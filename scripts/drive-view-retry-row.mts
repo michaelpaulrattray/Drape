@@ -1,20 +1,16 @@
 /**
- * HIS ONE MUTED LINE, PHOTOGRAPHED (#1347) — law 6, both themes.
+ * NO PER-VIEW ROW, PHOTOGRAPHED (#2089, after #1347 and #1903 slice 3) — law 6,
+ * both themes.
  *
- * His ruling, Desk reply 224, 2026-09-26: *"one muted line under the name,
- * nothing else … Under an unchecked view: 'Unchecked · Try again' … Under the
- * view that never arrived: 'Refunded · Try again'."*
- *
- * ⚠ **HIS SECOND RULING LEFT ONE OF THOSE TWO ROWS — #1903 slice 3, 2026-10-07.**
- * The check that produced *"Unchecked"* is retired and so is the free ask under
- * it, so a view that ARRIVED carries no row at all and the remedy is the paid
- * whole-set button. **His shape ruling above is untouched and is still what this
- * driver photographs**: one muted line, one word, one link, no credit count.
- *
- * So the three states it puts side by side are now a good view, a view nobody
- * could judge — which must look EXACTLY like a good one — and one that never
- * arrived, which is the only row left. A signed Cast in the dev database has
- * none of the last two.
+ * His word, 2026-10-08 (terminal), verbatim and entire: *"regenerate is the
+ * only option"*. This driver used to photograph his one muted line,
+ * *"Refunded · Try again"*, under a view that never arrived (#1347). #1903
+ * slice 3 took its *"Unchecked"* sibling; #2089 takes the last one. So the
+ * three states it puts side by side are now a good view, a view nobody could
+ * judge — which must look EXACTLY like a good one — and one that never
+ * arrived, which keeps its one true sentence on the empty tile and NOTHING
+ * under its name. The remedy is the whole-set *Regenerate · 650 credits* on the
+ * row of whole-Cast actions, and the driver reads that off the screen too.
  *
  * ⚠ **SO THE STATES ARE INJECTED AT THE WIRE, ON THE `castingV2.getCast`
  * RESPONSE, AND NOTHING IS WRITTEN TO A ROW.** That is the builder-seat rule of
@@ -29,14 +25,16 @@
  * `setItem` loses the race and a driver that does not read `data-theme` back
  * produces two identical frames and a claim that both themes were seen.
  *
- *   npx tsx scripts/drive-view-retry-row.mts [--base http://localhost:3000]
+ *   npx tsx scripts/drive-view-retry-row.mts [--base http://localhost:3000] [--out <dir>]
  *
- * Output: `output/1347-row/<theme>-strip.png` plus a whole-room frame each, and
- * one line per reading. It spends nothing — no render, no credit, no text call.
+ * Output: `<out>/<theme>-strip.png` plus a whole-room frame each (default
+ * `output/2089-row/`), and one line per reading. It spends nothing — no render,
+ * no credit, no text call.
  */
 
 import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { SignJWT } from "jose";
 
@@ -49,7 +47,9 @@ assertOneWorld(["DATABASE_URL"]);
 const BASE = process.argv.includes("--base")
   ? process.argv[process.argv.indexOf("--base") + 1]!
   : "http://localhost:3000";
-const OUT = new URL("../output/1347-row/", import.meta.url);
+const OUT = process.argv.includes("--out")
+  ? pathToFileURL(`${process.argv[process.argv.indexOf("--out") + 1]!.replace(/[\\/]+$/, "")}/`)
+  : new URL("../output/2089-row/", import.meta.url);
 
 /** The dev fixture that owns signed Casts. Never a real account. */
 const OPEN_ID = "verify-bot-local";
@@ -187,14 +187,14 @@ await page.evaluateOnNewDocument((failedNote: string) => {
       };
     }
     if (index === 2) {
-      /* Never arrived; the money went back. The tile is the confession. */
+      /* Never arrived; the money went back. The tile is the confession — and
+         since #2089 the projection sends NO `retry` on it, so none is dressed. */
       return {
         ...slot,
         state: "failed-refunded",
         url: null,
         note: failedNote,
-        refundedCredits: 50,
-        retry: { priceCredits: 50, reason: "refunded" },
+        refundedCredits: 1000,
       };
     }
     /* Everything else, the first one included, is left alone: the control. */
@@ -248,10 +248,11 @@ for (const theme of ["light", "dark"] as const) {
   }, theme);
   await page.goto(`${BASE}/app/casting/cast/${cast.castId}`, { waitUntil: "domcontentloaded" });
 
-  /* Wait on the ROW, never on the clock — the remote database makes the first
-     paint slow, and a fixed sleep photographs skeletons. */
+  /* Wait on the CONFESSION, never on the clock — the remote database makes the
+     first paint slow, and a fixed sleep photographs skeletons. (It waited on
+     the row until #2089; there is no row to wait on now.) */
   try {
-    await page.waitForSelector(".dpc-slot__row", { timeout: 120_000 });
+    await page.waitForSelector(".dpc-slot__confession", { timeout: 120_000 });
   } catch (error) {
     if (pageErrors.length > 0) {
       throw new Error(
@@ -342,59 +343,53 @@ for (const theme of ["light", "dark"] as const) {
     throw new Error("the getCast response was never rewritten — the frame is not the case");
   }
 
-  const rows = reading.filter((tile) => tile.row !== null);
-  const bare = reading.filter((tile) => tile.row === null && tile.label !== "Master");
+  const rows = reading.filter((tile) => tile.row !== null || tile.link !== null);
+  const bare = reading.filter((tile) => tile.row === null && tile.link === null && tile.label !== "Master");
   dressedSlots = rows.length;
   untouchedSlots = bare.length;
 
-  /* His sentence, read off the screen rather than off the source. */
-  const said = rows.map((tile) => tile.line);
-  if (!said.includes("Refunded · Try again")) {
-    throw new Error(`no refunded row on screen — saw ${JSON.stringify(said)}`);
-  }
   /*
-    ⚠ AND THE ROW HIS LATER RULING RETIRED MUST BE NOWHERE — #1903 slice 3.
-    This read `if (!said.includes("Unchecked · Try again")) throw` until that
-    ruling, and the repair is the same reading inverted.
-
-    ⚠ **IT IS A COUNT AND NOT A STRING SEARCH, AND THAT WAS DRIVEN RATHER THAN
-    REASONED.** The first repair looked for the word "Unchecked" on screen and
-    SURVIVED ITS OWN SABOTAGE: re-inject `reason: "unchecked"` and the client's
-    word map — which no longer has that key — renders nothing, so the row comes
-    back as a bare separator and a link with no word in it. The page grows a row
-    the customer can press and the word never appears, so a reader looking for
-    the word sees a clean screen. The COUNT sees it.
-
-    One row is the whole of the new rule: the fixture dresses exactly two tiles,
-    one delivered-and-unjudged and one refunded, and only the second may speak.
+    #2089: NO TILE CARRIES A ROW OR A LINK — read as a COUNT, never as a word
+    search (this driver's own lesson from #1903 slice 3: a row whose word map
+    has no key renders a bare link, and a reader looking for the word sees a
+    clean screen).
   */
-  if (rows.length !== 1) {
+  if (rows.length !== 0) {
     throw new Error(
-      `expected exactly ONE row (the refunded view) and saw ${rows.length} — `
-      + `${JSON.stringify(rows.map((tile) => ({ label: tile.label, row: tile.row })))}`,
+      `expected NO per-view row and saw ${rows.length} — `
+      + `${JSON.stringify(rows.map((tile) => ({ label: tile.label, row: tile.row, link: tile.link })))}`,
     );
   }
-  if (said.some((line) => line !== null && line.includes("Unchecked"))) {
-    throw new Error(`the retired Unchecked word is back on screen — saw ${JSON.stringify(said)}`);
+  const stripText = await page.evaluate(
+    () => document.querySelector(".dpc-strip")?.textContent ?? "",
+  );
+  if (stripText.includes("Try again")) {
+    throw new Error(`"Try again" is on the strip: ${stripText.slice(0, 200)}`);
   }
-  /* Nothing anywhere says a price, and no tile wears the old pill or caption. */
+  /* The refunded tile keeps its one true sentence. */
+  const confessions = reading.filter((one) => one.confession !== null);
+  if (confessions.length !== 1 || confessions[0]!.confession !== FAILED_NOTE) {
+    throw new Error(`expected one confession "${FAILED_NOTE}" — saw ${JSON.stringify(confessions)}`);
+  }
+  /* And the one remedy on the page, read off the screen with its price. */
+  const redo = await page.evaluate(
+    () => (document.querySelector(".dpc-room__redo")?.textContent ?? "").replace(/\s+/g, " ").trim(),
+  );
+  if (redo !== "Regenerate · 650 credits") {
+    throw new Error(`the whole-set remedy is not on the page as expected — saw "${redo}"`);
+  }
   for (const tile of reading) {
     if (tile.pill) throw new Error(`${tile.label} still wears the CR BACK pill`);
     if (tile.caption) throw new Error(`${tile.label} still wears a caption line`);
-    if (tile.row && /\d/.test(tile.row)) {
-      throw new Error(`${tile.label}'s row carries a number: "${tile.row}"`);
-    }
   }
-  /* A good view carries nothing — the control inside every frame. */
-  if (bare.length === 0) {
-    throw new Error("every tile has a row; there is no good-view control in this frame");
-  }
+  if (bare.length === 0) throw new Error("no tiles were read");
+  console.log(`${theme}: remedy on the page reads "${redo}"`);
 
   await mkdir(OUT, { recursive: true });
   const strip = await page.$(".dpc-strip");
   if (!strip) throw new Error("no strip on the page");
-  await strip.screenshot({ path: new URL(`${theme}-strip.png`, OUT).pathname.slice(1) });
-  await page.screenshot({ path: new URL(`${theme}-room.png`, OUT).pathname.slice(1) });
+  await strip.screenshot({ path: fileURLToPath(new URL(`${theme}-strip.png`, OUT)) });
+  await page.screenshot({ path: fileURLToPath(new URL(`${theme}-room.png`, OUT)) });
   await writeFile(
     new URL(`${theme}-reading.json`, OUT),
     JSON.stringify(reading, null, 2),
@@ -403,14 +398,7 @@ for (const theme of ["light", "dark"] as const) {
 
   await page.removeScriptToEvaluateOnNewDocument(seed.identifier);
 
-  console.log(`\n${theme}: ${rows.length} rows, ${bare.length} good views carrying nothing`);
-  for (const tile of rows) {
-    console.log(
-      `  ${tile.label.padEnd(12)} "${tile.line}"  ${tile.rowHeight}px gap ${tile.gap}  `
-      + `word ${tile.rowFontSize} ${tile.rowColour} · link ${tile.linkFontSize} `
-      + `${tile.linkColour} ${tile.linkUnderline}`,
-    );
-  }
+  console.log(`\n${theme}: ${rows.length} per-view rows, ${bare.length} tiles carrying nothing under the name`);
   for (const tile of reading.filter((one) => one.confession !== null)) {
     console.log(`  ${tile.label.padEnd(12)} tile says "${tile.confession}" (pill: ${tile.pill})`);
   }
@@ -419,8 +407,8 @@ for (const theme of ["light", "dark"] as const) {
 await browser.close();
 
 console.log(
-  `\nOK — ${dressedSlots} rows and ${untouchedSlots} bare good views in each theme.`
-  + `\nFrames: output/1347-row/{light,dark}-{strip,room}.png`
+  `\nOK — ${dressedSlots} per-view rows and ${untouchedSlots} bare tiles in each theme.`
+  + `\nFrames: ${fileURLToPath(OUT)}{light,dark}-{strip,room}.png`
   + "\nSpent: nothing. No row was written; the states were injected on the getCast response.",
 );
 
