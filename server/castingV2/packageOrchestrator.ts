@@ -175,15 +175,18 @@ import {
 } from "./outfitPlate";
 import {
   renderSignSheet,
-  signSheetKindFor,
   signSheetPlan,
-  type RenderedSignSheet,
   type SignSheetEngine,
   type SignSheetKind,
 } from "./signSheet";
 import {
+  settleSignSheet,
+  settledPanelFor,
+  type SettledSignSheet,
+} from "./signSheetCoordinator";
+import {
   conformanceProvenance,
-  unjudgedVerdict,
+  judgeUnjudgedOnFailure,
   viewConformanceRefuses,
   type ConformanceAxis,
   type ViewConformanceJudge,
@@ -450,13 +453,23 @@ export type BuildPackageInput = {
    */
   outfitReference?: OutfitReference | null;
   /**
-   * THE SHEET THIS PACKAGE IS BEING CUT FROM — in flight (#1904).
+   * THE SHEETS THIS PACKAGE IS BEING CUT FROM, ALREADY JUDGED — in flight (#1904).
    *
    * **His word, 2026-10-07, closing #1690:** *"and then we go with the sunburst
-   * 2.5 max quality for the sign sheet"*. When it is set, every view's picture
-   * is a panel cut from this one frame and no view calls an image engine at
-   * all; when it is absent, each view composes and renders its own request
-   * exactly as it always has.
+   * 2.5 max quality for the sign sheet"*, and his #1926 ruling splitting it in
+   * two. When it is set, every view's picture is a panel cut from one of these
+   * frames and no view calls an image engine at all; when it is absent, each
+   * view composes and renders its own request exactly as it always has.
+   *
+   * ⚠ **SETTLED SHEETS, NOT MERELY RENDERED ONES — every panel's verdict is
+   * decided before these promises resolve, and that is his option A rather than
+   * a layering preference.** A view refused for one of the three catastrophes
+   * re-renders ITS WHOLE SHEET once and replaces all of that sheet's views
+   * together, so the judging cannot happen per view: views commit as they land,
+   * and one could commit a first-render panel while a sibling triggers the
+   * re-render. {@link settleSignSheet} carries the reasoning and the money
+   * boundaries; this field carries its result, and the per-view road below only
+   * ever CONSUMES it.
    *
    * ⚠ **A PROMISE RATHER THAN A SHEET, and that is a money decision rather than
    * a style one.** `buildCastPackage` cannot await it before dispatching the
@@ -470,48 +483,23 @@ export type BuildPackageInput = {
    * `viewRetryService.ts` renders ONE view against its delivered sibling, and
    * handing it a sheet would have it pay for five panels to keep one.
    */
-  signSheets?: Readonly<Record<SignSheetKind, Promise<RenderedSignSheet>>>;
+  signSheets?: Readonly<Record<SignSheetKind, Promise<SettledSignSheet>>>;
+  /**
+   * WHAT THE CUSTOMER CALLS THIS CAST — for a refusal sentence, and for nothing
+   * else (#1904, his Yuna wording of 2026-10-08).
+   *
+   * ⚠ **It never reaches an engine or the judge**, and that is the whole of why
+   * it is safe to add here. A name in a prompt would be a word about a person
+   * the generator has a photograph of — it could only pull the picture toward
+   * whoever the model thinks that name looks like. It exists so that a refusal
+   * says *"didn't clearly look like Sifr"* instead of naming the pipeline's
+   * *"signed likeness"*, which is the term of art his ruling removed.
+   *
+   * Absent, blank, or whitespace is a Cast with no name, which is the ordinary
+   * case — see {@link refusedViewReason}.
+   */
+  castName?: string | null;
 };
-
-/**
- * ONE PANEL OUT OF THE SHEET, shaped like anything else a view can land.
- *
- * ⚠ **The provenance is the sheet's, not a constant**, which is what keeps the
- * asset rows honest about a delivered view's real size — see
- * {@link RenderedSignSheet.provenance}. Latency and cost are the SHEET's and are
- * deliberately attributed in full to each of the five rather than divided:
- * dividing would invent a per-view figure nobody measured, and a reader summing
- * five rows would then read one sheet as five renders either way. The sheet's
- * own log line is where the single true reading lives.
- */
-async function signSheetPanelFor(
-  sheets: Readonly<Record<SignSheetKind, Promise<RenderedSignSheet>>>,
-  angle: CastViewAngle,
-): Promise<ImageResult> {
-  /*
-    ⚠ **The view's sheet is DERIVED from the angle, never passed in** — one
-    reader (`signSheetKindFor`) answers it for the dispatch, the prompt and
-    this cut alike, so a view cannot be rendered on one sheet and read off the
-    other. The refusal below is what catches a split that forgot an angle.
-  */
-  const settled = await sheets[signSheetKindFor(angle)];
-  const panel = settled.panels[angle];
-  if (!panel) {
-    /*
-      A view the sheet has no panel for cannot be delivered, and it must not be
-      delivered as somebody else's panel. It reaches the attempt loop's catch as
-      an ordinary failure, so the slice refunds — see the fork's own comment.
-    */
-    throw new Error(`the Sign sheet carries no panel for the ${angle} view`);
-  }
-  return {
-    bytes: panel.bytes,
-    contentType: panel.contentType,
-    provenance: settled.provenance,
-    latencyMs: settled.latencyMs,
-    ...(settled.estimatedCostUsd === null ? {} : { estimatedCostUsd: settled.estimatedCostUsd }),
-  };
-}
 
 async function defaultStoreImage(input: {
   operationId: string;
@@ -654,6 +642,15 @@ export async function buildCastPackage(
     about the PERSON, true of every camera. A tail belongs on the body sheet and
     a facial scar on the head sheet, and no reader here can tell which is which.
   */
+  /*
+    ⚠ **AND EACH SHEET IS SETTLED, NOT MERELY RENDERED — his #1904 ruling of
+    2026-10-08, verbatim and entire: *"go with A"*.** A view refused for one of
+    the three catastrophes re-renders its own sheet once, silently, at our cost,
+    and all of that sheet's views are replaced together. The judging therefore
+    happens HERE, above the views, where one authority can see every panel of a
+    sheet at once — `settleSignSheet` carries why a per-view latch cannot do it
+    and what the re-render may and may not cost.
+  */
   const signSheets = Object.fromEntries(
     signSheetPlan().map((plan) => [
       plan.kind,
@@ -661,19 +658,38 @@ export async function buildCastPackage(
          throws on a missing FAL_KEY, and eagerly in the argument list that throw
          would be SYNCHRONOUS here — after five audit rows exist and 8,500
          credits are gone, with nothing to refund it. Now reachable twice. */
-      Promise.resolve().then(() => renderSignSheet({
-        engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
-        anchor: input.anchor,
-        wardrobeLine: input.wardrobeLine ?? null,
-        description: input.description ?? null,
-        ...(input.pronouns ? { pronouns: input.pronouns } : {}),
+      Promise.resolve().then(() => settleSignSheet({
+        kind: plan.kind,
         panelOrder: plan.panelOrder,
-        inkCrops: input.inkCrops ?? [],
-        featureWords: input.featureWords ?? [],
+        /* ⚠ **THE SAME PROMPT AND THE SAME REFERENCES EVERY TIME**, which is his
+           ruling's own wording — so the thunk closes over the composition rather
+           than taking anything that could differ between generations. */
+        render: () => renderSignSheet({
+          engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
+          anchor: input.anchor,
+          wardrobeLine: input.wardrobeLine ?? null,
+          description: input.description ?? null,
+          ...(input.pronouns ? { pronouns: input.pronouns } : {}),
+          panelOrder: plan.panelOrder,
+          inkCrops: input.inkCrops ?? [],
+          featureWords: input.featureWords ?? [],
+          operationId: input.operationId,
+        }),
+        /* Built inside the promise for the engine's own reason, one line up:
+           `castingViewConformanceJudge` throws on a missing `OPENROUTER_API_KEY`
+           — the §I door refusal, and the right one — and eagerly in the
+           argument list that throw would be SYNCHRONOUS here, after five audit
+           rows exist and 8,500 credits are gone. Inside, it is a sheet that
+           never arrived, and every slice refunds itself. */
+        judge: (dependencies.judge ?? castingViewConformanceJudge)(),
+        anchor: input.anchor,
+        pronouns: input.pronouns ?? pronounsForSex(null),
+        userId: input.userId,
         operationId: input.operationId,
+        ...(dependencies.capture ? { capture: dependencies.capture } : {}),
       })),
     ]),
-  ) as Record<SignSheetKind, Promise<RenderedSignSheet>>;
+  ) as Record<SignSheetKind, Promise<SettledSignSheet>>;
 
   const outcomes = await Promise.all(
     /*
@@ -977,19 +993,54 @@ export async function renderViewAttempts<T>(
         either way — what changed is that a partial package is now an ordinary
         outcome rather than a total loss, and this file's header says so.
 
-        ⚠ **WHAT IS RULED AND NOT YET BUILT, so the next reader does not read
-        this fork as the finished road: his #1904 ruling of 2026-10-08 ("go with
-        A") says a view refused for one of the three catastrophes re-renders ITS
-        OWN SHEET once, silently, at our cost, and replaces all of that sheet's
-        views together.** That cannot live in this per-view loop — views commit
-        as they land, so one view could commit a first-render panel while its
-        sibling triggers the re-render, and the two would come from different
-        sheets. It needs a sheet-level coordinator above `buildOneView`. Until
-        it exists, a catastrophic refusal refunds the slice exactly as it does
-        today, which is the behaviour this loop already has and not a regression.
+        ⚠ **AND ON THE SHEET ROAD THE PICTURE ARRIVES ALREADY JUDGED — his
+        #1904 ruling of 2026-10-08, verbatim and entire: *"go with A"*.** A view
+        refused for one of the three catastrophes re-renders ITS OWN SHEET once,
+        silently, at our cost, and all of that sheet's views are replaced
+        together — so the judgement cannot be made here. Views commit as they
+        land, so one view could commit a first-render panel while its sibling
+        triggered the re-render, and the two delivered views would come from
+        different frames. `settleSignSheet` owns every judgement for a sheet and
+        every frame it pays for; this loop CONSUMES its verdict and spends
+        nothing of its own on it.
       */
-      const image = input.signSheets
-        ? await signSheetPanelFor(input.signSheets, angle)
+      const panel = input.signSheets
+        ? await settledPanelFor(input.signSheets, angle)
+        : null;
+
+      if (panel?.status === "refused") {
+        /*
+          THE SHEET'S OWN BUDGET IS ALREADY SPENT, so this is terminal here.
+
+          ⚠ **No capture and no second attempt, and both absences are the
+          coordinator's doing rather than a gap.** It kept this frame AND the
+          one from the generation before it, keyed by sheet generation so
+          neither overwrote the other (#1492); and it has already bought the one
+          re-render his ruling allows. A `continue` here would ask the judge the
+          same question about the same settled pixels — the measured defect
+          `VIEW_JUDGED_ATTEMPTS` would otherwise produce on this road — and then
+          fail anyway. So the slice refunds through `failView`, exactly as it
+          did before this road existed, under the reference it has always used.
+        */
+        verdicts.push(...panel.verdicts);
+        judgedAttempts += panel.verdicts.length;
+        lastReason = refusedViewReason(panel.failedAxes, input.castName);
+        log.warn(
+          {
+            operationId: input.operationId,
+            angle,
+            sheetGeneration: panel.generation,
+            failedAxes: panel.failedAxes,
+            method: panel.verdicts[panel.verdicts.length - 1]?.method,
+          },
+          "[packageOrchestrator] the sheet's panel failed conformance — the sheet had its one "
+          + "re-render and this slice refunds",
+        );
+        break;
+      }
+
+      const image = panel
+        ? panel.image
         : await composeAndGenerateOneView(input, angle, engine);
 
       // Bytes land in OUR storage before anything references them; a provider
@@ -1000,7 +1051,24 @@ export async function renderViewAttempts<T>(
         contentType: image.contentType,
       });
 
-      const verdict = await judgeUnjudgedOnFailure(judge, {
+      /*
+        ⚠ **ONE JUDGEMENT PER RENDERED PANEL, AND IT WAS ALREADY MADE.** On the
+        sheet road the verdict comes from the coordinator — asking again here
+        would be a second read of identical pixels that cannot say anything new.
+        Every verdict the panel collected is recorded, oldest first, so a panel
+        refused on the first frame and passed on the second carries both
+        (D-114): what the judge rejected before the draw the customer heard
+        about is the thing that makes the judge improvable.
+      */
+      if (panel) {
+        /* All but the last; the shared `verdicts.push(verdict)` below records
+           the delivering one, and its `judgedAttempts` increment counts it. */
+        verdicts.push(...panel.verdicts.slice(0, -1));
+        judgedAttempts += panel.verdicts.length - 1;
+      }
+      /* `??` short-circuits, so the judge is never called on the sheet road —
+         which is the whole of "one judgement per rendered panel". */
+      const verdict = panel?.verdict ?? await judgeUnjudgedOnFailure(judge, {
         angle,
         anchor: input.anchor,
         candidate: { bytes: image.bytes, contentType: image.contentType },
@@ -1093,7 +1161,7 @@ export async function renderViewAttempts<T>(
             verdict this rule does not call a refusal DELIVERS rather than
             silently refunding.
           */
-          lastReason = refusedViewReason(failedAxes);
+          lastReason = refusedViewReason(failedAxes, input.castName);
           /*
             KEEP THE PICTURE THE JUDGE TURNED DOWN — #1492, his own Jingu (2026-09-29).
 
@@ -1537,38 +1605,14 @@ async function buildOneView(
   });
 }
 
-/**
- * The judge, with its own failures turned into an HONEST verdict rather than a
- * verdict at all.
- *
- * The judge converts a refusal or an unreadable answer into `unjudged`; what
- * reaches here is a transport failure that survived its retries, and it gets the
- * same treatment. **`unjudged` is not "it failed" — it is "nobody looked"**, and
- * since D-246 the caller delivers on it and records the fact.
- *
- * §I's fail-closed law is not repealed by that. It said a check that reports
- * success loudest exactly when it understood nothing is worthless, and that is
- * still true: nothing here reports success. It reports that no opinion exists,
- * which is a different sentence and lands on the row as one.
- */
-async function judgeUnjudgedOnFailure(
-  judge: ViewConformanceJudge,
-  input: Parameters<ViewConformanceJudge>[0],
-): Promise<ViewConformanceVerdict> {
-  try {
-    return await judge(input);
-  } catch (error) {
-    log.error(
-      { angle: input.angle, err: error },
-      "[packageOrchestrator] the conformance judge failed — no opinion exists about this view",
-    );
-    /* ⚠ THE AXES WERE SPELLED OUT HERE BY HAND AND ARE DERIVED NOW — #1903.
-       A second list of the axis names in a second file is working law 4, and
-       it was found the hard way: the rename broke this literal. The silent
-       version of the same mistake ships a verdict naming axes nothing reads. */
-    return unjudgedVerdict("unavailable", "the view could not be checked");
-  }
-}
+/*
+  ⚠ `judgeUnjudgedOnFailure` STOOD HERE AND IS NOW IN `viewConformance.ts`,
+  beside `unjudgedVerdict`, because his option A gave the Sign a SECOND road
+  that needs the same rule (#1904). A copy in the coordinator would have been
+  the worst place in the product for working law 4 to bite: the rule is D-246,
+  and getting it wrong means a judge outage refunds a whole Sign. Its docblock
+  there records what the first draft of the coordinator did instead.
+*/
 
 /**
  * THE SENTENCE A REFUSED VIEW CONFESSES. No judge text is ever shown.
@@ -1616,18 +1660,60 @@ async function judgeUnjudgedOnFailure(
  * fourth axis added to that set is a compile error here until somebody writes
  * what it would say to a customer — which is the only mechanism in this file
  * that could have stopped tonight's defect, so it is built rather than promised.
+ *
+ * ⚠ **AND THE THREE SENTENCES ARE YUNA'S NOW, ON HIS WORD — #1904, 2026-10-08,
+ * posted with his *"go with A"*: *"The refusal wording rides with it (Yuna, 8
+ * Oct, from his Notion desk)"*.** What changed beyond the words themselves:
+ *
+ * - **"Signed likeness" is dropped everywhere.** It was a term of art from the
+ *   pipeline standing on a path a customer cannot avoid — the
+ *   disappearing-technology law's own example of the machinery showing through.
+ *   The Cast's NAME stands where it stood, or *"this character"* for a Cast
+ *   whose owner has not named it yet ({@link UNNAMED_CAST_IN_COPY}).
+ * - **Each one says what we DID** — *"so we didn't keep it"* — because a
+ *   refusal that only describes the picture leaves the customer to work out
+ *   whether they still have it and whether they paid for it.
+ *
+ * ⚠ **THEY CARRY NO TERMINAL STOP, AND THAT IS MEASURED RATHER THAN A STYLE
+ * CHOICE.** Every surface that renders a reason supplies its own punctuation —
+ * `ViewTabs`'s failed slot composes `${label} failed — ${reason}. ${money}` —
+ * so a sentence shipped with its own full stop reads *"…we didn't keep it.."*
+ * on the one surface a Sign's refusal actually lands on. The alternative,
+ * taking the stop out of `ViewTabs`, breaks every OTHER reason this road
+ * raises (*"The view could not be generated"*, the fallback below, the fenced
+ * sentence), none of which carries one either. So the sentence is Yuna's and
+ * the punctuation stays where it already lives.
+ *
+ * ⚠ **The money half is NOT changed here.** Her design says *"{N} credits
+ * returned."* and this product currently says *"{N} credits refunded — you
+ * weren't charged."* ({@link refundOutcomeText}, one helper, four surfaces).
+ * That is **#1940**'s own founder-ordered card — *"credits returned" everywhere*
+ * — and it reaches top-ups, plan changes and refine refunds as well as this
+ * road. Folding it in here would ship half of it under a different card's name.
  */
-const REFUSED_VIEW_REASONS: Record<ConformanceAxis, string> = {
-  intact: "This view came back damaged",
-  /* His own sentence, unchanged, for the catastrophe it was always about. */
-  identity: "This view didn't hold the signed likeness",
-  /*
-    Covers BOTH halves of that axis honestly, which a count-shaped sentence
-    could not: `people` fails on nobody at all as well as on a crowd, and
-    "didn't come back with your cast alone in it" is true of each.
-  */
-  people: "This view didn't come back with your cast alone in it",
-};
+function refusedViewReasons(name: string): Record<ConformanceAxis, string> {
+  return {
+    intact: "This view came out broken, so we didn't keep it",
+    /*
+      Covers BOTH halves of that axis honestly, which a count-shaped sentence
+      could not: `people` fails on nobody at all as well as on a crowd, and
+      "didn't show just <name>" is true of each.
+    */
+    people: `This view didn't show just ${name}, so we didn't keep it`,
+    identity: `This view didn't clearly look like ${name}, so we didn't keep it`,
+  };
+}
+
+/**
+ * WHAT A CAST WITH NO NAME IS CALLED IN A SENTENCE A CUSTOMER READS — his
+ * ruling's own words, *"or \"this character\" when it has none"*.
+ *
+ * ⚠ **Never the KI id and never a pronoun.** The id is the machinery showing
+ * through, and a pronoun would be this road guessing about a person the
+ * customer invented — the Sign already carries {@link BuildPackageInput.pronouns}
+ * for the generator and the judge, and a refusal is not the place to spend it.
+ */
+export const UNNAMED_CAST_IN_COPY = "this character";
 
 /**
  * ⚠ **WHICH ONE IS CONFESSED WHEN SEVERAL FAILED, AND IT IS NOT
@@ -1639,12 +1725,22 @@ const REFUSED_VIEW_REASONS: Record<ConformanceAxis, string> = {
  * them when what actually happened is that it did not render. **The most basic
  * fault is named first**, which is both the true one and the believable one.
  *
+ * ⚠ **AND `people` MOVED AHEAD OF `identity` ON HIS WORD — #1904, 2026-10-08,
+ * verbatim: *"If several fail, show one line, in this order: broken, then wrong
+ * people, then not her."*** It was `intact → identity → people`. The reasoning
+ * is the same one the first paragraph makes, one step further: a frame holding
+ * two people, or nobody, drags identity down for exactly the reason a damaged
+ * frame does — there is no single face to recognise — so *"didn't show just
+ * {name}"* is the true fault and *"didn't clearly look like {name}"* is its
+ * symptom. His order is this reasoning, and the clause above is why it was
+ * already half-built.
+ *
  * It is a PERMUTATION of the axis set rather than a subset of it, and
  * `packageOrchestrator.test.ts` derives that check from {@link CONFORMANCE_AXES}
  * rather than restating this list — an axis added to the judge and forgotten
  * here would otherwise fall silently to the fallback sentence.
  */
-const REFUSAL_CONFESSION_ORDER: readonly ConformanceAxis[] = ["intact", "identity", "people"];
+const REFUSAL_CONFESSION_ORDER: readonly ConformanceAxis[] = ["intact", "people", "identity"];
 
 /**
  * ⚠ **THE FALLBACK IS NOT DECORATION — it is what a refusal says when the
@@ -1655,10 +1751,24 @@ const REFUSAL_CONFESSION_ORDER: readonly ConformanceAxis[] = ["intact", "identit
  */
 const REFUSED_VIEW_FALLBACK = "This view didn't come out right";
 
-/** The one sentence a refused view confesses, chosen from what actually failed. */
-export function refusedViewReason(failedAxes: readonly string[]): string {
+/**
+ * The one sentence a refused view confesses, chosen from what actually failed.
+ *
+ * ⚠ **`castName` IS OPTIONAL AND ITS ABSENCE IS A REAL STATE, not a caller
+ * forgetting.** A Cast is signed with a name or without one — `SignInput.name`
+ * is optional and *"A Cast with no name shows its KI id until its owner gives
+ * it one"* — so an unnamed Cast is the ordinary case on this road, and
+ * {@link UNNAMED_CAST_IN_COPY} is what it is called in a sentence. A blank or
+ * whitespace-only name is treated as no name, because *"didn't clearly look
+ * like  , so we didn't keep it"* is worse than the generic sentence.
+ */
+export function refusedViewReason(
+  failedAxes: readonly string[],
+  castName?: string | null,
+): string {
+  const reasons = refusedViewReasons(castName?.trim() || UNNAMED_CAST_IN_COPY);
   for (const axis of REFUSAL_CONFESSION_ORDER) {
-    if (failedAxes.includes(axis)) return REFUSED_VIEW_REASONS[axis];
+    if (failedAxes.includes(axis)) return reasons[axis];
   }
   return REFUSED_VIEW_FALLBACK;
 }

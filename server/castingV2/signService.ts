@@ -350,6 +350,19 @@ export async function signCandidate(
   input: SignInput,
 ): Promise<SignResult> {
   const price = CASTING_V2_SIGN_PRICE_CREDITS;
+  /*
+    THE NAME THIS CAST IS BORN WITH — read ONCE, for the two places that need it.
+
+    ⚠ **It was `input.name?.trim() || null` inline at the Cast's own row, and a
+    second copy of that expression is what #1904 would have added** — the
+    package's refusal sentences now say the Cast's name instead of the
+    pipeline's *"signed likeness"*, so the row and the sentence have to agree
+    about what the Cast is called. Two expressions of one normalisation drift
+    (working law 4), and the direction they drift in is a customer being told a
+    refusal about a name their Cast is not stored under. One local, two readers,
+    and the trim/empty rule lives in exactly one place.
+  */
+  const castName = input.name?.trim() || null;
   await assertNotFrozen(input.userId);
 
   // ---- free refusals: nothing claimed, nothing charged ----
@@ -491,7 +504,7 @@ export async function signCandidate(
       sessionId: source.session.id,
       // The selection this Sign was quoted against; the CAS refuses if it moved.
       selectedVariantId: source.face.variantId,
-      name: input.name?.trim() || null,
+      name: castName,
       cohortKey: source.roll.cohortKey,
       styleKey: source.roll.styleKey,
       masterPrompt: documents.masterPrompt,
@@ -586,6 +599,9 @@ export async function signCandidate(
     /* From the documents this Sign just sealed, so the Cast's views speak about
        the person the Cast's own record describes. */
     pronouns: castPronouns(documents.technicalSchema),
+    /* What the customer calls this Cast, from the same local the Cast's own row
+       was written from — so a refusal names the Cast it is actually about. */
+    castName,
     /*
       WHAT THIS CAST IS WEARING, from the documents this Sign just sealed — not
       re-resolved here (§3.3, condition (v)).
@@ -1010,6 +1026,9 @@ async function completeSignPackage(
     /** How the product refers to this Cast — derived from the identity
      *  documents this Sign just wrote, never guessed at a call site. */
     pronouns: CastPronouns;
+    /** What its owner called it, or `null` — the same value the Cast's row
+     *  carries, for the package's refusal sentences and nothing else. */
+    castName: string | null;
     /** The snapshotted outfit — `null` for every Cast signed before the paths. */
     wardrobeLine: string | null;
     /** Its `source` — `brief` keeps the ink ride on the house prior (#1222). */
@@ -1079,6 +1098,9 @@ async function completeSignPackage(
       /* Her own words dress the five views and the judge judges against them
          (#1278 part 1) — one field, read twice, same as the outfit above. */
       description: input.description,
+      /* ⚠ For the REFUSAL SENTENCES only — it never reaches an engine or the
+         judge. `BuildPackageInput.castName` carries why. */
+      castName: input.castName,
     });
 
     if (result.refundUnrecorded) {

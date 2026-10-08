@@ -420,6 +420,53 @@ export function unjudgedVerdict(
 /** The in-file name, unchanged, so every call site below reads as it did. */
 const unjudged = unjudgedVerdict;
 
+/**
+ * ASK THE JUDGE, AND TURN ITS OWN FAILURE INTO AN HONEST VERDICT RATHER THAN
+ * INTO A VERDICT AT ALL.
+ *
+ * The judge converts a refusal or an unreadable answer into `unjudged` itself;
+ * what reaches here is a transport failure that survived its retries, and it
+ * gets the same treatment. **`unjudged` is not "it failed" — it is "nobody
+ * looked"**, and since D-246 every caller DELIVERS on it and records the fact.
+ *
+ * §I's fail-closed law is not repealed by that. It said a check that reports
+ * success loudest exactly when it understood nothing is worthless, and that is
+ * still true: nothing here reports success. It reports that no opinion exists,
+ * which is a different sentence and lands on the row as one.
+ *
+ * ⚠ **IT LIVES HERE, BESIDE {@link unjudgedVerdict}, BECAUSE THERE ARE TWO
+ * ROADS NOW AND A SECOND COPY WOULD HAVE BEEN THE WORST POSSIBLE ONE — #1904.**
+ * It was `packageOrchestrator`'s private helper, called once, on the per-view
+ * road. His option A moved the Sign's judging into `signSheetCoordinator`,
+ * which needs exactly this rule — and the first draft of that coordinator let a
+ * judge fault propagate instead, on the plausible-sounding ground that
+ * delivering an unlooked-at picture would be dishonest. **It would have made a
+ * judge outage refund the whole Sign**: D-246's founder ruling exactly inverted
+ * (*detectors must not block real generations because the detectors are
+ * flawed*), and nothing in the row would have been more honest for it. One
+ * function, two roads, one rule — and the arm that caught it is the Sign's own
+ * *"DELIVERS a view it could not check"*.
+ */
+export async function judgeUnjudgedOnFailure(
+  judge: ViewConformanceJudge,
+  input: Parameters<ViewConformanceJudge>[0],
+): Promise<ViewConformanceVerdict> {
+  try {
+    return await judge(input);
+  } catch (error) {
+    log.error(
+      { angle: input.angle, err: error },
+      "[viewConformance] the conformance judge failed — no opinion exists about this view",
+    );
+    /* ⚠ THE AXES WERE SPELLED OUT BY HAND AT THE OLD CALL SITE AND ARE DERIVED
+       NOW — #1903. A second list of the axis names in a second file is working
+       law 4, and it was found the hard way: the rename broke that literal. The
+       silent version of the same mistake ships a verdict naming axes nothing
+       reads. */
+    return unjudgedVerdict("unavailable", "the view could not be checked");
+  }
+}
+
 export type ViewConformanceJudgeConfig = {
   engine: TextEngine;
   /*
