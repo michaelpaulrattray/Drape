@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 191
+      "moduleCount": 192
     },
     {
       "id": "domain:castingV2",
@@ -3579,6 +3579,12 @@
     {
       "id": "module:server/castingV2/accountCastingPurge.ts",
       "path": "server/castingV2/accountCastingPurge.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/arrivalRetry.ts",
+      "path": "server/castingV2/arrivalRetry.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -26974,6 +26980,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -29610,6 +29621,11 @@
     {
       "from": "module:server/castingV2/signSheet.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
       "kind": "imports"
     },
     {
