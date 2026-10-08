@@ -1496,6 +1496,26 @@ export type PurgeableCandidate = {
 };
 
 /**
+ * THE CANDIDATE'S OWN OBJECTS, NAMED ONCE — the projection two purge roads
+ * select (#1935).
+ *
+ * Retention asks *"which candidates may go now"* and account deletion asks
+ * *"which candidates does this account own"*, which are different WHERE
+ * clauses over one SELECT list. Spelling the three keys twice is working law 4
+ * with a measurable cost: `sourceKey` is itself the third member and it was
+ * added to this list, once, in migration 0053 — a second copy of it would have
+ * been the copy that got forgotten, and what gets left behind is an untrimmed
+ * frame of a person at a permanently public URL.
+ */
+export const CANDIDATE_OBJECT_COLUMNS = {
+  id: castingCandidates.id,
+  userId: castingCandidates.userId,
+  imageKey: castingCandidates.imageKey,
+  thumbKey: castingCandidates.thumbKey,
+  sourceKey: castingCandidates.sourceKey,
+} as const;
+
+/**
  * Candidates whose objects may be deleted (§G.6).
  *
  * Two independent sources, both conservative:
@@ -1520,13 +1540,7 @@ export async function listPurgeableCandidates(input: {
   const db = await requireDb();
   const now = input.now ?? new Date();
   return db
-    .select({
-      id: castingCandidates.id,
-      userId: castingCandidates.userId,
-      imageKey: castingCandidates.imageKey,
-      thumbKey: castingCandidates.thumbKey,
-      sourceKey: castingCandidates.sourceKey,
-    })
+    .select(CANDIDATE_OBJECT_COLUMNS)
     .from(castingCandidates)
     .where(and(
       isNull(castingCandidates.keptAt),
@@ -1742,6 +1756,80 @@ export async function deleteCandidateRowsIn(
       isNull(castingCandidates.signedCastId),
       isNull(castingCandidates.keptAt),
     ));
+  return affectedRows(result);
+}
+
+/* ------------------------------------------------- account erasure (#1935) */
+
+/*
+  THE THREE STATEMENTS ACCOUNT ERASURE NEEDS THAT RETENTION DOES NOT.
+
+  Retention is a sweep over a LIVING product: it spares a signed candidate, it
+  spares a kept sibling, and it never touches a roll or a session row because
+  those are shared history a surviving Cast still comes from. Account erasure
+  has no survivors to protect — the account is going — so it needs the same
+  tree with every one of those exemptions lifted.
+
+  ⚠ **THEY ARE SEPARATE FUNCTIONS RATHER THAN A FLAG ON THE RETENTION ONES, and
+  that is deliberate.** `deleteCandidateRowsIn`'s `signedCastId IS NULL` and
+  `keptAt IS NULL` are belt-and-braces against a selection bug ever reaching a
+  protected candidate; a parameter that switches them off would put the one
+  thing standing between a sweep bug and a customer's signed Cast behind a
+  boolean. A caller that means to delete everything says so in the name it
+  calls.
+
+  Every one is owner-scoped in the statement that writes (invariant 1), and the
+  child tables are reached through the owned candidate exactly as retention and
+  `finalCastDeletion` reach them (invariant 2).
+*/
+
+/**
+ * Every candidate this account owns, whatever its status — signed, kept,
+ * discarded, expired — with the objects it owns.
+ *
+ * Selects {@link CANDIDATE_OBJECT_COLUMNS}, so a key column added to a
+ * candidate reaches this reader without anybody remembering it exists.
+ */
+export async function listAccountCandidatesIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<PurgeableCandidate[]> {
+  assertPositiveId(userId, "userId");
+  return tx
+    .select(CANDIDATE_OBJECT_COLUMNS)
+    .from(castingCandidates)
+    .where(eq(castingCandidates.userId, userId));
+}
+
+/** Every candidate row of this account, including signed and kept ones. */
+export async function deleteAccountCandidateRowsIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<number> {
+  assertPositiveId(userId, "userId");
+  const result = await tx
+    .delete(castingCandidates)
+    .where(eq(castingCandidates.userId, userId));
+  return affectedRows(result);
+}
+
+/** Every roll of this account. Called after its candidates are gone. */
+export async function deleteAccountRollRowsIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<number> {
+  assertPositiveId(userId, "userId");
+  const result = await tx.delete(castingRolls).where(eq(castingRolls.userId, userId));
+  return affectedRows(result);
+}
+
+/** Every sheet of this account. Called last — rolls hang off it. */
+export async function deleteAccountSessionRowsIn(
+  tx: TransactionHandle,
+  userId: number,
+): Promise<number> {
+  assertPositiveId(userId, "userId");
+  const result = await tx.delete(castingSessions).where(eq(castingSessions.userId, userId));
   return affectedRows(result);
 }
 
