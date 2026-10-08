@@ -93,7 +93,7 @@ function callArguments(src: string, name: string): string[] {
  */
 const ENROLLED: Record<string, string> = {
   "client/src/features/settings/sections/SecuritySection.tsx:name":
-    "exportFileName() in exportAccountData.ts — PRODUCT_NAME, driven by exportAccountData.test.ts (#1981)",
+    "exportFileName() in exportAccountData.ts — PRODUCT_NAME, driven by exportAccountData.test.ts",
   "client/src/pages/AdminAuditLogs.tsx:result.filename":
     "server/routes/admin/auditLogs.ts — `audit-logs-<date>.csv`, staff only",
   "client/src/pages/CastingRoom.tsx:file.name":
@@ -123,7 +123,7 @@ for (const site of assignments) {
   else unenrolled.push(`${site.file}:${site.line} — .download = ${site.expr}`);
 }
 
-describe("download filenames carry the product's name (#1992)", () => {
+describe("download filenames carry the product's name", () => {
   it("productFilename prefixes the one declared name, lower-cased", () => {
     expect(productFilename("selection.zip")).toBe(`${PRODUCT_NAME.toLowerCase()}-selection.zip`);
     expect(productFilename("x.png")).not.toMatch(OLD_NAME);
