@@ -10978,6 +10978,10 @@
       "path": "client/src/features/casting/evidence/inkReferenceDrop.test.ts"
     },
     {
+      "id": "test:client/src/features/casting/evidence/inkStepFailure.test.ts",
+      "path": "client/src/features/casting/evidence/inkStepFailure.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
       "path": "client/src/features/castingV2/briefDraft.test.ts"
     },
@@ -11320,6 +11324,10 @@
     {
       "id": "test:client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts",
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
+    },
+    {
+      "id": "test:client/src/features/studio/takeover/identityCommitFailure.test.ts",
+      "path": "client/src/features/studio/takeover/identityCommitFailure.test.ts"
     },
     {
       "id": "test:client/src/foundation/anchorCascade.test.ts",
@@ -17689,6 +17697,11 @@
     },
     {
       "from": "module:client/src/features/casting/evidence/useInkAddWorkflow.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/evidence/useInkAddWorkflow.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -20305,6 +20318,11 @@
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
       "to": "module:client/src/features/studio/takeover/IdentityChangeDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
