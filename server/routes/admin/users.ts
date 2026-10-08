@@ -11,7 +11,14 @@ import {
   FREEZE_REASON_MAX_LENGTH,
   SUSPEND_REASON_MAX_LENGTH,
   UNFREEZE_NOTES_MAX_LENGTH,
+  CREDIT_ADJUST_MAX_DISPLAY,
 } from "../../../shared/inputLimits";
+import {
+  displayBalance,
+  formatCredits,
+  ledgerForDisplay,
+  type DisplayCredits,
+} from "../../../shared/creditDisplay";
 const log = createModuleLogger("routes/admin");
 
 export const usersRouter = router({
@@ -402,16 +409,53 @@ export const usersRouter = router({
   // only after clients have stopped sending it for one full deploy, never in
   // the commit that stops sending it. Until now an unknown key cost nothing;
   // now it is a BAD_REQUEST on a money surface mid-deploy.
+  //
+  // ⚠ **THE TYPED FIGURE IS DISPLAY CREDITS NOW, AND IT WAS LEDGER UNTIL #1986.**
+  // His report, 2026-10-08, verbatim: *"i tried to ad 100000 credits to my
+  // account but it only gave me 20000 , why?"* The panel sent the typed number
+  // straight to `adjustUserCredits`, which moves the LEDGER, and every balance
+  // anyone reads is ledger ÷ 5. So `displayAmount` is what the dialog sends,
+  // and `ledgerForDisplay` is the one place it becomes a ledger figure.
+  //
+  // ⚠ `amount` (LEDGER) is still ACCEPTED, unchanged in meaning, for ONE deploy
+  // — the removal contract above: a bundle loaded before this deploy still
+  // sends it, and `.strict()` would turn that into a BAD_REQUEST mid-deploy.
+  // Exactly one of the two must be present. Remove `amount` in a later commit,
+  // after a full deploy has shipped a client that no longer sends it.
   adjustCredits: adminProcedure
     .input(z.object({
       userId: z.number(),
-      amount: z.number().min(-100000).max(100000),
+      /** LEDGER units — the pre-#1986 field, accepted for one deploy only. */
+      amount: z.number().min(-100000).max(100000).optional(),
+      /** DISPLAY credits — what the customer reads, and what the admin types. */
+      displayAmount: z
+        .number()
+        .int()
+        .min(-CREDIT_ADJUST_MAX_DISPLAY)
+        .max(CREDIT_ADJUST_MAX_DISPLAY)
+        .optional(),
       // `.trim()` before `.min(1)` (#816's money row): a one-space reason used to move credits
       // against a blank on every log this handler writes. The cap is the shared constant.
       reason: z.string().trim().min(1).max(CREDIT_ADJUST_REASON_MAX_LENGTH),
-    }).strict())
+    }).strict().refine(
+      (input) => (input.amount === undefined) !== (input.displayAmount === undefined),
+      { message: "Send exactly one of displayAmount or amount" },
+    ))
     .mutation(async ({ ctx, input }) => {
       const { adjustUserCredits, getUserById } = await import("../../db");
+
+      // The one conversion (#1986). `amount` is the legacy ledger field and
+      // passes through as it always did; `displayAmount` is multiplied by the
+      // scale in `shared/creditDisplay.ts` and nowhere else.
+      const ledgerAmount =
+        input.displayAmount !== undefined ? ledgerForDisplay(input.displayAmount) : input.amount!;
+      // The display figure the logs carry. On the legacy road it is derived
+      // from the ledger through the shared helper, sign kept, rounded toward
+      // zero — a log never claims more moved than did.
+      const displayAmount: number =
+        input.displayAmount !== undefined
+          ? input.displayAmount
+          : Math.sign(ledgerAmount) * displayBalance(Math.abs(ledgerAmount));
       
       // Get target user info
       const targetUser = await getUserById(input.userId);
@@ -421,7 +465,7 @@ export const usersRouter = router({
 
       const result = await adjustUserCredits(
         input.userId,
-        input.amount,
+        ledgerAmount,
         input.reason,
         ctx.user.id
       );
@@ -433,18 +477,26 @@ export const usersRouter = router({
         });
       }
 
-      // Log the action
+      const newDisplayBalance =
+        result.newBalance === undefined ? null : displayBalance(result.newBalance);
+      const newDisplayBalanceText =
+        newDisplayBalance === null ? "unknown" : formatCredits(newDisplayBalance);
+
+      // Log the action. `amount` and `newBalance` stay LEDGER on every log —
+      // they are the books — and the display figures sit beside them, named.
       await logAuditEvent({
         userId: ctx.user.id,
-        action: input.amount > 0 ? AUDIT_ACTIONS.CREDITS_ADDED : AUDIT_ACTIONS.CREDITS_DEDUCTED,
+        action: ledgerAmount > 0 ? AUDIT_ACTIONS.CREDITS_ADDED : AUDIT_ACTIONS.CREDITS_DEDUCTED,
         resourceType: "credits",
         resourceId: input.userId.toString(),
         metadata: {
           targetUserId: input.userId,
           targetUserEmail: targetUser.email,
-          amount: input.amount,
+          amount: ledgerAmount,
+          displayAmount,
           reason: input.reason,
           newBalance: result.newBalance,
+          newDisplayBalance,
           adjustedBy: ctx.user.id,
           adjustedByName: ctx.user.name,
         },
@@ -452,14 +504,16 @@ export const usersRouter = router({
         req: ctx.req,
       });
 
-      // Log admin action to the audit system (staff panels read it)
+      // Log admin action to the audit system (staff panels read it). The
+      // sentence a person reads leads with the display figure and names the
+      // ledger figure as such, so neither number can be mistaken for the other.
       await logAdminAction({
         adminId: ctx.user.id,
         adminName: ctx.user.name || ctx.user.email || `Admin ${ctx.user.id}`,
         action: "adjustCredits",
         targetType: "user",
         targetId: input.userId.toString(),
-        details: `${input.amount > 0 ? "Added" : "Deducted"} ${Math.abs(input.amount)} credits for ${targetUser.email || targetUser.name} - Reason: ${input.reason} - New balance: ${result.newBalance}`,
+        details: `${ledgerAmount > 0 ? "Added" : "Deducted"} ${formatCredits(Math.abs(displayAmount) as DisplayCredits)} credits (${Math.abs(ledgerAmount)} ledger units) for ${targetUser.email || targetUser.name} - Reason: ${input.reason} - New balance: ${newDisplayBalanceText} credits (${result.newBalance} ledger units)`,
         ipAddress: getClientIp(ctx.req),
         userAgent: ctx.req.headers["user-agent"] || undefined,
       });
@@ -470,12 +524,14 @@ export const usersRouter = router({
         adminName: ctx.user.name,
         targetUserId: input.userId,
         targetUserEmail: targetUser.email,
-        amount: input.amount,
+        amount: ledgerAmount,
+        displayAmount,
         reason: input.reason,
         newBalance: result.newBalance,
+        newDisplayBalance,
       });
 
-      return { success: true, newBalance: result.newBalance };
+      return { success: true, newBalance: result.newBalance, newDisplayBalance };
     }),
 
   // Get user activity (audit logs for specific user)

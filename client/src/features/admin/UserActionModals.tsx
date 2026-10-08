@@ -49,7 +49,7 @@ import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CREDIT_ADJUST_REASON_MAX_LENGTH, ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
+import { CREDIT_ADJUST_MAX_DISPLAY, CREDIT_ADJUST_REASON_MAX_LENGTH, ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
 import {
   Dialog,
   DialogContent,
@@ -137,14 +137,22 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
           title={action === "add" ? "Add credits" : "Deduct credits"}
         />
         <div className={STAFF_DIALOG_BODY}>
-          <LabelledField label="Amount" htmlFor="user-credit-amount">
+          {/*
+            #1986: the figure is CREDITS AS THE CUSTOMER READS THEM — typing
+            100,000 moves their balance by 100,000 on every screen they see.
+            It used to be the hidden ledger figure, five times smaller on screen.
+          */}
+          <LabelledField label="Credits" htmlFor="user-credit-amount">
             <Input
               id="user-credit-amount"
               type="number"
+              inputMode="numeric"
               value={amount}
               onChange={(e) => onAmountChange(e.target.value)}
-              placeholder="Enter amount..."
+              placeholder="As the customer sees them"
               min="1"
+              max={CREDIT_ADJUST_MAX_DISPLAY}
+              step="1"
               required
             />
           </LabelledField>

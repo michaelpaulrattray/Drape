@@ -23,6 +23,8 @@ import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
 import { SuspendModal, CreditModal, RoleChangeModal } from "@/features/admin/UserActionModals";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
+import { CREDIT_ADJUST_MAX_DISPLAY } from "@shared/inputLimits";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -115,7 +117,16 @@ export default function AdminUserManagement() {
   });
 
   const adjustCreditsMutation = trpc.admin.adjustCredits.useMutation({
-    onSuccess: (data) => { toast.success(`Credits adjusted. New balance: ${data.newBalance}`); setCreditModalOpen(false); setCreditAmount(""); setCreditReason(""); userDetailsQuery.refetch(); },
+    // #1986: the toast reads the balance the CUSTOMER reads. `newBalance` is
+    // the ledger, which is five times larger and appears on no customer screen.
+    onSuccess: (data) => {
+      toast.success(
+        data.newBalance === undefined
+          ? "Credits adjusted."
+          : `Credits adjusted. New balance: ${formatCredits(displayBalance(data.newBalance))} credits`,
+      );
+      setCreditModalOpen(false); setCreditAmount(""); setCreditReason(""); userDetailsQuery.refetch();
+    },
     onError: (error) => { toast.error(error.message); },
   });
 
@@ -144,9 +155,12 @@ export default function AdminUserManagement() {
 
   const handleAdjustCredits = () => {
     if (!selectedUserId || !creditAmount || !creditReason.trim()) return;
-    const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount <= 0) { toast.error("Please enter a valid positive amount"); return; }
-    adjustCreditsMutation.mutate({ userId: selectedUserId, amount: creditAction === "deduct" ? -amount : amount, reason: creditReason });
+    // #1986: the figure typed is DISPLAY credits — the number the customer
+    // reads — and goes as `displayAmount`; the server converts it to the ledger.
+    const displayAmount = Number(creditAmount);
+    if (!Number.isInteger(displayAmount) || displayAmount <= 0) { toast.error("Enter a whole number of credits above zero"); return; }
+    if (displayAmount > CREDIT_ADJUST_MAX_DISPLAY) { toast.error(`At most ${CREDIT_ADJUST_MAX_DISPLAY.toLocaleString()} credits in one adjustment`); return; }
+    adjustCreditsMutation.mutate({ userId: selectedUserId, displayAmount: creditAction === "deduct" ? -displayAmount : displayAmount, reason: creditReason });
   };
 
   const handleChangeRole = () => {

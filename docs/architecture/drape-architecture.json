@@ -10395,6 +10395,13 @@
       "file": "shared/creditTopups.ts"
     },
     {
+      "id": "cost:shared/inputLimits.ts:CREDIT_ADJUST_MAX_DISPLAY",
+      "name": "CREDIT_ADJUST_MAX_DISPLAY",
+      "constant": "CREDIT_ADJUST_MAX_DISPLAY",
+      "credits": 100000,
+      "file": "shared/inputLimits.ts"
+    },
+    {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
@@ -16068,6 +16075,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
@@ -20915,6 +20927,16 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -32785,6 +32807,11 @@
     {
       "from": "module:server/routes/admin/users.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

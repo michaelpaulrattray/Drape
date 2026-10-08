@@ -363,7 +363,8 @@ describe("referral.claim, closed on #1010", () => {
  *
  *   admin.adjustCredits        one caller, `AdminUserManagement.tsx` —
  *                              `{ userId, amount, reason }`, exactly the three
- *                              declared keys
+ *                              declared keys (#1986: now `displayAmount` in
+ *                              place of `amount`, both declared for one deploy)
  *   admin.reviewChangeRequest  one caller, `AdminChangeRequests.tsx` —
  *                              `{ id, action, reviewNotes }`, the last
  *                              `undefined` when the operator left it blank
@@ -377,7 +378,10 @@ describe("referral.claim, closed on #1010", () => {
 describe("the two staff money procedures, closed on #1360", () => {
   /** What the admin panel actually sends, `undefined` optional and all. */
   const AS_THE_PANEL_SENDS_IT = {
-    adjustCredits: { userId: 823, amount: -160, reason: "roll 249 never delivered" },
+    // #1986: the panel sends DISPLAY credits as `displayAmount` now. The
+    // pre-#1986 `amount` (ledger) shape is parsed in the control below, because
+    // a bundle loaded before the deploy still sends it for one deploy.
+    adjustCredits: { userId: 823, displayAmount: -32, reason: "roll 249 never delivered" },
     reviewChangeRequest: { id: 41, action: "approved", reviewNotes: undefined },
   } as const;
 
@@ -394,6 +398,11 @@ describe("the two staff money procedures, closed on #1360", () => {
     ).not.toThrow();
     expect(() =>
       parserOf(adminRouter, "reviewChangeRequest").parse({ ...AS_THE_PANEL_SENDS_IT.reviewChangeRequest }),
+    ).not.toThrow();
+    /* The removal contract (#1986): the bundle from BEFORE the deploy sends the
+       ledger `amount`, and it must still parse for that one deploy. */
+    expect(() =>
+      parserOf(adminRouter, "adjustCredits").parse({ userId: 823, amount: -160, reason: "roll 249 never delivered" }),
     ).not.toThrow();
     /* And the review with its optional note actually filled in, since a blank
        one is the shape above. */
@@ -431,6 +440,7 @@ describe("the two staff money procedures, closed on #1360", () => {
     const adjust = parserOf(adminRouter, "adjustCredits");
     expect(() => adjust.parse({ userId: 823, amount: 50, reason: "   " }), "a blank reason").toThrow();
     expect(() => adjust.parse({ userId: 823, amount: 100001, reason: "too big" }), "over the cap").toThrow();
+    expect(() => adjust.parse({ userId: 823, displayAmount: 100001, reason: "too big" }), "over the display cap").toThrow();
     expect(() =>
       parserOf(adminRouter, "reviewChangeRequest").parse({ id: 41, action: "maybe" }),
       "an action outside the enum",
