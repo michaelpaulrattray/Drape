@@ -66,6 +66,7 @@ import Stripe from "stripe";
 import { SUBSCRIPTION_PRODUCTS, SubscriptionPlan } from "./stripeProducts";
 import { type BillingIntervalChoice } from "@shared/annualBilling";
 import { resolvePlanCreditsPriceId, resolvePriceId } from "./stripePriceCatalogue";
+import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 import { environmentMetadata } from "./environmentTag";
 import { createModuleLogger } from "../logging/logger";
 
@@ -182,10 +183,20 @@ export async function releaseScheduleOn(
        canceled answers with an invalid-state error — and in every one of those
        cases nothing is managing the subscription any more, which is the state
        the caller asked for. Anything else is a real failure and is reported as
-       one. */
+       one.
+
+       ⚠ `not_started` WAS IN THIS LIST AND IS THE ONE STATUS THAT MUST NOT BE
+       — read at the documented sentence two paragraphs up, release is
+       available *"if the status is `not_started` or `active`"*, so a
+       `not_started` schedule is RELEASABLE and a message naming it is never
+       the already-gone state. It is also the status every schedule this module
+       mints passes through, so the one word was turning a real release failure
+       on a brand-new schedule into "nothing to release" — and the write that
+       follows would then land on a schedule-managed subscription, which is the
+       single state this product must not guess about. */
     const code = (error as { code?: string } | null)?.code;
     const message = String((error as { message?: string } | null)?.message ?? error);
-    if (code === "resource_missing" || /released|canceled|completed|not_started/i.test(message)) {
+    if (code === "resource_missing" || /released|canceled|completed/i.test(message)) {
       log.warn(
         { subscriptionId, scheduleId, message },
         "[Schedule] Release refused on a schedule that is already gone — nothing to release",
@@ -468,13 +479,15 @@ export async function readPendingPlanChange(
 
   /* The dial's position in the scheduled phase comes from the phase's own
      items, the way the live dial comes from the add-on line's quantity — the
-     artifact that will bill, not a figure stamped beside it. Nothing this
-     product writes puts a quantity on the plan line, so the dial is the
-     largest quantity on the phase, and 0 when there is none. */
-  const creditUnits = (pending.items ?? []).reduce((most, item) => {
-    const quantity = typeof item.quantity === "number" ? item.quantity : 0;
-    return quantity > most ? quantity : most;
-  }, 0);
+     artifact that will bill, not a figure stamped beside it. WHICH of those
+     lines it is, is {@link pendingDialUnits}'s whole subject. */
+  const creditUnits = await pendingDialUnits(
+    stripe,
+    scheduleId,
+    pending.items ?? [],
+    plan,
+    interval,
+  );
 
   return {
     outcome: "pending",
@@ -486,4 +499,88 @@ export async function readPendingPlanChange(
       creditUnits: Math.max(0, Math.trunc(creditUnits)),
     },
   };
+}
+
+/** The price id on a phase item, whichever shape the SDK gives it. */
+function phaseItemPriceId(item: { price?: unknown }): string | null {
+  const price = item.price;
+  if (typeof price === "string") return price || null;
+  if (price && typeof price === "object") {
+    const id = (price as { id?: unknown }).id;
+    return typeof id === "string" && id ? id : null;
+  }
+  return null;
+}
+
+/**
+ * THE DIAL'S POSITION IN A SCHEDULED PHASE — THE ADD-ON LINE'S QUANTITY, AND
+ * THE ADD-ON LINE IS FOUND BY ITS PRICE.
+ *
+ * ⚠ **THIS READ USED TO TAKE THE LARGEST QUANTITY ON THE PHASE, ON THE STATED
+ * GROUND THAT _"nothing this product writes puts a quantity on the plan
+ * line"_ — WHICH IS TRUE OF WHAT WE SEND AND FALSE OF WHAT STRIPE RETURNS.** A
+ * licensed price's phase item comes back carrying `quantity: 1` whether or not
+ * one was sent, which is why the echo in {@link scheduleSubscriptionChange}
+ * reads a quantity off the minted phase at all. So the commonest decrease this
+ * product sells — **the dial to 0 on the dial's own rung**, which schedules a
+ * lone plan line — read `creditUnits = 1`, and the surface then promised one
+ * extra 5,000-credit step from the renewal date that the invoice would never
+ * grant. A pending-change read is a promise about money, so a line it cannot
+ * identify is the one thing it must not guess at.
+ *
+ * Two readings, in this order, and the second is declared a FLOOR rather than
+ * an answer:
+ *
+ * 1. **The rung's own dial, which is pure and free.** A plan that sells no
+ *    slider can carry no add-on line, whatever is on the phase — so every rung
+ *    but one answers 0 without asking Stripe anything.
+ * 2. **The plan's base price, resolved from the catalogue**, and the add-on is
+ *    the line that is not it. One extra `prices.list`, paid only while a
+ *    decrease is actually pending (no schedule, no read at all), through the
+ *    resolver this product already drives everywhere else.
+ *
+ * ⚠ **AND WHEN THE CATALOGUE CANNOT NAME THE PLAN'S OWN PRICE, THE STRUCTURAL
+ * READING IS THE FLOOR AND SAYS SO RATHER THAN PASSING AS AN ANSWER.**
+ * `resolvePriceId` refuses on an absent, ambiguous, wrongly-recurring or
+ * inconsistently-priced key, and none of those is a reason to tell a customer
+ * her scheduled dial is a number it is not. This product writes either a lone
+ * plan line or a plan line plus one add-on line, so a single-item phase
+ * carries no dial — which is precisely the case the old reading got wrong —
+ * and a two-line phase falls back to the largest quantity, which is the
+ * add-on's own step count in every shape this product has ever written.
+ */
+async function pendingDialUnits(
+  stripe: Stripe,
+  scheduleId: string,
+  items: { price?: unknown; quantity?: number | null }[],
+  plan: SubscriptionPlan,
+  interval: BillingIntervalChoice,
+): Promise<number> {
+  const largestQuantity = () =>
+    items.reduce((most, item) => {
+      const quantity = typeof item.quantity === "number" ? item.quantity : 0;
+      return quantity > most ? quantity : most;
+    }, 0);
+
+  if (planCreditSliderUnitsAllowed(plan) === 0) return 0;
+
+  let basePriceId: string;
+  try {
+    basePriceId = await resolvePriceId(stripe, plan, interval);
+  } catch (error) {
+    const floor = items.length < 2 ? 0 : largestQuantity();
+    log.warn(
+      { err: error, scheduleId, plan, interval, floor },
+      "[Schedule] The catalogue could not name the plan's own price — the pending dial is read structurally, as a floor",
+    );
+    return Math.max(0, Math.trunc(floor));
+  }
+
+  const units = items
+    .filter((item) => phaseItemPriceId(item) !== basePriceId)
+    .reduce((most, item) => {
+      const quantity = typeof item.quantity === "number" ? item.quantity : 0;
+      return quantity > most ? quantity : most;
+    }, 0);
+  return Math.max(0, Math.trunc(units));
 }

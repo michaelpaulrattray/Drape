@@ -31,6 +31,7 @@
  * read green on the sheet road for a day.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { formatCustomerShortDate } from "@shared/customerDate";
 
 vi.mock("../db", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -149,6 +150,7 @@ beforeEach(() => {
     periodEndSec: PERIOD_END_SEC,
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
   } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
   vi.mocked(scheduleSubscriptionChange).mockResolvedValue({
     success: true,
@@ -291,5 +293,87 @@ describe("the way back out — cancelScheduledChange", () => {
     });
 
     await expect(caller().cancelScheduledChange()).rejects.toThrow(/Nothing has changed/i);
+  });
+});
+
+describe("⚠ a decrease on a plan that is ALREADY SET TO END is refused, not scheduled", () => {
+  /*
+    The second repair on this card's PR, and it is the shape where a deferral
+    does something WORSE than the defect it replaced: the schedule's target
+    phase starts at the renewal, so on a subscription carrying
+    `cancel_at_period_end` it CONTINUES the subscription past the date it was
+    meant to end — and charges her for the period she had cancelled. She asked
+    for less and was given another month.
+  */
+  beforeEach(() => {
+    quoteIs(true);
+    vi.mocked(readSubscriptionBillingState).mockResolvedValue({
+      subscriptionItemId: "si_base",
+      currentPlan: "studio",
+      currentInterval: "monthly",
+      periodStartSec: PERIOD_END_SEC - 30 * 24 * 60 * 60,
+      periodEndSec: PERIOD_END_SEC,
+      currentCreditUnits: 0,
+      creditItemId: null,
+      cancelAtPeriodEnd: true,
+    } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
+  });
+
+  it("mints no schedule at all, and says what is in the way in her own words", async () => {
+    await expect(caller().changePlan({ newPlan: "pro" })).rejects.toThrow(/set to end on/i);
+
+    /* The refusal is BEFORE anything is attempted — the whole reason it sits
+       where it does. */
+    expect(scheduleSubscriptionChange).not.toHaveBeenCalled();
+    expect(updateSubscriptionPlan).not.toHaveBeenCalled();
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+  });
+
+  it("names the day the plan ends, and tells her the one thing to do about it", async () => {
+    const refusal = await caller()
+      .changePlan({ newPlan: "pro" })
+      .then(() => null)
+      .catch((error: unknown) => error as { message: string });
+
+    if (!refusal) throw new Error("expected a refusal");
+    /* Her own date, through the one formatter every customer-facing date uses,
+       so this sentence and the Billing tab cannot name two different days. */
+    expect(refusal.message).toContain(formatCustomerShortDate(new Date(PERIOD_END_SEC * 1000)));
+    expect(refusal.message).toMatch(/resume/i);
+    /* No engine, no schedule, no phase — the disappearing-technology law on a
+       refusal: it says what was refused and what to do. */
+    expect(refusal.message).not.toMatch(/schedule|phase|stripe|subscription_schedule/i);
+  });
+
+  it("⚠ POSITIVE CONTROL — the same fixture with the cancellation OFF schedules exactly as before", async () => {
+    /* Without this the three arms above pass against a procedure that refuses
+       every decrease, which would be a far worse product than the defect. */
+    vi.mocked(readSubscriptionBillingState).mockResolvedValue({
+      subscriptionItemId: "si_base",
+      currentPlan: "studio",
+      currentInterval: "monthly",
+      periodStartSec: PERIOD_END_SEC - 30 * 24 * 60 * 60,
+      periodEndSec: PERIOD_END_SEC,
+      currentCreditUnits: 0,
+      creditItemId: null,
+      cancelAtPeriodEnd: false,
+    } as Awaited<ReturnType<typeof readSubscriptionBillingState>>);
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(result.deferred).toBe(true);
+    expect(scheduleSubscriptionChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("an INCREASE on a cancelling plan is untouched by this refusal", async () => {
+    /* The refusal lives inside the deferred branch on purpose: an instant
+       change on a cancelling subscription is a pre-existing road and this card
+       does not re-rule it. */
+    quoteIs(false);
+
+    await caller().changePlan({ newPlan: "business" });
+
+    expect(updateSubscriptionPlan).toHaveBeenCalledTimes(1);
+    expect(scheduleSubscriptionChange).not.toHaveBeenCalled();
   });
 });

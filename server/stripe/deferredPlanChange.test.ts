@@ -132,6 +132,7 @@ function stateAt(overrides: Partial<SubscriptionBillingState> = {}): Subscriptio
     periodEndSec: NOW_SEC + 20 * DAY,
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }
@@ -565,10 +566,33 @@ describe("3 · release first — one rule, three write paths", () => {
 
     expect(released.outcome).toBe("nothing-to-release");
   });
+
+  it("⚠ a failure naming `not_started` is a REAL failure — that status is releasable", async () => {
+    /*
+      `not_started` was in the already-gone list and is the one status that must
+      not be: release is documented as available *"if the status is
+      `not_started` or `active`"*, and `not_started` is the status every schedule
+      this module mints passes through. So the word was turning a real release
+      failure on a brand-new schedule into "nothing to release" — and the write
+      that follows would then land on a schedule-managed subscription, which is
+      the single state this product must not guess about.
+    */
+    subscriptionsRetrieve.mockResolvedValue({ id: "sub_1", schedule: "sub_sched_1" });
+    schedulesRelease.mockRejectedValue(
+      Object.assign(new Error("The subscription schedule is not_started, so the request did not apply."), {
+        code: "api_error",
+      }),
+    );
+
+    const released = await releaseScheduleBeforeWrite(stripe, "sub_1");
+
+    expect(released.outcome).toBe("failed");
+  });
 });
 
 describe("4 · what is pending, read off the schedule", () => {
   it("reports the plan, the interval, the dial and the date", async () => {
+    catalogueHolds("monthly");
     schedulesRetrieve.mockResolvedValue({
       id: "sub_sched_1",
       status: "active",
@@ -577,7 +601,15 @@ describe("4 · what is pending, read off the schedule", () => {
         { start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} },
         {
           start_date: NOW_SEC + 20 * DAY,
-          items: [{ price: BASE_PRICE_ID }, { price: ADDON_PRICE_ID, quantity: 4 }],
+          /* ⚠ THE BASE LINE CARRIES `quantity: 1`, BECAUSE STRIPE RETURNS ONE
+             ON A LICENSED PRICE WHETHER OR NOT WE SENT IT. This fixture used
+             to leave it off, which is the one shape Stripe never produces —
+             and leaving it off is what hid the defect the arms below are
+             about. */
+          items: [
+            { price: BASE_PRICE_ID, quantity: 1 },
+            { price: ADDON_PRICE_ID, quantity: 4 },
+          ],
           metadata: { plan: DIAL_PLAN, interval: "monthly" },
         },
       ],
@@ -663,5 +695,138 @@ describe("4 · what is pending, read off the schedule", () => {
 
     expect(read.outcome).toBe("none");
     expect(schedulesRetrieve).not.toHaveBeenCalled();
+  });
+
+  it("⚠ A PHASE WITH NO ADD-ON LINE READS THE DIAL AS 0, though Stripe puts a quantity on the plan line", async () => {
+    /*
+      THE DEFECT THIS ARM IS ABOUT, and it is the commonest decrease the
+      product sells: the dial to 0 on the dial's own rung. That schedules a
+      LONE plan line — and Stripe returns `quantity: 1` on a licensed price's
+      phase item whether or not one was sent. The read used to take the largest
+      quantity on the phase, so it answered 1, and the surface then promised
+      one extra 5,000-credit step from the renewal date that the invoice would
+      never grant.
+
+      The old reading's own arm could not see it, because its fixture left the
+      quantity off the base line — a shape Stripe does not produce.
+    */
+    catalogueHolds("monthly");
+    schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      status: "active",
+      current_phase: { start_date: NOW_SEC - 10 * DAY, end_date: NOW_SEC + 20 * DAY },
+      phases: [
+        { start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} },
+        {
+          start_date: NOW_SEC + 20 * DAY,
+          items: [{ price: BASE_PRICE_ID, quantity: 1 }],
+          metadata: { plan: DIAL_PLAN, interval: "monthly" },
+        },
+      ],
+    });
+
+    const read = await readPendingPlanChange(stripe, {
+      id: "sub_1",
+      schedule: "sub_sched_1",
+    } as never);
+
+    if (read.outcome !== "pending") throw new Error("expected a pending change");
+    expect(read.change.plan).toBe(DIAL_PLAN);
+    expect(read.change.creditUnits).toBe(0);
+  });
+
+  it("the add-on line is found by its PRICE, so a one-step dial reads 1 — and reads it off the add-on", async () => {
+    /*
+      The positive control for the arm above, and the reason "the largest
+      quantity" cannot simply be replaced by "0 when there is one item": a dial
+      at one step is itself `quantity: 1`, so the two readings agree on the
+      number and disagree on where it came from. This pins the WHERE — the
+      catalogue is asked for the PLAN's own price, which is the derivation the
+      repair rests on.
+    */
+    catalogueHolds("monthly");
+    schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      status: "active",
+      current_phase: { start_date: NOW_SEC - 10 * DAY, end_date: NOW_SEC + 20 * DAY },
+      phases: [
+        { start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} },
+        {
+          start_date: NOW_SEC + 20 * DAY,
+          items: [
+            { price: BASE_PRICE_ID, quantity: 1 },
+            { price: ADDON_PRICE_ID, quantity: 1 },
+          ],
+          metadata: { plan: DIAL_PLAN, interval: "monthly" },
+        },
+      ],
+    });
+
+    const read = await readPendingPlanChange(stripe, {
+      id: "sub_1",
+      schedule: "sub_sched_1",
+    } as never);
+
+    if (read.outcome !== "pending") throw new Error("expected a pending change");
+    expect(read.change.creditUnits).toBe(1);
+    expect(pricesList).toHaveBeenCalledWith(
+      expect.objectContaining({ lookup_keys: [priceLookupKey(DIAL_PLAN as never, "monthly")] }),
+    );
+  });
+
+  it("a rung that sells no dial reads 0 without asking the catalogue anything", async () => {
+    catalogueHolds("monthly");
+    schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      status: "active",
+      current_phase: { start_date: NOW_SEC - 10 * DAY, end_date: NOW_SEC + 20 * DAY },
+      phases: [
+        { start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} },
+        {
+          start_date: NOW_SEC + 20 * DAY,
+          items: [{ price: `price_${LOWER_PLAN}_base`, quantity: 1 }],
+          metadata: { plan: LOWER_PLAN, interval: "monthly" },
+        },
+      ],
+    });
+
+    const read = await readPendingPlanChange(stripe, {
+      id: "sub_1",
+      schedule: "sub_sched_1",
+    } as never);
+
+    if (read.outcome !== "pending") throw new Error("expected a pending change");
+    expect(read.change.creditUnits).toBe(0);
+    expect(pricesList).not.toHaveBeenCalled();
+  });
+
+  it("⚠ a catalogue that cannot name the plan's price falls back to the STRUCTURAL floor, never to a guessed step", async () => {
+    /* `resolvePriceId` refuses on an absent, ambiguous, wrongly-recurring or
+       inconsistently-priced key, and none of those is a reason to tell a
+       customer her scheduled dial is a number it is not. A single-item phase
+       still reads 0 — the case the old reading got wrong — rather than
+       inheriting the plan line's echoed 1. */
+    pricesList.mockResolvedValue({ data: [] });
+    schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      status: "active",
+      current_phase: { start_date: NOW_SEC - 10 * DAY, end_date: NOW_SEC + 20 * DAY },
+      phases: [
+        { start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} },
+        {
+          start_date: NOW_SEC + 20 * DAY,
+          items: [{ price: BASE_PRICE_ID, quantity: 1 }],
+          metadata: { plan: DIAL_PLAN, interval: "monthly" },
+        },
+      ],
+    });
+
+    const read = await readPendingPlanChange(stripe, {
+      id: "sub_1",
+      schedule: "sub_sched_1",
+    } as never);
+
+    if (read.outcome !== "pending") throw new Error("expected a pending change");
+    expect(read.change.creditUnits).toBe(0);
   });
 });

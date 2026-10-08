@@ -40,6 +40,7 @@ function monthlyState(overrides: Partial<SubscriptionBillingState> = {}): Subscr
        raise the dial, which is how a future arm in this file would. */
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }
@@ -59,6 +60,7 @@ function annualState(overrides: Partial<SubscriptionBillingState> = {}): Subscri
        raise the dial, which is how a future arm in this file would. */
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }

@@ -35070,6 +35070,11 @@
     },
     {
       "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
       "to": "module:server/stripe/stripePriceCatalogue.ts",
       "kind": "imports"
     },

@@ -518,6 +518,21 @@ export type SubscriptionBillingState = {
    * re-prices or deletes. `null` means the line has to be ADDED.
    */
   creditItemId: string | null;
+  /**
+   * ⚠ **WHETHER THIS SUBSCRIPTION IS ALREADY SET TO END AT THE BOUNDARY, AND IT
+   * IS HERE BECAUSE A DEFERRED CHANGE COULD OTHERWISE UNDO A CANCELLATION
+   * (#1936 repair 2).** A scheduled decrease mints a two-phase schedule whose
+   * second phase STARTS at the renewal, so a customer who had cancelled and
+   * then lowered her plan got a subscription that continued past the date it
+   * was meant to end — and was charged for it.
+   *
+   * It is read off the same `subscriptions.retrieve` as the period it concerns,
+   * never off our own `subscriptions` row: the local mirror is written by a
+   * webhook and a change made in Stripe's own portal reaches it late, so a
+   * stale `false` here is exactly the reading that would schedule past a
+   * cancellation.
+   */
+  cancelAtPeriodEnd: boolean;
 };
 
 /**
@@ -609,6 +624,7 @@ export async function readSubscriptionBillingState(
       periodEndSec: endSec,
       currentCreditUnits: Math.max(0, Math.trunc(addonQuantity)),
       creditItemId: addon?.id ?? null,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end === true,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to read billing state for ${subscriptionId}:`);
@@ -755,8 +771,9 @@ export type PlanChangeQuote = {
    * · Adding `|| creditAdjustment < 0` would defer a change the customer is
    *   PAYING MORE for — a move up the ladder that drops the dial's steps (the
    *   dial is clamped to the target rung) raises the price and could lower the
-   *   allowance in one action. No money comes back, so nothing can be minted,
-   *   and deferring an upgrade is against his word. ⚠ **Measured rather than
+   *   allowance in one action. No money comes back **on that case**, so
+   *   nothing can be minted from it, and deferring an upgrade is against his
+   *   word. ⚠ **Measured rather than
    *   asserted, and the measurement corrected this sentence's first draft: on
    *   TODAY's ladder that case is UNREACHABLE** — the dial's rung at its
    *   maximum is still 20,000 ledger credits below the rung above it, so an
@@ -769,6 +786,16 @@ export type PlanChangeQuote = {
    * · Adding `|| creditUnwind > 0` would defer **monthly → annual**, which
    *   carries an unwind on every interval switch and is the largest upgrade
    *   this product sells.
+   *
+   * ⚠ **AND THE "NO MONEY COMES BACK" READING IS NOT TRUE OF EVERY INSTANT
+   * CHANGE — IT IS SCOPED TO THE TWO BULLETS ABOVE, AND THE EXCEPTION IS FILED
+   * AS #1965.** On the monthly → annual switch Stripe credits the dial's
+   * unused value back while its credits are already spent, so money DOES
+   * return on that road and `proratedAmount < 0` does not catch it (the switch
+   * charges a year up front, so the prorated figure is positive). That is a
+   * mint of its own shape, it pre-dates this card, and it is not closed here:
+   * read #1965 before treating this docblock as a statement that no instant
+   * change can return money.
    *
    * ⚠ **AND WHEN THIS IS TRUE, EVERY MONEY AND CREDIT FIELD ABOVE READS 0** —
    * see the end of {@link quotePlanChange}. That is the mechanism rather than

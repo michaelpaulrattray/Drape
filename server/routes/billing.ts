@@ -1098,6 +1098,42 @@ export const billingRouter = router({
         `creditSettlement: "none"` is the literal truth rather than a default.
       */
       if (quote.deferred) {
+        /*
+          ⚠ **A DECREASE IS REFUSED WHILE THE PLAN IS ALREADY SET TO END, AND
+          WITHOUT THIS REFUSAL THE DEFERRAL UNDOES THE CANCELLATION (#1936
+          repair 2).**
+
+          `scheduleSubscriptionChange` mints a two-phase schedule — the period
+          in progress, then a target phase that STARTS at the renewal and runs
+          one billing period, with `end_behavior: "release"`. On a subscription
+          carrying `cancel_at_period_end`, that second phase CONTINUES the
+          subscription past the date it was meant to end, and the customer is
+          charged at the renewal she had cancelled. She asked for less and got
+          another period.
+
+          ⚠ **The two repairs that are not taken, so neither is re-opened
+          cheaply.** Scheduling the decrease and keeping the cancellation means
+          minting a phase and then cancelling into it, which is a Stripe
+          interaction this module has NOT driven (see its header's own note on
+          what is reasoned from documentation) — and the phase would be billed
+          for a period nobody wants. Cancelling the cancellation to let the
+          change through decides something she never asked for. So the product
+          says what is in the way, in her own words, and leaves both facts
+          where she put them.
+
+          It reads `cancelAtPeriodEnd` off the billing state, which is the same
+          `subscriptions.retrieve` the period and the dial come from — not our
+          `subscriptions` row, which a webhook writes late and which a change
+          made in Stripe's own portal would leave stale in exactly the
+          direction that lets this through.
+        */
+        if (billingState.cancelAtPeriodEnd) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Your plan is set to end on ${formatCustomerShortDate(new Date(billingState.periodEndSec * 1000))}, so this change has nothing to take effect at. Resume your plan first, then you can change it.`,
+          });
+        }
+
         const scheduled = await scheduleSubscriptionChange(
           stripe,
           subscription.stripeSubscriptionId,
