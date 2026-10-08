@@ -20962,6 +20962,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -35889,6 +35894,11 @@
     {
       "from": "module:shared/productEventCatalogue.ts",
       "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/referralCodeFormat.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {

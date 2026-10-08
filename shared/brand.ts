@@ -22,12 +22,15 @@
  * this product has already paid for that once with a customer-facing refusal.
  *
  * ⚠ **A BRAND WORD THAT IS AN IDENTIFIER IS NOT THIS CONSTANT'S BUSINESS, and
- * the difference is whether changing it changes behaviour.** The referral-code
- * prefix (`shared/referralCodeFormat.ts`), the `drape_device` cookie name, the
- * Stripe refund metadata keys and the R2 object keys all contain the old name
- * and are all PERSISTED — a rename there invalidates live codes, logs out a
- * fraud guard, or 404s an asset. Those are data decisions, not copy. This
- * constant is for words a person READS.
+ * the difference is whether changing it changes behaviour.** The `drape_device`
+ * cookie name, the Stripe refund metadata keys and the R2 object keys all
+ * contain the old name and are all PERSISTED — a rename there logs out a fraud
+ * guard or 404s an asset. Those are data decisions, not copy. This constant is
+ * for words a person READS. **The referral and invite code prefix is the one
+ * that is both** — a customer reads it and types it, and it is persisted — so
+ * #2007 derives the prefix NEW codes are minted with from this constant, while
+ * `shared/referralCodeFormat.ts`'s `RETIRED_CODE_PREFIXES` keeps every code
+ * already issued under the old name redeemable.
  *
  * ⚠ **IT IS `PRODUCT_NAME` AND NOT `BRAND_NAME`, AND AN INSTRUMENT CHOSE THE
  * NAME RATHER THAN TASTE.** Declaring `BRAND_NAME` here reddened
