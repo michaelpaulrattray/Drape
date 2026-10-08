@@ -12,7 +12,7 @@ import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { ASSETS_BASE_URL, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { PRODUCT_NAME } from "@shared/brand";
-import { sendProductEmail } from "../mail";
+import { escapeEmailHtml, sendProductEmail, type ProductEmail } from "../mail";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db/connection";
@@ -66,22 +66,27 @@ function buildVerifyUrl(req: Request, token: string): string {
 }
 
 /**
- * Send a verification email via Resend
+ * THE VERIFICATION EMAIL'S BODY, as a pure builder.
+ *
+ * Extracted from {@link sendVerificationEmail} by the relay's finding on
+ * PR #1975: the finding was about an unescaped name in the renewal notice, and
+ * this email had the same defect — but it could not be DRIVEN, because its
+ * html was an argument to the transport inside an async function that needs an
+ * Express request and a mail provider. A fix without a failing reproduction is
+ * half a fix (the standing orders), so the body is now a function of its three
+ * facts and the suite reads it. Nothing about the markup changed.
  */
-export async function sendVerificationEmail(
-  req: Request,
-  email: string,
-  name: string,
-  token: string
-): Promise<{ success: boolean; error?: string }> {
-  const verifyUrl = buildVerifyUrl(req, token);
-
+export function verificationEmail(to: string, name: string, verifyUrl: string): ProductEmail {
   const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;
-  const firstName = name ? name.split(" ")[0] : "there";
+  /* ⚠ ESCAPED — the sibling of the relay's finding on PR #1975, swept here in
+     the same commit (working law 7). `users.name` is free text, and this
+     greeting has been dropping it into HTML unescaped since the email shipped;
+     see `escapeEmailHtml`'s header for the class. */
+  const firstName = escapeEmailHtml(name ? name.split(" ")[0] : "there");
 
-  const result = await sendProductEmail({
+  return {
     purpose: "verify",
-    to: email,
+    to,
     subject: `Verify your email — ${PRODUCT_NAME}`,
     html: `
 <!DOCTYPE html>
@@ -171,7 +176,21 @@ export async function sendVerificationEmail(
 </body>
 </html>
     `,
-  });
+  };
+}
+
+/**
+ * Send a verification email via Resend
+ */
+export async function sendVerificationEmail(
+  req: Request,
+  email: string,
+  name: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  const verifyUrl = buildVerifyUrl(req, token);
+
+  const result = await sendProductEmail(verificationEmail(email, name, verifyUrl));
 
   if (!result.success) {
     log.error({ err: result.error }, "[EmailVerification] Failed to send verification email");

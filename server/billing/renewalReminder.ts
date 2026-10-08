@@ -84,7 +84,7 @@ import {
   type RenewalReminderClaim,
 } from "../db";
 import { createModuleLogger } from "../logging/logger";
-import { sendProductEmail, type MailResult, type ProductEmail } from "../mail";
+import { escapeEmailHtml, sendProductEmail, type MailResult, type ProductEmail } from "../mail";
 import {
   retrieveLiveSubscription,
   stripe,
@@ -338,15 +338,40 @@ export async function runYearlyRenewalReminderSweep(
       );
     }
 
-    const sent = await deps.send(
-      renewalReminderEmail({
-        to: candidate.email,
-        name: candidate.name,
-        planTier: verdict.planTier,
-        periodEnd: verdict.periodEnd,
-        charge,
-      }),
-    );
+    /**
+     * ⚠ **A THROWN SEND IS A FAILED SEND, AND NOTHING ELSE WOULD MAKE "EXACTLY
+     * ONCE" MEAN "NEVER"** — the relay's finding on PR #1975. The default
+     * `send` is `sendProductEmail`, which THROWS when `RESEND_API_KEY` is
+     * unset and whenever the provider's own call rejects; only a RETURNED
+     * `{ success: false }` ever reached the release below. So an unconfigured
+     * key left the claim row standing, every later pass read `already-sent`,
+     * and that renewal lost its notice silently and permanently — and the
+     * throw also aborted the loop, so every remaining candidate in the pass
+     * was skipped as well.
+     *
+     * The catch converts the throw into the shape the failure path already
+     * handles: the claim goes back, the skip is counted, and the NEXT
+     * candidate is still written to. It carries the message and never the
+     * address — the metadata-only boundary applies to a log line as it does
+     * to a third party.
+     */
+    let sent: MailResult;
+    try {
+      sent = await deps.send(
+        renewalReminderEmail({
+          to: candidate.email,
+          name: candidate.name,
+          planTier: verdict.planTier,
+          periodEnd: verdict.periodEnd,
+          charge,
+        }),
+      );
+    } catch (error) {
+      sent = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
 
     if (!sent.success) {
       /* The claim goes back, so tomorrow's pass tries again — the window has
@@ -467,9 +492,27 @@ export function renewalReminderEmail(copy: RenewalReminderCopy): ProductEmail {
   const planName = PLAN_TIERS[copy.planTier].name;
   const amount = formatRenewalAmount(copy.charge);
   const date = formatRenewalDate(copy.periodEnd);
-  const firstName = copy.name ? copy.name.split(" ")[0] : "there";
+  /* ⚠ ESCAPED, because `users.name` is free text the customer typed — see
+     `escapeEmailHtml`'s own header for the class and the sibling it swept. */
+  const firstName = escapeEmailHtml(copy.name ? copy.name.split(" ")[0] : "there");
   const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;
-  const billingUrl = `${appBaseUrl()}/app`;
+  /**
+   * ⚠ **THE DOOR GOES TO THE APP, AND THE BUTTON NOW SAYS SO** — the relay's
+   * finding on PR #1975. It read `Open Billing` over this address, which is
+   * the app home: a button promising a surface it does not reach is the
+   * machinery showing through from the other side, and the customer presses
+   * it, lands somewhere else and has to go looking.
+   *
+   * There is no address to point it at, read at the code rather than assumed:
+   * Billing is a SECTION of a modal held in component state
+   * (`client/src/features/settings/AccountSurfaces.tsx` renders
+   * `SettingsModal` off `state.settings`), it has no route in `App.tsx`, and
+   * nothing reads a search parameter or a hash to open it. So the repair is
+   * the words, not a deep link — inventing a route for an email's benefit is a
+   * client feature, not a repair, and the sentence above already tells them
+   * where Billing lives once they are inside.
+   */
+  const appUrl = `${appBaseUrl()}/app`;
 
   return {
     purpose: "billing",
@@ -542,8 +585,8 @@ export function renewalReminderEmail(copy: RenewalReminderCopy): ProductEmail {
               <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
                 <tr>
                   <td align="center">
-                    <a href="${billingUrl}" target="_blank" style="display: inline-block; background-color: #0A0A0A; color: #ffffff; padding: 14px 40px; border-radius: 100px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.01em;">
-                      Open Billing
+                    <a href="${appUrl}" target="_blank" style="display: inline-block; background-color: #0A0A0A; color: #ffffff; padding: 14px 40px; border-radius: 100px; text-decoration: none; font-size: 14px; font-weight: 500; letter-spacing: 0.01em;">
+                      Open your account
                     </a>
                   </td>
                 </tr>

@@ -30,6 +30,8 @@ import type Stripe from "stripe";
 
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { isDuplicateCreditReferenceError } from "../db/credits";
+import { escapeEmailHtml } from "../mail";
+import { verificationEmail } from "../routes/emailVerification";
 import type { RenewalReminderCandidate } from "../db/billing";
 import type { ProductEmail } from "../mail";
 import {
@@ -96,6 +98,13 @@ function harness(options: {
   readOutcome?: "found" | "missing" | "failed";
   charge?: { amountCents: number; currency: string } | null;
   sendFails?: boolean;
+  /**
+   * A send that REJECTS rather than returning a failure — the default `send`
+   * is `sendProductEmail`, which throws on an unset `RESEND_API_KEY` and on
+   * any rejected provider call, so this is the live shape and not a
+   * hypothetical one (the relay's finding on PR #1975).
+   */
+  sendThrows?: boolean;
   claimUnreachable?: boolean;
   now?: Date;
 } = {}) {
@@ -138,6 +147,7 @@ function harness(options: {
       released.push(key(sub, periodEnd));
     },
     send: async (email) => {
+      if (options.sendThrows) throw new Error("RESEND_API_KEY is not configured");
       if (options.sendFails) return { success: false, error: "provider refused" };
       sentEmails.push(email);
       return { success: true };
@@ -397,5 +407,134 @@ describe("#1941 — the copy", () => {
     }).html;
     expect(html).toContain("Hi there,");
     expect(html).not.toContain("null");
+  });
+});
+
+describe("#1941 — a send that THROWS is a failed send, never a lost notice", () => {
+  /*
+    ⚠ **THE DEFAULT `send` THROWS AND ONLY A RETURNED FAILURE WAS HANDLED** —
+    the relay's finding on PR #1975. `sendProductEmail` throws when
+    `RESEND_API_KEY` is unset and whenever the provider's own call rejects, and
+    the claim is written BEFORE the send: so the throw left the claim standing,
+    every later pass read `already-sent`, and "exactly once" became "never" with
+    nothing in the result to say so. The throw also escaped the loop, taking
+    every remaining candidate in that pass with it.
+
+    Two accounts, because one of them cannot show the second half.
+  */
+  const SECOND: RenewalReminderCandidate = {
+    ...CANDIDATE,
+    userId: 43,
+    email: "second@example.com",
+    stripeSubscriptionId: "sub_yearly_1941_b",
+  };
+
+  it("releases its claim, lets the pass finish, and the next pass sends it exactly once", async () => {
+    const h = harness({ candidates: [CANDIDATE, SECOND] });
+    const thrown = new Set<string>();
+    const deps: RenewalReminderDeps = {
+      ...h.deps,
+      send: async (email) => {
+        if (email.to === CANDIDATE.email && !thrown.has(email.to)) {
+          thrown.add(email.to);
+          /* The real message, from `server/mail.ts`'s own refusal. */
+          throw new Error("RESEND_API_KEY is not configured");
+        }
+        return h.deps.send(email);
+      },
+    };
+
+    const first = await runYearlyRenewalReminderSweep(deps);
+
+    expect(first.skipped["send-failed"]).toBe(1);
+    expect(
+      h.released,
+      "a thrown send kept its claim, so this renewal could never be written to again",
+    ).toHaveLength(1);
+    expect(h.claimed.size, "the claim was not released, so tomorrow reads already-sent").toBe(1);
+    expect(
+      first.sent,
+      "the throw escaped the loop, so the OTHER account lost its notice as well",
+    ).toBe(1);
+    expect(h.sentEmails.map((email) => email.to)).toEqual([SECOND.email]);
+
+    const second = await runYearlyRenewalReminderSweep(deps);
+
+    expect(second.sent).toBe(1);
+    expect(second.skipped["already-sent"], "the account that already had its notice").toBe(1);
+    expect(h.sentEmails.map((email) => email.to)).toEqual([SECOND.email, CANDIDATE.email]);
+  });
+
+  it("a thrown send is counted and skipped exactly like a returned failure", async () => {
+    const thrower = await runYearlyRenewalReminderSweep(harness({ sendThrows: true }).deps);
+    const returner = await runYearlyRenewalReminderSweep(harness({ sendFails: true }).deps);
+    expect(thrower).toEqual(returner);
+  });
+});
+
+describe("#1941 — a name the customer typed cannot reach the markup unescaped", () => {
+  /*
+    ⚠ **THE CLASS, NOT THE INSTANCE (working law 7).** The finding named the
+    renewal notice; `users.name` is free text and there are exactly TWO email
+    html builders in the tree, so both are driven here with the same hostile
+    name. `escapeEmailHtml` gets its own controls first (working law 2): an
+    escaper proven able to pass is worth nothing until it is proven able to
+    change something.
+  */
+  const HOSTILE = "<script>alert('x')</script> & O'Neil";
+
+  it("the escaper escapes all five entities, and ampersand first", () => {
+    expect(escapeEmailHtml("&")).toBe("&amp;");
+    expect(escapeEmailHtml("<b>")).toBe("&lt;b&gt;");
+    expect(escapeEmailHtml('"q"')).toBe("&quot;q&quot;");
+    expect(escapeEmailHtml("it's")).toBe("it&#39;s");
+    /* Ampersand first, or the escapes would be escaped again. */
+    expect(escapeEmailHtml("<")).toBe("&lt;");
+    expect(escapeEmailHtml("plain name")).toBe("plain name");
+  });
+
+  it("the renewal notice escapes it", () => {
+    const html = renewalReminderEmail({
+      to: CANDIDATE.email,
+      name: HOSTILE,
+      planTier: "pro",
+      periodEnd: new Date("2026-11-21T09:00:00.000Z"),
+      charge: { amountCents: 67_200, currency: "usd" },
+    }).html;
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("the verification email escapes it too — the sibling swept in the same commit", () => {
+    const html = verificationEmail(
+      "casting@example.com",
+      HOSTILE,
+      "https://example.test/api/auth/verify-email?token=abc",
+    ).html;
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("#1941 — the one button does not promise a surface it cannot reach", () => {
+  it("says what it does, because Billing has no address", () => {
+    /*
+      Read at the code, not assumed: Billing is a SECTION of a modal held in
+      component state (`client/src/features/settings/AccountSurfaces.tsx`), it
+      has no route in `App.tsx`, and nothing opens it from a search parameter.
+      So `Open Billing` over the app home was a promise the product cannot
+      keep — the relay's finding on PR #1975.
+    */
+    const html = renewalReminderEmail({
+      to: CANDIDATE.email,
+      name: CANDIDATE.name,
+      planTier: "pro",
+      periodEnd: new Date("2026-11-21T09:00:00.000Z"),
+      charge: { amountCents: 67_200, currency: "usd" },
+    }).html;
+    expect(html).not.toContain("Open Billing");
+    expect(html).toContain("Open your account");
+    /* And the sentence that tells them where Billing actually is stays. */
+    expect(html).toContain("Billing settings");
   });
 });

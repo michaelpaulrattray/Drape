@@ -48,6 +48,32 @@ export function mailSender(localPart: string): string {
   return `${PRODUCT_NAME} <${localPart}@${MAIL_SENDING_DOMAIN}>`;
 }
 
+/**
+ * Escape a value on its way into an email's HTML.
+ *
+ * ⚠ **EVERY EMAIL IN THIS PRODUCT INTERPOLATES A NAME THE CUSTOMER TYPED, AND
+ * UNTIL NOW NEITHER OF THEM ESCAPED IT** — the relay's finding on PR #1975,
+ * swept to its class in the same commit (working law 7). `users.name` is
+ * free text: a name holding `<`, `&` or a quote lands inside a `<p>` and a
+ * `style="…"` attribute, so at best the greeting renders as rubbish and at
+ * worst the surrounding markup is broken by somebody else's address book.
+ * There are exactly TWO html builders in the tree (`renewalReminder.ts` and
+ * `routes/emailVerification.ts`); both call this, and it lives here rather
+ * than beside either so a third email cannot be written without meeting it.
+ *
+ * The five XML predefined entities and nothing else — an email body is HTML,
+ * not a URL, and a helper that also did percent-encoding would be wrong in
+ * both places. `&` goes first, or it would re-escape the escapes.
+ */
+export function escapeEmailHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface ProductEmail {
   /** The mailbox this comes from, local part only — `mailSender` adds the rest. */
   purpose: string;
