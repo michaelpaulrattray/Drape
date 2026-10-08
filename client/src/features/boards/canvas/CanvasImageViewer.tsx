@@ -10,6 +10,7 @@
  * Background kept from the old viewer — founder-flagged as the better
  * canvas color (R6 restyle reference).
  */
+import { productFilename } from "@shared/brand";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, Download } from "lucide-react";
 import { downloadImage } from "./imageActions";
@@ -85,7 +86,7 @@ export function CanvasImageViewer({ imageUrl, label, onClose }: CanvasImageViewe
             <button
               type="button"
               aria-label="Download"
-              onClick={() => void downloadImage(imageUrl, `drape-${label || "image"}.png`)}
+              onClick={() => void downloadImage(imageUrl, productFilename(`${label || "image"}.png`))}
               className="w-8 h-8 rounded-full flex items-center justify-center text-canvas-ink-soft hover:bg-canvas-surface-inset hover:text-canvas-ink transition-colors"
             >
               <Download className="w-3.5 h-3.5" strokeWidth={1.6} />
