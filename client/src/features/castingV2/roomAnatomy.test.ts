@@ -239,7 +239,8 @@ describe("the casting room is built to the drawing", () => {
     }
   });
 
-  it("promises the lock under the views, never a check that may not have run (#2087)", async () => {
+  it("promises the lock under the views, never a check that may not have run", async () => {
+    // Card #2087.
     /*
       A delivered view is no longer guaranteed a check: one the checker never
       reached is still delivered and charged (#1903), so a sentence claiming
