@@ -398,4 +398,51 @@ describe("the retried-view commit's fence", () => {
     expect(body.indexOf("withTransaction"))
       .toBeLessThan(body.indexOf("if (input.pressOperationId !== undefined) {"));
   });
+
+  /**
+   * ⚠ **A ROW THE SWEEP HAS CLAIMED CANNOT LAND A PICTURE — #2073.**
+   *
+   * `running` alone admitted a commit while the sweep was mid-adjudication: it
+   * claims (stamping `recoveryAttemptedAt`), reads *did a picture land* — no,
+   * not yet — records the refund, and only then seals the row out of
+   * `running`. A commit in that window was legitimate by the old fence, so
+   * she kept the view AND the 50 credits. The clause makes the claim itself
+   * the fence, under the same `FOR UPDATE`.
+   *
+   * A TEXT READ, and the same honest floor as its two neighbours: CI has no
+   * database. The behaviour — the real claim and a real commit interleaved
+   * against MySQL — is driven by `scripts/_2073-claim-fence-disposable.mts`,
+   * whose tally is on the PR.
+   */
+  it("refuses an operation the sweep has claimed, in the same locked read", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "server/db/castingV2ViewRetry.ts"),
+      "utf8",
+    );
+    const anchor = "export async function commitRetriedViewAsset";
+    expect(source.split(anchor)).toHaveLength(2);
+    const lines = source.split(/\r?\n/);
+    const start = lines.findIndex((line) => line.startsWith(anchor));
+    const end = lines.findIndex((line, index) => index > start && line === "}");
+    const body = lines.slice(start, end + 1).join("\n");
+    /* SLICED to the operation's own select — from its `await tx` to its
+       `if (!operation) return null;` — so the press fence and the model select,
+       which follow, cannot satisfy it. */
+    const opStart = body.indexOf("const [operation] = await tx");
+    const opEnd = body.indexOf("if (!operation) return null;");
+    expect(opStart).toBeGreaterThan(-1);
+    expect(opEnd).toBeGreaterThan(opStart);
+    const own = body.slice(opStart, opEnd);
+    expect(own).not.toContain("pressOperationId");
+    expect(own).toContain("eq(generationOperations.id, input.operationId)");
+    expect(own).toContain('eq(generationOperations.status, "running")');
+    expect(own).toContain("isNull(generationOperations.recoveryAttemptedAt)");
+    expect(own).toContain('.for("update")');
+    /* NEGATIVE CONTROL: the press fence must NOT carry the clause. A deferred
+       press pass stamps the press, and its slots must keep landing after it. */
+    const press = body.slice(body.indexOf("if (input.pressOperationId !== undefined) {"));
+    const pressFence = press.slice(0, press.indexOf("if (!press) return null;"));
+    expect(pressFence).toContain("eq(generationOperations.id, input.pressOperationId)");
+    expect(pressFence).not.toContain("recoveryAttemptedAt");
+  });
 });
