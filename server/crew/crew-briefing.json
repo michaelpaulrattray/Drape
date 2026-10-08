@@ -1,7 +1,7 @@
 {
-  "edition": 654,
-  "updatedAt": "2026-10-08T01:39:03.754Z",
-  "shift": "Foreman — foreman-20261008-1156",
+  "edition": 655,
+  "updatedAt": "2026-10-08T03:28:44.785Z",
+  "shift": "Foreman — foreman-20261008-1231",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T01:46:10.097Z",
+      "readAt": "2026-10-08T03:31:37.835Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -3614,6 +3614,33 @@
       "state": "done",
       "filedAt": "2026-10-04T00:00:26.000Z",
       "issueNumber": 1832
+    },
+    {
+      "id": "sign-sheet-reremake-1904",
+      "title": "Two small questions on the sheet re-make, and a Sign to drive when you have a minute",
+      "productImpact": "Your option A is built. When a view on a sheet comes back as one of your three catastrophes, that sheet is made again once, quietly, at our cost, and all of its views are replaced together so they still agree. The other sheet is left alone. You see nothing in the ordinary case — the slot just says being made for a bit longer. If a view still fails on the new picture, that slice gives its credits back exactly as before. One extra picture per sheet, never two.\n\nYuna wording is in with it. A refused view now says \"This view came out broken, so we didn't keep it\", or \"...didn't show just Sifr...\", or \"...didn't clearly look like Sifr...\" — with the cast's own name, or \"this character\" when it has not been named. \"Signed likeness\" is gone everywhere; that was our word, not a customer's.\n\nOne thing to know before you drive it: making a sheet again replaces ALL of its views, so a picture that passed can be swapped for one the checker then turns down, and that slice refunds. That is what keeps the views agreeing with each other, and it is a real trade rather than a free win.",
+      "workedExample": "QUESTION 1 — a dropped connection on a sheet now loses two or three views instead of one. A single view used to be asked for again three times, spaced out, if it never arrived, because that is our failure to deliver something you already paid for. A sheet is asked for once. Your \"at most one re-make per sheet\" can be read as allowing a spaced retry for a sheet that never arrived, or as forbidding it.\n\nQUESTION 2 — the head sheet has no visible seam between its panels, so the cutter falls back to equal thirds. Measured on your own test renders that is right to within 2 pixels, so the pictures are fine. But the warning that exists to say \"a panel may be cut through a figure\" now fires on every Sign, and an alarm that always cries cannot report the one case it is for. This is logging only; no customer sees it.\n\nAND WHEN YOU HAVE A MINUTE: sign a cast and look at the five views. They should agree on the outfit, front and back. If the checker turns one down, the credits for that slice come back and you should read one of Yuna's three sentences with the cast's name in it.",
+      "options": [
+        {
+          "key": "both",
+          "label": "Allow the retry, and fix the alarm",
+          "consequence": "A sheet that never arrives is asked for again three times, spaced out, exactly as a single view used to be — so a dropped connection stops costing you two or three views. And the warning only cries when a cut sits far from where a seam would be, so it can report the one case it exists for."
+        },
+        {
+          "key": "alarm-only",
+          "label": "Fix the alarm, forbid the retry",
+          "consequence": "The alarm becomes useful. A dropped connection on a sheet keeps losing two or three views at once; the money is still right every time, but the customer sees a half-finished package more often than they used to."
+        },
+        {
+          "key": "neither",
+          "label": "Leave both as they are",
+          "consequence": "Nothing is at risk and no money is wrong. The warning keeps crying on every Sign, so the day a panel really is cut through somebody nobody will notice, and a dropped sheet keeps losing several views at once."
+        }
+      ],
+      "recommendation": "Allow the retry, and fix the alarm. The retry restores the promise the per-view road already made, and the alarm is the only thing that could ever tell us a panel was cut through somebody.",
+      "state": "waiting",
+      "filedAt": "2026-10-08T03:28:44.785Z",
+      "issueNumber": 1904
     }
   ],
   "eyeItems": [
@@ -6814,11 +6841,11 @@
       "note": "The hand review's one finding, repaired; merged as 25f9015c and read back live at /api/health on a 73-second uptime."
     },
     {
-      "id": "dead-engine-record-1785",
-      "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
-      "status": "in-review",
-      "prNumber": null,
-      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+      "id": "package-redo-1903-slice2",
+      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "status": "blocked",
+      "prNumber": 1924,
+      "note": "Finished and green, waiting on the sheet work you held it behind. It needs one re-merge once that lands."
     },
     {
       "id": "pro-plus-rename-1900",
@@ -9733,18 +9760,18 @@
       "note": "Held for a hand review — it touches refunds. A court on your own frames caught back views being refused and that is fixed; the paid redo is the next half."
     },
     {
-      "id": "package-redo-1903-slice2",
-      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "id": "dead-engine-record-1785",
+      "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
       "status": "in-review",
-      "prNumber": 1924,
-      "note": "Finished and green — held on your word: hold the redo until the one-sheet Sign (#1904) lands. Your 350 does not move."
+      "prNumber": null,
+      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
     },
     {
       "id": "sign-sheet-1904",
-      "title": "Sign renders one Sunburst sheet cut into the five views (#1904)",
-      "status": "building",
-      "prNumber": null,
-      "note": "Built and measured on a real sheet; held on your shape decision (#1926) and 58 test arms."
+      "title": "A refused view re-makes its own sheet once, at our cost (#1904)",
+      "status": "in-review",
+      "prNumber": 1957,
+      "note": "Money surface, held for the relay. 82 arms, 8 sabotage rounds, preflight green."
     }
   ],
   "problems": [
@@ -10135,7 +10162,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T01:46:10.096Z",
+    "readAt": "2026-10-08T03:31:37.835Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10145,7 +10172,11 @@
       {
         "issueNumber": 1904,
         "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
-        "urgent": true
+        "urgent": true,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — two small questions in the newest comment, and your eye on a Sign's strip. The build is PR #1957, held for the relay."
+        }
       },
       {
         "issueNumber": 1469,
@@ -10195,11 +10226,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 1939,
-        "title": "The plan compare table says paid credits never expire, but Starter and Pro lose part of their plan credits at renewal",
-        "urgent": false
-      },
-      {
         "issueNumber": 1940,
         "title": "In-app money wording: \"credits returned\" everywhere, \"Cancel plan\" instead of \"Drop to Free\", and Billing says when a cancelled plan ends",
         "urgent": false
@@ -10207,6 +10233,16 @@
       {
         "issueNumber": 1941,
         "title": "A reminder email before a yearly plan renews — before go-live",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1952,
+        "title": "Customer pricing wording: price on every paid button, plain receipts, renewal and cancel lines (top-ups never expire)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1953,
+        "title": "Remove the plan features nobody delivers (support tiers, early access), and correct the stale Follow cost note",
         "urgent": false
       }
     ]
