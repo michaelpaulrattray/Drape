@@ -14,7 +14,8 @@
  *   9. generations (userId)
  *  9b. generationOperationLocks (via the account's operations), then
  *      generationOperations (userId)
- *  9c. bugReports (userId), faceScanDailyUsage (userId)
+ *  9c. bugReports (userId), faceScanDailyUsage (userId),
+ *      subscriptionRenewalReminders (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -57,6 +58,7 @@ import {
   generationOperationLocks,
   bugReports,
   faceScanDailyUsage,
+  subscriptionRenewalReminders,
   auditLogs,
   changeRequests,
   changeRequestAttachments,
@@ -186,6 +188,18 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     rows survive or not — deleting them loses no control at all.
   */
   "faceScanDailyUsage.userId": "deleted",
+
+  /* ---- a claim with nothing left to claim ---- */
+  /*
+    One row per renewal notice already sent (#1941). It exists only to stop a
+    second notice going to the same address about the same renewal, and the
+    shortlist it guards is read from `points`, which is deleted in this same
+    transaction — so the row can never be consulted again once the account is
+    gone. It holds her plan and the amount she was quoted, which is hers, and
+    deleting it loses no control at all: a duplicate send would need the
+    account to exist.
+  */
+  "subscriptionRenewalReminders.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -359,6 +373,7 @@ function zeroDeletionCounts() {
     generationOperationLocks: 0,
     bugReports: 0,
     faceScanDailyUsage: 0,
+    subscriptionRenewalReminders: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -435,6 +450,61 @@ function addOwnedAccountKey(
 ): void {
   const classified = classifyStorageReference({ ...reference, currentPublicUrl });
   if (classified.kind === "explicit_key" || classified.kind === "current_origin_url") {
+    keys.add(classified.key);
+  }
+}
+
+/**
+ * The two places the wardrobe writers put a customer's pictures, each carrying
+ * her id: `wardrobe/<id>/…` (the flat-lay, the refinement and every try-on
+ * result — `uploadBase64ToS3`'s prefix at all five call sites) and
+ * `<id>-wardrobe/…` (the upload road's original, the scan and decompose
+ * uploads, and the decomposed crops). Both unchanged since the wardrobe was
+ * built (`7681ddc2f`, 2026-03-24).
+ */
+export function wardrobeOwnedKeyPrefixes(userId: number): readonly [string, string] {
+  return [`wardrobe/${userId}/`, `${userId}-wardrobe/`];
+}
+
+/**
+ * A wardrobe row's picture, read by key when the row has one and by URL when
+ * it does not (#2020) — with ONE extra condition on the URL.
+ *
+ * ⚠ **A WARDROBE URL IS NOT PROOF OF OWNERSHIP, BECAUSE THE CUSTOMER CAN TYPE
+ * IT.** `garments.import` stores the client's `sourceImageUrl`/`cropUrl` as
+ * the garment's `originalImageUrl`/`sourceImageUrl`, `outfits.save` stores the
+ * client's `resultThumbUrl`, `looks.save` the client's `imageUrl`, and
+ * `sessions.update` the client's `history`. Each is a `z.string().url()` and
+ * nothing more, so any of them can hold ANOTHER customer's picture on our own
+ * bucket — and the bare `addOwnedAccountKey` turns any current-bucket URL into
+ * a deletion key. Erasing the account that typed it would then delete the
+ * other customer's object. So a URL counts only when the key it names sits
+ * under one of THIS account's own wardrobe prefixes; anything else — another
+ * customer's key, a cast's key, a legacy host (`files.manuscdn.com`,
+ * `*.cloudfront.net`), any other origin — is left alone. An explicit key
+ * column is written by the server alone and stays trusted as before.
+ *
+ * The cost is stated rather than hidden: a row this account wrote whose URL
+ * does not carry its prefix is no longer swept by URL. Every wardrobe writer
+ * has used the two prefixes since the wardrobe was built, so the only such
+ * URL is one the customer supplied — exactly the case that must not be
+ * deletion authority.
+ */
+function addOwnedWardrobeReference(
+  keys: Set<string>,
+  currentPublicUrl: string,
+  userId: number,
+  reference: { storageKey?: unknown; url?: unknown },
+): void {
+  const classified = classifyStorageReference({ ...reference, currentPublicUrl });
+  if (classified.kind === "explicit_key") {
+    keys.add(classified.key);
+    return;
+  }
+  if (
+    classified.kind === "current_origin_url"
+    && wardrobeOwnedKeyPrefixes(userId).some((prefix) => classified.key.startsWith(prefix))
+  ) {
     keys.add(classified.key);
   }
 }
@@ -659,13 +729,28 @@ export async function collectAccountOwnedStorageItemsIn(
   const garments = await tx.select().from(wardrobeGarments)
     .where(eq(wardrobeGarments.userId, userId)).for("update");
   for (const garment of garments) {
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.originalImageKey });
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.isolatedImageKey });
-    addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: garment.sourceImageKey });
+    /*
+      #2020: the KEY columns alone left the digitized flat-lay behind —
+      `isolatedImageKey` has no writer anywhere, so the garment's main picture
+      outlived the account at a permanently public URL. The URL beside each key
+      is read too, under the wardrobe ownership rule above.
+    */
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.originalImageKey,
+      url: garment.originalImageUrl,
+    });
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.isolatedImageKey,
+      url: garment.isolatedImageUrl,
+    });
+    addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
+      storageKey: garment.sourceImageKey,
+      url: garment.sourceImageUrl,
+    });
   }
   const outfits = await tx.select().from(wardrobeOutfits)
     .where(eq(wardrobeOutfits.userId, userId)).for("update");
-  for (const outfit of outfits) addOwnedAccountKey(publicKeys, currentPublicUrl, {
+  for (const outfit of outfits) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, {
     storageKey: outfit.resultThumbKey,
     url: outfit.resultThumbUrl,
   });
@@ -676,12 +761,12 @@ export async function collectAccountOwnedStorageItemsIn(
     // generated history is deletion authority when no explicit key exists.
     const history = parseJsonValue(session.history);
     if (Array.isArray(history)) {
-      for (const url of history) addOwnedAccountKey(publicKeys, currentPublicUrl, { url });
+      for (const url of history) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, { url });
     }
   }
   const looks = await tx.select().from(wardrobeLooks)
     .where(eq(wardrobeLooks.userId, userId)).for("update");
-  for (const look of looks) addOwnedAccountKey(publicKeys, currentPublicUrl, { url: look.imageUrl });
+  for (const look of looks) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, { url: look.imageUrl });
 
   const userBoards = await tx.select().from(boards)
     .where(eq(boards.userId, userId)).for("update");
@@ -1125,6 +1210,10 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(faceScanDailyUsage)
         .where(eq(faceScanDailyUsage.userId, userId));
       counts.faceScanDailyUsage = (scanUsageResult as any)[0]?.affectedRows ?? 0;
+      const renewalReminderResult = await tx
+        .delete(subscriptionRenewalReminders)
+        .where(eq(subscriptionRenewalReminders.userId, userId));
+      counts.subscriptionRenewalReminders = (renewalReminderResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx

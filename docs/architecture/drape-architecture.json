@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 192
+      "moduleCount": 193
     },
     {
       "id": "domain:castingV2",
@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 21
+      "moduleCount": 24
     },
     {
       "id": "domain:operations",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 85
+      "moduleCount": 86
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 54
+      "moduleCount": 56
     },
     {
       "id": "domain:wardrobe",
@@ -1825,6 +1825,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/moderator/creditRowText.ts",
+      "path": "client/src/features/moderator/creditRowText.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/factFigures.tsx",
+      "path": "client/src/features/moderator/factFigures.tsx",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/moderator/figures.ts",
       "path": "client/src/features/moderator/figures.ts",
       "domain": "moderator",
@@ -1863,6 +1875,12 @@
     {
       "id": "module:client/src/features/moderator/reconciliation-csv.ts",
       "path": "client/src/features/moderator/reconciliation-csv.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/reconciliationView.ts",
+      "path": "client/src/features/moderator/reconciliationView.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -2851,6 +2869,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/billing/renewalReminder.ts",
+      "path": "server/billing/renewalReminder.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/casting/aiService.ts",
       "path": "server/casting/aiService.ts",
       "domain": "casting",
@@ -3621,6 +3645,12 @@
     {
       "id": "module:server/castingV2/accountCastingPurge.ts",
       "path": "server/castingV2/accountCastingPurge.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/arrivalRetry.ts",
+      "path": "server/castingV2/arrivalRetry.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -5287,6 +5317,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/mail.ts",
+      "path": "server/mail.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/monitoring/errorTracker.ts",
       "path": "server/monitoring/errorTracker.ts",
       "domain": "platform",
@@ -6447,6 +6483,12 @@
     {
       "id": "module:shared/pictureFormats.ts",
       "path": "shared/pictureFormats.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/planCancelCopy.ts",
+      "path": "shared/planCancelCopy.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -9960,6 +10002,11 @@
       "id": "worker:startStorageCleanupWorker",
       "name": "startStorageCleanupWorker",
       "startedFrom": "server/_core/index.ts"
+    },
+    {
+      "id": "worker:startYearlyRenewalReminderSweep",
+      "name": "startYearlyRenewalReminderSweep",
+      "startedFrom": "server/_core/index.ts"
     }
   ],
   "operationKinds": [
@@ -10993,6 +11040,10 @@
       "path": "client/src/features/casting/evidence/inkReferenceDrop.test.ts"
     },
     {
+      "id": "test:client/src/features/casting/evidence/inkStepFailure.test.ts",
+      "path": "client/src/features/casting/evidence/inkStepFailure.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/briefDraft.test.ts",
       "path": "client/src/features/castingV2/briefDraft.test.ts"
     },
@@ -11233,6 +11284,10 @@
       "path": "client/src/features/lobby/lobbyStub.test.ts"
     },
     {
+      "id": "test:client/src/features/moderator/factFigures.test.ts",
+      "path": "client/src/features/moderator/factFigures.test.ts"
+    },
+    {
       "id": "test:client/src/features/moderator/section09-guard.test.ts",
       "path": "client/src/features/moderator/section09-guard.test.ts"
     },
@@ -11337,6 +11392,10 @@
       "path": "client/src/features/staff/stores/useStaffAutoRefreshStore.test.ts"
     },
     {
+      "id": "test:client/src/features/studio/takeover/identityCommitFailure.test.ts",
+      "path": "client/src/features/studio/takeover/identityCommitFailure.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/anchorCascade.test.ts",
       "path": "client/src/foundation/anchorCascade.test.ts"
     },
@@ -11419,6 +11478,10 @@
     {
       "id": "test:client/src/monitoring/errorTracker.test.ts",
       "path": "client/src/monitoring/errorTracker.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/CastingSheet.retryFailure.test.ts",
+      "path": "client/src/pages/CastingSheet.retryFailure.test.ts"
     },
     {
       "id": "test:client/src/staffPagesLazy.test.ts",
@@ -11649,6 +11712,10 @@
       "path": "server/billing.test.ts"
     },
     {
+      "id": "test:server/billing/renewalReminder.test.ts",
+      "path": "server/billing/renewalReminder.test.ts"
+    },
+    {
       "id": "test:server/boardDeletionChildren.test.ts",
       "path": "server/boardDeletionChildren.test.ts"
     },
@@ -11667,6 +11734,10 @@
     {
       "id": "test:server/boardsCasting.test.ts",
       "path": "server/boardsCasting.test.ts"
+    },
+    {
+      "id": "test:server/boardsClientStorageKey.test.ts",
+      "path": "server/boardsClientStorageKey.test.ts"
     },
     {
       "id": "test:server/briefingAtCommit.test.ts",
@@ -13945,6 +14016,10 @@
       "path": "server/moderatorReconciliation.test.ts"
     },
     {
+      "id": "test:server/moderatorRoadLedger.test.ts",
+      "path": "server/moderatorRoadLedger.test.ts"
+    },
+    {
       "id": "test:server/moduleResolution.test.ts",
       "path": "server/moduleResolution.test.ts"
     },
@@ -14113,6 +14188,10 @@
       "path": "server/providers/falMaskedEditWire.test.ts"
     },
     {
+      "id": "test:server/providers/falPostCompletionFault.test.ts",
+      "path": "server/providers/falPostCompletionFault.test.ts"
+    },
+    {
       "id": "test:server/providers/falSignSheetWire.test.ts",
       "path": "server/providers/falSignSheetWire.test.ts"
     },
@@ -14123,6 +14202,10 @@
     {
       "id": "test:server/providers/providerFailureContract.test.ts",
       "path": "server/providers/providerFailureContract.test.ts"
+    },
+    {
+      "id": "test:server/providers/withRetryBilled.test.ts",
+      "path": "server/providers/withRetryBilled.test.ts"
     },
     {
       "id": "test:server/publicInputStrictness.test.ts",
@@ -14587,6 +14670,10 @@
     {
       "id": "test:server/routes/modelCreatePayload.test.ts",
       "path": "server/routes/modelCreatePayload.test.ts"
+    },
+    {
+      "id": "test:server/routes/moneyWording1940.test.ts",
+      "path": "server/routes/moneyWording1940.test.ts"
     },
     {
       "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
@@ -16371,6 +16458,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
@@ -17691,6 +17783,11 @@
     },
     {
       "from": "module:client/src/features/casting/evidence/useInkAddWorkflow.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/evidence/useInkAddWorkflow.ts",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -18800,8 +18897,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "from": "module:client/src/features/moderator/creditRowText.ts",
       "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/creditRowText.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/creditRowText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/factFigures.tsx",
       "kind": "imports"
     },
     {
@@ -18845,6 +18957,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/factFigures.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -18885,6 +19002,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/FlaggedReferralsTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/moderator/staffCsvExport.ts",
       "kind": "imports"
@@ -18912,6 +19034,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -19006,12 +19133,12 @@
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/features/moderator/figures.ts",
+      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
-      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:client/src/features/moderator/reconciliationView.ts",
       "kind": "imports"
     },
     {
@@ -19022,6 +19149,21 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/figures.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/reconciliationView.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -19337,6 +19479,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -20262,6 +20409,11 @@
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
       "to": "module:client/src/features/studio/takeover/IdentityChangeDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -21320,6 +21472,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -22041,6 +22198,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/billing/renewalReminder.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/casting/evidence/evidenceComposerSchema.ts",
       "kind": "imports"
     },
@@ -22290,6 +22452,56 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/_core/appOrigin.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionPeriods.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/renewalReminder.ts",
+      "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/casting/aiService.ts",
       "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
@@ -22336,6 +22548,11 @@
     },
     {
       "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -22362,6 +22579,11 @@
     {
       "from": "module:server/casting/atomicCredits.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -24667,6 +24889,11 @@
     {
       "from": "module:server/casting/operationRecovery.ts",
       "to": "module:shared/productEventCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -27401,6 +27628,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -29446,6 +29678,11 @@
     },
     {
       "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
       "to": "module:server/casting/atomicCredits.ts",
       "kind": "imports"
     },
@@ -29552,6 +29789,11 @@
     {
       "from": "module:server/castingV2/retryService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -29662,6 +29904,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/_core/spokenError.ts",
       "kind": "imports"
     },
     {
@@ -29812,6 +30059,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -30157,6 +30409,11 @@
     {
       "from": "module:server/castingV2/signSheet.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/arrivalRetry.ts",
       "kind": "imports"
     },
     {
@@ -32615,6 +32872,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -33441,6 +33703,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
@@ -34151,12 +34418,22 @@
     },
     {
       "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/mail.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/crossSiteExpressGuard.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -35082,6 +35359,11 @@
     {
       "from": "module:server/routes/moderatorExports.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/moderatorExports.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -36242,6 +36524,11 @@
     {
       "from": "module:shared/inkReleasedPlacements.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/planCancelCopy.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {
@@ -38139,24 +38426,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1479",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1485",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1479",
+      "subject": "server/castingV2/rollService.ts:1485",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:272",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:274",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:272",
+      "subject": "server/castingV2/rollService.ts:274",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:318",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:320",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:318",
+      "subject": "server/castingV2/rollService.ts:320",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

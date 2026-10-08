@@ -57,13 +57,49 @@ export const AUTH_ME_QUERY_OPTIONS = {
  */
 export const AUTH_ME_RECONNECTING_AFTER_FAILURES = 3;
 
+/**
+ * STILL WAITING FOR AN ANSWER IS `isPending`, NOT `isLoading` — #2026.
+ *
+ * In react-query v5 `isLoading` is `isPending && isFetching`. When a retry is
+ * PAUSED — a background tab, or the browser offline (`fetchStatus` is
+ * `'paused'`) — `isFetching` is false, so `isLoading` reads false while there
+ * is still no answer at all. Every page that reads `!loading && !user` as
+ * "signed out" then sent a signed-in customer to the sign-in page. A query
+ * with no answer yet is `pending` whatever its fetch is doing, so that is what
+ * "still checking" keys on. `auth.me` is never disabled, so `pending` always
+ * means an answer is still coming. A refused session answers `null`, which is
+ * `success`, so it is never pending and still redirects at once.
+ *
+ * The hook's `loading`, its redirect guard and `reconnecting` all read this one
+ * function, and the suite reads it too, so the test cannot drift from the hook.
+ */
+export function isSessionCheckPending(result: { isPending: boolean }): boolean {
+  return result.isPending;
+}
+
+/**
+ * A PAUSED CHECK HAS NOTHING COMING UNTIL SOMETHING OUTSIDE CHANGES — #2030.
+ *
+ * The threshold above counts FAILED attempts, and a paused check makes none:
+ * opened while offline, react-query never sends the first request
+ * (`fetchStatus: 'paused'`, `failureCount` 0), so the count never moves and the
+ * page sat blank with nothing to say until the connection came back. The same
+ * held for a retry paused after one or two failures. A check that is pending
+ * AND paused is not a blink that is about to resolve — it is waiting on the
+ * connection — so it says so at once. The first answer clears it, exactly as
+ * before; a settled answer (signed in, or refused) is never pending, so a
+ * refused session still redirects at once and a signed-in page is never
+ * swapped for the notice.
+ */
 export function isSessionCheckReconnecting(result: {
-  isLoading: boolean;
+  isPending: boolean;
   failureCount: number;
+  fetchStatus: string;
 }): boolean {
   return (
-    result.isLoading &&
-    result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES
+    isSessionCheckPending(result) &&
+    (result.fetchStatus === "paused" ||
+      result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES)
   );
 }
 
@@ -105,7 +141,7 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     return {
       user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
+      loading: isSessionCheckPending(meQuery) || logoutMutation.isPending,
       reconnecting: isSessionCheckReconnecting(meQuery),
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
@@ -113,25 +149,26 @@ export function useAuth(options?: UseAuthOptions) {
   }, [
     meQuery.data,
     meQuery.error,
-    meQuery.isLoading,
+    meQuery.isPending,
     meQuery.failureCount,
+    meQuery.fetchStatus,
     logoutMutation.error,
     logoutMutation.isPending,
   ]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
+    if (isSessionCheckPending(meQuery) || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
     logoutMutation.isPending,
-    meQuery.isLoading,
+    meQuery.isPending,
     state.user,
   ]);
 

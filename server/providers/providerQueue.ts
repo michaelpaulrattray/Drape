@@ -1,7 +1,7 @@
 import pLimit from "p-limit";
 
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError, isRetryable, type ProviderFailureClass } from "./types";
+import { ProviderError, isRetryable, providerAlreadyBilled, type ProviderFailureClass } from "./types";
 
 const log = createModuleLogger("providers/providerQueue");
 
@@ -168,6 +168,17 @@ export class ProviderQueue {
  * attempt-scoped storage key, and landing is idempotent per candidate. Only
  * retryable classes are retried; everything else fails immediately so the
  * refund path runs without burning time.
+ *
+ * ⚠ **A FRAME THE PROVIDER ALREADY FINISHED IS NEVER ASKED FOR AGAIN (#2032).**
+ * The class answers *what went wrong*; it cannot answer *whose frame it was*.
+ * Four of fal's faults are raised after the job reported `COMPLETED` — the
+ * result fetch, an empty payload, a malformed data URI, a download that fails —
+ * and all four carry retryable classes, so this loop used to submit a NEW job
+ * up to `retries` more times, each one rendered and billed, each one failing
+ * the same way. {@link providerAlreadyBilled} is asked BEFORE the class, the
+ * same predicate both arrival loops ask (law 4: one copy of a money decision).
+ * Every fal engine reaches its provider through this function, so the one line
+ * covers rolls, refines, plates and the Sign sheet together.
  */
 export async function withRetry<T>(
   label: string,
@@ -186,6 +197,7 @@ export async function withRetry<T>(
       return await attempt();
     } catch (error) {
       lastError = error;
+      if (providerAlreadyBilled(error)) throw error;
       const failureClass =
         error instanceof ProviderError ? error.failureClass : ("unknown" as ProviderFailureClass);
       if (!isRetryable(failureClass) || tryIndex === retries) throw error;

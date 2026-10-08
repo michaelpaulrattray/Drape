@@ -200,7 +200,11 @@ export function ownPlanFacts(tier: string): {
  * #1973, 2026-10-08: *"go with B"* — the *"SLA guarantee"* line is gone,
  * because a written uptime commitment is something we have no way to measure
  * or back. `undeliveredPlanFeatures1953.test.ts` refuses a support tier, an
- * early-access promise, or an SLA / uptime / guarantee line at the wire.
+ * early-access promise, or an SLA / uptime / guarantee line in this table.
+ * ⚠ **This sentence said *"at the wire"* until #1972 half 1 took `features`
+ * off the public `getPlans` projection: nothing serves these lines any more,
+ * so the table is where they are held, and the same test asserts the wire
+ * carries none of them.**
  *
  * **EVERY ROLLOVER LINE IS DERIVED FROM `PLAN_TIERS` (#1972 half 2).** Five
  * rungs typed `"100% …"` while two derived it; all five were right, and the

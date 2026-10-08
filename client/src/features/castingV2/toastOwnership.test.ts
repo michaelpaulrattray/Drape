@@ -45,9 +45,9 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "A refused keep or discard. The optimistic paint snaps back, which shows something was refused and never why. It carries OUR sentence rather than the error's since run-9 (see failureCopy.ts) — a server refusal still speaks for itself, and a transport failure no longer speaks at all.",
   },
   {
-    match: '"That tile didn\'t arrive again. Your credits are back."',
+    match: "toast(retryFailureSentence(error))",
     because:
-      "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's 20 credits came back. The server's own sentence passes through readableFailure; this is only the fallback when it has none.",
+      "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's credits came back. The server's own sentence passes through readableGatedFailure; the page's fallback, when it has none, claims no refund (card 2033).",
   },
   // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2)
   {

@@ -43,6 +43,17 @@ const code = (text: string) => withoutComments(text);
 
 const CSS = read(path.join(HERE, "investigations.css"));
 const RECONCILIATION = read(path.join(HERE, "ReconciliationSubTab.tsx"));
+/*
+  #2027 — the pane's words and figures moved to a pure module so they can be
+  driven (`server/moderatorRoadLedger.test.ts`); the arms about WHAT the pane
+  says follow them there, and the arms about how it is DRAWN stay on the .tsx.
+*/
+const RECONCILIATION_VIEW = read(path.join(HERE, "reconciliationView.ts"));
+/** The pure modules that now hold a rebuilt surface's figures (#2027). */
+const VIEW_MODULES = ["creditRowText.ts", "reconciliationView.ts"].map((n) => ({
+  name: n,
+  text: read(path.join(HERE, n)),
+}));
 const FLAGGED = read(path.join(HERE, "FlaggedDiscrepanciesCard.tsx"));
 const WIDGETS = read(path.join(HERE, "UserInvestigationWidgets.tsx"));
 const FOUNDATION_CSS = read(path.resolve(CLIENT_SRC, "foundation/foundation.css"));
@@ -189,10 +200,12 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
     */
     const source = code(RECONCILIATION);
 
-    /* The workings card — from its own eyebrow to the end of the file. */
-    const workingsStart = source.indexOf('<TableHead eyebrow="Reconciliation" />');
-    expect(workingsStart, "the workings card is gone").toBeGreaterThan(-1);
-    const workings = source.slice(workingsStart);
+    /* The workings card — drawn from `view.workings`, whose rows live in the view module (#2027). */
+    expect(source, "the workings card is gone").toContain("<TableHead eyebrow={view.workings.eyebrow} />");
+    const view = code(RECONCILIATION_VIEW);
+    const workingsStart = view.indexOf("workings: {");
+    expect(workingsStart, "the workings rows are gone").toBeGreaterThan(-1);
+    const workings = view.slice(workingsStart);
     expect(workings, "the discrepancy is back in the workings").not.toContain("discrepancy");
     expect(workings).not.toMatch(/label="Discrepancy"/);
 
@@ -209,11 +222,12 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
   });
 
   it("the workings end at Recorded charges", () => {
-    const source = code(RECONCILIATION);
+    /* The workings' rows are the view module's since #2027; it is their last row. */
+    const source = code(RECONCILIATION_VIEW);
     const recorded = source.indexOf("Recorded charges (all records)");
     expect(recorded, "the Recorded charges row is gone").toBeGreaterThan(-1);
-    /* Nothing but the closing markup may follow it inside the workings card. */
-    expect(source.slice(recorded)).not.toContain("<LeaderRow");
+    /* Nothing but the closing brackets may follow it. */
+    expect(source.slice(recorded)).not.toContain("label:");
   });
 
   it("the verdict is above the evidence in source order", () => {
@@ -252,7 +266,8 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
 
     const definers: string[] = [];
     const importers: string[] = [];
-    for (const { name, text } of rebuilt()) {
+    /* #2027: two surfaces' figures moved into pure modules; the rule follows them. */
+    for (const { name, text } of [...rebuilt(), ...VIEW_MODULES]) {
       const source = code(text);
       if (/const (signed|negated|grouped) = |function (signed|negated|grouped)\(/.test(source)) {
         definers.push(name);
@@ -263,7 +278,7 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
     expect(importers.length, "no surface imports the shared figure helpers").toBeGreaterThanOrEqual(3);
 
     /* And no surface interpolates a raw figure where the helper belongs. */
-    for (const { name, text } of rebuilt()) {
+    for (const { name, text } of [...rebuilt(), ...VIEW_MODULES]) {
       expect(code(text), `${name} prints a raw signed figure`).not.toMatch(
         /\$\{[a-z]+\.amount > 0 \? "\+" : ""\}/,
       );
@@ -302,7 +317,9 @@ describe("brief 09 §2, §4b, §4d — verdict before workings, and once", () =>
   });
 
   it("`The ledgers agree.` is the clean headline, and it carries no colour", () => {
-    expect(code(RECONCILIATION)).toContain("The ledgers agree.");
+    /* The headline's words live in the view module since #2027. */
+    expect(code(RECONCILIATION_VIEW)).toContain("The ledgers agree.");
+    expect(code(RECONCILIATION_VIEW)).not.toContain("All Clear");
     expect(code(RECONCILIATION)).not.toContain("All Clear");
     /*
       The clean verdict block takes NO modifier class, so it inherits

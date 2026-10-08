@@ -58,13 +58,13 @@ export function cancelNoticeFor(outcome: CancelOutcome): string {
     becomes necessary with a red test rather than with a customer reading a zero.
   */
   if (outcome.stillFinishing > 0 && outcome.refundedCredits > 0) {
-    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits back — ${finishing}, refunds complete as they land.`;
+    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits returned — ${finishing}, refunds complete as they land.`;
   }
   if (outcome.stillFinishing > 0) {
     return `Cancelled — ${finishing}; refunds complete as they land.`;
   }
   if (outcome.refundedCredits > 0) {
-    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits back.`;
+    return `Cancelled · ${formatCredits(displayRefund(outcome.refundedCredits))} credits returned.`;
   }
   /*
     Nothing queued and nothing in flight: the roll had already finished. Saying

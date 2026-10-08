@@ -69,6 +69,7 @@ vi.mock("./db/connection", () => ({
 
 import { addCredits, deductCredits } from "./db/credits";
 import { adjustUserCredits } from "./db/admin";
+import { staffLedgerProse } from "../shared/creditDisplay";
 
 /**
  * Flatten a drizzle `SQL` into an ordered token list: `col:<name>` for a
@@ -254,5 +255,16 @@ describe("the deduct — the hot path, deliberately untouched", () => {
     expect(executed).toHaveLength(1);
     expect(columns(executed[0])).not.toContain("purchasedBalance");
     expect(text(executed[0])).not.toContain("LEAST(");
+  });
+});
+
+describe("#2027 — an admin adjustment's stored description keeps the reason as typed", () => {
+  it("\"100 credits\" in the reason survives the moderator's reading untouched", async () => {
+    selectAnswer = [{ balance: 0, purchasedBalance: 0 }];
+    await adjustUserCredits(7, 500, "as promised, 100 credits", 1, "adj:2027");
+    const row = inserted.find((candidate) => typeof candidate.description === "string");
+    const description = row?.description as string;
+    expect(description).toContain("as promised, 100 credits");
+    expect(staffLedgerProse(description)).toBe(description);
   });
 });

@@ -2159,14 +2159,24 @@ a.dp-segmented__seg {
 }
 
 /*
-  ⚠ `word-break: break-all` is load-bearing, not tidiness. These values are
+  ⚠ `overflow-wrap: anywhere` is load-bearing, not tidiness. These values are
   ids, hashes, IPs, emails and user agents; one unbroken 64-character value
-  otherwise blows the whole grid open and the table beside it.
+  otherwise blows the whole grid open and the table beside it. `anywhere`
+  still breaks that value wherever it must, and it counts toward the cell's
+  min-content width, so the grid track never grows to fit it.
+
+  ⚠ **It was `word-break: break-all` until #2043, and that was the defect.**
+  `break-all` breaks between ANY two letters even when a space is right there,
+  so a two-figure credit fact (`+37,466 credits · +187,330 ledger`) split
+  mid-number in a 168px column — `+187,3 / 30 ledger`, `8,340 le / dger`
+  (#2035's frames). `anywhere` breaks at a space first and inside a word only
+  when the word alone is wider than the cell, which is the one case the rule
+  exists for.
 */
 .dp-table__factvalue {
   font: 400 12px var(--font-mono);
   color: var(--secondary);
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 /*

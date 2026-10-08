@@ -37,6 +37,33 @@ const read = (path: string) => readFileSync(path, "utf8");
 /** Strip comments — a rule quoted in prose is not a rule shipped. */
 const code = (text: string) => withoutComments(text);
 
+/**
+ * ONE FUNCTION'S BODY, NOT THE REST OF THE FILE (#1941's law-7 finding).
+ *
+ * The two reading arms below used `source.slice(source.indexOf(name))`, which
+ * is everything from the declaration to the END OF THE FILE — correct only
+ * while `getCycleSpend` happened to be the last function in `db/billing.ts`,
+ * which nothing anywhere said and nothing could keep true. The first function
+ * appended after it carried a `catch`, and the refusal arm below reddened on a
+ * neighbour's code while the reader it is about had not moved a byte.
+ *
+ * It fails in both directions, which is why this is a repair rather than a
+ * loosening: a whole-tail slice also PASSES a `toContain` on a sibling's text,
+ * so the owner-in-the-WHERE arm one above would have gone on reading as
+ * coverage after `getCycleSpend` itself lost the clause.
+ *
+ * The end is the next top-level `export` — the shape every function in that
+ * file is declared with — and it REFUSES rather than falling back to the tail,
+ * because a slice that silently widens is the thing being fixed.
+ */
+function topLevelFunction(source: string, name: string): string {
+  const start = source.indexOf(`export async function ${name}`);
+  expect(start, `\`${name}\` is not declared in that file any more`).toBeGreaterThanOrEqual(0);
+  const rest = source.slice(start);
+  const next = rest.slice(1).search(/\nexport\s/);
+  return next === -1 ? rest : rest.slice(0, next + 1);
+}
+
 const DAY = 86_400_000;
 
 describe("#624 — the window opens at the period's own instant, not at midnight", () => {
@@ -153,8 +180,7 @@ describe("#624 — the wire", () => {
   it("⚠ the owner is in the WHERE of both statements, not checked and then dropped", () => {
     /* Enforcement invariant 1. Read at the reader itself: two statements, and
        each one carries `credits.userId` / `creditTransactions.userId`. */
-    const billing = code(read(join(HERE, "db", "billing.ts")));
-    const reader = billing.slice(billing.indexOf("export async function getCycleSpend"));
+    const reader = topLevelFunction(code(read(join(HERE, "db", "billing.ts"))), "getCycleSpend");
 
     expect(reader).toContain("eq(credits.userId, userId)");
     expect(reader).toContain("eq(creditTransactions.userId, userId)");
@@ -168,8 +194,7 @@ describe("#624 — the wire", () => {
       makes the burn band hide itself. Returning it for a database that did not
       respond is a confident wrong number on the screen where people pay.
     */
-    const billing = code(read(join(HERE, "db", "billing.ts")));
-    const reader = billing.slice(billing.indexOf("export async function getCycleSpend"));
+    const reader = topLevelFunction(code(read(join(HERE, "db", "billing.ts"))), "getCycleSpend");
 
     expect(reader, "the cycle-spend reader started swallowing its own failure").not.toContain(
       "catch",

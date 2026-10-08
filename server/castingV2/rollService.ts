@@ -37,6 +37,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
+import { spokenError } from "../_core/spokenError";
 
 import { type CastingPath } from "../../shared/castingPaths";
 import type { CastStyle } from "../../shared/castStyles";
@@ -51,6 +52,7 @@ import type { StatedInk } from "./castingIntent";
 
 import { CASTING_V2_COSTS, castingSliceCredits } from "../casting/castingCreditCosts";
 import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
+import { creditsReturnedText } from "../../shared/refundCopy";
 import { censusOfAttempt, censusSoFar } from "./callCensus";
 import { recordRefund, refundTruth } from "../casting/atomicCredits";
 import {
@@ -1207,7 +1209,7 @@ export async function createRoll(
     // The CAS refuses if cancel already moved the roll to its terminal state.
     await setRollStatus({ userId: input.userId, rollId: roll.id, status: "failed" });
     const refundSentence = unrecordedRefunds === 0
-      ? `${formatCredits(displayRefund(refundedCredits))} credits were refunded.`
+      ? creditsReturnedText(refundedCredits)
       // Never "you weren't charged" when the ledger says otherwise: quote the
       // operation so support can reconcile it by hand.
       : `Part of the refund could not be recorded — quote operation ${gate.operationId} and support will restore the balance.`;
@@ -1391,7 +1393,11 @@ async function settleAbandonedDispatch(input: {
       // the lease lapses on its own and the sweep takes the roll within one lease.
       log.fatal({ operationId, err: handoffError }, "[rollService] recovery handoff did not write");
     });
-    throw new TRPCError({
+    /* SPOKEN (#2058, the roll's twin of #2049): a sentence written for her on
+       INTERNAL_SERVER_ERROR is replaced by the sheet's fallback unless it
+       carries the marker, and the fallback cannot quote the operation id she
+       would give support. */
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: `This sheet is still being settled. Operation ${operationId}.`,
       cause: error,
@@ -1406,7 +1412,7 @@ async function settleAbandonedDispatch(input: {
       chargedCredits: outcome.chargedCredits,
       refundedCredits: outcome.refundedCredits,
     });
-    throw new TRPCError({
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: ROLL_RECOVERY_SENTENCE.supportReview(operationId),
     });

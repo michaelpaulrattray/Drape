@@ -3,8 +3,8 @@ import { X } from "lucide-react";
 import { Button, EmptyState, LeaderRow, Skeleton, TableHead } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 
-import { negated, signed } from "./figures";
 import { downloadReconciliationCsv } from "./reconciliation-csv";
+import { reconciliationView, type ReconciliationViewRow } from "./reconciliationView";
 import "./investigations.css";
 
 /**
@@ -64,12 +64,22 @@ interface ReconciliationSubTabProps {
   setEndDate: (v: string) => void;
 }
 
-const formatNumber = (n: number): string => n.toLocaleString();
-
-/** Sentence case for a machine label — `admin_add` and `castingRoll` both. */
-function sentenceCase(raw: string): string {
-  const spaced = raw.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().toLowerCase();
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+/** One leader row of a card — the strings come from `reconciliationView`. */
+function ViewRows({ rows, small }: { rows: readonly ReconciliationViewRow[]; small?: boolean }) {
+  return (
+    <>
+      {rows.map((row) => (
+        <LeaderRow
+          key={row.label}
+          small={small}
+          label={row.label}
+          value={row.value}
+          subtotal={row.subtotal}
+          attention={row.attention}
+        />
+      ))}
+    </>
+  );
 }
 
 export function ReconciliationSubTab({
@@ -114,22 +124,14 @@ export function ReconciliationSubTab({
     );
   }
 
-  const { credits, generations, reconciliation } = data;
-  const hasFailures = generations.failed > 0;
-  const failureRateHigh = generations.failureRate > 20;
-  const fault = reconciliation.hasDiscrepancy;
-
   /*
-    THE THREE-WAY HEADLINE, kept from the original and re-voiced. His §4b:
-    `All Clear` becomes `The ledgers agree.` — a sentence rather than a status
-    word, because the pane answers a question.
+    Every word and figure below comes from `reconciliationView.ts`, where they
+    are driven (#2027): the headline names the customer's figure first, and
+    every section says its figures are ledger. The three-way headline logic,
+    kept from the original (his §4b), lives there now too.
   */
-  const headline = fault
-    ? `${formatNumber(Math.abs(reconciliation.discrepancy))} credits unaccounted for.`
-    : hasFailures
-      ? "Failures were refunded."
-      : "The ledgers agree.";
-
+  const view = reconciliationView(data);
+  const { fault, hasFailures } = view;
   const verdictClass = fault
     ? "dp-inv__verdict dp-inv__verdict--fault"
     : hasFailures
@@ -164,131 +166,40 @@ export function ReconciliationSubTab({
       <div className={verdictClass}>
         <div className="dp-inv__verdictmain">
           <p className="dp-inv__eyebrow">Reconciliation</p>
-          <p className="dp-inv__verdictline">{headline}</p>
-          <p className="dp-inv__verdictsummary">{reconciliation.summary}</p>
+          <p className="dp-inv__verdictline">{view.headline}</p>
+          <p className="dp-inv__verdictsummary">{view.summary}</p>
         </div>
         <div className="dp-inv__verdictfigure">
-          <p className="dp-inv__eyebrow">Discrepancy</p>
+          <p className="dp-inv__eyebrow">{view.discrepancyEyebrow}</p>
           <p
             className={`dp-inv__verdictvalue${fault ? " dp-inv__verdictvalue--fault" : ""}`}
           >
-            {signed(reconciliation.discrepancy)}
+            {view.discrepancyValue}
           </p>
         </div>
       </div>
 
       {/* ── 3 · EVIDENCE — the two columns (§4c) ── */}
       <div className="dp-inv__columns">
-        <div className="dp-inv__card">
-          <TableHead eyebrow="Credit transactions" />
-          <div className="dp-inv__cardbody">
-            <LeaderRow label="Total earned" value={signed(credits.totalEarned)} />
-            <LeaderRow label="Total spent" value={negated(credits.totalSpent)} />
-            <LeaderRow
-              label="Gross generation deductions"
-              value={formatNumber(credits.grossGenerationDeductions)}
-              subtotal
-            />
-            {credits.totalRefunds > 0 && (
-              <LeaderRow label="Refunds" value={signed(credits.totalRefunds)} />
-            )}
-            <LeaderRow
-              label="Net generation cost"
-              value={formatNumber(credits.netGenerationCost)}
-              subtotal
-            />
-            <div className="dp-inv__subblock">
-              <p className="dp-inv__eyebrow">By type</p>
-              {Object.entries(credits.byType).map(([type, info]) => (
-                <LeaderRow
-                  key={type}
-                  small
-                  label={sentenceCase(type)}
-                  value={`${signed(info.totalAmount)} (${info.count})`}
-                />
-              ))}
+        {[view.credits, view.generations].map((card) => (
+          <div className="dp-inv__card" key={card.eyebrow}>
+            <TableHead eyebrow={card.eyebrow} />
+            <div className="dp-inv__cardbody">
+              <ViewRows rows={card.rows} />
+              <div className="dp-inv__subblock">
+                <p className="dp-inv__eyebrow">By type</p>
+                <ViewRows rows={card.byType ?? []} small />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="dp-inv__card">
-          <TableHead eyebrow="Generation records" />
-          <div className="dp-inv__cardbody">
-            <LeaderRow label="Total generations" value={formatNumber(generations.total)} />
-            <LeaderRow label="Completed" value={formatNumber(generations.completed)} />
-            <LeaderRow
-              label="Failed"
-              attention={hasFailures}
-              value={
-                failureRateHigh
-                  ? `${formatNumber(generations.failed)} (${generations.failureRate}%)`
-                  : formatNumber(generations.failed)
-              }
-            />
-            <LeaderRow label="Pending" value={formatNumber(generations.pending)} />
-            <LeaderRow
-              label="Completed cost"
-              value={formatNumber(generations.creditsOnCompleted)}
-              subtotal
-            />
-            {generations.creditsOnPending > 0 && (
-              <LeaderRow label="Pending cost" value={formatNumber(generations.creditsOnPending)} />
-            )}
-            <div className="dp-inv__subblock">
-              <p className="dp-inv__eyebrow">By type</p>
-              {generations.byType.map((entry) => (
-                <LeaderRow
-                  key={entry.type}
-                  small
-                  label={sentenceCase(entry.type)}
-                  value={`${formatNumber(entry.totalCost)} (${entry.totalCount})`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ── 4 · EVIDENCE — the workings (§4d) ── */}
+      {/* ── 4 · EVIDENCE — the workings (§4d); no discrepancy row, on purpose — see `reconciliationView.ts` ── */}
       <div className="dp-inv__card">
-        <TableHead eyebrow="Reconciliation" />
+        <TableHead eyebrow={view.workings.eyebrow} />
         <div className="dp-inv__cardbody">
-          <LeaderRow
-            label="Gross generation deductions"
-            value={formatNumber(reconciliation.grossGenerationDeductions)}
-          />
-          {reconciliation.totalRefunds > 0 && (
-            <LeaderRow
-              label="Refunds (failures, cancellations, corrections)"
-              value={negated(reconciliation.totalRefunds)}
-            />
-          )}
-          <LeaderRow
-            label="Net generation cost (credits)"
-            value={formatNumber(reconciliation.netGenerationCost)}
-            subtotal
-          />
-          <LeaderRow
-            label="Completed generation recorded cost"
-            value={formatNumber(reconciliation.completedGenerationCost)}
-          />
-          {reconciliation.pendingGenerationCost > 0 && (
-            <LeaderRow
-              label="Pending generation cost"
-              value={formatNumber(reconciliation.pendingGenerationCost)}
-            />
-          )}
-          <LeaderRow
-            label="Recorded charges (all records)"
-            value={formatNumber(reconciliation.expectedCost)}
-            subtotal
-          />
-          {/*
-            ⚠ THE DISCREPANCY ROW IS DELETED FROM HERE ON PURPOSE (§4d).
-            It is the verdict, it is at the top at 30px, and *"repeating it at
-            the bottom in 12px is the same double-count the Crew work removed."*
-            The workings end at Recorded charges.
-          */}
+          <ViewRows rows={view.workings.rows} />
         </div>
       </div>
 

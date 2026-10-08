@@ -495,7 +495,25 @@
 # newest (#1985…#1846) and 200 newest (#1985…#1563) — and the one PR it adds is
 # #1868, the specimen. No other merged PR in either window touches the file.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^drizzle/'
+# ⚠ `server/billing/renewalReminder.ts` IS HERE BY NAME, AND THE DERIVED
+# GUARD IS WHAT PUT IT HERE (#1941, 2026-10-09). The yearly renewal notice
+# reads Stripe's own invoice preview and writes an AMOUNT to a paying
+# customer, so a diff touching only it is a money diff by this file's own
+# first sentence — where money is STORED, BOUGHT, DECIDED or SET.
+#
+# ROAD: it could not have been on #2006's stated remainder, because it is a
+# NEW module on the branch that adds it and that list was derived from `main`.
+# The arm `every tracked file that imports a server/stripe helper is read as
+# money` reddened the moment this branch merged `main` forward — which is that
+# guard doing exactly what it was built for, on the first file it could not
+# have seen. The import it reads (`retrieveLiveSubscription`,
+# `readPendingPlanChange`) predates the arm and is not what the repair added.
+#
+# NAMED, NOT `^server/billing/`: the directory holds one file today, and a
+# later module there (a receipt renderer, a dunning note) is its own
+# judgement rather than something this entry decides in advance.
+#
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService).ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

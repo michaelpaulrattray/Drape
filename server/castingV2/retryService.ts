@@ -30,6 +30,7 @@
  * Everything before the claim is free and says why.
  */
 import { TRPCError } from "@trpc/server";
+import { spokenError } from "../_core/spokenError";
 import { CANDIDATE_RENDER } from "./briefCompiler";
 import { censusOfAttempt } from "./callCensus";
 /* `CASTING_V2_RETRY_PRICE_CREDITS` was imported here until #1601 item 2 moved
@@ -85,6 +86,7 @@ import { storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 import { candidateFailureKind, isRetryableFailure } from "../../shared/candidateFailure";
 import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
+import { creditsReturnedText } from "../../shared/refundCopy";
 import type { StatedInk } from "./castingIntent";
 import type { CreativeEngine } from "../providers/types";
 
@@ -543,7 +545,7 @@ export async function retryCandidate(
   }
   const refundSentence = refundUnrecorded
     ? `The refund could not be recorded — quote operation ${operationId} and support will restore the balance.`
-    : `${formatCredits(displayRefund(refunded))} credits were refunded.`;
+    : creditsReturnedText(refunded);
   log.warn(
     { operationId, candidate: candidate.publicId, failureClass: settlement.failureClass ?? "unknown", refunded },
     "[retryService] the retried tile failed again — refunded under the retry's own reference",
@@ -601,7 +603,10 @@ async function settleAbandonedRetry(input: {
       // the lease lapses on its own and the sweep takes the retry within one lease.
       log.fatal({ operationId, err: handoffError }, "[retryService] recovery handoff did not write");
     });
-    throw new TRPCError({
+    /* SPOKEN (#2049): a sentence written for her on INTERNAL_SERVER_ERROR is
+       replaced by the sheet's fallback unless it carries the marker, and the
+       fallback cannot quote the operation id she would give support. */
+    throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
       message: `That retry is still being settled. Operation ${operationId}.`,
       cause: error,
@@ -616,7 +621,7 @@ async function settleAbandonedRetry(input: {
       chargedCredits: outcome.chargedCredits,
       refundedCredits: outcome.refundedCredits,
     });
-    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: RETRY_SUPPORT_REVIEW_SENTENCE(operationId) });
+    throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: RETRY_SUPPORT_REVIEW_SENTENCE(operationId) });
   }
   if (outcome.type === "durable_success") {
     /*

@@ -32,6 +32,14 @@
  * unchanged and a customer who never sees a catastrophe pays nothing different
  * from one who does.
  *
+ * ⚠ **AND A SHEET THAT NEVER ARRIVES IS ASKED FOR AGAIN, SPACED, BEFORE ANY OF
+ * ITS VIEWS REFUND — #1966, his *"2) go with your recc"* of 2026-10-08.** That
+ * is a TRANSPORT fault, not a judged catastrophe: no frame came back, so
+ * nothing was drawn and nothing was judged. It is a separate budget from
+ * {@link SHEET_MAX_RENDERS} and does not touch `renders`;
+ * {@link renderWithArrivalRetries} carries why the per-view road's own three
+ * attempts could never have covered it.
+ *
  * ⚠ **ONE HONEST CONSEQUENCE OF HIS RULING, said out loud because a customer
  * can feel it: a view that PASSED on sheet 1 can fail on sheet 2 and refund.**
  * Replacing a sheet's views together means the good panel is discarded with the
@@ -43,7 +51,13 @@
 
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
-import type { ImageResult } from "../providers/types";
+import {
+  ProviderError,
+  mayStillArrive,
+  providerAlreadyBilled,
+  type ImageResult,
+} from "../providers/types";
+import { ARRIVAL_ATTEMPTS, arrivalBackoffMs, waitMs } from "./arrivalRetry";
 import { captureRefusedRender } from "./diagnosticCapture";
 import {
   type RenderedSignSheet,
@@ -75,6 +89,14 @@ const log = createModuleLogger("castingV2/signSheetCoordinator");
  * A re-render costs ~$0.11 and ~70 s of the customer's wait, so 2 is the whole
  * budget: the slot simply shows *being made* a little longer, and a third frame
  * would be the slot machine D-39/D-40 named, paid for by us.
+ *
+ * ⚠ **AND IT IS NOT THE ARRIVAL BUDGET EITHER — #1966, a third number this one
+ * must not be confused with.** This counts frames that ARRIVED and were judged.
+ * A request that produced no frame at all drew nothing, was judged by nobody
+ * and cost nothing, and {@link renderWithArrivalRetries} asks again for it,
+ * spaced, without touching `renders`. A reader who merged the two would either
+ * refuse to re-ask for a dropped request or let a judged catastrophe buy a
+ * third drawn frame; both are wrong, in opposite directions.
  */
 export const SHEET_MAX_RENDERS = 2;
 
@@ -178,7 +200,142 @@ export type SettleSignSheetInput = {
   readonly operationId: string;
   /** Injected on both roads for the reason the per-view capture is. */
   readonly capture?: typeof captureRefusedRender;
+  /**
+   * The wait between ARRIVAL retries (#1966).
+   *
+   * Injected so a suite can PROVE the spacing happened — recording the
+   * requested milliseconds — without actually sleeping for them. A test that
+   * only asserts the call count cannot tell "spaced" from "hammered", which is
+   * the per-view road's own stated reason for the same injection.
+   */
+  readonly wait?: (ms: number) => Promise<void>;
 };
+
+/**
+ * ASK FOR THE SHEET, AND ASK AGAIN — SPACED — WHEN NOTHING CAME BACK (#1966).
+ *
+ * **His word, 2026-10-08 (terminal), verbatim and entire: *"2) go with your
+ * recc"***, answering #1904's question 1.
+ *
+ * ## The defect
+ *
+ * Since the sheet road landed, each sheet was asked for exactly ONCE: this
+ * module called its `render` thunk and let a throw out. So a TRANSPORT fault —
+ * nothing came back at all, as opposed to a picture that came back and was
+ * refused — lost **two or three views together**, and every one of them
+ * refunded. The per-view road has asked three times, spaced, since #1208,
+ * because a render that never arrives is OUR failure to deliver something
+ * already paid for. The sheet road quietly dropped that promise for every view
+ * on it.
+ *
+ * ⚠ **AND THE PER-VIEW BUDGET COULD NOT COVER IT, which is why the repair has
+ * to live here.** `packageOrchestrator` holds ONE promise per sheet, so a
+ * settled rejection re-throws instantly to every view awaiting it: the three
+ * arrival attempts were spent waiting on an answer that could never change.
+ * The thing that can be re-asked is the SHEET, and only this module holds it.
+ *
+ * ## What it is NOT
+ *
+ * ⚠ **It is not a second RENDER in {@link SHEET_MAX_RENDERS}'s sense, and the
+ * two budgets must not be confused.** His #1904 ruling buys ONE re-render per
+ * sheet per Sign — *"at most one automatic re-render per sheet per Sign. No
+ * loop."* — and that is about a frame that ARRIVED and was judged a
+ * catastrophe. This is about a request that produced no frame at all: nothing
+ * was drawn, nothing was judged, nothing was spent on a picture. So it does not
+ * touch `renders`, which stays the count of frames this sheet actually cost.
+ *
+ * ⚠ **The decision of whether to ask again is not made here either.**
+ * `mayStillArrive` owns it, beside the failure classes themselves — #1212's
+ * finding was that a road holding a private opinion about that union drifts
+ * from it, and this would have been the fourth such place.
+ *
+ * ⚠ **BUT ONLY A `ProviderError` IS ASKED ABOUT, AND THE FIRST SHAPE OF THIS
+ * LOOP RE-BOUGHT SHEETS THAT HAD ALREADY ARRIVED** (the relay's finding on PR
+ * #1982). It read a non-`ProviderError` as `unknown` and handed that to
+ * `mayStillArrive`, which keeps retrying — the right default on the PER-VIEW
+ * road, where the thunk is the engine call and nothing else, and the wrong one
+ * here. **This thunk is `renderSignSheet`, which is the engine call PLUS the
+ * decode, the panel geometry, the cut and the provenance check.** Every one of
+ * those throws a plain `Error` (`signSheet.ts` 477, 511, 512, 578, 780, ~839),
+ * and every one of them is a frame that ARRIVED and was paid for — about
+ * $0.11 of Sunburst each, deterministic, so each re-ask bought another one and
+ * failed the same way, up to `ARRIVAL_ATTEMPTS` times, per generation.
+ *
+ * **Nothing legitimate is lost by making them terminal, and that was read
+ * rather than assumed.** `server/providers/falTransport.ts` maps every fault it
+ * can meet to a `ProviderError` — an unreachable host, a bad status, no
+ * request id, a completed job with no image, a malformed data URI, a failed
+ * download — so a transport fault NEVER arrives here as a bare `Error`. What
+ * is left before the engine returns is prompt composition, which is
+ * deterministic: asking again cannot change its answer either.
+ *
+ * ## Both calls, not only the first
+ *
+ * The re-render is HOUSE money bought to rescue a refused slice, so a transport
+ * fault there costs the customer the rescue and the slice refunds. Asking again
+ * costs only wait time on a road that is already failing, and the alternative
+ * is giving up on a view because of our own outage — which is the confession
+ * law's own reasoning, one level in.
+ */
+async function renderWithArrivalRetries(
+  input: SettleSignSheetInput,
+  generation: number,
+): Promise<RenderedSignSheet> {
+  const wait = input.wait ?? waitMs;
+  let arrivalFailures = 0;
+
+  for (;;) {
+    try {
+      return await input.render();
+    } catch (error) {
+      /*
+        ⚠ **A NON-`ProviderError` IS TERMINAL — it means the frame arrived.**
+        See the docblock: this thunk carries the cut and the judge as well as
+        the engine call, and the transport layer never lets a bare `Error`
+        out. `null` rather than `"unknown"` so the reasoning is in the type:
+        there is no failure CLASS to ask `mayStillArrive` about, because the
+        thing that failed was not the arrival.
+      */
+      const failureClass = error instanceof ProviderError ? error.failureClass : null;
+      arrivalFailures += 1;
+      log.warn(
+        {
+          err: error,
+          operationId: input.operationId,
+          sheet: input.kind,
+          generation,
+          arrivalFailures,
+          failureClass,
+        },
+        "[signSheetCoordinator] the sheet did not arrive",
+      );
+      /* Terminal: asking again cannot change the answer, and the wait would be
+         charged to a customer who is already going to be refunded. */
+      if (failureClass === null || !mayStillArrive(failureClass)) throw error;
+      /*
+        ⚠ **AND A FRAME THE PROVIDER ALREADY FINISHED IS TERMINAL TOO,
+        WHATEVER ITS CLASS** — the relay's second finding on PR #1982.
+
+        The arm above reads the failure CLASS, and three of fal's faults land
+        AFTER the job reports `COMPLETED`: no image in the payload and a
+        malformed data URI are `unknown`, a failed download is `transport`, and
+        a non-ok result fetch is whatever its status says. None of those is in
+        `VIEW_ARRIVAL_TERMINAL` — correctly, for a job that never ran — so this
+        loop re-asked and **bought another sheet**, on top of the engine's own
+        `withRetry`. Worst case per sheet was about 3 x ARRIVAL_ATTEMPTS 3 x
+        SHEET_MAX_RENDERS 2 = 18 engine calls against 6 before this card, under
+        a flat price.
+
+        The question is asked of the ERROR rather than of its class because it
+        is a fact about THAT request: `providerAlreadyBilled` carries why, and
+        the per-view arrival loop asks the same predicate.
+      */
+      if (providerAlreadyBilled(error)) throw error;
+      if (arrivalFailures >= ARRIVAL_ATTEMPTS) throw error;
+      await wait(arrivalBackoffMs(arrivalFailures));
+    }
+  }
+}
 
 /**
  * RENDER, CUT, JUDGE EVERY PANEL ONCE — then, on a catastrophe, do it again
@@ -245,7 +402,7 @@ export async function settleSignSheet(
     the asset row and is the honest record D-246 asks for.
   */
 
-  const first = await input.render();
+  const first = await renderWithArrivalRetries(input, 1);
   let judged = await judgeAll(first, 1);
 
   const refusedIn = (
@@ -281,7 +438,7 @@ export async function settleSignSheet(
         + "our cost, and all of its views will come from the new frame",
       );
       try {
-        const second = await input.render();
+        const second = await renderWithArrivalRetries(input, 2);
         renders = 2;
         /*
           Generation 1's verdicts are kept beside generation 2's for every panel
@@ -395,6 +552,31 @@ async function keepRefusedFrames(
 }
 
 /**
+ * THE SHEET IS SETTLED AND DID NOT ARRIVE — a terminal fact, not a retryable
+ * one (#1966).
+ *
+ * ⚠ **IT EXISTS BECAUSE THE ARRIVAL BUDGET MOVED, and leaving it out would
+ * have let one budget be spent twice.** `buildCastPackage` holds ONE promise
+ * per sheet, so a settled rejection re-throws the SAME error instantly to every
+ * view awaiting it — and the per-view loop, reading that error's failure class,
+ * would read it as *"may still arrive"* and wait out its own three attempts on
+ * an answer that cannot change. Before this card that waiting was the only
+ * asking anybody did; now the sheet has asked three times itself, so the views
+ * repeating it is pure delay in front of a refund.
+ *
+ * It is a distinct type rather than a mapped `ProviderError` class on purpose:
+ * the failure is OURS — a settled promise — and dressing it as a provider
+ * failure class would put a lie about the transport into the asset rows and the
+ * logs. `mayStillArrive` keeps answering only the question it owns.
+ */
+export class SignSheetUnavailableError extends Error {
+  constructor(kind: SignSheetKind, options: { cause?: unknown } = {}) {
+    super(`the ${kind} Sign sheet did not arrive`, options);
+    this.name = "SignSheetUnavailableError";
+  }
+}
+
+/**
  * THE SETTLED PANEL FOR ONE VIEW — derived from the angle, never passed in.
  *
  * One reader ({@link signSheetKindFor}) answers which sheet a view belongs to
@@ -405,7 +587,15 @@ export async function settledPanelFor(
   sheets: Readonly<Record<SignSheetKind, Promise<SettledSignSheet>>>,
   angle: CastViewAngle,
 ): Promise<SheetPanelOutcome> {
-  const settled = await sheets[signSheetKindFor(angle)];
+  const kind = signSheetKindFor(angle);
+  let settled: SettledSignSheet;
+  try {
+    settled = await sheets[kind];
+  } catch (error) {
+    /* The sheet is settled and it failed. It has already spent its own arrival
+       budget (#1966), so this is terminal for every view on it. */
+    throw new SignSheetUnavailableError(kind, { cause: error });
+  }
   const panel = settled.panels[angle];
   if (!panel) {
     /*

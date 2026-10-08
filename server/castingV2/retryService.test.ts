@@ -203,6 +203,21 @@ const {
 const { candidateChargeReference } = await import("./rollRecovery");
 const { RECOVERED_RETRY_SENTENCE, RETRY_SUPPORT_REVIEW_SENTENCE } = await import("./retryRecovery");
 const { ProviderError } = await import("../providers/types");
+const { SpokenError, withSpokenFlag } = await import("../_core/spokenError");
+const { readableFailure } = await import("../../client/src/lib/failureSentence");
+
+/*
+  WHAT HER SCREEN SHOWS (#2049) — the thrown error through the formatter the
+  server wires and the client's own rule. The fallback here is a stand-in, not
+  a copy of the sheet's: what matters is only that the server's sentence beats
+  it, because the sheet's fallback cannot carry the operation id she would
+  quote to support.
+*/
+const SHEET_FALLBACK = "(the surface's own fallback)";
+const shownToHer = (error: unknown) => readableFailure(
+  withSpokenFlag({ message: (error as Error).message, data: { code: (error as { code?: string }).code } }, error),
+  SHEET_FALLBACK,
+);
 const { CASTING_V2_COSTS } = await import("../casting/castingCreditCosts");
 /**
  * THE ROLL SLICE — what this fixture's rows cost, and the negative control for
@@ -523,7 +538,7 @@ describe("the retry is priced from the tile's own row, not from the roll-slice c
     seed({ pointsCost: FOLLOW_SLICE });
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${formatCredits(displayRefund(FOLLOW_SLICE))} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(FOLLOW_SLICE))} credits returned.`,
     });
     expect(refunds).toEqual([{
       amount: FOLLOW_SLICE,
@@ -599,7 +614,7 @@ describe("when the engine fails again", () => {
   it("refunds the one slice under the RETRY's reference — never the roll's — and leaves the roll's status alone", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits returned.`,
     });
     expect(refunds).toEqual([{
       amount: ROLL_SLICE,
@@ -623,7 +638,7 @@ describe("when the engine fails again", () => {
     vi.mocked(db.markCandidateDispatched).mockResolvedValueOnce(false);
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits returned.`,
     });
     expect(refunds).toEqual([{
       amount: ROLL_SLICE,
@@ -793,10 +808,14 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
       type: "recovery_required", reason: "no lock row", chargedCredits: ROLL_SLICE, refundedCredits: 0,
     });
 
-    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+    const refusal = await retryCandidate(dependencies(), INPUT).then(() => null, (error: unknown) => error);
+    expect(refusal).toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: RETRY_SUPPORT_REVIEW_SENTENCE(RETRY_OPERATION_ID),
     });
+    /* #2049: spoken, so the sheet reads it aloud with the operation number. */
+    expect(refusal).toBeInstanceOf(SpokenError);
+    expect(shownToHer(refusal)).toBe(RETRY_SUPPORT_REVIEW_SENTENCE(RETRY_OPERATION_ID));
     expect(adjudicator.park).toHaveBeenCalledWith({
       userId: INPUT.userId,
       operationId: RETRY_OPERATION_ID,
@@ -811,10 +830,14 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
     dispatchWriteThrows();
     adjudicator.recover.mockRejectedValueOnce(new Error("connection lost"));
 
-    await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
+    const refusal = await retryCandidate(dependencies(), INPUT).then(() => null, (error: unknown) => error);
+    expect(refusal).toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: `That retry is still being settled. Operation ${RETRY_OPERATION_ID}.`,
     });
+    /* #2049: spoken, so the sheet reads it aloud with the operation number. */
+    expect(refusal).toBeInstanceOf(SpokenError);
+    expect(shownToHer(refusal)).toContain(RETRY_OPERATION_ID);
     expect(adjudicator.handoff).toHaveBeenCalledWith({ userId: INPUT.userId, operationId: RETRY_OPERATION_ID });
     expect(adjudicator.park).not.toHaveBeenCalled();
     expect(receipts.failure).not.toHaveBeenCalled();
@@ -823,7 +846,7 @@ describe("a retry whose dispatch WRITE throws — the live-process collision (#8
 
   it("CONTROL — an engine failure inside the unit never reaches the adjudicator; the unit's own refund and receipt stand", async () => {
     await expect(retryCandidate(dependencies("fails"), INPUT)).rejects.toMatchObject({
-      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits were refunded.`,
+      message: `That tile didn't arrive again. ${formatCredits(displayRefund(ROLL_SLICE))} credits returned.`,
     });
     expect(adjudicator.recover).not.toHaveBeenCalled();
     expect(adjudicator.handoff).not.toHaveBeenCalled();

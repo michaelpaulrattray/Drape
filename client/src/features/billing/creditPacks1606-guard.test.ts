@@ -389,7 +389,10 @@ describe("the plan nudge, and the road it leads to", () => {
       "the credit packs pane",
     );
     const nudge = sourceBand(pane, 'className="dp-plan__cross"', "</div>", "the plan nudge");
-    expect(nudge).toContain("A bigger plan gives more for the money");
+    /* #1940 B28 — his recommendation 2 was to drop "cost less each". */
+    expect(nudge).toContain("Need credits every month?");
+    expect(nudge).toContain("A plan adds credits each month.");
+    expect(nudge, "a price claim is back on the nudge row").not.toMatch(/cost less|cheaper|more for the money/);
     expect(nudge, "the nudge has nowhere to go").toContain("onClick={onChangePlan}");
     /* His design: *no fake discount*. There is no former price to strike and a
        top-up discount would contradict the ladder's own design. */
