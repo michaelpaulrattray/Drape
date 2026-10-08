@@ -360,6 +360,7 @@ describe("3 · the plan change moves both items in ONE update", () => {
     periodEndSec: 1_702_592_000,
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...over,
   });
 
@@ -459,6 +460,7 @@ describe("4 · the quote prices the dial, in money and in credits", () => {
     periodEndSec: 1_700_000_000 + 30 * 86_400,
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...over,
   });
   const atStart = 1_700_000_000;
@@ -482,9 +484,10 @@ describe("4 · the quote prices the dial, in money and in credits", () => {
     expect(quote.immediateCharge).toBe(planCreditSliderPriceInCents(10, "monthly"));
   });
 
-  it("⚠ the credit adjustment follows the dial in BOTH directions", () => {
+  it("⚠ the credit adjustment follows the dial UP — and #1936 SUPERSEDED its down half", () => {
     const up = quotePlanChange(base(), PLAN as never, "monthly", atStart, 8);
     expect(up.creditAdjustment).toBe(planCreditSliderLedgerCredits(8));
+
     const down = quotePlanChange(
       base({ currentCreditUnits: 8, creditItemId: "si_addon" }),
       PLAN as never,
@@ -492,10 +495,30 @@ describe("4 · the quote prices the dial, in money and in credits", () => {
       atStart,
       0,
     );
-    /* NEGATIVE, for #664's mirror rule: `always_invoice` returns the money for
-       the remaining cycle, so the credits that money bought go back with it or
-       up-then-down alternation mints an allowance per round trip. */
-    expect(down.creditAdjustment).toBe(-planCreditSliderLedgerCredits(8));
+    /*
+      ⚠ **THIS ASSERTED `-planCreditSliderLedgerCredits(8)` AND THE REASON IT
+      GAVE IS THE REASON IT CHANGED. The old comment read:** *"NEGATIVE, for
+      #664's mirror rule: `always_invoice` returns the money for the remaining
+      cycle, so the credits that money bought go back with it or up-then-down
+      alternation mints an allowance per round trip."*
+
+      **Every clause of that was true, and the loop it names is the one #1936
+      was filed about** — it minted anyway, because the take-back floors at
+      what is LEFT of the allowance (*"spent credits are spent"*) while the
+      money came back whole. The mirror was the right answer to the right
+      problem and it could not win: spend first, and only the money returns.
+
+      **His option 1 closes it at the source instead: a decrease hands back no
+      money, so there is nothing to mirror.** A dial-down is now scheduled for
+      the period boundary and moves nothing today, which is why this reads 0.
+      ⚠ **The UP direction above is untouched** — an increase is still instant,
+      still charged, and still grants the remaining cycle's share.
+
+      `deferred` is asserted beside the 0, because a 0 on its own is what this
+      arm would also read if the dial had simply stopped working.
+    */
+    expect(down.deferred).toBe(true);
+    expect(down.creditAdjustment).toBe(0);
   });
 
   it("⚠ ABSENT MEANS KEEP THE DIAL, so a cycle switch does not hand credits back", () => {

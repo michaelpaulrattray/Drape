@@ -25,7 +25,9 @@
  *   - **the avatar identity seed** (`ProfileVisual`, `StudioSlimHeader`) —
  *     the card naming this defect carved it out by name: it seeds a colour,
  *     and changing it recolours every fallback avatar
- *   - **downloaded file names** and `__DRAPE_RELEASE__`
+ *   - **downloaded file names** — lower-case, so this reading cannot see
+ *     them; `client/src/foundation/downloadFilenameBrand.test.ts` reads that
+ *     shape since #1992 — and `__DRAPE_RELEASE__`
  *   - **document paths in comments** (`docs/.../drape-redesign/…`)
  *
  * So this guard asks the narrow, mechanical question the defect actually was:
@@ -330,16 +332,13 @@ describe("#1916 · the client does not draw the retired wordmark", () => {
 const SAYS_THE_OLD_NAME = /\bDrape\b/;
 
 /**
- * The one code line that may say it, with the reason. STAFF, not a customer:
- * `features/moderator/` is a staff surface by `CLAUDE.md`'s own naming, and
- * #1934 carved this out by name ("the moderator CSV header (staff)"). It is a
- * title row on a file a support agent downloads for a billing dispute, so
- * renaming it is a staff-vocabulary decision and not this card's.
+ * The code lines that may say it, with the reason — EMPTY since #1992. Its
+ * one row was the moderator reconciliation CSV's title (a STAFF download,
+ * carved out by #1934 by name); #1992 moved it onto `PRODUCT_NAME`, and the
+ * row was deleted rather than kept, which is the arm below doing its job.
+ * A new row is a carded decision, not a convenience.
  */
-const MAY_SAY_IT: Record<string, string> = {
-  "client/src/features/moderator/reconciliation-csv.ts":
-    "the billing-dispute CSV's title row — a STAFF download, carved out by #1934 by name",
-};
+const MAY_SAY_IT: Record<string, string> = {};
 
 function trackedCopyFiles(): string[] {
   const out = execFileSync("git", ["ls-files", "client/src", "shared"], {

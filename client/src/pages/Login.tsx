@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
 import { ACCESS_CODE_MAX_LENGTH } from "@shared/inputLimits";
+import { waitPhraseFromMinutes } from "@shared/waitPhrase";
 import { FREE_GRANT_REFUSAL_ERROR_CODE, FREE_GRANT_REFUSAL_SENTENCE } from "@shared/freeGrantRefusal";
 
 // ─── Error configurations ──────────────────────────────────────────────────
@@ -155,7 +156,7 @@ function ErrorBanner({ errorType, lockMinutes }: { errorType: string; lockMinute
           <h3 className="font-semibold text-[#0A0A0A] text-sm">{errorConfig.title}</h3>
           <p className="text-sm text-[#757575] mt-1">
             {errorType === "locked" && lockMinutes
-              ? `Your account has been temporarily locked due to multiple failed login attempts. Please try again in ${lockMinutes} minute${parseInt(lockMinutes) !== 1 ? "s" : ""}.`
+              ? `Your account has been temporarily locked due to multiple failed login attempts. Please try again ${waitPhraseFromMinutes(Number(lockMinutes))}.`
               : errorConfig.message}
           </p>
           {errorType === "suspended" && (
@@ -473,7 +474,7 @@ function EmailSignInForm() {
         if (data.error === "suspended") {
           setError("Your account has been suspended. Please contact support.");
         } else if (data.error === "locked") {
-          setError(`Account temporarily locked. Try again in ${data.minutes || 15} minutes.`);
+          setError(`Account temporarily locked. Try again ${waitPhraseFromMinutes(data.minutes || 15)}.`);
         } else if (data.error === "email_not_verified") {
           // Redirect to verify-email page
           window.location.href = `/verify-email?email=${encodeURIComponent(data.email || email.trim())}`;

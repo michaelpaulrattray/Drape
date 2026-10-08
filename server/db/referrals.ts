@@ -13,8 +13,8 @@ import crypto from "crypto";
 import {
   REFERRAL_CODE_BODY_LENGTH,
   REFERRAL_CODE_FORMAT_MESSAGE,
+  ISSUED_CODE_PREFIX,
   REFERRAL_CODE_MINT_ALPHABET,
-  REFERRAL_CODE_PREFIX,
   REFERRAL_CODE_SEPARATOR,
   referralCodePattern,
 } from "../../shared/referralCodeFormat";
@@ -22,7 +22,8 @@ import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/referrals");
 
 /**
- * Generate a unique referral code — `DRAPE-A3K9X2` in today's shape.
+ * Generate a unique referral code — `KLIEG-A3K9X2` in today's shape (#2007:
+ * the prefix is derived from the product's name, so it follows a rename).
  *
  * Every part of that shape comes from `shared/referralCodeFormat.ts`. It used
  * to be spelled here and quoted, by hand, in the refusal one file away; the
@@ -35,11 +36,13 @@ function createReferralCode(): string {
   for (let i = 0; i < REFERRAL_CODE_BODY_LENGTH; i++) {
     code += chars[crypto.randomInt(chars.length)];
   }
-  return `${REFERRAL_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${code}`;
+  return `${ISSUED_CODE_PREFIX}${REFERRAL_CODE_SEPARATOR}${code}`;
 }
 
 /**
- * Validate referral code format: `DRAPE-XXXXXX` (6 minted characters).
+ * Validate referral code format: `KLIEG-XXXXXX` (6 minted characters), and
+ * every code minted under a retired prefix (`DRAPE-XXXXXX`) still passes — a
+ * code a customer already shared must keep working after a rename.
  *
  * The pattern is derived, not written — see `referralCodePattern` for why the
  * accepted class is deliberately wider than the mint alphabet.
@@ -565,10 +568,16 @@ export async function getReferralHistory(userId: number): Promise<
   const db = await getDb();
   if (!db) return [];
 
+  // The referred person's name comes from the SAME statement, by a left join,
+  // never from one query per referral fired all at once — #2000. That fan-out
+  // was unbounded (a referrer's whole history) onto the shared pool's 20 + 50,
+  // so a referrer with more than about seventy referrals had the history 500.
+  // The referrer is scoped in this statement's WHERE (invariant 1); `users.id`
+  // is the primary key, so the join can never duplicate a referral row.
   const history = await db
     .select({
       id: referrals.id,
-      referredUserId: referrals.referredUserId,
+      referredName: users.name,
       referredEmail: referrals.referredEmail,
       status: referrals.status,
       creditsAwarded: referrals.creditsAwarded,
@@ -577,35 +586,21 @@ export async function getReferralHistory(userId: number): Promise<
       completedAt: referrals.completedAt,
     })
     .from(referrals)
+    .leftJoin(users, eq(users.id, referrals.referredUserId))
     .where(eq(referrals.referrerUserId, userId))
     .orderBy(desc(referrals.createdAt));
 
-  // Fetch referred user names
-  const results = await Promise.all(
-    history.map(async (ref) => {
-      let referredName: string | null = null;
-      if (ref.referredUserId) {
-        const [refUser] = await db
-          .select({ name: users.name })
-          .from(users)
-          .where(eq(users.id, ref.referredUserId))
-          .limit(1);
-        referredName = refUser?.name || null;
-      }
-      return {
-        id: ref.id,
-        referredName,
-        referredEmail: ref.referredEmail,
-        status: ref.status,
-        creditsAwarded: ref.creditsAwarded,
-        sameIpFlag: ref.sameIpFlag,
-        createdAt: ref.createdAt,
-        completedAt: ref.completedAt,
-      };
-    })
-  );
-
-  return results;
+  return history.map((ref) => ({
+    id: ref.id,
+    // `|| null` as before: an empty name reads as no name.
+    referredName: ref.referredName || null,
+    referredEmail: ref.referredEmail,
+    status: ref.status,
+    creditsAwarded: ref.creditsAwarded,
+    sameIpFlag: ref.sameIpFlag,
+    createdAt: ref.createdAt,
+    completedAt: ref.completedAt,
+  }));
 }
 
 /**

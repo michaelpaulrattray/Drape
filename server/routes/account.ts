@@ -30,7 +30,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { exportUserData } from "../db/gdprExport";
 import { logAuditEvent } from "../auditLog";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
-import { checkRateLimit } from "../security/rateLimit";
+import { checkRateLimit, releaseRateLimitSlot } from "../security/rateLimit";
 import { TRPCError } from "@trpc/server";
 import { getEvidenceDeliveryAdapter } from "../casting/evidence/evidenceDeliveryRuntime";
 
@@ -58,6 +58,9 @@ export function exportRefusalMessage(resetInMs: number): string {
   const when = minutes === 1 ? "in a minute" : `in ${minutes} minutes`;
   return `You can export your data once every 5 minutes. Try again ${when}.`;
 }
+
+/** One export per five minutes per account — read by the check AND the release. */
+const EXPORT_RATE_LIMIT = { maxRequests: 1, windowMs: 300_000 } as const;
 
 export const accountRouter = router({
   /**
@@ -87,10 +90,7 @@ export const accountRouter = router({
       both were in this file. `server/rateLimitVerdictRead.test.ts` is the
       derived sweep that keeps it that way.
     */
-    const rl = checkRateLimit(`data-export:${userId}`, {
-      maxRequests: 1,
-      windowMs: 300_000,
-    });
+    const rl = checkRateLimit(`data-export:${userId}`, EXPORT_RATE_LIMIT);
     if (!rl.allowed) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
@@ -98,25 +98,44 @@ export const accountRouter = router({
       });
     }
 
-    await logAuditEvent({
-      action: AUDIT_ACTIONS.DATA_EXPORT_REQUESTED,
-      userId,
-      severity: "info",
-      metadata: { requestedAt: new Date().toISOString() },
-    });
+    /*
+      ⚠ **A FAILED EXPORT GIVES ITS SLOT BACK — #1989.** The limit is spent on
+      the way in, so until this card an export that 500'd also refused her
+      retry for five minutes: our failure cost her the one request she has a
+      legal right to make. Whatever goes wrong after admission is ours, so the
+      slot is handed back and the error still reaches her. A success keeps the
+      slot, and a refusal above never took one.
 
-    const data = await exportUserData(
-      userId,
-      getEvidenceDeliveryAdapter() ?? undefined,
-    );
-    if (!data) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "User data not found.",
+      Declared trade: a failure that repeats on every attempt can now be
+      retried as fast as the client asks rather than once per five minutes —
+      the button sends one request per press, a script could send more. It
+      costs us reads, never money; refusing her right to retry was the worse
+      of the two.
+    */
+    try {
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.DATA_EXPORT_REQUESTED,
+        userId,
+        severity: "info",
+        metadata: { requestedAt: new Date().toISOString() },
       });
-    }
 
-    return data;
+      const data = await exportUserData(
+        userId,
+        getEvidenceDeliveryAdapter() ?? undefined,
+      );
+      if (!data) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User data not found.",
+        });
+      }
+
+      return data;
+    } catch (error) {
+      releaseRateLimitSlot(`data-export:${userId}`, EXPORT_RATE_LIMIT);
+      throw error;
+    }
   }),
 
 });

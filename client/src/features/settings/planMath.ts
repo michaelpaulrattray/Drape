@@ -208,9 +208,18 @@ export function prorationFactor(cycle: BillingCycle): number {
   prints a distinct figure — so no assertion left the tree with the functions.
 */
 
-/** `12 Aug` — the short form every date in these three surfaces uses. */
+/**
+ * `12 Aug` — the short form every date in these three surfaces uses.
+ *
+ * ⚠ **THE IMPLEMENTATION MOVED TO `shared/customerDate.ts` (#1936) AND THIS
+ * EXPORT STAYS.** The server now composes a sentence carrying this same date
+ * (*"Pro starts on 7 Nov"* on a deferred plan change), and the toast and the
+ * Billing tab must not be able to name two different days. Delegating rather
+ * than moving leaves every call site and the guard on this module's surface
+ * untouched, with one implementation.
+ */
 export function formatShortDate(date: Date): string {
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return formatCustomerShortDate(date);
 }
 
 /** `$149.00`, from cents. Prices are stored in cents and never in floats. */
@@ -319,6 +328,7 @@ export {
 } from "@shared/annualBilling";
 import { annualPriceInCents as sharedAnnualPrice } from "@shared/annualBilling";
 import { displayBalance } from "@shared/creditDisplay";
+import { formatCustomerShortDate } from "@shared/customerDate";
 import { planCreditSliderPriceInCents } from "@shared/planCreditSlider";
 
 /**

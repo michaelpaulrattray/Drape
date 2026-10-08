@@ -5,6 +5,7 @@ import {
   createImageProxyRouter,
   isAllowedUrl,
 } from "./imageProxy";
+import { PRODUCT_NAME } from "@shared/brand";
 
 const originalR2PublicUrl = process.env.R2_PUBLIC_URL;
 const PNG_BYTES = Buffer.from([
@@ -87,6 +88,25 @@ describe("image proxy request boundary", () => {
     });
 
     expect(dependencies.fetchImage).toHaveBeenCalledWith(imageUrl);
+  });
+
+  it("names a download after the product when the source URL carries no usable filename (#1992)", async () => {
+    // The fallback is the one Content-Disposition name the server composes
+    // itself; driven at the wire because a reader of the header line cannot
+    // see inside safeDownloadFilename.
+    process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
+    const dependencies = allowedDependencies();
+    const imageUrl = "https://pub-test.r2.dev/casting/";
+
+    await withImageProxy(dependencies, async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/image-proxy?download=1&url=${encodeURIComponent(imageUrl)}`,
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-disposition"))
+        .toBe(`attachment; filename="${PRODUCT_NAME.toLowerCase()}-image.png"`);
+      expect(response.headers.get("content-disposition")).not.toMatch(/drape/i);
+    });
   });
 
   it("returns a real 429 before fetch when the authenticated user is limited", async () => {

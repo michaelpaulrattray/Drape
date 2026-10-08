@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:boards",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 83
+      "moduleCount": 85
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 53
+      "moduleCount": 54
     },
     {
       "id": "domain:wardrobe",
@@ -4765,6 +4765,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/crew/liveRepairs.ts",
+      "path": "server/crew/liveRepairs.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/accountDeletion.ts",
       "path": "server/db/accountDeletion.ts",
       "domain": "data",
@@ -5785,6 +5791,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/subscriptionSchedule.ts",
+      "path": "server/stripe/subscriptionSchedule.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
@@ -6259,6 +6271,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/customerDate.ts",
+      "path": "shared/customerDate.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/engineVocabulary.ts",
       "path": "shared/engineVocabulary.ts",
       "domain": "shared",
@@ -6477,6 +6495,12 @@
     {
       "id": "module:shared/viewThumbnails.ts",
       "path": "shared/viewThumbnails.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/waitPhrase.ts",
+      "path": "shared/waitPhrase.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -6887,6 +6911,16 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/auth.ts"
+    },
+    {
+      "id": "route:billing.cancelScheduledChange",
+      "namespace": "billing",
+      "name": "cancelScheduledChange",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts"
     },
     {
       "id": "route:billing.cancelSubscription",
@@ -10858,6 +10892,10 @@
       "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/deferredChange1936-guard.test.ts",
+      "path": "client/src/features/billing/deferredChange1936-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/freeAddCredits1836-guard.test.ts",
       "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
     },
@@ -11238,6 +11276,14 @@
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
     {
+      "id": "test:client/src/foundation/canonicalWording.test.ts",
+      "path": "client/src/foundation/canonicalWording.test.ts"
+    },
+    {
+      "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
+      "path": "client/src/foundation/downloadFilenameBrand.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/focusRing.test.ts",
       "path": "client/src/foundation/focusRing.test.ts"
     },
@@ -11316,6 +11362,10 @@
     {
       "id": "test:server/_core/numericEnv.test.ts",
       "path": "server/_core/numericEnv.test.ts"
+    },
+    {
+      "id": "test:server/_core/sessionLookupFailure.test.ts",
+      "path": "server/_core/sessionLookupFailure.test.ts"
     },
     {
       "id": "test:server/abuseStripHonesty.test.ts",
@@ -13298,6 +13348,14 @@
       "path": "server/crew/liveQueue.test.ts"
     },
     {
+      "id": "test:server/crew/liveRepairs.test.ts",
+      "path": "server/crew/liveRepairs.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairsRouter.test.ts",
+      "path": "server/crew/liveRepairsRouter.test.ts"
+    },
+    {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
       "path": "server/crewBriefingFieldReaders.test.ts"
     },
@@ -13658,6 +13716,10 @@
       "path": "server/gateTriggers.test.ts"
     },
     {
+      "id": "test:server/gdprExportBounded.test.ts",
+      "path": "server/gdprExportBounded.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },
@@ -13848,6 +13910,10 @@
     {
       "id": "test:server/patrolClocks.test.ts",
       "path": "server/patrolClocks.test.ts"
+    },
+    {
+      "id": "test:server/perRowFanOutBounded.test.ts",
+      "path": "server/perRowFanOutBounded.test.ts"
     },
     {
       "id": "test:server/phase-a-quota.test.ts",
@@ -14406,6 +14472,10 @@
       "path": "server/routes/crewEyeFrames.test.ts"
     },
     {
+      "id": "test:server/routes/deferredPlanChangeRoute.test.ts",
+      "path": "server/routes/deferredPlanChangeRoute.test.ts"
+    },
+    {
       "id": "test:server/routes/emailAuth.test.ts",
       "path": "server/routes/emailAuth.test.ts"
     },
@@ -14612,6 +14682,10 @@
     {
       "id": "test:server/stripe/checkoutProductText.test.ts",
       "path": "server/stripe/checkoutProductText.test.ts"
+    },
+    {
+      "id": "test:server/stripe/deferredPlanChange.test.ts",
+      "path": "server/stripe/deferredPlanChange.test.ts"
     },
     {
       "id": "test:server/stripe/environmentTag.test.ts",
@@ -14828,6 +14902,10 @@
     {
       "id": "test:server/w6-thumbnail-restore.test.ts",
       "path": "server/w6-thumbnail-restore.test.ts"
+    },
+    {
+      "id": "test:server/waitPhrase.test.ts",
+      "path": "server/waitPhrase.test.ts"
     },
     {
       "id": "test:server/waitlist.test.ts",
@@ -16045,6 +16123,11 @@
     },
     {
       "from": "module:client/src/features/admin/UserActionModals.tsx",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserActionModals.tsx",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -16071,6 +16154,11 @@
     {
       "from": "module:client/src/features/admin/UserTable.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/UserTable.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -16425,6 +16513,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:shared/clientRequestId.ts",
       "kind": "imports"
     },
@@ -16451,6 +16544,11 @@
     {
       "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
       "to": "module:client/src/features/boards/canvas/ImageFallback.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/CanvasImageViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -16705,6 +16803,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
       "kind": "imports"
     },
@@ -16876,6 +16979,11 @@
     {
       "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
       "to": "module:client/src/features/boards/canvas/imageActions.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/components/NodeContextMenu.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -18759,6 +18867,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/moderator/reconciliation-csv.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/features/moderator/figures.ts",
       "kind": "imports"
@@ -18919,6 +19032,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/profile/ProfileVisual.tsx",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/referral/RedeemCodeModal.tsx",
       "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
@@ -19006,6 +19124,11 @@
     {
       "from": "module:client/src/features/settings/planMath.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {
@@ -19541,6 +19664,11 @@
     {
       "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/components/ImageActionBar.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -20884,6 +21012,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/AdminInviteCodes.tsx",
+      "to": "module:shared/referralCodeFormat.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/AdminOverview.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -20951,6 +21084,11 @@
     {
       "from": "module:client/src/pages/AdminUserManagement.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/AdminUserManagement.tsx",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -21529,6 +21667,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/pages/ModeratorDashboard.tsx",
       "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
@@ -21636,6 +21779,16 @@
     {
       "from": "module:server/_core/context.ts",
       "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -21941,6 +22094,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:shared/const.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -30105,6 +30263,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/crew/liveRepairs.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -30166,6 +30329,21 @@
     {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewTestDrive.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
@@ -32825,6 +33003,11 @@
     },
     {
       "from": "module:server/routes/admin/users.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/admin/users.ts",
       "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
@@ -32940,6 +33123,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -32951,6 +33139,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {
@@ -33466,6 +33659,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveRepairs.ts",
       "kind": "imports"
     },
     {
@@ -34759,6 +34957,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/usage.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
@@ -35054,6 +35257,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/security/rateLimit.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/security/trustedImageFetch.ts",
       "to": "module:server/security/urlValidator.ts",
       "kind": "imports"
@@ -35190,6 +35398,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -35206,6 +35419,36 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/environmentTag.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripeProducts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {
@@ -35711,6 +35954,11 @@
     {
       "from": "module:shared/productEventCatalogue.ts",
       "to": "module:shared/bugReportVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/referralCodeFormat.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {

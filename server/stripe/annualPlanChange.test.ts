@@ -30,19 +30,39 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve } =
-  vi.hoisted(() => ({
-    pricesCreate: vi.fn(),
-    pricesList: vi.fn(),
-    subscriptionsUpdate: vi.fn(),
-    subscriptionsRetrieve: vi.fn(),
-    invoicesRetrieve: vi.fn(),
-  }));
+const {
+  pricesCreate,
+  pricesList,
+  subscriptionsUpdate,
+  subscriptionsRetrieve,
+  invoicesRetrieve,
+  schedulesRelease,
+} = vi.hoisted(() => ({
+  pricesCreate: vi.fn(),
+  pricesList: vi.fn(),
+  subscriptionsUpdate: vi.fn(),
+  subscriptionsRetrieve: vi.fn(),
+  invoicesRetrieve: vi.fn(),
+  schedulesRelease: vi.fn(),
+}));
 
 vi.mock("stripe", () => ({
   default: class StripeDouble {
     prices = { create: pricesCreate, list: pricesList };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
+    /* ⚠ #1936 — `updateSubscriptionPlan` now RELEASES any pending scheduled
+       change before it writes, so it reads the subscription on every call and
+       may reach `subscriptionSchedules.release`. A double without this surface
+       made the release read as FAILED, and the write refuses on a failed
+       release by design — so six arms in this file went red on a road that has
+       nothing to do with the annual price. The arms below are unchanged; this
+       is the dependency the subject acquired. */
+    subscriptionSchedules = {
+      create: vi.fn(),
+      update: vi.fn(),
+      release: schedulesRelease,
+      retrieve: vi.fn(),
+    };
     invoices = { retrieve: invoicesRetrieve };
     customers = { retrieve: vi.fn(), create: vi.fn() };
     checkout = { sessions: { create: vi.fn(), retrieve: vi.fn() } };
@@ -79,7 +99,13 @@ beforeEach(() => {
   pricesList.mockReset();
   catalogueHolds("pro", "annual");
   subscriptionsUpdate.mockReset().mockResolvedValue({ latest_invoice: "in_change" });
-  subscriptionsRetrieve.mockReset();
+  /* ⚠ #1936 — a subscription with NO pending schedule, which is every
+     subscription these arms are about. It was a bare `mockReset()`, so the
+     release read got `undefined` and reported a FAILED read, and a plan change
+     refuses on that by design. The default is the ordinary state rather than
+     nothing, so an arm that cares about a schedule has to say so. */
+  subscriptionsRetrieve.mockReset().mockResolvedValue({ id: "sub_1", schedule: null });
+  schedulesRelease.mockReset().mockResolvedValue({ id: "sub_sched_1", status: "released" });
   invoicesRetrieve.mockReset().mockResolvedValue({ amount_due: 123_45 });
 });
 
@@ -100,8 +126,14 @@ describe("updateSubscriptionPlan — the outgoing request", () => {
     expect(updateArgs.metadata.interval).toBe("annual");
     expect(updateArgs.metadata.userId).toBe("7");
 
-    /* The item id was supplied, so nothing re-fetched the subscription. */
-    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    /* ⚠ **ONE read of the subscription, not two — #1936 kept this arm alive
+       rather than relaxing it.** It has guarded a redundant round trip since
+       #664, and it caught one the hour the release rule landed: the release
+       had grown its own retrieve beside the item-id lookup, and both wanted
+       the same object. The claim moved from *"nothing re-fetched"* to *"read
+       exactly once"* because the function now genuinely needs the
+       subscription on every call — see `releaseScheduleOn`. */
+    expect(subscriptionsRetrieve).toHaveBeenCalledTimes(1);
   });
 
   it("the MONTHLY leg is the negative control — the other key, the other price", async () => {

@@ -30,6 +30,7 @@ import {
   displayRefund,
   displaySpent,
   formatCredits,
+  ledgerForDisplay,
   wholeDisplayLedger,
 } from "../shared/creditDisplay";
 
@@ -331,5 +332,28 @@ describe("formatCredits — what the customer actually reads", () => {
       (999_999).toLocaleString(),
     );
     expect(formatCredits(MILLIONS_STYLE_FROM)).toBe("1M");
+  });
+});
+
+describe("ledgerForDisplay — a typed display figure becomes exactly that on screen (#1986)", () => {
+  it("round-trips: what is typed is what the balance reads, for every whole figure in range, both signs", () => {
+    const broken = exhaustive().filter(
+      (display) =>
+        displayBalance(ledgerForDisplay(display)) !== display ||
+        ledgerForDisplay(-display) !== -ledgerForDisplay(display),
+    );
+    expect(broken).toEqual([]);
+  });
+
+  it("the founder's own figure: 100,000 typed moves 500,000 ledger, which reads 100,000", () => {
+    expect(ledgerForDisplay(100_000)).toBe(500_000);
+    expect(displayBalance(ledgerForDisplay(100_000))).toBe(100_000);
+    expect(ledgerForDisplay(-20)).toBe(-100);
+  });
+
+  it("refuses a figure it would have to round, rather than moving a different amount", () => {
+    for (const bad of [1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 60]) {
+      expect(() => ledgerForDisplay(bad)).toThrow(TypeError);
+    }
   });
 });

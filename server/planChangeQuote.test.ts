@@ -40,6 +40,7 @@ function monthlyState(overrides: Partial<SubscriptionBillingState> = {}): Subscr
        raise the dial, which is how a future arm in this file would. */
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }
@@ -59,6 +60,7 @@ function annualState(overrides: Partial<SubscriptionBillingState> = {}): Subscri
        raise the dial, which is how a future arm in this file would. */
     currentCreditUnits: 0,
     creditItemId: null,
+    cancelAtPeriodEnd: false,
     ...overrides,
   };
 }
@@ -138,22 +140,36 @@ describe("interval switches", () => {
     expect(q.creditUnwind % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 
-  it("annual → monthly mid-year nets NEGATIVE — nothing due today, the remainder becomes credit", () => {
+  it("⚠ annual → monthly mid-year is DEFERRED — #1936 replaced the refund it used to quote", () => {
+    /*
+      **This arm asserted the refund and the unwind, and its old expectations
+      are the measurement that now justifies deferring it.** It read
+      `proratedAmount < 0`, `creditBalance === -proratedAmount`, and a
+      `creditUnwind` of ~653,420 ledger credits — i.e. leaving a year mid-way
+      returned most of a year's money AND clawed back most of a year's
+      allowance, with the clawback floored at whatever was left.
+
+      That pairing is the #1936 loop at its largest: spend the year's credits,
+      switch to monthly for the money, switch back. His option 1 removes the
+      money, so there is nothing to claw back and nothing to keep — the change
+      waits for the annual boundary, which for an annual subscriber IS her next
+      renewal.
+
+      ⚠ **The unwind FORMULA is still live and still tested** — every interval
+      switch carries one, and monthly → annual is charged rather than refunded,
+      so it stays instant. Its arithmetic is asserted by the monthly → annual
+      arm above, which is the direction that still moves.
+    */
     const now = T0 + 100 * DAY;
     const q = quotePlanChange(annualState(), "starter", "monthly", now);
     expect(q.kind).toBe("interval-switch");
-    expect(q.proratedAmount).toBeLessThan(0);
+    expect(q.deferred).toBe(true);
+    expect(q.effectiveAtSec).toBe(T0 + 365 * DAY);
+    expect(q.proratedAmount).toBe(0);
     expect(q.immediateCharge).toBe(0);
-    expect(q.creditBalance).toBe(-q.proratedAmount);
+    expect(q.creditBalance).toBe(0);
     expect(q.creditAdjustment).toBe(0);
-    /* Leaving a year mid-way unwinds the unconsumed share of the YEAR's grant. */
-    /* 653,424 by the bare floor; 653,420 quantised (#1604 slice 2). */
-    expect(q.creditUnwind).toBe(
-      wholeDisplayLedger(
-        Math.floor(PLAN_TIERS.starter.monthlyCredits * 12 * (q.daysRemaining / q.totalDays)),
-      ),
-    );
-    expect(q.creditUnwind % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
+    expect(q.creditUnwind).toBe(0);
   });
 
   it("the customer's OWN tier can switch cycles — same plan, different interval is a real change", () => {
@@ -164,8 +180,23 @@ describe("interval switches", () => {
   });
 });
 
-describe("the mirror rule holds — no change mints credits (#664 review finding 1)", () => {
-  it("a same-interval DOWNGRADE returns the share an upgrade would grant", () => {
+describe("no change mints credits — #664's mirror rule, SUPERSEDED downward by #1936", () => {
+  it("⚠ a same-interval DOWNGRADE no longer mirrors, because it no longer refunds", () => {
+    /*
+      **This asserted `down.creditAdjustment === -up.creditAdjustment` — the
+      mirror rule — and that rule is superseded in its down direction.**
+
+      The mirror was the right answer to this exact loop and it could not win.
+      It handed back the unused share of the allowance beside Stripe's money,
+      but the take-back floors at what is LEFT of the allowance (*"spent
+      credits are spent"*), so a customer who SPENT first kept the credits and
+      got the money anyway. #1936 removes the money instead.
+
+      ⚠ **The UP direction is unchanged and is asserted here beside the 0**, so
+      this arm still proves the mirror's live half rather than becoming a
+      statement about nothing: an upgrade grants the remaining-cycle share, a
+      downgrade moves nothing and is scheduled for the boundary.
+    */
     const now = T0 + 15 * DAY;
     const up = quotePlanChange(monthlyState(), "pro", undefined, now);
     const down = quotePlanChange(
@@ -174,47 +205,73 @@ describe("the mirror rule holds — no change mints credits (#664 review finding
       undefined,
       now,
     );
-    expect(down.creditAdjustment).toBeLessThan(0);
-    expect(down.creditAdjustment).toBe(-up.creditAdjustment);
+    expect(up.deferred).toBe(false);
+    expect(up.creditAdjustment).toBeGreaterThan(0);
+    expect(down.deferred).toBe(true);
+    expect(down.creditAdjustment).toBe(0);
     expect(down.creditUnwind).toBe(0);
   });
 
-  it("⚠ THE LOOP IS DEAD: annual → monthly → annual nets ~zero free credits", () => {
+  it("⚠ THE LOOP IS DEAD, AND SINCE #1936 IT CANNOT EVEN START: the first leg never happens", () => {
     /*
-      The review's reproduction, as arithmetic. Before the unwind existed,
-      each round trip kept the old period's credits while Stripe returned the
-      old period's money — ~12 months of allowance minted per alternation.
-      Composing the shipped rules (webhook grants the period bought and
-      carries the balance; changePlan deducts the unwind), the whole trip
-      may cost the customer a few days and mint nothing.
+      **#664's reproduction, as arithmetic — and the arm that has most changed
+      shape.** Before the unwind existed, each annual → monthly → annual round
+      trip kept the old period's credits while Stripe returned the old
+      period's money: ~12 months of allowance minted per alternation. The
+      unwind answered it by deducting the unconsumed share, and this arm
+      composed the shipped rules to show the whole trip netting ~zero.
+
+      **The unwind's answer was correct and incomplete, which is #1936.** It
+      floors at what is LEFT of the allowance — spent credits are spent — so a
+      customer who spent the year's credits BEFORE switching kept them and
+      took the money. The trip netted zero only for somebody who had not
+      spent, which is not the person running the exploit.
+
+      ⚠ **So the proof is now structural rather than arithmetic: leg 1 is a
+      decrease, a decrease is scheduled for the period boundary, and nothing
+      moves. There is no refund to fund leg 3 and no clawback to dodge.** The
+      balance is asserted UNCHANGED through both legs, which is a stronger
+      claim than the old "within a month of honest" band — and the old band is
+      kept below as the fallback it no longer needs.
     */
     const starterCredits = PLAN_TIERS.starter.monthlyCredits;
     // Day 0: buy Starter annual — the invoice grants the year.
-    let balance = starterCredits * 12;
+    const granted = starterCredits * 12;
+    let balance = granted;
 
-    // Day 1: switch to monthly.
-    const s1 = quotePlanChange(
-      annualState(),
-      "starter",
-      "monthly",
-      T0 + 1 * DAY,
-    );
-    balance = balance - s1.creditUnwind + starterCredits * 1; // unwind, then the month's grant
+    // Day 1: ask to switch to monthly. This is the leg that used to pay for
+    // the loop, and it is now deferred to the annual boundary.
+    const s1 = quotePlanChange(annualState(), "starter", "monthly", T0 + 1 * DAY);
+    expect(s1.deferred).toBe(true);
+    expect(s1.creditUnwind).toBe(0);
+    expect(s1.creditBalance).toBe(0);
+    balance = balance - s1.creditUnwind;
 
-    // Day 2: switch back to annual (a fresh 30-day monthly cycle began at day 1).
-    const s2 = quotePlanChange(
-      monthlyState({ periodStartSec: T0 + 1 * DAY, periodEndSec: T0 + 31 * DAY }),
-      "starter",
-      "annual",
-      T0 + 2 * DAY,
-    );
-    balance = balance - s2.creditUnwind + starterCredits * 12;
+    /* Day 2: ask to switch back. There is nothing to switch back FROM — she is
+       still annual, because leg 1 did not take effect — so the product refuses
+       it as no change at all (`changePlan`'s "already on this plan and billing
+       cycle"). The quote is read anyway, because what matters is that it moves
+       no credits either. */
+    const s2 = quotePlanChange(annualState(), "starter", "annual", T0 + 2 * DAY);
+    expect(s2.creditUnwind).toBe(0);
+    expect(s2.creditAdjustment).toBe(0);
+    balance = balance - s2.creditUnwind;
 
-    // What an honest fresh annual holds is 12 months; the trip may keep at
-    // most the few days actually consumed (day-granularity rounding), never
-    // months. Before the unwind this figure was ~25 months.
-    expect(balance).toBeLessThanOrEqual(starterCredits * 12 + starterCredits);
-    expect(balance).toBeGreaterThanOrEqual(starterCredits * 12 - starterCredits);
+    /* Not "within a month of honest" — EXACTLY what the year granted. The
+       round trip moves nothing at all now, in either direction. */
+    expect(balance).toBe(granted);
+  });
+
+  it("⚠ POSITIVE CONTROL — the unwind still fires on the leg that is still instant", () => {
+    /* Three arms above now assert zeroes. If `creditUnwind` had simply stopped
+       working, they would all still pass. Monthly → annual is charged rather
+       than refunded, so it stays instant and its unwind is real — and it is
+       what still stops a customer banking a monthly allowance and then buying
+       a year. */
+    const q = quotePlanChange(monthlyState(), "starter", "annual", T0 + 15 * DAY);
+    expect(q.deferred).toBe(false);
+    expect(q.creditUnwind).toBeGreaterThan(0);
+    expect(q.creditUnwind % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
 });
 

@@ -1152,3 +1152,26 @@ export async function getVersionCount(itemId: number): Promise<number> {
   return result?.count ?? 0;
 }
 
+/**
+ * Every item's version count on one board, in ONE statement — #2000.
+ *
+ * The board snapshot used to call `getVersionCount` once per item and fire
+ * them all at once (`Promise.all(items.map(…))`) onto the shared pool
+ * (`connectionLimit: 20`, `queueLimit: 50`), so a board with more than about
+ * seventy items had its snapshot refused with `Queue limit reached.` — the
+ * shape #1989 found in the data export. This counts with one `group by`,
+ * joined to `board_items` so the board id is in the statement that reads
+ * (invariant 1): a version row on another board can never be counted here.
+ * An item with no versions is absent from the map; callers read it as 0.
+ */
+export async function getVersionCountsForBoard(boardId: number): Promise<Map<number, number>> {
+  const db = (await getDb())!;
+  const rows = await db
+    .select({ itemId: boardItemVersions.itemId, count: sql<number>`count(*)` })
+    .from(boardItemVersions)
+    .innerJoin(boardItems, eq(boardItems.id, boardItemVersions.itemId))
+    .where(eq(boardItems.boardId, boardId))
+    .groupBy(boardItemVersions.itemId);
+  return new Map(rows.map((row) => [row.itemId, Number(row.count)]));
+}
+

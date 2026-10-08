@@ -133,7 +133,7 @@ import { staffDateTime } from "@/foundation/staffDate";
 import { CrewHappeningNow } from "@/features/admin/components/crew/CrewHappeningNow";
 import { CrewNav } from "@/features/admin/components/crew/CrewNav";
 import { CrewTestDrive } from "@/features/admin/components/crew/CrewTestDrive";
-import { testDriveOpenSteps } from "../../../shared/crewTestDrive";
+import { testDriveOpenSteps, testDrivesStillDrawn } from "../../../shared/crewTestDrive";
 import { landedSince } from "@/features/admin/components/crew/CrewSinceYouLooked";
 import { useCrewState } from "@/features/admin/components/crew/useCrewState";
 
@@ -439,8 +439,13 @@ export default function AdminCrew() {
           /* A milestone's drive, off the completion card itself (#1646). Empty
              when GitHub has not answered — there is no edition fallback for it
              on purpose: the steps live on the card and nowhere else, so an
-             invented copy is the one thing this must not have. */
-          const testDrives = live.available ? live.desk.testDrives : [];
+             invented copy is the one thing this must not have. A finished
+             drive — closed card, every step answered — leaves the page here,
+             once, so the menu count and the section read one list (#1988). */
+          const testDrives = testDrivesStillDrawn(
+            live.available ? live.desk.testDrives : [],
+            data.replies,
+          );
           const openSteps = testDriveOpenSteps(testDrives, data.replies);
           const inFlight = live.available ? live.desk.pullRequests.length : 0;
           return (
