@@ -188,6 +188,73 @@ describe("updateSubscriptionPlan — the outgoing request", () => {
   });
 });
 
+/**
+ * ⚠ **AN INTERVAL SWITCH ASKS FOR THE NEW PERIOD AS A WHOLE LINE (#2069).**
+ * Without `billing_cycle_anchor: "now"` Stripe bills the new year of a monthly
+ * → yearly switch as a PRORATION line, and the webhook grants nothing off one
+ * — measured in test mode: a Starter switch paid $242 and granted no credits.
+ * The anchor must go out on BOTH directions of a switch and on NEITHER
+ * same-interval change, where it would restart the cycle and charge a whole
+ * fresh period for a tier upgrade. Proven on the outgoing request (law 5).
+ */
+describe("updateSubscriptionPlan — the interval switch's billing anchor (#2069)", () => {
+  function subscriptionOn(interval: "month" | "year" | "week" | null) {
+    subscriptionsRetrieve.mockResolvedValue({
+      id: "sub_1",
+      schedule: null,
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: {
+              lookup_key: interval === "year" ? "klieg_pro_yearly_v2" : "klieg_pro_monthly_v2",
+              ...(interval ? { recurring: { interval } } : {}),
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  it("monthly → annual sends billing_cycle_anchor: now", async () => {
+    subscriptionOn("month");
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
+    expect(result.success).toBe(true);
+    expect(subscriptionsUpdate.mock.calls[0][1].billing_cycle_anchor).toBe("now");
+    expect(subscriptionsUpdate.mock.calls[0][1].proration_behavior).toBe("always_invoice");
+  });
+
+  it("annual → monthly (an instant switch) sends it too", async () => {
+    subscriptionOn("year");
+    catalogueHolds("pro", "monthly");
+    await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_1");
+    expect(subscriptionsUpdate.mock.calls[0][1].billing_cycle_anchor).toBe("now");
+  });
+
+  it("a same-interval change sends NO anchor — monthly → monthly and annual → annual", async () => {
+    subscriptionOn("month");
+    catalogueHolds("pro", "monthly");
+    await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_1");
+    expect("billing_cycle_anchor" in subscriptionsUpdate.mock.calls[0][1]).toBe(false);
+
+    subscriptionOn("year");
+    catalogueHolds("pro", "annual");
+    await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
+    expect("billing_cycle_anchor" in subscriptionsUpdate.mock.calls[1][1]).toBe(false);
+  });
+
+  it("an interval it cannot read sends no anchor — never a guess that could restart a cycle", async () => {
+    subscriptionOn(null);
+    await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
+    expect("billing_cycle_anchor" in subscriptionsUpdate.mock.calls[0][1]).toBe(false);
+
+    subscriptionsUpdate.mockClear();
+    subscriptionOn("week");
+    await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1");
+    expect("billing_cycle_anchor" in subscriptionsUpdate.mock.calls[0][1]).toBe(false);
+  });
+});
+
 describe("readSubscriptionBillingState — the artifact, not the metadata", () => {
   it("reads the interval off the item's PRICE and the plan off metadata", async () => {
     subscriptionsRetrieve.mockResolvedValue({
