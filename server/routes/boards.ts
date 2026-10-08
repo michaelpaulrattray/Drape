@@ -104,6 +104,41 @@ function withoutClientStorageKeys<T extends object>(
   return rest;
 }
 
+/**
+ * …and neither is a board ITEM's picture address (#2062, the URL half).
+ *
+ * Cast deletion read `board_items.imageUrl` on every item linked to the Cast
+ * and turned any address on our own bucket into a deletion key, and these
+ * three writers took that column straight from the client as `z.string()`.
+ * So a customer could put ANOTHER customer's picture address (it is public)
+ * on an item linked to her own Cast, delete the Cast, and put the other
+ * customer's picture in the deletion manifest. The deletion now checks every
+ * address against the Cast's own pictures (`server/casting/
+ * finalCastDeletion.ts`) — that is the half that covers rows already written
+ * and the roads this file does not own — and this is the input half.
+ *
+ * Nothing legitimate sends one, read at the callers 2026-10-09: the only
+ * client callers are `BoardPage.tsx`'s `updateItem` (position, size, label,
+ * metadata) and `addItem` (the note), neither naming `imageUrl` — the
+ * `vars.imageUrl ?? null` in `addItem`'s `onMutate` builds the OPTIMISTIC
+ * cache row and reads `null` either way; `addItems` has no client caller. A
+ * picture reaches an item through the SERVER writers (`server/lib/
+ * boardOps.ts`, `server/db/boards.ts`), which never pass through here.
+ *
+ * Same shape as the keys above: accepted only as `null` or absent, so a
+ * bundle that still names it is never refused by `updateItem`'s `.strict()`,
+ * and DROPPED rather than written.
+ */
+const clientImageUrlSchema = z.null().optional();
+
+function withoutClientItemPicture<T extends object>(
+  data: T,
+): Omit<T, "imageKey" | "thumbnailKey" | "imageUrl"> {
+  const { imageUrl: _imageUrl, ...rest } =
+    withoutClientStorageKeys(data) as Omit<T, "imageKey" | "thumbnailKey"> & { imageUrl?: unknown };
+  return rest as Omit<T, "imageKey" | "thumbnailKey" | "imageUrl">;
+}
+
 // ── Router ───────────────────────────────────────────────────────────────
 
 export const boardsRouter = router({
@@ -222,7 +257,7 @@ export const boardsRouter = router({
       boardId: z.number().int().positive(),
       type: boardItemTypeSchema,
       label: z.string().max(256).optional(),
-      imageUrl: z.string().optional(),
+      imageUrl: clientImageUrlSchema,
       imageKey: clientStorageKeySchema,
       positionX: z.number().int().default(0),
       positionY: z.number().int().default(0),
@@ -240,7 +275,7 @@ export const boardsRouter = router({
       await requireBoardOwnership(input.boardId, ctx.user.id);
       // Stamp the canvas `kind` alongside the legacy type (foundations Decision 1)
       const kind = input.type === "note" ? "note" : input.type === "frame" ? "frame" : "image";
-      const itemId = await addBoardItem({ ...withoutClientStorageKeys(input), kind });
+      const itemId = await addBoardItem({ ...withoutClientItemPicture(input), kind });
       return { id: itemId };
     }),
 
@@ -251,7 +286,7 @@ export const boardsRouter = router({
       items: z.array(z.object({
         type: boardItemTypeSchema,
         label: z.string().max(256).optional(),
-        imageUrl: z.string().optional(),
+        imageUrl: clientImageUrlSchema,
         imageKey: clientStorageKeySchema,
         positionX: z.number().int().default(0),
         positionY: z.number().int().default(0),
@@ -269,7 +304,7 @@ export const boardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
       const itemsWithBoard = input.items.map((item) => ({
-        ...withoutClientStorageKeys(item),
+        ...withoutClientItemPicture(item),
         boardId: input.boardId,
       }));
       const ids = await addBoardItems(itemsWithBoard);
@@ -308,7 +343,7 @@ export const boardsRouter = router({
     .input(z.object({
       itemId: z.number().int().positive(),
       label: z.string().max(256).optional(),
-      imageUrl: z.string().optional(),
+      imageUrl: clientImageUrlSchema,
       imageKey: clientStorageKeySchema,
       positionX: z.number().int().optional(),
       positionY: z.number().int().optional(),
@@ -320,7 +355,7 @@ export const boardsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { itemId, ...data } = input;
       const cleanData = Object.fromEntries(
-        Object.entries(withoutClientStorageKeys(data)).filter(([_, v]) => v !== undefined)
+        Object.entries(withoutClientItemPicture(data)).filter(([_, v]) => v !== undefined)
       );
       await updateBoardItem({
         userId: ctx.user.id,

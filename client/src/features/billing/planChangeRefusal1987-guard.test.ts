@@ -17,7 +17,7 @@ import { join } from "node:path";
 
 import { sourceBand } from "../../../../server/testing/sourceBand";
 import { withoutComments } from "../../../../server/testing/withoutComments";
-import { spentShareSentence } from "./spentShareSentence";
+import { spentShareSentence, yearlySwitchOffsetSentence } from "./spentShareSentence";
 import { displayBalance, formatCredits } from "@shared/creditDisplay";
 
 const BILLING = join(process.cwd(), "client", "src", "features", "billing");
@@ -97,9 +97,39 @@ describe("the spent-share line appears if and only if the charge is non-zero", (
     expect(spentShareSentence({})).toBe("");
   });
 
-  it("both interval-switch sentences carry it, right after the due-today figure", () => {
+  it("the monthly switch carries it right after the due-today figure; the yearly one says it inside its own clause (#2023)", () => {
     const switchBand = sourceBand(describeChange, 'if (quote.kind === "interval-switch")', "if (quote.isUpgrade)", "switch branch");
     const calls = switchBand.match(/is due today\.(` \+\s*)?(\$\{)?spentShareSentence\(quote\)/g) ?? [];
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(1);
+    const yearly = sourceBand(switchBand, 'if (quote.targetInterval === "annual")', "\n    }", "yearly branch");
+    expect(yearly).toContain("yearlySwitchOffsetSentence(quote, formatDollars(quote.immediateCharge))");
+    /* The old clause composed here was false in the spent case; the only
+       place it may be written now is the helper that chooses it. */
+    expect(yearly).not.toMatch(/comes off that|spentShareSentence\(/);
+  });
+});
+
+describe("#2023 — the yearly confirm says what really comes off, in every case", () => {
+  const due = "$269.00";
+  const share = 434_935; // ledger credits — any whole display figure
+  it("NEGATIVE CONTROL — nothing spent: the sentence exactly as it always read", () => {
+    const plain = `The unused part of your current cycle comes off that, so about ${due} is due today.`;
+    expect(yearlySwitchOffsetSentence({ spentShareCharge: 0, spentShareCredits: 0, creditUnwind: share }, due)).toBe(plain);
+    expect(yearlySwitchOffsetSentence({}, due)).toBe(plain);
+  });
+
+  it("⚠ all spent: it no longer says anything comes off — the unused time is paid for", () => {
+    const line = yearlySwitchOffsetSentence({ spentShareCharge: 2_700, spentShareCredits: share, creditUnwind: 0 }, due);
+    expect(line).toBe(
+      `You've already used this cycle's credits, so nothing comes off for the time left. About ${due} is due today.`,
+    );
+    expect(line).not.toMatch(/comes off that/);
+  });
+
+  it("⚠ part spent: the rest comes off, except the quote's own spent credits, in display units", () => {
+    const line = yearlySwitchOffsetSentence({ spentShareCharge: 1_200, spentShareCredits: share, creditUnwind: 100_000 }, due);
+    expect(line).toBe(
+      `The unused part of your current cycle comes off that, except for ${formatCredits(displayBalance(share))} credits you've already used, which are paid for instead. About ${due} is due today.`,
+    );
   });
 });

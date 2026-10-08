@@ -510,6 +510,50 @@ function addOwnedWardrobeReference(
 }
 
 /**
+ * A board's two key columns — `boards.thumbnailKey` and `board_items.imageKey`
+ * — are NEVER deletion authority on their own (#2056, the erasure half).
+ *
+ * ⚠ **THE OWNERSHIP RULE IS "UNDER A PREFIX THIS ACCOUNT'S WRITERS USE FOR
+ * THESE COLUMNS", AND READ AT THE WRITERS THAT SET IS EMPTY.** Read
+ * 2026-10-08 across `server/` and the whole of git history:
+ *   · `board_items.imageKey` has never had a server writer — `boardOps`
+ *     writes `imageUrl` only — and the client has only ever put `null` in an
+ *     optimistic cache row, never in a request. Its one road in was the four
+ *     board routes taking it from the client, closed at the input by #2060.
+ *   · `boards.thumbnailKey`'s only server writer is
+ *     `recomputeBoardThumbnailIn` (`server/casting/finalCastDeletion.ts`),
+ *     which COPIES the newest item's `imageKey` — so it inherits the
+ *     column above rather than minting a key of its own. The other road was
+ *     `boards.update` taking it from the client, closed by #2060 too.
+ *   · No prefix could stand in for a row either: a cast's picture key is
+ *     `casting-v2/candidates/<uuid>…` and carries no account id, so a prefix
+ *     rule cannot tell this account's cast picture from another's.
+ * So any non-null value on a row was typed through the old routes, by this
+ * account, before #2060 — exactly the case that must not delete another
+ * customer's picture. It is SKIPPED and LOGGED (board, item and column; never
+ * the key, which names somebody's object), and the rows themselves are still
+ * deleted below.
+ *
+ * Nothing this account owns is lost by it: no product road ever stored a key
+ * here, and every picture the account does own reaches the manifest through
+ * the row that proves it — its casts, its wardrobe, its uploads. If a server
+ * writer ever starts writing either column, it must give its keys a prefix
+ * carrying the account id and add the rule here; `server/
+ * boardsClientStorageKey.test.ts` reads the writers and reddens until it does.
+ */
+function skipUnownedBoardKey(
+  userId: number,
+  where: { boardId: number; itemId?: number; column: "boards.thumbnailKey" | "board_items.imageKey" },
+  storageKey: string | null,
+): void {
+  if (storageKey == null || storageKey === "") return;
+  log.warn(
+    { userId, ...where },
+    "[AccountDeletion] a board key no server writer could have stored was left alone, not deleted",
+  );
+}
+
+/**
  * The private-bucket prefixes that hold a customer's words or frames kept for
  * diagnosis and are known ONLY to the cleanup manifest — no product row points
  * at them, so the collector below cannot find them the way it finds a model's
@@ -770,12 +814,20 @@ export async function collectAccountOwnedStorageItemsIn(
 
   const userBoards = await tx.select().from(boards)
     .where(eq(boards.userId, userId)).for("update");
-  for (const board of userBoards) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: board.thumbnailKey });
+  for (const board of userBoards) {
+    skipUnownedBoardKey(userId, { boardId: board.id, column: "boards.thumbnailKey" }, board.thumbnailKey);
+  }
   if (userBoards.length > 0) {
     const boardIds = userBoards.map((board) => board.id);
     const items = await tx.select().from(boardItems)
       .where(inArray(boardItems.boardId, boardIds)).for("update");
-    for (const item of items) addOwnedAccountKey(publicKeys, currentPublicUrl, { storageKey: item.imageKey });
+    for (const item of items) {
+      skipUnownedBoardKey(
+        userId,
+        { boardId: item.boardId, itemId: item.id, column: "board_items.imageKey" },
+        item.imageKey,
+      );
+    }
     // URL-only Canvas references/history can be shared inputs. The dry-run
     // orphan audit counts them, but they are not automatic delete authority.
   }

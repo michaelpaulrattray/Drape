@@ -157,6 +157,7 @@ import {
   getOwnedCastingSession,
   getOwnedRoll,
   getRollLineage,
+  OPEN_SESSION_CARD_CHUNK,
   listKeptCandidates,
   listOpenCastingSessions,
   listRollCandidates,
@@ -1056,77 +1057,92 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const sessions = await listOpenCastingSessions(ctx.user.id);
-      return Promise.all(
-        sessions.map(async (session) => {
-          const rolls = await listSessionRolls(ctx.user.id, session.id);
-          const kept = await listKeptCandidates(ctx.user.id, session.id);
-          const latest = rolls[rolls.length - 1] ?? null;
+      /* ⚠ THE CARDS ARE BUILT IN SEQUENTIAL CHUNKS, NEVER ALL AT ONCE (#2000).
+         Each card is four reads, and the ceiling on open sheets is 40
+         (`OPEN_SESSION_CEILING`), so the old `Promise.all` over every session
+         held up to forty of the shared pool's slots at one moment
+         (`server/db/connection.ts`: 20 connections + 50 queued, and the 71st
+         query is refused with `Queue limit reached.`). Forty is under the
+         ceiling by itself, which is why this road failed for nobody — but it
+         is more than half the pool held by one lobby read, so two of them
+         beside anything else is the refusal. The chunk bounds what one request
+         can hold; the cards themselves are unchanged, and so is their order. */
+      const card = async (session: (typeof sessions)[number]) => {
+        const rolls = await listSessionRolls(ctx.user.id, session.id);
+        const kept = await listKeptCandidates(ctx.user.id, session.id);
+        const latest = rolls[rolls.length - 1] ?? null;
 
+        /*
+          A few faces, so the card looks like the sheet it opens.
+
+          This procedure used to say "counts only — a summary, not a preview",
+          on the reasoning that candidate images belong on the one page whose
+          retention and cancellation rules are written about them. The founder
+          has reversed that, and the original worry does not survive contact:
+          these are the owner's own faces, on an owner-scoped projection,
+          read-only, and nothing on this card can keep, discard or cancel
+          anything.
+
+          Kept candidates first — a sheet you have shortlisted should show
+          what you shortlisted — and the newest roll otherwise. Four, because
+          that is what the strip holds.
+        */
+        /*
+          A SHEET CARD ALWAYS PREVIEWS (founder bug, 2026-08-02).
+
+          After a Sign from this sheet the card went blank — "3 rolls · 1
+          kept" above an empty strip. Two causes, and both are fixed: the
+          signed candidate no longer counts as kept (§F, above), and the
+          fallback is now applied to the RESULT rather than to the source. A
+          kept list that yields no projectable face falls through to the
+          latest roll instead of leaving a hole where the sheet should be.
+        */
+        const rollCandidates = latest
+          ? await listRollCandidates(ctx.user.id, latest.id)
+          : [];
+        /*
+          A CARD SHOWS THE SHEET'S STATE, NOT ONLY ITS FACES (his bug, #1086).
+
+          Faces lead — the kept ones first, then the latest roll's — and the
+          latest roll's unfinished slices fill whatever is left: a quiet frame
+          while a picture is being cast, a plain one where the engine refused
+          or nothing arrived. Until this, `ready` was the only status that
+          projected at all, so a sheet with a roll in flight and a sheet whose
+          roll was refused both rendered as "4 rolls" over an empty strip —
+          the first reading as no roll, the second as broken.
+
+          The rule and its three past failures live in
+          `castingV2/sheetPreview.ts`, where they are pinned by test — it had
+          been wrong twice before this in ways that looked right on the card.
+        */
+        const previewTiles = sheetPreviewTiles(kept, rollCandidates).map((tile) =>
+          tile.kind === "face"
+            ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
+            : tile);
+
+        return {
+          sessionId: session.publicId,
+          briefText: latest?.briefText ?? null,
+          previewTiles,
+          rollCount: rolls.length,
+          keptCount: kept.length,
           /*
-            A few faces, so the card looks like the sheet it opens.
-
-            This procedure used to say "counts only — a summary, not a preview",
-            on the reasoning that candidate images belong on the one page whose
-            retention and cancellation rules are written about them. The founder
-            has reversed that, and the original worry does not survive contact:
-            these are the owner's own faces, on an owner-scoped projection,
-            read-only, and nothing on this card can keep, discard or cancel
-            anything.
-
-            Kept candidates first — a sheet you have shortlisted should show
-            what you shortlisted — and the newest roll otherwise. Four, because
-            that is what the strip holds.
+            Who SURVIVES this sheet's deletion (D-107). Names rather than a
+            count, because the confirm copy promises the user something about
+            their own work and a bare number is a claim they cannot check.
           */
-          /*
-            A SHEET CARD ALWAYS PREVIEWS (founder bug, 2026-08-02).
-
-            After a Sign from this sheet the card went blank — "3 rolls · 1
-            kept" above an empty strip. Two causes, and both are fixed: the
-            signed candidate no longer counts as kept (§F, above), and the
-            fallback is now applied to the RESULT rather than to the source. A
-            kept list that yields no projectable face falls through to the
-            latest roll instead of leaving a hole where the sheet should be.
-          */
-          const rollCandidates = latest
-            ? await listRollCandidates(ctx.user.id, latest.id)
-            : [];
-          /*
-            A CARD SHOWS THE SHEET'S STATE, NOT ONLY ITS FACES (his bug, #1086).
-
-            Faces lead — the kept ones first, then the latest roll's — and the
-            latest roll's unfinished slices fill whatever is left: a quiet frame
-            while a picture is being cast, a plain one where the engine refused
-            or nothing arrived. Until this, `ready` was the only status that
-            projected at all, so a sheet with a roll in flight and a sheet whose
-            roll was refused both rendered as "4 rolls" over an empty strip —
-            the first reading as no roll, the second as broken.
-
-            The rule and its three past failures live in
-            `castingV2/sheetPreview.ts`, where they are pinned by test — it had
-            been wrong twice before this in ways that looked right on the card.
-          */
-          const previewTiles = sheetPreviewTiles(kept, rollCandidates).map((tile) =>
-            tile.kind === "face"
-              ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
-              : tile);
-
-          return {
-            sessionId: session.publicId,
-            briefText: latest?.briefText ?? null,
-            previewTiles,
-            rollCount: rolls.length,
-            keptCount: kept.length,
-            /*
-              Who SURVIVES this sheet's deletion (D-107). Names rather than a
-              count, because the confirm copy promises the user something about
-              their own work and a bare number is a claim they cannot check.
-            */
-            signedCastNames: await listSessionSignedCastNames(ctx.user.id, session.id),
-            lastActivityAt: session.lastActivityAt.toISOString(),
-            expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
-          };
-        }),
-      );
+          signedCastNames: await listSessionSignedCastNames(ctx.user.id, session.id),
+          lastActivityAt: session.lastActivityAt.toISOString(),
+          expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
+        };
+      };
+      const cards: Array<Awaited<ReturnType<typeof card>>> = [];
+      for (let at = 0; at < sessions.length; at += OPEN_SESSION_CARD_CHUNK) {
+        cards.push(
+          ...(await Promise.all(sessions.slice(at, at + OPEN_SESSION_CARD_CHUNK).map(card))),
+        );
+      }
+      return cards;
     }),
 
   /** The resumable unsigned sheet: its rolls, and the cross-roll tray. */

@@ -1,7 +1,7 @@
 /**
  * Wardrobe DB Helpers — CRUD operations for garments, outfits, and sessions.
  */
-import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
+import { eq, and, desc, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb, withTransaction } from "./connection";
 import {
   wardrobeGarments,
@@ -32,6 +32,54 @@ export async function getGarmentById(garmentId: number) {
     .where(eq(wardrobeGarments.id, garmentId))
     .limit(1);
   return garment || null;
+}
+/**
+ * How many garment ids one `IN (…)` read carries (#2000).
+ *
+ * It bounds the length of ONE list and nothing else — the chunks run one
+ * after another, so a request holds a single pool slot for this read whatever
+ * the caller sent.
+ */
+export const GARMENT_BATCH_CHUNK = 200;
+
+/**
+ * THIS ACCOUNT'S GARMENTS, BY ID, IN ONE READ PER CHUNK (#2000).
+ *
+ * The four try-on roads in `server/routes/wardrobe.ts` each used to call
+ * {@link getGarmentById} once per id inside a `Promise.all` over an input
+ * array with no `.max()` on it. That is one pool slot per garment, fired at
+ * once, onto the shared pool `server/db/connection.ts` configures at 20
+ * connections + 50 queued — the 71st concurrent query is refused with
+ * `Queue limit reached.`, so a request naming more than about seventy
+ * garments failed outright. #1989 is the same shape in the data export, and
+ * #2000's three already-landed siblings are the same shape again.
+ *
+ * ⚠ **THE OWNER IS IN THE STATEMENT, NOT CHECKED AFTER IT (invariant 1).**
+ * Every call site read the row and then compared `userId` in TypeScript. This
+ * takes the owner as an argument and puts it in the `WHERE` beside the ids, so
+ * another account's garment is not read at all rather than read and
+ * discarded. The callers' refusal is unchanged — a garment that is not in the
+ * returned map is "not found", which is what someone else's garment already
+ * produced.
+ *
+ * Returns a Map so a caller can answer per id, in ITS OWN order, and say which
+ * id was missing. The old fan-out rejected with whichever lookup lost the
+ * race, so the id named in the error was not deterministic; now it is the
+ * first missing id in the order the customer sent.
+ */
+export async function getOwnedGarmentsByIds(userId: number, garmentIds: number[]) {
+  const db = (await getDb())!;
+  const wanted = Array.from(new Set(garmentIds));
+  const found = new Map<number, Awaited<ReturnType<typeof getGarmentById>>>();
+  for (let at = 0; at < wanted.length; at += GARMENT_BATCH_CHUNK) {
+    const chunk = wanted.slice(at, at + GARMENT_BATCH_CHUNK);
+    const rows = await db
+      .select()
+      .from(wardrobeGarments)
+      .where(and(eq(wardrobeGarments.userId, userId), inArray(wardrobeGarments.id, chunk)));
+    for (const row of rows) found.set(row.id, row);
+  }
+  return found;
 }
 
 export async function getUserGarments(userId: number) {

@@ -20,7 +20,7 @@ import { createModuleLogger } from "../logging/logger";
 import { WARDROBE_CREDIT_COSTS } from "../wardrobe/creditCosts";
 import { buildOutfitContext, selectDescribableGarments } from "../wardrobe/garmentDescription";
 import {
-  createGarment, getGarmentById, getUserGarments, getUserGarmentsBySlot,
+  createGarment, getGarmentById, getOwnedGarmentsByIds, getUserGarments, getUserGarmentsBySlot,
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
   createSession, getSessionById, getUserSessions, updateSession, deleteSession,
@@ -282,19 +282,25 @@ const vtoRouter = router({
         readMode,
       });
 
-      // Fetch garments and validate ownership
-      const garments = await Promise.all(
-        input.garmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          if (g.status !== "ready") {
-            throw new TRPCError({ code: "BAD_REQUEST", message: `Garment ${id} is still processing` });
-          }
-          return g;
-        }),
-      );
+      /* ONE OWNER-SCOPED READ OF EVERY GARMENT NAMED, never one query per id
+         fired at once (#2000). The input array carries no `.max()`, so the old
+         `Promise.all` held one slot of the shared pool (20 + 50) per garment
+         and a request naming more than about seventy of them was refused with
+         `Queue limit reached.`. The owner is now in the statement rather than
+         checked after it (invariant 1), and the ids are walked in the
+         CUSTOMER'S order, so the id named in a refusal is the first missing
+         one rather than whichever lookup lost the race. */
+      const ownedGarments = await getOwnedGarmentsByIds(ctx.user.id, input.garmentIds);
+      const garments = input.garmentIds.map((id) => {
+        const g = ownedGarments.get(id);
+        if (!g) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
+        }
+        if (g.status !== "ready") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Garment ${id} is still processing` });
+        }
+        return g;
+      });
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -377,26 +383,23 @@ const vtoRouter = router({
         readMode,
       });
 
-      // Fetch all garments
-      const allGarments = await Promise.all(
-        input.allGarmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          return g;
-        }),
-      );
-
-      const changedGarments = await Promise.all(
-        input.changedGarmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          return g;
-        }),
-      );
+      /* BOTH LISTS IN ONE OWNER-SCOPED READ (#2000 — see `compose` above for
+         the whole reasoning). The two arrays overlap by design, so they are
+         read together and answered separately; `getOwnedGarmentsByIds`
+         de-duplicates, which the two fan-outs did not. */
+      const ownedGarments = await getOwnedGarmentsByIds(ctx.user.id, [
+        ...input.allGarmentIds,
+        ...input.changedGarmentIds,
+      ]);
+      const requireGarment = (id: number) => {
+        const g = ownedGarments.get(id);
+        if (!g) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
+        }
+        return g;
+      };
+      const allGarments = input.allGarmentIds.map(requireGarment);
+      const changedGarments = input.changedGarmentIds.map(requireGarment);
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -477,13 +480,11 @@ const vtoRouter = router({
       let garmentReferenceUrls: { label: string; url: string }[] | undefined;
 
       if (input.allGarmentIds && input.allGarmentIds.length > 0) {
-        const allGarments = await Promise.all(
-          input.allGarmentIds.map(async (id) => {
-            const g = await getGarmentById(id);
-            if (!g || g.userId !== ctx.user.id) return null;
-            return g;
-          }),
-        );
+        /* One owner-scoped read (#2000). An id that is not this account's
+           still reads as `null` here, exactly as the per-row check did — this
+           road describes what it can and skips what it cannot. */
+        const owned = await getOwnedGarmentsByIds(ctx.user.id, input.allGarmentIds);
+        const allGarments = input.allGarmentIds.map((id) => owned.get(id) ?? null);
         const validGarments = selectDescribableGarments(allGarments);
 
         if (validGarments.length > 0) {
@@ -820,9 +821,16 @@ const outfitRouter = router({
   save: protectedProcedure
     .input(wardrobeOutfitSaveInput)
     .mutation(async ({ ctx, input }) => {
+      /* A FIFTH SITE THE CARD DID NOT NAME, and it is the same shape at
+         different odds (#2000's sweep). This one is a SEQUENTIAL loop, so it
+         never held more than one pool slot and could not trip the ceiling —
+         but it is still one round trip per garment, and it is one owner-scoped
+         read now like its four neighbours. Nothing about the refusal moves:
+         an id that is not this account's is still "not found", in the order
+         the customer sent. */
+      const owned = await getOwnedGarmentsByIds(ctx.user.id, input.garmentIds);
       for (const id of input.garmentIds) {
-        const g = await getGarmentById(id);
-        if (!g || g.userId !== ctx.user.id) {
+        if (!owned.has(id)) {
           throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
         }
       }
