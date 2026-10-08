@@ -1946,14 +1946,32 @@ function CompareGrid({
         },
       ],
       /*
-        One pool: there is one `points.balance` and every tool spends it. The
-        never-expire half is #1660's work and is already the shipped sentence on
-        Add credits (*"Purchased credits never expire"*) — said here in the one
-        place a customer is comparing plans, and said about PAID credits only,
-        which is the precise claim #1660 made true.
+        One pool: there is one `points.balance` and every tool spends it.
+
+        ⚠ **AND THE NEVER-EXPIRE HALF IS CUT (#1939) — IT WAS TRUE OF THE
+        SURFACE IT WAS QUOTED FROM AND FALSE WHERE IT WAS SAID.** The sentence
+        read *"… and credits you have paid for never expire"*, quoting Add
+        credits' own shipped line (*"Purchased credits never expire"*), which
+        #1660 made true of PURCHASED credits: `refreshMonthlyCredits` adds
+        `purchasedCreditsRemaining(row)` back whole at every renewal.
+
+        **But this is the plan compare table, and a customer paying for a plan
+        has paid for their plan credits too** — and those partly expire on two
+        of the three rungs drawn here: `PLAN_TIERS.starter.rolloverPercent` is
+        50 and `pro` is 75. **The table says so itself, in the `Unspent
+        credits` row of this very group**, which reads through
+        `rolloverSentence`: *"Half of anything unspent expires"*, *"A quarter of
+        anything unspent expires"*. So the contradiction sat inside ONE table,
+        on a money surface, in the one place a customer is choosing between
+        those exact rungs.
+
+        What is left says only what is true of every column, which is the whole
+        job of a group note. Nothing honest is lost by stopping the sentence
+        short: what expires and what does not is already stated PER RUNG by the
+        row above, which is where a per-rung fact belongs. Any wider expiry
+        wording waits on his separate top-up ruling.
       */
-      note:
-        "One pool. Every tool spends the same credits, and credits you have paid for never expire.",
+      note: "One pool. Every tool spends the same credits.",
     },
     {
       /*
