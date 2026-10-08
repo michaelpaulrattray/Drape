@@ -2,7 +2,7 @@
  * Wardrobe DB Helpers — CRUD operations for garments, outfits, and sessions.
  */
 import { eq, and, desc, inArray, isNotNull, sql } from "drizzle-orm";
-import { getDb, withTransaction } from "./connection";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import {
   wardrobeGarments,
   wardrobeOutfits,
@@ -18,6 +18,8 @@ import {
 } from "../../drizzle/schema";
 import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+import { wardrobeOwnedKeyPrefixes } from "./accountDeletion";
+import { classifyStorageReference } from "../casting/deletionAudit";
 
 function affectedRows(result: unknown): number {
   if (Array.isArray(result)) return Number((result[0] as { affectedRows?: unknown })?.affectedRows ?? 0);
@@ -29,6 +31,117 @@ export class GarmentPictureReceiptError extends Error {
     super(message);
     this.name = "GarmentPictureReceiptError";
   }
+}
+
+/**
+ * RELEASE ONE WARDROBE RECEIPT, INSIDE THE CALLER'S TRANSACTION — the one
+ * discharge every wardrobe keeper uses (#2094, #2095).
+ *
+ * `createGarment` (#1961) and `appendSessionResult` (#1980) each spelled this
+ * out inline; #2095 adds `updateGarment` and #2094 the Look and the Outfit, and
+ * five copies of the predicate that decides whether the worker may still
+ * delete a picture would be five chances for one of them to drift. So it is
+ * here once.
+ *
+ * Scoped three ways, and each is load-bearing:
+ * - the OWNER — another account's manifest is never discharged by this one;
+ * - the KIND — only a `wardrobe_scratch_cleanup` manifest; a receipt for some
+ *   other feature's manifest is not a wardrobe row's to spend;
+ * - UNDISCHARGED — a batch the worker has already claimed is past saving.
+ *
+ * ⚠ **THE BATCH GOES FIRST, and its items only if that delete took exactly one
+ * row.** The inline copies deleted the items first and relied on the caller's
+ * throw to roll them back. That is fine for a caller that throws, and wrong for
+ * the one caller that may lose quietly (`adoptOwnedScratchKeyIn`), which would
+ * have left a batch the worker had claimed with no items in it.
+ *
+ * Returns whether the receipt was released. A caller holding a receipt it was
+ * handed throws on `false`; a caller only looking for one does not.
+ */
+async function releaseWardrobeReceiptIn(
+  tx: TransactionHandle,
+  input: { cleanupBatchId: string; userId: number },
+): Promise<boolean> {
+  const released = await tx.delete(storageCleanupBatches).where(and(
+    eq(storageCleanupBatches.id, input.cleanupBatchId),
+    eq(storageCleanupBatches.userId, input.userId),
+    eq(storageCleanupBatches.kind, "wardrobe_scratch_cleanup"),
+    undischargedStorageCleanupBatchWhere(),
+  ));
+  if (affectedRows(released) !== 1) return false;
+  await tx.delete(storageCleanupItems)
+    .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+  return true;
+}
+
+/**
+ * A SAVED LOOK OR OUTFIT ADOPTS THE PICTURE IT NAMES — when, and only when,
+ * that picture is this account's own wardrobe object still waiting in a live
+ * scratch manifest (#2094).
+ *
+ * Since #1980 a try-on result made with NO session sits in a manifest and the
+ * worker deletes it after `WARDROBE_SCRATCH_HOLD_MS`. `looks.save` and
+ * `outfits.save` store the URL the browser sends, so a Look saved from such a
+ * picture pointed at nothing a day later. There is no receipt to hand over
+ * here — the browser never sees one, by design — so the key is derived from
+ * the very URL being stored and the manifest is FOUND by it.
+ *
+ * What it will adopt, and why each limit is there:
+ * - **a URL on the bucket we serve from today**, read by the same
+ *   `classifyStorageReference` the erasure sweep reads with;
+ * - **under one of THIS account's wardrobe prefixes** (`wardrobeOwnedKeyPrefixes`,
+ *   imported rather than restated) — exactly what account erasure later reads
+ *   a Look's or Outfit's URL as owning. Adopting a key the sweep would not read
+ *   (a model photo under `<id>-models/`) would move it from "the worker will
+ *   delete it" to "nothing ever will";
+ * - **named by a manifest THIS account owns** — another customer's URL, live
+ *   manifest or not, is never adopted (`releaseWardrobeReceiptIn`'s owner
+ *   scope, and the owner in the read below);
+ * - **a manifest naming that key and nothing else**, so a release can never
+ *   rescue some other object riding in the same batch.
+ *
+ * Returns the key it adopted, or `null`. A `null` changes nothing about the
+ * save: the row is written exactly as before — the right answer for a picture
+ * a session already adopted (no manifest is left), and the only one there is
+ * for a picture already past its hold.
+ *
+ * The first read takes no lock, on purpose: `storage_cleanup_items.storageKey`
+ * has no index of its own, and a locking scan would hold every manifest row it
+ * passed. The statement that decides is the release's delete, by primary key,
+ * re-checking that the batch is still undischarged.
+ */
+async function adoptOwnedScratchKeyIn(
+  tx: TransactionHandle,
+  input: { userId: number; url: string | null | undefined; currentPublicUrl: string },
+): Promise<string | null> {
+  if (!input.url) return null;
+  const classified = classifyStorageReference({ url: input.url, currentPublicUrl: input.currentPublicUrl });
+  if (classified.kind !== "current_origin_url") return null;
+  const key = classified.key;
+  if (!wardrobeOwnedKeyPrefixes(input.userId).some((prefix) => key.startsWith(prefix))) return null;
+
+  const candidates = await tx
+    .select({ id: storageCleanupBatches.id })
+    .from(storageCleanupBatches)
+    .innerJoin(storageCleanupItems, eq(storageCleanupItems.batchId, storageCleanupBatches.id))
+    .where(and(
+      eq(storageCleanupBatches.userId, input.userId),
+      eq(storageCleanupBatches.kind, "wardrobe_scratch_cleanup"),
+      undischargedStorageCleanupBatchWhere(),
+      eq(storageCleanupItems.storageKey, key),
+      eq(storageCleanupItems.storageBackend, "public_r2"),
+    ));
+
+  let adopted = false;
+  for (const { id } of candidates) {
+    const items = await tx
+      .select({ storageKey: storageCleanupItems.storageKey })
+      .from(storageCleanupItems)
+      .where(eq(storageCleanupItems.batchId, id));
+    if (items.length !== 1) continue;
+    if (await releaseWardrobeReceiptIn(tx, { cleanupBatchId: id, userId: input.userId })) adopted = true;
+  }
+  return adopted ? key : null;
 }
 
 // ── Garments ───────────────────────────────────────────────────────────────
@@ -78,14 +191,7 @@ export async function createGarment(
       rows would leave exactly the state this fixes while reporting success.
     */
     for (const batchId of receipts) {
-      await tx.delete(storageCleanupItems)
-        .where(eq(storageCleanupItems.batchId, batchId));
-      const released = await tx.delete(storageCleanupBatches).where(and(
-        eq(storageCleanupBatches.id, batchId),
-        eq(storageCleanupBatches.userId, data.userId),
-        undischargedStorageCleanupBatchWhere(),
-      ));
-      if (affectedRows(released) !== 1) {
+      if (!await releaseWardrobeReceiptIn(tx, { cleanupBatchId: batchId, userId: data.userId })) {
         throw new GarmentPictureReceiptError("no undischarged manifest for this garment's picture");
       }
     }
@@ -175,15 +281,63 @@ export async function getUserGarmentsBySlot(userId: number, slotType: string) {
     .orderBy(desc(wardrobeGarments.createdAt));
 }
 
+/**
+ * Update a garment, discharging the receipts for any object the update makes
+ * it own (#2095).
+ *
+ * The digitize road writes a flat-lay to the public bucket, and
+ * `garments.upload` / `garments.import` record it here as `isolatedImageUrl`.
+ * It was written with no manifest, so when `analyzeGarmentMetadata` threw
+ * after the upload the catch marked the garment failed and nothing ever named
+ * the key again. The flat-lay is now registered before it is written
+ * (`uploadGarmentFlatLay`) and its receipt comes here: the row records the key
+ * (`isolatedImageKey`, which until now had no writer) and the manifest is
+ * released in ONE transaction, so either the garment owns the flat-lay or the
+ * worker collects it. The failure road passes `[]` and the manifest stands.
+ *
+ * ⚠ **`adoptedReceipts` IS REQUIRED** — `createGarment`'s rule and reason: a
+ * caller must answer *does this update hand the garment bytes somebody
+ * registered for deletion?* rather than inherit "no".
+ *
+ * ⚠ **THE OWNER IS IN THE WHERE (invariant 1).** It was the id alone. Every
+ * caller holds an id it has just minted for this account, so nothing moves for
+ * them — but the receipt is scoped to an owner, and a write keyed on id alone
+ * is the shape invariant 1 forbids.
+ *
+ * A garment that is gone (deleted mid-pipeline) is not an error: nothing is
+ * written and NO receipt is discharged, so the flat-lay is collected.
+ */
 export async function updateGarment(
   garmentId: number,
+  userId: number,
   data: Partial<InsertWardrobeGarment>,
-) {
-  const db = (await getDb())!;
-  await db
-    .update(wardrobeGarments)
-    .set(data)
-    .where(eq(wardrobeGarments.id, garmentId));
+  adoptedReceipts: readonly string[],
+): Promise<void> {
+  const ownGarment = and(eq(wardrobeGarments.id, garmentId), eq(wardrobeGarments.userId, userId));
+  if (adoptedReceipts.length === 0) {
+    const db = (await getDb())!;
+    await db.update(wardrobeGarments).set(data).where(ownGarment);
+    return;
+  }
+  const receipts = Array.from(new Set(adoptedReceipts));
+  if (receipts.length !== adoptedReceipts.length) {
+    throw new GarmentPictureReceiptError("a garment's receipts must each name one object");
+  }
+  await withTransaction(async (tx) => {
+    const [garment] = await tx
+      .select({ id: wardrobeGarments.id })
+      .from(wardrobeGarments)
+      .where(ownGarment)
+      .limit(1)
+      .for("update");
+    if (!garment) return;
+    await tx.update(wardrobeGarments).set(data).where(ownGarment);
+    for (const batchId of receipts) {
+      if (!await releaseWardrobeReceiptIn(tx, { cleanupBatchId: batchId, userId })) {
+        throw new GarmentPictureReceiptError("no undischarged manifest for this garment's flat-lay");
+      }
+    }
+  });
 }
 
 export async function deleteGarment(garmentId: number, userId: number) {
@@ -200,10 +354,25 @@ export async function deleteGarment(garmentId: number, userId: number) {
 
 // ── Outfits ────────────────────────────────────────────────────────────────
 
-export async function createOutfit(data: InsertWardrobeOutfit) {
-  const db = (await getDb())!;
-  const [result] = await db.insert(wardrobeOutfits).values(data).$returningId();
-  return result.id;
+/**
+ * Save an Outfit. Its thumbnail ADOPTS a session-less try-on picture still in
+ * this account's scratch manifest, in the insert's own transaction (#2094 —
+ * see `adoptOwnedScratchKeyIn`), and the row then carries the key in
+ * `resultThumbKey`, which the erasure sweep reads as an explicit key. The key
+ * is written only when it was adopted, which is to say proven this account's.
+ */
+export async function createOutfit(data: InsertWardrobeOutfit, currentPublicUrl: string) {
+  return withTransaction(async (tx) => {
+    const adoptedKey = await adoptOwnedScratchKeyIn(tx, {
+      userId: data.userId,
+      url: data.resultThumbUrl,
+      currentPublicUrl,
+    });
+    const [result] = await tx.insert(wardrobeOutfits)
+      .values(adoptedKey ? { ...data, resultThumbKey: adoptedKey } : data)
+      .$returningId();
+    return result.id;
+  });
 }
 
 export async function getUserOutfits(userId: number) {
@@ -342,14 +511,7 @@ export async function appendSessionResult(input: {
         eq(wardrobeSessions.userId, input.userId),
       ));
 
-    await tx.delete(storageCleanupItems)
-      .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
-    const released = await tx.delete(storageCleanupBatches).where(and(
-      eq(storageCleanupBatches.id, input.cleanupBatchId),
-      eq(storageCleanupBatches.userId, input.userId),
-      undischargedStorageCleanupBatchWhere(),
-    ));
-    if (affectedRows(released) !== 1) {
+    if (!await releaseWardrobeReceiptIn(tx, { cleanupBatchId: input.cleanupBatchId, userId: input.userId })) {
       throw new GarmentPictureReceiptError("no undischarged manifest for this try-on result");
     }
     return true;
@@ -497,7 +659,14 @@ function formatSession() {
 
 // ── Looks (curated VTO results) ───────────────────────────────────────
 
-export async function saveLook(data: InsertWardrobeLook) {
+/**
+ * Save a Look. Its picture ADOPTS a session-less try-on result still in this
+ * account's scratch manifest, in the insert's own transaction (#2094 — see
+ * `adoptOwnedScratchKeyIn`); a Look saved from such a picture used to point at
+ * nothing once the scratch hold ran out. A refusal above the adoption leaves
+ * the manifest untouched, and a failed insert rolls the adoption back.
+ */
+export async function saveLook(data: InsertWardrobeLook, currentPublicUrl: string) {
   return withTransaction(async (tx) => {
     await assertOwnedAvailableModelIn(tx, { modelId: data.modelId, userId: data.userId });
     if (data.sessionId != null) {
@@ -513,6 +682,7 @@ export async function saveLook(data: InsertWardrobeLook) {
         .for("update");
       if (!session) throw new Error("Wardrobe session does not belong to this model");
     }
+    await adoptOwnedScratchKeyIn(tx, { userId: data.userId, url: data.imageUrl, currentPublicUrl });
     const [result] = await tx.insert(wardrobeLooks).values(data).$returningId();
     return result.id;
   });

@@ -176,19 +176,16 @@ const RECORDED_DIRECT_WRITES: ReadonlyArray<{ file: string; calls: number; why: 
     receipt to `createGarment`, which discharges it inside the insert's own
     transaction. The count of 0 is what this arm now holds that file to.
   */
-  {
-    file: "server/wardrobe/utils.ts",
-    calls: 1,
-    why:
-      "`uploadBase64ToS3` — the digitize flat-lay alone, returned to"
-      + " `garments.upload`/`garments.import`, which write it onto the garment row"
-      + " as `isolatedImageUrl`. The try-on results that used to share it were"
-      + " recorded on a session's history ONLY when the request carried one, and"
-      + " moved to `uploadTryOnResult` (#1980), which registers first; its callers"
-      + " are pinned in `tryOnResultReceipt.test.ts`. ⚠ The flat-lay's own window"
-      + " is named, not closed: if `analyzeGarmentMetadata` throws after the upload,"
-      + " the catch marks the garment failed and records the key nowhere",
-  },
+  /*
+    `server/wardrobe/utils.ts` LEFT THIS LIST WITH #2095. Its one direct write
+    was `uploadBase64ToS3`, by then the digitize flat-lay alone — and that one
+    was recorded on the garment row only if `analyzeGarmentMetadata`, which ran
+    after the upload, also succeeded. When analysis threw, the key was recorded
+    nowhere. The flat-lay now goes through `uploadGarmentFlatLay` (the
+    registrar), `updateGarment` discharges the receipt as it records the key,
+    and `uploadBase64ToS3` is deleted. The count of 0 is what this arm now holds
+    that file to.
+  */
   {
     file: "server/wardrobe/scratchUpload.ts",
     calls: 1,

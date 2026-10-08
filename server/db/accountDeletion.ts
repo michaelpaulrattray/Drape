@@ -457,7 +457,8 @@ function addOwnedAccountKey(
 /**
  * The two places the wardrobe writers put a customer's pictures, each carrying
  * her id: `wardrobe/<id>/…` (the flat-lay, the refinement and every try-on
- * result — `uploadBase64ToS3`'s prefix at all five call sites) and
+ * result — once `uploadBase64ToS3`'s prefix, now the registered writer's in
+ * `server/wardrobe/utils.ts` since #1980 and #2095) and
  * `<id>-wardrobe/…` (the upload road's original, the scan and decompose
  * uploads, and the decomposed crops). Both unchanged since the wardrobe was
  * built (`7681ddc2f`, 2026-03-24).
@@ -775,7 +776,7 @@ export async function collectAccountOwnedStorageItemsIn(
   for (const garment of garments) {
     /*
       #2020: the KEY columns alone left the digitized flat-lay behind —
-      `isolatedImageKey` has no writer anywhere, so the garment's main picture
+      `isolatedImageKey` had no writer anywhere (until #2095), so the garment's main picture
       outlived the account at a permanently public URL. The URL beside each key
       is read too, under the wardrobe ownership rule above.
     */

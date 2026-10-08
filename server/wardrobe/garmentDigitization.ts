@@ -15,7 +15,7 @@ import {
   withImageQueue,
   toInlinePart,
   diagnoseResponse,
-  uploadBase64ToS3,
+  uploadGarmentFlatLay,
 } from "./utils";
 import { createModuleLogger } from "../logging/logger";
 import { assertWardrobeTryOnOpen } from "./tryOnDoor";
@@ -24,6 +24,17 @@ const log = createModuleLogger("wardrobe/garmentDigitization");
 
 export interface DigitizationResult {
   flatLayUrl: string; // S3 URL of the flat-lay image
+  /**
+   * The flat-lay this call WROTE, and the receipt for the manifest that names
+   * it (#2095). The route hands both to `updateGarment`, which records the key
+   * and discharges the receipt in one transaction; a road that never gets
+   * there leaves the manifest standing and the worker collects the object.
+   *
+   * Absent when nothing was written — the engine returned no image and
+   * `flatLayUrl` is the garment's own picture handed back, which its row
+   * already owns.
+   */
+  flatLay?: { key: string; cleanupBatchId: string };
 }
 
 /**
@@ -94,12 +105,14 @@ RULES:
       return { flatLayUrl: imageUrl };
     }
 
-    const flatLayUrl = await uploadBase64ToS3(
+    /* REGISTERED BEFORE IT IS WRITTEN (#2095). The flat-lay used to be a bare
+       write, recorded only if the analysis after it also succeeded. */
+    const { url: flatLayUrl, key, cleanupBatchId } = await uploadGarmentFlatLay(
       diagnosis.imageBase64,
-      `wardrobe/${userId}/flat-lays`,
+      userId,
     );
 
     log.info(`Digitized garment "${garmentName}" → ${flatLayUrl}`);
-    return { flatLayUrl };
+    return { flatLayUrl, flatLay: { key, cleanupBatchId } };
   }, "garment-digitization");
 }

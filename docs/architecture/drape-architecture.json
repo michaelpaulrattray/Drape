@@ -15128,6 +15128,10 @@
       "path": "server/wardrobe.test.ts"
     },
     {
+      "id": "test:server/wardrobe/flatLayAndSavedPictureReceipt.test.ts",
+      "path": "server/wardrobe/flatLayAndSavedPictureReceipt.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/garmentAdoption.test.ts",
       "path": "server/wardrobe/garmentAdoption.test.ts"
     },
@@ -32614,6 +32618,16 @@
     },
     {
       "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/casting/deletionAudit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/wardrobe.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -36378,11 +36392,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/wardrobe/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/wardrobe/qualityCheck.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -36445,11 +36454,6 @@
     {
       "from": "module:server/wardrobe/utils.ts",
       "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/wardrobe/utils.ts",
-      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {

@@ -12,7 +12,6 @@ import {
 } from "../casting/geminiClient";
 import { randomUUID } from "node:crypto";
 import { withTextQueue, withImageQueue } from "../casting/geminiQueue";
-import { storagePut } from "../storage";
 import { putWardrobeScratchUpload } from "./scratchUpload";
 import { createModuleLogger } from "../logging/logger";
 
@@ -144,67 +143,85 @@ export async function toInlinePart(
 }
 
 /**
- * A TRY-ON RESULT, REGISTERED BEFORE IT EXISTS (#1980).
+ * A wardrobe output, registered before it exists — the one writer behind
+ * {@link uploadTryOnResult} and {@link uploadGarmentFlatLay}.
  *
- * `vto.generate`, `vto.incremental` (both of its exits) and `vto.refine` wrote
- * their result through {@link uploadBase64ToS3} and then recorded it on
- * `wardrobeSessions.history` — **only when the request carried a session that
- * was found**. With none, the URL went back to the client and nothing in the
- * product ever named the key again: a permanently public object no cleanup
- * could reach.
+ * It goes through {@link putWardrobeScratchUpload} — #1961's
+ * register-before-write, not a second mechanism — so a held manifest names the
+ * key before the bytes land, and the row that keeps the picture discharges the
+ * receipt in its own transaction. Anything that never reaches that row leaves
+ * the manifest standing and the worker collects the object after
+ * `WARDROBE_SCRATCH_HOLD_MS`.
  *
- * So the result goes through {@link putWardrobeScratchUpload} — #1961's
- * register-before-write, not a second mechanism — and the receipt it returns
- * travels back to the route, which hands it to `appendSessionResult`. That
- * discharges the manifest IN THE SAME TRANSACTION that writes the URL onto the
- * session's history, so the two outcomes are the only two there are: a session
- * holds the key and the manifest is gone, or no session holds it and the
- * worker collects it once `WARDROBE_SCRATCH_HOLD_MS` has passed.
- *
- * The bytes, the key's shape (`wardrobe/<id>/vto-results/<ms>-<uuid>.png`) and
- * the content type are exactly `uploadBase64ToS3`'s, so the account-erasure
- * sweep's prefix reading (`wardrobeOwnedKeyPrefixes`) is unchanged.
+ * The key's shape (`wardrobe/<id>/<folder>/<ms>-<uuid>.png`) and the content
+ * type are exactly what the old unregistered `uploadBase64ToS3` wrote, so the
+ * account-erasure sweep's prefix reading (`wardrobeOwnedKeyPrefixes`) is
+ * unchanged.
  */
-export async function uploadTryOnResult(
+async function uploadRegisteredWardrobeOutput(
   base64DataUrl: string,
   userId: string,
-): Promise<{ url: string; cleanupBatchId: string }> {
+  folder: "vto-results" | "flat-lays",
+): Promise<{ url: string; key: string; cleanupBatchId: string }> {
   /* The pipeline carries the account id as a string (it is a chat-session key
      too). A manifest belongs to an account by its numeric id, and a value that
      does not round-trip is refused rather than registered under a wrong
      owner — the write then never happens, which is the safe side. */
   const ownerId = Number(userId);
   if (!Number.isSafeInteger(ownerId) || ownerId <= 0 || String(ownerId) !== userId) {
-    throw new Error(`a try-on result needs a numeric account id, got "${userId}"`);
+    throw new Error(`a wardrobe picture needs a numeric account id, got "${userId}"`);
   }
   const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
-  const { url, cleanupBatchId } = await putWardrobeScratchUpload({
+  return putWardrobeScratchUpload({
     userId: ownerId,
-    key: `wardrobe/${ownerId}/vto-results/${Date.now()}-${randomUUID()}.png`,
+    key: `wardrobe/${ownerId}/${folder}/${Date.now()}-${randomUUID()}.png`,
     bytes: Buffer.from(base64Data, "base64"),
     contentType: "image/png",
   });
+}
+
+/**
+ * A TRY-ON RESULT, REGISTERED BEFORE IT EXISTS (#1980).
+ *
+ * `vto.generate`, `vto.incremental` (both of its exits) and `vto.refine` wrote
+ * their result with no manifest and then recorded it on
+ * `wardrobeSessions.history` — **only when the request carried a session that
+ * was found**. With none, the URL went back to the client and nothing in the
+ * product ever named the key again.
+ *
+ * The receipt travels back to the route, which hands it to
+ * `appendSessionResult`: the session holds the key and the manifest is gone, or
+ * no session holds it and the worker collects it — unless a Look or Outfit is
+ * saved from it first, which adopts it by its key (#2094,
+ * `adoptOwnedScratchKeyIn`).
+ */
+export async function uploadTryOnResult(
+  base64DataUrl: string,
+  userId: string,
+): Promise<{ url: string; cleanupBatchId: string }> {
+  const { url, cleanupBatchId } = await uploadRegisteredWardrobeOutput(base64DataUrl, userId, "vto-results");
   return { url, cleanupBatchId };
 }
 
 /**
- * Upload a base64 data URL to S3 and return the public URL.
+ * A GARMENT'S FLAT-LAY, REGISTERED BEFORE IT EXISTS (#2095).
  *
- * ⚠ **ONE CALLER IS LEFT, AND IT IS THE ONE WHOSE ROW RECORDS THE KEY**: the
- * flat-lay `digitizeGarment` returns, which `garments.upload` writes onto the
- * garment as `isolatedImageUrl`. The try-on results moved to
- * {@link uploadTryOnResult} (#1980). A new caller whose result is not written
- * onto a row before the request ends belongs there, not here.
+ * `digitizeGarment` wrote it with the unregistered `uploadBase64ToS3`, and the
+ * routes recorded it on the garment only after `analyzeGarmentMetadata` had
+ * also succeeded. When analysis threw, the catch marked the garment failed and
+ * the key was recorded nowhere — a permanently public object no cleanup could
+ * reach. The key and receipt now travel back to the route, which hands both to
+ * `updateGarment`: it writes `isolatedImageKey` and discharges the manifest in
+ * one transaction, or — on the failure road — nothing discharges it.
+ *
+ * With this, `uploadBase64ToS3` had no caller left and is deleted: there is no
+ * unregistered wardrobe writer any more.
  */
-export async function uploadBase64ToS3(
+export async function uploadGarmentFlatLay(
   base64DataUrl: string,
-  prefix: string,
-): Promise<string> {
-  const base64Data = base64DataUrl.replace(/^data:.*?;base64,/, "");
-  const buffer = Buffer.from(base64Data, "base64");
-  const filename = `${prefix}/${Date.now()}-${randomUUID()}.png`;
-  const { url } = await storagePut(filename, buffer, "image/png");
-  return url;
+  userId: string,
+): Promise<{ url: string; key: string; cleanupBatchId: string }> {
+  return uploadRegisteredWardrobeOutput(base64DataUrl, userId, "flat-lays");
 }
 
 // ── Response Diagnosis ─────────────────────────────────────────────────────
