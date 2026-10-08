@@ -21,13 +21,18 @@
  *
  * Every query, the CSV export and both date filters are unchanged (§7).
  */
+import { useState } from "react";
+
 import { toast } from "sonner";
 
 import { RowId, StatePill, pageRange } from "@/features/staff";
 import { Button, DataTable, TableFilter, TableHead } from "@/foundation";
 import type { DataRow } from "@/foundation";
 import { staffDateTime } from "@/foundation/staffDate";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
+
+import { csvDateStamp, runStaffCsvExport, saveCsvFile } from "./staffCsvExport";
 
 const PAGE_SIZE = 20;
 
@@ -60,30 +65,39 @@ export function GenerationsSubTab({
   setEndDate,
   userId,
 }: GenerationsSubTabProps) {
-  const exportQuery = trpc.moderatorExports.exportUserGenerationHistoryCsv.useQuery(
-    {
+  /*
+    Through the vanilla client and the shared routine — see `staffCsvExport.ts`
+    (#1991). This one had no `try` at all, so a refusal was also an unhandled
+    rejection.
+  */
+  const utils = trpc.useUtils();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    const input = {
       userId,
       status: genStatusFilter as any,
       type: genTypeFilter as any,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
-    },
-    { enabled: false }
-  );
-
-  const handleExportCsv = async () => {
-    const result = await exportQuery.refetch();
-    if (result.data) {
-      const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `generation-history-user-${userId}-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(
-        `Exported ${result.data.total} generation records (${result.data.summary.failedCount} failed, ${result.data.summary.totalCreditsUsed} credits used)`,
-      );
+    };
+    try {
+      await runStaffCsvExport({
+        context: "moderatorExports.exportUserGenerationHistoryCsv",
+        fetchExport: () => utils.client.moderatorExports.exportUserGenerationHistoryCsv.query(input),
+        fileName: `generation-history-user-${userId}-${csvDateStamp()}.csv`,
+        successMessage: (answer) =>
+          `Exported ${answer.total} generation records (${answer.summary.failedCount} failed, ${answer.summary.totalCreditsUsed} credits used)`,
+        fallbackFailure: "The generation history could not be exported.",
+        download: saveCsvFile,
+        onSuccess: (message) => toast.success(message),
+        onFailure: (message) => toast.error(message),
+        logFailure: logRawFailure,
+        readFailure: readableFailure,
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -198,9 +212,9 @@ export function GenerationsSubTab({
           variant="quiet"
           size="small"
           onClick={handleExportCsv}
-          disabled={exportQuery.isFetching}
+          disabled={isExporting}
         >
-          {exportQuery.isFetching ? "Exporting…" : "Export CSV"}
+          {isExporting ? "Exporting…" : "Export CSV"}
         </Button>
       </TableHead>
 
