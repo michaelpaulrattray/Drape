@@ -47,7 +47,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   {
     match: "toast(retryFailureSentence(error))",
     because:
-      "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's credits came back. The server's own sentence passes through readableGatedFailure; the page's fallback, when it has none, claims no refund (#2033).",
+      "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's credits came back. The server's own sentence passes through readableGatedFailure; the page's fallback, when it has none, claims no refund (card 2033).",
   },
   // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2)
   {
