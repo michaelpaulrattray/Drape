@@ -38,6 +38,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
 import type { ReferenceImage } from "../providers/types";
+import type { SheetBoundary } from "./signSheet";
 import { pronounsForSex } from "./castPronouns";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import {
@@ -48,6 +49,7 @@ import {
   findSheetPanelGeometry,
   renderSignSheet,
   sheetColumnMeans,
+  seamColumnsAtEdge,
   sheetReferenceFromMaster,
   SIGN_SHEET_PANEL_LINES,
   SIGN_SHEET_PANEL_ORDER,
@@ -172,7 +174,18 @@ describe("the Sign sheet's panel geometry, on the sheets his eye passed", () => 
       });
       const owned = panels.reduce((sum, panel) => sum + panel.width, 0);
       const dividers = boundaries.reduce((sum, b) => sum + (b.band!.end - b.band!.start + 1), 0);
-      expect(owned + dividers).toBe(sheet.width);
+      /*
+        ⚠ **AND THE TRIM IS IN THE SUM — #1971.** The unowned columns used to be
+        exactly the divider bands; since the trim they are the bands PLUS the
+        shoulder columns either side of each one, which is what stops a panel
+        keeping the line that marks its edge. Leaving the trim out of this
+        accounting would make the arm red for the fix; adding it as a free
+        remainder would make the arm unable to notice a lost column. So it is
+        read off the receipt each boundary carries.
+      */
+      const trimmed = boundaries.reduce((sum, b) => sum + b.trimmed.left + b.trimmed.right, 0);
+      expect(trimmed).toBeGreaterThan(0);
+      expect(owned + dividers + trimmed).toBe(sheet.width);
     }
   });
 });
@@ -392,7 +405,10 @@ describe("⚠ the two sheet shapes his #1926 ruling ships", () => {
     /* And it lands where the engine was asked to put it. */
     const centre = (boundary!.leftEnd + boundary!.rightStart) / 2;
     expect(Math.abs(centre - sheet.width / 2)).toBeLessThanOrEqual(PANEL_TOLERANCE_PX);
-    expect(geometry.panels.map((p) => p.width)).toEqual([1749, 1749]);
+    /* 1748 and not the 1749 either side of the band: #1971 trims the one
+       shoulder column each panel was keeping off the divider. */
+    expect(geometry.panels.map((p) => p.width)).toEqual([1748, 1748]);
+    expect(boundary!.trimmed).toEqual({ left: 1, right: 1 });
   });
 
   it("⚠ the PARALLEL HEAD sheet has NO divider bright enough to read — measured, not assumed", () => {
@@ -718,5 +734,450 @@ describe("rendering the sheet", () => {
         anchor: await anchorPng(),
       }),
     ).rejects.toThrow(/cannot hold 5 panels/);
+  });
+});
+
+/**
+ * ⚠ **THE SEAM A CUT EDGE USED TO KEEP — #1971, his own Sign on production.**
+ *
+ * His words: *"one of the views got cropped badly i can see on the left side of
+ * the image where the gap line was between the image and the border on the
+ * sheet making the crop look dirty"*. The three-quarter view is the MIDDLE
+ * panel of the head sheet, so its left edge is interior boundary 1 — and on the
+ * shipping head sheet that boundary's equal share lands at **1280**, which is
+ * the sheet's own hairline seam: one column, **89 greylevels below** its
+ * neighbourhood. `rightStart = 1280` handed that whole column to his
+ * three-quarter view as its first column of pixels.
+ *
+ * # The control is the rule `main` shipped, written out here
+ *
+ * Working law 2: these arms would be worth nothing if they could not fail. So
+ * every assertion about a clean edge is made twice on the same real signal —
+ * once against the detector and once against `edgeTheOldRuleCut`, which
+ * reproduces the cut this card replaces (`equal - 1 / equal` for a fallback,
+ * `band.start - 1 / band.end + 1` for a divider) — and the second must fail.
+ *
+ * # What the sweep found, which is why this is not a dark-seam special case
+ *
+ * Working law 7, the class rather than the instance: the same defect sits on
+ * the BRIGHT boundaries, in the other direction. `DIVIDER_BAND_TOLERANCE` grows
+ * a band 12 greylevels down from its peak, so the shoulder columns below that
+ * stayed at the panel edge — **+15 to +58 over their panel's backdrop**, on
+ * sheets whose cut his eye had already passed. Measured across the six real
+ * sheets: **26 of 34 cut edges were dirty, and 1 is now**, the worst falling
+ * from 95.0 to 10.2 greylevels off backdrop.
+ *
+ * # And the sweep's negative, which is NOT fixed because there is nothing to fix
+ *
+ * The card asks after the top, bottom and outer edges. Read on the real bytes
+ * of all three sheets (`output/1926-two-sheets/`, 31 MB and gitignored): the
+ * first and last ten ROWS and the first and last ten COLUMNS are **flat within
+ * ±1 greylevel** — 169/169/169 down the top, 178/178/179 down the left, and so
+ * on for all three. There is no frame around a sheet; the panels run to its
+ * edge, so the only seam on it is the interior one. A trim for three edges that
+ * carry nothing would be machinery with no measurement behind it, and it would
+ * risk eating a figure that touches the frame.
+ */
+describe("⚠ no panel keeps the seam that marks its edge (#1971)", () => {
+  /** The cut `main` shipped, for the control. */
+  const edgeTheOldRuleCut = (
+    boundary: SheetBoundary,
+    index: number,
+    width: number,
+    panelCount: number,
+  ): { leftEnd: number; rightStart: number } => {
+    if (boundary.band) {
+      return { leftEnd: boundary.band.start - 1, rightStart: boundary.band.end + 1 };
+    }
+    const equal = Math.round((width * (index + 1)) / panelCount);
+    return { leftEnd: equal - 1, rightStart: equal };
+  };
+
+  /**
+   * How far a column sits off its own panel's backdrop — the same question the
+   * repair asks, asked independently here rather than through the repair's own
+   * helper, because an arm reading its subject's reader cannot refute it.
+   */
+  const offBackdrop = (
+    means: ArrayLike<number>,
+    width: number,
+    column: number,
+    inward: -1 | 1,
+  ): number => {
+    const samples: number[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const x = column + inward * (3 + i);
+      if (x >= 0 && x <= width - 1) samples.push(means[x]);
+    }
+    samples.sort((a, b) => a - b);
+    return Math.abs(means[column] - samples[Math.floor(samples.length / 2)]!);
+  };
+
+  /** Every real sheet in the repository, as one population. */
+  const REAL: { label: string; width: number; panels: number; means: number[] }[] = [
+    ...COURT.sheets.map((sheet) => ({
+      label: `court-${sheet.sheet}`,
+      width: sheet.width,
+      panels: 5,
+      means: sheet.columnMeans,
+    })),
+    ...(
+      JSON.parse(
+        readFileSync("server/castingV2/__fixtures__/signSheet.twoSheetColumnMeans.json", "utf8"),
+      ) as {
+        sheets: {
+          kind: string; render: string; panels: number; width: number; columnMeans: number[];
+        }[];
+      }
+    ).sheets.map((sheet) => ({
+      label: `${sheet.kind}/${sheet.render}`,
+      width: sheet.width,
+      panels: sheet.panels,
+      means: sheet.columnMeans,
+    })),
+  ];
+
+  /** The widest a cut edge may sit from its own panel's backdrop. */
+  const CLEAN_EDGE_TOLERANCE = 8;
+
+  it("the fixture population is every real sheet, both shapes", () => {
+    expect(REAL.map((sheet) => sheet.label)).toEqual([
+      "court-1", "court-2", "court-3", "body/parallel", "head/parallel", "head/serial",
+    ]);
+  });
+
+  it("his three-quarter view no longer starts on the seam — and the old rule did", () => {
+    const sheet = REAL.find((entry) => entry.label === "head/parallel")!;
+    const means = Float64Array.from(sheet.means);
+    const geometry = findSheetPanelGeometry(means, sheet.width, sheet.panels);
+    const first = geometry.boundaries[0]!;
+
+    /* The seam itself, so the arm names what it avoids rather than a bare number. */
+    expect(first.source).toBe("fifth");
+    expect(first.darkSeam!.start).toBe(1280);
+    expect(first.darkSeam!.end).toBe(1280);
+    expect(first.darkSeam!.contrast).toBeGreaterThan(80);
+
+    /* AFTER: the three-quarter panel begins past the whole of it. */
+    expect(first.rightStart).toBe(1281);
+    expect(geometry.panels[1]!.left).toBe(1281);
+    expect(offBackdrop(means, sheet.width, first.rightStart, 1))
+      .toBeLessThanOrEqual(CLEAN_EDGE_TOLERANCE);
+
+    /*
+      ⚠ **TWO MECHANISMS STAND BEHIND THAT 1281 AND THIS ARM CANNOT TELL THEM
+      APART — said here rather than left to be discovered.** The seam sits
+      exactly on the equal share, so the cut moving outside its run and the trim
+      walking it off the edge both land on the same column; sabotage proved it
+      by leaving this arm green with the shift removed. The arm that isolates
+      the shift is the off-centre seam above.
+    */
+    /* THE CONTROL: the rule main shipped put the seam column itself first. */
+    const old = edgeTheOldRuleCut(first, 0, sheet.width, sheet.panels);
+    expect(old.rightStart).toBe(1280);
+    expect(
+      offBackdrop(means, sheet.width, old.rightStart, 1),
+      "the old cut's first column was already clean — then this arm proves nothing",
+    ).toBeGreaterThan(CLEAN_EDGE_TOLERANCE);
+  });
+
+it("⚠ a seam a few columns OFF the equal share — the case the trim cannot reach", () => {
+    /*
+      ⚠ **THIS ARM EXISTS BECAUSE SABOTAGE SAID THE OTHER ONE WAS NOT ENOUGH.**
+      Cutting back through the seam's centre left the three-quarter arm above
+      GREEN: on that sheet the seam sits exactly on the equal share, so it lands
+      at the cut EDGE and the trim walks it off without the shift's help. The
+      two mechanisms cover the same ground there, and an arm that cannot tell
+      them apart cannot report one of them dying.
+
+      What only the shift can reach is a seam sitting a few columns INSIDE a
+      panel — reachable, because `SEAM_SEARCH_PX` looks 4 columns either way.
+      There the cut edge is clean backdrop, so the trim correctly sees nothing,
+      and the line is a dark hairline two pixels into the delivered view.
+    */
+    const width = 900;
+    const means = new Float64Array(width).fill(200);
+    means[302] = 100; /* 1 px seam, two columns right of the equal third at 300 */
+
+    /* The trim's own answer at the old edge, so the claim is driven not argued. */
+    expect(seamColumnsAtEdge(means, width, 300, 1)).toBe(0);
+
+    const geometry = findSheetPanelGeometry(means, width, 3);
+    const first = geometry.boundaries[0]!;
+    expect(first.source).toBe("fifth");
+    expect(first.darkSeam).toEqual({ start: 302, end: 302, contrast: 100 });
+
+    /* AFTER: the seam belongs to neither panel. */
+    expect({ leftEnd: first.leftEnd, rightStart: first.rightStart })
+      .toEqual({ leftEnd: 301, rightStart: 303 });
+    expect(first.trimmed).toEqual({ left: 0, right: 0 });
+    for (let i = 0; i < 5; i += 1) expect(means[first.rightStart + i]).toBe(200);
+
+    /* THE CONTROL: the old rule's panel carried the hairline two columns in. */
+    const old = edgeTheOldRuleCut(first, 0, width, 3);
+    expect(old.rightStart).toBe(300);
+    expect(means[old.rightStart + 2]).toBe(100);
+  });
+
+  it("every cut edge on every real sheet is backdrop — and 26 of 34 were not", () => {
+    let dirtyNow = 0;
+    let dirtyBefore = 0;
+    let edges = 0;
+    const offenders: string[] = [];
+
+    for (const sheet of REAL) {
+      const means = Float64Array.from(sheet.means);
+      const geometry = findSheetPanelGeometry(means, sheet.width, sheet.panels);
+      geometry.boundaries.forEach((boundary, index) => {
+        const old = edgeTheOldRuleCut(boundary, index, sheet.width, sheet.panels);
+        const pairs: [number, number, -1 | 1][] = [
+          [boundary.leftEnd, old.leftEnd, -1],
+          [boundary.rightStart, old.rightStart, 1],
+        ];
+        for (const [now, before, inward] of pairs) {
+          edges += 1;
+          if (offBackdrop(means, sheet.width, now, inward) > CLEAN_EDGE_TOLERANCE) {
+            dirtyNow += 1;
+            offenders.push(`${sheet.label} b${index + 1} col ${now}`);
+          }
+          if (offBackdrop(means, sheet.width, before, inward) > CLEAN_EDGE_TOLERANCE) {
+            dirtyBefore += 1;
+          }
+        }
+      });
+    }
+
+    expect(edges).toBe(34);
+    /*
+      ⚠ **ONE SURVIVOR, AND IT IS NAMED RATHER THAN TUNED AWAY.** Court sheet
+      2's second panel starts at column 802, which reads 10.2 off its backdrop —
+      and the profile from there runs 207, 207, 203, 201, 199, 198, 196, 194 …
+      171 over the next twenty-five columns. That is the panel's own lighting
+      falloff away from a bright divider, not a line, and no trim reaches a flat
+      reading inside it. Lowering the floor until this read zero would start
+      eating backdrop off every sheet to flatter a number.
+    */
+    expect(offenders).toEqual(["court-2 b1 col 802"]);
+    expect(dirtyNow).toBe(1);
+    expect(
+      dirtyBefore,
+      "the old rule cut clean edges — then there was no defect to fix",
+    ).toBe(26);
+  });
+
+  it("the bright boundaries had it too, which is why the trim is not a dark-seam patch", () => {
+    /* Court sheet 3's second panel used to begin at column 779: 219 against a
+       161 backdrop — the same visible line he reported, in the other direction,
+       on a sheet whose cut his eye passed. */
+    const sheet = REAL.find((entry) => entry.label === "court-3")!;
+    const means = Float64Array.from(sheet.means);
+    const geometry = findSheetPanelGeometry(means, sheet.width, sheet.panels);
+    const first = geometry.boundaries[0]!;
+
+    expect(first.source).toBe("divider");
+    expect(first.darkSeam).toBeNull();
+    expect(first.trimmed).toEqual({ left: 2, right: 1 });
+
+    const old = edgeTheOldRuleCut(first, 0, sheet.width, sheet.panels);
+    expect(offBackdrop(means, sheet.width, old.rightStart, 1)).toBeGreaterThan(40);
+    expect(offBackdrop(means, sheet.width, first.rightStart, 1))
+      .toBeLessThanOrEqual(CLEAN_EDGE_TOLERANCE);
+  });
+
+  it("⚠ a figure pressed against the divider is not cut into — and no cap is what stops it", () => {
+    /*
+      ⚠ **THIS ARM WAS WRITTEN TO DRIVE A CAP, AND SABOTAGE SHOWED THERE WAS NO
+      CAP TO DRIVE.** The first shape of the repair carried a cap that claimed to
+      REFUSE past 8 columns so a figure could never be eaten, and this arm said
+      so in its title. Sabotaging that refusal into taking its cap instead left
+      the arm GREEN on every input — because the refusal is unreachable: the
+      backdrop is the MEDIAN of columns `edge+3 … edge+8`, a median of integer
+      samples is one of its own members, so the walk always meets a column
+      reading 0 off the backdrop at or before offset 8.
+
+      What the fixture DOES prove is better than what it was built for, and it
+      is the thing that actually protects a picture: a figure wide enough to
+      matter FILLS the backdrop window, so it reads as this panel's own backdrop
+      and the walk stops on its first step. The cap was never load-bearing; this
+      is.
+    */
+    const width = 900;
+    const means = new Float64Array(width).fill(200);
+    for (let x = 299; x <= 301; x += 1) means[x] = 254;
+    for (let x = 302; x <= 601; x += 1) means[x] = 90;
+
+    const geometry = findSheetPanelGeometry(means, width, 3);
+    const first = geometry.boundaries[0]!;
+    expect(first.source).toBe("divider");
+    expect(first.band!.start).toBe(299);
+    expect(first.band!.end).toBe(301);
+    /* Not one column of the body is taken, and the cut stays where the band put it. */
+    expect(first.trimmed.right).toBe(0);
+    expect(first.rightStart).toBe(302);
+    expect(seamColumnsAtEdge(means, width, 302, 1)).toBe(0);
+
+    /* THE CONTROL: a hairline in the same place IS trimmed, so the zero above is
+       the figure being spared and not a reader that never fires. */
+    const hairline = new Float64Array(width).fill(200);
+    for (let x = 299; x <= 301; x += 1) hairline[x] = 254;
+    hairline[302] = 150;
+    expect(seamColumnsAtEdge(hairline, width, 302, 1)).toBe(1);
+  });
+
+  it("⚠ the walk always stops ON backdrop, never by exhaustion — driven, not argued", () => {
+    /*
+      The bound's docblock claims the loop can never run out, and that claim is
+      the only reason this function needs no cap. A claim like that is worth
+      nothing unread, so it is driven over randomised profiles rather than
+      reasoned about: for every one, the column the walk stopped at must itself
+      be within tolerance of the backdrop it was measured against — which is
+      exactly *it stopped because it found backdrop* rather than *it ran out*.
+
+      ⚠ **Ramps are in the population on purpose.** A ramp is the shape most
+      likely to outrun a backdrop sampled once, and this population's deepest
+      walk is **6 of a possible 8** — read by printing it, not estimated, which
+      is what makes the floor below a real floor rather than decoration.
+    */
+    const width = 400;
+    let seed = 20261008;
+    const next = (): number => {
+      /* A fixed generator, so a red is reproducible rather than a once-off. */
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+
+    let deepest = 0;
+    for (let trial = 0; trial < 400; trial += 1) {
+      const means = new Float64Array(width);
+      /*
+        ⚠ **PIECEWISE RAMPS, BECAUSE THE FIRST POPULATION WAS TOO FLAT TO ASK
+        THE QUESTION.** It used one gentle slope over the whole profile, every
+        walk came back 1 column, and the floor below caught it — a sweep whose
+        deepest walk is 1 cannot tell a bound that holds from a bound that is
+        never approached. Segments of 20–60 columns at up to 4 greylevels a
+        column are a figure's soft edge, which is the real shape most
+        likely to outrun a backdrop sampled once.
+      */
+      let level = 40 + next() * 180;
+      let x = 0;
+      while (x < width) {
+        const run = 20 + Math.floor(next() * 40);
+        const slope = (next() - 0.5) * 8;
+        for (let i = 0; i < run && x < width; i += 1, x += 1) {
+          level = Math.max(0, Math.min(255, level + slope));
+          means[x] = Math.max(0, Math.min(255, level + (next() - 0.5) * 4));
+        }
+      }
+      const spikes = Math.floor(next() * 4);
+      for (let s = 0; s < spikes; s += 1) {
+        means[Math.floor(next() * width)] = next() < 0.5 ? 0 : 255;
+      }
+
+      for (const edge of [50, 120, 200, 310]) {
+        for (const inward of [-1, 1] as const) {
+          const walked = seamColumnsAtEdge(means, width, edge, inward);
+          deepest = Math.max(deepest, walked);
+          expect(walked).toBeLessThanOrEqual(8);
+          if (walked === 0) continue;
+          /* The stopping column, judged against the backdrop the walk used. */
+          const samples: number[] = [];
+          for (let i = 0; i < 6; i += 1) samples.push(means[edge + inward * (3 + i)]!);
+          samples.sort((a, b) => a - b);
+          const backdrop = samples[Math.floor(samples.length / 2)]!;
+          const stoppedAt = means[edge + inward * walked]!;
+          expect(
+            Math.abs(stoppedAt - backdrop),
+            `trial ${trial} edge ${edge} dir ${inward}: the walk ran out instead of finding backdrop`,
+          ).toBeLessThanOrEqual(CLEAN_EDGE_TOLERANCE);
+        }
+      }
+    }
+    /* And the population did walk deep enough to be worth driving. */
+    expect(deepest).toBeGreaterThanOrEqual(3);
+  });
+
+  it("a trim of nothing is only ever an edge that was already backdrop", () => {
+    /*
+      ⚠ The refusal returns 0, which is indistinguishable from *already clean*
+      on the receipt alone. So the two are told apart here: a trim of 0 is only
+      honest where the edge is already backdrop, and that is asserted of every
+      zero on every real sheet. The one exception is the named survivor above.
+    */
+    for (const sheet of REAL) {
+      const means = Float64Array.from(sheet.means);
+      const geometry = findSheetPanelGeometry(means, sheet.width, sheet.panels);
+      geometry.boundaries.forEach((boundary, index) => {
+        if (boundary.trimmed.left === 0) {
+          expect(
+            offBackdrop(means, sheet.width, boundary.leftEnd, -1),
+            `${sheet.label} b${index + 1}: left trimmed nothing while still on a line`,
+          ).toBeLessThanOrEqual(CLEAN_EDGE_TOLERANCE);
+        }
+        const named = sheet.label === "court-2" && index === 0;
+        if (boundary.trimmed.right === 0 && !named) {
+          expect(
+            offBackdrop(means, sheet.width, boundary.rightStart, 1),
+            `${sheet.label} b${index + 1}: right trimmed nothing while still on a line`,
+          ).toBeLessThanOrEqual(CLEAN_EDGE_TOLERANCE);
+        }
+      });
+    }
+  });
+
+  it("a boundary with no seam at all is left exactly where it was", () => {
+    /* The negative control: a flat profile has nothing to trim, and a trim that
+       fired here would be shaving every panel of every sheet for no reason. */
+    const width = 600;
+    const means = new Float64Array(width).fill(180);
+    const geometry = findSheetPanelGeometry(means, width, 2);
+    const only = geometry.boundaries[0]!;
+    expect(only.source).toBe("fifth");
+    expect(only.darkSeam).toBeNull();
+    expect(only.trimmed).toEqual({ left: 0, right: 0 });
+    expect({ leftEnd: only.leftEnd, rightStart: only.rightStart })
+      .toEqual({ leftEnd: 299, rightStart: 300 });
+    expect(geometry.panels.map((panel) => panel.width)).toEqual([300, 300]);
+  });
+
+  it("every column is accounted for: a panel, a seam, or a trim — nothing to arithmetic", () => {
+    for (const sheet of REAL) {
+      const means = Float64Array.from(sheet.means);
+      const geometry = findSheetPanelGeometry(means, sheet.width, sheet.panels);
+
+      /*
+        ⚠ **WHAT THE TRIM COSTS, AND NOT WHAT THE PANELS WEIGH.** The first
+        shape of this arm compared each panel to an equal share and was wrong by
+        148 px on court sheet 3 — because the real dividers put that sheet's
+        panels at 620 and 868, which is the finding the detector exists for and
+        has nothing to do with the trim. What is being claimed here is that the
+        TRIM is cheap, so the trim is what is measured.
+      */
+      for (const boundary of geometry.boundaries) {
+        expect(boundary.trimmed.left).toBeLessThanOrEqual(8);
+        expect(boundary.trimmed.right).toBeLessThanOrEqual(8);
+      }
+      const shaved = geometry.boundaries.reduce(
+        (sum, boundary) => sum + boundary.trimmed.left + boundary.trimmed.right,
+        0,
+      );
+      /* Measured: 3 to 9 columns off a 3504–3840 px sheet — under 0.25%. */
+      expect(shaved).toBeLessThan(sheet.width * 0.005);
+
+      const lost = sheet.width - geometry.panels.reduce((sum, panel) => sum + panel.width, 0);
+      const bands = geometry.boundaries.reduce(
+        (sum, boundary) => sum + (boundary.band ? boundary.band.end - boundary.band.start + 1 : 0),
+        0,
+      );
+      const seams = geometry.boundaries.reduce(
+        (sum, boundary) => sum
+          + (boundary.darkSeam ? boundary.darkSeam.end - boundary.darkSeam.start + 1 : 0),
+        0,
+      );
+      const trims = geometry.boundaries.reduce(
+        (sum, boundary) => sum + boundary.trimmed.left + boundary.trimmed.right,
+        0,
+      );
+      expect(lost).toBe(bands + seams + trims);
+    }
   });
 });
