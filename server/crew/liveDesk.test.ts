@@ -24,6 +24,10 @@ import {
   liveTestDrives,
   liveWaitingOnYou,
 } from "./liveDesk";
+import {
+  handFindingNoteForPullRequest,
+  repairFlaggedAtForPullRequest,
+} from "../../shared/crewCardBuildState";
 import type { LiveQueueItem, LiveQueueReading } from "./liveQueue";
 
 function item(overrides: Partial<LiveQueueItem> & { number: number }): LiveQueueItem {
@@ -781,5 +785,133 @@ describe("the test drives in a reading", () => {
       RUNGS,
     );
     expect(desk.testDrives.map((drive) => drive.issueNumber)).toEqual([1644]);
+  });
+});
+
+/**
+ * ⚠ **WHEN THE RELAY LAST FLAGGED A HELD PULL REQUEST — #1977, the figure his
+ * board was missing.**
+ *
+ * His word, 2026-10-08 (terminal): *"yes shouldnt the manager be on top of this
+ * when delegating the work to the crew"*. His board already said *Needs a
+ * repair* on every held row; what it did not say is that one of them had been
+ * waiting nine hours while seats opened new cards.
+ *
+ * # ⚠ THE CLOCK ON THIS ROAD IS `updatedAt`, AND THESE ARMS ARE WRITTEN TO IT
+ *
+ * `handVerdictFreshness` dates a hand comment against the pull request's own
+ * clock, so a finding is `fresh` only while NOTHING has happened since — the
+ * weaker bound its docblock argues for, because neither this page nor a queue
+ * reader can afford a per-pull-request commit read. The first shape of these
+ * arms put `updatedAt` an hour after the finding and every row read `gate`:
+ * that was the model being right and the fixture being wrong about it.
+ */
+describe("when the relay last flagged a held pull request (#1977)", () => {
+  const pr = (number: number, updatedAt: string): LiveQueueItem =>
+    item({ number, kind: "pr", updatedAt, title: `PR ${number}` });
+
+  const finding = (pullRequest: number, at: string, note: string | null = null) =>
+    ({ kind: "finding" as const, card: pullRequest, at, note });
+  const verdict = (pullRequest: number, at: string) =>
+    ({ kind: "verdict" as const, card: pullRequest, at });
+
+  it("carries the timestamp of the very finding the row is quoted from", () => {
+    /*
+      ⚠ **THE WHOLE POINT OF TAKING THE STAGE'S OWN COMMENT.** The row's WORDS
+      come from `handFindingNoteForPullRequest`'s `newest`; if the clock were
+      resolved separately the page could quote one finding and date another, and
+      a reader would have no way to tell. Both are asserted off one event here.
+    */
+    const facts = [
+      finding(1963, "2026-10-08T05:30:40Z", "held on the refund path"),
+      finding(1963, "2026-10-08T07:38:17Z", "a second reading"),
+    ];
+    const rows = livePullRequests(reading([pr(1963, "2026-10-08T07:38:17Z")]), facts);
+    expect(rows[0]!.state).toBe("finding");
+    expect(rows[0]!.repairFlaggedAt).toBe("2026-10-08T07:38:17Z");
+    expect(handFindingNoteForPullRequest({
+      pullRequest: 1963,
+      updatedAt: "2026-10-08T07:38:17Z",
+      facts,
+    })).toBe("a second reading");
+  });
+
+  it("is null on every row that is not held — including one the relay has passed", () => {
+    const rows = livePullRequests(
+      reading([
+        pr(10, "2026-10-08T07:40:00Z"),
+        pr(11, "2026-10-08T07:39:00Z"),
+      ]),
+      [verdict(11, "2026-10-08T07:39:00Z")],
+    );
+    const byNumber = new Map(rows.map((row) => [row.number, row]));
+    /* No hand comment at all: in the gate. */
+    expect(byNumber.get(10)!.state).toBe("gate");
+    expect(byNumber.get(10)!.repairFlaggedAt).toBeNull();
+    /* Read and passed: merging, and nothing is owed. */
+    expect(byNumber.get(11)!.state).toBe("passed");
+    expect(byNumber.get(11)!.repairFlaggedAt).toBeNull();
+  });
+
+  it("⚠ a later VERDICT clears it, and an earlier one does not", () => {
+    /*
+      `handVerdictForPullRequest` resolves which hand comment is newer, and this
+      reader asks it first rather than resolving the order a second time — two
+      readers of one question is working law 4's shape, and it is what #1673 cost
+      six hours of the board saying *passed and merging* over a held pull
+      request. Both directions are driven, because only one of them is safe.
+    */
+    const held = livePullRequests(
+      reading([pr(20, "2026-10-08T06:00:00Z")]),
+      [verdict(20, "2026-10-08T05:00:00Z"), finding(20, "2026-10-08T06:00:00Z")],
+    );
+    expect(held[0]!.state).toBe("finding");
+    expect(held[0]!.repairFlaggedAt).toBe("2026-10-08T06:00:00Z");
+
+    const cleared = livePullRequests(
+      reading([pr(20, "2026-10-08T07:00:00Z")]),
+      [finding(20, "2026-10-08T06:00:00Z"), verdict(20, "2026-10-08T07:00:00Z")],
+    );
+    expect(cleared[0]!.state).toBe("passed");
+    expect(cleared[0]!.repairFlaggedAt).toBeNull();
+  });
+
+  it("⚠ a STALE finding owes nothing here — something happened after it", () => {
+    /*
+      The row's clock has moved past the finding, which on this road means
+      something happened to the pull request since — most often the repair being
+      pushed. `handVerdictFreshness`'s own stated limit is that a label change or
+      a later comment does the same, and it fails toward *not yet* rather than
+      toward *passed*, which is the only direction a board may be wrong in.
+    */
+    const rows = livePullRequests(
+      reading([pr(30, "2026-10-08T07:59:00Z")]),
+      [finding(30, "2026-10-08T01:00:00Z")],
+    );
+    expect(rows[0]!.state).not.toBe("finding");
+    expect(rows[0]!.repairFlaggedAt).toBeNull();
+
+    /* THE POSITIVE CONTROL: the same finding with the clock still on it IS held,
+       so the null above is staleness and not a reader that never fires. */
+    const fresh = livePullRequests(
+      reading([pr(30, "2026-10-08T01:00:00Z")]),
+      [finding(30, "2026-10-08T01:00:00Z")],
+    );
+    expect(fresh[0]!.state).toBe("finding");
+    expect(fresh[0]!.repairFlaggedAt).toBe("2026-10-08T01:00:00Z");
+  });
+
+  it("the one reader is shared, so a shift's board and his page cannot disagree", () => {
+    /*
+      The shared function is asserted directly beside the row it fills, because
+      the row is a CONSUMER: a future caller that re-derived the answer from the
+      facts by hand would pass every arm above while being free to drift.
+    */
+    const facts = [finding(40, "2026-10-08T02:00:00Z"), finding(40, "2026-10-08T03:00:00Z")];
+    const input = { pullRequest: 40, updatedAt: "2026-10-08T03:00:00Z", facts };
+    expect(repairFlaggedAtForPullRequest(input)).toBe("2026-10-08T03:00:00Z");
+
+    const rows = livePullRequests(reading([pr(40, "2026-10-08T03:00:00Z")]), facts);
+    expect(rows[0]!.repairFlaggedAt).toBe(repairFlaggedAtForPullRequest(input));
   });
 });

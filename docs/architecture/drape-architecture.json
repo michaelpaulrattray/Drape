@@ -14304,6 +14304,10 @@
       "path": "server/refinePanelDoors.test.ts"
     },
     {
+      "id": "test:server/repairsOwed.test.ts",
+      "path": "server/repairsOwed.test.ts"
+    },
+    {
       "id": "test:server/replyHosts.test.ts",
       "path": "server/replyHosts.test.ts"
     },
