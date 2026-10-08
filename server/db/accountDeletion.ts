@@ -468,6 +468,22 @@ export function wardrobeOwnedKeyPrefixes(userId: number): readonly [string, stri
 }
 
 /**
+ * Where `wardrobe.models.upload` puts this account's model photograph —
+ * `<id>-models/upload-…` — and therefore the one prefix under which a
+ * session's `modelImageUrl` is read as THIS account's object (#2022).
+ *
+ * It is NOT one of {@link wardrobeOwnedKeyPrefixes} on purpose: those are what
+ * a garment, a Look, an Outfit or a session's history may own, and a model
+ * photo must not be adoptable onto any of them (`garmentAdoption.ts` refuses
+ * it by the same reasoning). It is owned by exactly one column, a session's
+ * photo. The trailing `-models/upload-` separates account 1 from account 12,
+ * as `-wardrobe/` does for the other two.
+ */
+export function wardrobeModelPhotoKeyPrefix(userId: number): string {
+  return `${userId}-models/upload-`;
+}
+
+/**
  * A wardrobe row's picture, read by key when the row has one and by URL when
  * it does not (#2020) — with ONE extra condition on the URL.
  *
@@ -802,8 +818,24 @@ export async function collectAccountOwnedStorageItemsIn(
   const sessions = await tx.select().from(wardrobeSessions)
     .where(eq(wardrobeSessions.userId, userId)).for("update");
   for (const session of sessions) {
-    // A session's modelImageUrl is a reference input and may be shared. Only
-    // generated history is deletion authority when no explicit key exists.
+    /*
+      A session's modelImageUrl is a reference input and may be shared — a
+      Cast-backed session names the Cast's full-body view, which belongs to the
+      Cast. So it is deletion authority ONLY under this account's own
+      model-photo prefix (#2022): since `createSession` adopts an upload-only
+      session's photograph out of its scratch manifest, this row is the one
+      thing that still names it, and an account erased a week after opening the
+      session would otherwise leave the photograph at a public URL for ever.
+      A Cast's key carries no account id and another account's upload carries
+      another id, so neither can pass.
+    */
+    if (typeof session.modelImageUrl === "string") {
+      const photo = classifyStorageReference({ url: session.modelImageUrl, currentPublicUrl });
+      if (photo.kind === "current_origin_url" && photo.key.startsWith(wardrobeModelPhotoKeyPrefix(userId))) {
+        publicKeys.add(photo.key);
+      }
+    }
+    // Generated history is deletion authority under the wardrobe prefixes.
     const history = parseJsonValue(session.history);
     if (Array.isArray(history)) {
       for (const url of history) addOwnedWardrobeReference(publicKeys, currentPublicUrl, userId, { url });

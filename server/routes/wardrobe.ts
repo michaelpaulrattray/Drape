@@ -38,7 +38,9 @@ import {
   adoptGarmentPictures,
   garmentRowPictures,
   importPictureChoice,
+  spokenImportRefusal,
 } from "../wardrobe/garmentAdoption";
+import { wardrobeModelPhotoKeyPrefix } from "../db/accountDeletion";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -693,25 +695,37 @@ const decomposeRouter = router({
         can drive a decision written inside a tRPC handler.
       */
       const chosen = importPictureChoice(input);
-      const adopted = await adoptGarmentPictures({
-        userId: ctx.user.id,
-        imageUrl: chosen.imageUrl,
-        sourceUrl: chosen.sourceUrl,
-        currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
-      });
+      /* SPOKEN, NOT A 500 (#2028). The two refusals this block can raise — a
+         picture that is not this account's, and a receipt the garment could not
+         take over — are both BEFORE the credit hold, so "nothing was charged"
+         is true of every one of them. The receipt refusals `updateGarment` can
+         raise further down are AFTER the charge and are deliberately not
+         wrapped: that sentence would be false there. */
+      let adopted: Awaited<ReturnType<typeof adoptGarmentPictures>>;
+      let garmentId: number;
+      try {
+        adopted = await adoptGarmentPictures({
+          userId: ctx.user.id,
+          imageUrl: chosen.imageUrl,
+          sourceUrl: chosen.sourceUrl,
+          currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
+        });
+
+        // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
+        garmentId = await createGarment({
+          userId: ctx.user.id,
+          slotType: input.slotType,
+          ...garmentRowPictures(adopted),
+          shortName: input.label,
+          status: "processing",
+        }, adopted.receipts);
+      } catch (err) {
+        throw spokenImportRefusal(err);
+      }
       /* The digitize reads the garment's OWN object from here on, never the
          scratch key it was cut from — one source of truth for what this row is
          made of. */
       const garmentImageUrl = adopted.image.url;
-
-      // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
-      const garmentId = await createGarment({
-        userId: ctx.user.id,
-        slotType: input.slotType,
-        ...garmentRowPictures(adopted),
-        shortName: input.label,
-        status: "processing",
-      }, adopted.receipts);
 
       try {
         const result = await withAtomicCredits(
@@ -770,6 +784,9 @@ const sessionRouter = router({
         requestedImageUrl: input.modelImageUrl,
         readMode,
       });
+      /* An upload-only session ADOPTS its photograph out of the scratch
+         manifest `models.upload` registered (#2022), so a session resumed after
+         the day's hold still has its picture. */
       const sessionId = await createSession({
         userId: ctx.user.id,
         modelId: input.modelId ?? null,
@@ -777,9 +794,9 @@ const sessionRouter = router({
         history: [],
         historyIndex: 0,
         activeGarmentIds: [],
-      });
-      // Enforce session cap — delete oldest beyond limit
-      await capUserSessions(ctx.user.id);
+      }, process.env.R2_PUBLIC_URL ?? "");
+      // Enforce session cap — delete oldest beyond limit (each one's photo back to the worker, #2022)
+      await capUserSessions(ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { sessionId };
     }),
 
@@ -836,7 +853,7 @@ const sessionRouter = router({
       if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
-      await deleteSession(input.sessionId, ctx.user.id);
+      await deleteSession(input.sessionId, ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { success: true };
     }),
 
@@ -964,7 +981,9 @@ const modelRouter = router({
       throwIfRateLimited(ctx.user.id);
 
       const suffix = randomUUID();
-      const fileKey = `${ctx.user.id}-models/upload-${Date.now()}-${suffix}.png`;
+      /* The prefix is the erasure sweep's own (#2022) — imported, not
+         restated, because it is what makes a session's photo this account's. */
+      const fileKey = `${wardrobeModelPhotoKeyPrefix(ctx.user.id)}${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",

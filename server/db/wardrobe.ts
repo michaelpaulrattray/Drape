@@ -18,7 +18,8 @@ import {
 } from "../../drizzle/schema";
 import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
-import { wardrobeOwnedKeyPrefixes } from "./accountDeletion";
+import { wardrobeModelPhotoKeyPrefix, wardrobeOwnedKeyPrefixes } from "./accountDeletion";
+import { returnWardrobeScratchKeyIn } from "../wardrobe/scratchUpload";
 import { classifyStorageReference } from "../casting/deletionAudit";
 
 function affectedRows(result: unknown): number {
@@ -112,13 +113,25 @@ async function releaseWardrobeReceiptIn(
  */
 async function adoptOwnedScratchKeyIn(
   tx: TransactionHandle,
-  input: { userId: number; url: string | null | undefined; currentPublicUrl: string },
+  input: {
+    userId: number;
+    url: string | null | undefined;
+    currentPublicUrl: string;
+    /**
+     * The prefixes the account-erasure sweep reads THIS row's column as owning,
+     * imported from `accountDeletion.ts` by every caller rather than defaulted
+     * here: a Look or an Outfit passes `wardrobeOwnedKeyPrefixes`, a session's
+     * model photo passes `wardrobeModelPhotoKeyPrefix` (#2022). A default would
+     * be a caller able to adopt a key its own column is never swept by.
+     */
+    ownedPrefixes: readonly string[];
+  },
 ): Promise<string | null> {
   if (!input.url) return null;
   const classified = classifyStorageReference({ url: input.url, currentPublicUrl: input.currentPublicUrl });
   if (classified.kind !== "current_origin_url") return null;
   const key = classified.key;
-  if (!wardrobeOwnedKeyPrefixes(input.userId).some((prefix) => key.startsWith(prefix))) return null;
+  if (!input.ownedPrefixes.some((prefix) => key.startsWith(prefix))) return null;
 
   const candidates = await tx
     .select({ id: storageCleanupBatches.id })
@@ -374,6 +387,7 @@ export async function createOutfit(data: InsertWardrobeOutfit, currentPublicUrl:
       userId: data.userId,
       url: data.resultThumbUrl,
       currentPublicUrl,
+      ownedPrefixes: wardrobeOwnedKeyPrefixes(data.userId),
     });
     const [result] = await tx.insert(wardrobeOutfits)
       .values(adoptedKey ? { ...data, resultThumbKey: adoptedKey } : data)
@@ -415,14 +429,120 @@ export async function deleteOutfit(outfitId: number, userId: number) {
 
 // ── Sessions ───────────────────────────────────────────────────────────────
 
-export async function createSession(data: InsertWardrobeSession) {
+/**
+ * Open a wardrobe session. An UPLOAD-ONLY session adopts its model photo (#2022).
+ *
+ * `wardrobe.models.upload` puts the customer's photograph under
+ * `<id>-models/upload-…` in a scratch manifest held for
+ * `WARDROBE_SCRATCH_HOLD_MS` (a day, #1961), and this row then names that URL
+ * as the picture the session is built on. Nothing ever discharged the
+ * manifest, so the worker kept its promise and a session resumed a day later
+ * showed a picture that was gone.
+ *
+ * So the insert ADOPTS it, in the insert's own transaction, through the same
+ * `adoptOwnedScratchKeyIn` a Look and an Outfit use — and under the one prefix
+ * the account-erasure sweep reads a session's photo as owning
+ * (`wardrobeModelPhotoKeyPrefix`). What that buys and what it costs:
+ * - **only a model-less session adopts.** A Cast-backed session's picture is
+ *   the Cast's full-body view and belongs to the Cast; its key carries no
+ *   account id, so it could not pass the prefix anyway, and the session does
+ *   not even ask.
+ * - **only this account's own, still-held upload** is adopted: the owner, the
+ *   kind, the single-object batch and the undischarged state are all
+ *   `adoptOwnedScratchKeyIn`'s, unchanged. A second session on the same
+ *   photograph finds no manifest left and is written exactly as before — the
+ *   first session already owns it, and `releaseSessionPhotosAndDeleteIn` keeps
+ *   it alive until the LAST session naming it is gone.
+ * - **no migration**: the key is not written on the row. The session's own
+ *   column is read under the prefix by the erasure sweep, which is the
+ *   ownership proof the prefix exists to be — only this account's own
+ *   `models.upload` ever mints a key under it.
+ *
+ * A photo already past its hold (the worker has claimed it) is not rescued:
+ * the bytes are being deleted, and the session is written as before.
+ */
+export async function createSession(data: InsertWardrobeSession, currentPublicUrl: string) {
   return withTransaction(async (tx) => {
     if (data.modelId != null) {
       await assertOwnedAvailableModelIn(tx, { modelId: data.modelId, userId: data.userId });
+    } else {
+      await adoptOwnedScratchKeyIn(tx, {
+        userId: data.userId,
+        url: data.modelImageUrl,
+        currentPublicUrl,
+        ownedPrefixes: [wardrobeModelPhotoKeyPrefix(data.userId)],
+      });
     }
     const [result] = await tx.insert(wardrobeSessions).values(data).$returningId();
     return result.id;
   });
+}
+
+/**
+ * Delete some of this account's sessions, and hand each model photo that no
+ * remaining session names BACK to the cleanup worker (#2022).
+ *
+ * ⚠ **WITHOUT THIS, ADOPTION WOULD TRADE ONE DEFECT FOR THE WORSE ONE.** Once
+ * `createSession` discharges the photo's manifest, the session row is the only
+ * thing in the product that names the key — and the account-erasure sweep
+ * finds it by reading session rows. A session deleted by the customer, or by
+ * `capUserSessions` the moment a fifth one opens, would then leave the photo
+ * at a permanently public URL that neither the worker nor the erasure could
+ * ever reach: #1961's orphan, rebuilt.
+ *
+ * So, in the deletion's own transaction: every session of this account naming
+ * the same photo is locked, and only when none of them survives the delete is
+ * a fresh scratch manifest written for the key, held for the same day
+ * `models.upload` held it — the picture returns to exactly the state the upload
+ * left it in, and a new session opened on it inside that day adopts it again.
+ * A photo not under this account's model-photo prefix (a Cast's view, any
+ * other URL) is never registered. A photo the worker had already collected is
+ * registered harmlessly: there is nothing left for the worker to delete.
+ *
+ * Returns how many session rows were deleted.
+ */
+async function releaseSessionPhotosAndDeleteIn(
+  tx: TransactionHandle,
+  input: { userId: number; sessionIds: readonly number[]; currentPublicUrl: string },
+): Promise<number> {
+  if (input.sessionIds.length === 0) return 0;
+  const doomed = await tx
+    .select({ id: wardrobeSessions.id, modelImageUrl: wardrobeSessions.modelImageUrl })
+    .from(wardrobeSessions)
+    .where(and(
+      eq(wardrobeSessions.userId, input.userId),
+      inArray(wardrobeSessions.id, [...input.sessionIds]),
+    ))
+    .for("update");
+  if (doomed.length === 0) return 0;
+  const doomedIds = new Set(doomed.map((row) => row.id));
+  const prefix = wardrobeModelPhotoKeyPrefix(input.userId);
+
+  const released = new Set<string>();
+  for (const { modelImageUrl } of doomed) {
+    const classified = classifyStorageReference({ url: modelImageUrl, currentPublicUrl: input.currentPublicUrl });
+    if (classified.kind !== "current_origin_url" || !classified.key.startsWith(prefix)) continue;
+    if (released.has(classified.key)) continue;
+    const sharers = await tx
+      .select({ id: wardrobeSessions.id })
+      .from(wardrobeSessions)
+      .where(and(
+        eq(wardrobeSessions.userId, input.userId),
+        eq(wardrobeSessions.modelImageUrl, modelImageUrl),
+      ))
+      .for("update");
+    if (sharers.some((row) => !doomedIds.has(row.id))) continue;
+    released.add(classified.key);
+    /* The upload's own manifest, minted by the upload's own module — kind,
+       synthetic id and the day's hold are decided there, not restated here. */
+    await returnWardrobeScratchKeyIn(tx, { userId: input.userId, storageKey: classified.key });
+  }
+
+  const result = await tx.delete(wardrobeSessions).where(and(
+    eq(wardrobeSessions.userId, input.userId),
+    inArray(wardrobeSessions.id, Array.from(doomedIds)),
+  ));
+  return affectedRows(result);
 }
 
 export async function getSessionById(sessionId: number, userId: number) {
@@ -525,16 +645,13 @@ export async function appendSessionResult(input: {
   });
 }
 
-export async function deleteSession(sessionId: number, userId: number) {
-  const db = (await getDb())!;
-  await db
-    .delete(wardrobeSessions)
-    .where(
-      and(
-        eq(wardrobeSessions.id, sessionId),
-        eq(wardrobeSessions.userId, userId),
-      ),
-    );
+/** Delete one session — a model photo nothing else names goes back to the worker (#2022). */
+export async function deleteSession(sessionId: number, userId: number, currentPublicUrl: string) {
+  await withTransaction((tx) => releaseSessionPhotosAndDeleteIn(tx, {
+    userId,
+    sessionIds: [sessionId],
+    currentPublicUrl,
+  }));
 }
 
 /**
@@ -689,7 +806,12 @@ export async function saveLook(data: InsertWardrobeLook, currentPublicUrl: strin
         .for("update");
       if (!session) throw new Error("Wardrobe session does not belong to this model");
     }
-    await adoptOwnedScratchKeyIn(tx, { userId: data.userId, url: data.imageUrl, currentPublicUrl });
+    await adoptOwnedScratchKeyIn(tx, {
+      userId: data.userId,
+      url: data.imageUrl,
+      currentPublicUrl,
+      ownedPrefixes: wardrobeOwnedKeyPrefixes(data.userId),
+    });
     const [result] = await tx.insert(wardrobeLooks).values(data).$returningId();
     return result.id;
   });
@@ -747,7 +869,7 @@ export async function deleteLook(lookId: number, userId: number) {
  * Cap sessions per user — delete oldest sessions beyond the limit.
  * Called after creating a new session to enforce the cap.
  */
-export async function capUserSessions(userId: number) {
+export async function capUserSessions(userId: number, currentPublicUrl: string) {
   const db = (await getDb())!;
   const allSessions = await db
     .select({ id: wardrobeSessions.id })
@@ -757,8 +879,12 @@ export async function capUserSessions(userId: number) {
 
   if (allSessions.length <= MAX_SESSIONS_PER_USER) return;
 
+  /* Through the same release as a customer's own delete (#2022): the oldest
+     session is the likeliest to be the only one naming its photograph. */
   const idsToDelete = allSessions.slice(MAX_SESSIONS_PER_USER).map((s) => s.id);
-  for (const id of idsToDelete) {
-    await db.delete(wardrobeSessions).where(eq(wardrobeSessions.id, id));
-  }
+  await withTransaction((tx) => releaseSessionPhotosAndDeleteIn(tx, {
+    userId,
+    sessionIds: idsToDelete,
+    currentPublicUrl,
+  }));
 }
