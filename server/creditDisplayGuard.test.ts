@@ -171,8 +171,16 @@ const repoRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   censused site and the reader indicts none in it. The rate's surviving home —
   the credit PACKS pane — computes it through `rateFor`, a name these rules do
   not read, so it was never censused either.
+
+  ✅ **15 → 11 (#2010), BY ROUTING.** The four sentences an admin reads back
+  after approving a moderator's credit request — the refund and grant
+  confirmations, and the Stripe refund's review note and confirmation — now
+  go through `staffCreditFact`, the customer's figure first and the ledger
+  beside it, so the toast agrees with the panel the admin approved from. Both
+  rows left by the routing door; the stale-row arm reported each at budgeted
+  2, found 0, before this number was touched.
 */
-const OCCURRENCES_CEILING = 15;
+const OCCURRENCES_CEILING = 11;
 
 const censusedOccurrences = UNROUTED.reduce((total, row) => total + row.count, 0);
 

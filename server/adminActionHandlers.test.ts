@@ -238,6 +238,21 @@ describe("cr_addCredits", () => {
     expect(db.addCredits.mock.calls[0][2]).toBe("refund");
   });
 
+  it("#2010 — moves the STORED LEDGER figure unconverted, and tells the admin the customer's figure beside it", async () => {
+    /* The row holds ledger (a moderator's typed 100 is stored as 500), so the
+       executor must not convert again — a second multiplication would grant
+       2,500 ledger, five times what was asked. */
+    const result = await runCr("cr_addCredits", { creditAmount: 500 });
+    expect(db.addCredits.mock.calls[0][1]).toBe(500);
+    expect(result.message).toContain(`100 credits · 500 ledger`);
+    vi.clearAllMocks();
+    db.getUserById.mockResolvedValue(ORDINARY_USER);
+    db.addCredits.mockResolvedValue({ success: true, newBalance: 600 });
+    const refund = await runCr("cr_refundCredits", { creditAmount: 160 });
+    expect(db.addCredits.mock.calls[0][1]).toBe(160);
+    expect(refund.message).toContain(`32 credits · 160 ledger`);
+  });
+
   it("refuses a non-positive amount", async () => {
     await expect(runCr("cr_addCredits", { creditAmount: 0 })).rejects.toThrow("Invalid credit amount");
     expect(db.addCredits).not.toHaveBeenCalled();

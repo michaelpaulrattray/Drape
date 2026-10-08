@@ -25,6 +25,7 @@
  */
 import { CHANGE_REQUEST_NOT_RECORDED } from "@shared/changeRequestLabels";
 import { changeRequestApprovalBlocker } from "@shared/changeRequestApproval";
+import { displayBalance, displayPrice, displayRefund, formatCredits, staffCreditFact } from "@shared/creditDisplay";
 
 import { RowId, RowStack, StatePill, pageRange } from "@/features/staff";
 import { DataTable } from "@/foundation";
@@ -296,7 +297,15 @@ function requestFacts(detail: any): DataFact[] {
       value:
         detail.creditAmount == null
           ? CHANGE_REQUEST_NOT_RECORDED
-          : `${detail.creditAmount}`,
+          : /* #2010: the stored figure is LEDGER (every row, before and
+               after the moderator's form changed scale); the customer's
+               number leads and the ledger stays beside it. */
+            staffCreditFact(
+              detail.type === "refund_credits"
+                ? displayRefund(detail.creditAmount)
+                : displayBalance(detail.creditAmount),
+              detail.creditAmount,
+            ),
     });
     if (detail.creditReason) facts.push({ label: "CREDIT REASON", value: detail.creditReason });
   }
@@ -307,8 +316,20 @@ function requestFacts(detail: any): DataFact[] {
       label: "REFUND",
       value: detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—",
     });
-    facts.push({ label: "ORIGINAL CREDITS", value: detail.originalCredits ?? "—" });
-    facts.push({ label: "CREDITS TO DEDUCT", value: detail.creditsToDeduct ?? "—" });
+    facts.push({
+      label: "ORIGINAL CREDITS",
+      value:
+        detail.originalCredits == null
+          ? "—"
+          : staffCreditFact(displayBalance(detail.originalCredits), detail.originalCredits),
+    });
+    facts.push({
+      label: "CREDITS TO DEDUCT",
+      value:
+        detail.creditsToDeduct == null
+          ? "—"
+          : staffCreditFact(displayPrice(detail.creditsToDeduct), detail.creditsToDeduct),
+    });
     if (detail.stripeSessionId) {
       facts.push({ label: "STRIPE SESSION", value: detail.stripeSessionId });
     }
@@ -381,11 +402,11 @@ function approvalConsequence(detail: any): string {
 
   switch (detail.type) {
     case "refund_credits":
-      return `Approving refunds ${detail.creditAmount} credits to this account. Denying leaves the balance as it is and closes the request.`;
+      return `Approving refunds ${formatCredits(displayRefund(detail.creditAmount))} credits to this account. Denying leaves the balance as it is and closes the request.`;
     case "add_credits":
-      return `Approving adds ${detail.creditAmount} credits to this account. Denying leaves the balance as it is and closes the request.`;
+      return `Approving adds ${formatCredits(displayBalance(detail.creditAmount))} credits to this account. Denying leaves the balance as it is and closes the request.`;
     case "stripe_refund":
-      return `Approving issues a ${detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—"} Stripe refund to the customer's card and takes ${detail.creditsToDeduct ?? "—"} credits back off their balance, floored at zero. Neither half can be undone from here.`;
+      return `Approving issues a ${detail.refundAmountCents ? `$${(detail.refundAmountCents / 100).toFixed(2)}` : "—"} Stripe refund to the customer's card and takes ${detail.creditsToDeduct == null ? "—" : formatCredits(displayPrice(detail.creditsToDeduct))} credits back off their balance, floored at zero. Neither half can be undone from here.`;
     case "block_ip":
       /*
         ⚠ **THE LAW-7 SIBLING OF #913, AND IT WAS THE WORSE OF THE TWO.**

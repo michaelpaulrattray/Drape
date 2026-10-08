@@ -100,6 +100,7 @@ import {
 } from "@/features/staff";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { ADMIN_ADJUST_DISPLAY_MAX } from "@shared/creditDisplay";
 import type { ChangeRequestType, ChangeRequestPriority } from "./moderatorConstants";
 import {
   CHANGE_REQUEST_TYPES,
@@ -313,8 +314,25 @@ export function ChangeRequestModal(props: ChangeRequestModalProps) {
           {/* Credit fields */}
           {(crType === "refund_credits" || crType === "add_credits") && (
             <div className="grid grid-cols-2 gap-3">
-              <LabelledField label="Credit amount" htmlFor="cr-credit-amount">
-                <Input id="cr-credit-amount" type="number" value={crCreditAmount} onChange={(e) => setCrCreditAmount(e.target.value)} placeholder="e.g., 100" min="1" required />
+              {/*
+                #2010: CREDITS AS THE CUSTOMER READS THEM — asking for 100 moves
+                their balance by 100 on every screen they see, the same scale
+                as the admin's Add credits (#1986). It was the hidden ledger
+                figure, five times smaller on screen.
+              */}
+              <LabelledField label="Credits" htmlFor="cr-credit-amount">
+                <Input
+                  id="cr-credit-amount"
+                  type="number"
+                  inputMode="numeric"
+                  value={crCreditAmount}
+                  onChange={(e) => setCrCreditAmount(e.target.value)}
+                  placeholder="As the customer sees them"
+                  min="1"
+                  max={ADMIN_ADJUST_DISPLAY_MAX}
+                  step="1"
+                  required
+                />
               </LabelledField>
               <LabelledField label="Credit reason" htmlFor="cr-credit-reason">
                 <Input id="cr-credit-reason" value={crCreditReason} onChange={(e) => setCrCreditReason(e.target.value)} placeholder="e.g., Service disruption" />

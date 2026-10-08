@@ -47,6 +47,7 @@ import { trpc } from "@/lib/trpc";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "@shared/inputLimits";
 
 import { type OpenChangeRequestOptions } from "./moderatorConstants";
+import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import "./investigations.css";
 
 /**
@@ -330,7 +331,10 @@ export function UserDetailCard({
         <div className="dp-inv__subjectfacts">
           <span className="dp-inv__fact">
             <span className="dp-inv__eyebrow">Credits</span>
-            <span className="dp-inv__factvalue">{credits?.balance?.toLocaleString() ?? "—"}</span>
+            {/* #2010: the balance the customer reads, as on the admin's Users panel. */}
+            <span className="dp-inv__factvalue">
+              {credits?.balance == null ? "—" : formatCredits(displayBalance(credits.balance))}
+            </span>
           </span>
           <span className="dp-inv__fact">
             <span className="dp-inv__eyebrow">Plan</span>

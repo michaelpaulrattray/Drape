@@ -11,6 +11,7 @@ import { getClientIp } from "../../security/rateLimit";
 import { writeImmutableLog } from "../../security/adminSecurity";
 import { type AdminActionContext, type ApprovedChangeRequestAction } from "./index";
 import { createModuleLogger } from "../../logging/logger";
+import { displayPrice, displayRefund, displayBalance, staffCreditFact } from "../../../shared/creditDisplay";
 const log = createModuleLogger("lib/adminActions");
 
 export async function executeChangeRequestAction(
@@ -154,7 +155,10 @@ export async function executeChangeRequestAction(
         approvedBy: pendingAction.resolvedBy,
       });
 
-      return { message: `Refunded ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
+      // #2010: the admin's confirmation reads the customer's figure first and
+      // the ledger beside it — the same sentence the request showed before
+      // Approve. `amount` is LEDGER (the stored unit, unconverted here).
+      return { message: `Refunded ${staffCreditFact(displayRefund(amount), amount)} to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
     }
 
     case "cr_addCredits": {
@@ -203,7 +207,7 @@ export async function executeChangeRequestAction(
         approvedBy: pendingAction.resolvedBy,
       });
 
-      return { message: `Added ${amount} credits to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
+      return { message: `Added ${staffCreditFact(displayBalance(amount), amount)} to ${targetUser.email || targetUser.name} via change request #${changeRequestId}` };
     }
 
     case "cr_blockIP": {
@@ -325,7 +329,7 @@ export async function executeChangeRequestAction(
 
       await updateCR(changeRequestId, {
         status: "approved",
-        reviewNotes: `Stripe refund ${refundResult.refundId}: $${(refundAmountCents / 100).toFixed(2)} (${refundType}). ${creditsToDeduct} credits deducted.`,
+        reviewNotes: `Stripe refund ${refundResult.refundId}: $${(refundAmountCents / 100).toFixed(2)} (${refundType}). ${staffCreditFact(displayPrice(creditsToDeduct), creditsToDeduct)} deducted.`,
       }, "pending_execution");
 
       await logAuditEvent({
@@ -365,7 +369,7 @@ export async function executeChangeRequestAction(
         approvedBy: pendingAction.resolvedBy,
       });
 
-      return { message: `Stripe refund of $${(refundAmountCents / 100).toFixed(2)} issued (${refundType}). ${creditsToDeduct} credits deducted. Refund ID: ${refundResult.refundId}` };
+      return { message: `Stripe refund of $${(refundAmountCents / 100).toFixed(2)} issued (${refundType}). ${staffCreditFact(displayPrice(creditsToDeduct), creditsToDeduct)} deducted. Refund ID: ${refundResult.refundId}` };
     }
 
     default:
