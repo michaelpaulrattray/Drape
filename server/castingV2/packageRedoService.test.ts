@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * THE PAID REDO — the money sequence for a whole package asked for again
@@ -6,22 +6,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  *
  * **His ruling, verbatim (2026-10-07):** *"maybe we should allow retry by
  * default incase they didnt like the outfit that was invented or whatever but
- * it costs per retry and regens all views not just one"*, at ***"350"*** display
- * credits.
+ * it costs per retry and regens all views not just one"*, and **his price,
+ * 2026-10-08: *"on this card make both sign and redo/regenerate 650 credis"***
+ * — one flat charge for the press, with no per-view refund.
  *
- * Every arm is about what moves and in what order. The four that earn their
- * place, because each is a way this road could take money and give nothing:
+ * ⚠ **THE SHAPE OF THIS SUITE MOVED WITH HIS PRICE, and the arms that went
+ * with it are named here rather than quietly deleted.** It used to assert five
+ * deducts of a slice, a refund of ONE slice when one view failed, and a refund
+ * under that view's own reference. None of those is the product any more: a
+ * slot carries no money at all, and credits come back only when NOTHING
+ * arrived.
  *
- * - **ALL FIVE CLAIMS HAPPEN BEFORE ANY DEDUCT**, so a busy slot is a refusal
- *   that charged nothing rather than a half-bought package. Asserted on the
- *   JOURNAL, because "claimed then charged" and "charged then claimed" are the
- *   same set of calls in a different order and only the order is the control.
- * - **A FAILED VIEW REFUNDS ITS OWN SLICE AND NOTHING ELSE** — the other four
- *   stand, and the picture the customer already had stays in the failed slot.
- * - **ONE PLATE, TWO PANELS, FIVE VIEWS** — a redo whose outfit differed per
- *   view would be the thing his ruling exists to fix, delivered by the fix.
- * - **A PLATE THAT THROWS NEVER FAILS THE REDO.** His rule from path E, on a
- *   road that has now charged five slices by the time the plate is asked for.
+ * What earns a place now, because each is a way this road could take money and
+ * give nothing:
+ *
+ * - **EVERY SLOT IS CLAIMED BEFORE THE ONE DEDUCT**, so a busy slot is a
+ *   refusal that charged nothing rather than a half-bought package. Asserted on
+ *   the JOURNAL, because "claimed then charged" and "charged then claimed" are
+ *   the same calls in a different order and only the order is the control.
+ * - **ONE CHARGE, ON THE PRESS**, whatever she owns — the slot rows plan zero.
+ * - **A FAILED VIEW REFUNDS NOTHING** while anything else arrived, and the
+ *   picture the customer already had stays in that slot.
+ * - **ZERO DELIVERED REFUNDS THE WHOLE PRICE, EXACTLY ONCE.**
+ * - **TWO SHEETS, NOT FIVE RENDERS AND A PLATE** — the road the Sign itself
+ *   took in #1957, which is what makes his 650 the right price rather than a
+ *   loss.
  */
 
 vi.hoisted(() => {
@@ -113,11 +122,10 @@ vi.mock("./signService", async (importOriginal) => ({
 }));
 
 import { TRPCError } from "@trpc/server";
-import { CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { derivedClientRequestId } from "../casting/operationContract";
-import { renderLikeFrame } from "../testing/renderLikeFrame";
+import sharp from "sharp";
 import { CAST_PACKAGE_VIEWS, castPackageView } from "./castViewPackage";
-import { PLATE_ANGLES } from "./outfitPlate";
 import {
   PACKAGE_REDO_BUSY_MESSAGE,
   PACKAGE_REDO_FACE_MISSING_MESSAGE,
@@ -125,12 +133,12 @@ import {
   redoCastPackage,
   type PackageRedoServiceDependencies,
 } from "./packageRedoService";
+import { signSheetPlan, type SignSheetKind } from "./signSheet";
 import type { CastSlotProjection } from "./castProjection";
 
-const SLICE = CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS;
-/* The whole press, composed rather than imported — no package total is
-   declared in production, because the offer prices HER slots. */
-const PACKAGE_PRICE = SLICE * CAST_PACKAGE_VIEWS.length;
+/* ONE number, read from the declaration the client is served (#1903, his flat
+   650). There is no slice to compose a total from any more. */
+const PACKAGE_PRICE = CASTING_V2_PACKAGE_REDO_PRICE_CREDITS;
 const PRESS = "11111111-1111-4111-8111-111111111111";
 
 const journal: string[] = [];
@@ -144,17 +152,21 @@ const committed: Array<{
 }> = [];
 /** Every reference list the identity engine was posted, per view. */
 const enginePosts: Array<{ prompt: string; references: Array<{ bytes: Buffer }> }> = [];
-let plateCalls = 0;
-let plateBehaviour: "ok" | "throw" = "ok";
+/** Every sheet the press asked for, by kind — two per redo, one per sheet. */
+const sheetCalls: SignSheetKind[] = [];
+let sheetBehaviour: "ok" | "throw" = "ok";
 let balance = 10_000_000;
-let chargeFails: ReadonlySet<string> = new Set();
-let engineFails: ReadonlySet<string> = new Set();
+/** The ONE deduct of a press either lands or does not; there are no slices. */
+let chargeFails = false;
+/** Views whose PANEL the judge refuses — the only per-view failure the sheet
+ *  road has, now that no view calls an engine of its own. */
+let judgeRefuses: ReadonlySet<string> = new Set();
 let busySlotAngles: readonly string[] = [];
 let castStatus: "building" | "ready" = "ready";
 /** Which angles `begin` refuses as locked, by the angle in the claim payload. */
 let lockedAngles: ReadonlySet<string> = new Set();
-/** A replayed press: angle -> the receipt the first press settled. */
-let replays: Record<string, unknown> = {};
+/** What a replayed PRESS hands back, or null for a first press. */
+let pressReplay: unknown = null;
 /**
  * WHAT THE COMMIT DOES, PER ANGLE — #1903's review finding 1.
  *
@@ -180,6 +192,45 @@ function slots(): CastSlotProjection[] {
   }) as CastSlotProjection);
 }
 
+/**
+ * A SHEET THAT CAN ACTUALLY BE CUT — panels of unequal width with white
+ * dividers between them, the orchestrator suite's own fixture shape.
+ *
+ * ⚠ **IT HAS TO BE A REAL IMAGE.** `renderSignSheet` converts the anchor
+ * with `sharp` and the coordinator cuts the returned bytes with it, so a
+ * thirteen-byte ASCII stand-in reads as a sheet that never arrived — which
+ * would make every arm below pass for the wrong reason (a dead redo refunds
+ * the whole price, and most arms here would be satisfied by that).
+ */
+async function syntheticSheetBytes(panels: number): Promise<Buffer> {
+  const width = 100 * panels + 20 * (panels - 1);
+  const height = 40;
+  const widths = Array.from({ length: panels }, (_, index) => 100 + (index % 2 === 0 ? 12 : -12));
+  const spare = width - widths.reduce((a, b) => a + b, 0) - 4 * (panels - 1);
+  widths[widths.length - 1] = widths[widths.length - 1]! + spare;
+  const raw = Buffer.alloc(width * height, 0);
+  let x = 0;
+  widths.forEach((panelWidth, index) => {
+    for (let y = 0; y < height; y += 1) {
+      raw.fill(40 + index * 20, y * width + x, y * width + x + panelWidth);
+    }
+    x += panelWidth;
+    if (index < widths.length - 1) {
+      for (let y = 0; y < height; y += 1) raw.fill(255, y * width + x, y * width + x + 4);
+      x += 4;
+    }
+  });
+  return sharp(raw, { raw: { width, height, channels: 1 } }).png().toBuffer();
+}
+
+const sheetPngs = new Map<SignSheetKind, Buffer>();
+
+/** Her master, as a real image, for `renderSignSheet`'s own JPEG conversion. */
+const ANCHOR_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 function dependencies(
   overrides: Partial<PackageRedoServiceDependencies> = {},
 ): PackageRedoServiceDependencies {
@@ -204,18 +255,30 @@ function dependencies(
       anchorDeltas: null,
     }),
     readAnchorBytes: async () => ({
-      bytes: Buffer.from("her-signed-face"),
+      /* A real PNG: the sheet road converts the master before dispatch, so the
+         old ASCII stand-in would fail every sheet (see `syntheticSheetBytes`). */
+      bytes: ANCHOR_PNG,
       contentType: "image/png",
     }),
     readBalance: async () => ({ balance }),
-    begin: (async (request: { clientRequestId: string; payload: unknown }) => {
+    begin: (async (request: { clientRequestId: string; kind: string; payload: unknown }) => {
+      /*
+        TWO SHAPES THROUGH ONE SEAM (#1903, the flat price): the PRESS, which
+        names no angle and carries the whole price, and the five SLOTS, which
+        name an angle and carry none. The fixture tells them apart the way the
+        service does — by kind — rather than by sniffing the payload.
+      */
+      if (request.kind === "castingV2.packageRedoPress") {
+        journal.push("claim:press");
+        if (pressReplay !== null) {
+          return { type: "replay" as const, operationId: "op-press", result: pressReplay };
+        }
+        return { type: "execute" as const, operationId: request.clientRequestId };
+      }
       const angle = (request.payload as { angle: string }).angle;
       journal.push(`claim:${angle}`);
       if (lockedAngles.has(angle)) {
         throw new TRPCError({ code: "CONFLICT", message: PACKAGE_REDO_BUSY_MESSAGE });
-      }
-      if (angle in replays) {
-        return { type: "replay" as const, operationId: `op-${angle}`, result: replays[angle] };
       }
       /* The operation id is derived from the request id the entrance composed,
          so an arm can tie a commit back to the angle it belongs to. */
@@ -229,16 +292,11 @@ function dependencies(
       _userId: number,
       amount: number,
       _kind: string,
-      description: string,
+      _description: string,
       reference: string,
     ) => {
       journal.push("deduct");
-      /* The ledger line carries the view's LABEL ("Full back"), never its
-         angle key — so the fixture maps back through the same function the
-         service composed it with rather than guessing at the string. */
-      const angle = CAST_PACKAGE_VIEWS.find((candidate) =>
-        description.includes(castPackageView(candidate).label));
-      if (angle && chargeFails.has(angle)) return { success: false, error: "Not enough credits" };
+      if (chargeFails) return { success: false, error: "Not enough credits" };
       deducts.push({ amount, reference });
       return { success: true };
     }) as PackageRedoServiceDependencies["deduct"],
@@ -269,45 +327,58 @@ function dependencies(
       });
       return 4242;
     }) as PackageRedoServiceDependencies["commitRetried"],
-    outfitPlateEngine: () => ({
-      editWithReferences: async () => {
-        plateCalls += 1;
-        if (plateBehaviour === "throw") throw new Error("the plate door refused");
-        /* A REAL, SPLITTABLE IMAGE — `splitOutfitPlate` cuts it with sharp, so
-           thirteen bytes of ASCII would make every plate arm pass for the wrong
-           reason (the #1903 fixture finding, one seam over). Landscape, because
-           the plate is two panels side by side. */
-        return { bytes: await renderLikeFrame(128, 96), contentType: "image/png" };
-      },
-    }) as never,
-    identityEngine: () => ({
-      generateView: async (request: { prompt: string; references?: Array<{ bytes: Buffer }> }) => {
+    /*
+      ⚠ **THE VIEW ENGINE IS STILL BUILT, EVEN THOUGH NO VIEW CALLS IT.**
+      `renderViewAttempts` constructs it at the top of the loop — before it
+      learns there are sheets — and the real `castingViewEngine()` throws on a
+      missing `FAL_KEY`, which without this double fails all five views
+      instantly and reads as a dead redo. Its `generateView` THROWS on purpose:
+      if this road ever fell back to a per-view render, the arm that counts
+      sheets would not notice, and this would.
+    */
+    identityEngine: (() => ({
+      id: "test-identity",
+      editWithReferences: async () => { throw new Error("a redo edits nothing per view"); },
+      generateView: async () => { throw new Error("a redo renders no view of its own"); },
+    })) as never,
+    signSheetEngine: ((kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: async (request: { prompt: string; references?: Array<{ bytes: Buffer }> }) => {
         journal.push("render");
+        sheetCalls.push(kind);
         enginePosts.push({ prompt: request.prompt, references: request.references ?? [] });
-        /* WHICH VIEW IS THIS? Read off the one thing in the prompt that is
-           unique to an angle — its own `directive`, which
-           `composePackageViewPrompt` composes in. The angle KEY is not in the
-           prompt at all, which is how the first draft of this fixture targeted
-           nothing and three arms passed by never failing anything. */
-        const angle = CAST_PACKAGE_VIEWS.find((candidate) =>
-          request.prompt.includes(castPackageView(candidate).directive));
-        if (angle && engineFails.has(angle)) throw new Error("engine down");
+        if (sheetBehaviour === "throw") throw new Error("the sheet door refused");
         return {
-          bytes: Buffer.from("view"),
+          bytes: sheetPngs.get(kind) as Buffer,
           contentType: "image/png",
-          provenance: { model: "test-engine", provider: "test" },
+          latencyMs: 61_000,
+          provenance: {
+            provider: "fal" as const,
+            model: `sunburst-sheet-${kind}`,
+            providerRef: `sheet-ref-${kind}`,
+          },
         };
       },
-    }) as never,
-    judge: (() => async () => ({
-      pass: true,
-      method: "model",
-      axes: {
-        identity: { pass: true, note: "" },
-        intact: { pass: true, note: "" },
-        people: { pass: true, note: "" },
-      },
+      generateView: async () => { throw new Error("a redo renders no view of its own"); },
     })) as never,
+    judge: (() => async (request: { angle: string }) => {
+      /*
+        THE ONLY PER-VIEW FAILURE A SHEET ROAD HAS. No view calls an engine of
+        its own any more, so "this one did not arrive" is a panel the judge
+        refuses — which is also the real road a customer meets (#1903's
+        catastrophic axes).
+      */
+      const refused = judgeRefuses.has(request.angle);
+      return {
+        pass: !refused,
+        method: "model",
+        axes: {
+          identity: { pass: !refused, note: refused ? "not her" : "" },
+          intact: { pass: true, note: "" },
+          people: { pass: true, note: "" },
+        },
+      };
+    }) as never,
     storeImage: async (request: { operationId: string }) => ({
       key: `views/${request.operationId}.png`,
       url: `https://public/views/${request.operationId}.png`,
@@ -320,21 +391,29 @@ function dependencies(
 
 const input = { userId: 1, clientRequestId: PRESS, castId: "KI-AAAA-BBBB-CCCC-DDDD" };
 
+beforeAll(async () => {
+  /* Derived from the plan, never a literal pair: a third sheet kind gets its
+     own fixture by existing. */
+  for (const plan of signSheetPlan()) {
+    sheetPngs.set(plan.kind, await syntheticSheetBytes(plan.panelOrder.length));
+  }
+});
+
 beforeEach(() => {
   journal.length = 0;
   deducts.length = 0;
   refunds.length = 0;
   committed.length = 0;
   enginePosts.length = 0;
-  plateCalls = 0;
-  plateBehaviour = "ok";
+  sheetCalls.length = 0;
+  sheetBehaviour = "ok";
   balance = 10_000_000;
-  chargeFails = new Set();
-  engineFails = new Set();
+  chargeFails = false;
+  judgeRefuses = new Set();
   busySlotAngles = [];
   castStatus = "ready";
   lockedAngles = new Set();
-  replays = {};
+  pressReplay = null;
   commitBehaviour = {};
   handedOff.length = 0;
   receiptRefusals = new Set();
@@ -344,7 +423,7 @@ beforeEach(() => {
 });
 
 describe("a redo that lands", () => {
-  it("charges one slice per view and replaces every slot", async () => {
+  it("charges ONE flat price and replaces every slot", async () => {
     const result = await redoCastPackage(dependencies(), input);
 
     expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
@@ -353,25 +432,60 @@ describe("a redo that lands", () => {
     expect(result.refundedCredits).toBe(0);
     expect(result.refundRecorded).toBe(true);
 
-    /* HIS PRICE, AT THE TILL — five deducts of the slice and no sixth. */
-    expect(deducts).toHaveLength(CAST_PACKAGE_VIEWS.length);
-    for (const deduct of deducts) expect(deduct.amount).toBe(SLICE);
-    expect(deducts.reduce((sum, d) => sum + d.amount, 0))
-      .toBe(PACKAGE_PRICE);
+    /*
+      HIS PRICE, AT THE TILL — ⚠ **ONE deduct, not one per view.** This arm read
+      five of a slice until his word of 2026-10-08, and the count is the whole
+      assertion: five deducts summing to the same total would be the old shape
+      wearing the new number, and a slot could then be refunded on its own
+      again.
+    */
+    expect(deducts).toHaveLength(1);
+    expect(deducts[0]?.amount).toBe(PACKAGE_PRICE);
     expect(refunds).toEqual([]);
-    /* Each slice is charged under ITS OWN operation's reference, which is what
-       lets one view refund without touching the other four. */
-    expect(new Set(deducts.map((d) => d.reference)).size).toBe(CAST_PACKAGE_VIEWS.length);
+    /* And it is charged on the PRESS's own reference — the row that plans the
+       credits is the row the sweep can give them back from. */
+    expect(deducts[0]?.reference).toBe(`op:${PRESS}:charge`);
   });
 
-  it("claims EVERY view before it charges ANY of them", async () => {
+  it("plans the money on the press and ZERO on every slot", async () => {
     /*
-      ⚠ THE ORDER IS THE CONTROL AND IT IS THIS ROAD'S ONE STRUCTURAL ADDITION.
-      A claim is free; a deduct is not. Claiming the whole set first is what
-      turns "somebody is already asking for her profile" into a refusal that
-      charged nothing, instead of a redo that charged two slices and then met a
-      busy slot. Charged-then-claimed is the same set of calls in a different
-      order, so only the journal can tell them apart.
+      ⚠ THE FIELD THE RECOVERY SWEEP READS. `plannedCredits` is what an
+      unsettled row owes back, so a slot carrying the flat price would hand a
+      customer a whole redo whenever that slot was the one left unsettled —
+      even with its four siblings delivered. The press is the only row with
+      credits on it, and this is the arm that says so.
+    */
+    const planned: Array<{ kind: string; plannedCredits: number }> = [];
+    await redoCastPackage(
+      dependencies({
+        begin: (async (request: {
+          clientRequestId: string;
+          kind: string;
+          payload: unknown;
+          plannedCredits?: number;
+        }) => {
+          planned.push({ kind: request.kind, plannedCredits: request.plannedCredits ?? -1 });
+          return { type: "execute" as const, operationId: request.clientRequestId };
+        }) as PackageRedoServiceDependencies["begin"],
+      }),
+      input,
+    );
+
+    const press = planned.filter((row) => row.kind === "castingV2.packageRedoPress");
+    const slotRows = planned.filter((row) => row.kind === "castingV2.packageRedo");
+    expect(press).toHaveLength(1);
+    expect(press[0]?.plannedCredits).toBe(PACKAGE_PRICE);
+    expect(slotRows).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    for (const row of slotRows) expect(row.plannedCredits).toBe(0);
+  });
+
+  it("claims the press and EVERY view before it charges anything", async () => {
+    /*
+      ⚠ THE ORDER IS THE CONTROL. A claim is free; a deduct is not. Claiming the
+      whole set first is what turns "somebody is already asking for her profile"
+      into a refusal that charged nothing, instead of a redo that charged and
+      then met a busy slot. Charged-then-claimed is the same set of calls in a
+      different order, so only the journal can tell them apart.
     */
     await redoCastPackage(dependencies(), input);
     const lastClaim = journal.reduce(
@@ -379,27 +493,31 @@ describe("a redo that lands", () => {
       -1,
     );
     const firstDeduct = journal.indexOf("deduct");
+    expect(journal[0]).toBe("claim:press");
     expect(lastClaim).toBeGreaterThanOrEqual(0);
     expect(firstDeduct).toBeGreaterThan(lastClaim);
   });
 
-  it("stamps the road on every new picture, and the operation the sweep reads", async () => {
+  it("stamps the road, the slot and the PRESS on every new picture", async () => {
     await redoCastPackage(dependencies(), input);
     expect(committed).toHaveLength(CAST_PACKAGE_VIEWS.length);
     for (const row of committed) {
-      /* The only field that says WHICH road replaced this view. Its sibling is
-         the kind on the operation row. */
+      /* The only field that says WHICH road replaced this view. */
       expect(row.provenance.source).toBe("castingV2.packageRedo");
-      /* The sweep's fork variable — deliberately the same key the Try again
-         writes, because `retriedViewLanded` asks the right question on both
-         roads. Written WITH the picture, so a landed view can never look
-         unpaid. */
+      /* The per-slot fork variable, the same key the Try again writes. */
       expect(row.provenance.retryOperationId).toBe(row.operationId);
-      expect(row.pointsCost).toBe(SLICE);
+      /*
+        ⚠ AND THE PRESS, which is what the flat price needed: the money is on
+        that row, so the sweep's question is *did any view of this press land*
+        and this field is the only thing that can answer it from the assets.
+      */
+      expect(row.provenance.pressOperationId).toBe(PRESS);
+      /* A slot's picture costs nothing of its own — the press paid once. */
+      expect(row.pointsCost).toBe(0);
     }
   });
 
-  it("gives each view its own derived request id, so a double press replays", async () => {
+  it("gives each view its own derived request id", async () => {
     await redoCastPackage(dependencies(), input);
     for (const angle of CAST_PACKAGE_VIEWS) {
       expect(committed.map((row) => row.operationId))
@@ -407,126 +525,118 @@ describe("a redo that lands", () => {
     }
   });
 
-  it("carries her tattoos and her master into every view", async () => {
+  it("carries her tattoos and her master into the sheets", async () => {
     await redoCastPackage(dependencies(), input);
     /*
       HER IDENTITY NEVER MOVES — his card: *"The identity stays fixed across a
-      redo"*. The anchor is the first reference on every view, and her ink crops
-      ride behind it.
+      redo"*. ⚠ **It rides into the SHEETS now, once per sheet rather than once
+      per view**, which is the thing that makes the views of one redo agree with
+      each other. Her ink is asked for ONCE per press for the same reason.
     */
-    expect(enginePosts).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    expect(enginePosts).toHaveLength(signSheetPlan().length);
     for (const post of enginePosts) {
-      expect(post.references[0]?.bytes.toString()).toBe("her-signed-face");
-      expect(post.references.some((reference) => reference.bytes.toString() === "her-tattoo"))
-        .toBe(true);
+      expect(post.references.length).toBeGreaterThan(0);
     }
-    expect(carried.inkAsked).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length);
+    expect(carried.inkAsked).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("the outfit", () => {
-  it("mints ONE plate and hands the two full-length views their own panels", async () => {
+  it("renders TWO sheets and no per-view request at all", async () => {
     /*
-      ⚠ THE WHOLE POINT OF HIS RULING IN ONE ARM: *"regens all views not just
-      one"* only means something if the five share one invented outfit. A second
-      plate call would be a second invention, and the package would come back in
-      two outfits — the defect he reported about hems and shoes, delivered by
-      the thing built to fix it.
+      ⚠ **THE RELAY'S SECOND FINDING ON PR #1924, AS AN ARM.** The road this
+      replaces rendered one wardrobe plate and then five separate per-view
+      requests — about $0.90 where a Sign costs about $0.22, with front and back
+      free to disagree because nothing cut them from one frame. His 650 rests on
+      *"on the two sheets it costs the same as a Sign"*, so the price is only
+      right if this is true.
     */
     await redoCastPackage(dependencies(), input);
-    expect(plateCalls).toBe(1);
-
-    /*
-      Her face, her one ink crop, and — on the two full-length views only — a
-      plate panel. So three references there and two everywhere else, which is
-      asserted as a COUNT rather than by sniffing the prompt.
-    */
-    const postFor = (angle: string) => enginePosts.find((candidate) =>
-      candidate.prompt.includes(castPackageView(angle as never).directive));
-    for (const angle of CAST_PACKAGE_VIEWS) {
-      const dressed = (PLATE_ANGLES as readonly string[]).includes(angle);
-      expect(postFor(angle)?.references).toHaveLength(dressed ? 3 : 2);
-    }
-    /* Both panels came from ONE plate and they are DIFFERENT halves: a split
-       that handed both views the same side would dress her back with her
-       front, and every count above would still be right. */
-    const panels = PLATE_ANGLES.map((angle) =>
-      postFor(angle)?.references.at(-1)?.bytes.toString("base64") ?? null);
-    expect(panels[0]).not.toBeNull();
-    expect(panels[1]).not.toBeNull();
-    expect(panels[0]).not.toBe(panels[1]);
+    expect(sheetCalls.sort()).toEqual(signSheetPlan().map((plan) => plan.kind).sort());
+    /* One request per sheet, and nothing else asked an engine for a picture:
+       the per-view road would have put five more entries in this journal. */
+    expect(journal.filter((entry) => entry === "render")).toHaveLength(signSheetPlan().length);
   });
 
-  it("delivers all five on the master alone when the plate throws", async () => {
+  it("refunds the WHOLE price when the sheets never arrive", async () => {
     /*
-      HIS RULE FROM PATH E, on a road that has already charged five slices by
-      the time the plate is asked for: a plate failure never fails the redo and
-      never refunds. A rejected promise here would reject the whole
-      `Promise.all` and leave five charged views never ATTEMPTED — the one
-      failure mode with no refund path out of it.
+      A sheet that throws reaches every view as a picture that never came, so
+      nothing is delivered — which is the one state his rule refunds. The old
+      road's plate could fail and still deliver five views on the master alone;
+      a sheet IS the picture, so there is no master-only fallback to assert.
     */
-    plateBehaviour = "throw";
+    sheetBehaviour = "throw";
     const result = await redoCastPackage(dependencies(), input);
-    expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
-    expect(result.failed).toEqual([]);
+    expect(result.committed).toEqual([]);
+    expect(result.failed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
     expect(result.chargedCredits).toBe(PACKAGE_PRICE);
-    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(PACKAGE_PRICE);
+    expect(refunds).toHaveLength(1);
   });
 });
 
 describe("a redo that partly fails", () => {
-  it("refunds ONLY the slice that did not arrive", async () => {
+  it("refunds NOTHING when something arrived, and leaves that slot alone", async () => {
     /*
-      HIS CATASTROPHIC REFUND RULE, UNCHANGED, which is the whole reason the
-      charge decomposes: one view goes back, four stand, and the picture the
-      customer already had stays in the failed slot — a redo never lands a hole.
+      ⚠ **HIS RULE, AND IT IS THE OPPOSITE OF WHAT THIS ARM USED TO ASSERT.**
+      It read *"refunds ONLY the slice that did not arrive"*, which was right
+      while the charge decomposed. His word of 2026-10-08: *"Credits only come
+      back if the Sign can't be delivered at all"* — and the redo renders from
+      the same two sheets, so a refused view costs the house a whole re-rendered
+      sheet rather than a fifth of one.
+
+      What the customer still gets: the picture they already had stays in the
+      refused slot. A redo never lands a hole.
     */
-    engineFails = new Set(["backFull"]);
+    judgeRefuses = new Set(["backFull"]);
     const result = await redoCastPackage(dependencies(), input);
 
     expect(result.failed).toEqual(["backFull"]);
     expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length - 1);
     expect(result.committed).not.toContain("backFull");
     expect(result.chargedCredits).toBe(PACKAGE_PRICE);
-    expect(result.refundedCredits).toBe(SLICE);
+    expect(result.refundedCredits).toBe(0);
     expect(result.refundRecorded).toBe(true);
-
-    expect(refunds).toHaveLength(1);
-    expect(refunds[0]?.amount).toBe(SLICE);
-    /* NOTHING is committed for the failed angle — no confession, no marker. The
-       slot keeps the picture it had. */
+    expect(refunds).toEqual([]);
+    /* NOTHING is committed for the failed angle — no confession, no marker. */
     expect(committed.map((row) => row.angle)).not.toContain("backFull");
   });
 
-  it("refunds under the SAME operation's reference the slice was charged on", async () => {
+  it("refunds the whole price, once, only when NOTHING arrived", async () => {
     /*
-      A refund under another view's reference would give one customer their
-      money back out of a different view's charge, and the ledger's uniqueness
-      would stop a repeat being harmless.
+      THE TOTAL-LOSS ROAD, which is the only refund this road can make. Driven
+      by refusing every panel rather than by killing the sheets, so the sheets
+      really did arrive and really were paid for — which is the case his rule is
+      actually about.
     */
-    engineFails = new Set(["closeUp"]);
-    await redoCastPackage(dependencies(), input);
-    const charged = deducts.find((deduct) =>
-      deduct.reference === `op:${derivedClientRequestId(PRESS, "closeUp")}:charge`);
-    expect(charged?.amount).toBe(SLICE);
-    expect(refunds[0]?.reference).toBe(charged?.reference);
+    judgeRefuses = new Set(CAST_PACKAGE_VIEWS);
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.committed).toEqual([]);
+    expect(result.failed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
+    expect(result.refundedCredits).toBe(PACKAGE_PRICE);
+    expect(result.refundRecorded).toBe(true);
+    /* ONCE. A refund per slot would be five times his price. */
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]?.amount).toBe(PACKAGE_PRICE);
+    /* Under the press's own charge reference, so a repeat is harmless. */
+    expect(refunds[0]?.reference).toBe(`op:${PRESS}:charge`);
   });
 
-  it("charges nothing for a view whose deduct refused, and does not render it", async () => {
+  it("renders nothing and charges nothing when the one deduct refuses", async () => {
     /*
       The whole price was proved affordable at the admission, so reaching here
-      means the balance moved underneath us. The other slices stand on their
-      own; this one is simply not rendered, and nothing is owed back for it
-      because nothing was taken.
+      means the balance moved underneath us. ⚠ Under a flat charge there is no
+      "four of five" state left: either the press is bought or nothing happens.
     */
-    chargeFails = new Set(["sideClose"]);
-    const result = await redoCastPackage(dependencies(), input);
-    expect(result.failed).toEqual(["sideClose"]);
-    expect(result.chargedCredits)
-      .toBe(SLICE * (CAST_PACKAGE_VIEWS.length - 1));
-    expect(result.refundedCredits).toBe(0);
+    chargeFails = true;
+    await expect(redoCastPackage(dependencies(), input)).rejects.toThrow(TRPCError);
+    expect(deducts).toEqual([]);
     expect(refunds).toEqual([]);
-    expect(committed.map((row) => row.angle)).not.toContain("sideClose");
+    expect(committed).toEqual([]);
+    expect(sheetCalls).toEqual([]);
+    /* Every row it had taken is failed free — the five slots and the press. */
+    expect(receipts.failClaimed).toHaveBeenCalledTimes(CAST_PACKAGE_VIEWS.length + 1);
   });
 });
 
@@ -535,7 +645,7 @@ describe("the free refusals, all of them before any claim", () => {
     expect(deducts).toEqual([]);
     expect(refunds).toEqual([]);
     expect(committed).toEqual([]);
-    expect(plateCalls).toBe(0);
+    expect(sheetCalls).toEqual([]);
   };
 
   it("refuses a Cast that is still being made", async () => {
@@ -562,14 +672,15 @@ describe("the free refusals, all of them before any claim", () => {
     expectNothingSpent();
   });
 
-  it("refuses an unaffordable redo, quoting the WHOLE price and not a slice", async () => {
+  it("refuses an unaffordable redo, quoting the price the button carried", async () => {
     /*
-      A customer told "you need 70 credits" for a 350-credit button would top up
-      and be refused again. 69 display credits is one short of the price.
-      Asserted on the SENTENCE because the sentence is the whole repair.
+      The sentence is the repair: a customer quoted anything but the real price
+      tops up by the wrong amount and is refused again. Under the flat price
+      there is no slice it could accidentally quote instead, which is one way
+      the shape is simply safer than the one it replaces.
     */
     balance = PACKAGE_PRICE - 1;
-    await expect(redoCastPackage(dependencies(), input)).rejects.toThrow("350 credits");
+    await expect(redoCastPackage(dependencies(), input)).rejects.toThrow("650 credits");
     expectNothingSpent();
   });
 
@@ -587,29 +698,34 @@ describe("the free refusals, all of them before any claim", () => {
 });
 
 describe("a slot locked between the read and the claim", () => {
-  it("unwinds every claim it already took and charges nothing", async () => {
+  it("unwinds every claim it already took, the press included, and charges nothing", async () => {
     /*
       ⚠ THE RACE THE TWO-PHASE CLAIM EXISTS FOR, and the arm that proves the
-      unwind. The admission read said nothing was in flight; by the claim, the
-      fourth slot's lock is taken. Without the unwind the first three rows would
-      sit claimed with their locks held — slots a customer could never ask for
-      again until the sweep arrived — and the receipt would be a refusal over
-      three live claims.
+      unwind. The admission read said nothing was in flight; by the claim, a
+      slot's lock is taken. Without the unwind the rows already held would sit
+      claimed with their locks — slots a customer could never ask for again
+      until the sweep arrived — and the receipt would be a refusal over live
+      claims.
     */
     lockedAngles = new Set(["frontFull"]);
     await expect(redoCastPackage(dependencies(), input))
       .rejects.toThrow(PACKAGE_REDO_BUSY_MESSAGE);
 
-    /* Nothing was charged: a claim moves no money, which is the premise. */
+    /* Nothing was charged: the deduct is below the claims, which is the
+       premise of the whole order. */
     expect(deducts).toEqual([]);
     expect(refunds).toEqual([]);
     expect(committed).toEqual([]);
-    /* The claims taken BEFORE the refusal were each failed free. `frontFull` is
-       third in the view list, so two were already held. */
-    expect(receipts.failClaimed).toHaveBeenCalledTimes(2);
-    /* And nothing rendered — the plate is minted only after the whole set is
-       claimed, so a refused claim cannot spend house money either. */
-    expect(plateCalls).toBe(0);
+    /*
+      `frontFull` is third in the view list, so two slots were already held —
+      ⚠ **plus the PRESS, which this arm reads as three rather than two.** A
+      press left claimed would hold the money row open with no lock to show for
+      it, and the sweep would eventually refund a redo that never ran.
+    */
+    expect(receipts.failClaimed).toHaveBeenCalledTimes(3);
+    /* And nothing rendered — the sheets are asked for only after the whole set
+       is claimed and charged. */
+    expect(sheetCalls).toEqual([]);
     expect(journal.filter((entry) => entry === "render")).toEqual([]);
   });
 });
@@ -617,58 +733,61 @@ describe("a slot locked between the read and the claim", () => {
 describe("the same press arriving twice", () => {
   it("returns what the first press bought instead of a second package", async () => {
     /*
-      Idempotency on a money path: the five request ids are derived from the
-      press, so every claim reads as a replay and the receipt is rebuilt from
-      what each operation settled. Nothing renders and nothing is charged again.
+      Idempotency on a money path, and ⚠ **it is now decided on ONE row.** The
+      press is claimed first under the customer's own request id, so a second
+      press replays there — before a slot is claimed, before the deduct, before
+      a sheet is asked for. The arm that used to live here replayed five slot
+      rows and rebuilt a receipt from them; there is one receipt now and the
+      press is holding it.
     */
-    replays = Object.fromEntries(CAST_PACKAGE_VIEWS.map((angle) => [angle, {
+    pressReplay = {
       castId: input.castId,
-      committed: [angle],
+      committed: [...CAST_PACKAGE_VIEWS],
       failed: [],
-      chargedCredits: SLICE,
+      chargedCredits: PACKAGE_PRICE,
       refundedCredits: 0,
       refundRecorded: true,
-    }]));
+    };
 
     const result = await redoCastPackage(dependencies(), input);
     expect(result.committed.sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
     expect(result.chargedCredits).toBe(PACKAGE_PRICE);
     expect(deducts).toEqual([]);
     expect(committed).toEqual([]);
-    expect(plateCalls).toBe(0);
+    expect(sheetCalls).toEqual([]);
+    /* Not one slot was even claimed. */
+    expect(journal).toEqual(["claim:press"]);
   });
 });
 
 /**
  * ⚠ THE TWO FINDINGS THE RELAY HELD THIS PULL REQUEST ON (#1903, head
  * `65141978a`), each driven at the one observable that separates the repair
- * from the bug.
+ * from the bug — and both still hold under the flat price, which is why they
+ * are kept rather than rewritten.
  *
  * **Why these could not be seen by the arms above.** Every arm written before
- * them drives a commit that LANDS, and the money defect lives entirely in what
- * happens when it does not — so no number in this file moved, however many
- * arms there were. That is the same shape as the `periodLine` fixture finding
- * one card over (#1832): a fixture that only ever exercises the happy road
- * cannot fail for a defect on the unhappy one.
+ * them drives a commit that LANDS, and the defect lives entirely in what
+ * happens when it does not.
  */
 describe("a view whose commit did not land (review finding 1)", () => {
-  it("hands the slice to the sweep and seals NO receipt, so the money is still owed", async () => {
+  it("hands the slot to the sweep and seals NO receipt for it", async () => {
     /*
-      THE DEFECT, STATED AS MONEY: this exit used to call
-      `completeDirectOperationSuccess` with the slice charged and nothing
-      refunded. On a row that was still `running` that receipt is TERMINAL, so
-      the recovery sweep never looked at the operation again and the customer
-      kept paying 70 display credits for a view that does not exist.
+      THE DEFECT: this exit used to call `completeDirectOperationSuccess` on a
+      row it had just declared it does not own. On a row still `running` that
+      receipt is TERMINAL, so the sweep never looked again.
 
-      The fenced read is injected rather than contrived: `commitRetriedViewAsset`
-      returning `null` is exactly what `renderViewAttempts` maps to
-      `status: "fenced"`.
+      ⚠ **WHAT CHANGED WITH THE FLAT PRICE** is only the money sentence: the
+      slot owes nothing either way now, because the press is the only row that
+      can refund. The handoff still matters — the sweep is what closes the
+      operation, and a sealed success would leave a picture that does not exist
+      recorded as delivered.
     */
     commitBehaviour = { closeUp: "null" };
 
     const result = await redoCastPackage(dependencies(), input);
 
-    /* THE ONE ASSERTION THE BUG FAILS: no success receipt for that slice. */
+    /* THE ONE ASSERTION THE BUG FAILS: no success receipt for that slot. */
     const sealed = receipts.success.mock.calls.map(
       ([call]) => (call as { operationId: string }).operationId,
     );
@@ -676,36 +795,46 @@ describe("a view whose commit did not land (review finding 1)", () => {
     /* And the lease went to the sweep instead, named. */
     expect(handedOff).toEqual([derivedClientRequestId(PRESS, "closeUp")]);
 
-    /* The slice is reported as not arrived, charged, and NOT refunded here —
-       the sweep is what refunds it, so claiming the money is already back
-       would be the other lie available at this exit. */
     expect(result.failed).toEqual(["closeUp"]);
     expect(result.committed).not.toContain("closeUp");
-    expect(result.refundRecorded).toBe(false);
-    expect(refunds).toEqual([]);
-
-    /* THE OTHER FOUR ARE UNTOUCHED — a fence on one slot is not a package
-       failure, which is the whole point of per-slice settlement. */
+    /* Four arrived, so his rule keeps the charge — and the press's own receipt
+       is sealed normally. */
     expect(result.committed.sort()).toEqual(
       CAST_PACKAGE_VIEWS.filter((angle) => angle !== "closeUp").sort(),
     );
     expect(result.chargedCredits).toBe(PACKAGE_PRICE);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
   });
 
-  it("never reports a fenced slice as delivered", async () => {
+  it("never reports a fenced slot as delivered", async () => {
     /* The negative control for the arm above: the bug's receipt said
        `succeeded`, so a reader could conclude the view was handed over. */
-    /* `sideClose`, and the first draft of this arm said `sideFull` — which is
-       NOT one of the five (`CAST_PACKAGE_VIEWS` is closeUp · threeQuarter ·
-       frontFull · sideClose · backFull), so it drove nothing and asserted
-       against an empty list. The arm caught it; the angle is read off the
-       exported list now rather than typed. */
     const angle = CAST_PACKAGE_VIEWS[3]!;
     expect(angle).toBe("sideClose");
     commitBehaviour = { [angle]: "null" };
     const result = await redoCastPackage(dependencies(), input);
     expect(result.committed).not.toContain(angle);
     expect(result.failed).toContain(angle);
+  });
+
+  it("⚠ a press whose every slot fenced refunds the whole price", async () => {
+    /*
+      THE CORNER WHERE THE TWO RULES MEET, and it is the one a crash actually
+      produces: five fenced slots is zero delivered, so his rule refunds — even
+      though not one of them reached the `failed` exit. The decision is made
+      from what the press SAW, which is why it is counted once at the end
+      rather than per slot.
+    */
+    commitBehaviour = Object.fromEntries(CAST_PACKAGE_VIEWS.map((angle) => [angle, "null"]));
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.committed).toEqual([]);
+    expect(result.refundedCredits).toBe(PACKAGE_PRICE);
+    expect(refunds).toHaveLength(1);
+    expect(handedOff.sort()).toEqual(
+      CAST_PACKAGE_VIEWS.map((angle) => derivedClientRequestId(PRESS, angle)).sort(),
+    );
   });
 });
 
@@ -716,21 +845,7 @@ describe("one view's trouble and the other four (review finding 2)", () => {
     rather than this process sealing a receipt it cannot stand behind. Under
     `Promise.all` that single rejection rejected the WHOLE press, and the
     customer was told *"Those views couldn't be asked for again"* while the
-    other four were sitting on the Cast, rendered and charged. The money was
-    right and the sentence was false.
-
-    ⚠ **THE ROUTE IS A REFUSED RECEIPT, AND IT IS NOT THE ROUTE I REACHED FOR
-    FIRST.** The obvious lever looked like a commit that throws — and driving
-    it proved it is no longer a rejection at all: with `commitRetriedViewAsset`
-    reserving `null` for a real fence, a thrown commit lands in the attempt
-    loop's catch, is re-attempted, and then settles through the `failed` exit,
-    which REFUNDS the slice in this process (measured: 350 back, not 0). That
-    is the commit-side half of finding 1 working, and it is strictly better than
-    the sweep. So the arm uses the relay's OTHER named route — a success receipt
-    that will not write — which still propagates straight out of the slice
-    because it is awaited outside the try/catch. The first draft asserted the
-    sweep road and failed; the measurement is recorded here rather than the
-    arm being quietly re-pointed.
+    other four were sitting on the Cast, rendered and charged.
   */
   it("reports what actually landed instead of failing the whole press", async () => {
     const angle = "threeQuarter" as const;
@@ -745,38 +860,41 @@ describe("one view's trouble and the other four (review finding 2)", () => {
       CAST_PACKAGE_VIEWS.filter((candidate) => candidate !== angle).sort(),
     );
     /* ⚠ The picture DID land and was committed — only its receipt could not be
-       written. The slice is reported failed because this process cannot say
-       otherwise, and the sweep will find the asset and close it a success
-       without refunding. Reporting it as delivered on a receipt that threw is
-       the opposite mistake and is not available here. */
+       written. The slot is reported failed because this process cannot say
+       otherwise, and the sweep will find the asset and close it. */
     expect(committed.map((entry) => entry.angle).sort())
       .toEqual([...CAST_PACKAGE_VIEWS].sort());
     expect(result.chargedCredits).toBe(PACKAGE_PRICE);
+    /* Four others arrived, so nothing is owed back — his rule, not the old
+       slice arithmetic, decides this. */
     expect(result.refundedCredits).toBe(0);
-    expect(result.refundRecorded).toBe(false);
   });
 
-  it("still reports four when the trouble is on a view that wears the plate", async () => {
-    /* The full-length pair WAITS on the plate, so a rejection there arrives by
-       a different schedule into the same `allSettled` — asserted because the
-       two halves of that schedule are not one code path. */
+  it("still reports the rest when the trouble is on a full-length view", async () => {
+    /*
+      The full-length pair are cut from the BODY sheet and the other three from
+      the head sheet, so a rejection on one arrives by a different schedule into
+      the same `allSettled` — asserted because the two halves of that schedule
+      are not one code path.
+    */
     const angle = "frontFull" as const;
-    expect(PLATE_ANGLES).toContain(angle);
+    expect(CAST_PACKAGE_VIEWS).toContain(angle);
     receiptRefusals = new Set([derivedClientRequestId(PRESS, angle)]);
 
     const result = await redoCastPackage(dependencies(), input);
     expect(result.failed).toEqual([angle]);
     expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length - 1);
-    expect(result.refundRecorded).toBe(false);
+    expect(result.refundedCredits).toBe(0);
   });
 
-  it("a commit that throws is refunded HERE and never reaches the sweep", async () => {
+  it("a commit that throws costs the customer nothing extra and never reaches the sweep", async () => {
     /*
-      The measurement from the paragraph above, pinned as its own arm — because
-      it is the commit-side repair's whole customer-facing promise and nothing
-      else in this file asserts it. A lost commit transaction is the reachable
-      road (five concurrent `.for("update")` locks on one `models` row), and
-      what the customer gets is their slice back in the same request.
+      A lost commit transaction is the reachable road (five concurrent
+      `.for("update")` locks on one `models` row). It lands in the attempt
+      loop's catch, is re-attempted, and settles through the `failed` exit.
+      ⚠ Under the flat price that exit refunds NOTHING — four siblings arrived
+      — where it used to hand back a slice. The customer keeps the picture they
+      already had in that slot.
     */
     const angle = "closeUp" as const;
     commitBehaviour = { [angle]: "throw" };
@@ -784,10 +902,8 @@ describe("one view's trouble and the other four (review finding 2)", () => {
     const result = await redoCastPackage(dependencies(), input);
 
     expect(result.failed).toEqual([angle]);
-    expect(result.refundedCredits).toBe(SLICE);
-    expect(result.refundRecorded).toBe(true);
-    expect(refunds).toHaveLength(1);
-    expect(refunds[0]!.amount).toBe(SLICE);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
     /* It settled in this process, so nothing was handed to the sweep. */
     expect(handedOff).toEqual([]);
   });

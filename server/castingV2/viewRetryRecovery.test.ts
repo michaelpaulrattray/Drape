@@ -18,10 +18,26 @@ const CHARGE_REFERENCE = `op:${OPERATION_ID}:charge`;
 const REFUND_REFERENCE = `refund:op:${OPERATION_ID}:charge`;
 
 let ledger: Array<{ referenceId: string; type: string; amount: number }> = [];
+/**
+ * The Cast's asset rows, for the arms that drive the PRODUCTION `landed`
+ * reader instead of injecting an answer (#1903).
+ *
+ * ⚠ **IT IS A SECOND CHAIN, AND IT HAS TO BE.** The ledger read is
+ * `select().from().where()`; `pressViewLanded` is
+ * `select().from().innerJoin().where()`. A mock that answered only the first
+ * shape made every press arm inject its own answer — which is how the
+ * default reader could be deleted with all sixteen arms green.
+ */
+let assets: Array<{ provenance: Record<string, unknown> }> = [];
 
 vi.mock("../db/connection", () => ({
   getDb: async () => ({
-    select: () => ({ from: () => ({ where: async () => ledger }) }),
+    select: () => ({
+      from: () => ({
+        where: async () => ledger,
+        innerJoin: () => ({ where: async () => assets }),
+      }),
+    }),
   }),
 }));
 
@@ -39,10 +55,12 @@ vi.mock("../db/generationOperations", async (importOriginal) => ({
 }));
 
 import {
+  PACKAGE_REDO_PRESS_RECOVERY_WORDING,
   PACKAGE_REDO_RECOVERY_WORDING,
   RECOVERED_VIEW_RETRY_FREE_SENTENCE,
   RECOVERED_VIEW_RETRY_SENTENCE,
   recoverCastingV2PackageRedoOperation,
+  recoverCastingV2PackageRedoPressOperation,
   recoverCastingV2ViewRetryOperation,
   VIEW_RETRY_RECOVERY_WORDING,
 } from "./viewRetryRecovery";
@@ -71,6 +89,7 @@ const operation = {
 
 beforeEach(() => {
   ledger = [];
+  assets = [];
   refunds.length = 0;
   landed = false;
   finalizers.success.mockClear();
@@ -153,6 +172,193 @@ describe("a swept try again", () => {
  * actually reach the receipt, every arm here would pass by agreeing with the
  * default.
  */
+/**
+ * THE PRESS OF A REDO, SWEPT — the flat price's whole money rule, read from
+ * the rows alone (#1903, his word of 2026-10-08).
+ *
+ * ⚠ **THESE ARE THE FOUR CONTROLS THE RELAY ASKED FOR ON PR #1924**, and
+ * they are here rather than in the service's suite because the sweep is the
+ * reading that happens when the process that charged is GONE. The live service
+ * decides from what its renders returned; this decides hours later from the
+ * ledger and the asset rows, and the two must reach the same answer or a crash
+ * pays a customer twice.
+ *
+ * `landed` is the whole difference between a press and a slot: for a slot it
+ * asks *did a picture land under THIS operation*, for a press *did one land
+ * under ANY of them*. The production reader is `pressViewLanded`; these arms
+ * inject the answer, because what is under test is the DECISION.
+ */
+describe("the press of a redo, swept", () => {
+  const PRESS_PRICE = 3250;
+
+  it("(a) keeps the whole charge when every view delivered", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = true;
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PRESS_PRICE });
+    expect(refunds).toEqual([]);
+  });
+
+  it("(b) keeps the whole charge when ONE of five delivered", async () => {
+    /*
+      ⚠ **THE ARM HIS RULE ACTUALLY TURNS ON.** One view is a delivered
+      press: the customer has the work, the other slots kept the pictures they
+      already had, and the house paid for both sheets either way. The reader
+      cannot tell this case from (a) and must not try — *any* is the rule, so
+      the same answer for one as for five is the point rather than a weakness.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = true;
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome.type).toBe("durable_success");
+    expect(refunds).toEqual([]);
+  });
+
+  it("(c) gives the whole price back, ONCE, when nothing arrived", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = false;
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome).toEqual({
+      type: "paid_failure",
+      chargedCredits: PRESS_PRICE,
+      refundedCredits: PRESS_PRICE,
+    });
+    /* ONE refund of the whole price — not five of a fifth, which is the
+       shape this road used to have. */
+    expect(refunds).toEqual([{ amount: PRESS_PRICE, reference: CHARGE_REFERENCE }]);
+    /* And it speaks about the whole ask rather than about one view. */
+    expect(finalizers.failure).toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: PACKAGE_REDO_PRESS_RECOVERY_WORDING.paidSentence,
+    }));
+    expect(finalizers.failure).not.toHaveBeenCalledWith(expect.objectContaining({
+      publicMessage: PACKAGE_REDO_RECOVERY_WORDING.paidSentence,
+    }));
+  });
+
+  it("(d) a SECOND sweep pass refunds nothing — the ledger is read, never re-issued", async () => {
+    /*
+      THE CRASH CASE, DRIVEN DIRECTLY: the press charged, the process died with
+      no slot settled, the sweep gave the price back — and then the sweep runs
+      again, which it does on its own cadence. The refund already on the ledger
+      is READ. A second pass that re-issued it would double a customer's
+      credits on exactly the road his rule exists to make safe.
+    */
+    ledger = [
+      { referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE },
+      { referenceId: `refund:${CHARGE_REFERENCE}`, type: "refund", amount: PRESS_PRICE },
+    ];
+    landed = false;
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(outcome).toEqual({
+      type: "paid_failure",
+      chargedCredits: PRESS_PRICE,
+      refundedCredits: PRESS_PRICE,
+    });
+    expect(refunds, "the sweep re-issued a refund that was already on the ledger").toEqual([]);
+  });
+
+  it("closes a press that never charged free", async () => {
+    /* The press died before its deduct — nothing was taken, so nothing is
+       owed, and the ledger says so rather than this being inferred. */
+    ledger = [];
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+    expect(outcome.type).toBe("free_failure");
+    expect(refunds).toEqual([]);
+  });
+
+  it("⚠ reads the PRESS's own key off the asset rows, with no reader injected", async () => {
+    /*
+      THE ARM THE SABOTAGE ASKED FOR. Every other press arm hands `landed` an
+      answer, so the DEFAULT reader — the one production actually uses — was
+      never exercised: deleting it and falling back to the slot's reader left
+      all of them green.
+
+      What that would cost a customer is this arm's fixture exactly. A redo's
+      asset carries BOTH keys: `retryOperationId` is the slot that rendered it,
+      `pressOperationId` is the press that paid. The slot's reader asks whether
+      anything carries the PRESS id in `retryOperationId` — nothing ever does —
+      so a delivered redo would read as a total loss and be refunded in full
+      while the customer keeps five new pictures.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    assets = [
+      { provenance: { retryOperationId: "slot-op-1", pressOperationId: operation.id } },
+      { provenance: { retryOperationId: "slot-op-2", pressOperationId: operation.id } },
+    ];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, {
+      refund: (async (_userId: number, amount: number, _d: string, reference: string) => {
+        refunds.push({ amount, reference });
+        return { recorded: true, amount, reference, duplicate: false };
+      }) as never,
+      finalizeSuccess: finalizers.success as never,
+      finalizeFailure: finalizers.failure as never,
+      finalizeClaimedFailure: finalizers.claimedFailure as never,
+    });
+
+    expect(outcome.type, "a delivered redo was refunded in full").toBe("durable_success");
+    expect(refunds).toEqual([]);
+  });
+
+  it("⚠ and refunds when the asset rows name a DIFFERENT press", async () => {
+    /*
+      The control for the arm above: the same chain, the same shape of row, one
+      field different. Without it, a reader that answered `true` for any asset
+      at all would pass.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    assets = [
+      { provenance: { retryOperationId: "slot-op-1", pressOperationId: "some-other-press" } },
+    ];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, {
+      refund: (async (_userId: number, amount: number, _d: string, reference: string) => {
+        refunds.push({ amount, reference });
+        return { recorded: true, amount, reference, duplicate: false };
+      }) as never,
+      finalizeSuccess: finalizers.success as never,
+      finalizeFailure: finalizers.failure as never,
+      finalizeClaimedFailure: finalizers.claimedFailure as never,
+    });
+
+    expect(outcome.type).toBe("paid_failure");
+    expect(refunds).toEqual([{ amount: PRESS_PRICE, reference: CHARGE_REFERENCE }]);
+  });
+
+  it("⚠ the press's reader is NOT the slot's, which is what makes (b) possible", async () => {
+    /*
+      THE CONTROL ON THE WIRING ITSELF. `recoverFlatPressCharge` refuses to take
+      the default `landed` reader, because that one asks about ONE operation —
+      and a press has no picture of its own, so the default would refund every
+      press that ever ran, including the ones that delivered everything.
+
+      Driven by handing it a reader that says yes and watching the charge be
+      kept, then one that says no and watching it be given back: if the
+      injection were dropped, both arms would reach the same answer.
+    */
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    const asked: string[] = [];
+
+    const kept = await recoverCastingV2PackageRedoPressOperation(operation, {
+      ...dependencies(),
+      landed: (async (request: { operationId: string }) => {
+        asked.push(request.operationId);
+        return true;
+      }) as never,
+    });
+    expect(kept.type).toBe("durable_success");
+    expect(asked, "the press asked about something other than itself").toEqual([operation.id]);
+  });
+});
+
 describe("a swept redo slice", () => {
   it("gives the slice back with the REDO's sentence, not the Try again's", async () => {
     ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];

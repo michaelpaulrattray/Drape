@@ -28,7 +28,7 @@ import {
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
 } from "../db/generationOperations";
-import { retriedViewLanded } from "../db/castingV2ViewRetry";
+import { pressViewLanded, retriedViewLanded } from "../db/castingV2ViewRetry";
 import { getDb } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 
@@ -139,6 +139,72 @@ export async function recoverCastingV2PackageRedoOperation(
   return recoverCastingV2ViewRetryOperation(operation, {
     ...options,
     wording: options.wording ?? PACKAGE_REDO_RECOVERY_WORDING,
+  });
+}
+
+/**
+ * The press's words (#1903, the flat price).
+ *
+ * ⚠ **A PRESS SPEAKS ABOUT THE WHOLE ASK, not about one view**, which is
+ * the one place its sentences differ from the slot's above. It is only ever
+ * read when NOTHING arrived — a press that delivered anything keeps its
+ * charge and is sealed as a success — so the paid sentence can say so
+ * plainly.
+ */
+export const PACKAGE_REDO_PRESS_RECOVERY_WORDING: ViewReplacementWording = {
+  refundDescription: "No views arrived when you asked for all of them again",
+  paidSentence: "None of the views arrived when you asked for them again. Your credits are back.",
+  freeSentence: "None of the views arrived when you asked for them again. You were not charged.",
+};
+
+/**
+ * THE SWEEP'S HALF OF A FLAT-PRICED PRESS — one charge, and credits back only
+ * when nothing could be delivered at all (#1903; **#1968 reuses this**).
+ *
+ * ⚠ **THE ADJUDICATOR DOES NOT KNOW WHICH ROAD IT IS SETTLING, and that is
+ * the point of routing a second road through it.** What it does is fixed: read
+ * the ledger under this operation's charge reference, ask ONE injected question
+ * — did anything land — and refund the whole charge exactly once if the answer
+ * is no. The only things a road supplies are that reader and its own sentences.
+ *
+ * So the redo and the Sign cannot come to disagree about his rule: there is one
+ * implementation of it and the live services ask it through
+ * `flatPressRefundOwed`, which is the same decision expressed for a process
+ * that still has its renders in hand.
+ *
+ * ⚠ **`landed` IS NOT OPTIONAL HERE.** The default reader asks about ONE
+ * operation, and a press has no picture of its own — falling back to it would
+ * refund every press that ever ran, including the ones that delivered
+ * everything.
+ */
+export async function recoverFlatPressCharge(
+  operation: RecoverableViewRetryOperation,
+  options: ViewRetryRecoveryDependencies & {
+    landed: NonNullable<ViewRetryRecoveryDependencies["landed"]>;
+  },
+): Promise<ViewRetryRecoveryOutcome> {
+  return recoverCastingV2ViewRetryOperation(operation, options);
+}
+
+/**
+ * The whole-package redo's press, as the sweep meets it (#1903).
+ *
+ * A named entry point rather than a flag at the dispatch, so the recovery table
+ * reads as what it is: one money row per press, settled by the shared
+ * flat-price adjudication, with the redo's own words.
+ */
+export async function recoverCastingV2PackageRedoPressOperation(
+  operation: RecoverableViewRetryOperation,
+  options: ViewRetryRecoveryDependencies = {},
+): Promise<ViewRetryRecoveryOutcome> {
+  return recoverFlatPressCharge(operation, {
+    ...options,
+    wording: options.wording ?? PACKAGE_REDO_PRESS_RECOVERY_WORDING,
+    landed: options.landed ?? (async (input) => pressViewLanded({
+      userId: input.userId,
+      modelId: input.modelId,
+      pressOperationId: input.operationId,
+    })),
   });
 }
 

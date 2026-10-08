@@ -20,7 +20,7 @@ import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
 import {
-  CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
   CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
@@ -208,22 +208,25 @@ export function castPackageRedoOffer(
     slots: readonly Pick<CastSlotProjection, "retrying">[];
   },
   /**
-   * ONE VIEW'S SLICE, not the package total — and this is a money control
-   * rather than a style of argument.
+   * THE WHOLE PRESS, FLAT ⚠ **AND IT USED TO BE ONE VIEW'S SLICE** (#1903,
+   * his word of 2026-10-08: *"make both sign and redo/regenerate 650 credis"*).
    *
-   * A package is a historical record: `castProjection` renders the slots this
-   * Cast actually owns, and two of them own a retired `walk`. Quoting today's
-   * five-view total would print 350 credits on a six-view Cast's button and
-   * then charge 420 at the till, which is the exact disagreement
-   * {@link castSlotRetryOffer}'s own docblock exists to prevent — louder here,
-   * because this number is printed where the customer can read it.
+   * The paragraph this replaces argued that a package is a historical record
+   * — two live Casts own a retired `walk` — so a per-view slice had to be
+   * multiplied by the slots she ACTUALLY owns, or a six-view Cast would print
+   * one number on the button and charge another at the till. That reasoning is
+   * sound and it is now moot: there is one number, it does not depend on the
+   * slot count, and the button and the till read the same constant.
+   *
+   * What survives of it is the REFUSALS below, which are still about her own
+   * slots rather than about today's profile.
    */
-  viewPriceCredits: number,
+  priceCredits: number,
 ): CastPackageRedo | null {
   if (cast.status !== "ready") return null;
   if (cast.slots.length === 0) return null;
   if (cast.slots.some((slot) => slot.retrying === true)) return null;
-  return { priceCredits: cast.slots.length * viewPriceCredits };
+  return { priceCredits };
 }
 
 export type CastCapability = "full" | "calibrated" | "unsupported";
@@ -842,7 +845,7 @@ export function projectSignedCast(input: {
     */
     redo: castPackageRedoOffer(
       { status: building ? "building" : "ready", slots },
-      CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+      CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
     ),
     /*
       Derived from the slots themselves rather than stored on the Cast, for the

@@ -4,6 +4,7 @@ import { RETRY_SUPPORT_REVIEW_SENTENCE, recoverCastingV2RetryOperation } from ".
 import {
   VIEW_RETRY_SUPPORT_REVIEW_SENTENCE,
   recoverCastingV2PackageRedoOperation,
+  recoverCastingV2PackageRedoPressOperation,
   recoverCastingV2ViewRetryOperation,
 } from "../castingV2/viewRetryRecovery";
 import { recoverCastingV2SignOperation } from "../castingV2/signRecovery";
@@ -112,6 +113,7 @@ const PUBLIC_RESULT_RECOVERY_BY_KIND: Readonly<
   /* Same again, five times over: a redo is five replaced views and the room
      reads each of them off her own asset rows. */
   "castingV2.packageRedo": "not_reconstructable",
+  "castingV2.packageRedoPress": "not_reconstructable",
 };
 
 type StaleRecoveryStrategy =
@@ -122,6 +124,7 @@ type StaleRecoveryStrategy =
   | "castingv2_retry"
   | "castingv2_view_retry"
   | "castingv2_package_redo"
+  | "castingv2_package_redo_press"
   | "ink_evidence"
   | "evidence_fork"
   | "evidence_mint";
@@ -204,6 +207,14 @@ const STALE_RECOVERY_BY_KIND: Readonly<
     came from.
   */
   "castingV2.packageRedo": "castingv2_package_redo",
+  /*
+    ⚠ **THE ONLY ROW OF A REDO THAT CARRIES MONEY (#1903, his flat
+    price).** Its own strategy because its question is its own: a slot row asks
+    *did a picture land under THIS operation*, and the press asks *did one land
+    under ANY of them* — which is the whole of his rule that credits come
+    back only when nothing could be delivered at all.
+  */
+  "castingV2.packageRedoPress": "castingv2_package_redo_press",
 };
 
 const LANDING_RECOVERY_BY_KIND: Readonly<
@@ -245,6 +256,8 @@ const LANDING_RECOVERY_BY_KIND: Readonly<
   "castingV2.retry": null,
   "castingV2.viewRetry": null,
   "castingV2.packageRedo": null,
+  /* The press commits no asset, so there is no landing to recover. */
+  "castingV2.packageRedoPress": null,
 };
 
 function assertNever(value: never): never {
@@ -1224,6 +1237,32 @@ async function settleStaleGenerationOperation(
       words** — the question is identical and only the sentence differs.
     */
     const recovered = await recoverCastingV2PackageRedoOperation({
+      ...operation,
+      // Narrowed by the gate above; the row's column type is a bare string.
+      status: operation.status === "claimed" ? "claimed" : "running",
+    });
+    if (recovered.type === "durable_success") return "durable_success";
+    if (recovered.type === "paid_failure") return "paid_failure";
+    if (recovered.type === "free_failure") return "free_failure";
+    if (recovered.type === "recovery_required") {
+      await markGenerationOperationRecoveryRequired({
+        userId: operation.userId,
+        operationId: operation.id,
+        publicMessage: VIEW_RETRY_SUPPORT_REVIEW_SENTENCE(operation.id),
+        chargedCredits: recovered.chargedCredits,
+        refundedCredits: recovered.refundedCredits,
+      });
+      return "recovery_required";
+    }
+  }
+  if (operation.kind === "castingV2.packageRedoPress") {
+    /*
+      THE PRESS OF A REDO (#1903, his flat price). The ONLY row of that road
+      that carries credits, and the only one that can give them back: it asks
+      whether ANY view of the press landed, through the shared flat-price
+      adjudication that #1968's Sign will use as well.
+    */
+    const recovered = await recoverCastingV2PackageRedoPressOperation({
       ...operation,
       // Narrowed by the gate above; the row's column type is a bare string.
       status: operation.status === "claimed" ? "claimed" : "running",

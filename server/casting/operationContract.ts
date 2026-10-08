@@ -76,14 +76,17 @@ export const GENERATION_OPERATION_KINDS = [
     again, dispatched five-at-a-time from one press, under an operation PER
     VIEW rather than one for the batch.
 
-    **Per view, and the reason is the refund rather than the render.** His card
-    keeps the catastrophic refund rule unchanged, and that rule gives back one
-    view — so the unit that can fail has to be the unit that is charged, which
-    is the roll's pattern and the Sign's. One operation for five views would
-    have to invent its own five-slice arithmetic (`signRecovery` is 636 lines
-    of exactly that, entangled with a promotion this road does not have); five
-    operations are five units the adjudicator ALREADY settles correctly, each
-    asking its own question: did a picture land under this operation?
+    ⚠ **IT CARRIES NO MONEY ANY MORE — his flat price of 2026-10-08
+    moved that to `castingV2.packageRedoPress`, and the paragraph this replaces
+    is the record of why it used to.** It read: *"the unit that can fail has to
+    be the unit that is charged"*, which was true while a refused view refunded
+    its own slice at 350. Under *"make both sign and redo/regenerate 650
+    credits"* with no per-view refund, there is no per-view money left to
+    carry: a slot row is `plannedCredits` 0, and the question it answers is
+    about PICTURES rather than credits — did one land under this operation.
+
+    What a slot row still is: the lock, the claim, the commit fence and the
+    sweep's per-slot authority over an unfinished render.
 
     **It is its own kind and not the Try again's**, even though it takes that
     road's claim payload, its slot lock and its adjudicator. The kind is the
@@ -94,6 +97,29 @@ export const GENERATION_OPERATION_KINDS = [
     three lines and made the two roads indistinguishable in the record.
   */
   "castingV2.packageRedo",
+  /*
+    THE PRESS ITSELF (#1903, his flat price of 2026-10-08: *"on this card make
+    both sign and redo/regenerate 650 credis"*).
+
+    ⚠ **IT HOLDS THE MONEY AND NOTHING ELSE.** A flat price cannot be
+    charged five times, and it cannot be charged on one of the five slot rows
+    either: the sweep refunds an unsettled operation's planned credits, so a
+    slot carrying the whole 3,250 would hand back a whole redo whenever THAT
+    slot was the one left unsettled, even though its four siblings delivered.
+    So the press is its own row: `plannedCredits` 3,250, one charge, and the
+    only operation the recovery sweep can refund.
+
+    ⚠ **AND IT TAKES NO LOCK, WHICH IS FORCED RATHER THAN CHOSEN.**
+    `generation_operation_locks` has a unique index on `operationId`, so one
+    operation holds exactly one lock key - the five slot locks therefore need
+    five operations, and a sixth lock for the press would be a key nothing else
+    ever takes. The mutual exclusion is the slots'; the press is the money.
+
+    It is NOT in {@link VIEW_REPLACING_OPERATION_KINDS}: it commits no picture,
+    and widening the commit fence to a row that never lands bytes is the
+    mistake that list's own header names.
+  */
+  "castingV2.packageRedoPress",
 ] as const;
 
 export type GenerationOperationKind = typeof GENERATION_OPERATION_KINDS[number];

@@ -61,6 +61,8 @@ export const FEATURE_TRANSITION_AUTHORITY:
       same ground the Try again above stands on.
     */
     "castingV2.packageRedo": "not_applicable",
+    /* The press row renders nothing and commits nothing (#1903). */
+    "castingV2.packageRedoPress": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

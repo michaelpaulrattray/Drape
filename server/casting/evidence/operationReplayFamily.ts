@@ -63,6 +63,10 @@ export const OPERATION_REPLAY_FAMILY_BY_KIND: Readonly<
     customer is already holding.
   */
   "castingV2.packageRedo": null,
+  /* The press row belongs to no replay family: a second press is a second
+     purchase, and the derived client request id is what makes ONE press
+     idempotent (#1903). */
+  "castingV2.packageRedoPress": null,
 };
 
 export type ReplayKindResolution =

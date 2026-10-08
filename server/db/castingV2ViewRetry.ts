@@ -565,6 +565,44 @@ export async function retriedViewLanded(input: {
 }
 
 /**
+ * DID ANY VIEW OF THIS PRESS LAND? — the money question a flat-priced redo
+ * asks, and the only one it asks (#1903, his word of 2026-10-08).
+ *
+ * {@link retriedViewLanded} answers *did a picture land under this OPERATION*,
+ * which is right for a road where every slot carries its own slice. Under one
+ * flat charge the question moved up a level: credits come back only when
+ * nothing could be delivered at all, so the sweep has to see the whole press.
+ *
+ * ⚠ **IT READS THE SAME ROWS AND THE SAME PROVENANCE, one key along.**
+ * Every slot of a redo writes `pressOperationId` beside its own
+ * `retryOperationId`, so this is the sibling reader rather than a second
+ * source of truth — and a press whose slots all failed has no asset naming
+ * it, which is exactly the state that owes a refund.
+ */
+export async function pressViewLanded(input: {
+  userId: number;
+  modelId: number;
+  pressOperationId: string;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db
+    .select({ provenance: modelAssets.provenance })
+    .from(modelAssets)
+    .innerJoin(models, and(
+      eq(models.id, modelAssets.modelId),
+      eq(models.userId, input.userId),
+    ))
+    .where(eq(modelAssets.modelId, input.modelId));
+  return rows.some((row) => {
+    const provenance = row.provenance as { pressOperationId?: unknown } | null;
+    return provenance?.pressOperationId === input.pressOperationId;
+  });
+}
+
+/**
  * The status a claim is written at, before anything about it is known.
  *
  * This is `generation_operations.status`'s own schema DEFAULT, spelled here

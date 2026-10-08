@@ -81,7 +81,8 @@ import { TRPCError } from "@trpc/server";
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { recordRefund } from "../casting/atomicCredits";
-import { CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import { flatPressRefundOwed } from "../casting/flatPressCharge";
 import {
   beginDirectOperation,
   completeDirectOperationSuccess,
@@ -105,17 +106,17 @@ import { storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
 import { castPackageView } from "./castViewPackage";
 import {
-  PLATE_ANGLES,
-  plateSideFor,
-  renderOutfitPlate,
-  type OutfitPlate,
-} from "./outfitPlate";
-import {
   renderViewAttempts,
   type PackageOrchestratorDependencies,
 } from "./packageOrchestrator";
+import {
+  renderSignSheet,
+  signSheetPlan,
+  type SignSheetKind,
+} from "./signSheet";
+import { settleSignSheet, type SettledSignSheet } from "./signSheetCoordinator";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
-import { castingOutfitPlateEngine } from "./signEngine";
+import { castingSignSheetEngine, castingViewConformanceJudge } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 import { conformanceProvenance } from "./viewConformance";
 import { castPackageRedoOffer } from "./castProjection";
@@ -222,13 +223,13 @@ export async function redoCastPackage(
     The button carried a price; this is the server asking the SAME function the
     same question at the moment the money would move — `castPackageRedoOffer`,
     over the projection the room is shown. A second reading in this file is how
-    a customer comes to press a 350-credit button and be charged something else.
+    a customer comes to press a 650-credit button and be charged something else.
 
     The offer answers WHETHER and HOW MUCH; the sentences below answer WHY, read
     off the same two facts the offer walked. Both refusals are free and before
     any claim.
   */
-  const offer = castPackageRedoOffer(read, CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS);
+  const offer = castPackageRedoOffer(read, CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -247,8 +248,10 @@ export async function redoCastPackage(
 
     A package is a historical record and the projection already honours it —
     `castProjection` renders the slots this Cast owns, two of which own a
-    retired `walk`. The offer priced those same slots, so the charge below and
-    the number on the button are the same arithmetic over the same list.
+    retired `walk`. ⚠ **The PRICE no longer depends on this list** (his flat
+    650 of 2026-10-08), but the RENDER still does: a Cast that owns six slots
+    has six redone, and the sheet plan below is built from her own list rather
+    than from today's five.
   */
   const angles = read.slots.map((slot) => slot.angle);
 
@@ -262,9 +265,9 @@ export async function redoCastPackage(
 
   /*
     HER FACE, FETCHED BEFORE THE FIRST CLAIM — so a Cast whose anchor object has
-    gone away is a free refusal rather than five charged renders with nothing to
-    hold the likeness. The same statement the Try again road makes, for the same
-    reason, one view multiplied by five.
+    gone away is a free refusal rather than a charged press with nothing to hold
+    the likeness. The same statement the Try again road makes, for the same
+    reason, one view multiplied by her whole package.
   */
   let anchor: { bytes: Buffer; contentType: string };
   try {
@@ -275,19 +278,10 @@ export async function redoCastPackage(
   }
 
   /*
-    CAN THEY AFFORD THE WHOLE THING? — a free refusal, before any claim.
-
-    ⚠ **This read exists because the charge is five deducts and a redo must not
-    be able to buy PART of a package.** Without it, a customer holding 210
-    display credits would get three new views, a failure on the fourth, and a
-    mixed package they did not ask for. With it, the only way to reach that
-    state is a balance that moves between this statement and the deducts — and
-    nothing else can be spending against this Cast, because the five slot locks
-    are ours by then.
-
-    **The number quoted is the whole price**, not a slice: a customer quoted one
-    view’s slice against a whole-package button would top up by a fifth of what
-    they need and be refused again.
+    CAN THEY AFFORD IT? — a free refusal, before any claim, and under the flat
+    price this is one number rather than five slices that must not be bought
+    separately. The quote is the whole price, which is also the only price
+    there is.
   */
   const balance = await (dependencies.readBalance ?? getUserCredits)(input.userId);
   if (!balance || balance.balance < offer.priceCredits) {
@@ -297,21 +291,54 @@ export async function redoCastPackage(
     });
   }
 
+  const begin = dependencies.begin ?? beginDirectOperation;
+
+  /* ---- the press: one row, all the money, no lock ---- */
+
+  /*
+    ⚠ **THE PRESS IS CLAIMED FIRST AND IT IS THE ONLY ROW THAT CARRIES CREDITS**
+    (his flat price, 2026-10-08; the shape the relay settled on PR #1924).
+
+    A flat price cannot be charged five times, and it cannot ride one of the
+    five slot rows either: the recovery sweep refunds an unsettled operation's
+    planned credits, so a slot holding the whole 3,250 would hand back a whole
+    redo whenever THAT slot was the one left unsettled — even with four
+    siblings delivered. The press row is the money, the slot rows are the
+    pictures, and the sweep can tell them apart by kind.
+
+    It takes NO lock, which is forced rather than chosen:
+    `generation_operation_locks` is unique on `operationId`, so one operation
+    holds one key — the five slot locks need five operations, and a sixth key
+    for the press would be one nothing else ever takes. Mutual exclusion is the
+    slots'; the press is the till.
+
+    A SECOND PRESS OF THE SAME BUTTON replays here, before any slot is claimed
+    and before any money moves, and is handed back what the first press bought.
+  */
+  const press = await begin({
+    userId: input.userId,
+    clientRequestId: input.clientRequestId,
+    kind: "castingV2.packageRedoPress",
+    /* Bound at the claim, BEFORE any money moves, so the sweep can always ask
+       whether a picture landed for this Cast. */
+    modelId: read.modelId,
+    payload: { castId: input.castId, angles },
+    plannedCredits: offer.priceCredits,
+  });
+  if (press.type === "replay") return press.result as PackageRedoResult;
+  const pressOperationId = press.operationId;
+
   /* ---- the claims: all of them, and all of them free ---- */
 
-  const begin = dependencies.begin ?? beginDirectOperation;
   const claimed: Array<{ angle: CastViewAngle; operationId: string }> = [];
-  const replayed: PackageRedoResult[] = [];
   try {
     for (const angle of angles) {
       const gate = await begin({
         userId: input.userId,
-        /* DERIVED, never minted: the same press replays the same five
+        /* DERIVED, never minted: the same press replays the same slot
            operations rather than buying a second package (#1903). */
         clientRequestId: derivedClientRequestId(input.clientRequestId, angle),
         kind: "castingV2.packageRedo",
-        /* Bound at the claim, BEFORE any money moves, so the sweep can always
-           ask whether a picture landed for this Cast. */
         modelId: read.modelId,
         /*
           ONE SLOT, ONE ASK — the SAME key the Try again takes (#1257).
@@ -319,100 +346,163 @@ export async function redoCastPackage(
           This is the whole mutual exclusion between the two roads, and it is
           structural rather than a read: `generation_operation_locks.lockKey` is
           a primary key, so a slot being replaced by one road cannot be claimed
-          by the other. A cast-level `model:` key would have been the tempting
-          choice for a whole-package operation and it would NOT have collided
-          with the per-slot keys at all — two roads could then have rendered the
-          same slot concurrently, and the later commit would silently throw away
-          a picture the customer paid for.
+          by the other.
         */
         lockKey: castViewSlotOperationLockKey(read.modelId, angle),
         lockBusyMessage: PACKAGE_REDO_BUSY_MESSAGE,
-        /* THE SAME SHAPE THE TRY AGAIN CLAIMS WITH — "this Cast, this view" is
-           exactly what this operation is about, and the busy read hashes this
-           builder per angle for both kinds. The KIND is what distinguishes the
-           roads, never the payload. */
         payload: castViewRetryClaimPayload({ castId: input.castId, angle }),
-        /* What this slice costs, written where the row is born (#1767). Never
-           zero on this road: a redo is never free, which is his own clause. */
-        plannedCredits: CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
+        /*
+          ⚠ **ZERO, AND THAT IS THE FLAT PRICE'S WHOLE SHAPE.** A slot row
+          carries no credits because a slot can no longer be refunded on its
+          own: his rule is one price with no per-view refund, and credits come
+          back only when nothing could be delivered at all. The sweep reads
+          this field to decide what an unsettled row owes — zero is the true
+          answer for a slot, and the press row is where the 3,250 lives.
+        */
+        plannedCredits: 0,
       });
-      if (gate.type === "replay") {
-        replayed.push(gate.result as PackageRedoResult);
-        continue;
-      }
+      if (gate.type === "replay") continue;
       claimed.push({ angle, operationId: gate.operationId });
     }
   } catch (error) {
     /*
-      ONE CLAIM REFUSED, SO NONE OF THEM HAPPENS.
-
-      Nothing has been charged — a claim moves no money — so the rows already
-      taken are failed free and their locks released, and the customer meets the
-      refusal with their balance untouched. Each settle is awaited and its own
-      throw swallowed: `failClaimedDirectOperation` always throws (it is the
-      road that reports a failure to a caller), and the error that matters here
-      is the FIRST one, not the five receipts.
+      ONE CLAIM REFUSED, SO NONE OF THEM HAPPENS — and nothing has been charged,
+      because the deduct is below this block. The rows already taken are failed
+      free, their locks released, and the press is failed with them.
     */
     for (const { operationId } of claimed) {
       await failClaimedDirectOperation({
         userId: input.userId,
         operationId,
-        error: new TRPCError({
-          code: "CONFLICT",
-          message: PACKAGE_REDO_BUSY_MESSAGE,
-        }),
+        error: new TRPCError({ code: "CONFLICT", message: PACKAGE_REDO_BUSY_MESSAGE }),
       }).catch(() => undefined);
     }
+    await failClaimedDirectOperation({
+      userId: input.userId,
+      operationId: pressOperationId,
+      error: new TRPCError({ code: "CONFLICT", message: PACKAGE_REDO_BUSY_MESSAGE }),
+    }).catch(() => undefined);
     throw error;
   }
 
-  /*
-    EVERY ANGLE WAS A REPLAY — the same press arriving twice. Return what it
-    bought the first time rather than a second package.
-  */
-  if (claimed.length === 0 && replayed.length > 0) {
-    return mergeRedoResults(input.castId, replayed);
+  /* ---- the one charge ---- */
+
+  const chargeReference = operationChargeReference(pressOperationId);
+  const charge = await (dependencies.deduct ?? deductCredits)(
+    input.userId,
+    offer.priceCredits,
+    "generation",
+    "Cast package redo (pending)",
+    chargeReference,
+    { toolKind: "image", engineUsed: "castingV2" },
+  );
+  if (!charge.success) {
+    /*
+      The whole price was proved affordable at the admission, so reaching here
+      means the balance moved underneath us. Nothing was dispatched: every row
+      is failed free and the customer's balance is untouched.
+    */
+    log.warn(
+      { operationId: pressOperationId, castId: input.castId, price: offer.priceCredits },
+      "[packageRedoService] the press could not be charged — nothing is rendered",
+    );
+    for (const { operationId } of claimed) {
+      await failClaimedDirectOperation({
+        userId: input.userId,
+        operationId,
+        error: new TRPCError({ code: "BAD_REQUEST", message: PACKAGE_REDO_UNAVAILABLE_MESSAGE }),
+      }).catch(() => undefined);
+    }
+    await failClaimedDirectOperation({
+      userId: input.userId,
+      operationId: pressOperationId,
+      error: new TRPCError({
+        code: "BAD_REQUEST",
+        message: charge.error
+          || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
+      }),
+    }).catch(() => undefined);
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: charge.error
+        || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
+    });
   }
 
-  /* ---- one fresh plate, for the two views that wear one ---- */
+  /* ---- the sheets: the Sign's own road, not the plate's ---- */
 
   /*
-    THE PLATE STARTS NOW AND ONLY THE FULL-LENGTH PAIR WAITS FOR IT — the Sign's
-    own schedule (#1278 path E), because this is the Sign's own road.
+    ⚠ **A REDO RENDERS THE WAY A SIGN RENDERS, WHICH IT DID NOT UNTIL NOW** —
+    the relay's finding on PR #1924, and it is the reason his 650 is the right
+    price rather than a loss.
 
-    ⚠ **The engine is built INSIDE the promise, not in the argument list.**
-    `castingOutfitPlateEngine()` throws on a missing `FAL_KEY` — the door's own
-    refusal, and the right one — and built eagerly that throw would be
-    synchronous here, after five rows exist and before anything could refuse or
-    refund them. Wrapped, it lands in the catch and the redo renders
-    master-only, which is what a missing plate is supposed to cost.
+    The road this replaces rendered one wardrobe plate and then five separate
+    per-view requests: about $0.90 of engine time where a Sign costs about
+    $0.22, with front and back free to disagree because nothing cut them from
+    one frame, and with no re-make when a view was refused. #1957 retired that
+    road for the Sign; this is the same retirement for the redo.
+
+    What arrives instead is `signSheetPlan` + `settleSignSheet`: two sheets
+    rendered in parallel at `quality: "high"`, every panel judged before any of
+    them can commit, and ONE house-cost re-make of a sheet whose panel met a
+    catastrophe — his #1904 option A, inherited rather than re-implemented.
+
+    ⚠ **The engines are built INSIDE the promise**, as the Sign builds them:
+    `castingSignSheetEngine(kind)` throws on a missing `FAL_KEY`, and eagerly in
+    the argument list that throw would be synchronous here — after the rows
+    exist and the credits are gone, with nothing to refund it. Inside, it is a
+    sheet that never arrived, every slot fails, and the press refunds whole.
   */
-  const plateOperationId = claimed[0]?.operationId ?? input.clientRequestId;
-  const plate: Promise<OutfitPlate | null> = Promise.resolve()
-    .then(() => renderOutfitPlate({
-      engine: (dependencies.outfitPlateEngine ?? castingOutfitPlateEngine)(),
-      /* #1471, his ruling: the plate EDITS the master. The same anchor the
-         views render from, so the plate cannot come to be of a different
-         picture than the views it dresses. */
-      anchor,
-      wardrobeLine: castWardrobeLine(source.technicalSchema),
-      description: source.briefText,
-      pronouns: castPronouns(source.technicalSchema),
-      operationId: plateOperationId,
-    }))
-    .catch((error: unknown) => {
-      log.warn(
-        {
-          operationId: plateOperationId,
-          castId: input.castId,
-          err: error instanceof Error ? error.message : String(error),
-        },
-        "[packageRedoService] the wardrobe plate threw — the full-length views render from the master alone",
-      );
-      return null;
-    });
+  const [inkCrops, featureWords] = await Promise.all([
+    source.candidatePublicId === null
+      ? Promise.resolve({ crops: [] as const })
+      : carriedInkCrops({}, {
+          userId: input.userId,
+          candidatePublicId: source.candidatePublicId,
+          anchorDeltas: source.anchorDeltas,
+          pronouns: castPronouns(source.technicalSchema),
+          operationId: pressOperationId,
+          wardrobeLine: castWardrobeLine(source.technicalSchema),
+          wardrobeSource: castWardrobeSource(source.technicalSchema),
+        }),
+    source.candidateId === null
+      ? Promise.resolve([])
+      : carriedFeatureWords({}, {
+          userId: input.userId,
+          candidateId: source.candidateId,
+          selectedVariantId: source.selectedVariantId,
+          operationId: pressOperationId,
+        }),
+  ]);
 
-  /* ---- the renders, concurrently, each settling its own slice ---- */
+  const signSheets = Object.fromEntries(
+    signSheetPlan(angles).map((plan) => [
+      plan.kind,
+      Promise.resolve().then(() => settleSignSheet({
+        kind: plan.kind,
+        panelOrder: plan.panelOrder,
+        render: () => renderSignSheet({
+          engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
+          anchor,
+          wardrobeLine: castWardrobeLine(source.technicalSchema),
+          description: source.briefText,
+          pronouns: castPronouns(source.technicalSchema),
+          panelOrder: plan.panelOrder,
+          inkCrops: inkCrops.crops,
+          featureWords,
+          operationId: pressOperationId,
+        }),
+        judge: (dependencies.judge ?? castingViewConformanceJudge)(),
+        anchor,
+        pronouns: castPronouns(source.technicalSchema),
+        userId: input.userId,
+        operationId: pressOperationId,
+        ...(dependencies.capture ? { capture: dependencies.capture } : {}),
+      })),
+    ]),
+  ) as Record<SignSheetKind, Promise<SettledSignSheet>>;
+
+  /* ---- the slots, concurrently, each cutting its own panel ---- */
 
   /*
     ⚠ **`allSettled`, NEVER `all` — #1903's REVIEW FINDING 2.**
@@ -420,18 +510,9 @@ export async function redoCastPackage(
     `redoOneView` re-throws when a view goes wrong past its render loop, on
     purpose: the lease goes to the sweep rather than this process sealing a
     receipt it cannot stand behind. Under `Promise.all` that one rejection
-    became the whole press's rejection, so a customer whose other FOUR views
-    rendered, landed and were charged was told *"Those views couldn't be asked
-    for again"*. **The money was right and the sentence was false** — which is
-    the worse half, because the four pictures are sitting on the Cast while the
-    room says nothing arrived.
-
-    So every slice reports, and a rejected one reports what is actually true of
-    it: nothing landed, its slice was charged, and **this process refunded
-    nothing because the sweep owns it**. That is the same shape the fenced exit
-    returns, for the same reason, and `mergeRedoResults` ANDs `refundRecorded`
-    so one unsettled slice makes the whole receipt say so rather than being
-    averaged away by four that worked.
+    became the whole press's rejection, so a customer whose other views
+    rendered and landed was told *"Those views couldn't be asked for again"*
+    while the pictures sat on the Cast.
   */
   const settled = await Promise.allSettled(claimed.map(({ angle, operationId }) =>
     redoOneView(dependencies, {
@@ -441,61 +522,106 @@ export async function redoCastPackage(
       anchor,
       angle,
       operationId,
-      plate,
-      packagePrice: offer.priceCredits,
+      pressOperationId,
+      signSheets,
     })));
 
-  const outcomes = settled.map((slice, index) => {
-    if (slice.status === "fulfilled") return slice.value;
-    /* `claimed` is what was mapped over, in order, so the index IS the angle.
-       Reading the angle off the rejection is impossible — a throw carries no
-       slot — and pairing by index is why this is a `map` over `settled`
-       rather than a filter. */
+  const committed: CastViewAngle[] = [];
+  const failed: CastViewAngle[] = [];
+  settled.forEach((slice, index) => {
     const { angle } = claimed[index]!;
-    log.error(
-      { operationId: claimed[index]!.operationId, castId: input.castId, angle, err: slice.reason },
-      "[packageRedoService] a redone view threw past its own settlement — the sweep owns that slice",
-    );
-    return {
-      castId: input.castId,
-      committed: [],
-      failed: [angle],
-      chargedCredits: CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
-      refundedCredits: 0,
-      refundRecorded: false,
-    } satisfies PackageRedoResult;
+    if (slice.status === "fulfilled" && slice.value === "committed") {
+      committed.push(angle);
+      return;
+    }
+    if (slice.status === "rejected") {
+      log.error(
+        { operationId: claimed[index]!.operationId, castId: input.castId, angle, err: slice.reason },
+        "[packageRedoService] a redone view threw past its own settlement — the sweep owns that slice",
+      );
+    }
+    failed.push(angle);
   });
 
-  return mergeRedoResults(input.castId, [...replayed, ...outcomes]);
-}
+  /* ---- settle the press: his rule, and the only refund on this road ---- */
 
-/**
- * Fold the per-view settlements into the one receipt the room is handed.
- *
- * Exported shape, private arithmetic: `refundRecorded` is ANDed because the
- * client's sentence turns on it, and one unwritten refund has to make the whole
- * receipt say so rather than being averaged away by four that worked.
- */
-function mergeRedoResults(
-  castId: string,
-  parts: readonly PackageRedoResult[],
-): PackageRedoResult {
-  return {
-    castId,
-    committed: parts.flatMap((part) => part.committed),
-    failed: parts.flatMap((part) => part.failed),
-    chargedCredits: parts.reduce((sum, part) => sum + part.chargedCredits, 0),
-    refundedCredits: parts.reduce((sum, part) => sum + part.refundedCredits, 0),
-    refundRecorded: parts.every((part) => part.refundRecorded),
+  /*
+    ⚠ **CREDITS COME BACK ONLY WHEN NOTHING COULD BE DELIVERED AT ALL** — his
+    word of 2026-10-08, the same sentence that governs the Sign: *"Credits only
+    come back if the Sign can't be delivered at all."*
+
+    One view that arrived is a delivered redo. A customer who asked for all her
+    views again and received four of them has had the work done; the fifth kept
+    the picture she already had, because a redo never leaves a hole. The house
+    paid for both sheets either way, which is what the flat price is for.
+
+    The decision itself is {@link flatPressRefundOwed} rather than an `if` here,
+    because the recovery sweep has to reach the SAME answer from the rows alone
+    and #1968's Sign will ask it too.
+  */
+  const owed = flatPressRefundOwed({
+    chargedCredits: offer.priceCredits,
+    delivered: committed.length,
+  });
+  let refundedCredits = 0;
+  let refundRecorded = true;
+  if (owed > 0) {
+    const refund = await (dependencies.refund ?? recordRefund)(
+      input.userId,
+      owed,
+      "No views arrived when you asked for all of them again",
+      chargeReference,
+    );
+    refundedCredits = refund.recorded && !refund.duplicate ? refund.amount : 0;
+    refundRecorded = refund.recorded;
+    if (!refund.recorded) {
+      log.error(
+        { operationId: pressOperationId, castId: input.castId, reference: refund.reference },
+        "[packageRedoService] the redo refund did not record — the owner remains charged",
+      );
+    }
+  }
+
+  const result: PackageRedoResult = {
+    castId: input.castId,
+    committed,
+    failed,
+    chargedCredits: offer.priceCredits,
+    refundedCredits,
+    refundRecorded,
   };
+  await completeDirectOperationSuccess({
+    userId: input.userId,
+    operationId: pressOperationId,
+    result,
+    chargedCredits: offer.priceCredits,
+    refundedCredits,
+  });
+  log.info(
+    {
+      operationId: pressOperationId,
+      castId: input.castId,
+      committed: committed.length,
+      failed: failed.length,
+      refundedCredits,
+    },
+    "[packageRedoService] a redo settled",
+  );
+  return result;
 }
 
 /**
- * ONE VIEW OF A REDO — running, deduct, render, land, settle.
+ * ONE SLOT OF A REDO — running, cut the panel, land, settle.
  *
- * Its own function because every exit has to settle its own operation and its
- * own slice: five of these run concurrently and none of them may be able to
- * leave another's money unsettled.
+ * ⚠ **IT MOVES NO MONEY ANY MORE, and that is the flat price's whole shape.**
+ * It used to deduct its own slice and refund it when the view did not arrive.
+ * Under his rule of 2026-10-08 a slot has no slice: the press charged once, and
+ * credits come back only when NOTHING was delivered — a decision no single slot
+ * can make, because it cannot see its siblings. So this function answers one
+ * question and returns one word.
+ *
+ * Its own function because every exit has to settle its own operation: the
+ * slots run concurrently and none of them may leave another's row unsettled.
  */
 async function redoOneView(
   dependencies: PackageRedoServiceDependencies,
@@ -506,152 +632,69 @@ async function redoOneView(
     anchor: { bytes: Buffer; contentType: string };
     angle: CastViewAngle;
     operationId: string;
-    plate: Promise<OutfitPlate | null>;
-    /** The WHOLE package price, for the one sentence that must quote it: a
-     *  customer quoted one view’s slice against a whole-package button would top
-     *  up by a fifth of what they need and be refused again. */
-    packagePrice: number;
+    /** The row that holds the money — written into the picture's provenance so
+     *  the sweep can ask whether ANY view of this press landed. */
+    pressOperationId: string;
+    signSheets: Record<SignSheetKind, Promise<SettledSignSheet>>;
   },
-): Promise<PackageRedoResult> {
-  const { input, read, source, anchor, angle, operationId } = context;
-  const price = CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS;
-  const view = castPackageView(angle);
+): Promise<"committed" | "failed"> {
+  const { input, read, source, anchor, angle, operationId, pressOperationId } = context;
   const slotLockKey = castViewSlotOperationLockKey(read.modelId, angle);
-
-  /** This slice failed and nothing is owed back — it never charged. */
-  const freeFailure = (): PackageRedoResult => ({
-    castId: input.castId,
-    committed: [],
-    failed: [angle],
-    chargedCredits: 0,
-    refundedCredits: 0,
-    refundRecorded: true,
-  });
 
   try {
     await (dependencies.markRunning ?? markGenerationOperationRunning)({
       userId: input.userId,
       operationId,
-      plannedCredits: price,
+      /* Zero for the slot, as at the claim: the press is where the credits are. */
+      plannedCredits: 0,
       phase: "generating",
       heartbeat: true,
       /* Re-proved at the transition, the way every other lock-taking road does
-         it: the money moves on the next statement, so "do we still hold the
+         it: the render starts on the next statement, so "do we still hold the
          slot" is asked once more immediately before it. */
       requiredLockKey: slotLockKey,
     });
   } catch (error) {
     log.warn(
       { operationId, castId: input.castId, angle, err: error },
-      "[packageRedoService] this view never started — nothing charged for it",
+      "[packageRedoService] this view never started",
     );
     await failClaimedDirectOperation({ userId: input.userId, operationId, error })
       .catch(() => undefined);
-    return freeFailure();
+    return "failed";
   }
-
-  /* ---- the pinned deduct ---- */
-
-  const charge = await (dependencies.deduct ?? deductCredits)(
-    input.userId,
-    price,
-    "generation",
-    `Cast package redo: ${view.label} (pending)`,
-    operationChargeReference(operationId),
-    { toolKind: "image", engineUsed: "castingV2" },
-  );
-  if (!charge.success) {
-    /*
-      Nothing was dispatched for this view, so nothing is owed back for it. The
-      whole price was proved affordable at the admission, so reaching here means
-      the balance moved underneath us — the other slices stand on their own and
-      this one is simply not rendered.
-    */
-    log.warn(
-      { operationId, castId: input.castId, angle, price },
-      "[packageRedoService] the slice could not be charged — this view is not rendered",
-    );
-    await failClaimedDirectOperation({
-      userId: input.userId,
-      operationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: charge.error
-          || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(context.packagePrice))} credits.`,
-      }),
-    }).catch(() => undefined);
-    return freeFailure();
-  }
-
-  /* ---- the render: the Sign's own loop, with our landing ---- */
 
   const commit = dependencies.commitRetried ?? commitRetriedViewAsset;
   let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ assetId: number; url: string }>>>;
   try {
-    /*
-      WHAT TRAVELS BESIDE THE ANCHOR, RE-DERIVED BY THE SIGN'S OWN TWO READERS.
-
-      Her delivered ink crops and her carried feature words are what make a view
-      of THIS woman rather than of the waist-up photograph. Both are called here
-      — never re-implemented — because a redone view that silently lost her
-      tattoos would be the fidelity law's exact failure, on a road the customer
-      has just paid to put right.
-    */
-    const [inkCrops, featureWords] = await Promise.all([
-      source.candidatePublicId === null
-        ? Promise.resolve({ crops: [] as const })
-        : carriedInkCrops({}, {
-            userId: input.userId,
-            candidatePublicId: source.candidatePublicId,
-            anchorDeltas: source.anchorDeltas,
-            pronouns: castPronouns(source.technicalSchema),
-            operationId,
-            wardrobeLine: castWardrobeLine(source.technicalSchema),
-            wardrobeSource: castWardrobeSource(source.technicalSchema),
-          }),
-      source.candidateId === null
-        ? Promise.resolve([])
-        : carriedFeatureWords({}, {
-            userId: input.userId,
-            candidateId: source.candidateId,
-            selectedVariantId: source.selectedVariantId,
-            operationId,
-          }),
-    ]);
-
-    /*
-      THE PLATE PANEL CUT FOR THIS VIEW, or nothing at all.
-
-      Only the two full-length views wear one, and a plate that did not land
-      leaves them rendering master-only — the input every view composed before
-      path E existed, field for field.
-    */
-    const plateAngle = (PLATE_ANGLES as readonly CastViewAngle[]).includes(angle)
-      ? (angle as (typeof PLATE_ANGLES)[number])
-      : null;
-    const settledPlate = plateAngle === null ? null : await context.plate;
-    const side = plateAngle === null ? null : plateSideFor(plateAngle);
-
     rendered = await renderViewAttempts(
       dependencies,
       {
-        ...(settledPlate !== null && side !== null
-          ? { outfitReference: { image: settledPlate[side], side, kind: "plate" as const } }
-          : {}),
         userId: input.userId,
         operationId,
         modelId: read.modelId,
         identityRevisionId: source.identityRevisionId,
         identityText: source.identityText,
         anchor,
-        inkCrops: inkCrops.crops,
         pronouns: castPronouns(source.technicalSchema),
-        featureWords,
         wardrobeLine: castWardrobeLine(source.technicalSchema),
-        /* The SAME words the original five views were composed from (#1278 part
-           1). Without this a redo renders a different prompt from the slots it
+        /* The SAME words the original views were composed from (#1278 part 1).
+           Without this a redo renders a different prompt from the slots it
            replaces. */
         description: source.briefText,
+        /*
+          ⚠ **THE PICTURE IS A PANEL, NOT A REQUEST.** With the sheets in hand
+          this loop calls no image engine at all: it cuts this angle's panel out
+          of its already-judged sheet. The ink crops and the feature words rode
+          into the SHEET's composition above, once for every panel on it, rather
+          than per view — which is what makes the five views of a redo agree
+          with each other.
+        */
+        signSheets: context.signSheets,
+        /* ⚠ NO `castName`: `CastSlotsRead` does not carry one, so a refusal on
+           this road says "this character" exactly as it did before the sheets
+           arrived. Widening that read to make one refusal sentence warmer is a
+           change to the room's projection, not part of this repair. */
       },
       angle,
       async (landed) => {
@@ -664,21 +707,26 @@ async function redoOneView(
           storageUrl: landed.stored.url,
           identityRevisionId: source.identityRevisionId,
           identityText: source.identityText,
-          pointsCost: price,
+          /* The picture cost nothing of its own: the press paid once. */
+          pointsCost: 0,
           provenance: {
-            /* THE ROAD, and it is the only field that says which one this was.
-               The kind on the operation row is its sibling; between them a
-               later reader can always separate a redo from a customer asking
-               for one view again. */
+            /* THE ROAD, and it is the only field that says which one this was. */
             source: "castingV2.packageRedo",
             /*
-              The fork variable the sweep reads, and it is deliberately the
-              SAME key the Try again writes: `retriedViewLanded` asks "did a
-              picture land under this operation", which is the right question
-              on both roads. Renaming it would mean rewriting the provenance of
-              every view ever retried to teach the adjudicator one new word.
+              The fork variable the sweep reads for ONE SLOT, deliberately the
+              same key the Try again writes: `retriedViewLanded` asks "did a
+              picture land under this operation", which is the right question on
+              both roads.
             */
             retryOperationId: operationId,
+            /*
+              ⚠ **AND THE PRESS, WHICH IS WHAT THE FLAT PRICE NEEDED.** The
+              money is on the press row, so the sweep's question about MONEY is
+              *did any view of this press land* — and this field is the only
+              thing that can answer it from the asset rows alone.
+              `pressViewLanded` reads exactly this.
+            */
+            pressOperationId,
             ...landed.provenance,
             ...conformanceProvenance(landed.verdict),
           },
@@ -689,9 +737,7 @@ async function redoOneView(
   } catch (error) {
     /*
       A throw past the render loop is a view nobody settled. Hand the lease to
-      the sweep rather than sealing a receipt this process cannot stand behind —
-      it reads the ledger and the asset rows and reaches the right answer
-      without trusting anything believed here.
+      the sweep rather than sealing a receipt this process cannot stand behind.
     */
     log.error(
       { operationId, castId: input.castId, angle, err: error },
@@ -700,122 +746,58 @@ async function redoOneView(
     throw error;
   }
 
-  /* ---- settle ---- */
-
   if (rendered.status === "landed") {
     log.info(
-      { operationId, castId: input.castId, angle, price },
+      { operationId, castId: input.castId, angle },
       "[packageRedoService] a redone view arrived",
     );
-    const result: PackageRedoResult = {
-      castId: input.castId,
-      committed: [angle],
-      failed: [],
-      chargedCredits: price,
-      refundedCredits: 0,
-      refundRecorded: true,
-    };
     await completeDirectOperationSuccess({
       userId: input.userId,
       operationId,
-      result,
-      chargedCredits: price,
+      result: { castId: input.castId, angle, outcome: "ready" },
+      chargedCredits: 0,
       refundedCredits: 0,
     });
-    return result;
+    return "committed";
   }
 
   if (rendered.status === "fenced") {
     /*
-      FENCED — AND THIS EXIT SEALS NO RECEIPT, WHICH IS #1903's REVIEW FINDING 1.
-
-      The reading is that this operation is no longer ours: its bytes were
-      dropped by the loop, and nothing is refunded HERE because a refund under
-      a reference the sweep is about to use is how one failure becomes two.
-      Both halves of that are still true. ⚠ **What was wrong was finishing the
-      sentence with `completeDirectOperationSuccess`** — stamping
-      `succeeded`, charged, nothing refunded, on an operation this process had
-      just declared it does not own. On a row that was still `running` that
-      receipt is terminal, so the sweep never looked again and the customer
-      kept paying 70 display for a view that does not exist.
-
-      `commitRetriedViewAsset` now reserves `null` for a real fence (its own
-      header carries the four roads it used to conflate), so this branch is
-      reached only when the row genuinely moved. Either way the answer is the
-      same and it is the one the other four casting services already give:
-      **hand the lease to the sweep and let it read the ledger and the asset
-      rows.** Refine, retry, roll and sign all end an uncertain settlement
-      exactly here; this road and the Try again were the two that did not.
+      FENCED — this operation is no longer ours: its bytes were dropped by the
+      loop. Hand the lease to the sweep and let it read the asset rows, which is
+      where #1903's first review finding landed. ⚠ It settles no receipt here,
+      and under the flat price it owes no refund either way: the press is the
+      only row that can give credits back.
     */
     log.warn(
       { operationId, castId: input.castId, angle },
       "[packageRedoService] the redone view lost its fence — handing the lease to the sweep",
     );
-    /*
-      It REFUSES unless the row is still `running` — which is the useful half.
-      A row another process already settled throws here and that is correct: it
-      is owned, and its money is already right. A row still `running` has its
-      lease expired to NOW, so the sweep takes it on its next pass rather than
-      after a five-minute lease.
-    */
     await (dependencies.handoffToRecovery ?? handoffGenerationOperationToRecovery)({
       userId: input.userId,
       operationId,
     })
       .catch((handoffError: unknown) => {
-        /* The heartbeat is stopped before the write is attempted, so even here
-           the lease lapses on its own and the sweep takes the slice within one
-           lease — the roll road's own sentence about the same call. */
         log.warn(
           { operationId, castId: input.castId, angle, err: handoffError },
           "[packageRedoService] the recovery handoff did not write — the lease lapses on its own",
         );
       });
-    return {
-      castId: input.castId,
-      committed: [],
-      failed: [angle],
-      chargedCredits: price,
-      refundedCredits: 0,
-      /* Not a refund that failed to write — a refund this exit deliberately
-         does not attempt, because the sweep is the one that will. Said as
-         `true` would claim the money is already back. */
-      refundRecorded: false,
-    };
+    return "failed";
   }
 
   /*
     It did not arrive. The slot is exactly what it was — the picture the
     customer already had is still in it, which is the whole reason a redo cannot
-    leave a hole, and this slice goes back.
+    leave a hole. ⚠ **No refund here**: whether anything is owed is a question
+    about the PRESS, decided once all the slots have settled.
   */
-  const refund = await (dependencies.refund ?? recordRefund)(
-    input.userId,
-    price,
-    `Cast package redo: ${view.label} didn't arrive`,
-    operationChargeReference(operationId),
-  );
-  const refunded = refund.recorded && !refund.duplicate ? refund.amount : 0;
-  if (!refund.recorded) {
-    log.error(
-      { operationId, castId: input.castId, angle, reference: refund.reference },
-      "[packageRedoService] the redo refund did not record — the owner remains charged",
-    );
-  }
-  const result: PackageRedoResult = {
-    castId: input.castId,
-    committed: [],
-    failed: [angle],
-    chargedCredits: price,
-    refundedCredits: refunded,
-    refundRecorded: refund.recorded,
-  };
   await completeDirectOperationSuccess({
     userId: input.userId,
     operationId,
-    result,
-    chargedCredits: price,
-    refundedCredits: refunded,
+    result: { castId: input.castId, angle, outcome: "failed" },
+    chargedCredits: 0,
+    refundedCredits: 0,
   });
-  return result;
+  return "failed";
 }

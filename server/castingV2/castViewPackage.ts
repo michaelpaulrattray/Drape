@@ -30,7 +30,6 @@ import {
   type CastViewAngle,
 } from "../../shared/boardTypes";
 import {
-  CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS,
   CASTING_V2_REFINE_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_SIGN_COSTS,
@@ -186,33 +185,21 @@ export const CASTING_V2_SIGN_PRICE_CREDITS =
   CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
 
 /*
-  ⚠ **A REDO HAS NO PACKAGE TOTAL HERE, AND TWO WERE WRITTEN BEFORE THAT WAS
-  TRUE — the reasoning is kept because the shape is tempting twice over**
-  (#1903 slice 2).
+  ⚠ **A REDO'S TOTAL IS ONE CONSTANT NOW, AND IT IS NOT HERE** (#1903, his
+  word of 2026-10-08: *"make both sign and redo/regenerate 650 credis"*).
 
-  The obvious thing, beside `CASTING_V2_SIGN_PRICE_CREDITS` above, is a
-  a constant deriving 1,750 from the slice and the view list, plus a display
-  twin holding his 350. Both landed on the
-  uncalled-export reading list, and the sweep was right both times: **nothing
-  in production reads a package total, because the offer prices HER slots.**
-  `castPackageRedoOffer` multiplies the slice by the slots a Cast actually owns
-  — which is the thing that must happen, since two live Casts own a retired
-  `walk` and quoting today's five-view figure on a six-view Cast would print one
-  number on the button and charge another at the till. A total declared here
-  would be a SECOND answer to a question the offer already answers, on a money
-  surface, which is working law 4 exactly.
+  What stood here argued that no package total should exist at all, because the
+  price was a per-view SLICE and `castPackageRedoOffer` had to multiply it by
+  the slots a Cast actually owns — two live Casts own a retired `walk`, so a
+  total derived from today's five views would have printed one number on the
+  button and charged another at the till. Both halves of that are gone with the
+  slice: `CASTING_V2_PACKAGE_REDO_PRICE_CREDITS` IS the total, it is flat
+  whatever she owns, and the offer serves it unmultiplied.
 
-  **Where his 350 is held instead:** `server/castingV2/packageRedoPrice.test.ts`
-  asserts `displayPrice(slice × CAST_PACKAGE_VIEWS.length) === 350` and names
-  him, because his figure is a COINCIDENCE OF THE VIEW COUNT rather than a
-  constant — six views would come to 420 display and no expression anywhere
-  would notice, so the product would simply start charging a price he never set.
-  A test and not an import-time throw (the shape this file's neighbour
-  `CAST_VIEW_ANGLE_PATTERN` uses): that one guards a validator that would accept
-  *more than it says*, which is unsafe to discover later, while this guards an
-  arithmetic disagreement with a founder decision — the gate stops it before a
-  deploy, and a boot refusal would turn a reviewable mistake into an outage on
-  every surface that quotes a price.
+  It lives in `castingCreditCosts.ts` beside every other price rather than here
+  beside the Sign's derivation, because it is not derived from anything: the
+  Sign's total is `promotion + view x views`, and his redo price is a number he
+  set.
 */
 
 /**
