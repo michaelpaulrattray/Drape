@@ -2276,6 +2276,11 @@ function describeChange(
        `previewPlanChange`, which clamps both to the target rung. */
     currentCreditUnits?: number;
     targetCreditUnits?: number;
+    /* Whether this change happens today or at the period boundary, and when
+       (#1936) — the server's own answer, so the confirm step and the charge
+       cannot disagree about it either. */
+    deferred?: boolean;
+    effectiveAtSec?: number;
   },
   /**
    * WHAT THE DIAL'S MOVE BUYS, when the dial is the only thing moving (#1832)
@@ -2296,6 +2301,31 @@ function describeChange(
    */
   dialAllowanceLedger: number | null,
 ): string {
+  /*
+    ⚠ **A DECREASE DOES NOT HAPPEN TODAY, AND THIS IS THE ONLY SENTENCE IT EVER
+    GETS (#1936).** His option 1: a decrease takes effect at the next renewal,
+    with no refund and no credit take-back.
+
+    It sits FIRST, above every other branch, for the reason the server's own
+    deferred branch sits above the charge: three of the arms below promise that
+    *"unused time comes back as billing credit"*, which was true while the
+    change was instant and is false of every change that reaches this line
+    today. One sentence at the top is what makes those three unreachable rather
+    than merely unlikely — and they are rewritten below as well, because the
+    knife-edge instant (a decrease asked for in the second the period ends,
+    where the quote is 0 and nothing is deferred) can still reach them.
+
+    No figure is quoted but the date. There is no charge, no credit balance and
+    no allowance change TODAY, so the only number that means anything to her is
+    when it happens.
+  */
+  if (quote.deferred && quote.effectiveAtSec) {
+    return (
+      `${plan.name} starts on ${formatShortDate(new Date(quote.effectiveAtSec * 1000))}. ` +
+      `Nothing is charged today, and you keep your current plan and credits until then.`
+    );
+  }
+
   const dialMoved =
     quote.kind === "same-interval"
     && quote.currentCreditUnits !== undefined
@@ -2313,10 +2343,11 @@ function describeChange(
           : ".")
       );
     }
+    /* ⚠ The refund clause that was here is GONE (#1936) — a dial-down returns
+       no money and claws back no credits now. Reachable only at the knife
+       edge; it says what happens and nothing more. */
     return (
-      `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time on the ` +
-      `credits you dropped becomes credit toward your future bills, and the unused credits go ` +
-      `back with it. ${plan.name} comes with ${monthlyFigure} credits a month from now.`
+      `Nothing to pay today. ${plan.name} comes with ${monthlyFigure} credits a month from now.`
     );
   }
   if (quote.kind === "interval-switch") {
@@ -2329,13 +2360,15 @@ function describeChange(
         `replacing what was left of this cycle's allowance.`
       );
     }
+    /* ⚠ The refund clause that closed this sentence is GONE (#1936): a switch
+       to monthly hands money back, so it is DEFERRED and answered by the
+       sentence at the top of this function. What is left is the knife-edge
+       instant, where the charge is positive or zero and nothing comes back. */
     return (
       `${plan.name} moves to ${formatDollars(quote.newPlanPrice)} a month, starting today. ` +
       (quote.immediateCharge > 0
-        ? `About ${formatDollars(quote.immediateCharge)} is due today.`
-        : `Nothing to pay today — about ${formatDollars(quote.creditBalance)} of unused time ` +
-          `becomes credit toward your future bills.`) +
-      ` The unused months of credits go back with that refund; this month's allowance takes their place.`
+        ? `About ${formatDollars(quote.immediateCharge)} is due today. This month's allowance takes the place of what was left of your year's.`
+        : `Nothing to pay today. This month's allowance takes the place of what was left of your year's.`)
     );
   }
   if (quote.isUpgrade) {
@@ -2347,10 +2380,13 @@ function describeChange(
         : "")
     );
   }
+  /* ⚠ THE PLAIN DOWNGRADE'S SENTENCE, AND IT IS THE THIRD OF THE THREE (#1936).
+     It promised the refund AND the credit take-back, which is precisely the
+     pair his option 1 removes — so a real downgrade is deferred and never
+     arrives here. The knife-edge instant keeps the one clause that is still
+     true: the new allowance starts at the renewal. */
   return (
-    `Nothing to pay today. Unused time on your current plan comes back as billing credit — ` +
-    `the unused credits that time bought go back with it — and the ${plan.name} allowance ` +
-    `starts at your next renewal.`
+    `Nothing to pay today, and the ${plan.name} allowance starts at your next renewal.`
   );
 }
 

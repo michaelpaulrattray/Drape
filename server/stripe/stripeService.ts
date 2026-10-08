@@ -30,6 +30,12 @@ import {
 import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
+import {
+  readPendingPlanChange,
+  releaseScheduleBeforeWrite,
+  releaseScheduleOn,
+  type PendingPlanChange,
+} from "./subscriptionSchedule";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
@@ -266,6 +272,22 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
   /** The interval the customer is actually billed on, read from the price
    *  itself (#664 decision 5) — never from metadata a writer might drop. */
   billingInterval: "month" | "year" | null;
+  /**
+   * ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936), AND THE DEFECT IS
+   * WHAT HAPPENS WITHOUT IT.** This read is what every billing surface draws
+   * its plan from, and it reads the tier off the subscription item — so a
+   * scheduled downgrade would be completely invisible: the customer asks to
+   * drop to Pro, is told it happens on 7 November, and then every screen she
+   * looks at goes on saying Pro Plus with no sign that anything is coming.
+   *
+   * `null` means nothing is pending **or the schedule could not be read** —
+   * the two are deliberately collapsed HERE and nowhere else, because this
+   * function already collapses every failure into its own `null` return and a
+   * surface that cannot be sure says nothing rather than claiming there is no
+   * pending change. The road that must tell them apart (the undo) reads
+   * `readPendingPlanChange` directly and gets all three outcomes.
+   */
+  pendingChange: PendingPlanChange | null;
 } | null> {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -286,6 +308,10 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
     const stripeInterval =
       subscriptionItemsOf(subscription).base?.price?.recurring?.interval;
 
+    /* Read off the SAME subscription object the plan above came from, so the
+       live plan and the pending one cannot be two different moments. */
+    const pending = await readPendingPlanChange(stripe, subscription);
+
     return {
       status: subscription.status,
       currentPeriodStart: new Date(startSec * 1000),
@@ -294,6 +320,7 @@ export async function getSubscriptionDetails(subscriptionId: string): Promise<{
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       billingInterval:
         stripeInterval === "year" || stripeInterval === "month" ? stripeInterval : null,
+      pendingChange: pending.outcome === "pending" ? pending.change : null,
     };
   } catch (error) {
     log.error({ err: error }, `[Stripe] Failed to get subscription ${subscriptionId}:`);
@@ -342,6 +369,26 @@ export async function retrieveLiveSubscription(
  */
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
   try {
+    /* ⚠ **RELEASE FIRST, THEN CANCEL — STRIPE'S OWN DOCUMENTED ORDER (#1936).**
+       Their automatic dispute cancellation is specified exactly this way:
+       *"For subscriptions managed with schedules, the subscription is first
+       released from the schedule and then canceled."* So a customer who
+       scheduled a downgrade and then decided to leave altogether is cancelled
+       cleanly, and the pending change is discarded with the subscription —
+       which is the right outcome, because she is going.
+
+       A failed release REFUSES the cancellation rather than attempting it: a
+       cancel that silently did not take is the one failure a leaving customer
+       discovers on her next statement. */
+    const released = await releaseScheduleBeforeWrite(stripe, subscriptionId);
+    if (released.outcome === "failed") {
+      log.error(
+        { subscriptionId, error: released.error },
+        "[Stripe] Refusing to cancel — the pending scheduled change could not be released",
+      );
+      return false;
+    }
+
     await stripe.subscriptions.update(subscriptionId, {
       cancel_at_period_end: true,
     });
@@ -671,6 +718,17 @@ export type PlanChangeQuote = {
    * to the customer's balance in the same act; a grant kept while its money
    * comes back is the credit-minting loop the review found. 0 on an
    * interval switch (the invoice grants; `creditUnwind` deducts).
+   *
+   * ⚠ **THE NEGATIVE DIRECTION IS SUPERSEDED BY #1936 AND IS NO LONGER
+   * REACHABLE ON A REAL DOWNGRADE — read the sentence above as history.** The
+   * mirror rule was right and it could not win: it handed back the unused
+   * share of the allowance while the take-back floored at what was LEFT of it
+   * (*"spent credits are spent"*), so a customer who SPENT first kept the
+   * credits and got the money anyway. That is the loop #1936 was filed about.
+   * His option 1 removes the money instead — a decrease is scheduled for the
+   * period boundary and moves nothing today — so there is no refund to mirror
+   * and this field reads 0 whenever `deferred` is true. The POSITIVE direction
+   * is untouched and still does exactly what the sentence above says.
    */
   creditAdjustment: number;
   /**
@@ -680,6 +738,52 @@ export type PlanChangeQuote = {
    * period's allowance per round trip. 0 for same-interval changes.
    */
   creditUnwind: number;
+  /**
+   * ⚠ **WHETHER THIS CHANGE HAPPENS NOW OR AT THE PERIOD BOUNDARY (#1936).**
+   * His ruling, verbatim: *"1 for the slider fix"* — **a DECREASE takes effect
+   * at the next renewal, with no refund and no credit take-back; an INCREASE
+   * stays instant.**
+   *
+   * **`deferred` IS THE SINGLE TEST `proratedAmount < 0`, AND THE TWO TEMPTING
+   * EXTRA CLAUSES ARE BOTH WRONG — worth saying here because each one looks
+   * like extra safety.**
+   *
+   * The loop this closes is minted by MONEY COMING BACK while spent credits
+   * stay spent, so money-back is the whole engine and `proratedAmount < 0` is
+   * exactly the set of changes that return any.
+   *
+   * · Adding `|| creditAdjustment < 0` would defer a change the customer is
+   *   PAYING MORE for — a move up the ladder that drops the dial's steps (the
+   *   dial is clamped to the target rung) raises the price and could lower the
+   *   allowance in one action. No money comes back, so nothing can be minted,
+   *   and deferring an upgrade is against his word. ⚠ **Measured rather than
+   *   asserted, and the measurement corrected this sentence's first draft: on
+   *   TODAY's ladder that case is UNREACHABLE** — the dial's rung at its
+   *   maximum is still 20,000 ledger credits below the rung above it, so an
+   *   upgrade's `creditAdjustment` cannot be negative. The clause stays out
+   *   because it is wrong in principle; what keeps "wrong in principle" from
+   *   becoming "wrong in practice" is a coincidence of two numbers in a price
+   *   table that has been re-cut twice this month, so
+   *   `deferredPlanChange.test.ts` pins that coincidence and reddens if a
+   *   future ladder breaks it.
+   * · Adding `|| creditUnwind > 0` would defer **monthly → annual**, which
+   *   carries an unwind on every interval switch and is the largest upgrade
+   *   this product sells.
+   *
+   * ⚠ **AND WHEN THIS IS TRUE, EVERY MONEY AND CREDIT FIELD ABOVE READS 0** —
+   * see the end of {@link quotePlanChange}. That is the mechanism rather than
+   * a courtesy: it means the charge road, the settlement road and every
+   * surface do nothing on a deferred change by construction, instead of each
+   * one remembering to ask.
+   */
+  deferred: boolean;
+  /**
+   * The end of the period the customer has paid for, as Unix seconds — when a
+   * deferred change takes effect, and the renewal date on an instant one.
+   * Carried on the quote so the confirm step's date and the scheduled phase's
+   * start cannot be two readings.
+   */
+  effectiveAtSec: number;
 };
 
 export function quotePlanChange(
@@ -798,22 +902,40 @@ export function quotePlanChange(
         )
       : 0;
 
+  /* ⚠ **THE DIRECTION, AND THEN THE DEFERRAL (#1936).** A change that hands
+     money back does not happen today — his option 1. The test is the signed
+     figure this quote has already computed, and the two tempting extra clauses
+     are wrong for the reasons on `deferred`'s own declaration above.
+
+     ⚠ **THE ZEROING BELOW IS THE MECHANISM, NOT A COURTESY.** Every road that
+     moves money or credits on a plan change reads these fields and nothing
+     else: `changePlan` derives its settlement `direction` from
+     `creditAdjustment` and `creditUnwind`, and the confirm step derives
+     "due today" from `immediateCharge` and "back to your balance" from
+     `creditBalance`. Zeroing them in ONE place means the charge road, the
+     settlement road and all three customer surfaces do nothing on a deferred
+     change by construction — rather than each of them remembering to ask,
+     which is how one of them would eventually forget. */
+  const deferred = proratedAmount < 0;
+
   return {
     kind,
     currentInterval: state.currentInterval,
     targetInterval,
     isUpgrade,
-    proratedAmount,
-    immediateCharge: Math.max(proratedAmount, 0),
-    creditBalance: Math.max(-proratedAmount, 0),
+    proratedAmount: deferred ? 0 : proratedAmount,
+    immediateCharge: deferred ? 0 : Math.max(proratedAmount, 0),
+    creditBalance: deferred ? 0 : Math.max(-proratedAmount, 0),
     newPlanPrice,
     currentPlanPrice,
     currentCreditUnits,
     targetCreditUnits,
     daysRemaining,
     totalDays,
-    creditAdjustment,
-    creditUnwind,
+    creditAdjustment: deferred ? 0 : creditAdjustment,
+    creditUnwind: deferred ? 0 : creditUnwind,
+    deferred,
+    effectiveAtSec: state.periodEndSec,
   };
 }
 
@@ -858,9 +980,36 @@ export async function updateSubscriptionPlan(
   error?: string;
 }> {
   try {
+    /* ⚠ **A PENDING SCHEDULED CHANGE IS RELEASED BEFORE THIS WRITE (#1936).**
+       An instant change asked for while a decrease is pending — she lowered
+       the dial yesterday and has thought better of it today — must REPLACE the
+       pending one, and `subscriptions.update` on a schedule-managed
+       subscription is not a state this product may guess about. The release
+       moves no money and no price (`subscriptionSchedule.ts` quotes the
+       documentation), so it costs one read when there is nothing pending.
+
+       It REFUSES rather than carrying on: the alternative is attempting a
+       charge against a subscription whose management we could not establish,
+       and `changePlan` has nothing to undo once Stripe has invoiced. */
+    /* ⚠ **ONE RETRIEVE, TWO QUESTIONS (#1936).** This read answers both the
+       pending-schedule check below and the plan's item id when the caller did
+       not supply one. The first draft asked twice — the release had its own
+       read — and `annualPlanChange.test.ts`'s *"the item id was supplied, so
+       nothing re-fetched the subscription"* arm caught it, having guarded that
+       round trip since #664. */
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+    const released = await releaseScheduleOn(stripe, subscription);
+    if (released.outcome === "failed") {
+      return {
+        success: false,
+        error:
+          "We could not clear the change already scheduled on your plan, so nothing was changed. Please try again.",
+      };
+    }
+
     let itemId = subscriptionItemId;
     if (!itemId) {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       /* ⚠ The PLAN's item, never `data[0]` — with a credit add-on on the
          subscription that index can be the $9 line, and re-pricing it to the
          new plan's price would make a customer's add-on their whole bill

@@ -364,7 +364,14 @@ describe("#1836 · Settings → Billing offers a free account no credits either"
     it the likeliest button his word is actually about.
   */
   it("the plan card's primary credits button is behind the shared rule", () => {
-    const card = band(read(SETTINGS), "Change plan\n          </Button>", "</SettingsCard>");
+    /* ⚠ **THE OPENING ANCHOR WAS `"Change plan\n          </Button>"` AND
+       #1936 BROKE IT ON INDENTATION ALONE** — that card put the pending-change
+       undo in place of `Change plan` behind a ternary, which moved the closing
+       tag two spaces and nothing else. The band REFUSED rather than reading
+       empty and passing, which is `sourceBand`'s whole safety property doing
+       its job; the repair is an anchor that is about the CONTROL rather than
+       about its whitespace. */
+    const card = band(read(SETTINGS), "onClick={onChangePlan}", "</SettingsCard>");
     expect(withoutComments(card), "a free account is offered credits on the plan card again")
       .toContain('topupEligibility(status?.planTier) === "may-buy" ? (');
     /* And `Change plan` is NOT behind it — the road must survive, or the fix

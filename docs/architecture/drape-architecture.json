@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 14
+      "moduleCount": 15
     },
     {
       "id": "domain:boards",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 82
+      "moduleCount": 83
     },
     {
       "id": "domain:staff",
@@ -5761,6 +5761,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/subscriptionSchedule.ts",
+      "path": "server/stripe/subscriptionSchedule.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/webhooks.ts",
       "path": "server/stripe/webhooks.ts",
       "domain": "billing",
@@ -6225,6 +6231,12 @@
     {
       "id": "module:shared/crewWorkSwitches.ts",
       "path": "shared/crewWorkSwitches.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/customerDate.ts",
+      "path": "shared/customerDate.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -6867,6 +6879,16 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/auth.ts"
+    },
+    {
+      "id": "route:billing.cancelScheduledChange",
+      "namespace": "billing",
+      "name": "cancelScheduledChange",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts"
     },
     {
       "id": "route:billing.cancelSubscription",
@@ -10834,6 +10856,10 @@
       "path": "client/src/features/billing/creditPacks1606-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/deferredChange1936-guard.test.ts",
+      "path": "client/src/features/billing/deferredChange1936-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/freeAddCredits1836-guard.test.ts",
       "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
     },
@@ -14350,6 +14376,10 @@
       "path": "server/routes/crewEyeFrames.test.ts"
     },
     {
+      "id": "test:server/routes/deferredPlanChangeRoute.test.ts",
+      "path": "server/routes/deferredPlanChangeRoute.test.ts"
+    },
+    {
       "id": "test:server/routes/emailAuth.test.ts",
       "path": "server/routes/emailAuth.test.ts"
     },
@@ -14552,6 +14582,10 @@
     {
       "id": "test:server/stripe/checkoutProductText.test.ts",
       "path": "server/stripe/checkoutProductText.test.ts"
+    },
+    {
+      "id": "test:server/stripe/deferredPlanChange.test.ts",
+      "path": "server/stripe/deferredPlanChange.test.ts"
     },
     {
       "id": "test:server/stripe/environmentTag.test.ts",
@@ -18902,6 +18936,11 @@
     {
       "from": "module:client/src/features/settings/planMath.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/planMath.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {
@@ -32761,6 +32800,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -32772,6 +32816,11 @@
     {
       "from": "module:server/routes/billing.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {
@@ -34986,6 +35035,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/subscriptionSchedule.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
@@ -35002,6 +35056,31 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/planCreditSlider.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/environmentTag.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripePriceCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:server/stripe/stripeProducts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/subscriptionSchedule.ts",
+      "to": "module:shared/annualBilling.ts",
       "kind": "imports"
     },
     {

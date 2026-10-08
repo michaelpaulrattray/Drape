@@ -95,6 +95,40 @@ export function BillingSection({
     SEEING them is the thing his word forbids.
   */
   const { data: status } = trpc.billing.getStatus.useQuery();
+  /*
+    ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936) — AND WITHOUT THIS
+    QUERY THE WHOLE DEFERRAL IS INVISIBLE.** Since his option 1, asking to drop
+    a plan or lower the dial no longer does anything today: it is scheduled for
+    the renewal. So a customer is told *"Pro starts on 7 Nov"* in one toast, and
+    then every screen she looks at — this one most of all — goes on saying Pro
+    Plus with nothing to show that a change is coming and no way to call it off.
+    That is the machinery showing through by omission, and this is where it is
+    closed.
+
+    ⚠ **IT IS `getSubscriptionDetails` AND DELIBERATELY NOT A FIELD ON
+    `getStatus`, for the reason the dial's own procedure already records: the
+    answer costs TWO Stripe round trips** (retrieve the subscription, then
+    retrieve its schedule), and `getStatus` is on the hot path that every
+    surface in this product waits on. A pending change is worth a request on
+    the one pane that shows plan state; it is not worth slowing down every
+    paint everywhere.
+  */
+  const { data: subscriptionDetails } = trpc.billing.getSubscriptionDetails.useQuery();
+  const pendingChange = subscriptionDetails?.pendingChange ?? null;
+  const utils = trpc.useUtils();
+  const cancelScheduledChange = trpc.billing.cancelScheduledChange.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.message);
+      /* Both reads, because the pending change lives on one and the plan a
+         customer sees lives on the other. */
+      void utils.billing.getSubscriptionDetails.invalidate();
+      void utils.billing.getStatus.invalidate();
+    },
+    onError: (error) => {
+      logRawFailure("billing.cancelScheduledChange", error);
+      toast.error(readableFailure(error, "That change could not be cancelled."));
+    },
+  });
   const portal = trpc.billing.createPortalSession.useMutation({
     onSuccess: (result) => {
       if (result?.portalUrl) window.open(result.portalUrl, "_blank");
@@ -168,14 +202,62 @@ export function BillingSection({
                 ? `${formatDollars(planPriceInCents)}/mo`
                 : "No charge",
             renews && granted ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
-            renewsAt ? `renews ${formatShortDate(renewsAt)}` : null,
+            /*
+              ⚠ **A PENDING CHANGE REPLACES THE RENEWAL SEGMENT RATHER THAN
+              SITTING BESIDE IT (#1936).** Both facts land on the same date —
+              the scheduled change happens AT the renewal — so printing both
+              gives *"renews 7 Nov · Pro from 7 Nov"*, which says one date
+              twice and makes a customer work out that they are the same
+              event. One segment, the thing she actually wants to know.
+
+              The sentence names whichever thing is changing, because a dial
+              move keeps the plan's own name and *"Pro Plus from 7 Nov"* on a
+              Pro Plus account reads as nothing happening at all.
+            */
+            pendingChange
+              ? pendingChange.plan !== status?.planTier
+                ? `${pendingChange.planName} from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
+                : (pendingChange.interval === "annual") !== (subscriptionDetails?.billingInterval === "year")
+                  ? `billed ${pendingChange.interval === "annual" ? "yearly" : "monthly"} from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
+                  : `${formatCredits(displayBalance(pendingChange.monthlyCredits))} credits/mo from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
+              : renewsAt
+                ? `renews ${formatShortDate(renewsAt)}`
+                : null,
           ]
             .filter(Boolean)
             .join(" · ")}
         >
-          <Button variant="secondary" size="small" onClick={onChangePlan}>
-            Change plan
-          </Button>
+          {/*
+            ⚠ **THE WAY BACK OUT OF A SCHEDULED CHANGE (#1936), AND IT SHIPS IN
+            THE SAME COMMIT AS THE DEFERRAL BECAUSE THE DEFERRAL CREATES THE
+            STATE IT RESCUES.** Before his option 1 there was nothing to undo:
+            a downgrade happened the moment it was asked for. Now she can ask
+            to drop to Pro on the 1st and change her mind on the 3rd, and
+            without this control her only road back is to buy an INCREASE she
+            does not want and pay a proration for it.
+
+            It stands IN PLACE of `Change plan` while something is pending,
+            rather than beside it. Two buttons offering to change the plan —
+            one of which cancels a change — is the busy, decide-this-first
+            shape his candidate-count ruling refused; and `Change plan` still
+            works from the modal, which is where a customer who wants a
+            DIFFERENT change is going anyway (asking for one replaces the
+            pending one on the server, by the same release rule).
+          */}
+          {pendingChange ? (
+            <Button
+              variant="secondary"
+              size="small"
+              disabled={cancelScheduledChange.isPending}
+              onClick={() => cancelScheduledChange.mutate()}
+            >
+              Keep my plan
+            </Button>
+          ) : (
+            <Button variant="secondary" size="small" onClick={onChangePlan}>
+              Change plan
+            </Button>
+          )}
           {/*
             ⚠ **AND THIS ONE IS PRIMARY-WEIGHTED, WHICH IS WHY IT IS THE LIKELY
             BUTTON HE PRESSED — #1836.** His word, 2026-10-03: *"you shouldnt be
