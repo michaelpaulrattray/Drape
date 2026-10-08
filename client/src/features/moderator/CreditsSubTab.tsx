@@ -46,7 +46,7 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 
 import { grouped, signed } from "./figures";
-import { csvDateStamp, runStaffCsvExport, saveCsvFile } from "./staffCsvExport";
+import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 import { type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -102,10 +102,10 @@ export function CreditsSubTab({
       await runStaffCsvExport({
         context: "moderatorExports.exportUserCreditHistoryCsv",
         fetchExport: () => utils.client.moderatorExports.exportUserCreditHistoryCsv.query(input),
-        fileName: `credit-history-user-${selectedUserId}-${csvDateStamp()}.csv`,
+        fileName: staffCsvFileName(`credit-history-user-${selectedUserId}`),
         successMessage: (answer) => `Exported ${answer.total} credit transactions`,
         fallbackFailure: "The credit history could not be exported.",
-        download: saveCsvFile,
+        download: ({ name, csv }) => saveCsvFile(name, csv),
         onSuccess: (message) => toast.success(message),
         onFailure: (message) => toast.error(message),
         logFailure: logRawFailure,

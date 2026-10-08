@@ -19,7 +19,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { readableFailure } from "../../lib/failureSentence";
-import { runStaffCsvExport, type StaffCsvAnswer, type StaffCsvExportDeps } from "./staffCsvExport";
+import { PRODUCT_NAME } from "@shared/brand";
+
+import {
+  runStaffCsvExport,
+  staffCsvFileName,
+  type StaffCsvAnswer,
+  type StaffCsvExportDeps,
+} from "./staffCsvExport";
 
 const FALLBACK = "The audit logs could not be exported.";
 
@@ -133,6 +140,14 @@ describe("a refused staff export says so, and downloads nothing", () => {
     await runStaffCsvExport(r.deps);
 
     expect(calls).toBe(1);
+  });
+});
+
+describe("a staff export's file carries the product's name", () => {
+  it("prefixes the product name and keeps the stem and the date", () => {
+    const name = staffCsvFileName("audit-logs", new Date("2026-10-08T11:30:00.000Z"));
+    expect(name).toBe(`${PRODUCT_NAME.toLowerCase()}-audit-logs-2026-10-08.csv`);
+    expect(name).not.toMatch(/drape/i);
   });
 });
 

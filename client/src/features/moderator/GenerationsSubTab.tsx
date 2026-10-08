@@ -32,7 +32,7 @@ import { staffDateTime } from "@/foundation/staffDate";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 
-import { csvDateStamp, runStaffCsvExport, saveCsvFile } from "./staffCsvExport";
+import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 
 const PAGE_SIZE = 20;
 
@@ -86,11 +86,11 @@ export function GenerationsSubTab({
       await runStaffCsvExport({
         context: "moderatorExports.exportUserGenerationHistoryCsv",
         fetchExport: () => utils.client.moderatorExports.exportUserGenerationHistoryCsv.query(input),
-        fileName: `generation-history-user-${userId}-${csvDateStamp()}.csv`,
+        fileName: staffCsvFileName(`generation-history-user-${userId}`),
         successMessage: (answer) =>
           `Exported ${answer.total} generation records (${answer.summary.failedCount} failed, ${answer.summary.totalCreditsUsed} credits used)`,
         fallbackFailure: "The generation history could not be exported.",
-        download: saveCsvFile,
+        download: ({ name, csv }) => saveCsvFile(name, csv),
         onSuccess: (message) => toast.success(message),
         onFailure: (message) => toast.error(message),
         logFailure: logRawFailure,

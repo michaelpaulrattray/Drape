@@ -29,7 +29,7 @@ import { staffDateTime, staffFullDateTime } from "@/foundation/staffDate";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { trpc } from "@/lib/trpc";
 
-import { csvDateStamp, runStaffCsvExport, saveCsvFile } from "./staffCsvExport";
+import { runStaffCsvExport, saveCsvFile, staffCsvFileName } from "./staffCsvExport";
 import { AuditLog, formatAction, getActionCategory, type OpenChangeRequestOptions } from "./moderatorConstants";
 
 const PAGE_SIZE = 20;
@@ -104,10 +104,10 @@ export function AuditLogsTab({
       await runStaffCsvExport({
         context: "moderatorExports.exportAuditLogsCsv",
         fetchExport: () => utils.client.moderatorExports.exportAuditLogsCsv.query(input),
-        fileName: `audit-logs-${csvDateStamp()}.csv`,
+        fileName: staffCsvFileName("audit-logs"),
         successMessage: (answer) => `Exported ${answer.total} audit log entries`,
         fallbackFailure: "The audit logs could not be exported.",
-        download: saveCsvFile,
+        download: ({ name, csv }) => saveCsvFile(name, csv),
         onSuccess: (message) => toast.success(message),
         onFailure: (message) => toast.error(message),
         logFailure: logRawFailure,

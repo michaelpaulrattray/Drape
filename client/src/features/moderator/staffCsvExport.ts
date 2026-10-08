@@ -33,6 +33,8 @@
  * call in `client/src` to that road.
  */
 
+import { productFilename } from "@shared/brand";
+
 /** What every staff CSV export answers with — `server/routes/moderatorExports.ts`. */
 export type StaffCsvAnswer = { readonly csv: string; readonly total: number };
 
@@ -95,8 +97,14 @@ export async function runStaffCsvExport<T extends StaffCsvAnswer>(
   deps.onSuccess(deps.successMessage(answer));
 }
 
-/** The browser half every staff export shares: CSV bytes to a saved file. */
-export function saveCsvFile({ name, csv }: { readonly name: string; readonly csv: string }): void {
+/**
+ * The browser half every staff export shares: CSV bytes to a saved file.
+ *
+ * Two plain parameters, not one object, on purpose: `downloadFilenameBrand.test.ts`
+ * follows a `.download = <param>` back to every CALL of its function, and it can
+ * read a named parameter but not a destructured one.
+ */
+export function saveCsvFile(name: string, csv: string): void {
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   try {
     const link = document.createElement("a");
@@ -110,7 +118,13 @@ export function saveCsvFile({ name, csv }: { readonly name: string; readonly csv
   }
 }
 
-/** Today's date for a file name, `YYYY-MM-DD` — the stamp all three files already carried. */
-export function csvDateStamp(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
+/**
+ * A staff export's file name: the product's name, the stem the file always
+ * carried, and today's date — `klieg-audit-logs-2026-10-08.csv`.
+ *
+ * Through `productFilename` (`shared/brand.ts`) like every other download, so a
+ * rename reaches these files too (#2004's guard holds every `.download` to it).
+ */
+export function staffCsvFileName(stem: string, now: Date = new Date()): string {
+  return productFilename(`${stem}-${now.toISOString().slice(0, 10)}.csv`);
 }
