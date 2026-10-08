@@ -853,3 +853,31 @@ note supporting the moat (his words): a tsunami of visually-decent AI
 film is coming, so voice, music, SFX and story become the
 differentiators. All of it dated: his own caveat gives it a ~2-month
 half-life, per the disappearing-technology law's expiry clause.
+
+
+## 14. Cinematique (vvsvs.pro) reviewed — mechanism-not-label, failure modes, and the cut vocabulary (founder order, 2026-10-08)
+
+A free 150+-technique cinematography prompt handbook by a credible solo
+practitioner (Ivan Flugelman; top-of-funnel for his paid course). Not a
+competitor — no software, no identity half at all (the fourth outside
+source in a week with the same hole; the moat keeps being confirmed by
+absence). Three takes for the DP skill, method only, our own sentences
+(his pages are his content — we adopt the METHOD, never scrape the
+templates):
+
+1. **Mechanism, not label** — a technique's NAME alone yields generic
+   output; its PHYSICS yields the technique ("key light high at 45
+   degrees creating the triangle on the shadow-side cheek", the dolly's
+   parallax layers and track). Build instruction for the camera picker:
+   the customer picks the move by eye; the assembler writes the
+   mechanism sentence. His site teaches humans the machinery; ours bakes
+   it in — the disappearing-technology law with a live counter-example.
+2. **The failure-mode catalogue** — three classic mistakes per technique
+   (conflating dolly/zoom, dropping the defining signature, stacking
+   contradictory terms) = DP-skill training material, plus a
+   CONTRADICTION LINT on assembled prompts (mutually exclusive lighting
+   terms never ship in one shot).
+3. **The cut vocabulary** — his editing/storytelling categories (smash
+   cut, cross-cutting, long take, in medias res, motif) extend the
+   grammar past the camera picker into transitions and the Composer
+   stage.
