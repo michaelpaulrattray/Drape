@@ -241,12 +241,13 @@ export type ShortfallResult =
  * redelivery, or a settlement applied earlier by `changePlan`'s own fresh
  * read, computes the same number. Its own ledger key makes it run once.
  *
- * ⚠ **IT NEEDS THE PERIOD GRANT, AND ON STRIPE'S REAL SWITCH INVOICE THAT
- * GRANT DOES NOT LAND YET — #2069.** Driven in test mode: the new year is
- * billed as a PRORATION line, `periodBought` skips it, and the webhook exits
- * before the grant and before this. Until #2069 lands this collects nothing
- * (the plan's-part floor finds nothing to take), which is the safe direction;
- * with a grant present the same drive took every spent credit back.
+ * ⚠ **IT NEEDS THE PERIOD GRANT, WHICH #2069 MADE REAL.** Until that fix the
+ * new year was billed as a PRORATION line, `periodBought` skipped it, and the
+ * webhook exited before the grant and before this — so this collected nothing
+ * (the plan's-part floor found nothing to take), the safe direction. Since
+ * `billing_cycle_anchor: "now"` the year is an ordinary period line; re-driven
+ * in test mode on the 3DS card, the year was granted once and the 56,000
+ * credits spent in the window came back out of it.
  *
  * Declined alternatives, named: charging the difference in money (a second
  * charge after Confirm, possibly a second 3DS, not on the confirm step); and

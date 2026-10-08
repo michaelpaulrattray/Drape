@@ -1296,20 +1296,16 @@ describe("the webhook settles what changePlan recorded", () => {
       });
       return state;
     }
+    /* The switch invoice Stripe really sends since #2069's anchor reset —
+       re-driven in test mode for this arm set (`in_1UOLGODkTxTcXBCH7ynzFzvh`:
+       a −2,700 unused-time proration line and `1 × Klieg Starter (at $269.00
+       / year)`, proration false, 365 days). */
     const switchInvoice = {
       id: "in_change",
       customer: "cus_1",
-      subscription: "sub_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
       billing_reason: "subscription_update",
-      lines: {
-        data: [
-          {
-            price: { recurring: { interval: "year" } },
-            proration: false,
-            period: { start: NOW_SEC, end: NOW_SEC + 365 * DAY },
-          },
-        ],
-      },
+      lines: switchLines(false),
     };
     const shortfallCalls = () =>
       db.deductCredits.mock.calls.filter((c) => c[4] === settlementShortfallLedgerRef("in_change"));
@@ -1407,6 +1403,20 @@ describe("the webhook settles what changePlan recorded", () => {
       const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
 
       expect(result.success).toBe(false);
+    });
+
+    it("with no period grant (the pre-#2069 shape) it takes NOTHING — the floor finds no plan's part to take", async () => {
+      const state = armLedger({ balanceAtPayment: 400 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", {
+        ...switchInvoice,
+        lines: switchLines(true),
+      });
+
+      expect(result.success).toBe(true);
+      expect(db.refreshMonthlyCredits).not.toHaveBeenCalled();
+      expect(shortfallCalls()).toHaveLength(0);
+      expect(state.balance).toBe(0);
     });
 
     it("a GRANT row is never treated as a take-back", async () => {
