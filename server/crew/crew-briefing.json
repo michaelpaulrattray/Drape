@@ -1,7 +1,7 @@
 {
-  "edition": 655,
-  "updatedAt": "2026-10-08T03:28:44.785Z",
-  "shift": "Foreman — foreman-20261008-1231",
+  "edition": 656,
+  "updatedAt": "2026-10-08T05:28:01.354Z",
+  "shift": "Foreman — foreman-20261008-1412",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T03:31:37.835Z",
+      "readAt": "2026-10-08T05:27:29.410Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9769,9 +9769,16 @@
     {
       "id": "sign-sheet-1904",
       "title": "A refused view re-makes its own sheet once, at our cost (#1904)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 1957,
       "note": "Money surface, held for the relay. 82 arms, 8 sabotage rounds, preflight green."
+    },
+    {
+      "id": "defer-decrease-1936",
+      "status": "in-review",
+      "title": "Dropping a plan or lowering the credit dial now happens at your renewal, not instantly (#1936)",
+      "note": "Money surface, held for the relay. Driven against real Stripe test mode: no refund, no invoice, balance unchanged.",
+      "prNumber": 1963
     }
   ],
   "problems": [
@@ -10162,7 +10169,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T03:31:37.835Z",
+    "readAt": "2026-10-08T05:27:29.410Z",
     "items": [
       {
         "issueNumber": 1903,
