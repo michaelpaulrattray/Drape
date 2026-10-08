@@ -394,15 +394,46 @@ export default function AdminCrew() {
             ONE QUESTION, ONE CARD (#1895, his word: *"i dont want double up of
             cards on my desk … its making my desk look overcrowded"*). An eye
             item whose `cardId` names a card still on his desk draws its frames
-            INSIDE that card; everything else stands on its own in For your
-            eyes, exactly as before. One function answers both halves, so the
-            two sections cannot disagree about what is paired.
+            INSIDE that card; one whose card he has ANSWERED is dropped (#1938 —
+            otherwise the pictures came back as their own question, with their
+            own reply box, until the next edition); and only an item with no
+            card, or one naming a card the edition never had, stands on its own.
+            One function answers every half, so the two sections cannot disagree
+            about what is paired.
+
+            It is handed BOTH lists on purpose: `needsYou` is what this page
+            draws, `data.briefing.needsYou` is what the edition wrote, and the
+            difference between them is exactly the set of cards he has answered
+            since it shipped.
           */
-          const { standalone: standaloneEyeItems, mergedInto: mergedEyeItems } =
-            partitionEyeItems(eyeItems, needsYou);
-          /* ⚠ **THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS**, not what
-             the edition holds. Counting merged items here would send him to a
-             section to find frames that are up on a card above it. */
+          const {
+            standalone: standaloneEyeItems,
+            mergedInto: mergedEyeItems,
+            drawnCardCount,
+          } = partitionEyeItems(eyeItems, needsYou, data.briefing.needsYou);
+          /*
+            ⚠ **THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS**, not what
+            the edition holds. Counting merged items here would send him to a
+            section to find frames that are up on a card above it.
+
+            ⚠ **AND THAT SENTENCE WAS A CLAIM, NOT A FACT, UNTIL #1950 — IT WAS
+            FALSE OF BOTH HALVES, WHICH IS THE PART WORTH NOTICING, BECAUSE IT
+            IS THE COMMENT THAT WOULD STOP ANYBODY LOOKING.** The count read
+            `needsYou.length + standaloneEyeItems.length`, and neither list was
+            filtered by state — while `CrewNeedsYou` draws
+            `cards.filter(crewCardNeedsHim)` and `CrewEyeGallery` draws
+            `items.filter(crewCardNeedsHim)` and returns `null` outright when
+            that leaves nothing. So a card or an item he had already ANSWERED
+            was counted and not drawn: the menu said things were waiting over a
+            section that was shorter, or empty.
+
+            Both halves now come off `partitionEyeItems`, which is the one
+            place that decides what this page draws — the card count is the
+            `drawn` set it already built, and `standalone` no longer holds an
+            item the gallery would drop. **Read once, from the decider**
+            (working law 4): a second filter here would be a second list, and
+            a second list drifts.
+          */
           const eyes = standaloneEyeItems.length;
           const landed = live.available ? landedSince(live.desk.recent, lastSeenAt) : 0;
           /* A milestone's drive, off the completion card itself (#1646). Empty
@@ -426,7 +457,7 @@ export default function AdminCrew() {
             <CrewNav
               items={[
                 { id: "crew-section-program", label: "Program" },
-                { id: "crew-section-needs-you", label: "Needs you", count: needsYou.length + eyes },
+                { id: "crew-section-needs-you", label: "Needs you", count: drawnCardCount + eyes },
                 { id: "crew-section-happening", label: "Happening now", count: inFlight },
                 ...(testDrives.length > 0
                   ? [{ id: "crew-section-drive", label: "Test drive", count: openSteps }]

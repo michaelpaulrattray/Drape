@@ -299,6 +299,36 @@ describe("view conformance", () => {
     expect(system).toContain("from directly behind");
     expect(system).toContain("NEVER by itself a reason to be unsure about identity");
   });
+
+  /*
+    HIS WORD, 2026-10-08 on #1904: *"drop 'costume' from the any-angle
+    sentence"*. Every view now wears an outfit the engine INVENTED on the
+    sheet, so clothing cannot count toward whether this is the same person —
+    and the prompt's own closing line already says *"Do NOT judge … or the
+    clothing"*, which the word contradicted.
+
+    ⚠ **The two assertions are a PAIR and neither works alone.** The absence
+    arm is what reddens if the word comes back; it would also pass happily if
+    somebody deleted the whole sentence, so the positive control above it pins
+    the list that must still be there. (The control cannot do the catching
+    itself: "hair, build, skin, markings" is a substring of the old text too.)
+  */
+  it("⚠ does NOT offer costume as identity evidence — his word on #1904", async () => {
+    let seen: TextRequest | null = null;
+    await createViewConformanceJudge({
+      engine: {
+        id: "test-judge",
+        complete: vi.fn(async (request: TextRequest) => {
+          seen = request;
+          return { text: allPass, latencyMs: 1, provenance: { provider: "openrouter" as const, model: "t" } };
+        }),
+      },
+    })({ angle: "backFull", anchor, candidate });
+
+    const system = (seen as unknown as TextRequest).system ?? "";
+    expect(system).toContain("hair, build, skin, markings");
+    expect(system).not.toContain("costume");
+  });
 });
 
 describe("one field for one fact — the judge cannot contradict itself", () => {

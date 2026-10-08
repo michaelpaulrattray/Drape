@@ -89,7 +89,29 @@ vi.mock("../db", () => ({
   getVoidPlanChangeSettlementInvoiceIdsForUser: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("./invoiceLines", () => ({
+/**
+ * ⚠ **PARTIAL ON PURPOSE, AND IT USED TO BE A WHOLE-MODULE REPLACEMENT THAT
+ * ENUMERATED ITS EXPORTS — WHICH IS A SECOND LIST SHADOWING A SOURCE OF TRUTH
+ * (working law 4), AND IT WENT STALE (#1930).**
+ *
+ * What this suite means to say is narrow: *the subscription id and the period
+ * bought are GIVEN, so the arms are about the event stream and not about
+ * dialects.* Spelled as a two-key factory it said something much larger —
+ * *`./invoiceLines` has exactly these two exports* — and every other reader the
+ * handler reaches for became a runtime throw the day one was added.
+ *
+ * It had already half-happened and passed by luck: `nonProrationSubscriptionLines`
+ * was absent here too, unreached only because this fixture's rung carries no
+ * credit dial. `invoiceSubscriptionMetadata` is called unconditionally, so it
+ * surfaced — two arms red with *No "invoiceSubscriptionMetadata" export is
+ * defined on the "./invoiceLines" mock*, inside a handler these arms do not
+ * claim to be testing.
+ *
+ * Spread from the real module, the two overrides are the whole statement and a
+ * third reader arriving costs this suite nothing.
+ */
+vi.mock("./invoiceLines", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./invoiceLines")>()),
   invoiceSubscriptionId: vi.fn().mockReturnValue("sub_live_1"),
   periodBought: vi.fn().mockReturnValue({ monthsBought: 1 }),
 }));

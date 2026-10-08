@@ -232,14 +232,18 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        rung is open tonight, the way `seatBatches.test.ts`'s pin does.
 
        ⚠ THIS PIN MOVES ONLY ON HIS WORD. P1 → P2 on 2026-10-03, verbatim
-       (terminal): *"phase 2 gets built next not n2b"*. The next flip is
-       P2 → N2b, on P2's completion card and his word — and when it happens,
-       BOTH files move, which is what the arm above now enforces. */
+       (terminal): *"phase 2 gets built next not n2b"*; **P2 → N2b on
+       2026-10-08, Desk reply #271 on the completion card #1933, verbatim and
+       entire: *"n2b"*** — given after he drove all five of P2's test-drive
+       steps and all five came back `matched`. BOTH files and
+       `seatBatches.test.ts`'s pin moved in that one commit, which is what the
+       arm above enforces. The next flip is N2b → N2c, on N2b's completion card
+       and his word, never on N2b merely finishing. */
     const declared = focusRungFromRulebook(read(RULEBOOK));
-    expect(declared).toMatchObject({ kind: "rung", rung: "P2" });
+    expect(declared).toMatchObject({ kind: "rung", rung: "N2b" });
   });
 
-  it("⚠ PROVEN ABLE TO FAIL — the ladder sabotaged back to P1 with the rulebook on P2", () => {
+  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N2b", () => {
     /*
       #1840's exact state, driven: the briefing left behind while his word has
       reached the rulebook. The card asks for this one by name.
@@ -251,15 +255,22 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
     const real = read(BRIEFING);
     /* ⚠ ANCHORED ON THE FILE'S REAL FORMATTING — the ladder is pretty-printed
        one field per line, so a one-line anchor matches nothing and the control
-       goes inert. The assertion below is what catches that, and it did. */
-    const stale = real.replace('"key": "P2",', '"key": "P2x",');
+       goes inert. The assertion below is what catches that, and it did.
+
+       ⚠ **AND THE ANCHOR MUST NAME THE RUNG THAT IS CURRENT, which is why it
+       moved from `P2` to `N2b` on 2026-10-08.** Doctoring a rung that is
+       `done` leaves the ladder's one `current` rung untouched, the two
+       artifacts still AGREE, and this control passes while proving nothing —
+       the inert-sabotage shape the comment above is already about, one rung
+       along. */
+    const stale = real.replace('"key": "N2b",', '"key": "N2bx",');
     expect(stale, "the doctored copy must differ, or this control proves nothing").not.toBe(real);
-    /* P1 is `done` and P2 is now `P2x`, so the ladder's one `current` rung is
-       `P2x` — a rung the rulebook does not declare. */
+    /* P2 is `done` and N2b is now `N2bx`, so the ladder's one `current` rung
+       is `N2bx` — a rung the rulebook does not declare. */
     const verdict = agree(rulebook, stale);
     expect(verdict.ok, "a disagreeing pair MUST fail, or the arm above is decoration").toBe(false);
     expect(verdict.why).toContain("TWO SOURCES OF TRUTH");
-    expect(verdict.why).toContain("P2x");
+    expect(verdict.why).toContain("N2bx");
   });
 
   it("⚠ PROVEN ABLE TO FAIL — a ladder with NO current rung, which is #1541's shape", () => {

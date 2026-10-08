@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 188
+      "moduleCount": 192
     },
     {
       "id": "domain:castingV2",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:evidence",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 82
+      "moduleCount": 83
     },
     {
       "id": "domain:staff",
@@ -3583,6 +3583,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/accountCastingPurge.ts",
+      "path": "server/castingV2/accountCastingPurge.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/askReference.ts",
       "path": "server/castingV2/askReference.ts",
       "domain": "casting-v2",
@@ -3651,6 +3657,12 @@
     {
       "id": "module:server/castingV2/candidateService.ts",
       "path": "server/castingV2/candidateService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/candidateStoreTolerance.ts",
+      "path": "server/castingV2/candidateStoreTolerance.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -4561,6 +4573,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/signSheet.ts",
+      "path": "server/castingV2/signSheet.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/signSheetCoordinator.ts",
+      "path": "server/castingV2/signSheetCoordinator.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/sliceRefundLedger.ts",
       "path": "server/castingV2/sliceRefundLedger.ts",
       "domain": "casting-v2",
@@ -4839,6 +4863,12 @@
     {
       "id": "module:server/db/castingV2OpenLaneDemand.ts",
       "path": "server/db/castingV2OpenLaneDemand.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castingV2Orphans.ts",
+      "path": "server/db/castingV2Orphans.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -5979,6 +6009,12 @@
     {
       "id": "module:shared/bodyAnchorRegions.ts",
       "path": "shared/bodyAnchorRegions.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/brand.ts",
+      "path": "shared/brand.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -11306,6 +11342,18 @@
       "path": "server/accessValidate.test.ts"
     },
     {
+      "id": "test:server/accountDeletionCoverage.test.ts",
+      "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionOrphans.test.ts",
+      "path": "server/accountDeletionOrphans.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionReachability.test.ts",
+      "path": "server/accountDeletionReachability.test.ts"
+    },
+    {
       "id": "test:server/accountFreeze.test.ts",
       "path": "server/accountFreeze.test.ts"
     },
@@ -12582,10 +12630,6 @@
       "path": "server/castingV2/packageOrchestrator.test.ts"
     },
     {
-      "id": "test:server/castingV2/packageOrchestratorPlate.test.ts",
-      "path": "server/castingV2/packageOrchestratorPlate.test.ts"
-    },
-    {
       "id": "test:server/castingV2/packageRedoPrice.test.ts",
       "path": "server/castingV2/packageRedoPrice.test.ts"
     },
@@ -12928,6 +12972,14 @@
     {
       "id": "test:server/castingV2/signService.test.ts",
       "path": "server/castingV2/signService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/signSheet.test.ts",
+      "path": "server/castingV2/signSheet.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/signSheetCutWarning.test.ts",
+      "path": "server/castingV2/signSheetCutWarning.test.ts"
     },
     {
       "id": "test:server/castingV2/signViewEngineChain.test.ts",
@@ -13930,6 +13982,10 @@
       "path": "server/providers/falMaskedEditWire.test.ts"
     },
     {
+      "id": "test:server/providers/falSignSheetWire.test.ts",
+      "path": "server/providers/falSignSheetWire.test.ts"
+    },
+    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },
@@ -14474,6 +14530,10 @@
       "path": "server/selfInvocationCheck.test.ts"
     },
     {
+      "id": "test:server/serverBrandCopy.test.ts",
+      "path": "server/serverBrandCopy.test.ts"
+    },
+    {
       "id": "test:server/serverResilience.test.ts",
       "path": "server/serverResilience.test.ts"
     },
@@ -14562,6 +14622,10 @@
       "path": "server/stripe/environmentTag.test.ts"
     },
     {
+      "id": "test:server/stripe/invoiceBilledPlanGrant.test.ts",
+      "path": "server/stripe/invoiceBilledPlanGrant.test.ts"
+    },
+    {
       "id": "test:server/stripe/moneyEventStream.test.ts",
       "path": "server/stripe/moneyEventStream.test.ts"
     },
@@ -14600,6 +14664,10 @@
     {
       "id": "test:server/stripe/topupGrant.test.ts",
       "path": "server/stripe/topupGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/undeliveredPlanFeatures1953.test.ts",
+      "path": "server/stripe/undeliveredPlanFeatures1953.test.ts"
     },
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
@@ -20205,6 +20273,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/foundation/brand.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/foundation/CardMenu.tsx",
       "to": "module:client/src/foundation/useAnchoredPanel.ts",
       "kind": "imports"
@@ -24251,6 +24324,11 @@
     },
     {
       "from": "module:server/casting/pdfService.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/pdfService.ts",
       "to": "module:shared/exportViews.ts",
       "kind": "imports"
     },
@@ -24840,6 +24918,81 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/casting/storageCleanupContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/castingV2/candidateStoreTolerance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Orphans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/askReference.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -25061,6 +25214,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/castingV2/candidateStoreTolerance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -25130,13 +25288,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/candidateRetention.ts",
-      "to": "module:shared/referenceIntents.ts",
+      "from": "module:server/castingV2/candidateService.ts",
+      "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/candidateService.ts",
-      "to": "module:server/db/castingV2.ts",
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
@@ -26892,6 +27060,16 @@
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/castingV2/signEngine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/castingV2/signSheetCoordinator.ts",
       "kind": "imports"
     },
     {
@@ -29311,6 +29489,11 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/viewConformance.ts",
       "kind": "imports"
     },
@@ -29562,6 +29745,71 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:shared/inkPlacementVocabulary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/castViewPackage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/inkViewReferences.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/castingV2/viewFeatureWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/diagnosticCapture.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/signSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:shared/boardTypes.ts",
       "kind": "imports"
     },
     {
@@ -30016,6 +30264,11 @@
     },
     {
       "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/castingV2/accountCastingPurge.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
@@ -30382,6 +30635,16 @@
     {
       "from": "module:server/db/castingV2OpenLaneDemand.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Orphans.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Orphans.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {
@@ -31642,6 +31905,11 @@
     {
       "from": "module:server/klaviyo.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/klaviyo.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -34130,6 +34398,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/imageProxy.ts",
+      "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/inkDesignDelivery.ts",
       "to": "module:server/_core/sdk.ts",
       "kind": "imports"
@@ -34502,6 +34775,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {

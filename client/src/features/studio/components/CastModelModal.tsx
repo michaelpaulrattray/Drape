@@ -345,7 +345,7 @@ export function CastModelModal({
             <div className="mb-3.5">
               {evidenceMode ? (
                 <p className="text-canvas-md text-canvas-ink-soft leading-normal mb-2.5">
-                  Drape will use the strongest complete coverage already available.
+                  The strongest complete coverage already available will be used.
                   No views will be generated and no credits will be used.
                 </p>
               ) : addFirst && !packageComplete ? (

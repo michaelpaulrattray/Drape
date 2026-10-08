@@ -91,10 +91,10 @@ export async function sendVerificationEmail(
   const firstName = name ? name.split(" ")[0] : "there";
 
   const { error } = await resend.emails.send({
-    from: "Drape <verify@mail.klieglabs.com>",
+    from: "Klieg <verify@mail.klieglabs.com>",
     replyTo: "support@klieglabs.com",
     to: email,
-    subject: "Verify your email — Drape",
+    subject: "Verify your email — Klieg",
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -172,7 +172,7 @@ export async function sendVerificationEmail(
           <tr>
             <td style="padding: 20px 32px 32px 32px;">
               <p style="margin: 0; font-size: 12px; color: #BFBFBF; line-height: 1.5; letter-spacing: 0.02em;">
-                Drape — Your next campaign, cast in minutes.
+                Klieg — Your next campaign, cast in minutes.
               </p>
             </td>
           </tr>

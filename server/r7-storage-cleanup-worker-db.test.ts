@@ -455,4 +455,291 @@ describeWithDatabase("R7-5D leased storage cleanup (disposable DB)", () => {
     ]);
     expect(cleanupItems.some((item) => item.storageKey.includes("shared/input"))).toBe(false);
   }, DB_TEST_TIMEOUT);
+
+  /**
+   * THE WHOLE CASTING STUDIO GOES WITH THE ACCOUNT — #1935's done-when,
+   * driven.
+   *
+   * The arm above proves wardrobe and canvas. Until #1935 the casting studio
+   * had no arm at all here because it was not erased at all: a sheet, its
+   * rolls, every candidate face, every refinement, the reference library, a
+   * customer's own attached photograph and the tattoos cut out of it all
+   * survived the deletion, with their objects left at permanently public R2
+   * URLs that are designed never to expire.
+   *
+   * It builds the awkward cases on purpose, not the easy one:
+   *
+   *  - a **signed** candidate and a **kept** one, because the retention
+   *    sweep's own delete refuses both and account erasure must not;
+   *  - an **ink plate**, whose only path back to an account runs through its
+   *    design row, so a wrong delete order orphans it forever;
+   *  - the **two exemptions** as negative controls — a free-grant claim and a
+   *    plan-change settlement, which must still be there afterwards.
+   */
+  it("erases the whole casting studio with the account, signed and kept rows included", async () => {
+    const [insertedUser] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO users (openId, name, approved, emailVerified) VALUES (?, 'Casting Erase', 1, 1)",
+      [`r7-5d-casting-${randomUUID()}`],
+    );
+    const castingUserId = insertedUser.insertId;
+
+    const [sheet] = await connection.execute<ResultSetHeader>(
+      "INSERT INTO casting_sessions (publicId, userId, originType, status) VALUES (?, ?, 'roster', 'open')",
+      [randomUUID(), castingUserId],
+    );
+    const sessionId = sheet.insertId;
+    const [roll] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO casting_rolls (publicId, sessionId, userId, rollIndex, briefText, status, operationId)
+       VALUES (?, ?, ?, 0, 'a brief', 'complete', ?)`,
+      [randomUUID(), sessionId, castingUserId, randomUUID()],
+    );
+    const rollId = roll.insertId;
+
+    const candidateIds: number[] = [];
+    /* position 0 becomes SIGNED, 1 becomes KEPT, 2 is an ordinary face. */
+    for (const position of [0, 1, 2] as const) {
+      const [candidate] = await connection.execute<ResultSetHeader>(
+        `INSERT INTO casting_candidates
+          (publicId, rollId, sessionId, userId, position, status, imageKey, thumbKey, sourceKey)
+         VALUES (?, ?, ?, ?, ?, 'ready', ?, ?, ?)`,
+        [
+          randomUUID(), rollId, sessionId, castingUserId, position,
+          `casting-v2/candidates/c${position}.png`,
+          `casting-v2/candidates/c${position}-thumb.png`,
+          position === 0 ? `casting-v2/candidates/c0-source.png` : null,
+        ],
+      );
+      candidateIds.push(candidate.insertId);
+    }
+    /* The two the retention sweep is forbidden to touch. */
+    await connection.execute(
+      "UPDATE casting_candidates SET signedCastId = ? WHERE id = ?",
+      [castingUserId, candidateIds[0]],
+    );
+    await connection.execute(
+      "UPDATE casting_candidates SET keptAt = NOW() WHERE id = ?",
+      [candidateIds[1]],
+    );
+
+    const [variant] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO casting_candidate_variants
+        (publicId, candidateId, sessionId, userId, status, instructions, operationId, imageKey, thumbKey)
+       VALUES (?, ?, ?, ?, 'ready', JSON_ARRAY(), ?, ?, ?)`,
+      [
+        randomUUID(), candidateIds[0], sessionId, castingUserId, randomUUID(),
+        "casting-v2/variants/v1.png", "casting-v2/variants/v1-thumb.png",
+      ],
+    );
+    const variantId = variant.insertId;
+
+    await connection.execute(
+      `INSERT INTO casting_segments
+        (publicId, userId, candidateId, provenance, facet, region, maskKey, contentKey,
+         bboxX, bboxY, bboxW, bboxH, frameWidth, frameHeight)
+       VALUES (?, ?, ?, 'detected_born', 'skin', 'neck', ?, ?, 0, 0, 8, 8, 64, 64)`,
+      [randomUUID(), castingUserId, candidateIds[0], "casting-v2/segments/s1-mask.png", "casting-v2/segments/s1.png"],
+    );
+    await connection.execute(
+      `INSERT INTO casting_reference_library
+        (publicId, userId, candidateId, role, slot, tier, noun, words, storageKey, maskKey,
+         refusedContentKey, refusedMaskKey)
+       VALUES (?, ?, ?, 'anchor', 'ink:neck', 'item', 'tattoo', JSON_ARRAY(), ?, ?, ?, ?)`,
+      [
+        randomUUID(), castingUserId, candidateIds[0],
+        "casting-v2/library/l1.png", "casting-v2/library/l1-mask.png",
+        "casting-v2/library/l1-refused.png", "casting-v2/library/l1-refused-mask.png",
+      ],
+    );
+    await connection.execute(
+      `INSERT INTO casting_face_scans
+        (publicId, userId, candidateId, versionKey, frameKey, geometry, stencilBytes)
+       VALUES (?, ?, ?, 'master', ?, JSON_OBJECT('slots', JSON_ARRAY(JSON_OBJECT('maskKey', ?))), 128)`,
+      [
+        randomUUID(), castingUserId, candidateIds[0],
+        /* `frameKey` POINTS AT the candidate's own frame — it is not a second
+           object, and the manifest must not carry it twice. */
+        "casting-v2/candidates/c0.png",
+        "casting-v2/scans/stencil-1.png",
+      ],
+    );
+    const [design] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO casting_ink_designs
+        (publicId, userId, candidateId, placement, side, provenance, intents, storageKey,
+         digest, mime, byteSize, width, height)
+       VALUES (?, ?, ?, 'neck', 'centre', 'consented', JSON_ARRAY(), ?, ?, 'image/png', 10, 8, 8)`,
+      [randomUUID(), castingUserId, candidateIds[0], "casting-v2/ink/design-1.png", "a".repeat(64)],
+    );
+    await connection.execute(
+      `INSERT INTO casting_ink_plates
+        (publicId, userId, designId, engine, templateKind, templateDigest, storageKey,
+         digest, mime, byteSize, width, height)
+       VALUES (?, ?, ?, 'test-engine', 'body', ?, ?, ?, 'image/png', 10, 8, 8)`,
+      [
+        randomUUID(), castingUserId, design.insertId, "b".repeat(64),
+        "casting-v2/ink/plate-1.png", "c".repeat(64),
+      ],
+    );
+    await connection.execute(
+      `INSERT INTO casting_ink_delivery_crops
+        (publicId, userId, candidateId, designId, variantId, slot, region, storageKey, digest,
+         mime, byteSize, width, height, bboxX, bboxY, bboxW, bboxH, frameWidth, frameHeight,
+         maskPixels, keptPixels)
+       VALUES (?, ?, ?, ?, ?, 'ink:neck', 'tattooed skin', ?, ?, 'image/png', 10, 8, 8,
+               0, 0, 8, 8, 64, 64, 32, 32)`,
+      [
+        randomUUID(), castingUserId, candidateIds[0], design.insertId, variantId,
+        "casting-v2/ink/delivered-1.png", "d".repeat(64),
+      ],
+    );
+    await connection.execute(
+      `INSERT INTO casting_reference_crops
+        (publicId, userId, candidateId, intent, source, provenance, region, storageKey, digest,
+         mime, byteSize, width, height, guardKind, guardCoverage)
+       VALUES (?, ?, ?, 'hair', 'uploadedReference', 'consented', 'hair', ?, ?, 'image/png',
+               10, 8, 8, 'coverage', 50)`,
+      [randomUUID(), castingUserId, candidateIds[0], "casting-v2/crops/crop-1.png", "e".repeat(64)],
+    );
+    await connection.execute(
+      `INSERT INTO casting_reference_attachments
+        (publicId, userId, candidateId, provenance, storageKey, digest, mime, byteSize, width, height)
+       VALUES (?, ?, ?, 'consented', ?, ?, 'image/jpeg', 10, 8, 8)`,
+      [randomUUID(), castingUserId, candidateIds[0], "casting-v2/attachments/her-photo.jpg", "f".repeat(64)],
+    );
+
+    /* An operation receipt and its lease — the lease has no `userId` of its own. */
+    const operationId = randomUUID();
+    await connection.execute(
+      `INSERT INTO generation_operations (id, userId, clientRequestId, kind, payloadHash, status)
+       VALUES (?, ?, ?, 'castingV2.roll', ?, 'succeeded')`,
+      [operationId, castingUserId, randomUUID(), "0".repeat(64)],
+    );
+    await connection.execute(
+      `INSERT INTO generation_operation_locks (lockKey, operationId, kind, expiresAt)
+       VALUES (?, ?, 'castingV2.roll', DATE_ADD(NOW(), INTERVAL 1 HOUR))`,
+      [`casting:${castingUserId}`, operationId],
+    );
+
+    /* Her words, and a day's house-money tally. */
+    await connection.execute(
+      "INSERT INTO bug_reports (userId, description, category) VALUES (?, 'the sheet froze', 'casting')",
+      [castingUserId],
+    );
+    await connection.execute(
+      "INSERT INTO face_scan_daily_usage (userId, day, scans) VALUES (?, '2026-10-08', 3)",
+      [castingUserId],
+    );
+
+    /* THE TWO NEGATIVE CONTROLS — both must SURVIVE the deletion. */
+    await connection.execute(
+      "INSERT INTO free_grant_claims (deviceKey, ipAddress, userId) VALUES (?, '203.0.113.9', ?)",
+      [`cookie:${randomUUID()}`, castingUserId],
+    );
+    const settledInvoice = `in_${randomUUID().replace(/-/g, "")}`;
+    await connection.execute(
+      `INSERT INTO plan_change_settlements
+        (userId, stripeInvoiceId, direction, credits, description, status)
+       VALUES (?, ?, 'grant', 1000, 'Upgrade to Pro', 'applied')`,
+      [castingUserId, settledInvoice],
+    );
+
+    const previousPublicUrl = process.env.R2_PUBLIC_URL;
+    process.env.R2_PUBLIC_URL = "https://owned.example";
+    let result!: Awaited<ReturnType<typeof accountDeletion.deleteUserAccount>>;
+    try {
+      result = await accountDeletion.deleteUserAccount(castingUserId);
+    } finally {
+      if (previousPublicUrl === undefined) delete process.env.R2_PUBLIC_URL;
+      else process.env.R2_PUBLIC_URL = previousPublicUrl;
+    }
+
+    expect(result).toMatchObject({
+      success: true,
+      deletedCounts: {
+        castingSessions: 1,
+        castingRolls: 1,
+        castingCandidates: 3,
+        castingCandidateVariants: 1,
+        castingSegments: 1,
+        castingReferenceLibrary: 1,
+        castingFaceScans: 1,
+        castingInkDesigns: 1,
+        castingInkPlates: 1,
+        castingInkDeliveryCrops: 1,
+        castingReferenceCrops: 1,
+        castingReferenceAttachments: 1,
+        generationOperations: 1,
+        generationOperationLocks: 1,
+        bugReports: 1,
+        faceScanDailyUsage: 1,
+        user: 1,
+      },
+    });
+
+    for (const table of [
+      "casting_sessions", "casting_rolls", "casting_candidates",
+      "casting_candidate_variants", "casting_segments", "casting_reference_library",
+      "casting_face_scans", "casting_ink_designs", "casting_ink_plates",
+      "casting_ink_delivery_crops", "casting_reference_crops",
+      "casting_reference_attachments", "generation_operations", "bug_reports",
+      "face_scan_daily_usage",
+    ]) {
+      const [[row]] = await connection.query<RowDataPacket[]>(
+        `SELECT COUNT(*) AS n FROM \`${table}\` WHERE userId = ?`,
+        [castingUserId],
+      );
+      expect(Number(row.n), `${table} should be erased`).toBe(0);
+    }
+    const [[lock]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM generation_operation_locks WHERE operationId = ?",
+      [operationId],
+    );
+    expect(Number(lock.n), "the lease must not outlive its operation").toBe(0);
+
+    /* The two exemptions, read back by name rather than counted. */
+    const [[claims]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM free_grant_claims WHERE userId = ?",
+      [castingUserId],
+    );
+    expect(Number(claims.n), "the free-grant fraud guard is exempt").toBe(1);
+    const [[settlements]] = await connection.query<RowDataPacket[]>(
+      "SELECT COUNT(*) AS n FROM plan_change_settlements WHERE stripeInvoiceId = ?",
+      [settledInvoice],
+    );
+    expect(Number(settlements.n), "the settlement ledger is exempt").toBe(1);
+    await connection.execute("DELETE FROM free_grant_claims WHERE userId = ?", [castingUserId]);
+    await connection.execute(
+      "DELETE FROM plan_change_settlements WHERE stripeInvoiceId = ?",
+      [settledInvoice],
+    );
+
+    /*
+      EVERY OBJECT, EXACTLY ONCE. The scan's `frameKey` is the candidate's own
+      `imageKey` and appears here once, not twice — which is the dedupe doing
+      its job rather than a coincidence.
+    */
+    const cleanupItems = await cleanupDb.getStorageCleanupItemsForBatch(result.cleanupBatchId!);
+    expect(cleanupItems.map((item) => item.storageKey).sort()).toEqual([
+      "casting-v2/attachments/her-photo.jpg",
+      "casting-v2/candidates/c0-source.png",
+      "casting-v2/candidates/c0-thumb.png",
+      "casting-v2/candidates/c0.png",
+      "casting-v2/candidates/c1-thumb.png",
+      "casting-v2/candidates/c1.png",
+      "casting-v2/candidates/c2-thumb.png",
+      "casting-v2/candidates/c2.png",
+      "casting-v2/crops/crop-1.png",
+      "casting-v2/ink/delivered-1.png",
+      "casting-v2/ink/design-1.png",
+      "casting-v2/ink/plate-1.png",
+      "casting-v2/library/l1-mask.png",
+      "casting-v2/library/l1-refused-mask.png",
+      "casting-v2/library/l1-refused.png",
+      "casting-v2/library/l1.png",
+      "casting-v2/scans/stencil-1.png",
+      "casting-v2/segments/s1-mask.png",
+      "casting-v2/segments/s1.png",
+      "casting-v2/variants/v1-thumb.png",
+      "casting-v2/variants/v1.png",
+    ]);
+  }, DB_TEST_TIMEOUT);
 });

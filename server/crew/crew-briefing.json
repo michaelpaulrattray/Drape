@@ -1,32 +1,32 @@
 {
-  "edition": 651,
-  "updatedAt": "2026-10-07T21:17:00.000Z",
-  "shift": "The credit dial on your top plan is live. That is the last piece of the pricing design you approved, and it went in tonight after a fault in it was found and fixed.\n\nHere is the fault in plain terms. When a renewal payment came in, we worked out how many extra credits to hand over by looking at where the dial sits right now — not at what the bill had actually charged. Those are usually the same thing. They are not always. If someone paid while the dial was at the bottom and then slid it up before our server had finished dealing with the payment, we would have given them a whole extra month of credits that no bill ever charged for. That gap is not seconds: Stripe can take up to three days to re-send a payment message. And because this plan lets you keep your balance when it renews, nothing would ever have taken those credits back. The mistake ran the other way too — slide the dial down after paying and you would have got the plan's basic credits only, having paid for more.\n\nIt reads the bill itself now. The bill is the thing that charged, so the bill is what we pay out against, and we no longer ask the dial at all when the bill can answer.\n\nOne thing in the review's own instructions would have left half the fault sitting there, and I want to be straight with you that I did it differently. The instruction said to fall back on reading the dial whenever the bill carries no credit line. But a bill for someone at the bottom of the dial carries no credit line — that is exactly what the bottom of the dial looks like — so falling back there is the very case that was broken. So instead: no credit line, on a bill we could otherwise read in full, now means no extra credits at all. Only a bill we genuinely cannot read falls back to the dial, and if that fails too we refuse the message and let Stripe send it again rather than guess at someone's money. I set that out in full for the reviewer rather than slipping it through, and the review accepted it.\n\nI broke the fix six different ways on purpose to check the tests would actually notice. Every one of them did, including one that restores the review's literal wording and fails on precisely the case above.\n\nIt passed its hand review and is merged and live — I read the live site back and it is serving the new build, not the old one. So a customer on your top plan can now buy extra credits by the month on a dial instead of being pushed at a plan five times the size.\n\nThe same mistake exists one step over: we still work out the plan's own monthly credits from our own records rather than from the bill. I wrote that up as its own job rather than quietly bolting it onto a money change that was already under review. Nobody can hit it today — there are no paying subscribers yet.\n\nNothing needs you.",
+  "edition": 657,
+  "updatedAt": "2026-10-08T06:30:06.157Z",
+  "shift": "Foreman — foreman-20261008-0610",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
       "state": "confirmed",
-      "title": "Pricing Phase 2 — the plans redesigned. Three plans instead of seven, with a credit slider on the biggest; Enterprise becomes a conversation rather than a support address; and Compare plans is organised by what you make. The brief you approved is the spec, and four build cards are cut from it.",
-      "quote": "phase 2 gets built next not n2b",
-      "quotedAt": "2026-10-03T17:33:25+10:00"
+      "title": "N2b — personality and voice, born at Sign, as editable text. You drove all five of Phase 2's test-drive steps and all five matched, then named this as the next rung. The persona-word clean-up (#1241) ships first because N2b writes into the field it clears; the focus card is #1242.",
+      "quote": "n2b",
+      "quotedAt": "2026-10-08T12:02:19+11:00"
     },
     "milestone": {
-      "title": "P2 — pricing, phase 2: the plan surface rebuilt to the brief you approved. Four cards, one per surface, and every one of them waits for an eye on the frames before it goes live",
+      "title": "N2b — a cast is born with a personality and a voice at Sign, written as text you can edit. Not a menu, not a fixed list: words that come with her and that you can change.",
       "steps": [
         {
-          "title": "Three plans instead of seven — Starter $27, Pro $68, Studio $159, with Free as the state you are in rather than a card, and an Enterprise band instead of a support address (#1832, #1833)",
+          "title": "The persona-word clean-up it writes into — already done and migrated (#1241)",
           "state": "done"
         },
         {
-          "title": "Studio's credit slider at $9 for each extra 5,000 a month — live (#1832)",
-          "state": "done"
+          "title": "A cast is born with a personality and a voice at Sign (#1242)",
+          "state": "waiting"
         },
         {
-          "title": "Compare plans organised by what you make, with the cinema row marked coming (#1834)",
-          "state": "done"
+          "title": "Both are editable text on her page, never a picker",
+          "state": "waiting"
         },
         {
-          "title": "Team priced per seat at $68 a seat, after the shared workspace exists (#1835, #1788)",
+          "title": "Your eye on a real Sign's words before the rung closes",
           "state": "waiting"
         }
       ]
@@ -50,12 +50,12 @@
       {
         "key": "P2",
         "title": "Pricing, phase 2 — the plans redesigned: three plans with a credit slider on the biggest, Enterprise as a conversation, and Compare plans organised by what you make",
-        "state": "current"
+        "state": "done"
       },
       {
         "key": "N2b",
         "title": "Personality and voice — born at Sign, as editable text",
-        "state": "queued"
+        "state": "current"
       },
       {
         "key": "N2c",
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-07T21:05:24.364Z",
+      "readAt": "2026-10-08T06:31:16.415Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -272,82 +272,45 @@
   "needsYou": [
     {
       "id": "pro-plus-stripe-rename-1900",
-      "title": "Rename the product in Stripe to Pro Plus — three of your six surfaces are Stripe's, not ours",
-      "productImpact": "The plan called Studio is called Pro Plus now on our side: the plan cards, the compare table and the confirm step all say it, and the price, the credits and the features have not moved. I looked at it in both themes.\n\nBut the checkout page Stripe hosts, the line on an invoice, and the subscription emails Stripe sends all read the name out of YOUR Stripe dashboard. We deliberately send Stripe no product text at all, so nothing we can merge will change those three.",
-      "workedExample": "Somebody upgrades after this goes live. Our page says Pro Plus and quotes $159. They click through to pay, and the Stripe page they land on says Klieg Studio. Then the invoice says Klieg Studio, and so does the receipt email.\n\nThe fix is one rename on one product: in Stripe, open the product called Klieg Studio and change its name to Klieg Pro Plus. Nothing else on it moves — not the price, not the lookup keys, not the amounts.",
-      "options": [
-        {
-          "key": "after",
-          "label": "A — rename in Stripe once the change is live",
-          "consequence": "The two sides agree within minutes of each other. This is the smallest window of mismatch."
-        },
-        {
-          "key": "now",
-          "label": "B — rename in Stripe now, before it lands",
-          "consequence": "Stripe would say Pro Plus while the app still says Studio, for as long as the review takes."
-        },
-        {
-          "key": "relay",
-          "label": "C — have the relay do it for you",
-          "consequence": "Same result. You asked the relay to do your Stripe keystrokes once before, on the credit packs."
-        }
-      ],
-      "recommendation": "A. The app half is in review now; rename it in Stripe the moment that lands and the two sides are never far apart. Leave the lookup keys alone exactly as you said — a customer never sees one, and moving them means creating new price objects.",
-      "state": "open",
+      "title": "Done — the plan is called Pro Plus on both sides now, ours and Stripe's",
+      "productImpact": "You chose A: rename it in Stripe once our side was live. Our side went live at 7:53pm, and on your word in the terminal — \"yes rename it\" — the relay renamed the product in your dashboard. Klieg Studio is Klieg Pro Plus, read back after the change.\n\nNothing else on it moved: not the description, not any of the four prices, and not the internal lookup names you said could stay.\n\nSo the checkout page, the invoice and Stripe's emails all say Pro Plus now, the same as our plan cards, our dial and our compare table. There is nothing left on this.",
+      "workedExample": "Somebody upgrades today. Our page says Pro Plus and quotes $159, the Stripe page they pay on says Klieg Pro Plus, and so do the invoice and the receipt email. The mismatch is gone.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T19:50:00.000Z",
       "issueNumber": 1900
     },
     {
+      "id": "p2-complete-1933",
+      "title": "Done — you drove all five and said n2b, so personality and voice is the next rung",
+      "productImpact": "You went through the whole test drive and every one of the five steps came back matched: the three plans, the credit dial on the biggest, Enterprise as a conversation, the rate chips gone, and Compare plans organised by what you make. Then you named what comes next in one word — n2b. So pricing phase 2 is finished and closed, and the crew is now on personality and voice: a cast is born with both at Sign, written as text you can edit rather than picked from a list.",
+      "workedExample": "Nothing is waiting on you here. One thing was already cleared out of the way: the old persona word that made every tile read 01 … 01 is gone and both databases are migrated, and that is the exact field the new writing goes into — so the new rung starts on a clean slate instead of a tidy-up.\n\nThree things are deliberately NOT part of the new rung, so nothing ships under its name. Team at $68 a seat cannot be built until a team can exist in the product, and you have never ordered that piece. Yuna's pass on the final pricing wording is hers, not a rung's work. And switching Stripe to live is still parked on your own word — not until the full app is built.",
+      "options": [],
+      "recommendation": "Nothing to decide. The next thing this page asks you about the new rung will be your eye on a real Sign's words.",
+      "state": "done",
+      "filedAt": "2026-10-07T23:58:00.000Z",
+      "issueNumber": 1933
+    },
+    {
       "id": "sign-sheet-shape-1926",
-      "title": "The one-sheet views are a taller shape and the strip cuts them — which of the three?",
-      "productImpact": "Signing a cast will soon render one wide sheet and cut your five views out of it. That is built and it works — I rendered a real one tonight for 8 cents, and the five views came out clean with one outfit across all of them.\n\nBut the views are a different shape: much taller and narrower than today's. The strip of five on a finished cast puts each one in a short wide tile, so it would show only the top of each picture. Nothing is wrong with the pictures. It is where they are shown.",
-      "workedExample": "On your own signed cast, the strip would show the top 58% of each view. The close-up would be hair and eyes with no mouth. The full front and the full back would stop at the thighs — no legs, no boots. The big viewer is unaffected and shows the whole picture.\n\nToday's views fill 83% of the same tile, which is why the strip works now and stops working after this change.",
-      "options": [
-        {
-          "key": "shorter",
-          "label": "A — ask for a shorter sheet",
-          "consequence": "The views come back nearer todays shape. Needs another render and your eye again, and only gets the tile to about 75% rather than back to 83%."
-        },
-        {
-          "key": "fit",
-          "label": "B — show the whole picture in the tile",
-          "consequence": "Nothing is cut. A little background sits either side of each view. No new render, and nothing you have already approved changes."
-        },
-        {
-          "key": "tall",
-          "label": "C — make the tiles tall and narrow",
-          "consequence": "Nothing is cut either, and the pictures fill their tiles. The strip of five looks quite different from the one you know."
-        }
-      ],
-      "recommendation": "B. A tall picture is the right shape for a standing figure, and the strip exists for you to pick one — a tile that cuts the face off cannot do that. Background either side costs less than a missing mouth, and it needs no new render.",
-      "state": "open",
+      "title": "Answered — you picked option 1: two sheets rendered side by side",
+      "productImpact": "Your word, in the terminal: \"yes option 1 cooks well done\". So a Sign renders TWO sheets at the same time rather than one — a body sheet for the full front and back, and a head sheet for the close-up, the three-quarter and the profile — each drawn from the master, and cut into the five views.\n\nThat settles the shape question nothing could get past. The build of it lives on its own card, and what it unlocks in order is: the Sign work itself, then the paid redo of all five views, then the small tidy-up after that.\n\nThe three options this card originally offered are moot — you rejected the simple one on sight (\"looks terrible\") and the relay tested two more on your ask before you picked this one.",
+      "workedExample": "You sign a cast. Two sheets render side by side, the five views are cut from them, and each one arrives in the shape the strip expects — nobody loses a mouth and nobody loses their boots.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T18:45:00.000Z",
       "issueNumber": 1926
     },
     {
       "id": "redo-price-1925",
-      "title": "Your redo price (350) is lower than your single Try again (370) — leave it, or raise one?",
-      "productImpact": "Asking for ALL FIVE of a cast's views again costs 350 credits. Asking for ONE of them again costs 370. Both numbers are yours, and they now sit side by side in the same room for the first time.\n\nNothing went wrong. On 1 October you set the single Try again to 370, on your finance guy's note that it was needed to keep every worst case profitable for one picture plus its check. On 7 October you set the redo at 350. Neither decision knew about the other, and the redo is only now built.\n\nIn practice: somebody who dislikes one picture pays LESS to replace all five than to replace that one, so almost nobody will press the single one. And we pay for five pictures plus a wardrobe plate at a price worked out to cover one.",
-      "workedExample": "You sign a cast and the invented outfit is not what you wanted, but the close-up of her face is perfect.\n\nPressing Try again on just the outfit view costs 370 and keeps the face you liked. Pressing Ask for all views again costs 350, replaces all five, and gives you a different face-shot too.\n\nSo the cheaper button is the one that throws away the picture you were happy with. That is the whole of it.",
-      "options": [
-        {
-          "key": "leave",
-          "label": "Leave it — a redo is the generous option",
-          "consequence": "Nothing changes. The single Try again becomes the rarely-pressed one, and we lose a little on each redo."
-        },
-        {
-          "key": "raise",
-          "label": "Raise the redo above 370 — say 450",
-          "consequence": "Still one price, still simple, and the single Try again stops being the silly choice. One number, under an hour."
-        },
-        {
-          "key": "drop",
-          "label": "Drop the single Try again below the redo instead",
-          "consequence": "The other way round, if you would rather the cheap option be the small one. Also one number."
-        }
-      ],
-      "recommendation": "Leave it. A redo is the moment somebody is disappointed, and being generous right there buys more than it costs us — the single Try again going quiet is not a problem, because the redo does the same job better.",
-      "state": "open",
+      "title": "Answered — the redo is held until the one-sheet Sign lands, and your 350 never moves",
+      "productImpact": "You said: hold the redo until #1904 lands. So it is held, and nothing is re-priced.\n\nThe work itself is finished — it was reviewed, two faults were found and fixed, and the gate is green. It just will not be switched on until the Sign work is there to make it pay for itself at the price you set.\n\nThe shape question that was holding the Sign work is now answered too, so what is left in front of this is a build rather than a decision of yours.",
+      "workedExample": "Nobody can press Ask for all views again yet, and that is deliberate. The moment the one-sheet Sign lands, the button appears at 350 credits and earns more than it costs.",
+      "options": [],
+      "recommendation": "",
+      "state": "done",
       "filedAt": "2026-10-07T16:50:45.000Z",
       "issueNumber": 1925
     },
@@ -396,7 +359,7 @@
         }
       ],
       "recommendation": "Close it. The rule did exactly what you asked — nothing was thrown away, and the one wrong label costs a word on a picture you still have.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612
     },
@@ -3648,9 +3611,63 @@
         }
       ],
       "recommendation": "Set up both. It is one sitting in Stripe and it is the only thing standing between you and a finished pricing screen — and doing the yearly one now avoids asking you back for it next week, which is the mistake we made with the top-up prices.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-04T00:00:26.000Z",
       "issueNumber": 1832
+    },
+    {
+      "id": "sign-sheet-reremake-1904",
+      "title": "Done — both your answers are filed, and the sheet re-make card is closed",
+      "productImpact": "You answered both questions at 05:45 this morning (\"2) go with your recc 3) go with your rec\") and both are now cards an agent can pick up: a sheet that never arrives is asked for again, spaced out, so a dropped connection stops costing you two or three views (#1966); and the cut warning stops crying on every Sign so it can report the one case it exists for (#1967).\n\nNothing on this card needs another word from you. It stays here for one reason only: the last step is your hands and eyes, not an agent's.",
+      "workedExample": "WHEN YOU HAVE A MINUTE: sign a cast and look at the five views. They should agree on the outfit, front and back. If the checker turns one down, the credits for that slice come back and you should read one of Yuna's three sentences with the cast's own name in it.\n\nOne thing to know before you drive it: making a sheet again replaces ALL of its views, so a picture that passed can be swapped for one the checker then turns down, and that slice refunds. That is what keeps the views agreeing with each other, and it is a real trade rather than a free win.",
+      "options": [
+        {
+          "key": "drove-it",
+          "label": "I drove it and it looked right",
+          "consequence": "Card 1904 closes. The two follow-ups (#1966, #1967) carry on as ordinary work."
+        },
+        {
+          "key": "something-wrong",
+          "label": "Something looked wrong",
+          "consequence": "Say which view and what you saw. Your eye outranks the checker, so a frame you call wrong becomes the next card whatever the checker said about it."
+        },
+        {
+          "key": "later",
+          "label": "Not yet",
+          "consequence": "It waits. Nothing is at risk and no agent is blocked by it."
+        }
+      ],
+      "recommendation": "Nothing to do. You answered both questions at 05:45 and card 1904 closed at 06:31. The two follow-ups carry on as ordinary work: #1966 (a sheet that never arrives is asked for again, spaced) and #1967 (the cut warning stops crying on every Sign).",
+      "state": "done",
+      "filedAt": "2026-10-08T03:28:44.785Z",
+      "issueNumber": 1904
+    },
+    {
+      "id": "enterprise-band-promises-1973",
+      "issueNumber": 1973,
+      "state": "waiting",
+      "filedAt": "2026-10-08T06:30:06.157Z",
+      "title": "Four things our top plans still promise that we have no system for — your call",
+      "productImpact": "Tonight I took three promises off the plan list on your word: \"Standard support\", \"Priority support\" and \"Early access to new features\". None of them exists — there are no support tiers and no early-access programme — so the app was offering things it cannot do.\n\nFour more are still there, and I did not touch them, because I do not think they are the same thing: \"Dedicated account manager\", \"Custom integrations\", \"SLA guarantee\" and \"White-glove onboarding\".\n\nNobody is being misled today. Those four sit only on the top rungs, and those stopped being plans anyone can buy when we turned them into the Enterprise \"let's talk\" band. No screen is even drawing them. So this is about what we are on record as offering, not about a screen that looks wrong.",
+      "workedExample": "Why I think they are different: \"Priority support\" on a Pro plan is the app promising something automatic that does not exist. \"Dedicated account manager\" on an Enterprise conversation is a thing YOU could genuinely agree to on a call — it is a negotiating position, not a broken feature. Deleting it would be taking away something you might want to offer.\n\nThe one I am least sure about is \"SLA guarantee\". An SLA is a written uptime commitment, and we have not made one. The other three are things you could do by hand tomorrow for one customer.",
+      "options": [
+        {
+          "key": "keep-all",
+          "label": "Keep all four",
+          "consequence": "Nothing changes. They describe what an Enterprise deal could include, and the band is a conversation with you in it."
+        },
+        {
+          "key": "drop-sla",
+          "label": "Keep three, drop the SLA one",
+          "consequence": "The list then only promises things you can actually do by hand. A few lines in one file, and the guard written tonight already has the shape to pin it."
+        },
+        {
+          "key": "drop-all",
+          "label": "Drop all four",
+          "consequence": "The plan list then says only what the product does by itself. You would be giving up four things you could have offered in a sales call."
+        }
+      ],
+      "recommendation": "Keep three and drop the SLA one. An account manager, custom integration work and hands-on onboarding are all things you can genuinely agree to for one customer; a written uptime guarantee is the only one of the four you would have to build something to honour."
     }
   ],
   "eyeItems": [
@@ -3674,7 +3691,7 @@
       "id": "law9-sign-1612",
       "title": "The first cast signed under the new picture rule — and two of the five are marked unchecked",
       "question": "This is a whole cast signed under the rule you approved on 30 September, start to finish. Five pictures, one man.\n\nRead the labels under them. Three say delivered. Two say delivered, unchecked, free retry — those are the two the checker was unhappy with, and the whole point of your ruling is that you still get them instead of losing them.\n\nWhat I would like your eye on, in order:\n\n1. Is this the same man in all five? Same face, same jacket, same weather.\n\n2. The full front — he should be head to toe with room above the hair and below the boots. He is, to my eye. This is the view that lost its feet twice in last night's cost test, so it matters that today's road gets it right.\n\n3. The two marked unchecked. The three-quarter has his head turned the wrong way, which is a fair complaint. The close-up was marked for being cropped too tight and I think that is simply wrong — he has room below the chin. If you agree, the rule is still doing its job: you kept the picture, you only got a label you can ignore.\n\nIf the five look right, say so and the card closes.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T17:30:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3705,7 +3722,7 @@
       "id": "framing-template-court-1612-sifr2",
       "title": "Sifr2, with and without the framing example — did the crop come in enough?",
       "question": "This is the pair that decides it, and it is a straight before and after on the same cast.\n\nOn the LEFT is what the studio sends today for a close-up. On the RIGHT is the same thing with a stored example picture attached showing where to crop, plus a sentence telling the engine the example is a guide and nothing else.\n\nWhat to look for: the right-hand picture IS tighter. Less chest, less shoulder, the face bigger in the frame. That is the idea working.\n\nAnd then look at how much neck and collarbone is still there. A close-up is supposed to stop just under the chin. It has come in and it has not come in far enough — which is exactly what the numbers say: the typical picture moved from 0.51 of a face-height of room below the chin to 0.42, where we need 0.30.\n\nThis cast is the one that produced your original complaint about close-ups coming back as portraits, so it is the fairest possible test. My recommendation is on the job: stop here, and consider instead whether 0.30 is simply a shade tight.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-03T02:35:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -3720,7 +3737,7 @@
       "id": "portrait-band-1612",
       "title": "Where a Portrait stops being a Portrait — six of your own, in order",
       "question": "WHAT YOU ARE LOOKING AT — six pictures you already own, put in order of how much picture sits below the face. The number under each is the whole measurement: 1.10 means about one face's worth of chest below the chin, 7.72 means head to toe. The black line is where the studio now draws the boundary between a Portrait and a full-length picture.\n\nWHY IT MATTERS. Until tonight the Portrait slot had one test — is the whole head inside the frame — and a head-to-toe picture passes that easily. So a full-length picture delivered where you asked for a Portrait would have gone through unnoticed. Now the distance is measured, so it would not.\n\nTHE ONE THING WORTH YOUR EYE is the pair either side of the line: Hingu at 3.03, which we keep and say nothing about, and Jenny Craig at 4.61, which we would hand over marked unchecked with a free Try again beside it. Everything further out is obvious in both directions. The line sits in a wide empty gap — across every picture you own there is nothing at all between 3.03 and 4.61.\n\nIf you would rather it sat tighter — so Hingu's also got a free Try again — say so and it is one number. Nothing here throws a picture away: the strictest this can ever do is hand you the picture and offer another go.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-02T11:00:00.000Z",
       "issueNumber": 1612,
       "frames": [
@@ -6824,7 +6841,7 @@
       "id": "sign-sheet-shape-1904",
       "title": "The one-sheet Sign works — and the five views come out a different shape",
       "question": "WHAT YOU ARE LOOKING AT — two pictures of the same real sheet I rendered tonight, for 8 cents.\n\nThe FIRST is the five views as they really come out. This is the thing to judge: is it the same woman five times, is it one outfit, is every camera right, is anybody cut off. To my eye all five are whole and the outfit is identical across them, which was the thing most likely to go wrong and is the whole reason for doing it this way.\n\nThe SECOND is the problem, and it is not about the pictures — it is about where they go. The strip of five on a finished cast puts each view in a short wide tile. These pictures are tall and narrow, so the tile shows only the top of each one. Look at the close-up: no mouth. Look at the front and the back: no legs, no boots. That is what you would see on your own cast page today if this shipped as it is.\n\nThe big viewer is fine. It is only the strip.\n\nThree ways out, on card 1926. A: ask the engine for a shorter sheet so the views come back nearer today's shape — needs another render and your eye again, and only gets us part of the way. B: show the whole picture in each tile with a little background either side. C: make the tiles tall and narrow to match.\n\nI recommend B. A tall picture is the right shape for a standing figure, and the strip is there for you to pick one — a tile that cuts the face off cannot do that job. Background either side costs less than a missing mouth. But it changes what you look at every day, so it is yours.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-07T18:45:00.000Z",
       "issueNumber": 1926,
       "cardId": "sign-sheet-shape-1926",
@@ -6851,18 +6868,18 @@
       "note": "The hand review's one finding, repaired; merged as 25f9015c and read back live at /api/health on a 73-second uptime."
     },
     {
-      "id": "dead-engine-record-1785",
-      "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
-      "status": "in-review",
-      "prNumber": null,
-      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+      "id": "package-redo-1903-slice2",
+      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "status": "blocked",
+      "prNumber": 1924,
+      "note": "Finished and green, waiting on the sheet work you held it behind. It needs one re-merge once that lands."
     },
     {
       "id": "pro-plus-rename-1900",
       "title": "The Studio plan is called Pro Plus (#1900)",
       "status": "merged",
       "prNumber": 1927,
-      "note": "One word of product code; rendered in both themes. Waiting on the relay, then your Stripe rename."
+      "note": "Live since 7:53pm, and the Stripe product is renamed too on your word — both sides say Pro Plus."
     },
     {
       "id": "rate-chip-off-plans-1773",
@@ -9770,18 +9787,32 @@
       "note": "Held for a hand review — it touches refunds. A court on your own frames caught back views being refused and that is fixed; the paid redo is the next half."
     },
     {
-      "id": "package-redo-1903-slice2",
-      "title": "Ask for all views again — the paid redo of a whole signed package, 350 credits (#1903 slice 2)",
+      "id": "dead-engine-record-1785",
+      "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
       "status": "in-review",
-      "prNumber": 1924,
-      "note": "Held for a hand review: it charges and refunds."
+      "prNumber": null,
+      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
     },
     {
       "id": "sign-sheet-1904",
-      "title": "Sign renders one Sunburst sheet cut into the five views (#1904)",
-      "status": "building",
-      "prNumber": null,
-      "note": "Built and measured on a real sheet; held on your shape decision (#1926) and 58 test arms."
+      "title": "A refused view re-makes its own sheet once, at our cost (#1904)",
+      "status": "merged",
+      "prNumber": 1957,
+      "note": "Money surface, held for the relay. 82 arms, 8 sabotage rounds, preflight green."
+    },
+    {
+      "id": "defer-decrease-1936",
+      "status": "in-review",
+      "title": "Dropping a plan or lowering the credit dial now happens at your renewal, not instantly (#1936)",
+      "note": "Money surface, held for the relay. Driven against real Stripe test mode: no refund, no invoice, balance unchanged.",
+      "prNumber": 1963
+    },
+    {
+      "id": "undelivered-plan-features-1953",
+      "status": "merged",
+      "title": "The plan features nobody delivers come off the wire, and the Follow cost note reads the measured figure (#1953)",
+      "note": "Merged 06:29Z, squash 54cf50b3 — relay's verdict. Sabotage 10/10 red.",
+      "prNumber": 1970
     }
   ],
   "problems": [
@@ -10161,10 +10192,18 @@
     260,
     261,
     262,
-    263
+    263,
+    264,
+    265,
+    266,
+    267,
+    268,
+    269,
+    270,
+    271
   ],
   "nextUp": {
-    "readAt": "2026-10-07T21:05:24.364Z",
+    "readAt": "2026-10-08T06:31:16.415Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10177,7 +10216,7 @@
         "urgent": true,
         "held": {
           "state": "blocked",
-          "because": "YOU — the views come out a taller shape and the strip cuts them. A/B/C on #1926, recommend B. Built and measured otherwise."
+          "because": "YOU — two small questions in the newest comment, and your eye on a Sign's strip. The build is PR #1957, held for the relay."
         }
       },
       {
@@ -10200,11 +10239,6 @@
         }
       },
       {
-        "issueNumber": 1612,
-        "title": "The view checker measures framing and only refuses on identity: geometry from the segmenter for every framing band, and an unsure framing or wardrobe verdict delivers the picture unchecked instead of dropping it — his ruling 2026-09-30",
-        "urgent": false
-      },
-      {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
         "urgent": false
@@ -10219,11 +10253,6 @@
         }
       },
       {
-        "issueNumber": 1832,
-        "title": "P2-1 — Three individual plans with the credit slider on Studio ($9 per 5,000 credits): the plan cards and pricing surface rebuilt to the brief",
-        "urgent": false
-      },
-      {
         "issueNumber": 1835,
         "title": "P2-4 — Team priced per seat ($68 a seat), after the workspace (#1788) exists",
         "urgent": false,
@@ -10233,13 +10262,39 @@
         }
       },
       {
-        "issueNumber": 1900,
-        "title": "Rename the Studio plan to Pro Plus everywhere a customer sees it — same price, credits and features, only the name",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — it is LIVE: our side says Pro Plus. Stripe still says Studio, and that is your dashboard: 3 of your 6 surfaces. Rename the product now."
-        }
+        "issueNumber": 1936,
+        "title": "The slider (and any downgrade) can be looped for free credits: raise, spend, lower for a Stripe refund, raise again — fix before go-live",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1940,
+        "title": "In-app money wording: \"credits returned\" everywhere, \"Cancel plan\" instead of \"Drop to Free\", and Billing says when a cancelled plan ends",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1941,
+        "title": "A reminder email before a yearly plan renews — before go-live",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1952,
+        "title": "Customer pricing wording: price on every paid button, plain receipts, renewal and cancel lines (top-ups never expire)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1966,
+        "title": "A Sign sheet that never arrives is asked for again, spaced, before its views are refunded (his word on #1904)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1968,
+        "title": "Sign is a flat 1,000 credits with no per-view refund, and the whole-set redo is 620 (his word, Cid's reprice 2026-10-08)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1969,
+        "title": "The Sign dialog says \"five canonical views\" — our word, not hers (his word 2026-10-08)",
+        "urgent": false
       }
     ]
   }

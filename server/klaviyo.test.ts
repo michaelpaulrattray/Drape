@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { PRODUCT_NAME } from "@shared/brand";
 import { testConnection, newsletterSignup, sendAccountFrozenEmail } from "./klaviyo";
 
 // Mock fetch globally
@@ -161,7 +162,17 @@ describe("Klaviyo Integration", () => {
       expect(eventBody.data.attributes.properties.user_name).toBe("Test User");
       expect(eventBody.data.attributes.properties.freeze_reason).toContain("credit discrepancy");
       expect(eventBody.data.attributes.properties.frozen_by).toBe("system");
-      expect(eventBody.data.attributes.properties.app_name).toBe("Drape");
+      /*
+        #1955 — the name on the wire, asserted as the CLAIM rather than as a
+        literal. A Klaviyo flow template renders `app_name` into the email a
+        frozen customer reads, so this is copy; it said "Drape", and retyping
+        "Klieg" here would just be the next rename's chore. What matters is
+        that the wire carries the product's own name and not a stale spelling,
+        so one arm derives and one refuses. That the name IS Klieg is pinned
+        once, in `server/serverBrandCopy.test.ts`.
+      */
+      expect(eventBody.data.attributes.properties.app_name).toBe(PRODUCT_NAME);
+      expect(eventBody.data.attributes.properties.app_name).not.toMatch(/drape/i);
       // #452, his word: the appeal route a frozen customer is given on the wire.
       expect(eventBody.data.attributes.properties.support_url).toBe("mailto:support@klieglabs.com");
     });

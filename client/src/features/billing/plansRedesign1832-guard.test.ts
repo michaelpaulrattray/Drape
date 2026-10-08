@@ -655,3 +655,98 @@ describe("the brief's new copy claims only what the tree holds (#1607's rule)", 
     );
   });
 });
+
+describe("card 1939 — no note in this table may claim credits do not expire", () => {
+  /**
+   * ⚠ **THE DEFECT THIS ARM EXISTS FOR WAS A SENTENCE THAT WAS TRUE WHERE IT
+   * WAS WRITTEN AND FALSE WHERE IT WAS COPIED.**
+   *
+   * The Credits group's note read *"One pool. Every tool spends the same
+   * credits, and credits you have paid for never expire."* The second clause was
+   * quoted from Add credits, where it is true and derived from real behaviour:
+   * #1660 made `refreshMonthlyCredits` add `purchasedCreditsRemaining(row)` back
+   * whole at every renewal. **In the plan compare table it is false**, because a
+   * customer paying for a plan has paid for their plan credits too, and
+   * `rolloverPercent` is 50 on Starter and 75 on Pro — two of the three rungs
+   * this table draws. **The same table said so two rows up**, through
+   * `rolloverSentence`.
+   *
+   * ⚠ **SO THE ARM IS NOT A STRING PIN, AND THAT CHOICE IS THE WHOLE VALUE
+   * HERE.** Pinning the new sentence would redden on a reword and say nothing
+   * about the next sentence somebody copies in from a surface where it is true.
+   * What is asserted is the PROPERTY: while any rung drawn in this table
+   * forfeits part of its allowance, no note in it may claim otherwise. The
+   * population is read from `PLAN_TIERS` through the same two order constants
+   * the surface itself is narrowed by, so the day every offered rung reaches
+   * 100% rollover this arm stands down on its own rather than holding a true
+   * sentence out.
+   */
+
+  /** Every group `note:` string in the compare table, read at the real source. */
+  function groupNotes(): string[] {
+    const modal = code(MODAL);
+    const groups = slice(
+      modal,
+      "const groups: CompareGroup[]",
+      "const phoneOrder",
+      "the compare groups",
+    );
+    const notes = [...groups.matchAll(/note:\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+    expect(notes.length, "no group notes were read — the shape moved and this arm is blind")
+      .toBeGreaterThan(0);
+    return notes;
+  }
+
+  it("⚠ while a drawn rung forfeits unspent credits, no note says credits never expire", () => {
+    /* The rungs the table actually draws: the self-serve ladder, plus the
+       arranged-directly band the footnote covers — both read from the catalogue
+       rather than listed, so a rung moving between them cannot slip the check. */
+    const drawn = [...SELF_SERVE_PLAN_ORDER, ...ARRANGED_DIRECTLY_PLAN_TIERS];
+    const forfeiting = drawn.filter((tier) => PLAN_TIERS[tier].rolloverPercent < 100);
+
+    /* The precondition, stated so a future reader knows why the arm is silent
+       if it ever stops holding — and so a catalogue change that makes the
+       sentence TRUE does not read as this guard being deleted. */
+    expect(
+      forfeiting.length,
+      "every drawn rung now keeps 100% of unspent credits — this arm no longer has a" +
+        " subject, and an expiry claim in the table would be true; delete it with its card",
+    ).toBeGreaterThan(0);
+
+    const worst = forfeiting
+      .map((tier) => `${PLAN_TIERS[tier].name} keeps ${PLAN_TIERS[tier].rolloverPercent}%`)
+      .join(", ");
+
+    for (const note of groupNotes()) {
+      expect(
+        /\bnever expire\b|\bdo(?:es)? not expire\b|\bdon't expire\b|\bnothing\b[^.]*\bexpires?\b/i.test(
+          note,
+        ),
+        `a compare-table note claims credits do not expire — but ${worst}, and the` +
+          ` Unspent credits row in this same table says so: "${note}"`,
+      ).toBe(false);
+    }
+  });
+
+  it("the per-rung expiry fact is still drawn, in the row where it belongs", () => {
+    /*
+      The other half of the repair, and the reason nothing honest was lost by
+      cutting the clause: what expires is a PER-RUNG fact, so it is stated in a
+      per-rung CELL and never in a note that spans every column. If the row ever
+      stops reading `rolloverSentence`, the table would carry no expiry fact at
+      all — which the arm above cannot see, because it only forbids a claim.
+    */
+    const modal = code(MODAL);
+    const groups = slice(
+      modal,
+      "const groups: CompareGroup[]",
+      "const phoneOrder",
+      "the compare groups",
+    );
+    expect(
+      groups,
+      "the Unspent credits row stopped reading rolloverSentence — the table now states" +
+        " no expiry fact anywhere, per rung or otherwise",
+    ).toContain("rolloverSentence(plan.rolloverPercent).text");
+  });
+});

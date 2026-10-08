@@ -686,6 +686,7 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("frames-1837", "card-1837")],
       [card("card-1837", "open")],
+      [card("card-1837", "open")],
     );
     expect(standalone, "the gallery would still draw it — two cards again").toEqual([]);
     expect(mergedInto.get("card-1837")?.map((i) => i.id)).toEqual(["frames-1837"]);
@@ -695,39 +696,77 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("loose", null)],
       [card("card-1837", "open")],
+      [card("card-1837", "open")],
     );
     expect(standalone.map((i) => i.id)).toEqual(["loose"]);
     expect(mergedInto.size).toBe(0);
   });
 
-  it("⚠ an item whose card is DONE stands on its own — a merge into a card nobody draws is a vanishing", () => {
-    /*
-      The failure #354 named in this feature's own words — *"the vanishing the
-      design forbids"* — created by a fix for its own class. `CrewNeedsYou`
-      renders `crewCardNeedsHim` cards only, so pairing against the raw list
-      would hide the frames entirely.
-    */
+  /**
+   * ⚠ **#1938 — THIS ARM IS THE REVERSE OF THE ONE IT REPLACES, AND THE REASON
+   * IS THAT THE OLD ANSWER WAS THE DEFECT.**
+   *
+   * It read *"an item whose card is DONE stands on its own — a merge into a
+   * card nobody draws is a vanishing"*, citing #354's *"the vanishing the
+   * design forbids"*. That reasoning is still right about a card the page
+   * cannot explain, and it is wrong about one he has ANSWERED: his answer is
+   * what retired the question, so showing the frames again with their own reply
+   * box asks it a second time. The briefing schema refuses an OPEN item on a
+   * card that no longer needs him (#133), so an item reaching this branch is
+   * one `CrewEyeGallery` would filter out anyway — the old arm was asserting a
+   * place in a list nothing drew.
+   */
+  it("⚠ an item whose card he has ANSWERED is dropped, not stood on its own (#1938)", () => {
     for (const dead of ["done", "answered"]) {
-      const { standalone, mergedInto } = partitionEyeItems(
+      const { standalone, mergedInto, answered } = partitionEyeItems(
         [item("frames", "card")],
         [card("card", dead)],
+        [card("card", dead)],
       );
-      expect(standalone.map((i) => i.id), `${dead}: the frames vanished`).toEqual(["frames"]);
+      expect(standalone, `${dead}: the frames came back asking again`).toEqual([]);
+      expect(answered.map((i) => i.id)).toEqual(["frames"]);
       expect(mergedInto.size).toBe(0);
     }
     /* And a `waiting` card IS still his, so its frames go with it (#354). */
     expect(
-      partitionEyeItems([item("frames", "card")], [card("card", "waiting")]).standalone,
+      partitionEyeItems(
+        [item("frames", "card")],
+        [card("card", "waiting")],
+        [card("card", "waiting")],
+      ).standalone,
     ).toEqual([]);
   });
 
-  it("an item naming a card this page is not drawing at all stands on its own", () => {
-    /* The schema refuses an unpaired `cardId` (#133), so this is the LIVE
-       narrowing rather than a malformed edition: `needsYouFor` subtracts cards
-       GitHub has closed since the edition shipped (#1193), and the frames must
-       survive that. */
-    const { standalone } = partitionEyeItems([item("frames", "card-gone")], []);
+  /**
+   * ⚠ **THE ARM THIS CARD EXISTS FOR, AND IT FAILS AGAINST THE SHIPPED
+   * READING.** The card is OPEN — its next slice is being built — and the relay
+   * has lifted the hold because his answer is recorded, so `needsYouFor` takes
+   * it off the live desk (#1193) while `eyeItemsFor` cannot see it: that reader
+   * drops an item only when its issue is CLOSED. Handed one list, the host
+   * failed the `drawn` test and the frames fell into the gallery with their own
+   * reply box, from his answer until the next edition.
+   */
+  it("⚠ an item whose card the LIVE desk dropped because he answered it is dropped too (#1938)", () => {
+    const { standalone, mergedInto, answered } = partitionEyeItems(
+      [item("frames-1612", "law9-sign-card-1612")],
+      /* What the page draws: `needsYouFor` subtracted the answered card. */
+      [],
+      /* What the edition wrote: the card, still `open`, with its frames. */
+      [card("law9-sign-card-1612", "open")],
+    );
+    expect(standalone, "the pictures came back as their own question").toEqual([]);
+    expect(answered.map((i) => i.id)).toEqual(["frames-1612"]);
+    expect(mergedInto.size).toBe(0);
+  });
+
+  it("an item naming a card the EDITION never had stands on its own", () => {
+    /* The one case the function cannot explain: the schema refuses an unpaired
+       `cardId` (#133), so this is a malformed edition rather than a live
+       narrowing — and frames cannot be re-created from a dropped item, so the
+       direction it fails in is toward his eye (law 9). */
+    const { standalone, answered } = partitionEyeItems([item("frames", "card-gone")], [], []);
     expect(standalone.map((i) => i.id)).toEqual(["frames"]);
+    expect(answered).toEqual([]);
   });
 
   it("several items on one card all merge into it, in their own order", () => {
@@ -735,14 +774,17 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("a", "card"), item("loose", null), item("b", "card")],
       [card("card", "open")],
+      [card("card", "open")],
     );
     expect(mergedInto.get("card")?.map((i) => i.id)).toEqual(["a", "b"]);
     expect(standalone.map((i) => i.id)).toEqual(["loose"]);
   });
 
-  it("⚠ nothing is lost: every item is in exactly one of the two halves", () => {
-    /* The property that matters more than any single case — the two sections
-       between them draw the whole list, and draw nothing twice. */
+  it("⚠ nothing is lost: every item is in exactly one of the three halves", () => {
+    /* The property that matters more than any single case — the halves between
+       them account for the whole list, and nothing appears twice. `answered` is
+       returned rather than quietly discarded precisely so this stays provable
+       after #1938 gave the function something to drop. */
     const items = [
       item("a", "card"),
       item("b", null),
@@ -750,12 +792,226 @@ describe("one question, one card — which eye items merge (#1895)", () => {
       item("d", "card"),
       item("e", "card-missing"),
     ];
-    const { standalone, mergedInto } = partitionEyeItems(items, [
-      card("card", "open"),
-      card("card-done", "done"),
-    ]);
-    const drawn = [...standalone.map((i) => i.id), ...[...mergedInto.values()].flat().map((i) => i.id)];
-    expect(drawn.sort()).toEqual(["a", "b", "c", "d", "e"]);
-    expect(new Set(drawn).size, "an item is drawn twice").toBe(items.length);
+    const edition = [card("card", "open"), card("card-done", "done")];
+    const { standalone, mergedInto, answered } = partitionEyeItems(items, edition, edition);
+    const seen = [
+      ...standalone.map((i) => i.id),
+      ...[...mergedInto.values()].flat().map((i) => i.id),
+      ...answered.map((i) => i.id),
+    ];
+    expect(seen.sort()).toEqual(["a", "b", "c", "d", "e"]);
+    expect(new Set(seen).size, "an item is accounted for twice").toBe(items.length);
+    /* And the three halves are the ones this card settled. */
+    expect(standalone.map((i) => i.id)).toEqual(["b", "e"]);
+    expect(answered.map((i) => i.id)).toEqual(["c"]);
+    expect(mergedInto.get("card")?.map((i) => i.id)).toEqual(["a", "d"]);
+  });
+
+  /**
+   * ⚠ **THE SAME QUESTION ASKED OF THE DEPLOYED EDITION, not of a fixture
+   * (#1938, working law 1).** Every arm above builds its own two-item world,
+   * and a partition rule can be right about those and wrong about the shapes a
+   * real file carries — paired items whose own `issueNumber` differs from their
+   * host's (`retry-outfit-1474` hosts on `sheet-shape-1278`), several items per
+   * host, and hosts in four different states.
+   *
+   * It simulates the ONE thing the live desk does that an edition cannot
+   * record: his answer arriving, which takes a host off `needsYou` while the
+   * card stays open. Every paired item in the file must then be accounted for
+   * as answered rather than reappearing in the gallery.
+   */
+  it("the deployed briefing's paired frames never reappear when their host is answered", () => {
+    const briefing = JSON.parse(
+      readFileSync(
+        path.resolve(__dirname, "../../../../../../server/crew/crew-briefing.json"),
+        "utf8",
+      ),
+    ) as {
+      needsYou: { id: string; state: string }[];
+      eyeItems: { id: string; cardId?: string | null; state: string }[];
+    };
+    const items = briefing.eyeItems as unknown as Parameters<typeof partitionEyeItems>[0];
+    const edition = briefing.needsYou as unknown as Parameters<typeof partitionEyeItems>[1];
+    const paired = briefing.eyeItems.filter((item) =>
+      item.cardId != null && briefing.needsYou.some((card) => card.id === item.cardId));
+    /* The floor: a file with no paired item would pass this arm by holding
+       nothing, which is the shape a population control exists to refuse. */
+    expect(paired.length, "the real edition carries no paired eye item to judge")
+      .toBeGreaterThan(5);
+
+    /* HE ANSWERS EVERYTHING: the live desk hands the page an empty needs-you
+       list while the edition still carries every card and every pairing. */
+    const afterHisAnswers = partitionEyeItems(items, [], edition);
+    expect(afterHisAnswers.mergedInto.size, "nothing can merge into a card nobody draws").toBe(0);
+    const pairedIds = new Set(paired.map((item) => item.id));
+    expect(
+      afterHisAnswers.standalone.filter((item) => pairedIds.has(item.id)).map((item) => item.id),
+      "these frames came back as their own question",
+    ).toEqual([]);
+    /*
+      ⚠ **THIS WAS AN EQUALITY AND IS NOW A CONTAINMENT, BECAUSE #1950 WIDENED
+      WHAT `answered` MEANS — and the arm failing was the measurement.**
+
+      It read `expect(answered.map(id).sort()).toEqual([...pairedIds].sort())`
+      and `expect(standalone.length).toBe(eyeItems.length - paired.length)`,
+      both true when `answered` meant only *paired, but its host is not drawn*.
+      It now also holds an item whose OWN state no longer needs him, which is
+      what stopped the section menu counting things the gallery drops.
+
+      Run against this very file the day it changed: of **127** eye items,
+      **87** were standalone under the old rule and **0** of those were ones
+      the gallery would draw. The equality is therefore the wrong shape — it
+      would pin a number about the current edition's contents — and the
+      property that actually matters is the two below.
+    */
+    for (const id of pairedIds) {
+      expect(
+        afterHisAnswers.answered.some((item) => item.id === id),
+        `${id} is paired with a card he answered and is not accounted for as answered`,
+      ).toBe(true);
+    }
+    /* And every item left standing alone is one the gallery will actually
+       draw — the whole of #1950, asked of the real file. */
+    expect(
+      afterHisAnswers.standalone.filter((item) => !crewCardNeedsHim(item.state)).map((i) => i.id),
+      "an item the gallery filters out is still in `standalone`, so the section menu"
+        + " would count a picture nobody is shown",
+    ).toEqual([]);
+    /* Nothing is lost, still, over the real file. */
+    expect(
+      afterHisAnswers.standalone.length
+      + afterHisAnswers.answered.length
+      + [...afterHisAnswers.mergedInto.values()].flat().length,
+    ).toBe(briefing.eyeItems.length);
+  });
+});
+
+/**
+ * THE SECTION MENU'S COUNT IS WHAT THE SECTIONS DRAW — #1950.
+ *
+ * The menu put `needsYou.length + standaloneEyeItems.length` beside **Needs
+ * you**, and neither list was filtered by state — while `CrewNeedsYou` draws
+ * `cards.filter(crewCardNeedsHim)` and `CrewEyeGallery` draws
+ * `items.filter(crewCardNeedsHim)` and returns `null` outright when that
+ * leaves nothing. **Both halves were wrong in the same direction**: the menu
+ * told him things were waiting over a section that was shorter, or empty.
+ *
+ * ⚠ **AND THE COMMENT DIRECTLY ABOVE THE COUNT SAID THE OPPOSITE** —
+ * *"THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS"* — which is the part
+ * worth keeping in mind, because a confident sentence is what stops anybody
+ * looking. It was a claim, not a fact (working law 1).
+ *
+ * ⚠ **THESE ARMS ASSERT THE EQUALITY, NOT THE IMPLEMENTATION.** Pinning
+ * `drawnCardCount` to a number would pass the day somebody counts the wrong
+ * list again with the same arithmetic. What is asserted is that the figure the
+ * menu renders equals the figure the two sections render, computed the way the
+ * sections compute it — so the two can never disagree without this going red.
+ */
+describe("the Needs-you count equals what the two sections draw (#1950)", () => {
+  const item = (id: string, cardId: string | null, state: string) =>
+    ({ id, cardId, frames: [], state }) as unknown as Parameters<
+      typeof partitionEyeItems
+    >[0][number];
+  const card = (id: string, state: string) =>
+    ({ id, state }) as unknown as Parameters<typeof partitionEyeItems>[1][number];
+
+  /** What the menu renders, read exactly as `AdminCrew.tsx` reads it. */
+  function menuCount(
+    cards: Parameters<typeof partitionEyeItems>[1],
+    items: Parameters<typeof partitionEyeItems>[0],
+    edition: Parameters<typeof partitionEyeItems>[2],
+  ): number {
+    const { standalone, drawnCardCount } = partitionEyeItems(items, cards, edition);
+    return drawnCardCount + standalone.length;
+  }
+
+  /** What the two sections render, read exactly as each component reads it. */
+  function sectionsDraw(
+    cards: Parameters<typeof partitionEyeItems>[1],
+    items: Parameters<typeof partitionEyeItems>[0],
+    edition: Parameters<typeof partitionEyeItems>[2],
+  ): number {
+    const { standalone } = partitionEyeItems(items, cards, edition);
+    const drawnCards = cards.filter((entry) => crewCardNeedsHim(entry.state));
+    const drawnEyes = standalone.filter((entry) => crewCardNeedsHim(entry.state));
+    return drawnCards.length + drawnEyes.length;
+  }
+
+  it("⚠ answered and done rows in BOTH lists are counted by neither", () => {
+    /*
+      The fixture the card asks for. Two cards and two loose eye items still
+      need him; two of each do not. Before this card the menu said SIX.
+    */
+    const cards = [
+      card("open-card", "open"),
+      card("waiting-card", "waiting"),
+      card("answered-card", "answered"),
+      card("done-card", "done"),
+    ];
+    const items = [
+      item("loose-open", null, "open"),
+      item("loose-waiting", null, "waiting"),
+      item("loose-answered", null, "answered"),
+      item("loose-done", null, "done"),
+    ];
+
+    expect(sectionsDraw(cards, items, cards), "the fixture's own arithmetic").toBe(4);
+    expect(
+      menuCount(cards, items, cards),
+      "the menu counts a card or a picture the sections do not draw",
+    ).toBe(4);
+  });
+
+  it("the two agree when everything is open, so the arm is not passing by refusing", () => {
+    const cards = [card("a", "open"), card("b", "waiting")];
+    const items = [item("x", null, "open"), item("y", null, "open")];
+    expect(menuCount(cards, items, cards)).toBe(4);
+    expect(sectionsDraw(cards, items, cards)).toBe(4);
+  });
+
+  it("the two agree when everything is answered — the section is empty and says zero", () => {
+    const cards = [card("a", "answered"), card("b", "done")];
+    const items = [item("x", null, "answered"), item("y", null, "done")];
+    /* The gallery returns null outright at zero, so the menu must too. */
+    expect(menuCount(cards, items, cards)).toBe(0);
+    expect(sectionsDraw(cards, items, cards)).toBe(0);
+  });
+
+  it("a merged item is counted ONCE, on its card, and never again in the gallery", () => {
+    /*
+      The property #1895 shipped, now also held of the number: frames drawn
+      inside a card must not add to the count, or the menu sends him looking
+      for a section that holds them already.
+    */
+    const cards = [card("host", "open")];
+    const items = [item("frames", "host", "open")];
+    expect(menuCount(cards, items, cards), "the merged frames were counted twice").toBe(1);
+    expect(sectionsDraw(cards, items, cards)).toBe(1);
+  });
+
+  it("⚠ the real deployed edition: the menu and the sections agree", () => {
+    /*
+      Working law 1 — the fixtures above are a claim about the rule, and this
+      is the artifact. The fallback path is the one driven here: when GitHub
+      has not answered, the page draws the edition's own lists, and that is a
+      state the page really reaches.
+    */
+    const briefing = JSON.parse(
+      readFileSync(
+        path.resolve(__dirname, "../../../../../../server/crew/crew-briefing.json"),
+        "utf8",
+      ),
+    ) as {
+      needsYou: Parameters<typeof partitionEyeItems>[1];
+      eyeItems: Parameters<typeof partitionEyeItems>[0];
+    };
+    const cards = briefing.needsYou;
+    const items = briefing.eyeItems;
+    expect(cards.length, "the edition carries no needs-you rows to judge").toBeGreaterThan(5);
+    expect(items.length, "the edition carries no eye items to judge").toBeGreaterThan(5);
+    expect(
+      menuCount(cards, items, cards),
+      "on the real edition the menu still disagrees with its own sections",
+    ).toBe(sectionsDraw(cards, items, cards));
   });
 });

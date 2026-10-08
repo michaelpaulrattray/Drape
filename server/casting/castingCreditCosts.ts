@@ -145,10 +145,21 @@ export const CASTING_V2_COSTS = {
    * Roll and a Follow each cost.
    *
    * ⚠ **THE TWO PRICES AGREE AND THEY ARE STILL TWO PRICES.** A roll costs
-   * the house roughly a third of what a follow does (about $0.12 of engine time
-   * against $0.32-0.52, the reading he decided on — #1699), so one price does
-   * not mean one margin: it means a roll earns more, and a customer reads one
-   * number instead of two. Where the two differ now is the books, not the screen.
+   * the house less than a follow does (about $0.12 of engine time against about
+   * $0.19–0.26 for a Follow — 8 × $0.0232 measured 2026-09-30, plus the
+   * interpreter), so one price does not mean one margin: it means a roll earns
+   * more, and a customer reads one number instead of two. Where the two differ
+   * now is the books, not the screen.
+   *
+   * ⚠ **THE FIGURE THIS CARRIED UNTIL 2026-10-08 WAS THE OLD ENGINE'S AND IT
+   * OVERSTATED THE GAP BY ABOUT A FACTOR OF TWO** (#1953, from his finance
+   * guy's refresh). It read *"roughly a third of what a follow does … against
+   * $0.32-0.52"* — the reading #1699 was decided on, and true of the engine
+   * that road ran then. Measured on today's engine a Follow is about
+   * $0.19–0.26, so a roll costs about two thirds of one rather than a third.
+   * ⚠ **His 320 display price is untouched by this, and the ratio was never
+   * what set it** — his *"one price is better and we earn more for rolls
+   * simple"* (#1753) was, and that is still true, by a smaller margin.
    *
    * It was **150** (30 display) for one day, 2026-10-01 to 2026-10-02, and
    * **20** from 2026-07-30 to 2026-10-01.

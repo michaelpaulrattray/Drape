@@ -261,3 +261,195 @@ describe("#1916 · the client does not draw the retired wordmark", () => {
     ).toBe(true);
   });
 });
+
+/**
+ * #1934 · AND IT MAY NOT SAY THE OLD PRODUCT'S NAME EITHER.
+ *
+ * The suite above asks whether the client DRAWS the retired mark. It went
+ * green, and two and a half months after the rename a customer could still
+ * READ the old name in four places on the way in: the sign-in page's own
+ * heading said **Welcome to Drape**, the homepage video placeholder said
+ * *"See how Drape transforms your creative workflow"*, the verify-email page
+ * said *"Open the email from Drape"*, and the canvas's cast dialog said
+ * *"Drape will use the strongest complete coverage already available."*
+ *
+ * An asset reference and a sentence are different shapes, and #1916's reader
+ * was built for the first on purpose — so this is a second question in the
+ * same file rather than a second file, because it needs #1916's `codeLines`
+ * and a second copy of that state machine is the drift this repository has
+ * been bitten by (working law 4).
+ *
+ * # THE WORD BOUNDARY IS WHAT MAKES THIS WRITABLE
+ *
+ * The header above explains why *"no file says drape"* cannot be written
+ * honestly, and it is right — but every shape it names is excluded by
+ * `/\bDrape\b/` on its own, with no taxonomy and no exclusion list:
+ *
+ *   - `DrapeStudio`, `DrapeStudio.tsx`, `pages/DrapeStudio` — a word character
+ *     follows, so the boundary does not close. The legacy studio's symbol is
+ *     the most common hit in the tree and this reader never sees it.
+ *   - `drape_theme`, `drape_referral_code`, `drape_staff_auto_refresh` — `_`
+ *     is a word character; same reason.
+ *   - `DRAPE-XXXX`, `__DRAPE_RELEASE__`, `drape-logo-tight.png`,
+ *     `drape-selection.zip`, `docs/…/drape-redesign/…` — this reader is case
+ *     SENSITIVE, and every one of those is lower or upper case, never the
+ *     capitalised product name a sentence uses.
+ *
+ * What is left is the shape nothing else in the repository can see: the
+ * product's name, capitalised, standing alone, in prose. Each of those five
+ * is a NEGATIVE CONTROL below rather than a claim in this comment.
+ *
+ * # POPULATION, AND THE TWO THINGS DELIBERATELY OUT OF IT
+ *
+ * Every tracked file under `client/src` and `shared` — `.ts`, `.tsx` and
+ * `.css`, which is all three extensions those two trees contain. `shared` is
+ * in it because a customer reads `APP_UPDATE_REQUIRED_MESSAGE` as a toast, and
+ * it was the fifth instance: the card named three, the sweep found two more,
+ * and that one is not even in the client bundle — the server sends it over the
+ * wire, so a bundle grep could never have found it.
+ *
+ *   - **Comments are skipped**, by #1916's reader, for #1916's reason: the
+ *     rename's own explanations name what they replaced, and the four CSS
+ *     files that still carry a `Drape™` banner are history rather than copy.
+ *   - **`*.test.ts` / `*.test.tsx` are out of the population**, and this suite
+ *     is the worked example of why: a guard must be able to quote the string
+ *     it refuses, and the arms below quote all five. A test ships to nobody.
+ *
+ * ⚠ `server/` IS NOT IN THIS POPULATION AND THAT IS A DEBT, NOT A DECISION.
+ * The same sweep found customer-visible prose there — a tattoo refusal, the
+ * referral invite's sender fallback, the Klaviyo `app_name`, and the identity
+ * PDF — and the carve-outs that population needs are real work (the Railway
+ * service is `--service Drape`, the repo is `michaelpaulrattray/Drape`, the
+ * Atlas file is `drape-architecture.json`, and log lines are staff-only). It
+ * is carded rather than guessed at here. The verification email moved in
+ * #1934's own commit for one reason only: `"Open the email from Klieg"` is
+ * true only if the sender says Klieg.
+ */
+
+/** The product's name, capitalised and standing alone — the shape prose uses. */
+const SAYS_THE_OLD_NAME = /\bDrape\b/;
+
+/**
+ * The one code line that may say it, with the reason. STAFF, not a customer:
+ * `features/moderator/` is a staff surface by `CLAUDE.md`'s own naming, and
+ * #1934 carved this out by name ("the moderator CSV header (staff)"). It is a
+ * title row on a file a support agent downloads for a billing dispute, so
+ * renaming it is a staff-vocabulary decision and not this card's.
+ */
+const MAY_SAY_IT: Record<string, string> = {
+  "client/src/features/moderator/reconciliation-csv.ts":
+    "the billing-dispute CSV's title row — a STAFF download, carved out by #1934 by name",
+};
+
+function trackedCopyFiles(): string[] {
+  const out = execFileSync("git", ["ls-files", "client/src", "shared"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  return out
+    .split(/\r?\n/)
+    .map((line) => line.trim().replace(/\\/g, "/"))
+    .filter((file) => /\.(?:ts|tsx|css)$/.test(file))
+    .filter((file) => !/\.test\.tsx?$/.test(file));
+}
+
+/** Every file in the population whose CODE says the old name, with the lines. */
+function filesSayingTheOldName(files: string[]): Record<string, string[]> {
+  const found: Record<string, string[]> = {};
+  for (const file of files) {
+    /* `readListedSource` because a listing and a read are two moments: a
+       disposable planted by a sibling suite can vanish between them (#223). */
+    const source = readListedSource(join(REPO_ROOT, file));
+    if (source === null) continue;
+    const hits = codeLines(source)
+      .filter((line) => SAYS_THE_OLD_NAME.test(line))
+      .map((line) => line.trim());
+    if (hits.length > 0) found[file] = hits;
+  }
+  return found;
+}
+
+describe("#1934 · the client does not say the old product's name to a customer", () => {
+  it("⚠ CONTROL — it finds all five renamed lines, and none of the load-bearing shapes", () => {
+    /* POSITIVE CONTROL FIRST, on the real strings this card removed, because
+       every assertion below is vacuously satisfied by a blind reader and a
+       blind reader reads exactly like a renamed tree (working law 2). */
+    for (const copy of [
+      "                    Welcome to Drape",
+      "                    See how Drape transforms your creative workflow",
+      "                  Drape will use the strongest complete coverage already available.",
+      '                "Open the email from Drape",',
+      '  "Drape was updated while this page was open. Reload to continue — nothing was charged.";',
+    ]) {
+      expect(SAYS_THE_OLD_NAME.test(copy), `must find: ${copy.trim()}`).toBe(true);
+    }
+
+    /* NEGATIVE CONTROLS — the five shapes #1916's header names as load
+       bearing, each excluded by the boundary alone rather than by a list. A
+       guard that fired on any of these would ask a shift to discard every
+       customer's stored theme, or rename a code format that is a real value in
+       the database, in order to go green. */
+    for (const safe of [
+      'const DrapeStudio = staffPage(() => import("./pages/DrapeStudio"));',
+      '    "pages/DrapeStudio",',
+      'localStorage.getItem("drape_theme")',
+      'const REFERRAL_STORAGE_KEY = "drape_referral_code";',
+      "return `DRAPE-${seg()}-${seg()}`;",
+      'identity={user ?? "drape"}',
+      "a.download = 'drape-selection.zip';",
+      "__DRAPE_RELEASE__",
+      "const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;",
+      "import x from '@/docs/drape-redesign/08-crew';",
+    ]) {
+      expect(SAYS_THE_OLD_NAME.test(safe), `must not fire on: ${safe}`).toBe(false);
+    }
+
+    /* And the comment reader on THIS question — a `Drape™` banner is history,
+       a continuation line below it is still prose, and a real string is
+       found. This is the shape the four CSS files carry. */
+    const sample = [
+      "/**",
+      " * Drape™ Keyframe Animations",
+      "   still inside the block, and this line says Drape too.",
+      " */",
+      "// Drape, in a line comment",
+      'const heading = "Welcome to Drape";',
+    ].join("\n");
+    expect(
+      codeLines(sample).filter((line) => SAYS_THE_OLD_NAME.test(line)),
+      "only the real string survives the comment reader",
+    ).toEqual(['const heading = "Welcome to Drape";']);
+  });
+
+  it("⚠ no shipped client or shared file says it, outside the enumerated remainder", () => {
+    const files = trackedCopyFiles();
+    /* The reader's own positive control: a blind `git ls-files` returns
+       nothing, which satisfies "nothing says it" perfectly happily. */
+    expect(
+      files.length,
+      "`git ls-files client/src shared` saw nothing — the reader is blind, not the tree renamed",
+    ).toBeGreaterThan(200);
+
+    const saying = filesSayingTheOldName(files);
+    const unexpected = Object.keys(saying).filter((file) => !(file in MAY_SAY_IT));
+    expect(
+      unexpected.map((file) => `${file} — ${saying[file]!.join(" | ")}`),
+      "a customer-visible line says the old product's name. The product is"
+      + " Klieg: say Klieg, or drop the name where the sentence reads better"
+      + " without it. If the line is genuinely staff-only, that is a second"
+      + " decision and it is carded, not a row added below:",
+    ).toEqual([]);
+  });
+
+  it("⚠ the remainder only SHRINKS — a row that stopped being true is deleted, not kept", () => {
+    const saying = filesSayingTheOldName(trackedCopyFiles());
+    const stale = Object.keys(MAY_SAY_IT).filter((file) => !(file in saying));
+    expect(
+      stale,
+      "these files no longer say the old name — delete their rows from"
+      + " MAY_SAY_IT. A debt list that keeps a discharged row is a list that"
+      + " stops meaning anything.",
+    ).toEqual([]);
+  });
+});
