@@ -1321,4 +1321,125 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
         + "entry in money-surfaces.sh — never `^scripts/`, which #1906 measured and declined.",
     ).toEqual([]);
   });
+
+  /*
+    ⚠ AND A FILE CAN REACH STRIPE WITHOUT EVER HOLDING A CLIENT (#2006). The
+    readers above see `new Stripe(`, a `stripe` value import and a direct
+    `.x.create/update/del(` call. A script that imports `issueStripeRefund`,
+    `updateSubscriptionPlan` or `scheduleSubscriptionChange` from
+    `server/stripe/` and calls it does none of the three, so a diff touching
+    only it would pass unlabelled. The population therefore widens to every
+    tracked code file that IMPORTS from `server/stripe/`, whatever it calls.
+
+    The specifier is read from `withoutComments` (it is a string, and `codeOnly`
+    blanks it), and a match counts only when the SAME LINE of `codeOnly` still
+    carries the keyword that introduces it — `from`, `import` or `import(` /
+    `require(` — so an import quoted inside a find/replace string is not an
+    importer. Both outputs keep every newline, which is what makes the line a
+    shared coordinate. A type-only import is erased at compile time, moves no
+    money, and is not counted.
+  */
+  const STATIC_IMPORT =
+    /(?:^|\n)[ \t]*(?:import|export)\s+(type\s+)?[\w\s{},*$]*?\bfrom\s*["']([^"']+)["']/g;
+  const BARE_IMPORT = /(?:^|\n)[ \t]*import\s*["']([^"']+)["']/g;
+  const DYNAMIC_IMPORT = /\b(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/g;
+
+  /** Every module specifier `file` really imports, resolved to a repo path where it is relative. */
+  function importedPaths(file: string, source: string): string[] {
+    const kept = withoutComments(source);
+    const codeLines = codeOnly(source).split("\n");
+    const lineOf = (offset: number) => codeLines[kept.slice(0, offset).split("\n").length - 1] ?? "";
+    const resolve = (spec: string) =>
+      spec.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), spec)) : spec;
+    const found: string[] = [];
+    for (const m of kept.matchAll(STATIC_IMPORT)) {
+      if (m[1]) continue; // `import type` / `export type`
+      const at = m.index! + m[0].lastIndexOf(m[2]!);
+      if (/\bfrom\b/.test(lineOf(at))) found.push(resolve(m[2]!));
+    }
+    for (const m of kept.matchAll(BARE_IMPORT)) {
+      const at = m.index! + m[0].lastIndexOf(m[1]!);
+      if (/\bimport\b/.test(lineOf(at))) found.push(resolve(m[1]!));
+    }
+    for (const m of kept.matchAll(DYNAMIC_IMPORT)) {
+      if (/\b(?:import|require)\s*\(/.test(lineOf(m.index!))) found.push(resolve(m[1]!));
+    }
+    return found;
+  }
+
+  const reachesStripeHelper = (file: string, source: string) =>
+    importedPaths(file, source).some((p) => /^server\/stripe\//.test(p));
+
+  /*
+    The two server modules that import a `server/stripe/` helper and are NOT on
+    MONEY_PATHS on the day this arm landed. A STATED REMAINDER, not a verdict:
+    #2006's scope forbade editing `money-surfaces.sh` (PR #1924 was open on it),
+    so both were reported on the PR for the relay to decide.
+     - `server/_core/index.ts` mounts `handleStripeWebhook` behind
+       `express.raw()` — the route every Stripe grant arrives through.
+     - `server/routes/moderator.ts` reads `getSessionChargedAmountCents` to
+       derive the amount a filed Stripe refund request carries.
+  */
+  const STRIPE_IMPORTERS_OFF_THE_LIST = new Set([
+    "server/_core/index.ts",
+    "server/routes/moderator.ts",
+  ]);
+
+  function stripeHelperImporters(): string[] {
+    const importers: string[] = [];
+    for (const file of trackedCodeFiles()) {
+      const source = readListedSource(path.join(repoRoot, file));
+      if (source === null) continue;
+      if (reachesStripeHelper(file, source)) importers.push(file);
+    }
+    return importers.sort();
+  }
+
+  it("the importer reader is driven on constructed sources, both directions", () => {
+    const script = "scripts/refund-everyone.mts";
+    /* Positive: the card's own shape — static, multi-line, dynamic, require, re-export, namespace. */
+    expect(reachesStripeHelper(script, 'import { issueStripeRefund } from "../server/stripe/stripeService";\nawait issueStripeRefund(x);')).toBe(true);
+    expect(reachesStripeHelper(script, 'import {\n  updateSubscriptionPlan,\n  scheduleSubscriptionChange,\n} from "../server/stripe/stripeService";')).toBe(true);
+    expect(reachesStripeHelper(script, 'const { issueStripeRefund } = await import("../server/stripe/stripeService");')).toBe(true);
+    expect(reachesStripeHelper(script, 'const s = require("../server/stripe/stripeService");')).toBe(true);
+    expect(reachesStripeHelper(script, 'export { issueStripeRefund } from "../server/stripe/stripeService";')).toBe(true);
+    expect(reachesStripeHelper("server/lib/x.ts", 'import * as s from "../stripe/stripeService";')).toBe(true);
+    /* Negative: an unrelated server module, type-only, a comment, a string, lookalike paths. */
+    expect(reachesStripeHelper(script, 'import { getDb } from "../server/db/connection";')).toBe(false);
+    expect(reachesStripeHelper(script, 'import type { PlanChange } from "../server/stripe/stripeService";')).toBe(false);
+    expect(reachesStripeHelper(script, '// import { issueStripeRefund } from "../server/stripe/stripeService";\nexport const x = 1;')).toBe(false);
+    expect(reachesStripeHelper(script, 'const find = \'await import("../server/stripe/stripeService")\';')).toBe(false);
+    expect(reachesStripeHelper(script, 'const fixture = `\nimport { issueStripeRefund } from "../server/stripe/stripeService";\n`;')).toBe(false);
+    expect(reachesStripeHelper(script, 'import { x } from "../server/stripeish/thing";')).toBe(false);
+    expect(reachesStripeHelper("server/lib/x.ts", 'import { x } from "./stripe/thing";')).toBe(false);
+  });
+
+  it("the importer reader finds the importers everybody already agrees about, and the ceremony", () => {
+    const importers = stripeHelperImporters();
+    expect(importers).toContain(CEREMONY);
+    expect(importers).toContain("server/routes/billing.ts");
+    expect(importers).toContain("server/lib/adminActions/changeRequestActions.ts");
+    /* A neighbouring ceremony that imports server code but nothing under server/stripe/. */
+    expect(importers).not.toContain("scripts/ceremony-r7-founder-evidence.mts");
+  });
+
+  it("every tracked file that imports a server/stripe helper is read as money, or a stated remainder", () => {
+    const missing = stripeHelperImporters()
+      .filter((file) => !pathRe.test(file) && !STRIPE_IMPORTERS_OFF_THE_LIST.has(file));
+    expect(
+      missing,
+      "these files import from server/stripe/ and a diff touching only them is not read as money: "
+        + `${missing.join(", ")}. Add each to MONEY_PATHS by name, with its entry in money-surfaces.sh `
+        + "— never `^scripts/`, which #1906 measured and declined.",
+    ).toEqual([]);
+  });
+
+  it("each stated importer remainder is real, still an importer, and genuinely off the list", () => {
+    const importers = new Set(stripeHelperImporters());
+    for (const file of STRIPE_IMPORTERS_OFF_THE_LIST) {
+      expect(() => read(file), `${file} no longer exists, so drop it`).not.toThrow();
+      expect(importers.has(file), `${file} no longer imports from server/stripe/, so drop it`).toBe(true);
+      expect(pathRe.test(file), `${file} is now on MONEY_PATHS, so drop it`).toBe(false);
+    }
+  });
 });
