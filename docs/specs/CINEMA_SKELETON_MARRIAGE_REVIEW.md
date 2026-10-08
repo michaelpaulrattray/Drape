@@ -819,3 +819,19 @@ natural-language scene timestamps are hard execution guarantees."
 claims idea — every ad claim tracing to a typed finding — noted for the
 ads door's future legal/brand-safety questions), provider lock-in, and
 their consistency approach entirely.
+
+
+**§12 addendum (founder Q, 2026-10-08): does any of this apply to scripted
+film, or only ads?** The line, ruled into the record: **for ads the
+reference is the SKELETON (structure transplanted, content swapped); for
+film the reference is an INGREDIENT (grammar extracted, structure never)**
+— a short film copying another film's cut beat-for-beat is derivative by
+construction; the script is film's skeleton. What crosses over to cinema:
+the engine craft entirely (it is about engines, not ads); "match this"
+widened from a still to a clip, extracting LOOK + RHYTHM (shot-length
+distribution, cut frequency, camera behaviour, pacing stats) into the
+style profile and scene overrides, never the shot list; and the SOP's
+measurement layer pointed at OUR OWN takes as the generation-supervision
+mechanism the spec named but never equipped (did the take hold its length,
+did text bleed, did the camera actually push). A breakdown-for-learning
+"study this scene" tool is noted and left unbuilt.
