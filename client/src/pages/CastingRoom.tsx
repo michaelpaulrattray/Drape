@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
-import { displayRefund, formatCredits } from "@shared/creditDisplay";
 import { creditsReturnedText } from "@shared/refundCopy";
 import { Button, EmptyState, Skeleton } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
@@ -333,12 +332,33 @@ export default function CastingRoom() {
              sentence, which is how Jericho came to be called the wrong thing on
              his own page. These say "the views", which needs no record at all
              and reads the same for every cast. */
+          /*
+            ⚠ **NOTHING COMES BACK FOR ONE VIEW UNDER THE FLAT PRICE, so this
+            line says nothing about money unless money actually moved** (#1968,
+            his word of 2026-10-08; #1903's card names it — *"nothing may imply
+            credits came back for that view"*). Repaired on PR #1924 when
+            `main` merged forward.
+
+            It used to end with a sentence telling her she had not been charged
+            — and under the flat price that is the ORDINARY partial failure,
+            because her slot rows cost nothing and `refundedCredits` is 0. True
+            of the pipeline, false to the person who paid 650 for the set. So
+            the claim is removed rather than reworded: the honest line says
+            which views are new and makes none about the till.
+
+            ⚠ **And when money DID come back it is said in the product's one
+            refund vocabulary** (`creditsReturnedText`, #1940). The spelling
+            this branch had — *"Your N credits … are back."* — is one of the
+            four that helper was built to retire, reintroduced on a branch cut
+            before it landed. Exactly the drift `shared/refundCopy.ts` exists
+            to prevent.
+          */
           const back = result.refundedCredits > 0
-            ? `Your ${formatCredits(displayRefund(result.refundedCredits))} credits for ${result.failed.length === 1 ? "it" : "them"} are back.`
-            : "You weren't charged for them.";
+            ? ` ${creditsReturnedText(result.refundedCredits)}`
+            : "";
           toast(result.committed.length === 0
-            ? `None of the views arrived this time. ${back}`
-            : `${result.failed.length} of the views didn't arrive. ${back} The rest are new.`);
+            ? `None of the views arrived this time.${back}`
+            : `${result.failed.length} of the views didn't arrive.${back} The rest are new.`);
         },
         onError: (error) => {
           setAskingAll(false);

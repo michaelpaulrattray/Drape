@@ -69,7 +69,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   {
     match: "None of the views arrived this time.",
     because:
-      "The total-loss branch of the same press — every view failed, so the strip looks exactly as it did before the button was pressed and nothing on it says the 350 credits went back. The one case where the surface shows literally no change at all.",
+      "The total-loss branch of the same press — every view failed, so the strip looks exactly as it did before the button was pressed and nothing on it says the 650 credits went back. The one case where the surface shows literally no change at all.",
   },
   {
     match: '"Some views didn\'t arrive — and the refund couldn\'t be recorded. Support can restore it."',

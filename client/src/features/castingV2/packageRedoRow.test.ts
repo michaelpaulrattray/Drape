@@ -28,6 +28,72 @@ const ROOM = fs.readFileSync(
   "utf8",
 );
 
+describe("what the redo says about money when a view does not arrive", () => {
+  /*
+    ⚠ **UNDER THE FLAT PRICE NOTHING COMES BACK FOR ONE VIEW, so no sentence
+    may imply it did** (#1968, his word of 2026-10-08; #1903's card names this
+    as its own sweep item — *"nothing may imply credits came back for that
+    view"*).
+
+    The partial-failure toast ended *"You weren't charged for them."* on every
+    such failure, which under the flat price is the ORDINARY one: her slot rows
+    cost nothing, so `refundedCredits` is 0 and the branch fires. True of the
+    pipeline, false to the person who paid 650 for the set.
+
+    It is read at the ROOM because that is where the sentence is composed — a
+    constant in `packageRedoRow.ts` could be held to anything and still not be
+    the thing on screen.
+  */
+  /*
+    ⚠ **SLICED TO THE STATEMENTS, NOT THE FILE — and the first draft of these
+    arms failed on their own evidence.** A whole-file `not.toContain` of the
+    banned sentence reddened because the REPAIR's own comment quotes it, which
+    is how this repository records a superseded line. A guard that cannot
+    survive its subject being explained is a guard that will be deleted.
+
+    So the subject is cut out: `const back =` through the end of the `toast(`
+    call. That region is code only, and it is where both defects lived.
+  */
+  const REDO_TOAST = (() => {
+    const start = ROOM.indexOf("const back = result.refundedCredits");
+    expect(start, "the redo's money line is gone from the room").toBeGreaterThan(-1);
+    const end = ROOM.indexOf("The rest are new.", start);
+    expect(end, "the redo's partial-failure toast is gone from the room").toBeGreaterThan(start);
+    return ROOM.slice(start, end);
+  })();
+
+  it("never tells her she wasn't charged for a view of a set she paid for", () => {
+    expect(REDO_TOAST).not.toContain("You weren't charged");
+    /* And not the retired spelling of the refund line either: #1940 replaced
+       four of them with one helper, and this branch had brought one back
+       (*"Your N credits … are back."*). */
+    expect(REDO_TOAST).not.toContain("are back");
+    expect(REDO_TOAST).not.toMatch(/credits for/);
+  });
+
+  it("says the money line only when money moved, in the ONE shared vocabulary", () => {
+    /*
+      Two halves, and the second is what stops this passing by deleting the
+      sentence: the money clause must still EXIST, and it must be the shared
+      helper rather than a fifth hand-built spelling.
+    */
+    expect(REDO_TOAST).toContain("result.refundedCredits > 0");
+    expect(REDO_TOAST).toContain("creditsReturnedText(result.refundedCredits)");
+    /* The empty alternative is the repair: no claim at all when nothing came
+       back. A literal sentence here would be the defect returning. */
+    expect(REDO_TOAST).toMatch(/\?\s*` \$\{creditsReturnedText\(result\.refundedCredits\)\}`\s*:\s*""/);
+  });
+
+  it("does its own credit arithmetic nowhere — the helper converts", () => {
+    /* `displayRefund`/`formatCredits` by hand on this page is how a ledger
+       figure reaches a customer five times too large (#1600). The conversion
+       is `creditsReturnedText`'s job, and the page no longer imports either —
+       read on the IMPORT rather than the call, so a new call site anywhere on
+       the page reddens and not merely one inside the slice above. */
+    expect(ROOM).not.toContain('from "@shared/creditDisplay"');
+  });
+});
+
 describe("the redo button", () => {
   it("says what it does in the customer's own noun", () => {
     /* VIEWS — the word the strip beside it already uses. Not "package", not
@@ -38,10 +104,17 @@ describe("the redo button", () => {
   });
 
   it("carries the price, spelled `credits` and never `CR`", () => {
-    /* 1,750 LEDGER is his 350 display. Handed the ledger number because that
-       is what the wire carries, and the conversion is this module’s job. */
-    const label = packageRedoLabel(1750);
-    expect(label).toBe(`Ask for all views again ${PACKAGE_REDO_SEPARATOR} 350 credits`);
+    /* 3,250 LEDGER is his 650 display (his word, 2026-10-08: "on this card
+       make both sign and redo/regenerate 650 credis"). Handed the ledger
+       number because that is what the wire carries, and the conversion is
+       this module’s job.
+
+       ⚠ This fixture was 1,750 → 350 until 2026-10-09 — his first answer,
+       superseded by his finance team's reprice. It still PASSED, because the
+       arm proves the division rather than the price, which is exactly why a
+       stale figure here reads as current. */
+    const label = packageRedoLabel(3250);
+    expect(label).toBe(`Ask for all views again ${PACKAGE_REDO_SEPARATOR} 650 credits`);
     expect(label).toContain("credits");
     /* #1908's rule: an abbreviation is the product's shorthand. Asserted on a
        word boundary so "credits" does not satisfy a search for "CR". */
@@ -91,7 +164,7 @@ describe("the room draws it through this module", () => {
       turn a ledger number into a display one (#1600), and the conversion lives
       in `packageRedoLabel` — so what the ROOM must not do is touch the number
       at all. A component interpolating `priceCredits` raw would print 1,750
-      where his price is 350: five times the figure, on the one surface that is
+      where his price is 650: five times the figure, on the one surface that is
       a promise about money.
     */
     const call = ROOM.match(/packageRedoLabel\([^\n]*\)/)?.[0] ?? "";

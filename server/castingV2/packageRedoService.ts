@@ -4,8 +4,16 @@
  *
  * **His ruling, verbatim (2026-10-07):** *"maybe we should allow retry by
  * default incase they didnt like the outfit that was invented or whatever but
- * it costs per retry and regens all views not just one"*. And his price, asked
- * and answered the same sitting: ***"350"*** display credits.
+ * it costs per retry and regens all views not just one"*.
+ *
+ * **His price, 2026-10-08 (terminal), verbatim:** *"on this card make both
+ * sign and redo/regenerate 650 credis"* — a flat **650 display = 3,250
+ * ledger**, declared once as {@link CASTING_V2_PACKAGE_REDO_PRICE_CREDITS}.
+ * ⚠ This header said ***"350"*** and described a per-slice charge until
+ * 2026-10-09; that was his first answer, asked and given the same sitting as
+ * the ruling above, and his finance team's reprice superseded it. Both halves
+ * of the old design are gone and the paragraphs below record what replaced
+ * them, because the per-slice shape is still the obvious one to reach for.
  *
  * **No fault has to be found first, and that is the feature.** Every other road
  * to a second render on this Cast is a remedy — a view that failed was
@@ -15,23 +23,36 @@
  * only questions are whether she is ready to be asked (below) and whether the
  * customer can afford it.
  *
- * # One press, five operations, and the reason is the refund
+ * # One press, five operations, and the money is ALL on the press
  *
- * His card keeps the catastrophic refund rule unchanged, and that rule gives
- * back **one view**. So the unit that can fail has to be the unit that is
- * charged: **1,750 ledger = 5 × 350**, each view its own refundable slice at
- * 70 display — a whole display number, which is the property the Sign's own
- * decomposition was chosen for. A view that does not arrive refunds its slice
- * and leaves the picture the customer already holds in that slot, so a redo
- * never lands a hole.
+ * ⚠ **THE FIVE SLOT ROWS PLAN 0 AND SETTLE 0/0.** The press is the only row
+ * with money on it, and it takes the whole 3,250 in a single deduct. The
+ * reason is arithmetic rather than taste: the recovery sweep refunds an
+ * unsettled row's `plannedCredits`, so a slot holding the flat price would
+ * hand back a WHOLE redo whenever that slot happened to be the one left
+ * unsettled — with its four siblings delivered.
+ *
+ * **What comes back, and it is the only thing that does:** nothing, unless
+ * **zero** views were delivered. One view is a delivered press — she asked for
+ * her views again, she received work, and the fifth slot kept the picture she
+ * already had, so a redo never leaves a hole. His word, on #1968: *"Credits
+ * only come back if the Sign can't be delivered at all."* The rule itself is
+ * {@link flatPressRefundOwed} and lives in one module for both roads.
+ *
+ * ⚠ **THIS SECTION DESCRIBED THE OPPOSITE UNTIL 2026-10-09, and the shape it
+ * described is the one to resist.** It read: *"the unit that can fail has to be
+ * the unit that is charged: 1,750 ledger = 5 × 350, each view its own
+ * refundable slice"* — true of the per-slice price, and the reason a per-slot
+ * refund branch stayed wired in the sweep long after it could be reached. His
+ * reprice made the views un-refundable one by one because they are cut from
+ * two sheets: a refused panel re-makes its whole sheet at the house's cost,
+ * which is what the flat price buys.
  *
  * ⚠ **WHAT THAT COSTS, named rather than discovered: in a partial failure the
  * package is briefly MIXED** — four views in the new outfit beside one in the
- * old — which is the one thing a redo exists to avoid. The alternative is
- * all-or-nothing, which spends house money on renders nobody receives and
- * hands the customer nothing new for a charge they then watch come back.
- * Per-slice is the lesser of the two and it is the pattern every other
- * multi-output road here already takes.
+ * old — which is the one thing a redo exists to avoid. That is unchanged by
+ * the reprice; what changed is that the odd slot out is no longer refunded, so
+ * nothing a customer reads may imply credits came back for it.
  *
  * # The money order, and it is the house's with one addition
  *
@@ -304,7 +325,7 @@ export async function redoCastPackage(
 
   const begin = dependencies.begin ?? beginDirectOperation;
 
-  /* ---- the press: one row, all the money, no lock ---- */
+  /* ---- the press: one row, all the money, and the cast-level lock ---- */
 
   /*
     ⚠ **THE PRESS IS CLAIMED FIRST AND IT IS THE ONLY ROW THAT CARRIES CREDITS**
@@ -426,11 +447,22 @@ export async function redoCastPackage(
     the same reason and one step earlier, because it is the row that is about
     to be charged.
 
-    It carries no `requiredLockKey` — the press holds no lock by design (the
-    lock table is unique on the operation id, so the five slot locks need five
-    operations). The HEARTBEAT is the point: a press lives as long as both
-    sheets take, which is minutes, and a lease that lapsed under it would hand
-    a live redo to the sweep.
+    It passes no `requiredLockKey` here — the press's lock is taken at its
+    CLAIM above (`modelOperationLockKey`), which is what refuses a second
+    press on one Cast before a slot is taken or a credit moves. ⚠ **This
+    paragraph read *"the press holds no lock by design"* until 2026-10-09 and
+    was false of its own commit**: the sentence survived from the shape that
+    was proposed, and the press took the cast-level lock in the same change
+    that added this transition. The lock table being unique on the operation
+    id is still why the five slot locks need five operations — it is just not
+    a reason for the press to hold none.
+
+    The HEARTBEAT is the point here: a press lives as long as both sheets
+    take, which is minutes, and a lease that lapsed under it would hand a live
+    redo to the sweep. ⚠ **And a lapsed press lease is no longer a money
+    defect as well as a wait** — the slot commit re-proves the press `running`
+    inside its own statement (#1903 review finding 1), so a press the sweep
+    settled cannot also receive its views.
   */
   try {
     await (dependencies.markRunning ?? markGenerationOperationRunning)({
