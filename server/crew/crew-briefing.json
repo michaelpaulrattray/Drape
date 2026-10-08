@@ -1,7 +1,7 @@
 {
-  "edition": 657,
-  "updatedAt": "2026-10-08T06:30:06.157Z",
-  "shift": "Foreman — foreman-20261008-0610",
+  "edition": 658,
+  "updatedAt": "2026-10-08T09:24:55.842Z",
+  "shift": "Foreman — foreman-20261008-0755",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T06:31:16.415Z",
+      "readAt": "2026-10-08T09:24:00.620Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -10203,21 +10203,12 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T06:31:16.415Z",
+    "readAt": "2026-10-08T09:24:00.619Z",
     "items": [
       {
         "issueNumber": 1903,
         "title": "Ditch the framing measurement and the checker's opinions — refuse only catastrophic failures; a paid redo of the whole package, on by default",
         "urgent": true
-      },
-      {
-        "issueNumber": 1904,
-        "title": "Sign renders one GPT Image 2.5 Sunburst sheet (high, 3840×1648, no outfit plate) cut into the five views — his word closing #1690",
-        "urgent": true,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — two small questions in the newest comment, and your eye on a Sign's strip. The build is PR #1957, held for the relay."
-        }
       },
       {
         "issueNumber": 1469,
@@ -10294,6 +10285,11 @@
       {
         "issueNumber": 1969,
         "title": "The Sign dialog says \"five canonical views\" — our word, not hers (his word 2026-10-08)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1977,
+        "title": "Held PRs with a repair owed are picked before any new card — the seat picker and the board enforce it (his word 2026-10-08)",
         "urgent": false
       }
     ]
