@@ -3,7 +3,7 @@
  * One function returns one object; agents, undo, export, and future
  * collaboration all consume this.
  */
-import { getBoardById, getBoardItems, getVersionCount } from "../db";
+import { getBoardById, getBoardItems, getVersionCountsForBoard } from "../db";
 import { getBoardEdges } from "../db/boardEdges";
 import type { Provenance, NodeStatus, BoardItemCanvasMetadata } from "../../shared/boardTypes";
 import type { BoardItemKind, BoardEdgeRelation } from "../../drizzle/schema";
@@ -38,8 +38,12 @@ export async function getSnapshot(boardId: number): Promise<BoardStateSnapshot |
   const board = await getBoardById(boardId);
   if (!board) return null;
 
-  const [items, edges] = await Promise.all([getBoardItems(boardId), getBoardEdges(boardId)]);
-  const versionCounts = await Promise.all(items.map((i) => getVersionCount(i.id)));
+  // One grouped count for the whole board, never one query per item — #2000.
+  const [items, edges, versionCounts] = await Promise.all([
+    getBoardItems(boardId),
+    getBoardEdges(boardId),
+    getVersionCountsForBoard(boardId),
+  ]);
 
   return {
     boardId,
@@ -48,7 +52,7 @@ export async function getSnapshot(boardId: number): Promise<BoardStateSnapshot |
       y: board.viewportY ?? 0,
       zoom: (board.viewportZoom ?? 100) / 100,
     },
-    nodes: items.map((item, idx) => {
+    nodes: items.map((item) => {
       const meta = (item.metadata && typeof item.metadata === "object"
         ? item.metadata
         : {}) as BoardItemCanvasMetadata;
@@ -65,7 +69,7 @@ export async function getSnapshot(boardId: number): Promise<BoardStateSnapshot |
         status: meta.status ?? null,
         pinned: meta.pinned === true,
         metadata: meta as Record<string, unknown>,
-        versionCount: versionCounts[idx] ?? 0,
+        versionCount: versionCounts.get(item.id) ?? 0,
       };
     }),
     edges: edges.map((e) => ({
