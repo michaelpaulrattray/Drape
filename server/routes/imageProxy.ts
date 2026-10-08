@@ -7,7 +7,7 @@
 import { Router, type Request, type Response } from "express";
 import { PRODUCT_NAME } from "@shared/brand";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "../_core/sdk";
+import { answerForSessionFailure, sdk } from "../_core/sdk";
 import { createModuleLogger } from "../logging/logger";
 import {
   checkUserRateLimit,
@@ -80,8 +80,12 @@ export function createImageProxyRouter(
     let user: ImageProxyUser;
     try {
       user = await dependencies.authenticateRequest(req);
-    } catch {
-      fixedError(res, 401, "Authentication required");
+    } catch (error) {
+      // A refused session is 401 as before; a lookup that could not finish is
+      // 503 "try again" — never read as "not signed in" (#1997).
+      const answer = answerForSessionFailure(error);
+      if (answer.status === 503) log.error({ err: error }, "[Auth] Session check could not finish — answering 503, not a sign-in refusal (#1997)");
+      fixedError(res, answer.status, answer.message);
       return;
     }
 

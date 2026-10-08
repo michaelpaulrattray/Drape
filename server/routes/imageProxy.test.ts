@@ -1,5 +1,6 @@
 import express from "express";
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
+import { SessionRejectedError } from "../_core/sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createImageProxyRouter,
@@ -57,7 +58,7 @@ describe("image proxy request boundary", () => {
   it("rejects an unauthenticated request before rate limiting or fetch", async () => {
     process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
     const dependencies = allowedDependencies();
-    dependencies.authenticateRequest.mockRejectedValueOnce(new Error("no session"));
+    dependencies.authenticateRequest.mockRejectedValueOnce(new SessionRejectedError("Invalid session cookie"));
 
     await withImageProxy(dependencies, async (baseUrl) => {
       const response = await fetch(
