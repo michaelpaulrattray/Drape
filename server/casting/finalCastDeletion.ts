@@ -32,6 +32,7 @@ import {
   type BoardItem,
 } from "../../drizzle/schema";
 import { withTransaction, type TransactionHandle } from "../db/connection";
+import { wardrobeOwnedKeyPrefixes } from "../db/accountDeletion";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import {
   classifyStorageReference,
@@ -182,12 +183,52 @@ function collectManifestKey(
   }
 }
 
-function collectKnownOutputHistory(keys: Set<string>, currentPublicUrl: string, value: unknown): void {
-  const parsed = parseJsonValue(value);
-  if (!Array.isArray(parsed)) return;
-  for (const entry of parsed) {
-    if (typeof entry === "string") collectManifestKey(keys, currentPublicUrl, { url: entry });
+/**
+ * A wardrobe address linked to this Cast is deletion authority only when the
+ * key it names sits under one of THIS account's own wardrobe prefixes (#2064)
+ * — #2057's rule for the account erasure, applied to the Cast deletion, and
+ * through the same `wardrobeOwnedKeyPrefixes` rather than a second copy.
+ *
+ * ⚠ **A SAVED LOOK'S `imageUrl` AND A SESSION'S `history` ARE BOTH TYPED BY
+ * THE BROWSER.** `looks.save` stores the client's `imageUrl` and
+ * `sessions.update` the client's `history` (`server/routes/wardrobe.ts`),
+ * each a bare string, and a picture address is public. So until this check a
+ * customer could save another customer's picture as a look on her own Cast,
+ * delete the Cast, and the other customer's object went into HER deletion
+ * manifest. Every server writer of a wardrobe output (`uploadBase64ToS3` under
+ * `wardrobe/<id>/…`) carries the prefix, so nothing this account made is lost;
+ * anything else is left alone. These keys are added AFTER `castOwnedKeys` is
+ * frozen, so a wardrobe address can never vouch for a canvas picture either.
+ */
+export function collectCastWardrobeKeys(input: {
+  storageKeys: Set<string>;
+  currentPublicUrl: string;
+  userId: number;
+  assetUrls: readonly string[];
+  sessions: ReadonlyArray<{ modelImageUrl: unknown; history: unknown }>;
+  looks: ReadonlyArray<{ imageUrl: unknown }>;
+}): void {
+  const { storageKeys, currentPublicUrl, userId } = input;
+  const prefixes = wardrobeOwnedKeyPrefixes(userId);
+  const addOwnedWardrobeUrl = (url: unknown) => {
+    const classified = classifyStorageReference({ url, currentPublicUrl });
+    if (classified.kind === "current_origin_url" && prefixes.some((prefix) => classified.key.startsWith(prefix))) {
+      storageKeys.add(classified.key);
+    }
+  };
+  const assetUrlSet = new Set(input.assetUrls);
+  for (const session of input.sessions) {
+    // A linked Wardrobe session may point at a shared upload. Only the Cast
+    // asset itself proves the model picture is this Cast's.
+    if (typeof session.modelImageUrl === "string" && assetUrlSet.has(session.modelImageUrl)) {
+      collectManifestKey(storageKeys, currentPublicUrl, { url: session.modelImageUrl });
+    }
+    const history = parseJsonValue(session.history);
+    if (Array.isArray(history)) {
+      for (const entry of history) if (typeof entry === "string") addOwnedWardrobeUrl(entry);
+    }
   }
+  for (const look of input.looks) addOwnedWardrobeUrl(look.imageUrl);
 }
 
 async function lockModelIn(tx: TransactionHandle, input: { modelId: number; userId: number }) {
@@ -238,8 +279,10 @@ async function recomputeBoardThumbnailIn(tx: TransactionHandle, boardId: number)
  * `casting-v2/candidates/<uuid>.png`) carries no account id, so no prefix can
  * tell this Cast's picture from another account's. `castOwnedKeys` is the set
  * the deletion already collected from rows keyed on this Cast — its
- * `model_assets`, its `generations`, its promoted evidence, its wardrobe
- * history and looks — frozen before the canvas is read. Read at the server
+ * `model_assets`, its `generations` and its promoted evidence — frozen before
+ * any wardrobe address is added (#2064: a saved look and a session history are
+ * typed by the browser, so they prove nothing) and before the canvas is read.
+ * Read at the server
  * writers 2026-10-09, none puts a Cast's canvas picture under an
  * account-scoped prefix either (the wardrobe's `wardrobe/<id>/` and
  * `<id>-wardrobe/` never land on a Cast's canvas node), so that half of the
@@ -948,16 +991,19 @@ export async function executeFinalCastDeletion(input: {
     for (const attempt of attempts) {
       collectManifestKey(storageKeys, currentPublicUrl, { url: attempt.resultUrl });
     }
-    const assetUrlSet = new Set(assets.map((asset) => asset.storageUrl));
-    for (const session of sessions) {
-      // A linked Wardrobe session may point at a shared upload. Only the Cast
-      // asset itself and Wardrobe's known output history prove object ownership.
-      if (assetUrlSet.has(session.modelImageUrl)) {
-        collectManifestKey(storageKeys, currentPublicUrl, { url: session.modelImageUrl });
-      }
-      collectKnownOutputHistory(storageKeys, currentPublicUrl, session.history);
-    }
-    for (const look of looks) collectManifestKey(storageKeys, currentPublicUrl, { url: look.imageUrl });
+    // The Cast's own keys — its assets, its generations, its promoted
+    // evidence — frozen HERE, before any wardrobe address is added (#2064)
+    // and before the canvas is read (#2062). A canvas address counts only
+    // when it names one of these; a wardrobe address never vouches for one.
+    const castOwnedKeys: ReadonlySet<string> = new Set(storageKeys);
+    collectCastWardrobeKeys({
+      storageKeys,
+      currentPublicUrl,
+      userId: input.userId,
+      assetUrls: assets.map((asset) => asset.storageUrl),
+      sessions,
+      looks,
+    });
 
     // preferences.referenceImage is a temporary input, not an owned output.
     // Without a durable ownership key and a complete reverse-reference proof,
@@ -965,9 +1011,8 @@ export async function executeFinalCastDeletion(input: {
 
     // Canvas references may contribute explicit item/history keys. Discover
     // them before persisting the manifest; only then may source rows change.
-    // A canvas address counts only when it names a key the Cast's own rows
-    // above already prove (#2062) — frozen HERE, before the canvas is read.
-    const castOwnedKeys: ReadonlySet<string> = new Set(storageKeys);
+    // A canvas address counts only when it names a key in `castOwnedKeys`,
+    // frozen above (#2062, #2064).
     await collectCanvasCleanupKeysIn({
       tx,
       modelId: input.modelId,
