@@ -77,7 +77,7 @@
     {
       "id": "domain:moderator",
       "name": "moderator",
-      "moduleCount": 20
+      "moduleCount": 21
     },
     {
       "id": "domain:operations",
@@ -1845,6 +1845,12 @@
     {
       "id": "module:client/src/features/moderator/reconciliation-csv.ts",
       "path": "client/src/features/moderator/reconciliation-csv.ts",
+      "domain": "moderator",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/moderator/staffCsvExport.ts",
+      "path": "client/src/features/moderator/staffCsvExport.ts",
       "domain": "moderator",
       "lifecycle": "active"
     },
@@ -11162,6 +11168,10 @@
       "path": "client/src/features/moderator/section09-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/moderator/staffCsvExport.test.ts",
+      "path": "client/src/features/moderator/staffCsvExport.test.ts"
+    },
+    {
       "id": "test:client/src/features/operations/bridgeOwnership.test.ts",
       "path": "client/src/features/operations/bridgeOwnership.test.ts"
     },
@@ -18568,6 +18578,11 @@
     },
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18579,6 +18594,11 @@
     {
       "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/AuditLogsTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18668,6 +18688,11 @@
     },
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18679,6 +18704,11 @@
     {
       "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/CreditsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18728,6 +18758,11 @@
     },
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/features/moderator/staffCsvExport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/features/staff/index.ts",
       "kind": "imports"
     },
@@ -18739,6 +18774,11 @@
     {
       "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
       "to": "module:client/src/foundation/staffDate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/GenerationsSubTab.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -18849,6 +18889,11 @@
     {
       "from": "module:client/src/features/moderator/ReconciliationSubTab.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/moderator/staffCsvExport.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
