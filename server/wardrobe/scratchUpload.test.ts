@@ -18,12 +18,18 @@
  * the upload does not happen either, which is invariant 7's second clause. An
  * arm drives it.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import {
   putWardrobeScratchUpload,
   type ScratchUploadDeps,
 } from "./scratchUpload";
+
+/* #741 — the class guard at the foot of this file reads every source file in
+   the feature off the real tree, which multiplies well past vitest's 5 s
+   default when 275 test files share one disk. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 function recorder(options: { registerThrows?: boolean; putThrows?: boolean } = {}) {
   const order: string[] = [];
