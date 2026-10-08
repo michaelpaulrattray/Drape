@@ -1,0 +1,37 @@
+-- Wardrobe scratch uploads get their own cleanup batch kind (#1961).
+--
+-- Additive and reversible: one enum value appended to a column whose existing
+-- values are untouched, so every row already written keeps its exact meaning
+-- and no application version in flight can be confused by it. It is migration
+-- 0024's shape, clause for clause, for the same reason.
+--
+-- WHY ITS OWN VALUE. These batches hold a customer's PHOTOGRAPH, put to a
+-- permanently public key only so a detector can read it back. Their retention
+-- answers to "the request is over", which is nothing like a candidate's
+-- lifecycle or a diagnostic frame's — and one enum value covering two
+-- retention policies makes the worker's batches ambiguous, which is the
+-- reasoning that gave `casting_candidate_cleanup` its own value in 0017 and
+-- `casting_diagnostic_cleanup` its own in 0024.
+--
+-- ⚠ WHY IT MUST RUN BEFORE THE CODE THAT USES IT, AND WHY THAT IS NOT THE
+-- SAME AS 0024'S CASE. `MODIFY COLUMN` is destructive-shaped, so
+-- `scripts/lib/ceremonyAutoApply.mts` REFUSES it by design and
+-- `predeployVerdict` prints it as a WAITING ceremony without blocking the
+-- deploy — the deploy proceeds and this value is still absent.
+--
+-- 0024 could live with that: the write it gated was a diagnostic side-effect,
+-- so a failed reservation made capture INERT, which that file calls "the
+-- correct failure". Here the write is on the customer's own request path —
+-- `wardrobe.garments.quickDetect` and `wardrobe.decompose.analyze` register
+-- before they store — so the same failure is a live route refusing a real
+-- person's photograph, not an inert feature.
+--
+-- So this one is sequenced rather than assumed: the generic ceremony
+--
+--   railway.cmd run --service MySQL -- npx tsx scripts/ceremony-add-diagnostic-batch-kind.mts
+--
+-- (generic since fable-486 §g — it applies whatever `STORAGE_CLEANUP_BATCH_KINDS`
+-- declares and the database lacks, and running it twice is a no-op) is run
+-- against production BEFORE this card's code merges. The PR says so in its
+-- first line.
+ALTER TABLE `storage_cleanup_batches` MODIFY COLUMN `kind` enum('model_delete','account_delete','evidence_cleanup','candidate_cleanup','casting_candidate_cleanup','casting_diagnostic_cleanup','wardrobe_scratch_cleanup') NOT NULL;

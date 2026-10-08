@@ -34,6 +34,7 @@ import {
 } from "../casting/modelReadProjections";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -233,7 +234,17 @@ const garmentRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: sourceImageUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). Nothing read this key, so no
+         cleanup could ever reach the object and it stayed at a permanently
+         public URL for good. The detector inlines the bytes it is handed, so
+         the upload exists only to give the client a URL `import` can persist —
+         which is why it is registered-and-swept rather than removed. */
+      const { url: sourceImageUrl } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       // Run lightweight detection (no credits — UX guard only)
       const detected = await detectGarmentsInImage(sourceImageUrl);
@@ -604,7 +615,15 @@ const decomposeRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961) — the same orphan as quickDetect's,
+         and the crops `decomposeOutfit` cuts from it are registered the same
+         way, which the card did not name and the class sweep found. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       const result = await withAtomicCredits(
         {
@@ -616,7 +635,7 @@ const decomposeRouter = router({
           toolKind: "image",
         },
         async () => {
-          return decomposeOutfit(url, String(ctx.user.id));
+          return decomposeOutfit(url, ctx.user.id);
         },
       );
 
@@ -889,7 +908,15 @@ const modelRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). The quietest of the four: the
+         studio keeps this URL in a Zustand store and no row anywhere has ever
+         held the key. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       log.info(`Model photo uploaded for user ${ctx.user.id}: ${fileKey}`);
       return { url, fileKey };

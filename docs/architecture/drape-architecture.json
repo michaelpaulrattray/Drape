@@ -152,7 +152,7 @@
     {
       "id": "domain:wardrobe",
       "name": "wardrobe",
-      "moduleCount": 37
+      "moduleCount": 38
     }
   ],
   "modules": [
@@ -5931,6 +5931,12 @@
     {
       "id": "module:server/wardrobe/qualityCheck.ts",
       "path": "server/wardrobe/qualityCheck.ts",
+      "domain": "wardrobe",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/wardrobe/scratchUpload.ts",
+      "path": "server/wardrobe/scratchUpload.ts",
       "domain": "wardrobe",
       "lifecycle": "active"
     },
@@ -14798,6 +14804,10 @@
     {
       "id": "test:server/wardrobe/outfitDecomposition.test.ts",
       "path": "server/wardrobe/outfitDecomposition.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/scratchUpload.test.ts",
+      "path": "server/wardrobe/scratchUpload.test.ts"
     },
     {
       "id": "test:server/wardrobe/vtoSession.test.ts",
@@ -34750,6 +34760,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/wardrobe/tattooAnalysis.ts",
       "kind": "imports"
     },
@@ -35305,12 +35320,12 @@
     },
     {
       "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/storage.ts",
+      "to": "module:server/wardrobe/garmentDetection.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/wardrobe/garmentDetection.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {
@@ -35331,6 +35346,21 @@
     {
       "from": "module:server/wardrobe/qualityCheck.ts",
       "to": "module:shared/modelRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/scratchUpload.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
