@@ -205,7 +205,20 @@ export const VIEW_RETRY_RECOVERY_WORDING: ViewReplacementWording = {
 */
 export const PACKAGE_REDO_RECOVERY_WORDING: ViewReplacementWording = {
   refundDescription: "That view didn't arrive when you asked for all the views again",
-  paidSentence: "That view didn't arrive when you asked for all the views again. Your credits were returned.",
+  /*
+    ⚠ **NO MONEY CLAUSE ON ANY OF THE THREE, which is one sentence further than
+    the review asked and the arm that found it is why.** The finding named
+    `freeSentence`; an arm asserting the slot makes no money claim then caught
+    `paidSentence` saying *"Your credits were returned."* — the same defect, one
+    line down, on a sentence the comment above correctly calls unreachable.
+
+    Leaving it on the unreachable one would have made the guard depend on
+    reachability, which is a claim that has to be re-proved every time this road
+    changes. All three are money-free instead, so the division holds whatever
+    becomes reachable: a slot speaks about a picture, the press speaks about the
+    credits.
+  */
+  paidSentence: "That view didn't arrive when you asked for all the views again.",
   freeSentence: "That view didn't arrive when you asked for all the views again.",
 };
 

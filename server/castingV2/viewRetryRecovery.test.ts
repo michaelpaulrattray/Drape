@@ -216,6 +216,41 @@ describe("a swept try again", () => {
  * under ANY of them*. The production reader is `pressViewLanded`; these arms
  * inject the answer, because what is under test is the DECISION.
  */
+describe("whose sentence may speak about money", () => {
+  /*
+    ⚠ **A SLOT SPEAKS ABOUT A PICTURE; THE PRESS SPEAKS ABOUT THE MONEY (#1903
+    review, the slot receipt).**
+
+    `PACKAGE_REDO_RECOVERY_WORDING.freeSentence` read *"You were not charged."*
+    — true of the slot ROW, which settles 0/0, and false of what the customer
+    did: she paid 3,250 for the press. Nothing could see it, because no customer
+    surface reads a redo slot's receipt today and #1940's vocabulary guard bans
+    other spellings than this one. So the division is asserted here rather than
+    left as a comment.
+
+    ⚠ **IT IS NOT A BLANKET BAN, and the press arm below is what stops it
+    becoming one.** The press's own `freeSentence` MAY say nothing was charged,
+    because on that row it is the whole truth — it is reached only when the
+    ledger is empty. An arm that forbade the phrase everywhere would have been
+    satisfied by deleting a true sentence.
+  */
+  const MONEY_WORDS = /charg|credit|refund|cost|paid|money/i;
+
+  it("a redo SLICE never claims anything about money", () => {
+    for (const [name, sentence] of Object.entries(PACKAGE_REDO_RECOVERY_WORDING)) {
+      expect(sentence, `the slot's ${name} speaks about money the slot row cannot know`)
+        .not.toMatch(MONEY_WORDS);
+    }
+  });
+
+  it("the PRESS may — it is the row the credits are on", () => {
+    /* The positive control: if the arm above were a blanket ban on the phrase,
+       this would be impossible to satisfy honestly. */
+    expect(PACKAGE_REDO_PRESS_RECOVERY_WORDING.paidSentence).toMatch(MONEY_WORDS);
+    expect(PACKAGE_REDO_PRESS_RECOVERY_WORDING.freeSentence).toMatch(MONEY_WORDS);
+  });
+});
+
 describe("the roads that do NOT ask whether anything can still arrive", () => {
   /*
     ⚠ **THE NEGATIVE CONTROL ON #1903's SWEEP-SIDE GATE, and it is the arm that
