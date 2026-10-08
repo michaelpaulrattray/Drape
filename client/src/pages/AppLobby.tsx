@@ -36,6 +36,7 @@ import { getLoginUrl } from '@/const';
 import type { RailDestinationId } from '@/foundation';
 import { AppChrome } from '@/components/AppChrome';
 import { LobbyStub } from '@/features/lobby/LobbyStub';
+import { ReconnectingNotice } from '@/components/ReconnectingNotice';
 
 /*
   MobileHeader retired at M2. Below 720px the foundation rail collapses to
@@ -44,7 +45,7 @@ import { LobbyStub } from '@/features/lobby/LobbyStub';
 */
 
 export default function AppLobby() {
-  const { user, loading } = useAuth();
+  const { user, loading, reconnecting } = useAuth();
   const [location] = useLocation();
 
   // Redirect to login if not authenticated
@@ -53,7 +54,11 @@ export default function AppLobby() {
     return null;
   }
 
-  // Show nothing while checking auth
+  // Show nothing while checking auth — unless the check has kept failing,
+  // in which case say so calmly while it keeps trying (#2018)
+  if (reconnecting) {
+    return <ReconnectingNotice />;
+  }
   if (loading) {
     return <div style={{ height: '100vh', background: 'var(--surface)' }} />;
   }
