@@ -1,5 +1,5 @@
 import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
-import { ForbiddenError } from "@shared/_core/errors";
+import { HttpError } from "@shared/_core/errors";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
@@ -10,6 +10,35 @@ import { ENV } from "./env";
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
+
+/**
+ * THE SESSION WAS READ, AND REFUSED — #1990.
+ *
+ * `authenticateRequest` can fail two ways that used to look identical to its
+ * callers: the request carries no usable session (no cookie, a bad or expired
+ * one, or a user who is genuinely not in the database), or the server could
+ * not FINISH asking (the database was unreachable, the pool was saturated, the
+ * activity write threw). The first is a verdict about the visitor; the second
+ * is a verdict about us.
+ *
+ * Only the first is thrown as this class. Everything else that escapes
+ * `authenticateRequest` is an infrastructure failure, and a caller that reads
+ * it as "anonymous" signs a customer out because the database blinked — which
+ * is exactly what `createContext` did until this class existed.
+ *
+ * It is still an `HttpError` with status 403, so every Express caller that
+ * catches the old `ForbiddenError` shape keeps the behaviour it had.
+ */
+export class SessionRejectedError extends HttpError {
+  constructor(message: string) {
+    super(403, message);
+    this.name = "SessionRejectedError";
+  }
+}
+
+export function isSessionRejected(error: unknown): error is SessionRejectedError {
+  return error instanceof SessionRejectedError;
+}
 
 type SessionPayload = {
   openId: string;
@@ -114,13 +143,23 @@ class SDKServer {
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {
-      throw ForbiddenError("Invalid session cookie");
+      throw new SessionRejectedError("Invalid session cookie");
+    }
+
+    /*
+      `getUserByOpenId` answers `undefined` both for a user who is not there
+      and for a database it could not get a handle on. Only the first is a
+      verdict about this session, so the second is asked first and thrown as
+      what it is — an unavailable database, never "User not found" (#1990).
+    */
+    if (!(await db.getDb())) {
+      throw new Error("[Auth] Database unavailable while verifying a session");
     }
 
     const user = await db.getUserByOpenId(session.openId);
 
     if (!user) {
-      throw ForbiddenError("User not found");
+      throw new SessionRejectedError("User not found");
     }
 
     if (options.recordActivity !== false) {

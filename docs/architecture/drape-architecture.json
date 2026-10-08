@@ -11228,6 +11228,10 @@
       "path": "client/src/foundation/anchoredPanel.test.ts"
     },
     {
+      "id": "test:client/src/foundation/canonicalWording.test.ts",
+      "path": "client/src/foundation/canonicalWording.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
       "path": "client/src/foundation/downloadFilenameBrand.test.ts"
     },
@@ -11310,6 +11314,10 @@
     {
       "id": "test:server/_core/numericEnv.test.ts",
       "path": "server/_core/numericEnv.test.ts"
+    },
+    {
+      "id": "test:server/_core/sessionLookupFailure.test.ts",
+      "path": "server/_core/sessionLookupFailure.test.ts"
     },
     {
       "id": "test:server/abuseStripHonesty.test.ts",
@@ -13650,6 +13658,10 @@
     {
       "id": "test:server/gateTriggers.test.ts",
       "path": "server/gateTriggers.test.ts"
+    },
+    {
+      "id": "test:server/gdprExportBounded.test.ts",
+      "path": "server/gdprExportBounded.test.ts"
     },
     {
       "id": "test:server/ghQueueTransport.test.ts",
@@ -21635,6 +21647,16 @@
     {
       "from": "module:server/_core/context.ts",
       "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/context.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {

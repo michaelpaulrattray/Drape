@@ -84,6 +84,27 @@ export function checkRateLimit(
 }
 
 /**
+ * Hand back ONE slot this window spent — for a request that was admitted and
+ * then failed on our side, so the failure does not also cost the retry (#1989).
+ *
+ * Same key derivation as `checkRateLimit` (it must be called with the same
+ * identifier and config). It never takes a count below zero and never touches
+ * a window that has already rolled over, so a late release cannot mint credit
+ * in a NEW window. Only call it on a failure the customer did not cause; a
+ * refusal or a success keeps its slot.
+ */
+export function releaseRateLimitSlot(
+  identifier: string,
+  config: RateLimitConfig
+): void {
+  const key = `${config.keyPrefix || 'rl'}:${identifier}`;
+  const entry = rateLimitStore.get(key);
+  if (!entry) return;
+  if (Date.now() - entry.windowStart >= config.windowMs) return;
+  if (entry.count > 0) entry.count--;
+}
+
+/**
  * Get the client IP only from Express. `configureTrustedProxy` makes Express
  * trust exactly Railway's final proxy hop; raw forwarding headers are never
  * accepted as authority here.
