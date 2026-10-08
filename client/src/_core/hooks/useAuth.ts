@@ -77,13 +77,29 @@ export function isSessionCheckPending(result: { isPending: boolean }): boolean {
   return result.isPending;
 }
 
+/**
+ * A PAUSED CHECK HAS NOTHING COMING UNTIL SOMETHING OUTSIDE CHANGES — #2030.
+ *
+ * The threshold above counts FAILED attempts, and a paused check makes none:
+ * opened while offline, react-query never sends the first request
+ * (`fetchStatus: 'paused'`, `failureCount` 0), so the count never moves and the
+ * page sat blank with nothing to say until the connection came back. The same
+ * held for a retry paused after one or two failures. A check that is pending
+ * AND paused is not a blink that is about to resolve — it is waiting on the
+ * connection — so it says so at once. The first answer clears it, exactly as
+ * before; a settled answer (signed in, or refused) is never pending, so a
+ * refused session still redirects at once and a signed-in page is never
+ * swapped for the notice.
+ */
 export function isSessionCheckReconnecting(result: {
   isPending: boolean;
   failureCount: number;
+  fetchStatus: string;
 }): boolean {
   return (
     isSessionCheckPending(result) &&
-    result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES
+    (result.fetchStatus === "paused" ||
+      result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES)
   );
 }
 
@@ -135,6 +151,7 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.error,
     meQuery.isPending,
     meQuery.failureCount,
+    meQuery.fetchStatus,
     logoutMutation.error,
     logoutMutation.isPending,
   ]);
