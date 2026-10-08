@@ -34,6 +34,31 @@ import { checkRateLimit } from "../security/rateLimit";
 import { TRPCError } from "@trpc/server";
 import { getEvidenceDeliveryAdapter } from "../casting/evidence/evidenceDeliveryRuntime";
 
+/**
+ * WHAT THE EXPORT'S REFUSAL SAYS, AND WHY IT IS A FUNCTION.
+ *
+ * ⚠ **IT SAID "Try again in 1 minutes" AND THAT WAS READ OFF A FRAME, NOT
+ * OFF THE CODE (#1962's law-6 render).** `Math.ceil(resetIn / 60000)` is 1 for
+ * the whole last minute of every window, so the ungrammatical form is not an
+ * edge case — it is what a customer sees for a fifth of the refusal's life,
+ * and for the whole of it whenever they come back late. The sentence is on a
+ * GDPR surface, where sounding broken is its own cost.
+ *
+ * It is a function rather than a template so the arms can drive the boundary
+ * (0 → 1 → 2 minutes) instead of asserting that a file contains a word.
+ *
+ * ⚠ **THE SAME SHAPE IS IN THREE MORE LIVE REFUSALS AND IS NOT FIXED HERE** —
+ * `routes/referral.ts` lines 91, 158 and 206 all say `${…} minutes.`, and
+ * `_core/trpc.ts:160` says the ugly `minute(s)`. They are pre-existing, on a
+ * different router, and folding them into a held privacy pull request is how a
+ * card grows a second subject; they are filed instead.
+ */
+export function exportRefusalMessage(resetInMs: number): string {
+  const minutes = Math.max(1, Math.ceil(resetInMs / 60000));
+  const when = minutes === 1 ? "in a minute" : `in ${minutes} minutes`;
+  return `You can export your data once every 5 minutes. Try again ${when}.`;
+}
+
 export const accountRouter = router({
   /**
    * Export all personal data for the authenticated user (GDPR Article 20).
@@ -69,7 +94,7 @@ export const accountRouter = router({
     if (!rl.allowed) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
-        message: `You can export your data once every 5 minutes. Try again in ${Math.ceil(rl.resetIn / 60000)} minutes.`,
+        message: exportRefusalMessage(rl.resetIn),
       });
     }
 

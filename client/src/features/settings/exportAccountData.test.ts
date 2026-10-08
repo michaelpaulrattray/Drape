@@ -70,7 +70,7 @@ function refusal(code: string, message: string): Error & { data: { code: string 
   return error;
 }
 
-describe("the GDPR export's refusal reaches the customer (#1962)", () => {
+describe("the GDPR export's refusal reaches the customer", () => {
   it("downloads nothing and shows the SERVER'S OWN sentence when the limit refuses", async () => {
     const said = "You can export your data once every 5 minutes. Try again in 4 minutes.";
     const r = recorder(() => Promise.reject(refusal("TOO_MANY_REQUESTS", said)));
@@ -161,7 +161,7 @@ describe("the GDPR export's refusal reaches the customer (#1962)", () => {
   });
 });
 
-describe("the downloaded file carries the product's name (#1962)", () => {
+describe("the downloaded file carries the product's name", () => {
   it("names the file from PRODUCT_NAME, not the old product", () => {
     const name = exportFileName(new Date("2026-10-08T11:30:00.000Z"));
 

@@ -32,6 +32,8 @@ import { join, relative, sep } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { exportRefusalMessage } from "./routes/account";
+
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { withoutComments } from "./testing/withoutComments";
@@ -149,5 +151,45 @@ describe("#1962 — the rate-limit verdict is read, never dropped", () => {
     expect(reader).toContain("if (!rl.allowed)");
     expect(reader).toContain('code: "TOO_MANY_REQUESTS"');
     expect(reader, "a refusal that does not say when leaves the customer guessing").toContain("resetIn");
+  });
+});
+
+/**
+ * ⚠ **THESE ARMS EXIST BECAUSE A FRAME SAID SOMETHING THE CODE DID NOT.**
+ * #1962's law-6 render photographed the refusal in both themes and it read
+ * *"Try again in 1 minutes."* — `Math.ceil` answers 1 for the whole last
+ * minute of every window, so that is the common case rather than an edge one.
+ * Working law 6, paying for itself: nothing in the suite could have said so.
+ */
+describe("#1962 — the export's refusal is a sentence, at every boundary", () => {
+  it("says 'in a minute' for anything inside the last minute", () => {
+    expect(exportRefusalMessage(1)).toBe(
+      "You can export your data once every 5 minutes. Try again in a minute.",
+    );
+    expect(exportRefusalMessage(60_000)).toBe(
+      "You can export your data once every 5 minutes. Try again in a minute.",
+    );
+  });
+
+  it("pluralises from two minutes up", () => {
+    expect(exportRefusalMessage(60_001)).toContain("in 2 minutes.");
+    expect(exportRefusalMessage(300_000)).toContain("in 5 minutes.");
+  });
+
+  it("never says 'in 0 minutes' — a window with milliseconds left is still a wait", () => {
+    /*
+      `resetIn` can arrive as 0 or negative on a window that expired between
+      the check and the throw. "Try again in 0 minutes" is worse than useless:
+      it tells her to retry now, and the retry is refused.
+    */
+    expect(exportRefusalMessage(0)).toContain("in a minute.");
+    expect(exportRefusalMessage(-5_000)).toContain("in a minute.");
+  });
+
+  it("never says the ungrammatical form the frame caught", () => {
+    for (const ms of [0, 1, 30_000, 60_000, 60_001, 120_000, 299_999, 300_000]) {
+      expect(exportRefusalMessage(ms)).not.toContain("1 minutes");
+      expect(exportRefusalMessage(ms)).not.toContain("minute(s)");
+    }
   });
 });
