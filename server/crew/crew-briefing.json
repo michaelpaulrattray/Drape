@@ -1,7 +1,7 @@
 {
-  "edition": 656,
-  "updatedAt": "2026-10-08T05:28:01.354Z",
-  "shift": "Foreman — foreman-20261008-1412",
+  "edition": 657,
+  "updatedAt": "2026-10-08T06:30:06.157Z",
+  "shift": "Foreman — foreman-20261008-0610",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3617,30 +3617,57 @@
     },
     {
       "id": "sign-sheet-reremake-1904",
-      "title": "Two small questions on the sheet re-make, and a Sign to drive when you have a minute",
-      "productImpact": "Your option A is built. When a view on a sheet comes back as one of your three catastrophes, that sheet is made again once, quietly, at our cost, and all of its views are replaced together so they still agree. The other sheet is left alone. You see nothing in the ordinary case — the slot just says being made for a bit longer. If a view still fails on the new picture, that slice gives its credits back exactly as before. One extra picture per sheet, never two.\n\nYuna wording is in with it. A refused view now says \"This view came out broken, so we didn't keep it\", or \"...didn't show just Sifr...\", or \"...didn't clearly look like Sifr...\" — with the cast's own name, or \"this character\" when it has not been named. \"Signed likeness\" is gone everywhere; that was our word, not a customer's.\n\nOne thing to know before you drive it: making a sheet again replaces ALL of its views, so a picture that passed can be swapped for one the checker then turns down, and that slice refunds. That is what keeps the views agreeing with each other, and it is a real trade rather than a free win.",
-      "workedExample": "QUESTION 1 — a dropped connection on a sheet now loses two or three views instead of one. A single view used to be asked for again three times, spaced out, if it never arrived, because that is our failure to deliver something you already paid for. A sheet is asked for once. Your \"at most one re-make per sheet\" can be read as allowing a spaced retry for a sheet that never arrived, or as forbidding it.\n\nQUESTION 2 — the head sheet has no visible seam between its panels, so the cutter falls back to equal thirds. Measured on your own test renders that is right to within 2 pixels, so the pictures are fine. But the warning that exists to say \"a panel may be cut through a figure\" now fires on every Sign, and an alarm that always cries cannot report the one case it is for. This is logging only; no customer sees it.\n\nAND WHEN YOU HAVE A MINUTE: sign a cast and look at the five views. They should agree on the outfit, front and back. If the checker turns one down, the credits for that slice come back and you should read one of Yuna's three sentences with the cast's name in it.",
+      "title": "Both your answers are filed — the only thing left here is a Sign to drive",
+      "productImpact": "You answered both questions at 05:45 this morning (\"2) go with your recc 3) go with your rec\") and both are now cards an agent can pick up: a sheet that never arrives is asked for again, spaced out, so a dropped connection stops costing you two or three views (#1966); and the cut warning stops crying on every Sign so it can report the one case it exists for (#1967).\n\nNothing on this card needs another word from you. It stays here for one reason only: the last step is your hands and eyes, not an agent's.",
+      "workedExample": "WHEN YOU HAVE A MINUTE: sign a cast and look at the five views. They should agree on the outfit, front and back. If the checker turns one down, the credits for that slice come back and you should read one of Yuna's three sentences with the cast's own name in it.\n\nOne thing to know before you drive it: making a sheet again replaces ALL of its views, so a picture that passed can be swapped for one the checker then turns down, and that slice refunds. That is what keeps the views agreeing with each other, and it is a real trade rather than a free win.",
       "options": [
         {
-          "key": "both",
-          "label": "Allow the retry, and fix the alarm",
-          "consequence": "A sheet that never arrives is asked for again three times, spaced out, exactly as a single view used to be — so a dropped connection stops costing you two or three views. And the warning only cries when a cut sits far from where a seam would be, so it can report the one case it exists for."
+          "key": "drove-it",
+          "label": "I drove it and it looked right",
+          "consequence": "Card 1904 closes. The two follow-ups (#1966, #1967) carry on as ordinary work."
         },
         {
-          "key": "alarm-only",
-          "label": "Fix the alarm, forbid the retry",
-          "consequence": "The alarm becomes useful. A dropped connection on a sheet keeps losing two or three views at once; the money is still right every time, but the customer sees a half-finished package more often than they used to."
+          "key": "something-wrong",
+          "label": "Something looked wrong",
+          "consequence": "Say which view and what you saw. Your eye outranks the checker, so a frame you call wrong becomes the next card whatever the checker said about it."
         },
         {
-          "key": "neither",
-          "label": "Leave both as they are",
-          "consequence": "Nothing is at risk and no money is wrong. The warning keeps crying on every Sign, so the day a panel really is cut through somebody nobody will notice, and a dropped sheet keeps losing several views at once."
+          "key": "later",
+          "label": "Not yet",
+          "consequence": "It waits. Nothing is at risk and no agent is blocked by it."
         }
       ],
-      "recommendation": "Allow the retry, and fix the alarm. The retry restores the promise the per-view road already made, and the alarm is the only thing that could ever tell us a panel was cut through somebody.",
+      "recommendation": "Drive it when you have ten minutes. It is the only thing standing between this card and done, and it is the kind of change that reads fine in a report and still looks wrong on a screen.",
       "state": "waiting",
       "filedAt": "2026-10-08T03:28:44.785Z",
       "issueNumber": 1904
+    },
+    {
+      "id": "enterprise-band-promises-1973",
+      "issueNumber": 1973,
+      "state": "waiting",
+      "filedAt": "2026-10-08T06:30:06.157Z",
+      "title": "Four things our top plans still promise that we have no system for — your call",
+      "productImpact": "Tonight I took three promises off the plan list on your word: \"Standard support\", \"Priority support\" and \"Early access to new features\". None of them exists — there are no support tiers and no early-access programme — so the app was offering things it cannot do.\n\nFour more are still there, and I did not touch them, because I do not think they are the same thing: \"Dedicated account manager\", \"Custom integrations\", \"SLA guarantee\" and \"White-glove onboarding\".\n\nNobody is being misled today. Those four sit only on the top rungs, and those stopped being plans anyone can buy when we turned them into the Enterprise \"let's talk\" band. No screen is even drawing them. So this is about what we are on record as offering, not about a screen that looks wrong.",
+      "workedExample": "Why I think they are different: \"Priority support\" on a Pro plan is the app promising something automatic that does not exist. \"Dedicated account manager\" on an Enterprise conversation is a thing YOU could genuinely agree to on a call — it is a negotiating position, not a broken feature. Deleting it would be taking away something you might want to offer.\n\nThe one I am least sure about is \"SLA guarantee\". An SLA is a written uptime commitment, and we have not made one. The other three are things you could do by hand tomorrow for one customer.",
+      "options": [
+        {
+          "key": "keep-all",
+          "label": "Keep all four",
+          "consequence": "Nothing changes. They describe what an Enterprise deal could include, and the band is a conversation with you in it."
+        },
+        {
+          "key": "drop-sla",
+          "label": "Keep three, drop the SLA one",
+          "consequence": "The list then only promises things you can actually do by hand. A few lines in one file, and the guard written tonight already has the shape to pin it."
+        },
+        {
+          "key": "drop-all",
+          "label": "Drop all four",
+          "consequence": "The plan list then says only what the product does by itself. You would be giving up four things you could have offered in a sales call."
+        }
+      ],
+      "recommendation": "Keep three and drop the SLA one. An account manager, custom integration work and hands-on onboarding are all things you can genuinely agree to for one customer; a written uptime guarantee is the only one of the four you would have to build something to honour."
     }
   ],
   "eyeItems": [
@@ -9779,6 +9806,13 @@
       "title": "Dropping a plan or lowering the credit dial now happens at your renewal, not instantly (#1936)",
       "note": "Money surface, held for the relay. Driven against real Stripe test mode: no refund, no invoice, balance unchanged.",
       "prNumber": 1963
+    },
+    {
+      "id": "undelivered-plan-features-1953",
+      "status": "in-review",
+      "title": "The plan features nobody delivers come off the wire, and the Follow cost note reads the measured figure (#1953)",
+      "note": "Money surface, held for the relay. Gate green; sabotage 10/10 red.",
+      "prNumber": 1970
     }
   ],
   "problems": [
