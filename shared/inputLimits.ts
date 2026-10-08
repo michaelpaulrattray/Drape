@@ -111,13 +111,6 @@ export const IP_BLOCK_REASON_MAX_LENGTH = 500;
    the dialog had no cap at all — the same drift as the three above. */
 export const CREDIT_ADJUST_REASON_MAX_LENGTH = 500;
 
-/* ── Admin: a credit adjustment — the size, in DISPLAY credits (#1986) ────
-   The most one Add or Deduct may move, on the scale the customer reads. It was
-   `100000` LEDGER until #1986, which is 20,000 credits on screen — so the cap
-   and the figure typed were both on a scale nobody in the panel could see.
-   Read by `server/routes/admin/users.ts` and by `CreditModal`. */
-export const CREDIT_ADJUST_MAX_DISPLAY = 100_000;
-
 /* ── Profile ──────────────────────────────────────────────────────────────
    `server/routes/profile.ts` and `ProfileTab`. */
 export const PROFILE_DISPLAY_NAME_MAX_LENGTH = 100;

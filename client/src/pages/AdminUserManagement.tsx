@@ -23,8 +23,7 @@ import { UserStatsCards } from "@/features/admin/UserStatsCards";
 import { UserFilters } from "@/features/admin/UserFilters";
 import { UserTable } from "@/features/admin/UserTable";
 import { SuspendModal, CreditModal, RoleChangeModal } from "@/features/admin/UserActionModals";
-import { displayBalance, formatCredits } from "@shared/creditDisplay";
-import { CREDIT_ADJUST_MAX_DISPLAY } from "@shared/inputLimits";
+import { ADMIN_ADJUST_DISPLAY_MAX, displayBalance, formatCredits } from "@shared/creditDisplay";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -159,7 +158,7 @@ export default function AdminUserManagement() {
     // reads — and goes as `displayAmount`; the server converts it to the ledger.
     const displayAmount = Number(creditAmount);
     if (!Number.isInteger(displayAmount) || displayAmount <= 0) { toast.error("Enter a whole number of credits above zero"); return; }
-    if (displayAmount > CREDIT_ADJUST_MAX_DISPLAY) { toast.error(`At most ${CREDIT_ADJUST_MAX_DISPLAY.toLocaleString()} credits in one adjustment`); return; }
+    if (displayAmount > ADMIN_ADJUST_DISPLAY_MAX) { toast.error(`At most ${ADMIN_ADJUST_DISPLAY_MAX.toLocaleString()} credits in one adjustment`); return; }
     adjustCreditsMutation.mutate({ userId: selectedUserId, displayAmount: creditAction === "deduct" ? -displayAmount : displayAmount, reason: creditReason });
   };
 

@@ -239,6 +239,22 @@ export function ledgerForDisplay(display: number): number {
 }
 
 /**
+ * The most one admin Add or Deduct may move, in DISPLAY credits (#1986).
+ *
+ * It was `100000` LEDGER until #1986 — one fifth of that on screen — so the cap and
+ * the figure typed were both on a scale nobody in the panel could see. Read by
+ * `server/routes/admin/users.ts` (the authority) and by `CreditModal`.
+ *
+ * It lives in this module rather than beside the reason cap in
+ * `shared/inputLimits.ts` because it bounds a MONEY authority, and this file is
+ * on `MONEY_PATHS` (`.github/money-surfaces.sh`) while that one is not — a
+ * change to how many credits one action may move must read as money. It is a
+ * CAP, not a price, which is why its name does not say COST, PRICE or CREDIT:
+ * the Atlas's price collector reads those words as a price.
+ */
+export const ADMIN_ADJUST_DISPLAY_MAX = 100_000;
+
+/**
  * Display credits above which the product reads them in millions.
  *
  * Read from the plan table rather than chosen: Business is 2,350,000 ledger

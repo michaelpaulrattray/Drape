@@ -49,7 +49,8 @@ import { User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CREDIT_ADJUST_MAX_DISPLAY, CREDIT_ADJUST_REASON_MAX_LENGTH, ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
+import { CREDIT_ADJUST_REASON_MAX_LENGTH, ROLE_CHANGE_REASON_MAX_LENGTH, SUSPEND_REASON_MAX_LENGTH } from "@shared/inputLimits";
+import { ADMIN_ADJUST_DISPLAY_MAX } from "@shared/creditDisplay";
 import {
   Dialog,
   DialogContent,
@@ -151,7 +152,7 @@ export function CreditModal({ open, onOpenChange, action, amount, onAmountChange
               onChange={(e) => onAmountChange(e.target.value)}
               placeholder="As the customer sees them"
               min="1"
-              max={CREDIT_ADJUST_MAX_DISPLAY}
+              max={ADMIN_ADJUST_DISPLAY_MAX}
               step="1"
               required
             />

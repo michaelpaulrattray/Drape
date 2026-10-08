@@ -11,9 +11,9 @@ import {
   FREEZE_REASON_MAX_LENGTH,
   SUSPEND_REASON_MAX_LENGTH,
   UNFREEZE_NOTES_MAX_LENGTH,
-  CREDIT_ADJUST_MAX_DISPLAY,
 } from "../../../shared/inputLimits";
 import {
+  ADMIN_ADJUST_DISPLAY_MAX,
   displayBalance,
   formatCredits,
   ledgerForDisplay,
@@ -431,8 +431,8 @@ export const usersRouter = router({
       displayAmount: z
         .number()
         .int()
-        .min(-CREDIT_ADJUST_MAX_DISPLAY)
-        .max(CREDIT_ADJUST_MAX_DISPLAY)
+        .min(-ADMIN_ADJUST_DISPLAY_MAX)
+        .max(ADMIN_ADJUST_DISPLAY_MAX)
         .optional(),
       // `.trim()` before `.min(1)` (#816's money row): a one-space reason used to move credits
       // against a blank on every log this handler writes. The cap is the shared constant.
