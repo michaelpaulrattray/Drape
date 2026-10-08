@@ -881,3 +881,20 @@ templates):
    cut, cross-cutting, long take, in medias res, motif) extend the
    grammar past the camera picker into transitions and the Composer
    stage.
+
+
+**§13 mechanics (founder Q, 2026-10-08: "how would we use the audio after
+the video is generated?"):** four steps — the take arrives already talking
+(native engine audio, unconstrained performance); the soundtrack is SPLIT
+into stems (dialogue vs room/SFX/music — karaoke-class source separation);
+the dialogue stem is VOICE-CONVERTED speech-to-speech to the cast's signed
+voice (same words, timing, pauses, emphasis — her timbre; timing unmoved,
+so lips stay matched; the picture untouched); and the converted dialogue
+REMIXES with the original background layers. Product placement: a quiet
+finishing step ON KEEP — a kept take with a speaking, voice-owning cast
+converts automatically, priced per second of dialogue, judged by ear;
+tossed takes never pay; a voiceless cast keeps the take's born audio,
+already shaped by the Voice: text line. Build caveats: multi-speaker takes
+need per-speaker separation before each converts to their own cast
+(single-speaker ships first); conversion on music-heavy mixes is where the
+ear-check earns its place.
