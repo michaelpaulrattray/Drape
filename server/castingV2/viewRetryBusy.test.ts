@@ -282,9 +282,17 @@ describe("the retried-view commit's fence", () => {
    * the arm above is one**: the statement lives inside `withTransaction`
    * against a real connection and this repository's CI has no database. What
    * it pins is the shape of the mistake that was actually made — a blanket
-   * `catch` and a second bare `return null` — never the behaviour. The
-   * behaviour is driven one layer up, in `packageRedoService.test.ts`, where
-   * the commit seam is injected.
+   * `catch` and a BARE `return null` — never the behaviour. The behaviour is
+   * driven one layer up, in `packageRedoService.test.ts`, where the commit
+   * seam is injected.
+   *
+   * ⚠ **THERE ARE TWO FENCES NOW, and this arm reddened on the second one
+   * before it was told about it** (#1903 review finding 1, 2026-10-09). It
+   * pinned *exactly one* `return null`; the press fence made two, and the
+   * guard refused the change by name rather than going quiet. It was
+   * RE-DERIVED and not loosened: the count now comes from an enumerated list
+   * of the fences, so the arm still fails on a bare `return null` that is not
+   * one of them.
    */
   it("reserves null for the fence alone, and throws on every other road", () => {
     const source = fs.readFileSync(
@@ -306,9 +314,29 @@ describe("the retried-view commit's fence", () => {
     expect(end).toBeGreaterThan(start);
     const body = lines.slice(start, end + 1).join("\n");
 
-    /* EXACTLY ONE `return null`, and it is the fence's. */
-    expect(body.match(/return null/g) ?? []).toHaveLength(1);
-    expect(body).toContain("if (!operation) return null;");
+    /*
+      EVERY `return null` IS A NAMED FENCE — and there are TWO of them since
+      #1903's review finding 1, not one.
+
+      ⚠ **The rule this arm carries never changed; the population did.** The
+      money for a redo sits on the PRESS row and is spent on five slots, so
+      "this process still owns the money" needs both proofs: this slot
+      `running`, and the press `running`. Both are fences in the precise sense
+      the docblock above defines — *another process owns this operation's
+      money, so do not refund it* — which is why both may answer `null`.
+
+      ⚠ **ENUMERATED, NOT COUNTED UP TO TWO.** The length is derived from this
+      list, so a THIRD `return null` that is not written here reddens rather
+      than passing as "one of the fences". A bare count of 2 would have let the
+      next bare `return null` in — which is exactly the regression this arm
+      exists to catch, one fence later.
+    */
+    const FENCES = [
+      "if (!operation) return null;",
+      "if (!press) return null;",
+    ] as const;
+    for (const fence of FENCES) expect(body).toContain(fence);
+    expect(body.match(/return null/g) ?? []).toHaveLength(FENCES.length);
 
     /* NO blanket catch. This is the road that lost the money: a thrown
        transaction — a lock wait or a deadlock on the `models` row, and a redo
@@ -317,5 +345,39 @@ describe("the retried-view commit's fence", () => {
 
     /* The other two roads throw, by the name that says they are not fences. */
     expect(body.match(/throw new RetriedViewCommitError/g) ?? []).toHaveLength(2);
+
+    /*
+      ⚠ **AND THE PRESS FENCE IS PROVEN IN THE STATEMENT THAT WRITES — #1903
+      review finding 1, invariant 1's shape.**
+
+      The defect was that a slot's commit fenced on its OWN row and never asked
+      whether the row the MONEY sits on was still alive. The sweep refunds a
+      press whose lease lapsed before anything committed, the slots then commit
+      anyway, and she keeps the new views as well as the 3,250 — nothing claws
+      a recorded refund back.
+
+      Three things make the repair the repair rather than a lookalike, so three
+      things are pinned:
+
+      1. the press row is read **inside the same transaction**, under
+         `.for("update")` — a `SELECT` before this one is the same
+         check-then-write race, one lease-expiry wide;
+      2. it requires `running` — the whole question;
+      3. it is scoped to the same `userId`, so the fence cannot be satisfied by
+         somebody else's press (invariant 3's shape on a fence).
+    */
+    const press = body.slice(body.indexOf("if (input.pressOperationId !== undefined) {"));
+    expect(press, "the press fence is gone from the commit").not.toBe("");
+    expect(press).toContain("eq(generationOperations.id, input.pressOperationId)");
+    expect(press).toContain('eq(generationOperations.status, "running")');
+    expect(press).toContain("eq(generationOperations.userId, input.userId)");
+    expect(press).toContain('.for("update")');
+    /* It is INSIDE the transaction: the fence's slice must still be within the
+       function body sliced to its own braces above, which it is by
+       construction here — and the transaction opens before the first fence, so
+       a press read hoisted above `withTransaction` would leave this slice
+       without its `.for("update")`. */
+    expect(body.indexOf("withTransaction"))
+      .toBeLessThan(body.indexOf("if (input.pressOperationId !== undefined) {"));
   });
 });

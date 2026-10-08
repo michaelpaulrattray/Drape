@@ -360,11 +360,57 @@ describe("the press of a redo, swept", () => {
 });
 
 describe("a swept redo slice", () => {
-  it("gives the slice back with the REDO's sentence, not the Try again's", async () => {
+  /**
+   * ⚠ **A CHARGED SLICE IS PARKED, NOT REFUNDED — #1903's review finding, and
+   * this arm used to assert the opposite.**
+   *
+   * It read: a slice carrying 350 is refunded 350, with the redo's sentence.
+   * That was the per-slice price, and the flat price retired it — the money
+   * for a redo is one 3,250 charge on the PRESS and the five slot rows plan 0
+   * and settle 0/0. So a charged slot is not a case to pay out; it is a fact
+   * nothing on this road can produce, and paying it out beside the press's own
+   * settlement is one failure refunded twice. That branch stayed wired after
+   * the price changed, which is the sibling shape working law 7 is about.
+   *
+   * The 350 is kept as the FIXTURE deliberately: it is the figure the dead
+   * road would have refunded, so an arm that still refunded it would read
+   * exactly as this one did.
+   */
+  it("PARKS a slice that somehow carries a charge, and refunds nothing", async () => {
     ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];
     landed = false;
 
     const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+
+    expect(outcome).toEqual({
+      type: "recovery_required",
+      reason: "charged on a road whose rows settle at zero — the money is on another row",
+      chargedCredits: 350,
+      refundedCredits: 0,
+    });
+    /* THE WHOLE POINT: no money moved, in either direction. */
+    expect(refunds).toEqual([]);
+    /* And nothing was sealed — a parked row stays for a person to read. */
+    expect(finalizers.failure).not.toHaveBeenCalled();
+  });
+
+  /**
+   * THE POSITIVE CONTROL ON THAT PARK, and without it the arm above passes for
+   * the wrong reason.
+   *
+   * `chargeIsExpected` is a per-road declaration, so a reader that simply
+   * refused to refund anything would satisfy the park arm while breaking the
+   * Try again — whose charge is perfectly ordinary and MUST come back. Driven
+   * through the same adjudicator with the same ledger, one option apart.
+   */
+  it("still refunds the same charge on a road where a charge is expected", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];
+    landed = false;
+
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, {
+      ...dependencies(),
+      chargeIsExpected: true,
+    });
 
     expect(outcome).toEqual({ type: "paid_failure", chargedCredits: 350, refundedCredits: 350 });
     expect(refunds).toEqual([{ amount: 350, reference: CHARGE_REFERENCE }]);
@@ -391,10 +437,49 @@ describe("a swept redo slice", () => {
     }));
   });
 
+  /**
+   * ⚠ **THE FALSE RECEIPT — #1903's review finding, and it is the redo's
+   * ORDINARY road rather than an edge case.**
+   *
+   * A redo's slices charge nothing by design, so *every* slice swept after a
+   * crash took the no-charge branch — and that branch returned before anything
+   * asked whether a picture had arrived. A slice that HAD committed its
+   * picture was therefore sealed *"That view didn't arrive when you asked for
+   * all the views again. You were not charged."*: wrong about the only thing
+   * she can see, while right about the money.
+   *
+   * So the ledger is no longer consulted ahead of the asset rows. The money
+   * answer is unchanged — nothing charged, nothing back — and the receipt now
+   * says the picture arrived, because it did.
+   */
+  it("seals a slice that charged nothing but DID land as a success, not as 'didn't arrive'", async () => {
+    ledger = [];
+    landed = true;
+
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: 0 });
+    expect(refunds).toEqual([]);
+    /* THE NEGATIVE HALF, and it is the defect itself: she must not be told the
+       view never came. */
+    expect(finalizers.failure).not.toHaveBeenCalled();
+    expect(finalizers.claimedFailure).not.toHaveBeenCalled();
+    expect(finalizers.success).toHaveBeenCalledWith(expect.objectContaining({
+      chargedCredits: 0,
+      refundedCredits: 0,
+      terminalStatus: "succeeded",
+    }));
+  });
+
   it("keeps the slice when a picture landed under it", async () => {
     ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -350 }];
     landed = true;
-    const outcome = await recoverCastingV2PackageRedoOperation(operation, dependencies());
+    const outcome = await recoverCastingV2PackageRedoOperation(operation, {
+      ...dependencies(),
+      /* A charge on a slice is parked, so this arm declares the road where one
+         is expected — otherwise it would be re-testing the park above. */
+      chargeIsExpected: true,
+    });
     expect(outcome).toEqual({ type: "durable_success", chargedCredits: 350 });
     expect(refunds).toEqual([]);
   });

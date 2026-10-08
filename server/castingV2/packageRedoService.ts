@@ -824,6 +824,16 @@ async function redoOneView(
           identityText: source.identityText,
           /* The picture cost nothing of its own: the press paid once. */
           pointsCost: 0,
+          /*
+            ⚠ **THE FENCE, AND IT IS WHY THIS ID IS PASSED TWICE (#1903 review
+            finding 1).** Named here, the commit's own statement refuses to
+            land this picture unless the press row holding the money is still
+            `running` — so a press the sweep has already refunded cannot also
+            receive its views. In `provenance` below it is the sweep's fork
+            variable, read back off the asset rows hours later. Two different
+            jobs for one id, and the fence must be the typed one.
+          */
+          pressOperationId,
           provenance: {
             /* THE ROAD, and it is the only field that says which one this was. */
             source: "castingV2.packageRedo",

@@ -54,3 +54,29 @@ export function flatPressRefundOwed(input: {
   if (input.chargedCredits <= 0) return 0;
   return input.delivered > 0 ? 0 : input.chargedCredits;
 }
+
+/**
+ * THE OPERATION ROW A FLAT-PRICED PRESS IS SETTLED FROM — declared here, in
+ * the module about the rule, rather than in the Try again's (#1903 review
+ * finding 2).
+ *
+ * ⚠ **THE NAME WAS THE WHOLE PROBLEM, AND IT IS NOT A COSMETIC ONE.** The
+ * sweep's flat-press entry point took a `RecoverableViewRetryOperation` — a
+ * type named for ONE of the two roads that call it. #1968's Sign is not a view
+ * retry, and asking it to import the Try again's vocabulary to settle its own
+ * press is how a second adjudicator comes to be written instead: the shape is
+ * obviously wrong for the caller, so the caller writes its own. That is
+ * precisely the drift this module exists to prevent.
+ *
+ * It is ONE declaration with two names, never two declarations
+ * (`RecoverableViewRetryOperation` is this type) — a parallel copy would be
+ * working law 4 on the structure that decides a refund.
+ */
+export type FlatPressOperation = {
+  id: string;
+  userId: number;
+  modelId: number | null;
+  status: "claimed" | "running";
+  chargedCredits: number;
+  refundedCredits: number;
+};

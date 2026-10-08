@@ -149,6 +149,7 @@ const committed: Array<{
   operationId: string;
   pointsCost: number;
   provenance: Record<string, unknown>;
+  pressOperationId?: string;
 }> = [];
 /** Every reference list the identity engine was posted, per view. */
 const enginePosts: Array<{ prompt: string; references: Array<{ bytes: Buffer }> }> = [];
@@ -332,6 +333,7 @@ function dependencies(
       operationId: string;
       pointsCost: number;
       provenance: Record<string, unknown>;
+      pressOperationId?: string;
     }) => {
       journal.push("commit");
       const behaviour = commitBehaviour[request.angle];
@@ -342,6 +344,12 @@ function dependencies(
         operationId: request.operationId,
         pointsCost: request.pointsCost,
         provenance: request.provenance,
+        /* ⚠ RECORDED AT THE WIRE (#1903 review finding 1). The fence lives in
+           the commit's own statement, so what this service must be proven to
+           do is HAND IT the press id — as a named argument, not buried in the
+           provenance bag. Working law 5: the contract is proven on the
+           outgoing request. */
+        pressOperationId: request.pressOperationId,
       });
       return 4242;
     }) as PackageRedoServiceDependencies["commitRetried"],
@@ -907,6 +915,72 @@ describe("a view whose commit did not land (review finding 1)", () => {
     const result = await redoCastPackage(dependencies(), input);
     expect(result.committed).not.toContain(angle);
     expect(result.failed).toContain(angle);
+  });
+
+  /**
+   * ⚠ **THE PRESS'S ID REACHES THE COMMIT AS A NAMED ARGUMENT — #1903 review
+   * finding 1, asserted at the wire.**
+   *
+   * The repair is a second fence inside the commit's own statement: a slot may
+   * not land its picture unless the PRESS row holding the money is still
+   * `running`. That statement can only ask the question if this service hands
+   * it the id, so this is the half of the repair that lives here — and it is
+   * checked as a named argument rather than inside `provenance`, because a
+   * fence keyed on a free-form bag fails SILENTLY when the key is misspelled:
+   * it would skip the fence and read exactly like a road that has one.
+   *
+   * The provenance copy is asserted beside it and is a different job: it is
+   * what the sweep reads back off the asset rows hours later.
+   */
+  it("hands the slot commit the press's id by name, not only inside the provenance", async () => {
+    const result = await redoCastPackage(dependencies(), input);
+    expect(result.committed).toHaveLength(CAST_PACKAGE_VIEWS.length);
+    expect(committed).toHaveLength(CAST_PACKAGE_VIEWS.length);
+
+    for (const row of committed) {
+      /* THE FENCE'S INPUT — a named argument on every one of the five. */
+      expect(row.pressOperationId, `${row.angle} did not carry the press id`).toBe(PRESS);
+      /* THE SWEEP'S FORK VARIABLE — the same id, its other job. */
+      expect(row.provenance.pressOperationId).toBe(PRESS);
+      /* And it is the PRESS, never the slot's own operation: reading the slot
+         id into the fence would make it a restatement of the fence that was
+         already there, and prove nothing about the money. */
+      expect(row.pressOperationId).not.toBe(row.operationId);
+    }
+  });
+
+  /**
+   * ⚠ **A SLOT WHOSE PRESS THE SWEEP HAS ALREADY SETTLED REFUNDS NOTHING AND
+   * DELIVERS NOTHING — the relay's own arm, in its own words: "press swept
+   * while a slot is still running → no refund, or the slot commit refused".**
+   *
+   * The repair chose *refused*, which is option (a) and the one the relay
+   * preferred, because it also stops a late picture landing under a settled
+   * press. In the real statement the refusal is the press row not being
+   * `running`; here the commit seam answers `null`, which is what that
+   * statement returns and what `renderViewAttempts` maps to `fenced`.
+   *
+   * ⚠ **THE MONEY IS THE ASSERTION, not the status.** The failure this closes
+   * is *the customer keeps the new views AND the 3,250*: the sweep refunds the
+   * press because nothing had committed yet, and the slots then commit anyway.
+   * So what must be true is that this process adds no second refund of its own
+   * — the press's settlement is the sweep's — and that the fenced slot is
+   * never reported as delivered.
+   */
+  it("adds no refund of its own when the press has been settled under it", async () => {
+    const angle = CAST_PACKAGE_VIEWS[1]!;
+    commitBehaviour = { [angle]: "null" };
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    /* Four landed, so by his rule the press keeps its charge and this process
+       refunds nothing — the swept slot's money was never this slot's. */
+    expect(result.committed).not.toContain(angle);
+    expect(result.failed).toContain(angle);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
+    /* The lease goes to the sweep rather than being sealed here. */
+    expect(handedOff).toContain(derivedClientRequestId(PRESS, angle));
   });
 
   it("⚠ a press whose every slot fenced refunds the whole price", async () => {

@@ -282,8 +282,15 @@ export class RetriedViewCommitError extends Error {
 /**
  * Land a retried view on a LIVE Cast.
  *
- * Returns the new asset's id, or `null` when THE FENCE REFUSED — and that is
+ * Returns the new asset's id, or `null` when A FENCE REFUSED — and that is
  * now the only thing `null` can mean.
+ *
+ * ⚠ **THERE ARE TWO FENCES AND BOTH ANSWER ONE QUESTION: does this process
+ * still own the money?** This operation being `running` is the first. The
+ * second, for a slot of a flat-priced press, is the PRESS being `running`
+ * (#1903 review finding 1) — the money is on that row, so a slot whose press
+ * the sweep has already refunded must not land its picture. Both are proven
+ * inside the transaction that inserts, never before it.
  *
  * ⚠ **IT MEANT FOUR THINGS UNTIL #1903's REVIEW, AND THREE OF THEM LOST A
  * CUSTOMER'S MONEY.** `renderViewAttempts` reads `null` as *fenced* — "this
@@ -329,6 +336,19 @@ export async function commitRetriedViewAsset(input: {
   identityText: string;
   pointsCost: number;
   provenance: Record<string, unknown>;
+  /**
+   * THE ROW THE MONEY IS ON, when this view is one slot of a flat-priced
+   * press (#1903). Absent on the Try again, whose charge is its own row.
+   *
+   * ⚠ **IT IS A NAMED INPUT AND NOT READ OUT OF `provenance`, deliberately.**
+   * The same id is written into the provenance bag below for the sweep to read
+   * back, but a FENCE must not be keyed on a free-form `Record<string,
+   * unknown>` a caller composes: a typo there would not fail — it would
+   * silently skip the fence and read as this road being unfenced, which is the
+   * defect itself wearing the repair's clothes. In the signature the type
+   * system asks for it.
+   */
+  pressOperationId?: string;
 }): Promise<number | null> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
@@ -362,6 +382,55 @@ export async function commitRetriedViewAsset(input: {
       .limit(1)
       .for("update");
     if (!operation) return null;
+
+    /*
+      ⚠ **THE PRESS THAT HOLDS THE MONEY IS FENCED TOO, IN THIS SAME
+      TRANSACTION (#1903 review finding 1).**
+
+      A flat-priced press keeps its charge on ONE row and spends it on five
+      slots. Each slot's own fence above proves *this slot* is still ours; it
+      says nothing about whether the row the money sits on is still alive. The
+      gap that leaves is a customer paid twice over:
+
+      - the press's lease lapses (its heartbeat latches on its first failure
+        and never renews again — `startOperationHeartbeat`, and the lease is
+        five minutes while two sheets, a house re-make and the spaced arrival
+        attempts can plausibly run past it);
+      - the sweep reads `pressViewLanded` = false, because nothing has
+        committed YET, refunds the whole press and finalizes it failed;
+      - the slots then commit anyway, and **she keeps the new views as well as
+        the credits.** Nothing claws a recorded refund back.
+
+      ⚠ **IT IS CHECKED IN THE STATEMENT THAT WRITES, which is invariant 1 and
+      not decoration.** A `SELECT` for the press followed by this insert is the
+      same check-then-write race one lease-expiry wide; `.for("update")` inside
+      the slot's own transaction is what makes the reading hold until the row
+      lands.
+
+      ⚠ **AND A REFUSAL HERE IS A FENCE — `null`, not a throw.** `null` means
+      *another process owns this operation's money*, which is exactly true: the
+      sweep has already settled the press. So the attempt loop seals without a
+      refund, because the refund has happened. Throwing would take the loop's
+      `failed` exit and refund a second time under a reference the sweep has
+      used — one failure becoming two, which is the whole reason the two
+      meanings were separated in the header above.
+
+      The Try again road passes no `pressOperationId` and is untouched: its
+      money row IS its fence, which is why it was immune to this.
+    */
+    if (input.pressOperationId !== undefined) {
+      const [press] = await tx
+        .select({ id: generationOperations.id })
+        .from(generationOperations)
+        .where(and(
+          eq(generationOperations.id, input.pressOperationId),
+          eq(generationOperations.userId, input.userId),
+          eq(generationOperations.status, "running"),
+        ))
+        .limit(1)
+        .for("update");
+      if (!press) return null;
+    }
 
     const [model] = await tx
       .select({ id: models.id })

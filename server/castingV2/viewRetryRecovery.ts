@@ -22,6 +22,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { creditTransactions } from "../../drizzle/schema";
 import { recordRefund, refundReferenceFor } from "../casting/atomicCredits";
+import { flatPressRefundOwed, type FlatPressOperation } from "../casting/flatPressCharge";
 import { operationChargeReference } from "../casting/operationContract";
 import {
   finalizeClaimedGenerationOperationFailure,
@@ -41,14 +42,17 @@ export type ViewRetryRecoveryOutcome =
   | { type: "free_failure"; reason: string }
   | { type: "recovery_required"; reason: string; chargedCredits: number; refundedCredits: number };
 
-export type RecoverableViewRetryOperation = {
-  id: string;
-  userId: number;
-  modelId: number | null;
-  status: "claimed" | "running";
-  chargedCredits: number;
-  refundedCredits: number;
-};
+/**
+ * ⚠ **ONE DECLARATION, TWO NAMES — and the declaration lives in
+ * `flatPressCharge.ts` (#1903 review finding 2).** This adjudicator settles
+ * two roads: the Try again, whose money is its own row, and a flat-priced
+ * press, whose money is one row over five. The second road's callers must not
+ * have to speak the first road's vocabulary to use it, so the shape is named
+ * there under a road-neutral name and re-exported here under the name every
+ * existing caller already passes. Aliased, never re-typed: a second copy of
+ * the structure a refund is decided from is working law 4 on a money path.
+ */
+export type RecoverableViewRetryOperation = FlatPressOperation;
 
 export type ViewRetryRecoveryDependencies = {
   landed?: typeof retriedViewLanded;
@@ -64,6 +68,21 @@ export type ViewRetryRecoveryDependencies = {
    * written before the redo existed keeps its exact sentences.
    */
   wording?: ViewReplacementWording;
+  /**
+   * CAN A ROW ON THIS ROAD EVER CARRY A CHARGE? Default `true` — the Try
+   * again's does, and refunding it is the whole point.
+   *
+   * ⚠ **`false` MAKES AN UNEXPECTED CHARGE PARK INSTEAD OF REFUND (#1903).** A
+   * flat-priced press keeps the money on its own row and its slots settle at
+   * zero, so a charged slot is not a case to handle — it is a fact nothing on
+   * that road can explain, and the safe act is to stop and tell a person
+   * rather than to pay it out beside the press's own settlement.
+   *
+   * It is per road and never inferred from the charge being zero: "zero today"
+   * and "zero by construction" are different claims, and only the second one
+   * justifies refusing to refund.
+   */
+  chargeIsExpected?: boolean;
 };
 
 /**
@@ -139,6 +158,16 @@ export async function recoverCastingV2PackageRedoOperation(
   return recoverCastingV2ViewRetryOperation(operation, {
     ...options,
     wording: options.wording ?? PACKAGE_REDO_RECOVERY_WORDING,
+    /*
+      ⚠ **A REDO SLOT SETTLES AT ZERO, SO A CHARGE ON ONE IS PARKED (#1903
+      review finding).** The press holds the whole 3,250; these five rows plan
+      0 and settle 0/0. Before this, a slot found charged was REFUNDED — the
+      per-slice road from the old 350-a-view price, unreachable by design and
+      still wired, which is exactly the shape working law 7 calls a sibling
+      waiting to happen. It is the press fence's back door: a slot refund
+      beside a press settlement pays one failure twice.
+    */
+    chargeIsExpected: options.chargeIsExpected ?? false,
   });
 }
 
@@ -168,9 +197,17 @@ export const PACKAGE_REDO_PRESS_RECOVERY_WORDING: ViewReplacementWording = {
  * is no. The only things a road supplies are that reader and its own sentences.
  *
  * So the redo and the Sign cannot come to disagree about his rule: there is one
- * implementation of it and the live services ask it through
- * `flatPressRefundOwed`, which is the same decision expressed for a process
- * that still has its renders in hand.
+ * implementation of it — {@link flatPressRefundOwed} — and BOTH the live
+ * services and this sweep's own adjudicator ask it. ⚠ **That was not true
+ * until #1903's review finding 2**: this road passed through to a
+ * `landed ? keep : refund` written out again inside `adjudicate`, which
+ * agreed with the helper by inspection rather than by construction.
+ *
+ * ⚠ **AND ITS PARAMETER IS `FlatPressOperation`, NOT THE TRY AGAIN'S TYPE** —
+ * same declaration, road-neutral name, so #1968's Sign can settle its press
+ * here without importing a vocabulary that does not describe it. A caller who
+ * finds the shape wrong for their road writes a second adjudicator, and a
+ * second adjudicator is the one thing this module exists to prevent.
  *
  * ⚠ **`landed` IS NOT OPTIONAL HERE.** The default reader asks about ONE
  * operation, and a press has no picture of its own — falling back to it would
@@ -178,7 +215,7 @@ export const PACKAGE_REDO_PRESS_RECOVERY_WORDING: ViewReplacementWording = {
  * everything.
  */
 export async function recoverFlatPressCharge(
-  operation: RecoverableViewRetryOperation,
+  operation: FlatPressOperation,
   options: ViewRetryRecoveryDependencies & {
     landed: NonNullable<ViewRetryRecoveryDependencies["landed"]>;
   },
@@ -247,13 +284,33 @@ async function adjudicate(
     .filter((row) => row.referenceId === refundReference && row.type === "refund" && row.amount > 0)
     .reduce((sum, row) => sum + row.amount, 0);
 
-  if (charged === 0) {
-    /*
-      Either the retry died before its deduct, or it was a FREE one and never
-      had a deduct to die before. Both owe nothing, and neither is a guess: the
-      ledger is empty.
-    */
-    return { type: "free_failure", reason: "no charge on the ledger" };
+  /*
+    ⚠ **A CHARGE ON A ROW THAT CANNOT BE CHARGED IS PARKED, NEVER REFUNDED
+    (#1903 review finding, "the per-slot refund branch still lives").**
+
+    Under the flat price a redo's five slot rows plan 0 and settle 0/0: the
+    money is on the press. So a charged slot is not an edge case of this road,
+    it is **evidence that something happened which this road cannot produce** —
+    and the one thing never to do with money you cannot explain is move it. A
+    refund here would be the back door the press fence above was just built to
+    close: hand back a slot's worth of credits against a press that has its own
+    settlement, and the two roads pay for one failure twice.
+
+    `chargeIsExpected` is declared per road rather than inferred, because
+    inferring it is the same mistake one level up: the Try again's charge is
+    perfectly ordinary and must keep refunding exactly as it does.
+  */
+  if (charged > 0 && options.chargeIsExpected === false) {
+    log.error(
+      { operationId: operation.id, modelId: operation.modelId, charged },
+      "[viewRetryRecovery] a row that cannot be charged carries a charge — parking for support",
+    );
+    return {
+      type: "recovery_required",
+      reason: "charged on a road whose rows settle at zero — the money is on another row",
+      chargedCredits: charged,
+      refundedCredits: alreadyRefunded,
+    };
   }
 
   if (operation.modelId === null) {
@@ -262,7 +319,14 @@ async function adjudicate(
       operation with no Cast is a shape this road does not produce. Park it
       rather than refund it: a refund here would be issued without ever having
       asked whether a picture landed.
+
+      ⚠ With NO charge there is nothing to park over and nothing to ask: no
+      Cast means no asset rows to read, and the ledger is already empty. That
+      closes free, exactly as it did before the landed read moved below.
     */
+    if (charged === 0) {
+      return { type: "free_failure", reason: "no charge on the ledger, and no Cast to ask about" };
+    }
     return {
       type: "recovery_required",
       reason: "charged with no Cast bound — cannot ask whether a view landed",
@@ -276,20 +340,77 @@ async function adjudicate(
     modelId: operation.modelId,
     operationId: operation.id,
   });
-  if (landed) {
+  /*
+    ⚠ **A PICTURE THAT LANDED IS A SUCCESS EVEN WHEN NOTHING WAS CHARGED
+    (#1903 review finding, "false receipt").**
+
+    The ledger used to be consulted first: `charged === 0` returned
+    `free_failure` before anything asked whether a picture had arrived. So a
+    free ask that DID deliver and then crashed was sealed *"That view didn't
+    arrive… You were not charged"* — a sentence that is wrong about the only
+    thing the customer can see, while being right about the money.
+
+    ⚠ **The flat price makes this the redo's ORDINARY road rather than an edge
+    case, which is why it moved now.** A redo's slots charge nothing by
+    design, so *every* slot swept after a crash took the free branch — and the
+    ones that had already committed their picture were told it never came.
+
+    The money answer does not change: nothing was charged, so nothing goes
+    back, and `chargedCredits: 0` is what the receipt carries. Only the story
+    changes, and it changes to the true one.
+
+    A landed picture is necessarily `running` — the commit's own fence demands
+    it — so sealing this as a success cannot meet the `claimed` finalizer.
+  */
+  if (charged === 0) {
+    return landed
+      ? { type: "durable_success", chargedCredits: 0 }
+      : { type: "free_failure", reason: "no charge on the ledger" };
+  }
+
+  /*
+    ⚠ **THE RULE IS ASKED HERE, NOT RESPELLED (#1903 review finding 2).**
+
+    This function used to carry its own `landed ? keep : refund`, and the live
+    services carry {@link flatPressRefundOwed}. The two agreed — and two
+    spellings of one founder ruling on a money path can only ever come to
+    disagree, which is a customer refunded twice or not at all depending on
+    whether her press died. The relay's finding named it before it drifted,
+    which is the cheapest moment there is.
+
+    So there is now ONE definition of "what does a flat-priced ask owe back",
+    and both the process that still has its renders in hand and the sweep that
+    meets the rows hours later read it from the same place. **#1968's Sign
+    calls it too**, which is the whole reason it is a module.
+
+    It is right for the Try again as well, and that is not a coincidence being
+    exploited: a Try again is a flat-priced ask with exactly one unit, so
+    "credits back only if nothing could be delivered" IS its rule. Behaviour
+    is unchanged in every arm — `charged` is already proven non-zero above, so
+    the helper returns 0 exactly when a picture landed and `charged` exactly
+    when none did.
+  */
+  const refundOwed = flatPressRefundOwed({
+    chargedCredits: charged,
+    delivered: landed ? 1 : 0,
+  });
+
+  if (refundOwed <= alreadyRefunded) {
     /*
-      The picture is in her room. The customer asked for a view, got it, and
-      paid for it once — his rule exactly. Nothing goes back.
+      Nothing further is owed — but by two different roads, and the customer
+      reads a different sentence on each, so the STORY is still chosen by
+      whether a picture landed rather than by the arithmetic:
+
+      - it landed: she asked, she received, she paid once. His rule exactly.
+      - it did not: the service refunded and then died before its receipt.
+        The money is already back; only the row was left open.
     */
-    return { type: "durable_success", chargedCredits: charged };
+    return landed
+      ? { type: "durable_success", chargedCredits: charged }
+      : { type: "paid_failure", chargedCredits: charged, refundedCredits: alreadyRefunded };
   }
 
-  if (alreadyRefunded >= charged) {
-    // The service refunded and died before the receipt. Nothing more is owed.
-    return { type: "paid_failure", chargedCredits: charged, refundedCredits: alreadyRefunded };
-  }
-
-  const owed = charged - alreadyRefunded;
+  const owed = refundOwed - alreadyRefunded;
   const wording = options.wording ?? VIEW_RETRY_RECOVERY_WORDING;
   const refund = await (options.refund ?? recordRefund)(
     operation.userId,
