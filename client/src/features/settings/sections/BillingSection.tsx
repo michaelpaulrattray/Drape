@@ -115,6 +115,33 @@ export function BillingSection({
   */
   const { data: subscriptionDetails } = trpc.billing.getSubscriptionDetails.useQuery();
   const pendingChange = subscriptionDetails?.pendingChange ?? null;
+  /*
+    WHAT IS CHANGING AND WHEN, in her words — `null` when nothing is pending.
+    It names whichever thing is actually moving, because a dial move keeps the
+    plan's own name and *"Pro Plus from 7 Nov"* on a Pro Plus account reads as
+    nothing happening at all.
+
+    ⚠ **IT IS A BLOCK RATHER THAN A TERNARY IN THE JSX, AND #1741's GUARD IS
+    WHY.** The first draft compared `subscriptionDetails?.billingInterval ===
+    "year"` inline, and `server/unreadPlanIdentity.test.ts` caught it: an
+    optional chain there answers *monthly* about a customer nobody has read.
+    It happened to be unreachable — `pendingChange` comes off the same query,
+    so there is no paint where one is known and the other is not — but the
+    SHAPE is the defect that file exists to keep out of this surface, and the
+    early return below makes the interval a fact read off a value that is
+    present rather than a comparison against `undefined`.
+  */
+  const pendingSentence = (() => {
+    if (!subscriptionDetails?.pendingChange) return null;
+    const pending = subscriptionDetails.pendingChange;
+    const on = formatShortDate(new Date(pending.effectiveAt));
+    if (pending.plan !== status?.planTier) return `${pending.planName} from ${on}`;
+    const billedYearly = subscriptionDetails.billingInterval === "year";
+    if ((pending.interval === "annual") !== billedYearly) {
+      return `billed ${pending.interval === "annual" ? "yearly" : "monthly"} from ${on}`;
+    }
+    return `${formatCredits(displayBalance(pending.monthlyCredits))} credits/mo from ${on}`;
+  })();
   const utils = trpc.useUtils();
   const cancelScheduledChange = trpc.billing.cancelScheduledChange.useMutation({
     onSuccess: (result) => {
@@ -210,19 +237,10 @@ export function BillingSection({
               twice and makes a customer work out that they are the same
               event. One segment, the thing she actually wants to know.
 
-              The sentence names whichever thing is changing, because a dial
-              move keeps the plan's own name and *"Pro Plus from 7 Nov"* on a
-              Pro Plus account reads as nothing happening at all.
+              The sentence itself is `pendingSentence`, composed above — see
+              its note for why it is not a ternary in here.
             */
-            pendingChange
-              ? pendingChange.plan !== status?.planTier
-                ? `${pendingChange.planName} from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
-                : (pendingChange.interval === "annual") !== (subscriptionDetails?.billingInterval === "year")
-                  ? `billed ${pendingChange.interval === "annual" ? "yearly" : "monthly"} from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
-                  : `${formatCredits(displayBalance(pendingChange.monthlyCredits))} credits/mo from ${formatShortDate(new Date(pendingChange.effectiveAt))}`
-              : renewsAt
-                ? `renews ${formatShortDate(renewsAt)}`
-                : null,
+            pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
           ]
             .filter(Boolean)
             .join(" · ")}

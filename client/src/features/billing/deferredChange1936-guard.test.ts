@@ -146,17 +146,40 @@ describe("Billing & plan shows the pending change and offers the way out", () =>
 
   it("⚠ the pending change REPLACES the renewal segment rather than sitting beside it", () => {
     /* Both facts land on the same date, so printing both says one date twice
-       and makes her work out that they are one event. The ternary is the
-       contract: `renews …` is the ELSE of a pending change. */
-    expect(billingSection).toMatch(/pendingChange\s*\?[\s\S]{0,900}?renews \$\{formatShortDate\(renewsAt\)\}/);
+       and makes her work out that they are one event. The `??` IS the
+       contract: `renews …` is the fallback for having nothing pending. */
+    expect(billingSection).toMatch(
+      /pendingSentence \?\? \(renewsAt \? `renews \$\{formatShortDate\(renewsAt\)\}` : null\)/,
+    );
   });
 
   it("names whichever thing is changing — plan, cycle, or the dial's credits", () => {
     /* A dial move keeps the plan's own name, so "Pro Plus from 7 Nov" on a Pro
-       Plus account would read as nothing happening at all. */
-    expect(billingSection).toMatch(/pendingChange\.planName/);
-    expect(billingSection).toMatch(/billed \$\{pendingChange\.interval === "annual" \? "yearly" : "monthly"\}/);
-    expect(billingSection).toMatch(/pendingChange\.monthlyCredits/);
+       Plus account would read as nothing happening at all.
+
+       Sliced to the composer, so these three claims cannot be answered by the
+       plan card's own markup further down the file. */
+    const sentence = sourceBand(
+      billingSection,
+      "const pendingSentence = (() => {",
+      "\n  })();",
+      "pendingSentence",
+    );
+    expect(sentence).toMatch(/pending\.planName/);
+    expect(sentence).toMatch(/billed \$\{pending\.interval === "annual" \? "yearly" : "monthly"\}/);
+    expect(sentence).toMatch(/pending\.monthlyCredits/);
+    /* ⚠ And the INTERVAL is read off a narrowed value, never through an
+       optional chain — #1741's guard caught exactly that in the first draft of
+       this surface, because an optional chain there answers "monthly" about a
+       customer nobody has read.
+
+       The assertion names `billingInterval` rather than banning `?.` from the
+       whole block: the block's own early return is `if
+       (!subscriptionDetails?.pendingChange)`, which is the correct use of one,
+       and a blanket ban would have made this arm about punctuation instead of
+       about the unread status. */
+    expect(sentence).not.toMatch(/subscriptionDetails\?\.billingInterval/);
+    expect(sentence).toMatch(/subscriptionDetails\.billingInterval === "year"/);
   });
 
   it("⚠ carries an undo, and it is wired to the procedure rather than drawn", () => {
