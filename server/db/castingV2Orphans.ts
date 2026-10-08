@@ -42,9 +42,10 @@
  * that column, rather than being a second file that knows where a plate's
  * bytes are.
  */
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 
 import {
+  castingCandidates,
   castingCandidateVariants,
   castingFaceScans,
   castingInkDeliveryCrops,
@@ -115,4 +116,36 @@ export async function listAccountOrphanCandidateIdsIn(
     if (typeof row.candidateId === "number") ids.push(row.candidateId);
   }
   return ids;
+}
+
+/**
+ * Which of these candidate ids still have a `castingCandidates` row — for ANY
+ * owner, which is the whole point of the read (#1959).
+ *
+ * ⚠ **IT DECIDES NOTHING ABOUT WHAT IS DELETED, AND THAT IS DELIBERATE.**
+ * #1959 proposed gating the orphan set on `NOT EXISTS`, so that only an id
+ * with no candidate row anywhere counted as orphaned. That closes the
+ * cross-account erasure — but it also abandons the row it was reading: a
+ * child row carrying the deleting account's `userId` while pointing at
+ * ANOTHER customer's live candidate would then be in no set at all, and would
+ * outlive the account as litter with its object still up. The deletion is
+ * made safe instead by putting the owner in the statement
+ * (`castingV2PurgeScope`), which removes exactly her row and nothing else.
+ *
+ * So the existence check earns its place in the DIAGNOSIS, where the two
+ * cases are genuinely different bugs and the log could not tell them apart:
+ * a candidate dropped without its children, or a child row carrying an owner
+ * that is not its candidate's. The second is the worse of the two and was
+ * being reported as the first.
+ */
+export async function listExistingCandidateIdsIn(
+  tx: TransactionHandle,
+  candidateIds: readonly number[],
+): Promise<number[]> {
+  if (candidateIds.length === 0) return [];
+  const rows = await tx
+    .select({ id: castingCandidates.id })
+    .from(castingCandidates)
+    .where(inArray(castingCandidates.id, [...candidateIds]));
+  return rows.map((row) => row.id);
 }

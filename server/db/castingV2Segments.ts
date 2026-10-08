@@ -36,10 +36,14 @@
  * own cleanup manifest. A segment's lifetime is its candidate's, and there is
  * deliberately no second schedule for it.
  */
-import { inArray } from "drizzle-orm";
 
 import { castingSegments } from "../../drizzle/schema";
 import { type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 
 function affectedRows(result: unknown): number {
   const header = Array.isArray(result) ? result[0] : result;
@@ -56,9 +60,9 @@ function affectedRows(result: unknown): number {
  */
 export async function listPurgeableSegmentsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; maskKey: string; contentKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   return tx
     .select({
       id: castingSegments.id,
@@ -66,16 +70,16 @@ export async function listPurgeableSegmentsIn(
       contentKey: castingSegments.contentKey,
     })
     .from(castingSegments)
-    .where(inArray(castingSegments.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingSegments.candidateId, castingSegments.userId, candidateIds));
 }
 
 export async function deleteSegmentRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const result = await tx
     .delete(castingSegments)
-    .where(inArray(castingSegments.candidateId, [...candidateIds]));
+    .where(purgeScopeWhere(castingSegments.candidateId, castingSegments.userId, candidateIds));
   return affectedRows(result);
 }

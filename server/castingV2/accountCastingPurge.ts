@@ -75,6 +75,10 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import type { TransactionHandle } from "../db/connection";
+import {
+  purgeScopeIsEmpty,
+  type PurgeCandidateScope,
+} from "../db/castingV2PurgeScope";
 import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import {
   deleteAccountCandidateRowsIn,
@@ -110,6 +114,7 @@ import {
 } from "../db/castingV2ReferenceAttachments";
 import {
   listAccountOrphanCandidateIdsIn,
+  listExistingCandidateIdsIn,
   ORPHAN_SCANNED_STORES,
   type OrphanStoreName,
 } from "../db/castingV2Orphans";
@@ -228,15 +233,55 @@ export async function purgeAccountCastingIn(
       LOUD ON PURPOSE. An orphan here means a row survived the path that
       should have taken it, and a cleanup that absorbs the bug it cleans up
       is exactly what the header's old clause was right to object to.
+
+      ⚠ **AND IT NAMES WHICH OF TWO BUGS IT FOUND — #1959.** One warning stood
+      for both, saying *a path dropped a candidate without its children*, which
+      is true of only one of them. An id with a live `castingCandidates` row
+      means the opposite and worse thing: a child row carries THIS account's
+      `userId` while pointing at a candidate the account does not own. The
+      deletion is safe either way — `castingV2PurgeScope` puts the owner in the
+      statement — but a log that cannot tell the two apart sends every reading
+      of it looking for the wrong defect.
     */
-    log.warn(
-      { userId, orphanCandidates: orphanIds.size, ...orphansByStore },
-      "[accountCastingPurge] child rows found whose candidate row was already gone — "
-        + "a path dropped a candidate without its children; swept here with the account",
-    );
+    const orphanIdList = Array.from(orphanIds);
+    const stillPresent = new Set(await listExistingCandidateIdsIn(tx, orphanIdList));
+    const dropped = orphanIdList.filter((id) => !stillPresent.has(id));
+    if (dropped.length > 0) {
+      log.warn(
+        { userId, orphanCandidates: dropped.length, ...orphansByStore },
+        "[accountCastingPurge] child rows found whose candidate row was already gone — "
+          + "a path dropped a candidate without its children; swept here with the account",
+      );
+    }
+    if (stillPresent.size > 0) {
+      log.warn(
+        { userId, misownedCandidates: stillPresent.size, ...orphansByStore },
+        "[accountCastingPurge] child rows found carrying this account's userId while pointing "
+          + "at a candidate it does not own — only this account's rows are swept; the "
+          + "candidate and its owner's rows are untouched",
+      );
+    }
   }
 
-  const candidateIds = [...liveCandidateIds, ...Array.from(orphanIds)];
+  /*
+    THE TWO KINDS OF ID, AND THE TERMS EACH TRAVELS ON — #1959.
+
+    The live ids came out of `listAccountCandidatesIn(tx, userId)`, so the
+    candidate itself is the proof of ownership and every child row under it
+    goes whatever `userId` the row carries — a mis-owned row under a candidate
+    that IS hers is the litter this sweep is for.
+
+    ⚠ **THE ORPHAN IDS PROVE NOTHING AND ARE SCOPED TO HER IN THE STATEMENT.**
+    They were read OFF a child row, and that row is itself the evidence that
+    something went wrong, so it cannot also be the warrant for a delete. One of
+    them pointing at another customer's live candidate used to take that
+    customer's refinements, segments, references, scans and ink work, and their
+    objects, with her account. `castingV2PurgeScope` carries the rule.
+  */
+  const candidateIds: PurgeCandidateScope = {
+    candidateIds: liveCandidateIds,
+    ownerScoped: { candidateIds: Array.from(orphanIds), userId },
+  };
 
   /*
     The candidate's own three objects — the delivered face, its thumbnail and
@@ -249,7 +294,7 @@ export async function purgeAccountCastingIn(
     }
   }
 
-  if (candidateIds.length > 0) {
+  if (!purgeScopeIsEmpty(candidateIds)) {
     // Refinements (D-122): a variant is a paid picture of a person.
     const variants = await listPurgeableVariantsIn(tx, candidateIds);
     for (const variant of variants) {

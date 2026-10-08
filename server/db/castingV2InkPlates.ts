@@ -66,6 +66,11 @@ import {
 import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { InkSide } from "../../shared/inkReleasedPlacements";
 import { getDb, type TransactionHandle } from "./connection";
+import {
+  purgeScopeIsEmpty,
+  purgeScopeWhere,
+  type PurgeCandidateSelector,
+} from "./castingV2PurgeScope";
 
 async function requireDb() {
   const db = await getDb();
@@ -125,14 +130,23 @@ export async function deleteInkPlateRowsForDesignIn(
 
 export async function listPurgeableInkPlatesIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<Array<{ id: number; storageKey: string }>> {
-  if (candidateIds.length === 0) return [];
+  if (purgeScopeIsEmpty(candidateIds)) return [];
   const rows = await tx
     .select({ id: castingInkPlates.id, storageKey: castingInkPlates.storageKey })
     .from(castingInkPlates)
     .innerJoin(castingInkDesigns, eq(castingInkDesigns.id, castingInkPlates.designId))
-    .where(inArray(castingInkDesigns.candidateId, [...candidateIds]));
+    /*
+      THE PLATE OWNER, NEVER THE DESIGN OWNER (#1959). The plate is the row
+      being collected and deleted, so it is the plate whose deletion must be
+      refused when the candidate id came off a row rather than a scoped read.
+    */
+    .where(purgeScopeWhere(
+      castingInkDesigns.candidateId,
+      castingInkPlates.userId,
+      candidateIds,
+    ));
   return rows;
 }
 
@@ -147,9 +161,9 @@ export async function listPurgeableInkPlatesIn(
  */
 export async function deleteInkPlateRowsIn(
   tx: TransactionHandle,
-  candidateIds: readonly number[],
+  candidateIds: PurgeCandidateSelector,
 ): Promise<number> {
-  if (candidateIds.length === 0) return 0;
+  if (purgeScopeIsEmpty(candidateIds)) return 0;
   const doomed = await listPurgeableInkPlatesIn(tx, candidateIds);
   if (doomed.length === 0) return 0;
   const result = await tx

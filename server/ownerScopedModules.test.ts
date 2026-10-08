@@ -124,25 +124,25 @@ const OWNERLESS_STATEMENTS: ReadonlyArray<{ file: string; clause: string; reason
       "invariant 2: the candidate was proved owned earlier in the same transaction, and the frame is re-anchored to it — a crop claiming somebody else's render would be geometry about a picture this Cast has never seen.",
   },
 
-  // ── 2 · Purge helpers whose ids the caller proved owned ──
-  {
-    file: "server/db/castingV2FaceScans.ts",
-    clause: "inArray(castingFaceScans.candidateId, [...candidateIds])",
-    reason:
-      "`listPurgeableFaceScansIn(tx, candidateIds)` — a `TransactionHandle` helper inside the purge's own transaction; the ids come from the owner-scoped selection its caller made.",
-  },
-  {
-    file: "server/db/castingV2InkDeliveryCrops.ts",
-    clause: "inArray(castingInkDeliveryCrops.candidateId, [...candidateIds])",
-    reason:
-      "`listPurgeableInkDeliveryCropsIn` / its delete twin — the same purge shape, for the crops a candidate owns; the ids arrive already owner-scoped.",
-  },
-  {
-    file: "server/db/castingV2InkDesigns.ts",
-    clause: "inArray(castingInkDesigns.candidateId, [...candidateIds])",
-    reason:
-      "the same purge shape, for ink designs — a `TransactionHandle` helper called only by the retention sweep, on ids that sweep has already scoped to an owner.",
-  },
+  /*
+    ── 2 · Purge helpers whose ids the caller proved owned ──
+
+    ⚠ **THE THREE `inArray(table.candidateId, [...candidateIds])` ENTRIES THAT
+    STOOD HERE ARE GONE, AND THEIR OWN STATED REASON IS WHY — #1959.** Each
+    said the ids *"come from the owner-scoped selection its caller made"*, and
+    that was true when they were written. #1948 L1 then gave the same helpers a
+    second kind of id: every candidate id the deleting account's child rows
+    POINT AT, read off a row and proving nothing. One of those pointing at
+    another customer's live candidate took that customer's rows and objects.
+
+    So the exception was correct about the caller it knew and silently covered
+    a caller it had never seen. The ids now arrive carrying the terms they may
+    be used on (`server/db/castingV2PurgeScope.ts`): the proven half still
+    reaches rows by candidate id alone, the half read off a row carries
+    `userId` in the same statement, and both travel in ONE predicate — so
+    there is no clause left here to list.
+    `server/accountDeletionOrphanOwnerScope.test.ts` holds it at the wire.
+  */
   {
     file: "server/db/castingV2FaceScans.ts",
     clause: "eq(storageCleanupItems.batchId, input.cleanupBatchId)",
