@@ -1061,6 +1061,76 @@ describe("generation failures", () => {
     expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
+  /*
+    ⚠ **THE SECOND MONEY ARM (the relay's second finding on PR #1982): A
+    FRAME THE PROVIDER ALREADY FINISHED IS ASKED FOR ONCE, WHATEVER ITS CLASS.**
+
+    The arm above covers a frame that arrived and threw a plain `Error` out of
+    the cut. These cover the harder half: four of fal's faults are raised AFTER
+    the job reports `COMPLETED`, so they are real `ProviderError`s with
+    RETRYABLE classes — `"could not download fal.ai result"` is `transport`,
+    `"fal.ai completed without an image"` and the malformed data URI are
+    `unknown`, and a non-ok result fetch is whatever its status maps to. Every
+    one of them had been bought and billed, and every one of them was re-asked.
+
+    Worst case before this: 3 arrival attempts x 2 sheet renders = 6 frames per
+    sheet where the budget intends 2, on top of the engine's own `withRetry`.
+
+    ⚠ **ONE CASE PER ARM, NEVER A LOOP INSIDE ONE** — `beforeEach` fires
+    between arms and not between iterations, which this suite has already been
+    bitten by (the sentence arm at the foot of this file). The first case would
+    record its refund and the second would read a deduped zero.
+  */
+  it.each([
+    ["a result that would not download", () => new ProviderError(
+      "transport", "could not download fal.ai result", { providerRef: "req-1", completed: true },
+    )],
+    ["a completed job with no image in it", () => new ProviderError(
+      "unknown", "fal.ai completed without an image", { providerRef: "req-2", completed: true },
+    )],
+    ["a result fetch the provider rate-limited", () => new ProviderError(
+      "rate_limit", "fal.ai result fetch failed (429): slow down",
+      { providerRef: "req-3", status: 429, completed: true },
+    )],
+  ])("asks ONCE for a frame the provider finished: %s", async (_what, fault) => {
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(fault) }),
+      input,
+    );
+
+    expect(
+      rendersPerSheet(),
+      "a frame that was already bought was re-bought — asking again renders a NEW one",
+    ).toEqual({ body: 1, head: 1 });
+    expect(waitedMs, "nothing waits for a frame that already arrived").toEqual([]);
+    /* The customer is still made whole: nothing was delivered, so the whole
+       Sign comes back exactly as it does for a terminal refusal. */
+    expect(result.failed).toHaveLength(5);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
+  });
+
+  /*
+    THE CONTROL FOR THE THREE ARMS ABOVE (law 2). The SAME classes, with the
+    provider never having finished, are still asked for three times — so those
+    arms are reading the flag and not the class, and nothing retryable was
+    quietly made terminal for every road.
+  */
+  it.each([
+    ["an unreachable host", () => new ProviderError("transport", "fal.ai unreachable")],
+    ["a submit with no request id", () => new ProviderError("unknown", "fal.ai returned no request id")],
+    ["a refused submit", () => new ProviderError(
+      "rate_limit", "fal.ai refused the request (429): slow down", { status: 429 },
+    )],
+  ])("still asks three times when the job never ran: %s", async (_what, fault) => {
+    await buildCastPackage(deps({ signSheetEngine: deadSheetEngine(fault) }), input);
+
+    expect(
+      rendersPerSheet(),
+      "a job that never ran stopped being re-asked — it is still owed its attempts",
+    ).toEqual({ body: VIEW_ARRIVAL_ATTEMPTS, head: VIEW_ARRIVAL_ATTEMPTS });
+    expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+  });
+
   it("SPACES the arrival retries rather than hammering the provider", async () => {
     await buildCastPackage(
       deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("timeout", "no answer")) }),

@@ -349,22 +349,70 @@ export class ProviderError extends Error {
   readonly providerRef?: string;
   /** Provider status code when there was one. Internal. */
   readonly status?: number;
+  /**
+   * DID THE PROVIDER FINISH THE JOB BEFORE THIS FAULT — and therefore bill for
+   * it? (The relay's finding on PR #1982.)
+   *
+   * The failure CLASS answers *what went wrong*; this answers *whose frame it
+   * was*, and the two are independent. A job fal reports `COMPLETED` has been
+   * paid for whatever happens next: the result fetch can 503 (`transport`), the
+   * payload can carry no image (`unknown`), the data URI can be malformed
+   * (`unknown`), the download can fail (`transport`). Every one of those
+   * classes is retryable — correctly, for a job that never ran — so an arrival
+   * loop re-asked and **bought another frame**, deterministically failing the
+   * same way, up to its whole attempt budget.
+   *
+   * ⚠ **It is a fact about the request, not an opinion about retrying.**
+   * The decision belongs to the road ({@link providerAlreadyBilled} is how a
+   * road asks), exactly as {@link mayStillArrive} is asked by the road rather
+   * than restated inside the loop.
+   */
+  readonly completed: boolean;
 
   constructor(
     failureClass: ProviderFailureClass,
     message: string,
-    options: { providerRef?: string; status?: number; cause?: unknown } = {},
+    options: {
+      providerRef?: string;
+      status?: number;
+      cause?: unknown;
+      completed?: boolean;
+    } = {},
   ) {
     super(message, { cause: options.cause });
     this.name = "ProviderError";
     this.failureClass = failureClass;
     this.providerRef = options.providerRef;
     this.status = options.status;
+    /* Defaults FALSE: a fault whose site has not been read is treated as a job
+       that never ran, which is the direction that keeps retrying a view the
+       customer has paid for. Only a site that KNOWS the provider finished sets
+       it. */
+    this.completed = options.completed === true;
   }
 
   get retryable(): boolean {
     return isRetryable(this.failureClass);
   }
+}
+
+/**
+ * Was this frame already bought? — the question an arrival loop has to ask
+ * before it asks whether another attempt may still arrive.
+ *
+ * ⚠ **Asking again cannot change the answer and it buys a second frame.**
+ * The three post-completion faults in `falTransport.ts` are deterministic
+ * properties of a payload that has already been rendered and billed: no image
+ * in it, a malformed data URI, a result that will not download. A fourth —
+ * a non-ok result fetch after `COMPLETED` — is the same shape and is marked
+ * the same way.
+ *
+ * One predicate rather than `error instanceof ProviderError && error.completed`
+ * at each loop: two copies of a money decision is the drift working law 4 is
+ * about, and both arrival loops in this product ask it.
+ */
+export function providerAlreadyBilled(error: unknown): boolean {
+  return error instanceof ProviderError && error.completed;
 }
 
 /* ------------------------------------------------------------- provenance */

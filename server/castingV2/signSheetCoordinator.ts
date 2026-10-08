@@ -51,7 +51,12 @@
 
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError, mayStillArrive, type ImageResult } from "../providers/types";
+import {
+  ProviderError,
+  mayStillArrive,
+  providerAlreadyBilled,
+  type ImageResult,
+} from "../providers/types";
 import { ARRIVAL_ATTEMPTS, arrivalBackoffMs, waitMs } from "./arrivalRetry";
 import { captureRefusedRender } from "./diagnosticCapture";
 import {
@@ -307,6 +312,25 @@ async function renderWithArrivalRetries(
       /* Terminal: asking again cannot change the answer, and the wait would be
          charged to a customer who is already going to be refunded. */
       if (failureClass === null || !mayStillArrive(failureClass)) throw error;
+      /*
+        ⚠ **AND A FRAME THE PROVIDER ALREADY FINISHED IS TERMINAL TOO,
+        WHATEVER ITS CLASS** — the relay's second finding on PR #1982.
+
+        The arm above reads the failure CLASS, and three of fal's faults land
+        AFTER the job reports `COMPLETED`: no image in the payload and a
+        malformed data URI are `unknown`, a failed download is `transport`, and
+        a non-ok result fetch is whatever its status says. None of those is in
+        `VIEW_ARRIVAL_TERMINAL` — correctly, for a job that never ran — so this
+        loop re-asked and **bought another sheet**, on top of the engine's own
+        `withRetry`. Worst case per sheet was about 3 x ARRIVAL_ATTEMPTS 3 x
+        SHEET_MAX_RENDERS 2 = 18 engine calls against 6 before this card, under
+        a flat price.
+
+        The question is asked of the ERROR rather than of its class because it
+        is a fact about THAT request: `providerAlreadyBilled` carries why, and
+        the per-view arrival loop asks the same predicate.
+      */
+      if (providerAlreadyBilled(error)) throw error;
       if (arrivalFailures >= ARRIVAL_ATTEMPTS) throw error;
       await wait(arrivalBackoffMs(arrivalFailures));
     }

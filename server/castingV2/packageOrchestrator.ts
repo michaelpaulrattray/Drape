@@ -130,6 +130,7 @@ import { mintViewThumbnail } from "./viewThumbnailMint";
 import {
   ProviderError,
   mayStillArrive,
+  providerAlreadyBilled,
   type IdentityEngine,
   type ImageResult,
   type ReferenceImage,
@@ -1321,6 +1322,23 @@ export async function renderViewAttempts<T>(
       */
       if (error instanceof SignSheetUnavailableError) break;
       if (!mayStillArrive(failureClass)) break;
+      /*
+        ⚠ **THE SECOND INSTANCE OF THE CLASS THE RELAY FOUND ON THE SHEET
+        ROAD (PR #1982), swept here in the same commit.**
+
+        Four of fal's faults are raised AFTER the job reports `COMPLETED` — no
+        image in the payload, a malformed data URI, a failed download, a non-ok
+        result fetch — and their classes (`unknown`, `transport`, and whatever
+        a status maps to) are retryable, because retryable is the right answer
+        for a job that never ran. This one ran and was billed: re-asking
+        renders a NEW frame rather than re-fetching the one we bought, and it
+        fails the same way, so the budget buys up to three frames to learn one
+        answer.
+
+        The slice refunds either way — what the customer stops doing is waiting
+        through 5.5 s of spaced retries for a refund they are already owed.
+      */
+      if (providerAlreadyBilled(error)) break;
       /*
         The view never arrived. Keep trying, spaced — this is our failure to
         deliver something already paid for, not a draw against a judgement.

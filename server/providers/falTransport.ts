@@ -278,7 +278,12 @@ async function runFalImageJobUncounted(input: {
       throw new ProviderError(
         classifyFalHttp(result.status, text),
         `fal.ai result fetch failed (${result.status}): ${text.slice(0, 200)}`,
-        { status: result.status, providerRef: requestId },
+        /* COMPLETED, so this frame is already bought — the status poll said so
+           one statement ago. A 5xx here classifies `transport` and a 429
+           `rate_limit`, both retryable, so without this flag an arrival loop
+           re-asked and paid for a second frame. The fourth site of the class
+           the relay's finding named three of. */
+        { status: result.status, providerRef: requestId, completed: true },
       );
     }
 
@@ -302,6 +307,10 @@ async function runFalImageJobUncounted(input: {
     if (!image?.url) {
       throw new ProviderError("unknown", "fal.ai completed without an image", {
         providerRef: requestId,
+        /* The job COMPLETED and was billed; the payload simply holds no image.
+           Deterministic, so a re-ask buys another frame and reads it the same
+           way (the relay's finding on PR #1982). */
+        completed: true,
       });
     }
 
@@ -318,6 +327,8 @@ async function runFalImageJobUncounted(input: {
       if (comma < 0) {
         throw new ProviderError("unknown", "fal.ai returned a malformed data URI", {
           providerRef: requestId,
+          /* Bought and delivered — the bytes are in hand and unreadable. */
+          completed: true,
         });
       }
       bytes = Buffer.from(image.url.slice(comma + 1), "base64");
@@ -335,6 +346,11 @@ async function runFalImageJobUncounted(input: {
       if (!download.ok) {
         throw new ProviderError("transport", "could not download fal.ai result", {
           providerRef: requestId,
+          /* `transport` is the honest CLASS — a CDN fetch really did fail — and
+             it is retryable for a job that never ran. This one ran: re-asking
+             renders a NEW frame rather than re-fetching this one, so it is
+             terminal at the arrival layer and paid for either way. */
+          completed: true,
         });
       }
       bytes = Buffer.from(await download.arrayBuffer());
