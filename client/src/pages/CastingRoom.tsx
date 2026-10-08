@@ -788,7 +788,7 @@ export default function CastingRoom() {
                       {askingAll ? (
                         /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
                            A TILE. Borrowing it put a second element with that
-                           class above the strip, and `viewRetryRow.test.ts` (deleted with the row, #2089)
+                           class above the strip, and the row's own guard (deleted with the row, #2089)
                            slices the component from the FIRST one — so his two
                            Try again sentences were being read out of this header
                            instead. A guard whose anchor another element can

@@ -454,7 +454,7 @@ export function castSlotRetryOffer(
     a delivered view — and kept these two because she paid for a picture she
     never received. His ruling on #2089 answers that case too: the remedy for
     ANY view, arrived or refunded, is the whole-set redo
-    ({@link castPackageRedoOffer}, *Regenerate · 650 credits*), because views
+    ({@link castPackageRedoOffer}, the priced *Regenerate* button), because views
     are cut from two sheets and a single view re-made on its own matches its
     siblings less well than a set made together.
 
