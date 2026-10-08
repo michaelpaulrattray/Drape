@@ -686,6 +686,7 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("frames-1837", "card-1837")],
       [card("card-1837", "open")],
+      [card("card-1837", "open")],
     );
     expect(standalone, "the gallery would still draw it — two cards again").toEqual([]);
     expect(mergedInto.get("card-1837")?.map((i) => i.id)).toEqual(["frames-1837"]);
@@ -695,39 +696,77 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("loose", null)],
       [card("card-1837", "open")],
+      [card("card-1837", "open")],
     );
     expect(standalone.map((i) => i.id)).toEqual(["loose"]);
     expect(mergedInto.size).toBe(0);
   });
 
-  it("⚠ an item whose card is DONE stands on its own — a merge into a card nobody draws is a vanishing", () => {
-    /*
-      The failure #354 named in this feature's own words — *"the vanishing the
-      design forbids"* — created by a fix for its own class. `CrewNeedsYou`
-      renders `crewCardNeedsHim` cards only, so pairing against the raw list
-      would hide the frames entirely.
-    */
+  /**
+   * ⚠ **#1938 — THIS ARM IS THE REVERSE OF THE ONE IT REPLACES, AND THE REASON
+   * IS THAT THE OLD ANSWER WAS THE DEFECT.**
+   *
+   * It read *"an item whose card is DONE stands on its own — a merge into a
+   * card nobody draws is a vanishing"*, citing #354's *"the vanishing the
+   * design forbids"*. That reasoning is still right about a card the page
+   * cannot explain, and it is wrong about one he has ANSWERED: his answer is
+   * what retired the question, so showing the frames again with their own reply
+   * box asks it a second time. The briefing schema refuses an OPEN item on a
+   * card that no longer needs him (#133), so an item reaching this branch is
+   * one `CrewEyeGallery` would filter out anyway — the old arm was asserting a
+   * place in a list nothing drew.
+   */
+  it("⚠ an item whose card he has ANSWERED is dropped, not stood on its own (#1938)", () => {
     for (const dead of ["done", "answered"]) {
-      const { standalone, mergedInto } = partitionEyeItems(
+      const { standalone, mergedInto, answered } = partitionEyeItems(
         [item("frames", "card")],
         [card("card", dead)],
+        [card("card", dead)],
       );
-      expect(standalone.map((i) => i.id), `${dead}: the frames vanished`).toEqual(["frames"]);
+      expect(standalone, `${dead}: the frames came back asking again`).toEqual([]);
+      expect(answered.map((i) => i.id)).toEqual(["frames"]);
       expect(mergedInto.size).toBe(0);
     }
     /* And a `waiting` card IS still his, so its frames go with it (#354). */
     expect(
-      partitionEyeItems([item("frames", "card")], [card("card", "waiting")]).standalone,
+      partitionEyeItems(
+        [item("frames", "card")],
+        [card("card", "waiting")],
+        [card("card", "waiting")],
+      ).standalone,
     ).toEqual([]);
   });
 
-  it("an item naming a card this page is not drawing at all stands on its own", () => {
-    /* The schema refuses an unpaired `cardId` (#133), so this is the LIVE
-       narrowing rather than a malformed edition: `needsYouFor` subtracts cards
-       GitHub has closed since the edition shipped (#1193), and the frames must
-       survive that. */
-    const { standalone } = partitionEyeItems([item("frames", "card-gone")], []);
+  /**
+   * ⚠ **THE ARM THIS CARD EXISTS FOR, AND IT FAILS AGAINST THE SHIPPED
+   * READING.** The card is OPEN — its next slice is being built — and the relay
+   * has lifted the hold because his answer is recorded, so `needsYouFor` takes
+   * it off the live desk (#1193) while `eyeItemsFor` cannot see it: that reader
+   * drops an item only when its issue is CLOSED. Handed one list, the host
+   * failed the `drawn` test and the frames fell into the gallery with their own
+   * reply box, from his answer until the next edition.
+   */
+  it("⚠ an item whose card the LIVE desk dropped because he answered it is dropped too (#1938)", () => {
+    const { standalone, mergedInto, answered } = partitionEyeItems(
+      [item("frames-1612", "law9-sign-card-1612")],
+      /* What the page draws: `needsYouFor` subtracted the answered card. */
+      [],
+      /* What the edition wrote: the card, still `open`, with its frames. */
+      [card("law9-sign-card-1612", "open")],
+    );
+    expect(standalone, "the pictures came back as their own question").toEqual([]);
+    expect(answered.map((i) => i.id)).toEqual(["frames-1612"]);
+    expect(mergedInto.size).toBe(0);
+  });
+
+  it("an item naming a card the EDITION never had stands on its own", () => {
+    /* The one case the function cannot explain: the schema refuses an unpaired
+       `cardId` (#133), so this is a malformed edition rather than a live
+       narrowing — and frames cannot be re-created from a dropped item, so the
+       direction it fails in is toward his eye (law 9). */
+    const { standalone, answered } = partitionEyeItems([item("frames", "card-gone")], [], []);
     expect(standalone.map((i) => i.id)).toEqual(["frames"]);
+    expect(answered).toEqual([]);
   });
 
   it("several items on one card all merge into it, in their own order", () => {
@@ -735,14 +774,17 @@ describe("one question, one card — which eye items merge (#1895)", () => {
     const { standalone, mergedInto } = partitionEyeItems(
       [item("a", "card"), item("loose", null), item("b", "card")],
       [card("card", "open")],
+      [card("card", "open")],
     );
     expect(mergedInto.get("card")?.map((i) => i.id)).toEqual(["a", "b"]);
     expect(standalone.map((i) => i.id)).toEqual(["loose"]);
   });
 
-  it("⚠ nothing is lost: every item is in exactly one of the two halves", () => {
-    /* The property that matters more than any single case — the two sections
-       between them draw the whole list, and draw nothing twice. */
+  it("⚠ nothing is lost: every item is in exactly one of the three halves", () => {
+    /* The property that matters more than any single case — the halves between
+       them account for the whole list, and nothing appears twice. `answered` is
+       returned rather than quietly discarded precisely so this stays provable
+       after #1938 gave the function something to drop. */
     const items = [
       item("a", "card"),
       item("b", null),
@@ -750,12 +792,65 @@ describe("one question, one card — which eye items merge (#1895)", () => {
       item("d", "card"),
       item("e", "card-missing"),
     ];
-    const { standalone, mergedInto } = partitionEyeItems(items, [
-      card("card", "open"),
-      card("card-done", "done"),
-    ]);
-    const drawn = [...standalone.map((i) => i.id), ...[...mergedInto.values()].flat().map((i) => i.id)];
-    expect(drawn.sort()).toEqual(["a", "b", "c", "d", "e"]);
-    expect(new Set(drawn).size, "an item is drawn twice").toBe(items.length);
+    const edition = [card("card", "open"), card("card-done", "done")];
+    const { standalone, mergedInto, answered } = partitionEyeItems(items, edition, edition);
+    const seen = [
+      ...standalone.map((i) => i.id),
+      ...[...mergedInto.values()].flat().map((i) => i.id),
+      ...answered.map((i) => i.id),
+    ];
+    expect(seen.sort()).toEqual(["a", "b", "c", "d", "e"]);
+    expect(new Set(seen).size, "an item is accounted for twice").toBe(items.length);
+    /* And the three halves are the ones this card settled. */
+    expect(standalone.map((i) => i.id)).toEqual(["b", "e"]);
+    expect(answered.map((i) => i.id)).toEqual(["c"]);
+    expect(mergedInto.get("card")?.map((i) => i.id)).toEqual(["a", "d"]);
+  });
+
+  /**
+   * ⚠ **THE SAME QUESTION ASKED OF THE DEPLOYED EDITION, not of a fixture
+   * (#1938, working law 1).** Every arm above builds its own two-item world,
+   * and a partition rule can be right about those and wrong about the shapes a
+   * real file carries — paired items whose own `issueNumber` differs from their
+   * host's (`retry-outfit-1474` hosts on `sheet-shape-1278`), several items per
+   * host, and hosts in four different states.
+   *
+   * It simulates the ONE thing the live desk does that an edition cannot
+   * record: his answer arriving, which takes a host off `needsYou` while the
+   * card stays open. Every paired item in the file must then be accounted for
+   * as answered rather than reappearing in the gallery.
+   */
+  it("the deployed briefing's paired frames never reappear when their host is answered", () => {
+    const briefing = JSON.parse(
+      readFileSync(
+        path.resolve(__dirname, "../../../../../../server/crew/crew-briefing.json"),
+        "utf8",
+      ),
+    ) as {
+      needsYou: { id: string; state: string }[];
+      eyeItems: { id: string; cardId?: string | null; state: string }[];
+    };
+    const items = briefing.eyeItems as unknown as Parameters<typeof partitionEyeItems>[0];
+    const edition = briefing.needsYou as unknown as Parameters<typeof partitionEyeItems>[1];
+    const paired = briefing.eyeItems.filter((item) =>
+      item.cardId != null && briefing.needsYou.some((card) => card.id === item.cardId));
+    /* The floor: a file with no paired item would pass this arm by holding
+       nothing, which is the shape a population control exists to refuse. */
+    expect(paired.length, "the real edition carries no paired eye item to judge")
+      .toBeGreaterThan(5);
+
+    /* HE ANSWERS EVERYTHING: the live desk hands the page an empty needs-you
+       list while the edition still carries every card and every pairing. */
+    const afterHisAnswers = partitionEyeItems(items, [], edition);
+    expect(afterHisAnswers.mergedInto.size, "nothing can merge into a card nobody draws").toBe(0);
+    const pairedIds = new Set(paired.map((item) => item.id));
+    expect(
+      afterHisAnswers.standalone.filter((item) => pairedIds.has(item.id)).map((item) => item.id),
+      "these frames came back as their own question",
+    ).toEqual([]);
+    expect(afterHisAnswers.answered.map((item) => item.id).sort())
+      .toEqual([...pairedIds].sort());
+    /* And the unpaired ones are untouched by any of this. */
+    expect(afterHisAnswers.standalone.length).toBe(briefing.eyeItems.length - paired.length);
   });
 });
