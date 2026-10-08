@@ -57,12 +57,32 @@ export const AUTH_ME_QUERY_OPTIONS = {
  */
 export const AUTH_ME_RECONNECTING_AFTER_FAILURES = 3;
 
+/**
+ * STILL WAITING FOR AN ANSWER IS `isPending`, NOT `isLoading` — #2026.
+ *
+ * In react-query v5 `isLoading` is `isPending && isFetching`. When a retry is
+ * PAUSED — a background tab, or the browser offline (`fetchStatus` is
+ * `'paused'`) — `isFetching` is false, so `isLoading` reads false while there
+ * is still no answer at all. Every page that reads `!loading && !user` as
+ * "signed out" then sent a signed-in customer to the sign-in page. A query
+ * with no answer yet is `pending` whatever its fetch is doing, so that is what
+ * "still checking" keys on. `auth.me` is never disabled, so `pending` always
+ * means an answer is still coming. A refused session answers `null`, which is
+ * `success`, so it is never pending and still redirects at once.
+ *
+ * The hook's `loading`, its redirect guard and `reconnecting` all read this one
+ * function, and the suite reads it too, so the test cannot drift from the hook.
+ */
+export function isSessionCheckPending(result: { isPending: boolean }): boolean {
+  return result.isPending;
+}
+
 export function isSessionCheckReconnecting(result: {
-  isLoading: boolean;
+  isPending: boolean;
   failureCount: number;
 }): boolean {
   return (
-    result.isLoading &&
+    isSessionCheckPending(result) &&
     result.failureCount >= AUTH_ME_RECONNECTING_AFTER_FAILURES
   );
 }
@@ -105,7 +125,7 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     return {
       user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
+      loading: isSessionCheckPending(meQuery) || logoutMutation.isPending,
       reconnecting: isSessionCheckReconnecting(meQuery),
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
@@ -113,7 +133,7 @@ export function useAuth(options?: UseAuthOptions) {
   }, [
     meQuery.data,
     meQuery.error,
-    meQuery.isLoading,
+    meQuery.isPending,
     meQuery.failureCount,
     logoutMutation.error,
     logoutMutation.isPending,
@@ -121,17 +141,17 @@ export function useAuth(options?: UseAuthOptions) {
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
+    if (isSessionCheckPending(meQuery) || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
     logoutMutation.isPending,
-    meQuery.isLoading,
+    meQuery.isPending,
     state.user,
   ]);
 
