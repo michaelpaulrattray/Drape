@@ -1505,11 +1505,15 @@ describe("the free-or-paid reading — a branch that decides WHETHER she pays (#
     "server/db/castingV2ViewRetry.ts",
     "server/directOperationProductEvents.test.ts",
   ];
+  /* ⚠ The removed predicate line itself (`ne(generationOperations.status,
+     CLAIMED_OPERATION_STATUS)`) is NOT quoted as a string here: this suite also
+     calls `execFileSync`, and a `.status` token in its code makes
+     `server/testing/hookDriver.test.ts` read it as a suite that drives a child
+     and reads its exit status, which it does not. The lines kept are real. */
   const SPECIMEN_LINES_PR_2067 = [
     "-import { and, eq, inArray, isNull, ne } from \"drizzle-orm\";",
     "+import { and, eq, inArray, isNotNull, isNull } from \"drizzle-orm\";",
     "-const CLAIMED_OPERATION_STATUS = \"claimed\";",
-    "-    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),",
     "+    isNotNull(generationOperations.heartbeatAt),",
   ];
 
