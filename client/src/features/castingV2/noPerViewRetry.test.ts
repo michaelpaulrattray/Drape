@@ -59,7 +59,7 @@ function stripSpan(room: string): string {
 
 const roomSource = async () => renderable(await readFile(ROOM, "utf8"));
 
-describe("the room offers no per-view Try again (#2089)", () => {
+describe("the room offers no per-view Try again (card 2089)", () => {
   it("draws nothing under a view's name — no row, no link, no offer read", async () => {
     const strip = stripSpan(await roomSource());
     expect(strip).not.toContain("slot.retry");
@@ -121,7 +121,7 @@ describe("the reader itself", () => {
     expect(out).toContain("const b = 1;");
   });
 
-  it("would have FAILED on the strip as it stood before #2089", () => {
+  it("would have FAILED on the strip as it stood before card 2089", () => {
     /* The row exactly as the room drew it, between a label and its tile's end. */
     const yesterday = renderable([
       '<article className="dpc-strip__item">',
