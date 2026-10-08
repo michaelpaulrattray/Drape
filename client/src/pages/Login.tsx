@@ -648,7 +648,7 @@ export default function Login() {
               <motion.div key="choose" variants={viewVariants} initial="initial" animate="animate" exit="exit" className="bg-white rounded-2xl p-6 sm:p-8 md:p-10 border border-[#0A0A0A]/5">
                 <div className="mb-8">
                   <h1 className="text-2xl sm:text-3xl font-medium tracking-tight text-[#0A0A0A] font-geist">
-                    Welcome to Drape
+                    Welcome to Klieg
                   </h1>
                   <p className="text-[#757575] text-sm mt-2 font-medium font-body">
                     Choose how to get started.

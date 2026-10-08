@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 188
+      "moduleCount": 190
     },
     {
       "id": "domain:castingV2",
@@ -3577,6 +3577,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/accountCastingPurge.ts",
+      "path": "server/castingV2/accountCastingPurge.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/askReference.ts",
       "path": "server/castingV2/askReference.ts",
       "domain": "casting-v2",
@@ -3645,6 +3651,12 @@
     {
       "id": "module:server/castingV2/candidateService.ts",
       "path": "server/castingV2/candidateService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/candidateStoreTolerance.ts",
+      "path": "server/castingV2/candidateStoreTolerance.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -11272,6 +11284,10 @@
     {
       "id": "test:server/accessValidate.test.ts",
       "path": "server/accessValidate.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionCoverage.test.ts",
+      "path": "server/accountDeletionCoverage.test.ts"
     },
     {
       "id": "test:server/accountFreeze.test.ts",
@@ -24794,6 +24810,76 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/casting/storageCleanupContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/castingV2/candidateStoreTolerance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2FaceScans.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkDesigns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2InkPlates.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceAttachments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2ReferenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Segments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/askReference.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -25015,6 +25101,11 @@
     },
     {
       "from": "module:server/castingV2/candidateRetention.ts",
+      "to": "module:server/castingV2/candidateStoreTolerance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateRetention.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -25084,13 +25175,23 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/candidateRetention.ts",
-      "to": "module:shared/referenceIntents.ts",
+      "from": "module:server/castingV2/candidateService.ts",
+      "to": "module:server/db/castingV2.ts",
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/candidateService.ts",
-      "to": "module:server/db/castingV2.ts",
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/candidateStoreTolerance.ts",
+      "to": "module:shared/referenceIntents.ts",
       "kind": "imports"
     },
     {
@@ -29901,6 +30002,11 @@
     {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/casting/storageCleanupContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/castingV2/accountCastingPurge.ts",
       "kind": "imports"
     },
     {

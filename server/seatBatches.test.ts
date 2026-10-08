@@ -1075,8 +1075,17 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        cannot see `.agents/foreman/PROGRAM.md`, so a briefing left behind while
        his word reached the rulebook passes here. The arm that holds the two
        EQUAL is `server/seatFocusTwoTruths.test.ts`, and the pin above and that
-       arm move together: a flip that changes this line changes both files. */
-    expect(focusRungFromLadder(ladder)).toBe("P2");
+       arm move together: a flip that changes this line changes both files.
+
+       ⚠ **MOVED P2 → N2b ON 2026-10-08, AND THE ROAD IS THE ONE THIS DOCBLOCK
+       PRESCRIBES.** His Desk reply #271 on the P2 completion card (#1933) was
+       `"n2b"`, given after he drove all five of P2's test-drive steps and all
+       five came back `matched` (#266–#270). The rulebook's `CURRENT FOCUS`
+       line, the briefing's ladder and this pin moved in ONE commit, which is
+       what #1840 cost the program when they did not. **This pin moves only on
+       his word. The next flip is N2b → N2c, on N2b's completion card and his
+       word — never on N2b merely finishing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N2b");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {

@@ -394,12 +394,20 @@ export default function AdminCrew() {
             ONE QUESTION, ONE CARD (#1895, his word: *"i dont want double up of
             cards on my desk … its making my desk look overcrowded"*). An eye
             item whose `cardId` names a card still on his desk draws its frames
-            INSIDE that card; everything else stands on its own in For your
-            eyes, exactly as before. One function answers both halves, so the
-            two sections cannot disagree about what is paired.
+            INSIDE that card; one whose card he has ANSWERED is dropped (#1938 —
+            otherwise the pictures came back as their own question, with their
+            own reply box, until the next edition); and only an item with no
+            card, or one naming a card the edition never had, stands on its own.
+            One function answers every half, so the two sections cannot disagree
+            about what is paired.
+
+            It is handed BOTH lists on purpose: `needsYou` is what this page
+            draws, `data.briefing.needsYou` is what the edition wrote, and the
+            difference between them is exactly the set of cards he has answered
+            since it shipped.
           */
           const { standalone: standaloneEyeItems, mergedInto: mergedEyeItems } =
-            partitionEyeItems(eyeItems, needsYou);
+            partitionEyeItems(eyeItems, needsYou, data.briefing.needsYou);
           /* ⚠ **THE SECTION MENU'S COUNT IS WHAT THE SECTION DRAWS**, not what
              the edition holds. Counting merged items here would send him to a
              section to find frames that are up on a card above it. */

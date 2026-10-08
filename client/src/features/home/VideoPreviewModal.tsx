@@ -99,7 +99,7 @@ export function VideoPreviewModal({ open, onClose }: VideoPreviewModalProps) {
                     Product demo coming soon
                   </p>
                   <p className="font-body text-sm text-white/50 mt-2">
-                    See how Drape transforms your creative workflow
+                    See how Klieg transforms your creative workflow
                   </p>
                 </div>
               </div>

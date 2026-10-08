@@ -2,6 +2,7 @@
  * Account Deletion — GDPR-compliant cascading deletion of all user data.
  *
  * Deletion order (respects foreign key dependencies):
+ *   0. the whole casting studio — `purgeAccountCastingIn` (#1935)
  *   1. changeRequestAttachments (via changeRequests)
  *   2. changeRequests (submittedById or targetUserId)
  *   3. referrals (referrerUserId)
@@ -11,6 +12,9 @@
  *   7. modelAssets (via models.userId)
  *   8. models (userId)
  *   9. generations (userId)
+ *  9b. generationOperationLocks (via the account's operations), then
+ *      generationOperations (userId)
+ *  9c. bugReports (userId), faceScanDailyUsage (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -18,6 +22,13 @@
  *
  * Owned-storage cleanup: persists an exact-key manifest in the same database
  * transaction; the leased R7-5D worker performs storage deletion later.
+ *
+ * ⚠ **WHICH TABLES THIS FUNCTION IS ANSWERABLE FOR IS NOT THIS LIST — IT IS
+ * `ACCOUNT_DELETION_DISPOSITIONS` BELOW, WHICH A GUARD HOLDS AGAINST THE
+ * SCHEMA (#1935).** An ordered prose list is the artifact that was wrong for
+ * the whole life of this feature: it read as complete while seventeen
+ * user-keyed tables, the entire casting studio among them, were untouched. A
+ * list a person maintains cannot tell you what it is missing.
  */
 import { randomUUID } from "node:crypto";
 import { and, eq, or, inArray, sql } from "drizzle-orm";
@@ -42,6 +53,10 @@ import {
   modelPackageSnapshots,
   modelPackageSnapshotSlots,
   generations,
+  generationOperations,
+  generationOperationLocks,
+  bugReports,
+  faceScanDailyUsage,
   auditLogs,
   changeRequests,
   changeRequestAttachments,
@@ -60,6 +75,7 @@ import {
 import { getDb, withTransaction } from "./connection";
 import type { TransactionHandle } from "./connection";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
+import { purgeAccountCastingIn } from "../castingV2/accountCastingPurge";
 import { classifyStorageReference, parseJsonValue } from "../casting/deletionAudit";
 import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import { createModuleLogger } from "../logging/logger";
@@ -69,46 +85,190 @@ import { DIAGNOSTIC_KEY_PREFIX } from "../castingV2/diagnosticCapture";
 import { REFUSAL_LOOP_KEY_PREFIX } from "../castingV2/refusalLoopCapture";
 const log = createModuleLogger("db/accountDeletion");
 
+/**
+ * WHAT ACCOUNT ERASURE DOES WITH EVERY TABLE THAT CARRIES A `userId` — the
+ * declaration `server/accountDeletionCoverage.test.ts` holds against
+ * `drizzle/schema.ts` in both directions (#1935, working law 7).
+ *
+ * ⚠ **THIS EXISTS BECAUSE THE GAP WAS SILENT FOR THE WHOLE LIFE OF THE
+ * FEATURE.** Seventeen user-keyed tables were missed — every casting table
+ * among them — and nothing could notice: there is no `ON DELETE CASCADE` in
+ * this schema to catch an omission, no foreign key to refuse one, and the
+ * deletion's own tests assert the counts it reports rather than the rows it
+ * leaves. A table added tomorrow would have joined them in exactly the same
+ * silence. **The guard is the fix; this map is only the thing it reads.**
+ *
+ * `deleted` and `anonymised` mean what they say. `exempt` is a decision, so
+ * every one of them carries its reason here and the guard refuses a reason
+ * that is empty.
+ *
+ * ⚠ **KEYED ON THE DRIZZLE SYMBOL, NOT THE SQL TABLE NAME, and the guard's own
+ * first run is why.** Two of these tables do not have the name their symbol
+ * has: `credits` is the SQL table **`points`** and `creditTransactions` is
+ * **`point_transactions`** — the pre-rename names, still in the database. A map
+ * keyed on SQL names would read as a list of tables nobody writing this file
+ * has ever typed, and the two that mattered most are the money ones.
+ */
+export const ACCOUNT_DELETION_DISPOSITIONS = {
+  /* ---- the account itself and its money ---- */
+  /* `users` itself has no `userId` column and is therefore not in this map —
+     it IS the account, and it is deleted last. */
+  credits: "deleted",
+  creditTransactions: "deleted",
+
+  /* ---- the legacy studio ---- */
+  models: "deleted",
+  generations: "deleted",
+  generationOperations: "deleted",
+  castingEvidenceIngestions: "deleted",
+  castingEvidenceCandidates: "deleted",
+  castingEvidenceCandidateFeatureTargets: "deleted",
+  modelReferencePlates: "deleted",
+  modelEvidenceCrops: "deleted",
+  modelIdentityFeatureIntents: "deleted",
+  modelIdentityFeatureProjectionEvidence: "deleted",
+
+  /* ---- boards and wardrobe ---- */
+  boards: "deleted",
+  wardrobeGarments: "deleted",
+  wardrobeOutfits: "deleted",
+  wardrobeSessions: "deleted",
+  wardrobeLooks: "deleted",
+
+  /* ---- the casting studio (`purgeAccountCastingIn`) ---- */
+  castingSessions: "deleted",
+  castingRolls: "deleted",
+  castingCandidates: "deleted",
+  castingCandidateVariants: "deleted",
+  castingSegments: "deleted",
+  castingReferenceLibrary: "deleted",
+  castingFaceScans: "deleted",
+  castingInkDesigns: "deleted",
+  castingInkPlates: "deleted",
+  castingReferenceCrops: "deleted",
+  castingReferenceAttachments: "deleted",
+  castingInkDeliveryCrops: "deleted",
+
+  /* ---- her own words, at her own request ---- */
+  /*
+    #255 ruled that a staff queue gets no delete button, because *"removing a
+    person's words is a founder decision, not a queue button"*. This is the
+    other party asking: a customer erasing her own account is the person whose
+    words they are, and nothing in the product reads a bug report for money or
+    for a legal obligation. So they go with her.
+  */
+  bugReports: "deleted",
+
+  /* ---- a quiet limit with nothing to remember ---- */
+  /*
+    One row per account per UTC day, counting house-money face scans. It is
+    keyed on the account id, so a new account starts at zero whether these
+    rows survive or not — deleting them loses no control at all.
+  */
+  faceScanDailyUsage: "deleted",
+
+  /* ---- anonymised ---- */
+  /*
+    Compliance keeps the trail and drops the person: `userId` goes null and the
+    row records that its user was deleted. Pre-dates #1935 and is unchanged.
+  */
+  auditLogs: "anonymised",
+
+  /* ---- exempt, each for its own stated reason ---- */
+  /*
+    ⚠ THE SCHEMA ITSELF ALREADY RULED ON THIS ONE, and the sentence is on the
+    column: *"Not a foreign key, for the same reason the audit log is not: a
+    deleted account must not take the record with it."* It is the free-grant
+    fraud guard — grants per device, grants per network, inside a window — so
+    deleting it on request turns delete-and-register into a credit farm. The
+    row holds a device key and an IP and no content of hers.
+  */
+  freeGrantClaims: "exempt: the free-grant fraud guard, which delete-and-re-register would defeat — the schema's own column comment rules it",
+  /*
+    A money record mirroring a settled Stripe invoice, one per plan change,
+    whose own status comment says *"Never deleted"*. Credits owed or handed
+    back beside real money moving; the accounting outlives the account.
+  */
+  planChangeSettlements: "exempt: the Stripe-invoice settlement ledger — a money record that outlives the account, and its own column comment says never deleted",
+  /*
+    The manifest this very deletion writes. Deleting the account's batches
+    would delete the instruction to go and remove its objects.
+  */
+  storageCleanupBatches: "exempt: the deletion's own storage-cleanup manifest — the instruction that removes its objects",
+} as const satisfies Record<string, `deleted` | `anonymised` | `exempt: ${string}`>;
+
+/**
+ * Every count this function reports, at zero — ONE list.
+ *
+ * ⚠ **IT WAS WRITTEN OUT THREE TIMES BEFORE #1935**: once as the type, once in
+ * the no-database early return and once as the live accumulator. Three copies
+ * of a 31-name list is working law 4, and the failure mode is quiet — a field
+ * missed in the early return is a `deletedCounts` object with a hole in it on
+ * the one path nobody drives. The type is DERIVED from this function's return
+ * now, so a count has exactly one place to be added.
+ */
+function zeroDeletionCounts() {
+  return {
+    changeRequestAttachments: 0,
+    changeRequests: 0,
+    referrals: 0,
+    boardEdges: 0,
+    boardItemVersions: 0,
+    boardItems: 0,
+    boards: 0,
+    wardrobeLooks: 0,
+    wardrobeSessions: 0,
+    wardrobeOutfits: 0,
+    wardrobeGarments: 0,
+    evidenceIngestions: 0,
+    evidenceCandidates: 0,
+    evidenceCandidateAttempts: 0,
+    evidenceCandidateFeatureTargets: 0,
+    featureIntents: 0,
+    identityFeatures: 0,
+    identityFeatureVersions: 0,
+    identityFeatureProjectionEvidence: 0,
+    snapshotFeatureSelections: 0,
+    referencePlates: 0,
+    evidenceCrops: 0,
+    modelPackageSnapshotSlots: 0,
+    modelPackageSnapshots: 0,
+    modelIdentitySnapshots: 0,
+    modelAssets: 0,
+    models: 0,
+    generations: 0,
+    generationOperations: 0,
+    generationOperationLocks: 0,
+    bugReports: 0,
+    faceScanDailyUsage: 0,
+    creditTransactions: 0,
+    credits: 0,
+    auditLogsAnonymized: 0,
+    user: 0,
+    /* The casting studio's twelve, keyed by table (#1935). */
+    castingSessions: 0,
+    castingRolls: 0,
+    castingCandidates: 0,
+    castingCandidateVariants: 0,
+    castingSegments: 0,
+    castingReferenceLibrary: 0,
+    castingFaceScans: 0,
+    castingInkDesigns: 0,
+    castingInkPlates: 0,
+    castingReferenceCrops: 0,
+    castingReferenceAttachments: 0,
+    castingInkDeliveryCrops: 0,
+  };
+}
+
 export interface DeletionResult {
   success: boolean;
   cleanupBatchId: string | null;
   cleanupObjects: number;
-  deletedCounts: {
-    changeRequestAttachments: number;
-    changeRequests: number;
-    referrals: number;
-    boardEdges: number;
-    boardItemVersions: number;
-    boardItems: number;
-    boards: number;
-    wardrobeLooks: number;
-    wardrobeSessions: number;
-    wardrobeOutfits: number;
-    wardrobeGarments: number;
-    evidenceIngestions: number;
-    evidenceCandidates: number;
-    evidenceCandidateAttempts: number;
-    evidenceCandidateFeatureTargets: number;
-    featureIntents: number;
-    identityFeatures: number;
-    identityFeatureVersions: number;
-    identityFeatureProjectionEvidence: number;
-    snapshotFeatureSelections: number;
-    referencePlates: number;
-    evidenceCrops: number;
-    modelPackageSnapshotSlots: number;
-    modelPackageSnapshots: number;
-    modelIdentitySnapshots: number;
-    modelAssets: number;
-    models: number;
-    generations: number;
-    creditTransactions: number;
-    credits: number;
-    auditLogsAnonymized: number;
-    user: number;
-  };
+  deletedCounts: ReturnType<typeof zeroDeletionCounts>;
   error?: string;
 }
+
 
 function addOwnedAccountKey(
   keys: Set<string>,
@@ -355,10 +515,38 @@ export async function collectAccountOwnedStorageItemsIn(
       storageKey,
       storageBackend: "public_r2" as const,
     })),
-  ].sort((left, right) =>
-    left.storageBackend.localeCompare(right.storageBackend)
-    || left.storageKey.localeCompare(right.storageKey)
-  );
+  ].sort(byBackendThenKey);
+}
+
+/** One manifest order, so two contributors cannot each have their own. */
+function byBackendThenKey(
+  left: StorageCleanupManifestItem,
+  right: StorageCleanupManifestItem,
+): number {
+  return left.storageBackend.localeCompare(right.storageBackend)
+    || left.storageKey.localeCompare(right.storageKey);
+}
+
+/**
+ * The account's manifest, from its two contributors.
+ *
+ * ⚠ **DEDUPED, AND THE DUPLICATE IS NOT HYPOTHETICAL.** A casting render files
+ * a `generations` row whose `resultUrl` is the very object the candidate row
+ * names in `imageKey`, so the same key arrives from both readers. The manifest
+ * carries an `expectedCount` the cleanup worker reconciles against, and two
+ * items for one object would make a correct run look like a half-done one
+ * forever.
+ */
+function accountManifest(
+  ...contributions: readonly StorageCleanupManifestItem[][]
+): StorageCleanupManifestItem[] {
+  const seen = new Map<string, StorageCleanupManifestItem>();
+  for (const contribution of contributions) {
+    for (const item of contribution) {
+      seen.set(`${item.storageBackend}\u0000${item.storageKey}`, item);
+    }
+  }
+  return Array.from(seen.values()).sort(byBackendThenKey);
 }
 
 /**
@@ -372,57 +560,12 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       success: false,
       cleanupBatchId: null,
       cleanupObjects: 0,
-      deletedCounts: {
-        changeRequestAttachments: 0, changeRequests: 0, referrals: 0,
-        boardEdges: 0, boardItemVersions: 0, boardItems: 0, boards: 0,
-        wardrobeLooks: 0, wardrobeSessions: 0, wardrobeOutfits: 0, wardrobeGarments: 0,
-        evidenceIngestions: 0, evidenceCandidates: 0, evidenceCandidateAttempts: 0,
-        evidenceCandidateFeatureTargets: 0,
-        featureIntents: 0, identityFeatures: 0, identityFeatureVersions: 0,
-        identityFeatureProjectionEvidence: 0,
-        snapshotFeatureSelections: 0, referencePlates: 0, evidenceCrops: 0,
-        modelPackageSnapshotSlots: 0, modelPackageSnapshots: 0, modelIdentitySnapshots: 0,
-        modelAssets: 0, models: 0, generations: 0,
-        creditTransactions: 0, credits: 0, auditLogsAnonymized: 0, user: 0,
-      },
+      deletedCounts: zeroDeletionCounts(),
       error: "Database not available",
     };
   }
 
-  const counts: DeletionResult["deletedCounts"] = {
-    changeRequestAttachments: 0,
-    changeRequests: 0,
-    referrals: 0,
-    boardEdges: 0,
-    boardItemVersions: 0,
-    boardItems: 0,
-    boards: 0,
-    wardrobeLooks: 0,
-    wardrobeSessions: 0,
-    wardrobeOutfits: 0,
-    wardrobeGarments: 0,
-    evidenceIngestions: 0,
-    evidenceCandidates: 0,
-    evidenceCandidateAttempts: 0,
-    evidenceCandidateFeatureTargets: 0,
-    featureIntents: 0,
-    identityFeatures: 0,
-    identityFeatureVersions: 0,
-    identityFeatureProjectionEvidence: 0,
-    snapshotFeatureSelections: 0,
-    referencePlates: 0,
-    evidenceCrops: 0,
-    modelPackageSnapshotSlots: 0,
-    modelPackageSnapshots: 0,
-    modelIdentitySnapshots: 0,
-    modelAssets: 0,
-    models: 0,
-    generations: 0,
-    creditTransactions: 0,
-    credits: 0,
-    auditLogsAnonymized: 0,
-    user: 0,
-  };
+  const counts: DeletionResult["deletedCounts"] = zeroDeletionCounts();
 
   try {
     const operationId = randomUUID();
@@ -434,11 +577,28 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       const currentPublicUrl = process.env.R2_PUBLIC_URL ?? "";
       if (!currentPublicUrl) throw new Error("R2_PUBLIC_URL is required for account cleanup");
       const storageItems = await collectAccountOwnedStorageItemsIn(tx, userId, currentPublicUrl);
+
+      /*
+        STEP 0: THE CASTING STUDIO (#1935).
+
+        It collects AND deletes in one pass, which is the retention
+        authority's own shape and is why it is here rather than inside
+        `collectAccountOwnedStorageItemsIn`: the nine child stores it reaches
+        are reached through the owned candidate, so the rows have to go in the
+        same walk that found their keys. Running before the manifest exists
+        costs nothing — every statement in this function is one transaction,
+        so the keys and the row deletions commit together or not at all, which
+        is the same reason the board and item keys below enter a manifest
+        written before their rows disappear.
+      */
+      const castingPurge = await purgeAccountCastingIn(tx, userId);
+      Object.assign(counts, castingPurge.counts);
+
       const manifest = await createStorageCleanupManifestIn(tx, {
         userId,
         operationId,
         kind: "account_delete",
-        storageItems,
+        storageItems: accountManifest(storageItems, castingPurge.storageItems),
       });
       cleanupBatchId = manifest.id;
       cleanupObjects = manifest.expectedCount;
@@ -622,6 +782,52 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(generations)
         .where(eq(generations.userId, userId));
       counts.generations = (genResult as any)[0]?.affectedRows ?? 0;
+
+      /*
+        Step 9b: the operation receipts, and their leases BEFORE them (#1935).
+
+        A lock row carries no `userId` — its only path back to an account runs
+        through the operation it fences — so deleting the operations first
+        would strand every lease with nothing able to find it, and a stranded
+        lease's `lockKey` is a key a LATER account could be refused on.
+
+        These rows carry `chargedCredits`, `refundedCredits` and a saved
+        `result`, so they are the subject content and the money story of an
+        account that has asked to be gone. Deleting them is the same decision
+        this function already makes two statements below about the credit
+        ledger itself, which is the money record a receipt only mirrors.
+      */
+      const userOperations = await tx
+        .select({ id: generationOperations.id })
+        .from(generationOperations)
+        .where(eq(generationOperations.userId, userId));
+      if (userOperations.length > 0) {
+        const lockResult = await tx
+          .delete(generationOperationLocks)
+          .where(inArray(
+            generationOperationLocks.operationId,
+            userOperations.map((row) => row.id),
+          ));
+        counts.generationOperationLocks = (lockResult as any)[0]?.affectedRows ?? 0;
+      }
+      const opResult = await tx
+        .delete(generationOperations)
+        .where(eq(generationOperations.userId, userId));
+      counts.generationOperations = (opResult as any)[0]?.affectedRows ?? 0;
+
+      /*
+        Step 9c: her own words, and a day's face-scan tally (#1935).
+
+        `ACCOUNT_DELETION_DISPOSITIONS` carries why each one goes rather than
+        staying or being anonymised; the reasons are decisions and they are
+        written down where the guard reads them.
+      */
+      const bugResult = await tx.delete(bugReports).where(eq(bugReports.userId, userId));
+      counts.bugReports = (bugResult as any)[0]?.affectedRows ?? 0;
+      const scanUsageResult = await tx
+        .delete(faceScanDailyUsage)
+        .where(eq(faceScanDailyUsage.userId, userId));
+      counts.faceScanDailyUsage = (scanUsageResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx
