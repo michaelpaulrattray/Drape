@@ -723,16 +723,12 @@ describe.skipIf(!dbAvailable)("boards", () => {
       const ownerB = appRouter.createCaller(createAuthContext(418));
       const { id: boardA } = await ownerA.boards.create({ startedWith: "blank" });
       const { id: boardB } = await ownerB.boards.create({ startedWith: "blank" });
-      const { id: itemA } = await ownerA.boards.addItem({
-        boardId: boardA,
-        type: "note",
-        imageUrl: "https://example.com/a-current.png",
-      });
-      const { id: itemB } = await ownerB.boards.addItem({
-        boardId: boardB,
-        type: "note",
-        imageUrl: "https://example.com/b-current.png",
-      });
+      const { id: itemA } = await ownerA.boards.addItem({ boardId: boardA, type: "note" });
+      const { id: itemB } = await ownerB.boards.addItem({ boardId: boardB, type: "note" });
+      // #2062: the routes no longer take a picture address from the client;
+      // the server writer sets it, scoped to the owner.
+      await updateBoardItem({ userId: 417, itemId: itemA, data: { imageUrl: "https://example.com/a-current.png" } });
+      await updateBoardItem({ userId: 418, itemId: itemB, data: { imageUrl: "https://example.com/b-current.png" } });
 
       await expect(addOwnedBoardItemVersion({
         userId: 418,

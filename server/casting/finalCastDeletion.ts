@@ -218,14 +218,73 @@ async function recomputeBoardThumbnailIn(tx: TransactionHandle, boardId: number)
     .where(eq(boards.id, boardId));
 }
 
+/**
+ * A canvas picture address is deletion authority only when it names one of
+ * THIS Cast's own pictures (#2062).
+ *
+ * ⚠ **A BOARD ITEM'S `imageUrl` IS NOT PROOF OF OWNERSHIP, BECAUSE THE
+ * CUSTOMER COULD TYPE IT.** `boards.addItem` / `addItems` / `updateItem` took
+ * it from the client until #2062, `boardOps.createNode` still takes one (the
+ * canvas Duplicate sends the copied node's address back), and
+ * `boards.addItemVersion` writes one to a version row that
+ * `revertItemVersion` then copies onto the item. A picture address is public.
+ * So until this check a customer could put another customer's picture on an
+ * item linked to her own Cast, delete the Cast, and `classifyStorageReference`
+ * would turn the address into a key in HER deletion manifest — deleting the
+ * other customer's object.
+ *
+ * The rule is the Cast's own pictures and nothing else, and it is a JOIN, not
+ * a prefix: a cast's picture key (`casting/<ts>-<uuid>.png`,
+ * `casting-v2/candidates/<uuid>.png`) carries no account id, so no prefix can
+ * tell this Cast's picture from another account's. `castOwnedKeys` is the set
+ * the deletion already collected from rows keyed on this Cast — its
+ * `model_assets`, its `generations`, its promoted evidence, its wardrobe
+ * history and looks — frozen before the canvas is read. Read at the server
+ * writers 2026-10-09, none puts a Cast's canvas picture under an
+ * account-scoped prefix either (the wardrobe's `wardrobe/<id>/` and
+ * `<id>-wardrobe/` never land on a Cast's canvas node), so that half of the
+ * rule is an empty set rather than a guessed one.
+ *
+ * Nothing this Cast owns is lost by it: every server writer that puts a
+ * Cast's picture on a canvas (the headshot fill, the library landing, the
+ * canvas recast, the variations, the copied Cast) writes an address that is a
+ * `model_assets` row of that Cast — assets are appended and marked stale,
+ * never overwritten — so the canvas can no longer ADD a key the Cast's own
+ * rows do not already prove. That is the point: the canvas is a reference,
+ * never proof. Anything else on our bucket is SKIPPED and LOGGED with where
+ * it was (Cast, item, column) and never the key, which names somebody's
+ * object. An address on another origin was never a key and stays silent.
+ */
+function collectCastCanvasKey(
+  keys: Set<string>,
+  castOwnedKeys: ReadonlySet<string>,
+  currentPublicUrl: string,
+  url: unknown,
+  where: { modelId: number; itemId: number; column: "board_items.imageUrl" | "board_item_versions.imageUrl" } | null,
+): void {
+  const classified = classifyStorageReference({ url, currentPublicUrl });
+  if (classified.kind !== "current_origin_url") return;
+  if (castOwnedKeys.has(classified.key)) {
+    keys.add(classified.key);
+    return;
+  }
+  // The second canvas pass (inside the deletion, after the manifest) makes
+  // the same decision silently: the first pass already said where it was.
+  if (where) {
+    log.warn(where, "A canvas picture that is not one of this Cast's own was left alone, not deleted");
+  }
+}
+
 export async function collectCanvasCleanupKeysIn(input: {
   tx: TransactionHandle;
   modelId: number;
   assetUrls: string[];
   storageKeys: Set<string>;
+  /** The keys this Cast's own rows prove, collected before the canvas is read (#2062). */
+  castOwnedKeys: ReadonlySet<string>;
   currentPublicUrl: string;
 }): Promise<void> {
-  const { tx, modelId, assetUrls, storageKeys, currentPublicUrl } = input;
+  const { tx, modelId, assetUrls, storageKeys, castOwnedKeys, currentPublicUrl } = input;
   const linked = await tx
     .select({
       id: boardItems.id,
@@ -247,15 +306,22 @@ export async function collectCanvasCleanupKeysIn(input: {
     const isCast = item.sourceModelId === modelId || provenance?.modelId === modelId;
     if (!isCast && item.imageUrl && assetUrls.includes(item.imageUrl)) continue;
     linkedIds.push(item.id);
-    // The item's URL only, never `imageKey` — see the note at the second read below (#2056).
-    collectManifestKey(storageKeys, currentPublicUrl, { url: item.imageUrl });
+    // The item's URL only, never `imageKey` — see the note at the second read
+    // below (#2056) — and the URL only when it is this Cast's own (#2062).
+    collectCastCanvasKey(storageKeys, castOwnedKeys, currentPublicUrl, item.imageUrl, {
+      modelId, itemId: item.id, column: "board_items.imageUrl",
+    });
   }
   if (linkedIds.length) {
     const versions = await tx
-      .select({ imageUrl: boardItemVersions.imageUrl })
+      .select({ itemId: boardItemVersions.itemId, imageUrl: boardItemVersions.imageUrl })
       .from(boardItemVersions)
       .where(inArray(boardItemVersions.itemId, linkedIds));
-    for (const version of versions) collectManifestKey(storageKeys, currentPublicUrl, { url: version.imageUrl });
+    for (const version of versions) {
+      collectCastCanvasKey(storageKeys, castOwnedKeys, currentPublicUrl, version.imageUrl, {
+        modelId, itemId: version.itemId, column: "board_item_versions.imageUrl",
+      });
+    }
   }
 }
 
@@ -265,12 +331,13 @@ async function deleteCanvasDependenciesIn(input: {
   userId: number;
   assetUrls: string[];
   storageKeys: Set<string>;
+  castOwnedKeys: ReadonlySet<string>;
   currentPublicUrl: string;
   wardrobeSessionIds: number[];
   wardrobeLookIds: number[];
 }): Promise<{ items: number; versions: number; boards: number }> {
   const {
-    tx, modelId, userId, assetUrls, storageKeys, currentPublicUrl,
+    tx, modelId, userId, assetUrls, storageKeys, castOwnedKeys, currentPublicUrl,
     wardrobeSessionIds, wardrobeLookIds,
   } = input;
   const urlSet = new Set(assetUrls);
@@ -360,15 +427,18 @@ async function deleteCanvasDependenciesIn(input: {
         on an older row was typed by a customer and may name another
         customer's picture. The account erasure skips it for the same reason
         (`skipUnownedBoardKey`, `server/db/accountDeletion.ts`). The Cast's own
-        pictures still arrive through its assets and through this URL.
+        pictures still arrive through its assets — and this URL counts only
+        when it is one of them (#2062, `collectCastCanvasKey`).
       */
-      collectManifestKey(storageKeys, currentPublicUrl, { url: item.imageUrl });
+      collectCastCanvasKey(storageKeys, castOwnedKeys, currentPublicUrl, item.imageUrl, null);
       const allVersions = await tx
         .select({ id: boardItemVersions.id, imageUrl: boardItemVersions.imageUrl })
         .from(boardItemVersions)
         .where(eq(boardItemVersions.itemId, item.id))
         .for("update");
-      for (const version of allVersions) collectManifestKey(storageKeys, currentPublicUrl, { url: version.imageUrl });
+      for (const version of allVersions) {
+        collectCastCanvasKey(storageKeys, castOwnedKeys, currentPublicUrl, version.imageUrl, null);
+      }
       removedVersions += allVersions.length;
       deleteItemIds.push(item.id);
       continue;
@@ -895,11 +965,15 @@ export async function executeFinalCastDeletion(input: {
 
     // Canvas references may contribute explicit item/history keys. Discover
     // them before persisting the manifest; only then may source rows change.
+    // A canvas address counts only when it names a key the Cast's own rows
+    // above already prove (#2062) — frozen HERE, before the canvas is read.
+    const castOwnedKeys: ReadonlySet<string> = new Set(storageKeys);
     await collectCanvasCleanupKeysIn({
       tx,
       modelId: input.modelId,
       assetUrls: assets.map((asset) => asset.storageUrl),
       storageKeys,
+      castOwnedKeys,
       currentPublicUrl,
     });
     const manifest = await createStorageCleanupManifestIn(tx, {
@@ -925,6 +999,7 @@ export async function executeFinalCastDeletion(input: {
       userId: input.userId,
       assetUrls: assets.map((asset) => asset.storageUrl),
       storageKeys,
+      castOwnedKeys,
       currentPublicUrl,
       wardrobeSessionIds: sessions.map((session) => session.id),
       wardrobeLookIds: looks.map((look) => look.id),
