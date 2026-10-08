@@ -28,6 +28,7 @@ import {
   scheduleSubscriptionChange,
 } from "../stripe/subscriptionSchedule";
 import { formatCustomerShortDate } from "@shared/customerDate";
+import { planCancelledReceipt } from "@shared/planCancelCopy";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -698,7 +699,9 @@ export const billingRouter = router({
       req: ctx.req,
     });
 
-    return { success: true, message: "Subscription will be canceled at the end of the billing period." };
+    /* #1940 B25 — his approved receipt, with the period end this row already
+       holds (the plan runs to it: `cancel_at_period_end`). */
+    return { success: true, message: planCancelledReceipt(subscription.currentPeriodEnd) };
   }),
 
   // Reactivate canceled subscription

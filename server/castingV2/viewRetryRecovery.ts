@@ -60,7 +60,7 @@ export type ViewRetryRecoveryDependencies = {
 
 /** The customer's sentence for a swept Try again — one wording, two writers. */
 export const RECOVERED_VIEW_RETRY_SENTENCE =
-  "That view didn't arrive when you asked again. Your credits are back.";
+  "That view didn't arrive when you asked again. Your credits were returned.";
 export const RECOVERED_VIEW_RETRY_FREE_SENTENCE =
   "That view didn't arrive when you asked again. You were not charged.";
 export const VIEW_RETRY_SUPPORT_REVIEW_SENTENCE = (operationId: string) =>

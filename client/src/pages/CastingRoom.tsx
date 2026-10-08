@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
-import { displayRefund, formatCredits } from "@shared/creditDisplay";
+import { creditsReturnedText } from "@shared/refundCopy";
 import { Button, EmptyState, Skeleton } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
 import { toast } from "sonner";
@@ -243,10 +243,12 @@ export default function CastingRoom() {
             sum too small to show — and `creditDisplayFloor.test.ts` is
             what keeps that sum impossible, at the price table rather than here.
           */
+          /* #1940 / #1952: *"{N} credits returned."* and *"Nothing was made,
+             so nothing was charged."* — his approved receipts, 2026-10-08. */
           toast(result.refundRecorded
             ? (result.refundedCredits > 0
-              ? `It didn't arrive again. Your ${formatCredits(displayRefund(result.refundedCredits))} credits are back.`
-              : "It didn't arrive again. You weren't charged.")
+              ? `It didn't arrive again. ${creditsReturnedText(result.refundedCredits)}`
+              : "It didn't arrive again. Nothing was made, so nothing was charged.")
             : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
         },
         onError: (error) => {

@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 85
+      "moduleCount": 86
     },
     {
       "id": "domain:staff",
@@ -6447,6 +6447,12 @@
     {
       "id": "module:shared/pictureFormats.ts",
       "path": "shared/pictureFormats.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/planCancelCopy.ts",
+      "path": "shared/planCancelCopy.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14558,6 +14564,10 @@
       "path": "server/routes/modelCreatePayload.test.ts"
     },
     {
+      "id": "test:server/routes/moneyWording1940.test.ts",
+      "path": "server/routes/moneyWording1940.test.ts"
+    },
+    {
       "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
       "path": "server/routes/planChangeSpentShareAndStates.test.ts"
     },
@@ -16336,6 +16346,11 @@
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -19339,6 +19354,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/settings/sections/exportAccountData.ts",
       "to": "module:shared/brand.ts",
       "kind": "imports"
@@ -21305,12 +21325,12 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:shared/creditDisplay.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:shared/inputLimits.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -22356,6 +22376,11 @@
     {
       "from": "module:server/casting/atomicCredits.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -24661,6 +24686,11 @@
     {
       "from": "module:server/casting/operationRecovery.ts",
       "to": "module:shared/productEventCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/operationRecovery.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -29434,6 +29464,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/retryService.ts",
+      "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/rollEngine.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -29691,6 +29726,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:shared/refundCopy.ts",
       "kind": "imports"
     },
     {
@@ -33325,6 +33365,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
@@ -36129,6 +36174,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/planCancelCopy.ts",
+      "to": "module:shared/customerDate.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/planCreditSlider.ts",
       "to": "module:shared/annualBilling.ts",
       "kind": "imports"
@@ -38016,24 +38066,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1479",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1480",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1479",
+      "subject": "server/castingV2/rollService.ts:1480",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:272",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:273",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:272",
+      "subject": "server/castingV2/rollService.ts:273",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:318",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:319",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:318",
+      "subject": "server/castingV2/rollService.ts:319",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

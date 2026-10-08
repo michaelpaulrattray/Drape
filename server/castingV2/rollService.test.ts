@@ -1084,7 +1084,7 @@ describe("cancel", () => {
     vi.mocked(settleCancelledSlices).mockResolvedValueOnce({ refundedCredits: ROLL_PRICE, unrecorded: 0 });
 
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
-      message: `That roll was cancelled. ${formatCredits(displayRefund(ROLL_PRICE))} credits were refunded.`,
+      message: `That roll was cancelled. ${formatCredits(displayRefund(ROLL_PRICE))} credits returned.`,
     });
   });
 
@@ -1173,7 +1173,7 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
     const dependencies = { ...(baseDependencies() as object), deduct: deductAfterCancel(landed, true) } as never;
 
     await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
-      message: `That roll was cancelled. ${formatCredits(displayRefund(ROLL_PRICE))} credits were refunded.`,
+      message: `That roll was cancelled. ${formatCredits(displayRefund(ROLL_PRICE))} credits returned.`,
     });
 
     // The press worked: every tile stopped, and the cancel claimed no money.
