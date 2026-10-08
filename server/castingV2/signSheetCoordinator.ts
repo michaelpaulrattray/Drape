@@ -242,9 +242,27 @@ export type SettleSignSheetInput = {
  * ⚠ **The decision of whether to ask again is not made here either.**
  * `mayStillArrive` owns it, beside the failure classes themselves — #1212's
  * finding was that a road holding a private opinion about that union drifts
- * from it, and this would have been the fourth such place. A non-`ProviderError`
- * is `unknown`, which that predicate keeps retrying on purpose: an unmapped
- * fault must not quietly cost a paid view its attempts.
+ * from it, and this would have been the fourth such place.
+ *
+ * ⚠ **BUT ONLY A `ProviderError` IS ASKED ABOUT, AND THE FIRST SHAPE OF THIS
+ * LOOP RE-BOUGHT SHEETS THAT HAD ALREADY ARRIVED** (the relay's finding on PR
+ * #1982). It read a non-`ProviderError` as `unknown` and handed that to
+ * `mayStillArrive`, which keeps retrying — the right default on the PER-VIEW
+ * road, where the thunk is the engine call and nothing else, and the wrong one
+ * here. **This thunk is `renderSignSheet`, which is the engine call PLUS the
+ * decode, the panel geometry, the cut and the provenance check.** Every one of
+ * those throws a plain `Error` (`signSheet.ts` 477, 511, 512, 578, 780, ~839),
+ * and every one of them is a frame that ARRIVED and was paid for — about
+ * $0.11 of Sunburst each, deterministic, so each re-ask bought another one and
+ * failed the same way, up to `ARRIVAL_ATTEMPTS` times, per generation.
+ *
+ * **Nothing legitimate is lost by making them terminal, and that was read
+ * rather than assumed.** `server/providers/falTransport.ts` maps every fault it
+ * can meet to a `ProviderError` — an unreachable host, a bad status, no
+ * request id, a completed job with no image, a malformed data URI, a failed
+ * download — so a transport fault NEVER arrives here as a bare `Error`. What
+ * is left before the engine returns is prompt composition, which is
+ * deterministic: asking again cannot change its answer either.
  *
  * ## Both calls, not only the first
  *
@@ -265,7 +283,15 @@ async function renderWithArrivalRetries(
     try {
       return await input.render();
     } catch (error) {
-      const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+      /*
+        ⚠ **A NON-`ProviderError` IS TERMINAL — it means the frame arrived.**
+        See the docblock: this thunk carries the cut and the judge as well as
+        the engine call, and the transport layer never lets a bare `Error`
+        out. `null` rather than `"unknown"` so the reasoning is in the type:
+        there is no failure CLASS to ask `mayStillArrive` about, because the
+        thing that failed was not the arrival.
+      */
+      const failureClass = error instanceof ProviderError ? error.failureClass : null;
       arrivalFailures += 1;
       log.warn(
         {
@@ -280,7 +306,7 @@ async function renderWithArrivalRetries(
       );
       /* Terminal: asking again cannot change the answer, and the wait would be
          charged to a customer who is already going to be refunded. */
-      if (!mayStillArrive(failureClass)) throw error;
+      if (failureClass === null || !mayStillArrive(failureClass)) throw error;
       if (arrivalFailures >= ARRIVAL_ATTEMPTS) throw error;
       await wait(arrivalBackoffMs(arrivalFailures));
     }

@@ -985,13 +985,24 @@ describe("generation failures", () => {
     ⚠ **THE SHEET IS WHAT GETS ASKED AGAIN, AND UNTIL #1966 NOTHING DID.** This
     arm used to assert `{ body: 1, head: 1 }` and five views' worth of waiting:
     one request per sheet, and the per-view budget spent on an already-settled
-    rejection that re-throws instantly. A plain `Error` is `unknown` to
-    `mayStillArrive`, which keeps retrying on purpose — an unmapped fault must
-    not quietly cost a paid view its attempts.
+    rejection that re-throws instantly.
+
+    ⚠ **AND ITS FIXTURE WAS A PLAIN `Error`, WHICH PINNED A DEFECT (the relay's
+    finding on PR #1982).** The old body threw `new Error("something odd")` and
+    asserted three renders, on the reasoning that an unmapped fault is `unknown`
+    to `mayStillArrive` and must not quietly cost a paid view its attempts. That
+    is right on the per-view road and wrong here: this thunk is the whole of
+    `renderSignSheet`, so a plain `Error` out of it means **the frame arrived
+    and the CUT failed** — and each re-ask bought another ~$0.11 Sunburst sheet
+    that failed the same way. A real non-arrival is a `ProviderError`, because
+    `server/providers/falTransport.ts` maps every transport fault to one; the
+    fixture now says what it means.
   */
   it("asks three times for a sheet that never arrived, and no view repeats it", async () => {
     await buildCastPackage(
-      deps({ signSheetEngine: deadSheetEngine(() => new Error("something odd")) }),
+      deps({
+        signSheetEngine: deadSheetEngine(() => new ProviderError("transport", "fal.ai unreachable")),
+      }),
       input,
     );
     expect(rendersPerSheet())
@@ -999,6 +1010,55 @@ describe("generation failures", () => {
     /* Two waits per SHEET, two sheets — and not one more from the five views,
        whose own budget a settled rejection no longer spends. */
     expect(waitedMs).toHaveLength(2 * (VIEW_ARRIVAL_ATTEMPTS - 1));
+  });
+
+  /*
+    ⚠ **THE MONEY ARM (the relay's finding on PR #1982): A FRAME THAT ARRIVED
+    AND COULD NOT BE CUT IS ASKED FOR ONCE.**
+
+    Everything after the engine call — the decode, `findSheetPanelGeometry`, the
+    panel cut, the provenance check — throws a plain `Error`
+    (`signSheet.ts` 477, 511, 512, 578, 780, ~839), and every one of those is a
+    picture that ARRIVED and was paid for. They are deterministic, so a re-ask
+    buys another sheet and fails identically; at `ARRIVAL_ATTEMPTS` per sheet
+    per generation that is up to four wasted Sunburst sheets on one Sign.
+
+    This drives the REAL post-arrival road rather than faking it: the engine
+    returns successfully with bytes `sharp` cannot decode, so the throw comes
+    out of the product's own cut.
+  */
+  it("asks ONCE for a sheet that arrived and could not be cut", async () => {
+    const arrivedUnusable = (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+        sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+        /* It ARRIVED — the engine resolved, the money is spent — and it is
+           not an image, so the cut throws a plain Error. */
+        return {
+          bytes: Buffer.from("this is not a png"),
+          contentType: "image/png",
+          latencyMs: 61_000,
+          provenance: {
+            provider: "fal" as const,
+            model: `sunburst-sheet-${kind}`,
+            providerRef: `sheet-ref-${kind}-gen1`,
+          },
+        };
+      }),
+      generateView: vi.fn(),
+    });
+
+    const result = await buildCastPackage(deps({ signSheetEngine: arrivedUnusable }), input);
+
+    expect(
+      rendersPerSheet(),
+      "a frame that arrived must never be re-bought — it fails the same way every time",
+    ).toEqual({ body: 1, head: 1 });
+    expect(waitedMs, "nothing waits for a sheet that already arrived").toEqual([]);
+    /* The customer is still made whole: nothing was delivered, so the whole
+       Sign comes back exactly as it does for a terminal refusal. */
+    expect(result.failed).toHaveLength(5);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
   it("SPACES the arrival retries rather than hammering the provider", async () => {
