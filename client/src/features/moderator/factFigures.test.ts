@@ -31,7 +31,7 @@ const figures = (markup: string) =>
 /* A top-up large enough that both figures are long — the frames' own shape. */
 const tx = { id: 41, type: "topup", amount: 187_330, balanceAfter: 8_340, description: null, referenceId: "cs_x" };
 
-describe("#2035 — a two-figure credit fact holds each figure whole", () => {
+describe("card 2035 — a two-figure credit fact holds each figure whole", () => {
   const facts = staffFacts(creditRowText(tx, "8 Oct, 14:00").facts);
   const byLabel = (label: string) => facts.find((f) => f.label === label)!;
   const source = (label: string) => creditRowText(tx, "8 Oct, 14:00").facts.find((f) => f.label === label)!.value;
