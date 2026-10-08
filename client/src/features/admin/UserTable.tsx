@@ -27,6 +27,7 @@ import type { DataRow, RowAction } from "@/foundation";
 import { staffDateOnly, staffDateTimeWithYear } from "@/foundation/staffDate";
 
 import { getUserStatus } from "./UserBadges";
+import { displayBalance, displayPrice, formatCredits } from "@shared/creditDisplay";
 
 interface UserRow {
   id: number;
@@ -346,19 +347,28 @@ function UserPanel({
       <MiniList
         empty="No credits record."
         entries={[
-          { key: "balance", when: "Now", what: "Balance", amount: `${detail.credits.balance} cr` },
+          /* #1986: the three figures are on the CUSTOMER's scale, the same one
+             Add credits now takes — a ledger balance beside a display-credit
+             input is the mismatch that card was about. Balance and purchased
+             round down (what they hold); used rounds up (what they paid). */
+          {
+            key: "balance",
+            when: "Now",
+            what: "Balance",
+            amount: `${formatCredits(displayBalance(detail.credits.balance))} cr`,
+          },
           { key: "plan", when: "Plan", what: "Tier", amount: detail.credits.planTier },
           {
             key: "bought",
             when: "All time",
             what: "Purchased",
-            amount: `${detail.credits.creditsPurchased} cr`,
+            amount: `${formatCredits(displayBalance(detail.credits.creditsPurchased))} cr`,
           },
           {
             key: "used",
             when: "All time",
             what: "Used",
-            amount: `${detail.credits.creditsUsed} cr`,
+            amount: `${formatCredits(displayPrice(detail.credits.creditsUsed))} cr`,
           },
         ]}
       />
