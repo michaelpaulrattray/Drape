@@ -418,7 +418,12 @@ describe("the block the ledger prints", () => {
       ),
       "last 14d",
     );
-    expect(text).toMatch(/overlapping windows: 1, 2/);
+    expect(text).toMatch(/ALIVE at the same moment as another: 1, 2/);
+    /* The sentence that said this *"should be empty"* is gone with #2086 — up
+       to four builder seats run per pass, so concurrency is the design. What
+       the row must still say is that the attribution is ambiguous. */
+    expect(text).toMatch(/ambiguous/);
+    expect(text).not.toMatch(/should be empty/);
   });
 
   it("carries both figures and both denominators", () => {
@@ -429,5 +434,110 @@ describe("the block the ledger prints", () => {
     expect(text).toMatch(/cards landed per session/);
     expect(text).toMatch(/gate minutes per card/);
     expect(text).toMatch(/closed sessions          1/);
+  });
+});
+
+/**
+ * A RUN'S END IS TWO DIFFERENT FIELDS FOR TWO DIFFERENT QUESTIONS (#2086).
+ *
+ * The fixtures here are PRODUCTION ROWS, with their own ids and timestamps,
+ * because the card was filed on real rows and a repair proved only against
+ * invented ones proves only that the arithmetic runs. Both halves of the card
+ * are pinned: the half that was built, and the half that was REFUSED — a later
+ * shift reading `endedAt` in the attribution loop and "fixing" it to match the
+ * overlap clause above would send 44% of merged PRs to `unattributed`, and the
+ * last arm in this block is what tells them so before they measure it again.
+ */
+describe("the overlap test reads a lifetime, never a close stamp", () => {
+  /* Rows #612 and #615, read off production 2026-10-09. #612's own log ends
+     "You've hit your session limit"; it was dead from 15:36 and a later shift
+     stamped it closed at 17:20. #615 opened 48 min AFTER #612 went quiet. */
+  const RUN_612 = run({
+    id: 612,
+    shift: "seat1-20261009-005826",
+    startedAt: "2026-10-08T15:14:13Z",
+    heartbeatAt: "2026-10-08T15:36:19Z",
+    endedAt: "2026-10-08T17:20:26Z",
+  });
+  const RUN_615 = run({
+    id: 615,
+    shift: "seat1-20261009-015956",
+    startedAt: "2026-10-08T16:24:33Z",
+    heartbeatAt: "2026-10-08T16:44:26Z",
+    endedAt: "2026-10-08T17:18:28Z",
+  });
+
+  it("⚠ THE ARM THIS BLOCK EXISTS FOR — two rows that overlap only by their close stamps do not overlap", () => {
+    expect(attributePrsToSessions([RUN_612, RUN_615], []).overlappingRunIds).toEqual([]);
+  });
+
+  it("and the same pair DOES overlap when their lifetimes are not supplied — the reading as it was", () => {
+    // The positive control for the defect itself: strip the one field and the
+    // instrument goes back to reporting a concurrency that never happened.
+    const blind = [
+      { ...RUN_612, heartbeatAt: undefined },
+      { ...RUN_615, heartbeatAt: undefined },
+    ];
+    expect(attributePrsToSessions(blind, []).overlappingRunIds).toEqual([612, 615]);
+  });
+
+  it("a REAL overlap is still reported — the repair only ever removes false ones", () => {
+    // Positive control: two runs genuinely alive at once, which is the design
+    // under four builder seats per pass and must never read as empty.
+    const reading = attributePrsToSessions(
+      [
+        run({ id: 1, startedAt: "2026-10-08T10:00:00Z", heartbeatAt: "2026-10-08T11:30:00Z", endedAt: "2026-10-08T11:40:00Z" }),
+        run({ id: 2, startedAt: "2026-10-08T11:00:00Z", heartbeatAt: "2026-10-08T12:00:00Z", endedAt: "2026-10-08T12:10:00Z" }),
+      ],
+      [],
+    );
+    expect(reading.overlappingRunIds).toEqual([1, 2]);
+  });
+
+  it("a run that NEVER checked in keeps the close stamp — no information is no licence to sharpen", () => {
+    /* `heartbeatAt === startedAt` is how a row records a skipped check-in.
+       Reading it literally would collapse the run to an instant and it could
+       never overlap anything — and a silent shift that really did run beside
+       another for forty minutes is exactly the concurrency this clause is for. */
+    const silent = run({
+      id: 700,
+      startedAt: "2026-10-08T15:14:13Z",
+      heartbeatAt: "2026-10-08T15:14:13Z",
+      endedAt: "2026-10-08T17:20:26Z",
+    });
+    expect(attributePrsToSessions([silent, RUN_615], []).overlappingRunIds).toEqual([615, 700]);
+  });
+
+  it("a null lifetime is the same fallback, so a caller that selected no column is not sharpened", () => {
+    const unread = [
+      { ...RUN_612, heartbeatAt: null },
+      { ...RUN_615, heartbeatAt: null },
+    ];
+    expect(attributePrsToSessions(unread, []).overlappingRunIds).toEqual([612, 615]);
+  });
+
+  it("⚠ AND THE ATTRIBUTION WINDOW IS NOT NARROWED — a shift's own merge lands after its last check-in", () => {
+    /*
+      THE REFUSED HALF OF #2086, pinned at a row that proves it. Production run
+      #604 carries `branch = team/1953-plan-features` and `prNumber = 1970`, so
+      the row itself says which PR it owns — and PR #1970 merged at 06:29:19,
+      SIX minutes after that run's last heartbeat and seventeen before its
+      close. The standing orders put the last heartbeat at *edition written*;
+      the merge, the rite and the close all come after it.
+
+      Measured before this was written: narrowing this bound sends 35 of 80
+      merged PRs to `unattributed` (6 → 41), and the gentler alive-preferring
+      variant moves 2 of 80 — one of which is this row, moved wrongly.
+    */
+    const RUN_604 = run({
+      id: 604,
+      shift: "foreman-20261008-0610",
+      startedAt: "2026-10-08T06:08:05Z",
+      heartbeatAt: "2026-10-08T06:23:03Z",
+      endedAt: "2026-10-08T06:46:53Z",
+    });
+    const reading = attributePrsToSessions([RUN_604], [pr({ number: 1970, mergedAt: "2026-10-08T06:29:19Z" })]);
+    expect(reading.sessions[0]!.prs.map((p) => p.number)).toEqual([1970]);
+    expect(reading.unattributed).toEqual([]);
   });
 });

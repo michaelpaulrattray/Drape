@@ -34,10 +34,52 @@
  * failure mode a denominator exists to prevent. The unattributed list is part
  * of the output, with its own count.
  *
+ * # ⚠ TWO QUESTIONS HERE READ TWO DIFFERENT FIELDS FOR A RUN'S END, ON PURPOSE
+ *
+ * `endedAt` is not a lifetime — it is a STAMP any later shift may apply at any
+ * hour, and `shared/crewShiftState.ts` says so in its own words: *"a dead row
+ * closed hours late carries a lifetime it never had"*. Measured on production's
+ * 54 honestly-stamped rows (the 565 closed before #1872 had `heartbeatAt`
+ * overwritten by their own close and cannot be read): the gap between a row's
+ * last proof of life and its close stamp runs **median 17 min, p90 32 min, max
+ * 678 min**.
+ *
+ * **The OVERLAP test therefore reads the last proof of life**
+ * (`laneRunLastProofOfLife`), because its question is purely *"were two runs
+ * ALIVE at the same moment"* and a close stamp cannot answer that. Measured
+ * before and after on the real rows: **48 overlapping pairs by close stamp,
+ * 24 by proof of life** over those 54; **182 → 158** over all 619 closed rows.
+ * Twenty-four of the forty-eight never overlapped.
+ *
+ * **The ATTRIBUTION window deliberately keeps `endedAt`, and #2086 asked for
+ * both halves to move.** The second half was driven before it was written and
+ * it is REFUSED, because a shift's own merge routinely lands AFTER its last
+ * heartbeat: the standing orders put that heartbeat at *edition written*, and
+ * the merge, the rite and the close all come after it.
+ *
+ *   * narrowing the window to the proof of life sends **35 of 80 merged PRs
+ *     (44%) to `unattributed`** — the unattributed count goes 6 → 41 and the
+ *     card's own headline figure is then computed over half the work;
+ *   * the gentler variant — keep the window, but prefer a session that was
+ *     still alive at the merge — moves only 2 of 80, and **one of those two is
+ *     provably wrong against the row's own columns**: run #604 carries
+ *     `branch = team/1953-plan-features` and `prNumber = 1970`, and PR #1970
+ *     merged at 06:29:19, six minutes after that run's last heartbeat and
+ *     seventeen before its close. The close stamp is the only bound that
+ *     contains a shift's own merge.
+ *
+ * So the honest remainder is named rather than patched: the defect #2086
+ * describes in attribution is real (a dead row's late close can out-rank a live
+ * run for a merge inside it) and **a time window cannot fix it** — the fields
+ * that can are `prNumber` and `branch`, which anchor a PR to a run with no
+ * clock at all. That is a design change, filed separately, not smuggled in
+ * here.
+ *
  * Pure: readings in, figures out. No `gh`, no database, no network — the
  * reader that fetches lives in `machinist-ledger-read.mts`, so this whole
  * decision is driveable from fixtures (law 3).
  */
+import { laneRunLastProofOfLife } from "../../shared/crewShiftState.js";
 
 /** One row of `crew_shift_runs`, reduced to what the join uses. */
 export type ShiftRunReading = {
@@ -50,6 +92,15 @@ export type ShiftRunReading = {
   endedAt: string | null;
   /** shipped | stopped | failed, or null while open. */
   outcome: string | null;
+  /**
+   * ISO — the run's last check-in, which is where its TRUSTWORTHY life ends.
+   * The OVERLAP test reads it; the attribution window does not (see the header).
+   *
+   * Optional, and absence gets exactly the reading this file had before #2086:
+   * `laneRunLastProofOfLife` falls back to `endedAt`. A caller joining rows it
+   * did not select this column from is therefore not silently sharpened.
+   */
+  heartbeatAt?: string | null;
 };
 
 /** One merged pull request, with the gate time it consumed. */
@@ -78,14 +129,37 @@ export type ShiftLedgerReading = {
   /** PRs that fit no closed session's window. Reported, never dropped. */
   unattributed: MergedPrReading[];
   /**
-   * Runs whose windows overlap another's. One runner launches shifts, so this
-   * should be empty; if it is not, the attribution below is ambiguous for any
-   * PR inside the overlap and the caller is told rather than left to assume.
+   * Runs that were ALIVE at the same moment as another — `startedAt` to last
+   * proof of life, never to the close stamp (#2086).
+   *
+   * ⚠ **IT IS NO LONGER EXPECTED TO BE EMPTY, and this comment said it should
+   * be.** That sentence was true of a runner launching one shift per pass;
+   * `.agents/foreman/foreman-runner.ps1` has launched up to `MAX_SEATS = 4`
+   * builder seats per pass since #1281, so concurrency is the design rather
+   * than an anomaly — 24 genuine overlapping pairs sit in the 54 honestly
+   * stamped rows. What the figure still means is what it always meant: the
+   * attribution below is AMBIGUOUS for any PR merged inside an overlap, and
+   * the caller is told rather than left to assume.
    */
   overlappingRunIds: number[];
 };
 
 const at = (iso: string): number => new Date(iso).getTime();
+
+/**
+ * WHEN A RUN WAS LAST KNOWN TO BE ALIVE — one owner, in `shared/`, because the
+ * seat cut, his page and this ledger must not disagree about what a lifetime is
+ * (working law 4, applied to a definition). The never-checked-in fallback and
+ * the reason it exists are in that function's own header.
+ */
+const lifeEndOf = (run: ShiftRunReading): number =>
+  laneRunLastProofOfLife({
+    id: run.id,
+    shift: run.shift,
+    startedAt: run.startedAt,
+    endedAt: run.endedAt,
+    heartbeatAt: run.heartbeatAt ?? null,
+  });
 
 /**
  * The join. A PR belongs to the closed run whose window contains its merge;
@@ -100,12 +174,20 @@ export function attributePrsToSessions(
     .filter((r): r is ShiftRunReading & { endedAt: string } => r.endedAt !== null)
     .sort((a, b) => at(a.startedAt) - at(b.startedAt));
 
+  /*
+    ⚠ THE BOUND HERE IS A LIFETIME, NOT A CLOSE STAMP (#2086) — and that is the
+    identical clause shape #2079 repaired one file away. "Did these two runs
+    overlap" asks whether both were ALIVE at one moment; a row stamped closed
+    hours after it went quiet answers yes to a question nobody asked. Measured
+    on production: 48 pairs by close stamp, 24 by proof of life, over the 54
+    rows whose check-in survives.
+  */
   const overlapping = new Set<number>();
   for (let i = 0; i < closed.length; i += 1) {
     for (let j = i + 1; j < closed.length; j += 1) {
       const a = closed[i]!;
       const b = closed[j]!;
-      if (at(b.startedAt) < at(a.endedAt) && at(a.startedAt) < at(b.endedAt)) {
+      if (at(b.startedAt) < lifeEndOf(a) && at(a.startedAt) < lifeEndOf(b)) {
         overlapping.add(a.id);
         overlapping.add(b.id);
       }
@@ -120,6 +202,12 @@ export function attributePrsToSessions(
     let chosen: AttributedSession | null = null;
     for (const session of sessions) {
       const { startedAt, endedAt } = session.run;
+      /*
+        ⚠ `endedAt` AND NOT THE LIFETIME, which is the opposite of the overlap
+        clause above and is the header's refusal of #2086's second half: a
+        shift's own merge lands after its last heartbeat, so narrowing this
+        bound sends 44% of merged PRs to `unattributed`.
+      */
       if (merged < at(startedAt) || merged > at(endedAt!)) continue;
       // Later-starting run wins an overlap; `sessions` is in start order, so a
       // straight overwrite is that rule.
@@ -286,9 +374,11 @@ export function renderLedgerBlock(reading: ShiftLedgerReading, windowLabel: stri
   if (reading.overlappingRunIds.length > 0) {
     lines.push("");
     lines.push(
-      `  ⚠ shift runs with overlapping windows: ${reading.overlappingRunIds.join(", ")} — one ` +
-        "runner launches shifts, so this should be empty. Attribution inside the overlap goes " +
-        "to the later-starting run.",
+      `  ⚠ shift runs ALIVE at the same moment as another: ${reading.overlappingRunIds.join(", ")}` +
+        " — up to four builder seats run per pass, so this is the design and not an anomaly." +
+        " What it means is that attribution for a PR merged inside the overlap is ambiguous;" +
+        " it goes to the later-starting run. Read from each run's last check-in, never from" +
+        " its close stamp (#2086).",
     );
   }
   return lines.join("\n");

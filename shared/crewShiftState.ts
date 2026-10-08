@@ -86,6 +86,53 @@ export type CrewShiftRunState = "running" | "stalled" | "finished";
  * heartbeat now sent at every meaningful step (#295), a live shift stamps far
  * more often than this, so the window governs only how long a genuinely dead
  * one goes unnoticed.
+ *
+ * # ⚠ RE-READ ON THE HONEST FIELD, 2026-10-09 (#2086) — AND THE FIELD WAS
+ * ALREADY THE HONEST ONE, WHICH IS THE OPPOSITE OF WHAT THAT CARD ASSUMED
+ *
+ * #2086 was filed on the belief that the figures above are stamp-to-stamp
+ * durations — *"`CREW_SHIFT_STALL_MS` … was set from a measurement quoted in
+ * its own docblock … Those are stamp-to-stamp durations, so the input to the
+ * constant is the inflated figure."* **Read at the artifact, it is not.** The
+ * provenance line four paragraphs up names `.agents/mailbox/*.md`, `exit:`
+ * minus `shift launched` — the runner's own `## Runner close-stamp` trailer,
+ * written after that shift's PROCESS exited (#101). That is a real process
+ * lifetime, not a `crew_shift_runs.endedAt` stamp, and no later shift can move
+ * it. Re-measured from those trailers in the stated window: **85 entries, all
+ * 85 at exit code 0, median 46, max 138** — the same maximum the bar in
+ * `server/crewHeartbeat.test.ts` is pinned against.
+ *
+ * It is also the only field that can answer this question, in either reading.
+ * The silence the window measures begins at a shift's last check-in and ends
+ * when somebody notices; a shift that never checks in is silent from
+ * `startedAt` for as long as its PROCESS lives, and nothing in the database
+ * records a process exit. `endedAt` over-reports it (a late close) and
+ * `heartbeatAt` cannot see the gaps inside a live run at all.
+ *
+ * # ⚠ WHAT THE FRESH READING DOES CHANGE, AND IT IS A DECISION RATHER THAN A
+ * REPAIR — SO IT IS NAMED HERE AND NOT MADE
+ *
+ * The same trailers over the whole history, all-time, exit code 0:
+ *
+ * | n | median | p90 | p95 | p99 | max |
+ * |---|---|---|---|---|---|
+ * | 589 | 58 min | 102 min | 123 min | 155 min | **247 min** |
+ *
+ * **The bar this constant is pinned against — *clear the longest run the team
+ * has ever recorded* — no longer holds.** 16 of 589 runs exceed the 138 that
+ * suite quotes, and **3 of 589 (0.5%) exceed the three-hour window itself**, so
+ * those three would have been drawn as stalled while alive.
+ * `LONGEST_RECORDED_SHIFT_MINUTES` there is deliberately NOT bumped to 247 in
+ * this commit: the arm would go red, exactly as it did when two hours was
+ * tried, and the only way to green it is to move this number — which is a
+ * judgement about what his page says, not a repair.
+ *
+ * Both directions cost something and neither is free: a longer window lets a
+ * genuinely dead row sit vouched-for for longer (the #548 and #607 incidents
+ * are what that costs), and the present window mislabels about one run in two
+ * hundred. **0.5% is far from the 31% that made the hour untenable**, so
+ * nothing here is urgent and the number stands until he or the relay rules on
+ * it.
  */
 export const CREW_SHIFT_STALL_MS = 3 * 60 * 60 * 1000;
 
