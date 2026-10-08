@@ -194,6 +194,41 @@ describe("the running-retry filter", () => {
     expect(params).toContain(MODEL_ID);
   });
 
+  /**
+   * ⚠ **THE PRESS IS NOT IN THIS PREDICATE, AND THE PRICE OF ADDING IT IS A
+   * CUSTOMER NEVER GETTING HER CREDITS BACK** (the relay's note on PR #1924).
+   *
+   * Since #1903's sweep-side repair, `viewReplacementInFlight` asks this very
+   * filter whether a picture can still arrive on the Cast, and the flat-priced
+   * press defers its whole settlement while the answer is yes. The press's own
+   * row sits on the same `modelId`. **So a press kind inside this set would
+   * match the press itself, every swept press would defer for ever, and the one
+   * road that can hand back 3,250 credits would never run** — a customer who
+   * received nothing, charged, with no refund and no error anywhere.
+   *
+   * ⚠ **THE ARM ABOVE ALREADY PINS THE SET AND IS NOT ENOUGH, which is the
+   * whole reason this one exists.** `toEqual([...])` goes red on the widening,
+   * but it reads as a list that needs updating — the obvious repair is to add
+   * the third string to the expectation and move on. Nothing there says what
+   * breaks. This arm reads the PREDICATE THE READER ACTUALLY SENDS and names
+   * the consequence, so the red arrives with its reason attached.
+   *
+   * Read at the wire rather than at the constant (invariant 5): the set and the
+   * SQL are two different claims, and it is the SQL that decides.
+   */
+  it("never admits the press that holds the money — it would defer every refund for ever", () => {
+    const { params } = rendered();
+    expect(
+      params,
+      "the redo PRESS is in the busy predicate: viewReplacementInFlight would match the "
+      + "press's own row, so every swept press defers for ever and a total loss is never refunded",
+    ).not.toContain("castingV2.packageRedoPress");
+    /* The positive control, so the arm cannot pass by the predicate carrying no
+       kinds at all: the two roads that DO commit a picture are still in it. */
+    expect(params).toContain("castingV2.viewRetry");
+    expect(params).toContain("castingV2.packageRedo");
+  });
+
   it("counts only a claimed or running retry as busy", () => {
     const { sql, params } = rendered();
     expect(sql).toContain("`generation_operations`.`status` in (?, ?)");
