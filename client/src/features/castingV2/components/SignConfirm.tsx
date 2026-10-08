@@ -104,8 +104,8 @@ export function SignConfirm({
             implied by the roster itself.
           */}
           <p className="dpc-modal__explainer">
-            Locks this face and builds five canonical views. Nothing else on the
-            sheet changes.
+            Locks this face and builds five matching views of them. Nothing else
+            on the sheet changes.
           </p>
 
           <label className="dpc-modal__label" htmlFor="dpc-modal-name">
