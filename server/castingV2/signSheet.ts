@@ -169,8 +169,9 @@ export const SIGN_SHEET_PANEL_ORDER: readonly CastViewAngle[] = CAST_PACKAGE_VIE
  * **93.6%**. Today's Nano Banana Pro view is 1696x2528 (0.671) and shows at
  * 83.9%, so this is better than the road it replaces rather than merely less
  * bad than one sheet. ⚠ **No client change is owed, and that is a measured
- * claim, not a hope** — `signSheetStripFit.test.ts` recomputes all four of
- * those percentages from the CSS rule itself.
+ * claim, not a hope** — `signSheet.test.ts` recomputes all four of those
+ * percentages from the CSS rule itself, with the one-sheet shape as its
+ * failing control.
  *
  * ⚠ **BOTH SHEETS TAKE THE MASTER AS THEIR ONLY REFERENCE, AND THE OUTFIT AS
  * WORDS.** The tempting shape is to render the body sheet first and hand it to
