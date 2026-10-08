@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 53
+      "moduleCount": 54
     },
     {
       "id": "domain:wardrobe",
@@ -4755,6 +4755,12 @@
     {
       "id": "module:server/crew/liveQueue.ts",
       "path": "server/crew/liveQueue.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/crew/liveRepairs.ts",
+      "path": "server/crew/liveRepairs.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -13330,6 +13336,14 @@
     {
       "id": "test:server/crew/liveQueue.test.ts",
       "path": "server/crew/liveQueue.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairs.test.ts",
+      "path": "server/crew/liveRepairs.test.ts"
+    },
+    {
+      "id": "test:server/crew/liveRepairsRouter.test.ts",
+      "path": "server/crew/liveRepairsRouter.test.ts"
     },
     {
       "id": "test:server/crewBriefingFieldReaders.test.ts",
@@ -30189,6 +30203,11 @@
     },
     {
       "from": "module:server/crew/liveDesk.ts",
+      "to": "module:server/crew/liveRepairs.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
       "kind": "imports"
     },
@@ -30250,6 +30269,21 @@
     {
       "from": "module:server/crew/liveQueue.ts",
       "to": "module:shared/crewTestDrive.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveRepairs.ts",
+      "to": "module:shared/handVerdict.ts",
       "kind": "imports"
     },
     {
@@ -33560,6 +33594,11 @@
     {
       "from": "module:server/routes/crew.ts",
       "to": "module:server/crew/liveQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/crew.ts",
+      "to": "module:server/crew/liveRepairs.ts",
       "kind": "imports"
     },
     {
