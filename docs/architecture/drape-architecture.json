@@ -13926,6 +13926,10 @@
       "path": "server/faceScanCapDriven.test.ts"
     },
     {
+      "id": "test:server/faceScanCapRepeatLooks.test.ts",
+      "path": "server/faceScanCapRepeatLooks.test.ts"
+    },
+    {
       "id": "test:server/faceScanWire.test.ts",
       "path": "server/faceScanWire.test.ts"
     },

@@ -52,6 +52,12 @@ import {
   entryForPath,
   humanBytes,
   ignoredReadingLine,
+  installedLockfilePath,
+  judgeSharedInstall,
+  sharedInstallRedDiagnosis,
+  sharedInstallWarning,
+  INSTALLED_LOCKFILE_RELATIVE,
+  keptIgnoredHoldsWork,
   keptIgnoredPrefixFor,
   mergedPrArgs,
   parseWorktreeList,
@@ -70,6 +76,7 @@ import {
   reviewWorktreeAddArgs,
   shipReadingFor,
   junctionMustBeGone,
+  junctionReadingLine,
   looksCrlfSmudged,
   planFor,
   validatePrNumber,
@@ -78,7 +85,7 @@ import {
   type RemovalState,
   type ShipReading,
 } from "../scripts/lib/shiftWorktree.mts";
-import { measureTree, MEASURE_ENTRY_CAP } from "../scripts/lib/riteWorktree.mts";
+import { measureTree, MEASURE_ENTRY_CAP, readJunctionAt } from "../scripts/lib/riteWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -89,7 +96,7 @@ const clean: RemovalState = {
   unpushedCommits: 0,
   dirtyFiles: [],
   registered: true,
-  junctionPresent: false,
+  junctionAt: "absent",
   /* Read, and nothing merged this branch (#1540). Explicit rather than omitted
      because the field is REQUIRED: `null` and "nobody asked" are different facts
      and an omitted field would silently pick one. Every arm below that is not
@@ -275,7 +282,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
   });
 
   it("REFUSES the kept set, overridably — and `--force` says what it destroys", () => {
-    const court = [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }];
+    const court = [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false, unreadable: false }];
     const verdict = decideRemoval({ ...clean, keptIgnored: court }, false);
     expect(verdict.proceed).toBe(false);
     if (!verdict.proceed) {
@@ -306,7 +313,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
     /* A refusal naming renders over lost commits would send a shift to copy a
        directory and then `--force` past the commits. */
     const verdict = decideRemoval(
-      { ...clean, unpushedCommits: 2, keptIgnored: [{ path: "output/", bytes: 10, files: 1, capped: false }] },
+      { ...clean, unpushedCommits: 2, keptIgnored: [{ path: "output/", bytes: 10, files: 1, capped: false, unreadable: false }] },
       false,
     );
     expect(verdict.proceed).toBe(false);
@@ -321,7 +328,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
     expect(ignoredReadingLine({ keptIgnored: [], disposableIgnored: ["node_modules/", ".env"] }))
       .toBe("2 path(s), none worth keeping (node_modules/, .env)");
     const line = ignoredReadingLine({
-      keptIgnored: [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }],
+      keptIgnored: [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false, unreadable: false }],
       disposableIgnored: ["node_modules/"],
     });
     expect(line).toContain("WORTH KEEPING");
@@ -330,8 +337,86 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
   });
 
   it("a capped walk reads as a FLOOR, never as a measurement", () => {
-    expect(describeKeptIgnored({ path: "output/", bytes: 2048, files: 2, capped: true }))
+    expect(describeKeptIgnored({ path: "output/", bytes: 2048, files: 2, capped: true, unreadable: false }))
       .toBe("output/ (at least 2.0 kB in at least 2 files)");
+  });
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     AN EMPTY KEPT PATH IS NOT WORK (#2155).
+
+     ⚠ MEASURED BEFORE IT WAS BUILT, THROUGH THE REAL TOOL: `remove --dry-run`
+     over the 34 leftover worktrees standing on this machine refused ALL 34, and
+     **15 of them on an `output/` reading `0 B in 0 files`** — confirmed at the
+     disk afterwards (`find -type f` returned nothing in each). The tool took the
+     measurement, printed it, and refused anyway; a shift reads a refusal and
+     leaves the tree, so the junctions accumulate. The population is the proof,
+     and these arms are the guard.
+     ────────────────────────────────────────────────────────────────────────── */
+
+  it("⚠ AN `output/` MEASURED EMPTY NO LONGER REFUSES — the 15-of-34 case", () => {
+    const emptyOutput = [{ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false }];
+    const verdict = decideRemoval({ ...clean, keptIgnored: emptyOutput }, false);
+    expect(
+      verdict.proceed,
+      "an empty directory refused a removal — this is the refusal that left 37 worktrees standing",
+    ).toBe(true);
+    /* And it is not warned about either: there is nothing to move out. */
+    if (verdict.proceed) expect(verdict.warnings.join(" ")).not.toContain("worth keeping");
+  });
+
+  it("⚠ POSITIVE CONTROL — one byte in it and the refusal is back", () => {
+    /* The arm that proves the one above is not simply switching the guard off.
+       `#1823`'s refusal is untouched for anything that holds bytes. */
+    const verdict = decideRemoval(
+      { ...clean, keptIgnored: [{ path: "output/", bytes: 1, files: 1, capped: false, unreadable: false }] },
+      false,
+    );
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("output/ (1 B in 1 file)");
+  });
+
+  it("⚠ FAILS CLOSED — a zero that came from `could not look` still refuses", () => {
+    /* The whole reason `measureTree` now reports `unreadable`. Without this the
+       repair above hands the 1.36 GB back to the delete by a different door. */
+    for (const measure of [
+      { bytes: 0, files: 0, capped: false, unreadable: true },
+      { bytes: 0, files: 0, capped: true, unreadable: false },
+    ]) {
+      const verdict = decideRemoval({ ...clean, keptIgnored: [{ path: "output/", ...measure }] }, false);
+      expect(verdict.proceed, `an unmeasured zero (${JSON.stringify(measure)}) authorised a delete`).toBe(false);
+    }
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: true })).toBe(true);
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: true, unreadable: false })).toBe(true);
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false })).toBe(false);
+  });
+
+  it("⚠ AN UNREADABLE PATH DOES NOT PRINT `0 B in 0 files` — the reassuring lie", () => {
+    const said = describeKeptIgnored({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: true });
+    expect(said).toContain("SIZE NOT READ");
+    expect(said, "the one state nobody measured printed the most reassuring number available").not.toContain("0 B");
+  });
+
+  it("the printed line still names an EMPTY kept path, because silence is the other defect", () => {
+    /* #1823's lesson, held in the direction it was learned: a population nobody
+       mentions cannot be told apart from an empty one. So the ⚠ goes away and the
+       path does not. */
+    const line = ignoredReadingLine({
+      keptIgnored: [{ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false }],
+      disposableIgnored: ["node_modules/", ".env"],
+    });
+    expect(line).toBe("3 path(s), none worth keeping; 1 kept path measured EMPTY (output/); 2 disposable (node_modules/, .env)");
+    expect(line, "an empty directory kept the WORTH KEEPING flag").not.toContain("WORTH KEEPING");
+
+    /* A mixed worktree says both halves, and the ⚠ belongs to the one with bytes. */
+    const mixed = ignoredReadingLine({
+      keptIgnored: [
+        { path: ".playwright-mcp/", bytes: 139_500, files: 7, capped: false, unreadable: false },
+        { path: "output/", bytes: 0, files: 0, capped: false, unreadable: false },
+      ],
+      disposableIgnored: [],
+    });
+    expect(mixed).toContain("⚠ WORTH KEEPING: .playwright-mcp/ (136.2 kB in 7 files)");
+    expect(mixed).toContain("1 kept path measured EMPTY (output/)");
   });
 
   it("⚠ humanBytes REACHES GB — the unit the 1.357 GB that filed this is read in", () => {
@@ -453,12 +538,37 @@ describe("the ignored reading, against a real repository (#1823)", () => {
       const measured = measureTree(join(tree, "node_modules"));
       expect(measured.files, "measureTree followed the junction into the real install").toBe(0);
       expect(measured.bytes).toBe(0);
+      /* ⚠ AND ITS ZERO IS NOT A MEASUREMENT (#2155). Nothing was counted and the
+         target is outside this tree, so a caller asking *would anything be lost*
+         must not read this as an empty directory. */
+      expect(measured.unreadable, "a link's uncounted zero read as a measured empty").toBe(true);
+    });
+  });
+
+  it("⚠ DRIVEN AT THE DISK — a real empty output/ in a real worktree removes", () => {
+    withWorktree(({ tree }) => {
+      mkdirSync(join(tree, "output"), { recursive: true });
+
+      /* The reading git takes, not a fixture of it: an empty ignored directory IS
+         listed by `--ignored=matching`, which is why it ever reached the verdict. */
+      const read = parseWorktreeStatus(statusIn(tree, worktreeStatusArgs()));
+      const { kept } = classifyIgnored(read.ignored);
+      expect(kept, "git stopped listing an empty ignored directory — this arm is now vacuous").toContain("output/");
+
+      const measured = measureTree(join(tree, "output"));
+      expect(measured).toEqual({ bytes: 0, files: 0, capped: false, unreadable: false });
+
+      const verdict = decideRemoval({ ...clean, keptIgnored: [{ path: "output/", ...measured }] }, false);
+      expect(verdict.proceed, "a real empty output/ still refused its own worktree's removal").toBe(true);
     });
   });
 
   it("measureTree returns zero for a path that is not there, rather than throwing", () => {
     withWorktree(({ tree }) => {
-      expect(measureTree(join(tree, "output"))).toEqual({ bytes: 0, files: 0, capped: false });
+      expect(measureTree(join(tree, "output")))
+        /* ⚠ `unreadable: false` IS THE LOAD-BEARING HALF (#2155): ENOENT means there
+           is provably nothing there, which is the one zero a caller may act on. */
+        .toEqual({ bytes: 0, files: 0, capped: false, unreadable: false });
     });
   });
 
@@ -635,13 +745,44 @@ describe("readMergedPullRequest", () => {
 
 describe("junctionMustBeGone — the refusal --force cannot reach", () => {
   it("passes once the junction is gone", () => {
-    expect(junctionMustBeGone(false).ok).toBe(true);
+    expect(junctionMustBeGone("absent").ok).toBe(true);
   });
 
   it("REFUSES while the junction is present", () => {
-    const verdict = junctionMustBeGone(true);
+    const verdict = junctionMustBeGone("link");
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toContain("node_modules");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ #2161 — A REAL DIRECTORY IS NOT A JUNCTION, AND REFUSING ON IT DEAD-ENDS.
+
+     It took a boolean (`stillOnDisk`: *is there anything there*) and refused on
+     it, so `drape-review-1910` and `drape-review-1915` — each holding a
+     `node_modules` that is a real directory, `isSymbolicLink()` false, 824
+     directories and 0 bytes from an aborted install — were refused with a
+     sentence about a link that does not exist, and could not be cleared by the
+     tool at all. The danger is the delete FOLLOWING A LINK; a real directory
+     has nothing to follow.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ PASSES on a REAL directory — there is no link for a recursive delete to follow", () => {
+    const verdict = junctionMustBeGone("real");
+    expect(verdict.ok).toBe(true);
+    expect(verdict.reason).toBe("");
+  });
+
+  it("⚠ REFUSES an UNREADABLE path — an unknown is never a permission to delete", () => {
+    /* The polarity PR #692's review bought, held across #2161's widening. The
+       tempting shape was three answers with `unreadable` folded into `real`,
+       which would quietly authorise the recursive delete on exactly the paths
+       nobody can see into. */
+    const verdict = junctionMustBeGone("unreadable");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.reason).toContain("UNKNOWN");
+    expect(verdict.reason).toContain("not overridable by --force");
+    /* And it must not read as the link refusal — the two want different acts
+       from whoever reads them. */
+    expect(verdict.reason).not.toContain("Remove the link first");
   });
 
   it("⚠ IS NOT PART OF THE FORCE-ABLE VERDICT — a habitual --force must not reach it", () => {
@@ -649,10 +790,57 @@ describe("junctionMustBeGone — the refusal --force cannot reach", () => {
     // shift's work, where --force is a legitimate answer; this is about
     // emptying the machine's dependency install, where it never is. If the
     // junction check ever migrated into decideRemoval, this reddens.
-    const withJunction: RemovalState = { ...clean, junctionPresent: true };
+    const withJunction: RemovalState = { ...clean, junctionAt: "link" };
     const forced = decideRemoval(withJunction, true);
     expect(forced.proceed).toBe(true); // decideRemoval says nothing about it…
-    expect(junctionMustBeGone(withJunction.junctionPresent).ok).toBe(false); // …this still refuses.
+    expect(junctionMustBeGone(withJunction.junctionAt).ok).toBe(false); // …this still refuses.
+  });
+});
+
+describe("junctionReadingLine — `remove` says which of the four it found (#2161)", () => {
+  /* The card's own *"and says which it found"*. Before it there was no line at
+     all: a shift read a refusal naming a junction and had no way to learn that
+     the path was an ordinary directory. */
+  it("names a link as a link, and says the unlink comes first", () => {
+    expect(junctionReadingLine("link")).toContain("junction");
+    expect(junctionReadingLine("link")).toContain("unlinked first");
+  });
+
+  it("⚠ MARKS A REAL DIRECTORY AS UNUSUAL, AND SAYS THE WHOLE OF IT GOES", () => {
+    /* It must not read like business as usual: the recursive delete is about to
+       take a real directory full of files, and the reader deciding whether to
+       pass `--force` should know that is what is happening.
+
+       ⚠ AND IT MUST NOT CALL IT AN ABORTED INSTALL, which is what it said until
+       a census of all 56 `drape-*` directories found the third real-directory
+       tree: `drape-shift-relay-2152`, the relay's LIVE tree, holding a
+       deliberate per-tree install with real content — not the 0 files the two
+       review shells held. Naming only the junk causes, four lines above a
+       recursive delete, invites a reader to treat a full install as junk. */
+    const line = junctionReadingLine("real");
+    expect(line).toContain("REAL directory");
+    expect(line).toContain("⚠");
+    expect(line).toContain("recursive delete");
+    expect(line, "the sentence does not say the whole directory goes").toContain("ALL of it");
+    expect(line, "a deliberate per-tree install is a measured cause and is not named")
+      .toContain("per-tree install");
+  });
+
+  it("names the other two plainly, and the unreadable one as a refusal", () => {
+    expect(junctionReadingLine("absent")).toBe("nothing there");
+    expect(junctionReadingLine("unreadable")).toContain("UNREADABLE");
+    expect(junctionReadingLine("unreadable")).toContain("refusing");
+  });
+
+  it("⚠ COVERS ALL FOUR — a fifth reading cannot ship with no sentence", () => {
+    /* The exhaustiveness the `switch` gives at compile time, held at runtime
+       too: a widened union with a missing case returns `undefined` here, and a
+       `undefined` printed four lines above a recursive delete is worse than no
+       line. */
+    for (const at of ["link", "real", "absent", "unreadable"] as const) {
+      expect(typeof junctionReadingLine(at), `no sentence for ${at}`).toBe("string");
+      expect(junctionReadingLine(at).length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -744,9 +932,47 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
     withJunction("order", ({ link, tree, canary }) => {
       const unlinked = spawnSync("cmd", ["/c", "rmdir", link.replace(/\//g, "\\")], { encoding: "utf8" });
       expect(unlinked.status).toBe(0);
-      expect(junctionMustBeGone(existsSync(link)).ok).toBe(true);
+      /* ⚠ `readJunctionAt` AND NOT `existsSync` (#2161, and #654 before it).
+         This read `existsSync(link)` — which FOLLOWS the link, so a junction
+         whose target had gone would have read as absent — and then handed a
+         boolean to a verdict that now needs the KIND. The script itself reads
+         the same way; the text arm below pins that. */
+      expect(junctionMustBeGone(readJunctionAt(link)).ok).toBe(true);
       rmSync(tree, { recursive: true, force: true });
       expect(existsSync(canary)).toBe(true);
+      expect(readFileSync(canary, "utf8")).toBe("the main tree's install");
+    });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ THE CARD'S OWN NAMED CONTROL (#2161), ON A REAL DISK.
+
+     The done-when asks that *"the negative control in `server/shiftWorktree.test.ts`
+     still proves a real junction is unlinked and proven gone before anything
+     recursive runs"* — so the widening is driven BOTH ways against real
+     junctions and real directories, in the same fixture shape, rather than on
+     the pure verdict alone. The pure arms cannot see a widening that is right
+     in the library and wrong at the disk.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ READS A LIVE JUNCTION AS `link` AND A REAL DIRECTORY AS `real`, at the same place in the tree", () => {
+    withJunction("kinds", ({ link, tree, canary }) => {
+      /* The live junction, which must still be refused. */
+      expect(readJunctionAt(link)).toBe("link");
+      expect(junctionMustBeGone(readJunctionAt(link)).ok, "a live junction stopped refusing").toBe(false);
+
+      /* Now the measured state of the two review shells, in the same tree: the
+         link unlinked and a REAL directory left where it was. */
+      const unlinked = spawnSync("cmd", ["/c", "rmdir", link.replace(/\//g, "\\")], { encoding: "utf8" });
+      expect(unlinked.status).toBe(0);
+      mkdirSync(join(link, "some-package", "dist"), { recursive: true });
+      expect(readJunctionAt(link)).toBe("real");
+      expect(junctionMustBeGone(readJunctionAt(link)).ok, "a real directory still dead-ends the tool").toBe(true);
+
+      /* And the recursive delete is the correct act on it — with the canary
+         proving the install was never what got taken. */
+      rmSync(tree, { recursive: true, force: true });
+      expect(existsSync(tree)).toBe(false);
+      expect(existsSync(canary), "the main tree's install was touched").toBe(true);
       expect(readFileSync(canary, "utf8")).toBe("the main tree's install");
     });
   });
@@ -766,6 +992,44 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
 
 describe("the script's own text — the sequence a reader must be able to trust", () => {
   const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     ⚠ THE UNLINK'S OWN CONDITION, AND IT WAS THE ONE THING NO ARM HELD (#2161).
+
+     Found by sabotage, not by review: widening the CLI's guard back to
+     `=== "link" || === "real"` — the original dead end restored — landed (read
+     at the diff) and **all 169 arms stayed green**. Every arm in this suite
+     drives the LIBRARY's reading and the LIBRARY's verdict, and both would be
+     perfectly correct while the call site rmdir'd a real directory again. That
+     is invariant 7 exactly: the control is right and the thing that invokes it
+     is not, so the condition is pinned here where the source is read.
+     ────────────────────────────────────────────────────────────────────────── */
+  it("⚠ RMDIRS ONLY A LINK — a real directory never reaches the unlink", () => {
+    const start = source.indexOf("// ⚠ THE JUNCTION, FIRST");
+    const end = source.indexOf("// Two acts, because one is not enough");
+    expect(start, "the junction step's banner moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(end, "the unregister banner moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = source.slice(start, end);
+
+    /* The `rmdir` that unlinks, which must appear exactly once in the sequence. */
+    const rmdirs = [...block.matchAll(/"\/c",\s*"rmdir"/g)];
+    expect(rmdirs, "the unlink is not in the junction step, or it is there twice").toHaveLength(1);
+
+    /* ⚠ THE CONDITION, READ AS A WHOLE LINE. A `toContain` on the link-only
+       form would pass on `=== "link" || === "real"` too, because the widened
+       condition CONTAINS the narrow one — the negation-contains-the-token trap
+       this repository has already paid for. So the line is matched exactly. */
+    const guard = block
+      .split(/\r?\n/)
+      .find((line) => /^if \(state\.junctionAt/.test(line.trim()));
+    expect(guard?.trim(), "the unlink's guard is not a bare link-only condition")
+      .toBe('if (state.junctionAt === "link") {');
+
+    /* And the real-directory branch exists and does something OTHER than unlink. */
+    expect(block, "nothing says what happens to a real directory").toMatch(
+      /if \(state\.junctionAt === "real"\) say\(/,
+    );
+  });
 
   it("⚠ THE LEFTOVER PATH IS REACHABLE — the git probes are skipped when git has let go (finding 1)", () => {
     // The dead end this closes: an unregistered directory's `.git` file points
@@ -1938,5 +2202,447 @@ describe("the script's own text — the review road's sequence (#1796)", () => {
     /* `remove --pr --dry-run` taking `--dry-run` as the number would leave
        `dryRun` false on the one command that deletes. */
     expect(source).toContain('value.startsWith("--")');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ⚠ THE SHARED INSTALL — ONE `node_modules`, N TREES (#2148, 2026-10-09)
+//
+// The junction is the whole reason this reading has to exist: every worktree
+// shares the main tree's install, so the install can only satisfy the trees
+// whose lockfile it was made from. On the day this landed, `86c560c3` took
+// cookie 2.0.1 (`parse` renamed `parseCookie`) and the install still held
+// cookie 1.0.2, so a worktree cut from `origin/main` reported three errors in
+// `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — both auth files,
+// nobody's diff — while `pnpm check` in the main tree was GREEN because that
+// tree was four commits behind and therefore agreed with the stale install.
+//
+// ⚠ THE ARM THAT MATTERS MOST HERE IS THE FALSE-ALARM ONE. A reading that
+// cried skew on every tree would be worse than no reading: it would send every
+// shift to a pointless multi-minute install and then be learned as noise. The
+// CRLF arm is that control, and it is not hypothetical — this same tool warns
+// three steps earlier that a checkout can arrive CRLF-smudged.
+// ---------------------------------------------------------------------------
+describe("judgeSharedInstall — the install's own lockfile against this tree's (#2148)", () => {
+  const LOCK = "lockfileVersion: '9.0'\n\nimporters:\n  .:\n    dependencies:\n      cookie:\n        specifier: ^2.0.1\n";
+  const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
+
+  it("MATCH — the install was made from this tree's lockfile", () => {
+    expect(judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] }))
+      .toEqual({ kind: "match" });
+  });
+
+  it("SKEW — a different lockfile, and the other trees it would move are named", () => {
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      repairTreeLock: OTHER,
+      otherTrees: [
+        { path: "C:/Users/Admin/Drape", lock: OTHER },
+        { path: "C:/Users/Admin/drape-shift-seat-1", lock: OTHER },
+      ],
+    });
+    expect(reading.kind).toBe("skew");
+    expect(reading.kind === "skew" && reading.collisions).toEqual([
+      "C:/Users/Admin/Drape",
+      "C:/Users/Admin/drape-shift-seat-1",
+    ]);
+  });
+
+  it("SKEW with NO collisions — every other tree already wants what this one wants", () => {
+    // The common case after a bump everyone has merged forward: the install is
+    // simply stale, and one `pnpm install` costs nobody anything. Reporting a
+    // collision here would argue against the command that fixes it.
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      repairTreeLock: LOCK,
+      otherTrees: [{ path: "C:/Users/Admin/Drape", lock: LOCK }],
+    });
+    expect(reading.kind === "skew" && reading.collisions).toEqual([]);
+  });
+
+  it("⚠ an UNREADABLE other tree is not a collision — unknown is never counted as disagreement", () => {
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      repairTreeLock: LOCK,
+      otherTrees: [{ path: "C:/Users/Admin/drape-review-9", lock: null }],
+    });
+    expect(reading.kind === "skew" && reading.collisions).toEqual([]);
+  });
+
+  it("UNREADABLE — the install records no lockfile, so the question is not answered", () => {
+    const reading = judgeSharedInstall({ installedLock: null, treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] });
+    expect(reading.kind).toBe("unreadable");
+    expect(reading.kind === "unreadable" && reading.why).toContain(INSTALLED_LOCKFILE_RELATIVE);
+  });
+
+  it("UNREADABLE — this tree has no lockfile at all", () => {
+    const reading = judgeSharedInstall({ installedLock: LOCK, treeLock: null, repairTreeLock: LOCK, otherTrees: [] });
+    expect(reading.kind).toBe("unreadable");
+    expect(reading.kind === "unreadable" && reading.why).toContain("pnpm-lock.yaml");
+  });
+
+  it("⚠ THE FALSE-ALARM CONTROL — a CRLF-smudged checkout reads MATCH, not skew", () => {
+    // Without the normalise this is a skew on every tree on the machine at
+    // once, and the warning becomes noise the first time a checkout smudges.
+    expect(
+      judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK.replace(/\n/g, "\r\n"), repairTreeLock: LOCK, otherTrees: [] }),
+    ).toEqual({ kind: "match" });
+  });
+
+  it("a trailing-newline difference reads MATCH", () => {
+    expect(judgeSharedInstall({ installedLock: LOCK + "\n\n", treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] }))
+      .toEqual({
+      kind: "match",
+    });
+  });
+
+  it("⚠ THE POSITIVE CONTROL — pnpm really does write the file this reading depends on", () => {
+    // Law 2: verify the instrument before believing its finding. The whole
+    // reading rests on pnpm keeping a copy of the lockfile it installed from.
+    // If pnpm ever stops, every verdict silently becomes `unreadable` and this
+    // arm is the only thing that would say so.
+    const real = installedLockfilePath(join(import.meta.dirname, "..").replace(/\\/g, "/"));
+    expect(real.endsWith(INSTALLED_LOCKFILE_RELATIVE)).toBe(true);
+    expect(existsSync(real), "pnpm no longer records its lockfile at " + INSTALLED_LOCKFILE_RELATIVE).toBe(true);
+    expect(readFileSync(real, "utf8")).toContain("lockfileVersion");
+  });
+});
+
+describe("sharedInstallWarning — the words a shift reads, driven by the same suite (#2148)", () => {
+  const lines = (reading: Parameters<typeof sharedInstallWarning>[0]) =>
+    sharedInstallWarning(reading, "C:/Users/Admin/Drape").join("\n");
+
+  it("says nothing on a match, and nothing when the question was not answered", () => {
+    expect(sharedInstallWarning({ kind: "match" }, "C:/Users/Admin/Drape")).toEqual([]);
+    expect(sharedInstallWarning({ kind: "unreadable", why: "no install" }, "C:/Users/Admin/Drape")).toEqual([]);
+  });
+
+  it("⚠ CARRIES THE REPAIR COMMAND AND THE TREE TO RUN IT IN", () => {
+    // A warning that describes a problem and not its one command is a warning
+    // that gets read twice and acted on once.
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).toContain("pnpm install");
+    expect(text).toContain("C:/Users/Admin/Drape");
+    expect(text).toContain("CI installs fresh");
+  });
+
+  it("⚠ COUNTS THE TREES THE REPAIR WOULD MOVE AND NEVER LISTS THEM, with the commands that show which are alive", () => {
+    // ⚠ MEASURED, NOT REASONED. The first shape printed every colliding path
+    // and the real `add` printed 36 of them — genuine older checkouts, so the
+    // judge was right and the output was a wall nobody reads. The paths stay on
+    // the verdict; the words carry the count and the two commands.
+    const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
+    const text = lines({ kind: "skew", collisions: many, repairTree: "same-lockfile" });
+    expect(text).toContain("36 other tree(s)");
+    expect(text).toContain("scripts/dev-servers.mts");
+    expect(text).toContain("scripts/shift-worktree.mts list");
+    // The wall is the thing being refused, so the arm refuses it by name.
+    expect(text).not.toContain("drape-shift-stale-0");
+    expect(text.split("\n").length).toBeLessThan(14);
+  });
+
+  it("says nothing about other trees when none of them disagree", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).not.toContain("THE INSTALL IS SHARED");
+    expect(text).toContain("pnpm install");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ THE REPAIR LINE IS ONLY A REPAIR WHEN IT WOULD REPAIR IT (#2148, round 2).
+
+     MEASURED on this machine the hour this was written, three lockfiles and no
+     two alike: the shared install was made from `04d1a5fd…`, the launching tree
+     held `24d2c74c…` and `origin/main` — which is what `add` cuts from, so it is
+     the new worktree's — held `be7c3b77…`. `pnpm install` installs the lockfile
+     of the tree it RUNS IN, so the named repair moved the install from the first
+     to the second while the worktree needed the third. The warning described the
+     skew correctly and then named a command that does not clear it.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  it("⚠ WHEN THE REPAIR TREE IS ON A DIFFERENT LOCKFILE, IT SAYS SO AND DOES NOT CALL IT A REPAIR", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "different-lockfile" });
+    expect(text).toContain("WOULD NOT REPAIR IT");
+    expect(text).toContain("C:/Users/Admin/Drape");
+    /* The word that made it read as the answer. A shift scanning the block for
+       one command must not find one that leaves the red where it was. */
+    expect(text, "a command that does not clear the skew is still headed `repair:`")
+      .not.toContain("repair: run");
+    /* And it says whose act the fix is, because a seat may not advance that tree. */
+    expect(text).toContain("owner's act");
+  });
+
+  it("⚠ AN UNREADABLE REPAIR TREE IS ITS OWN ANSWER, never the friendly one", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "unreadable" });
+    expect(text).toContain("IS UNKNOWN");
+    expect(text).not.toContain("repair: run");
+    expect(text).not.toContain("WOULD NOT REPAIR IT");
+  });
+
+  it("⚠ POSITIVE CONTROL — the same-lockfile case still prints the one command", () => {
+    /* The arm that proves the two above are not simply deleting the command.
+       After a bump everyone has merged forward this is the ordinary case, and
+       `pnpm install` there really is the whole fix. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).toContain("repair: run `pnpm install` in C:/Users/Admin/Drape");
+    expect(text).not.toContain("WOULD NOT REPAIR IT");
+    expect(text).not.toContain("IS UNKNOWN");
+  });
+});
+
+describe("sharedInstallRedDiagnosis — the words for the moment the red arrives (#2148, round 3)", () => {
+  const OWNER = "C:/Users/Admin/Drape";
+  const lines = (reading: Parameters<typeof sharedInstallRedDiagnosis>[0]) =>
+    sharedInstallRedDiagnosis(reading, OWNER).join("\n");
+
+  it("says nothing on a match, and nothing when the question was not answered", () => {
+    /* The same floor the `add` words have, and it matters more here: this is
+       printed under a red a shift is already reading, so a block that appears
+       when the install is FINE would send it chasing the wrong thing. */
+    expect(sharedInstallRedDiagnosis({ kind: "match" }, OWNER)).toEqual([]);
+    expect(sharedInstallRedDiagnosis({ kind: "unreadable", why: "no install" }, OWNER)).toEqual([]);
+  });
+
+  it("⚠ LEADS WITH THE FACT THE SHIFT NEEDS FIRST — that the red may not be its diff", () => {
+    /* The whole value is in the first line. A shift reading three errors in two
+       auth files it never opened spends its next twenty minutes on `sdk.ts`
+       unless something says otherwise in the first sentence it meets. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text.split("\n")[0]).toContain("MAY NOT BE YOUR DIFF");
+    expect(text).toContain("CI installs fresh");
+    /* And it names where the install actually is, because the seat's own tree
+       is not it. */
+    expect(text).toContain(OWNER);
+  });
+
+  it("⚠ IT IS WRITTEN IN THE PAST TENSE, because the red has already happened", () => {
+    /* ⚠ THE ONE THING THAT COULD NOT BE SHARED WITH `add`'s WORDS, and the
+       reason this is a second function rather than a second call. `add` says
+       *expect* a red; printing a prediction of a thing already on the screen is
+       how a block gets learned as decoration. One judge, two moments. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).not.toContain("Expect");
+    expect(text).not.toContain("to go red");
+    expect(text).toContain("reports errors in files");
+  });
+
+  it("⚠ ON A DIFFERENT-LOCKFILE OWNER IT GIVES BOTH STEPS AND FORBIDS THE FIRST ALONE", () => {
+    /* ⚠ MEASURED ON THIS MACHINE and the reason the second line exists: the
+       shared install was made from `04d1a5fd…`, the owning tree holds
+       `24d2c74c…` and this tree needs `be7c3b77…`. An install in the owner
+       produces ITS list, so the owner must advance first — and advancing it
+       ALONE moves the one tree that currently typechecks green INTO the skew.
+       A reader given only the cheap half does the damage. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "different-lockfile" });
+    expect(text).toContain("WOULD NOT FIX IT");
+    expect(text).toContain(`git -C ${OWNER} merge --ff-only origin/main`);
+    expect(text).toContain("pnpm install");
+    expect(text).toContain("never the first alone");
+    /* A seat may not run either step, and the words say so rather than leaving
+       a seat to discover it from its standing orders. */
+    expect(text).toContain("MACHINE OWNER'S ACT");
+    /* The word that would make a non-repair read as the answer. */
+    expect(text).not.toContain("repair: run");
+  });
+
+  it("⚠ POSITIVE CONTROL — a same-lockfile owner gets the one command and no two-step warning", () => {
+    /* The arm that proves the one above is not simply deleting the command.
+       After a bump everybody has merged forward, `pnpm install` in the owner
+       really is the whole fix, and a tool that cried "two steps" then would be
+       the false alarm this block cannot afford. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).toContain(`repair: run \`pnpm install\` in ${OWNER}`);
+    expect(text).not.toContain("WOULD NOT FIX IT");
+    expect(text).not.toContain("merge --ff-only");
+    expect(text).not.toContain("IS UNKNOWN");
+  });
+
+  it("⚠ AN UNREADABLE OWNER IS ITS OWN ANSWER, never the friendly one", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "unreadable" });
+    expect(text).toContain("IS UNKNOWN");
+    expect(text).not.toContain("repair: run");
+    expect(text).not.toContain("WOULD NOT FIX IT");
+  });
+
+  it("⚠ NEVER LISTS OTHER TREES, whatever it is handed", () => {
+    /* Round 1's measured wall, held at this caller too. preflight passes
+       `otherTrees: []` so `collisions` is empty in practice — this arm proves
+       the WORDS would not print a wall even if a later caller passed 36, which
+       is the only way the guarantee survives a new call site. */
+    const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
+    const text = lines({ kind: "skew", collisions: many, repairTree: "same-lockfile" });
+    expect(text).not.toContain("drape-shift-stale-0");
+    expect(text.split("\n").length).toBeLessThan(10);
+  });
+});
+
+describe("judgeSharedInstall reads the REPAIR TREE, which was in its input all along (#2148, round 2)", () => {
+  const LOCK = "lockfileVersion: '9.0'\n\nimporters:\n  .:\n    dependencies:\n      cookie:\n        specifier: ^2.0.1\n";
+  const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
+  const skew = (repairTreeLock: string | null) =>
+    judgeSharedInstall({ installedLock: OTHER, treeLock: LOCK, repairTreeLock, otherTrees: [] });
+
+  it("the launching tree agreeing with this worktree reads `same-lockfile`", () => {
+    const agreeing = skew(LOCK);
+    expect(agreeing.kind === "skew" && agreeing.repairTree).toBe("same-lockfile");
+  });
+
+  it("⚠ THE LIVE CASE — the launching tree BEHIND this worktree reads `different-lockfile`", () => {
+    /* The main tree sat 7 commits behind `origin/main` when this was written,
+       and exactly one of those commits moved the dependency list. */
+    const behind = skew(OTHER);
+    expect(behind.kind === "skew" && behind.repairTree).toBe("different-lockfile");
+  });
+
+  it("⚠ unreadable is NOT `same-lockfile` — falling back is how the command came to be printed", () => {
+    const unreadable = skew(null);
+    expect(unreadable.kind === "skew" && unreadable.repairTree).toBe("unreadable");
+  });
+
+  it("⚠ CRLF does not make the repair tree look different either", () => {
+    /* The same false alarm the top-level reading already guards: a smudged
+       checkout must not turn the one true repair line into a two-step. */
+    const smudged = skew(LOCK.replace(/\n/g, "\r\n"));
+    expect(smudged.kind === "skew" && smudged.repairTree).toBe("same-lockfile");
+  });
+});
+
+describe("the script's own text — the shared-install reading is INVOKED (#2148)", () => {
+  // ⚠ Invariant 7: a control that is not invoked does not exist. Every arm
+  // above drives the library, and all of them would stay green if the call
+  // site were deleted — which is the shape this repository keeps paying for.
+  // So the wiring is held here, sliced out of `add` rather than grepped
+  // whole-file, because a whole-file `toContain` passes on an identical line in
+  // a neighbouring function.
+  const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
+
+  const addBlock = () => {
+    const start = source.indexOf('if (command === "add") {');
+    const end = source.indexOf("// ---- remove ---");
+    return { start, end, text: source.slice(start, end) };
+  };
+
+  it("`add` calls judgeSharedInstall, and does it AFTER the worktree exists", () => {
+    // Order is load-bearing and not cosmetic: the reading opens the new tree's
+    // own `pnpm-lock.yaml`, which does not exist until `git worktree add` has
+    // run. Called earlier it would read null and report `unreadable` forever —
+    // a control that is invoked and inert, which is worse than one that is
+    // missing, because every arm above would still pass.
+    const add = addBlock();
+    expect(add.start, "the add command block moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(add.end, "the remove banner moved — re-anchor this arm").toBeGreaterThan(add.start);
+
+    const worktreeAdd = add.text.indexOf('git(["worktree", "add"');
+    const judged = add.text.indexOf("judgeSharedInstall({");
+    expect(worktreeAdd, "add no longer creates the worktree here").toBeGreaterThan(-1);
+    expect(judged, "`add` does not call judgeSharedInstall — the reading is dead code").toBeGreaterThan(-1);
+    expect(
+      judged,
+      "the install is read before the worktree exists — it would always read unreadable",
+    ).toBeGreaterThan(worktreeAdd);
+    expect(add.text).toContain("sharedInstallWarning(reading, repoRoot)");
+    /* ⚠ AND THE REPAIR TREE IS ASKED ABOUT ITSELF (#2148, round 2). Every arm
+       in the block above drives the library and all of them stay green if the
+       call site stops passing this, which is the same invariant-7 shape this
+       describe exists for — and the field defaults to nothing, so a dropped
+       line reads as `unreadable` and the warning quietly stops naming a
+       repair at all. `repoRoot` is what the printed line points at, so it is
+       the only honest thing to read it from. */
+    expect(
+      add.text,
+      "`add` stopped telling the reading which tree the printed repair would run in",
+    ).toContain("repairTreeLock: readOrNull(`${repoRoot}/pnpm-lock.yaml`)");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ AND `pnpm preflight` IS THE SECOND CALLER (#2148, round 3).
+
+     `sharedInstallWarning`'s own first line predicts this red — *"expect
+     `pnpm check` and `pnpm preflight` to go red naming files your diff never
+     touched"* — and for a whole day the tool that went red said nothing. The
+     instance was fixed at the door and the sibling was left, which is law 7's
+     sweep owed on this card's own fix. MEASURED in this tree before the arms
+     were written: `npx tsc --noEmit` gives three errors in `server/_core/sdk.ts`
+     and `server/routes/googleAuth.ts`, both auth files, nobody's diff, and
+     preflight stops there with five of its remaining checks never reached.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ `preflight` CALLS THE SAME JUDGE, and only under a typecheck red", () => {
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    /* Sliced out of the typecheck branch rather than grepped whole-file: a
+       whole-file `toContain` would pass on an identical line in a neighbouring
+       diagnosis block, which is the trap this describe's own header names. */
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    expect(start, "the typecheck diagnosis block is gone — preflight no longer names the install").toBeGreaterThan(-1);
+    expect(end, "the architecture diagnosis moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = preflight.slice(start, end);
+
+    expect(block, "preflight re-derives the comparison instead of calling the judge (working law 4)")
+      .toContain("judgeSharedInstall({");
+    expect(block).toContain("sharedInstallRedDiagnosis(reading,");
+    /* ⚠ THE OWNING TREE IS RESOLVED AND NOT ASSUMED TO BE `repoRoot` — round
+       2's whole lesson, one caller over. In a worktree `node_modules` is a
+       junction, so the tree whose lockfile an install would produce is the
+       target's parent; passing `repoRoot` here would name the seat's own tree
+       and print a repair that cannot be run. */
+    expect(block, "preflight stopped resolving which tree owns the install").toContain("realpathSync");
+    /* And it must not enumerate worktrees: the paths are `add`'s sentence, and
+       36 of them under a red is the wall round 1 measured. */
+    expect(block, "preflight is listing other trees under a red — that is the measured wall")
+      .toContain("otherTrees: []");
+  });
+
+  it("⚠ THE DIAGNOSIS IS NOT PRINTED ON A GREEN PREFLIGHT — a block that is always there is noise", () => {
+    /* The negative control for the clause above. A skew line on every green run
+       trains the shift to scroll past exactly the block that matters on the one
+       run it does. So both calls must live INSIDE the typecheck branch and
+       nowhere else in the file.
+
+       ⚠ THE FIRST SHAPE OF THIS ARM WAS BLIND, AND SABOTAGE FOUND IT RATHER
+       THAN REVIEW. It read `preflight.slice(indexOf("PREFLIGHT GREEN"))` and
+       asserted the call was absent from it — but the green path BEGINS where
+       the red block exits, not at its closing banner, so a call inserted one
+       line ABOVE `console.log("PREFLIGHT GREEN` sat on the green path and
+       outside the slice. Driven: the sabotage landed (two insertions, read at
+       the diff) and all 157 arms stayed green. A slice anchored on a banner is
+       a guess about where a branch starts; counting the call sites is the fact.
+       Memory's own five causes of a surviving sabotage — this was the blind
+       guard, and the one direction that matters is the permissive one. */
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+
+    /* The CALL form, which the import line cannot satisfy — it carries no paren. */
+    for (const symbol of ["judgeSharedInstall", "sharedInstallRedDiagnosis"]) {
+      const sites = [...preflight.matchAll(new RegExp(`${symbol}\\(`, "g"))].map((m) => m.index ?? -1);
+      expect(sites.length, `${symbol} is called ${sites.length} times — exactly one call site, inside the typecheck branch`)
+        .toBe(1);
+      expect(sites[0], `${symbol} is called outside the typecheck branch — it would run on a green preflight`)
+        .toBeGreaterThan(start);
+      expect(sites[0], `${symbol} is called after the typecheck branch closes`).toBeLessThan(end);
+    }
+  });
+
+  it("⚠ `preflight` NEVER RUNS AN INSTALL EITHER — the same refusal, the same reason", () => {
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    const block = preflight.slice(start, end);
+    expect(block).not.toMatch(/spawnSync\(\s*"pnpm"/);
+    expect(block).not.toMatch(/"install"/);
+  });
+
+  it("⚠ `add` NEVER RUNS AN INSTALL ITSELF — the mutation stays with whoever can see the machine", () => {
+    // The convenient path is for the tool to just fix it. It must not: the
+    // install is shared with every other worktree and with any running dev
+    // server, so a silent refresh is a mutation under somebody else's live
+    // work. The fidelity law's declared-shortcut clause pointed at tooling —
+    // name the tradeoff rather than quietly taking the easy half.
+    expect(addBlock().text).not.toMatch(/run\(\s*"pnpm"/);
+    expect(addBlock().text).not.toMatch(/"install"/);
   });
 });

@@ -33,6 +33,45 @@ import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
 
 import { allowTreeSweeps } from "./testing/suiteClocks";
 
+/**
+ * ONE BUILD, SHARED BY EVERY ARM THAT ONLY READS IT — #2172, 2026-10-10.
+ *
+ * This file was **128.9 s of the gate's 719 s unit total — 17.9% of it, the
+ * single heaviest file in the suite** (measured off CI run `37945774253`'s
+ * per-file reporter lines), and it spawns no child process at all: all of that
+ * is in-process work. The cause was `buildStaticAtlas(CORPUS)` called **31
+ * times**, 27 of them with the identical `CORPUS` on a function this file's own
+ * second arm proves is deterministic — *"two builds on one tree are
+ * identical"*. Every one of those walks the source tree, reads every listed
+ * file and resolves import specifiers.
+ *
+ * ⚠ **THE MEMO IS SAFE ON TWO READINGS TAKEN BEFORE IT WAS WRITTEN, not on the
+ * assumption that sharing is fine.** (1) No arm mutates a built atlas — no
+ * assignment into one, no `push`/`splice`/`sort`/`reverse` on `declared` or
+ * `findings`. (2) No arm writes into the tree `buildStaticAtlas` reads: the two
+ * arms that write files both write under `mkdtempSync(tmpdir())` and neither
+ * feeds the atlas, so there is no arm whose expected answer differs before and
+ * after a tree change.
+ *
+ * ⚠ **THREE CALLS DELIBERATELY DO NOT USE IT, and each is necessary rather than
+ * missed:**
+ *
+ *   · the determinism arm builds TWICE on purpose — comparing the memo with
+ *     itself would prove nothing, and that arm is the reason every other arm is
+ *     allowed to share one build. It is necessarily slow and stays so.
+ *   · the `scope_unknown` arm builds a FILTERED corpus — a different input, so
+ *     a shared answer would be the wrong one.
+ *
+ * So the build count goes **31 → 4** (one shared, two for determinism, one
+ * filtered). ⚠ **The second-order figure is NOT claimed here**: this box runs
+ * the suite at roughly 8.9x parallelism against the gate's 2.5x, which is why
+ * #1799's local bench read the growth as flat, so the only honest before/after
+ * is CI's own per-file reporter line on this pull request.
+ */
+let sharedAtlasMemo: ReturnType<typeof buildStaticAtlas> | null = null;
+const sharedAtlas = (): ReturnType<typeof buildStaticAtlas> =>
+  (sharedAtlasMemo ??= buildStaticAtlas(CORPUS));
+
 /* This file reads the source tree; under load that is the work that blows up, not
    the logic. It timed out at the 5s default THREE times across the runs on #233
    (foreman-98 run 1; foreman-99 runs 1 and 2). See `suiteClocks.ts` family 2 for
@@ -46,7 +85,7 @@ describe("the static half reads what the source declares", () => {
     const interpreter = declaredInterpreterRefusals();
     expect(interpreter).toContain("unreadable");
     expect(interpreter).toContain("gate_ink_document");
-    const ids = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
+    const ids = sharedAtlas().declared.map((d) => d.id);
     /* `inkRemovalNotYet` stood here until 2026-08-22 and was DELETED with its
        door (fable-1322 §1) — a positive control has to name a door that
        exists, and a control pinning a deleted one is the census asserting its
@@ -89,7 +128,7 @@ describe("the static half reads what the source declares", () => {
   it("reports a declared door that no corpus row expects, and stops when a row expects it", () => {
     const without = buildStaticAtlas(CORPUS.filter((row) => outcomeId(row.expect) !== "scope_unknown"));
     expect(without.findings.some((f) => f.kind === "unreached" && f.subject === "scope_unknown")).toBe(true);
-    const withRow = buildStaticAtlas(CORPUS);
+    const withRow = sharedAtlas();
     expect(withRow.findings.some((f) => f.kind === "unreached" && f.subject === "scope_unknown")).toBe(false);
   });
 
@@ -116,7 +155,7 @@ describe("the static half reads what the source declares", () => {
 
     /* And the finding is really produced from an empty pin list, rather than
        the emptiness being read straight off the map above. */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const entry of atlas.declared) {
       const reported = atlas.findings.some(
         (f) => f.kind === "unpinned-refusal" && f.subject === entry.id,
@@ -262,7 +301,7 @@ describe("the static half reads what the source declares", () => {
       the strongest reading this arm has ever had, so it is asserted as such
       rather than loosened to "at most one".
     */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     const unpinned = atlas.declared.filter((d) => d.pinnedBy.length === 0).map((d) => d.id);
     expect(unpinned).toEqual([]);
   });
@@ -325,7 +364,7 @@ describe("the static half reads what the source declares", () => {
       Asserted over the WHOLE map rather than on the two specimens, because the
       next docblock to name a door has not been written yet.
     */
-    for (const entry of buildStaticAtlas(CORPUS).declared) {
+    for (const entry of sharedAtlas().declared) {
       for (const site of entry.sites) {
         const at = site.lastIndexOf(":");
         const line = readFileSync(site.slice(0, at), "utf8").split("\n")[Number(site.slice(at + 1)) - 1] ?? "";
@@ -521,7 +560,7 @@ describe("the static half reads what the source declares", () => {
       read" — to an upload door, which is the conflation `roll.*` was qualified
       to avoid and the stated reason this half of #209 waited a year.
     */
-    const declared = buildStaticAtlas(CORPUS).declared;
+    const declared = sharedAtlas().declared;
     for (const id of [...declaredUploadRefusals(), ...declaredReferenceRefusals()]) {
       const entry = declared.find((d) => d.id === id);
       expect(entry, `${id} is not on the map`).toBeDefined();
@@ -544,7 +583,7 @@ describe("the static half reads what the source declares", () => {
       the door it was credited with proving.
     */
     let checked = 0;
-    for (const entry of buildStaticAtlas(CORPUS).declared) {
+    for (const entry of sharedAtlas().declared) {
       /* Pins are searched on the BARE member name and attached to the QUALIFIED
          entry — `buildStaticAtlas`'s own comment. The bare name is what a test
          quotes, so it is what is looked for here.
@@ -574,7 +613,7 @@ describe("the static half reads what the source declares", () => {
     /* The first run of the scan counted the line above as the pin for
        "refine_limit" and declared the door proven. The instrument must not be
        able to prove a door by being told which door to look for. */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const entry of atlas.declared) {
       expect(entry.pinnedBy).not.toContain("server/capabilityAtlas.test.ts");
     }
@@ -595,7 +634,7 @@ describe("the concept upload's doors are on the map", () => {
     expect(declared).toContain("concept.not_about_the_person");
     expect(declared).toContain("concept.unreadable");
     expect(declared.length).toEqual(Object.keys(CONCEPT_DESCRIBE_COPY).length);
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     const ids = atlas.declared.map((d) => d.id);
     for (const id of declared) expect(ids).toContain(id);
     /*
@@ -634,7 +673,7 @@ describe("the concept upload's doors are on the map", () => {
       chosen by a ternary that no `reason:`-shaped regex sees, so their only
       site is the copy table's key line — which is why the key lines are sites.
     */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const entry of atlas.declared.filter((d) => d.id.startsWith("concept."))) {
       expect(entry.sites.length, entry.id).toBeGreaterThan(0);
       for (const site of entry.sites) {
@@ -656,7 +695,7 @@ describe("the concept upload's doors are on the map", () => {
       new ids landed on the DOCUMENTED side rather than the `unmapped` ERROR
       side — the state the founder law's teeth produce for a door with no entry.
     */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const id of declaredConceptRefusals()) {
       const found = atlas.findings.filter((f) => f.subject === id);
       expect(found.map((f) => f.kind), id).toEqual(["documented-unreachable"]);
@@ -675,9 +714,9 @@ describe("the concept upload's doors are on the map", () => {
       check passes today whatever the finding does, so the finding itself is
       produced from a deliberately colliding list.
     */
-    const live = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
+    const live = sharedAtlas().declared.map((d) => d.id);
     expect(new Set(live).size).toEqual(live.length);
-    expect(buildStaticAtlas(CORPUS).findings.some((f) => f.kind === "duplicate-door-id")).toBe(false);
+    expect(sharedAtlas().findings.some((f) => f.kind === "duplicate-door-id")).toBe(false);
 
     const colliding = [
       { id: "unreadable", kind: "interpreter-refusal" as const, pinnedBy: [], sites: [] },
@@ -718,7 +757,7 @@ describe("one word may be three doors, and each keeps only its own pins", () => 
   const read = (f: string) => SOURCES[f] ?? null;
 
   it("POSITIVE CONTROL — the live map really does hold a shared bare id, so this reader has a subject", () => {
-    const shared = sharedBareDoorIds(buildStaticAtlas(CORPUS).declared);
+    const shared = sharedBareDoorIds(sharedAtlas().declared);
     expect([...shared.keys()].sort()).toEqual(["reader_outage", "unreadable"]);
     expect(shared.get("unreadable")!.map((d) => d.id).sort())
       .toEqual(["concept.unreadable", "unreadable", "upload.unreadable"]);
@@ -802,7 +841,7 @@ describe("one word may be three doors, and each keeps only its own pins", () => 
   });
 
   it("THE LIVE READING — the real map's shared words are separated, and no door was emptied to do it", () => {
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const [bare, rows] of sharedBareDoorIds(atlas.declared)) {
       const lists = rows.map((r) => [...r.pinnedBy].sort().join("|"));
       expect(new Set(lists).size, `${bare}: every door of this word still carries one list`)
@@ -830,7 +869,7 @@ describe("the roll entrance's walls are on the map", () => {
       "roll.likeness", "roll.not_a_being", "roll.reader_outage", "roll.uninterpretable",
     ]);
     expect(declared.length).toEqual(Object.keys(ROLL_REFUSAL_COPY).length);
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     const ids = atlas.declared.map((d) => d.id);
     for (const id of declared) expect(ids).toContain(id);
     /* The pins resolve on the BARE name — asserted in its own right, because
@@ -902,7 +941,7 @@ describe("the roll entrance's walls are on the map", () => {
 
     /* AND THE LIVE READING still resolves: every declared roll wall cites a
        real throw in the entrance's own file. */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     const source = readFileSync(join(__dirname, "castingV2", "briefCompiler.ts"), "utf8").split("\n");
     for (const [id, member] of [["roll.likeness", "likeness"], ["roll.not_a_being", "not_a_being"], ["roll.reader_outage", "reader_outage"]] as const) {
       const entry = atlas.declared.find((d) => d.id === id)!;
@@ -912,7 +951,7 @@ describe("the roll entrance's walls are on the map", () => {
   });
 
   it("cites only the roll entrance's own files, and no other door cites them", () => {
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const entry of atlas.declared.filter((d) => d.id.startsWith("roll."))) {
       expect(entry.sites.length, entry.id).toBeGreaterThan(0);
       for (const site of entry.sites) {
@@ -942,7 +981,7 @@ describe("the roll entrance's walls are on the map", () => {
   });
 
   it("each roll wall is documented unreached — the corpus sends sentences, not briefs", () => {
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     for (const id of declaredRollRefusals()) {
       expect(atlas.findings.filter((f) => f.subject === id).map((f) => f.kind), id)
         .toEqual(["documented-unreachable"]);
@@ -958,7 +997,7 @@ describe("the roll entrance's walls are on the map", () => {
       reaches it, which is what every entry's own `becomesReachable` prose has
       always been written in terms of.
     */
-    const atlas = buildStaticAtlas(CORPUS);
+    const atlas = sharedAtlas();
     const documented = atlas.findings.filter((f) => f.kind === "documented-unreachable");
     expect(documented.length).toBeGreaterThan(0);
     for (const f of documented) {
@@ -980,7 +1019,7 @@ describe("the roll entrance's walls are on the map", () => {
       points at the wrong line of a real door, the first puts a door on the map
       that does not exist.
     */
-    const declared = buildStaticAtlas(CORPUS).declared.map((d) => d.id);
+    const declared = sharedAtlas().declared.map((d) => d.id);
     expect(declared).not.toContain("id");
     /* The prose that produced it is still there — so this arm is live, not a
        fixture that has been quietly deleted out from under itself. */
@@ -1018,7 +1057,7 @@ describe("free answers are matched back to the member that wrote them", () => {
 });
 
 describe("driven findings", () => {
-  const staticAtlas = buildStaticAtlas(CORPUS);
+  const staticAtlas = sharedAtlas();
   const row = CORPUS.find((r) => r.id === "guard.scope.unknown")!;
   const driven = (observed: string, ledgerAfter = 0) => ({
     profile: { name: "test", flags: {}, fixture: "test" },
@@ -1050,7 +1089,7 @@ describe("the committed census is fresh", () => {
   });
   it("its static half matches a fresh build of this tree (regenerate if this is red)", () => {
     if (!committed) return;
-    expect(JSON.stringify(committed.static)).toEqual(JSON.stringify(buildStaticAtlas(CORPUS)));
+    expect(JSON.stringify(committed.static)).toEqual(JSON.stringify(sharedAtlas()));
   });
 
   /*
@@ -1079,7 +1118,7 @@ describe("the committed census is fresh", () => {
   it("⚠ its PAGE matches a render of the committed census (regenerate if this is red)", () => {
     if (!committed) return;
     expect(existsSync(pagePath), "the committed page exists").toBe(true);
-    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), readFileSync(pagePath, "utf8"))).toBe(true);
+    expect(committedPageIsFresh(committed, sharedAtlas(), readFileSync(pagePath, "utf8"))).toBe(true);
   });
 
   it("CONTROL — a hand-edited page does NOT match, and a CRLF checkout does", () => {
@@ -1088,8 +1127,8 @@ describe("the committed census is fresh", () => {
        must not — the two failure modes the architecture checker learned to tell
        apart the hard way. */
     if (!committed) return;
-    const fresh = renderCapabilityPage({ ...committed, static: buildStaticAtlas(CORPUS) });
-    expect(committedPageIsFresh(committed, buildStaticAtlas(CORPUS), `${fresh}hand edited\n`)).toBe(false);
+    const fresh = renderCapabilityPage({ ...committed, static: sharedAtlas() });
+    expect(committedPageIsFresh(committed, sharedAtlas(), `${fresh}hand edited\n`)).toBe(false);
     /* ⚠ THE CRLF HALF IS DRIVEN THROUGH THE COMPARISON, NOT THROUGH THE
        NORMALIZER (second review of #201). Asserting `lfOnly(crlf(x)) ===
        lfOnly(x)` exercises `lfOnly` in isolation: delete the `lfOnly(pageText)`
@@ -1099,7 +1138,7 @@ describe("the committed census is fresh", () => {
        is the failure this whole file is the opposite of. */
     expect(committedPageIsFresh(
       committed,
-      buildStaticAtlas(CORPUS),
+      sharedAtlas(),
       fresh.split("\n").join(String.fromCharCode(13) + "\n"),
     )).toBe(true);
   });
@@ -1124,7 +1163,7 @@ describe("the committed census is fresh", () => {
       message: '"a probe ask" — committed refusal_a, now refusal_b',
     };
     const afterDrive = { ...committed, findings: [...committed.findings, routeChanged] };
-    const staticAtlas = buildStaticAtlas(CORPUS);
+    const staticAtlas = sharedAtlas();
     const page = renderCapabilityPage({ ...afterDrive, static: staticAtlas });
 
     /* The page prints severity/kind/subject/message, not the id — read off the
@@ -1539,7 +1578,7 @@ describe("the declared set reads CODE, and the real map is clean (#1821)", () =>
     expect(names.length).toBeGreaterThan(20);
 
     const doorIds = new Set<string>();
-    for (const entry of buildStaticAtlas().declared) {
+    for (const entry of sharedAtlas().declared) {
       doorIds.add(entry.id);
       doorIds.add(bareDoorId(entry.id));
     }
