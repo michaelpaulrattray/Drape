@@ -305,6 +305,154 @@ describe("what the instruction is not allowed to ask for", () => {
     expect(prompt).toMatch(/Both halves are required/);
   });
 
+  /*
+    HIS EYE ON THE FIRST COURT — 2026-10-09, the finding that held PR #2145.
+
+    The three craft rules above did their job and then overshot: the drafts came
+    back saying the same facts as his own examples with about 150 characters of
+    padding. So he added a fourth rule, kept here VERBATIM as he typed it, and
+    said the caps themselves stay where this branch put them.
+  */
+  const HIS_LENGTH_RULE = [
+    "Every sentence states one new thing the camera can see, said once. Match the",
+    "length of the founder's examples — the character limit is a ceiling for rare",
+    "cases, never a target to fill.",
+  ].join("\n");
+
+  it("⚠ rule 4 — carries his length ruling verbatim, and exactly once", () => {
+    expect(prompt).toContain(HIS_LENGTH_RULE);
+    /* Once, because a clause that appears twice cannot be removed by a sweep —
+       which is what the sabotage arm below depends on. */
+    expect(prompt.split(HIS_LENGTH_RULE)).toHaveLength(2);
+  });
+
+  it("⚠ rule 4, clause by clause — one new thing per sentence, his lengths, the cap is not a target", () => {
+    expect(prompt).toContain("states one new thing the camera can see, said once");
+    expect(prompt).toContain("Match the\nlength of the founder's examples");
+    expect(prompt).toContain("a ceiling for rare\ncases, never a target to fill");
+  });
+
+  it("⚠ rule 4 — SABOTAGE: with his rule cut out, the arm above goes red", () => {
+    /* Working law 2: a reader that cannot fail has proven nothing. The cut is
+       asserted to have LANDED before its consequence is read, because a
+       `replace` that matched nothing passes a sabotage arm by doing nothing. */
+    const sabotaged = prompt.replace(HIS_LENGTH_RULE, "");
+    expect(sabotaged).not.toBe(prompt);
+    expect(sabotaged).not.toContain(HIS_LENGTH_RULE);
+    expect(sabotaged).not.toContain("never a target to fill");
+  });
+
+  it("⚠ the caps STAY at 500 and 320 — his word on the court, and not a shift's to move", () => {
+    /* Verbatim: "Keep the limits at 500 and 320 — those stay." The arm further
+       down proves they clear the widest line measured; this one pins the two
+       numbers he actually named, so a later tidy-up cannot drift them. */
+    expect(CAST_PERSONALITY_MAX_LENGTH).toBe(500);
+    expect(CAST_VOICE_MAX_LENGTH).toBe(320);
+  });
+
+  /*
+    HIS FIX 3 — THE BREAK IN THE VOICE HAS TO BE ACTABLE.
+
+    His words on the first court's Pigman line: *"grinding growl on certain
+    vowels" — a performer can't act "certain vowels." The old version's "on the
+    exhale" was better. Make the growl land on something performable.* So the
+    instruction names the kinds of thing a break may land on, and names the
+    shape it may not.
+  */
+  it("⚠ fix 3 — tells the reader the voice's break must land on something a performer can DO", () => {
+    expect(prompt).toContain("something a performer can DO");
+    for (const actable of ["a breath", "exhale", "a laugh", "a pause", "a question"]) {
+      expect(prompt).toContain(actable);
+    }
+  });
+
+  it("⚠ fix 3 — forbids a speech sound or a letter, which is the thing he could not act", () => {
+    expect(prompt).toMatch(/Never a speech\s*\n?sound and never a letter/);
+    /* BOTH named instances: his own "certain vowels", and the one the re-court
+       produced on Henry when the prohibition named only the plural phrasings —
+       the draft read "until a hard consonant cuts through clean", which is the
+       same unactable class wearing the singular. Naming the CLASS and both
+       phrasings is what stopped it; the clause is the measurement's own shape. */
+    expect(prompt).toContain('"on certain vowels"');
+    expect(prompt).toMatch(/"on a hard\s*\n?consonant"/);
+  });
+
+  /*
+    THE DRAFTED LINES USE THE CAST'S OWN PRONOUNS AND NEVER THE PICTURE'S.
+
+    Measured in the re-court, round 1: "Rina" resolves to they/them/their, the
+    ask carried those three words, and the drafted lines still said "while the
+    rest of HER stays locked" and "SHE answers in short, finished statements".
+    `castPronouns` exists because the room called every Cast "she" and that read
+    as the product not having looked at the person it was describing — the same
+    defect, now leaking through the two lines the product WRITES. It is also his
+    standing order of 2026-10-09. The instruction already said "use the pronouns
+    given below"; what it did not say is that no other pronoun may appear, and
+    that the face is not where they come from. After the clause, 0 of 6 drafts
+    across two samples used a pronoun the cast was not given.
+  */
+  it("⚠ allows only the three pronouns the cast was given, and names them inline", () => {
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      expect(rendered).toContain("Use ONLY the three pronouns given");
+      expect(rendered).toContain(`"${pronouns.subject}", "${pronouns.object}", "${pronouns.possessive}"`);
+      expect(rendered).toMatch(/no other pronoun in\s*\n?either line/);
+    }
+  });
+
+  it("⚠ forbids reading the pronouns off the face — `they` is the fallback, not a gap to fill", () => {
+    /* `castPronouns`' own rule: "Guessing from a name or a face is not on the
+       table." A reader handed a photograph and three pronoun words will
+       otherwise prefer the photograph, which is what round 1 measured. */
+    expect(prompt).toMatch(/never read off the face or guessed from the picture/);
+  });
+
+  it("⚠ fix 3 — and the FORM example no longer MODELS the shape he rejected", () => {
+    /* Law 7, the class rather than the instance: the example's own break was
+       "until a hard consonant clips it short", which is the same unactable
+       phonetic class as "certain vowels" — and an example is the strongest
+       signal an instruction carries. Sliced out rather than swept over the
+       whole prompt, because the forbidden phrases legitimately appear in the
+       prohibition above and a whole-file sweep would read them as the defect. */
+    const example = prompt.slice(prompt.lastIndexOf("  VOICE:"), prompt.indexOf("Answer with JSON only"));
+    expect(example).toContain("VOICE:");
+    expect(example).not.toMatch(/consonant|vowel/i);
+  });
+
+  /*
+    THE OBJECT PRONOUN IS ITS OWN WORD, AND "she" HID THAT FOR BOTH CLAUSES.
+
+    Two clauses take the object form, and both read correctly for a `she` cast
+    — the only prompt fixture this suite had — while rendering "asked of he",
+    "Write about he" and "asked of they" for everybody else. These arms drive
+    all three pronoun sets, so the fixture can no longer be the reason a
+    grammar defect in the live instruction is invisible.
+  */
+  const everyPronounSet: readonly CastPronouns[] = [
+    { subject: "he", object: "him", possessive: "his", plural: false },
+    { subject: "she", object: "her", possessive: "her", plural: false },
+    { subject: "they", object: "them", possessive: "their", plural: true },
+  ];
+
+  it("⚠ renders the object form in both clauses that need it, for every pronoun set", () => {
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      expect(rendered).toContain(`being asked of\n${pronouns.object}.`);
+      expect(rendered).toContain(`Write about ${pronouns.object} in the third person`);
+    }
+  });
+
+  it("⚠ NEGATIVE CONTROL — the subject form in those slots is what the defect looked like", () => {
+    /* Drives the defect rather than asserting the repair: for `he` and `they`
+       the old text was ungrammatical, and this is the string it produced. */
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      if (pronouns.object === pronouns.subject) continue;
+      expect(rendered).not.toContain(`being asked of\n${pronouns.subject}.`);
+      expect(rendered).not.toContain(`Write about ${pronouns.subject} in the third person`);
+    }
+  });
+
   it("⚠ no longer tells the reader to ignore what the voice says — that clause CONTRADICTED rule 3", () => {
     /* The instruction used to end the voice clause with "never what it says",
        which forbids the performance half he asked for by name. A sweep for the

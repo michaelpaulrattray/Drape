@@ -164,6 +164,20 @@ export type CastPersonaReader = {
  */
 export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
   const subject = pronouns.subject;
+  /*
+    ⚠ THE OBJECT FORM IS A SEPARATE WORD AND TWO CLAUSES NEED IT.
+
+    Both of them read correctly for a "she" cast, which is why neither was ever
+    seen: "asked of her" and "Write about her" are both grammatical because
+    SHE's subject and object forms differ only in the subject slot. Rendered for
+    a "he" cast — his own Pigman — the same two clauses said "when nothing is
+    being asked of he" and "Write about he in the third person", and for a
+    "they" cast "asked of they". The suite's only prompt fixture is `she`, so a
+    grammar defect in the live instruction for every other cast could not show
+    there either. Found by printing the instruction for `he` before the court
+    ran, which is working law 1: the artifact, at the resolution the claim needs.
+  */
+  const object = pronouns.object;
   const possessive = pronouns.possessive;
   return [
     "You write two short lines for a casting studio's cast page. They describe a",
@@ -173,7 +187,7 @@ export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
     "PERSONALITY — exactly two sentences, and each one has its own job.",
     "SENTENCE ONE is how this performer is at REST: the set of the body, where the",
     `gaze goes, what ${possessive} hands are doing when nothing is being asked of`,
-    `${subject}. Inside that first sentence, name the ONE thing that breaks the`,
+    `${object}. Inside that first sentence, name the ONE thing that breaks the`,
     "rest — a baseline and a single break, never a list of quirks.",
     "SENTENCE TWO is TIMING: how this performer moves and when they react. Speed",
     "of movement, how long a reply takes, what happens on the way from still to",
@@ -192,10 +206,22 @@ export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
     "gets answered. Both halves are required: a line that only says what the voice",
     "sounds like is half the line.",
     "",
-    `Write about ${subject} in the third person and use the pronouns given below.`,
+    "Whatever breaks the voice lands on something a performer can DO: a breath, an",
+    "exhale, a laugh, a pause, the end of a sentence, a question. Never a speech",
+    'sound and never a letter — not "on certain vowels", not "on a hard',
+    'consonant" — because nobody can rehearse which sounds those are.',
+    "",
+    `Write about ${object} in the third person. Use ONLY the three pronouns given`,
+    `below — "${subject}", "${object}", "${possessive}" — and no other pronoun in`,
+    "either line. The pronouns are a fact about this performer that you are given;",
+    "they are never read off the face or guessed from the picture.",
     "Do not use a name. Do not mention photography, framing, lighting, cameras,",
     "image quality, or that this is a generated picture. Do not mention clothing",
     "unless the way it is worn is itself a physical mannerism.",
+    "",
+    "Every sentence states one new thing the camera can see, said once. Match the",
+    "length of the founder's examples — the character limit is a ceiling for rare",
+    "cases, never a target to fill.",
     "",
     "The two examples below are the FORM to produce — the two jobs per line, the",
     "rhythm, and the length. Their WORDING is not available to you: do",
@@ -207,7 +233,7 @@ export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
     "  at. Answers almost before a question has landed, then stops dead in the",
     "  middle of a sentence to think, and starts again somewhere else.",
     "  VOICE: A dry, light voice pitched higher than the frame suggests, even and",
-    "  unhurried until a hard consonant clips it short. Talks in long unbroken runs",
+    "  unhurried until a laugh clips it short. Talks in long unbroken runs",
     "  and meets a question with a question, giving the answer two turns later.",
     "",
     'Answer with JSON only: {"personality": "...", "voice": "..."}',
@@ -369,13 +395,18 @@ export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
  * our sentence before saving their own edit. A line cut after a full stop reads as a
  * shorter line, which is what a draft is allowed to be.
  *
- * ⚠ **THE INSTRUCTION IS DELIBERATELY NOT CHANGED TO CARRY THESE NUMBERS.**
- * Telling the model a character budget is the tempting second half and it is
- * not taken here: *context is not additive* is a measured law in this
- * repository, one clause moves every cast, and a deterministic bound at the
- * parse costs nothing and cannot regress the writing. The craft stays in the
- * instruction (camera-visible, baseline then exception); the arithmetic stays
- * here.
+ * ⚠ **THE INSTRUCTION STILL CARRIES NO NUMBER, AND HIS OWN RULE IS WHY THAT
+ * DISTINCTION IS WORTH KEEPING.** Telling the model a character budget is the
+ * tempting second half and it is not taken: *context is not additive* is a
+ * measured law here, one clause moves every cast, and a deterministic bound at
+ * the parse costs nothing and cannot regress the writing. What his craft ruling
+ * of 2026-10-09 added is the OPPOSITE of a budget and is in the instruction
+ * verbatim — *"the character limit is a ceiling for rare cases, never a target
+ * to fill"* — because the first court measured drafts 150 characters longer than
+ * his own examples saying the same facts. A ceiling named without its number
+ * cannot be filled to; a number given would be. The craft stays in the
+ * instruction (camera-visible, rest then timing, match his lengths); the
+ * arithmetic stays here.
  */
 export function fitToCap(line: string, cap: number): string {
   if (line.length <= cap) return line;
