@@ -37,6 +37,8 @@ const db = {
   unsuspendUser: vi.fn(),
   addCredits: vi.fn(),
   adjustUserCredits: vi.fn(),
+  /* #2152 repair 2: a FULL refund stops a yearly plan's months still to come. */
+  clearAnnualYear: vi.fn(),
   blockIp: vi.fn(),
   unblockIp: vi.fn(),
   updateChangeRequestStatus: vi.fn(),
@@ -97,6 +99,7 @@ beforeEach(() => {
   db.getUserCredits.mockResolvedValue({ balance: 500 });
   db.suspendUser.mockResolvedValue({ success: true });
   db.unsuspendUser.mockResolvedValue({ success: true });
+  db.clearAnnualYear.mockResolvedValue(true);
   db.addCredits.mockResolvedValue({ success: true, newBalance: 600 });
   db.adjustUserCredits.mockResolvedValue({ success: true, newBalance: 400 });
   db.blockIp.mockResolvedValue({ success: true });
@@ -317,6 +320,14 @@ describe("cr_stripeRefund", () => {
     expect(stripe.issueStripeRefund.mock.calls[0][1]).toBe(1000);
     // 100 credits bought, only 30 left — a customer is never taken below zero.
     expect(db.adjustUserCredits.mock.calls[0][1]).toBe(-30);
+  });
+
+  it("#2152 — a FULL refund stops the yearly plan's months still to come; a proportional one does not", async () => {
+    await runCr("cr_stripeRefund", { ...PURCHASE, refundType: "full" });
+    expect(db.clearAnnualYear).toHaveBeenCalledWith(42);
+    db.clearAnnualYear.mockClear();
+    await runCr("cr_stripeRefund", PURCHASE);
+    expect(db.clearAnnualYear).not.toHaveBeenCalled();
   });
 
   it("#418 PINNED — a figure smuggled into params cannot set the refund; the charge itself does", async () => {

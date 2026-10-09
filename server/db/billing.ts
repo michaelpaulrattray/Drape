@@ -2,7 +2,7 @@
  * Billing Domain — subscriptions, credit top-ups, and cycle spend.
  */
 
-import { eq, and, gt, gte, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
+import { eq, and, gt, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import {
   MONTHS_IN_A_PAID_YEAR,
   annualMonthLedgerRef,
@@ -68,10 +68,14 @@ function annualYearColumns(year: AnnualGrantYear | null) {
  * `past_due` is in on purpose: on a yearly plan nothing falls due mid-year but
  * an upgrade's own invoice, and an unpaid UPGRADE must not stop the months of
  * a year that WAS paid — the upgrade's higher month is installed only when its
- * money settles, so what keeps arriving is what was paid for. `canceled` and
- * `unpaid` are out: the plan is over.
+ * money settles, so what keeps arriving is what was paid for. `unpaid` is in
+ * for the same reason (#2152 repair 1): Stripe's dunning can leave a failed
+ * upgrade's subscription `unpaid` while the year it already paid for runs on,
+ * and a failed RENEWAL cannot reach a year this way — its year's columns are
+ * the last PAID year's, whose end has already passed. `canceled` is out: the
+ * plan is over.
  */
-export const ANNUAL_GRANT_LIVE_STATUSES = ["active", "trialing", "past_due"] as const;
+export const ANNUAL_GRANT_LIVE_STATUSES = ["active", "trialing", "past_due", "unpaid"] as const;
 
 /** The answer a monthly grant gets when the year it was asked about is no longer the one in flight. */
 export const ANNUAL_YEAR_NOT_CURRENT = "The paid year this month belongs to is no longer in flight";
@@ -481,6 +485,23 @@ function annualYearLockConditions(lock: AnnualYearLock) {
   ];
 }
 
+/**
+ * STOP A YEARLY PLAN'S MONTHS STILL TO COME (#2152, the relay's finding on
+ * head 18315b5f1, repair 2): the money behind the year is disputed or
+ * refunded. Scoped to the owner in the write; nothing is read first.
+ */
+export async function clearAnnualYear(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db.update(credits).set(NO_ANNUAL_YEAR).where(eq(credits.userId, userId));
+    return true;
+  } catch (error) {
+    log.error({ err: error, userId }, "[Database] could not clear the paid year");
+    return false;
+  }
+}
+
 /** One account's paid year, as the monthly worker reads it. */
 export type AnnualGrantCandidate = {
   userId: number;
@@ -512,8 +533,12 @@ export async function getAnnualGrantCandidates(now: Date): Promise<AnnualGrantCa
       monthlyCredits: credits.annualGrantMonthlyCredits,
     })
     .from(credits)
+    /* ⚠ A SUSPENDED ACCOUNT RECEIVES NO MONTHS (#2152, repair 2) — a
+       chargeback suspends; the months stop with the account. */
+    .innerJoin(users, eq(users.id, credits.userId))
     .where(
       and(
+        isNull(users.suspendedAt),
         isNotNull(credits.annualGrantSubscriptionId),
         isNotNull(credits.annualGrantPeriodStart),
         isNotNull(credits.annualGrantMonthlyCredits),

@@ -94,6 +94,20 @@ export function planCreditsExpiryFrom(subscription: unknown, now: Date): Date {
   return new Date(Math.floor((from + CANCELLED_PLAN_GRACE_DAYS * DAY_MS) / 1000) * 1000);
 }
 
+/**
+ * The deadline for a plan that died of a FINAL PAYMENT FAILURE (#2152, the
+ * relay's finding on head 18315b5f1, repair 3): the end of the period that WAS
+ * paid for — the failed invoice's own period start — plus
+ * {@link CANCELLED_PLAN_GRACE_DAYS}. Unreadable, it is the moment we heard.
+ */
+export function planCreditsExpiryFromPaidEnd(paidEndSec: number | null, now: Date): Date {
+  const fromMs =
+    typeof paidEndSec === "number" && Number.isFinite(paidEndSec) && paidEndSec > 0
+      ? paidEndSec * 1000
+      : now.getTime();
+  return new Date(Math.floor((fromMs + CANCELLED_PLAN_GRACE_DAYS * DAY_MS) / 1000) * 1000);
+}
+
 export interface PlanCreditsExpiryDeps {
   now: () => Date;
   candidates: (now: Date) => Promise<Array<{ userId: number; planCreditsExpireAt: Date }>>;

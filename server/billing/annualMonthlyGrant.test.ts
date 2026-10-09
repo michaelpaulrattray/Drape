@@ -34,16 +34,25 @@ const updateWheres: string[] = [];
 const insertedRows: Array<Record<string, unknown>> = [];
 let selectAnswer: Array<Record<string, unknown>> = [];
 const selectWheres: string[] = [];
+const joinOns: unknown[] = [];
 const txDouble = {
-  select: () => ({
-    from: () => ({
-      where: async (condition: unknown) => {
-        const { MySqlDialect } = await import("drizzle-orm/mysql-core");
-        selectWheres.push(new MySqlDialect().sqlToQuery(condition as never).sql);
-        return selectAnswer;
-      },
-    }),
-  }),
+  select: () => {
+    const where = async (condition: unknown) => {
+      const { MySqlDialect } = await import("drizzle-orm/mysql-core");
+      selectWheres.push(new MySqlDialect().sqlToQuery(condition as never).sql);
+      return selectAnswer;
+    };
+    return {
+      from: () => ({
+        where,
+        /* The shortlist joins `users` for suspension (#2152 repair 2). */
+        innerJoin: (_table: unknown, on: unknown) => {
+          joinOns.push(on);
+          return { where };
+        },
+      }),
+    };
+  },
   update: () => ({
     set: (values: Record<string, unknown>) => ({
       where: async (condition: unknown) => {
@@ -67,7 +76,9 @@ vi.mock("../db/connection", () => ({
 }));
 
 import {
+  ANNUAL_GRANT_LIVE_STATUSES,
   ANNUAL_YEAR_NOT_CURRENT,
+  clearAnnualYear,
   getAnnualGrantCandidates,
   getAnnualYearProgress,
   installAnnualMonthlyCredits,
@@ -84,6 +95,8 @@ import {
 } from "./annualCreditMonths";
 import { grantAnnualMonth, runAnnualMonthlyGrantSweep, type AnnualMonthlyGrantDeps } from "./annualMonthlyGrant";
 import { calculateRolloverCredits } from "../stripe/stripeService";
+import { planCreditsExpiryFromPaidEnd } from "./planCreditsExpiry";
+import { CANCELLED_PLAN_GRACE_DAYS } from "@shared/planCancelCopy";
 import { PLAN_TIERS, type PlanTier } from "../../drizzle/schema";
 import { SELF_SERVE_PLAN_ORDER } from "../stripe/stripeProducts";
 
@@ -137,6 +150,7 @@ beforeEach(() => {
   insertedRows.length = 0;
   selectAnswer = [];
   selectWheres.length = 0;
+  joinOns.length = 0;
 });
 
 describe("1 · the months of a paid year", () => {
@@ -155,6 +169,22 @@ describe("1 · the months of a paid year", () => {
     expect(annualMonthsBegun(s, e, annualMonthStartMs(s, e, 1) - 1)).toBe(1);
     expect(annualMonthsBegun(s, e, annualMonthStartMs(s, e, 1))).toBe(2);
     expect(annualMonthsBegun(s, e, e - 1)).toBe(MONTHS_IN_A_PAID_YEAR);
+  });
+
+  it("⚠ the key is the SAME across a change of clock — a clock-dependent key would double-grant every pass", () => {
+    /* The relay's finding on head 18315b5f1: the old stability arm computed
+       both keys in one millisecond, so a key with `Date.now()` in it passed.
+       The two readings here are a day apart on the clock. */
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-12-01T00:00:00Z"));
+      const first = annualMonthLedgerRef(SUB, START.getTime(), 3);
+      vi.setSystemTime(new Date("2026-12-02T00:00:01Z"));
+      const second = annualMonthLedgerRef(SUB, START.getTime(), 3);
+      expect(second).toBe(first);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("each month's ledger key is unique per (subscription, year, month) and stable", () => {
@@ -313,6 +343,39 @@ describe("3 · how the worker finds due grants", () => {
     expect(where).toMatch(/`planTier` <> \?/);
     expect(where).toMatch(/`billingInterval` = \?/);
     expect(where).toMatch(/`subscriptionStatus` in \(/);
+  });
+
+  it("⚠ a SUSPENDED account receives no months — the shortlist joins users and asks for none (#2152 repair 2)", async () => {
+    await getAnnualGrantCandidates(START);
+    expect(joinOns).toHaveLength(1);
+    expect(selectWheres[0]).toMatch(/`users`\.`suspendedAt` is null/);
+  });
+
+  it("an `unpaid` subscription keeps its PAID year's months — a failed upgrade's dunning cannot stop them (#2152 repair 1)", () => {
+    expect(ANNUAL_GRANT_LIVE_STATUSES).toContain("unpaid");
+    expect(ANNUAL_GRANT_LIVE_STATUSES).not.toContain("canceled");
+  });
+
+  it("a dispute or full refund clears the year, scoped to the owner in the write", async () => {
+    expect(await clearAnnualYear(7)).toBe(true);
+    expect(updateSets[0]).toEqual({
+      annualGrantSubscriptionId: null,
+      annualGrantPeriodStart: null,
+      annualGrantPeriodEnd: null,
+      annualGrantMonthlyCredits: null,
+    });
+    expect(updateWheres[0]).toMatch(/`points`\.`userId` = \?/);
+  });
+
+  it("a final payment failure's deadline runs from the END OF THE PAID PERIOD plus the grace days (#2152 repair 3)", () => {
+    const paidEnd = Math.floor(START.getTime() / 1000);
+    const now = new Date(START.getTime() + 20 * DAY_MS); // dunning ran three weeks
+    expect(planCreditsExpiryFromPaidEnd(paidEnd, now)).toEqual(
+      new Date((paidEnd + CANCELLED_PLAN_GRACE_DAYS * 86_400) * 1000),
+    );
+    expect(planCreditsExpiryFromPaidEnd(null, now)).toEqual(
+      new Date(now.getTime() + CANCELLED_PLAN_GRACE_DAYS * DAY_MS),
+    );
   });
 
   it("how many months have landed is read off the LEDGER, month 1 being the invoice's own", async () => {

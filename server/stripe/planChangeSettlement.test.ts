@@ -950,7 +950,10 @@ describe("the webhook settles what changePlan recorded", () => {
     through the recording idempotency double — the road production takes.
   */
   it("a failed invoice void on the FINAL-FAILURE road FAILS THE EVENT after the cancel and downgrade land, and the SAME event redelivered voids it (#788)", async () => {
-    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+    /* An interval SWITCH's invoice (an unwind is recorded on it): its new
+       period was never paid, so its final failure still ends the plan. An
+       UPGRADE's invoice no longer does (#2152 repair 1, its own arms below). */
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow, direction: "unwind" as const });
     invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
     invoicesVoid.mockRejectedValueOnce(new Error("stripe blipped"));
 
@@ -1623,7 +1626,7 @@ describe("the webhook settles what changePlan recorded", () => {
         email: "u@example.com",
         credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
       });
-      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow, direction: "unwind" as const });
       invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
       invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
       db.updateUserSubscription.mockResolvedValueOnce({ success: false, error: "Failed to update subscription" });
@@ -1662,7 +1665,7 @@ describe("the webhook settles what changePlan recorded", () => {
         email: "u@example.com",
         credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_NEW" },
       });
-      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow });
+      db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...grantRow, direction: "unwind" as const });
       invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
       invoicesVoid.mockResolvedValue({ id: "in_change", status: "void" });
 
@@ -2105,5 +2108,96 @@ describe("#2152 — an upgrade on a yearly plan granted month by month", () => {
     await applyPlanChangeSettlement("in_change");
     expect(db.installAnnualMonthlyCredits).not.toHaveBeenCalled();
     expect(db.addCredits).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * ⚠ #2152, the relay's finding on head 18315b5f1, repair 1: a FAILED UPGRADE
+ * on a period already paid for voids the upgrade and keeps the plan. Until
+ * this, its final failure cancelled the subscription and dropped the account
+ * to Free, clearing months of a yearly plan that had been paid in full.
+ */
+describe("#2152 — a failed upgrade invoice keeps the plan already paid for", () => {
+  const upgradeRow = {
+    userId: 7,
+    stripeInvoiceId: "in_upgrade",
+    direction: "grant" as const,
+    credits: 4000,
+    description: "Prorated credits for upgrade to pro",
+    status: "pending" as const,
+  };
+  async function deliverFinalFailure(id: string, extra: Record<string, unknown> = {}) {
+    const event = {
+      id: `evt_upgrade_fail_${id}_${Math.random().toString(36).slice(2)}`,
+      type: "invoice.payment_failed",
+      data: { object: { id, customer: "cus_1", subscription: "sub_1", next_payment_attempt: null, amount_due: 12_00, currency: "usd", ...extra } },
+      object: "event",
+      api_version: "2026-01-28.clover",
+      created: NOW_SEC,
+      livemode: false,
+      pending_webhooks: 0,
+      request: null,
+    } as unknown as Stripe.Event;
+    const svc = await import("./stripeService");
+    const stripeInstance = (svc as { stripe: { webhooks: { constructEvent: unknown } } }).stripe;
+    (stripeInstance.webhooks.constructEvent as ReturnType<typeof vi.fn>).mockReturnValue(event);
+    return handleStripeWebhook("{}", "sig");
+  }
+
+  it("voids the upgrade (settlement and invoice) and neither cancels nor drops to Free", async () => {
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7, name: "seven", email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({ ...upgradeRow });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_upgrade", status: "void" });
+
+    const result = await deliverFinalFailure("in_upgrade");
+
+    expect(result.success).toBe(true);
+    expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_upgrade", "void");
+    expect(invoicesVoid).toHaveBeenCalledWith("in_upgrade");
+    expect(subscriptionsUpdate).not.toHaveBeenCalledWith("sub_1", { cancel_at_period_end: true });
+    expect(db.updateUserSubscription).not.toHaveBeenCalled();
+  });
+
+  it("NEGATIVE CONTROL: a failed RENEWAL (no plan change on the invoice) still ends the plan, stamped from the PAID period's end", async () => {
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7, name: "seven", email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue(null);
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_renewal", status: "void" });
+
+    const result = await deliverFinalFailure("in_renewal");
+
+    expect(result.success).toBe(true);
+    expect(subscriptionsUpdate).toHaveBeenCalledWith("sub_1", { cancel_at_period_end: true });
+    const write = db.updateUserSubscription.mock.calls[0][1];
+    expect(write).toMatchObject({ planTier: "free" });
+    /* #2152 repair 3: the drop to Free carries the 30-day stamp. This invoice
+       states no period line, so it runs from the moment we heard. */
+    expect(write.planCreditsExpireAt).toBeInstanceOf(Date);
+  });
+
+  it("⚠ a failed yearly RENEWAL's 30 days run from where the PAID year ended — the failed invoice's own period start", async () => {
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7, name: "seven", email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: "sub_1" },
+    });
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue(null);
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    invoicesVoid.mockResolvedValue({ id: "in_year2", status: "void" });
+    const paidEnd = NOW_SEC - 21 * DAY; // the year that was paid ended three weeks ago
+    await deliverFinalFailure("in_year2", {
+      lines: { data: [{
+        parent: { type: "subscription_item_details", subscription_item_details: { proration: false } },
+        period: { start: paidEnd, end: paidEnd + 365 * DAY },
+      }] },
+    });
+    const write = db.updateUserSubscription.mock.calls[0][1];
+    expect(write.planCreditsExpireAt).toEqual(new Date((paidEnd + 30 * DAY) * 1000));
   });
 });

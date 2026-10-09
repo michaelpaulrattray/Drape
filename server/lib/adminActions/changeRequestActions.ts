@@ -313,6 +313,18 @@ export async function executeChangeRequestAction(
         throw new Error(`Stripe refund failed: ${refundResult.error}`);
       }
 
+      /* ⚠ A FULL REFUND RETURNS THE YEAR'S MONEY, SO NO MORE OF ITS MONTHS
+         ARRIVE (#2152, the relay's finding on head 18315b5f1, repair 2).
+         Month-by-month granting opened this road. A proportional refund
+         keeps the year: it returns the unused BALANCE's money, not the
+         period's. Logged, never thrown: the refund has already been issued. */
+      if (refundType === "full") {
+        const { clearAnnualYear } = await import("../../db");
+        if (!(await clearAnnualYear(userId))) {
+          log.error(`[Refund] Full refund ${refundResult.refundId} issued but user ${userId}'s paid year could not be cleared — yearly months may continue`);
+        }
+      }
+
       if (creditsToDeduct > 0) {
         const { adjustUserCredits } = await import("../../db");
         const deductResult = await adjustUserCredits(

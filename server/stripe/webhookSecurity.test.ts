@@ -17,6 +17,8 @@ vi.mock("../db", () => ({
   getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
   suspendUser: vi.fn().mockResolvedValue({ success: true }),
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
+  /* #2152 repair 2: a chargeback stops a yearly plan's months still to come. */
+  clearAnnualYear: vi.fn().mockResolvedValue(true),
   deductCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 0 }),
   addCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 75 }),
   getCreditTransactionByRef: vi.fn().mockResolvedValue(null),
@@ -74,6 +76,7 @@ import {
   deductCredits,
   addCredits,
   getCreditTransactionByRef,
+  clearAnnualYear,
 } from "../db";
 import { logAuditEvent } from "../auditLog";
 import type Stripe from "stripe";
@@ -127,6 +130,18 @@ describe("Webhook Security", () => {
   // DISPUTE CREATED — AUTO-SUSPEND + REVOKE CREDITS
   // ============================================================
   describe("Chargeback: dispute.created — Auto-suspend + Revoke Credits", () => {
+    it("#2152 — a paid year that cannot be cleared FAILS THE EVENT so Stripe redelivers", async () => {
+      const event = makeEvent("charge.dispute.created", {
+        id: "dp_test_year", charge: "ch_y", amount: 5000, currency: "usd",
+        reason: "fraudulent", customer: "cus_test_user42", status: "needs_response",
+      });
+      vi.mocked(constructWebhookEvent).mockReturnValue(event);
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
+      vi.mocked(clearAnnualYear).mockResolvedValueOnce(false);
+      const result = await handleStripeWebhook("payload", "sig");
+      expect(result.success).toBe(false);
+    });
+
     it("should suspend user and revoke all credits when dispute is filed", async () => {
       const dispute = {
         id: "dp_test_suspend",
@@ -147,6 +162,10 @@ describe("Webhook Security", () => {
       expect(result.success).toBe(true);
       expect(result.message).toContain("suspended");
       expect(result.message).toContain("75 credits revoked");
+
+      /* #2152 repair 2 — the disputed year's months still to come stop. */
+      expect(clearAnnualYear).toHaveBeenCalledWith(42);
+      expect(result.message).toContain("yearly months stopped");
 
       // Verify user was suspended with correct reason
       expect(suspendUser).toHaveBeenCalledWith(

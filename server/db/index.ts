@@ -103,6 +103,7 @@ export {
   getAnnualGrantCandidates,
   getAnnualYearProgress,
   installAnnualMonthlyCredits,
+  clearAnnualYear,
   // The yearly renewal reminder's shortlist and its claim (#1941).
   getYearlyRenewalReminderCandidates,
   claimRenewalReminder,

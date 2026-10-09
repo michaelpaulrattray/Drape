@@ -10598,6 +10598,14 @@
       "file": "shared/creditTopups.ts"
     },
     {
+      "id": "cost:shared/planCancelCopy.ts:ANNUAL_CREDITS_ARRIVE_SENTENCE",
+      "name": "ANNUAL_CREDITS_ARRIVE_SENTENCE",
+      "constant": "ANNUAL_CREDITS_ARRIVE_SENTENCE",
+      "credits": null,
+      "derivedFrom": "\"Your credits arrive each month.\"",
+      "file": "shared/planCancelCopy.ts"
+    },
+    {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
@@ -16578,6 +16586,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {

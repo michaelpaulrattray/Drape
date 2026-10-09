@@ -37,13 +37,15 @@ import {
   addTopupCredits,
   getCreditTransactionByRef,
   appendChangeRequestReviewNote,
+  getPlanChangeSettlementByInvoice,
+  clearAnnualYear,
 } from "../db";
 import { SubscriptionPlan } from "./stripeProducts";
 import { isPlanCreditsLookupKey } from "./stripePriceCatalogue";
 import type { BillingIntervalChoice } from "@shared/annualBilling";
 import { PLAN_TIERS, PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
-import { planCreditsExpiryFrom } from "../billing/planCreditsExpiry";
+import { planCreditsExpiryFrom, planCreditsExpiryFromPaidEnd } from "../billing/planCreditsExpiry";
 import type { AnnualGrantYear } from "../db/billing";
 import {
   invoiceSubscriptionId,
@@ -950,7 +952,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
          stale delivery never stamps a resubscribed account. A same-id
          redelivery restamps from the payload's own `ended_at` and period end,
          so it lands on the same deadline. */
-      planCreditsExpireAt: planCreditsExpiryFrom(subscription, new Date()),
+      /* ⚠ AN EARLIER STAMP WINS (#2152, repair 3). A final payment failure
+         already moved this account to Free and stamped the deadline from the
+         end of the PAID period; this event, arriving after, would measure
+         from the unpaid one and push the deadline out by a period. */
+      planCreditsExpireAt: earlierDeadline(
+        userWithCredits.credits?.planTier === "free" ? userWithCredits.credits?.planCreditsExpireAt ?? null : null,
+        planCreditsExpiryFrom(subscription, new Date()),
+      ),
     });
     if (downgradeResult.success) {
       log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
@@ -1498,6 +1507,51 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
   const isFinalFailure = !nextAttempt;
 
   if (isFinalFailure) {
+    /* ⚠ WHICH INVOICE FAILED DECIDES WHAT DIES (#2152, the relay's finding on
+       PR #2157 head 18315b5f1, repair 1). An UPGRADE's own invoice (a grant
+       settlement is recorded against it) buying more of a period that is
+       ALREADY PAID is not the plan failing: the customer keeps the plan and
+       the year they paid for, and only the upgrade dies — its settlement and
+       its invoice are voided below, so the higher month is never installed
+       and the top-up never granted. Cancelling here used to drop a yearly
+       customer to Free and clear months 4-12 of a paid year over a failed
+       mid-year upgrade. A failed RENEWAL, or an interval switch (whose new
+       period was never paid), still ends the plan. */
+    const failedChange = await getPlanChangeSettlementByInvoice(invoice.id as string);
+    const isPaidPeriodUpgrade = failedChange !== null && failedChange !== undefined && failedChange.direction === "grant";
+
+    if (isPaidPeriodUpgrade) {
+      log.info(`[Webhook] Final payment failure on user ${userId}'s UPGRADE invoice ${invoice.id} — the upgrade is voided; the plan and period already paid for are kept`);
+      await voidPlanChangeSettlement(invoice.id as string);
+      const upgradeVoid = await voidInvoice(invoice.id as string);
+      /* `detail` rather than an inline literal on `metadata` — an AUDIT row,
+         not Stripe-bound (environmentTag.test.ts reads inline blocks here as
+         Stripe writes). */
+      const upgradeFailureDetail = {
+        targetUserId: userId,
+        invoiceId: invoice.id,
+        reason: "FINAL FAILURE on a plan-change invoice — the change is voided; the plan and the period already paid for are kept",
+      };
+      await logAuditEvent({
+        userId,
+        action: AUDIT_ACTIONS.BILLING_PAYMENT_FINAL_FAILURE,
+        resourceType: "billing",
+        resourceId: subscriptionId,
+        metadata: upgradeFailureDetail,
+        severity: "warning",
+      });
+      if (upgradeVoid === "failed") {
+        return {
+          success: false,
+          message: `Upgrade invoice ${invoice.id} for user ${userId} could not be voided — redeliver to retry`,
+        };
+      }
+      return {
+        success: true,
+        message: `Upgrade invoice ${invoice.id} failed for user ${userId} — upgrade voided, paid plan kept`,
+      };
+    }
+
     // Final retry exhausted — auto-cancel the subscription and downgrade to free
     log.info(`[Webhook] Final payment failure for user ${userId}, auto-cancelling subscription`);
 
@@ -1560,6 +1614,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
         planExpiresAt: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        /* ⚠ THE 30 DAYS RUN FROM THE END OF THE PERIOD THAT WAS PAID FOR
+           (#2152, the relay's finding on head 18315b5f1, repair 3). This drop
+           to Free used to carry no stamp, and the later `subscription.deleted`
+           measured from the UNPAID period it died in — a failed yearly
+           renewal kept plan credits about thirteen months. The failed
+           invoice's own period line starts where the paid period ended. */
+        planCreditsExpireAt: planCreditsExpiryFromPaidEnd(periodBought(invoice)?.startSec ?? null, new Date()),
       });
       if (!downgradeResult.success) {
         downgradeFailed = true;
@@ -1909,6 +1970,17 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     // 1. Suspend the user account
     //    Using userId 0 as "system" since this is an automated action
     const suspendResult = await suspendUser(userId, `Chargeback filed: ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()} — reason: ${reason}`, 0);
+    /* ⚠ AND NO MORE OF A YEARLY PLAN'S MONTHS ARRIVE (#2152, the relay's
+       finding on head 18315b5f1, repair 2). Month-by-month granting opened
+       this road: the money behind the year is disputed, so the months still
+       to come stop here. A failed clear fails the event like the suspend. */
+    const yearCleared = await clearAnnualYear(userId);
+    if (!yearCleared) {
+      mustRedeliver = true;
+      actions.push("paid year could not be cleared");
+    } else {
+      actions.push("yearly months stopped");
+    }
     if (suspendResult.success) {
       actions.push("account suspended");
       log.info(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
@@ -2130,4 +2202,9 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
     success: true,
     message: `Dispute ${dispute.id} closed (${status}) — ${userId ? actions.join(", ") : "user not identified"} — audit row written`,
   };
+}
+
+/** The earlier of two deadlines; either may be absent (#2152 repair 3). */
+function earlierDeadline(a: Date | null, b: Date): Date {
+  return a instanceof Date && a.getTime() < b.getTime() ? a : b;
 }

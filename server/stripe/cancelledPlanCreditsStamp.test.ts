@@ -186,6 +186,31 @@ beforeEach(() => {
 });
 
 describe("customer.subscription.deleted stamps the 30-day deadline in the downgrade write", () => {
+  /* #2152, the relay's finding on head 18315b5f1, repair 3: a FINAL PAYMENT
+     FAILURE already dropped the account to Free and stamped from the end of
+     the PAID period; this event, arriving after, measures from the unpaid
+     one. The earlier deadline must stand. */
+  it("⚠ an earlier stamp from a final payment failure is never pushed later", async () => {
+    const earlier = new Date((NOW_SEC + 5 * DAY) * 1000);
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7, name: "seven", email: "u@example.com",
+      credits: { planTier: "free", balance: 4000, stripeSubscriptionId: null, planCreditsExpireAt: earlier },
+    });
+    const periodEnd = NOW_SEC + 300 * DAY; // the UNPAID year the dunning died in
+    await deliver(deadSub(periodEnd, NOW_SEC));
+    expect(stamped()).toEqual(earlier);
+  });
+
+  it("NEGATIVE CONTROL: a stamp on an account still on a paid plan is not carried — the deleted event stamps afresh", async () => {
+    db.getUserByStripeCustomerId.mockResolvedValue({
+      id: 7, name: "seven", email: "u@example.com",
+      credits: { planTier: "pro", balance: 4000, stripeSubscriptionId: SUB_ID, planCreditsExpireAt: new Date((NOW_SEC + 5 * DAY) * 1000) },
+    });
+    const periodEnd = NOW_SEC - 60;
+    await deliver(deadSub(periodEnd, periodEnd));
+    expect(stamped()).toEqual(new Date((periodEnd + 30 * DAY) * 1000));
+  });
+
   it("a plan cancelled at its period end: the deadline is that period's end plus 30 days", async () => {
     armAccount(SUB_ID);
     const periodEnd = NOW_SEC - 60;
