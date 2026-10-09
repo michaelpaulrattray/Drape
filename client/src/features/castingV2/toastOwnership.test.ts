@@ -52,6 +52,12 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2) — RETIRED by
   // #2089 (his "regenerate is the only option", 2026-10-08) with the press that
   // raised both of its toasts; their rows go with them.
+  // ---- CastingRoom.tsx (N2b — her edit of a drafted line, #1242)
+  {
+    match: 'line === "voice"',
+    because:
+      "Her inline rewrite of the personality or the voice line was refused. The edit has NO optimistic paint and no success toast — the badge going is the receipt, and it is on the card she is looking at — so a refusal leaves the card showing exactly the sentence she tried to replace, which is indistinguishable from her not having typed anything. D-110's question answered: without this she would not know the server refused her words rather than having silently accepted them. It names WHICH of the two lines failed, because the two cards sit one above the other and a bare 'that could not be saved' would leave her unsure which to try again.",
+  },
   // ---- CastingRoom.tsx (the paid redo of a whole package — #1903 slice 2)
   {
     match: "of the views didn't arrive.",

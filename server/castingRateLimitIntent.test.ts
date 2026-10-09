@@ -163,6 +163,13 @@ describe("which bucket each casting procedure was handed", () => {
       variants: "castingRead",
       roster: "castingRead",
       renameCast: "castingSheet",
+      /* HER EDIT OF A DRAFTED PERSONALITY OR VOICE LINE (N2b, #1242) — the
+         RENAME's own bucket, deliberately, because it IS that act: a customer
+         correcting a piece of text on her own Cast, free, with no credit, no
+         lock and no operation row. The generation buckets are for roads that
+         spend; a bucket of its own would be a third window to reason about for
+         a write that costs nothing and renders nothing. */
+      editCastPersonaField: "castingSheet",
       deleteCast: "castingSheet",
       getCast: "castingRead",
       /* Panel v2's read — a read, on the read bucket, like its v1 sibling. */

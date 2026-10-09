@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { getTableColumns } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
+import { models } from "../drizzle/schema";
+import { REFUSING_KEYS } from "../shared/errorEventScrub";
 import { FENCED_PRIOR_OPERATION_SCRUB } from "./casting/finalCastDeletion";
 import { adjudicateStaleGenerationOperation } from "./casting/operationRecovery";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
@@ -174,4 +177,86 @@ describe("R7-5C final Cast deletion source contracts", () => {
     expect(modelDb).not.toContain("deleteModelWithAssetKeys");
     expect(modelIndex).not.toContain("deleteModelWithAssetKeys");
   });
+});
+
+/**
+ * EVERY CREATIVE-CONTENT COLUMN IS IN THE TOMBSTONE, AND THE POPULATION IS
+ * DERIVED — the relay's finding 1 on PR #2114 (#1242), generalised.
+ *
+ * N2b added `personality` and `voice` to `models`, declared them *"the same
+ * family as `masterPrompt`"* in the schema, and did not add them to the
+ * tombstone. So a permanently deleted Cast kept the two most readable sentences
+ * about who she was. The fix for the instance is five lines in
+ * `finalCastDeletion.ts`; the fix for the CLASS is this arm, because the next
+ * creative column will be added by somebody who has never read that function
+ * (working law 7).
+ *
+ * # Why it is derived from the refusal list rather than from a list written here
+ *
+ * `shared/errorEventScrub.ts`'s `REFUSING_KEYS` already enumerates the fields
+ * that may never leave the building, with CLAUDE.md's named field group at the
+ * top of it. Intersect that with the columns of `models` and what comes back is
+ * exactly *this table's creative content*: five columns today, and the five the
+ * tombstone names. Nothing here is a second list to keep in step (working law
+ * 4) — a sixth creative column reaches this arm the moment it is added to the
+ * refusal list, which it must be anyway, and the arm then demands it be
+ * scrubbed.
+ *
+ * ⚠ **THE SUBJECT IS SLICED OUT, NOT GREPPED FOR WHOLE-FILE.** A
+ * `toContain("personality:")` over this file would pass on any line anywhere —
+ * including the line that READS the column two statements earlier. The slice is
+ * the tombstone's `set({…})` and nothing else, and the first arm proves the
+ * anchor it is cut on is unique, because a slice taken on a non-unique anchor is
+ * a guard that silently reads the wrong function.
+ *
+ * ⚠ **AND THE ROW-LEVEL ARM IN `r7-final-cast-deletion-db.test.ts` IS NOT THIS.**
+ * That one asserts the real UPDATE against a real row and is the better
+ * evidence — and it SKIPS on the gate, because `vitest.setup.ts` strips
+ * `DATABASE_URL` on purpose. Both exist: the row arm when a disposable database
+ * is configured, this one always.
+ */
+describe("the permanent-deletion tombstone scrubs every creative-content column", () => {
+  const implementation = source("server/casting/finalCastDeletion.ts");
+  const anchor = "const tombstoned = await tx.update(models).set({";
+
+  it("is the file's only write to `models`, so the slice below is the whole subject", () => {
+    expect(implementation.split("update(models)")).toHaveLength(2);
+    expect(implementation.split(anchor)).toHaveLength(2);
+  });
+
+  const start = implementation.indexOf(anchor);
+  const tombstone = implementation.slice(start, implementation.indexOf("}).where(", start));
+
+  const columns = new Set(Object.keys(getTableColumns(models)));
+  const creative = REFUSING_KEYS.filter((key) => columns.has(key));
+
+  it("derives a non-empty population, so a broken intersection cannot read as coverage", () => {
+    /* Five today. A floor rather than an equality: adding a creative column is
+       allowed, silently losing the whole population to a renamed export is not. */
+    expect(creative.length).toBeGreaterThanOrEqual(5);
+    expect(creative).toContain("masterPrompt");
+    expect(creative).toContain("personality");
+    expect(creative).toContain("voice");
+  });
+
+  it.each(creative.map((key) => [key] as const))(
+    "`%s` is written by the tombstone",
+    (key) => {
+      expect(tombstone).toMatch(new RegExp(`^\\s{6}${key}:`, "m"));
+    },
+  );
+
+  /*
+    THE THREE STAMPS, NAMED BY HAND — they are not in the refusal list and
+    should not be: an error event carrying `personaDraftedAt` leaks nothing. They
+    still belong in the tombstone, because the badge is derived as *drafted and
+    not since edited*, so a surviving `personalityEditedAt` records that this
+    customer rewrote a line on a day we claim to have forgotten her cast.
+  */
+  it.each([["personaDraftedAt"], ["personalityEditedAt"], ["voiceEditedAt"]])(
+    "`%s` is nulled by the tombstone too",
+    (key) => {
+      expect(tombstone).toMatch(new RegExp(`^\\s{6}${key}: null,$`, "m"));
+    },
+  );
 });

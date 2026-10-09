@@ -427,6 +427,32 @@ export const models = mysqlTable("models", {
   styleKey: varchar("styleKey", { length: 48 }),
   sourceCandidateId: int("sourceCandidateId"),
   sourceRollId: int("sourceRollId"),
+  /*
+    WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS — N2b, migration 0075, additive.
+
+    Two short lines derived once inside the Sign mint from her brief, her own
+    edit sentences and the picture she signed, then handed to her as a draft she
+    can rewrite. Her words after she edits; ours until she does.
+
+    ⚠ **THE BADGE IS DERIVED FROM THESE TIMESTAMPS, NEVER STORED AS A FLAG**
+    (his brief). `personaDraftedAt` is set by the one derivation; the two
+    `…EditedAt` columns are set by her edit. A line is a DRAFT while it was
+    drafted and not yet edited, so the badge is a question asked of the row
+    rather than a boolean somebody has to remember to clear.
+
+    Two edit stamps and not one, because the two lines are two cards: rewriting
+    who she is must not quietly un-badge how she sounds.
+
+    These are CREATIVE CONTENT about a customer's cast — the same family as
+    `masterPrompt` above, and governed by the same ruling (2026-07-25). They are
+    owner-only: no staff projection carries them, and nothing reads them to
+    build a prompt until she has seen them (law 9 — the vision read proposes).
+  */
+  personality: text("personality"),
+  voice: text("voice"),
+  personaDraftedAt: timestamp("personaDraftedAt"),
+  personalityEditedAt: timestamp("personalityEditedAt"),
+  voiceEditedAt: timestamp("voiceEditedAt"),
   // provisioning = invisible evidence-aware Fork under construction
   // draft = work in progress, mutable
   // active = minted with agencyId, identity locked

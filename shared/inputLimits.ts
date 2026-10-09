@@ -64,6 +64,35 @@ export const BOARD_NAME_MAX_LENGTH = 128;
    why the arm sweeps for the shape instead of pairing sites to schemas. */
 export const CAST_NAME_MAX_LENGTH = 60;
 
+/* -- Casting V2: who she is on camera, and how she sounds -----------------
+   N2b (#1242). ONE idea, THREE places: `castingV2.editCastPersonaField` on the
+   server, and the two inline fields on `CastingRoom`.
+
+   The sizes are HER ceiling, not the drafter's. The drafted lines are two
+   sentences and one line -- his specimen runs to 175 and 75 characters -- so
+   these are roughly double, because a cap sized to our own output would refuse
+   a customer a longer sentence than the one we wrote her for no reason a
+   customer could see. They are a bound against a paste, not a style rule: the
+   craft (camera-visible, baseline then exception) lives in the drafter's
+   instruction, where his brief puts it, and never in a refusal at her keyboard.
+
+   ⚠ The personality is the longer of the two ON PURPOSE and the two are
+   declared apart rather than sharing one number: they are two different things
+   -- two sentences against one line -- and a single shared cap would be the
+   kind of accidental equality this file exists to make visible.
+
+   ⚠ **AND "HER CEILING, NOT THE DRAFTER'S" WAS A HOLE, NOW CLOSED -- a FOURTH
+   place reads these numbers** (the relay's finding 3 on PR #2114).
+   `castPersona.ts`'s `fitToHerCap` bounds the DRAFTED line by them too, at a
+   sentence end. Nothing bounded the drafter before, so a long reply was stored
+   and drawn and then she could not save a one-word change to it: the edit
+   procedure refused her at the cap, and the textarea's `maxLength` would not let
+   her type. **A line we write her must be a line she can edit**, so the sentence
+   above is still true of the CRAFT -- the drafter is not style-checked against
+   these -- and no longer true of the LENGTH. */
+export const CAST_PERSONALITY_MAX_LENGTH = 400;
+export const CAST_VOICE_MAX_LENGTH = 200;
+
 /* ── Legacy casting: a model's name ───────────────────────────────────────
    `server/routes/models.ts` and `CastProfilePanel`.
 

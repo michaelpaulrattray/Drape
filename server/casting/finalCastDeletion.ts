@@ -1159,6 +1159,25 @@ export async function executeFinalCastDeletion(input: {
       masterPrompt: "[deleted]",
       technicalSchema: { deleted: true },
       preferences: {},
+      /*
+        AND HER TWO LINES GO WITH THE RECIPE — N2b (#1242), migration 0075.
+
+        `personality` and `voice` are the same field family as `masterPrompt`
+        above (the schema's own docblock says so), and half of what they are made
+        of is her own typed words. A deletion that scrubbed the recipe and left
+        the two lines describing who she is would keep the most readable thing
+        about a cast she asked us to destroy.
+
+        The three stamps go too, because they are not bookkeeping about OUR
+        write — the badge is derived as *drafted and not since edited*, so a
+        surviving `personalityEditedAt` records that this customer rewrote a line
+        on a day we are claiming to have forgotten her cast.
+      */
+      personality: null,
+      voice: null,
+      personaDraftedAt: null,
+      personalityEditedAt: null,
+      voiceEditedAt: null,
       status: "archived",
       identityRevisionId: null,
       currentPackageSnapshotId: null,

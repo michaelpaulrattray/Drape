@@ -46,6 +46,7 @@ import { SIGN_SHEET_SIZES, type SignSheetKind } from "./signSheet";
 import { ProviderQueue } from "../providers/providerQueue";
 import type { IdentityEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
+import { createCastPersonaReader, type CastPersonaReader } from "./castPersona";
 import {
   createViewConformanceJudge,
   forcedFailAnglesFromEnv,
@@ -69,6 +70,7 @@ let plateEngine: IdentityEngine | null = null;
  */
 const sheetEngines: Record<SignSheetKind, IdentityEngine | null> = { head: null, body: null };
 let judge: ViewConformanceJudge | null = null;
+let personaReader: CastPersonaReader | null = null;
 
 function castPackageQueue(): ProviderQueue {
   if (!viewQueue) {
@@ -257,6 +259,41 @@ export function castingViewConformanceJudge(): ViewConformanceJudge {
   return judge;
 }
 
+/**
+ * WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS — N2b's reader, in production (#1242).
+ *
+ * ⚠ **THE SAME ROAD AND THE SAME MODEL AS THE CHECKER, deliberately** (the
+ * card's own settled line). One vision-capable slug for this product to reason
+ * about and one retention conversation to have about customers' frames — the
+ * same argument the judge's own comment makes one function above.
+ *
+ * ⚠ **IT NEVER REFUSES THE SIGN, and that is the whole difference from the
+ * judge.** No `OPENROUTER_API_KEY` means `null` here, where the judge throws:
+ * a deployment with no checker cannot validate a package anybody paid for, but
+ * a deployment that cannot draft two lines of text should still deliver five
+ * pictures. The absent reader is the same outcome as a read that fails — no
+ * lines, no badge, nothing on her page that looks broken — so there is exactly
+ * one behaviour to reason about rather than two.
+ *
+ * Its own queue, at ONE in flight: a Sign makes exactly one of these calls, and
+ * borrowing the judge's three would let a burst of Signs spend the checker's
+ * allowance on prose while a view waited to be judged.
+ */
+export function castingCastPersonaReader(): CastPersonaReader | null {
+  if (!personaReader) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) return null;
+    personaReader = createCastPersonaReader({
+      engine: createOpenRouterTextEngine({
+        apiKey,
+        model: process.env.SIGN_JUDGE_MODEL || DEFAULT_INTERPRETER_MODEL,
+        queue: new ProviderQueue({ name: "openrouter-cast-persona", concurrency: 1, maxQueueDepth: 16 }),
+      }),
+    });
+  }
+  return personaReader;
+}
+
 /** Test seam: drops the memoized engines so config changes take effect. */
 export function resetSignEnginesForTests(): void {
   viewQueue = null;
@@ -273,4 +310,5 @@ export function resetSignEnginesForTests(): void {
      added and left un-reset. */
   for (const kind of Object.keys(sheetEngines) as SignSheetKind[]) sheetEngines[kind] = null;
   judge = null;
+  personaReader = null;
 }

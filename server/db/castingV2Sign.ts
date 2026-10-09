@@ -62,6 +62,12 @@ import {
   type SlotFailureRecord,
 } from "../castingV2/slotFailureRecord";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import type { CastPersonaField } from "./castPersonaField";
+import {
+  castPersonaEditPatch,
+  castPersonaEditWhere,
+  castPersonaRedraftWhere,
+} from "./castPersonaScope";
 
 /** The identity recipe this ceremony writes under (D-12 provenance). */
 export const CASTING_V2_SIGN_RECIPE_VERSION = "castingv2-sign-v1";
@@ -171,6 +177,17 @@ export type SignableCandidate = {
      * tattoo, so the delivery store is not asked at all.
      */
     deltas: unknown;
+    /**
+     * HER OWN CORRECTION SENTENCES, oldest first - N2b's second source (#1242).
+     *
+     * His brief: *"each correction is the user describing who she is."* Read on
+     * the variant join this statement already makes, so the Sign gains the
+     * source with NO new read - the same promise 3.1 kept for the two paths.
+     *
+     * EMPTY for the pristine master, and that is a real answer rather than a
+     * missing one: she refined nothing, so there is nothing she said.
+     */
+    editSentences: readonly string[];
   };
   roll: {
     id: number;
@@ -206,6 +223,21 @@ export type SignableCandidate = {
 };
 
 /**
+ * HER TYPED SENTENCES, OUT OF A `json` COLUMN - N2b (#1242).
+ *
+ * `castingCandidateVariants.instructions` is `json().notNull()`, so its TYPE
+ * is `unknown` and a reader that trusted it to be `string[]` would be trusting
+ * a column rather than reading it. Rows written by any other road must not be
+ * able to put a non-string into a prompt, so every element is checked and
+ * anything else is DROPPED rather than coerced: `String(x)` here would put
+ * `[object Object]` in front of a reader asked who this person is.
+ */
+function castEditSentences(raw: unknown): readonly string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((entry): entry is string => typeof entry === "string");
+}
+
+/**
  * The candidate a Sign would spend, read owner-scoped and `ready`.
  *
  * A free refusal before anything is claimed: signing a discarded, expired or
@@ -228,6 +260,7 @@ export async function getSignableCandidate(
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
       variantDeltas: castingCandidateVariants.deltas,
+      variantInstructions: castingCandidateVariants.instructions,
       rollId: castingRolls.id,
       rollPublicId: castingRolls.publicId,
       briefText: castingRolls.briefText,
@@ -293,6 +326,7 @@ export async function getSignableCandidate(
         thumbKey: row.variantThumbKey,
         internalPrompt: row.variantInternalPrompt,
         deltas: row.variantDeltas,
+        editSentences: castEditSentences(row.variantInstructions),
       }
       : {
         variantId: null,
@@ -302,6 +336,8 @@ export async function getSignableCandidate(
         internalPrompt: row.candidate.internalPrompt,
         /* The pristine master, which wears nothing. */
         deltas: null,
+        /* And which she said nothing about - she never refined it. */
+        editSentences: [],
       },
     roll: {
       id: row.rollId,
@@ -1088,6 +1124,96 @@ export type SignedCastLocation = {
   candidateSignedCastId: number | null;
   candidateStatus: string;
 };
+
+/**
+ * WRITE THE TWO DRAFTED LINES ONTO THE CAST — N2b (#1242).
+ *
+ * Called once, from inside the package mint, with whatever the reader came back
+ * with. `personaDraftedAt` is stamped in the same statement as the text, which
+ * is what makes the draft badge a question asked of the row rather than a flag
+ * somebody has to remember to set.
+ *
+ * ⚠ **THE OWNER IS IN THE `WHERE`, NOT IN A CHECK BEFORE IT** (invariant 1).
+ * There is no read-then-write here to race: one statement, scoped by owner and
+ * id together, and a row that is not hers is not updated.
+ *
+ * ⚠ **IT NEVER OVERWRITES A LINE SHE HAS EDITED — and the sweep this used to
+ * cite does not exist** (the relay's finding 5 on PR #2114). This block read
+ * *"the recovery sweep can re-enter a Sign whose process died"*; it cannot. This
+ * function has one non-test caller, and the recovery road does not reach it, so
+ * **a Sign whose process dies between the seal and this write never gets its two
+ * lines** — declared in `castPersonaRedraftWhere`'s own docblock, where the
+ * `isNull(...EditedAt)` terms live and where the reason they are still worth
+ * keeping is set out. The mint runs once per Sign, so nothing today can be
+ * overwritten by it either way.
+ *
+ * `castPersonaWrite.test.ts` drives THIS FUNCTION at the wire — the statement it
+ * really emits, through a pool that never connects — rather than rendering the
+ * predicate beside it, which is a second finding from the same review: dropping
+ * the owner from the `WHERE` here left the predicate's own arms green.
+ *
+ * Returns whether a row moved, so a caller can log the miss rather than assume.
+ */
+export async function writeCastPersonaDraft(input: {
+  userId: number;
+  modelId: number;
+  personality: string;
+  voice: string;
+  now?: Date;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const now = input.now ?? new Date();
+  const db = await requireDb();
+
+  const written = await db
+    .update(models)
+    .set({
+      personality: input.personality,
+      voice: input.voice,
+      personaDraftedAt: now,
+    })
+    .where(castPersonaRedraftWhere({ userId: input.userId, modelId: input.modelId }));
+
+  return affectedRows(written) > 0;
+}
+
+/**
+ * SHE REWRITES ONE OF THE TWO LINES — N2b's edit (#1242).
+ *
+ * Free, and deliberately not a generation operation: no credits, no lock, no
+ * operation row. His brief — *"editing is free and clears the badge"*.
+ *
+ * ⚠ **THE BADGE CLEARS BY ARITHMETIC, NOT BY A SECOND WRITE.** Stamping
+ * `…EditedAt` is the whole of "clears the badge", because the badge is derived
+ * as *drafted and not since edited*. Nothing has to remember to unset a flag,
+ * which is the failure working law 4 names: the flag that survives the edit.
+ *
+ * ⚠ **ONE LINE AT A TIME, AND THE OTHER ONE IS NOT TOUCHED.** The two lines are
+ * two cards on her page; rewriting who she is must not un-badge how she sounds.
+ *
+ * Returns false when no row was hers — the caller turns that into the refusal,
+ * so the decision about what to say lives at the entrance and not in the query.
+ */
+export async function editCastPersonaField(input: {
+  userId: number;
+  modelId: number;
+  line: CastPersonaField;
+  text: string;
+  now?: Date;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const now = input.now ?? new Date();
+  const db = await requireDb();
+
+  const written = await db
+    .update(models)
+    .set(castPersonaEditPatch(input.line, input.text, now))
+    .where(castPersonaEditWhere({ userId: input.userId, modelId: input.modelId }));
+
+  return affectedRows(written) > 0;
+}
 
 /**
  * Find the Cast a Sign operation created, if it created one.

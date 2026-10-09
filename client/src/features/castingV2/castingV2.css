@@ -4781,3 +4781,64 @@
 }
 .dpc-setm__done:hover { opacity: 0.88; }
 
+
+/* ---- N2b: who she is on camera, and how she sounds (#1242) ----
+
+   Two lines on the signed Cast's room, drafted once at Sign and hers to
+   rewrite. The read state and the edit state are deliberately the SAME SIZE
+   and the same colour as `dpc-rcard__body` beside them, because clicking a
+   line should put a cursor in the sentence she was reading rather than swap it
+   for a form: a text field that looks like a text field is a second thing on
+   the page, and the only change she should see is a cursor.
+
+   ⚠ NO INNER FOCUS OUTLINE ON THE FIELD (the room's own design law, and a
+   mechanized assertion elsewhere in the suite) — the border carries focus. */
+.dpc-persona__read {
+  font: 400 11.5px/1.5 var(--font-sans);
+  color: var(--metaStrong);
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  cursor: text;
+  width: 100%;
+}
+.dpc-persona__read:hover { border-color: var(--border); }
+.dpc-persona__read:disabled { cursor: default; opacity: 0.55; }
+
+.dpc-persona__field {
+  font: 400 11.5px/1.5 var(--font-sans);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  width: 100%;
+  resize: none;
+}
+.dpc-persona__field:focus { outline: none; }
+
+/* The badge sits where a card's action sits, in the label's own register, so
+   it reads as a note about the card and never as a control. */
+.dpc-persona__badge {
+  font: 400 10.5px var(--font-sans);
+  color: var(--meta);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+/* The voice line lives INSIDE the existing stub, above its foot. */
+.dpc-persona__voice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+/* The label and its badge travel together, left, on both cards (#1242). */
+.dpc-persona__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
