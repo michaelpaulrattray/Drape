@@ -3220,7 +3220,7 @@ export default function CastingSheet() {
                 placeholder={
                   followLabel
                     ? "Add anything that should change — the rest stays theirs"
-                    : "a fitness creator in their 30s, close-cropped hair"
+                    : "Describe who you need"
                 }
                 aria-label="Casting brief"
               />

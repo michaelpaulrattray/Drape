@@ -143,45 +143,34 @@ function sheetDeleteCopy(sheet: {
 }
 
 /**
- * THE HERO BRIEF BOX'S EXAMPLE — PLACEHOLDER LAW (founder, 2026-08-01): a
- * placeholder obeys every clause the seeds obey. It is the most-read example on
- * the page — seen by everyone, tapped by nobody — so a bad one teaches the
- * wrong shape to every visitor.
+ * THE HERO BRIEF BOX'S PLACEHOLDER IS AN INSTRUCTION, NOT AN EXAMPLE CAST
+ * (founder, 2026-10-09, card 2121). His words, on a screenshot of this page:
+ * *"same with the default text in the casting box it should be somthing
+ * better"* — and, offered four example casts to choose from: *"It should be
+ * instructions not an example cast"*.
  *
- * The text before it broke four at once: "a dad in his 30s, dry humour, hands
- * that have done some work" was the wrong audience, named a pronoun (which pins
- * sex), asked for humour (performance, which the expression law forbids), and
- * promised HANDS — which the waist-up frame with arms at the sides cannot show
- * at all.
+ * So the box says what to do, and no longer shows someone to copy. The history
+ * it replaces: from 2026-08-01 the PLACEHOLDER LAW held that a placeholder obeys
+ * every clause the seeds obey, because an example is the most-read brief on the
+ * page and teaches its shape to every visitor. That law was about EXAMPLES, and
+ * there is no longer an example here to obey it — the deck's brief block beside
+ * the box is where a full-length brief is still demonstrated.
  *
- * ⚠ They are module constants rather than a literal at the prop since card
- * 1111, because the prop composes and a law about an EXAMPLE should not be read
- * as covering the offer appended after it.
+ * ⚠ ONE CONSTRAINT SURVIVES THE RULING, AND IT IS A MEASUREMENT: Section 10 §2c,
+ * **"The placeholder must fit one line at this width."** Card 1107 appended his
+ * drop offer to the old full example and it SHIPPED WRAPPED (91 characters, two
+ * lines at 1440, the resting box 27px → 46px); card 1111 shortened the example
+ * to bring it back to one line. The instruction plus the offer is 62 characters
+ * and was measured on one line at 1440 in the running app (card 2121).
+ * `section10-guard.test.ts` holds the budget.
+ *
+ * ⚠ A module constant rather than a literal at the prop since card 1111,
+ * because the prop composes it with `CONCEPT_BRIEF_PLACEHOLDER_CLAUSE` — his
+ * clause, kept verbatim — inside the concept-upload scope, and uses it alone
+ * outside it. The sheet page's non-follow placeholder says the same words, and
+ * the guard holds the two together.
  */
-const HERO_BRIEF_EXAMPLE = "a fitness creator in their 30s, close-cropped hair";
-
-/**
- * THE SAME EXAMPLE, SHORTER, FOR THE COMPOSED PLACEHOLDER (card 1111) — and the
- * reason is a measurement rather than a preference.
- *
- * ⚠ Section 10 §2c states the only hard constraint on this string in as many
- * words: **"The placeholder must fit one line at this width."** Card 1107 added
- * his drop offer to the full example and it SHIPPED WRAPPED. Driven in the
- * running app at 1440 (textarea 427px, 13px on 19.5px): the full example plus
- * the offer is **91 characters and renders on two lines**, taking the resting
- * box from 27px to 46px and the row from 55px to 70px — so the box he presses
- * Cast it on looks FILLED before anyone types, and the wrap lands mid-phrase
- * ("or drop a picture of / someone like them").
- *
- * His clause is his and is kept verbatim; what gives is the second half of the
- * example, because the deck's brief block beside it already demonstrates a
- * full-length brief — which §2c itself says teaches it better than a
- * placeholder can. Measured: 71 characters, one line, box back to 27/55.
- *
- * **Outside the concept scope nothing changes**: no offer, no shortening, the
- * example exactly as it has always been.
- */
-const HERO_BRIEF_EXAMPLE_SHORT = "a fitness creator in their 30s";
+const HERO_BRIEF_INSTRUCTION = "Describe who you need";
 
 export default function CastingV2() {
   const [, navigate] = useLocation();
@@ -818,13 +807,12 @@ export default function CastingV2() {
                     void startCasting(brief);
                   }
                 }}
-                /* The two examples are `HERO_BRIEF_EXAMPLE` and
-                   `HERO_BRIEF_EXAMPLE_SHORT` above, where the placeholder law
-                   they obey and the one-line measurement are written down. */
+                /* The instruction is `HERO_BRIEF_INSTRUCTION` above, where
+                   the ruling and the one-line measurement are written down. */
                 placeholder={
                   conceptUploadEnabled
-                    ? `${HERO_BRIEF_EXAMPLE_SHORT}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`
-                    : HERO_BRIEF_EXAMPLE
+                    ? `${HERO_BRIEF_INSTRUCTION}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`
+                    : HERO_BRIEF_INSTRUCTION
                 }
                 aria-label="Casting brief"
               />
