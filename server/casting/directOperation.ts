@@ -571,7 +571,7 @@ export async function completeDirectOperationFailure(input: {
 
    **So the reading on the dashboard was: a successful Sign is a generation that
    started and never ended** — on the most expensive operation in the product,
-   8,500 credits — while Sign's two FAILURE paths recorded correctly. Starts
+   3,250 credits — while Sign's two FAILURE paths recorded correctly. Starts
    permanently exceed deliveries plus failures, and the failure rate reads as
    100% of everything recorded for that action. Same shape on the live road as
    #1425 fixed for the recovery sweep, on the ordinary every-time path rather

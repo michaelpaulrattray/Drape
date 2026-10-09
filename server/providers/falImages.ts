@@ -626,7 +626,7 @@ export function createFalSunburstPlateEngine(config: {
 }): IdentityEngine {
   if (!config.apiKey) {
     /* Refused at construction for the reason its sibling is: a Sign that
-       reaches dispatch has already taken 8,500 credits. */
+       reaches dispatch has already taken 3,250 credits. */
     throw new ProviderError("capability", "the outfit plate needs FAL_KEY to render");
   }
   const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
@@ -805,7 +805,7 @@ export function createFalSunburstSheetEngine(config: {
 }): IdentityEngine {
   if (!config.apiKey) {
     /* Refused at construction for the reason both its siblings are: a Sign that
-       reaches dispatch has already taken 8,500 credits, so a credential nobody
+       reaches dispatch has already taken 3,250 credits, so a credential nobody
        set is a configuration fault and never a generation failure a customer
        should have to be refunded for. */
     throw new ProviderError("capability", "the Sign sheet needs FAL_KEY to render");
