@@ -123,7 +123,7 @@ function sheetDeleteCopy(sheet: {
   briefText: string | null;
   signedCastNames: string[];
 }): string {
-  const label = `"${sheet.briefText ?? "Untitled sheet"}"`;
+  const label = `"${sheet.briefText ?? "Untitled casting"}"`;
   if (sheet.signedCastNames.length === 0) {
     return `${label} and every candidate on it will be deleted. This cannot be undone.`;
   }
@@ -137,9 +137,9 @@ function sheetDeleteCopy(sheet: {
     along. The name does the work instead.
   */
   const who = sheet.signedCastNames.length === 1
-    ? `${names} came from this sheet and is safe`
-    : `${sheet.signedCastNames.length} casts came from this sheet — ${names} are safe`;
-  return `${who}. The sheet and its unsigned candidates will be gone. This cannot be undone.`;
+    ? `${names} came from this casting and is safe`
+    : `${sheet.signedCastNames.length} casts came from this casting — ${names} are safe`;
+  return `${who}. The casting and its unsigned candidates will be gone. This cannot be undone.`;
 }
 
 /**
@@ -390,9 +390,9 @@ export default function CastingV2() {
         The rule held; the assumption about the surface did not, and only
         driving it found that out.
       */
-      toast("Sheet deleted");
+      toast("Casting deleted");
     } catch (error) {
-      toast(error instanceof Error ? error.message : "That sheet could not be discarded.");
+      toast(error instanceof Error ? error.message : "That casting could not be deleted.");
     } finally {
       setAbandoning(null);
     }
@@ -1102,8 +1102,8 @@ export default function CastingV2() {
             said so.
           */}
           <SectionHead
-            eyebrow="Unsigned sheets"
-            aside={`Unsigned sheets clear after ${CASTING_SESSION_IDLE_PHRASE}.`}
+            eyebrow="Unsigned castings"
+            aside={`Unsigned castings clear after ${CASTING_SESSION_IDLE_PHRASE}.`}
           />
           {/*
             One row that scrolls, not a grid that grows.
@@ -1120,7 +1120,7 @@ export default function CastingV2() {
             ref={sheetRow}
             className="dpc-sheetrow"
             role="group"
-            aria-label="Unsigned sheets"
+            aria-label="Unsigned castings"
             tabIndex={0}
           >
             {openSessions.data.map((entry, index) => (
@@ -1194,7 +1194,7 @@ export default function CastingV2() {
                     className="dp-label dpc-sheetcard__brief"
                     title={entry.briefText ?? undefined}
                   >
-                    {entry.briefText ?? "Untitled sheet"}
+                    {entry.briefText ?? "Untitled casting"}
                   </span>
                   <span className="dp-secondary">
                     {entry.rollCount} roll{entry.rollCount === 1 ? "" : "s"}
@@ -1267,7 +1267,7 @@ export default function CastingV2() {
                 */}
                 <span className="dpc-sheetmenu">
                   <CardMenu
-                    label={`the sheet "${entry.briefText ?? "Untitled sheet"}"`}
+                    label={`the casting "${entry.briefText ?? "Untitled casting"}"`}
                     open={menuFor === entry.sessionId}
                     onToggle={() =>
                       setMenuFor(menuFor === entry.sessionId ? null : entry.sessionId)
@@ -1275,7 +1275,7 @@ export default function CastingV2() {
                     onCancel={() => setMenuFor(null)}
                     items={[
                       {
-                        label: "Open sheet",
+                        label: "Open casting",
                         onSelect: () => navigate(`/app/casting/s/${entry.sessionId}`),
                       },
                       {
@@ -1316,7 +1316,7 @@ export default function CastingV2() {
           Gated on `isFetched` so it does not flash before the query answers.
         */
         <section className="dp-stack" style={{ gap: 12 }}>
-          <SectionHead eyebrow="Unsigned sheets" />
+          <SectionHead eyebrow="Unsigned castings" />
           <p className="dp-secondary">{RETENTION_EMPTY_STATE}</p>
         </section>
       ) : null}
@@ -1336,9 +1336,9 @@ export default function CastingV2() {
       */}
       {armedSheet ? (
         <ConfirmDialog
-          title="Delete this sheet?"
+          title="Delete this casting?"
           body={sheetDeleteCopy(armedSheet)}
-          confirmLabel="Delete sheet"
+          confirmLabel="Delete casting"
           busyLabel="Deleting…"
           busy={abandoning === armedSheet.sessionId}
           onConfirm={() => discardSheet(armedSheet.sessionId)}
@@ -1515,7 +1515,7 @@ export default function CastingV2() {
         {/* A sentence, so Archivo — mono is for machine facts only. */}
         {casts.length === 0 ? (
           <span className="dp-secondary">
-            No one signed yet — cast a sheet, then sign the candidate you want to keep working
+            No one signed yet — roll a casting, then sign the candidate you want to keep working
             with.
           </span>
         ) : null}

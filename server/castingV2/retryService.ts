@@ -243,7 +243,7 @@ export async function retryCandidate(
       code: "PRECONDITION_FAILED",
       message: roll.status === "cancelled"
         ? "That roll was cancelled, so its tiles can't be retried."
-        : "The sheet is still casting — retry a tile once it has finished.",
+        : "That roll is still casting — retry a tile once it has finished.",
     });
   }
   const prompt = promptOfInternal(candidate.internalPrompt);
@@ -287,7 +287,7 @@ export async function retryCandidate(
     );
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "That tile can't be retried just now. Nothing was charged — roll the sheet again to cast it.",
+      message: "That tile can't be retried just now. Nothing was charged — roll again to cast it.",
     });
   }
   const price = candidate.pointsCost;
@@ -349,7 +349,7 @@ export async function retryCandidate(
       operationId,
       error: new TRPCError({
         code: "CONFLICT",
-        message: "That tile changed while you tapped — nothing was charged. Refresh the sheet.",
+        message: "That tile changed while you tapped — nothing was charged. Refresh the page.",
       }),
     });
   }
@@ -631,7 +631,7 @@ async function settleAbandonedRetry(input: {
     */
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `That tile arrived, but its settlement was interrupted. Reload the sheet. Operation ${operationId}.`,
+      message: `That tile arrived, but its settlement was interrupted. Reload the page. Operation ${operationId}.`,
     });
   }
   // paid_failure / free_failure — the receipt is sealed with these words.

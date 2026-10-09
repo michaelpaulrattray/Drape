@@ -83,10 +83,10 @@ describe("the sheet's own line", () => {
 
   it("names the day and the action, and nothing else", () => {
     expect(sheetExpiryNotice(inFuture(30 * HOUR), NOW)).toBe(
-      "This sheet expires tomorrow — keep or sign what's worth holding.",
+      "This casting expires tomorrow — keep or sign what's worth holding.",
     );
     expect(sheetExpiryNotice(inFuture(3 * HOUR), NOW)).toBe(
-      "This sheet expires today — keep or sign what's worth holding.",
+      "This casting expires today — keep or sign what's worth holding.",
     );
   });
 

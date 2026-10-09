@@ -67,6 +67,6 @@ export function sheetIsGone(status: CastingSessionStatus): status is GoneSheetSt
  */
 export function sheetGoneSentence(status: GoneSheetStatus): string {
   return status === "expired"
-    ? "That sheet expired and was cleared. Start a new one."
-    : "That sheet was closed and cleared. Start a new one.";
+    ? "That casting expired and was cleared. Start a new one."
+    : "That casting was closed and cleared. Start a new one.";
 }

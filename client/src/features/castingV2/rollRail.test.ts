@@ -57,7 +57,7 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "");
 describe("the roll rail: one selected pill while a roll is being paid for", () => {
   it("a real pill is selected only when the provisional roll is not the one shown", async () => {
     const source = code(await readFile(SHEET, "utf8"));
-    const rail = source.slice(source.indexOf('role="tablist" aria-label="Rolls in this sheet"'));
+    const rail = source.slice(source.indexOf('role="tablist" aria-label="Rolls in this casting"'));
     expect(rail, "the rail must be readable").toContain("rolls.map((entry)");
     /*
       THE ARM THAT MATTERS. `entry.rollId === shownRollId` alone is the bug:
@@ -73,7 +73,7 @@ describe("the roll rail: one selected pill while a roll is being paid for", () =
 
   it("the provisional pill is the selected one while its tiles are up, and it is the way back to them", async () => {
     const source = code(await readFile(SHEET, "utf8"));
-    const rail = source.slice(source.indexOf('role="tablist" aria-label="Rolls in this sheet"'));
+    const rail = source.slice(source.indexOf('role="tablist" aria-label="Rolls in this casting"'));
     /* Bounded at the block's own close, so the arm cannot read the history button after it. */
     const start = rail.indexOf("{provisionalIndex ? (");
     const provisional = rail.slice(start, rail.indexOf(") : null}", start));

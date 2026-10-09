@@ -428,7 +428,7 @@ export const FAILED_SLOT_CONFESSION = "This view didn't arrive";
  * customer-facing failure copy; it found these two and no third.
  */
 export const TOTAL_LOSS_CONFESSION =
-  "The package didn't arrive — everything you paid has been refunded, "
+  "The character sheet didn't arrive — everything you paid has been refunded, "
   + "including the Sign itself. The face you chose is still yours.";
 
 /**
@@ -899,7 +899,7 @@ export function projectSignedCast(input: {
       indexLabel: String(sibling.position + 1).padStart(2, "0"),
     })),
     provenance: input.lineage.castFromAt
-      ? `Cast from a sheet on ${formatCastDate(input.lineage.castFromAt)}`
+      ? `Cast on ${formatCastDate(input.lineage.castFromAt)}`
       : null,
     sheetOpen: input.sheetLive ?? false,
     pronouns: castPronouns(input.model.technicalSchema),

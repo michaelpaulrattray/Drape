@@ -11085,6 +11085,10 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/castingNotSheet.test.ts",
+      "path": "client/src/features/castingV2/castingNotSheet.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/castingV2CssEmitters.test.ts",
       "path": "client/src/features/castingV2/castingV2CssEmitters.test.ts"
     },

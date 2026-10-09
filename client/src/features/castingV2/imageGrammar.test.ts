@@ -63,7 +63,7 @@ describe("the one image grammar", () => {
     expect(
       offenders,
       "Download belongs in the viewer chrome, and for bulk in the room's explicit "
-      + "Download package control. A download attribute anywhere else is the "
+      + "Download character sheet control. A download attribute anywhere else is the "
       + "hover-chrome grammar coming back.",
     ).toEqual([]);
   });
@@ -227,7 +227,7 @@ describe("the one image grammar", () => {
 
   it("offers the package in bulk as a real control", async () => {
     const room = await readFile(ROOM, "utf8");
-    expect(room).toContain("Download package");
+    expect(room).toContain("Download character sheet");
     expect(room).toContain("function downloadPackage");
     // Not hover chrome: it sits in the package head, beside the count.
     expect(room).toContain("dpc-takes__actions");
@@ -252,11 +252,11 @@ describe("a sibling tile goes where she is", () => {
     const room = await readFile(ROOM, "utf8");
     /*
       Matched on the rendered expression, not the prose: the label is now
-      pronoun-derived ("Open the sheet {pronouns.subject} came from"), and the
+      pronoun-derived ("Open the casting {pronouns.subject} came from"), and the
       old wording survives only in the comment explaining why the room's
       top-right link was removed.
     */
-    const index = room.lastIndexOf("Open the sheet {data.pronouns.subject} came from");
+    const index = room.lastIndexOf("Open the casting {data.pronouns.subject} came from");
     expect(index).toBeGreaterThan(0);
     expect(room.slice(index - 500, index)).toContain("data.sheetOpen");
   });

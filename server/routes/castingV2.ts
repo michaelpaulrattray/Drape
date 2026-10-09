@@ -1386,7 +1386,7 @@ export const castingV2Router = router({
         userId: ctx.user.id,
         sessionPublicId: input.sessionId,
       });
-      if (!abandoned) throw new TRPCError({ code: "NOT_FOUND", message: "Sheet not found" });
+      if (!abandoned) throw new TRPCError({ code: "NOT_FOUND", message: "Casting not found" });
       return { abandoned: true as const };
     }),
 

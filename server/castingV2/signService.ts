@@ -1502,7 +1502,7 @@ function signRefusal(error: unknown, refunded: boolean, operationId: string): TR
       case "session_unavailable":
         return new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: `That sheet is no longer open. ${tail}`,
+          message: `That casting is no longer open. ${tail}`,
         });
       case "operation_unavailable":
         return new TRPCError({

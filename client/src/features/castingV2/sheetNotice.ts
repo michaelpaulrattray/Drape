@@ -67,7 +67,7 @@ export const FELL_BACK_NOTICE =
  * cleanup milestone and its reasoning came here, where the sentence is.
  */
 export const STATED_WARDROBE_NOTICE =
-  "Casting sheets keep the studio tee — outfits come after Sign, in takes.";
+  "Every casting keeps the studio tee — outfits come after Sign, in takes.";
 
 /**
  * The line, or nothing at all. Never two.

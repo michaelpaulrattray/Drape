@@ -344,8 +344,8 @@ async function defaultStoreImage(input: { bytes: Buffer; contentType: string; ke
  */
 function closedSessionRefusal(status: Exclude<CastingSession["status"], "open">): string {
   return status === "expired"
-    ? "This sheet has expired, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again."
-    : "This sheet was closed, so it can't be rolled on. Nothing was charged — start a new sheet to roll these words again.";
+    ? "This casting has expired, so it can't be rolled on. Nothing was charged — start a new casting to roll these words again."
+    : "This casting was closed, so it can't be rolled on. Nothing was charged — start a new casting to roll these words again.";
 }
 
 export async function createRoll(
@@ -1220,7 +1220,7 @@ export async function createRoll(
         code: "PRECONDITION_FAILED",
         message: cancelled > 0
           ? `That roll was cancelled. ${refundSentence}`
-          : `None of the sheet arrived. ${refundSentence}`,
+          : `Nothing from that roll arrived. ${refundSentence}`,
       }),
       chargedCredits,
       refundedCredits,
@@ -1399,7 +1399,7 @@ async function settleAbandonedDispatch(input: {
        would give support. */
     throw spokenError({
       code: "INTERNAL_SERVER_ERROR",
-      message: `This sheet is still being settled. Operation ${operationId}.`,
+      message: `This roll is still being settled. Operation ${operationId}.`,
       cause: error,
     });
   }

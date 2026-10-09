@@ -465,7 +465,7 @@ export default function CastingRoom() {
   );
 
   /*
-    THE PACKAGE AS ONE SET — master first, then the landed views in strip order.
+    THE CHARACTER SHEET AS ONE SET — master first, then the landed views in strip order.
     Built once here rather than rebuilt at each opening site, which is how the
     three near-identical walks this replaces came to drift apart.
 
@@ -505,7 +505,7 @@ export default function CastingRoom() {
         and an explanation: §G.6 is the reason she is still here at all.
       */
       caption: sibling.destination === "viewer"
-        ? `From a sheet that has expired or was deleted — ${
+        ? `From a casting that has expired or was deleted — ${
           data?.pronouns.subject ?? "they"} remain${
           data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`
         : null,
@@ -840,7 +840,7 @@ export default function CastingRoom() {
                   </div>
                   <p className="dpc-rcard__body">
                     Refining a signed Cast arrives with refinement. Until then, a new direction
-                    means a new sheet.
+                    means a new casting.
                   </p>
                 </section>
 
@@ -863,14 +863,15 @@ export default function CastingRoom() {
                 </section>
 
                 {/*
-                  THE PACKAGE — not in the drawing. Added below the drawn
+                  CHARACTER SHEET (named "the package" until #2129, his word "go with
+                  option 3") — not in the drawing. Added below the drawn
                   sections by founder ruling (2026-08-02): it is infrastructure,
                   not the show. The confession still renders in place on any
                   slot that is not coming (D-92's gate condition).
                 */}
                 <section className="dpc-takes">
                   <div className="dpc-takes__head">
-                    <span className="dpc-rcard__label">THE PACKAGE</span>
+                    <span className="dpc-rcard__label">CHARACTER SHEET</span>
                     {/*
                       THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
                       2026-08-02) — a real control, not hover chrome.
@@ -891,7 +892,7 @@ export default function CastingRoom() {
                         onClick={() => downloadPackage(packageFrames, castId)}
                       >
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
-                        Download package
+                        Download character sheet
                       </Button>
                       {/*
                         DELETING HER IS A SENTENCE, NOT A MENU (founder ruling,
@@ -1147,7 +1148,7 @@ export default function CastingRoom() {
                 <section className="dpc-rcard">
                   <span className="dpc-rcard__label">SIBLINGS</span>
                   <p className="dpc-rcard__body">
-                    Variants cast from the same sheet. Useful when a campaign needs a near-miss
+                    Variants from the same casting. Useful when a campaign needs a near-miss
                     rather than a new face.
                   </p>
                   {/*
@@ -1203,7 +1204,7 @@ export default function CastingRoom() {
                             sibling.destination === "cast"
                               ? `Open ${sibling.indexLabel}'s room`
                               : sibling.destination === "sheet"
-                                ? `Find ${sibling.indexLabel} on that sheet`
+                                ? `Find ${sibling.indexLabel} in that casting`
                                 : `Look at ${sibling.indexLabel}`
                           }
                         >
@@ -1213,7 +1214,7 @@ export default function CastingRoom() {
                     </div>
                   ) : (
                     <p className="dpc-rcard__body">
-                      Nothing else was kept from {data.pronouns.possessive} sheet.
+                      Nothing else was kept from {data.pronouns.possessive} casting.
                     </p>
                   )}
                   {/*
@@ -1229,7 +1230,7 @@ export default function CastingRoom() {
                       size="small"
                       onClick={() => navigate(`/app/casting/s/${data.lineage.fromSessionPublicId}`)}
                     >
-                      Open the sheet {data.pronouns.subject} came from
+                      Open the casting {data.pronouns.subject} came from
                     </Button>
                   ) : null}
                 </section>
