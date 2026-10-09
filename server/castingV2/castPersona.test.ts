@@ -267,11 +267,50 @@ describe("what the instruction is not allowed to ask for", () => {
     expect(prompt).toMatch(/physical tell/i);
   });
 
-  it("asks for the baseline-then-exception shape his specimen has", () => {
+  it("asks for the baseline-then-break shape his specimen has", () => {
     expect(prompt).toMatch(/baseline/i);
-    expect(prompt).toMatch(/exception/i);
+    /* His craft correction (#2136) calls it a BREAK rather than an exception,
+       and the clause says there is exactly one of them. */
+    expect(prompt).toMatch(/single break|one thing that breaks|ONE thing that breaks/);
   });
 
+  /*
+    HIS THREE CRAFT RULES — card #2136, from the Desk item recording "Mike's
+    corrections, verbatim". Each is pinned as its own arm, because the court
+    measured that the instruction is what moves the output: the before arm,
+    missing these clauses, produced no timing sentence and no performance half
+    on any of his three casts.
+  */
+  it("⚠ rule 1 — gives each personality sentence its own job: rest, then timing", () => {
+    expect(prompt).toMatch(/SENTENCE ONE/);
+    expect(prompt).toMatch(/at REST/);
+    expect(prompt).toMatch(/SENTENCE TWO/);
+    expect(prompt).toMatch(/TIMING/);
+    /* The order is load-bearing: rest first, timing second, as he wrote it. */
+    expect(prompt.indexOf("SENTENCE ONE")).toBeLessThan(prompt.indexOf("SENTENCE TWO"));
+  });
+
+  it("⚠ rule 2 — makes translating a feeling into a camera-word OUR job, not the customer's", () => {
+    /* His words: "Menacing" is not storable; "moves all at once, without
+       wind-up" is. The translation is the engine's job, never the customer's. */
+    expect(prompt).toMatch(/menacing/i);
+    expect(prompt).toMatch(/YOUR work/);
+    expect(prompt).toMatch(/not the customer's/);
+  });
+
+  it("⚠ rule 3 — requires BOTH voice halves: the sound of it, then how it is used", () => {
+    expect(prompt).toMatch(/timbre/i);
+    expect(prompt).toMatch(/USES it/);
+    expect(prompt).toMatch(/how a question/i);
+    expect(prompt).toMatch(/Both halves are required/);
+  });
+
+  it("⚠ no longer tells the reader to ignore what the voice says — that clause CONTRADICTED rule 3", () => {
+    /* The instruction used to end the voice clause with "never what it says",
+       which forbids the performance half he asked for by name. A sweep for the
+       old sentence is the only thing that keeps it from drifting back in. */
+    expect(prompt).not.toMatch(/never what it says/i);
+  });
   it("⚠ hands his specimens over as FORM and forbids their wording", () => {
     /* A reader given an exemplar copies it unless something stops it, and
        "holds eye contact a beat too long" on every cast in the product would be
@@ -285,6 +324,56 @@ describe("what the instruction is not allowed to ask for", () => {
        volunteers an opinion about it. This reader is given no framing, no
        wardrobe and no quality question at all; it is told not to mention them. */
     expect(prompt).toMatch(/Do not mention photography/i);
+  });
+});
+
+/*
+ * THE CAPS FIT HIS OWN SPECIMEN — card #2136, and the arm that would have gone
+ * red before it.
+ *
+ * `fitToCap` cuts at a SENTENCE END, so a line one character over the cap loses
+ * its entire second sentence — which under his craft rules is the exact half
+ * the correction added. The old numbers therefore deleted the feature while
+ * looking like a harmless bound: measured on three of his production casts,
+ * the voice was cut 3 of 3 and the personality 2 of 3.
+ */
+describe("the caps fit the shape his craft rules produce (#2136)", () => {
+  /** His own Pigman specimen, from the card. The product must store it whole. */
+  const hisPersonality = "Stands planted and square, chin level, clouded eyes fixed forward "
+    + "without blinking rhythm; the one break is the jaw, which hangs faintly open as though "
+    + "the tusks no longer fit the mouth that holds them. Slow to move and slower to answer: "
+    + "ignores what is said until it is said twice, then moves all at once, without wind-up.";
+  const hisVoice = "A wet, dragging rumble that stays flat for whole sentences, then catches "
+    + "on a phlegmy snag before pushing through. Says little: three or four words after a "
+    + "pause, and a question gets ignored until it is asked twice.";
+
+  /** The widest line the court actually measured through the real reader. */
+  const MEASURED_WIDEST_PERSONALITY = 474;
+  const MEASURED_WIDEST_VOICE = 303;
+
+  it("keeps his own voice specimen whole", () => {
+    expect(hisVoice.length).toBe(215);
+    expect(fitToCap(hisVoice, CAST_VOICE_MAX_LENGTH)).toBe(hisVoice);
+  });
+
+  it("keeps his own personality specimen whole", () => {
+    expect(hisPersonality.length).toBe(323);
+    expect(fitToCap(hisPersonality, CAST_PERSONALITY_MAX_LENGTH)).toBe(hisPersonality);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the OLD caps cut his specimen, and cut the half he added", () => {
+    /* Drives the defect rather than asserting the repair: at 200 his voice
+       loses its second sentence entirely, which is the performance style. */
+    const cutAtOldCap = fitToCap(hisVoice, 200);
+    expect(cutAtOldCap).not.toBe(hisVoice);
+    expect(cutAtOldCap).not.toMatch(/Says little/);
+    expect(hisVoice).toMatch(/Says little/);
+  });
+
+  it("⚠ leaves headroom above the widest line the court measured, not just at it", () => {
+    /* A cap sized to the three casts measured would cut the fourth. */
+    expect(CAST_VOICE_MAX_LENGTH).toBeGreaterThan(MEASURED_WIDEST_VOICE);
+    expect(CAST_PERSONALITY_MAX_LENGTH).toBeGreaterThan(MEASURED_WIDEST_PERSONALITY);
   });
 });
 
@@ -346,7 +435,17 @@ describe("a drafted line is fitted to the cap the customer is held to", () => {
   /* ------------------------------------------- and through the real parse */
 
   it("a reply whose voice line is over the cap is fitted, not stored long", () => {
-    const voice = `Low and unhurried. ${"The vowels sit a long way back in the throat. ".repeat(6)}`;
+    /*
+      ⚠ THE REPEAT COUNT IS DERIVED FROM THE CAP, NOT TYPED — working law 4.
+      It was `.repeat(6)`, sized against a cap of 200, and #2136 raised the cap
+      to 320: the fixture quietly stopped being over the cap at all, so the arm
+      asserted that an UNDER-cap line is left alone and still went green on the
+      strength of its own title. A fixture that mirrors a constant drifts from
+      it, and this one drifted in the direction that keeps the test passing.
+    */
+    const sentence = "The vowels sit a long way back in the throat. ";
+    let voice = "Low and unhurried. ";
+    while (voice.length <= CAST_VOICE_MAX_LENGTH) voice += sentence;
     expect(voice.length).toBeGreaterThan(CAST_VOICE_MAX_LENGTH);
 
     const draft = parseCastPersonaDraft(reply("Watchful, hands still.", voice));
