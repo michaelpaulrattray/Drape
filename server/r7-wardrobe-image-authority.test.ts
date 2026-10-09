@@ -261,7 +261,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       userId: 7,
       modelId: 42,
       modelImageUrl: "https://selected.example/cast-body.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("refuses a linked session without a selected full-body view", async () => {
@@ -293,7 +293,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       modelId: null,
       modelImageUrl: "https://pub-test.r2.dev/7-models/upload-owned-model.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("refuses a model-less session URL outside the user's upload namespace", async () => {
@@ -316,7 +316,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       modelId: 42,
       modelImageUrl: "https://legacy.example/model.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("rejects client-supplied read authority before the handler runs", async () => {

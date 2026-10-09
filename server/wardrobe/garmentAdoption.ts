@@ -72,6 +72,8 @@ import { classifyStorageReference } from "../casting/deletionAudit";
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
 import { withTransaction } from "../db/connection";
 import { storageCopyExact } from "../storage";
+import { spokenError } from "../_core/spokenError";
+import { GarmentPictureReceiptError } from "../db/wardrobe";
 import { wardrobeScratchHeldUntil } from "./scratchUpload";
 
 /**
@@ -88,6 +90,39 @@ export class GarmentPictureNotYoursError extends Error {
     super(GARMENT_PICTURE_NOT_YOURS);
     this.name = "GarmentPictureNotYoursError";
   }
+}
+
+/**
+ * The sentence for the other refusal on the same road: the garment could not
+ * take its pictures over (`GarmentPictureReceiptError` — the manifest naming
+ * the copy was no longer there to discharge). That is our failure rather than
+ * hers, so it says nothing about her picture, and it is raised before the
+ * credit hold, so "nothing was charged" is true wherever it is spoken (#2028).
+ */
+export const GARMENT_PICTURE_NOT_SAVED =
+  "That garment couldn't be saved just now. Nothing was charged. Try importing it again.";
+
+/**
+ * Turn the import road's two pre-charge refusals into the sentence written for
+ * the customer (#2028); anything else passes through untouched.
+ *
+ * Both are plain `Error` subclasses, so reaching tRPC raw they answered as a
+ * generic 500 and the sentence above was never seen by anyone. A pure function
+ * rather than a branch inside the handler, because a decision written inside a
+ * tRPC handler is one nothing in `pnpm test` can drive on its own.
+ *
+ * ⚠ It is applied ONLY around the adoption and the garment insert, which both
+ * run before `withAtomicCredits`. A receipt refusal after the charge must not
+ * be told "nothing was charged".
+ */
+export function spokenImportRefusal(error: unknown): unknown {
+  if (error instanceof GarmentPictureNotYoursError) {
+    return spokenError({ code: "BAD_REQUEST", message: GARMENT_PICTURE_NOT_YOURS, cause: error });
+  }
+  if (error instanceof GarmentPictureReceiptError) {
+    return spokenError({ code: "BAD_REQUEST", message: GARMENT_PICTURE_NOT_SAVED, cause: error });
+  }
+  return error;
 }
 
 /**

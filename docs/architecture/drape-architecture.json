@@ -15138,6 +15138,10 @@
       "path": "server/wardrobe/scratchUpload.test.ts"
     },
     {
+      "id": "test:server/wardrobe/sessionPhotoAndImportRefusal.test.ts",
+      "path": "server/wardrobe/sessionPhotoAndImportRefusal.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/tryOnResultReceipt.test.ts",
       "path": "server/wardrobe/tryOnResultReceipt.test.ts"
     },
@@ -32626,6 +32630,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/health.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -35642,6 +35651,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/db/dailyQuota.ts",
       "kind": "imports"
     },
@@ -36227,6 +36241,11 @@
     },
     {
       "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
       "to": "module:server/casting/deletionAudit.ts",
       "kind": "imports"
     },
@@ -36238,6 +36257,11 @@
     {
       "from": "module:server/wardrobe/garmentAdoption.ts",
       "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/wardrobe.ts",
       "kind": "imports"
     },
     {
