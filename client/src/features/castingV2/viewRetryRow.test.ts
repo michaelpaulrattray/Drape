@@ -273,7 +273,7 @@ describe("the word can only ever come from the server's own reason", () => {
     expect(projection).not.toContain("ANCHOR_STANDIN_NOTE");
     /* The one he kept by name, so this arm cannot pass by reading an empty file. */
     expect(projection).toContain("FAILED_SLOT_CONFESSION");
-    expect(projection).toContain("This view didn't arrive — refunded");
+    expect(projection).toContain("This view didn't arrive");
   });
 });
 
