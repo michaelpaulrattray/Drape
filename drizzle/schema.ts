@@ -1921,6 +1921,10 @@ export const planChangeSettlements = mysqlTable("plan_change_settlements", {
   // months still to come arrive at the plan that was paid for. NULL on every
   // other settlement.
   annualMonthlyCredits: int("annualMonthlyCredits"),
+  // WHICH paid year that month was bought for (#2152) — the install is
+  // conditioned on it still being the year on the row, so a late-paid upgrade
+  // can never write its month onto the next year.
+  annualPeriodStart: timestamp("annualPeriodStart"),
   // pending → applied (invoice settled, credits moved) or void (the invoice
   // will never settle — final payment failure). Never deleted.
   status: mysqlEnum("status", ["pending", "applied", "void"]).default("pending").notNull(),

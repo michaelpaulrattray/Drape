@@ -46,6 +46,8 @@ export type RecordPlanChangeSettlementInput = {
   /** The month an instant upgrade on a YEARLY plan installs on the paid year
    *  when this invoice is paid (#2152); absent on every other change. */
   annualMonthlyCredits?: number | null;
+  /** The paid year that month belongs to — required beside it (#2152). */
+  annualPeriodStart?: Date | null;
 };
 
 export async function recordPlanChangeSettlement(
@@ -64,6 +66,7 @@ export async function recordPlanChangeSettlement(
         description: input.description,
         clientRequestId: input.clientRequestId ?? null,
         annualMonthlyCredits: input.annualMonthlyCredits ?? null,
+        annualPeriodStart: input.annualPeriodStart ?? null,
       })
       // One invoice, one settlement: a replayed record for the same invoice
       // (a retried mutation that somehow re-read the same invoice) is a no-op.

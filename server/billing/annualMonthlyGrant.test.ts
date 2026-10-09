@@ -70,6 +70,7 @@ import {
   ANNUAL_YEAR_NOT_CURRENT,
   getAnnualGrantCandidates,
   getAnnualYearProgress,
+  installAnnualMonthlyCredits,
   refreshMonthlyCredits,
   updateUserSubscription,
   type AnnualGrantCandidate,
@@ -223,7 +224,7 @@ describe("2 · the write that carries the paid year", () => {
     rows.push(liveRow(0));
     const result = await refreshMonthlyCredits(
       7, MONTH, (b) => b, annualMonthLedgerRef(SUB, START.getTime(), 1), "m2", null,
-      { onlyWhileYear: { subscriptionId: SUB, periodStart: START } },
+      { onlyWhileYear: { subscriptionId: SUB, periodStart: START, monthlyCredits: MONTH } },
     );
     expect(result.success).toBe(true);
     const where = updateWheres[0];
@@ -233,6 +234,24 @@ describe("2 · the write that carries the paid year", () => {
     expect(where).toMatch(/`planTier` <> \?/);
     expect(where).toMatch(/`billingInterval` = \?/);
     expect(where).toMatch(/`subscriptionStatus` in \(/);
+    expect(where).toMatch(/`annualGrantMonthlyCredits` = \?/);
+  });
+
+  it("⚠ an upgrade raising the month between the worker's read and its write: the stale size never lands", async () => {
+    rows.push(liveRow(5_000, { annualGrantMonthlyCredits: MONTH * 2 }));
+    const result = await refreshMonthlyCredits(
+      7, MONTH, (b) => b, annualMonthLedgerRef(SUB, START.getTime(), 2), "m3", null,
+      { onlyWhileYear: { subscriptionId: SUB, periodStart: START, monthlyCredits: MONTH } },
+    );
+    expect(result.error).toBe(ANNUAL_YEAR_NOT_CURRENT);
+    expect(updateSets).toHaveLength(0);
+  });
+
+  it("⚠ an upgrade's month installs only on the OWNER's row AND the year it was bought for, in the write's own WHERE", async () => {
+    await installAnnualMonthlyCredits(7, MONTH * 2, START);
+    expect(updateSets[0]).toEqual({ annualGrantMonthlyCredits: MONTH * 2 });
+    expect(updateWheres[0]).toMatch(/`points`\.`userId` = \?/);
+    expect(updateWheres[0]).toMatch(/`annualGrantPeriodStart` = \?/);
   });
 
   for (const [what, over] of [
@@ -247,7 +266,7 @@ describe("2 · the write that carries the paid year", () => {
       rows.push(liveRow(5_000, over as Record<string, unknown>));
       const result = await refreshMonthlyCredits(
         7, MONTH, (b) => b, annualMonthLedgerRef(SUB, START.getTime(), 2), "m3", null,
-        { onlyWhileYear: { subscriptionId: SUB, periodStart: START } },
+        { onlyWhileYear: { subscriptionId: SUB, periodStart: START, monthlyCredits: MONTH } },
       );
       expect(result).toEqual({ success: false, error: ANNUAL_YEAR_NOT_CURRENT });
       expect(updateSets).toHaveLength(0);
@@ -260,7 +279,7 @@ describe("2 · the write that carries the paid year", () => {
     updateAnswers = [0];
     const result = await refreshMonthlyCredits(
       7, MONTH, (b) => b, annualMonthLedgerRef(SUB, START.getTime(), 2), "m3", null,
-      { onlyWhileYear: { subscriptionId: SUB, periodStart: START } },
+      { onlyWhileYear: { subscriptionId: SUB, periodStart: START, monthlyCredits: MONTH } },
     );
     expect(result.error).toBe(ANNUAL_YEAR_NOT_CURRENT);
     expect(insertedRows).toHaveLength(0);
@@ -349,7 +368,7 @@ describe("4 · the worker", () => {
     expect(ref).toBe(annualMonthLedgerRef(SUB, START.getTime(), 1));
     expect(description).toContain("month 2 of 12");
     expect(windowStart).toEqual(at(1));
-    expect(options).toEqual({ onlyWhileYear: { subscriptionId: SUB, periodStart: START } });
+    expect(options).toEqual({ onlyWhileYear: { subscriptionId: SUB, periodStart: START, monthlyCredits: MONTH } });
   });
 
   it("⚠ the rule at each monthly grant is the monthly plan's: the percentage, capped at ONE month", async () => {

@@ -141,8 +141,18 @@ export async function applyPlanChangeSettlement(
        here, when the money settles, and never before. Idempotent: a replay
        sets the same figure. A failure leaves the row pending so the
        redelivery tries again; the grant above is a typed duplicate then. */
-    if (row.annualMonthlyCredits !== null && row.annualMonthlyCredits !== undefined) {
-      const installed = await installAnnualMonthlyCredits(row.userId, row.annualMonthlyCredits);
+    if (
+      row.annualMonthlyCredits !== null && row.annualMonthlyCredits !== undefined
+      && row.annualPeriodStart instanceof Date
+    ) {
+      /* Scoped to the owner and the year the upgrade was bought for — see
+         `installAnnualMonthlyCredits` for why the year read at quote time is
+         never trusted at payment time. */
+      const installed = await installAnnualMonthlyCredits(
+        row.userId,
+        row.annualMonthlyCredits,
+        row.annualPeriodStart,
+      );
       if (!installed) {
         return { outcome: "failed", error: "could not raise the paid year's month" };
       }

@@ -125,7 +125,7 @@ export async function grantAnnualMonth(
        so it crosses whole rather than at the percentage (#1937) — the same
        window the renewal draws at its own period start. */
     monthStart,
-    { onlyWhileYear: { subscriptionId: year.subscriptionId, periodStart: year.periodStart } },
+    { onlyWhileYear: { subscriptionId: year.subscriptionId, periodStart: year.periodStart, monthlyCredits: monthly } },
   );
   if (result.success) return { outcome: result.duplicate ? "already-granted" : "granted", result };
   if (result.error === ANNUAL_YEAR_NOT_CURRENT) return { outcome: "year-over", result };

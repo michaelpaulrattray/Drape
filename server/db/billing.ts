@@ -306,7 +306,7 @@ export async function refreshMonthlyCredits(
    */
   options: {
     annualYear?: AnnualGrantYear | null;
-    onlyWhileYear?: { subscriptionId: string; periodStart: Date };
+    onlyWhileYear?: AnnualYearLock;
   } = {},
 ): Promise<CreditWriteResult> {
   const db = await getDb();
@@ -435,7 +435,17 @@ export async function refreshMonthlyCredits(
   }
 }
 
+/**
+ * The monthly worker's lock: the year AND the month's size it read. The size
+ * is in the lock because an upgrade's settlement can raise the paid year's
+ * month between the worker's read and its write; granting the size read
+ * before it would hand over the old plan's month for a month the new one was
+ * paid for. A changed size misses, and the next pass grants the new one.
+ */
+export type AnnualYearLock = { subscriptionId: string; periodStart: Date; monthlyCredits: number };
+
 type AnnualYearRow = {
+  annualGrantMonthlyCredits?: number | null;
   annualGrantSubscriptionId?: string | null;
   annualGrantPeriodStart?: Date | null;
   stripeSubscriptionId?: string | null;
@@ -445,12 +455,10 @@ type AnnualYearRow = {
 };
 
 /** The row-side half of {@link refreshMonthlyCredits}'s `onlyWhileYear` lock. */
-export function annualYearStillCurrent(
-  row: AnnualYearRow,
-  lock: { subscriptionId: string; periodStart: Date },
-): boolean {
+export function annualYearStillCurrent(row: AnnualYearRow, lock: AnnualYearLock): boolean {
   return (
     row.annualGrantSubscriptionId === lock.subscriptionId
+    && row.annualGrantMonthlyCredits === lock.monthlyCredits
     && row.annualGrantPeriodStart instanceof Date
     && row.annualGrantPeriodStart.getTime() === lock.periodStart.getTime()
     && row.stripeSubscriptionId === lock.subscriptionId
@@ -460,10 +468,11 @@ export function annualYearStillCurrent(
   );
 }
 
-/** The WHERE-side half of the same lock — the same six facts, so the read and the write cannot disagree. */
-function annualYearLockConditions(lock: { subscriptionId: string; periodStart: Date }) {
+/** The WHERE-side half of the same lock — the same seven facts, so the read and the write cannot disagree. */
+function annualYearLockConditions(lock: AnnualYearLock) {
   return [
     eq(credits.annualGrantSubscriptionId, lock.subscriptionId),
+    eq(credits.annualGrantMonthlyCredits, lock.monthlyCredits),
     eq(credits.annualGrantPeriodStart, lock.periodStart),
     eq(credits.stripeSubscriptionId, lock.subscriptionId),
     ne(credits.planTier, "free"),
@@ -572,18 +581,31 @@ export async function getAnnualYearProgress(userId: number): Promise<{
 /**
  * AN INSTANT UPGRADE ON A YEARLY PLAN RAISES THE MONTHS STILL TO COME (#2152).
  * Called when the upgrade's invoice is PAID (the settlement applier), so a
- * declined card never earns a higher month. Only a year in flight is touched:
- * a row with no year (a monthly plan, or a year granted up front) has no
- * months still to come.
+ * declined card never earns a higher month.
+ *
+ * ⚠ **SCOPED TO THE OWNER AND TO THE YEAR IT WAS BOUGHT FOR, IN THE WRITE
+ * ITSELF.** The upgrade was quoted against one paid year; its invoice can be
+ * paid days later (3DS, Stripe's retries), by which time the next year's
+ * invoice, a switch to monthly or a cancellation may have replaced or cleared
+ * that year. Trusting the year read at quote time would write the old month
+ * onto a different year, so the UPDATE is conditioned on the period start the
+ * change was made in: a year that is no longer on the row matches nothing,
+ * and the months to come stay as that newer write set them (a new year is
+ * sized by its own invoice). Matching nothing is a success: there is no year
+ * left for this month to belong to.
  */
-export async function installAnnualMonthlyCredits(userId: number, monthlyCredits: number): Promise<boolean> {
+export async function installAnnualMonthlyCredits(
+  userId: number,
+  monthlyCredits: number,
+  yearStart: Date,
+): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
   try {
     await db
       .update(credits)
       .set({ annualGrantMonthlyCredits: Math.max(0, Math.floor(monthlyCredits)) })
-      .where(and(eq(credits.userId, userId), isNotNull(credits.annualGrantPeriodStart)));
+      .where(and(eq(credits.userId, userId), eq(credits.annualGrantPeriodStart, yearStart)));
     return true;
   } catch (error) {
     log.error({ err: error, userId }, "[Database] could not install the upgraded month on the paid year");

@@ -169,19 +169,26 @@ async function planAllowanceLeftFor(userId: number): Promise<number> {
  * - `0` — a year IS on the row but it is not the period Stripe says is current
  *   (the new year's invoice has not landed yet): nothing of this period has
  *   been handed over.
+ *
+ * `yearStart` is the paid year's own start, and only when it IS Stripe's
+ * current period — the year an instant upgrade's higher month is recorded
+ * against, so its install can be conditioned on that year still being the one
+ * on the row when the money settles (never a year read now and trusted later).
  */
-async function annualMonthsGrantedFor(
+async function annualYearFor(
   userId: number,
   state: { currentInterval: "monthly" | "annual"; periodStartSec: number },
   subscriptionId: string,
-): Promise<number | null> {
-  if (state.currentInterval !== "annual") return null;
+): Promise<{ monthsGranted: number | null; yearStart: Date | null }> {
+  if (state.currentInterval !== "annual") return { monthsGranted: null, yearStart: null };
   const year = await getAnnualYearProgress(userId);
-  if (!year) return null;
+  if (!year) return { monthsGranted: null, yearStart: null };
   const sameYear =
     year.subscriptionId === subscriptionId
     && Math.abs(Math.floor(year.periodStart.getTime() / 1000) - state.periodStartSec) <= 60;
-  return sameYear ? year.monthsGranted : 0;
+  return sameYear
+    ? { monthsGranted: year.monthsGranted, yearStart: year.periodStart }
+    : { monthsGranted: 0, yearStart: null };
 }
 
 /**
@@ -866,7 +873,7 @@ export const billingRouter = router({
            the charge there are one arithmetic. */
         await planAllowanceLeftFor(ctx.user.id),
         /* And the same months-granted read (#2152), for the same reason. */
-        await annualMonthsGrantedFor(ctx.user.id, billingState, subscription.stripeSubscriptionId),
+        (await annualYearFor(ctx.user.id, billingState, subscription.stripeSubscriptionId)).monthsGranted,
       );
 
       return {
@@ -1154,11 +1161,12 @@ export const billingRouter = router({
         });
       }
 
-      const annualMonthsGranted = await annualMonthsGrantedFor(
+      const annualYear = await annualYearFor(
         ctx.user.id,
         billingState,
         subscription.stripeSubscriptionId,
       );
+      const annualMonthsGranted = annualYear.monthsGranted;
       const quote = quotePlanChange(
         billingState,
         input.newPlan,
@@ -1452,9 +1460,11 @@ export const billingRouter = router({
          change's invoice is PAID, never before. Only an increase reaches here
          (a decrease is deferred to the renewal, whose invoice starts a new
          year at the new plan). `null` when there is no year in flight: a
-         monthly plan, or a year granted up front. */
+         monthly plan, or a year granted up front — and `null` too when the year
+         on the row is not Stripe's current one (the next year's invoice will
+         size that year by its own plan). */
       const annualMonthAfterChange =
-        annualMonthsGranted !== null && quote.kind === "same-interval"
+        annualYear.yearStart !== null && quote.kind === "same-interval"
           ? monthlyLedgerCreditsFor(input.newPlan as PlanTier, quote.targetCreditUnits)
           : null;
 
@@ -1495,8 +1505,8 @@ export const billingRouter = router({
                   input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
                 )
               : { success: true };
-            if (creditResult.success && annualMonthAfterChange !== null) {
-              await installAnnualMonthlyCredits(ctx.user.id, annualMonthAfterChange);
+            if (creditResult.success && annualMonthAfterChange !== null && annualYear.yearStart !== null) {
+              await installAnnualMonthlyCredits(ctx.user.id, annualMonthAfterChange, annualYear.yearStart);
             }
             if (!creditResult.success) {
               throw new TRPCError({
@@ -1545,6 +1555,7 @@ export const billingRouter = router({
             description,
             clientRequestId: input.clientRequestId,
             annualMonthlyCredits: direction === "grant" ? annualMonthAfterChange : null,
+            annualPeriodStart: direction === "grant" && annualMonthAfterChange !== null ? annualYear.yearStart : null,
           });
           if (!recorded.success) {
             if (direction === "grant") {

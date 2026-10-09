@@ -1,4 +1,4 @@
--- YEARLY PLANS ARE GIVEN THEIR CREDITS MONTH BY MONTH — five additive columns
+-- YEARLY PLANS ARE GIVEN THEIR CREDITS MONTH BY MONTH — six additive columns
 -- (#2152, his ruling on #2159, 2026-10-10, verbatim: "yearly credits apply
 -- month by month it on the new notion card"). The Desk item's rollover rules
 -- now read: "Yearly credits are granted month by month, not all 12 months up
@@ -30,7 +30,11 @@
 --
 -- On `plan_change_settlements` — `annualMonthlyCredits`, the new month's
 -- allowance an instant upgrade on a yearly plan installs on the year when its
--- invoice is paid. NULL on every other settlement.
+-- invoice is paid, and `annualPeriodStart`, WHICH year it was bought for: the
+-- install is conditioned on that year still being the one on the row, so an
+-- upgrade invoice paid late (after the next year's invoice, a switch or a
+-- cancel) can never write its month onto a different year. NULL on every
+-- other settlement.
 --
 -- ============================================================================
 -- NULL — AND WHAT THAT MEANS FOR THE ROWS THAT EXIST
@@ -47,7 +51,7 @@
 -- `scripts/lib/ceremonyAutoApply.mts` recognises, so the deploy rite applies
 -- these before the new code takes traffic and no ceremony reaches the founder.
 --
--- PURELY ADDITIVE. Five nullable columns. No row is rewritten, no index moves,
+-- PURELY ADDITIVE. Six nullable columns. No row is rewritten, no index moves,
 -- no existing column changes.
 ALTER TABLE `points` ADD COLUMN `annualGrantSubscriptionId` varchar(64) NULL;
 --> statement-breakpoint
@@ -58,3 +62,5 @@ ALTER TABLE `points` ADD COLUMN `annualGrantPeriodEnd` timestamp NULL;
 ALTER TABLE `points` ADD COLUMN `annualGrantMonthlyCredits` int NULL;
 --> statement-breakpoint
 ALTER TABLE `plan_change_settlements` ADD COLUMN `annualMonthlyCredits` int NULL;
+--> statement-breakpoint
+ALTER TABLE `plan_change_settlements` ADD COLUMN `annualPeriodStart` timestamp NULL;
