@@ -1,7 +1,7 @@
 {
-  "edition": 664,
-  "updatedAt": "2026-10-09T00:39:58.600Z",
-  "shift": "Foreman — foreman-20261009-0907",
+  "edition": 665,
+  "updatedAt": "2026-10-09T05:35:00.000Z",
+  "shift": "Foreman — foreman-20261009-1404",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -19,11 +19,11 @@
         },
         {
           "title": "A cast is born with a personality and a voice at Sign (#1242)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Both are editable text on her page, never a picker",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Your eye on a real Sign's words before the rung closes",
