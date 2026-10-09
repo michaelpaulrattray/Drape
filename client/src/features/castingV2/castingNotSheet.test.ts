@@ -83,14 +83,14 @@ function sentencesSayingSheet(fileName: string, text: string): string[] {
 
 const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
 
-describe("#2129 — the candidates page is a casting, and only the delivered pictures are a sheet", () => {
+describe("card 2129 — the candidates page is a casting, and only the delivered pictures are a sheet", () => {
   it("no sentence on the casting road calls the candidates page a sheet", () => {
     const offenders = SURFACES.flatMap((file) =>
       sentencesSayingSheet(file, read(file)).map((hit) => `${file}: ${JSON.stringify(hit)}`),
     );
     expect(
       offenders,
-      `the page of candidates is a "casting" (his word, #2129: "go with option 3"):\n${offenders.join("\n")}`,
+      `the page of candidates is a "casting" (his word, card 2129: "go with option 3"):\n${offenders.join("\n")}`,
     ).toEqual([]);
   });
 
