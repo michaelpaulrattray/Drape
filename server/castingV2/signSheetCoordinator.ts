@@ -483,8 +483,8 @@ export async function settleSignSheet(
               sheet: input.kind,
               refused: refusedSecond.map((row) => row.angle),
             },
-            "[signSheetCoordinator] the re-rendered sheet still has refused views — those "
-            + "slices refund and the rest are delivered; there is no third render",
+            "[signSheetCoordinator] the re-rendered sheet still has refused views — they are "
+            + "kept with the rest and nothing refunds per view; there is no third render",
           );
         } else {
           log.info(

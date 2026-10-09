@@ -145,10 +145,25 @@ export function slotFailureMessage(f: RefundedFailure & {
   reason: string;
   markerPersisted?: boolean;
 }): string {
+  /*
+    ⚠ **THIS SENTENCE NAMED A CONTROL THAT NO LONGER EXISTS — found by the
+    relay on the flat-price PR, and it is PR 2098's remainder rather than this
+    card's own defect.** It read *It's marked "Try again" in the package.*,
+    which was true while a failed view carried its own Try again. That PR
+    removed the per-view offer, so the package now draws the server's confession
+    (`FAILED_SLOT_CONFESSION`, *"This view didn't arrive"*) and the remedy is
+    Regenerate for the whole set.
+
+    The verb ruling it was written to satisfy — *"one verb, Try again,
+    everywhere"*, card 1940 B18, now closed — is not what changed; the control
+    it pointed at is gone, so the claim is simply false. It says what the
+    package actually shows instead, which is also what the
+    `markerPersisted: false` branch beside it has always said in its own words.
+  */
   const marker =
     f.markerPersisted === false
       ? "The failure couldn't be saved to the package — if it isn't shown after reopening, the view is still missing."
-      : 'It\'s marked "Try again" in the package.';
+      : "It's shown as missing in the package.";
   /* The money half can be empty (#1968), so the parts are joined rather than
      interpolated — `joinSentences` carries why. */
   return joinSentences(

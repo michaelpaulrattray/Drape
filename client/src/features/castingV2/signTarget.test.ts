@@ -9,7 +9,7 @@ const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
 /**
  * THE RING AND THE TARGET AGREE ON EVERY CLICK (fable-729 §5).
  *
- * Sign spends 8,500 credits on the face the tray's accent ring is drawn around.
+ * Sign spends its whole flat charge on the face the tray's accent ring is drawn around.
  * The sheet filtered signed faces out of its target list while the tray drew
  * every shortlist entry as a radio labelled "Sign 03 from ROLL 02" — so a
  * signed face could be clicked, the click wrote a selection the target list

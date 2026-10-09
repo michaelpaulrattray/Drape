@@ -313,8 +313,16 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
       .toBe("Refund pending — contact support");
     expect(refundBadgeText({ refunded: 0 }), "no money was owed, so no badge").toBe("");
     const ok = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 300, markerPersisted: true });
-    /* One verb, Try again, everywhere (#1940 B18). */
-    expect(ok).toContain('"Try again"');
+    /*
+      ⚠ **IT MUST NOT PROMISE A PER-VIEW TRY AGAIN, because there is not one.**
+      This arm asserted the opposite until the flat-price card: it pinned
+      *"Try again"* on #1940 B18's one-verb ruling, and that ruling is about
+      which verb to use where the control EXISTS. PR 2098 deleted the per-view
+      offer and left this toast naming it, so the arm was holding false copy in
+      place. It now refuses the stale claim and pins what the package shows.
+    */
+    expect(ok).not.toContain("Try again");
+    expect(ok).toContain("shown as missing in the package");
     const noMarker = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 0, markerPersisted: false });
     expect(noMarker).not.toContain('"Try again"');
     expect(noMarker).toContain("couldn't be saved to the package");

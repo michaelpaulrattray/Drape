@@ -60,16 +60,18 @@ export function SignConfirm({
    *
    * `signVersion.ts` holds the rule and the words; this component only draws
    * them. It is `null` while the answer is still being fetched and `null` if
-   * the fetch fails, which is deliberate: the line is a claim about where 8,500
-   * credits are going, and silence is today's product while a wrong sentence
-   * would be a new defect.
+   * the fetch fails, which is deliberate: the line is a claim about where the
+   * Sign's credits are going, and silence is today's product while a wrong
+   * sentence would be a new defect. (It said 8,500 until the flat price; the
+   * figure is served, so no number belongs in this prose at all.)
    */
   signsVersion: SignVersion | null;
   /**
    * ⚠ **`null` MEANS THE PRICE HAS NOT BEEN READ, AND IT IS NOT THE SAME FACT
    * AS A PRICE OF ZERO — #1727.** The sheet's settings query races the roll
    * query on mount and can fail outright, so this arrives unread; under
-   * `?? 0` the modal stated **`~ 0 credits`** over a button that spends 8,500.
+   * `?? 0` the modal stated **`~ 0 credits`** over a button that spends the
+   * Sign's whole flat charge.
    * The slot below draws an em dash instead, for the same reason the version
    * line above says nothing rather than guessing.
    */
