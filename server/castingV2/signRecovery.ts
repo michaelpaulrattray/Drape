@@ -33,6 +33,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { creditTransactions } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { recordRefund, refundReferenceFor } from "../casting/atomicCredits";
+import { flatPressRefundOwed } from "../casting/flatPressCharge";
 import { operationChargeReference } from "../casting/operationContract";
 import {
   fenceCastingV2SignOperationIn,
@@ -490,12 +491,24 @@ export async function recoverCastingV2SignOperation(
       is caught by the conservation ceiling below before this is read.
     */
     /*
+      ⚠ **THE RULE IS ASKED, NOT RESTATED.** `flatPressRefundOwed` is the one
+      definition of *"could not be delivered at all"*, shared with the live
+      orchestrator and with the paid redo — two spellings of one founder ruling
+      is working law 4 on a money path, and this branch and the live one decide
+      the same question from different evidence hours apart.
+
       Never negative: the ceiling above has already parked a ledger whose
       refunds exceed its charge, so this is the honest remainder and nothing
-      more. Zero is the ordinary case for a Sign a previous pass settled, or one
+      more. The branch is only entered with `committed.length === 0`, so the
+      helper answers the whole charge here — it is asked anyway, because the
+      day *delivered* means something subtler, this road must move with the
+      other one rather than be remembered. Zero is the ordinary case for a Sign a previous pass settled, or one
       the old build part-refunded all the way to its charge.
     */
-    const owed = ledger.charge.credits - refundedCredits;
+    const owed = flatPressRefundOwed({
+      chargedCredits: ledger.charge.credits,
+      delivered: committed.length,
+    }) - refundedCredits;
     if (owed === 0) {
       log.warn(
         { operationId: operation.id, refundedCredits, charged: ledger.charge.credits },

@@ -13131,6 +13131,10 @@
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
     {
+      "id": "test:server/castingV2/signFlatPrice.test.ts",
+      "path": "server/castingV2/signFlatPrice.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signInkCrops.test.ts",
       "path": "server/castingV2/signInkCrops.test.ts"
     },
@@ -27617,6 +27621,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/casting/operationContract.ts",
       "kind": "imports"
     },
@@ -30153,6 +30162,11 @@
     {
       "from": "module:server/castingV2/signRecovery.ts",
       "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signRecovery.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
       "kind": "imports"
     },
     {

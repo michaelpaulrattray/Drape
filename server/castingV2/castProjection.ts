@@ -348,8 +348,8 @@ export type SignedCastProjection = {
 
   ⚠ **It was found by LOOKING, which is working law 6 earning its place.** No
   suite could have caught it: every failed-slot marker in the dev database
-  carries `refunded: 50` from the 450-credit era, so the sentence was true of
-  every row on screen. It only becomes a lie on a row this build writes.
+  carries `refunded: 50` from an earlier Sign price, so the sentence was true
+  of every row on screen. It only becomes a lie on a row this build writes.
 
   ⚠ **AND PR #2098 (card #2089) ARGUES THE OTHER WAY ON AN EXPIRED PREMISE.**
   Its capability-atlas prose keeps this word with the reasoning *"which is true

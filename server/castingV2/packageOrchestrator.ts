@@ -115,6 +115,7 @@ import { randomUUID } from "node:crypto";
 
 import { recordRefund } from "../casting/atomicCredits";
 import { operationChargeReference } from "../casting/operationContract";
+import { flatPressRefundOwed } from "../casting/flatPressCharge";
 import { createGeneration, updateGeneration } from "../db/generations";
 import { listOperationViewSteps } from "../db/castingV2Sign";
 import {
@@ -854,7 +855,21 @@ export async function buildCastPackage(
     spending money, which is the one thing the fence exists to stop.
   */
   const anyFenced = failures.some((failure) => failure.fenced);
-  if (promised.length > 0 && committed.length === 0 && !anyFenced) {
+  /*
+    ⚠ **THE RULE IS ASKED, NOT RESTATED — #1968.** `committed.length === 0` was
+    this road's own spelling of *"the Sign could not be delivered at all"*, and
+    the recovery sweep had a second one. Two implementations of one founder
+    ruling on a money path is working law 4 exactly, and
+    `server/casting/flatPressCharge.ts` exists because the redo met it first:
+    the live service decides from what its renders returned and the sweep
+    decides hours later from the rows, so the two must share one definition of
+    *delivered* or a crash pays a customer twice.
+  */
+  const owed = flatPressRefundOwed({
+    chargedCredits: input.chargedCredits,
+    delivered: committed.length,
+  });
+  if (promised.length > 0 && owed > 0 && !anyFenced) {
     const outcome = await (dependencies.refund ?? recordRefund)(
       input.userId,
       /*
@@ -867,7 +882,7 @@ export async function buildCastPackage(
         a Sign in flight. `chargedCredits` is the figure `signService`
         deducted, one statement earlier in the same process.
       */
-      input.chargedCredits,
+      owed,
       "Cast package: nothing arrived — the Sign refunded in full",
       packagePromotionChargeReference(input.operationId),
     );
