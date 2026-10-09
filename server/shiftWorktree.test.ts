@@ -982,6 +982,44 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
 describe("the script's own text — the sequence a reader must be able to trust", () => {
   const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
 
+  /* ──────────────────────────────────────────────────────────────────────────
+     ⚠ THE UNLINK'S OWN CONDITION, AND IT WAS THE ONE THING NO ARM HELD (#2161).
+
+     Found by sabotage, not by review: widening the CLI's guard back to
+     `=== "link" || === "real"` — the original dead end restored — landed (read
+     at the diff) and **all 169 arms stayed green**. Every arm in this suite
+     drives the LIBRARY's reading and the LIBRARY's verdict, and both would be
+     perfectly correct while the call site rmdir'd a real directory again. That
+     is invariant 7 exactly: the control is right and the thing that invokes it
+     is not, so the condition is pinned here where the source is read.
+     ────────────────────────────────────────────────────────────────────────── */
+  it("⚠ RMDIRS ONLY A LINK — a real directory never reaches the unlink", () => {
+    const start = source.indexOf("// ⚠ THE JUNCTION, FIRST");
+    const end = source.indexOf("// Two acts, because one is not enough");
+    expect(start, "the junction step's banner moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(end, "the unregister banner moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = source.slice(start, end);
+
+    /* The `rmdir` that unlinks, which must appear exactly once in the sequence. */
+    const rmdirs = [...block.matchAll(/"\/c",\s*"rmdir"/g)];
+    expect(rmdirs, "the unlink is not in the junction step, or it is there twice").toHaveLength(1);
+
+    /* ⚠ THE CONDITION, READ AS A WHOLE LINE. A `toContain` on the link-only
+       form would pass on `=== "link" || === "real"` too, because the widened
+       condition CONTAINS the narrow one — the negation-contains-the-token trap
+       this repository has already paid for. So the line is matched exactly. */
+    const guard = block
+      .split(/\r?\n/)
+      .find((line) => /^if \(state\.junctionAt/.test(line.trim()));
+    expect(guard?.trim(), "the unlink's guard is not a bare link-only condition")
+      .toBe('if (state.junctionAt === "link") {');
+
+    /* And the real-directory branch exists and does something OTHER than unlink. */
+    expect(block, "nothing says what happens to a real directory").toMatch(
+      /if \(state\.junctionAt === "real"\) say\(/,
+    );
+  });
+
   it("⚠ THE LEFTOVER PATH IS REACHABLE — the git probes are skipped when git has let go (finding 1)", () => {
     // The dead end this closes: an unregistered directory's `.git` file points
     // at a pruned entry, so BOTH `git log` probes fail. Exiting there would
