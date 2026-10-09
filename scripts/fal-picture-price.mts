@@ -29,8 +29,10 @@
  *   CLEAN WINDOWS   one class of traffic and nothing else, so the drop DIVIDES.
  *                   Exact, and rare — usually two or three in a month.
  *   UPPER BOUNDS    one render family plus face scans, with scans charged at
- *                   fal's own published SAM-3 price times the COUNTED 20 reads
- *                   a scan makes. Inexact, and over hundreds of renders.
+ *                   the fewest dollars a scan can cost at fal — the DERIVED
+ *                   fewest SAM-3 reads at fal's published price plus the
+ *                   cheapest measured body cutout (`faceScanFalFloorUsd`).
+ *                   Inexact, and over hundreds of renders.
  *   THE FIT         least squares over every window with a drop. Weakest of
  *                   the three, and it says so: the refine road writes its own
  *                   census onto a variant row that PURGES (#1133), so a real
@@ -58,6 +60,7 @@ import "dotenv/config";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mjs";
+import { faceScanFalFloorUsd } from "./lib/falSpend.mts";
 
 const SINCE = process.argv[2] ?? "2026-08-01T00:00:00Z";
 const DIR = "output/deploy-receipts";
@@ -196,15 +199,21 @@ if (cleanCount === 0) console.log("  none");
 /* ---- 1b · an UPPER BOUND per family, which needs no fit ---------------- */
 /*
    A window carrying renders of one family plus face scans bounds that family's
-   price from above, using nothing of our own: fal publishes $0.005 per SAM-3
-   request, and `FACE_SCAN_READS_PER_VERSION` is 20, COUNTED by driving the real
-   scanner (`falSpend.mts`). So a scan costs AT LEAST $0.10, and whatever the
-   window spent beyond that was the renders or less.
+   price from above: fal publishes $0.005 per SAM-3 request, a scan makes AT
+   LEAST `FACE_SCAN_FAL_CALLS.sam3.fewest` of them (derived at the wire by
+   `server/faceScanSpend.test.ts`), and it also buys one body cutout, billed by
+   compute-second. So a scan costs AT LEAST `faceScanFalFloorUsd()` at fal, and
+   whatever the window spent beyond that was the renders or less.
+
+   ⚠ This was a typed `0.10` until #2184 — 20 reads at $0.005, where the 20 had
+   folded the cutout in as a SAM-3 read. A real face averages 21–27 reads, so
+   the floor stays the DERIVED fewest on purpose: an overestimate here would
+   subtract more than the scans cost and hide part of a render's price.
 
    This is the half of the reading that has an n. The clean windows above are
    exact and rare; these are inexact and many, and they must agree.
 */
-const SCAN_FLOOR_USD = 0.10;
+const SCAN_FLOOR_USD = faceScanFalFloorUsd();
 console.log("");
 console.log("UPPER BOUNDS — one render family plus face scans, scans charged at their published floor");
 console.log("");
@@ -228,7 +237,7 @@ for (const family of ["gptimage2", "sunburst"] as const) {
       + `(${tightest.w.from}, ${tightest.renders} renders, ${tightest.w.scans} scans, $${tightest.w.spent.toFixed(2)})`);
   }
   console.log(`    ${negative} of ${rows.length} windows go NEGATIVE against the scan floor`
-    + (negative > 0 ? " — those windows cannot afford $0.10 a scan, so the floor is wrong for them or the spend settled late" : ""));
+    + (negative > 0 ? ` — those windows cannot afford $${SCAN_FLOOR_USD.toFixed(4)} a scan, so the floor is wrong for them or the spend settled late` : ""));
   for (const row of rows.slice(0, 5)) {
     console.log(`      ${row.w.from}  $${row.w.spent.toFixed(2)} · ${row.renders} renders · ${row.w.scans} scans `
       + `-> <= $${row.bound.toFixed(4)}`);

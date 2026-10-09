@@ -4,9 +4,9 @@
  *
  * # The blind spot this exists for
  *
- * Opening a casting sheet fires `castingV2.faceScan`, and a scan is ~20
- * segmenter reads plus one describer call per (candidate, version) per server
- * process. **It mints nothing** — no row, no object, no manifest — which is the
+ * Opening a casting sheet fires `castingV2.faceScan`, and a scan is 21–27
+ * segmenter reads, one body cutout and one describer call per (candidate,
+ * version) per server process (`FACE_SCAN_FAL_CALLS`, measured in #2183). **It mints nothing** — no row, no object, no manifest — which is the
  * design (CLAUDE.md, `CASTING_FACE_SCAN_SCOPE`) and is exactly why no
  * instrument in this campaign could see it: the ledger counts credits, the
  * census counts what a refine persists, and a scan writes neither. Every
@@ -46,7 +46,7 @@
  * `facePanel` has answered `scanning: true`, which is a later tick than the
  * batch that carried `facePanel`.)
  */
-import { FACE_SCAN_READS_PER_VERSION, FAL_MEASURED_USD } from "./falSpend.mts";
+import { FACE_SCAN_FAL_CALLS, faceScanUsd } from "./falSpend.mts";
 
 /** The tRPC procedure that spends. `facePanel` beside it is free and is not
  *  counted — it reads what is already in memory and never asks a provider. */
@@ -151,8 +151,13 @@ export function readFaceScanAsk(url: string, body?: string | null): WireAsk {
     : { kind: "mixed", asks, beside };
 }
 
-/** fal's price for one segmentation question, from the one table that holds it. */
-const USD_PER_READ = FAL_MEASURED_USD["fal-ai/sam-3/image"]?.usd ?? 0;
+/**
+ * One version read, in dollars, from the one module that prices a scan — its
+ * SAM 3 reads, its body cutout and its describer call, each a measured band.
+ * Until #2184 this line priced 20 reads and called the describer UNPRICED,
+ * which was about half of what a real face costs.
+ */
+const PER_VERSION_USD = faceScanUsd().total;
 
 export type FaceScanMeter = {
   /** Record one request. `held` is true when the harness aborted it. */
@@ -205,14 +210,15 @@ export function createFaceScanMeter(): FaceScanMeter {
     delivered: () => [...deliveredVersions],
     line: () => {
       if (asks === 0) return null;
-      const reads = deliveredVersions.size * FACE_SCAN_READS_PER_VERSION;
-      const usd = reads * USD_PER_READ;
+      const versions = deliveredVersions.size;
+      const { low, high } = FACE_SCAN_FAL_CALLS.sam3.measured;
       const lines = [
         `face scan  ${asks} ask(s) at the wire · ${askedVersions.size} version(s) asked about`
-        + ` · ${deliveredVersions.size} reached the server`,
-        `           HOUSE MONEY ≤ $${usd.toFixed(3)} — ${reads} segmenter reads`
-        + ` (${FACE_SCAN_READS_PER_VERSION}/version at $${USD_PER_READ})`
-        + ` plus ${deliveredVersions.size} describer call(s), UNPRICED`,
+        + ` · ${versions} reached the server`,
+        `           HOUSE MONEY ≤ $${(versions * PER_VERSION_USD.high).toFixed(3)}`
+        + ` (about $${(versions * PER_VERSION_USD.low).toFixed(3)}–$${(versions * PER_VERSION_USD.high).toFixed(3)})`
+        + ` — per version: ${low}–${high} segmenter reads, ${FACE_SCAN_FAL_CALLS.cutouts} body cutout,`
+        + ` ${FACE_SCAN_FAL_CALLS.describer} describer call (measured, #2183)`,
         "           a CEILING: the server reads a (candidate, version) once per process,"
         + " so a version already warm cost this walk nothing",
       ];

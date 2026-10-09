@@ -1,8 +1,8 @@
 /**
  * THE FACE-SCAN WIRE HOLD — the reader, and the one batch it must never touch.
  *
- * A browser walk that opens a casting sheet buys ~20 segmenter reads of house
- * money and, until fable-694, declared nothing: the scan mints no row, so the
+ * A browser walk that opens a casting sheet buys 21–27 segmenter reads, a body
+ * cutout and a describer call of house money and, until fable-694, declared nothing: the scan mints no row, so the
  * ledger, the census and every park block were blind to it by design. The
  * harness now counts the ask at the wire and can abort it there.
  *
@@ -25,7 +25,7 @@ import {
   readFaceScanAsk,
   FACE_SCAN_PROCEDURE,
 } from "../scripts/lib/faceScanWire.mts";
-import { FACE_SCAN_READS_PER_VERSION, FAL_MEASURED_USD } from "../scripts/lib/falSpend.mts";
+import { FACE_SCAN_FAL_CALLS, faceScanUsd } from "../scripts/lib/falSpend.mts";
 
 /**
  * CAPTURED, NOT COMPOSED — `drive-facescan-hold-disposable.mts` against the dev
@@ -128,11 +128,11 @@ describe("what the walk declares", () => {
     );
     meter.saw(second, false);
 
-    const usd = 2 * FACE_SCAN_READS_PER_VERSION * FAL_MEASURED_USD["fal-ai/sam-3/image"].usd;
-    expect(usd).toBeCloseTo(0.2, 5);
+    const perVersion = faceScanUsd().total;
     expect(meter.asks()).toBe(3);
     expect(meter.delivered()).toHaveLength(2);
-    expect(meter.line()).toContain(`$${usd.toFixed(3)}`);
+    expect(meter.line()).toContain(`≤ $${(2 * perVersion.high).toFixed(3)}`);
+    expect(meter.line()).toContain(`$${(2 * perVersion.low).toFixed(3)}–`);
     expect(meter.line()).toContain("2 reached the server");
   });
 
@@ -159,13 +159,28 @@ describe("what the walk declares", () => {
     expect(meter.line()).toContain("*** LEAK");
     expect(meter.line()).toContain("castingV2.getRoll");
     /* And it is PRICED, because it really was bought. */
-    expect(meter.line()).toContain("$0.100");
+    expect(meter.line()).toContain(`≤ $${faceScanUsd().total.high.toFixed(3)}`);
   });
 
-  it("keeps the per-version figure and its price in one place", () => {
-    /* Both halves of "$0.10 a look" come from named constants; a suite that
-       retyped either would agree with itself while the report drifted. */
-    expect(FACE_SCAN_READS_PER_VERSION).toBe(20);
-    expect(FAL_MEASURED_USD["fal-ai/sam-3/image"].usd).toBe(0.005);
+  /*
+    THE LINE PRICES EVERY PART OF A SCAN (#2184). It printed 20 reads at $0.005
+    and called the describer UNPRICED — about half of the $0.121–$0.151 that
+    #2183 measured on real faces. The band itself is derived and held against
+    the wire in `faceScanSpend.test.ts`; this arm holds the LINE to it, so the
+    walk's declaration cannot fall back to a SAM-3-only figure.
+  */
+  it("prices one version at the whole scan's band — reads, cutout and describer", () => {
+    const meter = createFaceScanMeter();
+    meter.saw(readFaceScanAsk(REAL_ASK), false);
+    const band = faceScanUsd();
+    const line = meter.line() ?? "";
+    expect(line).toContain(`≤ $${band.total.high.toFixed(3)}`);
+    expect(band.total.high).toBeGreaterThan(band.sam3.high);
+    expect(band.total.high).toBeGreaterThanOrEqual(0.151);
+    const reads = FACE_SCAN_FAL_CALLS.sam3.measured;
+    expect(line).toContain(`${reads.low}–${reads.high} segmenter reads`);
+    expect(line).toContain("1 body cutout");
+    expect(line).toContain("1 describer call");
+    expect(line).not.toContain("UNPRICED");
   });
 });

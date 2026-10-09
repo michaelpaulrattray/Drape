@@ -15,6 +15,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  FACE_SCAN_FAL_CALLS,
   FAL_LOW_BALANCE_USD,
   FAL_MEASURED_USD,
   falLine,
@@ -373,6 +374,10 @@ describe("the derived line says derived, and says what it cannot see", () => {
     expect(line, "a derived figure that omits the scans looks exactly like one that includes them")
       .toContain("FLOOR");
     expect(line).toContain("face scans");
+    /* The scan's own figures, from the one place they live (#2184): it named
+       ~20 segmenter calls and no cutout, about half of a real face. */
+    const reads = FACE_SCAN_FAL_CALLS.sam3.measured;
+    expect(line).toContain(`${reads.low}–${reads.high} segmenter calls + ${FACE_SCAN_FAL_CALLS.cutouts} cutout per version`);
     expect(line).toContain("moondream3-preview/point (5 calls)");
     expect(line).toContain("UNREAD");
   });
