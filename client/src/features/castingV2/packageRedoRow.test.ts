@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { withoutComments } from "../../../../server/testing/withoutComments";
 
 /**
  * THE REDO BUTTON'S COPY AND ITS PRICE (#1903 slice 2).
@@ -18,10 +19,13 @@ import path from "node:path";
  */
 import {
   PACKAGE_REDO_LINK,
-  PACKAGE_REDO_SEPARATOR,
+  PACKAGE_REDO_MENU_LABEL,
   PACKAGE_REDO_WORKING,
-  packageRedoLabel,
+  characterSheetCount,
+  characterSheetMenuItems,
+  packageRedoPrice,
 } from "./packageRedoRow";
+import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../../../../server/casting/castingCreditCosts";
 
 const ROOM = fs.readFileSync(
   path.join(process.cwd(), "client/src/pages/CastingRoom.tsx"),
@@ -120,21 +124,23 @@ describe("the redo button", () => {
     /* 3,250 LEDGER is his 650 display (his word, 2026-10-08: "on this card
        make both sign and redo/regenerate 650 credis"). Handed the ledger
        number because that is what the wire carries, and the conversion is
-       this module’s job.
+       this module's job. Since #2144 the price is the menu item's own grey
+       line on the right, so it is the figure alone. */
+    expect(packageRedoPrice(3250)).toBe("650 credits");
+    /* And held against the SERVER's declared price, so a reprice that forgot
+       the client reddens here rather than on a receipt. */
+    expect(packageRedoPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS)).toBe("650 credits");
+    /* #1908's rule: an abbreviation is the product's shorthand. */
+    expect(/\bCR\b/.test(packageRedoPrice(3250))).toBe(false);
+    /* A price rounds UP (displayPrice), never down: one ledger credit over a
+       display step is quoted as the next display credit. */
+    expect(packageRedoPrice(3251)).toBe("651 credits");
+  });
 
-       ⚠ This fixture was 1,750 → 350 until 2026-10-09 — his first answer,
-       superseded by his finance team's reprice. It still PASSED, because the
-       arm proves the division rather than the price, which is exactly why a
-       stale figure here reads as current. */
-    const label = packageRedoLabel(3250);
-    expect(label).toBe(`Regenerate ${PACKAGE_REDO_SEPARATOR} 650 credits`);
-    /* The whole sentence he will read, separator spelled out, so a change to
-       the separator constant cannot pass by changing both sides at once. */
-    expect(label).toBe("Regenerate · 650 credits");
-    expect(label).toContain("credits");
-    /* #1908's rule: an abbreviation is the product's shorthand. Asserted on a
-       word boundary so "credits" does not satisfy a search for "CR". */
-    expect(/\bCR\b/.test(label)).toBe(false);
+  it("names the menu item in his Option A words (card 2144)", () => {
+    expect(PACKAGE_REDO_MENU_LABEL).toBe("Regenerate character sheet");
+    /* Built from his verb, so the verb and the item cannot drift apart. */
+    expect(PACKAGE_REDO_MENU_LABEL.startsWith(PACKAGE_REDO_LINK)).toBe(true);
   });
 
   it("names no engine, no model and no pipeline word, anywhere in its copy", () => {
@@ -144,7 +150,7 @@ describe("the redo button", () => {
       because the working line is on that path too — a loader is named in the
       law by example.
     */
-    const copy = [PACKAGE_REDO_LINK, packageRedoLabel(1750), PACKAGE_REDO_WORKING]
+    const copy = [PACKAGE_REDO_LINK, PACKAGE_REDO_MENU_LABEL, packageRedoPrice(1750), PACKAGE_REDO_WORKING]
       .join(" ")
       .toLowerCase();
     for (const machine of [
@@ -160,64 +166,126 @@ describe("the redo button", () => {
   });
 });
 
+describe("the character sheet row's menu (card 2144, his Option A)", () => {
+  const noop = () => undefined;
+  const offered = { priceCredits: CASTING_V2_PACKAGE_REDO_PRICE_CREDITS };
+
+  it("offers Regenerate with its price, then Delete in red, in that order", () => {
+    const items = characterSheetMenuItems({
+      redo: offered, askingAll: false, deleteOffered: true, onRegenerate: noop, onDelete: noop,
+    });
+    expect(items.map((item) => [item.label, item.meta ?? null, item.danger ?? false])).toEqual([
+      ["Regenerate character sheet", "650 credits", false],
+      ["Delete this character", null, true],
+    ]);
+  });
+
+  it("wires each item to the press it had as a link — never crossed", () => {
+    const calls: string[] = [];
+    const items = characterSheetMenuItems({
+      redo: offered,
+      askingAll: false,
+      deleteOffered: true,
+      onRegenerate: () => calls.push("regenerate"),
+      onDelete: () => calls.push("delete"),
+    });
+    items[0].onSelect();
+    items[1].onSelect();
+    expect(calls).toEqual(["regenerate", "delete"]);
+  });
+
+  it("leaves out what cannot happen, rather than disabling it", () => {
+    /* No redo offered by the server: no Regenerate. */
+    expect(characterSheetMenuItems({
+      redo: null, askingAll: false, deleteOffered: true, onRegenerate: noop, onDelete: noop,
+    }).map((item) => item.label)).toEqual(["Delete this character"]);
+    /* A redo already being asked for: no second Regenerate. */
+    expect(characterSheetMenuItems({
+      redo: offered, askingAll: true, deleteOffered: true, onRegenerate: noop, onDelete: noop,
+    }).map((item) => item.label)).toEqual(["Delete this character"]);
+    /* Delete door shut or still building: no Delete. */
+    expect(characterSheetMenuItems({
+      redo: offered, askingAll: false, deleteOffered: false, onRegenerate: noop, onDelete: noop,
+    }).map((item) => item.label)).toEqual(["Regenerate character sheet"]);
+    /* Nothing possible: an empty list, which CardMenu draws as no dots at all. */
+    expect(characterSheetMenuItems({
+      redo: undefined, askingAll: false, deleteOffered: false, onRegenerate: noop, onDelete: noop,
+    })).toEqual([]);
+  });
+});
+
+describe("the count beside the title — only while views are being made (card 2144)", () => {
+  const NOBODY = new Set<string>();
+  const slot = (angle: string, state: string, extra: { retrying?: true } = {}) => ({
+    angle, state, url: state === "ready" ? `https://cdn/${angle}.png` : null, ...extra,
+  });
+  const five = (states: string[]) => states.map((state, i) => slot(`a${i}`, state));
+
+  it("says nothing once every view is done (his 'on yunas call - yes')", () => {
+    expect(characterSheetCount("ready", five(["ready", "ready", "ready", "ready", "ready"]), NOBODY))
+      .toBeNull();
+  });
+
+  it("counts the ready views over all five while the sheet is being made", () => {
+    expect(characterSheetCount("building", five(["ready", "ready", "ready", "building", "building"]), NOBODY))
+      .toBe("3 of 5");
+    /* A slot building on a ready cast (a view being made again) shows it too. */
+    expect(characterSheetCount("ready", five(["ready", "ready", "ready", "ready", "building"]), NOBODY))
+      .toBe("4 of 5");
+  });
+
+  it("does not call a view done while it is being re-made, so a Regenerate starts at 0 of 5", () => {
+    const retrying = ["a0", "a1", "a2", "a3", "a4"].map((angle) => slot(angle, "ready", { retrying: true }));
+    expect(characterSheetCount("ready", retrying, NOBODY)).toBe("0 of 5");
+    /* Our own press, before the server's answer lands, reads the same. */
+    expect(characterSheetCount("ready", five(["ready", "ready", "ready", "ready", "ready"]),
+      new Set(["a0", "a1", "a2", "a3", "a4"]))).toBe("0 of 5");
+  });
+
+  it("does not hold the count up forever for a view that failed and was refunded", () => {
+    expect(characterSheetCount("ready", five(["ready", "ready", "ready", "ready", "failed-refunded"]), NOBODY))
+      .toBeNull();
+  });
+});
+
 describe("the room draws it through this module", () => {
-  it("renders the label from here rather than a sentence of its own", () => {
+  it("renders the menu, the count and the working line from here", () => {
     /*
-      ⚠ THE ARM THAT MAKES THE ONES ABOVE WORTH ANYTHING. A component with its
+      THE ARM THAT MAKES THE ONES ABOVE WORTH ANYTHING. A component with its
       own literal would pass every assertion in this file and put a different
-      sentence on screen — which is `viewRetryRow.ts`'s own stated reason for
-      existing, and `retryFace.ts`'s before it.
+      sentence on screen.
     */
-    expect(ROOM).toContain("packageRedoLabel(");
+    expect(ROOM).toContain("characterSheetMenuItems({");
+    expect(ROOM).toContain("characterSheetCount(data.status, data.slots, asking)");
     expect(ROOM).toContain("{PACKAGE_REDO_WORKING}");
-    /* And it must not have grown a second copy of his sentence. */
-    expect(ROOM).not.toContain(`"${PACKAGE_REDO_LINK}"`);
+    /* And it must not have grown a second copy of his words. */
+    expect(ROOM).not.toContain("Regenerate character sheet");
   });
 
   it("hands over the LEDGER price and does no arithmetic of its own", () => {
     /*
       `shared/creditDisplay.ts` is the only thing in this product allowed to
       turn a ledger number into a display one (#1600), and the conversion lives
-      in `packageRedoLabel` — so what the ROOM must not do is touch the number
-      at all. A component interpolating `priceCredits` raw would print 1,750
-      where his price is 650: five times the figure, on the one surface that is
-      a promise about money.
+      in `packageRedoPrice` — so what the ROOM must not do is touch the number.
     */
-    const call = ROOM.match(/packageRedoLabel\([^\n]*\)/)?.[0] ?? "";
-    expect(call).toBe("packageRedoLabel(data.redo.priceCredits)");
-    /* And it is handed over exactly ONCE. Counted on the CALL rather than on
-       the field name, which also appears in the hook's own docblock — a count
-       over prose is a guard that reddens when somebody explains the code. */
-    expect(ROOM.match(/packageRedoLabel\(/g)).toHaveLength(1);
+    const from = ROOM.indexOf("characterSheetMenuItems({");
+    const call = ROOM.slice(from, ROOM.indexOf("})}", from));
+    expect(call).toMatch(/redo: data\.redo,/);
+    /* Comments stripped: the room's own docblock names the field it is
+       explaining, and a guard broken by prose is a guard that gets deleted. */
+    expect(withoutComments(ROOM)).not.toContain("priceCredits");
   });
 
   it("converts through the one converter, where a census reader can see it", () => {
-    /*
-      ⚠ THE SHAPE THIS ARM EXISTS FOR, because the first draft failed it. A
-      `packageRedoLabel(formattedDisplayCredits: string)` signature left the
-      conversion in the component and this module holding a number it could not
-      vouch for — and `server/creditDisplayGuard.test.ts` flagged it on its
-      first run as a credit figure beside the word *credits* that nothing
-      visibly routed. Both shapes obey #1600; only one is legible to the reader
-      whose job is to check that it is obeyed.
-    */
     const source = fs.readFileSync(
       path.join(process.cwd(), "client/src/features/castingV2/packageRedoRow.ts"),
       "utf8",
     );
-    /*
-      ⚠ SLICED TO THE RETURN, NOT READ OVER THE WHOLE FILE — which is the arm's
-      own second lesson and it cost a red: the negative half below was written
-      against `source` and the docblock three lines up says *"`displayPrice` and
-      not `displayBalance`"*, so the guard failed on its own explanation. A
-      whole-file read is satisfied, or broken, by prose.
-    */
-    const body = source.match(/export function packageRedoLabel[\s\S]*?\n}/)?.[0] ?? "";
+    /* SLICED TO THE FUNCTION'S RETURN, never the file: the docblock names the
+       wrong converters on purpose, and a whole-file read is broken by prose. */
+    const body = source.match(/export function packageRedoPrice[\s\S]*?\n}/)?.[0] ?? "";
     const returned = body.split("\n").filter((line) => line.includes("return `")).join("\n");
     expect(returned).toContain("formatCredits(displayPrice(priceCredits))");
-    /* `displayPrice` rounds UP, so a customer is never quoted less than the
-       till will take; `displayBalance` and `displayRefund` round DOWN and are
-       the wrong readers for a price. */
     expect(returned).not.toContain("displayBalance");
     expect(returned).not.toContain("displayRefund");
   });

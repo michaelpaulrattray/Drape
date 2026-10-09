@@ -20,6 +20,20 @@ const COMPONENTS = new URL("./components/", import.meta.url);
 const CSS = new URL("./castingV2.css", import.meta.url);
 const MENU = new URL("../../foundation/CardMenu.tsx", import.meta.url);
 const ROOM = new URL("../../pages/CastingRoom.tsx", import.meta.url);
+const MODALS = new URL("../../foundation/modals.css", import.meta.url);
+
+/** modals.css with its line endings normalised, so a CRLF checkout reads the same. */
+async function readModals(): Promise<string> {
+  return (await readFile(MODALS, "utf8")).replace(/\r\n/g, "\n");
+}
+
+/** The declarations of the first rule that starts a line with `head`. */
+function ruleBody(css: string, head: string): string {
+  const at = css.indexOf(`\n${head}`);
+  if (at < 0) return "";
+  const open = css.indexOf("{", at);
+  return css.slice(open + 1, css.indexOf("}", open));
+}
 const LOBBY = new URL("../../pages/CastingV2.tsx", import.meta.url);
 
 describe("there is exactly one overflow menu", () => {
@@ -40,48 +54,73 @@ describe("there is exactly one overflow menu", () => {
     ).toEqual([]);
   });
 
-  it("is used by the two card surfaces, and NOT by the room", async () => {
+  it("is used by the two card surfaces as overlays, and by the room's row (card 2144)", async () => {
     /*
-      The room had one beside the name for a day, and the founder was right that
-      it was wrong: file-manager furniture on the one line that is meant to be
-      her, offering a Rename the name already does when you click it. Deleting
-      her is a sentence at the foot of the rail instead.
-
-      A menu belongs on a CARD — a small repeated object in a grid, where the
-      actions have nowhere else to live. A page has room to say what it means.
+      The room had one beside the name for a day (2026-08-03) and deleting was
+      made a sentence instead. That ruling is RETIRED by him, 2026-10-09,
+      verbatim: "on the old ruling casting library already has delete in a menu
+      i think this must be an old ruling on menu styling shouldnt all menus be
+      the same ?" — the character sheet row now carries the same one menu, in
+      its `row` placement, and the delete sentence is gone.
     */
     const lobby = await readFile(LOBBY, "utf8");
     const room = await readFile(ROOM, "utf8");
+    expect(lobby.match(/<CardMenu\s+placement="overlay"/g) ?? []).toHaveLength(2);
     expect(lobby.match(/<CardMenu/g) ?? []).toHaveLength(2);
-    expect(room).not.toContain("<CardMenu");
-    expect(room).toContain("dpc-room__delete");
+    expect(room.match(/<CardMenu\s+placement="row"/g) ?? []).toHaveLength(1);
+    expect(room.match(/<CardMenu/g) ?? []).toHaveLength(1);
+    expect(room).not.toContain("dpc-room__delete");
+  });
+
+  it("makes every caller say where its dots sit", async () => {
+    /* Required, not optional: a caller cannot forget, and there is no third
+       style. */
+    const menu = withoutComments(await readFile(MENU, "utf8"));
+    expect(menu).toContain('placement: "overlay" | "row";');
+    expect(menu).not.toContain("placement?:");
+    expect(menu).toContain("dpc-cardmenu--${placement}");
   });
 });
 
 describe("the reveal ladder", () => {
-  it("climbs three rungs, not one", async () => {
-    const css = await readFile(CSS, "utf8");
-    const trigger = css.slice(
-      css.indexOf(".dpc-cardmenu__trigger {"),
-      css.indexOf(".dpc-cardmenu__panel"),
-    );
+  it("shows the dots at rest, and hides an OVERLAY's only where a pointer can hover (card 2144)", async () => {
+    /*
+      His words, 2026-10-09: "shouldnt all menus be the same ?", then "anywhere
+      that a 3 dot menu is sitting ontop of a card like the cast library could
+      be hover hidden? thoughts". So: the rest look is VISIBLE (a `row` menu
+      keeps it always), and an `overlay` hides it until its card is hovered —
+      inside `(hover: hover)` only, because a touch screen cannot hover and a
+      hover-revealed control there would not exist.
+    */
+    const css = await readModals();
+    const rest = ruleBody(css, ".dpc-cardmenu__trigger {");
+    expect(rest).toContain("opacity: 1");
+    expect(rest).toContain("var(--fillStrong)");
+    expect(rest).not.toContain("opacity: 0");
 
-    // Rung one: absent at rest.
-    expect(trigger).toContain("opacity: 0");
-    // Rung two: the CARD is hovered, so its actions show themselves.
-    expect(trigger).toContain(".dpc-menuhost:hover .dpc-cardmenu__trigger");
-    expect(trigger).toContain("var(--fillStrong)");
-    // Rung three: solid, and a hairline so it reads as raised rather than as a
-    // hole on a card of the same colour.
-    expect(trigger).toContain(".dpc-cardmenu__trigger:hover");
-    expect(trigger).toContain("background: var(--surface)");
-    expect(trigger).toContain("border-color: var(--borderCard)");
+    const media = css.slice(css.indexOf("@media (hover: hover) {"));
+    expect(media.length, "the pointer-only block is gone").toBeLessThan(css.length);
+    const block = media.slice(0, media.indexOf("\n}\n") + 3);
+    const hide = '.dpc-cardmenu--overlay .dpc-cardmenu__trigger:not([aria-expanded="true"]):not(:focus-visible)';
+    const reveal = ".dpc-menuhost:hover .dpc-cardmenu--overlay .dpc-cardmenu__trigger";
+    expect(block).toContain(hide);
+    expect(block.slice(block.indexOf(hide))).toContain("opacity: 0");
+    expect(block).toContain(reveal);
+    /* Same specificity, so the REVEAL must come after the hide to win. */
+    expect(block.indexOf(reveal)).toBeGreaterThan(block.indexOf(hide));
+    /* And the hide is nowhere outside that block — or touch loses the dots. */
+    expect(css.replace(block, "")).not.toContain("cardmenu--overlay");
   });
 
-  it("reveals for the keyboard too", async () => {
+  it("reveals an overlay for the keyboard too", async () => {
     // Otherwise the menu is reachable by tab and invisible while focused.
-    const css = await readFile(CSS, "utf8");
-    expect(css).toContain(".dpc-menuhost:focus-within .dpc-cardmenu__trigger");
+    const css = await readModals();
+    expect(css).toContain(".dpc-menuhost:focus-within .dpc-cardmenu--overlay .dpc-cardmenu__trigger");
+  });
+
+  it("paints a danger item red AT REST, on every menu (card 2144)", async () => {
+    const css = await readModals();
+    expect(ruleBody(css, ".dpc-cardmenu__item--danger {")).toContain("color: var(--errorInk)");
   });
 
   it("pins the trigger to the corner it is supposed to be in", async () => {
@@ -169,17 +208,16 @@ describe("what the menu may offer", () => {
     expect(lobby).toContain("const castMenuItems =");
   });
 
-  it("gates the room's delete line exactly as the menu item was gated", async () => {
+  it("gates the room's Delete item exactly as the sentence was gated", async () => {
     /*
-      The affordance changed shape; the rules did not. Absent while she builds,
-      absent while the server's door is shut — a control that could only refuse
-      is a dead control whether it is a menu item or a sentence.
+      The affordance changed shape again (#2144: a sentence became a menu
+      item); the rules did not. Absent while the cast builds, absent while the
+      server's door is shut.
     */
     const room = await readFile(ROOM, "utf8");
-    const index = room.indexOf("dpc-room__delete");
+    const index = room.indexOf("characterSheetMenuItems({");
     expect(index).toBeGreaterThan(0);
-    const guard = room.slice(index - 700, index);
-    expect(guard).toContain("deleteDoorOpen");
-    expect(guard).toContain('status !== "building"');
+    const call = room.slice(index, room.indexOf("})}", index));
+    expect(call).toContain('deleteOffered: deleteDoorOpen && data.status !== "building"');
   });
 });

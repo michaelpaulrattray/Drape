@@ -1267,6 +1267,7 @@ export default function CastingV2() {
                 */}
                 <span className="dpc-sheetmenu">
                   <CardMenu
+                    placement="overlay"
                     label={`the casting "${entry.briefText ?? "Untitled casting"}"`}
                     open={menuFor === entry.sessionId}
                     onToggle={() =>
@@ -1501,6 +1502,7 @@ export default function CastingV2() {
             */}
             <span className="dpc-castmenu">
               <CardMenu
+                placement="overlay"
                 label={cast.name ?? "this cast"}
                 open={castMenu === cast.castId}
                 onToggle={() => setCastMenu(castMenu === cast.castId ? null : cast.castId)}

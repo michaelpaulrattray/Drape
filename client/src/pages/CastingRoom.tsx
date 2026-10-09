@@ -24,7 +24,8 @@ import {
 } from "@/features/castingV2/roomBusy";
 import {
   PACKAGE_REDO_WORKING,
-  packageRedoLabel,
+  characterSheetCount,
+  characterSheetMenuItems,
 } from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
@@ -162,6 +163,8 @@ export default function CastingRoom() {
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** The character sheet row's ⋯ menu (#2144). Above every early return. */
+  const [sheetMenuOpen, setSheetMenuOpen] = useState(false);
   /*
     The server owns the door; the client only decides whether to OFFER the
     control. `castingV2.deleteCast` asserts the same flag itself, so a menu that
@@ -876,100 +879,93 @@ export default function CastingRoom() {
                 */}
                 <section className="dpc-takes">
                   <div className="dpc-takes__head">
-                    <span className="dpc-rcard__label">CHARACTER SHEET</span>
                     {/*
-                      THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
-                      2026-08-02) — a real control, not hover chrome.
+                      THE TITLE, AND A COUNT ONLY WHILE VIEWS ARE BEING MADE
+                      (#2144). His Option A took the standing "5 of 5 views" off
+                      the row; Yuna's suggestion — "3 of 5" while views are
+                      still being made, nothing once they are done — is his word
+                      too: "on yunas call - yes". The Master is not counted: it
+                      was never a paid view.
+                    */}
+                    <span className="dpc-rcard__label">CHARACTER SHEET</span>
+                    {(() => {
+                      const count = characterSheetCount(data.status, data.slots, asking);
+                      return count ? <span className="dpc-rcard__label dpc-takes__count">{count}</span> : null;
+                    })()}
+                    {/*
+                      ONE VISIBLE ACTION, AND A ⋯ MENU FOR THE REST — his Option
+                      A, 2026-10-09 (#2144; "Mike approved Option A", the Desk
+                      item filed for Yuna). Since Regenerate arrived the row had
+                      held four things — download, regenerate, delete and a
+                      count — and was cramped; Download is the one thing most
+                      people come here for, so it stays out, and Regenerate and
+                      Delete sit behind the dots.
 
-                      Per-image download lives in the viewer, which is right for
-                      "I want that one". This is the other need: everything she
-                      is, in one action. It is a plain sequence of the same
-                      public URLs the viewer serves — no new server surface, no
-                      archive to build — and the character-sheet artifact joins
-                      it here when it ships, as the single-file form of the same
-                      idea.
+                      THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
+                      2026-08-02) is unchanged under its shorter word: per-image
+                      download lives in the viewer, this is everything the cast
+                      is in one action — a plain sequence of the same public URLs
+                      the viewer serves, no new server surface, no archive.
+
+                      ⚠ THE "A DESTRUCTIVE ACTION IS A SENTENCE, NOT A MENU"
+                      RULING (founder, 2026-08-03; DECISION_LOG, same title) IS
+                      RETIRED BY HIM — 2026-10-09,
+                      verbatim: "on the old ruling casting library already has
+                      delete in a menu i think this must be an old ruling on menu
+                      styling shouldnt all menus be the same ?". The library's
+                      cards already deleted from a menu, so the room now does
+                      too, on the same one `CardMenu`, in its `row` placement:
+                      the dots visible at rest, Delete red at rest. The gating is
+                      unchanged: Delete is absent while the cast builds and while
+                      the server's door is shut; Regenerate is absent unless the
+                      server offered it. Both open exactly what they opened as
+                      links: Regenerate presses straight through with its price
+                      on the item, Delete opens the destructive confirm.
                     */}
                     <span className="dpc-takes__actions">
+                      {askingAll ? (
+                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
+                           A TILE — a guard slicing from that class's first
+                           element would read this header instead. */
+                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
+                      ) : null}
                       <Button
                         variant="quiet"
                         size="small"
                         disabled={packageFrames.length === 0}
                         onClick={() => downloadPackage(packageFrames, castId)}
+                        /* The visible word is the short one his Option A
+                           drew; a screen reader hears what is downloaded. */
+                        aria-label="Download character sheet"
                       >
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
-                        Download character sheet
+                        Download
                       </Button>
-                      {/*
-                        DELETING HER IS A SENTENCE, NOT A MENU (founder ruling,
-                        2026-08-03) — and it sits with the other thing you can
-                        do to the whole Cast rather than to one picture.
-
-                        A three-dot menu beside her name put file-manager
-                        furniture on the one line that is meant to be her, and
-                        offered a Rename the name already does when you click
-                        it. Two affordances for one action, and a heavy one.
-
-                        Accent-coloured because it is the only irreversible
-                        thing in the room, and last in the row because it is the
-                        last thing anyone should reach for. Same gating as
-                        before: absent while she builds, absent while the
-                        server's door is shut.
-                      */}
-                      {/*
-                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — on the row
-                        of things you do to the WHOLE Cast rather than to one
-                        picture, which is where the other one already is.
-
-                        ⚠ **BEFORE Delete and not after**, because that button
-                        carries its own standing rule two comments down: it is
-                        accent-coloured and LAST *"because it is the last thing
-                        anyone should reach for"*. The first draft of this row
-                        put the redo after it and the frame said so — a reading
-                        no test could have given, and law 6 exactly.
-
-                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
-                        COMPONENT.** The server withholds `redo` while she is
-                        building and while anything of hers is in flight, so
-                        there is no second rule here to drift from it — and no
-                        disabled button wearing a verb, which is the shape #1235
-                        took off the tiles.
-                      */}
-                      {askingAll ? (
-                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
-                           A TILE. Borrowing it put a second element with that
-                           class above the strip, and the row's own guard (deleted with the row, #2089)
-                           slices the component from the FIRST one — so his two
-                           Try again sentences were being read out of this header
-                           instead. A guard whose anchor another element can
-                           steal is the shape that memory is about. */
-                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
-                      ) : data.redo ? (
-                        <button
-                          type="button"
-                          className="dpc-room__redo"
-                          onClick={askForAllViewsAgain}
-                        >
-                          {/* The LEDGER price, straight off the wire. The copy
-                              module converts it through the one converter
-                              (#1600) so the routing is visible where it happens;
-                              this file does no arithmetic at all. */}
-                          {packageRedoLabel(data.redo.priceCredits)}
-                        </button>
-                      ) : null}
-                      {deleteDoorOpen && data.status !== "building" ? (
-                        <button
-                          type="button"
-                          className="dpc-room__delete"
-                          onClick={() => setDeleting(true)}
-                        >
-                          Delete this character
-                        </button>
-                      ) : null}
-                    </span>
-                    <span className="dpc-rcard__hint">
-                      {/* The Master is not counted: it was never a paid view. */}
-                      {data.slots.filter((slot) => slot.state === "ready").length} of{" "}
-                      {data.slots.length} views
+                      <span className="dpc-takes__menu dpc-menuhost">
+                        <CardMenu
+                          placement="row"
+                          label="the character sheet"
+                          open={sheetMenuOpen}
+                          onToggle={() => setSheetMenuOpen((was) => !was)}
+                          onCancel={() => setSheetMenuOpen(false)}
+                          items={characterSheetMenuItems({
+                            /* The LEDGER price, straight off the wire; the copy
+                               module converts it through the one converter
+                               (#1600) and this file does no arithmetic. */
+                            redo: data.redo,
+                            askingAll,
+                            deleteOffered: deleteDoorOpen && data.status !== "building",
+                            onRegenerate: () => {
+                              setSheetMenuOpen(false);
+                              askForAllViewsAgain();
+                            },
+                            onDelete: () => {
+                              setSheetMenuOpen(false);
+                              setDeleting(true);
+                            },
+                          })}
+                        />
+                      </span>
                     </span>
                   </div>
                   <div className="dpc-strip">
