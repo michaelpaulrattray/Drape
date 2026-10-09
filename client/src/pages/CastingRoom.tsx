@@ -27,6 +27,11 @@ import {
 } from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
+import {
+  CastPersonalityCard,
+  CastVoiceLine,
+  type CastPersonaLineName,
+} from "@/features/castingV2/components/CastPersonaCards";
 
 /**
  * The casting room (plan §F, §J; handoff chapter 07).
@@ -127,9 +132,19 @@ export default function CastingRoom() {
 
   const config = trpc.castingV2.config.useQuery({});
   const rename = trpc.castingV2.renameCast.useMutation();
+  const editPersona = trpc.castingV2.editCastPersonaLine.useMutation();
   const utils = trpc.useUtils();
   /** Inline rename on the title. Null when not editing. */
   const [draftName, setDraftName] = useState<string | null>(null);
+  /*
+    WHICH OF THE TWO LINES IS IN FLIGHT - N2b (#1242).
+
+    Declared HERE, beside the rename's own draft, and deliberately not below the
+    loading return further down this file: a `useState` under an early return
+    runs on some renders and not others, which is React #310 and crashes every
+    load of this page (memory `hooks-below-early-return`).
+  */
+  const [savingPersonaLine, setSavingPersonaLine] = useState<CastPersonaLineName | null>(null);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -319,6 +334,41 @@ export default function CastingRoom() {
           setDraftName(null);
           logRawFailure('castingV2.renameCast', error);
           toast.error(readableFailure(error, 'That name could not be saved.'));
+        },
+      },
+    );
+  };
+
+  /**
+   * SHE REWRITES ONE OF HER CAST'S TWO LINES - N2b (#1242).
+   *
+   * Free: no price, no credit, no confirmation. On the rename's own shape above
+   * because it IS that act - a customer correcting a piece of text on her own
+   * Cast - and a second shape for it would be a second thing to maintain.
+   *
+   * ⚠ **NO SUCCESS TOAST.** The badge going is the receipt, and it is on the
+   * card she is looking at. A sentence telling her the thing she just typed was
+   * saved is the kind of noise his #2089 ruling took off these tiles.
+   */
+  const savePersonaLine = (line: CastPersonaLineName, text: string) => {
+    if (!data) return;
+    setSavingPersonaLine(line);
+    editPersona.mutate(
+      { castId: data.castId, line, text },
+      {
+        onSuccess: () => {
+          setSavingPersonaLine(null);
+          void utils.castingV2.getCast.invalidate({ castId: data.castId });
+        },
+        onError: (error) => {
+          setSavingPersonaLine(null);
+          logRawFailure('castingV2.editCastPersonaLine', error);
+          toast.error(readableFailure(
+            error,
+            line === "voice"
+              ? 'That voice line could not be saved.'
+              : 'That personality could not be saved.',
+          ));
         },
       },
     );
@@ -928,6 +978,19 @@ export default function CastingRoom() {
               </div>
 
               <div className="dpc-room__right">
+                {/*
+                  PERSONALITY - N2b (#1242). Drawn only when there is a line,
+                  which is his brief's own rule: a Cast signed before N2b, or
+                  one whose read failed, shows no card rather than an empty one.
+
+                  ⚠ ABOVE the voice, because who she is comes before how she
+                  sounds in the only order a director reads them in.
+                */}
+                <CastPersonalityCard
+                  personality={data.persona?.personality ?? null}
+                  onSave={savePersonaLine}
+                  savingLine={savingPersonaLine}
+                />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
                   <div className="dpc-rcard__head">
@@ -946,6 +1009,18 @@ export default function CastingRoom() {
                       ))}
                     </span>
                   </div>
+                  {/*
+                    HOW SHE SOUNDS - N2b (#1242), inside the EXISTING stub
+                    rather than replacing it. His brief: *"the existing Voice
+                    card stub gains this text half."* The player skeleton and
+                    the "arrives with voice" promise below are both still true -
+                    there is no audio asset yet, and this line is not one.
+                  */}
+                  <CastVoiceLine
+                    voice={data.persona?.voice ?? null}
+                    onSave={savePersonaLine}
+                    savingLine={savingPersonaLine}
+                  />
                   <div className="dpc-voice__foot">
                     <span className="dpc-voice__name">No voice yet</span>
                     <span className="dpc-rcard__hint">

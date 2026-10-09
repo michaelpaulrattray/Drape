@@ -66,6 +66,7 @@ import {
   getSignableCandidate,
   signCandidateIntoCast,
   type SignableCandidate,
+  writeCastPersonaLines,
 } from "../db/castingV2Sign";
 import { createHash } from "node:crypto";
 import { createModuleLogger } from "../logging/logger";
@@ -140,6 +141,9 @@ export type InkCropDisposition =
   };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { buildCastPackage, type PackageOrchestratorDependencies } from "./packageOrchestrator";
+import type { CastPersonaLines, CastPersonaReader } from "./castPersona";
+import type { ReferenceImage } from "../providers/types";
+import { castingCastPersonaReader } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 
 const log = createModuleLogger("castingV2/signService");
@@ -164,6 +168,18 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
    *  the answer was bought once at the acceptance door. */
   readKindRegion?: typeof readOpenKindProperties;
   buildPackage?: typeof buildCastPackage;
+  /**
+   * WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS - N2b's reader (#1242).
+   *
+   * Injected for the reason `capture` is: production reaches a served model and
+   * a suite could otherwise only prove that nothing broke. `null` is a real
+   * production value (no `OPENROUTER_API_KEY` means no reader), and it takes the
+   * same road as a read that failed - no lines, no badge - so there is one
+   * behaviour here and not two.
+   */
+  personaReader?: () => CastPersonaReader | null;
+  /** The write of those two lines. Injected so an arm can see it happen. */
+  writePersona?: typeof writeCastPersonaLines;
   /**
    * How the package work is scheduled after the Cast exists.
    *
@@ -596,6 +612,8 @@ export async function signCandidate(
     selectedVariantId: source.face.variantId,
     /* Which tattoos that branch wears, from the same read as its pixels. */
     anchorDeltas: source.face.deltas,
+    /* What she typed while refining this face - the same read, same branch. */
+    editSentences: source.face.editSentences,
     /* From the documents this Sign just sealed, so the Cast's views speak about
        the person the Cast's own record describes. */
     pronouns: castPronouns(documents.technicalSchema),
@@ -995,6 +1013,115 @@ export async function carriedFeatureWords(
 }
 
 /**
+ * START THE TWO-LINE READ - N2b (#1242).
+ *
+ * Returns a promise that NEVER REJECTS. That is the contract the call site
+ * depends on: the promise is created before `buildCastPackage` and awaited
+ * minutes later, so a rejection in between would be an unhandled rejection on
+ * the way to a seal that had nothing to do with it. A reader that is absent -
+ * no `OPENROUTER_API_KEY` - resolves `null` by the same road a failed read
+ * does, so there is one outcome to reason about and not two.
+ */
+function derivePersonaLines(
+  dependencies: SignServiceDependencies,
+  input: {
+    /* ALREADY a `ReferenceImage` - `storageReadBytes` returns the pair, so
+       rewrapping it here would be a second shape for one fact. */
+    anchor: ReferenceImage;
+    brief: string | null;
+    editSentences: readonly string[];
+    pronouns: CastPronouns;
+    operationId: string;
+  },
+): Promise<CastPersonaLines | null> {
+  const reader = (dependencies.personaReader ?? castingCastPersonaReader)();
+  if (!reader) {
+    log.info(
+      { operationId: input.operationId },
+      "[signService] no persona reader on this deployment - the Cast is signed without its two lines",
+    );
+    return Promise.resolve(null);
+  }
+  return reader
+    .read({
+      anchor: input.anchor,
+      brief: input.brief,
+      editSentences: input.editSentences,
+      pronouns: input.pronouns,
+    })
+    .catch((error) => {
+      /* The reader already swallows its own faults; this is the backstop that
+         makes "never rejects" a property of this function rather than a belief
+         about another module. */
+      log.warn(
+        { operationId: input.operationId, err: error },
+        "[signService] the two-line read threw - the Cast is signed without them",
+      );
+      return null;
+    });
+}
+
+/**
+ * WRITE THEM, OR SAY WHY THERE ARE NONE - N2b (#1242).
+ *
+ * ⚠ **A MISS IS LOGGED, NEVER ASSUMED AWAY.** `writeCastPersonaLines` returns
+ * whether a row moved, and today there are three honest reasons it would not:
+ * the Cast was deleted between the Sign and the seal, or she has already
+ * rewritten one of the lines (the redraft guard), or this is the sweep
+ * re-entering a Sign that already has them. None is an error and all three are
+ * worth being able to read in a log rather than inferring from a blank card.
+ */
+async function writePersonaLines(
+  dependencies: SignServiceDependencies,
+  input: {
+    userId: number;
+    modelId: number;
+    operationId: string;
+    read: Promise<CastPersonaLines | null>;
+  },
+): Promise<void> {
+  const lines = await input.read;
+  if (!lines) return;
+  let written: boolean;
+  try {
+    written = await (dependencies.writePersona ?? writeCastPersonaLines)({
+      userId: input.userId,
+      modelId: input.modelId,
+      personality: lines.personality,
+      voice: lines.voice,
+    });
+  } catch (error) {
+    /*
+      ⚠ **ITS OWN CATCH, AND THAT IS A CORRECTION TO MY OWN FIRST PLACEMENT.**
+
+      This runs inside `completeSignPackage`'s try, after the receipt is sealed
+      and the terminal event is composed. Letting a throw here reach that catch
+      would log *"the package could not be sealed - leaving it for the recovery
+      sweep"* about a package that WAS sealed: a false sentence in the log a
+      human reads when a Sign goes wrong, on a money road, caused by two lines
+      of prose failing to save. The Sign is finished by this point and nothing
+      about it is in doubt.
+    */
+    log.warn(
+      { operationId: input.operationId, modelId: input.modelId, err: error },
+      "[signService] the two drafted lines could not be saved - the Cast is sealed without them",
+    );
+    return;
+  }
+  if (!written) {
+    log.info(
+      { operationId: input.operationId, modelId: input.modelId },
+      "[signService] the two drafted lines reached no row - deleted, already hers, or already written",
+    );
+    return;
+  }
+  log.info(
+    { operationId: input.operationId, modelId: input.modelId },
+    "[signService] the Cast was drafted a personality and a voice",
+  );
+}
+
+/**
  * Everything after the durable boundary: build, activate, seal.
  *
  * Contained on purpose — a throw in here must never look like a Sign failure to
@@ -1043,6 +1170,14 @@ async function completeSignPackage(
     identityRevisionId: string;
     identityText: string;
     chargedCredits: number;
+    /**
+     * HER OWN CORRECTION SENTENCES, oldest first - N2b's second source (#1242).
+     *
+     * Threaded from the Sign's own read for the reason `anchorDeltas` is: a
+     * second read could answer about a different branch and nothing would say
+     * so. EMPTY when she refined nothing, which is a real answer.
+     */
+    editSentences: readonly string[];
   },
 ): Promise<void> {
   /*
@@ -1059,6 +1194,32 @@ async function completeSignPackage(
   let deliveredEvent: Parameters<typeof recordDirectOperationDelivered>[0] | null = null;
   try {
     const anchorBytes = await (dependencies.readBytes ?? storageReadBytes)(input.anchorStorageKey);
+    /*
+      WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS - N2b (#1242), started HERE and
+      awaited after the seal.
+
+      ⚠ **THE PLACEMENT IS THE WHOLE OF "OFF THE CUSTOMER'S WAIT"** (his brief:
+      *"no step added to the Sign ceremony"*). It is started the moment the
+      frame she signed is in hand and NOT awaited until the package is sealed,
+      so it runs beside five 2K renders rather than in front of them: the views
+      never wait on it, and by the time the seal returns a 75-second read has
+      long landed. Awaiting it here instead would add its whole latency to the
+      first picture she sees; firing and never awaiting it would lose the write
+      to the deploy that ends this process, for no gain, because the seal is
+      minutes away either way.
+
+      ⚠ **IT CANNOT FAIL THE SIGN.** The reader returns `null` rather than
+      throwing, the write is caught below, and an absent reader is the same
+      outcome as a failed read - no lines, no badge, no empty card that looks
+      like a feature that broke.
+    */
+    const personaRead = derivePersonaLines(dependencies, {
+      anchor: anchorBytes,
+      brief: input.description,
+      editSentences: input.editSentences,
+      pronouns: input.pronouns,
+      operationId: input.operationId,
+    });
     /*
       THE DELIVERED CROPS, AND THERE IS NO SECOND LANE BEHIND THEM ANY MORE.
 
@@ -1165,6 +1326,22 @@ async function completeSignPackage(
       refundedCredits: result.refundedCredits,
       terminalStatus,
     };
+    /*
+      HER TWO LINES LAND AFTER THE MONEY IS SETTLED, never before it.
+
+      A Sign's receipt must not be able to wait on a text call, so this is the
+      last thing the happy path does. It is inside the `try` on purpose: a throw
+      here is caught by the same arm that catches a failed seal, which logs and
+      hands the operation to the sweep - and the sweep re-enters a Sign whose
+      lines are missing without ever overwriting a line she has since rewritten
+      (`castPersonaRedraftWhere`).
+    */
+    await writePersonaLines(dependencies, {
+      userId: input.userId,
+      modelId: input.modelId,
+      operationId: input.operationId,
+      read: personaRead,
+    });
   } catch (error) {
     /*
       The sweep owns it from here. Sealing is the only thing that can have

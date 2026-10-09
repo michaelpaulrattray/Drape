@@ -32,12 +32,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 194
+      "moduleCount": 195
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 52
+      "moduleCount": 53
     },
     {
       "id": "domain:client-shared",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 67
+      "moduleCount": 69
     },
     {
       "id": "domain:evidence",
@@ -1347,6 +1347,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "path": "client/src/features/castingV2/components/CandidateViewer.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "path": "client/src/features/castingV2/components/CastPersonaCards.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3757,6 +3763,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/castPersonaProjection.ts",
+      "path": "server/castingV2/castPersonaProjection.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/castProjection.ts",
       "path": "server/castingV2/castProjection.ts",
       "domain": "casting-v2",
@@ -4881,6 +4893,18 @@
     {
       "id": "module:server/db/bugReports.ts",
       "path": "server/db/bugReports.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castPersonaLineKind.ts",
+      "path": "server/db/castPersonaLineKind.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castPersonaScope.ts",
+      "path": "server/db/castPersonaScope.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -7706,6 +7730,16 @@
       "id": "route:castingV2.discard",
       "namespace": "castingV2",
       "name": "discard",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.editCastPersonaLine",
+      "namespace": "castingV2",
+      "name": "editCastPersonaLine",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -12333,6 +12367,10 @@
       "path": "server/castingV2/castPersona.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaProjection.test.ts",
+      "path": "server/castingV2/castPersonaProjection.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castProjection.test.ts",
       "path": "server/castingV2/castProjection.test.ts"
     },
@@ -13651,6 +13689,10 @@
     {
       "id": "test:server/cycleSpend.test.ts",
       "path": "server/cycleSpend.test.ts"
+    },
+    {
+      "id": "test:server/db/castPersonaWrite.test.ts",
+      "path": "server/db/castPersonaWrite.test.ts"
     },
     {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
@@ -18245,6 +18287,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CastSettingsModal.tsx",
       "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "kind": "imports"
@@ -21452,6 +21499,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
       "kind": "imports"
     },
     {
@@ -26101,6 +26153,11 @@
     },
     {
       "from": "module:server/castingV2/castProjection.ts",
+      "to": "module:server/castingV2/castPersonaProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castProjection.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -30151,6 +30208,11 @@
     },
     {
       "from": "module:server/castingV2/signEngine.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signEngine.ts",
       "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
@@ -30286,6 +30348,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -30327,6 +30394,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/rollProjection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
     {
@@ -30397,6 +30469,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
@@ -31531,6 +31608,16 @@
     },
     {
       "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/db/castPersonaLineKind.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/db/castPersonaScope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -31592,6 +31679,16 @@
     {
       "from": "module:server/db/castingV2ViewRetry.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castPersonaScope.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castPersonaScope.ts",
+      "to": "module:server/db/castPersonaLineKind.ts",
       "kind": "imports"
     },
     {
@@ -34187,6 +34284,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/db/castingV2ViewRetry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castPersonaLineKind.ts",
       "kind": "imports"
     },
     {

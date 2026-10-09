@@ -710,3 +710,69 @@ describe("landedViewAsset — the picture a slot is actually showing (#1474)", (
     expect(landedViewAsset(ledger(anchor()), "backFull")).toBeNull();
   });
 });
+
+/**
+ * WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS, ON THE ROOM'S OWN PAYLOAD — N2b
+ * (#1242).
+ *
+ * `castPersonaProjection.test.ts` drives the derivation itself over every
+ * combination of the five columns. These three arms exist for a different
+ * question, and it is the one invariant 7 asks: **does the thing a customer is
+ * actually handed carry it.** A correct derivation that nothing calls is the
+ * shape this repository has been bitten by, and this feature's entire surface
+ * is one field on this one projection.
+ */
+describe("N2b's two lines on the signed Cast projection", () => {
+  it("carries the two lines and the derived badge", () => {
+    const projection = projectSignedCast({
+      model: model({
+        personality: "Unhurried, hands still.",
+        voice: "Low and level.",
+        personaDraftedAt: new Date("2026-10-09T01:00:00Z"),
+      } as Partial<Model>),
+      assets: ledger(anchor(), asset()),
+      lineage,
+    });
+    expect(projection.persona).toEqual({
+      personality: { text: "Unhurried, hands still.", drafted: true },
+      voice: { text: "Low and level.", drafted: true },
+    });
+  });
+
+  it("carries null for every Cast signed before N2b, so the room draws no card", () => {
+    const projection = projectSignedCast({
+      model: model(),
+      assets: ledger(anchor(), asset()),
+      lineage,
+    });
+    expect(projection.persona).toBeNull();
+  });
+
+  /*
+    ⚠ THE SAME QUESTION THE TOP OF THIS FILE ASKS, POINTED AT THE NEW FIELD.
+    These two lines are CREATIVE CONTENT about a customer's cast — the same
+    family as `masterPrompt` under his ruling of 2026-07-25 — so the arm that
+    proves nothing sensitive escapes has to know they exist, or the field grows
+    beside a guard that cannot see it.
+  */
+  it("the two lines are the ONLY new prose on the payload — no stamp, no schema", () => {
+    const projection = projectSignedCast({
+      model: model({
+        personality: "Unhurried, hands still.",
+        voice: "Low and level.",
+        personaDraftedAt: new Date("2026-10-09T01:00:00Z"),
+        personalityEditedAt: new Date("2026-10-09T02:00:00Z"),
+      } as Partial<Model>),
+      assets: ledger(anchor(), asset()),
+      lineage,
+    });
+    const serialized = JSON.stringify(projection);
+    expect(serialized).not.toContain(SECRET_PROMPT);
+    /* The timestamps are the derivation's INPUT and never its output: a client
+       handed `personaDraftedAt` could compute its own badge, which is the
+       second reader working law 4 refuses. */
+    expect(serialized).not.toContain("personaDraftedAt");
+    expect(serialized).not.toContain("EditedAt");
+    expect(projection.persona?.personality?.drafted).toBe(false);
+  });
+});

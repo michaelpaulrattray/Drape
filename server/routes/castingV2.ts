@@ -139,6 +139,7 @@ import {
   listCastSiblings,
   listSessionSignedCastNames,
   listSignedCasts,
+  editCastPersonaLine,
 } from "../db/castingV2Sign";
 import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -164,7 +165,12 @@ import {
   listSessionRolls,
   resolveOwnedCandidateId,
 } from "../db/castingV2";
-import { CAST_NAME_MAX_LENGTH } from "../../shared/inputLimits";
+import {
+  CAST_NAME_MAX_LENGTH,
+  CAST_PERSONALITY_MAX_LENGTH,
+  CAST_VOICE_MAX_LENGTH,
+} from "../../shared/inputLimits";
+import { CAST_PERSONA_LINE_KINDS } from "../db/castPersonaLineKind";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
@@ -2028,6 +2034,83 @@ export const castingV2Router = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }
       return { castId: input.castId, name: input.name };
+    }),
+
+  /**
+   * SHE REWRITES ONE OF HER CAST'S TWO LINES - N2b (#1242).
+   *
+   * His brief: *"both are inline-editable plain text; editing is free and
+   * clears the badge."*
+   *
+   * ⚠ **FREE, AND THEREFORE DELIBERATELY NOT A GENERATION OPERATION.** No
+   * credits, no lock, no operation row, no price on the control. Typing over a
+   * sentence somebody drafted for you is not a purchase, and giving it an
+   * operation would put it in the spend ledger, on the strip, and in front of
+   * the recovery sweep for no reason at all.
+   *
+   * ⚠ **THE BADGE CLEARS BY ARITHMETIC.** Stamping the line's own `...EditedAt`
+   * IS "clears the badge", because the badge is derived as *drafted and not
+   * since edited* (`projectCastPersona`). Nothing here unsets a flag, so no
+   * flag can survive the edit.
+   *
+   * Ownership is proved in the statement that writes (invariant 1): the room
+   * only ever holds her public `KI-...` id, so the numeric model is resolved
+   * owner-scoped here AND the owner goes into the update's own `WHERE`
+   * (`castPersonaEditWhere`) - the resolve is a free refusal, never the
+   * authority.
+   *
+   * ⚠ **AN EMPTY LINE IS REFUSED RATHER THAN STORED.** `.trim().min(1)`: a
+   * blank line would draw a card with nothing in it, and his brief's own rule
+   * against a card that looks broken applies to a line she emptied exactly as
+   * it applies to one we failed to draft. Clearing a line is not a feature
+   * anybody asked for; if it becomes one it is a door of its own.
+   */
+  editCastPersonaLine: protectedProcedure
+    .input(z.object({
+      castId: z.string().min(1).max(32),
+      line: z.enum(CAST_PERSONA_LINE_KINDS),
+      text: z.string().trim().min(1).max(CAST_PERSONALITY_MAX_LENGTH),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      /*
+        THE PER-LINE CAP, CHECKED AFTER THE SCHEMA AND NOT INSTEAD OF IT.
+
+        The schema can only carry ONE max for a field whose ceiling depends on
+        another field, so it takes the LOOSER of the two and the voice's own
+        cap is applied here. Doing it the other way round - one shared cap -
+        would silently let a 400-character voice line through, which is the
+        accidental equality `shared/inputLimits.ts` exists to prevent.
+      */
+      const max = input.line === "voice" ? CAST_VOICE_MAX_LENGTH : CAST_PERSONALITY_MAX_LENGTH;
+      if (input.text.length > max) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: input.line === "voice"
+            ? `Keep the voice to ${CAST_VOICE_MAX_LENGTH} characters or fewer.`
+            : `Keep the personality to ${CAST_PERSONALITY_MAX_LENGTH} characters or fewer.`,
+        });
+      }
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      const written = await editCastPersonaLine({
+        userId: ctx.user.id,
+        modelId: model.id,
+        line: input.line,
+        text: input.text,
+      });
+      if (!written) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      }
+      /* Her words, back to her, with the badge already gone - so the card she
+         is looking at does not need a refetch to stop saying it is a draft. */
+      return {
+        castId: input.castId,
+        line: input.line,
+        text: input.text,
+        drafted: false as const,
+      };
     }),
 
   /**

@@ -25,6 +25,7 @@ import {
 } from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
+import { projectCastPersona, type CastPersonaProjection } from "./castPersonaProjection";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -275,6 +276,18 @@ export type SignedCastProjection = {
    * ruling, 2026-07-25). `they` is the fallback for an unstated sex.
    */
   pronouns: CastPronouns;
+  /**
+   * WHO SHE IS ON CAMERA AND HOW SHE SOUNDS - N2b (#1242), or `null`.
+   *
+   * Two short lines drafted once inside her Sign and hers to rewrite. `null`
+   * for every Cast signed before N2b and for one whose read failed, and the
+   * room draws no card at all in that case rather than an empty one.
+   *
+   * ⚠ **OWNER-ONLY, the same family as `masterPrompt`** (his ruling,
+   * 2026-07-25). Nothing on a staff surface reaches this projection, and
+   * nothing may: `projectSignedCast` runs behind an owner-scoped read.
+   */
+  persona: CastPersonaProjection | null;
   lineage: {
     fromRollPublicId: string | null;
     fromRollIndex: number | null;
@@ -889,6 +902,7 @@ export function projectSignedCast(input: {
       : null,
     sheetOpen: input.sheetLive ?? false,
     pronouns: castPronouns(input.model.technicalSchema),
+    persona: projectCastPersona(input.model),
     lineage: {
       fromRollPublicId: input.lineage.rollPublicId,
       fromRollIndex: input.lineage.rollIndex,

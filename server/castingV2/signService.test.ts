@@ -91,6 +91,10 @@ let copyThrows = false;
 let manifestThrows = false;
 const cleanupBatches: string[] = [];
 const receipts: Array<Record<string, unknown>> = [];
+/** Her own correction sentences, as the Sign's read would hand them over. */
+let editSentences: readonly string[] = [];
+/** What N2b's write was handed, for the arms that read it. */
+const personaWrites: Array<Record<string, unknown>> = [];
 /** What #1429's recorder was handed, in order — the terminal product event. */
 const terminalEvents: Array<Record<string, unknown>> = [];
 
@@ -106,6 +110,21 @@ vi.mock("./spendGuards", () => ({ assertNotFrozen: vi.fn(async () => undefined) 
 
 vi.mock("../db/castingV2Sign", () => ({
   SignPersistenceError: TestSignPersistenceError,
+  /*
+    N2b's write (#1242), present in this mock ON PURPOSE.
+
+    `signService` falls back to the real `writeCastPersonaLines` when no
+    `writePersona` is injected, and a module mock that omitted it would make
+    that fallback `undefined()` - a TypeError thrown INSIDE the seal's own
+    catch, which logs and hands the operation to the sweep. Every arm in this
+    file would still be green, and the production default would be broken. So
+    it is here, it journals, and `personaWrites` is asserted below.
+  */
+  writeCastPersonaLines: vi.fn(async (write: Record<string, unknown>) => {
+    journal.push("persona:write");
+    personaWrites.push(write);
+    return true;
+  }),
   getSignableCandidate: vi.fn(async () => {
     journal.push("read");
     if (candidateRow.status !== "ready") return null;
@@ -121,6 +140,8 @@ vi.mock("../db/castingV2Sign", () => ({
           /* The branch's composed state, read in the same statement as its
              pixels — which is what says WHICH tattoos this face wears. */
           deltas: (selectedVariant as { deltas?: unknown }).deltas ?? null,
+          /* What she typed while refining this face - N2b's second source. */
+          editSentences: editSentences,
         }
         : {
           variantId: null,
@@ -130,6 +151,8 @@ vi.mock("../db/castingV2Sign", () => ({
           internalPrompt: candidateRow.internalPrompt,
           /* The pristine master, which wears nothing. */
           deltas: null,
+          /* And which she said nothing about - she never refined it. */
+          editSentences: [],
         },
       roll: {
         id: 22,
@@ -415,6 +438,8 @@ beforeEach(() => {
      later arm silently reads a state nobody chose for it. */
   candidateRow.internalPrompt = { prompt: "the composed casting instruction", resolved: { sex: "female" } };
   selectedVariant = null;
+  editSentences = [];
+  personaWrites.length = 0;
   vi.clearAllMocks();
 });
 
@@ -1255,5 +1280,181 @@ describe("a signed Cast records its terminal event (#1429)", () => {
        here is the absence of a DOUBLE, not of any event at all. */
     expect(receipts.at(-1)).toMatchObject({ kind: "failure" });
     expect(terminalEvents).toEqual([]);
+  });
+});
+
+/**
+ * WHO SHE IS ON CAMERA, AND HOW SHE SOUNDS — N2b's wiring (#1242).
+ *
+ * `castPersona.test.ts` drives the READER and `castPersonaWrite.test.ts` drives
+ * the statement. These arms are about the thing neither can see: **whether the
+ * mint actually calls it, with what, in what order, and what happens to the
+ * Sign when it does not work.** His brief's two hard conditions are both
+ * orderings — *"no step added to the Sign ceremony"* and *"a read that fails
+ * leaves both lines empty"* — and an ordering is only ever visible from here.
+ */
+describe("N2b's two lines are born inside the Sign", () => {
+  const reader = (lines: { personality: string; voice: string } | null) => ({
+    read: vi.fn(async () => {
+      journal.push("persona:read");
+      return lines;
+    }),
+  });
+  const LINES = { personality: "Unhurried, hands still.", voice: "Low and level." };
+
+  it("carries all three of his sources: her brief, her corrections and the signed frame", async () => {
+    /*
+      ⚠ A REFINED BRANCH, because the sentences live on the VARIANT and a
+      pristine master honestly has none. The first version of this arm set the
+      sentences and left the master selected, and it went red - which is the
+      fixture telling the truth about where her corrections come from.
+    */
+    selectedVariant = {
+      id: 77,
+      publicId: "variant-public",
+      imageKey: "casting-v2/variants/refined.png",
+      thumbKey: null,
+      internalPrompt: { prompt: "composed", resolved: { sex: "female" } },
+    };
+    editSentences = ["make her hair shorter", "actually older"];
+    const persona = reader(LINES);
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => persona,
+      },
+      input,
+    );
+
+    expect(persona.read).toHaveBeenCalledTimes(1);
+    const ask = persona.read.mock.calls[0]?.[0] as Record<string, unknown>;
+    /* The ROLL's brief in her own words — never the composed master prompt. */
+    expect(ask.brief).toBe("a redhead in her 30s");
+    /* Her corrections, in order, from the same read as the face. */
+    expect(ask.editSentences).toEqual(["make her hair shorter", "actually older"]);
+    /* The frame she signed — the only reason two siblings differ. */
+    expect(ask.anchor).toBeTruthy();
+    /* Her pronouns, so the lines read as English about the right person. */
+    expect(ask.pronouns).toMatchObject({ subject: "she" });
+  });
+
+  /*
+    ⚠ THE WHOLE OF "OFF THE CUSTOMER'S WAIT", and the only place it is visible.
+
+    The read is STARTED before the package is built and AWAITED after the seal.
+    An arm that only checked "the reader was called" would be green with the
+    await moved above `buildCastPackage` — which would add the read's whole
+    latency to the first picture she sees, and is exactly the step his brief
+    forbids being added to the ceremony.
+  */
+  it("starts the read BEFORE the package and lands the write AFTER the seal", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => reader(LINES),
+      },
+      input,
+    );
+
+    expect(journal.indexOf("persona:read")).toBeLessThan(journal.indexOf("package"));
+    expect(journal.indexOf("persona:write")).toBeGreaterThan(journal.indexOf("seal:success"));
+    expect(personaWrites).toHaveLength(1);
+    expect(personaWrites[0]).toMatchObject({ modelId: expect.any(Number), ...LINES });
+  });
+
+  it("writes nothing at all when the read comes back empty — no badge, no blank card", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => reader(null),
+      },
+      input,
+    );
+    expect(personaWrites).toHaveLength(0);
+    /* And the Sign is finished regardless — this is his "leaves both lines
+       empty", not "fails the Sign". */
+    expect(journal).toContain("seal:success");
+  });
+
+  it("signs normally on a deployment with no reader at all", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        /* Production's own value when `OPENROUTER_API_KEY` is absent. */
+        personaReader: () => null,
+      },
+      input,
+    );
+    expect(personaWrites).toHaveLength(0);
+    expect(journal).toContain("seal:success");
+    expect(receipts).toHaveLength(1);
+  });
+
+  /*
+    ⚠ A READER THAT THROWS. The reader swallows its own faults, so this arm is
+    about the BACKSTOP being a property of `derivePersonaLines` rather than a
+    belief about another module — and about the promise never rejecting, since
+    it is created minutes before it is awaited.
+  */
+  it("a reader that throws does not fail the Sign", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => ({
+          read: vi.fn(async () => {
+            throw new Error("the reader exploded");
+          }),
+        }),
+      },
+      input,
+    );
+    expect(journal).toContain("seal:success");
+    expect(receipts).toHaveLength(1);
+    expect(personaWrites).toHaveLength(0);
+  });
+
+  /*
+    ⚠ AND A WRITE THAT THROWS MUST NOT BE MISTAKEN FOR A SEAL FAILURE. This
+    arm exists because the first placement of this call let the throw reach
+    `completeSignPackage`'s catch, which logs *"the package could not be
+    sealed"* — a false sentence about a sealed package, on a money road.
+  */
+  it("a write that throws leaves the receipt sealed and the delivery recorded", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => reader(LINES),
+        writePersona: vi.fn(async () => {
+          throw new Error("the write exploded");
+        }),
+      },
+      input,
+    );
+    expect(journal).toContain("seal:success");
+    expect(journal).not.toContain("seal:recovery");
+    expect(receipts).toHaveLength(1);
+    expect(terminalEvents).toHaveLength(1);
+  });
+
+  it("asks nothing and writes nothing when she refined nothing but still gets her lines", async () => {
+    editSentences = [];
+    const persona = reader(LINES);
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => persona,
+      },
+      input,
+    );
+    const ask = persona.read.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(ask.editSentences).toEqual([]);
+    expect(personaWrites).toHaveLength(1);
   });
 });

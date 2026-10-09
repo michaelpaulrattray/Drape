@@ -62,6 +62,12 @@ import {
   type SlotFailureRecord,
 } from "../castingV2/slotFailureRecord";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import type { CastPersonaLineKind } from "./castPersonaLineKind";
+import {
+  castPersonaEditPatch,
+  castPersonaEditWhere,
+  castPersonaRedraftWhere,
+} from "./castPersonaScope";
 
 /** The identity recipe this ceremony writes under (D-12 provenance). */
 export const CASTING_V2_SIGN_RECIPE_VERSION = "castingv2-sign-v1";
@@ -171,6 +177,17 @@ export type SignableCandidate = {
      * tattoo, so the delivery store is not asked at all.
      */
     deltas: unknown;
+    /**
+     * HER OWN CORRECTION SENTENCES, oldest first - N2b's second source (#1242).
+     *
+     * His brief: *"each correction is the user describing who she is."* Read on
+     * the variant join this statement already makes, so the Sign gains the
+     * source with NO new read - the same promise 3.1 kept for the two paths.
+     *
+     * EMPTY for the pristine master, and that is a real answer rather than a
+     * missing one: she refined nothing, so there is nothing she said.
+     */
+    editSentences: readonly string[];
   };
   roll: {
     id: number;
@@ -206,6 +223,21 @@ export type SignableCandidate = {
 };
 
 /**
+ * HER TYPED SENTENCES, OUT OF A `json` COLUMN - N2b (#1242).
+ *
+ * `castingCandidateVariants.instructions` is `json().notNull()`, so its TYPE
+ * is `unknown` and a reader that trusted it to be `string[]` would be trusting
+ * a column rather than reading it. Rows written by any other road must not be
+ * able to put a non-string into a prompt, so every element is checked and
+ * anything else is DROPPED rather than coerced: `String(x)` here would put
+ * `[object Object]` in front of a reader asked who this person is.
+ */
+function castEditSentences(raw: unknown): readonly string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((entry): entry is string => typeof entry === "string");
+}
+
+/**
  * The candidate a Sign would spend, read owner-scoped and `ready`.
  *
  * A free refusal before anything is claimed: signing a discarded, expired or
@@ -228,6 +260,7 @@ export async function getSignableCandidate(
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
       variantDeltas: castingCandidateVariants.deltas,
+      variantInstructions: castingCandidateVariants.instructions,
       rollId: castingRolls.id,
       rollPublicId: castingRolls.publicId,
       briefText: castingRolls.briefText,
@@ -293,6 +326,7 @@ export async function getSignableCandidate(
         thumbKey: row.variantThumbKey,
         internalPrompt: row.variantInternalPrompt,
         deltas: row.variantDeltas,
+        editSentences: castEditSentences(row.variantInstructions),
       }
       : {
         variantId: null,
@@ -302,6 +336,8 @@ export async function getSignableCandidate(
         internalPrompt: row.candidate.internalPrompt,
         /* The pristine master, which wears nothing. */
         deltas: null,
+        /* And which she said nothing about - she never refined it. */
+        editSentences: [],
       },
     roll: {
       id: row.rollId,
@@ -1106,7 +1142,7 @@ export type SignedCastLocation = {
  * a Sign whose process died, and a second derivation landing on top of a line
  * she had already rewritten would be this feature deleting a customer's words.
  * The two `isNull(...EditedAt)` terms are that guard, in the statement, and
- * `castPersonaWrite.test.ts` drives both directions.
+ * `castPersonaWrite.test.ts` renders it at the wire and drives both directions.
  *
  * Returns whether a row moved, so a caller can log the miss rather than assume.
  */
@@ -1120,7 +1156,7 @@ export async function writeCastPersonaLines(input: {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   const now = input.now ?? new Date();
-  const db = await getDb();
+  const db = await requireDb();
 
   const written = await db
     .update(models)
@@ -1129,20 +1165,10 @@ export async function writeCastPersonaLines(input: {
       voice: input.voice,
       personaDraftedAt: now,
     })
-    .where(and(
-      eq(models.id, input.modelId),
-      eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-      /* Her words win. A redraft never lands on a line she has rewritten. */
-      isNull(models.personalityEditedAt),
-      isNull(models.voiceEditedAt),
-    ));
+    .where(castPersonaRedraftWhere({ userId: input.userId, modelId: input.modelId }));
 
   return affectedRows(written) > 0;
 }
-
-/** Which of the two lines an edit is about. */
-export type CastPersonaLineKind = "personality" | "voice";
 
 /**
  * SHE REWRITES ONE OF THE TWO LINES — N2b's edit (#1242).
@@ -1171,20 +1197,12 @@ export async function editCastPersonaLine(input: {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   const now = input.now ?? new Date();
-  const db = await getDb();
-
-  const patch = input.line === "personality"
-    ? { personality: input.text, personalityEditedAt: now }
-    : { voice: input.text, voiceEditedAt: now };
+  const db = await requireDb();
 
   const written = await db
     .update(models)
-    .set(patch)
-    .where(and(
-      eq(models.id, input.modelId),
-      eq(models.userId, input.userId),
-      isNull(models.deletedAt),
-    ));
+    .set(castPersonaEditPatch(input.line, input.text, now))
+    .where(castPersonaEditWhere({ userId: input.userId, modelId: input.modelId }));
 
   return affectedRows(written) > 0;
 }
