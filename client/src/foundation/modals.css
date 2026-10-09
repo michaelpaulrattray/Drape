@@ -53,10 +53,18 @@
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--r-btn);
-  background: transparent;
-  color: var(--muted);
+  /*
+    VISIBLE AT REST (#2144, his word 2026-10-09: "shouldnt all menus be the
+    same ?"), on the soft fill the card-hover rung used to reveal. A `row`
+    menu keeps this look always; an `overlay` menu on a card hides it on
+    pointer devices until the card is hovered (the placements, below). Rung
+    three (the solid fill on the dots themselves) lives with the hosts in
+    castingV2.css.
+  */
+  background: var(--fillStrong);
+  color: var(--secondary);
   cursor: pointer;
-  opacity: 0;
+  opacity: 1;
   transition:
     opacity var(--t-fast) var(--ease),
     background var(--t-fast) var(--ease),
@@ -67,6 +75,32 @@
 .dpc-cardmenu__trigger:focus-visible {
   outline: 2px solid var(--accentSolid);
   outline-offset: 1px;
+}
+
+/*
+  TWO PLACEMENTS, ONE MENU (#2144). His question, 2026-10-09, verbatim:
+  "anywhere that a 3 dot menu is sitting ontop of a card like the cast library
+  could be hover hidden? thoughts" — after his "shouldnt all menus be the same ?"
+  that made the panel and the danger colour one look everywhere.
+
+  `row`      a header row or toolbar (the cast room's character sheet row):
+             visible at rest, always — the rest look above.
+  `overlay`  sitting ON a picture or card (the cast library): hidden until the
+             card (`.dpc-menuhost`) is hovered OR holds keyboard focus — but only
+             where a pointer can hover. On a touch screen (`hover: none`) nothing
+             hovers, so a hover-revealed control would not exist; there it shows.
+
+  The hide is written to step aside for an OPEN menu and a FOCUSED trigger, so
+  an open menu never loses its dots when the pointer leaves the card.
+*/
+@media (hover: hover) {
+  .dpc-cardmenu--overlay .dpc-cardmenu__trigger:not([aria-expanded="true"]):not(:focus-visible) {
+    opacity: 0;
+  }
+  .dpc-menuhost:hover .dpc-cardmenu--overlay .dpc-cardmenu__trigger,
+  .dpc-menuhost:focus-within .dpc-cardmenu--overlay .dpc-cardmenu__trigger {
+    opacity: 1;
+  }
 }
 
 .dpc-cardmenu__panel {
@@ -109,18 +143,25 @@
 }
 
 /*
-  A PAID ITEM SAYS WHAT IT COSTS, under its own label (D-109: never in the
-  button text). The row becomes two lines when there is a price and stays one
-  line when there is not, so no free item grows a gap for the paid one's sake.
+  A PAID ITEM SAYS WHAT IT COSTS, in grey at the RIGHT of its own line (D-109:
+  never in the button text). It sat under the label until #2144, whose Option A
+  frame puts it on the right; no caller had used it before the cast room's
+  Regenerate. A free item has no meta and no gap is reserved for one.
 */
-.dpc-cardmenu__item:has(.dpc-cardmenu__meta) { align-items: flex-start; }
-.dpc-cardmenu__lines { display: flex; flex-direction: column; min-width: 0; }
-.dpc-cardmenu__label { display: block; }
+.dpc-cardmenu__lines {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-8);
+  min-width: 0;
+}
+.dpc-cardmenu__label { display: block; white-space: nowrap; }
 .dpc-cardmenu__meta {
   display: block;
-  margin-top: 2px;
-  font: 400 11px var(--font-sans);
+  font: 400 12px var(--font-sans);
   color: var(--meta);
+  white-space: nowrap;
 }
 
 .dpc-cardmenu__item:hover:not(:disabled) { background: var(--well); }
@@ -159,8 +200,11 @@
 }
 .dpc-cardmenu__item:disabled { opacity: 0.6; cursor: default; }
 
-/* Destructive reveals itself on hover, per the foundation button law. */
-.dpc-cardmenu__item--danger { color: var(--metaStrong); }
+/* Destructive is RED AT REST, on every menu (#2144, his word 2026-10-09:
+   "shouldnt all menus be the same ?"). It was grey until hovered, per the
+   foundation button law; a menu item is already one deliberate step away
+   behind the dots, so the colour is the warning rather than a reveal. */
+.dpc-cardmenu__item--danger { color: var(--errorInk); }
 .dpc-cardmenu__item--danger:hover:not(:disabled) { color: var(--errorInk); background: var(--well); }
 
 .dpc-cardmenu__rule { display: block; height: 1px; margin: 5px 0; background: var(--rule); }

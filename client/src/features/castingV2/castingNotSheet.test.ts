@@ -106,7 +106,12 @@ describe("card 2129 — the candidates page is a casting, and only the delivered
 
   it("the room carries the wording he approved on the Desk, 2026-10-09", () => {
     const room = read("client/src/pages/CastingRoom.tsx").replace(/\s+/g, " ");
-    expect(room).toContain("Delete this character");
+    /* Since card 2144 the Delete item lives in the row's menu, and its words
+       live in the module that builds that menu — the room draws them from
+       there, which `packageRedoRow.test.ts` pins. */
+    expect(read("client/src/features/castingV2/packageRedoRow.ts"))
+      .toContain('CHARACTER_SHEET_DELETE_LABEL = "Delete this character"');
+    expect(room).toContain("characterSheetMenuItems({");
     expect(room).toContain("Use in a campaign · soon");
     expect(room).toContain("Use in a new campaign");
     expect(room).toContain("`Refine ${data.name.trim()}'s look` : \"Refine their look\"");

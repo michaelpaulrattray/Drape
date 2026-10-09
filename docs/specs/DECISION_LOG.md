@@ -3037,6 +3037,19 @@ behind it, and its gating, are unchanged.
 **A menu belongs on a CARD** — a small repeated object in a grid, where the
 actions have nowhere else to live. A page has room to say what it means.
 
+⚠ **RETIRED 2026-10-09 (#2144), by the founder.** His words, verbatim: *"on the
+old ruling casting library already has delete in a menu i think this must be an
+old ruling on menu styling shouldnt all menus be the same ?"* — after approving
+Option A for the cast room's character sheet row (*"Mike approved Option A"*),
+which keeps Download as the row's one visible action and moves Regenerate and
+Delete into a ⋯ menu. The room now deletes from the same `CardMenu` the cast
+library does: one panel look everywhere, danger items red at rest, and the dots
+hidden until hover only where they sit on top of a card on a pointer device
+(his follow-up the same day: *"anywhere that a 3 dot menu is sitting ontop of a
+card like the cast library could be hover hidden? thoughts"*). The entry above
+is kept as the record of what stood; the ceremony behind Delete and its gating
+are unchanged.
+
 ### The topbar credits chip is unchanged
 
 It is the account's balance, not any action's price, and it was never part of

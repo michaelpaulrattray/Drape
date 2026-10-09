@@ -118,12 +118,13 @@ describe("the casting room is built to the drawing", () => {
     // what makes it free, and what stops it being re-rendered.
     expect(strip).toContain("data.anchorUrl");
     /*
-      And the "N of N views" count reads `data.slots`, which the server fills
-      with the five paid views only. Counting the Master would sell six.
+      And the count ("3 of 5" while views are being made, card 2144) reads
+      `data.slots`, which the server fills with the five paid views only.
+      Counting the Master would sell six.
     */
-    const count = strip.slice(strip.indexOf("dpc-rcard__hint"), strip.indexOf("dpc-strip"));
-    expect(count).toContain("data.slots.length");
-    expect(count).not.toContain("anchorUrl");
+    const call = room.match(/characterSheetCount\([^)]*\)/)?.[0] ?? "";
+    expect(call).toBe("characterSheetCount(data.status, data.slots, asking)");
+    expect(call).not.toContain("anchorUrl");
   });
 
   it("fills the hero with three ANGLES of her, never the same crop twice", async () => {

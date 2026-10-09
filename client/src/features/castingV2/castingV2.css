@@ -1908,13 +1908,12 @@
   z-index: 2;
 }
 
-/* Rung two: the card is hovered, so its actions show themselves. */
-.dpc-menuhost:hover .dpc-cardmenu__trigger,
-.dpc-menuhost:focus-within .dpc-cardmenu__trigger {
-  opacity: 1;
-  background: var(--fillStrong);
-  color: var(--secondary);
-}
+/*
+  Rung two (the card is hovered, so its actions show themselves) MOVED to
+  `foundation/modals.css` with #2144, because it now belongs to the menu's
+  PLACEMENT rather than to casting: an `overlay` menu on a card hides until the
+  card is hovered or focused (pointer devices only), a `row` menu never hides.
+*/
 
 /*
   Rung three: solid. On a card of the same colour the fill alone would vanish,
@@ -2681,8 +2680,11 @@
 
 .dpc-media { position: relative; }
 
-/* The package head carries the two whole-Cast actions, so it needs a slot. */
-.dpc-takes__actions { margin-left: auto; margin-right: 12px; display: inline-flex; align-items: center; }
+/* The character sheet head: Download, then the ⋯ menu, flush right (#2144). */
+.dpc-takes__actions { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.dpc-takes__menu { display: inline-flex; }
+/* "3 of 5" beside the title, only while views are being made (#2144). */
+.dpc-takes__count { margin-right: auto; letter-spacing: 0.04em; }
 
 /*
   The hover action row is GONE (founder ruling, 2026-08-02). Clicking is
@@ -2767,56 +2769,13 @@
 .dpc-room__nameline .dpc-cardmenu { margin-left: 2px; }
 
 /*
-  The room's one irreversible action, said as a sentence.
-
-  Accent-coloured because it is the only thing in the room that cannot be
-  undone, and quiet because it should never compete with her. It sits last in
-  the rail, after everything else about her — reading order carrying the same
-  meaning as the colour.
+  The room's delete SENTENCE and the Regenerate LINK that stood here are gone
+  (#2144): both live in the character sheet row's ⋯ menu now, styled by the one
+  `CardMenu`. His ruling retiring "a destructive action is a sentence, not a
+  menu", 2026-10-09: "shouldnt all menus be the same ?".
 */
-.dpc-room__delete {
-  margin-left: 12px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: 400 12px/1.4 var(--font-sans);
-  color: var(--accentSolid);
-  cursor: pointer;
-  opacity: 0.85;
-  transition: opacity var(--t-fast) var(--ease);
-}
 
-.dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
-.dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
-
-/* ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — the other whole-Cast action,
-   and a deliberate SIBLING of the sentence above rather than of the tile's
-   `dpc-slot__again`.
-
-   ⚠ It wore `dpc-slot__again` first and the frame is what said no: that class
-   is `font: inherit` with a standing underline, written for a muted line under
-   a picture, and in this header it inherited the row's larger type and became
-   the loudest thing on a line whose only coloured word is meant to be Delete.
-   Same 12px as its neighbour, `--meta` because nothing here is destructive,
-   and the underline arrives on hover exactly as the delete sentence's does —
-   three actions, one rhythm, one coloured. */
-.dpc-room__redo {
-  margin-left: 12px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: 400 12px/1.4 var(--font-sans);
-  color: var(--meta);
-  cursor: pointer;
-  transition: color var(--t-fast) var(--ease);
-}
-
-.dpc-room__redo:hover { color: var(--ink); text-decoration: underline; }
-.dpc-room__redo:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-/* What stands in its place while the new set is being made — the same type and
-   the same colour, so the row does not shift when the button becomes a
-   sentence. Not pressable and says so by being a span, rather than by being a
+/* What the row says while the new set is being made, before Download. Not pressable and says so by being a span, rather than by being a
    button wearing a verb and a disabled attribute (#1235's shape). */
 .dpc-room__redo-working {
   margin-left: 12px;

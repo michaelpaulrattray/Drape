@@ -11459,6 +11459,10 @@
       "path": "client/src/foundation/canonicalWording.test.ts"
     },
     {
+      "id": "test:client/src/foundation/cardMenuRender.test.ts",
+      "path": "client/src/foundation/cardMenuRender.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
       "path": "client/src/foundation/downloadFilenameBrand.test.ts"
     },
@@ -18548,6 +18552,16 @@
     {
       "from": "module:client/src/features/castingV2/failureCopy.ts",
       "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/packageRedoRow.ts",
+      "to": "module:client/src/features/castingV2/roomBusy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/packageRedoRow.ts",
+      "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
     {

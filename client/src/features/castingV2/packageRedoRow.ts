@@ -13,8 +13,9 @@
  *
  * # The disappearing-technology gate (law 5, clause 7), answered here
  *
- * 1. **What must the customer learn to use this?** Nothing. A button that says
- *    what it does and what it costs, under the pictures it would replace.
+ * 1. **What must the customer learn to use this?** Nothing. A menu item that
+ *    says what it does and what it costs, on the row above the pictures it
+ *    would replace (behind the ⋯ since #2144, his Option A).
  * 2. **What decision does it put in front of them, and on what basis?** *Do I
  *    like these?* — judged on the pictures themselves, which is their own taste
  *    and the only basis it needs. No eligibility, no verdict, no axis.
@@ -25,6 +26,8 @@
  *    this row existed.
  */
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
+import type { CardMenuItem } from "@/foundation";
+import { slotIsBeingAsked, type BusySlotRead } from "./roomBusy";
 
 /**
  * The press, and the PRICE RIDES ON IT — his standing rule, prices on paid
@@ -46,36 +49,105 @@ import { displayPrice, formatCredits } from "@shared/creditDisplay";
  */
 export const PACKAGE_REDO_LINK = "Regenerate";
 
-/** The separator between the words and the price. Aria-hidden in the row. */
-export const PACKAGE_REDO_SEPARATOR = "·";
+/**
+ * THE MENU ITEM'S WORDS — his Option A of 2026-10-09 (#2144; *"Mike approved
+ * Option A"*, the Desk item filed for Yuna): the character sheet row keeps one
+ * visible action, Download, and Regenerate moves into the ⋯ menu as
+ * **"Regenerate character sheet"**. Built from his verb rather than typed
+ * twice, so the verb cannot drift from the item that carries it.
+ *
+ * ⚠ **It was a link reading "Regenerate · 650 credits" until #2144**, with the
+ * price joined to the words by " · ". In the menu the price is the item's own
+ * grey line on the right (`packageRedoPrice`), which keeps his standing rule —
+ * prices on paid buttons — on the item a customer actually presses.
+ */
+export const PACKAGE_REDO_MENU_LABEL = `${PACKAGE_REDO_LINK} character sheet`;
 
 /**
- * The whole label, as one string, from the LEDGER price on the wire.
+ * The price, as the menu item's grey line: "650 credits", from the LEDGER
+ * number on the wire.
  *
  * `credits` is spelled out rather than abbreviated to `CR` — #1908's rule, and
  * the same reasoning: an abbreviation is the product's shorthand, not the
  * customer's word.
  *
- * ⚠ **IT TAKES THE LEDGER NUMBER AND CONVERTS HERE, AND THE FIRST DRAFT TOOK
- * AN ALREADY-FORMATTED STRING.** Both satisfy #1600's rule that
- * `shared/creditDisplay.ts` is the only thing allowed to turn one into the
- * other — but a `formattedDisplayCredits: string` parameter puts the
- * conversion in the component and leaves this function holding a number it
- * cannot vouch for, and **`creditDisplayGuard.test.ts` said so the first time
- * it ran**: its census reader sees a credit figure beside the word *credits*
- * and cannot tell, from here, that anything routed it. Taking the ledger value
- * makes the routing visible at the only place it happens.
+ * ⚠ **IT TAKES THE LEDGER NUMBER AND CONVERTS HERE.** `shared/creditDisplay.ts`
+ * is the only thing allowed to turn one into the other (#1600), and
+ * `creditDisplayGuard.test.ts` reads the expression that sits beside the word
+ * *credits* — so the conversion is inline, where the census can see it routed,
+ * and the room does no arithmetic at all.
  *
  * `displayPrice` and not `displayBalance`: a price rounds UP, so a customer is
  * never quoted less than the till will take.
  */
-export function packageRedoLabel(priceCredits: number): string {
-  /* INLINE, not via a local named `credits`: `creditDisplayGuard.test.ts`
-     reads the expression that sits beside the word, and a variable—however
-     honestly assigned one line above—is a figure it cannot see routed. The
-     reader is right to refuse it; a census that trusted a good name would not
-     be a census. */
-  return `${PACKAGE_REDO_LINK} ${PACKAGE_REDO_SEPARATOR} ${formatCredits(displayPrice(priceCredits))} credits`;
+export function packageRedoPrice(priceCredits: number): string {
+  return `${formatCredits(displayPrice(priceCredits))} credits`;
+}
+
+/** His Desk wording for the destructive item (2026-10-09), unchanged by #2144. */
+export const CHARACTER_SHEET_DELETE_LABEL = "Delete this character";
+
+/**
+ * WHAT THE ⋯ MENU ON THE CHARACTER SHEET ROW OFFERS (#2144), in his order:
+ * Regenerate first, then — below the rule a danger item draws — Delete.
+ *
+ * Each item is PRESENT only when it can happen, never disabled (D-107, and
+ * `CardMenu`'s own rule): Regenerate only when the server offered a redo and
+ * none is already being asked for; Delete only when the caller says the door is
+ * open and the cast is not still being made. An empty list draws no dots at all.
+ *
+ * Both items open exactly what they opened as links before the move: Regenerate
+ * presses straight through (no confirm — the price is on the item), Delete
+ * opens the destructive confirm.
+ */
+export function characterSheetMenuItems(options: {
+  redo: { priceCredits: number } | null | undefined;
+  askingAll: boolean;
+  deleteOffered: boolean;
+  onRegenerate: () => void;
+  onDelete: () => void;
+}): CardMenuItem[] {
+  const items: CardMenuItem[] = [];
+  if (options.redo && !options.askingAll) {
+    items.push({
+      label: PACKAGE_REDO_MENU_LABEL,
+      meta: packageRedoPrice(options.redo.priceCredits),
+      onSelect: options.onRegenerate,
+    });
+  }
+  if (options.deleteOffered) {
+    items.push({ label: CHARACTER_SHEET_DELETE_LABEL, danger: true, onSelect: options.onDelete });
+  }
+  return items;
+}
+
+/**
+ * THE COUNT BESIDE THE TITLE — "3 of 5" WHILE VIEWS ARE BEING MADE, AND
+ * NOTHING ONCE THEY ARE DONE (#2144; Yuna's suggestion on the Desk item, and
+ * his word of 2026-10-09, verbatim: *"on yunas call - yes"*).
+ *
+ * The same reading the old *"N of 5 views"* hint made — views that are
+ * `ready`, over every slot, the Master never counted — with one refinement it
+ * needs to be a PROGRESS count: a view being asked for again is not counted as
+ * done while it is being re-made, or a Regenerate would read "5 of 5" for its
+ * whole run.
+ *
+ * Returns null when nothing is being made: the cast is not building, no slot
+ * is building, and no slot is being asked for again. A view that failed and
+ * was refunded is not being made, so it does not hold the count up forever.
+ */
+export function characterSheetCount(
+  castStatus: string,
+  slots: readonly BusySlotRead[],
+  asking: ReadonlySet<string>,
+): string | null {
+  const making = castStatus === "building"
+    || slots.some((slot) => slot.state === "building" || slotIsBeingAsked(slot, asking));
+  if (!making) return null;
+  const done = slots.filter(
+    (slot) => slot.state === "ready" && !slotIsBeingAsked(slot, asking),
+  ).length;
+  return `${done} of ${slots.length}`;
 }
 
 /**
