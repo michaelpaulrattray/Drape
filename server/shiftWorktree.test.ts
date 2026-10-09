@@ -2442,12 +2442,34 @@ describe("the script's own text — the shared-install reading is INVOKED (#2148
   it("⚠ THE DIAGNOSIS IS NOT PRINTED ON A GREEN PREFLIGHT — a block that is always there is noise", () => {
     /* The negative control for the clause above. A skew line on every green run
        trains the shift to scroll past exactly the block that matters on the one
-       run it does. So the call is INSIDE `if (firstRed…)`, and this arm proves
-       it by reading where the green path ends. */
+       run it does. So both calls must live INSIDE the typecheck branch and
+       nowhere else in the file.
+
+       ⚠ THE FIRST SHAPE OF THIS ARM WAS BLIND, AND SABOTAGE FOUND IT RATHER
+       THAN REVIEW. It read `preflight.slice(indexOf("PREFLIGHT GREEN"))` and
+       asserted the call was absent from it — but the green path BEGINS where
+       the red block exits, not at its closing banner, so a call inserted one
+       line ABOVE `console.log("PREFLIGHT GREEN` sat on the green path and
+       outside the slice. Driven: the sabotage landed (two insertions, read at
+       the diff) and all 157 arms stayed green. A slice anchored on a banner is
+       a guess about where a branch starts; counting the call sites is the fact.
+       Memory's own five causes of a surviving sabotage — this was the blind
+       guard, and the one direction that matters is the permissive one. */
     const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
-    const greenPath = preflight.slice(preflight.indexOf("PREFLIGHT GREEN"));
-    expect(greenPath).not.toContain("sharedInstallRedDiagnosis");
-    expect(greenPath).not.toContain("judgeSharedInstall");
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+
+    /* The CALL form, which the import line cannot satisfy — it carries no paren. */
+    for (const symbol of ["judgeSharedInstall", "sharedInstallRedDiagnosis"]) {
+      const sites = [...preflight.matchAll(new RegExp(`${symbol}\\(`, "g"))].map((m) => m.index ?? -1);
+      expect(sites.length, `${symbol} is called ${sites.length} times — exactly one call site, inside the typecheck branch`)
+        .toBe(1);
+      expect(sites[0], `${symbol} is called outside the typecheck branch — it would run on a green preflight`)
+        .toBeGreaterThan(start);
+      expect(sites[0], `${symbol} is called after the typecheck branch closes`).toBeLessThan(end);
+    }
   });
 
   it("⚠ `preflight` NEVER RUNS AN INSTALL EITHER — the same refusal, the same reason", () => {
