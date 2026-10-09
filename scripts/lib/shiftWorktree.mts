@@ -1154,6 +1154,18 @@ export type SharedInstallReading =
   | {
       readonly kind: "skew";
       readonly collisions: readonly string[];
+      /**
+       * ⚠ WHETHER THE REPAIR COMMAND WOULD ACTUALLY REPAIR THIS — the question
+       * the first cut of this reading did not ask (#2148, round 2).
+       *
+       * `pnpm install` installs the lockfile of the tree it is RUN IN. The
+       * printed command names the tree this tool was launched from, and that
+       * tree can be on a different commit from the worktree just cut — `add`
+       * creates the worktree from `origin/main`, never from the launching
+       * tree's HEAD. When the two disagree the command produces the launching
+       * tree's dependency list and the skew just reported survives it.
+       */
+      readonly repairTree: "same-lockfile" | "different-lockfile" | "unreadable";
     };
 
 /**
@@ -1163,10 +1175,25 @@ export type SharedInstallReading =
  * own lockfile text (`null` when it could not be read — unknown, so never
  * counted as a collision, because a guessed collision argues against the one
  * command that fixes the tree in front of you).
+ *
+ * ⚠ **`repairTreeLock` IS THE LOCKFILE OF THE TREE THE PRINTED COMMAND NAMES,
+ * AND IT WAS IN `otherTrees` ALL ALONG WITHOUT BEING ASKED (#2148, round 2).**
+ * The launching tree was read, compared, and counted as one collision among 36
+ * — and then the warning told the shift to run `pnpm install` in it without
+ * ever saying that doing so produces THAT tree's dependency list. Measured on
+ * this machine the hour this was written, three lockfiles and no two alike:
+ * the install was made from `04d1a5fd…`, the launching tree holds `24d2c74c…`,
+ * and `origin/main` — which is what `add` cuts from, so it is the new
+ * worktree's — holds `be7c3b77…`. The named repair moves the install from the
+ * first to the second; the worktree needs the third. Same class as the verdict
+ * that discarded `measureTree`'s own measurement (#2155): a decision that does
+ * not read a fact the code is already holding.
  */
 export function judgeSharedInstall(state: {
   readonly installedLock: string | null;
   readonly treeLock: string | null;
+  /** The lockfile of the tree the printed `pnpm install` would run IN. */
+  readonly repairTreeLock: string | null;
   readonly otherTrees: readonly { readonly path: string; readonly lock: string | null }[];
 }): SharedInstallReading {
   if (state.treeLock === null) {
@@ -1185,7 +1212,17 @@ export function judgeSharedInstall(state: {
   const collisions = state.otherTrees
     .filter((other) => other.lock !== null && normaliseLockfile(other.lock) !== tree)
     .map((other) => other.path);
-  return { kind: "skew", collisions };
+  /* ⚠ UNREADABLE IS ITS OWN ANSWER, NEVER "same" (#2148, round 2). Falling back
+     to the friendly reading is how the command came to be printed as a repair
+     in the first place: a sentence that is always confident is never wrong-
+     looking. A tree whose lockfile cannot be read gets a warning that says the
+     repair was not checked, which is one honest sentence rather than a guess. */
+  const repairTree = state.repairTreeLock === null
+    ? "unreadable" as const
+    : normaliseLockfile(state.repairTreeLock) === tree
+      ? "same-lockfile" as const
+      : "different-lockfile" as const;
+  return { kind: "skew", collisions, repairTree };
 }
 
 /**
@@ -1215,8 +1252,32 @@ export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: st
     "⚠ THE SHARED node_modules WAS INSTALLED FROM A DIFFERENT LOCKFILE than this",
     "  worktree's. Expect `pnpm check` and `pnpm preflight` to go red naming files",
     "  your diff never touched. CI installs fresh, so the gate is unaffected.",
-    `  repair: run \`pnpm install\` in ${repoRoot}`,
   ];
+  /* ⚠ THE REPAIR IS NAMED ONLY WHERE IT IS ONE (#2148, round 2). `pnpm install`
+     installs the lockfile of the tree it runs IN, and this tool's launching tree
+     can sit on an older commit than the worktree `add` just cut from
+     `origin/main` — which is the live state on this machine. A command printed
+     under the word "repair" that leaves the red exactly where it was costs a
+     shift the seven minutes it was written to save, and then teaches it to
+     distrust the block. */
+  if (reading.repairTree === "same-lockfile") {
+    lines.push(`  repair: run \`pnpm install\` in ${repoRoot}`);
+  } else if (reading.repairTree === "different-lockfile") {
+    lines.push(
+      `  ⚠ AND \`pnpm install\` IN ${repoRoot} WOULD NOT REPAIR IT.`,
+      "    That tree owns the install and is on a DIFFERENT lockfile from this",
+      "    worktree, so installing there produces ITS dependency list and this",
+      "    worktree stays red. It has to reach this worktree's commit FIRST, and",
+      "    that is its owner's act, not a seat's — the main tree is shared with",
+      "    live sessions.",
+    );
+  } else {
+    lines.push(
+      `  ⚠ WHETHER \`pnpm install\` IN ${repoRoot} WOULD REPAIR IT IS UNKNOWN — that`,
+      "    tree's own pnpm-lock.yaml could not be read, and the install takes the",
+      "    lockfile of the tree it runs in.",
+    );
+  }
   if (reading.collisions.length > 0) {
     lines.push(
       "",
