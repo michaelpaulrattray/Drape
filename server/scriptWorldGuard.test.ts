@@ -1,11 +1,14 @@
-import { execFileSync } from "node:child_process";
-import { readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
@@ -123,11 +126,14 @@ function callsTheGuard(source: string): boolean {
  * citers spell them, and the suffix is now residue.
  */
 function trackedScripts(root: string): Set<string> {
-  const listed = execFileSync("git", ["ls-files", "--", "scripts"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  /* Through `runHook` like every other child in this suite: a git that never
+     ran throws, and a git that ran and failed is refused by its exit code —
+     both before an empty listing could exempt the tree. (A listing past
+     spawnSync's 1 MB default buffer kills the child, which `runHook` also
+     throws on; the listing is ~24 KB today.) */
+  const run = runHook("git", ["ls-files", "--", "scripts"], { cwd: repoRoot });
+  if (run.status !== 0) throw new Error(`git ls-files exited ${run.status} — the exemption cannot be decided`);
+  const listed = run.stdout;
   const names = listed
     .split(/\r?\n/)
     .filter((line) => line !== "")
@@ -258,5 +264,128 @@ describe("a script that reads the app's database declares its world", () => {
       expect(databaseScripts(scriptsDir), `stale exemption: ${relative}`).toContain(relative);
       expect(reason.length, `exemption without a reason: ${relative}`).toBeGreaterThan(10);
     }
+  });
+});
+
+/**
+ * THE GUARD, DRIVEN ON THE CALLER'S OWN PATH (#2156).
+ *
+ * Each arm runs `assertOneWorld` in a real child process, with a real `.env`
+ * file in its working directory and a process environment shaped like one
+ * Railway invocation — so the declaration a caller makes, the file reader and
+ * the refusal are all the shipped code, not a constant passed in by hand.
+ *
+ * Every value is a FAKE written by this suite, the child is given no
+ * environment but these fakes (the parent's own `.env`-loaded values never
+ * reach it), and the refusal is read by KEY NAME. An arm also checks that no
+ * value — fake or otherwise — is ever echoed into the refusal.
+ *
+ * The fakes have the measured shape: production and dev share the R2 endpoint
+ * and credential, and differ on the database, the bucket and its base.
+ */
+describe("the world guard on the caller's path (#2156)", () => {
+  const dev = {
+    DATABASE_URL: "mysql://fake-dev-2156",
+    R2_BUCKET: "fake-bucket-dev-2156",
+    R2_PUBLIC_URL: "https://fake-pub-dev-2156.example",
+  };
+  const production = {
+    DATABASE_URL: "mysql://fake-production-2156",
+    R2_BUCKET: "fake-bucket-production-2156",
+    R2_PUBLIC_URL: "https://fake-pub-production-2156.example",
+  };
+  /* One R2 account serves both worlds — identical on purpose. */
+  const shared = {
+    R2_ENDPOINT: "https://fake-endpoint-2156.example",
+    R2_ACCESS_KEY_ID: "fake-access-key-2156",
+    R2_SECRET_ACCESS_KEY: "fake-secret-2156",
+  };
+  /* A declared key that is not a world-key at all: still guarded. */
+  const other = { FAKE_OTHER_KEY_2156: "fake-other-2156" };
+  const everyFakeValue = [dev, production, shared, other].flatMap((set) => Object.values(set));
+
+  const guardUrl = pathToFileURL(path.join(scriptsDir, "lib", "worldGuard.mts")).href;
+  const tsxLoader = pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href;
+
+  /** `declaration`: "app-write-path" | "default" | a JSON list of keys. */
+  function drive(environment: Record<string, string>, declaration: string): { refused: string[] | null; output: string } {
+    const dir = mkdtempSync(path.join(tmpdir(), "world-guard-2156-"));
+    try {
+      writeFileSync(path.join(dir, ".env"), Object.entries({ ...dev, ...shared, ...other })
+        .map(([key, value]) => `${key}=${value}`).join("\n") + "\n");
+      writeFileSync(path.join(dir, "drive.mts"), [
+        `import { assertOneWorld, APP_WRITE_PATH_KEYS } from ${JSON.stringify(guardUrl)};`,
+        `const declaration = process.argv[2];`,
+        `try {`,
+        `  if (declaration === "app-write-path") assertOneWorld(APP_WRITE_PATH_KEYS);`,
+        `  else if (declaration === "default") assertOneWorld();`,
+        `  else assertOneWorld(JSON.parse(declaration));`,
+        `  console.log("ALLOWED");`,
+        `} catch (error) {`,
+        `  console.log("REFUSED " + (error as Error).message);`,
+        `}`,
+      ].join("\n"));
+      /* Through `runHook`, so a child that never ran THROWS rather than
+         handing back a status this arm could misread (#640). */
+      const child = runHook(process.execPath, ["--import", tsxLoader, "drive.mts", declaration], {
+        cwd: dir,
+        env: {
+          PATH: process.env.PATH ?? "",
+          SystemRoot: process.env.SystemRoot ?? "",
+          ...environment,
+        },
+      });
+      const output = `${child.stdout}${child.stderr}`;
+      expect(child.status, output).toBe(0);
+      if (/^ALLOWED/m.test(output)) return { refused: null, output };
+      const match = /^REFUSED Mixed worlds: (.+?) currently hold/m.exec(output);
+      expect(match, `the child neither allowed nor refused in the guard's words:\n${output}`).not.toBeNull();
+      return { refused: match![1]!.split(", ").sort(), output };
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  const inRailway = { RAILWAY_ENVIRONMENT_NAME: "production", RAILWAY_SERVICE_NAME: "fake" };
+  /* `railway run --service Drape`: the service defines all six itself. */
+  const serviceDrape = { ...inRailway, ...production, ...shared };
+  /* `railway run --service MySQL` + dotenv: the service defines none of the
+     six, so every one of them is the `.env` value. */
+  const serviceMySql = { ...inRailway, ...dev, ...shared };
+
+  it("ALLOWS the correct `--service Drape` run of APP_WRITE_PATH_KEYS — the false refusal of the card", () => {
+    expect(drive(serviceDrape, "app-write-path").refused).toBeNull();
+  });
+
+  it("REFUSES `--service MySQL` by the three keys that differ, and never the three that cannot", () => {
+    expect(drive(serviceMySql, "app-write-path").refused)
+      .toEqual(["DATABASE_URL", "R2_BUCKET", "R2_PUBLIC_URL"]);
+  });
+
+  it("REFUSES the third bite: rows pointed at production by hand, the bucket left to .env", () => {
+    expect(drive({ ...serviceMySql, DATABASE_URL: production.DATABASE_URL }, "app-write-path").refused)
+      .toEqual(["R2_BUCKET", "R2_PUBLIC_URL"]);
+  });
+
+  it("the default declaration gets the same answer in both directions", () => {
+    expect(drive(serviceDrape, "default").refused).toBeNull();
+    expect(drive(serviceMySql, "default").refused).toEqual(["DATABASE_URL", "R2_BUCKET", "R2_PUBLIC_URL"]);
+  });
+
+  /* Only the measured-shared keys are skipped — a subtraction, not an
+     intersection, so a caller's non-world key is exactly as guarded as before. */
+  it("a declared key outside the world-keys is still refused when .env supplied it", () => {
+    expect(drive({ ...serviceDrape, ...other }, JSON.stringify(["FAKE_OTHER_KEY_2156"])).refused)
+      .toEqual(["FAKE_OTHER_KEY_2156"]);
+  });
+
+  it("stays inert outside a Railway run, as before", () => {
+    const { RAILWAY_ENVIRONMENT_NAME: _env, RAILWAY_SERVICE_NAME: _service, ...local } = serviceMySql;
+    expect(drive(local, "app-write-path").refused).toBeNull();
+  });
+
+  it("names keys, never values, in the refusal", () => {
+    const { output } = drive({ ...serviceMySql, ...other }, JSON.stringify([...Object.keys(dev), ...Object.keys(shared), ...Object.keys(other)]));
+    for (const value of everyFakeValue) expect(output.includes(value), "a value reached the refusal").toBe(false);
   });
 });
