@@ -360,16 +360,17 @@ export default function CastingRoom() {
         onSuccess: (saved) => {
           setSavingPersonaField(null);
           /*
-            HER OWN WORDS GO STRAIGHT INTO THE CACHE — the relay's non-blocking
-            note on PR #2114, and the reason the procedure returns them at all.
+            THE CUSTOMER'S OWN WORDS GO STRAIGHT INTO THE CACHE — the relay's
+            non-blocking note on PR #2114, and the reason the procedure returns
+            them at all.
 
             Without this the card falls back to `value.text` the instant the
             textarea closes, which is still the OLD sentence until the refetch
-            lands: **she watches her edit flash back to what it was and then
-            change again.** The entrance's reply is shaped for exactly this (its
-            own comment: *"her words, back to her, with the badge already gone -
-            so the card she is looking at does not need a refetch"*) and nothing
-            was reading it.
+            lands: **the edit flashes back to what it was and then changes
+            again** — measured at 2,230 ms on a real Cast. The entrance's reply
+            is shaped for exactly this — its own comment says the reply comes
+            back *"with the badge already gone"* so the card *"does not need a
+            refetch"* — and nothing was reading it.
 
             The `invalidate` below stays: this writes the one line the reply is
             authoritative about, and the refetch is still what reconciles

@@ -38,10 +38,11 @@ import type { CastPersonaField } from "./castPersonaField";
  * money are all finished and correct by that point.
  *
  * The two `isNull(…EditedAt)` terms stay, and they are worth their two lines for
- * a reason that does not depend on a sweep existing: they make *her words win*
+ * a reason that does not depend on a sweep existing: they make *the customer's
+ * words win*
  * a property of the STATEMENT rather than of the call graph. Whoever does build
  * a redraft — the sweep, a repair ceremony, a re-Sign — inherits a write that
- * cannot land on a line she has rewritten, instead of having to know that it
+ * cannot land on a line the customer has rewritten, instead of having to know that it
  * must not. They are in the statement and not in a read before it, because a
  * check-then-write here would leave exactly the race invariant 1 refuses.
  */
