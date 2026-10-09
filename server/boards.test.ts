@@ -784,7 +784,7 @@ describe.skipIf(!dbAvailable)("boards", () => {
         history: ["https://example.com/original.png"],
         historyIndex: 0,
         activeGarmentIds: [],
-      });
+      }, "");
 
       await expect(getSessionById(sessionId, 414)).resolves.toBeNull();
       await updateSession(sessionId, 414, {

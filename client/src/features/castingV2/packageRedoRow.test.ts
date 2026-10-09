@@ -104,12 +104,16 @@ describe("what the redo says about money when a view does not arrive", () => {
 });
 
 describe("the redo button", () => {
-  it("says what it does in the customer's own noun", () => {
-    /* VIEWS — the word the strip beside it already uses. Not "package", not
-       "redo", not "regenerate": the product's shorthand is not the customer's
-       word (his #1908 rule, one noun over). */
-    expect(PACKAGE_REDO_LINK).toBe("Ask for all views again");
-    expect(PACKAGE_REDO_LINK.toLowerCase()).toContain("views");
+  it("says his word for it, and only that", () => {
+    /* REGENERATE — his word, #2090 (2026-10-08): *"way too long just call it
+       Regenerate"*. It was "Ask for all views again" until then, and this arm
+       said "not regenerate" on the reasoning that it was product shorthand;
+       his ruling supersedes that, and the refine panel's version button
+       already says Regenerate to the same customer. Still not "package", not
+       "redo" (the copy arm below). */
+    expect(PACKAGE_REDO_LINK).toBe("Regenerate");
+    /* The old sentence must not survive in the row's copy under any casing. */
+    expect(PACKAGE_REDO_LINK.toLowerCase()).not.toContain("ask for all views again");
   });
 
   it("carries the price, spelled `credits` and never `CR`", () => {
@@ -123,7 +127,10 @@ describe("the redo button", () => {
        arm proves the division rather than the price, which is exactly why a
        stale figure here reads as current. */
     const label = packageRedoLabel(3250);
-    expect(label).toBe(`Ask for all views again ${PACKAGE_REDO_SEPARATOR} 650 credits`);
+    expect(label).toBe(`Regenerate ${PACKAGE_REDO_SEPARATOR} 650 credits`);
+    /* The whole sentence he will read, separator spelled out, so a change to
+       the separator constant cannot pass by changing both sides at once. */
+    expect(label).toBe("Regenerate · 650 credits");
     expect(label).toContain("credits");
     /* #1908's rule: an abbreviation is the product's shorthand. Asserted on a
        word boundary so "credits" does not satisfy a search for "CR". */

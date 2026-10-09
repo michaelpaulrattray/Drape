@@ -547,8 +547,20 @@ console.log("");
 // the merged-PR window — filed as unattributed under a printed explanation
 // that is wrong for that case, so a boundary artifact would read as a
 // recurring anomaly.
+//
+// ⚠ `heartbeatAt` IS SELECTED BECAUSE THE OVERLAP TEST READS IT (#2086). The
+// column is optional on `ShiftRunReading`, so leaving it out of this SELECT
+// would make the repair INERT and nothing would say so — the join would fall
+// back to the close stamp and keep reporting 48 overlapping pairs where 24 are
+// real. A control that is not invoked does not exist (invariant 7).
+//
+// ⚠ `prNumber` AND `branch` ARE SELECTED FOR THE SAME REASON (#2097): they are
+// the anchors the attribution reads before any clock, both optional on
+// `ShiftRunReading`, so a SELECT without them would leave every PR to the time
+// window and the ledger's "by PR number 0, by branch 0" line would be the only
+// sign of it.
 const shiftRuns = (await q(
-  `SELECT id, shift, seat, startedAt, endedAt, outcome
+  `SELECT id, shift, seat, startedAt, heartbeatAt, endedAt, outcome, prNumber, branch
      FROM crew_shift_runs WHERE endedAt >= ? OR endedAt IS NULL ORDER BY startedAt`,
   [since],
 )).map<ShiftRunReading>((row) => ({
@@ -556,8 +568,11 @@ const shiftRuns = (await q(
   shift: String(row.shift),
   seat: String(row.seat),
   startedAt: new Date(row.startedAt).toISOString(),
+  heartbeatAt: row.heartbeatAt ? new Date(row.heartbeatAt).toISOString() : null,
   endedAt: row.endedAt ? new Date(row.endedAt).toISOString() : null,
   outcome: row.outcome === null || row.outcome === undefined ? null : String(row.outcome),
+  prNumber: row.prNumber === null || row.prNumber === undefined ? null : Number(row.prNumber),
+  branch: row.branch === null || row.branch === undefined ? null : String(row.branch),
 }));
 
 const mergedPrs = readMergedPrs(sinceIso, { limit: prLimit });

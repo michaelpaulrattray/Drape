@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 53
+      "moduleCount": 52
     },
     {
       "id": "domain:client-shared",
@@ -1581,12 +1581,6 @@
     {
       "id": "module:client/src/features/castingV2/singleFlight.ts",
       "path": "client/src/features/castingV2/singleFlight.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/viewRetryRow.ts",
-      "path": "client/src/features/castingV2/viewRetryRow.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11152,6 +11146,10 @@
       "path": "client/src/features/castingV2/modalAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/noPerViewRetry.test.ts",
+      "path": "client/src/features/castingV2/noPerViewRetry.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/packageRedoRow.test.ts",
       "path": "client/src/features/castingV2/packageRedoRow.test.ts"
     },
@@ -11274,10 +11272,6 @@
     {
       "id": "test:client/src/features/castingV2/useChipAnatomy.test.ts",
       "path": "client/src/features/castingV2/useChipAnatomy.test.ts"
-    },
-    {
-      "id": "test:client/src/features/castingV2/viewRetryRow.test.ts",
-      "path": "client/src/features/castingV2/viewRetryRow.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/viewerCompare.test.ts",
@@ -15128,6 +15122,10 @@
       "path": "server/wardrobe.test.ts"
     },
     {
+      "id": "test:server/wardrobe/flatLayAndSavedPictureReceipt.test.ts",
+      "path": "server/wardrobe/flatLayAndSavedPictureReceipt.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/garmentAdoption.test.ts",
       "path": "server/wardrobe/garmentAdoption.test.ts"
     },
@@ -15138,6 +15136,18 @@
     {
       "id": "test:server/wardrobe/scratchUpload.test.ts",
       "path": "server/wardrobe/scratchUpload.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/sessionHistoryRelease.test.ts",
+      "path": "server/wardrobe/sessionHistoryRelease.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/sessionPhotoAndImportRefusal.test.ts",
+      "path": "server/wardrobe/sessionPhotoAndImportRefusal.test.ts"
+    },
+    {
+      "id": "test:server/wardrobe/tryOnResultReceipt.test.ts",
+      "path": "server/wardrobe/tryOnResultReceipt.test.ts"
     },
     {
       "id": "test:server/wardrobe/vtoSession.test.ts",
@@ -18509,11 +18519,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/viewRetryRow.ts",
-      "to": "module:server/castingV2/castProjection.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/export/ExportPackDialog.tsx",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -21466,11 +21471,6 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/roomBusy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:client/src/features/castingV2/viewRetryRow.ts",
       "kind": "imports"
     },
     {
@@ -32610,6 +32610,16 @@
     },
     {
       "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/casting/deletionAudit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/wardrobe.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -32621,6 +32631,11 @@
     {
       "from": "module:server/db/wardrobe.ts",
       "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/wardrobe.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {
@@ -35640,6 +35655,11 @@
     },
     {
       "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/db/accountDeletion.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/db/dailyQuota.ts",
       "kind": "imports"
     },
@@ -35661,11 +35681,6 @@
     {
       "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/wardrobe.ts",
-      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
@@ -36230,6 +36245,11 @@
     },
     {
       "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
       "to": "module:server/casting/deletionAudit.ts",
       "kind": "imports"
     },
@@ -36241,6 +36261,11 @@
     {
       "from": "module:server/wardrobe/garmentAdoption.ts",
       "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/wardrobe/garmentAdoption.ts",
+      "to": "module:server/db/wardrobe.ts",
       "kind": "imports"
     },
     {
@@ -36379,11 +36404,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/wardrobe/outfitDecomposition.ts",
-      "to": "module:server/wardrobe/utils.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/wardrobe/qualityCheck.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -36450,7 +36470,7 @@
     },
     {
       "from": "module:server/wardrobe/utils.ts",
-      "to": "module:server/storage.ts",
+      "to": "module:server/wardrobe/scratchUpload.ts",
       "kind": "imports"
     },
     {

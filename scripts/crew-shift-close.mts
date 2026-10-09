@@ -529,6 +529,18 @@ try {
     check-in has already shown him the banner, so half is the early warning
     that arrives before it bites. A genuinely short shift — a quiet night, a
     one-line fix — has no meaningful step to stamp and is not a finding.
+
+    ⚠ `ranForMs` IS A STAMP SPAN HERE AND IT CANNOT BE SHARPENED — read in
+    #2086's class sweep and named so the next sweep does not re-file it. It is
+    `Date.now() - startedAt`, so on the `--id` road (a later shift closing a
+    dead row) it is the whole silence and not the shift's life: a shift that
+    died at minute five and is stamped ten hours later reports ten hours. There
+    is no better field. This arm fires ONLY when `heartbeatAt === startedAt`,
+    which is precisely the row that has no proof of life after its start — the
+    same reason `laneRunLastProofOfLife` falls back to `endedAt` for it. The
+    finding's SUBSTANCE (it never checked in) is right either way; only the
+    minutes are generous, and they are generous in the direction that makes
+    somebody look.
   */
   if (!checkedIn && ranForMs > CREW_SHIFT_STALL_MS / 2) {
     const minutes = Math.round(ranForMs / 60_000);

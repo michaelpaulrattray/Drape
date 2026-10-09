@@ -403,8 +403,8 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
       expect.arrayContaining([expect.stringContaining("Delete Me"), expect.stringContaining("agencyId")]),
     );
 
-    await expect(wardrobeDb.createSession({ userId, modelId, modelImageUrl: headUrl })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(wardrobeDb.saveLook({ userId, modelId, imageUrl: headUrl })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(wardrobeDb.createSession({ userId, modelId, modelImageUrl: headUrl }, "")).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(wardrobeDb.saveLook({ userId, modelId, imageUrl: headUrl }, "")).rejects.toMatchObject({ code: "NOT_FOUND" });
     await expect(boardsDb.addBoardItem({
       boardId: boardB.insertId, type: "model", kind: "cast_config", sourceModelId: modelId,
     })).rejects.toMatchObject({ code: "NOT_FOUND" });

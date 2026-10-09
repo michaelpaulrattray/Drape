@@ -131,7 +131,6 @@ async function drive(operationId: string, mode: "lost-ack" | "failed" | "undecid
         retry: { priceCredits: PRICE, reason: "refunded" },
       }],
       deliveredOutfitKeys: {},
-      freeRetrySpentAngles: [],
     }),
     readSource: async () => ({
       modelId: cast.id,

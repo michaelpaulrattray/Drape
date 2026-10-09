@@ -190,8 +190,18 @@ export type ViewRetryResult = {
   refundRecorded: boolean;
 };
 
+/**
+ * THE FREE REFUSAL A PRESS MEETS WHEN THE SLOT OFFERS NOTHING — and since #2089
+ * that is EVERY slot (his *"regenerate is the only option"*, 2026-10-08), so
+ * the customer who meets it is the one holding a tab opened before that deploy.
+ *
+ * ⚠ **It says what to do, not only what was refused** — the
+ * disappearing-technology law's rule for a refusal. It read *"That view isn't
+ * one you can ask for again"*, which was true and left her nowhere to go; the
+ * remedy is the whole-set button on the same page, named by its own label.
+ */
 export const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
-  "That view isn't one you can ask for again. Nothing was charged.";
+  "That view can't be asked for again on its own — Regenerate makes every view again. Nothing was charged.";
 
 /**
  * A SECOND PRESS ON A VIEW ALREADY BEING MADE — free, and it says which of the
@@ -470,6 +480,14 @@ export async function retryCastView(
     throw new TRPCError({ code: "NOT_FOUND", message: VIEW_RETRY_NOTHING_TO_ASK_MESSAGE });
   }
   /*
+    ⚠ **SINCE #2089 THIS REFUSES EVERY PRESS** — his *"regenerate is the only
+    option"* — because `castSlotRetryOffer` answers null for every slot. That is
+    the server half of retiring the per-view door: a tab still drawing
+    *"Refunded · Try again"* from before the deploy is refused here, free and
+    before the claim. Everything below this exit is kept for the operations
+    already in flight and for the recovery sweep that settles them; the road
+    itself retires on its own card.
+
     THE OFFER IS RE-READ HERE, NOT TRUSTED FROM THE CLIENT.
 
     The button carried a price; this is the server asking the same function the

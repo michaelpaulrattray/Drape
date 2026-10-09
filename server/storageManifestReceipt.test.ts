@@ -386,7 +386,18 @@ const COLLECTORS: Readonly<Record<string, string>> = {
     holding the key**, and the two answers to this table are different because
     of it.
   */
-  "server/wardrobe/scratchUpload.ts": "a photograph uploaded only so a detector could read it, collected once the request is over",
+  /*
+    ⚠ **AND #2021/#1980 GAVE IT TWO CALLERS WHOSE ROW DOES ADOPT THE KEY ITSELF**
+    — not a copy. `garments.upload`'s photograph is handed to `createGarment`
+    and a try-on result to `appendSessionResult` (`server/db/wardrobe.ts`), and
+    each discharges the receipt in the transaction that files its row. The
+    entry stays a COLLECTOR because THIS module never discharges and most of
+    its callers drop the receipt on purpose: the classification is of the
+    module that mints the id, and what it promises is "collected unless a row
+    adopts it in the same transaction". `server/db/storageCleanupHold.test.ts`
+    already holds `db/wardrobe.ts` to the shared undischarged predicate.
+  */
+  "server/wardrobe/scratchUpload.ts": "a photograph uploaded only so a detector could read it, collected unless a row adopts it in the transaction that files it",
 };
 
 /**
