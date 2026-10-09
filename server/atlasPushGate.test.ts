@@ -47,6 +47,23 @@ const GENERATE = `ls server | sort > ${MAP}`;
 const CHECK = `ls server | sort > .expected && cmp -s .expected ${MAP} `
   + `&& echo "[atlas:check] OK" || { echo "[atlas:check] FAILED - map is stale"; exit 1; }`;
 
+/**
+ * ⚠ THE #2167 FIXTURES — a check that CANNOT RUN, and a stale one that merely
+ * talks about things not found. Declared beside `CHECK` because they are the
+ * same kind of thing: a stand-in whose exact TEXT is the property under test.
+ */
+/** pnpm's own output with no install, measured 2026-10-10 — note it exits 1. */
+const NO_INSTALL_CHECK = [
+  `echo '> tsx scripts/check-architecture.mts'`,
+  `echo "'tsx' is not recognized as an internal or external command,"`,
+  `echo ' ELIFECYCLE  Command failed with exit code 1.'`,
+  `echo ' WARN   Local package.json exists, but node_modules missing, did you mean to install?'`,
+  `exit 1`,
+].join("; ");
+/** Genuinely stale, and its message says "not found" mid-sentence on purpose. */
+const PROSE_STALE_CHECK =
+  `echo '[atlas:check] FAILED - a road cites a door that is not found in the code'; exit 1`;
+
 type Result = { status: number; stderr: string; stdout: string };
 
 function gitWith(config: string[], cwd: string, ...args: string[]): Result {
@@ -130,6 +147,28 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
   });
 
+  /*
+    ⚠ AND THE HOOK MUST NOT ERROR ON ITS OWN LINES, which is not implied by any
+    verdict assertion above — found the hard way on this very card. A docblock
+    edit left one comment line without its `#`, so sh executed it: every push
+    printed `.githooks/pre-push: line 316: alone: command not found` to stderr.
+    The verdict was still right, the maps were fresh, the push was taken, and
+    all thirteen arms stayed green — a hook can be broken and correct at once.
+    The whole suite asserts on MESSAGE CONTENT, so nothing here could see it.
+  */
+  it("⚠ the hook runs without sh errors of its own (#2167)", () => {
+    const { work, remote } = repoWithRemote();
+    const result = push(work);
+
+    expect(result.status, result.stderr).toBe(0);
+    /* sh names the failing script and line: `.githooks/pre-push: line N: ...`. */
+    expect(result.stderr).not.toMatch(/pre-push: line \d+:/);
+    /* Belt and braces for a shell that words it differently. */
+    expect(result.stderr).not.toContain("command not found");
+    expect(result.stderr).not.toContain("syntax error");
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
   it("REFUSES a stale map on a clean tree, and the remote does NOT move", () => {
     const { work, remote } = repoWithRemote();
     expect(push(work).status).toBe(0);
@@ -146,6 +185,98 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(result.stderr).toContain("REFUSED");
     expect(result.stderr).toContain("pnpm architecture:generate");
     expect(remoteHead(remote)).toBe(before);
+  });
+
+  /*
+    ⚠ THE #2167 TRIO — "the map is stale" and "the checker could not run" were
+    ONE answer until 2026-10-10, because this arm read only the exit code. A
+    docs-only commit in a worktree with no `node_modules` was refused with "the
+    working tree is clean and the generated maps are STALE" above the remedy
+    `pnpm architecture:generate`, which needs the same missing `tsx` and fails
+    identically. The map was never stale; only whether the checker could run.
+
+    The three arms are a SET and only mean anything together: two shapes that
+    must WARN, and one that must still REFUSE. The third is what keeps the first
+    two honest — without it `check_never_ran` could be a blanket "anything
+    non-zero is unjudgeable" and both allow-arms would pass just the same.
+  */
+  it("⚠ #2167: WARNS and allows when the checker is ABSENT — and the remote moves", () => {
+    const { work, remote } = repoWithRemote();
+    /* A command no machine has, so the SHELL answers for itself — exit 127 plus
+       its own "not found" / "command not found". This arm therefore drives real
+       shell behaviour rather than a sentence this suite made up. */
+    const absent = ["-c", "drape.atlasCheck=drape-no-such-checker-2167"];
+    expect(gitWith(absent, work, "push", "origin", "trunk").status).toBe(0);
+
+    commitSource(work, "b.ts");
+    const result = gitWith(absent, work, "push", "origin", "trunk");
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toContain("COULD NOT JUDGE");
+    expect(result.stderr).not.toContain("REFUSED");
+    /* It must not blame the dirty list — the wrong sentence for this cause, and
+       the one a tree holding scratch used to be told instead. */
+    expect(result.stderr).not.toContain("uncommitted");
+    /* And it must not print the remedy that reproduces the error. */
+    expect(result.stderr).not.toContain("architecture:generate");
+    /* The only proof an allow-arm consulted the hook at all (see the header). */
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
+  /*
+    ⚠ AND THIS IS THE ARM THAT MATTERS, BECAUSE THE REAL CASE EXITS 1, NOT 127.
+    `pnpm` catches the missing binary itself. Measured in a directory with no
+    install, 2026-10-10, and pasted here rather than paraphrased:
+
+        > tsx scripts/check-architecture.mts
+        'tsx' is not recognized as an internal or external command,
+         ELIFECYCLE  Command failed with exit code 1.
+         WARN   Local package.json exists, but node_modules missing, did you mean to install?
+        EXIT=1
+
+    So an exit-code reader cannot see this at all: 1 is exactly what a stale map
+    exits with. Only the output tells the two apart.
+  */
+  it("⚠ #2167: the measured pnpm output exits 1 and still reads as COULD NOT RUN", () => {
+    const { work, remote } = repoWithRemote();
+    const noInstall = ["-c", "drape.atlasCheck=" + NO_INSTALL_CHECK];
+    expect(gitWith(noInstall, work, "push", "origin", "trunk").status).toBe(0);
+
+    commitSource(work, "b.ts");
+    const result = gitWith(noInstall, work, "push", "origin", "trunk");
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toContain("COULD NOT JUDGE");
+    expect(result.stderr).not.toContain("REFUSED");
+    /* The check's own tail is printed, so an unrecognised cause stays diagnosable. */
+    expect(result.stderr).toContain("node_modules missing");
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
+  /*
+    ⚠ THE NEGATIVE CONTROL OF THE READER ITSELF, and the reason the pair above is
+    evidence rather than decoration. `not found` is ordinary English, and a
+    freshness checker is full of prose about things it could not find — so a
+    blanket match would read a genuinely stale map as unjudgeable, which is the
+    one direction this arm may never fail in (#606, #519). The pattern is
+    anchored at end of line for exactly this output, which carries the words
+    mid-sentence.
+  */
+  it("⚠ #2167: a stale map whose message merely SAYS 'not found' is still REFUSED", () => {
+    const { work, remote } = repoWithRemote();
+    const prose = ["-c", "drape.atlasCheck=" + PROSE_STALE_CHECK];
+    /* Seeded with the real check, so the remote holds a known commit to compare. */
+    expect(push(work).status).toBe(0);
+    const landed = remoteHead(remote);
+
+    commitSource(work, "b.ts");
+    const result = gitWith(prose, work, "push", "origin", "trunk");
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("REFUSED");
+    expect(result.stderr).not.toContain("COULD NOT JUDGE");
+    /* A refusal is only a refusal if nothing moved. */
+    expect(remoteHead(remote)).toBe(landed);
   });
 
   it("⚠ THE #606 ROAD: a revert skips pre-commit, and the push is caught", () => {

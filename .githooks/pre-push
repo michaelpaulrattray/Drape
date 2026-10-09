@@ -80,7 +80,24 @@
 # population is `.githooks/atlas-paths`, shared with the commit hook so the two
 # cannot drift about which files matter.
 #
-# ⚠ TWO STATED LIMITS, because a guard that half-declares one reads as coverage.
+# ⚠ AND "STALE" IS NOT THE ONLY WAY THE CHECK CAN COME BACK NON-ZERO — #2167,
+# 2026-10-10, found by the Machinist being refused by it. Until then this arm
+# read ONLY the exit code, so *the generator ran and the map is stale* and *the
+# generator could not run at all* were one answer. In a worktree cut with plain
+# `git worktree add` and no `node_modules`, a docs-only commit was refused with
+# "the working tree is clean and the generated maps are STALE" above the remedy
+# `pnpm architecture:generate`, which needs the same missing `tsx` and fails
+# identically — so an author who obeyed the instruction got the same error and
+# no way forward. Measured, nothing staged, one junction the only change:
+#
+#     push from the worktree, no node_modules  REFUSED — "maps are STALE"
+#     after a junction to the main tree's      architecture:check OK,
+#     install, nothing else changed            capability:check OK, push taken
+#
+# Not one byte of the commit changed between those two readings. The map was
+# never stale; only whether the checker could run.
+#
+# ⚠ THREE STATED LIMITS, because a guard that half-declares one reads as coverage.
 #
 # 1. IT JUDGES THE CURRENT WORKING TREE, WHATEVER REF IS BEING PUSHED. `git push
 #    origin some-other-branch` from this checkout gets a verdict about THIS
@@ -92,11 +109,71 @@
 #    line. A filename holding a space splits, and a glob character expands. It
 #    is display only — the refusal decision never reads it — and the tradeoff is
 #    a legible list against a cosmetic edge nothing in this tree has.
+# 3. `check_never_ran` reads SENTENCES, and a provider may reword one. A pnpm or
+#    shell release that renames "node_modules missing" lands this arm back on
+#    its OLD behaviour — a refusal carrying a remedy that cannot work — rather
+#    than on a wrong allow. That is the safe direction, and it is why the
+#    failing direction is not hidden: the refusal prints the check's own tail,
+#    so an unrecognised sentence is on screen for the next reader.
 #
 # `drape.atlasCheck` overrides the check command; its only intended use is the
 # guard's own test, which drives real temporary repositories with no generator.
 # Driven by `server/atlasPushGate.test.ts`, against real repositories and a real
 # `git push` to a real bare remote.
+
+# ⚠ DID THE CHECK RUN AT ALL? — the question this arm did not ask until #2167.
+#
+# Takes the check's output and its status. True only for the shapes that mean
+# *no verdict was produced*, and false for everything else, because the default
+# must be the refusal: a stale map this arm waves through is a map the gate
+# catches at 3 and a half minutes, which is the cost #606 exists to avoid.
+#
+# ⚠ THE EXIT CODE CANNOT TELL THE TWO APART, WHICH IS WHY THIS READS THE OUTPUT.
+# The obvious discriminator is 127, the shell's own command-not-found, and on
+# this road it is the wrong one: `pnpm` catches the missing binary itself and
+# exits 1, measured in a directory with no install —
+#
+#     > tsx scripts/check-architecture.mts
+#     'tsx' is not recognized as an internal or external command,
+#      ELIFECYCLE  Command failed with exit code 1.
+#      WARN   Local package.json exists, but node_modules missing, did you mean to install?
+#     EXIT=1
+#
+# — the same 1 a genuinely stale map exits with. The sentences, each measured
+# rather than guessed:
+#
+#   node_modules missing        pnpm's own WARN with no install present. The
+#                               most general of them: it fires whatever binary
+#                               the script names, which is why it is first.
+#   is not recognized as an     cmd.exe, the binary absent. This is the one the
+#   internal or external        #2167 repro actually printed on this machine.
+#   command
+#   command not found           POSIX sh, same cause, one of its two spellings.
+#   : not found at end of line  The other spelling (`sh: 1: tsx: not found` has
+#                               no "command"), ANCHORED with [[:space:]]*$ on
+#                               purpose: bare `not found` is ordinary English,
+#                               and unanchored it would read a reworded
+#                               staleness message as an absent checker — the
+#                               one wrong direction here. The space class is
+#                               there for a CR byte sitting before the line
+#                               ending, which a bare anchor would miss.
+#   ERR_PNPM_NO_SCRIPT          the script is not declared — a renamed script is
+#                               still a verdict that was never produced.
+#   Cannot find module          node resolving against a half-written install,
+#                               which is #2148's state rather than a hypothetical.
+#
+# 127 is read too and is NOT redundant with those: it is the shell's own answer
+# when the check COMMAND itself is missing (no `pnpm` on PATH), where there is
+# no pnpm left to print a sentence.
+check_never_ran() {
+  never_ran_out=$1
+  never_ran_status=$2
+  [ "$never_ran_status" -eq 127 ] && return 0
+  printf '%s\n' "$never_ran_out" | grep -qiE \
+    'node_modules missing|is not recognized as an internal or external command|command not found|: not found[[:space:]]*$|ERR_PNPM_NO_SCRIPT|Cannot find module' \
+    && return 0
+  return 1
+}
 
 atlas_push_gate() {
   # The rite runs these two itself before it pushes main — do not pay twice.
@@ -116,6 +193,31 @@ atlas_push_gate() {
   out=$(sh -c "$check" </dev/null 2>&1)
   status=$?
   [ "$status" -eq 0 ] && return 0
+
+  # ⚠ BEFORE THE DIRTY READ, AND THE ORDER IS THE POINT (#2167). When the check
+  # never ran, the dirty list is not the reason and must not be offered as one:
+  # a tree that happened to hold uncommitted sources would already have warned
+  # here with a sentence blaming the wrong thing, and a clean one was refused
+  # outright. Both are the same missing question, so it is asked first.
+  if check_never_ran "$out" "$status"; then
+    echo "" >&2
+    echo "atlas: ⚠ COULD NOT JUDGE — the freshness check did not run, so nothing is" >&2
+    echo "known about whether the maps are stale. The push is allowed." >&2
+    echo "" >&2
+    printf '%s\n' "$out" | tail -n 5 >&2
+    echo "" >&2
+    echo "This usually means the worktree has no install. The fix is an install or a" >&2
+    echo "junction to one — NOT a regenerate, which needs the same missing tooling and" >&2
+    echo "fails the same way:" >&2
+    echo "" >&2
+    echo "  npx tsx scripts/shift-worktree.mts add <slug>   (cuts a tree WITH the junction)" >&2
+    echo "  pnpm install                                     (if this tree owns its install)" >&2
+    echo "" >&2
+    echo "The gate rebuilds both maps from the committed tree and is the backstop for" >&2
+    echo "this one. (card #2167 — never --no-verify.)" >&2
+    echo "" >&2
+    return 0
+  fi
 
   # Stale — but is the staleness the COMMIT's, or uncommitted work on disk?
   #
