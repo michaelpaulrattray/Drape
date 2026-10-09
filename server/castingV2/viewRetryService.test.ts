@@ -207,7 +207,9 @@ function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
     label: "Back",
     state: "failed-refunded",
     url: null,
-    note: "This view didn't arrive — refunded",
+    /* The confession lost its money clause with #1968 — `castProjection.ts`
+       carries why. This fixture stands for a LEGACY row either way. */
+    note: "This view didn't arrive",
     refundedCredits: LEGACY_VIEW_SLICE,
     /*
       ⚠ The `as` below means this object does NOT have to satisfy the type, so

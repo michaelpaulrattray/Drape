@@ -620,6 +620,18 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
       // would pass every arm above by containing nothing at all.
       expect(sentence.length).toBeGreaterThan(20);
       expect(sentence).toContain("didn't arrive");
+      /*
+        ⚠ **AND NEITHER MAY CLAIM MONEY CAME BACK FOR THIS VIEW — #1968.**
+        `FAILED_SLOT_CONFESSION` said *"— refunded"* until his flat Sign price
+        removed the per-view refund that made it true. `TOTAL_LOSS_CONFESSION`
+        is about the whole Sign and is allowed to talk about money, so the ban
+        is on the per-VIEW word rather than on the subject: a note that is
+        drawn under one tile must not describe a refund.
+      */
+      if (name === "FAILED_SLOT_CONFESSION") {
+        expect(sentence.toLowerCase(), "a per-view note cannot claim a refund (#1968)")
+          .not.toContain("refund");
+      }
     });
   }
 

@@ -328,7 +328,36 @@ export type SignedCastProjection = {
  * once. Saying a count truthfully needs the count on the row, which is the Try
  * again slice's work, where the sentence is read rather than assumed.
  */
-export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded";
+/*
+  ⚠ **THE WORD `refunded` IS GONE FROM THIS SENTENCE — #1968, AND IT IS THE
+  ONE CUSTOMER-FACING CLAIM HIS REPRICE MADE FALSE.**
+
+  It read *"This view didn't arrive — refunded"*, and it was true for as long as
+  a failed view gave its own slice back. His word of 2026-10-08 ends that:
+  views are cut from two sheets and *"can't be refunded one by one... Credits
+  only come back if the Sign can't be delivered at all."* So a tile wearing this
+  note is a view that cost its owner money and did not arrive, and telling her
+  it was refunded is the worst kind of wrong copy — a promise about money that
+  did not keep.
+
+  **What it says now says less and stays true on both roads:** a view that
+  failed on a delivered Sign (no refund, and the remedy is the whole-set redo),
+  and a view that failed on a Sign that delivered nothing at all (where the
+  WHOLE charge went back, which is a fact about the Sign rather than about this
+  tile, and the package's own `TOTAL_LOSS_CONFESSION` is where it is said).
+
+  ⚠ **It was found by LOOKING, which is working law 6 earning its place.** No
+  suite could have caught it: every failed-slot marker in the dev database
+  carries `refunded: 50` from the 450-credit era, so the sentence was true of
+  every row on screen. It only becomes a lie on a row this build writes.
+
+  ⚠ **AND PR #2098 (card #2089) ARGUES THE OTHER WAY ON AN EXPIRED PREMISE.**
+  Its capability-atlas prose keeps this word with the reasoning *"which is true
+  because the Sign still charges each view its own refundable slice"* — the
+  exact sentence this card deletes. Named on both pull requests rather than
+  resolved by whichever merges second.
+*/
+export const FAILED_SLOT_CONFESSION = "This view didn't arrive";
 
 /**
  * ⚠ **THE TWO SENTENCES THAT USED TO SIT HERE ARE GONE — his ruling,
