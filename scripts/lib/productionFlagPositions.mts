@@ -595,7 +595,10 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why:
       "how many face scans one account may buy in a UTC day, read by "
       + "assertNumericEnv() at boot. A scan is house money and the customer is never "
-      + "charged for it. Never set on the service — the declared default of 40",
+      + "charged for it. Never set on the service — the declared default, 250 since "
+      + "#2170 (2026-10-10). It was 40, which three of the only ten days of real "
+      + "scanning exceeded; the number is argued at the constant, from what a scan "
+      + "costs ($0.10) and what accounts actually do",
   },
   ROLL_IMAGE_CONCURRENCY: {
     position: UNSET,

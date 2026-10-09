@@ -41,6 +41,11 @@ import sharp from "sharp";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AUDIT_ACTIONS } from "../shared/auditActions";
+import { NUMERIC_ENV_VARS } from "./_core/env";
+import { utcDayOf } from "./castingV2/faceScanDailyCap";
+
+/** The shipped number, read from its declaration — never typed twice (law 4). */
+const SHIPPED_CAP = NUMERIC_ENV_VARS.FREE_SCAN_DAILY_CAP;
 
 /* ---- ownership: one owned candidate per public id ---- */
 const candidateIdByPublicId = new Map<string, number>();
@@ -211,29 +216,67 @@ describe("the daily face-scan cap counts distinct faces, not requests (#2170)", 
     expect(scanFace).toHaveBeenCalledTimes(1);
   }, 20_000);
 
-  it("⚠ POSITIVE CONTROL — at the shipped default of 40, the 41st distinct face is still refused", async () => {
+  /*
+    ⚠ THIS ARM DRIVES THE BOUNDARY, NOT THE ARITHMETIC — and it changed shape in
+    #2170 for a reason worth keeping.
+
+    It used to loop to the cap (`for n = 1..40`) and then ask once more. At the
+    new default that is 251 requests, and it is structurally impossible: this
+    procedure also sits behind `RATE_LIMITS.castingRead`, which is **120
+    requests a minute**, so the loop trips a DIFFERENT limit and the arm fails
+    with `TOO_MANY_REQUESTS` having never reached the cap. (Driven: it did.)
+
+    So the day's tally is seeded to one short of the cap and the boundary is
+    crossed in two requests. The cap's own number, comparison and audit row are
+    still the real ones; what is faked is only how the day got full, which is
+    the same edge this file already fakes everywhere else.
+  */
+  it("⚠ POSITIVE CONTROL — at the shipped default, one face past the cap is refused", async () => {
     const userId = (nextUser += 1);
     openTo(userId);
-    /* No FREE_SCAN_DAILY_CAP: the number under test is the shipped default. */
+    /* No FREE_SCAN_DAILY_CAP: the number under test is the shipped default,
+       DERIVED from its declaration rather than typed here (law 4). */
     scanFace.mockResolvedValue(CLEAN_SCAN);
+    tally.set(`${userId}:${utcDayOf(new Date())}`, SHIPPED_CAP - 1);
 
-    for (let n = 1; n <= 40; n += 1) {
-      await caller(userId).faceScan({ candidateId: own(1_000 + n), variantId: null });
-    }
-    expect(scanFace, "under the cap, a distinct face was not read").toHaveBeenCalledTimes(40);
-    expect(cappedRows()).toHaveLength(0);
+    /* The cap-th face of the day: counted to exactly the cap, and allowed. */
+    const allowed = await caller(userId).faceScan({ candidateId: own(1_001), variantId: null });
+    expect(scanFace, "the cap-th distinct face was refused").toHaveBeenCalledTimes(1);
+    expect(allowed).toMatchObject({ enabled: true });
+    expect(cappedRows(), "the cap-th face wrote a refusal row").toHaveLength(0);
 
-    const refused = await caller(userId).faceScan({ candidateId: own(1_041), variantId: null });
+    /* One past it. */
+    const refused = await caller(userId).faceScan({ candidateId: own(1_002), variantId: null });
 
-    expect(scanFace, "the 41st distinct face of the day bought a scan").toHaveBeenCalledTimes(40);
+    expect(scanFace, "one face past the cap bought a scan").toHaveBeenCalledTimes(1);
     /* Today's panel, exactly as before #2170 — no copy, no error. */
     expect(refused).toMatchObject({ enabled: true, done: true });
     expect(cappedRows(), "the refusal wrote no audit row").toHaveLength(1);
     expect(cappedRows()[0]![0]).toMatchObject({
       userId,
-      metadata: expect.objectContaining({ cap: 40, scansToday: 41 }),
+      metadata: expect.objectContaining({ cap: SHIPPED_CAP, scansToday: SHIPPED_CAP + 1 }),
     });
   }, 30_000);
+
+  /*
+    ⚠ THE ARM THAT STOPS THE NUMBER DRIFTING BACK UNDER REAL USE (#2170).
+
+    Every behavioural arm in this file passes at ANY cap — they set a small one
+    and count to it — so none of them could see the shipped number being too
+    low. That is exactly what happened: 40 shipped, three of the only ten days
+    of real scanning exceeded it, and the first real day of use was refused 15
+    times with this suite green.
+
+    The floor is the measured busiest day, read at every row of
+    `casting_face_scans` on 2026-10-10 (371 rows, one account, ten days):
+    189 · 56 · 43 · 39 · 20 · 13 · 8 · 1 · 1 · 1. A cap at or below 189 would
+    have refused a real session. (The 20 is 8 October and is CENSORED — the cap
+    refused that day 15 times, so its true demand was higher.)
+  */
+  it("⚠ the shipped cap sits above the busiest day any account has ever had", () => {
+    const BUSIEST_REAL_DAY = 189;
+    expect(SHIPPED_CAP).toBeGreaterThan(BUSIEST_REAL_DAY);
+  });
 
   it("a face already bought today is still served after the day is shut", async () => {
     /*

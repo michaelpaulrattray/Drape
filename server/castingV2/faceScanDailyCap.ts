@@ -5,8 +5,8 @@
  *
  * A face scan is **house money**, and `castingV2.faceScan`'s own docblock is the
  * place that says so: *"Nothing is charged to the user — a scan is house money on
- * a read they never asked to pay for."* One scan is fourteen segmenter questions
- * at fal, every bilateral one of which becomes two more.
+ * a read they never asked to pay for."* One scan is **20** segmenter reads at fal
+ * (`FACE_SCAN_READS_PER_VERSION`, counted rather than derived) — about $0.10.
  *
  * Until P1-4 that was fine, because every account was approved by hand. From
  * P1-4 a free account arrives on a verified email or a Google sign-in with **no
@@ -49,24 +49,92 @@
  *
  * # The number
  *
- * `FREE_SCAN_DAILY_CAP`, default 40, through `envInt` — so a blank Railway
+ * `FREE_SCAN_DAILY_CAP`, default **250**, through `envInt` — so a blank Railway
  * variable takes the default rather than becoming `NaN`, which on this
  * comparison would admit every scan and silently delete the control.
  *
- * Forty is loose on purpose. A scan is per (candidate, version) and idempotent,
- * so re-opening a face costs nothing; reaching forty in one UTC day means forty
- * distinct faces or versions looked at for the first time, which is far past any
- * session a person actually has. The two measured facts behind it: the in-process
- * cache holds 64 readings (`FACE_SCAN_CACHE_LIMIT`), and the panel's own scan is
- * gated to five concurrent segmenter calls.
+ * ⚠ **IT WAS 40, AND 40 WAS MEASURABLY TOO LOW — #2170, 2026-10-10. The
+ * paragraph this replaces argued the number from two cache sizes; it is argued
+ * here from what accounts actually do and what a scan actually costs.**
+ *
+ * **What a scan costs the house:** `FACE_SCAN_READS_PER_VERSION` is **20**
+ * segmenter reads (`scripts/lib/falSpend.mts`, counted by driving the real
+ * `scanFace` through a recording reader — its own docblock notes that *every
+ * hand-derivation of this number before that script was wrong*), and fal's
+ * published SAM-3 price is **$0.005 a request** (`FAL_MEASURED_USD`). So one
+ * scan is about **$0.10**, plus one describer text call on a different
+ * transport that is deliberately not priced in with it.
+ *
+ * ⚠ **The sentence above this one used to say "fourteen segmenter questions",
+ * and that was one of the wrong hand-derivations** — 11 asks with 3 bilateral
+ * ones doubling. The figure lives in one place precisely so this does not
+ * happen; this docblock now cites it instead of recomputing it.
+ *
+ * **What accounts actually do.** Distinct `(candidate, version)` pairs per UTC
+ * day, every row in `casting_face_scans`, all time, read 2026-10-10 (371 rows,
+ * one account — the only one that has ever scanned, over ten days):
+ *
+ *     189 · 56 · 43 · 39 · 20 · 13 · 8 · 1 · 1 · 1
+ *
+ * **Three of those ten days exceed 40 counted correctly**, and a cap of 40 would
+ * have refused 149 of the 189 faces of 22 September — about four fifths of one
+ * real session. ⚠ **The 20 is not a quiet day either: it is CENSORED.** That is
+ * 8 October, the day the cap first fired, and the account was refused 15 times
+ * on top of it — so the demand that day was higher than the row shows, and the
+ * only reason it reads as 20 is that this control stopped it.
+ *
+ * **Why 250 costs the house nothing it was not already exposed to, which is the
+ * argument that actually settles the number.** A free account can only scan
+ * faces it owns, and it has to buy them first: the one-time grant is
+ * `FREE_SIGNUP_GRANT_CREDITS` = 13,500 ledger credits, and a sheet of eight
+ * candidates is `CASTING_V2_ROLL_PRICE_CREDITS` = 1,600 — so **eight sheets, 64
+ * candidates, about $6.40 of scans in its entire life.** The grant bounds a
+ * cardless account's total scan spend an order of magnitude below any plausible
+ * daily ceiling, and it does so whether this number is 40 or 250. Anyone who
+ * can reach 250 distinct faces in a day has bought about 32 sheets, which is
+ * several times a free grant.
+ *
+ * So the daily number was never the control on a free account's TOTAL; it is a
+ * control on a BURST. ⚠ **And the burst road is the one #2174 closed** — the
+ * panel's once-a-second poll used to spend a count each time, which is what
+ * made 40 behave like 15. With counting fixed, 250 is a ceiling an honest
+ * session does not reach and an abusive one cannot pay for.
+ *
+ * **The worst case, stated rather than implied: 250 × $0.10 = $25.00 of house
+ * money per account per UTC day.**
+ *
+ * ⚠ **AND THIS IS NOT THE ONLY LIMIT ON THIS ROAD — found while driving the new
+ * number (#2170), and it is the thing to know before anyone changes it again.**
+ * `castingV2.faceScan` also calls `enforceRateLimit(ctx.user.id,
+ * RATE_LIMITS.castingRead)`, which is **120 requests a minute**
+ * (`server/security/rateLimit.ts`). The two answer differently and a reader who
+ * knows only this file will misdiagnose the other: the rate limit throws a real
+ * `TOO_MANY_REQUESTS` the client can see, while this cap returns today's panel
+ * and says nothing. So a burst is already bounded per MINUTE by that, and this
+ * number bounds the DAY. The test that proves this cap fires had to stop
+ * looping to it for exactly this reason — 251 requests trip the per-minute
+ * limit long before the daily one.
  *
  * # Who it applies to
  *
  * ⚠ **EVERY ACCOUNT, not only free ones** — and that is a deliberate choice
  * rather than an oversight. Keying the cap on the plan tier would mean the
  * control's population changes whenever billing does, and it would read a money
- * table to answer a cost question. At forty a day no paying customer can reach
- * it either, so a tier test would buy nothing and cost a dependency.
+ * table to answer a cost question.
+ *
+ * ⚠ **THE JUSTIFICATION THIS CLAUSE USED TO CARRY IS FALSIFIED AND IS NOT
+ * REPLACED WITH A GUESS (#2170).** It read *"At forty a day no paying customer
+ * can reach it either, so a tier test would buy nothing and cost a
+ * dependency"* — and the only account that has ever scanned reached it, 15
+ * times in four minutes on 8 October. The *conclusion* still holds at 250 for
+ * the reason above (a free grant cannot buy enough candidates to get near it,
+ * so a tier test would still change nobody's answer), but it holds on the
+ * credit grant rather than on the claim that nobody reaches the number.
+ *
+ * Whether a cardless free account should have a LOWER ceiling than an
+ * established one is a real question and is deliberately NOT answered here: it
+ * is the tier dependency this clause declines, and reopening it is a design
+ * decision rather than a number change.
  */
 import { AUDIT_ACTIONS } from "../../shared/auditActions";
 import { envInt } from "../_core/env";
