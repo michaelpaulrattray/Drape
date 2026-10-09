@@ -267,11 +267,198 @@ describe("what the instruction is not allowed to ask for", () => {
     expect(prompt).toMatch(/physical tell/i);
   });
 
-  it("asks for the baseline-then-exception shape his specimen has", () => {
+  it("asks for the baseline-then-break shape his specimen has", () => {
     expect(prompt).toMatch(/baseline/i);
-    expect(prompt).toMatch(/exception/i);
+    /* His craft correction (#2136) calls it a BREAK rather than an exception,
+       and the clause says there is exactly one of them. */
+    expect(prompt).toMatch(/single break|one thing that breaks|ONE thing that breaks/);
   });
 
+  /*
+    HIS THREE CRAFT RULES — card #2136, from the Desk item recording "Mike's
+    corrections, verbatim". Each is pinned as its own arm, because the court
+    measured that the instruction is what moves the output: the before arm,
+    missing these clauses, produced no timing sentence and no performance half
+    on any of his three casts.
+  */
+  it("⚠ rule 1 — gives each personality sentence its own job: rest, then timing", () => {
+    expect(prompt).toMatch(/SENTENCE ONE/);
+    expect(prompt).toMatch(/at REST/);
+    expect(prompt).toMatch(/SENTENCE TWO/);
+    expect(prompt).toMatch(/TIMING/);
+    /* The order is load-bearing: rest first, timing second, as he wrote it. */
+    expect(prompt.indexOf("SENTENCE ONE")).toBeLessThan(prompt.indexOf("SENTENCE TWO"));
+  });
+
+  it("⚠ rule 2 — makes translating a feeling into a camera-word OUR job, not the customer's", () => {
+    /* His words: "Menacing" is not storable; "moves all at once, without
+       wind-up" is. The translation is the engine's job, never the customer's. */
+    expect(prompt).toMatch(/menacing/i);
+    expect(prompt).toMatch(/YOUR work/);
+    expect(prompt).toMatch(/not the customer's/);
+  });
+
+  it("⚠ rule 3 — requires BOTH voice halves: the sound of it, then how it is used", () => {
+    expect(prompt).toMatch(/timbre/i);
+    expect(prompt).toMatch(/USES it/);
+    expect(prompt).toMatch(/how a question/i);
+    expect(prompt).toMatch(/Both halves are required/);
+  });
+
+  /*
+    HIS EYE ON THE FIRST COURT — 2026-10-09, the finding that held PR #2145.
+
+    The three craft rules above did their job and then overshot: the drafts came
+    back saying the same facts as his own examples with about 150 characters of
+    padding. So he added a fourth rule, kept here VERBATIM as he typed it, and
+    said the caps themselves stay where this branch put them.
+  */
+  const HIS_LENGTH_RULE = [
+    "Every sentence states one new thing the camera can see, said once. Match the",
+    "length of the founder's examples — the character limit is a ceiling for rare",
+    "cases, never a target to fill.",
+  ].join("\n");
+
+  it("⚠ rule 4 — carries his length ruling verbatim, and exactly once", () => {
+    expect(prompt).toContain(HIS_LENGTH_RULE);
+    /* Once, because a clause that appears twice cannot be removed by a sweep —
+       which is what the sabotage arm below depends on. */
+    expect(prompt.split(HIS_LENGTH_RULE)).toHaveLength(2);
+  });
+
+  it("⚠ rule 4, clause by clause — one new thing per sentence, his lengths, the cap is not a target", () => {
+    expect(prompt).toContain("states one new thing the camera can see, said once");
+    expect(prompt).toContain("Match the\nlength of the founder's examples");
+    expect(prompt).toContain("a ceiling for rare\ncases, never a target to fill");
+  });
+
+  it("⚠ rule 4 — SABOTAGE: with his rule cut out, the arm above goes red", () => {
+    /* Working law 2: a reader that cannot fail has proven nothing. The cut is
+       asserted to have LANDED before its consequence is read, because a
+       `replace` that matched nothing passes a sabotage arm by doing nothing. */
+    const sabotaged = prompt.replace(HIS_LENGTH_RULE, "");
+    expect(sabotaged).not.toBe(prompt);
+    expect(sabotaged).not.toContain(HIS_LENGTH_RULE);
+    expect(sabotaged).not.toContain("never a target to fill");
+  });
+
+  it("⚠ the caps STAY at 500 and 320 — his word on the court, and not a shift's to move", () => {
+    /* Verbatim: "Keep the limits at 500 and 320 — those stay." The arm further
+       down proves they clear the widest line measured; this one pins the two
+       numbers he actually named, so a later tidy-up cannot drift them. */
+    expect(CAST_PERSONALITY_MAX_LENGTH).toBe(500);
+    expect(CAST_VOICE_MAX_LENGTH).toBe(320);
+  });
+
+  /*
+    HIS FIX 3 — THE BREAK IN THE VOICE HAS TO BE ACTABLE.
+
+    His words on the first court's Pigman line: *"grinding growl on certain
+    vowels" — a performer can't act "certain vowels." The old version's "on the
+    exhale" was better. Make the growl land on something performable.* So the
+    instruction names the kinds of thing a break may land on, and names the
+    shape it may not.
+  */
+  it("⚠ fix 3 — tells the reader the voice's break must land on something a performer can DO", () => {
+    expect(prompt).toContain("something a performer can DO");
+    for (const actable of ["a breath", "exhale", "a laugh", "a pause", "a question"]) {
+      expect(prompt).toContain(actable);
+    }
+  });
+
+  it("⚠ fix 3 — forbids a speech sound or a letter, which is the thing he could not act", () => {
+    expect(prompt).toMatch(/Never a speech\s*\n?sound and never a letter/);
+    /* BOTH named instances: his own "certain vowels", and the one the re-court
+       produced on Henry when the prohibition named only the plural phrasings —
+       the draft read "until a hard consonant cuts through clean", which is the
+       same unactable class wearing the singular. Naming the CLASS and both
+       phrasings is what stopped it; the clause is the measurement's own shape. */
+    expect(prompt).toContain('"on certain vowels"');
+    expect(prompt).toMatch(/"on a hard\s*\n?consonant"/);
+  });
+
+  /*
+    THE DRAFTED LINES USE THE CAST'S OWN PRONOUNS AND NEVER THE PICTURE'S.
+
+    Measured in the re-court, round 1: "Rina" resolves to they/them/their, the
+    ask carried those three words, and the drafted lines still said "while the
+    rest of HER stays locked" and "SHE answers in short, finished statements".
+    `castPronouns` exists because the room called every Cast "she" and that read
+    as the product not having looked at the person it was describing — the same
+    defect, now leaking through the two lines the product WRITES. It is also his
+    standing order of 2026-10-09. The instruction already said "use the pronouns
+    given below"; what it did not say is that no other pronoun may appear, and
+    that the face is not where they come from. After the clause, 0 of 6 drafts
+    across two samples used a pronoun the cast was not given.
+  */
+  it("⚠ allows only the three pronouns the cast was given, and names them inline", () => {
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      expect(rendered).toContain("Use ONLY the three pronouns given");
+      expect(rendered).toContain(`"${pronouns.subject}", "${pronouns.object}", "${pronouns.possessive}"`);
+      expect(rendered).toMatch(/no other pronoun in\s*\n?either line/);
+    }
+  });
+
+  it("⚠ forbids reading the pronouns off the face — `they` is the fallback, not a gap to fill", () => {
+    /* `castPronouns`' own rule: "Guessing from a name or a face is not on the
+       table." A reader handed a photograph and three pronoun words will
+       otherwise prefer the photograph, which is what round 1 measured. */
+    expect(prompt).toMatch(/never read off the face or guessed from the picture/);
+  });
+
+  it("⚠ fix 3 — and the FORM example no longer MODELS the shape he rejected", () => {
+    /* Law 7, the class rather than the instance: the example's own break was
+       "until a hard consonant clips it short", which is the same unactable
+       phonetic class as "certain vowels" — and an example is the strongest
+       signal an instruction carries. Sliced out rather than swept over the
+       whole prompt, because the forbidden phrases legitimately appear in the
+       prohibition above and a whole-file sweep would read them as the defect. */
+    const example = prompt.slice(prompt.lastIndexOf("  VOICE:"), prompt.indexOf("Answer with JSON only"));
+    expect(example).toContain("VOICE:");
+    expect(example).not.toMatch(/consonant|vowel/i);
+  });
+
+  /*
+    THE OBJECT PRONOUN IS ITS OWN WORD, AND "she" HID THAT FOR BOTH CLAUSES.
+
+    Two clauses take the object form, and both read correctly for a `she` cast
+    — the only prompt fixture this suite had — while rendering "asked of he",
+    "Write about he" and "asked of they" for everybody else. These arms drive
+    all three pronoun sets, so the fixture can no longer be the reason a
+    grammar defect in the live instruction is invisible.
+  */
+  const everyPronounSet: readonly CastPronouns[] = [
+    { subject: "he", object: "him", possessive: "his", plural: false },
+    { subject: "she", object: "her", possessive: "her", plural: false },
+    { subject: "they", object: "them", possessive: "their", plural: true },
+  ];
+
+  it("⚠ renders the object form in both clauses that need it, for every pronoun set", () => {
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      expect(rendered).toContain(`being asked of\n${pronouns.object}.`);
+      expect(rendered).toContain(`Write about ${pronouns.object} in the third person`);
+    }
+  });
+
+  it("⚠ NEGATIVE CONTROL — the subject form in those slots is what the defect looked like", () => {
+    /* Drives the defect rather than asserting the repair: for `he` and `they`
+       the old text was ungrammatical, and this is the string it produced. */
+    for (const pronouns of everyPronounSet) {
+      const rendered = castPersonaSystemPrompt(pronouns);
+      if (pronouns.object === pronouns.subject) continue;
+      expect(rendered).not.toContain(`being asked of\n${pronouns.subject}.`);
+      expect(rendered).not.toContain(`Write about ${pronouns.subject} in the third person`);
+    }
+  });
+
+  it("⚠ no longer tells the reader to ignore what the voice says — that clause CONTRADICTED rule 3", () => {
+    /* The instruction used to end the voice clause with "never what it says",
+       which forbids the performance half he asked for by name. A sweep for the
+       old sentence is the only thing that keeps it from drifting back in. */
+    expect(prompt).not.toMatch(/never what it says/i);
+  });
   it("⚠ hands his specimens over as FORM and forbids their wording", () => {
     /* A reader given an exemplar copies it unless something stops it, and
        "holds eye contact a beat too long" on every cast in the product would be
@@ -285,6 +472,56 @@ describe("what the instruction is not allowed to ask for", () => {
        volunteers an opinion about it. This reader is given no framing, no
        wardrobe and no quality question at all; it is told not to mention them. */
     expect(prompt).toMatch(/Do not mention photography/i);
+  });
+});
+
+/*
+ * THE CAPS FIT HIS OWN SPECIMEN — card #2136, and the arm that would have gone
+ * red before it.
+ *
+ * `fitToCap` cuts at a SENTENCE END, so a line one character over the cap loses
+ * its entire second sentence — which under his craft rules is the exact half
+ * the correction added. The old numbers therefore deleted the feature while
+ * looking like a harmless bound: measured on three of his production casts,
+ * the voice was cut 3 of 3 and the personality 2 of 3.
+ */
+describe("the caps fit the shape his craft rules produce (#2136)", () => {
+  /** His own Pigman specimen, from the card. The product must store it whole. */
+  const hisPersonality = "Stands planted and square, chin level, clouded eyes fixed forward "
+    + "without blinking rhythm; the one break is the jaw, which hangs faintly open as though "
+    + "the tusks no longer fit the mouth that holds them. Slow to move and slower to answer: "
+    + "ignores what is said until it is said twice, then moves all at once, without wind-up.";
+  const hisVoice = "A wet, dragging rumble that stays flat for whole sentences, then catches "
+    + "on a phlegmy snag before pushing through. Says little: three or four words after a "
+    + "pause, and a question gets ignored until it is asked twice.";
+
+  /** The widest line the court actually measured through the real reader. */
+  const MEASURED_WIDEST_PERSONALITY = 474;
+  const MEASURED_WIDEST_VOICE = 303;
+
+  it("keeps his own voice specimen whole", () => {
+    expect(hisVoice.length).toBe(215);
+    expect(fitToCap(hisVoice, CAST_VOICE_MAX_LENGTH)).toBe(hisVoice);
+  });
+
+  it("keeps his own personality specimen whole", () => {
+    expect(hisPersonality.length).toBe(323);
+    expect(fitToCap(hisPersonality, CAST_PERSONALITY_MAX_LENGTH)).toBe(hisPersonality);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the OLD caps cut his specimen, and cut the half he added", () => {
+    /* Drives the defect rather than asserting the repair: at 200 his voice
+       loses its second sentence entirely, which is the performance style. */
+    const cutAtOldCap = fitToCap(hisVoice, 200);
+    expect(cutAtOldCap).not.toBe(hisVoice);
+    expect(cutAtOldCap).not.toMatch(/Says little/);
+    expect(hisVoice).toMatch(/Says little/);
+  });
+
+  it("⚠ leaves headroom above the widest line the court measured, not just at it", () => {
+    /* A cap sized to the three casts measured would cut the fourth. */
+    expect(CAST_VOICE_MAX_LENGTH).toBeGreaterThan(MEASURED_WIDEST_VOICE);
+    expect(CAST_PERSONALITY_MAX_LENGTH).toBeGreaterThan(MEASURED_WIDEST_PERSONALITY);
   });
 });
 
@@ -346,7 +583,17 @@ describe("a drafted line is fitted to the cap the customer is held to", () => {
   /* ------------------------------------------- and through the real parse */
 
   it("a reply whose voice line is over the cap is fitted, not stored long", () => {
-    const voice = `Low and unhurried. ${"The vowels sit a long way back in the throat. ".repeat(6)}`;
+    /*
+      ⚠ THE REPEAT COUNT IS DERIVED FROM THE CAP, NOT TYPED — working law 4.
+      It was `.repeat(6)`, sized against a cap of 200, and #2136 raised the cap
+      to 320: the fixture quietly stopped being over the cap at all, so the arm
+      asserted that an UNDER-cap line is left alone and still went green on the
+      strength of its own title. A fixture that mirrors a constant drifts from
+      it, and this one drifted in the direction that keeps the test passing.
+    */
+    const sentence = "The vowels sit a long way back in the throat. ";
+    let voice = "Low and unhurried. ";
+    while (voice.length <= CAST_VOICE_MAX_LENGTH) voice += sentence;
     expect(voice.length).toBeGreaterThan(CAST_VOICE_MAX_LENGTH);
 
     const draft = parseCastPersonaDraft(reply("Watchful, hands still.", voice));
