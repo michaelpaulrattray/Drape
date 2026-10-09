@@ -159,15 +159,30 @@ function priceVocabulary(): { values: ReadonlySet<number>; constants: readonly s
  * the modules it enrolled stay enrolled. Removing a figure is the one edit that
  * re-opens #2106, so never remove one.
  *
- * Its stated limit: figures retired BEFORE the guard existed (a Refine's 25, a
- * Roll's 160, a Sign's 450, a slice's 20) are not on it, because no module was
- * ever enrolled by them — that is the guard's pre-existing remainder, not a
- * module leaving. Measured: adding them raises 38 prose figures across 31
- * modules, almost all dated incident records, and it is its own card (#2110).
+ * ⚠ **AND SINCE #2110 IT REACHES BACK BEFORE THE GUARD WAS BORN, SO "WAS" NOW
+ * MEANS "EVER".** As first written the list started at `721a8dd62`, so a
+ * figure retired before then — a Refine's 25, a Roll's 160, a Sign's 450, a
+ * slice's 20 — had never enrolled anything and a module whose prose named only
+ * those was never read. The definition is now every figure the Atlas's
+ * `creditCosts` carried at ANY commit up to `ebf8aa12f`: the 1,585 maps from
+ * the first one (`271ff4dd4`, 2026-07-30) to `721a8dd62` were read with
+ * `git show` on 2026-10-09 — all 1,585 carry a price list — and they add six
+ * figures and no others: 20 (`CASTING_V2_COSTS.rollCandidate`, and the old
+ * `CASTING_V2_RETRY_PRICE_CREDITS`), 25 (`CASTING_V2_REFINE_PRICE_CREDITS`),
+ * 150 (a roll slice, `CASTING_V2_COSTS`), 160 and 1,200
+ * (`CASTING_V2_ROLL_PRICE_CREDITS`) and 450 (`CASTING_V2_SIGN_PRICE_CREDITS`).
+ * They raised 38 prose figures across 31 modules; the reading of each is at
+ * the #2110 block of `PROSE_NOT_A_CURRENT_PRICE`.
+ *
+ * Its stated limit, which moved rather than vanished: a figure that was a price
+ * only BEFORE the Atlas existed (the Sign's 500, two repricings ago) is not on
+ * it, because no map ever carried it. 500 is read wherever a module is enrolled
+ * some other way — `server/routes/castingV2.ts` and `CastingV2.tsx` both declare
+ * one — but it cannot enrol a module by itself.
  */
 const FIGURES_THE_PRICE_LIST_HAS_CARRIED: ReadonlySet<number> = new Set([
-  0, 0.5, 5, 8, 10, 50, 100, 200, 250, 300, 350, 900,
-  1000, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850, 25000,
+  0, 0.5, 5, 8, 10, 20, 25, 50, 100, 150, 160, 200, 250, 300, 350, 450, 900,
+  1000, 1200, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850, 25000,
 ]);
 
 /** What enrols a module: a figure that is a price now, or ever was one here. */
@@ -211,6 +226,57 @@ export function priceFiguresInProse(source: string): ProseFigure[] {
     }
   }
   return found;
+}
+
+/**
+ * ⚠ THE SECOND READER — a figure with NO "credits" word after it (#2110).
+ *
+ * `PRICE_IN_PROSE` requires the word, which keeps its output small, and so it
+ * cannot see the spelling a price docblock most often uses once the unit is
+ * obvious: *"a Sign at 8,500"*, *"derives 8,500 = 3,500 + 5 × 1,000"*, *"the
+ * Sign's 8,500 is untouched"*. Two such lines are what #2110 was filed about,
+ * and the sweep that read them found more of the same shape.
+ *
+ * It is deliberately narrow, and each narrowing is a measured trade rather
+ * than a guess. It reads only a figure written with a THOUSANDS COMMA (`8,500`,
+ * not `8500` and not `25`), because a bare small number in a comment is
+ * almost never a price — `20` and `25` are pixel sizes and timeouts far more
+ * often than they are credits. And its output counts as a finding only when the
+ * figure WAS a price and is not one now (`staleFigures` below), so a comma
+ * number that was never a price — a row count, a character ceiling — never
+ * reaches the reader of this suite. Its honest floor: a retired price written
+ * without a comma and without the word is still invisible.
+ */
+const BARE_GROUPED_FIGURE = /(?<![\d.,])(\d{1,3}(?:,\d{3})+)(?!\d|,\d|\s*-?credits?\b)/gi;
+
+export function bareGroupedFiguresInProse(source: string): ProseFigure[] {
+  const rawLines = source.split("\n");
+  const codeLines = withoutComments(source).split("\n");
+  const found: ProseFigure[] = [];
+  for (let index = 0; index < rawLines.length; index += 1) {
+    const raw = rawLines[index]!;
+    const code = codeLines[index] ?? "";
+    for (const hit of raw.matchAll(BARE_GROUPED_FIGURE)) {
+      if (code.includes(hit[0])) continue;
+      found.push({ line: index + 1, credits: Number(hit[1]!.replace(/,/g, "")), text: raw.trim() });
+    }
+  }
+  return found;
+}
+
+/**
+ * Every prose figure in a module that is not a current price: everything the
+ * first reader finds that nothing charges, plus every bare grouped figure that
+ * was once a price and has retired. One function so the staleness arm and the
+ * reachability arm cannot read two different populations.
+ */
+function staleFigures(source: string, values: ReadonlySet<number>): ProseFigure[] {
+  const enrolling = enrollingFigures(values);
+  return [
+    ...priceFiguresInProse(source).filter((figure) => !values.has(figure.credits)),
+    ...bareGroupedFiguresInProse(source)
+      .filter((figure) => enrolling.has(figure.credits) && !values.has(figure.credits)),
+  ];
 }
 
 type Module = { relative: string; source: string };
@@ -268,10 +334,11 @@ function pricedModules(constants: readonly string[], values: ReadonlySet<number>
     price), staleness still reads the current set, and the two are kept apart
     on purpose.
 
-    ⚠ **ITS HONEST LIMIT IS NARROWER THAN IT WAS, AND STILL THERE.** A module
-    whose prose names only figures retired before this guard existed, and no
-    constant, is still invisible — nothing ever opted it in. The list's own
-    docblock carries the measured size of that remainder.
+    ⚠ **ITS HONEST LIMIT IS NARROWER AGAIN SINCE #2110, AND STILL THERE.** The
+    figures retired before this guard existed are enrolled now, back to the
+    first Atlas map. A module whose prose names only a figure that was a price
+    before ANY map existed, and no constant, is still invisible — the list's
+    own docblock names the one such figure known.
   */
   const enrolling = enrollingFigures(values);
   const found: Module[] = [];
@@ -820,6 +887,375 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "Putting a display figure in this quotation would make the example argue "
       + "against the decision it exists to explain.",
   },
+  /*
+    ⚠ **THE PRE-BIRTH FIGURES — #2110, 2026-10-09.** Enrolling the six figures
+    the Atlas price list carried only BEFORE this guard existed (20, 25, 150,
+    160, 450, 1,200) raised 38 prose figures across 31 modules that nothing had
+    ever read. Read one by one at their lines: SIXTEEN were claims about today
+    and were corrected to the current price in the same commit; the
+    twenty-two below are records of what something cost on a day, and are
+    declared rather than rewritten. Twenty-one of the 38 are a Refine's old
+    25, which is why most of the reasons below name an incident or a
+    measurement rather than a rule.
+  */
+  {
+    file: "server/castingV2/briefCompiler.ts",
+    credits: 160,
+    quote: "sentence charged roll 219 160 credits for men and women against a",
+    why:
+      "A NAMED INCIDENT, roll 219: the interpreter deadline fired on a "
+      + "cyber-goth brief, the fallback cast eight people from its first 80 "
+      + "characters, and the roll was charged at the Roll price of the day. It "
+      + "is the evidence for his *\"refuse-free\"* (Crew reply #7, 2026-08-26).",
+  },
+  {
+    file: "server/castingV2/briefCompiler.ts",
+    credits: 160,
+    quote: "H30 fallback that charged roll 219 160 credits for a sheet cast from the",
+    why:
+      "THE SAME roll 219 INCIDENT, in the paragraph recording his one-word "
+      + "*\"always\"* (Crew reply #9). What the fallback cost on that day is "
+      + "what the ruling was given in answer to.",
+  },
+  {
+    file: "server/castingV2/interpreter.ts",
+    credits: 160,
+    quote: "ignored the customer's words (roll 219, 160 credits)",
+    why:
+      "THE SAME roll 219 INCIDENT, cited by roll number beside its cost as the "
+      + "reason a never-read brief is refused free since #126. A re-scaled "
+      + "figure would no longer be what roll 219 was charged.",
+  },
+  {
+    file: "server/castingV2/castingIntent.ts",
+    credits: 160,
+    quote: "cost a founder 160 credits.",
+    why:
+      "A NAMED INCIDENT: a bare `.optional()` rejected a model's `null`, the "
+      + "whole reply was discarded, and the fallback cast the brief as a "
+      + "photoreal human and charged a Roll at the price of the day. The figure "
+      + "is what the defect cost him.",
+  },
+  {
+    file: "server/castingV2/inkViewReferences.ts",
+    credits: 450,
+    quote: "scoop, and then a 450-credit dev Sign",
+    why:
+      "A QUOTATION OF THIS PARAGRAPH'S OWN EARLIER TEXT (*\"It used to read "
+      + "…\"*), recorded beside the ruling that retired the question it asked. "
+      + "Rewriting the figure would quote a sentence the file never said.",
+  },
+  {
+    file: "server/castingV2/openLaneAccept.ts",
+    credits: 25,
+    quote: "He paid 25 credits, received the horns, and got no sentence about the orb.",
+    why:
+      "A NAMED INCIDENT: horns and an orb in one ask, the normalizer collided on "
+      + "the closed noun, and the founder was charged a Refine at the price of "
+      + "the day for half of what he asked. It is the specimen this collision "
+      + "rule was rebuilt from.",
+  },
+  {
+    file: "server/castingV2/openLaneKind.ts",
+    credits: 25,
+    quote: "The founder paid 25 credits, received the horns, and got no sentence about the",
+    why:
+      "THE SAME horns-and-orb INCIDENT, told in the module that reads our own "
+      + "record rather than asking again. What he paid on that day is the "
+      + "evidence, not a statement of what a Refine costs.",
+  },
+  {
+    file: "server/castingV2/recipeAssembler.ts",
+    credits: 25,
+    quote: "what the founder paid 25 credits for twice on production v#182",
+    why:
+      "A NAMED INCIDENT ON PRODUCTION (v#182): an ask putting glasses back was "
+      + "appended to the absence and both instructions were dispatched, twice. "
+      + "The figure is what those two renders cost him at the price of the day.",
+  },
+  {
+    file: "server/castingV2/refineDelta.ts",
+    credits: 25,
+    quote: "keeping the hoops; the gate found earrings and passed it; 25 credits.",
+    why:
+      "A NAMED INCIDENT: hoops-and-crosses, a picture that cannot exist, "
+      + "resolved by the engine keeping the hoops while the gate passed it. The "
+      + "figure is what the false pass charged on the day, and the argument for "
+      + "the replacement rule below it.",
+  },
+  {
+    file: "server/castingV2/refineDelta.ts",
+    credits: 25,
+    quote: "RENDERED, 25 credits",
+    why:
+      "A MEASUREMENT TABLE (fable-1430): two asks, the picture the only variable, "
+      + "one rendered and charged and one refused free. A row of a measurement "
+      + "records what that ask cost when it was driven.",
+  },
+  {
+    file: "server/castingV2/refineSubjects.ts",
+    credits: 25,
+    quote: "and 25 credits were charged, twice.",
+    why:
+      "RUN 1 OF THE REPLAY WALK (2026-08-11, production, his own account): "
+      + "*\"wear her hair down\"* delivered a high bun on both renders. The same "
+      + "run `refineService.ts`'s declared line above records; the figure is "
+      + "what it cost then.",
+  },
+  {
+    file: "server/castingV2/reliabilityReport.ts",
+    credits: 25,
+    quote: "and the first one cost 25 credits on the founder's own account without",
+    why:
+      "THE SAME REPLAY-WALK CHARGE, recorded as the reason the absent-feature "
+      + "bucket was split out of quibbles on 2026-08-12. A dated cost on his "
+      + "account, not a price.",
+  },
+  {
+    file: "server/castingV2/reliabilityReport.ts",
+    credits: 25,
+    quote: "`hairWorn` was not binding. 25 credits, twice, on the founder's own account,",
+    why:
+      "THE SAME TWO RENDERS, in the paragraph that adds the absence line to "
+      + "the report. What they cost on the day is the size of what the "
+      + "delivery-rate bar could not see.",
+  },
+  {
+    file: "server/castingV2/removalWords.ts",
+    credits: 25,
+    quote: "charged 25 credits for the opposite of his ask",
+    why:
+      "A NAMED INCIDENT, and the comment's own words call it *\"the only wrong "
+      + "charge in the campaign's history\"*: \"clear\" sat in the removal list "
+      + "and his glasses were taken off. A historical charge, at that day's "
+      + "Refine price.",
+  },
+  {
+    file: "server/castingV2/renderFault.ts",
+    credits: 20,
+    quote: "a misfire costs one 20-credit self-refund",
+    why:
+      "HIS RATIONALE ON THE DAY THE DETECTOR WAS FLIPPED (2026-08-03), on the "
+      + "record as he gave it: he was the only affectable user, so a misfire "
+      + "cost him one slice at the slice price of that day. Re-pricing his "
+      + "reasoning would change what he was weighing.",
+  },
+  {
+    file: "server/castingV2/renderVerification.ts",
+    credits: 25,
+    quote: "The house kept 25 credits on",
+    why:
+      "A NAMED SPECIMEN, dev v#166: a paid render delivered and charged on a "
+      + "single negative reading because the confirming call did not return "
+      + "(fable-318 R1). The figure is what that render was charged then.",
+  },
+  {
+    file: "server/castingV2/repaintAsks.ts",
+    credits: 25,
+    quote: "claim, so he was charged 25 credits and refunded them in the same second and",
+    why:
+      "THE CAULIFLOWER-EAR INCIDENT (fable-471, fable-489 §3), the same one "
+      + "`refineService.ts` declares above: refused correctly but after the "
+      + "claim. A dated charge-and-refund, and the argument for judging it "
+      + "before the claim.",
+  },
+  {
+    file: "shared/candidateFailure.ts",
+    credits: 20,
+    quote: "slice, 20 credits, refunded again on failure",
+    why:
+      "HIS OWN WORDS, VERBATIM — the same quotation `retryService.ts` declares "
+      + "above, here as the provenance of the kinds a plain retry serves. "
+      + "Editing his sentence to today's slice price would falsify it.",
+  },
+  {
+    file: "client/src/features/admin/ChangeRequestList.tsx",
+    credits: 160,
+    quote: "$12.00 Stripe refund and deduct 160 credits from the user",
+    why:
+      "A QUOTATION OF THE STAFF SCREEN'S OWN EARLIER LINE, an example of what "
+      + "one change request's block read before it became the Approve note. "
+      + "The figure is that request's amount, not a price of anything.",
+  },
+  {
+    file: "client/src/features/castingV2/components/CandidateViewer.tsx",
+    credits: 25,
+    quote: "Enter then fired a 25-credit refine at somebody else.",
+    why:
+      "WHAT AN EARLIER VERSION OF THIS LISTENER DID (*\"it used to eat ←/→\"*): "
+      + "the viewer walked to the next face under a half-typed instruction. The "
+      + "figure is the cost of the version that was replaced, at that day's "
+      + "Refine price.",
+  },
+  {
+    file: "client/src/pages/CastingV2.tsx",
+    credits: 500,
+    quote: "the founder signed a Cast for 500 credits",
+    why:
+      "THE FOUNDER'S OWN LOST CAST — the same incident `server/routes/castingV2.ts` "
+      + "declares above, at the Sign price of that day. It is the reason the "
+      + "roster stopped being a hardcoded zero.",
+  },
+  {
+    file: "client/src/pages/CastingV2.tsx",
+    credits: 30,
+    quote: "Yuna's wording read *\"30 credits a face\"*",
+    why:
+      "THE DRAFT THAT MADE THE PER-FACE FIGURE DERIVED — the same quotation "
+      + "`shared/castingReceipt.ts` declares above, and the evidence that a "
+      + "hand-typed per-face figure goes stale. Rewriting it deletes the "
+      + "argument.",
+  },
+  /*
+    ⚠ **THE SECOND READER'S RECORDS — #2110, the figures with no "credits"
+    word.** The card named two such lines (`castingV2Scope.ts`'s *"derives
+    8,500 = 3,500 + 5 × 1,000"* and `castingCreditCosts.ts`'s *"a Sign at
+    8,500"*), corrected by hand first. `bareGroupedFiguresInProse` then raised
+    32 figures on its first run. Eleven were claims about today, corrected in
+    this commit — `packageOrchestrator.ts` twice saying *"8,500 credits are
+    gone"* across a line break the first reader could not cross,
+    `discrepancyQueries.ts` explaining its own rule with a Sign whose view rows
+    no longer carry a price, `castViewPackage.ts` saying the total *"is still"*
+    a decomposition #1968 deleted. Three were this commit's own first wording of
+    the card's two lines, reworded. The eighteen below are records, or are not
+    prices at all.
+  */
+  ...[3500, 1000, 8500].map((credits) => ({
+    file: "server/casting/castingCreditCosts.ts",
+    credits,
+    quote: "IT WAS 3,500 + 5 × 1,000 = 8,500 UNTIL THIS COMMIT",
+    why:
+      "THE SIGN'S OLD DECOMPOSITION, STATED AS WHAT IT WAS on the commit that "
+      + "retired it (#1968): promotion plus five view slices. Its own sentence "
+      + "is in the past tense and dated by its commit; one entry per figure, "
+      + "because the line carries three.",
+  })),
+  {
+    file: "server/casting/castingCreditCosts.ts",
+    credits: 8500,
+    quote: "so a Sign bought at 8,500 before this commit",
+    why:
+      "A SIGN IN FLIGHT ACROSS THE REPRICE, and true: one charged at the old "
+      + "price must settle to what it was charged. The figure is what such a "
+      + "Sign paid, which is the whole point of deriving the refund.",
+  },
+  {
+    file: "server/casting/castingCreditCosts.ts",
+    credits: 8500,
+    quote: "still settles to the full 8,500 after it.",
+    why:
+      "THE SAME IN-FLIGHT SIGN, the second half of the sentence. Rewriting it "
+      + "to 3,250 would claim the sweep refunds less than it was charged, which "
+      + "is the defect the sentence says it cannot have.",
+  },
+  {
+    file: "server/castingV2/castingIntent.ts",
+    credits: 1200,
+    quote: "1,200 — so no roll that exists is affected either way",
+    why:
+      "NOT A PRICE — A BRIEF LENGTH IN CHARACTERS (the dev rows' longest brief "
+      + "was 1,137, none over 1,200). It collides with a Roll's #1601 price "
+      + "only numerically, which is the bare reader's stated cost.",
+  },
+  ...[8500, 3500].map((credits) => ({
+    file: "server/castingV2/castingV2Scope.ts",
+    credits,
+    quote: "set the adopted scale: the Sign 450 → 8,500, the promotion 200 → 3,500",
+    why:
+      "A DATED RECORD OF #1601 item 1's REPRICE (*\"ALL FOUR OF ITS FIGURES "
+      + "MOVED AGAIN ON 2026-10-01\"*), the arrows saying from-and-to. The "
+      + "paragraph's subject is that these figures were missed once; the "
+      + "docblock above it now states the flat price.",
+  })),
+  {
+    file: "server/castingV2/castingV2Scope.ts",
+    credits: 1000,
+    quote: "view 50 → 1,000.**",
+    why:
+      "THE SAME DATED #1601 RECORD, its third arrow: what a view was repriced "
+      + "to on 2026-10-01. A view has no price of its own since #1968, which "
+      + "the docblock above it now says.",
+  },
+  {
+    file: "server/castingV2/castProjection.ts",
+    credits: 1000,
+    quote: "a view was 1,000",
+    why:
+      "WHAT A VIEW WAS PRICED AT under #1601's scale, in the paragraph that "
+      + "records the offers this function USED to make — past tense, and "
+      + "followed in the same sentence by #1968 leaving a view no price.",
+  },
+  {
+    file: "server/castingV2/packageOrchestrator.ts",
+    credits: 8500,
+    quote: "8,500 before this commit, part-refunded by slice, and settled by the sweep",
+    why:
+      "A SIGN IN FLIGHT ACROSS #1968, the case this helper is kept for: one "
+      + "charged at the old price and part-refunded by slice. The figure is "
+      + "what such a Sign was charged.",
+  },
+  {
+    file: "server/castingV2/packageOrchestrator.ts",
+    credits: 8500,
+    quote: "(450 → 8,500 → 3,250)",
+    why:
+      "THE SIGN PRICE'S OWN HISTORY, as the reason the refund is threaded from "
+      + "the deduct rather than read from the constant. Every figure in the "
+      + "arrow chain is a dated price, ending at today's.",
+  },
+  {
+    file: "server/castingV2/viewConformance.ts",
+    credits: 1000,
+    quote: "1,000 is five times the answer",
+    why:
+      "NOT A PRICE — A TOKEN CEILING (`max_tokens`) on the conformance reader. "
+      + "It collides with a view's #1601 price only numerically, which is the "
+      + "bare reader's stated cost.",
+  },
+  {
+    file: "server/db/castingV2.ts",
+    credits: 1200,
+    quote: "(160 → 1,200 on #1601 item 1, → 1,600 on",
+    why:
+      "THE ROLL PRICE'S OWN HISTORY, ending at today's 1,600, as the argument "
+      + "for not dating the figure beside it. Each arrow is a dated price.",
+  },
+  {
+    file: "server/routes/castingV2.ts",
+    credits: 1200,
+    quote: "1,200 against 1,600 — so one",
+    why:
+      "WHAT A ROLL AND A FOLLOW COST between #1601 (2026-10-01) and #1753 "
+      + "(2026-10-02), dated in its own sentence — the one day the dock needed "
+      + "two price lines.",
+  },
+  {
+    file: "server/testing/creditDisplaySites.ts",
+    credits: 1200,
+    quote: "tile reading 240 in its title and 1,200 on its face",
+    why:
+      "A COUNTERFACTUAL ON THAT DAY'S SCALE: what a half-routed tile would have "
+      + "shown, a display figure beside a ledger one. Both are the Roll of "
+      + "#1601's day, and the argument is their mismatch, not either price.",
+  },
+  {
+    file: "client/src/features/castingV2/components/SignConfirm.tsx",
+    credits: 8500,
+    quote: "(It said 8,500 until the flat price;",
+    why:
+      "WHAT THE CONFIRM SAID BEFORE #1968, as the reason no number belongs in "
+      + "this prose at all — the figure is served. A record of the old "
+      + "sentence, in the past tense.",
+  },
+  {
+    file: "client/src/pages/CastingSheet.tsx",
+    credits: 1200,
+    quote: "1,600 and a roll sheet's 1,200",
+    why:
+      "WHAT A SHEET'S ROW CARRIED WHEN THIS WAS WRITTEN (*\"When this was "
+      + "written…\"*), followed by *\"Since #1753 both carry 1,600\"*. The "
+      + "paragraph's point is that a row keeps the price of its day.",
+  },
 ];
 
 function declaredFor(file: string, figure: ProseFigure): boolean {
@@ -1046,13 +1482,98 @@ describe("a module enrolled by its prose stays enrolled when that figure retires
   });
 });
 
+describe("the figures retired before this guard existed are read (#2110)", () => {
+  /* THE CARD'S OWN SPECIMEN, VERBATIM: `signVersion.ts:51` as it stood at
+     `7c046429` (#2111's merge). The module names no price constant and its only
+     figure is a Sign's 450, so nothing had ever opted it in. */
+  const SIGN_VERSION_BEFORE_2110 =
+    "/** Which of her pictures the 450 credits are about to be spent on. */\n"
+    + "export type SignVersion = \"original\" | \"edit\";\n";
+  const PRE_BIRTH = [20, 25, 150, 160, 450, 1200];
+
+  it("⚠ POSITIVE CONTROL — the specimen is enrolled, and its 450 is a finding", () => {
+    const { values, constants } = priceVocabulary();
+    for (const figure of PRE_BIRTH) {
+      expect(values.has(figure), `${figure} must not be a current price`).toBe(false);
+      expect(FIGURES_THE_PRICE_LIST_HAS_CARRIED.has(figure), `${figure} must be enrolled`).toBe(true);
+    }
+    /* The defect, reproduced through the same function: on the list as #2111
+       left it — without the six — the module is invisible. */
+    const before2110 = new Set(
+      [...enrollingFigures(values)].filter((figure) => !PRE_BIRTH.includes(figure)),
+    );
+    expect(enrols(SIGN_VERSION_BEFORE_2110, constants, before2110)).toBe(false);
+    expect(enrols(SIGN_VERSION_BEFORE_2110, constants, enrollingFigures(values))).toBe(true);
+    expect(staleFigures(SIGN_VERSION_BEFORE_2110, values).map((figure) => figure.credits))
+      .toEqual([450]);
+    expect(
+      staleFigures(SIGN_VERSION_BEFORE_2110, values)
+        .filter((figure) => declaredFor("client/src/features/castingV2/signVersion.ts", figure)),
+      "the old sentence is absolved by nothing",
+    ).toEqual([]);
+  });
+
+  it("⚠ NEGATIVE CONTROL — the corrected sentence is not a finding, and the real module is read", () => {
+    const { values, constants } = priceVocabulary();
+    const corrected = "/** Which of her pictures the 3,250 credits of a Sign are about to be spent on. */\n";
+    expect(staleFigures(corrected, values)).toEqual([]);
+    const modules = pricedModules(constants, values).map((module) => module.relative);
+    for (const named of [
+      "client/src/features/castingV2/signVersion.ts",
+      "server/casting/castLineagePurge.ts",
+      "server/castingV2/refineSubjects.ts",
+    ]) {
+      expect(modules, `${named} must be in the population`).toContain(named);
+    }
+  });
+});
+
+describe("the second reader — a figure with no \"credits\" word (#2110)", () => {
+  /* THE CARD'S OWN TWO SPECIMENS, VERBATIM, as they stood at `7c046429`. */
+  const SCOPE_BEFORE_2110 = [
+    "/**",
+    " * ruled fable-1654 §2).** The package is FIVE views (`CAST_PACKAGE_VIEWS`, and",
+    " * `CASTING_V2_SIGN_PRICE_CREDITS` derives 8,500 = 3,500 + 5 × 1,000 from its length),",
+    " */",
+    "",
+  ].join("\n");
+  const COSTS_BEFORE_2110 =
+    "/**\n * a whole package. Against a Sign at 8,500, three variants at 1,750 come to\n */\n";
+
+  it("⚠ POSITIVE CONTROL — reads both of the card's lines, and the first reader cannot", () => {
+    const { values } = priceVocabulary();
+    expect(priceFiguresInProse(SCOPE_BEFORE_2110), "no credits word, so the first reader is blind")
+      .toEqual([]);
+    expect(staleFigures(SCOPE_BEFORE_2110, values).map((figure) => [figure.line, figure.credits]))
+      .toEqual([[3, 8500], [3, 3500], [3, 1000]]);
+    expect(staleFigures(COSTS_BEFORE_2110, values).map((figure) => figure.credits))
+      .toEqual([8500]);
+  });
+
+  it("⚠ NEGATIVE CONTROL — a current price, a never-price, code and copy are not findings", () => {
+    const { values } = priceVocabulary();
+    /* 1,750 is a current price; 5,250 and 1,137 were never prices. */
+    expect(staleFigures(COSTS_BEFORE_2110.replace("8,500", "3,250"), values)).toEqual([]);
+    expect(staleFigures("// longest brief 1,137 characters, total 5,250\n", values)).toEqual([]);
+    /* The bare reader leaves a "credits" figure to the first reader, so one
+       figure is never reported twice. */
+    expect(bareGroupedFiguresInProse("// a Sign at 8,500 credits\n")).toEqual([]);
+    /* Code and customer copy survive stripping and are not prose. */
+    expect(bareGroupedFiguresInProse('const s = "a Sign at 8,500";\n')).toEqual([]);
+    /* No comma, no reading — the stated floor, pinned so it is not mistaken for coverage. */
+    expect(bareGroupedFiguresInProse("// a Sign at 8500\n")).toEqual([]);
+    /* A larger number is not read as the retired figure inside it. */
+    expect(bareGroupedFiguresInProse("// 1,000,000 rows and 18,500 more\n").map((f) => f.credits))
+      .toEqual([1_000_000, 18_500]);
+  });
+});
+
 describe("every priced module's prose", () => {
   it("names no figure the product has stopped charging", () => {
     const { values, constants } = priceVocabulary();
     const findings: string[] = [];
     for (const module of pricedModules(constants, values)) {
-      for (const figure of priceFiguresInProse(module.source)) {
-        if (values.has(figure.credits)) continue;
+      for (const figure of staleFigures(module.source, values)) {
         if (declaredFor(module.relative, figure)) continue;
         findings.push(`${module.relative}:${figure.line} — ${figure.credits}: ${figure.text}`);
       }
@@ -1082,11 +1603,16 @@ describe("the declared exemptions cannot outlive their subject", () => {
     for (const entry of PROSE_NOT_A_CURRENT_PRICE) {
       const source = readListedSource(path.join(repoRoot, entry.file));
       expect(source, `${entry.file} is declared here and missing from the tree`).not.toBeNull();
-      const matches = priceFiguresInProse(source!).filter(
+      const matches = [
+        ...priceFiguresInProse(source!),
+        ...bareGroupedFiguresInProse(source!),
+      ].filter(
         (figure) => figure.credits === entry.credits && figure.text.includes(entry.quote),
       );
+      /* Lines, not hits: since #2110 two readers may report the same figure on
+         the same line, and the question is which LINE the entry absolves. */
       expect(
-        matches.map((figure) => figure.line),
+        [...new Set(matches.map((figure) => figure.line))],
         `${entry.file}: the declared quote "${entry.quote}" (${entry.credits}) must match exactly `
         + "one comment line. Re-read the line and re-word this entry, or delete it.",
       ).toHaveLength(1);
@@ -1129,8 +1655,7 @@ describe("the declared exemptions cannot outlive their subject", () => {
     const { values, constants } = priceVocabulary();
     const reached = new Set<string>();
     for (const module of pricedModules(constants, values)) {
-      for (const figure of priceFiguresInProse(module.source)) {
-        if (values.has(figure.credits)) continue;
+      for (const figure of staleFigures(module.source, values)) {
         for (const entry of PROSE_NOT_A_CURRENT_PRICE) {
           if (entry.file !== module.relative) continue;
           if (entry.credits !== figure.credits) continue;

@@ -278,8 +278,12 @@ export function castingSliceCredits(
  * The stronger half is what it does to exploring. Refine is the path to a
  * Sign: every refine is a deposit toward one, and it cuts post-Sign revision
  * churn because identity decisions get made against one cheap image instead of
- * a whole package. Against a Sign at 8,500, three variants at 1,750 come to
- * 5,250 — visible, and still less than the ceremony they protect.
+ * a whole package. As first written, against the Sign price of #1601's scale,
+ * three variants at 1,750 came to 5,250 — visible, and still less than the ceremony they
+ * protected. ⚠ **That half no longer holds (#2110 read it, 2026-10-09):** since
+ * #1968 a Sign is a flat 3,250 credits (`CASTING_V2_SIGN_PRICE_CREDITS`), so
+ * two refines already cost more than the Sign they lead to. This comment
+ * records the change and decides nothing about it.
  *
  * **One unit, not eight slices.** A refine is a single image, so the whole
  * charge refunds on any failure. Per-slice accounting exists because a roll has
@@ -322,8 +326,8 @@ export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
  * RATHER THAN A WRONG ONE.** Both `castProjection` and `viewRetryService`
  * passed `CAST_PACKAGE_VIEW_PRICE` into `castSlotRetryOffer`, on his #1208
  * word — *"trying again deducts another 50cr. its not completely free"* —
- * said when a view WAS 50. A view is 1,000 now and a Try again is 1,850,
- * because a Try again is not an amortised fifth of a package: it is one render
+ * said when a view WAS 50. A view had its own price until #1968 made the Sign
+ * one flat charge, and a Try again is 1,850 credits, because a Try again is not an amortised fifth of a package: it is one render
  * plus its own check, and the spec priced it to stay profitable in the case
  * where that check has to run twice.
  *

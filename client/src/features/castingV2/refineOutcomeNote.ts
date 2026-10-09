@@ -5,7 +5,7 @@
  *
  * The server sets `note` on two kinds of outcome. A FREE one — undoing, or
  * removing a step that lands back on a picture they already have — says so
- * because silence would leave someone assuming they had just spent 25 credits
+ * because silence would leave someone assuming they had just spent 1,750 credits
  * (D-163 rule 4). And a PAID one that could only be served in PART says which
  * part was left out, because a product that quietly serves half an instruction
  * and says nothing has decided something on the user's behalf without telling

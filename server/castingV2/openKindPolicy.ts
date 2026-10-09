@@ -509,7 +509,7 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         record, no render is bought, and the copy says honestly where it will
         show. The reason it is the only honest option today is measured rather
         than argued — a render of an invisible region returns a
-        pixel-identical frame, so charging 25 credits for it would be charging
+        pixel-identical frame, so charging 1,750 credits for it would be charging
         for the picture she already had.
 
         **HIS CONDITION RIDES WITH IT, and it is an obligation on a later

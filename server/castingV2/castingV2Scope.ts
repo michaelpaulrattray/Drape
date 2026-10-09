@@ -62,18 +62,20 @@ export class CastingV2TransportConfigurationError extends Error {
  *
  * §I's fail-closed law: where no trustworthy verifier exists, the request
  * refuses BEFORE the spend. Without the judge transport, every Sign would
- * charge the promotion plus five views, fail all five conformance checks, and
- * refund the WHOLE 8,500 — a Cast with an empty package, every single time, and
- * the money technically correct throughout. Refusing to enable is the only
- * honest posture (invariant 7).
+ * charge its flat 3,250 credits (`CASTING_V2_SIGN_PRICE_CREDITS`, since #1968),
+ * fail all five conformance checks, and refund the WHOLE 3,250 credits — a Cast
+ * with an empty package, every single time, and the money technically correct
+ * throughout. Refusing to enable is the only honest posture (invariant 7).
  *
  * ⚠ **THIS PARAGRAPH SAID "six views" AND "refund three hundred credits back",
  * AND ALL THREE NUMBERS IN IT WERE WRONG — corrected 2026-08-25 (opus-1272,
  * ruled fable-1654 §2).** The package is FIVE views (`CAST_PACKAGE_VIEWS`, and
- * `CASTING_V2_SIGN_PRICE_CREDITS` derives 8,500 = 3,500 + 5 × 1,000 from its length),
- * so the charge was never 500 and the checks were never six. The third is the
- * one that mattered: **a zero-of-N Sign does not keep the 3,500.** The founder
- * ruled on 2026-08-02 that the promotion goes back too — *"nobody came here to
+ * the Sign price was then DERIVED from its length — a promotion plus five view
+ * slices on the scale of that day; it is one flat number with no promotion and
+ * no slice since #1968), so the charge was never 500 and the checks were never
+ * six. The third is the one that mattered: **a zero-of-N Sign did not keep
+ * its promotion**, the base the Sign price then carried. The founder ruled
+ * on 2026-08-02 that the promotion goes back too — *"nobody came here to
  * buy the preservation of a face they had already paid for on the sheet"* — and
  * `packageOrchestrator` has refunded it ever since, logging *"TOTAL LOSS — not
  * one view landed; the whole Sign refunded, base included"*. So this docblock
