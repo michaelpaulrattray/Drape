@@ -947,17 +947,49 @@ export function composeSignSheetPrompt(input: {
     live road and the line is the one a later ruling may fill.
 
     With neither, the sentence names reference 1 alone and stops. It does NOT
-    invent an outfit adjective: the master shows the top of what she is wearing,
-    and that is a real record — an authored one would be this module having an
-    opinion about a cast's wardrobe.
+    invent an outfit adjective: the master shows the top of what the cast is
+    wearing, and that is a real record — an authored one would be this module
+    having an opinion about a cast's wardrobe.
+
+    ⚠ **THE BRIEF IS LABELLED AS A BRIEF, NEVER AS THE OUTFIT — #2131.** Until
+    then the fallback filed the customer's WHOLE brief under *"OUTFIT, as
+    cast:"*: face, build, species and all, so the engine was told every word of
+    it was clothing. And the fallback fires exactly when the brief names no
+    outfit — a stored line is null precisely because the interpreter found no
+    clothing to record — so the mislabel landed hardest on the briefs with the
+    least clothing in them (*"Alien creature type … hairless skin … fused
+    natural plating"*). Read at the production rows 2026-10-09: **9 of 17 live
+    signed casts** carry no line and a brief, so this was the majority road.
+
+    The brief is KEPT rather than dropped, and that is the decision: it is the
+    only description of the person this sheet carries, and #1278 part 1 brought
+    it onto the view road on his eye (*"The dress is a plain modest version of
+    what the brief describes"*). Omitting it would take the outfit words away
+    from the briefs that do describe clothing, to fix a label. So it rides
+    under its true name, with one sentence saying which part of it is the
+    outfit — the same split the view road's `VIEW_DESCRIPTION_SCOPE` makes
+    (*"who this person is and what they wear"*).
+
+    ⚠ **"the brief settles the body below its frame" is load-bearing, and it was
+    measured, not written by taste.** The first wording of this sentence named
+    only the outfit, and on the founder's cast 71 (*"undead human, man bear pig"*) the
+    body sheet traded the hooves the old label had produced for ragged trousers
+    and boots — the paragraph below asks the engine to design footwear, and
+    nothing any longer said the brief's body ran past the master's frame. With
+    the clause, the same court returned hooves and a hide wrap.
   */
-  const stated = input.wardrobeLine?.trim() || brief;
+  const line = input.wardrobeLine?.trim() || null;
   /* His heading is all caps — "HER OUTFIT, as cast:" — so the possessive is
-     uppercased rather than sentence-capped. */
+     uppercased rather than sentence-capped. The brief's heading takes the same
+     shape so the paragraph reads as one voice. */
   const whose = pronouns.possessive.toUpperCase();
-  const outfit = stated
-    ? `${whose} OUTFIT, as cast: ${stripTrailingStop(stated)}. `
-    : `${whose} OUTFIT is the one reference 1 shows. `;
+  const outfit = line
+    ? `${whose} OUTFIT, as cast: ${stripTrailingStop(line)}. `
+    : brief
+      ? `${whose} BRIEF, as cast: ${stripTrailingStop(brief)}. The brief describes the whole `
+        + `person: reference 1 settles everything it shows, the brief settles the body below its `
+        + `frame, and the clothing the brief names is ${pronouns.possessive} outfit. `
+      : `${whose} OUTFIT is the one reference 1 shows. `;
 
   return [
     "A CHARACTER SHEET: one landscape photograph divided into "

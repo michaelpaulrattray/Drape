@@ -601,23 +601,57 @@ describe("the sheet's prompt", () => {
     expect(line).not.toContain("qipao");
 
     const brief = composeSignSheetPrompt(SIFR);
-    expect(brief).toContain("HER OUTFIT, as cast: A white, body-conscious dress");
+    expect(brief).toContain("HER BRIEF, as cast: A white, body-conscious dress");
     /* His sentence continues mid-paragraph, so the brief's own full stop must
        not double up. */
-    expect(brief).not.toContain("straps.. Above");
-    expect(brief).toContain("straps. Above the frame of reference 1");
+    expect(brief).not.toContain("straps..");
+    expect(brief).toContain("straps. The brief describes the whole person:");
 
     const neither = composeSignSheetPrompt({ pronouns: SIFR.pronouns });
     expect(neither).toContain("HER OUTFIT is the one reference 1 shows.");
     expect(neither).not.toContain("as cast:");
   });
 
+  it("files the brief under its own name, never under the outfit heading (#2131)", () => {
+    /*
+      The production shape that fired the mislabel: a stored line is null
+      exactly when the brief names no clothing, so the fallback carried briefs
+      like this one — every word of it the cast's body, none of it costume.
+    */
+    const creature = "Alien creature type, humanoid build, with porous bleached hide and fused natural plating.";
+    const prompt = composeSignSheetPrompt({ description: creature, pronouns: pronounsForSex(null) });
+    expect(prompt).toContain(`THEIR BRIEF, as cast: ${creature.replace(/\.$/, "")}. The brief describes`);
+    expect(prompt).toContain("the clothing the brief names is their outfit.");
+    expect(prompt).not.toMatch(/OUTFIT, as cast:[^\n]*hide/);
+    expect(prompt).not.toContain("OUTFIT, as cast:");
+
+    /* POSITIVE CONTROL — a stored line is still the outfit, under the outfit
+       heading, and the brief's label appears nowhere. */
+    const lined = composeSignSheetPrompt({
+      wardrobeLine: "a navy flight suit",
+      description: creature,
+      pronouns: pronounsForSex(null),
+    });
+    expect(lined).toContain("THEIR OUTFIT, as cast: a navy flight suit.");
+    expect(lined).not.toContain("BRIEF, as cast:");
+
+    /* A whitespace line is no line: it falls to the brief, labelled as one. */
+    const blank = composeSignSheetPrompt({ wardrobeLine: "   ", description: creature });
+    expect(blank).toContain("BRIEF, as cast:");
+    expect(blank).not.toContain("OUTFIT, as cast:");
+  });
+
   it("never calls a male cast 'her', and reads a group as plural", () => {
-    const male = composeSignSheetPrompt({ description: "a navy flight suit", pronouns: pronounsForSex("male") });
+    const male = composeSignSheetPrompt({ wardrobeLine: "a navy flight suit", pronouns: pronounsForSex("male") });
     expect(male).toContain("HIS OUTFIT");
     expect(male).toContain("His back and arms");
     expect(male).toContain("that is the outfit he wears");
     expect(male).not.toMatch(/\bher\b/);
+    /* The brief road (#2131) composes with the same pronouns. */
+    const maleBrief = composeSignSheetPrompt({ description: "a skincare founder", pronouns: pronounsForSex("male") });
+    expect(maleBrief).toContain("HIS BRIEF, as cast:");
+    expect(maleBrief).toContain("the clothing the brief names is his outfit.");
+    expect(maleBrief).not.toMatch(/\bher\b/);
 
     const group = composeSignSheetPrompt({ pronouns: pronounsForSex(null) });
     expect(group).toContain("THEIR OUTFIT");
