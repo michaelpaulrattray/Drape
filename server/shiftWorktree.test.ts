@@ -52,6 +52,10 @@ import {
   entryForPath,
   humanBytes,
   ignoredReadingLine,
+  installedLockfilePath,
+  judgeSharedInstall,
+  sharedInstallWarning,
+  INSTALLED_LOCKFILE_RELATIVE,
   keptIgnoredPrefixFor,
   mergedPrArgs,
   parseWorktreeList,
@@ -1938,5 +1942,193 @@ describe("the script's own text — the review road's sequence (#1796)", () => {
     /* `remove --pr --dry-run` taking `--dry-run` as the number would leave
        `dryRun` false on the one command that deletes. */
     expect(source).toContain('value.startsWith("--")');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ⚠ THE SHARED INSTALL — ONE `node_modules`, N TREES (#2148, 2026-10-09)
+//
+// The junction is the whole reason this reading has to exist: every worktree
+// shares the main tree's install, so the install can only satisfy the trees
+// whose lockfile it was made from. On the day this landed, `86c560c3` took
+// cookie 2.0.1 (`parse` renamed `parseCookie`) and the install still held
+// cookie 1.0.2, so a worktree cut from `origin/main` reported three errors in
+// `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — both auth files,
+// nobody's diff — while `pnpm check` in the main tree was GREEN because that
+// tree was four commits behind and therefore agreed with the stale install.
+//
+// ⚠ THE ARM THAT MATTERS MOST HERE IS THE FALSE-ALARM ONE. A reading that
+// cried skew on every tree would be worse than no reading: it would send every
+// shift to a pointless multi-minute install and then be learned as noise. The
+// CRLF arm is that control, and it is not hypothetical — this same tool warns
+// three steps earlier that a checkout can arrive CRLF-smudged.
+// ---------------------------------------------------------------------------
+describe("judgeSharedInstall — the install's own lockfile against this tree's (#2148)", () => {
+  const LOCK = "lockfileVersion: '9.0'\n\nimporters:\n  .:\n    dependencies:\n      cookie:\n        specifier: ^2.0.1\n";
+  const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
+
+  it("MATCH — the install was made from this tree's lockfile", () => {
+    expect(judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK, otherTrees: [] })).toEqual({ kind: "match" });
+  });
+
+  it("SKEW — a different lockfile, and the other trees it would move are named", () => {
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      otherTrees: [
+        { path: "C:/Users/Admin/Drape", lock: OTHER },
+        { path: "C:/Users/Admin/drape-shift-seat-1", lock: OTHER },
+      ],
+    });
+    expect(reading.kind).toBe("skew");
+    expect(reading.kind === "skew" && reading.collisions).toEqual([
+      "C:/Users/Admin/Drape",
+      "C:/Users/Admin/drape-shift-seat-1",
+    ]);
+  });
+
+  it("SKEW with NO collisions — every other tree already wants what this one wants", () => {
+    // The common case after a bump everyone has merged forward: the install is
+    // simply stale, and one `pnpm install` costs nobody anything. Reporting a
+    // collision here would argue against the command that fixes it.
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      otherTrees: [{ path: "C:/Users/Admin/Drape", lock: LOCK }],
+    });
+    expect(reading.kind === "skew" && reading.collisions).toEqual([]);
+  });
+
+  it("⚠ an UNREADABLE other tree is not a collision — unknown is never counted as disagreement", () => {
+    const reading = judgeSharedInstall({
+      installedLock: OTHER,
+      treeLock: LOCK,
+      otherTrees: [{ path: "C:/Users/Admin/drape-review-9", lock: null }],
+    });
+    expect(reading.kind === "skew" && reading.collisions).toEqual([]);
+  });
+
+  it("UNREADABLE — the install records no lockfile, so the question is not answered", () => {
+    const reading = judgeSharedInstall({ installedLock: null, treeLock: LOCK, otherTrees: [] });
+    expect(reading.kind).toBe("unreadable");
+    expect(reading.kind === "unreadable" && reading.why).toContain(INSTALLED_LOCKFILE_RELATIVE);
+  });
+
+  it("UNREADABLE — this tree has no lockfile at all", () => {
+    const reading = judgeSharedInstall({ installedLock: LOCK, treeLock: null, otherTrees: [] });
+    expect(reading.kind).toBe("unreadable");
+    expect(reading.kind === "unreadable" && reading.why).toContain("pnpm-lock.yaml");
+  });
+
+  it("⚠ THE FALSE-ALARM CONTROL — a CRLF-smudged checkout reads MATCH, not skew", () => {
+    // Without the normalise this is a skew on every tree on the machine at
+    // once, and the warning becomes noise the first time a checkout smudges.
+    expect(
+      judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK.replace(/\n/g, "\r\n"), otherTrees: [] }),
+    ).toEqual({ kind: "match" });
+  });
+
+  it("a trailing-newline difference reads MATCH", () => {
+    expect(judgeSharedInstall({ installedLock: LOCK + "\n\n", treeLock: LOCK, otherTrees: [] })).toEqual({
+      kind: "match",
+    });
+  });
+
+  it("⚠ THE POSITIVE CONTROL — pnpm really does write the file this reading depends on", () => {
+    // Law 2: verify the instrument before believing its finding. The whole
+    // reading rests on pnpm keeping a copy of the lockfile it installed from.
+    // If pnpm ever stops, every verdict silently becomes `unreadable` and this
+    // arm is the only thing that would say so.
+    const real = installedLockfilePath(join(import.meta.dirname, "..").replace(/\\/g, "/"));
+    expect(real.endsWith(INSTALLED_LOCKFILE_RELATIVE)).toBe(true);
+    expect(existsSync(real), "pnpm no longer records its lockfile at " + INSTALLED_LOCKFILE_RELATIVE).toBe(true);
+    expect(readFileSync(real, "utf8")).toContain("lockfileVersion");
+  });
+});
+
+describe("sharedInstallWarning — the words a shift reads, driven by the same suite (#2148)", () => {
+  const lines = (reading: Parameters<typeof sharedInstallWarning>[0]) =>
+    sharedInstallWarning(reading, "C:/Users/Admin/Drape").join("\n");
+
+  it("says nothing on a match, and nothing when the question was not answered", () => {
+    expect(sharedInstallWarning({ kind: "match" }, "C:/Users/Admin/Drape")).toEqual([]);
+    expect(sharedInstallWarning({ kind: "unreadable", why: "no install" }, "C:/Users/Admin/Drape")).toEqual([]);
+  });
+
+  it("⚠ CARRIES THE REPAIR COMMAND AND THE TREE TO RUN IT IN", () => {
+    // A warning that describes a problem and not its one command is a warning
+    // that gets read twice and acted on once.
+    const text = lines({ kind: "skew", collisions: [] });
+    expect(text).toContain("pnpm install");
+    expect(text).toContain("C:/Users/Admin/Drape");
+    expect(text).toContain("CI installs fresh");
+  });
+
+  it("⚠ COUNTS THE TREES THE REPAIR WOULD MOVE AND NEVER LISTS THEM, with the commands that show which are alive", () => {
+    // ⚠ MEASURED, NOT REASONED. The first shape printed every colliding path
+    // and the real `add` printed 36 of them — genuine older checkouts, so the
+    // judge was right and the output was a wall nobody reads. The paths stay on
+    // the verdict; the words carry the count and the two commands.
+    const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
+    const text = lines({ kind: "skew", collisions: many });
+    expect(text).toContain("36 other tree(s)");
+    expect(text).toContain("scripts/dev-servers.mts");
+    expect(text).toContain("scripts/shift-worktree.mts list");
+    // The wall is the thing being refused, so the arm refuses it by name.
+    expect(text).not.toContain("drape-shift-stale-0");
+    expect(text.split("\n").length).toBeLessThan(14);
+  });
+
+  it("says nothing about other trees when none of them disagree", () => {
+    const text = lines({ kind: "skew", collisions: [] });
+    expect(text).not.toContain("THE INSTALL IS SHARED");
+    expect(text).toContain("pnpm install");
+  });
+});
+
+describe("the script's own text — the shared-install reading is INVOKED (#2148)", () => {
+  // ⚠ Invariant 7: a control that is not invoked does not exist. Every arm
+  // above drives the library, and all of them would stay green if the call
+  // site were deleted — which is the shape this repository keeps paying for.
+  // So the wiring is held here, sliced out of `add` rather than grepped
+  // whole-file, because a whole-file `toContain` passes on an identical line in
+  // a neighbouring function.
+  const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
+
+  const addBlock = () => {
+    const start = source.indexOf('if (command === "add") {');
+    const end = source.indexOf("// ---- remove ---");
+    return { start, end, text: source.slice(start, end) };
+  };
+
+  it("`add` calls judgeSharedInstall, and does it AFTER the worktree exists", () => {
+    // Order is load-bearing and not cosmetic: the reading opens the new tree's
+    // own `pnpm-lock.yaml`, which does not exist until `git worktree add` has
+    // run. Called earlier it would read null and report `unreadable` forever —
+    // a control that is invoked and inert, which is worse than one that is
+    // missing, because every arm above would still pass.
+    const add = addBlock();
+    expect(add.start, "the add command block moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(add.end, "the remove banner moved — re-anchor this arm").toBeGreaterThan(add.start);
+
+    const worktreeAdd = add.text.indexOf('git(["worktree", "add"');
+    const judged = add.text.indexOf("judgeSharedInstall({");
+    expect(worktreeAdd, "add no longer creates the worktree here").toBeGreaterThan(-1);
+    expect(judged, "`add` does not call judgeSharedInstall — the reading is dead code").toBeGreaterThan(-1);
+    expect(
+      judged,
+      "the install is read before the worktree exists — it would always read unreadable",
+    ).toBeGreaterThan(worktreeAdd);
+    expect(add.text).toContain("sharedInstallWarning(reading, repoRoot)");
+  });
+
+  it("⚠ `add` NEVER RUNS AN INSTALL ITSELF — the mutation stays with whoever can see the machine", () => {
+    // The convenient path is for the tool to just fix it. It must not: the
+    // install is shared with every other worktree and with any running dev
+    // server, so a silent refresh is a mutation under somebody else's live
+    // work. The fidelity law's declared-shortcut clause pointed at tooling —
+    // name the tradeoff rather than quietly taking the easy half.
+    expect(addBlock().text).not.toMatch(/run\(\s*"pnpm"/);
+    expect(addBlock().text).not.toMatch(/"install"/);
   });
 });

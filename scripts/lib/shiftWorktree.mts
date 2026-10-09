@@ -1080,3 +1080,152 @@ export function junctionMustBeGone(junctionPresent: boolean): { ok: boolean; rea
 export function looksCrlfSmudged(sample: string): boolean {
   return sample.includes("\r\n");
 }
+
+// ---- the shared install's own lockfile ------------------------------------
+/**
+ * ⚠ **ONE `node_modules`, N TREES, AND IT CAN ONLY SATISFY THE ONES WHOSE
+ * LOCKFILE IT WAS INSTALLED FROM (#2148, 2026-10-09).**
+ *
+ * Every shift worktree junctions `node_modules` at the main tree's real one —
+ * the install is over a gigabyte and the overlap rule cuts two trees a night,
+ * so copying it is absurd. The price is that the install is **shared mutable
+ * state between trees that do not share a lockfile**, and nothing was reading
+ * it: a dependency bump lands on `main`, every worktree cut afterwards
+ * typechecks against the install from before it, and the red names files the
+ * diff never touched.
+ *
+ * **Measured the day this was written.** `86c560c3` took cookie 2.0.1, which
+ * renames `parse` to `parseCookie`. The shared install still held cookie 1.0.2,
+ * so a worktree cut from `origin/main` reported three errors in
+ * `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — **both auth files,
+ * neither of them anybody's diff** — while `pnpm check` in the main tree was
+ * GREEN, because that tree was four commits behind and therefore agreed with
+ * the stale install. Two relay agents hit it before it was carded.
+ *
+ * ⚠ **pnpm ALREADY RECORDS THE ANSWER AND NOTHING WAS READING IT** — the
+ * disappearing-technology law's clause 4, pointed at a tool rather than a
+ * model: `node_modules/.pnpm/lock.yaml` is pnpm's own copy of the lockfile it
+ * installed from. So "does this install match this tree?" is a byte compare
+ * against an artifact the installer already wrote, not a version census we
+ * invent. No `pnpm` invocation, no network, no guess.
+ *
+ * ⚠ **AND THE READING IS NEVER AN INSTALL.** Refreshing the install is a
+ * mutation under every other tree on the machine, and on the day this landed
+ * it would have reddened a LIVE seat whose branch predated the bump and swapped
+ * the dependencies under two running dev servers. So this reports, names the
+ * one command, and names who else the command would move — the choice stays
+ * with whoever can see whether the machine is quiet. A tool that silently
+ * installed would be the convenient path and the wrong one.
+ */
+export const INSTALLED_LOCKFILE_RELATIVE = "node_modules/.pnpm/lock.yaml";
+
+export function installedLockfilePath(repoRoot: string): string {
+  return `${repoRoot}/${INSTALLED_LOCKFILE_RELATIVE}`;
+}
+
+/**
+ * ⚠ **NORMALISED BEFORE COMPARING, AND THAT IS NOT DECORATION ON THIS
+ * MACHINE.** `.gitattributes` says `* text=auto eol=lf`, so both files are LF
+ * today and the compare would pass raw — but this very tool warns three steps
+ * earlier that a checkout can arrive CRLF-SMUDGED, and a smudged
+ * `pnpm-lock.yaml` would read as a skew against pnpm's LF copy on every tree
+ * at once. That is a false alarm telling every shift to run a pointless
+ * install, so the one line that cannot produce it is worth having. A trailing
+ * newline is dropped for the same reason.
+ */
+function normaliseLockfile(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\n+$/, "");
+}
+
+export type SharedInstallReading =
+  /** The install was made from this tree's lockfile. Nothing to say. */
+  | { readonly kind: "match" }
+  /**
+   * The question could not be answered — say which file and why, and do NOT
+   * warn. A missing marker is what a tree with no install at all looks like,
+   * and crying skew there would train the warning away.
+   */
+  | { readonly kind: "unreadable"; readonly why: string }
+  /**
+   * The install does not match this tree. `collisions` are the OTHER trees a
+   * refresh would move off their own lockfile — the reason this is reported
+   * rather than fixed in place.
+   */
+  | {
+      readonly kind: "skew";
+      readonly collisions: readonly string[];
+    };
+
+/**
+ * Pure: the three readings, from text that is already in hand.
+ *
+ * `otherTrees` carries every other checkout sharing the install, each with its
+ * own lockfile text (`null` when it could not be read — unknown, so never
+ * counted as a collision, because a guessed collision argues against the one
+ * command that fixes the tree in front of you).
+ */
+export function judgeSharedInstall(state: {
+  readonly installedLock: string | null;
+  readonly treeLock: string | null;
+  readonly otherTrees: readonly { readonly path: string; readonly lock: string | null }[];
+}): SharedInstallReading {
+  if (state.treeLock === null) {
+    return { kind: "unreadable", why: "this worktree has no pnpm-lock.yaml to compare" };
+  }
+  if (state.installedLock === null) {
+    return {
+      kind: "unreadable",
+      why: `the shared install records no lockfile at ${INSTALLED_LOCKFILE_RELATIVE} — nothing to compare it against`,
+    };
+  }
+
+  const tree = normaliseLockfile(state.treeLock);
+  if (normaliseLockfile(state.installedLock) === tree) return { kind: "match" };
+
+  const collisions = state.otherTrees
+    .filter((other) => other.lock !== null && normaliseLockfile(other.lock) !== tree)
+    .map((other) => other.path);
+  return { kind: "skew", collisions };
+}
+
+/**
+ * The lines `add` prints for a skew. Kept here with the judgement so the words
+ * a shift reads are driven by the same suite as the verdict — a warning whose
+ * text nothing tests is a warning that can lose its command.
+ *
+ * ⚠ **IT STATES THE COUNT AND NEVER THE LIST, AND THAT WAS MEASURED ON THIS
+ * MACHINE RATHER THAN REASONED.** The first shape of this printed every
+ * colliding tree's path. Driven through the real `add`, it printed **36 of
+ * them** — nearly all leftover shells from three days earlier, each a genuine
+ * checkout with a genuine older lockfile, so the judge was right and the output
+ * was a wall. A shift cannot act on 36 paths; it learns to scroll past the
+ * block, which is the same death the CRLF control exists to prevent arriving by
+ * a different door. The arms could not catch it, because an arm picks two
+ * fixtures and two paths read fine — the real output caught it, which is
+ * working law 6 pointed at a terminal instead of a screen.
+ *
+ * So the words carry the two things a shift can act on — **how many** other
+ * trees the repair would move, and **the commands that show which of them is
+ * alive** — and the paths stay on the verdict, where a caller that wants them
+ * can have them and a reader is not drowned in them.
+ */
+export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: string): readonly string[] {
+  if (reading.kind !== "skew") return [];
+  const lines = [
+    "⚠ THE SHARED node_modules WAS INSTALLED FROM A DIFFERENT LOCKFILE than this",
+    "  worktree's. Expect `pnpm check` and `pnpm preflight` to go red naming files",
+    "  your diff never touched. CI installs fresh, so the gate is unaffected.",
+    `  repair: run \`pnpm install\` in ${repoRoot}`,
+  ];
+  if (reading.collisions.length > 0) {
+    lines.push(
+      "",
+      `  ⚠ BUT THE INSTALL IS SHARED, and ${reading.collisions.length} other tree(s) on this machine sit`,
+      "    on a different lockfile — the repair above moves every one of them off",
+      "    theirs. Check nothing is live first, and only then install:",
+      "      npx tsx scripts/dev-servers.mts          (what is running, and from where)",
+      "      npx tsx scripts/shift-worktree.mts list  (which trees those are)",
+    );
+  }
+  return lines;
+}
