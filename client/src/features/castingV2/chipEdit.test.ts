@@ -135,7 +135,7 @@ describe("the box is the only channel to the engine", () => {
 
     it("positive control: the record and the mark it kept ARE both there", () => {
       /* Without this, the arm above passes on a file that lost the whole block. */
-      expect(sheet).toContain("The brief this sheet was cast from");
+      expect(sheet).toContain("The brief this casting was cast from");
       expect(sheet).toContain("BOX_EDITED_MARK");
     });
   });

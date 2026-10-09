@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 const ROOM = new URL("../../pages/CastingRoom.tsx", import.meta.url);
 
 const SENTENCE =
-  "This cast's Klieg ID. It never changes and belongs only to them — quote it if you ever contact us about this cast.";
+  "A unique identifier for this character. It records when and by whom this character was made.";
 
 /** The tag alone: from its opening span to the end of its tooltip. */
 function tagOf(source: string): string {

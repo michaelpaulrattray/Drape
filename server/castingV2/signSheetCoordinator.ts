@@ -283,6 +283,7 @@ async function renderWithArrivalRetries(
   input: SettleSignSheetInput,
   generation: number,
   budget: RenderBudget,
+  refusal: SheetRefusalState,
 ): Promise<RenderedSignSheet> {
   const wait = input.wait ?? waitMs;
   let arrivalFailures = 0;
@@ -312,6 +313,41 @@ async function renderWithArrivalRetries(
         },
         "[signSheetCoordinator] the sheet did not arrive",
       );
+      /*
+        ⚠ **A WHOLE SHEET THE PROVIDER REFUSED IS ASKED FOR ONCE MORE, AT OUR
+        COST — #2127, his word of 2026-10-09 (terminal), verbatim: *"im happy
+        with your reccomendation on the sheet refunding etc"*.**
+
+        `content_policy` is terminal for `mayStillArrive`, and a refusal that
+        arrives as `completed` is terminal for `providerAlreadyBilled` too —
+        both right for a picture that will refuse again. **Measured on cast 71
+        (#2125), this one does not**: the provider's checker refused the face
+        sheet AFTER drawing it, and the same request, sent again unchanged, was
+        delivered. So a content refusal of the whole sheet is the one terminal
+        class this loop asks about again — **once per sheet per Sign**
+        (`refusal.retried`, and only on the first generation), with no wait,
+        and still inside the sheet's render budget: the engine charges it like
+        any other submission and REFUSES before it submits when the budget is
+        spent, so the retry can never become a loop (#2105).
+
+        If it refuses again, the throw below reaches every view on the sheet
+        and those views are refunded — {@link sheetRefusedByProvider} is how
+        the money road tells this failure apart from every other.
+      */
+      /* Generation 1 only: a refused house RE-MAKE is already caught above
+         this loop and settles from the first frame, so it loses no view and
+         buys nothing. */
+      const sheetRefused = failureClass === "content_policy" && generation === 1;
+      if (sheetRefused) refusal.refused = true;
+      if (sheetRefused && !refusal.retried) {
+        refusal.retried = true;
+        log.warn(
+          { operationId: input.operationId, sheet: input.kind, generation },
+          "[signSheetCoordinator] the provider refused the whole sheet — asking for it once more, "
+          + "unchanged and at our cost",
+        );
+        continue;
+      }
       /* Terminal: asking again cannot change the answer, and the wait would be
          charged to a customer who is already going to be refunded. */
       if (failureClass === null || !mayStillArrive(failureClass)) throw error;
@@ -419,7 +455,24 @@ export async function settleSignSheet(
   */
   const budget = createRenderBudget(SHEET_MAX_RENDERS);
 
-  const first = await renderWithArrivalRetries(input, 1, budget);
+  /* One per sheet per Sign, shared by both generations (#2127). */
+  const refusal: SheetRefusalState = { refused: false, retried: false };
+  let first: RenderedSignSheet;
+  try {
+    first = await renderWithArrivalRetries(input, 1, budget, refusal);
+  } catch (error) {
+    /*
+      ⚠ **THE REFUSAL IS READ OFF THE SHEET'S HISTORY, NOT OFF ITS LAST ERROR
+      (#2127).** The free retry is charged against the same budget as
+      everything else, so a sheet whose first submission was billed on a
+      transport fault and whose second was refused meets a SPENT budget on the
+      retry — and its last error is then `capability`, not `content_policy`.
+      Reading only the last error would drop the refund for a sheet the
+      provider really did refuse.
+    */
+    if (refusal.refused) throw new SignSheetRefusedError(input.kind, { cause: error });
+    throw error;
+  }
   let judged = await judgeAll(first, 1);
 
   const refusedIn = (
@@ -463,7 +516,7 @@ export async function settleSignSheet(
           docblock already describes, now reached for a money reason as well as
           an outage one.
         */
-        const second = await renderWithArrivalRetries(input, 2, budget);
+        const second = await renderWithArrivalRetries(input, 2, budget, refusal);
         renders = 2;
         /*
           Generation 1's verdicts are kept beside generation 2's for every panel
@@ -608,11 +661,57 @@ export class SignSheetUnavailableError extends Error {
    */
   readonly failureClass: ProviderFailureClass | null;
 
+  /** The provider refused this whole sheet, after its one free retry (#2127). */
+  readonly refusedByProvider: boolean;
+
   constructor(kind: SignSheetKind, options: { cause?: unknown } = {}) {
     super(`the ${kind} Sign sheet did not arrive`, options);
     this.name = "SignSheetUnavailableError";
-    this.failureClass = options.cause instanceof ProviderError ? options.cause.failureClass : null;
+    this.refusedByProvider = options.cause instanceof SignSheetRefusedError;
+    this.failureClass = options.cause instanceof ProviderError
+      ? options.cause.failureClass
+      : this.refusedByProvider ? "content_policy" : null;
   }
+}
+
+/** What one sheet remembers about the provider refusing it, across its renders. */
+type SheetRefusalState = { refused: boolean; retried: boolean };
+
+/**
+ * THE PROVIDER REFUSED THIS WHOLE SHEET, AND ITS ONE FREE RETRY DID NOT
+ * DELIVER IT — #2127.
+ *
+ * ⚠ **ITS OWN TYPE BECAUSE IT MOVES MONEY, AND NOTHING ELSE ON THIS ROAD
+ * DOES.** His amendment refunds the views of a sheet the provider refused *"because of OUR
+ * instructions"*, and ONLY those; a sheet lost to a transport outage, a cut
+ * that failed or a spent budget still follows the flat rule. A predicate over
+ * the last error's class could not hold that line (the retry's own last error
+ * may be a spent budget), so the coordinator, which saw the whole history,
+ * says it with a type and the money road asks {@link sheetRefusedByProvider}.
+ */
+export class SignSheetRefusedError extends Error {
+  constructor(kind: SignSheetKind, options: { cause?: unknown } = {}) {
+    super(`the provider refused the ${kind} Sign sheet`, options);
+    this.name = "SignSheetRefusedError";
+  }
+}
+
+/**
+ * WAS THE SHEET THIS VIEW IS CUT FROM REFUSED BY THE PROVIDER? — the one
+ * question the refund for a lost view asks (#2127).
+ *
+ * Asked only after the view has failed, of the sheet's own settled promise,
+ * so it never waits on anything and never decides the render. One reader
+ * ({@link signSheetKindFor}) picks the sheet, exactly as the cut does.
+ */
+export async function sheetRefusedByProvider(
+  sheets: Readonly<Record<SignSheetKind, Promise<SettledSignSheet>>>,
+  angle: CastViewAngle,
+): Promise<boolean> {
+  return sheets[signSheetKindFor(angle)].then(
+    () => false,
+    (error: unknown) => error instanceof SignSheetRefusedError,
+  );
 }
 
 /**

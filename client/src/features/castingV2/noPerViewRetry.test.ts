@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../../../../server/casting/castingCreditCosts";
 import { FAILED_SLOT_CONFESSION } from "../../../../server/castingV2/castProjection";
-import { packageRedoLabel } from "./packageRedoRow";
+import { packageRedoPrice } from "./packageRedoRow";
 
 /**
  * NO PER-VIEW TRY AGAIN ON ANY VIEW OF A SIGNED CAST — #2089.
@@ -118,10 +118,10 @@ describe("the room offers no per-view Try again (card 2089)", () => {
       redo too would pass every one of them and leave her with no remedy.
     */
     const room = await roomSource();
-    expect(room).toContain("data.redo ? (");
-    expect(room).toContain("packageRedoLabel(data.redo.priceCredits)");
-    expect(room).toContain("onClick={askForAllViewsAgain}");
-    expect(packageRedoLabel(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS)).toBe("Regenerate · 650 credits");
+    /* Since #2144 it is the row menu's first item, priced on the item. */
+    expect(room).toContain("redo: data.redo,");
+    expect(room).toContain("askForAllViewsAgain();");
+    expect(packageRedoPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS)).toBe("650 credits");
   });
 });
 

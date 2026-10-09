@@ -24,11 +24,13 @@ import {
 } from "@/features/castingV2/roomBusy";
 import {
   PACKAGE_REDO_WORKING,
-  packageRedoLabel,
+  characterSheetCount,
+  characterSheetMenuItems,
 } from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { masterLookLine } from "@/features/castingV2/masterLookLine";
+import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
   CastVoiceBadge,
@@ -59,12 +61,14 @@ import {
 const POLL_MS = 2_500;
 
 /**
- * What the ? beside the Klieg ID says (#2124), verbatim from the card. It is
+ * What the ? beside the Klieg ID says — #2124 shipped it, and his word of
+ * 2026-10-09 replaced the sentence verbatim (the cast row behind the ID records
+ * its owning account and its creation time, which is what makes it true). It is
  * both the tooltip and the button's accessible name, so a screen reader hears
  * the same sentence a pointer sees.
  */
 const CAST_ID_EXPLAINED =
-  "This cast's Klieg ID. It never changes and belongs only to them — quote it if you ever contact us about this cast.";
+  "A unique identifier for this character. It records when and by whom this character was made.";
 
 /**
  * The drawn placeholders, kept as structure with honest captions.
@@ -159,6 +163,8 @@ export default function CastingRoom() {
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** The character sheet row's ⋯ menu (#2144). Above every early return. */
+  const [sheetMenuOpen, setSheetMenuOpen] = useState(false);
   /*
     The server owns the door; the client only decides whether to OFFER the
     control. `castingV2.deleteCast` asserts the same flag itself, so a menu that
@@ -465,7 +471,7 @@ export default function CastingRoom() {
   );
 
   /*
-    THE PACKAGE AS ONE SET — master first, then the landed views in strip order.
+    THE CHARACTER SHEET AS ONE SET — master first, then the landed views in strip order.
     Built once here rather than rebuilt at each opening site, which is how the
     three near-identical walks this replaces came to drift apart.
 
@@ -505,7 +511,7 @@ export default function CastingRoom() {
         and an explanation: §G.6 is the reason she is still here at all.
       */
       caption: sibling.destination === "viewer"
-        ? `From a sheet that has expired or was deleted — ${
+        ? `From a casting that has expired or was deleted — ${
           data?.pronouns.subject ?? "they"} remain${
           data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`
         : null,
@@ -603,7 +609,7 @@ export default function CastingRoom() {
                   Open in canvas · soon
                 </button>
                 <button type="button" className="dpc-room__cta dpc-room__cta--primary" disabled>
-                  Cast in a campaign · soon
+                  Use in a campaign · soon
                 </button>
               </div>
             </header>
@@ -815,7 +821,9 @@ export default function CastingRoom() {
                 */}
                 <section className="dpc-rcard dpc-rrefine">
                   <div className="dpc-rcard__head">
-                    <span className="dpc-rcard__title">Refine without recasting</span>
+                    <span className="dpc-rcard__title">
+                      {data.name?.trim() ? `Refine ${data.name.trim()}'s look` : "Refine their look"}
+                    </span>
                     <span className="dpc-rcard__hint">
                       Face stays locked. Everything else is fair game.
                     </span>
@@ -839,8 +847,8 @@ export default function CastingRoom() {
                     ))}
                   </div>
                   <p className="dpc-rcard__body">
-                    Refining a signed Cast arrives with refinement. Until then, a new direction
-                    means a new sheet.
+                    Refining arrives soon. Until then, a new direction means making a new
+                    character.
                   </p>
                 </section>
 
@@ -863,107 +871,101 @@ export default function CastingRoom() {
                 </section>
 
                 {/*
-                  THE PACKAGE — not in the drawing. Added below the drawn
+                  CHARACTER SHEET (named "the package" until #2129, his word "go with
+                  option 3") — not in the drawing. Added below the drawn
                   sections by founder ruling (2026-08-02): it is infrastructure,
                   not the show. The confession still renders in place on any
                   slot that is not coming (D-92's gate condition).
                 */}
                 <section className="dpc-takes">
                   <div className="dpc-takes__head">
-                    <span className="dpc-rcard__label">THE PACKAGE</span>
                     {/*
-                      THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
-                      2026-08-02) — a real control, not hover chrome.
+                      THE TITLE, AND A COUNT ONLY WHILE VIEWS ARE BEING MADE
+                      (#2144). His Option A took the standing "5 of 5 views" off
+                      the row; Yuna's suggestion — "3 of 5" while views are
+                      still being made, nothing once they are done — is his word
+                      too: "on yunas call - yes". The Master is not counted: it
+                      was never a paid view.
+                    */}
+                    <span className="dpc-rcard__label">CHARACTER SHEET</span>
+                    {(() => {
+                      const count = characterSheetCount(data.status, data.slots, asking);
+                      return count ? <span className="dpc-rcard__label dpc-takes__count">{count}</span> : null;
+                    })()}
+                    {/*
+                      ONE VISIBLE ACTION, AND A ⋯ MENU FOR THE REST — his Option
+                      A, 2026-10-09 (#2144; "Mike approved Option A", the Desk
+                      item filed for Yuna). Since Regenerate arrived the row had
+                      held four things — download, regenerate, delete and a
+                      count — and was cramped; Download is the one thing most
+                      people come here for, so it stays out, and Regenerate and
+                      Delete sit behind the dots.
 
-                      Per-image download lives in the viewer, which is right for
-                      "I want that one". This is the other need: everything she
-                      is, in one action. It is a plain sequence of the same
-                      public URLs the viewer serves — no new server surface, no
-                      archive to build — and the character-sheet artifact joins
-                      it here when it ships, as the single-file form of the same
-                      idea.
+                      THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
+                      2026-08-02) is unchanged under its shorter word: per-image
+                      download lives in the viewer, this is everything the cast
+                      is in one action — a plain sequence of the same public URLs
+                      the viewer serves, no new server surface, no archive.
+
+                      ⚠ THE "A DESTRUCTIVE ACTION IS A SENTENCE, NOT A MENU"
+                      RULING (founder, 2026-08-03; DECISION_LOG, same title) IS
+                      RETIRED BY HIM — 2026-10-09,
+                      verbatim: "on the old ruling casting library already has
+                      delete in a menu i think this must be an old ruling on menu
+                      styling shouldnt all menus be the same ?". The library's
+                      cards already deleted from a menu, so the room now does
+                      too, on the same one `CardMenu`, in its `row` placement:
+                      the dots visible at rest, Delete red at rest. The gating is
+                      unchanged: Delete is absent while the cast builds and while
+                      the server's door is shut; Regenerate is absent unless the
+                      server offered it. Both open exactly what they opened as
+                      links: Regenerate presses straight through with its price
+                      on the item, Delete opens the destructive confirm.
                     */}
                     <span className="dpc-takes__actions">
+                      {askingAll ? (
+                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
+                           A TILE — a guard slicing from that class's first
+                           element would read this header instead. */
+                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
+                      ) : null}
                       <Button
                         variant="quiet"
                         size="small"
                         disabled={packageFrames.length === 0}
                         onClick={() => downloadPackage(packageFrames, castId)}
+                        /* The visible word is the short one his Option A
+                           drew; a screen reader hears what is downloaded. */
+                        aria-label="Download character sheet"
                       >
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
-                        Download package
+                        Download
                       </Button>
-                      {/*
-                        DELETING HER IS A SENTENCE, NOT A MENU (founder ruling,
-                        2026-08-03) — and it sits with the other thing you can
-                        do to the whole Cast rather than to one picture.
-
-                        A three-dot menu beside her name put file-manager
-                        furniture on the one line that is meant to be her, and
-                        offered a Rename the name already does when you click
-                        it. Two affordances for one action, and a heavy one.
-
-                        Accent-coloured because it is the only irreversible
-                        thing in the room, and last in the row because it is the
-                        last thing anyone should reach for. Same gating as
-                        before: absent while she builds, absent while the
-                        server's door is shut.
-                      */}
-                      {/*
-                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — on the row
-                        of things you do to the WHOLE Cast rather than to one
-                        picture, which is where the other one already is.
-
-                        ⚠ **BEFORE Delete and not after**, because that button
-                        carries its own standing rule two comments down: it is
-                        accent-coloured and LAST *"because it is the last thing
-                        anyone should reach for"*. The first draft of this row
-                        put the redo after it and the frame said so — a reading
-                        no test could have given, and law 6 exactly.
-
-                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
-                        COMPONENT.** The server withholds `redo` while she is
-                        building and while anything of hers is in flight, so
-                        there is no second rule here to drift from it — and no
-                        disabled button wearing a verb, which is the shape #1235
-                        took off the tiles.
-                      */}
-                      {askingAll ? (
-                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
-                           A TILE. Borrowing it put a second element with that
-                           class above the strip, and the row's own guard (deleted with the row, #2089)
-                           slices the component from the FIRST one — so his two
-                           Try again sentences were being read out of this header
-                           instead. A guard whose anchor another element can
-                           steal is the shape that memory is about. */
-                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
-                      ) : data.redo ? (
-                        <button
-                          type="button"
-                          className="dpc-room__redo"
-                          onClick={askForAllViewsAgain}
-                        >
-                          {/* The LEDGER price, straight off the wire. The copy
-                              module converts it through the one converter
-                              (#1600) so the routing is visible where it happens;
-                              this file does no arithmetic at all. */}
-                          {packageRedoLabel(data.redo.priceCredits)}
-                        </button>
-                      ) : null}
-                      {deleteDoorOpen && data.status !== "building" ? (
-                        <button
-                          type="button"
-                          className="dpc-room__delete"
-                          onClick={() => setDeleting(true)}
-                        >
-                          Delete this cast
-                        </button>
-                      ) : null}
-                    </span>
-                    <span className="dpc-rcard__hint">
-                      {/* The Master is not counted: it was never a paid view. */}
-                      {data.slots.filter((slot) => slot.state === "ready").length} of{" "}
-                      {data.slots.length} views
+                      <span className="dpc-takes__menu dpc-menuhost">
+                        <CardMenu
+                          placement="row"
+                          label="the character sheet"
+                          open={sheetMenuOpen}
+                          onToggle={() => setSheetMenuOpen((was) => !was)}
+                          onCancel={() => setSheetMenuOpen(false)}
+                          items={characterSheetMenuItems({
+                            /* The LEDGER price, straight off the wire; the copy
+                               module converts it through the one converter
+                               (#1600) and this file does no arithmetic. */
+                            redo: data.redo,
+                            askingAll,
+                            deleteOffered: deleteDoorOpen && data.status !== "building",
+                            onRegenerate: () => {
+                              setSheetMenuOpen(false);
+                              askForAllViewsAgain();
+                            },
+                            onDelete: () => {
+                              setSheetMenuOpen(false);
+                              setDeleting(true);
+                            },
+                          })}
+                        />
+                      </span>
                     </span>
                   </div>
                   <div className="dpc-strip">
@@ -1139,17 +1141,14 @@ export default function CastingRoom() {
                   </p>
                   <button type="button" className="dpc-camp__add" disabled>
                     <Plus size={12} strokeWidth={1.9} aria-hidden="true" />
-                    Cast into a new campaign
+                    Use in a new campaign
                   </button>
                 </section>
 
-                {/* SIBLINGS — drawn sentence verbatim, tiles unlabelled. */}
+                {/* SIBLINGS — both sentences name the cast (#2141); tiles unlabelled. */}
                 <section className="dpc-rcard">
                   <span className="dpc-rcard__label">SIBLINGS</span>
-                  <p className="dpc-rcard__body">
-                    Variants cast from the same sheet. Useful when a campaign needs a near-miss
-                    rather than a new face.
-                  </p>
+                  <p className="dpc-rcard__body">{siblingsIntroLine(data.name)}</p>
                   {/*
                     REAL FACES (founder ruling, 2026-08-02). These are the
                     candidates kept beside her on the same sheet, and retention
@@ -1203,7 +1202,7 @@ export default function CastingRoom() {
                             sibling.destination === "cast"
                               ? `Open ${sibling.indexLabel}'s room`
                               : sibling.destination === "sheet"
-                                ? `Find ${sibling.indexLabel} on that sheet`
+                                ? `Find ${sibling.indexLabel} in that casting`
                                 : `Look at ${sibling.indexLabel}`
                           }
                         >
@@ -1212,9 +1211,7 @@ export default function CastingRoom() {
                       ))}
                     </div>
                   ) : (
-                    <p className="dpc-rcard__body">
-                      Nothing else was kept from {data.pronouns.possessive} sheet.
-                    </p>
+                    <p className="dpc-rcard__body">{siblingsNoneLine(data.name)}</p>
                   )}
                   {/*
                     Offered only while the sheet still EXISTS. Her siblings'
@@ -1229,7 +1226,7 @@ export default function CastingRoom() {
                       size="small"
                       onClick={() => navigate(`/app/casting/s/${data.lineage.fromSessionPublicId}`)}
                     >
-                      Open the sheet {data.pronouns.subject} came from
+                      Open the casting {data.pronouns.subject} came from
                     </Button>
                   ) : null}
                 </section>

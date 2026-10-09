@@ -101,7 +101,6 @@ import { TRPCError } from "@trpc/server";
 
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
-import { recordRefund } from "../casting/atomicCredits";
 import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { flatPressRefundOwed } from "../casting/flatPressCharge";
 import {
@@ -118,8 +117,11 @@ import {
 } from "../casting/operationContract";
 import {
   commitRetriedViewAsset,
+  packageRedoSlotFailedReceipt,
   pressViewLanded,
   readCastViewRenderSource,
+  readPressRefusedSheetRefund,
+  recordPackageRedoPressRefund,
 } from "../db/castingV2ViewRetry";
 import { getUserCredits } from "../db/credits";
 import { deductCredits } from "../db/credits";
@@ -140,13 +142,17 @@ import {
   signSheetPlan,
   type SignSheetKind,
 } from "./signSheet";
-import { settleSignSheet, type SettledSignSheet } from "./signSheetCoordinator";
+import { settleSignSheet, sheetRefusedByProvider, type SettledSignSheet } from "./signSheetCoordinator";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { castingSignSheetEngine, castingViewConformanceJudge } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 import { conformanceProvenance } from "./viewConformance";
 import { castPackageRedoOffer } from "./castProjection";
 import { readCastSlots, type CastSlotsRead } from "./viewRetryService";
+import {
+  PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION,
+  PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
+} from "./viewRetryRecovery";
 import { castWardrobeLine, castWardrobeSource } from "./wardrobeLine";
 
 const log = createModuleLogger("castingV2/packageRedoService");
@@ -174,6 +180,17 @@ export type PackageRedoServiceDependencies = PackageOrchestratorDependencies & {
    * belief (the security review's third finding on PR #1924).
    */
   pressLanded?: typeof pressViewLanded;
+  /**
+   * THE PRESS'S ONE REFUND, UNDER ITS OWN FENCE (#2133) — injected so an arm
+   * can drive the fenced answer, which is the one observable that tells the
+   * repair from a writer that pays whatever the sweep has done.
+   */
+  pressRefund?: typeof recordPackageRedoPressRefund;
+  /**
+   * WHAT THE REFUSED SHEETS ARE OWED, read off the slots' sealed receipts
+   * (#2133) — the same reader the sweep settles from.
+   */
+  readRefusedSheets?: typeof readPressRefusedSheetRefund;
   readAnchorBytes?: typeof storageReadBytes;
   /**
    * THE BALANCE, AND ONLY THE BALANCE.
@@ -710,26 +727,119 @@ export async function redoCastPackage(
     }
   }
 
-  const owed = flatPressRefundOwed({
+  const wholeOwed = flatPressRefundOwed({
     chargedCredits: offer.priceCredits,
     delivered,
   });
+  /*
+    ⚠ **AND THE ONE AMENDMENT, ON THIS ROAD AS ON THE SIGN — #2127.** His word
+    of 2026-10-09 (*"im happy with your reccomendation on the sheet refunding
+    etc"*) refunds the views of a sheet the image provider REFUSED, after its
+    free retry; the card asks for the same rule on a Regenerate, and this press
+    renders through the same `settleSignSheet`, so it inherits the free retry
+    and owes the same share: one equal part of what THIS press charged per view
+    it asked for — a fifth of the press per view, today.
+
+    ⚠ **One refund, under the press's own reference, decided here** — the same
+    single settlement the total loss already makes, because a redo's slots move
+    no money. A total loss still pays the whole and never the shares on top.
+    ⚠ This paragraph used to end on a stated limit: a press that died after its
+    views failed and before this line kept the shares, because the sweep read
+    rows that could not see a refused sheet. #2133 closed it — the refusal is
+    now on the refused slot's own receipt, read below.
+  */
+  /*
+    ⚠ **THE SHARES ARE READ OFF THE SLOTS' SEALED RECEIPTS, NOT COUNTED FROM
+    THIS PROCESS'S MEMORY (#2133).** A refused slot writes the refusal on its
+    own receipt the moment it settles (`redoOneView`, below), and this reads
+    those rows with the same function the recovery sweep reads them with. So a
+    press that dies anywhere after that — including the minutes the other sheet
+    can still take — is settled by the sweep to the same amount, under the same
+    reference, and whichever of the two pays second is a ledger duplicate.
+  */
+  let owed = wholeOwed;
+  let shareReadFailed = false;
+  if (wholeOwed === 0) {
+    try {
+      owed = (await (dependencies.readRefusedSheets ?? readPressRefusedSheetRefund)({
+        userId: input.userId,
+        modelId: read.modelId,
+        pressClientRequestId: input.clientRequestId,
+        chargedCredits: offer.priceCredits,
+      })).owed;
+    } catch (error) {
+      shareReadFailed = true;
+      log.error(
+        { operationId: pressOperationId, castId: input.castId, err: error },
+        "[packageRedoService] could not read the refused sheets — handing the press to the sweep",
+      );
+    }
+  }
+
   let refundedCredits = 0;
   let refundRecorded = true;
+  /*
+    ⚠ **WHEN THE PRESS IS NOT OURS TO SETTLE, IT IS LEFT FOR THE SWEEP** — a
+    fenced refund (the sweep sealed the press under us) or shares nobody could
+    read. The sweep reads the same rows and pays under the same reference, so
+    nothing is lost by leaving it and nothing is paid twice.
+  */
+  let leaveForSweep = shareReadFailed;
+  /*
+    What the press's own RECEIPT records as refunded — which is not always what
+    THIS process paid. A refund the sweep already wrote under the same reference
+    reaches us as a duplicate: the customer HAS been refunded, so the receipt
+    says so, while `refundedCredits` (what this process moved) stays 0.
+  */
+  let receiptRefundedCredits = 0;
   if (owed > 0) {
-    const refund = await (dependencies.refund ?? recordRefund)(
-      input.userId,
-      owed,
-      "No views arrived when you asked for all of them again",
-      chargeReference,
-    );
-    refundedCredits = refund.recorded && !refund.duplicate ? refund.amount : 0;
-    refundRecorded = refund.recorded;
-    if (!refund.recorded) {
+    /*
+      ⚠ **A THROW HERE IS LEFT FOR THE SWEEP, NEVER PROPAGATED (the relay's
+      finding on PR #2147).** The fenced writer re-throws everything but the
+      fence — a lock wait or deadlock on its `FOR UPDATE`, a dropped
+      connection, a duplicate-key race against a sweep refund committed after
+      its reference read. Propagating it skipped both the seal and the
+      handoff, so the press's heartbeat kept renewing its lease and the sweep
+      never saw it expire. Handed off instead: the heartbeat stops, the lease
+      expires now, and the sweep settles from the same receipts and reference.
+    */
+    let settled: Awaited<ReturnType<typeof recordPackageRedoPressRefund>> | null = null;
+    try {
+      settled = await (dependencies.pressRefund ?? recordPackageRedoPressRefund)({
+        userId: input.userId,
+        pressOperationId,
+        amount: owed,
+        description: wholeOwed > 0
+          ? PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION
+          : PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
+        chargeReferenceId: chargeReference,
+      });
+    } catch (error) {
+      leaveForSweep = true;
       log.error(
-        { operationId: pressOperationId, castId: input.castId, reference: refund.reference },
-        "[packageRedoService] the redo refund did not record — the owner remains charged",
+        { operationId: pressOperationId, castId: input.castId, owed, err: error },
+        "[packageRedoService] the press refund threw — handing the press to the sweep",
       );
+    }
+    if (settled === null) {
+      /* Handed off below; the sweep owns the money. */
+    } else if (settled.fenced) {
+      leaveForSweep = true;
+      log.warn(
+        { operationId: pressOperationId, castId: input.castId, owed },
+        "[packageRedoService] the press left running before its refund — the sweep owns it",
+      );
+    } else {
+      const refund = settled.refund;
+      refundedCredits = refund.recorded && !refund.duplicate ? refund.amount : 0;
+      receiptRefundedCredits = refund.recorded ? refund.amount : 0;
+      refundRecorded = refund.recorded;
+      if (!refund.recorded) {
+        log.error(
+          { operationId: pressOperationId, castId: input.castId, reference: refund.reference },
+          "[packageRedoService] the redo refund did not record — the owner remains charged",
+        );
+      }
     }
   }
 
@@ -741,12 +851,26 @@ export async function redoCastPackage(
     refundedCredits,
     refundRecorded,
   };
+  if (leaveForSweep) {
+    /* Stops this process's heartbeat on the press either way; on a press the
+       sweep already sealed the row write is refused, which is expected. */
+    await (dependencies.handoffToRecovery ?? handoffGenerationOperationToRecovery)({
+      userId: input.userId,
+      operationId: pressOperationId,
+    }).catch((handoffError: unknown) => {
+      log.warn(
+        { operationId: pressOperationId, castId: input.castId, err: handoffError },
+        "[packageRedoService] the press handoff did not write — its lease lapses on its own",
+      );
+    });
+    return result;
+  }
   await completeDirectOperationSuccess({
     userId: input.userId,
     operationId: pressOperationId,
     result,
     chargedCredits: offer.priceCredits,
-    refundedCredits,
+    refundedCredits: receiptRefundedCredits,
   });
   log.info(
     {
@@ -952,11 +1076,22 @@ async function redoOneView(
     customer already had is still in it, which is the whole reason a redo cannot
     leave a hole. ⚠ **No refund here**: whether anything is owed is a question
     about the PRESS, decided once all the slots have settled.
+
+    ⚠ **BUT THE REASON IS WRITTEN DOWN HERE, AND IT IS THE DURABLE RECORD
+    (#2133).** When the sheet this view is cut from was refused by the image
+    provider after its free retry, this receipt says so. It is the first write
+    after the refusal reaches this slot, and it is what both the live press and
+    the recovery sweep read the shares from — so a press that dies while the
+    other sheet is still rendering still owes them, and still pays them once.
   */
   await completeDirectOperationSuccess({
     userId: input.userId,
     operationId,
-    result: { castId: input.castId, angle, outcome: "failed" },
+    result: packageRedoSlotFailedReceipt({
+      castId: input.castId,
+      angle,
+      refusedByProvider: await sheetRefusedByProvider(context.signSheets, angle),
+    }),
     chargedCredits: 0,
     refundedCredits: 0,
   });

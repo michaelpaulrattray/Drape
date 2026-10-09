@@ -95,8 +95,8 @@ function affectedRows(result: unknown): number {
  * comment exists to forbid.
  */
 export const ROLL_RECOVERY_SENTENCE = {
-  didNotFinish: "The sheet didn't finish. Everything that didn't arrive was refunded.",
-  didNotStart: "The sheet didn't start. You were not charged.",
+  didNotFinish: "The roll didn't finish. Everything that didn't arrive was refunded.",
+  didNotStart: "The roll didn't start. You were not charged.",
   supportReview: (operationId: string) =>
     `This operation needs support review before it can be retried. Operation ${operationId}.`,
 } as const;

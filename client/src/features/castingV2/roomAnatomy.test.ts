@@ -101,7 +101,7 @@ describe("the casting room is built to the drawing", () => {
     }
   });
 
-  it("leads the package strip with the Master, and the Master is not generated", async () => {
+  it("leads the character sheet strip with the Master, and the Master is not generated", async () => {
     /*
       Founder ruling: the strip presents SIX things and the first costs nothing.
       The Master is the signed sheet image itself — presentation-only, never
@@ -112,18 +112,19 @@ describe("the casting room is built to the drawing", () => {
       charge for a view nobody ordered and re-render the face she chose.
     */
     const room = await readFile(ROOM, "utf8");
-    const strip = room.slice(room.indexOf("THE PACKAGE"));
+    const strip = room.slice(room.indexOf(">CHARACTER SHEET<"));
     expect(strip).toContain("Master");
     // The Master tile is drawn from the ANCHOR, never from a slot — that is
     // what makes it free, and what stops it being re-rendered.
     expect(strip).toContain("data.anchorUrl");
     /*
-      And the "N of N views" count reads `data.slots`, which the server fills
-      with the five paid views only. Counting the Master would sell six.
+      And the count ("3 of 5" while views are being made, card 2144) reads
+      `data.slots`, which the server fills with the five paid views only.
+      Counting the Master would sell six.
     */
-    const count = strip.slice(strip.indexOf("dpc-rcard__hint"), strip.indexOf("dpc-strip"));
-    expect(count).toContain("data.slots.length");
-    expect(count).not.toContain("anchorUrl");
+    const call = room.match(/characterSheetCount\([^)]*\)/)?.[0] ?? "";
+    expect(call).toBe("characterSheetCount(data.status, data.slots, asking)");
+    expect(call).not.toContain("anchorUrl");
   });
 
   it("fills the hero with three ANGLES of her, never the same crop twice", async () => {

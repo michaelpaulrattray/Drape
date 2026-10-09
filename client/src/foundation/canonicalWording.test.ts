@@ -80,7 +80,7 @@ describe("#1969 — no sentence a customer reads says 'canonical'", () => {
   it("the three sentences say what they now say, so the arm above cannot pass on a deleted line", () => {
     const read = (file: string) => readFileSync(join(CLIENT, file), "utf8").replace(/\s+/g, " ");
     expect(read("features/castingV2/components/SignConfirm.tsx")).toContain(
-      "Locks this face and builds five matching views of them. Nothing else on the sheet changes.",
+      "Locks this face and builds five matching views of them. Nothing else in the casting changes.",
     );
     expect(read("features/lobby/ModelCardChooser.tsx")).toContain("Every view of them, on one card.");
     expect(read("foundation/DestructiveConfirm.tsx")).toContain(

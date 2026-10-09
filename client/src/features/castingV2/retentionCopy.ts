@@ -106,7 +106,7 @@ export function sheetExpiryNotice(expiresAt: string | null, now = Date.now()): s
   const left = at - now;
   if (left <= 0 || left >= EXPIRY_NOTICE_MS) return null;
   const when = left < DAY ? "today" : "tomorrow";
-  return `This sheet expires ${when} — keep or sign what's worth holding.`;
+  return `This casting expires ${when} — keep or sign what's worth holding.`;
 }
 
 /**
@@ -121,4 +121,4 @@ export function sheetExpiryNotice(expiresAt: string | null, now = Date.now()): s
  * expiry says what happened"): saying "your sheet expired" to someone who
  * never made one would be inventing an event to fill a silence.
  */
-export const RETENTION_EMPTY_STATE = `Unsigned sheets are cleared after ${CASTING_SESSION_IDLE_PHRASE}.`;
+export const RETENTION_EMPTY_STATE = `Unsigned castings are cleared after ${CASTING_SESSION_IDLE_PHRASE}.`;

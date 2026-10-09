@@ -1609,7 +1609,10 @@ describe("the free-or-paid reading — a branch that decides WHETHER she pays (#
     "server/castingV2/viewRetryFreeOnce.test.ts",
     "server/castingV2/castProjection.test.ts",
     "server/db/castingV2ViewRetry.ts.bak",
-    "server/db/castingV2Sign.ts",
+    /* `server/db/castingV2Sign.ts` stood here and LEFT it with #2127: it now writes a
+       refused sheet's share to the ledger, so it is on MONEY_PATHS. A lookalike
+       keeps the anchoring arm this entry was for. */
+    "server/db/castingV2Signing.ts",
   ])("still leaves %s alone", (file) => {
     expect(pathRe.test(file)).toBe(false);
   });

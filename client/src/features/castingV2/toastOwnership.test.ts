@@ -101,11 +101,11 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   },
   // ---- CastingV2.tsx (the lobby)
   {
-    match: '"That sheet could not be discarded."',
+    match: '"That casting could not be deleted."',
     because: "A sheet that stays put says nothing about why it stayed.",
   },
   {
-    match: '"Sheet deleted"',
+    match: '"Casting deleted"',
     because:
       "MEASURED, not assumed: the card takes 7.1s to leave the strip, because `openSessions` runs four queries per sheet and a lobby with two dozen sheets refetches ~100 times first. Seven seconds of silence after a destructive action is worse than a duplicate. Remove this when the removal is optimistic or the projection is one query.",
   },

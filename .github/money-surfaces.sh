@@ -599,9 +599,13 @@
 # `recordRefund` there are seen by the symbol half. Adding it is #1622's bulk
 # question, which was measured and declined.
 #
+# #2127 ADDED `server/db/castingV2Sign.ts`: `recordRefusedSheetSlotFailure` writes a
+# refused sheet's share to the ledger inside the Sign's fenced transaction
+# (`addCreditsIn`), so the module now REACHES the credit primitive.
+#
 # NAMED FILES, NEVER DIRECTORIES — `server/db/` and `server/castingV2/` stay off.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry|castingV2Sign)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

@@ -1,3 +1,4 @@
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { MoreHorizontal, Trash2 } from "lucide-react";
 
@@ -12,7 +13,29 @@ import { useAnchoredPanel, type PanelAlign } from "./useAnchoredPanel";
  * a third. Three copies of a hover rule is three chances for two of them to be
  * wrong, so there is now one.
  *
- * **The reveal ladder (founder ruling, 2026-08-03).** The dots were invisible
+ * ⚠ **ONE MENU, ONE LOOK, TWO PLACEMENTS — #2144, his words of 2026-10-09,
+ * verbatim.** First: *"on the old ruling casting library already has delete in
+ * a menu i think this must be an old ruling on menu styling shouldnt all menus
+ * be the same ?"* — so the PANEL is one look everywhere and a danger item is
+ * RED AT REST on every menu, not grey until hovered. Then: *"anywhere that a 3
+ * dot menu is sitting ontop of a card like the cast library could be hover
+ * hidden? thoughts"* — so where the dots SIT decides whether they hide, and
+ * nothing else does:
+ *
+ *   `overlay`  on a picture or a card (the cast library): hidden at rest until
+ *              the card is hovered or holds keyboard focus — on pointer
+ *              devices only. A touch screen has no hover, so a hover-revealed
+ *              control there would not exist at all; on `(hover: none)` the
+ *              dots always show.
+ *   `row`      in a header row or toolbar (the cast room's character sheet
+ *              row, his Option A — *"Mike approved Option A"*): always
+ *              visible. A row on a page has no card to hover.
+ *
+ * It is a PLACEMENT, named by the caller for where it mounts the menu, and
+ * required — a caller cannot forget to say, and there is no third style.
+ *
+ * **The reveal ladder (founder ruling, 2026-08-03) — now the `overlay`
+ * placement's, on pointer devices.** The dots were invisible
  * until pointed at directly, which is a control you can only find by knowing it
  * is there:
  *
@@ -28,7 +51,8 @@ import { useAnchoredPanel, type PanelAlign } from "./useAnchoredPanel";
  * **Placement is the caller's.** The sheet and roster cards pin it to a corner;
  * the room sits it beside the name. The component owns the trigger, the panel
  * and the behaviour — never where it lives. What every caller must supply is a
- * host element carrying `dpc-menuhost`, which is what the first rung hangs off.
+ * host element carrying `dpc-menuhost`, which is what an `overlay` menu's
+ * reveal hangs off.
  *
  * ---------------------------------------------------------------------------
  * **#304 — this is now a SHAPE, and the behaviour under it is shared.** His
@@ -48,10 +72,12 @@ import { useAnchoredPanel, type PanelAlign } from "./useAnchoredPanel";
 export type CardMenuItem = {
   label: string;
   onSelect: () => void;
-  /** Destructive: separated by a rule and coloured on hover. */
+  /** Destructive: separated by a rule and red at rest (#2144). */
   danger?: boolean;
   /**
-   * THE QUIET LINE UNDER THE LABEL — what this costs, before the click.
+   * THE QUIET PRICE AT THE RIGHT OF THE LABEL — what this costs, before the
+   * click. (It sat UNDER the label until #2144; his Option A frame puts it in
+   * grey on the right of the same line, and no caller had used it before.)
    *
    * D-109 keeps a price OUT of button text and the UI contract requires a paid
    * action to say what it costs before it is taken. Both are satisfied by
@@ -70,6 +96,7 @@ export function CardMenu({
   onToggle,
   onCancel,
   align = "fromTheRight",
+  placement,
 }: {
   /** Names the subject, for the trigger's accessible name. */
   label: string;
@@ -106,6 +133,12 @@ export function CardMenu({
    * every shape on the owner shares.
    */
   align?: PanelAlign;
+  /**
+   * WHERE THE DOTS SIT, which decides whether they hide (#2144, the docblock
+   * above): `overlay` on a picture or card, `row` in a header row or toolbar.
+   * Required, so every caller says which.
+   */
+  placement: "overlay" | "row";
 }) {
   /*
     THE SHARED OWNER, in controlled mode. The open state stays the caller's —
@@ -121,10 +154,45 @@ export function CardMenu({
     },
   });
 
+  /*
+    THE KEYBOARD'S WAY IN (#2144: "keyboard and screen-reader users can reach
+    both menu items"). The panel is portalled to the end of `<body>`, so a Tab
+    from the trigger walks the PAGE, never the menu — before this, a keyboard
+    could open the menu and not reach a single item in it.
+
+    Only when the menu was opened FROM the keyboard (a click with `detail === 0`
+    is Enter or Space): a pointer user's focus stays on the trigger exactly as
+    it always has, so no card caller looks or behaves any differently.
+
+    ⚠ On `placed`, not on `open` — the panel spends one commit hidden while the
+    owner measures it, and `focus()` on a hidden element does nothing and says
+    nothing (`Popover.tsx` lost its focus this way during #304).
+  */
+  const openedByKeyboard = useRef(false);
+  const { placed, panelRef, triggerRef } = panel;
+  useEffect(() => {
+    if (!open) {
+      openedByKeyboard.current = false;
+      return;
+    }
+    if (!placed || !openedByKeyboard.current) return;
+    panelRef.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
+  }, [open, placed, panelRef]);
+
+  const walk = (event: KeyboardEvent, direction: 1 | -1) => {
+    event.preventDefault();
+    const rows = Array.from(
+      panelRef.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? [],
+    );
+    if (rows.length === 0) return;
+    const index = rows.indexOf(document.activeElement as HTMLElement);
+    rows[(index + direction + rows.length) % rows.length]?.focus();
+  };
+
   if (items.length === 0) return null;
 
   return (
-    <span className="dpc-cardmenu" {...panel.surfaceProps}>
+    <span className={`dpc-cardmenu dpc-cardmenu--${placement}`} {...panel.surfaceProps}>
       <button
         ref={panel.triggerRef}
         type="button"
@@ -136,6 +204,7 @@ export function CardMenu({
           // The card beneath is usually a link. The menu is not a way into it.
           event.preventDefault();
           event.stopPropagation();
+          openedByKeyboard.current = !open && event.detail === 0;
           onToggle();
         }}
       >
@@ -155,8 +224,20 @@ export function CardMenu({
             ref={panel.panelRef}
             className="dp-floatpanel dpc-cardmenu__panel"
             role="menu"
+            aria-label={`Actions for ${label}`}
             style={panel.panelStyle}
             {...panel.surfaceProps}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") walk(event, 1);
+              if (event.key === "ArrowUp") walk(event, -1);
+              /* Tab leaves a menu, as it does everywhere else: closed, and
+                 back on the trigger rather than lost at the end of <body>. */
+              if (event.key === "Tab") {
+                event.preventDefault();
+                onCancel();
+                triggerRef.current?.focus();
+              }
+            }}
           >
             {items.map((item, index) => (
               <span key={item.label}>
@@ -170,12 +251,14 @@ export function CardMenu({
                   onClick={item.onSelect}
                 >
                   {item.danger ? <Trash2 size={12} strokeWidth={2} aria-hidden="true" /> : null}
-                  {/* The action and, UNDER it, what it costs — a column inside
-                      the row so the icon stays beside the label and the price
-                      gets its own line (D-109: never in the button text). */}
+                  {/* The action and, at the RIGHT of it, what it costs (#2144's
+                      Option A frame; D-109: never in the button text). */}
                   <span className="dpc-cardmenu__lines">
                     <span className="dpc-cardmenu__label">{item.label}</span>
-                    {item.meta ? <span className="dpc-cardmenu__meta">{item.meta}</span> : null}
+                    {/* A space a screen reader hears ("…sheet, 650 credits"
+                        rather than "…sheet650 credits"); a flex row draws
+                        nothing for it. */}
+                    {item.meta ? <>{" "}<span className="dpc-cardmenu__meta">{item.meta}</span></> : null}
                   </span>
                 </button>
               </span>

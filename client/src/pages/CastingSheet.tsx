@@ -2603,7 +2603,7 @@ export default function CastingSheet() {
   if (goneSentence) return null;
 
   return (
-    <AppChrome breadcrumb="Casting / Sheet" current="casting" width="working">
+    <AppChrome breadcrumb="Casting / Candidates" current="casting" width="working">
       <div className="dp-dock-scroll dp-stack" style={{ gap: 22 }}>
         <div className="dp-row" style={{ justifyContent: "space-between" }}>
           <Button variant="quiet" size="small" onClick={() => navigate("/app/casting")}>
@@ -2639,7 +2639,7 @@ export default function CastingSheet() {
           roll a session has paid for stays reachable for its whole life.
         */}
         {rolls.length > 1 || provisionalIndex ? (
-          <div className="dpc-rollrail" role="tablist" aria-label="Rolls in this sheet">
+          <div className="dpc-rollrail" role="tablist" aria-label="Rolls in this casting">
             {rolls.map((entry) => {
               /*
                 ONE SELECTED PILL, AND WHILE A ROLL IS BEING PAID FOR IT IS THE
@@ -2817,7 +2817,7 @@ export default function CastingSheet() {
         {shownBrief.trim().length > 0 ? (
           <details className="dpc-prompt">
             <summary className="dpc-prompt__summary">
-              The brief this sheet was cast from
+              The brief this casting was cast from
               {/*
                 ⚠ **THE ONLY NOTE ABOUT A DIFFERENCE (#534, his reply #134:
                 "the only note about a difference is the small 'edited below,
@@ -2965,7 +2965,7 @@ export default function CastingSheet() {
         */}
         {!shownRollId && !startingRoll && !visibleFailure && session.isFetched ? (
           <EmptyState
-            title="Nothing cast on this sheet yet"
+            title="Nothing cast yet"
             body="Describe who you need in the box below and roll."
           />
         ) : null}
@@ -3296,7 +3296,7 @@ export default function CastingSheet() {
               <Instruction>{cancelLine}</Instruction>
             ) : parentGone ? (
               <Instruction>
-                That face is no longer on this sheet — back to open casting. Nothing was charged.
+                That face is no longer in this casting — back to open casting. Nothing was charged.
               </Instruction>
             ) : /*
                 THIS LINE STAYS ON THE LATCH, NOT ON THE VIEW (card 1232).

@@ -592,6 +592,7 @@ export default function AdminFoundation() {
           </Button>
           <span className="dpc-menuhost" style={{ position: "relative" }}>
             <CardMenu
+              placement="row"
               label="this specimen"
               open={menuOpen}
               onToggle={() => setMenuOpen((was) => !was)}

@@ -23,13 +23,13 @@ describe("the sentence composes rather than templates", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a slim woman in her early 20s.",
+      "Everyone in this casting is a slim woman in her early 20s.",
     );
   });
 
   it("drops the phase when the brief only pinned the decade", () => {
     const spans = composeEcho(facts({ locks: { sex: "male", ageBand: "50s" } }));
-    expect(echoText(spans)).toBe("Everyone on this sheet is a man in his 50s.");
+    expect(echoText(spans)).toBe("Everyone in this casting is a man in his 50s.");
   });
 
   it("writes heritage, presence and look as prose, not as a list", () => {
@@ -39,7 +39,7 @@ describe("the sentence composes rather than templates", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal.",
+      "Everyone in this casting is a woman in her 20s, of East Asian heritage, reading dry, held to severe minimal.",
     );
   });
 
@@ -50,7 +50,7 @@ describe("the sentence composes rather than templates", () => {
 
   it("says 'seventies or older' rather than the raw band label", () => {
     const spans = composeEcho(facts({ locks: { sex: "male", ageBand: "70s+" } }));
-    expect(echoText(spans)).toBe("Everyone on this sheet is a man in his seventies or older.");
+    expect(echoText(spans)).toBe("Everyone in this casting is a man in his seventies or older.");
   });
 });
 
@@ -90,7 +90,7 @@ describe("nothing is said about what the roll was free to vary", () => {
         const where = `${JSON.stringify(locks)} / ${authorRoad}`;
         expect(text, where).not.toContain("left to the roll");
         /* THE POSITIVE CONTROL: the sentence still says who was cast. */
-        expect(text, where).toContain("Everyone on this sheet");
+        expect(text, where).toContain("Everyone in this casting");
       }
     }
   });
@@ -128,7 +128,7 @@ describe("lineage", () => {
       { followLabel: "the third face on roll 01" },
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman in her 40s. The eight follow the third face on roll 01.",
+      "Everyone in this casting is a woman in her 40s. The eight follow the third face on roll 01.",
     );
   });
 
@@ -144,10 +144,10 @@ describe("lineage", () => {
   it("reads the same on a first roll and on a repeat", () => {
     const shown = facts({ locks: { sex: "female", ageBand: "20s", heritage: ["Nordic"] } });
     expect(echoText(composeEcho(shown))).toBe(
-      "Everyone on this sheet is a woman in her 20s, of Nordic heritage.",
+      "Everyone in this casting is a woman in her 20s, of Nordic heritage.",
     );
     expect(echoText(composeEcho(shown, { followLabel: "01 on roll 05" }))).toBe(
-      "Everyone on this sheet is a woman in her 20s, of Nordic heritage. The eight follow 01 on roll 05.",
+      "Everyone in this casting is a woman in her 20s, of Nordic heritage. The eight follow 01 on roll 05.",
     );
   });
 });
@@ -237,7 +237,7 @@ describe("a pinned fact is never dropped to make the sentence fit", () => {
       statedAccessories: ["chunky glasses"],
     }, { followLabel: "the third face on roll 01" }));
     expect(text).toBe(
-      "Everyone on this sheet is cast as an oncology nurse — an athletic woman in her early 20s, "
+      "Everyone in this casting is cast as an oncology nurse — an athletic woman in her early 20s, "
       + "of Western European and Southeast Asian heritage, reading guarded, held to commanding glamour, "
       + "wearing chunky glasses. The eight follow the third face on roll 01.",
     );
@@ -248,7 +248,7 @@ describe("a pinned fact is never dropped to make the sentence fit", () => {
 describe("the casting category is in the sentence", () => {
   /*
     Founder's round-6 finding: "a runway model early 20s" echoed as
-    "Everyone on this sheet is someone early 20s" — the category missing
+    "Everyone in this casting is someone early 20s" — the category missing
     entirely, and the grammar broken where it should have been.
 
     The interpreter was innocent: it captured role="runway model" on that exact
@@ -262,7 +262,7 @@ describe("the casting category is in the sentence", () => {
       facts({ role: "runway model", locks: { ageBand: "20s", agePhase: "early" } }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as a runway model — in their early 20s.",
+      "Everyone in this casting is cast as a runway model — in their early 20s.",
     );
   });
 
@@ -270,14 +270,14 @@ describe("the casting category is in the sentence", () => {
     // The other half of the report: with no sex pinned the preposition was
     // dropped, because it only existed on the branch that had a noun.
     const spans = composeEcho(facts({ locks: { ageBand: "20s", agePhase: "early" } }));
-    expect(echoText(spans)).toBe("Everyone on this sheet is in their early 20s.");
+    expect(echoText(spans)).toBe("Everyone in this casting is in their early 20s.");
     expect(echoText(spans)).not.toContain("someone");
   });
 
   /*
     #230, his verdict on a live MAX sheet (verbatim): *"Delete the differ-by
     line on LOW and MAX. Don't say the eight differ by look, disposition, or
-    expression. Keep only: Everyone on this sheet is cast as [type] — [sex] in
+    expression. Keep only: Everyone in this casting is cast as [type] — [sex] in
     their [age band]. The sheet already proves whether the faces are
     different."*
 
@@ -302,7 +302,7 @@ describe("the casting category is in the sentence", () => {
       locks: { sex: "female", ageBand: "50s", heritage: ["British Isles"], energy: "grave" },
     });
     expect(echoText(composeEcho(shown, { authorRoad: true }))).toBe(
-      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
+      "Everyone in this casting is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
     );
 
     /*
@@ -355,20 +355,20 @@ describe("the casting category is in the sentence", () => {
       }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
+      "Everyone in this casting is cast as an oncology nurse — a woman in her 50s, of British Isles heritage, reading grave.",
     );
   });
 
   it("stands alone when the category is all the brief gave", () => {
     const spans = composeEcho(facts({ role: "blacksmith" }));
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is cast as a blacksmith.",
+      "Everyone in this casting is cast as a blacksmith.",
     );
   });
 
   it("does not double the article on a category the user wrote with one", () => {
     const spans = composeEcho(facts({ role: "a retired boxer" }));
-    expect(echoText(spans)).toBe("Everyone on this sheet is cast as a retired boxer.");
+    expect(echoText(spans)).toBe("Everyone in this casting is cast as a retired boxer.");
     expect(echoText(spans)).not.toContain("as a a ");
   });
 
@@ -434,17 +434,17 @@ describe("no clause may open the sentence with a comma", () => {
     const spans = composeEcho(facts({ locks: { heritage: ["East Asian"] } }));
     const text = echoText(spans);
     expect(text.startsWith(",")).toBe(false);
-    expect(text).toBe("Everyone on this sheet is of East Asian heritage.");
+    expect(text).toBe("Everyone in this casting is of East Asian heritage.");
   });
 
   it("opens on presence when presence is the only thing pinned", () => {
     const spans = composeEcho(facts({ locks: { energy: "dry" } }));
-    expect(echoText(spans)).toBe("Everyone on this sheet reads dry.");
+    expect(echoText(spans)).toBe("Everyone in this casting reads dry.");
   });
 
   it("opens on look when the look is the only thing pinned", () => {
     const spans = composeEcho(facts({ locks: { look: "severe minimal" } }));
-    expect(echoText(spans)).toBe("Everyone on this sheet is held to severe minimal.");
+    expect(echoText(spans)).toBe("Everyone in this casting is held to severe minimal.");
   });
 
   it("still continues rather than re-opening once a subject exists", () => {
@@ -452,7 +452,7 @@ describe("no clause may open the sentence with a comma", () => {
       facts({ locks: { sex: "female", heritage: ["Nordic"], energy: "warm" } }),
     );
     expect(echoText(spans)).toBe(
-      "Everyone on this sheet is a woman, of Nordic heritage, reading warm.",
+      "Everyone in this casting is a woman, of Nordic heritage, reading warm.",
     );
   });
 
@@ -507,7 +507,7 @@ describe("what the brief said they are wearing", () => {
     }));
     // One sentence, and the accessory continues it rather than starting a second.
     expect(text).toContain(", wearing chunky glasses");
-    expect(text).not.toContain(". Everyone on this sheet is wearing");
+    expect(text).not.toContain(". Everyone in this casting is wearing");
   });
 
   /*

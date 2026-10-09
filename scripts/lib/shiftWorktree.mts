@@ -466,7 +466,43 @@ export type KeptIgnoredPath = {
   readonly files: number;
   /** `true` when the walk hit its entry cap, so both figures are a floor. */
   readonly capped: boolean;
+  /**
+   * `true` when the walk could not finish — a refused stat, a link, a directory
+   * it could not list, a file it could not size. Both figures are then a floor
+   * and a zero means *not counted*, never *empty* (#2155).
+   */
+  readonly unreadable: boolean;
 };
+
+/**
+ * WHETHER A KEPT IGNORED PATH ACTUALLY HOLDS ANYTHING — the reading the verdict
+ * below used to take and throw away (#2155).
+ *
+ * ⚠ **MEASURED, NOT REASONED: 15 OF THE 34 LEFTOVER WORKTREES ON THIS MACHINE
+ * REFUSED REMOVAL ON AN `output/` DIRECTORY HOLDING `0 B in 0 files`** — read
+ * through the real `remove --dry-run`, then confirmed at the disk (`find -type f`
+ * returned nothing in each). The tool measured the directory, PRINTED
+ * `output/ (0 B in 0 files)`, and then refused on it anyway; a shift reads a
+ * refusal and leaves the tree, so the leftovers accumulate and every one of them
+ * keeps a live `node_modules` junction into the main tree's install — which is
+ * the hazard `#2155` and this module's own header are about.
+ *
+ * **So the class is not "shifts that ended without running the tool", which is
+ * what the card supposed.** It is this function's absence: *a verdict that
+ * discards a measurement it already took.* `#1823`'s refusal is right and is
+ * untouched for anything that holds bytes — what changes is that an empty
+ * directory is no longer called work.
+ *
+ * ⚠ **AND IT FAILS CLOSED, WHICH IS THE WHOLE REASON `measureTree` NOW REPORTS
+ * `unreadable`.** A zero that came from *could not look* must keep refusing, or
+ * this repair hands `#1823`'s 1.36 GB back to the delete by a different door. A
+ * capped walk is the same answer for the same reason: the figures are a floor,
+ * so a zero is not a measurement.
+ */
+export function keptIgnoredHoldsWork(kept: KeptIgnoredPath): boolean {
+  if (kept.unreadable || kept.capped) return true;
+  return kept.files > 0 || kept.bytes > 0;
+}
 
 /**
  * Bytes as a person reads them.
@@ -490,6 +526,10 @@ export function humanBytes(bytes: number): string {
 
 /** One kept path, worded once for the refusal, the warning and the printed line. */
 export function describeKeptIgnored(kept: KeptIgnoredPath): string {
+  /* ⚠ NOT `0 B in 0 files`, WHICH IS WHAT AN UNREADABLE PATH USED TO PRINT
+     (#2155) — the most reassuring sentence available about the one state nobody
+     measured, four lines above a recursive delete. */
+  if (kept.unreadable) return `${kept.path} (SIZE NOT READ — the walk could not finish, so it is kept)`;
   const floor = kept.capped ? "at least " : "";
   return `${kept.path} (${floor}${humanBytes(kept.bytes)} in ${floor}${kept.files} file${kept.files === 1 ? "" : "s"})`;
 }
@@ -516,11 +556,20 @@ export function ignoredReadingLine(state: {
       ? `${counted} — git is ignoring nothing in this worktree`
       : `${counted}, none worth keeping (${state.disposableIgnored.join(", ")})`;
   }
-  const kept = state.keptIgnored.map(describeKeptIgnored).join("; ");
+  /* ⚠ THE KEPT SET SPLITS IN TWO AND BOTH HALVES ARE SAID (#2155). A path in the
+     named set that measured EMPTY is not work — it no longer earns the ⚠ and no
+     longer refuses — but it is still printed, because #1823's whole lesson is
+     that silence about a population cannot be told apart from an empty one. */
+  const holding = state.keptIgnored.filter(keptIgnoredHoldsWork);
+  const empty = state.keptIgnored.filter((path) => !keptIgnoredHoldsWork(path));
+  const emptyNote = empty.length === 0
+    ? ""
+    : `; ${empty.length} kept path${empty.length === 1 ? "" : "s"} measured EMPTY (${empty.map((path) => path.path).join(", ")})`;
   const rest = state.disposableIgnored.length === 0
     ? ""
     : `; ${state.disposableIgnored.length} disposable (${state.disposableIgnored.join(", ")})`;
-  return `${counted} — ⚠ WORTH KEEPING: ${kept}${rest}`;
+  if (holding.length === 0) return `${counted}, none worth keeping${emptyNote}${rest}`;
+  return `${counted} — ⚠ WORTH KEEPING: ${holding.map(describeKeptIgnored).join("; ")}${emptyNote}${rest}`;
 }
 
 /**
@@ -530,6 +579,41 @@ export function ignoredReadingLine(state: {
  * loop — and both directions matter equally. A helper that refuses too readily
  * gets `--force`d by habit, and then it is not a guard at all.
  */
+/**
+ * ⚠ **WHAT IS AT THE `node_modules` PATH — A LINK, OR A REAL DIRECTORY (#2161).**
+ *
+ * The question the gate above the recursive delete has to answer is *is there a
+ * LINK in the way*, and until this type existed it was answered with *is there
+ * anything in the way* (`stillOnDisk`, a boolean). Those agree on every tree
+ * this tool made — and they disagreed on the two that could not be cleared.
+ *
+ * **Measured, 2026-10-09, with a positive control:**
+ *
+ * | path | `lstat.isSymbolicLink()` |
+ * |---|---|
+ * | `drape-review-1910/node_modules` | **false** — a real directory |
+ * | `drape-review-1915/node_modules` | **false** — a real directory |
+ * | a live worktree's `node_modules` | true |
+ *
+ * Each of the two holds 58 top-level entries, **824 directories, 0 files,
+ * 0 bytes** — an aborted install or an interrupted delete. `rmdir` removes an
+ * empty directory or unlinks a reparse point and does neither here, so `remove`
+ * refused with a message about a junction that was not there and the two shells
+ * could not be cleared by the tool at all.
+ *
+ * ⚠ **AND `unreadable` IS NOT `real`.** The polarity `stillOnDisk` was given by
+ * PR #692's review — *only "it is not there" means absent* — is the whole reason
+ * this is four answers and not a boolean plus a guess. A path the process cannot
+ * `lstat` for a reason that is not absence is a path nobody may authorise a
+ * recursive delete past, and collapsing it into `real` would do exactly that,
+ * quietly, on the one predicate this module's header calls the thing standing
+ * between a sweep and the main checkout.
+ *
+ * The reading itself is `readJunctionAt` in `lib/riteWorktree.mts`, which is
+ * where the disk lives; this module stays drivable without one.
+ */
+export type JunctionReading = "link" | "real" | "absent" | "unreadable";
+
 export type RemovalState = {
   /**
    * Commits on the branch that no remote has.
@@ -547,8 +631,8 @@ export type RemovalState = {
   readonly dirtyFiles: readonly string[];
   /** Whether git still knows about this path as a worktree. */
   readonly registered: boolean;
-  /** Whether the node_modules junction is still in place. */
-  readonly junctionPresent: boolean;
+  /** What is actually AT the `node_modules` path — see {@link JunctionReading}. */
+  readonly junctionAt: JunctionReading;
   /**
    * DID THIS BRANCH ALREADY MERGE? — the fact `unpushedCommits` cannot see
    * (#1540).
@@ -670,8 +754,14 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
    * first, and a refusal naming renders over lost commits would send a shift to
    * copy a directory and `--force` past the commits.
    */
-  if (state.keptIgnored.length > 0 && !force) {
-    const named = state.keptIgnored.map(describeKeptIgnored).join("; ");
+  /* ⚠ THE SUBSET THAT HOLDS SOMETHING, NEVER THE WHOLE NAMED SET (#2155). An
+     `output/` measured at `0 B in 0 files` refused 15 of the 34 leftover
+     worktrees on this machine, and a refusal a shift cannot act on is how 37 of
+     them came to be standing with live junctions. `keptIgnoredHoldsWork` fails
+     closed, so an unreadable or capped measurement still refuses here. */
+  const keptHoldingWork = state.keptIgnored.filter(keptIgnoredHoldsWork);
+  if (keptHoldingWork.length > 0 && !force) {
+    const named = keptHoldingWork.map(describeKeptIgnored).join("; ");
     return {
       proceed: false,
       reason: `the worktree holds ignored work that is worth keeping: ${named}`
@@ -702,9 +792,9 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
      It names the paths and the bytes rather than a count, because the count is
      what the old report had: `uncommitted 0 file(s)` was a true number about the
      wrong population. */
-  if (force && state.keptIgnored.length > 0) {
+  if (force && keptHoldingWork.length > 0) {
     warnings.push(
-      `--force is destroying ignored work worth keeping: ${state.keptIgnored.map(describeKeptIgnored).join("; ")}`,
+      `--force is destroying ignored work worth keeping: ${keptHoldingWork.map(describeKeptIgnored).join("; ")}`,
     );
   }
   if (!state.registered) {
@@ -1063,13 +1153,71 @@ export function removalStateFromShipReading(
  * there is nothing for `--force` to express. Keeping it out of the force-able
  * verdict is what stops a habitual `--force` from reaching it.
  */
-export function junctionMustBeGone(junctionPresent: boolean): { ok: boolean; reason: string } {
-  if (!junctionPresent) return { ok: true, reason: "" };
+/*
+ * ⚠ **IT TOOK A BOOLEAN AND THE BOOLEAN WAS THE WRONG QUESTION (#2161).** The
+ * caller passed `stillOnDisk(…)` — *is there anything there* — and this refused
+ * on it, so a `node_modules` that is a REAL DIRECTORY was refused with a
+ * sentence about a link that does not exist, and the only two trees in that
+ * state could not be cleared by the tool at all. The danger this guard exists
+ * for is the delete FOLLOWING A LINK; a real directory has nothing to follow,
+ * and `rmSync(recursive)` is the correct thing to do to it.
+ *
+ * So the refusals are now exactly two, and the second is the one that keeps the
+ * fail-closed polarity PR #692's review bought: a reading that could not be
+ * taken is never read as permission.
+ */
+export function junctionMustBeGone(at: JunctionReading): { ok: boolean; reason: string } {
+  if (at === "absent" || at === "real") return { ok: true, reason: "" };
+  if (at === "unreadable") {
+    return {
+      ok: false,
+      reason:
+        "the node_modules path could not be read, so whether a junction is still in the way is UNKNOWN — and a recursive delete past a live junction empties the MAIN tree's node_modules. Nothing was touched. This refusal is not overridable by --force; find out what is holding the path and run again.",
+    };
+  }
   return {
     ok: false,
     reason:
       "the node_modules junction is still in place — a recursive delete would follow it into the MAIN tree's node_modules and empty it. Remove the link first (cmd /c rmdir \"<path>\\node_modules\") and run again. This refusal is not overridable by --force.",
   };
+}
+
+/**
+ * The one line `remove` prints about what it found at `node_modules` — the
+ * card's own *"and says which it found"*.
+ *
+ * ⚠ Kept beside the verdict rather than in the CLI, for the reason every other
+ * words-function in this module is: this sits four lines above a recursive
+ * delete, a shift reads it to decide whether to pass `--force`, and a sentence
+ * nothing drives is a sentence that can quietly stop matching the branch it
+ * describes. A `real` directory in particular must not read like a happy path —
+ * it is unusual, it means somebody's install rather than this tool's junction —
+ * deliberate, aborted, or half-deleted — and the reader should know the
+ * recursive delete is about to take every byte of it.
+ */
+export function junctionReadingLine(at: JunctionReading): string {
+  switch (at) {
+    case "link":
+      return "a junction — it is unlinked first, and proven gone before anything recursive runs";
+    case "real":
+      /* ⚠ THE CAUSES ARE NAMED IN THE ORDER THEY WERE MEASURED, AND THE FIRST
+         ONE WAS MISSING FROM THIS SENTENCE UNTIL THE CENSUS (#2161). It read
+         "an aborted install or an interrupted delete leaves this", and then a
+         census of all 56 `drape-*` directories found a third real-directory
+         tree that is neither: `drape-shift-relay-2152`, the relay's LIVE tree
+         with PR #2157 open, holding a **real per-tree install** — 64 top-level
+         entries with real content, not the 0 files the two review shells held.
+         Somebody installed there on purpose, which is the sensible way to dodge
+         the shared-install skew of #2148.
+         The difference is not academic: this line sits four above a recursive
+         delete, and "an aborted install" invites a reader to treat a full
+         install as junk. */
+      return "⚠ a REAL directory, not a junction — nothing to unlink; the recursive delete takes ALL of it (a deliberate per-tree install, an aborted one, or an interrupted delete)";
+    case "absent":
+      return "nothing there";
+    case "unreadable":
+      return "⚠ UNREADABLE — refusing, because an unknown is not a permission";
+  }
 }
 
 /**
@@ -1079,4 +1227,292 @@ export function junctionMustBeGone(junctionPresent: boolean): { ok: boolean; rea
  */
 export function looksCrlfSmudged(sample: string): boolean {
   return sample.includes("\r\n");
+}
+
+// ---- the shared install's own lockfile ------------------------------------
+/**
+ * ⚠ **ONE `node_modules`, N TREES, AND IT CAN ONLY SATISFY THE ONES WHOSE
+ * LOCKFILE IT WAS INSTALLED FROM (#2148, 2026-10-09).**
+ *
+ * Every shift worktree junctions `node_modules` at the main tree's real one —
+ * the install is over a gigabyte and the overlap rule cuts two trees a night,
+ * so copying it is absurd. The price is that the install is **shared mutable
+ * state between trees that do not share a lockfile**, and nothing was reading
+ * it: a dependency bump lands on `main`, every worktree cut afterwards
+ * typechecks against the install from before it, and the red names files the
+ * diff never touched.
+ *
+ * **Measured the day this was written.** `86c560c3` took cookie 2.0.1, which
+ * renames `parse` to `parseCookie`. The shared install still held cookie 1.0.2,
+ * so a worktree cut from `origin/main` reported three errors in
+ * `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — **both auth files,
+ * neither of them anybody's diff** — while `pnpm check` in the main tree was
+ * GREEN, because that tree was four commits behind and therefore agreed with
+ * the stale install. Two relay agents hit it before it was carded.
+ *
+ * ⚠ **pnpm ALREADY RECORDS THE ANSWER AND NOTHING WAS READING IT** — the
+ * disappearing-technology law's clause 4, pointed at a tool rather than a
+ * model: `node_modules/.pnpm/lock.yaml` is pnpm's own copy of the lockfile it
+ * installed from. So "does this install match this tree?" is a byte compare
+ * against an artifact the installer already wrote, not a version census we
+ * invent. No `pnpm` invocation, no network, no guess.
+ *
+ * ⚠ **AND THE READING IS NEVER AN INSTALL.** Refreshing the install is a
+ * mutation under every other tree on the machine, and on the day this landed
+ * it would have reddened a LIVE seat whose branch predated the bump and swapped
+ * the dependencies under two running dev servers. So this reports, names the
+ * one command, and names who else the command would move — the choice stays
+ * with whoever can see whether the machine is quiet. A tool that silently
+ * installed would be the convenient path and the wrong one.
+ */
+export const INSTALLED_LOCKFILE_RELATIVE = "node_modules/.pnpm/lock.yaml";
+
+export function installedLockfilePath(repoRoot: string): string {
+  return `${repoRoot}/${INSTALLED_LOCKFILE_RELATIVE}`;
+}
+
+/**
+ * ⚠ **NORMALISED BEFORE COMPARING, AND THAT IS NOT DECORATION ON THIS
+ * MACHINE.** `.gitattributes` says `* text=auto eol=lf`, so both files are LF
+ * today and the compare would pass raw — but this very tool warns three steps
+ * earlier that a checkout can arrive CRLF-SMUDGED, and a smudged
+ * `pnpm-lock.yaml` would read as a skew against pnpm's LF copy on every tree
+ * at once. That is a false alarm telling every shift to run a pointless
+ * install, so the one line that cannot produce it is worth having. A trailing
+ * newline is dropped for the same reason.
+ */
+function normaliseLockfile(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\n+$/, "");
+}
+
+export type SharedInstallReading =
+  /** The install was made from this tree's lockfile. Nothing to say. */
+  | { readonly kind: "match" }
+  /**
+   * The question could not be answered — say which file and why, and do NOT
+   * warn. A missing marker is what a tree with no install at all looks like,
+   * and crying skew there would train the warning away.
+   */
+  | { readonly kind: "unreadable"; readonly why: string }
+  /**
+   * The install does not match this tree. `collisions` are the OTHER trees a
+   * refresh would move off their own lockfile — the reason this is reported
+   * rather than fixed in place.
+   */
+  | {
+      readonly kind: "skew";
+      readonly collisions: readonly string[];
+      /**
+       * ⚠ WHETHER THE REPAIR COMMAND WOULD ACTUALLY REPAIR THIS — the question
+       * the first cut of this reading did not ask (#2148, round 2).
+       *
+       * `pnpm install` installs the lockfile of the tree it is RUN IN. The
+       * printed command names the tree this tool was launched from, and that
+       * tree can be on a different commit from the worktree just cut — `add`
+       * creates the worktree from `origin/main`, never from the launching
+       * tree's HEAD. When the two disagree the command produces the launching
+       * tree's dependency list and the skew just reported survives it.
+       */
+      readonly repairTree: "same-lockfile" | "different-lockfile" | "unreadable";
+    };
+
+/**
+ * Pure: the three readings, from text that is already in hand.
+ *
+ * `otherTrees` carries every other checkout sharing the install, each with its
+ * own lockfile text (`null` when it could not be read — unknown, so never
+ * counted as a collision, because a guessed collision argues against the one
+ * command that fixes the tree in front of you).
+ *
+ * ⚠ **`repairTreeLock` IS THE LOCKFILE OF THE TREE THE PRINTED COMMAND NAMES,
+ * AND IT WAS IN `otherTrees` ALL ALONG WITHOUT BEING ASKED (#2148, round 2).**
+ * The launching tree was read, compared, and counted as one collision among 36
+ * — and then the warning told the shift to run `pnpm install` in it without
+ * ever saying that doing so produces THAT tree's dependency list. Measured on
+ * this machine the hour this was written, three lockfiles and no two alike:
+ * the install was made from `04d1a5fd…`, the launching tree holds `24d2c74c…`,
+ * and `origin/main` — which is what `add` cuts from, so it is the new
+ * worktree's — holds `be7c3b77…`. The named repair moves the install from the
+ * first to the second; the worktree needs the third. Same class as the verdict
+ * that discarded `measureTree`'s own measurement (#2155): a decision that does
+ * not read a fact the code is already holding.
+ */
+export function judgeSharedInstall(state: {
+  readonly installedLock: string | null;
+  readonly treeLock: string | null;
+  /** The lockfile of the tree the printed `pnpm install` would run IN. */
+  readonly repairTreeLock: string | null;
+  readonly otherTrees: readonly { readonly path: string; readonly lock: string | null }[];
+}): SharedInstallReading {
+  if (state.treeLock === null) {
+    return { kind: "unreadable", why: "this worktree has no pnpm-lock.yaml to compare" };
+  }
+  if (state.installedLock === null) {
+    return {
+      kind: "unreadable",
+      why: `the shared install records no lockfile at ${INSTALLED_LOCKFILE_RELATIVE} — nothing to compare it against`,
+    };
+  }
+
+  const tree = normaliseLockfile(state.treeLock);
+  if (normaliseLockfile(state.installedLock) === tree) return { kind: "match" };
+
+  const collisions = state.otherTrees
+    .filter((other) => other.lock !== null && normaliseLockfile(other.lock) !== tree)
+    .map((other) => other.path);
+  /* ⚠ UNREADABLE IS ITS OWN ANSWER, NEVER "same" (#2148, round 2). Falling back
+     to the friendly reading is how the command came to be printed as a repair
+     in the first place: a sentence that is always confident is never wrong-
+     looking. A tree whose lockfile cannot be read gets a warning that says the
+     repair was not checked, which is one honest sentence rather than a guess. */
+  const repairTree = state.repairTreeLock === null
+    ? "unreadable" as const
+    : normaliseLockfile(state.repairTreeLock) === tree
+      ? "same-lockfile" as const
+      : "different-lockfile" as const;
+  return { kind: "skew", collisions, repairTree };
+}
+
+/**
+ * The lines `add` prints for a skew. Kept here with the judgement so the words
+ * a shift reads are driven by the same suite as the verdict — a warning whose
+ * text nothing tests is a warning that can lose its command.
+ *
+ * ⚠ **IT STATES THE COUNT AND NEVER THE LIST, AND THAT WAS MEASURED ON THIS
+ * MACHINE RATHER THAN REASONED.** The first shape of this printed every
+ * colliding tree's path. Driven through the real `add`, it printed **36 of
+ * them** — nearly all leftover shells from three days earlier, each a genuine
+ * checkout with a genuine older lockfile, so the judge was right and the output
+ * was a wall. A shift cannot act on 36 paths; it learns to scroll past the
+ * block, which is the same death the CRLF control exists to prevent arriving by
+ * a different door. The arms could not catch it, because an arm picks two
+ * fixtures and two paths read fine — the real output caught it, which is
+ * working law 6 pointed at a terminal instead of a screen.
+ *
+ * So the words carry the two things a shift can act on — **how many** other
+ * trees the repair would move, and **the commands that show which of them is
+ * alive** — and the paths stay on the verdict, where a caller that wants them
+ * can have them and a reader is not drowned in them.
+ */
+export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: string): readonly string[] {
+  if (reading.kind !== "skew") return [];
+  const lines = [
+    "⚠ THE SHARED node_modules WAS INSTALLED FROM A DIFFERENT LOCKFILE than this",
+    "  worktree's. Expect `pnpm check` and `pnpm preflight` to go red naming files",
+    "  your diff never touched. CI installs fresh, so the gate is unaffected.",
+  ];
+  /* ⚠ THE REPAIR IS NAMED ONLY WHERE IT IS ONE (#2148, round 2). `pnpm install`
+     installs the lockfile of the tree it runs IN, and this tool's launching tree
+     can sit on an older commit than the worktree `add` just cut from
+     `origin/main` — which is the live state on this machine. A command printed
+     under the word "repair" that leaves the red exactly where it was costs a
+     shift the seven minutes it was written to save, and then teaches it to
+     distrust the block. */
+  if (reading.repairTree === "same-lockfile") {
+    lines.push(`  repair: run \`pnpm install\` in ${repoRoot}`);
+  } else if (reading.repairTree === "different-lockfile") {
+    lines.push(
+      `  ⚠ AND \`pnpm install\` IN ${repoRoot} WOULD NOT REPAIR IT.`,
+      "    That tree owns the install and is on a DIFFERENT lockfile from this",
+      "    worktree, so installing there produces ITS dependency list and this",
+      "    worktree stays red. It has to reach this worktree's commit FIRST, and",
+      "    that is its owner's act, not a seat's — the main tree is shared with",
+      "    live sessions.",
+    );
+  } else {
+    lines.push(
+      `  ⚠ WHETHER \`pnpm install\` IN ${repoRoot} WOULD REPAIR IT IS UNKNOWN — that`,
+      "    tree's own pnpm-lock.yaml could not be read, and the install takes the",
+      "    lockfile of the tree it runs in.",
+    );
+  }
+  if (reading.collisions.length > 0) {
+    lines.push(
+      "",
+      `  ⚠ BUT THE INSTALL IS SHARED, and ${reading.collisions.length} other tree(s) on this machine sit`,
+      "    on a different lockfile — the repair above moves every one of them off",
+      "    theirs. Check nothing is live first, and only then install:",
+      "      npx tsx scripts/dev-servers.mts          (what is running, and from where)",
+      "      npx tsx scripts/shift-worktree.mts list  (which trees those are)",
+    );
+  }
+  return lines;
+}
+
+/**
+ * ⚠ **THE WORDS FOR THE MOMENT THE RED ACTUALLY ARRIVES — `pnpm preflight`
+ * (#2148, round 3, law 7's sweep on its own fix).**
+ *
+ * `sharedInstallWarning` above is printed ONCE, by `add`, and its own first
+ * line predicts exactly this: *"Expect `pnpm check` and `pnpm preflight` to go
+ * red naming files your diff never touched."* **Then the tool that goes red
+ * said nothing.** So the instance was fixed at the door and the sibling — the
+ * place every seat is sent before a push — was left, which is the class this
+ * repository has paid for before: a warning at `add` time is read by the seat
+ * that cut the tree, and the red is met by whoever is in it an hour later,
+ * often after a `git merge origin/main` that no `add` ever ran.
+ *
+ * Measured on this machine the hour this was written, in a worktree cut from
+ * `origin/main` by the real `add`: `npx tsc --noEmit` reports three errors in
+ * `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — **both auth files,
+ * neither of them anybody's diff** — preflight stops there, and **six of its
+ * nine checks are never reached.** A seat facing that either hand-assembles the
+ * remaining six or skips them; both were recorded on #2148 this week.
+ *
+ * ⚠ **ONE JUDGE, TWO CALLERS, AND THE WORDS DIFFER BECAUSE THE MOMENT DOES.**
+ * `judgeSharedInstall` is the only thing that decides, so there is no second
+ * reader to drift (working law 4). What cannot be shared is the tense: `add`
+ * says *expect a red*, and this is said with the red already on the screen —
+ * printing a prediction of a thing that has just happened is how a block gets
+ * learned as noise.
+ *
+ * ⚠ **AND IT IS PRINTED ONLY UNDER A RED.** A skew line on every green
+ * preflight is the 36-path wall of round 1 arriving by a different door: the
+ * block that is always there is the block nobody reads. `collisions` is
+ * deliberately left empty by the preflight caller too — diagnosing one red is
+ * this function's job, and planning a machine-wide refresh is `add`'s.
+ *
+ * `installOwner` is the tree that owns the real `node_modules`, **read and not
+ * guessed**: a worktree's `node_modules` is a junction, so
+ * `realpathSync` resolves it to the owning tree and the parent of that path is
+ * the tree whose lockfile an install there would produce. That is the fact
+ * `repairTree` needs, and in a worktree it is NOT the tree preflight is running
+ * in — which is precisely the mistake round 2 of this card was about.
+ */
+export function sharedInstallRedDiagnosis(
+  reading: SharedInstallReading,
+  installOwner: string,
+): readonly string[] {
+  if (reading.kind !== "skew") return [];
+  const lines = [
+    "⚠ THIS RED MAY NOT BE YOUR DIFF. The shared node_modules was installed from a",
+    "  DIFFERENT LOCKFILE than this tree's, so `pnpm check` reports errors in files",
+    "  nobody touched. CI installs fresh, so the gate is unaffected — a green gate",
+    "  over this red is the expected pair, not a contradiction.",
+    `  The install lives in ${installOwner} and serves every worktree on this machine.`,
+  ];
+  if (reading.repairTree === "same-lockfile") {
+    lines.push(
+      `  repair: run \`pnpm install\` in ${installOwner} — it is on this tree's lockfile,`,
+      "    so installing there produces the dependency list this tree needs.",
+    );
+  } else if (reading.repairTree === "different-lockfile") {
+    lines.push(
+      `  ⚠ AND \`pnpm install\` IN ${installOwner} WOULD NOT FIX IT. That tree owns the`,
+      "    install and is on a DIFFERENT lockfile from this one, so installing there",
+      "    produces ITS dependency list and this tree stays red. It has to reach this",
+      "    tree's commit FIRST. Both steps, in this order, and never the first alone:",
+      `      git -C ${installOwner} merge --ff-only origin/main`,
+      `      pnpm install        # in ${installOwner}`,
+      "    ⚠ THAT IS THE MACHINE OWNER'S ACT, NOT A SEAT'S — the tree is shared with",
+      "    live sessions, and the first step alone moves it INTO this skew.",
+    );
+  } else {
+    lines.push(
+      `  ⚠ WHETHER AN INSTALL IN ${installOwner} WOULD FIX IT IS UNKNOWN — that tree's`,
+      "    own pnpm-lock.yaml could not be read, and an install takes the lockfile of",
+      "    the tree it runs in.",
+    );
+  }
+  return lines;
 }

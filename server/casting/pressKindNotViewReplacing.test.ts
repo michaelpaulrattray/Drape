@@ -154,6 +154,7 @@ const PRESS_KIND = "castingV2.packageRedoPress";
 
 const press = {
   id: PRESS_ID,
+  clientRequestId: PRESS_ID,
   userId: USER_ID,
   modelId: MODEL_ID,
   status: "running" as const,

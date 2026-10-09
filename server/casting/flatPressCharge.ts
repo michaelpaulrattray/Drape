@@ -9,6 +9,11 @@
  * > sheet at our cost, and 1,000 covers the worst case. Credits only come back
  * > if the Sign can't be delivered at all."*
  *
+ * ⚠ **AND ONE AMENDMENT, ALSO HERE (#2127, his word of 2026-10-09):** a view
+ * lost to a sheet the image provider REFUSED — after that sheet's one free
+ * retry — gives back an equal share of the charge. {@link refusedSheetViewRefund}
+ * is that share; every other lost view still follows the rule above.
+ *
  * ⚠ **IT IS ONE RULE FOR TWO ROADS, AND THAT IS WHY IT IS ITS OWN MODULE.**
  * The whole-package redo (#1903) ships on it first; the Sign (#1968) moves onto
  * it next. Two implementations of one founder ruling would be working law 4 on
@@ -53,6 +58,36 @@ export function flatPressRefundOwed(input: {
 }): number {
   if (input.chargedCredits <= 0) return 0;
   return input.delivered > 0 ? 0 : input.chargedCredits;
+}
+
+/**
+ * WHAT ONE VIEW LOST TO A REFUSED SHEET GIVES BACK — #2127, the one amendment
+ * to the rule above.
+ *
+ * **His word, 2026-10-09 (terminal), verbatim:** *"im happy with your
+ * reccomendation on the sheet refunding etc"* — accepting: when the image
+ * provider refuses a whole sheet because of OUR instructions, the sheet is
+ * retried once by itself at no charge, and if it still fails **the views that
+ * sheet would have made are refunded**. Every other way a view is lost follows
+ * {@link flatPressRefundOwed} unchanged.
+ *
+ * ⚠ **THE UNIT IS DERIVED FROM WHAT THE PRESS CHARGED, NEVER TYPED.** One equal
+ * share of the charge per promised view — a fifth of the press each, today.
+ * Read off the charge rather than a
+ * price constant for the reason the total-loss refund is: a press in flight
+ * across a price change is owed a share of what it PAID.
+ *
+ * ⚠ **IT ROUNDS DOWN, AND THAT IS SAFE RATHER THAN STINGY.** The shares of a
+ * press can never sum past its charge, and the one road on which every view
+ * is lost — the total loss — refunds the whole charge MINUS what the shares
+ * already returned, so the remainder still reaches the customer there.
+ */
+export function refusedSheetViewRefund(input: {
+  chargedCredits: number;
+  promisedViews: number;
+}): number {
+  if (input.chargedCredits <= 0 || input.promisedViews <= 0) return 0;
+  return Math.floor(input.chargedCredits / input.promisedViews);
 }
 
 /**

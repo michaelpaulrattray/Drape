@@ -711,6 +711,36 @@ export function scanProgressOf(input: {
 }
 
 /**
+ * WHETHER A LOOK AT THIS FACE-VERSION WOULD BUY ANYTHING (#2170).
+ *
+ * `true` exactly when {@link scannedFace}'s FIRST branch would answer — an
+ * entry is held, whether its reading is still in flight or settled — and that
+ * branch returns the held promise without ringing a segmenter. So `true` means
+ * "already paid for", read off the same `cache.get(key)` the spend itself reads
+ * rather than a second record of it (working law 4).
+ *
+ * It exists for the daily scan cap. The panel asks `faceScan` again every
+ * second while a reading fills, and until #2170 every one of those asks spent a
+ * count: 55 counts for 20 faces on the first real day, and 15 refusals after.
+ * A look that this answers `true` for buys nothing, so it must spend nothing.
+ *
+ * ⚠ **`false` does not promise a spend**, and that is the safe direction: a
+ * reading in the kept table but not in memory answers `false` here and is then
+ * served free by `scannedFace`'s second branch. In practice the panel's own
+ * first paint (`scannedFaceAlreadyRead`) has usually HELD that reading already,
+ * so it reads `true` by the time `faceScan` asks.
+ *
+ * Never a read, never a wait, never a write.
+ */
+export function scanIsInHand(input: {
+  userId: number;
+  candidateId: number;
+  variantId: number | null;
+}): boolean {
+  return cache.has(keyOf(input));
+}
+
+/**
  * WHICH SLOTS WERE ASKED ABOUT AND ANSWERED NOTHING, CLEANLY.
  *
  * The fact the bald row is made of (founder ruling fable-889, design note

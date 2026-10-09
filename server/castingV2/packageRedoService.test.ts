@@ -46,15 +46,36 @@ vi.mock("../logging/logger", () => {
   return { logger: shape, createModuleLogger: () => shape };
 });
 
-/** The frozen-account read, which every paid entrance makes first. */
-vi.mock("../db/connection", () => ({
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({ where: () => ({ limit: async () => [{ frozenAt: null }] }) }),
+/*
+  THE DATABASE, BY TABLE (#2133). `.limit()`-ed it is the frozen-account read
+  every paid entrance makes first. Awaited on the OPERATIONS table it is this
+  press's slot rows — built from the receipts the real `redoOneView` actually
+  wrote through `completeDirectOperationSuccess`, so the refused-sheet reader
+  both the live press and the sweep use runs unstubbed over what this process
+  really recorded. Awaited on the LEDGER it is the fake ledger below.
+*/
+vi.mock("../db/connection", async () => {
+  const schema = await import("../../drizzle/schema");
+  return {
+    getDb: async () => ({
+      select: () => ({
+        from: (table: unknown) => ({
+          where: () => {
+            const rows = table === schema.generationOperations
+              ? slotRowsFromReceipts()
+              : table === schema.creditTransactions
+                ? ledger
+                : [];
+            return Object.assign(Promise.resolve(rows), {
+              limit: async () => [{ frozenAt: null }],
+            });
+          },
+        }),
+      }),
     }),
-  }),
-  withTransaction: async (run: (tx: unknown) => Promise<unknown>) => run({}),
-}));
+    withTransaction: async (run: (tx: unknown) => Promise<unknown>) => run({}),
+  };
+});
 
 vi.mock("../db/generations", () => ({
   createGeneration: vi.fn(async () => ({ success: true, generationId: 1 })),
@@ -122,6 +143,10 @@ vi.mock("./signService", async (importOriginal) => ({
 }));
 
 import { TRPCError } from "@trpc/server";
+import { ProviderError } from "../providers/types";
+import { refusedSheetViewRefund } from "../casting/flatPressCharge";
+import { refundReferenceFor, type RefundOutcome } from "../casting/atomicCredits";
+import { recoverCastingV2PackageRedoPressOperation } from "./viewRetryRecovery";
 import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { derivedClientRequestId } from "../casting/operationContract";
 import sharp from "sharp";
@@ -143,7 +168,47 @@ const PRESS = "11111111-1111-4111-8111-111111111111";
 
 const journal: string[] = [];
 const deducts: Array<{ amount: number; reference: string }> = [];
+/** Refunds that actually WROTE a ledger row — a duplicate writes none. */
 const refunds: Array<{ amount: number; reference: string }> = [];
+/**
+ * THE LEDGER, WITH ITS ONE RULE (#2133): a reference holds one row. A second
+ * write of the same amount is a duplicate and moves nothing; a different
+ * amount is refused. It is the unique index the live press and the sweep
+ * both rely on to make the second payer harmless.
+ */
+let ledger: Array<{ referenceId: string; type: string; amount: number }> = [];
+/** False once the sweep has sealed the press: the live refund is fenced. */
+let pressRunning = true;
+/** What the live press's refund does — `kill` is the process dying right there. */
+let pressRefundBehaviour: "pay" | "kill" | "throw" = "pay";
+/** Runs inside the live press's refund, BEFORE it decides — the interleave seam. */
+let beforePressPays: (() => Promise<void>) | null = null;
+/** True once a killed press reached its refund and stopped there for good. */
+let killReached = false;
+
+function ledgerRefund(amount: number, chargeReferenceId: string): RefundOutcome {
+  const reference = refundReferenceFor(chargeReferenceId);
+  const existing = ledger.find((row) => row.referenceId === reference);
+  if (existing) {
+    return { recorded: existing.amount === amount, amount, duplicate: true, reference };
+  }
+  ledger.push({ referenceId: reference, type: "refund", amount });
+  refunds.push({ amount, reference: chargeReferenceId });
+  return { recorded: true, amount, duplicate: false, reference };
+}
+
+/** This press's slot rows, as the receipts this process wrote left them. */
+function slotRowsFromReceipts(): Array<{ status: string; result: unknown }> {
+  return CAST_PACKAGE_VIEWS.map((angle) => {
+    const operationId = derivedClientRequestId(PRESS, angle);
+    const sealed = receipts.success.mock.calls.find(([call]) =>
+      (call as { operationId: string }).operationId === operationId
+      && !receiptRefusals.has(operationId));
+    return sealed
+      ? { status: "succeeded", result: (sealed[0] as { result: unknown }).result }
+      : { status: "running", result: null };
+  });
+}
 const committed: Array<{
   angle: string;
   operationId: string;
@@ -156,6 +221,10 @@ const enginePosts: Array<{ prompt: string; references: Array<{ bytes: Buffer }> 
 /** Every sheet the press asked for, by kind — two per redo, one per sheet. */
 const sheetCalls: SignSheetKind[] = [];
 let sheetBehaviour: "ok" | "throw" = "ok";
+/** How many more times the provider refuses the HEAD sheet as a whole (#2127). */
+let headRefusals = 0;
+/** A head sheet lost some other way — a provider-account fault (#2127's negative control). */
+let headDead = false;
 let balance = 10_000_000;
 /** The ONE deduct of a press either lands or does not; there are no slices. */
 let chargeFails = false;
@@ -324,17 +393,31 @@ function dependencies(
       journal.push("deduct");
       if (chargeFails) return { success: false, error: "Not enough credits" };
       deducts.push({ amount, reference });
+      ledger.push({ referenceId: reference, type: "generation", amount: -amount });
       return { success: true };
     }) as PackageRedoServiceDependencies["deduct"],
     handoffToRecovery: (async (request: { operationId: string }) => {
       journal.push("handoff");
       handedOff.push(request.operationId);
     }) as PackageRedoServiceDependencies["handoffToRecovery"],
-    refund: (async (_userId: number, amount: number, _d: string, reference: string) => {
+    /*
+      THE PRESS'S FENCED REFUND (#2133). Fenced while the press is not
+      running; otherwise the fake ledger decides, exactly as the real
+      transaction's reference read does.
+    */
+    pressRefund: (async (request: { amount: number; chargeReferenceId: string }) => {
       journal.push("refund");
-      refunds.push({ amount, reference });
-      return { recorded: true, amount, reference, duplicate: false };
-    }) as PackageRedoServiceDependencies["refund"],
+      /* A KILL IS NOT A THROW: a dead process runs no catch and no handoff,
+         so the press simply never returns from here. */
+      if (pressRefundBehaviour === "kill") {
+        killReached = true;
+        return new Promise<never>(() => undefined);
+      }
+      if (pressRefundBehaviour === "throw") throw new Error("Lock wait timeout exceeded; try restarting transaction");
+      if (beforePressPays) await beforePressPays();
+      if (!pressRunning) return { fenced: true as const };
+      return { fenced: false as const, refund: ledgerRefund(request.amount, request.chargeReferenceId) };
+    }) as PackageRedoServiceDependencies["pressRefund"],
     commitRetried: (async (request: {
       angle: string;
       operationId: string;
@@ -390,6 +473,11 @@ function dependencies(
         sheetCalls.push(kind);
         enginePosts.push({ prompt: request.prompt, references: request.references ?? [] });
         if (sheetBehaviour === "throw") throw new Error("the sheet door refused");
+        if (kind === "head" && headDead) throw new ProviderError("provider_account", "402 no funds");
+        if (kind === "head" && headRefusals > 0) {
+          headRefusals -= 1;
+          throw new ProviderError("content_policy", "flagged by a content checker", { completed: true });
+        }
         return {
           bytes: sheetPngs.get(kind) as Buffer,
           contentType: "image/png",
@@ -445,10 +533,17 @@ beforeEach(() => {
   journal.length = 0;
   deducts.length = 0;
   refunds.length = 0;
+  ledger = [];
+  pressRunning = true;
+  pressRefundBehaviour = "pay";
+  beforePressPays = null;
+  killReached = false;
   committed.length = 0;
   enginePosts.length = 0;
   sheetCalls.length = 0;
   sheetBehaviour = "ok";
+  headRefusals = 0;
+  headDead = false;
   balance = 10_000_000;
   chargeFails = false;
   judgeRefuses = new Set();
@@ -1143,5 +1238,263 @@ describe("one view's trouble and the other four (review finding 2)", () => {
     expect(refunds).toEqual([]);
     /* It settled in this process, so nothing was handed to the sweep. */
     expect(handedOff).toEqual([]);
+  });
+});
+
+/*
+  #2127 — THE SAME AMENDMENT ON A REGENERATE. The card: *"whether it applies to
+  a Regenerate press as well as a Sign. It should."* The redo renders through
+  the same `settleSignSheet`, so it inherits the free retry; the refund is the
+  press's own, decided once, on its own reference.
+*/
+describe("⚠ a refused sheet on a Regenerate (#2127)", () => {
+  const share = refusedSheetViewRefund({
+    chargedCredits: PACKAGE_PRICE,
+    promisedViews: CAST_PACKAGE_VIEWS.length,
+  });
+  const HEAD_VIEWS = ["closeUp", "sideClose", "threeQuarter"];
+
+  it("THE RETRY DELIVERS — every view is new and nothing comes back", async () => {
+    headRefusals = 1;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(sheetCalls.filter((kind) => kind === "head")).toHaveLength(2);
+    expect(result.failed).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
+  });
+
+  it("REFUSED AGAIN — the press gives back one share per view that sheet would have made, once", async () => {
+    headRefusals = 2;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(sheetCalls.filter((kind) => kind === "head"), "one free retry, never a third").toHaveLength(2);
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(result.refundedCredits).toBe(share * HEAD_VIEWS.length);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].amount).toBe(share * HEAD_VIEWS.length);
+  });
+
+  it("A SHEET LOST ANY OTHER WAY IS UNCHANGED — the flat rule, nothing back", async () => {
+    headDead = true;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
+  });
+
+  it("BOTH SHEETS GONE TO REFUSALS IS STILL ONE WHOLE REFUND, never the shares on top", async () => {
+    headRefusals = 2;
+    judgeRefuses = new Set(["frontFull", "backFull"]);
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.committed).toEqual([]);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].amount).toBe(PACKAGE_PRICE);
+  });
+});
+
+/*
+  #2133 — A REGENERATE THAT DIES AFTER A SHEET IS REFUSED TWICE KEEPS NOTHING.
+
+  The relay's follow-up on PR #2132: the press decided the refused-sheet shares
+  only after every slot settled, from its own memory, so a press killed in
+  between was settled by the sweep from rows that could not see the refusal —
+  a view had landed, nothing was owed, and the customer kept no share. The
+  refused slot now writes the refusal on its own sealed receipt; the live press
+  and the sweep both read that receipt and pay under the press's one refund
+  reference, so whichever pays second is a ledger duplicate.
+
+  The sweep below is the REAL `recoverCastingV2PackageRedoPressOperation`,
+  with its production refused-sheet reader running over the slot rows this
+  process's receipts left. Only the money writer, the finalizers and the two
+  asset readers are seams.
+*/
+describe("⚠ a Regenerate killed after a sheet is refused twice (#2133)", () => {
+  const share = refusedSheetViewRefund({
+    chargedCredits: PACKAGE_PRICE,
+    promisedViews: CAST_PACKAGE_VIEWS.length,
+  });
+  const HEAD_VIEWS = ["closeUp", "sideClose", "threeQuarter"];
+  const SHARES = share * HEAD_VIEWS.length;
+  const sealed = {
+    success: vi.fn(async (_input: unknown) => undefined),
+    failure: vi.fn(async (_input: unknown) => undefined),
+  };
+  const sweep = () => recoverCastingV2PackageRedoPressOperation(
+    {
+      id: PRESS,
+      clientRequestId: PRESS,
+      userId: 1,
+      modelId: 7,
+      status: "running",
+      chargedCredits: PACKAGE_PRICE,
+      refundedCredits: 0,
+    },
+    {
+      refund: (async (_userId: number, amount: number, _d: string, reference: string) =>
+        ledgerRefund(amount, reference)) as never,
+      landed: (async () => committed.some((row) => row.pressOperationId === PRESS)) as never,
+      stillArriving: async () => false,
+      finalizeSuccess: sealed.success as never,
+      finalizeFailure: sealed.failure as never,
+      finalizeClaimedFailure: sealed.failure as never,
+    },
+  );
+  const slotReceipt = (angle: string) => receipts.success.mock.calls
+    .map(([call]) => call as { operationId: string; result: Record<string, unknown> })
+    .find((call) => call.operationId === derivedClientRequestId(PRESS, angle))?.result;
+  const pressSealedLive = () => receipts.success.mock.calls
+    .some(([call]) => (call as { operationId: string }).operationId === PRESS);
+
+  beforeEach(() => {
+    sealed.success.mockClear();
+    sealed.failure.mockClear();
+  });
+
+  it("THE RECORD — a view lost to a refused sheet says so on its own receipt, and only that one", async () => {
+    headRefusals = 2;
+    judgeRefuses = new Set(["frontFull"]);
+    await redoCastPackage(dependencies(), input);
+
+    for (const angle of HEAD_VIEWS) {
+      expect(slotReceipt(angle), `${angle}'s receipt`).toEqual({
+        castId: input.castId,
+        angle,
+        outcome: "failed",
+        refusedByProvider: true,
+      });
+    }
+    /* Negative control: a panel the judge refused is lost, but NOT to the
+       provider, so its receipt carries no refusal and earns no share. */
+    expect(slotReceipt("frontFull")).toEqual({ castId: input.castId, angle: "frontFull", outcome: "failed" });
+    expect(slotReceipt("backFull")).toMatchObject({ outcome: "ready" });
+  });
+
+  it("KILLED BEFORE IT PAID — the sweep refunds exactly the refused shares, once", async () => {
+    headRefusals = 2;
+    pressRefundBehaviour = "kill";
+
+    void redoCastPackage(dependencies(), input);
+    await vi.waitFor(() => expect(killReached).toBe(true));
+    /* The process died with the body views landed and nothing refunded. */
+    expect(committed.map((row) => row.angle).sort()).toEqual(["backFull", "frontFull"]);
+    expect(refunds).toEqual([]);
+
+    const outcome = await sweep();
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PACKAGE_PRICE, refundedCredits: SHARES });
+    expect(refunds).toEqual([{ amount: SHARES, reference: `op:${PRESS}:charge` }]);
+    /* It delivered, so it is sealed a success carrying the refund, never a
+       failure telling the customer none of the views arrived. */
+    expect(sealed.success).toHaveBeenCalledWith(expect.objectContaining({
+      operationId: PRESS,
+      chargedCredits: PACKAGE_PRICE,
+      refundedCredits: SHARES,
+    }));
+    expect(sealed.failure).not.toHaveBeenCalled();
+
+    /* A second pass reads the ledger and pays nothing more. */
+    await sweep();
+    expect(refunds).toHaveLength(1);
+  });
+
+  it("THE LIVE PRESS PAID FIRST — the sweep finds it on the ledger and pays nothing", async () => {
+    headRefusals = 2;
+    const result = await redoCastPackage(dependencies(), input);
+    expect(result.refundedCredits).toBe(SHARES);
+    expect(refunds).toHaveLength(1);
+
+    const outcome = await sweep();
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PACKAGE_PRICE, refundedCredits: SHARES });
+    expect(refunds, "the sweep paid the shares a second time").toHaveLength(1);
+  });
+
+  it("A FENCED LIVE WRITER — the sweep sealed the press first, so the live process pays nothing", async () => {
+    headRefusals = 2;
+    beforePressPays = async () => {
+      await sweep();
+      pressRunning = false; // the sweep's seal moved the press out of `running`
+    };
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(refunds, "one payment, the sweep's").toEqual([{ amount: SHARES, reference: `op:${PRESS}:charge` }]);
+    expect(result.refundedCredits).toBe(0);
+    /* The press is not this process's to seal any more. */
+    expect(pressSealedLive()).toBe(false);
+    expect(handedOff).toContain(PRESS);
+  });
+
+  it("THE SAME WINDOW BEFORE THE SEAL — one reference, so the second payer is a duplicate", async () => {
+    headRefusals = 2;
+    /* The sweep pays and has not sealed yet: the press is still `running`. */
+    beforePressPays = async () => { await sweep(); };
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0]?.amount).toBe(SHARES);
+    expect(result.refundedCredits, "a duplicate is not a payment").toBe(0);
+    expect(result.refundRecorded).toBe(true);
+    /* But the press's receipt records that the customer WAS refunded. */
+    const pressReceipt = receipts.success.mock.calls
+      .map(([call]) => call as { operationId: string; refundedCredits: number })
+      .find((call) => call.operationId === PRESS);
+    expect(pressReceipt?.refundedCredits, "the receipt says nothing came back").toBe(SHARES);
+  });
+
+  it("A REFUND WRITER THAT THROWS — the press is handed to the sweep, never sealed, never left heartbeating", async () => {
+    headRefusals = 2;
+    pressRefundBehaviour = "throw";
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(handedOff, "the heartbeat was never stopped").toContain(PRESS);
+    expect(pressSealedLive(), "a press whose refund threw was sealed").toBe(false);
+    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+
+    /* And the sweep, reading the same receipts, pays the shares once. */
+    await sweep();
+    expect(refunds).toEqual([{ amount: SHARES, reference: `op:${PRESS}:charge` }]);
+  });
+
+  it("A TOTAL LOSS IS STILL ONE WHOLE REFUND — the sweep pays the whole, never the shares on top", async () => {
+    headRefusals = 2;
+    judgeRefuses = new Set(["frontFull", "backFull"]);
+    pressRefundBehaviour = "kill";
+
+    void redoCastPackage(dependencies({ pressLanded: (async () => false) as never }), input);
+    await vi.waitFor(() => expect(killReached).toBe(true));
+    const outcome = await sweep();
+
+    expect(outcome).toEqual({ type: "paid_failure", chargedCredits: PACKAGE_PRICE, refundedCredits: PACKAGE_PRICE });
+    expect(refunds).toEqual([{ amount: PACKAGE_PRICE, reference: `op:${PRESS}:charge` }]);
+  });
+
+  it("a total loss the live press already refunded owes the sweep nothing more", async () => {
+    headRefusals = 2;
+    judgeRefuses = new Set(["frontFull", "backFull"]);
+    const result = await redoCastPackage(dependencies({ pressLanded: (async () => false) as never }), input);
+    expect(result.refundedCredits).toBe(PACKAGE_PRICE);
+
+    await sweep();
+    expect(refunds).toHaveLength(1);
+  });
+
+  it("shares nobody could read are left for the sweep — no refund, no receipt, the press handed over", async () => {
+    headRefusals = 2;
+    const result = await redoCastPackage(
+      dependencies({ readRefusedSheets: (async () => { throw new Error("database gone"); }) as never }),
+      input,
+    );
+
+    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+    expect(pressSealedLive()).toBe(false);
+    expect(handedOff).toContain(PRESS);
+
+    /* And the sweep, reading the same receipts, settles it. */
+    await sweep();
+    expect(refunds).toEqual([{ amount: SHARES, reference: `op:${PRESS}:charge` }]);
   });
 });

@@ -28,7 +28,7 @@
  * DELETED**, which is a guard over nothing — the class this repository keeps
  * paying for. The load-bearing arm is therefore the gate's own DECISION: the
  * returned verdict and the directory left standing. Delete the
- * `stillOnDisk(junction)` check and that arm goes red, because the fallback
+ * `readJunctionAt(junction)` check and that arm goes red, because the fallback
  * then fires and takes the directory. The decoy is still checked, as a
  * documented redundancy that costs nothing — never as the proof.
  */
@@ -40,7 +40,7 @@ import {
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { inWorktreeOf, removeThrowawayDir, stillOnDisk } from "../scripts/lib/riteWorktree.mts";
+import { inWorktreeOf, readJunctionAt, removeThrowawayDir } from "../scripts/lib/riteWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite spawns real `git` — #548's class. Without the declaration it runs
@@ -133,6 +133,49 @@ describe("removeThrowawayDir — the recursive fallback is gated on the junction
       expect(existsSync(dir)).toBe(true);
     });
   });
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     ⚠ THE SIBLING OF #2161, FOUND BY ITS LAW-7 SWEEP.
+
+     This gate read `stillOnDisk(junction)` — *is there anything at the path* —
+     and answered `kept-junction-present`. So a `node_modules` that is a REAL
+     DIRECTORY (an aborted install; the measured state of both review shells
+     #2161 was filed about) made it report a live junction standing in the way
+     when none was. The polarity is the safe one, so nothing was ever destroyed
+     — what it produced is litter that can never be swept, under a verdict
+     naming a cause that is not the cause.
+     ────────────────────────────────────────────────────────────────────────── */
+  it("⚠ SWEEPS a node_modules that is a REAL DIRECTORY — there is no link to follow", () => {
+    withTemp((base) => {
+      const { dir, junction } = leftoverShape(base, null);
+      /* The fixture is the measured one: a real directory, non-empty, where a
+         junction would be. `rmdir` takes neither an empty directory's contents
+         nor a reparse point here, which is why the old reading dead-ended. */
+      mkdirSync(path.join(junction, "some-package", "dist"), { recursive: true });
+      expect(lstatSync(junction).isSymbolicLink(), "the fixture must NOT be a link, or this arm proves nothing")
+        .toBe(false);
+
+      expect(removeThrowawayDir(dir, junction)).toBe("removed");
+      expect(existsSync(dir), "the leftover is gone — a real directory is the recursive delete's job").toBe(false);
+    });
+  });
+
+  it("⚠ NEGATIVE CONTROL — a real directory sweeping does NOT mean a live junction sweeps", () => {
+    /* The arm that proves the one above widened the gate and did not remove it.
+       Same shape, one difference: the path is a LINK into a decoy that stands
+       in for the main checkout's install, and the decoy must survive intact. */
+    withTemp((base) => {
+      const decoy = path.join(base, "decoy_node_modules");
+      mkdirSync(path.join(decoy, "nested"), { recursive: true });
+      writeFileSync(path.join(decoy, "CANARY.txt"), "the main checkout's node_modules");
+      const { dir, junction } = leftoverShape(base, decoy);
+      expect(lstatSync(junction).isSymbolicLink()).toBe(true);
+
+      expect(removeThrowawayDir(dir, junction)).toBe("kept-junction-present");
+      expect(existsSync(dir)).toBe(true);
+      expect(readFileSync(path.join(decoy, "CANARY.txt"), "utf8")).toBe("the main checkout's node_modules");
+    });
+  });
 });
 
 describe("inWorktreeOf leaves no directory behind on the failure shape #654 measured", () => {
@@ -193,16 +236,29 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
     helper, so a sabotage of the helper alone is what proves them — and a
     second declaration appearing anywhere is the drift this arm exists to
     catch. Both facts are asserted: the declaration count, and the call sites.
+
+    ⚠ **AND THE PREDICATE WAS THE WRONG QUESTION UNTIL #2161.** It was
+    `stillOnDisk`, a boolean meaning *is there any entry here*, and all three
+    call sites fed it to a decision about a LINK. Collapsing them onto one
+    reading had made them consistently WRONG rather than inconsistently wrong,
+    which is the honest shape of what #654 bought: one place to fix. It is
+    `readJunctionAt` now and it returns the distinction `lstat` was already
+    handing it.
   */
   const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
 
-  it("declares stillOnDisk exactly once, in riteWorktree.mts", () => {
+  it("declares readJunctionAt exactly once, in riteWorktree.mts", () => {
     const lib = read("scripts/lib/riteWorktree.mts");
-    expect(lib.match(/export const stillOnDisk\s*=/g) ?? []).toHaveLength(1);
+    expect(lib.match(/export const readJunctionAt\s*=/g) ?? []).toHaveLength(1);
     /* Nothing else may grow its own copy of the reading. */
     for (const rel of ["scripts/shift-worktree.mts", "scripts/lib/shiftWorktree.mts"]) {
-      expect(read(rel), `${rel} must not re-declare the reading`).not.toMatch(/const stillOnDisk\s*=/);
+      expect(read(rel), `${rel} must not re-declare the reading`).not.toMatch(/const readJunctionAt\s*=/);
+      /* ⚠ AND THE OLD NAME MUST NOT COME BACK ANYWHERE. A re-added
+         `stillOnDisk` is not a stale name — it is the boolean that cannot tell a
+         link from a directory, re-entering the gate above a recursive delete. */
+      expect(read(rel), `${rel} re-declares the boolean #2161 removed`).not.toMatch(/const stillOnDisk\s*=/);
     }
+    expect(lib, "the boolean #2161 widened is back in the library").not.toMatch(/const stillOnDisk\s*=/);
   });
 
   it("routes shift-worktree's junction reads through it, never through existsSync", () => {
@@ -219,13 +275,35 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
       .split(/\r?\n/)
       .find((line) => /^import \{[^}]*\} from "\.\/lib\/riteWorktree\.mts";$/.test(line));
     expect(importLine, "shift-worktree.mts no longer imports from ./lib/riteWorktree.mts").toBeDefined();
-    expect(importLine ?? "", "the junction reading is not among the imported names").toMatch(/\bstillOnDisk\b/);
+    expect(importLine ?? "", "the junction reading is not among the imported names").toMatch(/\breadJunctionAt\b/);
     /* The guard's own argument is the one that matters: an `existsSync` here
        is the exact defect this sweep closed. */
-    expect(script).toMatch(/junctionMustBeGone\(stillOnDisk\(plan\.nodeModulesLink\)\)/);
+    expect(script).toMatch(/junctionMustBeGone\(readJunctionAt\(plan\.nodeModulesLink\)\)/);
     expect(script).not.toMatch(/existsSync\(plan\.nodeModulesLink\)/);
     /* And the state the removal plan is printed from reads the same way. */
-    expect(script).toMatch(/junctionPresent: stillOnDisk\(plan\.nodeModulesLink\)/);
+    expect(script).toMatch(/junctionAt: readJunctionAt\(plan\.nodeModulesLink\)/);
+    /* ⚠ THE PROOF STEP RE-READS THE DISK RATHER THAN REUSING THE STATE (#2161).
+       Its whole purpose is that the unlink above actually took; handed
+       `state.junctionAt` it would assert the first reading against itself and
+       pass by construction — a control that is invoked and inert, which every
+       arm here would still call green. */
+    expect(script, "the proof step reuses the first reading, so it proves nothing")
+      .not.toMatch(/junctionMustBeGone\(state\.junctionAt\)/);
+  });
+
+  it("⚠ ROUTES THE RITE'S OWN TEARDOWN THROUGH IT TOO — the sibling #2161 swept", () => {
+    /* `removeThrowawayDir` is the third road that authorises a recursive delete
+       on this answer, and it read the boolean exactly as the CLI did. Held here
+       because the behavioural arms above drive the function and would all stay
+       green if this gate went back to asking "is there anything there". */
+    const lib = read("scripts/lib/riteWorktree.mts");
+    const start = lib.indexOf("export const removeThrowawayDir");
+    const end = lib.indexOf("export const inWorktreeOf");
+    expect(start, "removeThrowawayDir moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(end, "inWorktreeOf moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = lib.slice(start, end);
+    expect(block, "the rite's teardown no longer reads the junction kind").toMatch(/readJunctionAt\(junction\)/);
+    expect(block, 'a "real" directory must not be reported as a live junction').toMatch(/at === "link"/);
   });
 
   it("FAILS CLOSED — a read it cannot complete means STILL THERE, not gone", () => {
@@ -253,23 +331,69 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
       try { lstatSync(unreadable); } catch (e) { code = (e as NodeJS.ErrnoException).code ?? ""; }
       expect(code, "the fixture must fail for a reason that is NOT absence").not.toBe("ENOENT");
       expect(code.length, "the platform must give a code, or this arm proves nothing").toBeGreaterThan(0);
-      expect(stillOnDisk(unreadable)).toBe(true);
+      /* ⚠ `unreadable`, AND #2161's WIDENING MUST NOT HAVE MADE IT `real` —
+         which is the one way this card could have broken the gate it widened.
+         `real` is a permission to delete recursively; `unreadable` is refused by
+         `junctionMustBeGone`. Both halves are asserted, because "not absent"
+         alone would pass on `real`. */
+      expect(readJunctionAt(unreadable)).toBe("unreadable");
+      expect(readJunctionAt(unreadable), "an unknown became a permission to delete").not.toBe("real");
       /* And the ordinary absent case still reads absent, or the hardening has
          simply broken the reader in the other direction. */
-      expect(stillOnDisk(path.join(base, "nothing-here"))).toBe(false);
+      expect(readJunctionAt(path.join(base, "nothing-here"))).toBe("absent");
     });
   });
 
-  it("stillOnDisk sees a link whose target has gone — the property existsSync lacks", () => {
+  it("readJunctionAt sees a link whose target has gone — the property existsSync lacks", () => {
     withTemp((base) => {
       const target = path.join(base, "gone");
       mkdirSync(target);
       const link = path.join(base, "link");
       symlinkSync(target, link, "junction");
-      expect(stillOnDisk(link)).toBe(true);
+      expect(readJunctionAt(link)).toBe("link");
       rmSync(target, { recursive: true, force: true });
       expect(existsSync(link), "existsSync follows and loses the link").toBe(false);
-      expect(stillOnDisk(link), "the link is still standing in the way").toBe(true);
+      expect(readJunctionAt(link), "the link is still standing in the way").toBe("link");
+    });
+  });
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     ⚠ THE DISTINCTION ITSELF, WITH ITS POSITIVE CONTROL (#2161).
+
+     MEASURED on this machine before a line was written, which is why the card
+     could be built rather than argued: `drape-review-1910/node_modules` and
+     `drape-review-1915/node_modules` both answer `isSymbolicLink()` FALSE while
+     a live worktree's answers true. Each shell holds 58 top-level entries, 824
+     directories, 0 files, 0 bytes — an aborted install.
+     ────────────────────────────────────────────────────────────────────────── */
+  it("⚠ TELLS A LINK FROM A REAL DIRECTORY AT THE SAME PATH — the whole of #2161", () => {
+    withTemp((base) => {
+      const target = path.join(base, "target");
+      mkdirSync(target);
+      const asLink = path.join(base, "as_link");
+      symlinkSync(target, asLink, "junction");
+      const asReal = path.join(base, "as_real");
+      mkdirSync(path.join(asReal, "some-package"), { recursive: true });
+
+      expect(readJunctionAt(asLink)).toBe("link");
+      expect(readJunctionAt(asReal)).toBe("real");
+      /* The fixtures are only fixtures if they differ the way the real shells
+         differ — otherwise this arm is two names for one state. */
+      expect(lstatSync(asLink).isSymbolicLink()).toBe(true);
+      expect(lstatSync(asReal).isSymbolicLink()).toBe(false);
+    });
+  });
+
+  it("⚠ A FILE at the junction path is `real`, not `link` — not a directory either, and never a permissionless unknown", () => {
+    /* The shape nobody expects and the reader must not get wrong by accident:
+       `isDirectory()` and `isSymbolicLink()` are both false. It reads `real`
+       because the only question the callers ask is *is there a link to follow*,
+       and `rmSync(recursive, force)` takes a file perfectly well. Asserted so
+       the answer is a decision rather than a side effect of the implementation. */
+    withTemp((base) => {
+      const asFile = path.join(base, "as_file");
+      writeFileSync(asFile, "not a directory at all");
+      expect(readJunctionAt(asFile)).toBe("real");
     });
   });
 });

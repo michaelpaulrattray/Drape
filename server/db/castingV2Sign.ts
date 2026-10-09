@@ -41,6 +41,7 @@ import {
   castingCandidateVariants,
   castingRolls,
   castingSessions,
+  creditTransactions,
   generationOperations,
   generations,
   modelAssets,
@@ -62,6 +63,8 @@ import {
   type SlotFailureRecord,
 } from "../castingV2/slotFailureRecord";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { addCreditsIn } from "./credits";
+import { refundReferenceFor, type RefundOutcome } from "../casting/atomicCredits";
 import type { CastPersonaField } from "./castPersonaField";
 import {
   castPersonaEditPatch,
@@ -821,6 +824,111 @@ export async function recordPackageSlotFailure(input: {
     });
   } catch (error) {
     if (error instanceof SignPersistenceError) return false;
+    throw error;
+  }
+}
+
+/**
+ * A VIEW LOST TO A SHEET THE PROVIDER REFUSED — its share refunded and its
+ * marker written in ONE transaction, under the Sign's own fence (#2127).
+ *
+ * ⚠ **THE REFUND CANNOT BE WRITTEN BEFORE THE FENCE, OR THE SWEEP PAYS IT
+ * TOO** (the relay's finding on PR #2132). The first shape refunded first and
+ * wrote the marker second, ignoring the marker's `false`. If the lease lapsed
+ * while the live process was still rendering, the sweep had already fenced the
+ * operation out of `running` and refunded `charge − alreadyRefunded` under
+ * the promotion reference, and the live process then paid each share again
+ * under its slot reference: two references, so the ledger could not see the
+ * repeat. Driven: three shares landed beside a fenced marker.
+ *
+ * So the share is written INSIDE the transaction that holds the operation row
+ * `FOR UPDATE` on `status = 'running'`. The sweep moves that row out of
+ * `running` before it reads the ledger and refunds, so the two are
+ * serialized by the database: either this commits first and the sweep's
+ * `alreadyRefunded` reads the share, or the sweep's fence commits first and
+ * this finds no running row, refunds nothing and returns `fenced`.
+ *
+ * A repeat of the same share (a retried write after a lost acknowledgement) is
+ * read first, in the same transaction, and reported as a duplicate rather than
+ * thrown — a duplicate insert would roll the marker back with it.
+ */
+export async function recordRefusedSheetSlotFailure(input: {
+  userId: number;
+  operationId: string;
+  modelId: number;
+  angle: CastViewAngle;
+  /** The marker, minus the money — `refunded` and `refundReference` are written from what recorded. */
+  failure: Omit<SlotFailureRecord, "refunded" | "refundReference">;
+  refund: { amount: number; description: string; chargeReferenceId: string };
+  now?: Date;
+}): Promise<{ fenced: true } | { fenced: false; refund: RefundOutcome }> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const at = (input.now ?? new Date()).toISOString();
+  const reference = refundReferenceFor(input.refund.chargeReferenceId);
+  try {
+    return await withTransaction(async (tx) => {
+      await requireRunningSignOperationIn(tx, input);
+      const [model] = await tx
+        .select({ id: models.id })
+        .from(models)
+        .where(and(
+          eq(models.id, input.modelId),
+          eq(models.userId, input.userId),
+          eq(models.status, "provisioning"),
+          isNull(models.deletedAt),
+        ))
+        .limit(1)
+        .for("update");
+      if (!model) throw new SignPersistenceError("commit_conflict");
+
+      const [existing] = await tx
+        .select({ amount: creditTransactions.amount, type: creditTransactions.type })
+        .from(creditTransactions)
+        .where(and(
+          eq(creditTransactions.userId, input.userId),
+          eq(creditTransactions.referenceId, reference),
+        ))
+        .limit(1);
+      let refund: RefundOutcome;
+      if (existing) {
+        refund = {
+          recorded: existing.type === "refund" && existing.amount === input.refund.amount,
+          amount: input.refund.amount,
+          duplicate: true,
+          reference,
+        };
+      } else {
+        const written = await addCreditsIn(
+          tx,
+          input.userId,
+          input.refund.amount,
+          "refund",
+          input.refund.description,
+          reference,
+        );
+        refund = { recorded: written.success, amount: input.refund.amount, duplicate: false, reference };
+      }
+
+      await tx.insert(modelAssets).values({
+        modelId: input.modelId,
+        viewType: input.angle,
+        resolution: "2K",
+        storageUrl: "",
+        storageKey: null,
+        pointsCost: 0,
+        pinned: false,
+        status: slotFailureStatus({
+          ...input.failure,
+          refunded: refund.recorded ? refund.amount : 0,
+          refundReference: reference,
+        }, at),
+        provenance: { source: "castingV2.sign" },
+      });
+      return { fenced: false as const, refund };
+    });
+  } catch (error) {
+    if (error instanceof SignPersistenceError) return { fenced: true };
     throw error;
   }
 }

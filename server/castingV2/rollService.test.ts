@@ -1020,7 +1020,7 @@ describe("cancel", () => {
     ];
     // The whole sheet here is one cancelled-mid-flight candidate, so the
     // create call ends in a refusal — and its wording must blame the cancel,
-    // not us. "None of the sheet arrived" would read as our failure.
+    // not us. "Nothing from that roll arrived" would read as our failure.
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
       message: expect.stringContaining("cancelled"),
     });
@@ -1310,7 +1310,7 @@ describe("the render-fault detector, enforcing", () => {
       "no new money path" means in practice.
     */
     await expect(createRoll(dependencies, INPUT)).rejects.toThrow(
-      /None of the sheet arrived/,
+      /Nothing from that roll arrived/,
     );
 
     // Eight slices out, eight slices back, under the derived references.
@@ -2199,7 +2199,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
     const refusal = await createRoll(baseDependencies(), INPUT).then(() => null, (error: unknown) => error);
     expect(refusal).toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
-      message: `This sheet is still being settled. Operation ${OPERATION_ID}.`,
+      message: `This roll is still being settled. Operation ${OPERATION_ID}.`,
     });
     /* #2058: spoken, so the sheet reads it aloud with the operation number. */
     expect(refusal).toBeInstanceOf(SpokenError);
@@ -2223,7 +2223,7 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
     adjudicator.handoff.mockRejectedValueOnce(new Error("connection lost"));
 
     await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
-      message: `This sheet is still being settled. Operation ${OPERATION_ID}.`,
+      message: `This roll is still being settled. Operation ${OPERATION_ID}.`,
     });
   });
 

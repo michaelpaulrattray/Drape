@@ -192,7 +192,7 @@ try {
   await setStatus(SLOT_ID, "running");
   calls.length = 0;
   const deferred = await recoverCastingV2PackageRedoPressOperation(
-    { id: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
+    { id: PRESS_ID, clientRequestId: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
     injected(),
   );
   check("the outcome is deferred", deferred.type, "deferred");
@@ -210,7 +210,7 @@ try {
   calls.length = 0;
   let interleaved: number | null | "not attempted" = "not attempted";
   const settled = await recoverCastingV2PackageRedoPressOperation(
-    { id: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
+    { id: PRESS_ID, clientRequestId: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
     {
       ...injected(),
       landed: (async () => {
@@ -230,7 +230,7 @@ try {
   check("not in flight", await inFlight(), false);
   calls.length = 0;
   const reached = await recoverCastingV2PackageRedoPressOperation(
-    { id: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
+    { id: PRESS_ID, clientRequestId: PRESS_ID, userId: cast.userId, modelId: cast.id, status: "running", chargedCredits: 0, refundedCredits: 0 },
     injected(),
   );
   check("it is NOT deferred — the gate does not refuse everything", reached.type !== "deferred", true);
