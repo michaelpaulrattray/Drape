@@ -1191,15 +1191,28 @@ export function junctionMustBeGone(at: JunctionReading): { ok: boolean; reason: 
  * delete, a shift reads it to decide whether to pass `--force`, and a sentence
  * nothing drives is a sentence that can quietly stop matching the branch it
  * describes. A `real` directory in particular must not read like a happy path —
- * it is unusual, it means an aborted install or an interrupted delete, and the
- * reader should know the recursive delete is about to take it.
+ * it is unusual, it means somebody's install rather than this tool's junction —
+ * deliberate, aborted, or half-deleted — and the reader should know the
+ * recursive delete is about to take every byte of it.
  */
 export function junctionReadingLine(at: JunctionReading): string {
   switch (at) {
     case "link":
       return "a junction — it is unlinked first, and proven gone before anything recursive runs";
     case "real":
-      return "⚠ a REAL directory, not a junction — nothing to unlink; the recursive delete takes it (an aborted install or an interrupted delete leaves this)";
+      /* ⚠ THE CAUSES ARE NAMED IN THE ORDER THEY WERE MEASURED, AND THE FIRST
+         ONE WAS MISSING FROM THIS SENTENCE UNTIL THE CENSUS (#2161). It read
+         "an aborted install or an interrupted delete leaves this", and then a
+         census of all 56 `drape-*` directories found a third real-directory
+         tree that is neither: `drape-shift-relay-2152`, the relay's LIVE tree
+         with PR #2157 open, holding a **real per-tree install** — 64 top-level
+         entries with real content, not the 0 files the two review shells held.
+         Somebody installed there on purpose, which is the sensible way to dodge
+         the shared-install skew of #2148.
+         The difference is not academic: this line sits four above a recursive
+         delete, and "an aborted install" invites a reader to treat a full
+         install as junk. */
+      return "⚠ a REAL directory, not a junction — nothing to unlink; the recursive delete takes ALL of it (a deliberate per-tree install, an aborted one, or an interrupted delete)";
     case "absent":
       return "nothing there";
     case "unreadable":

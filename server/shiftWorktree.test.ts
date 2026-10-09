@@ -805,14 +805,24 @@ describe("junctionReadingLine — `remove` says which of the four it found (#216
     expect(junctionReadingLine("link")).toContain("unlinked first");
   });
 
-  it("⚠ MARKS A REAL DIRECTORY AS UNUSUAL — it is an aborted install, not a happy path", () => {
+  it("⚠ MARKS A REAL DIRECTORY AS UNUSUAL, AND SAYS THE WHOLE OF IT GOES", () => {
     /* It must not read like business as usual: the recursive delete is about to
        take a real directory full of files, and the reader deciding whether to
-       pass `--force` should know that is what is happening. */
+       pass `--force` should know that is what is happening.
+
+       ⚠ AND IT MUST NOT CALL IT AN ABORTED INSTALL, which is what it said until
+       a census of all 56 `drape-*` directories found the third real-directory
+       tree: `drape-shift-relay-2152`, the relay's LIVE tree, holding a
+       deliberate per-tree install with real content — not the 0 files the two
+       review shells held. Naming only the junk causes, four lines above a
+       recursive delete, invites a reader to treat a full install as junk. */
     const line = junctionReadingLine("real");
     expect(line).toContain("REAL directory");
     expect(line).toContain("⚠");
     expect(line).toContain("recursive delete");
+    expect(line, "the sentence does not say the whole directory goes").toContain("ALL of it");
+    expect(line, "a deliberate per-tree install is a measured cause and is not named")
+      .toContain("per-tree install");
   });
 
   it("names the other two plainly, and the unreadable one as a refusal", () => {
