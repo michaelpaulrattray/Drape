@@ -121,6 +121,45 @@ vi.mock("./signService", async (importOriginal) => ({
   }),
 }));
 
+/*
+  ⚠ **THE OFFER THIS SUITE DRIVES IS THE RETIRED ONE, ON PURPOSE — #2089.**
+
+  His word of 2026-10-08, *"regenerate is the only option"*, made the real
+  `castSlotRetryOffer` answer null for EVERY slot, so the real entrance now
+  refuses every press at admission. But the road behind that admission is KEPT
+  (the card's own instruction): a Try again already in flight at the deploy
+  still claims, renders, settles and is recovered by the sweep, and every arm
+  below is about what that road does with its money. Driving it needs a press
+  that gets past admission, and no production seam may exist to let one in.
+
+  So the offer is replaced HERE, in the test, by the rule it answered until
+  #2089 — a refunded view (or the legacy stand-in whose close-up was refunded)
+  offers the Try again price, everything else nothing — and
+  `offerMode.real` switches it back to the real function. **The arms that pin the retirement run
+  the REAL function** (the `#2089` describe at the end of this file sets
+  `offerMode.real`) and each has a control in the same harness under
+  the retired rule, so a refusal cannot pass because the harness could never
+  reach the till in the first place.
+*/
+const offerMode = vi.hoisted(() => ({ real: false }));
+vi.mock("./castProjection", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./castProjection")>();
+  return {
+    ...actual,
+    castSlotRetryOffer: (
+      slot: Parameters<typeof actual.castSlotRetryOffer>[0],
+      price: number,
+    ): ReturnType<typeof actual.castSlotRetryOffer> => {
+      if (offerMode.real) return actual.castSlotRetryOffer(slot, price);
+      if (slot.state === "failed-refunded") return { priceCredits: price, reason: "refunded" };
+      if (slot.state === "ready" && slot.standIn === true && slot.refundedCredits !== null) {
+        return { priceCredits: price, reason: "refunded" };
+      }
+      return null;
+    },
+  };
+});
+
 import { TRPCError } from "@trpc/server";
 import {
   castViewRetrySubjectHash,
@@ -361,6 +400,7 @@ const input = {
 };
 
 beforeEach(() => {
+  offerMode.real = false;
   journal.length = 0;
   deducts.length = 0;
   refunds.length = 0;
@@ -564,7 +604,7 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     const filled = slot({ state: "ready", url: "https://cdn.example/x.png", retry: undefined });
     await expect(retryCastView(dependencies([filled]), input)).rejects.toThrow(
-      /isn't one you can ask for again/,
+      /can't be asked for again on its own/,
     );
   });
 
@@ -857,7 +897,7 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     const nothing = slot({ state: "ready", url: "https://cdn.example/x.png", retry: undefined });
     await expect(retryCastView(dependencies([nothing]), input)).rejects.toThrow(
-      /isn't one you can ask for again/,
+      /can't be asked for again on its own/,
     );
     const asking = slot({ state: "building", url: null, retrying: true, retry: undefined });
     await expect(retryCastView(dependencies([asking]), input)).rejects.toThrow(
@@ -1637,5 +1677,84 @@ describe("the settled line, one per Try again (#1608)", () => {
 
     expect(settled()).toHaveLength(0);
     expect(deducts).toHaveLength(0);
+  });
+});
+
+/**
+ * ⚠ **#2089 — A STALE PER-VIEW TRY AGAIN IS REFUSED AT THE SERVER, FREE.**
+ *
+ * His word, 2026-10-08 (terminal), verbatim and entire: *"regenerate is the
+ * only option"*. The room no longer draws a per-view row, but a tab opened
+ * before that deploy still does, and its press arrives here carrying a request
+ * the client had every reason to believe was valid. **These arms run the REAL
+ * `castSlotRetryOffer`**, not the retired rule the rest of this file drives the
+ * road with, so they fail the moment the real function offers anything again.
+ *
+ * Each refusal has its CONTROL in the same harness: the identical press under
+ * the retired rule reaches the claim and the deduct. Without it, "nothing was
+ * claimed" could be true because this harness never claims anything.
+ */
+describe("#2089 — the real offer refuses every per-view Try again", () => {
+  const refunded = () => slot();
+  const standIn = () => slot({
+    angle: "frontClose",
+    label: "Portrait",
+    state: "ready",
+    url: "https://cdn.example/anchor.png",
+    note: null,
+    /* A legacy row: the per-view slice is gone with #1968. */
+    refundedCredits: LEGACY_VIEW_SLICE,
+    standIn: true,
+  });
+  const delivered = () => slot({
+    state: "ready",
+    url: "https://cdn.example/view.png",
+    note: null,
+    refundedCredits: null,
+    retry: undefined,
+  });
+
+  for (const [name, make, angle] of [
+    ["a REFUNDED view", refunded, "backFull"],
+    ["the legacy stand-in whose close-up was REFUNDED", standIn, "frontClose"],
+    ["a DELIVERED view", delivered, "backFull"],
+  ] as const) {
+    it(`${name} is refused PRECONDITION_FAILED before the claim — nothing claimed, charged or rendered`, async () => {
+      offerMode.real = true;
+      const press = { ...input, angle: angle as typeof input.angle };
+      const refusal = await retryCastView(dependencies([make()]), press).catch((error: unknown) => error);
+
+      expect(refusal).toBeInstanceOf(TRPCError);
+      expect((refusal as TRPCError).code).toBe("PRECONDITION_FAILED");
+      /* The refusal tells her what to do, in the page's own word. */
+      expect((refusal as TRPCError).message).toContain("Regenerate");
+      expect((refusal as TRPCError).message).toContain("Nothing was charged");
+      expect(journal).toEqual([]);
+      expect(deducts).toHaveLength(0);
+      expect(refunds).toHaveLength(0);
+      expect(engineCalls).toBe(0);
+      expect(committed).toHaveLength(0);
+      expect(receipts.success).not.toHaveBeenCalled();
+    });
+  }
+
+  it("CONTROL — the same refunded press under the RETIRED rule reaches the claim and the till", async () => {
+    offerMode.real = false;
+    const result = await retryCastView(dependencies([refunded()]), input);
+
+    expect(result.outcome).toBe("ready");
+    expect(journal.slice(0, 3)).toEqual(["claim", "running", "deduct"]);
+    expect(deducts).toEqual([{ amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` }]);
+  });
+
+  it("CONTROL — the stand-in under the RETIRED rule reaches the till too", async () => {
+    offerMode.real = false;
+    const result = await retryCastView(
+      dependencies([standIn()]),
+      { ...input, angle: "frontClose" as typeof input.angle },
+    );
+
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+    expect(deducts).toHaveLength(1);
   });
 });

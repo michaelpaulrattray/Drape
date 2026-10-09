@@ -4,7 +4,14 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { castSlotRetryOffer, type CastSlotProjection } from "./castProjection";
+import {
+  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
+} from "../casting/castingCreditCosts";
+import {
+  castPackageRedoOffer,
+  castSlotRetryOffer,
+  type CastSlotProjection,
+} from "./castProjection";
 
 /**
  * NO VIEW IS EVER ASKED FOR FREE — #1903 slice 3, his ruling of 2026-10-07.
@@ -78,23 +85,27 @@ describe("no view is ever asked for free (#1903 slice 3)", () => {
    * coincidence — the same discipline `viewRetryOffer.test.ts` already applies
    * to its state walk.
    */
-  it("NO slot shape produces a zero price — walked over the function's whole input space", () => {
-    const price = 777;
-    let offers = 0;
-    for (const { name, slot } of everySlotShape()) {
-      const offer = castSlotRetryOffer(slot, price);
-      if (!offer) continue;
-      offers += 1;
-      expect(offer.priceCredits, `${name}: offered a FREE ask`).toBe(price);
-      expect(offer.priceCredits, `${name}: offered a zero price`).toBeGreaterThan(0);
-    }
+  it("NO slot shape produces ANY offer — walked over the function's whole input space (#2089)", () => {
     /*
-      THE FLOOR, and it is what stops this arm passing by offering nothing at
-      all. A function that returned `null` for every shape would satisfy every
-      expectation above and would also have deleted the paid Try again.
+      ⚠ **THIS ARM'S FLOOR WAS `offers > 0` AND IT IS NOW THE OPPOSITE — #2089,
+      his word of 2026-10-08: *"regenerate is the only option"*.** It used to
+      hold that the paid Try again on a refunded view still existed; his ruling
+      retired that too, so the strongest form of "never free" is now "never
+      offered". The floor that keeps this honest moves to the WALK: it must have
+      visited the shapes that used to offer, or an empty walk would pass.
     */
-    expect(offers, "no shape offered anything — the paid Try again is gone too")
-      .toBeGreaterThan(0);
+    const price = 777;
+    let walked = 0;
+    let formerlyOffered = 0;
+    for (const { name, slot } of everySlotShape()) {
+      walked += 1;
+      if (slot.state === "failed-refunded" || (slot.state === "ready" && slot.standIn === true && slot.refundedCredits !== null)) {
+        formerlyOffered += 1;
+      }
+      expect(castSlotRetryOffer(slot, price), `${name}: offered a per-view ask`).toBeNull();
+    }
+    expect(walked).toBe(SLOT_STATES.length * 9);
+    expect(formerlyOffered, "the walk never reached a refunded shape").toBeGreaterThan(0);
   });
 
   it("a DELIVERED view has nothing to ask for, at any price", () => {
@@ -114,33 +125,24 @@ describe("no view is ever asked for free (#1903 slice 3)", () => {
     }
   });
 
-  it("⚠ CONTROL — the REFUNDED roads still offer, at the Try again price", () => {
+  it("⚠ CONTROL — the remedy still exists: the whole-set redo is offered on a Cast whose views offer nothing", () => {
     /*
-      Without this the two arms above are satisfied by a function that refuses
-      everything, which would take the paid Try again away from a customer who
-      paid for a view she never received. His ruling removed an apology, not a
-      remedy.
+      This control used to hold that a REFUNDED view still offered a paid Try
+      again, so that a function refusing everything could not pass the arms
+      above while taking a customer's remedy away. #2089 retired that remedy BY
+      RULING and named its replacement — *"regenerate is the only option"* — so
+      the control now holds the replacement: on the very slots that used to
+      offer, the package-level offer is present, priced, and not free.
     */
-    const empty = castSlotRetryOffer(
-      { state: "failed-refunded", refundedCredits: 200 } as unknown as CastSlotProjection,
-      CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    );
-    expect(empty).toEqual({
-      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-      reason: "refunded",
-    });
-
-    const standIn = castSlotRetryOffer(
-      { state: "ready", standIn: true, refundedCredits: 200 } as unknown as CastSlotProjection,
-      CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    );
-    expect(standIn).toEqual({
-      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-      reason: "refunded",
-    });
-
-    /* And the price really is a positive number, so "offers at the price" is a
-       statement about money rather than about a constant that happens to be 0. */
+    const slots = [
+      { retrying: undefined },
+      { retrying: undefined },
+    ] as unknown as CastSlotProjection[];
+    const redo = castPackageRedoOffer({ status: "ready", slots }, CASTING_V2_PACKAGE_REDO_PRICE_CREDITS);
+    expect(redo).toEqual({ priceCredits: CASTING_V2_PACKAGE_REDO_PRICE_CREDITS });
+    expect(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS).toBeGreaterThan(0);
+    /* And the per-view price still exists as a constant for the in-flight road
+       — it is the price those operations were bought at. */
     expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).toBeGreaterThan(0);
   });
 });

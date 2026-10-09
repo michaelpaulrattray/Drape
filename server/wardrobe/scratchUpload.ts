@@ -66,20 +66,19 @@
  * modelImageUrl}`), so a five-minute sweep took the picture off the screen
  * mid-session.
  *
- * ⚠ **AND THE ONE REMAINDER IS NAMED RATHER THAN LEFT TO BE FOUND: a model
- * photo outlives this hold and is then swept, so a session RESUMED later than
- * the hold shows a picture that is gone.** No row owns that key and the
- * account-erasure sweep says why in its own comment — *"A session's
- * modelImageUrl is a reference input and may be shared"* — so a
- * `modelImageKey` column written only for upload-only sessions is a build with
- * a migration, filed as its own card rather than folded in here. Before this
- * card the same object lived at a public URL **for ever**, which is what the
- * sweep is for.
+ * ⚠ **THE REMAINDER THIS CARD NAMED IS CLOSED (#2022): a session RESUMED
+ * later than the hold used to show a picture that was gone.** An upload-only
+ * session now ADOPTS the photograph out of this manifest when it is opened
+ * (`createSession`, `server/db/wardrobe.ts`), hands it back to the worker when
+ * the last session naming it is deleted, and the account-erasure sweep reads a
+ * session's photo under this account's own model-photo prefix
+ * (`wardrobeModelPhotoKeyPrefix`). No migration: the prefix is the ownership
+ * proof, not a key column.
  */
 import { randomUUID } from "crypto";
 
 import { createStorageCleanupManifestIn } from "../db/storageCleanup";
-import { withTransaction } from "../db/connection";
+import { withTransaction, type TransactionHandle } from "../db/connection";
 import { storagePut } from "../storage";
 
 /**
@@ -113,6 +112,35 @@ export const WARDROBE_SCRATCH_HOLD_MS = 24 * 60 * 60 * 1000;
 /** The instant a wardrobe scratch manifest born now stops holding itself. */
 export function wardrobeScratchHeldUntil(now: Date = new Date()): Date {
   return new Date(now.getTime() + WARDROBE_SCRATCH_HOLD_MS);
+}
+
+/**
+ * Hand an EXISTING wardrobe object back to the cleanup worker, inside the
+ * caller's transaction — the same manifest `putWardrobeScratchUpload` writes
+ * (kind, synthetic operation id, the day's hold), minted here so those three
+ * are decided in one module and not restated by a second (#2022).
+ *
+ * Its one caller is a session's deletion (`server/db/wardrobe.ts`): an
+ * upload-only session ADOPTS its model photo out of this module's manifest,
+ * and when the last session naming the photo is deleted the photo comes back
+ * here, exactly as the upload left it. It never discharges anything, so this
+ * module stays a collector: whatever it registers is collected unless a row
+ * adopts it.
+ */
+export async function returnWardrobeScratchKeyIn(
+  tx: TransactionHandle,
+  input: { userId: number; storageKey: string },
+): Promise<string> {
+  const cleanupBatchId = randomUUID();
+  await createStorageCleanupManifestIn(tx, {
+    id: cleanupBatchId,
+    userId: input.userId,
+    operationId: cleanupBatchId,
+    kind: "wardrobe_scratch_cleanup",
+    storageItems: [{ storageKey: input.storageKey, storageBackend: "public_r2" }],
+    heldUntil: wardrobeScratchHeldUntil(),
+  });
+  return cleanupBatchId;
 }
 
 export interface ScratchUploadResult {

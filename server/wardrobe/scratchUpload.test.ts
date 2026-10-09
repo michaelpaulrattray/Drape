@@ -168,27 +168,24 @@ const REPO_ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za
  * a key that a ROW holds, so a cleanup can always reach it.
  */
 const RECORDED_DIRECT_WRITES: ReadonlyArray<{ file: string; calls: number; why: string }> = [
-  {
-    file: "server/routes/wardrobe.ts",
-    calls: 1,
-    why:
-      "`garments.upload` — the only wardrobe write whose key is persisted:"
-      + " `createGarment({ originalImageKey: fileKey })` two statements later,"
-      + " so the object is reachable from the garment row that owns it",
-  },
-  {
-    file: "server/wardrobe/utils.ts",
-    calls: 1,
-    why:
-      "`uploadBase64ToS3` — the digitize and refine results, each returned to a"
-      + " caller that writes the URL onto a garment row (`isolatedImageUrl`) or a"
-      + " session's history before the request ends; they are deliverables, not"
-      + " scratch. ⚠ ONE OF ITS CALLERS IS CONDITIONAL and is NOT fixed by this"
-      + " card: `vto.generate` pushes its result onto `wardrobeSessions.history`"
-      + " ONLY when the request carries a `sessionId`, so a VTO with none writes"
-      + " an object nothing names — the same class, on a road `assertWardrobeTryOnOpen`"
-      + " closes today (#1537), filed rather than widened into this diff",
-  },
+  /*
+    `server/routes/wardrobe.ts` LEFT THIS LIST WITH #2021. Its one direct write
+    was `garments.upload`'s photograph, persisted on the garment row one
+    statement after the put — so a request that died in between left an object
+    nothing named. It now goes through `putWardrobeScratchUpload` and hands the
+    receipt to `createGarment`, which discharges it inside the insert's own
+    transaction. The count of 0 is what this arm now holds that file to.
+  */
+  /*
+    `server/wardrobe/utils.ts` LEFT THIS LIST WITH #2095. Its one direct write
+    was `uploadBase64ToS3`, by then the digitize flat-lay alone — and that one
+    was recorded on the garment row only if `analyzeGarmentMetadata`, which ran
+    after the upload, also succeeded. When analysis threw, the key was recorded
+    nowhere. The flat-lay now goes through `uploadGarmentFlatLay` (the
+    registrar), `updateGarment` discharges the receipt as it records the key,
+    and `uploadBase64ToS3` is deleted. The count of 0 is what this arm now holds
+    that file to.
+  */
   {
     file: "server/wardrobe/scratchUpload.ts",
     calls: 1,

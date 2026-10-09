@@ -264,7 +264,10 @@ describe("the signed Cast projection", () => {
       what earns `reason: "refunded"`, and the room draws `Refunded · Try again`.
     */
     expect(slot?.note).toBeNull();
-    expect(slot?.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    /* ⚠ NO OFFER SINCE #2089 (his *"regenerate is the only option"*). It
+       carried the refunded Try again here until then; the remedy is the
+       whole-set redo, and the refund itself is still recorded above. */
+    expect(slot?.retry).toBeUndefined();
   });
 
   it("opens the room on the signed master while the package is still building", () => {
@@ -490,9 +493,11 @@ describe("a view being asked for again (#1235)", () => {
     const assets = ledger(anchor(), failed("backFull"));
 
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
-    // The control: without a running retry this is a confession WITH an offer.
+    // The control: without a running retry this is a confession at rest. Since
+    // #2089 it carries no offer either way, so the fact under test is the STATE.
     expect(atRest.state).toBe("failed-refunded");
-    expect(atRest.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    expect(atRest.note).not.toBeNull();
+    expect(atRest.retry).toBeUndefined();
     expect(atRest.retrying).toBeUndefined();
 
     const asking = backFull(projectSignedCast({
@@ -563,7 +568,9 @@ describe("a view being asked for again (#1235)", () => {
       room held one angle in one string and disabled every button from it.
     */
     expect(other.state).toBe("failed-refunded");
-    expect(other.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    /* Untouched means its confession too; no slot carries an offer since #2089. */
+    expect(other.note).not.toBeNull();
+    expect(other.retry).toBeUndefined();
     expect(other.retrying).toBeUndefined();
   });
 

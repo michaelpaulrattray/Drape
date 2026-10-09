@@ -320,6 +320,8 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.ok && result.prs[0]).toMatchObject({ gateRuns: 1, gateMinutes: 7 });
+    /* #2097: the head branch rides along to the join, which anchors on it. */
+    expect(result.ok && result.prs[0]!.headRefName).toBe("team/x0");
   });
 
   /*
@@ -418,7 +420,12 @@ describe("the block the ledger prints", () => {
       ),
       "last 14d",
     );
-    expect(text).toMatch(/overlapping windows: 1, 2/);
+    expect(text).toMatch(/ALIVE at the same moment as another: 1, 2/);
+    /* The sentence that said this *"should be empty"* is gone with #2086 — up
+       to four builder seats run per pass, so concurrency is the design. What
+       the row must still say is that the attribution is ambiguous. */
+    expect(text).toMatch(/ambiguous/);
+    expect(text).not.toMatch(/should be empty/);
   });
 
   it("carries both figures and both denominators", () => {
@@ -429,5 +436,258 @@ describe("the block the ledger prints", () => {
     expect(text).toMatch(/cards landed per session/);
     expect(text).toMatch(/gate minutes per card/);
     expect(text).toMatch(/closed sessions          1/);
+  });
+});
+
+/**
+ * A RUN'S END IS TWO DIFFERENT FIELDS FOR TWO DIFFERENT QUESTIONS (#2086).
+ *
+ * The fixtures here are PRODUCTION ROWS, with their own ids and timestamps,
+ * because the card was filed on real rows and a repair proved only against
+ * invented ones proves only that the arithmetic runs. Both halves of the card
+ * are pinned: the half that was built, and the half that was REFUSED — a later
+ * shift reading `endedAt` in the attribution loop and "fixing" it to match the
+ * overlap clause above would send 44% of merged PRs to `unattributed`, and the
+ * last arm in this block is what tells them so before they measure it again.
+ */
+describe("the overlap test reads a lifetime, never a close stamp", () => {
+  /* Rows #612 and #615, read off production 2026-10-09. #612's own log ends
+     "You've hit your session limit"; it was dead from 15:36 and a later shift
+     stamped it closed at 17:20. #615 opened 48 min AFTER #612 went quiet. */
+  const RUN_612 = run({
+    id: 612,
+    shift: "seat1-20261009-005826",
+    startedAt: "2026-10-08T15:14:13Z",
+    heartbeatAt: "2026-10-08T15:36:19Z",
+    endedAt: "2026-10-08T17:20:26Z",
+  });
+  const RUN_615 = run({
+    id: 615,
+    shift: "seat1-20261009-015956",
+    startedAt: "2026-10-08T16:24:33Z",
+    heartbeatAt: "2026-10-08T16:44:26Z",
+    endedAt: "2026-10-08T17:18:28Z",
+  });
+
+  it("⚠ THE ARM THIS BLOCK EXISTS FOR — two rows that overlap only by their close stamps do not overlap", () => {
+    expect(attributePrsToSessions([RUN_612, RUN_615], []).overlappingRunIds).toEqual([]);
+  });
+
+  it("and the same pair DOES overlap when their lifetimes are not supplied — the reading as it was", () => {
+    // The positive control for the defect itself: strip the one field and the
+    // instrument goes back to reporting a concurrency that never happened.
+    const blind = [
+      { ...RUN_612, heartbeatAt: undefined },
+      { ...RUN_615, heartbeatAt: undefined },
+    ];
+    expect(attributePrsToSessions(blind, []).overlappingRunIds).toEqual([612, 615]);
+  });
+
+  it("a REAL overlap is still reported — the repair only ever removes false ones", () => {
+    // Positive control: two runs genuinely alive at once, which is the design
+    // under four builder seats per pass and must never read as empty.
+    const reading = attributePrsToSessions(
+      [
+        run({ id: 1, startedAt: "2026-10-08T10:00:00Z", heartbeatAt: "2026-10-08T11:30:00Z", endedAt: "2026-10-08T11:40:00Z" }),
+        run({ id: 2, startedAt: "2026-10-08T11:00:00Z", heartbeatAt: "2026-10-08T12:00:00Z", endedAt: "2026-10-08T12:10:00Z" }),
+      ],
+      [],
+    );
+    expect(reading.overlappingRunIds).toEqual([1, 2]);
+  });
+
+  it("a run that NEVER checked in keeps the close stamp — no information is no licence to sharpen", () => {
+    /* `heartbeatAt === startedAt` is how a row records a skipped check-in.
+       Reading it literally would collapse the run to an instant and it could
+       never overlap anything — and a silent shift that really did run beside
+       another for forty minutes is exactly the concurrency this clause is for. */
+    const silent = run({
+      id: 700,
+      startedAt: "2026-10-08T15:14:13Z",
+      heartbeatAt: "2026-10-08T15:14:13Z",
+      endedAt: "2026-10-08T17:20:26Z",
+    });
+    expect(attributePrsToSessions([silent, RUN_615], []).overlappingRunIds).toEqual([615, 700]);
+  });
+
+  it("a null lifetime is the same fallback, so a caller that selected no column is not sharpened", () => {
+    const unread = [
+      { ...RUN_612, heartbeatAt: null },
+      { ...RUN_615, heartbeatAt: null },
+    ];
+    expect(attributePrsToSessions(unread, []).overlappingRunIds).toEqual([612, 615]);
+  });
+
+  it("⚠ AND THE ATTRIBUTION WINDOW IS NOT NARROWED — a shift's own merge lands after its last check-in", () => {
+    /*
+      THE REFUSED HALF OF #2086, pinned at a row that proves it. Production run
+      #604 carries `branch = team/1953-plan-features` and `prNumber = 1970`, so
+      the row itself says which PR it owns — and PR #1970 merged at 06:29:19,
+      SIX minutes after that run's last heartbeat and seventeen before its
+      close. The standing orders put the last heartbeat at *edition written*;
+      the merge, the rite and the close all come after it.
+
+      Measured before this was written: narrowing this bound sends 35 of 80
+      merged PRs to `unattributed` (6 → 41), and the gentler alive-preferring
+      variant moves 2 of 80 — one of which is this row, moved wrongly.
+    */
+    const RUN_604 = run({
+      id: 604,
+      shift: "foreman-20261008-0610",
+      startedAt: "2026-10-08T06:08:05Z",
+      heartbeatAt: "2026-10-08T06:23:03Z",
+      endedAt: "2026-10-08T06:46:53Z",
+    });
+    const reading = attributePrsToSessions([RUN_604], [pr({ number: 1970, mergedAt: "2026-10-08T06:29:19Z" })]);
+    expect(reading.sessions[0]!.prs.map((p) => p.number)).toEqual([1970]);
+    expect(reading.unattributed).toEqual([]);
+  });
+});
+
+/**
+ * THE ROW ANCHORS ITS OWN PR BEFORE ANY CLOCK IS READ (#2097).
+ *
+ * `endedAt` is a stamp any later shift may apply at any hour, so a row that
+ * died hours ago but was stamped closed late carries a window that can contain
+ * — and, starting later, out-rank — a merge the live shift made. #2086 proved
+ * no clock bound can tell the two apart; the row's own `prNumber` and `branch`
+ * can, with no clock at all. Every arm that moves a PR has a twin with the
+ * anchor removed that reproduces the clock's answer, so the anchor is what
+ * moved it and not the fixture.
+ */
+describe("a merged PR is attributed by the run's own PR number, then its branch, then the clock", () => {
+  /* The shape of #612's late close: DEAD went quiet at 16:10 and was stamped
+     closed at 18:00 by somebody else; LIVE did the work and merged at 17:00.
+     DEAD started later, so the window hands it the merge. */
+  const LIVE = run({
+    id: 10,
+    shift: "seat1-live",
+    startedAt: "2026-10-08T15:30:00Z",
+    heartbeatAt: "2026-10-08T16:50:00Z",
+    endedAt: "2026-10-08T17:30:00Z",
+  });
+  const DEAD = run({
+    id: 11,
+    shift: "seat2-dead",
+    startedAt: "2026-10-08T16:00:00Z",
+    heartbeatAt: "2026-10-08T16:10:00Z",
+    endedAt: "2026-10-08T18:00:00Z",
+  });
+  const MERGE = pr({ number: 2001, mergedAt: "2026-10-08T17:00:00Z", headRefName: "team/2001-thing" });
+  const ownerOf = (reading: ReturnType<typeof attributePrsToSessions>, n: number) =>
+    reading.sessions.find((s) => s.prs.some((p) => p.number === n))?.run.id ?? null;
+
+  it("the defect, reproduced — with no anchor the dead row's late close out-ranks the live shift", () => {
+    const reading = attributePrsToSessions([LIVE, DEAD], [{ ...MERGE, headRefName: undefined }]);
+    expect(ownerOf(reading, 2001)).toBe(11);
+    expect(reading.byRoad).toEqual({ prNumber: 0, branch: 0, window: 1 });
+    expect(reading.changedHands).toEqual([]);
+  });
+
+  it("⚠ the run that NAMES the PR owns it, and the clock's other answer is counted", () => {
+    const reading = attributePrsToSessions([{ ...LIVE, prNumber: 2001 }, DEAD], [MERGE]);
+    expect(ownerOf(reading, 2001)).toBe(10);
+    expect(reading.byRoad).toEqual({ prNumber: 1, branch: 0, window: 0 });
+    expect(reading.changedHands).toEqual([{ pr: 2001, road: "prNumber", toRunId: 10, clockRunId: 11 }]);
+  });
+
+  it("the run whose branch is the PR's head branch owns it when no row names the number", () => {
+    const reading = attributePrsToSessions([{ ...LIVE, branch: "team/2001-thing" }, DEAD], [MERGE]);
+    expect(ownerOf(reading, 2001)).toBe(10);
+    expect(reading.byRoad).toEqual({ prNumber: 0, branch: 1, window: 0 });
+    // Control: the same rows, the PR without its head branch — back to the clock.
+    const blind = attributePrsToSessions([{ ...LIVE, branch: "team/2001-thing" }, DEAD], [
+      { ...MERGE, headRefName: null },
+    ]);
+    expect(ownerOf(blind, 2001)).toBe(11);
+  });
+
+  it("the PR number outranks the branch when two rows disagree", () => {
+    const reading = attributePrsToSessions(
+      [{ ...LIVE, prNumber: 2001 }, { ...DEAD, branch: "team/2001-thing" }],
+      [MERGE],
+    );
+    expect(ownerOf(reading, 2001)).toBe(10);
+    expect(reading.byRoad.prNumber).toBe(1);
+  });
+
+  it("an anchor can place a PR the clock could not — a merge after its own run closed", () => {
+    /* A shift opens its PR and closes; the merge lands later, outside every
+       window. Its own row still names it, so it is not unattributed. */
+    const late = pr({ number: 2002, mergedAt: "2026-10-08T19:00:00Z" });
+    const reading = attributePrsToSessions([{ ...LIVE, prNumber: 2002 }, DEAD], [late]);
+    expect(ownerOf(reading, 2002)).toBe(10);
+    expect(reading.unattributed).toEqual([]);
+    expect(reading.changedHands).toEqual([{ pr: 2002, road: "prNumber", toRunId: 10, clockRunId: null }]);
+  });
+
+  it("a run that STARTED after the merge did not land it — a re-used branch name falls to the clock", () => {
+    const after = run({
+      id: 12,
+      startedAt: "2026-10-08T17:05:00Z",
+      endedAt: "2026-10-08T17:40:00Z",
+      branch: "team/2001-thing",
+      prNumber: 2001,
+    });
+    const reading = attributePrsToSessions([LIVE, DEAD, after], [MERGE]);
+    expect(ownerOf(reading, 2001)).toBe(11);
+    expect(reading.byRoad.window).toBe(1);
+    // Control: the same row started before the merge DOES own it.
+    const before = attributePrsToSessions([LIVE, DEAD, { ...after, startedAt: "2026-10-08T16:30:00Z" }], [MERGE]);
+    expect(ownerOf(before, 2001)).toBe(12);
+  });
+
+  it("⚠ a PR whose own run is still OPEN is held back as unattributed, never handed to the clock", () => {
+    const open = { ...LIVE, endedAt: null, prNumber: 2001 };
+    const reading = attributePrsToSessions([open, DEAD], [MERGE]);
+    expect(ownerOf(reading, 2001)).toBeNull();
+    expect(reading.unattributed.map((p) => p.number)).toEqual([2001]);
+    expect(reading.changedHands).toEqual([{ pr: 2001, road: "prNumber", toRunId: null, clockRunId: 11 }]);
+  });
+
+  it("run #604 names PR #1970 itself — anchored by number, and the clock agreed", () => {
+    // Production row, read 2026-10-09 (#2086's own fixture, now with its columns).
+    const RUN_604 = run({
+      id: 604,
+      shift: "foreman-20261008-0610",
+      startedAt: "2026-10-08T06:08:05Z",
+      heartbeatAt: "2026-10-08T06:23:03Z",
+      endedAt: "2026-10-08T06:46:53Z",
+      branch: "team/1953-plan-features",
+      prNumber: 1970,
+    });
+    const reading = attributePrsToSessions(
+      [RUN_604],
+      [pr({ number: 1970, mergedAt: "2026-10-08T06:29:19Z", headRefName: "team/1953-plan-features" })],
+    );
+    expect(reading.sessions[0]!.prs.map((p) => p.number)).toEqual([1970]);
+    expect(reading.byRoad).toEqual({ prNumber: 1, branch: 0, window: 0 });
+    expect(reading.changedHands).toEqual([]);
+  });
+
+  it("the printed block names each road's count and every PR that changed hands", () => {
+    const text = renderLedgerBlock(attributePrsToSessions([{ ...LIVE, prNumber: 2001 }, DEAD], [MERGE]), "last 14d");
+    expect(text).toMatch(/by the run's own PR number 1, by its branch 0, by the clock 0/);
+    expect(text).toMatch(/#2001 → run 10 by prNumber, clock said run 11/);
+    // Control: nothing anchored, nothing changed hands, no such line.
+    const quiet = renderLedgerBlock(attributePrsToSessions([LIVE, DEAD], [{ ...MERGE, headRefName: undefined }]), "last 14d");
+    expect(quiet).toMatch(/by the clock 1/);
+    expect(quiet).not.toMatch(/placed differently/);
+  });
+
+  it("⚠ the Machinist reader SELECTs both anchors, or the whole repair is inert", async () => {
+    /* Both fields are optional on `ShiftRunReading`, so a SELECT without them
+       sends every PR to the clock and nothing goes red. Sliced to the
+       crew_shift_runs statement so another query's columns cannot satisfy it. */
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync("scripts/machinist-ledger-read.mts", "utf8");
+    const from = source.indexOf("FROM crew_shift_runs");
+    expect(from).toBeGreaterThan(0);
+    const select = source.slice(source.lastIndexOf("SELECT", from), from);
+    expect(select).toMatch(/\bprNumber\b/);
+    expect(select).toMatch(/\bbranch\b/);
+    const mapping = source.slice(from, source.indexOf("}));", from));
+    expect(mapping).toMatch(/prNumber:/);
+    expect(mapping).toMatch(/branch:/);
   });
 });

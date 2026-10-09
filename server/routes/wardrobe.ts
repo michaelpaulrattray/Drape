@@ -23,7 +23,7 @@ import {
   createGarment, getGarmentById, getOwnedGarmentsByIds, getUserGarments, getUserGarmentsBySlot,
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
-  createSession, getSessionById, getUserSessions, updateSession, deleteSession,
+  createSession, getSessionById, getUserSessions, updateSession, deleteSession, appendSessionResult,
   getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
   saveLook, getUserLooksByModel, getUserLooks, renameLook, deleteLook,
@@ -33,13 +33,14 @@ import {
   getUserMintedModelsWithThumbnailForRead,
 } from "../casting/modelReadProjections";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
-import { storagePut } from "../storage";
 import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
 import {
   adoptGarmentPictures,
   garmentRowPictures,
   importPictureChoice,
+  spokenImportRefusal,
 } from "../wardrobe/garmentAdoption";
+import { wardrobeModelPhotoKeyPrefix } from "../db/accountDeletion";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -137,28 +138,34 @@ const garmentRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Upload original image to S3
+      /* THE PHOTOGRAPH IS REGISTERED BEFORE IT IS WRITTEN (#2021). It used to
+         be a bare `storagePut` one statement ahead of the insert, so a request
+         that died in between — a database hiccup, a deploy — left her
+         photograph on a permanently public key that no row and no manifest
+         named. Now a held manifest names the key first, and `createGarment`
+         discharges it IN THE SAME TRANSACTION as the insert: either the row
+         owns the key, or the worker collects it. */
       const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/original-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: originalUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      const { url: originalUrl, cleanupBatchId: originalReceipt } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
-      /* Create garment record (status: processing). NO RECEIPTS: this road
-         writes its own `original-*` key above and registers no manifest for it,
-         so there is nothing to discharge — the row owns the key and the account
-         sweep reads it. That the put is unregistered at all is a sibling of
-         #1961 and is filed on its own card: a crash between the put and this
-         insert leaves an orphan. It is a window, not an orphan at birth. */
+      // Create garment record (status: processing) — the row adopts the photograph.
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
         originalImageUrl: originalUrl,
         originalImageKey: fileKey,
         status: "processing",
-      }, []);
+      }, [originalReceipt]);
 
       // Create generation record
       const genResult = await createGeneration({
@@ -204,17 +211,22 @@ const garmentRouter = router({
           },
         );
 
-        // Update garment record with results
+        /* The row records the flat-lay's KEY and discharges its receipt in one
+           transaction (#2095). A throw anywhere before here — the analysis
+           above, most likely — leaves the manifest standing, and the worker
+           collects the flat-lay instead of it sitting public for ever. */
         const qualityIssues = result.quality.issues.length > 0 ? result.quality.issues : null;
-        await updateGarment(garmentId, {
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           qualityIssues,
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         log.info(`Garment ${garmentId} processed for user ${ctx.user.id}: ${result.metadata.shortName}`);
 
@@ -226,7 +238,7 @@ const garmentRouter = router({
           status: "ready" as const,
         };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -351,20 +363,25 @@ const vtoRouter = router({
         },
       );
 
-      // Update session history if provided
+      /* THE SESSION ADOPTS THE RESULT, OR THE WORKER COLLECTS IT (#1980). The
+         result was registered in a cleanup manifest before its bytes were
+         written; `appendSessionResult` writes it onto the history and
+         discharges that manifest in one transaction. With no session, or one
+         that is not this account's, nothing discharges it — the picture stays
+         reachable for the scratch hold and is then swept, where it used to sit
+         at a public URL that nothing named, for ever. */
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.garmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       log.info(`VTO generated for user ${ctx.user.id} with ${garments.length} garments`);
@@ -454,20 +471,19 @@ const vtoRouter = router({
         },
       );
 
-      // Persist incremental result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.allGarmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       return { resultUrl: result.resultUrl };
@@ -554,17 +570,14 @@ const vtoRouter = router({
         },
       );
 
-      // Persist refinement result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
-          });
-        }
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+        });
       }
 
       return { resultUrl: result.resultUrl };
@@ -682,25 +695,37 @@ const decomposeRouter = router({
         can drive a decision written inside a tRPC handler.
       */
       const chosen = importPictureChoice(input);
-      const adopted = await adoptGarmentPictures({
-        userId: ctx.user.id,
-        imageUrl: chosen.imageUrl,
-        sourceUrl: chosen.sourceUrl,
-        currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
-      });
+      /* SPOKEN, NOT A 500 (#2028). The two refusals this block can raise — a
+         picture that is not this account's, and a receipt the garment could not
+         take over — are both BEFORE the credit hold, so "nothing was charged"
+         is true of every one of them. The receipt refusals `updateGarment` can
+         raise further down are AFTER the charge and are deliberately not
+         wrapped: that sentence would be false there. */
+      let adopted: Awaited<ReturnType<typeof adoptGarmentPictures>>;
+      let garmentId: number;
+      try {
+        adopted = await adoptGarmentPictures({
+          userId: ctx.user.id,
+          imageUrl: chosen.imageUrl,
+          sourceUrl: chosen.sourceUrl,
+          currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
+        });
+
+        // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
+        garmentId = await createGarment({
+          userId: ctx.user.id,
+          slotType: input.slotType,
+          ...garmentRowPictures(adopted),
+          shortName: input.label,
+          status: "processing",
+        }, adopted.receipts);
+      } catch (err) {
+        throw spokenImportRefusal(err);
+      }
       /* The digitize reads the garment's OWN object from here on, never the
          scratch key it was cut from — one source of truth for what this row is
          made of. */
       const garmentImageUrl = adopted.image.url;
-
-      // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
-      const garmentId = await createGarment({
-        userId: ctx.user.id,
-        slotType: input.slotType,
-        ...garmentRowPictures(adopted),
-        shortName: input.label,
-        status: "processing",
-      }, adopted.receipts);
 
       try {
         const result = await withAtomicCredits(
@@ -726,18 +751,21 @@ const decomposeRouter = router({
           },
         );
 
-        await updateGarment(garmentId, {
+        // The garment adopts its flat-lay, or the worker collects it (#2095 — see `upload`).
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         return { garmentId, shortName: result.metadata.shortName };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -756,6 +784,9 @@ const sessionRouter = router({
         requestedImageUrl: input.modelImageUrl,
         readMode,
       });
+      /* An upload-only session ADOPTS its photograph out of the scratch
+         manifest `models.upload` registered (#2022), so a session resumed after
+         the day's hold still has its picture. */
       const sessionId = await createSession({
         userId: ctx.user.id,
         modelId: input.modelId ?? null,
@@ -763,9 +794,9 @@ const sessionRouter = router({
         history: [],
         historyIndex: 0,
         activeGarmentIds: [],
-      });
-      // Enforce session cap — delete oldest beyond limit
-      await capUserSessions(ctx.user.id);
+      }, process.env.R2_PUBLIC_URL ?? "");
+      // Enforce session cap — delete oldest beyond limit (each one's photo back to the worker, #2022)
+      await capUserSessions(ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { sessionId };
     }),
 
@@ -822,7 +853,7 @@ const sessionRouter = router({
       if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
-      await deleteSession(input.sessionId, ctx.user.id);
+      await deleteSession(input.sessionId, ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { success: true };
     }),
 
@@ -888,13 +919,17 @@ const outfitRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
         }
       }
+      /* A thumbnail made with no session is still in this account's scratch
+         manifest; the insert adopts it in its own transaction (#2094), or it
+         would be collected after the hold and the Outfit would point at
+         nothing. Another account's picture is never adopted. */
       const outfitId = await createOutfit({
         userId: ctx.user.id,
         name: input.name,
         garmentIds: input.garmentIds,
         styleNotes: input.styleNotes,
         resultThumbUrl: input.resultThumbUrl,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       return { outfitId };
     }),
 
@@ -946,7 +981,9 @@ const modelRouter = router({
       throwIfRateLimited(ctx.user.id);
 
       const suffix = randomUUID();
-      const fileKey = `${ctx.user.id}-models/upload-${Date.now()}-${suffix}.png`;
+      /* The prefix is the erasure sweep's own (#2022) — imported, not
+         restated, because it is what makes a session's photo this account's. */
+      const fileKey = `${wardrobeModelPhotoKeyPrefix(ctx.user.id)}${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
@@ -997,6 +1034,7 @@ const looksRouter = router({
       garmentIds: z.array(z.number()),
     }))
     .mutation(async ({ ctx, input }) => {
+      // The Look adopts a session-less try-on picture, or it would be collected (#2094 — see `outfits.save`).
       const lookId = await saveLook({
         userId: ctx.user.id,
         sessionId: input.sessionId ?? null,
@@ -1004,7 +1042,7 @@ const looksRouter = router({
         imageUrl: input.imageUrl,
         name: input.name ?? null,
         garmentIds: input.garmentIds,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       log.info(`Look saved: id=${lookId} model=${input.modelId} user=${ctx.user.id}`);
       return { lookId };
     }),

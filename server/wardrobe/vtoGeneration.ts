@@ -17,7 +17,7 @@ import {
   withImageQueue,
   toInlinePart,
   diagnoseResponse,
-  uploadBase64ToS3,
+  uploadTryOnResult,
   sanitizeDescription,
   sortByLayerPriority,
   type GarmentForVTO,
@@ -165,6 +165,12 @@ export interface VTOParams {
 
 export interface VTOResult {
   resultUrl: string; // S3 URL of the dressed result
+  /**
+   * The manifest that will collect `resultUrl` unless a session adopts it
+   * (#1980). The route hands it to `appendSessionResult`; it never goes back
+   * to the client.
+   */
+  cleanupBatchId: string;
 }
 
 /**
@@ -270,15 +276,15 @@ Return the composite image.`;
       );
     }
 
-    const resultUrl = await uploadBase64ToS3(
+    const { url: resultUrl, cleanupBatchId } = await uploadTryOnResult(
       diagnosis.imageBase64,
-      `wardrobe/${params.userId}/vto-results`,
+      params.userId,
     );
 
     log.info(
       `VTO generated for session ${params.sessionId} with ${sortedGarments.length} garments (ar=${ar})`,
     );
-    return { resultUrl };
+    return { resultUrl, cleanupBatchId };
   }, "vto-generation");
 }
 
@@ -372,11 +378,11 @@ Return the updated image with styling changes applied.`;
         );
       }
 
-      const resultUrl = await uploadBase64ToS3(
+      const { url: resultUrl, cleanupBatchId } = await uploadTryOnResult(
         diagnosis.imageBase64,
-        `wardrobe/${params.userId}/vto-results`,
+        params.userId,
       );
-      return { resultUrl };
+      return { resultUrl, cleanupBatchId };
     }
 
     // Garment swap — replace specific slots
@@ -448,14 +454,14 @@ Merge the new garments realistically with the existing outfit in Image 2. Handle
       );
     }
 
-    const resultUrl = await uploadBase64ToS3(
+    const { url: resultUrl, cleanupBatchId } = await uploadTryOnResult(
       diagnosis.imageBase64,
-      `wardrobe/${params.userId}/vto-results`,
+      params.userId,
     );
 
     log.info(
       `Incremental composite for session ${params.sessionId}, changed: ${changeList}`,
     );
-    return { resultUrl };
+    return { resultUrl, cleanupBatchId };
   }, "vto-incremental");
 }

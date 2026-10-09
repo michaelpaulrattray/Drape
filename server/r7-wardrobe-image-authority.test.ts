@@ -15,6 +15,9 @@ vi.mock("./db", async (importOriginal) => {
     getOwnedGarmentsByIds: vi.fn(),
     createGeneration: vi.fn(),
     updateSession: vi.fn(),
+    /* #1980 — the try-on roads append their result through the one helper
+       that also discharges its cleanup manifest. */
+    appendSessionResult: vi.fn(),
   };
 });
 
@@ -110,6 +113,7 @@ import {
   getOwnedGarmentsByIds,
   getSessionById,
   updateSession,
+  appendSessionResult,
 } from "./db";
 import { withAtomicCredits } from "./casting/atomicCredits";
 import { captureSnapshotReadMode } from "./casting/snapshotReadScope";
@@ -213,15 +217,19 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       generationId: 501,
     });
     vi.mocked(updateSession).mockResolvedValue(undefined);
+    vi.mocked(appendSessionResult).mockResolvedValue(true);
     vi.mocked(getImageAspectBucket).mockResolvedValue("3:4");
     vi.mocked(generateVirtualTryOn).mockResolvedValue({
       resultUrl: "https://results.example/full.png",
+      cleanupBatchId: "batch-full",
     });
     vi.mocked(incrementalComposite).mockResolvedValue({
       resultUrl: "https://results.example/incremental.png",
+      cleanupBatchId: "batch-incremental",
     });
     vi.mocked(refineGarment).mockResolvedValue({
       resultUrl: "https://results.example/refined.png",
+      cleanupBatchId: "batch-refined",
     });
     vi.mocked(checkIdentityMatch).mockResolvedValue(true);
   });
@@ -253,7 +261,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       userId: 7,
       modelId: 42,
       modelImageUrl: "https://selected.example/cast-body.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("refuses a linked session without a selected full-body view", async () => {
@@ -285,7 +293,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       modelId: null,
       modelImageUrl: "https://pub-test.r2.dev/7-models/upload-owned-model.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("refuses a model-less session URL outside the user's upload namespace", async () => {
@@ -308,7 +316,7 @@ describe("R7-7B5 Wardrobe session image authority", () => {
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       modelId: 42,
       modelImageUrl: "https://legacy.example/model.png",
-    }));
+    }), "https://pub-test.r2.dev");
   });
 
   it("rejects client-supplied read authority before the handler runs", async () => {
@@ -420,13 +428,12 @@ describe("R7-7B5 Wardrobe session image authority", () => {
       sessionId: "91",
     }));
     expect(getSessionById).toHaveBeenCalledWith(91, 7);
-    expect(updateSession).toHaveBeenCalledWith(
-      91,
-      7,
-      expect.objectContaining({
-        history: expect.arrayContaining(["https://results.example/full.png"]),
-      }),
-    );
+    expect(appendSessionResult).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: 91,
+      userId: 7,
+      resultUrl: "https://results.example/full.png",
+      cleanupBatchId: "batch-full",
+    }));
     expect(vi.mocked(resolveEffectiveCastStateForRead).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(createGeneration).mock.invocationCallOrder[0]);
     expect(vi.mocked(createGeneration).mock.invocationCallOrder[0])

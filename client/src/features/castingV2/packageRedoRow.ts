@@ -1,5 +1,5 @@
 /**
- * ASK FOR ALL HER VIEWS AGAIN — the words on the one button (#1903 slice 2).
+ * REGENERATE — the words on the one button (#1903 slice 2; renamed #2090).
  *
  * **His ruling, verbatim (2026-10-07):** *"maybe we should allow retry by
  * default incase they didnt like the outfit that was invented or whatever but
@@ -19,8 +19,10 @@
  *    like these?* — judged on the pictures themselves, which is their own taste
  *    and the only basis it needs. No eligibility, no verdict, no axis.
  * 3. **Where does the technology show?** Nowhere. Not the engine, not the
- *    plate, not the word *package*, not *redo* — the customer's noun is the one
- *    the strip already uses, which is **views**.
+ *    plate, not the word *package*, not *redo*. **Regenerate** is his own word
+ *    for it (#2090, below) and is already the customer's verb one panel over:
+ *    the refine panel's version button says *Regenerate* and has since before
+ *    this row existed.
  */
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 
@@ -34,8 +36,15 @@ import { displayPrice, formatCredits } from "@shared/creditDisplay";
  * beside it. This is a deliberate purchase of a whole new set of views. A
  * caption and a button are not the same object, and the earlier rule — prices
  * on paid buttons — is the one that governs a button.
+ *
+ * ⚠ **THE WORDS WERE "Ask for all views again" UNTIL #2090.** His word,
+ * 2026-10-08 (terminal), verbatim: *"also the wording "Ask for all views
+ * again · 650 credits" is way too long just call it Regenerate ~ 350
+ * credits"*, then, asked to confirm the price: *"Call it Regnerated ~ 650
+ * credits yes"*. The price is unchanged and stays derived below; his "~" is
+ * read as this row's separator, the same " · " every other paid button wears.
  */
-export const PACKAGE_REDO_LINK = "Ask for all views again";
+export const PACKAGE_REDO_LINK = "Regenerate";
 
 /** The separator between the words and the price. Aria-hidden in the row. */
 export const PACKAGE_REDO_SEPARATOR = "·";
