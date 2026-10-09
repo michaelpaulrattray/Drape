@@ -52,7 +52,7 @@ import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
   ANNUAL_CHARGE_SENTENCE,
-  ANNUAL_CREDITS_ARRIVE_SENTENCE,
+  ANNUAL_ALLOWANCE_ARRIVES_SENTENCE,
   YEARLY_SWITCH_ALLOWANCE_SENTENCE,
   CANCEL_ANY_TIME_SHORT,
   CANCELLED_PLAN_GRACE_DAYS,
@@ -158,9 +158,9 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
   it("#2152 (relay repair 4) — the add-credits yearly switch no longer says the year's credits land with the payment", () => {
     const modal = read("client/src/features/billing/AddCreditsModal.tsx");
     expect(modal).not.toContain("the year's credits land with the payment");
-    expect(modal).toContain("your new billing year starts now. ${ANNUAL_CREDITS_ARRIVE_SENTENCE}`");
+    expect(modal).toContain("your new billing year starts now. ${ANNUAL_ALLOWANCE_ARRIVES_SENTENCE}`");
     /* The half it uses is the approved CPM:2268 sentence's own second half. */
-    expect(ANNUAL_CHARGE_SENTENCE.endsWith(ANNUAL_CREDITS_ARRIVE_SENTENCE)).toBe(true);
+    expect(ANNUAL_CHARGE_SENTENCE.endsWith(ANNUAL_ALLOWANCE_ARRIVES_SENTENCE)).toBe(true);
   });
 
   it("#2152 — the 30 in every sentence IS the deadline the server stamps (derived, not mirrored)", () => {

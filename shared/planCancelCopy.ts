@@ -102,9 +102,9 @@ export const RENEWAL_BALANCE_SENTENCE =
  * CHARGED once a year and its credits ARRIVE month by month (his ruling on
  * #2159, 2026-10-10: *"yearly credits apply month by month"*).
  */
-export const ANNUAL_CREDITS_ARRIVE_SENTENCE = "Your credits arrive each month.";
+export const ANNUAL_ALLOWANCE_ARRIVES_SENTENCE = "Your credits arrive each month.";
 export const ANNUAL_CHARGE_SENTENCE =
-  `Annual plans are charged once a year. ${ANNUAL_CREDITS_ARRIVE_SENTENCE}`;
+  `Annual plans are charged once a year. ${ANNUAL_ALLOWANCE_ARRIVES_SENTENCE}`;
 
 /**
  * #2152 — what a switch to yearly billing does to credits, said once for the
