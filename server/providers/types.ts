@@ -557,7 +557,24 @@ export type ReadPurpose =
    * authored card under `interpret` would price the interpreter for work it
    * never did.
    */
-  | "author";
+  | "author"
+  /**
+   * TWO LINES AUTHORED ABOUT A CAST, ONCE PER SIGN — N2b (#1242).
+   *
+   * Its own word rather than `author`, on `author`'s own argument: the prompt
+   * author and Re-imagine write prose for a SLICE, and filing this with them
+   * would make "what does a personality line cost us per Sign" unanswerable —
+   * which is the question the disappearing-technology law's third clause
+   * obliges this feature to answer out loud. One bucket, one road, one price.
+   *
+   * Not `describe` or `caption` either: those read a fact out of a picture for
+   * the record. This WRITES prose a customer is handed and may rewrite.
+   *
+   * ⚠ Unrelated to the candidate `personaLine` retired by #1241 — that was a
+   * tile LABEL on a sheet and its column is dropped. Named here so the two are
+   * not read as one thing coming back.
+   */
+  | "persona";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -575,6 +592,7 @@ export const READ_PURPOSES = Object.freeze([
   "classify",
   "gate",
   "author",
+  "persona",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

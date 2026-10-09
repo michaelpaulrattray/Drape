@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 192
+      "moduleCount": 193
     },
     {
       "id": "domain:castingV2",
@@ -3735,6 +3735,12 @@
     {
       "id": "module:server/castingV2/carriedGeometry.ts",
       "path": "server/castingV2/carriedGeometry.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castPersona.ts",
+      "path": "server/castingV2/castPersona.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -12260,6 +12266,10 @@
     {
       "id": "test:server/castingV2/carrySurvival.test.ts",
       "path": "server/castingV2/carrySurvival.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPersona.test.ts",
+      "path": "server/castingV2/castPersona.test.ts"
     },
     {
       "id": "test:server/castingV2/castProjection.test.ts",
@@ -25883,6 +25893,26 @@
     {
       "from": "module:server/castingV2/castingIntent.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {

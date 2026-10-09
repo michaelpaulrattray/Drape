@@ -1,0 +1,80 @@
+-- PERSONALITY AND VOICE, BORN AT SIGN — N2b, card #1242. Five additive columns.
+--
+-- ============================================================================
+-- WHAT A CUSTOMER GETS
+-- ============================================================================
+--
+-- She signs a cast and the cast's page carries two short lines she did not have
+-- to write: who this person is on camera (posture, gaze, tempo, hands) and how
+-- they sound. Both arrive badged as a draft and both are hers to rewrite in
+-- place, free. Nothing is added before the Sign button and no question is asked
+-- on the way there — his brief's first condition.
+--
+-- ============================================================================
+-- WHY FIVE COLUMNS AND NOT TWO
+-- ============================================================================
+--
+-- `personality` and `voice` hold the text. The other three exist so the DRAFT
+-- BADGE is DERIVED rather than stored, which is his brief's own instruction:
+--
+--   a line is a draft  ⇔  it was drafted and has not since been edited
+--
+-- `personaDraftedAt` is written once, by the one derivation inside the mint.
+-- `personalityEditedAt` and `voiceEditedAt` are written by her edit. A boolean
+-- `isDraft` would be a second fact about the same thing, and the badge would
+-- then survive an edit that forgot to clear it (working law 4 — a second list
+-- shadowing a source of truth always drifts from it).
+--
+-- TWO EDIT STAMPS, NOT ONE, and that is a product fact rather than tidiness:
+-- the two lines are two separate cards on her page, so rewriting who she is
+-- must not quietly un-badge how she sounds.
+--
+-- ============================================================================
+-- NULLABLE, AND WHAT THAT MEANS FOR THE ROWS THAT EXIST
+-- ============================================================================
+--
+-- Every column is nullable with no default, so MySQL leaves all existing rows
+-- NULL. NULL is the truthful value for all of them: no cast signed before this
+-- was ever given these lines, and the projection reads an absent line as
+-- absent — never as an empty card that looks like a feature that broke. Casts
+-- signed before N2b show no personality card at all, which is correct; this is
+-- deliberately NOT backfilled, because deriving a line for an old cast would
+-- spend house money on every cast ever signed to answer a question nobody
+-- asked.
+--
+-- ⚠ `migration-before-code` also asks the INSERT side: a new column on a
+-- written table has to be in every INSERT, or be defaulted. `models` is
+-- inserted in exactly THREE places, read at the code on this branch rather
+-- than assumed:
+--
+--   server/db/castingV2Sign.ts:408       (the Sign mint)
+--   server/casting/evidence/evidenceFork.ts:355  (the evidence fork)
+--   server/db/models.ts:30               (the legacy create, spreading InsertModel)
+--
+-- The first two name their columns explicitly and name none of these five; the
+-- third spreads a typed `InsertModel`, where all five are optional. So no
+-- INSERT needs a line changed, and none breaks.
+--
+-- ============================================================================
+-- WHOSE WORDS THESE ARE
+-- ============================================================================
+--
+-- CREATIVE CONTENT about a customer's cast, the same family as `masterPrompt`
+-- and under the same founder ruling (2026-07-25): never outside the owning
+-- account. No staff projection carries them — the metadata-only boundary
+-- applies to these exactly as it applies to the prompt — and nothing reads them
+-- to build a prompt anywhere until she has seen them (law 9: the vision read
+-- proposes, her eye rules).
+--
+-- PURELY ADDITIVE. Five columns, one table. No row is rewritten, no index
+-- moves, no existing column changes — so `scripts/lib/ceremonyAutoApply.mts`
+-- recognises every statement and no ceremony reaches the founder.
+ALTER TABLE `models` ADD COLUMN `personality` text;
+--> statement-breakpoint
+ALTER TABLE `models` ADD COLUMN `voice` text;
+--> statement-breakpoint
+ALTER TABLE `models` ADD COLUMN `personaDraftedAt` timestamp;
+--> statement-breakpoint
+ALTER TABLE `models` ADD COLUMN `personalityEditedAt` timestamp;
+--> statement-breakpoint
+ALTER TABLE `models` ADD COLUMN `voiceEditedAt` timestamp;

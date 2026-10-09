@@ -1009,6 +1009,106 @@ export type SignedCastLocation = {
 };
 
 /**
+ * WRITE THE TWO DRAFTED LINES ONTO THE CAST — N2b (#1242).
+ *
+ * Called once, from inside the package mint, with whatever the reader came back
+ * with. `personaDraftedAt` is stamped in the same statement as the text, which
+ * is what makes the draft badge a question asked of the row rather than a flag
+ * somebody has to remember to set.
+ *
+ * ⚠ **THE OWNER IS IN THE `WHERE`, NOT IN A CHECK BEFORE IT** (invariant 1).
+ * There is no read-then-write here to race: one statement, scoped by owner and
+ * id together, and a row that is not hers is not updated.
+ *
+ * ⚠ **IT NEVER OVERWRITES A LINE SHE HAS EDITED.** The mint runs once per Sign
+ * so today there is nothing to overwrite — but the recovery sweep can re-enter
+ * a Sign whose process died, and a second derivation landing on top of a line
+ * she had already rewritten would be this feature deleting a customer's words.
+ * The two `isNull(...EditedAt)` terms are that guard, in the statement, and
+ * `castPersonaWrite.test.ts` drives both directions.
+ *
+ * Returns whether a row moved, so a caller can log the miss rather than assume.
+ */
+export async function writeCastPersonaLines(input: {
+  userId: number;
+  modelId: number;
+  personality: string;
+  voice: string;
+  now?: Date;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const now = input.now ?? new Date();
+  const db = await getDb();
+
+  const written = await db
+    .update(models)
+    .set({
+      personality: input.personality,
+      voice: input.voice,
+      personaDraftedAt: now,
+    })
+    .where(and(
+      eq(models.id, input.modelId),
+      eq(models.userId, input.userId),
+      isNull(models.deletedAt),
+      /* Her words win. A redraft never lands on a line she has rewritten. */
+      isNull(models.personalityEditedAt),
+      isNull(models.voiceEditedAt),
+    ));
+
+  return affectedRows(written) > 0;
+}
+
+/** Which of the two lines an edit is about. */
+export type CastPersonaLineKind = "personality" | "voice";
+
+/**
+ * SHE REWRITES ONE OF THE TWO LINES — N2b's edit (#1242).
+ *
+ * Free, and deliberately not a generation operation: no credits, no lock, no
+ * operation row. His brief — *"editing is free and clears the badge"*.
+ *
+ * ⚠ **THE BADGE CLEARS BY ARITHMETIC, NOT BY A SECOND WRITE.** Stamping
+ * `…EditedAt` is the whole of "clears the badge", because the badge is derived
+ * as *drafted and not since edited*. Nothing has to remember to unset a flag,
+ * which is the failure working law 4 names: the flag that survives the edit.
+ *
+ * ⚠ **ONE LINE AT A TIME, AND THE OTHER ONE IS NOT TOUCHED.** The two lines are
+ * two cards on her page; rewriting who she is must not un-badge how she sounds.
+ *
+ * Returns false when no row was hers — the caller turns that into the refusal,
+ * so the decision about what to say lives at the entrance and not in the query.
+ */
+export async function editCastPersonaLine(input: {
+  userId: number;
+  modelId: number;
+  line: CastPersonaLineKind;
+  text: string;
+  now?: Date;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const now = input.now ?? new Date();
+  const db = await getDb();
+
+  const patch = input.line === "personality"
+    ? { personality: input.text, personalityEditedAt: now }
+    : { voice: input.text, voiceEditedAt: now };
+
+  const written = await db
+    .update(models)
+    .set(patch)
+    .where(and(
+      eq(models.id, input.modelId),
+      eq(models.userId, input.userId),
+      isNull(models.deletedAt),
+    ));
+
+  return affectedRows(written) > 0;
+}
+
+/**
  * Find the Cast a Sign operation created, if it created one.
  *
  * The existence of this row is the proof the durable boundary committed — it is
