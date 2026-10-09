@@ -2260,3 +2260,156 @@ hand-run 24 minutes before this one began (`foreman-20261009-2312`): bundle
 budget 267.2 kB gzip against 290.0, after-paint 243.7 against 280.0 — **cited as
 theirs, not re-taken as mine.** Interaction latency is still blocked on #1800's
 fixture. The gate readings above need none of this: they are CI's own logs.
+
+### L. Addendum — #2164's two levers, MEASURED (builder seat `seat1-20261010-005320`, 2026-10-10)
+
+Not patrol 7's own reading. Run 7 filed **#2164** naming two levers — the
+isolation port (growth) and cost-weighted sharding (imbalance) — and
+deliberately chose neither; this is the measurement that chooses, taken by the
+builder seat that took the card. §H above is the before and is unchanged.
+
+**It chose a THIRD thing, which the card listed and run 7 did not expect to
+win: one more shard.** It is 3.4x the prize of the best cost-weighting that
+could ever exist, and it is two jobs' worth of YAML.
+
+#### L.1 · Method — CI's own logs, not this box, and a simulator with controls
+
+⚠ **The local box is not admissible for this question and §K.1 is why.** It runs
+the suite at ~8.9x parallelism against the gate's 2.5x, which is how #1799's
+local bench read a 42% gate rise as flat. ⚠ **And it could not have been used
+tonight anyway: #2148 IS STILL OPEN AND THE SHARED INSTALL IS STILL SKEWED** —
+read at the bytes at 01:1xZ, `node_modules/cookie` is a symlink into
+`.pnpm/cookie@1.0.2` while `pnpm-lock.yaml` pins **2.0.1**, and `cookie@2.0.1`
+is not in `.pnpm` at all. Seven files are red on `main` on this machine for that
+one reason (`googleAuth`, `sessionCookieHeaderRead`, `sessionLookupFailure`,
+`sessionFailureRoutes`, `useAuth`, `typecheckGate`, `atlasCommitHook`), and two
+of them are *inflated* by it — `googleAuth` took **210.6 s** locally against
+**1.4 s** in CI. Run 7's close said the install "was about to be replaced"; it
+has not been. A duration read off this box would have been 37% one broken file.
+
+So both readings come from **CI run `37945774253`** (a green `gate.yml` run on
+`main`, 2026-10-09 — the same population §H measured):
+
+1. **Per-file `tests` cost for all 1,070 files**, scraped from the two shards'
+   own reporter lines. ⚠ **Its control is internal and exact:** the scrape sums
+   to **289.0 s** and **429.6 s**, against the `Duration` lines' printed
+   `tests 289.04s` and `tests 429.63s`. 0 unmatched candidate lines.
+2. **A reimplementation of `BaseSequencer.shard` + `calculateShardRange`**, read
+   out of the bytes of `node_modules/vitest/dist/chunks/coverage.DM_a_rWm.js`
+   (vitest 4.1.11) rather than from the docs.
+
+⚠ **Two things that reading settles, and the first would have invalidated the
+whole model if it had gone the other way.** `shard()` builds its key as
+`resolve(slash(root), slash(moduleId)).slice(root.length)` — and `resolve` is
+**`pathe`'s**, not `node:path`'s, so it is forward-slashed on every platform and
+shard membership is identical on Windows and Linux. And the slice is by **equal
+FILE COUNT** over a sha1-sorted list: there is no cost weighting anywhere in it,
+and the within-shard `sort()` falls back to **file size**, because CI's duration
+cache is empty on a fresh checkout.
+
+**Controls on the simulator, before any prediction off it was believed (working
+law 2):**
+
+| control | result |
+|---|---|
+| reproduces CI's real `unit-tests-1` membership | **yes** — 535/535, symmetric difference **0** |
+| reproduces CI's real `unit-tests-2` membership | **yes** — 535/535, symmetric difference **0** |
+| NEGATIVE: hashing the path *without* its leading slash reproduces it | **no** (as it must not) |
+| the wall model against the real job seconds | `unit-tests-2` **307 s modelled / 299 s measured** (+2.6%); `unit-tests-1` 251 / 266 (−5.7%) |
+
+The wall model is `26 s setup + (import + tests) / 2.51`, where 26 s is §K.4's
+measured per-job setup and 2.51x is this run's own parallelism (1,266 worker-
+seconds over 532 s of job wall). Import is taken as 0.512 s x files, which needs
+no assumption beyond the average: shards carry equal file counts, and CI's own
+split was 266.9/280.8 on 535/535 — 2.5% off even.
+
+#### L.2 · The answer, at job grain
+
+| scheme | shard `tests` | slowest job | runner-seconds |
+|---|---|---|---|
+| **two shards (as it was)** | 289.0 / 429.6 | **299 s measured**, 307 modelled | 557 s |
+| **THREE shards** | 212.5 / 279.2 / 227.0 | **210 s — −30%** | 583 s (**+4.7%**) |
+| four shards | 158.8 / 131.3 / 254.0 / 174.6 | 182 s | 609 s (+9.3%) |
+| perfect cost-weighting, two shards | — | **279 s — the CEILING on lever 2** | 557 s |
+| perfect cost-weighting, three shards | — | 195 s | 583 s |
+
+**1 · LEVER 2 (imbalance) IS REFUSED, AND BY A BIGGER NUMBER THAN DRIFT.** The
+card priced perfect balance at ~24 s and expected drift to be the objection — a
+committed per-file weight list is a second list shadowing the tree (working law
+4), and vitest reads no such thing, so it would need a custom `sequencer`. **It
+is refused on the prize instead: longest-processing-time packing with PERFECT
+per-file knowledge — which no implementation can beat — buys 28 s (9%), against
+the third shard's 89 s (30%).** At three shards it is 16 s. Cost-weighting is
+the smaller lever at every width, and it stays smaller.
+
+**2 · THE FOURTH SHARD IS MEASURED AND DECLINED, with its numbers here so the
+next run need not re-take them.** Its extra 28 s comes with a worse spread (the
+heaviest shard **42%** above the mean against **31%** at three) and a fourth
+parallel job on the one Actions budget every seat and the crew share. And
+`gate-checks` at **151 s** is the next floor under the gate wall, so the headroom
+past three is both small and getting lumpier.
+
+**3 · LEVER 1 (the isolation port) IS RE-SIZED AND STILL REFUSED for this
+card.** `import` is **547.7 s of 1,266 worker-seconds — 43%**, down from run 6's
+46% not because import shrank but because `tests` grew faster. At §K.2's measured
+−81.9% it would take the three-shard wall from 210 s to **151 s**: real, and
+**60 s** rather than the headline the card implies. The price is §K.3's ~60
+suites made isolation-independent — and the risk it carries is not porting
+effort, it is that a non-isolated suite can pass for the WRONG reason, with
+leaked state making an assertion true. That is a trade against the gate's own
+trustworthiness, and it is not made inside a sharding card.
+
+#### L.3 · What the measurement found that was on NEITHER lever, and is bigger than both
+
+| | `tests` |
+|---|---|
+| all 1,070 files | **719 s** |
+| the **ten** heaviest | **355.8 s — 50%**, on 0.9% of the files |
+| `server/capabilityAtlas.test.ts` alone | **128.9 s — 17.9%** |
+| the 800 files that finish under 100 ms | 21.3 s — 3% |
+
+Per-file: p50 **27 ms**, p75 105 ms, p90 0.70 s, p99 11.8 s, max 128.9 s.
+
+**The suite has no broad cost problem. It has ten files, and not one of them is
+a product test** — every one is a guard on the crew's own tooling, slow for the
+same reason: it drives a real `git`, a real `tsc`, or another child process.
+That is precisely the loop §H named, and this is where it lands.
+
+⚠ **And one file is a HARD FLOOR under every scheme in L.2.** 128.9 s cannot be
+divided, so no sharding of any width can put a shard below **~78 s**. Filed as
+**#2172**, with the ten and the questions to ask of each.
+
+#### L.4 · What shipped, and where its own after is read
+
+`gate.yml` only: `unit-tests-3`, a byte-identical copy of its sibling, and the
+three denominators moved to `/3`. **No TypeScript at all** — `unitShardJobNames`
+derives the names from the workflow, which is what #1811 built it for, and every
+arm in `server/prMergeOrder.test.ts` is derived from that list and went green on
+three without an edit.
+
+One arm was ADDED, and it is the price of the copy rather than tidiness: the
+three forty-line blocks are maintained by hand, every field in them is
+load-bearing, and exactly **one** of them had a guard (`fetch-depth`). A copy
+that lost the `ref:` pointing at `resolve`'s merge ref would gate the branch head
+instead of the merge with main — PR #87's review finding 5, a job that passes on
+bytes nobody proposed — and it would go **green**, because every other reading
+here is derived from the job NAMES and a drifted body keeps its name. Driven
+under sabotage, each case anchored inside the block it damages and its landed
+diff printed:
+
+| case | arm that reddened |
+|---|---|
+| 0 · no edit (control) | none — green |
+| 1 · `unit-tests-3` loses `persist-credentials: false` | the new drift arm |
+| 2 · `unit-tests-2` on node 22, siblings on 24 | the new drift arm |
+| 3 · `--shard=3/4` beside `1/3` and `2/3` | #1811's gap/overlap arm **and** the drift arm |
+
+⚠ **Case 1's first attempt proves its own method note:** the anchor was found by
+counting `persist-credentials: false` across the file and taking the third,
+which is `unit-tests-2`'s — `gate-checks` holds one too. A containment assertion
+caught it; without one it would have edited the wrong job, survived green, and
+read as *the guard does not catch this*.
+
+**The after is NOT read on this card's own PR** (its diff is the change). It is
+read on the next ordinary PR's `gate.yml` run, at job grain, against the **299 s
+measured** above — run 8's §H is where it belongs.

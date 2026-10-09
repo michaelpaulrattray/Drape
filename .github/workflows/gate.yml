@@ -336,8 +336,9 @@ jobs:
       - name: Capability Atlas (static)
         run: pnpm capability:check
 
-      # ⚠ THE UNIT SUITE IS NOT HERE ANY MORE — IT IS `unit-tests-1` AND
-      # `unit-tests-2` BELOW (#1811, Machinist run 6's #1799).
+      # ⚠ THE UNIT SUITE IS NOT HERE ANY MORE — IT IS `unit-tests-1`,
+      # `unit-tests-2` AND `unit-tests-3` BELOW (#1811, Machinist run 6's
+      # #1799; the third shard is #2164, Machinist run 7).
       #
       # It was 402.5 s of this job's 533.5 s (median of ten green runs,
       # 2026-10-02) and three quarters of the gate every seat waits on. Split
@@ -350,7 +351,7 @@ jobs:
       # is off (#460) and every merge here is made by an admin, so a job that
       # `scripts/lib/prMergeOrder.mts` does not read by name binds no merge —
       # the "installed and never connected" shape #1034 wrote its warning
-      # about. `unitShardJobNames` derives both names from THIS file and
+      # about. `unitShardJobNames` derives every name from THIS file and
       # `PrReading.unitShards` carries their states, so a red shard refuses a
       # merge and an EMPTY derivation refuses the run.
 
@@ -383,23 +384,52 @@ jobs:
 
   # THE UNIT SUITE, SHARDED (#1811 out of #1799, Machinist run 6).
   #
-  # Two explicit jobs rather than a matrix, and that is a deliberate choice
-  # rather than verbosity: `extractJobNames` (scripts/lib/prMergeOrder.mts)
-  # reads a workflow's job names STATICALLY, and a matrix `name:` carrying
+  # Explicit jobs rather than a matrix, and that is a deliberate choice rather
+  # than verbosity: `extractJobNames` (scripts/lib/prMergeOrder.mts) reads a
+  # workflow's job names STATICALLY, and a matrix `name:` carrying
   # `${{ matrix.shard }}` would reach it uninterpolated — so the merge tool's
   # startup assertion, the one thing standing between a renamed job and a
   # silent permissive read, would need a second reader that expands matrices.
-  # Two literal names cost four lines and keep every existing derivation
+  # Literal names cost four lines each and keep every existing derivation
   # exactly as it is.
   #
-  # ⚠ THE STEP NAME STAYS EXACTLY `Unit tests`, in both. The Machinist reads
-  # the gate at step grain (`gh run view --json jobs`), and run 6's before
-  # figures — the ones this card's after will be compared against — are keyed
-  # on that string. Renaming it would silently end that series.
+  # ⚠ THE STEP NAME STAYS EXACTLY `Unit tests`, in every shard. The Machinist
+  # reads the gate at step grain (`gh run view --json jobs`), and run 6's and
+  # run 7's before figures — the ones a later after will be compared against —
+  # are keyed on that string. Renaming it would silently end that series.
   #
-  # The shard COUNT lives here and nowhere else: the merge tool derives both
-  # names from this file, so a third shard is two jobs' worth of YAML and no
+  # The shard COUNT lives here and nowhere else: the merge tool derives every
+  # name from this file, so a fourth shard is one job's worth of YAML and no
   # TypeScript at all.
+  #
+  # ⚠ THERE ARE THREE OF THEM AS OF #2164 (Machinist run 7), AND THE THIRD WAS
+  # CHOSEN OVER THE CARD'S OTHER TWO OPTIONS BY MEASUREMENT — numbers below
+  # read off CI run `37945774253` (green, 2026-10-09), whose own reporter lines
+  # give the `tests` cost of all 1,070 files, plus a reimplementation of
+  # vitest 4.1.11's `BaseSequencer.shard` validated against that run's real
+  # membership (symmetric difference 0 on both shards; the record is
+  # `docs/MACHINIST_LEDGER.md` §L):
+  #
+  #   two shards (as it was)   slowest job  299 s measured / 307 s modelled
+  #   THREE shards             slowest job  210 s modelled   — −30%
+  #   four shards              slowest job  182 s modelled
+  #   perfect cost-weighting   slowest job  279 s at two shards — the CEILING
+  #                                         on the card's other option, 9%,
+  #                                         against the third shard's 30%
+  #
+  # Runner-seconds 557 → 583, +4.7% — not doubled, because only the 26 s of
+  # per-job setup is paid again. The fourth shard was measured and DECLINED:
+  # its extra 28 s comes with a worse spread (the heaviest shard 42% above the
+  # mean against 31% at three) and a fourth parallel job on the one Actions
+  # budget every seat and the crew share, and `gate-checks` at 151 s is the
+  # next floor under the gate wall anyway.
+  #
+  # ⚠ AND NO WIDTH OF SHARD REACHES THE REAL COST. `tests` is 719 s of the
+  # suite's 1,266 worker-seconds and HALF of it sits in ten files — none a
+  # product test, every one a crew-tooling guard driving real git, tsc or a
+  # child process — with `server/capabilityAtlas.test.ts` alone at 128.9 s,
+  # 17.9% of every test-second in the suite. That file is a hard floor: no
+  # sharding of any width can put a shard below ~78 s. #2172.
   unit-tests-1:
     name: unit-tests-1
     needs: resolve
@@ -443,7 +473,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Unit tests
-        run: pnpm test --shard=1/2
+        run: pnpm test --shard=1/3
 
   unit-tests-2:
     name: unit-tests-2
@@ -488,7 +518,52 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Unit tests
-        run: pnpm test --shard=2/2
+        run: pnpm test --shard=2/3
+
+  unit-tests-3:
+    name: unit-tests-3
+    needs: resolve
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # A failed resolve must redden this required check, never skip it.
+      - name: Refuse unless resolve succeeded
+        if: ${{ needs.resolve.result != 'success' }}
+        env:
+          RESULT: ${{ needs.resolve.result }}
+        run: |
+          echo "::error::resolve did not succeed ($RESULT) — this run gates nothing."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The same merge ref `gate-checks` tests — see the header.
+          ref: ${{ needs.resolve.outputs.ref }}
+          # ⚠ FULL HISTORY, AND THE UNIT SUITE IS WHY — NOT THE SECRET SCAN.
+          # `gate-checks` carries `fetch-depth: 0` for its gitleaks walk, and
+          # that happened to serve the test step sitting in the same job. It
+          # was load-bearing for BOTH and nothing said so: `quietEdition.test.ts`
+          # runs `git show <commit>~1:…` over real past editions and
+          # `briefingConformance.test.ts` runs `git grep`/`git rev-list` at
+          # historical commits. On the default depth-1 clone those commits do
+          # not exist and both suites fail — measured on this card's first gate
+          # run (#1816), 2 files red out of 983.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test --shard=3/3
 
   founder-gate:
     name: founder-gate
