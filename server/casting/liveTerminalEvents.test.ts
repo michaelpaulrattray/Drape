@@ -469,19 +469,65 @@ describe("each live road records AFTER its settlement, read at the bytes", () =>
     return source;
   };
 
-  it("sign holds the event and sends it below the catch that hands over to the sweep", () => {
+  /**
+   * Where a CODE LINE sits in a block, and it REFUSES rather than returning -1.
+   *
+   * ⚠ Two reasons, both paid for on this arm:
+   *
+   *   1. **`indexOf` finds prose.** A docblock quoting the line it describes —
+   *      ``…the tail is `if (deliveredEvent) recordDirectOperationDelivered(…)`
+   *      and N2b inserted…`` — is an earlier match than the statement, so a
+   *      comment ABOUT the order could fail an arm about the order. That is
+   *      what happened when finding 4 on PR #2114 was repaired. Anchoring to the
+   *      start of a line with only indentation in front means a backticked
+   *      quotation inside prose can never be mistaken for the statement.
+   *   2. **-1 orders before everything.** `indexOf` returning -1 made every
+   *      `toBeLessThan` below pass vacuously, so this arm would have gone quiet
+   *      the day a name it reads was renamed — rather than saying so.
+   */
+  const at = (block: string, line: RegExp): number => {
+    const found = block.search(line);
+    if (found < 0) {
+      throw new Error(`this arm cannot find ${line} — the shape it asserts has moved, so it must be re-read`);
+    }
+    return found;
+  };
+
+  it("sign records after the finalizer settled it, and keeps its backstop below the catch", () => {
     const source = read("server/castingV2/signService.ts");
     const fn = source.slice(source.indexOf("async function completeSignPackage"));
     const body = fn.slice(0, fn.indexOf("\n}\n"));
-    /* Assigned inside the try after the finalizer, sent after the catch. Both
-       halves, because either one alone is the defect: assigning and never
-       sending records nothing, sending inside the try records a park. */
-    expect(body.indexOf("await finalizeGenerationOperationSuccess("))
-      .toBeLessThan(body.indexOf("deliveredEvent = {"));
-    expect(body.indexOf("deliveredEvent = {"))
-      .toBeLessThan(body.indexOf("if (deliveredEvent) recordDirectOperationDelivered("));
-    expect(body.indexOf("} catch (error) {"))
-      .toBeLessThan(body.indexOf("if (deliveredEvent) recordDirectOperationDelivered("));
+
+    const settles = at(body, /^\s+await finalizeGenerationOperationSuccess\(/m);
+    const composed = at(body, /^\s+deliveredEvent = \{$/m);
+    const records = at(body, /^\s+recordDirectOperationDelivered\(deliveredEvent\);$/m);
+    const catches = at(body, /^\s+\} catch \(error\) \{$/m);
+    const backstop = at(body, /^\s+if \(deliveredEvent\) recordDirectOperationDelivered\(deliveredEvent\);$/m);
+
+    /* THE RULE, which is this describe's own title: the recorder comes after the
+       settlement. A recorder before it would send an event for a settlement that
+       never happened. */
+    expect(settles).toBeLessThan(composed);
+    expect(composed).toBeLessThan(records);
+
+    /*
+      ⚠ **AND THE HAPPY PATH RECORDS INSIDE THE TRY, WHICH THIS ARM USED TO
+      FORBID — read it before moving it back.** The old shape asserted the
+      recording was below the catch, with the reason *"sending inside the try
+      records a park"*. That reason does not hold at THIS point in this function:
+      `finalizeGenerationOperationSuccess` has already returned, so the operation
+      is terminal (its `WHERE status = 'running'` matched, and it throws
+      otherwise) and no later throw can hand it to the sweep to settle again.
+      What the old placement did instead was make the receipt wait on N2b's
+      persona read — a 75 s deadline behind a queue of concurrency 1 — which
+      delayed every delivered event under load and lost it to a deploy inside
+      that window (the relay's finding 4 on PR #2114).
+
+      The rule is unchanged and still proven above. What moved is only WHERE
+      after the settlement, and the two orderings below keep the backstop honest.
+    */
+    expect(records).toBeLessThan(catches);
+    expect(catches).toBeLessThan(backstop);
   });
 
   it("the whole-Cast restore records after the transaction committed", () => {
