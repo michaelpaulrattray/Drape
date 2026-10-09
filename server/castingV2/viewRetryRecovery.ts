@@ -29,14 +29,24 @@ import {
   finalizeGenerationOperationFailure,
   finalizeGenerationOperationSuccess,
 } from "../db/generationOperations";
-import { pressViewLanded, retriedViewLanded, viewReplacementInFlight } from "../db/castingV2ViewRetry";
+import {
+  pressViewLanded,
+  readPressRefusedSheetRefund,
+  retriedViewLanded,
+  viewReplacementInFlight,
+} from "../db/castingV2ViewRetry";
 import { getDb } from "../db/connection";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/viewRetryRecovery");
 
 export type ViewRetryRecoveryOutcome =
-  | { type: "durable_success"; chargedCredits: number }
+  /**
+   * A picture landed. `refundedCredits` is present only when something WAS
+   * given back beside it — a Regenerate's shares for a refused sheet (#2133) —
+   * so the receipt the sweep seals carries the money that actually moved.
+   */
+  | { type: "durable_success"; chargedCredits: number; refundedCredits?: number }
   | { type: "paid_failure"; chargedCredits: number; refundedCredits: number }
   /** Terminal, and the user was never charged — so nothing is owed back. */
   | { type: "free_failure"; reason: string }
@@ -126,6 +136,23 @@ export type ViewRetryRecoveryDependencies = {
     modelId: number;
     operationId: string;
   }) => Promise<boolean>;
+  /**
+   * WHAT IS OWED BACK WHEN SOMETHING DID LAND — asked only then (#2133).
+   *
+   * ⚠ **ABSENT MEANS ZERO, WHICH IS HIS FLAT RULE AND EVERY ROAD'S ANSWER
+   * BEFORE THIS EXISTED.** Only the Regenerate's press supplies it: #2127
+   * refunds one share per view a sheet the image provider refused would have
+   * made, and those shares are owed even when the other sheet delivered. The
+   * press reads them off its slots' sealed receipts
+   * (`readPressRefusedSheetRefund`), the same reading the live process pays
+   * from, so the two arrive at one amount under one reference.
+   */
+  refusedSheetRefund?: (input: {
+    userId: number;
+    modelId: number;
+    operationId: string;
+    chargedCredits: number;
+  }) => Promise<number>;
 };
 
 /**
@@ -147,6 +174,12 @@ export type ViewReplacementWording = {
   readonly paidSentence: string;
   /** Said on a swept operation that never charged, so nothing is owed. */
   readonly freeSentence: string;
+  /**
+   * The description on a refund paid BESIDE a delivery — a Regenerate's
+   * refused-sheet shares (#2133). Only a road that supplies
+   * `refusedSheetRefund` can reach it.
+   */
+  readonly refusedSheetRefundDescription?: string;
 };
 
 /** The customer's sentence for a swept Try again — one wording, two writers. */
@@ -267,6 +300,16 @@ export async function recoverCastingV2PackageRedoOperation(
 }
 
 /**
+ * THE TWO LEDGER DESCRIPTIONS A REGENERATE'S PRESS REFUND CAN CARRY — said
+ * once here, written by both the live press (`packageRedoService.ts`) and this
+ * sweep (#2133), so a refund reads the same whichever of them paid it.
+ */
+export const PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION =
+  "No views arrived when you asked for all of them again";
+export const PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION =
+  "Some views didn't arrive when you asked for all of them again";
+
+/**
  * The press's words (#1903, the flat price).
  *
  * ⚠ **A PRESS SPEAKS ABOUT THE WHOLE ASK, not about one view**, which is
@@ -276,7 +319,8 @@ export async function recoverCastingV2PackageRedoOperation(
  * plainly.
  */
 export const PACKAGE_REDO_PRESS_RECOVERY_WORDING: ViewReplacementWording = {
-  refundDescription: "No views arrived when you asked for all of them again",
+  refundDescription: PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION,
+  refusedSheetRefundDescription: PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
   paidSentence: "None of the views arrived when you asked for them again. Your credits were returned.",
   freeSentence: "None of the views arrived when you asked for them again. You were not charged.",
 };
@@ -326,11 +370,36 @@ export async function recoverFlatPressCharge(
  * flat-price adjudication, with the redo's own words.
  */
 export async function recoverCastingV2PackageRedoPressOperation(
-  operation: RecoverableViewRetryOperation,
+  /*
+    ⚠ **THE PRESS'S OWN REQUEST ID IS REQUIRED (#2133)** — its slots are
+    claimed under ids derived from it, and the refused-sheet read below finds
+    them by that derivation. The sweep spreads the whole operation row in, so
+    the field is already there; the type makes a caller that drops it a
+    compile error rather than a press whose shares read as zero.
+  */
+  operation: RecoverableViewRetryOperation & { clientRequestId: string },
   options: ViewRetryRecoveryDependencies = {},
 ): Promise<ViewRetryRecoveryOutcome> {
   return recoverFlatPressCharge(operation, {
     ...options,
+    /*
+      ⚠ **THE SHARES A REFUSED SHEET IS OWED, READ OFF THE SLOTS' SEALED
+      RECEIPTS (#2133).** A press that died after a sheet was refused twice and
+      after another view landed used to be settled here as "something landed,
+      nothing owed" — the refusal lived only in the dead process's memory. The
+      refused slot now writes it on its own receipt, and this reads it with the
+      same derivation the live press pays from, so a press the live process
+      already refunded reads as already paid and a press it did not is paid
+      here, once, under the press's own reference.
+    */
+    refusedSheetRefund: options.refusedSheetRefund ?? (async (input) => (
+      await readPressRefusedSheetRefund({
+        userId: input.userId,
+        modelId: input.modelId,
+        pressClientRequestId: operation.clientRequestId,
+        chargedCredits: input.chargedCredits,
+      })
+    ).owed),
     wording: options.wording ?? PACKAGE_REDO_PRESS_RECOVERY_WORDING,
     landed: options.landed ?? (async (input) => pressViewLanded({
       userId: input.userId,
@@ -538,10 +607,25 @@ async function adjudicate(
     the helper returns 0 exactly when a picture landed and `charged` exactly
     when none did.
   */
-  const refundOwed = flatPressRefundOwed({
-    chargedCredits: charged,
-    delivered: landed ? 1 : 0,
-  });
+  /*
+    ⚠ **AND THE ONE AMENDMENT, WHEN SOMETHING LANDED (#2133).** His flat rule
+    owes nothing back once a picture arrived, except #2127's shares for views a
+    sheet the image provider refused would have made. Only the Regenerate's
+    press supplies the reader; every other road gets zero, which is the flat
+    rule exactly. A total loss never asks it: the whole charge is owed, and the
+    shares are inside that whole rather than on top of it.
+  */
+  const refundOwed = landed && options.refusedSheetRefund
+    ? await options.refusedSheetRefund({
+        userId: operation.userId,
+        modelId: operation.modelId,
+        operationId: operation.id,
+        chargedCredits: charged,
+      })
+    : flatPressRefundOwed({
+        chargedCredits: charged,
+        delivered: landed ? 1 : 0,
+      });
 
   if (refundOwed <= alreadyRefunded) {
     /*
@@ -553,17 +637,36 @@ async function adjudicate(
       - it did not: the service refunded and then died before its receipt.
         The money is already back; only the row was left open.
     */
+    /*
+      - it landed and the live press already paid a refused sheet's shares
+        (#2133): the receipt says so, rather than reading as nothing back.
+    */
     return landed
-      ? { type: "durable_success", chargedCredits: charged }
+      ? {
+          type: "durable_success",
+          chargedCredits: charged,
+          ...(alreadyRefunded > 0 ? { refundedCredits: alreadyRefunded } : {}),
+        }
       : { type: "paid_failure", chargedCredits: charged, refundedCredits: alreadyRefunded };
   }
 
+  /*
+    ⚠ **ONE REFERENCE, AND IT IS WHAT MAKES A SECOND PAYER HARMLESS (#2133).**
+    The live press pays its refund under this same reference, with an amount
+    taken from the same reading. So if it pays between this read and this
+    write, the write below is a ledger duplicate, never a second refund; and an
+    amount that disagreed would be refused by the ledger and parked below,
+    never paid on top. That is why this road needs no re-read after a fence,
+    where the Sign (whose shares sit under per-slot references) did.
+  */
   const owed = refundOwed - alreadyRefunded;
   const wording = options.wording ?? VIEW_RETRY_RECOVERY_WORDING;
   const refund = await (options.refund ?? recordRefund)(
     operation.userId,
     owed,
-    wording.refundDescription,
+    landed
+      ? wording.refusedSheetRefundDescription ?? wording.refundDescription
+      : wording.refundDescription,
     chargeReference,
   );
   if (!refund.recorded) {
@@ -576,6 +679,18 @@ async function adjudicate(
       reason: "the refund did not record",
       chargedCredits: charged,
       refundedCredits: alreadyRefunded,
+    };
+  }
+  /*
+    Something landed and only the refused-sheet shares came back: the press
+    DELIVERED, so it is sealed as a success carrying the refund, not as a
+    failure that would tell the customer none of the views arrived.
+  */
+  if (landed) {
+    return {
+      type: "durable_success",
+      chargedCredits: charged,
+      refundedCredits: alreadyRefunded + refund.amount,
     };
   }
   return {
@@ -613,7 +728,7 @@ async function seal(
         operationId: operation.id,
         result: { outcome: "ready", recovered: true },
         chargedCredits: outcome.chargedCredits,
-        refundedCredits: 0,
+        refundedCredits: outcome.refundedCredits ?? 0,
         terminalStatus: "succeeded",
       });
       return outcome;
@@ -660,7 +775,7 @@ async function seal(
       type: "recovery_required",
       reason: "receipt did not seal after adjudication",
       chargedCredits: "chargedCredits" in outcome ? outcome.chargedCredits : 0,
-      refundedCredits: "refundedCredits" in outcome ? outcome.refundedCredits : 0,
+      refundedCredits: "refundedCredits" in outcome ? outcome.refundedCredits ?? 0 : 0,
     };
   }
 }

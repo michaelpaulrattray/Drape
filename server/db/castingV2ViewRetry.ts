@@ -30,17 +30,22 @@ import {
   castingCandidateVariants,
   castingCandidates,
   castingRolls,
+  creditTransactions,
   generationOperations,
   modelAssets,
   models,
 } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
+import { refundReferenceFor, type RefundOutcome } from "../casting/atomicCredits";
+import { refusedSheetViewRefund } from "../casting/flatPressCharge";
 import { identityStampFor } from "../casting/identity/anchorSelector";
 import {
   castViewSubjectHash,
+  derivedClientRequestId,
   VIEW_REPLACING_OPERATION_KINDS,
 } from "../casting/operationContract";
 import { getDb, withTransaction } from "./connection";
+import { addCreditsIn } from "./credits";
 
 /** A positive integer id, or a throw — the same assertion `castingV2Sign` makes
  *  at every entrance, said here because this module has its own. */
@@ -883,3 +888,198 @@ export async function viewReplacementInFlight(input: {
   a money-path condition nothing invokes is the dead control this repository
   keeps rediscovering months later.
 */
+
+/* ------------------------------------------------ a redo's refused sheets */
+
+/**
+ * WHAT A REDO SLOT'S RECEIPT SAYS WHEN ITS VIEW DID NOT ARRIVE (#2133).
+ *
+ * ⚠ **THE RECEIPT IS THE DURABLE RECORD OF A REFUSED SHEET, AND THAT IS ITS
+ * WHOLE POINT.** #2127 gave a Regenerate one share back per view that a sheet
+ * the image provider refused would have made, and decided it from what THIS
+ * process saw — after every slot had settled. A press that died between the
+ * second refusal and that line (a deploy lands on every merge, and the other
+ * sheet can take minutes) left the sweep nothing to read: it saw a landed
+ * view, owed nothing, and the customer kept no share. So the refused slot now
+ * says so on its own terminal receipt, the moment it settles, and both payers
+ * read that receipt rather than a belief.
+ *
+ * One writer and one reader of the key, both here, so the spelling cannot
+ * drift between the slot that writes it and the sweep that reads it.
+ */
+const REFUSED_BY_PROVIDER = "refusedByProvider" as const;
+
+export function packageRedoSlotFailedReceipt(input: {
+  castId: string;
+  angle: CastViewAngle;
+  refusedByProvider: boolean;
+}): Record<string, unknown> {
+  return {
+    castId: input.castId,
+    angle: input.angle,
+    outcome: "failed",
+    ...(input.refusedByProvider ? { [REFUSED_BY_PROVIDER]: true } : {}),
+  };
+}
+
+/** A redo slot's row as the refused-sheet reader needs it — status and receipt. */
+export type PackageRedoSlotRow = { status: string; result: unknown };
+
+export type PressRefusedSheets = {
+  /** Every slot this press claimed — the denominator of one share. */
+  promisedViews: number;
+  /** Slots whose sealed receipt records a sheet the provider refused. */
+  refusedViews: number;
+  /** One share per refused view, derived from what the press charged. */
+  owed: number;
+};
+
+/**
+ * WHAT A PRESS OWES FOR REFUSED SHEETS, FROM ITS SLOT ROWS ALONE (#2133).
+ *
+ * Pure, and the ONE place the live press and the sweep both take the amount
+ * from. That is what makes a second payment a ledger duplicate rather than a
+ * collision: both writers pay under the press's own refund reference, and an
+ * equal amount is the only thing the ledger's unique index absorbs quietly.
+ *
+ * ⚠ **ONLY A SEALED (`succeeded`) RECEIPT COUNTS.** A slot the sweep closed
+ * carries the sweep's receipt, never this one, and a slot still running has
+ * not said anything yet — neither is evidence of a refusal.
+ */
+export function refusedSheetRefundFromSlotRows(
+  rows: readonly PackageRedoSlotRow[],
+  chargedCredits: number,
+): PressRefusedSheets {
+  const promisedViews = rows.length;
+  const refusedViews = rows.filter((row) => {
+    if (row.status !== "succeeded") return false;
+    const result = row.result as Record<string, unknown> | null;
+    return result !== null
+      && typeof result === "object"
+      && result[REFUSED_BY_PROVIDER] === true;
+  }).length;
+  const share = refusedSheetViewRefund({ chargedCredits, promisedViews });
+  return { promisedViews, refusedViews, owed: share * refusedViews };
+}
+
+/**
+ * THE SLOT ROWS OF ONE PRESS, read by the ids the press DERIVED for them.
+ *
+ * A redo claims each slot under `derivedClientRequestId(press, angle)` — the
+ * same function, imported, so the claim and this read cannot come to disagree
+ * about which rows belong to which press. Every angle a Cast may own is asked
+ * for; only the ones this press claimed exist.
+ *
+ * ⚠ **A DATABASE THAT CANNOT ANSWER THROWS.** Both callers settle money from
+ * this, and "no rows" would read as "nothing refused" — the direction that
+ * keeps a customer's shares.
+ */
+export async function readPressRefusedSheetRefund(input: {
+  userId: number;
+  modelId: number;
+  pressClientRequestId: string;
+  chargedCredits: number;
+}): Promise<PressRefusedSheets> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) throw new Error("Database not available to read a redo's refused sheets");
+  const slotRequestIds = CAST_VIEW_ANGLES.map((angle) =>
+    derivedClientRequestId(input.pressClientRequestId, angle));
+  const rows = await db
+    .select({ status: generationOperations.status, result: generationOperations.result })
+    .from(generationOperations)
+    .where(and(
+      eq(generationOperations.userId, input.userId),
+      eq(generationOperations.modelId, input.modelId),
+      eq(generationOperations.kind, "castingV2.packageRedo"),
+      inArray(generationOperations.clientRequestId, slotRequestIds),
+    ));
+  return refusedSheetRefundFromSlotRows(rows, input.chargedCredits);
+}
+
+/** Thrown inside the press refund's transaction to roll it back as a fence. */
+class PressRefundFenced extends Error {}
+
+/**
+ * THE LIVE PRESS'S ONE REFUND, UNDER THE PRESS'S OWN FENCE (#2133) — the
+ * pattern #2127 settled for the Sign (`recordRefusedSheetSlotFailure`).
+ *
+ * The press row is taken `FOR UPDATE` on `running`, the reference is read in
+ * the same transaction, and the credit is written with `addCreditsIn` on THAT
+ * handle. A press the sweep has already sealed is out of `running`, so this
+ * writes nothing and answers `{ fenced: true }`: the sweep owns the money.
+ *
+ * ⚠ **IT DOES NOT REFUSE A PRESS THE SWEEP HAS ONLY STAMPED.** A deferred
+ * sweep pass stamps `recoveryAttemptedAt` on a healthy press and leaves it
+ * running (`commitRetriedViewAsset` says why the press is never that clause's
+ * subject), so fencing on the stamp would refuse the live process its own
+ * refund. What keeps the two writers from paying twice in the window before
+ * the sweep seals is that they pay under ONE reference with ONE derived
+ * amount, so the ledger's unique index lets exactly one of them land.
+ *
+ * A repeat already in the ledger is read and reported as a duplicate rather
+ * than thrown, because a duplicate insert inside this transaction would roll
+ * back with it.
+ */
+export async function recordPackageRedoPressRefund(input: {
+  userId: number;
+  pressOperationId: string;
+  amount: number;
+  description: string;
+  chargeReferenceId: string;
+}): Promise<{ fenced: true } | { fenced: false; refund: RefundOutcome }> {
+  assertPositiveId(input.userId, "userId");
+  const reference = refundReferenceFor(input.chargeReferenceId);
+  try {
+    return await withTransaction(async (tx) => {
+      const [press] = await tx
+        .select({ id: generationOperations.id })
+        .from(generationOperations)
+        .where(and(
+          eq(generationOperations.id, input.pressOperationId),
+          eq(generationOperations.userId, input.userId),
+          eq(generationOperations.kind, "castingV2.packageRedoPress"),
+          eq(generationOperations.status, "running"),
+        ))
+        .limit(1)
+        .for("update");
+      if (!press) throw new PressRefundFenced();
+
+      const [existing] = await tx
+        .select({ amount: creditTransactions.amount, type: creditTransactions.type })
+        .from(creditTransactions)
+        .where(and(
+          eq(creditTransactions.userId, input.userId),
+          eq(creditTransactions.referenceId, reference),
+        ))
+        .limit(1);
+      if (existing) {
+        return {
+          fenced: false as const,
+          refund: {
+            recorded: existing.type === "refund" && existing.amount === input.amount,
+            amount: input.amount,
+            duplicate: true,
+            reference,
+          },
+        };
+      }
+      const written = await addCreditsIn(
+        tx,
+        input.userId,
+        input.amount,
+        "refund",
+        input.description,
+        reference,
+      );
+      return {
+        fenced: false as const,
+        refund: { recorded: written.success, amount: input.amount, duplicate: false, reference },
+      };
+    });
+  } catch (error) {
+    if (error instanceof PressRefundFenced) return { fenced: true };
+    throw error;
+  }
+}

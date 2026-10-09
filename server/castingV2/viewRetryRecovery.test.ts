@@ -45,28 +45,46 @@ let assets: Array<{ provenance: Record<string, unknown> }> = [];
  * fixture above was written to stop.
  */
 let openOperations: Array<{ id: string }> = [];
+/**
+ * A REDO PRESS'S SLOT ROWS, for the arms that drive the production
+ * refused-sheet reader (#2133). Told apart from the ledger by TABLE rather
+ * than by chain shape — both are `select().from().where()` awaited — which is
+ * also what drizzle itself does. `.limit()` on the operations table is still
+ * `viewReplacementInFlight`'s answer, `openOperations`.
+ */
+let slotRows: Array<{ status: string; result: unknown }> = [];
+/** Every request id the refused-sheet reader asked for, read off its WHERE. */
+let slotReads = 0;
 
-vi.mock("../db/connection", () => ({
-  getDb: async () => ({
-    select: () => ({
-      from: () => ({
-        /*
-          AWAITED IT IS THE LEDGER; `.limit()`-ed IT IS THE OPEN OPERATIONS.
-          Two readers, two chain shapes, one faithful builder — see
-          `openOperations` above.
-        */
-        where: () => {
-          const builder = Promise.resolve(ledger) as Promise<unknown> & {
-            limit: (count: number) => Promise<unknown>;
-          };
-          builder.limit = async () => openOperations;
-          return builder;
-        },
-        innerJoin: () => ({ where: async () => assets }),
+vi.mock("../db/connection", async () => {
+  const schema = await import("../../drizzle/schema");
+  return {
+    getDb: async () => ({
+      select: () => ({
+        from: (table: unknown) => ({
+          /*
+            AWAITED IT IS THE LEDGER (or, on the operations table, the press's
+            slot rows); `.limit()`-ed IT IS THE OPEN OPERATIONS. See
+            `openOperations` and `slotRows` above.
+          */
+          where: () => {
+            const onOperations = table === schema.generationOperations;
+            if (onOperations) slotReads += 1;
+            const builder = Promise.resolve(onOperations ? slotRows : ledger) as Promise<unknown> & {
+              limit: (count: number) => Promise<unknown>;
+            };
+            builder.limit = async () => {
+              if (onOperations) slotReads -= 1;
+              return openOperations;
+            };
+            return builder;
+          },
+          innerJoin: () => ({ where: async () => assets }),
+        }),
       }),
     }),
-  }),
-}));
+  };
+});
 
 const finalizers = {
   success: vi.fn(async (_input: unknown) => undefined),
@@ -107,6 +125,9 @@ function dependencies() {
 
 const operation = {
   id: OPERATION_ID,
+  /* The press road derives its slot rows from this (#2133); the Try again
+     road ignores it. */
+  clientRequestId: "99999999-9999-4999-8999-999999999999",
   userId: 1,
   modelId: 7,
   status: "running" as const,
@@ -118,6 +139,8 @@ beforeEach(() => {
   ledger = [];
   assets = [];
   openOperations = [];
+  slotRows = [];
+  slotReads = 0;
   refunds.length = 0;
   landed = false;
   finalizers.success.mockClear();
@@ -703,5 +726,90 @@ describe("a swept redo slice", () => {
     expect(finalizers.failure).toHaveBeenCalledWith(expect.objectContaining({
       publicMessage: RECOVERED_VIEW_RETRY_SENTENCE,
     }));
+  });
+});
+
+/*
+  #2133 — THE PRESS'S REFUSED-SHEET SHARES, READ BY THE PRODUCTION READER.
+
+  A Regenerate whose sheet the image provider refused twice owes one share per
+  view that sheet would have made, even when the other sheet delivered. The
+  refused slot writes that on its own sealed receipt, and the sweep reads it
+  through `readPressRefusedSheetRefund` — driven here over `slotRows`, never
+  injected, so deleting the default reader reddens these arms.
+*/
+describe("a swept press whose sheet was refused twice (#2133)", () => {
+  const PRESS_PRICE = 3250;
+  const SHARE = 650;
+  const refusedRow = { status: "succeeded", result: { outcome: "failed", refusedByProvider: true } };
+  const landedRow = { status: "succeeded", result: { outcome: "ready" } };
+  const plainFailedRow = { status: "succeeded", result: { outcome: "failed" } };
+
+  it("pays one share per refused view, once, under the press's own reference, and seals it a success", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = true;
+    slotRows = [refusedRow, refusedRow, refusedRow, landedRow, landedRow];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(slotReads, "the production reader was not asked").toBeGreaterThan(0);
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PRESS_PRICE, refundedCredits: 3 * SHARE });
+    expect(refunds).toEqual([{ amount: 3 * SHARE, reference: CHARGE_REFERENCE }]);
+    expect(finalizers.success).toHaveBeenCalledWith(expect.objectContaining({ refundedCredits: 3 * SHARE }));
+    expect(finalizers.failure).not.toHaveBeenCalled();
+  });
+
+  it("pays nothing when the live press already paid the same shares", async () => {
+    ledger = [
+      { referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE },
+      { referenceId: REFUND_REFERENCE, type: "refund", amount: 3 * SHARE },
+    ];
+    landed = true;
+    slotRows = [refusedRow, refusedRow, refusedRow, landedRow, landedRow];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(refunds).toEqual([]);
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PRESS_PRICE, refundedCredits: 3 * SHARE });
+  });
+
+  it("NEGATIVE CONTROL — views lost any other way, or slots not yet sealed, owe nothing", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = true;
+    slotRows = [
+      plainFailedRow,
+      { status: "running", result: null },
+      { status: "failed", result: { outcome: "failed", refusedByProvider: true } },
+      landedRow,
+      landedRow,
+    ];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(refunds).toEqual([]);
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: PRESS_PRICE });
+  });
+
+  it("a total loss pays the whole charge only, never the shares on top", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -PRESS_PRICE }];
+    landed = false;
+    slotRows = [refusedRow, refusedRow, refusedRow, plainFailedRow, plainFailedRow];
+
+    const outcome = await recoverCastingV2PackageRedoPressOperation(operation, dependencies());
+
+    expect(refunds).toEqual([{ amount: PRESS_PRICE, reference: CHARGE_REFERENCE }]);
+    expect(outcome).toEqual({ type: "paid_failure", chargedCredits: PRESS_PRICE, refundedCredits: PRESS_PRICE });
+  });
+
+  it("the Try again road never asks about refused sheets — a landed view still owes nothing", async () => {
+    ledger = [{ referenceId: CHARGE_REFERENCE, type: "generation", amount: -50 }];
+    landed = true;
+    slotRows = [refusedRow, refusedRow, refusedRow];
+
+    const outcome = await recoverCastingV2ViewRetryOperation(operation, dependencies());
+
+    expect(slotReads).toBe(0);
+    expect(refunds).toEqual([]);
+    expect(outcome).toEqual({ type: "durable_success", chargedCredits: 50 });
   });
 });
