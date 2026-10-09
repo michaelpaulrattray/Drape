@@ -25,7 +25,7 @@ import {
   castPersonaEditBlock,
   castPersonaSystemPrompt,
   createCastPersonaReader,
-  parseCastPersonaLines,
+  parseCastPersonaDraft,
   PERSONA_EDIT_SENTENCE_LIMIT,
   PERSONA_EDIT_SENTENCE_MAX_CHARS,
   PERSONA_MAX_OUTPUT_TOKENS,
@@ -285,18 +285,18 @@ describe("what the instruction is not allowed to ask for", () => {
 
 describe("the parse, driven without an engine at all", () => {
   it("reads a good reply", () => {
-    expect(parseCastPersonaLines(good)).not.toBeNull();
+    expect(parseCastPersonaDraft(good)).not.toBeNull();
   });
 
   it("refuses a JSON array", () => {
-    expect(parseCastPersonaLines('["a","b"]')).toBeNull();
+    expect(parseCastPersonaDraft('["a","b"]')).toBeNull();
   });
 
   it("refuses null", () => {
-    expect(parseCastPersonaLines("null")).toBeNull();
+    expect(parseCastPersonaDraft("null")).toBeNull();
   });
 
   it("refuses an empty string", () => {
-    expect(parseCastPersonaLines("")).toBeNull();
+    expect(parseCastPersonaDraft("")).toBeNull();
   });
 });

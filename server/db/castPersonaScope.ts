@@ -1,7 +1,7 @@
 /**
  * WHICH ROWS N2b's TWO WRITES CAN REACH — the predicates, factored out (#1242).
  *
- * `writeCastPersonaLines` and `editCastPersonaLine` in `castingV2Sign.ts` are
+ * `writeCastPersonaDraft` and `editCastPersonaField` in `castingV2Sign.ts` are
  * the two statements that touch a Cast's personality and voice. Their contract
  * is *which rows can this statement reach*, and invariant 5 says that is proven
  * on the statement rather than on a constant near it — so the predicates and
@@ -20,7 +20,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { models } from "../../drizzle/schema";
-import type { CastPersonaLineKind } from "./castPersonaLineKind";
+import type { CastPersonaField } from "./castPersonaField";
 
 /**
  * THE REDRAFT'S REACH — one Cast, its owner, alive, and NEITHER LINE EDITED.
@@ -72,7 +72,7 @@ export function castPersonaEditWhere(scope: { userId: number; modelId: number })
  * ternary below.
  */
 export function castPersonaEditPatch(
-  line: CastPersonaLineKind,
+  line: CastPersonaField,
   text: string,
   now: Date,
 ): { personality: string; personalityEditedAt: Date } | { voice: string; voiceEditedAt: Date } {

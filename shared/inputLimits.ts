@@ -65,7 +65,7 @@ export const BOARD_NAME_MAX_LENGTH = 128;
 export const CAST_NAME_MAX_LENGTH = 60;
 
 /* -- Casting V2: who she is on camera, and how she sounds -----------------
-   N2b (#1242). ONE idea, THREE places: `castingV2.editCastPersonaLine` on the
+   N2b (#1242). ONE idea, THREE places: `castingV2.editCastPersonaField` on the
    server, and the two inline fields on `CastingRoom`.
 
    The sizes are HER ceiling, not the drafter's. The drafted lines are two

@@ -4897,8 +4897,8 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/db/castPersonaLineKind.ts",
-      "path": "server/db/castPersonaLineKind.ts",
+      "id": "module:server/db/castPersonaField.ts",
+      "path": "server/db/castPersonaField.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -7737,9 +7737,9 @@
       "file": "server/routes/castingV2.ts"
     },
     {
-      "id": "route:castingV2.editCastPersonaLine",
+      "id": "route:castingV2.editCastPersonaField",
       "namespace": "castingV2",
-      "name": "editCastPersonaLine",
+      "name": "editCastPersonaField",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -31608,7 +31608,7 @@
     },
     {
       "from": "module:server/db/castingV2Sign.ts",
-      "to": "module:server/db/castPersonaLineKind.ts",
+      "to": "module:server/db/castPersonaField.ts",
       "kind": "imports"
     },
     {
@@ -31688,7 +31688,7 @@
     },
     {
       "from": "module:server/db/castPersonaScope.ts",
-      "to": "module:server/db/castPersonaLineKind.ts",
+      "to": "module:server/db/castPersonaField.ts",
       "kind": "imports"
     },
     {
@@ -34288,7 +34288,7 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/db/castPersonaLineKind.ts",
+      "to": "module:server/db/castPersonaField.ts",
       "kind": "imports"
     },
     {

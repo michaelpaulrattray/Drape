@@ -3,7 +3,7 @@
  *
  * # Why this file exists at all
  *
- * `writeCastPersonaLines`'s docblock said *"`castPersonaWrite.test.ts` drives
+ * `writeCastPersonaDraft`'s docblock said *"`castPersonaWrite.test.ts` drives
  * both directions"* and the file did not exist. That is the sharpest shape of a
  * false claim in otherwise careful prose: the next reader trusts the sentence
  * and never looks, and `suitePointerDiscipline` is the only thing in the tree
@@ -29,7 +29,7 @@
  *      hers, which is what lets her rewrite a line twice while stopping the
  *      recovery sweep from deleting what she wrote;
  *   3. **her edit touches ONE line and one stamp** — driven over the DERIVED
- *      set of line kinds, so a third line added to `CAST_PERSONA_LINE_KINDS`
+ *      set of line kinds, so a third line added to `CAST_PERSONA_FIELDS`
  *      is asserted here with no edit to this file.
  */
 import { drizzle } from "drizzle-orm/mysql2";
@@ -37,7 +37,7 @@ import mysql from "mysql2/promise";
 import { describe, expect, it, vi } from "vitest";
 
 import { models } from "../../drizzle/schema";
-import { CAST_PERSONA_LINE_KINDS } from "./castPersonaLineKind";
+import { CAST_PERSONA_FIELDS } from "./castPersonaField";
 import {
   castPersonaEditPatch,
   castPersonaEditWhere,
@@ -113,7 +113,7 @@ describe("a redraft never lands on a line she has rewritten", () => {
 /* --------------------------------- 3 · one line at a time, over a derived set */
 
 describe("her edit sets one line and one stamp, and leaves the other alone", () => {
-  it.each(CAST_PERSONA_LINE_KINDS.map((kind) => [kind] as const))(
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
     "editing %s writes its own text and its own stamp only",
     (kind) => {
       const now = new Date("2026-10-09T03:00:00.000Z");
@@ -136,6 +136,6 @@ describe("her edit sets one line and one stamp, and leaves the other alone", () 
   );
 
   it("the two kinds are the whole vocabulary, so a third cannot ship unasserted", () => {
-    expect([...CAST_PERSONA_LINE_KINDS]).toEqual(["personality", "voice"]);
+    expect([...CAST_PERSONA_FIELDS]).toEqual(["personality", "voice"]);
   });
 });

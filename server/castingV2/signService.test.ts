@@ -137,14 +137,14 @@ vi.mock("../db/castingV2Sign", () => ({
   /*
     N2b's write (#1242), present in this mock ON PURPOSE.
 
-    `signService` falls back to the real `writeCastPersonaLines` when no
+    `signService` falls back to the real `writeCastPersonaDraft` when no
     `writePersona` is injected, and a module mock that omitted it would make
     that fallback `undefined()` - a TypeError thrown INSIDE the seal's own
     catch, which logs and hands the operation to the sweep. Every arm in this
     file would still be green, and the production default would be broken. So
     it is here, it journals, and `personaWrites` is asserted below.
   */
-  writeCastPersonaLines: vi.fn(async (write: Record<string, unknown>) => {
+  writeCastPersonaDraft: vi.fn(async (write: Record<string, unknown>) => {
     journal.push("persona:write");
     personaWrites.push(write);
     return true;
@@ -1388,8 +1388,8 @@ describe("N2b's two lines are born inside the Sign", () => {
   /*
     ⚠ **THIS ARM IS DEFERRED AND THE REASON IS A SURVIVING SABOTAGE.** Its first
     shape read the journal — `persona:read` before `package`, `persona:write`
-    after `seal:success` — and turning `derivePersonaLines(...)` into
-    `await derivePersonaLines(...)` LEFT IT GREEN: a reader that resolves
+    after `seal:success` — and turning `derivePersonaDraft(...)` into
+    `await derivePersonaDraft(...)` LEFT IT GREEN: a reader that resolves
     immediately journals its entry first either way, so the arm could not tell
     *started before* from *awaited before*, which is the entire claim.
 
@@ -1461,7 +1461,7 @@ describe("N2b's two lines are born inside the Sign", () => {
 
   /*
     ⚠ A READER THAT THROWS. The reader swallows its own faults, so this arm is
-    about the BACKSTOP being a property of `derivePersonaLines` rather than a
+    about the BACKSTOP being a property of `derivePersonaDraft` rather than a
     belief about another module — and about the promise never rejecting, since
     it is created minutes before it is awaited.
   */

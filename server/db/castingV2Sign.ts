@@ -62,7 +62,7 @@ import {
   type SlotFailureRecord,
 } from "../castingV2/slotFailureRecord";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
-import type { CastPersonaLineKind } from "./castPersonaLineKind";
+import type { CastPersonaField } from "./castPersonaField";
 import {
   castPersonaEditPatch,
   castPersonaEditWhere,
@@ -1146,7 +1146,7 @@ export type SignedCastLocation = {
  *
  * Returns whether a row moved, so a caller can log the miss rather than assume.
  */
-export async function writeCastPersonaLines(input: {
+export async function writeCastPersonaDraft(input: {
   userId: number;
   modelId: number;
   personality: string;
@@ -1187,10 +1187,10 @@ export async function writeCastPersonaLines(input: {
  * Returns false when no row was hers — the caller turns that into the refusal,
  * so the decision about what to say lives at the entrance and not in the query.
  */
-export async function editCastPersonaLine(input: {
+export async function editCastPersonaField(input: {
   userId: number;
   modelId: number;
-  line: CastPersonaLineKind;
+  line: CastPersonaField;
   text: string;
   now?: Date;
 }): Promise<boolean> {

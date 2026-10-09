@@ -621,9 +621,12 @@ export type ReadPurpose =
    * Not `describe` or `caption` either: those read a fact out of a picture for
    * the record. This WRITES prose a customer is handed and may rewrite.
    *
-   * ⚠ Unrelated to the candidate `personaLine` retired by #1241 — that was a
-   * tile LABEL on a sheet and its column is dropped. Named here so the two are
-   * not read as one thing coming back.
+   * ⚠ Unrelated to the candidate tile LABEL #1241 retired — that was one word
+   * under a face on a sheet and its column is dropped. Said here without
+   * spelling its name, because `candidateDispositionRetired.test.ts` refuses
+   * that word anywhere in the product and is RIGHT to: a reader meeting it
+   * again cannot tell which of the two it is, and this whole paragraph exists
+   * because somebody would have had to ask.
    */
   | "persona";
 

@@ -22,15 +22,15 @@
  */
 
 /** What the room is handed for one of the two lines. */
-export type CastPersonaLineProjection = {
+export type CastPersonaFieldProjection = {
   text: string;
   /** Ours until she touches it. The room badges a draft and nothing else. */
   drafted: boolean;
 };
 
 export type CastPersonaProjection = {
-  personality: CastPersonaLineProjection | null;
-  voice: CastPersonaLineProjection | null;
+  personality: CastPersonaFieldProjection | null;
+  voice: CastPersonaFieldProjection | null;
 };
 
 /** The five columns, by the names the row carries them under. */
@@ -61,7 +61,7 @@ function line(
   text: string | null,
   draftedAt: Date | null,
   editedAt: Date | null,
-): CastPersonaLineProjection | null {
+): CastPersonaFieldProjection | null {
   const trimmed = text?.trim();
   if (!trimmed) return null;
   /*

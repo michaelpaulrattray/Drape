@@ -11,6 +11,6 @@
  * The frozen tuple is what the router's enum is DERIVED from, so a third line
  * cannot be added to one without the other.
  */
-export const CAST_PERSONA_LINE_KINDS = Object.freeze(["personality", "voice"] as const);
+export const CAST_PERSONA_FIELDS = Object.freeze(["personality", "voice"] as const);
 
-export type CastPersonaLineKind = (typeof CAST_PERSONA_LINE_KINDS)[number];
+export type CastPersonaField = (typeof CAST_PERSONA_FIELDS)[number];

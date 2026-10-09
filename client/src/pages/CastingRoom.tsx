@@ -31,7 +31,7 @@ import {
   CastPersonalityCard,
   CastVoiceBadge,
   CastVoiceLine,
-  type CastPersonaLineName,
+  type CastPersonaFieldName,
 } from "@/features/castingV2/components/CastPersonaCards";
 
 /**
@@ -133,7 +133,7 @@ export default function CastingRoom() {
 
   const config = trpc.castingV2.config.useQuery({});
   const rename = trpc.castingV2.renameCast.useMutation();
-  const editPersona = trpc.castingV2.editCastPersonaLine.useMutation();
+  const editPersona = trpc.castingV2.editCastPersonaField.useMutation();
   const utils = trpc.useUtils();
   /** Inline rename on the title. Null when not editing. */
   const [draftName, setDraftName] = useState<string | null>(null);
@@ -145,7 +145,7 @@ export default function CastingRoom() {
     runs on some renders and not others, which is React #310 and crashes every
     load of this page (memory `hooks-below-early-return`).
   */
-  const [savingPersonaLine, setSavingPersonaLine] = useState<CastPersonaLineName | null>(null);
+  const [savingPersonaField, setSavingPersonaField] = useState<CastPersonaFieldName | null>(null);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -351,19 +351,19 @@ export default function CastingRoom() {
    * card she is looking at. A sentence telling her the thing she just typed was
    * saved is the kind of noise his #2089 ruling took off these tiles.
    */
-  const savePersonaLine = (line: CastPersonaLineName, text: string) => {
+  const savePersonaField = (line: CastPersonaFieldName, text: string) => {
     if (!data) return;
-    setSavingPersonaLine(line);
+    setSavingPersonaField(line);
     editPersona.mutate(
       { castId: data.castId, line, text },
       {
         onSuccess: () => {
-          setSavingPersonaLine(null);
+          setSavingPersonaField(null);
           void utils.castingV2.getCast.invalidate({ castId: data.castId });
         },
         onError: (error) => {
-          setSavingPersonaLine(null);
-          logRawFailure('castingV2.editCastPersonaLine', error);
+          setSavingPersonaField(null);
+          logRawFailure('castingV2.editCastPersonaField', error);
           toast.error(readableFailure(
             error,
             line === "voice"
@@ -989,8 +989,8 @@ export default function CastingRoom() {
                 */}
                 <CastPersonalityCard
                   personality={data.persona?.personality ?? null}
-                  onSave={savePersonaLine}
-                  savingLine={savingPersonaLine}
+                  onSave={savePersonaField}
+                  savingLine={savingPersonaField}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
@@ -1022,8 +1022,8 @@ export default function CastingRoom() {
                   */}
                   <CastVoiceLine
                     voice={data.persona?.voice ?? null}
-                    onSave={savePersonaLine}
-                    savingLine={savingPersonaLine}
+                    onSave={savePersonaField}
+                    savingLine={savingPersonaField}
                   />
                   <div className="dpc-voice__player">
                     <span className="dpc-voice__play">

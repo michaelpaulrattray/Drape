@@ -79,7 +79,7 @@ import { boundForJudge } from "./judgeFrame";
 const log = createModuleLogger("castingV2/castPersona");
 
 /** The two lines, as they are written to the Cast's own row. */
-export type CastPersonaLines = {
+export type CastPersonaDraft = {
   /** At most two sentences: a camera-visible baseline, then its one exception. */
   personality: string;
   /** One line of register and delivery. */
@@ -153,7 +153,7 @@ export type CastPersonaRequest = {
 
 export type CastPersonaReader = {
   /** The two lines, or `null` when the read could not be made at all. */
-  read(request: CastPersonaRequest): Promise<CastPersonaLines | null>;
+  read(request: CastPersonaRequest): Promise<CastPersonaDraft | null>;
 };
 
 /**
@@ -275,7 +275,7 @@ export function createCastPersonaReader(config: { engine: TextEngine }): CastPer
         return null;
       }
 
-      return parseCastPersonaLines(text);
+      return parseCastPersonaDraft(text);
     },
   };
 }
@@ -285,7 +285,7 @@ export function createCastPersonaReader(config: { engine: TextEngine }): CastPer
  * engine, and so a court can read a real reply through the same code the mint
  * uses rather than through a second reader of the same JSON.
  */
-export function parseCastPersonaLines(raw: string): CastPersonaLines | null {
+export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(stripFence(raw));

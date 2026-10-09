@@ -43,9 +43,9 @@ import {
 } from "@shared/inputLimits";
 
 /** One of the two lines, exactly as the room is handed it. */
-export type PersonaLine = { text: string; drafted: boolean };
+export type PersonaField = { text: string; drafted: boolean };
 
-export type CastPersonaLineName = "personality" | "voice";
+export type CastPersonaFieldName = "personality" | "voice";
 
 /**
  * THE BADGE'S WORDS, in one place.
@@ -59,10 +59,10 @@ export type CastPersonaLineName = "personality" | "voice";
 export const PERSONA_DRAFT_BADGE = "Drafted for you";
 
 type EditableLineProps = {
-  line: CastPersonaLineName;
-  value: PersonaLine;
+  line: CastPersonaFieldName;
+  value: PersonaField;
   /** Free, and never a generation — so there is no price and no credit here. */
-  onSave: (line: CastPersonaLineName, text: string) => void;
+  onSave: (line: CastPersonaFieldName, text: string) => void;
   saving: boolean;
 };
 
@@ -152,10 +152,10 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
 }
 
 export type CastPersonaCardsProps = {
-  personality: PersonaLine | null;
-  voice: PersonaLine | null;
-  onSave: (line: CastPersonaLineName, text: string) => void;
-  savingLine: CastPersonaLineName | null;
+  personality: PersonaField | null;
+  voice: PersonaField | null;
+  onSave: (line: CastPersonaFieldName, text: string) => void;
+  savingLine: CastPersonaFieldName | null;
 };
 
 /**
@@ -207,7 +207,7 @@ export function CastPersonalityCard({
  * card this file does not own: the badge beside the card's own label, the line
  * above its player skeleton.
  */
-export function CastVoiceBadge({ voice }: { voice: PersonaLine | null }) {
+export function CastVoiceBadge({ voice }: { voice: PersonaField | null }) {
   if (!voice?.drafted) return null;
   return <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>;
 }

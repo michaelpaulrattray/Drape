@@ -139,7 +139,7 @@ import {
   listCastSiblings,
   listSessionSignedCastNames,
   listSignedCasts,
-  editCastPersonaLine,
+  editCastPersonaField,
 } from "../db/castingV2Sign";
 import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -170,7 +170,7 @@ import {
   CAST_PERSONALITY_MAX_LENGTH,
   CAST_VOICE_MAX_LENGTH,
 } from "../../shared/inputLimits";
-import { CAST_PERSONA_LINE_KINDS } from "../db/castPersonaLineKind";
+import { CAST_PERSONA_FIELDS } from "../db/castPersonaField";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
@@ -2065,10 +2065,10 @@ export const castingV2Router = router({
    * it applies to one we failed to draft. Clearing a line is not a feature
    * anybody asked for; if it becomes one it is a door of its own.
    */
-  editCastPersonaLine: protectedProcedure
+  editCastPersonaField: protectedProcedure
     .input(z.object({
       castId: z.string().min(1).max(32),
-      line: z.enum(CAST_PERSONA_LINE_KINDS),
+      line: z.enum(CAST_PERSONA_FIELDS),
       text: z.string().trim().min(1).max(CAST_PERSONALITY_MAX_LENGTH),
     }).strict())
     .mutation(async ({ ctx, input }) => {
@@ -2094,7 +2094,7 @@ export const castingV2Router = router({
       }
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
-      const written = await editCastPersonaLine({
+      const written = await editCastPersonaField({
         userId: ctx.user.id,
         modelId: model.id,
         line: input.line,

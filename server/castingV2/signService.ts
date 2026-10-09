@@ -66,7 +66,7 @@ import {
   getSignableCandidate,
   signCandidateIntoCast,
   type SignableCandidate,
-  writeCastPersonaLines,
+  writeCastPersonaDraft,
 } from "../db/castingV2Sign";
 import { createHash } from "node:crypto";
 import { createModuleLogger } from "../logging/logger";
@@ -141,7 +141,7 @@ export type InkCropDisposition =
   };
 import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { buildCastPackage, type PackageOrchestratorDependencies } from "./packageOrchestrator";
-import type { CastPersonaLines, CastPersonaReader } from "./castPersona";
+import type { CastPersonaDraft, CastPersonaReader } from "./castPersona";
 import type { ReferenceImage } from "../providers/types";
 import { castingCastPersonaReader } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
@@ -179,7 +179,7 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
    */
   personaReader?: () => CastPersonaReader | null;
   /** The write of those two lines. Injected so an arm can see it happen. */
-  writePersona?: typeof writeCastPersonaLines;
+  writePersona?: typeof writeCastPersonaDraft;
   /**
    * How the package work is scheduled after the Cast exists.
    *
@@ -1022,7 +1022,7 @@ export async function carriedFeatureWords(
  * no `OPENROUTER_API_KEY` - resolves `null` by the same road a failed read
  * does, so there is one outcome to reason about and not two.
  */
-function derivePersonaLines(
+function derivePersonaDraft(
   dependencies: SignServiceDependencies,
   input: {
     /* ALREADY a `ReferenceImage` - `storageReadBytes` returns the pair, so
@@ -1033,7 +1033,7 @@ function derivePersonaLines(
     pronouns: CastPronouns;
     operationId: string;
   },
-): Promise<CastPersonaLines | null> {
+): Promise<CastPersonaDraft | null> {
   const reader = (dependencies.personaReader ?? castingCastPersonaReader)();
   if (!reader) {
     log.info(
@@ -1064,27 +1064,27 @@ function derivePersonaLines(
 /**
  * WRITE THEM, OR SAY WHY THERE ARE NONE - N2b (#1242).
  *
- * ⚠ **A MISS IS LOGGED, NEVER ASSUMED AWAY.** `writeCastPersonaLines` returns
+ * ⚠ **A MISS IS LOGGED, NEVER ASSUMED AWAY.** `writeCastPersonaDraft` returns
  * whether a row moved, and today there are three honest reasons it would not:
  * the Cast was deleted between the Sign and the seal, or she has already
  * rewritten one of the lines (the redraft guard), or this is the sweep
  * re-entering a Sign that already has them. None is an error and all three are
  * worth being able to read in a log rather than inferring from a blank card.
  */
-async function writePersonaLines(
+async function writePersonaDraft(
   dependencies: SignServiceDependencies,
   input: {
     userId: number;
     modelId: number;
     operationId: string;
-    read: Promise<CastPersonaLines | null>;
+    read: Promise<CastPersonaDraft | null>;
   },
 ): Promise<void> {
   const lines = await input.read;
   if (!lines) return;
   let written: boolean;
   try {
-    written = await (dependencies.writePersona ?? writeCastPersonaLines)({
+    written = await (dependencies.writePersona ?? writeCastPersonaDraft)({
       userId: input.userId,
       modelId: input.modelId,
       personality: lines.personality,
@@ -1213,7 +1213,7 @@ async function completeSignPackage(
       outcome as a failed read - no lines, no badge, no empty card that looks
       like a feature that broke.
     */
-    const personaRead = derivePersonaLines(dependencies, {
+    const personaRead = derivePersonaDraft(dependencies, {
       anchor: anchorBytes,
       brief: input.description,
       editSentences: input.editSentences,
@@ -1336,7 +1336,7 @@ async function completeSignPackage(
       lines are missing without ever overwriting a line she has since rewritten
       (`castPersonaRedraftWhere`).
     */
-    await writePersonaLines(dependencies, {
+    await writePersonaDraft(dependencies, {
       userId: input.userId,
       modelId: input.modelId,
       operationId: input.operationId,
