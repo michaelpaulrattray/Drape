@@ -1,6 +1,6 @@
 import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { HttpError } from "@shared/_core/errors";
-import { parse as parseCookieHeader } from "cookie";
+import { parseCookie as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";

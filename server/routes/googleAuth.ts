@@ -17,7 +17,7 @@ import { Router, type Request, type Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
 import { SignJWT, jwtVerify } from "jose";
-import { parse as parseCookieHeader } from "cookie";
+import { parseCookie as parseCookieHeader } from "cookie";
 import { COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
