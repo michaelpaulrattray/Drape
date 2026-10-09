@@ -581,7 +581,7 @@ export async function redoCastPackage(
       Promise.resolve().then(() => settleSignSheet({
         kind: plan.kind,
         panelOrder: plan.panelOrder,
-        render: () => renderSignSheet({
+        render: (renderBudget) => renderSignSheet({
           engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
           anchor,
           wardrobeLine: castWardrobeLine(source.technicalSchema),
@@ -591,6 +591,10 @@ export async function redoCastPackage(
           inkCrops: inkCrops.crops,
           featureWords,
           operationId: pressOperationId,
+          /* The redo is priced at the same flat 650 for the same two sheets, so
+             it draws on the same cap — his word on #1968, and it comes for free
+             from sharing `settleSignSheet`. */
+          renderBudget,
         }),
         judge: (dependencies.judge ?? castingViewConformanceJudge)(),
         anchor,

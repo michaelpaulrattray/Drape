@@ -102,7 +102,7 @@
     {
       "id": "domain:providers",
       "name": "providers",
-      "moduleCount": 8
+      "moduleCount": 9
     },
     {
       "id": "domain:referral",
@@ -5379,6 +5379,12 @@
     {
       "id": "module:server/providers/providerQueue.ts",
       "path": "server/providers/providerQueue.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/renderBudget.ts",
+      "path": "server/providers/renderBudget.ts",
       "domain": "providers",
       "lifecycle": "active"
     },
@@ -14191,6 +14197,10 @@
     {
       "id": "test:server/providers/providerFailureContract.test.ts",
       "path": "server/providers/providerFailureContract.test.ts"
+    },
+    {
+      "id": "test:server/providers/renderBudget.test.ts",
+      "path": "server/providers/renderBudget.test.ts"
     },
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
@@ -30402,6 +30412,11 @@
     },
     {
       "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/providers/renderBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
@@ -30433,6 +30448,11 @@
     {
       "from": "module:server/castingV2/signSheetCoordinator.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/providers/renderBudget.ts",
       "kind": "imports"
     },
     {
@@ -33082,7 +33102,22 @@
     },
     {
       "from": "module:server/providers/providerQueue.ts",
+      "to": "module:server/providers/renderBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/providerQueue.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/renderBudget.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/types.ts",
+      "to": "module:server/providers/renderBudget.ts",
       "kind": "imports"
     },
     {

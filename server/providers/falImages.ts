@@ -884,7 +884,15 @@ export function createFalSunburstSheetEngine(config: {
             provenance: { provider: "fal" as const, model, providerRef: job.requestId },
           };
         },
-        { signal: request.signal },
+        /*
+          ⚠ **The sheet is the one engine that carries a render budget (#1968),
+          because it is the one whose price was set on a bounded render count.**
+          Cid's flat 650 for a Sign holds at 2 paid renders per sheet; the
+          counting happens inside `withRetry`, which is the only layer that sees
+          each submission. A caller that passes none is unbounded exactly as
+          before.
+        */
+        { signal: request.signal, ...(request.renderBudget ? { budget: request.renderBudget } : {}) },
       ),
     );
   }

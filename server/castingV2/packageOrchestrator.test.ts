@@ -4,6 +4,8 @@ import sharp from "sharp";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
+import { withRetry } from "../providers/providerQueue";
+import type { RenderBudget } from "../providers/renderBudget";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
    below drives the writer's own function rather than a copy of it. */
 import { slotFailureStatus } from "./slotFailureRecord";
@@ -3088,5 +3090,185 @@ describe("⚠ a view that arrived is never bought twice (#1994)", () => {
 
     expect(result.failed, "a free re-store was turned into a refunded view").toHaveLength(0);
     expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+  });
+});
+
+/**
+ * ⚠ **CID'S PAID-RENDER CAP, COUNTED IN SUBMISSIONS RATHER THAN IN RENDER
+ * CALLS — the condition his flat price rests on (card 1968, his word
+ * 2026-10-08).**
+ *
+ * The card labels it required: *"at most 2 head-sheet and 2 body-sheet renders
+ * per Sign, re-makes and arrival retries from one pool, or Cid's figure is
+ * about 1,100."*
+ *
+ * ⚠ **AND THE ENGINE FIXTURE HERE ROUTES THROUGH THE REAL `withRetry`, WHICH
+ * IS THE ONLY REASON THESE ARMS MEAN ANYTHING.** `deadSheetEngine` above calls
+ * nothing but the thunk, so it records ONE `sheetCalls` row per `render()` and
+ * can never see the third loop — and the third loop is where the multiplying
+ * happens. Production's sheet engine is
+ * `queue.run(… withRetry("fal.signSheet", () => runFalImageJob(…)))`, so one
+ * `editWithReferences` is up to THREE submissions. This fixture has the same
+ * shape and counts attempts, so the number it reports is the number of jobs fal
+ * would have been sent and could have billed for.
+ */
+describe("the Sign's paid renders are capped per sheet", () => {
+  /** Submissions — one per job the provider would have been sent. */
+  const submissions: SignSheetKind[] = [];
+
+  /**
+   * Production's shape: the retrying loop lives INSIDE the engine, under the
+   * budget the request carries.
+   */
+  function retryingSheetEngine(makeError: () => unknown) {
+    return (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: {
+        prompt: string;
+        references: unknown[];
+        renderBudget?: RenderBudget;
+      }) => {
+        sheetCalls.push({
+          kind,
+          prompt: request.prompt,
+          references: (request.references as Array<{ bytes: Buffer; contentType: string }>).map(
+            (reference) => ({ bytes: reference.bytes.toString(), contentType: reference.contentType }),
+          ),
+        });
+        return withRetry(
+          "fal.signSheet",
+          async () => {
+            submissions.push(kind);
+            throw makeError();
+          },
+          {
+            retries: 2,
+            baseDelayMs: 0,
+            ...(request.renderBudget ? { budget: request.renderBudget } : {}),
+          },
+        );
+      }),
+      generateView: vi.fn(),
+    });
+  }
+
+  const submissionsPerSheet = () =>
+    Object.fromEntries(
+      signSheetPlan().map((plan) => [
+        plan.kind,
+        submissions.filter((kind) => kind === plan.kind).length,
+      ]),
+    ) as Record<SignSheetKind, number>;
+
+  beforeEach(() => {
+    submissions.length = 0;
+  });
+
+  it("THE CAP — a sheet that keeps hitting the deadline costs two renders, not eighteen", async () => {
+    /*
+      ⚠ **THE DEADLINE IS THE ONE FAULT THAT CAN BILL WITHOUT SAYING SO**, and
+      it is why reading the three existing guards was not enough to discharge
+      this condition. `falTransport` cancels on the deadline and sets
+      `completed` only when fal answers 400 ALREADY_COMPLETED; its own note
+      records that whether a cancel stops a job already IN_PROGRESS is
+      unverified. `timeout` is retryable and is not arrival-terminal, so before
+      this cap all three loops ran: withRetry 3 x arrival 3 x re-make 2 = 18
+      submissions on one sheet, every one of them possibly billed, under a flat
+      price that paid for two.
+    */
+    const result = await buildCastPackage(
+      deps({
+        signSheetEngine: retryingSheetEngine(() =>
+          new ProviderError("timeout", "fal.ai did not complete within the deadline", {
+            providerRef: "req-deadline",
+            completed: false,
+          })),
+      }),
+      input,
+    );
+
+    expect(submissionsPerSheet()).toEqual({ body: SHEET_MAX_RENDERS, head: SHEET_MAX_RENDERS });
+
+    /* And the customer is not left charged for nothing: nothing was delivered,
+       so the whole flat charge goes back under the one idempotent reference. */
+    expect(result.totalLoss).toBe(true);
+    expect(result.committed).toHaveLength(0);
+    expect(refunds).toEqual([
+      { amount: SIGN_PRICE, reference: packagePromotionChargeReference(input.operationId) },
+    ]);
+  });
+
+  it("THE CONTROL — a fault that never reached the provider keeps its free retries", async () => {
+    /*
+      ⚠ **Without this arm the one above is satisfied by any change that simply
+      breaks the arrival retry.** Cid's note asks for the distinction in as many
+      words: *"a transport failure that returned no frame is usually not billed
+      by the provider. Say on the PR which attempts actually cost money, and
+      count those."* An unreachable host is the free case, so its rescue is
+      untouched and it spends none of the budget.
+    */
+    await buildCastPackage(
+      deps({ signSheetEngine: retryingSheetEngine(() => new ProviderError("transport", "fal.ai unreachable")) }),
+      input,
+    );
+
+    /* Three withRetry attempts x three arrival attempts, charged nothing. */
+    const perSheet = submissionsPerSheet();
+    expect(perSheet.head).toBeGreaterThan(SHEET_MAX_RENDERS);
+    expect(perSheet).toEqual({ body: 9, head: 9 });
+  });
+
+  it("the re-make and the arrival retries draw on ONE pool, not two", async () => {
+    /*
+      The money shape the card names: a first generation that spent both its
+      renders cannot then buy a house re-make. The first submission DELIVERS a
+      sheet the judge refuses — so the re-make is wanted — and the second
+      hits the deadline, which leaves the pool empty. The re-make must refuse
+      before it submits, and the sheet settles from the frame we have.
+    */
+    let calls = 0;
+    const signSheetEngine = (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: {
+        prompt: string;
+        references: unknown[];
+        renderBudget?: RenderBudget;
+      }) => withRetry(
+        "fal.signSheet",
+        async () => {
+          submissions.push(kind);
+          calls += 1;
+          if (calls > 1) {
+            throw new ProviderError("timeout", "deadline", {
+              providerRef: `req-${calls}`,
+              completed: false,
+            });
+          }
+          return defaultSheetEngine(kind).editWithReferences(request as never);
+        },
+        {
+          retries: 2,
+          baseDelayMs: 0,
+          ...(request.renderBudget ? { budget: request.renderBudget } : {}),
+        },
+      )),
+      generateView: vi.fn(),
+    });
+
+    await buildCastPackage(
+      deps({
+        signSheetEngine,
+        judge: () => vi.fn(async () => fail),
+      }),
+      input,
+    );
+
+    /*
+      Two per sheet and no more — the delivered frame plus one deadline. The
+      pool is the cap whichever road spends it.
+    */
+    for (const count of Object.values(submissionsPerSheet())) {
+      expect(count).toBeLessThanOrEqual(SHEET_MAX_RENDERS);
+    }
   });
 });

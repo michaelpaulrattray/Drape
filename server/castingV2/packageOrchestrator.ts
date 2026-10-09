@@ -743,7 +743,7 @@ export async function buildCastPackage(
         /* ⚠ **THE SAME PROMPT AND THE SAME REFERENCES EVERY TIME**, which is his
            ruling's own wording — so the thunk closes over the composition rather
            than taking anything that could differ between generations. */
-        render: () => renderSignSheet({
+        render: (renderBudget) => renderSignSheet({
           engine: (dependencies.signSheetEngine ?? castingSignSheetEngine)(plan.kind),
           anchor: input.anchor,
           wardrobeLine: input.wardrobeLine ?? null,
@@ -753,6 +753,9 @@ export async function buildCastPackage(
           inkCrops: input.inkCrops ?? [],
           featureWords: input.featureWords ?? [],
           operationId: input.operationId,
+          /* This sheet's share of Cid's paid-render cap, owned by
+             `settleSignSheet` and handed in per call (#1968). */
+          renderBudget,
         }),
         /* Built inside the promise for the engine's own reason, one line up:
            `castingViewConformanceJudge` throws on a missing `OPENROUTER_API_KEY`
