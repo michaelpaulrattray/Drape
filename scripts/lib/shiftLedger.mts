@@ -22,7 +22,8 @@
  *   CARDS LANDED PER SESSION    ≥ 3 on a small-card night
  *   GATE MINUTES PER CARD       ≤ 10
  *
- * ⚠ THE ATTRIBUTION IS BY TIME WINDOW, AND THAT IS A DECISION WITH A REASON.
+ * ⚠ THE ATTRIBUTION FALLS BACK TO A TIME WINDOW, AND THAT IS A DECISION WITH A
+ * REASON — the row's own `prNumber` and `branch` are read FIRST (#2097, below).
  * `crew_shift_runs.prNumber` holds ONE pr number per run, and the founder
  * removed the batch cap on 2026-09-05 — a shift now lands as many small cards
  * as it can, so the column cannot answer "how many". A PR is therefore
@@ -68,12 +69,44 @@
  *     seventeen before its close. The close stamp is the only bound that
  *     contains a shift's own merge.
  *
- * So the honest remainder is named rather than patched: the defect #2086
+ * So the honest remainder was named rather than patched: the defect #2086
  * describes in attribution is real (a dead row's late close can out-rank a live
  * run for a merge inside it) and **a time window cannot fix it** — the fields
  * that can are `prNumber` and `branch`, which anchor a PR to a run with no
- * clock at all. That is a design change, filed separately, not smuggled in
- * here.
+ * clock at all.
+ *
+ * # ⚠ AND THE ROW NOW ANCHORS ITS OWN PR, BEFORE ANY CLOCK IS READ (#2097)
+ *
+ * This header used to say the `prNumber` column *"cannot answer 'how many'"*
+ * and set it aside. That is true of COUNTING and wrong about ANCHORING: a run
+ * that names PR #1970 owns PR #1970 whatever hour it merged, and a PR whose
+ * head branch is a run's `branch` is that run's. So a merged PR is attributed
+ * by, in order:
+ *
+ *   1. **`prNumber`** — the run that names it;
+ *   2. **`branch`** — the run whose branch is the PR's head branch;
+ *   3. **the time window** above, for what neither field names.
+ *
+ * Two bounds on the anchors, each from a real shape of the rows:
+ *
+ *   * **an anchoring run must have STARTED at or before the merge.** A later
+ *     shift that writes an already-merged PR onto its own row (a verify, a
+ *     repair of the same card) did not land it; and a branch name is re-used
+ *     when a card is claimed again (`team/relay-<card>`), so a run that started
+ *     after the merge is different work under the same name. Among several
+ *     qualifying runs the LATER-starting wins — the window's own overlap rule.
+ *   * **an anchor on a run that is still OPEN leaves the PR unattributed**,
+ *     never handed to the clock. That run has no session yet, and giving its
+ *     merge to whichever closed row's window happens to contain it is exactly
+ *     the mis-credit #2097 exists to stop; the PR lands in its own session on
+ *     the first reading after that run is closed, and until then it is printed
+ *     as unattributed rather than credited to somebody else.
+ *
+ * ⚠ **EVERY ANCHORED PR WHOSE CLOCK ANSWER WAS DIFFERENT IS COUNTED AND
+ * PRINTED** (`changedHands`), beside the count per road, so a repair that
+ * quietly moves or loses work is visible on the ledger itself rather than in a
+ * one-off measurement. The window's own `endedAt` bound does not move: it still
+ * answers for every PR no row names, and #2086's measurement of it stands.
  *
  * Pure: readings in, figures out. No `gh`, no database, no network — the
  * reader that fetches lives in `machinist-ledger-read.mts`, so this whole
@@ -101,6 +134,14 @@ export type ShiftRunReading = {
    * did not select this column from is therefore not silently sharpened.
    */
   heartbeatAt?: string | null;
+  /**
+   * The PR this run recorded as its own (`crew_shift_runs.prNumber`) — the
+   * first anchor of the attribution (#2097). Optional, and absent means the
+   * clock alone, which is the reading this file had before.
+   */
+  prNumber?: number | null;
+  /** The branch this run worked on (`crew_shift_runs.branch`) — the second anchor. */
+  branch?: string | null;
 };
 
 /** One merged pull request, with the gate time it consumed. */
@@ -116,6 +157,25 @@ export type MergedPrReading = {
   gateMinutes: number;
   /** How many gate runs those minutes came from, so the mean is checkable. */
   gateRuns: number;
+  /**
+   * The PR's head branch (`headRefName`), matched against a run's `branch` —
+   * the second anchor (#2097). Optional: absent, only `prNumber` and the clock
+   * can place it.
+   */
+  headRefName?: string | null;
+};
+
+/** Which road placed a PR in its session (#2097). */
+export type AttributionRoad = "prNumber" | "branch" | "window";
+
+/** An anchored PR the time window alone would have placed differently. */
+export type ChangedHands = {
+  pr: number;
+  road: Exclude<AttributionRoad, "window">;
+  /** The run the row names, or null when that run is still open (held back). */
+  toRunId: number | null;
+  /** The run the window alone would have chosen, or null for unattributed. */
+  clockRunId: number | null;
 };
 
 type AttributedSession = {
@@ -142,6 +202,13 @@ export type ShiftLedgerReading = {
    * the caller is told rather than left to assume.
    */
   overlappingRunIds: number[];
+  /** How many attributed PRs each road placed; the window is the remainder (#2097). */
+  byRoad: Record<AttributionRoad, number>;
+  /**
+   * Anchored PRs the clock alone would have placed elsewhere (or nowhere), so
+   * the anchoring's effect is printed on every reading rather than asserted.
+   */
+  changedHands: ChangedHands[];
 };
 
 const at = (iso: string): number => new Date(iso).getTime();
@@ -197,6 +264,38 @@ export function attributePrsToSessions(
   const sessions: AttributedSession[] = closed.map((run) => ({ run, prs: [] }));
   const unattributed: MergedPrReading[] = [];
 
+  const byRoad: Record<AttributionRoad, number> = { prNumber: 0, branch: 0, window: 0 };
+  const changedHands: ChangedHands[] = [];
+  const sessionOf = new Map(sessions.map((session) => [session.run.id, session]));
+  /* Every run, OPEN ones included, in start order: an open run that names the
+     PR must be able to hold it back from the clock (see the header). */
+  const everyRun = [...runs].sort((a, b) => at(a.startedAt) - at(b.startedAt));
+
+  /** The run the rows themselves name for this PR, or null (see the header). */
+  const anchorOf = (
+    pr: MergedPrReading,
+  ): { road: Exclude<AttributionRoad, "window">; run: ShiftRunReading } | null => {
+    const merged = at(pr.mergedAt);
+    const latest = (match: (candidate: ShiftRunReading) => boolean): ShiftRunReading | null => {
+      let found: ShiftRunReading | null = null;
+      for (const candidate of everyRun) {
+        // A run that began after the merge cannot have landed it.
+        if (at(candidate.startedAt) > merged) continue;
+        // Later-starting wins; `everyRun` is in start order, so overwrite.
+        if (match(candidate)) found = candidate;
+      }
+      return found;
+    };
+    const byNumber = latest((candidate) => candidate.prNumber != null && candidate.prNumber === pr.number);
+    if (byNumber !== null) return { road: "prNumber", run: byNumber };
+    const head = pr.headRefName ?? null;
+    if (head !== null && head !== "") {
+      const byBranch = latest((candidate) => candidate.branch != null && candidate.branch === head);
+      if (byBranch !== null) return { road: "branch", run: byBranch };
+    }
+    return null;
+  };
+
   for (const pr of [...prs].sort((a, b) => at(a.mergedAt) - at(b.mergedAt))) {
     const merged = at(pr.mergedAt);
     let chosen: AttributedSession | null = null;
@@ -213,11 +312,40 @@ export function attributePrsToSessions(
       // straight overwrite is that rule.
       chosen = session;
     }
+
+    /* The row's own word outranks the clock (#2097). `chosen` above stays the
+       clock's answer so that a disagreement is counted, never silent. */
+    const anchor = anchorOf(pr);
+    if (anchor !== null) {
+      const owner = sessionOf.get(anchor.run.id) ?? null;
+      const clockRunId = chosen?.run.id ?? null;
+      if (clockRunId !== (owner?.run.id ?? null)) {
+        changedHands.push({ pr: pr.number, road: anchor.road, toRunId: owner?.run.id ?? null, clockRunId });
+      }
+      if (owner === null) {
+        // Its own run is still open: held back from the clock, printed as unattributed.
+        unattributed.push(pr);
+      } else {
+        owner.prs.push(pr);
+        byRoad[anchor.road] += 1;
+      }
+      continue;
+    }
+
     if (chosen === null) unattributed.push(pr);
-    else chosen.prs.push(pr);
+    else {
+      chosen.prs.push(pr);
+      byRoad.window += 1;
+    }
   }
 
-  return { sessions, unattributed, overlappingRunIds: [...overlapping].sort((a, b) => a - b) };
+  return {
+    sessions,
+    unattributed,
+    overlappingRunIds: [...overlapping].sort((a, b) => a - b),
+    byRoad,
+    changedHands,
+  };
 }
 
 export type LedgerFigures = {
@@ -357,6 +485,23 @@ export function renderLedgerBlock(reading: ShiftLedgerReading, windowLabel: stri
     const mark = v.met === null ? "  ?  " : v.met ? "  OK " : " MISS";
     lines.push(`  ${mark}  ${v.name}: ${num(v.figure)}  (target ${v.target})  — ${v.note}`);
   }
+  lines.push("");
+  lines.push(
+    `  attributed by the run's own PR number ${reading.byRoad.prNumber}, by its branch ` +
+      `${reading.byRoad.branch}, by the clock ${reading.byRoad.window} (#2097)`,
+  );
+  if (reading.changedHands.length > 0) {
+    lines.push(
+      `  ⚠ ${reading.changedHands.length} PR(s) the clock alone would have placed differently: ` +
+        reading.changedHands
+          .map(
+            (c) =>
+              `#${c.pr} → ${c.toRunId === null ? "held (its run is still open)" : `run ${c.toRunId}`}` +
+              ` by ${c.road}, clock said ${c.clockRunId === null ? "unattributed" : `run ${c.clockRunId}`}`,
+          )
+          .join("; "),
+    );
+  }
   if (f.unattributedPrs > 0) {
     lines.push("");
     lines.push(
@@ -365,7 +510,8 @@ export function renderLedgerBlock(reading: ShiftLedgerReading, windowLabel: stri
         reading.unattributed.map((p) => `#${p.number} (${p.mergedAt})`).join(", "),
     );
     lines.push(
-      "    A PR merged by hand, or during a shift whose row was never closed, lands here — as " +
+      "    A PR merged by hand, or one whose own run (named by PR number or branch) is still open, " +
+        "or one merged during a shift whose row was never closed, lands here — as " +
         "does one merged by a shift that both started AND ended outside this window, which is a " +
         "boundary artifact rather than an anomaly. It is printed rather than dropped so the " +
         "denominator stays honest.",
