@@ -3272,3 +3272,77 @@ describe("the Sign's paid renders are capped per sheet", () => {
     }
   });
 });
+
+/*
+  #2125 — THE TWO LOG LINES A READER OF CAST 71's SIGN MET FIRST, AND BOTH LIED.
+
+  The face sheet came back `content_policy` and every one of its three views
+  logged `failureClass: "unknown"`, because the settled sheet reaches the
+  per-view catch wrapped in `SignSheetUnavailableError`. And the package line
+  said *"failed views refunded their slices"* beside `refundedCredits: 0` —
+  false since #1968 made the Sign one flat charge. These arms read the lines a
+  real build writes, through the real coordinator, not a constant.
+*/
+describe("⚠ the logs tell the truth about a sheet that did not arrive (#2125)", () => {
+  const viewFailureLines = () => loggedWarnings
+    .filter(([, message]) => message === "[packageOrchestrator] view generation failed")
+    .map(([fields]) => fields as { angle: string; failureClass: unknown });
+
+  it("logs the provider's own class on every view of a refused sheet", async () => {
+    loggedWarnings.length = 0;
+    const signSheetEngine = (kind: SignSheetKind) => (
+      kind === "head"
+        ? deadSheetEngine(() => new ProviderError("content_policy", "flagged by a content checker"))(kind)
+        : defaultSheetEngine(kind)
+    );
+    const result = await buildCastPackage(deps({ signSheetEngine }), input);
+
+    expect(result.failed.sort()).toEqual(["closeUp", "sideClose", "threeQuarter"]);
+    const lines = viewFailureLines();
+    expect(lines.map((line) => line.angle).sort()).toEqual(["closeUp", "sideClose", "threeQuarter"]);
+    for (const line of lines) expect(line.failureClass, line.angle).toBe("content_policy");
+  });
+
+  it("logs null — not a made-up class — when the sheet ARRIVED and a later step failed", async () => {
+    /* The negative control: a frame that came back and would not cut has no
+       provider class, and the line must not borrow one. */
+    loggedWarnings.length = 0;
+    const arrivedUnusable = (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async () => ({
+        bytes: Buffer.from("this is not a png"),
+        contentType: "image/png",
+        latencyMs: 1,
+        provenance: { provider: "fal" as const, model: `sunburst-sheet-${kind}` },
+      })),
+      generateView: vi.fn(),
+    });
+    await buildCastPackage(deps({ signSheetEngine: arrivedUnusable }), input);
+
+    const lines = viewFailureLines();
+    expect(lines).toHaveLength(5);
+    for (const line of lines) expect(line.failureClass, line.angle).toBeNull();
+  });
+
+  it("never says a partial Sign refunded anything it did not", async () => {
+    loggedWarnings.length = 0;
+    const signSheetEngine = (kind: SignSheetKind) => (
+      kind === "head"
+        ? deadSheetEngine(() => new ProviderError("content_policy", "flagged"))(kind)
+        : defaultSheetEngine(kind)
+    );
+    const result = await buildCastPackage(deps({ signSheetEngine }), input);
+
+    expect(result.refundedCredits).toBe(0);
+    const incomplete = loggedWarnings.filter(([, message]) =>
+      typeof message === "string" && message.includes("package incomplete"));
+    expect(incomplete).toHaveLength(1);
+    const [fields, message] = incomplete[0] as [Record<string, unknown>, string];
+    expect(message).not.toMatch(/refund/i);
+    expect(fields).toMatchObject({ delivered: 2, refundedCredits: 0 });
+    /* And nothing anywhere on this build claims a refund happened. */
+    for (const [, line] of loggedWarnings) {
+      if (typeof line === "string") expect(line).not.toMatch(/refunded their slices|this slice refunds/);
+    }
+  });
+});

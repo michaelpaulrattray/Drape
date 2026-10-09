@@ -57,6 +57,7 @@ import {
   mayStillArrive,
   providerAlreadyBilled,
   type ImageResult,
+  type ProviderFailureClass,
 } from "../providers/types";
 import { ARRIVAL_ATTEMPTS, arrivalBackoffMs, waitMs } from "./arrivalRetry";
 import { captureRefusedRender } from "./diagnosticCapture";
@@ -594,9 +595,23 @@ async function keepRefusedFrames(
  * logs. `mayStillArrive` keeps answering only the question it owns.
  */
 export class SignSheetUnavailableError extends Error {
+  /**
+   * WHY THE SHEET DID NOT ARRIVE, read off the provider's own error — #2125.
+   *
+   * ⚠ **The wrapper used to hide it, and the per-view log lied as a result.**
+   * Every view on a refused sheet logged `failureClass: "unknown"` while the
+   * coordinator's own line, one statement earlier, said `content_policy`
+   * (cast 71, 2026-10-09). The class is the PROVIDER's fact about the request,
+   * so it is carried rather than re-mapped — and `null` when the sheet failed
+   * after it arrived (a cut or a provenance refusal), which is the same `null`
+   * {@link renderWithArrivalRetries} logs for the same reason.
+   */
+  readonly failureClass: ProviderFailureClass | null;
+
   constructor(kind: SignSheetKind, options: { cause?: unknown } = {}) {
     super(`the ${kind} Sign sheet did not arrive`, options);
     this.name = "SignSheetUnavailableError";
+    this.failureClass = options.cause instanceof ProviderError ? options.cause.failureClass : null;
   }
 }
 
