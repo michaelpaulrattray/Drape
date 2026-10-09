@@ -407,6 +407,13 @@ if (command === "add") {
     const reading = judgeSharedInstall({
       installedLock: readOrNull(installedLockfilePath(repoRoot)),
       treeLock: readOrNull(`${plan.path}/pnpm-lock.yaml`),
+      /* ⚠ THE TREE THE PRINTED COMMAND NAMES, ASKED ABOUT ITSELF (#2148, round
+         2). It is in `others` as well, where it is one collision among dozens —
+         but which lockfile an install THERE would produce is the question that
+         decides whether the repair line is a repair, and nothing was putting
+         it. `repoRoot` is also where `sharedInstallWarning` is told to point,
+         so the two cannot drift apart. */
+      repairTreeLock: readOrNull(`${repoRoot}/pnpm-lock.yaml`),
       otherTrees: others,
     });
     if (reading.kind === "skew") {

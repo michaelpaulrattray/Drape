@@ -2072,13 +2072,15 @@ describe("judgeSharedInstall — the install's own lockfile against this tree's 
   const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
 
   it("MATCH — the install was made from this tree's lockfile", () => {
-    expect(judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK, otherTrees: [] })).toEqual({ kind: "match" });
+    expect(judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] }))
+      .toEqual({ kind: "match" });
   });
 
   it("SKEW — a different lockfile, and the other trees it would move are named", () => {
     const reading = judgeSharedInstall({
       installedLock: OTHER,
       treeLock: LOCK,
+      repairTreeLock: OTHER,
       otherTrees: [
         { path: "C:/Users/Admin/Drape", lock: OTHER },
         { path: "C:/Users/Admin/drape-shift-seat-1", lock: OTHER },
@@ -2098,6 +2100,7 @@ describe("judgeSharedInstall — the install's own lockfile against this tree's 
     const reading = judgeSharedInstall({
       installedLock: OTHER,
       treeLock: LOCK,
+      repairTreeLock: LOCK,
       otherTrees: [{ path: "C:/Users/Admin/Drape", lock: LOCK }],
     });
     expect(reading.kind === "skew" && reading.collisions).toEqual([]);
@@ -2107,19 +2110,20 @@ describe("judgeSharedInstall — the install's own lockfile against this tree's 
     const reading = judgeSharedInstall({
       installedLock: OTHER,
       treeLock: LOCK,
+      repairTreeLock: LOCK,
       otherTrees: [{ path: "C:/Users/Admin/drape-review-9", lock: null }],
     });
     expect(reading.kind === "skew" && reading.collisions).toEqual([]);
   });
 
   it("UNREADABLE — the install records no lockfile, so the question is not answered", () => {
-    const reading = judgeSharedInstall({ installedLock: null, treeLock: LOCK, otherTrees: [] });
+    const reading = judgeSharedInstall({ installedLock: null, treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] });
     expect(reading.kind).toBe("unreadable");
     expect(reading.kind === "unreadable" && reading.why).toContain(INSTALLED_LOCKFILE_RELATIVE);
   });
 
   it("UNREADABLE — this tree has no lockfile at all", () => {
-    const reading = judgeSharedInstall({ installedLock: LOCK, treeLock: null, otherTrees: [] });
+    const reading = judgeSharedInstall({ installedLock: LOCK, treeLock: null, repairTreeLock: LOCK, otherTrees: [] });
     expect(reading.kind).toBe("unreadable");
     expect(reading.kind === "unreadable" && reading.why).toContain("pnpm-lock.yaml");
   });
@@ -2128,12 +2132,13 @@ describe("judgeSharedInstall — the install's own lockfile against this tree's 
     // Without the normalise this is a skew on every tree on the machine at
     // once, and the warning becomes noise the first time a checkout smudges.
     expect(
-      judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK.replace(/\n/g, "\r\n"), otherTrees: [] }),
+      judgeSharedInstall({ installedLock: LOCK, treeLock: LOCK.replace(/\n/g, "\r\n"), repairTreeLock: LOCK, otherTrees: [] }),
     ).toEqual({ kind: "match" });
   });
 
   it("a trailing-newline difference reads MATCH", () => {
-    expect(judgeSharedInstall({ installedLock: LOCK + "\n\n", treeLock: LOCK, otherTrees: [] })).toEqual({
+    expect(judgeSharedInstall({ installedLock: LOCK + "\n\n", treeLock: LOCK, repairTreeLock: LOCK, otherTrees: [] }))
+      .toEqual({
       kind: "match",
     });
   });
@@ -2162,7 +2167,7 @@ describe("sharedInstallWarning — the words a shift reads, driven by the same s
   it("⚠ CARRIES THE REPAIR COMMAND AND THE TREE TO RUN IT IN", () => {
     // A warning that describes a problem and not its one command is a warning
     // that gets read twice and acted on once.
-    const text = lines({ kind: "skew", collisions: [] });
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
     expect(text).toContain("pnpm install");
     expect(text).toContain("C:/Users/Admin/Drape");
     expect(text).toContain("CI installs fresh");
@@ -2174,7 +2179,7 @@ describe("sharedInstallWarning — the words a shift reads, driven by the same s
     // judge was right and the output was a wall nobody reads. The paths stay on
     // the verdict; the words carry the count and the two commands.
     const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
-    const text = lines({ kind: "skew", collisions: many });
+    const text = lines({ kind: "skew", collisions: many, repairTree: "same-lockfile" });
     expect(text).toContain("36 other tree(s)");
     expect(text).toContain("scripts/dev-servers.mts");
     expect(text).toContain("scripts/shift-worktree.mts list");
@@ -2184,9 +2189,81 @@ describe("sharedInstallWarning — the words a shift reads, driven by the same s
   });
 
   it("says nothing about other trees when none of them disagree", () => {
-    const text = lines({ kind: "skew", collisions: [] });
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
     expect(text).not.toContain("THE INSTALL IS SHARED");
     expect(text).toContain("pnpm install");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ THE REPAIR LINE IS ONLY A REPAIR WHEN IT WOULD REPAIR IT (#2148, round 2).
+
+     MEASURED on this machine the hour this was written, three lockfiles and no
+     two alike: the shared install was made from `04d1a5fd…`, the launching tree
+     held `24d2c74c…` and `origin/main` — which is what `add` cuts from, so it is
+     the new worktree's — held `be7c3b77…`. `pnpm install` installs the lockfile
+     of the tree it RUNS IN, so the named repair moved the install from the first
+     to the second while the worktree needed the third. The warning described the
+     skew correctly and then named a command that does not clear it.
+     ──────────────────────────────────────────────────────────────────────── */
+
+  it("⚠ WHEN THE REPAIR TREE IS ON A DIFFERENT LOCKFILE, IT SAYS SO AND DOES NOT CALL IT A REPAIR", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "different-lockfile" });
+    expect(text).toContain("WOULD NOT REPAIR IT");
+    expect(text).toContain("C:/Users/Admin/Drape");
+    /* The word that made it read as the answer. A shift scanning the block for
+       one command must not find one that leaves the red where it was. */
+    expect(text, "a command that does not clear the skew is still headed `repair:`")
+      .not.toContain("repair: run");
+    /* And it says whose act the fix is, because a seat may not advance that tree. */
+    expect(text).toContain("owner's act");
+  });
+
+  it("⚠ AN UNREADABLE REPAIR TREE IS ITS OWN ANSWER, never the friendly one", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "unreadable" });
+    expect(text).toContain("IS UNKNOWN");
+    expect(text).not.toContain("repair: run");
+    expect(text).not.toContain("WOULD NOT REPAIR IT");
+  });
+
+  it("⚠ POSITIVE CONTROL — the same-lockfile case still prints the one command", () => {
+    /* The arm that proves the two above are not simply deleting the command.
+       After a bump everyone has merged forward this is the ordinary case, and
+       `pnpm install` there really is the whole fix. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).toContain("repair: run `pnpm install` in C:/Users/Admin/Drape");
+    expect(text).not.toContain("WOULD NOT REPAIR IT");
+    expect(text).not.toContain("IS UNKNOWN");
+  });
+});
+
+describe("judgeSharedInstall reads the REPAIR TREE, which was in its input all along (#2148, round 2)", () => {
+  const LOCK = "lockfileVersion: '9.0'\n\nimporters:\n  .:\n    dependencies:\n      cookie:\n        specifier: ^2.0.1\n";
+  const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
+  const skew = (repairTreeLock: string | null) =>
+    judgeSharedInstall({ installedLock: OTHER, treeLock: LOCK, repairTreeLock, otherTrees: [] });
+
+  it("the launching tree agreeing with this worktree reads `same-lockfile`", () => {
+    const agreeing = skew(LOCK);
+    expect(agreeing.kind === "skew" && agreeing.repairTree).toBe("same-lockfile");
+  });
+
+  it("⚠ THE LIVE CASE — the launching tree BEHIND this worktree reads `different-lockfile`", () => {
+    /* The main tree sat 7 commits behind `origin/main` when this was written,
+       and exactly one of those commits moved the dependency list. */
+    const behind = skew(OTHER);
+    expect(behind.kind === "skew" && behind.repairTree).toBe("different-lockfile");
+  });
+
+  it("⚠ unreadable is NOT `same-lockfile` — falling back is how the command came to be printed", () => {
+    const unreadable = skew(null);
+    expect(unreadable.kind === "skew" && unreadable.repairTree).toBe("unreadable");
+  });
+
+  it("⚠ CRLF does not make the repair tree look different either", () => {
+    /* The same false alarm the top-level reading already guards: a smudged
+       checkout must not turn the one true repair line into a two-step. */
+    const smudged = skew(LOCK.replace(/\n/g, "\r\n"));
+    expect(smudged.kind === "skew" && smudged.repairTree).toBe("same-lockfile");
   });
 });
 
@@ -2224,6 +2301,17 @@ describe("the script's own text — the shared-install reading is INVOKED (#2148
       "the install is read before the worktree exists — it would always read unreadable",
     ).toBeGreaterThan(worktreeAdd);
     expect(add.text).toContain("sharedInstallWarning(reading, repoRoot)");
+    /* ⚠ AND THE REPAIR TREE IS ASKED ABOUT ITSELF (#2148, round 2). Every arm
+       in the block above drives the library and all of them stay green if the
+       call site stops passing this, which is the same invariant-7 shape this
+       describe exists for — and the field defaults to nothing, so a dropped
+       line reads as `unreadable` and the warning quietly stops naming a
+       repair at all. `repoRoot` is what the printed line points at, so it is
+       the only honest thing to read it from. */
+    expect(
+      add.text,
+      "`add` stopped telling the reading which tree the printed repair would run in",
+    ).toContain("repairTreeLock: readOrNull(`${repoRoot}/pnpm-lock.yaml`)");
   });
 
   it("⚠ `add` NEVER RUNS AN INSTALL ITSELF — the mutation stays with whoever can see the machine", () => {
