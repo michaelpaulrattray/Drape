@@ -2085,11 +2085,25 @@ export const castingV2Router = router({
       */
       const max = input.line === "voice" ? CAST_VOICE_MAX_LENGTH : CAST_PERSONALITY_MAX_LENGTH;
       if (input.text.length > max) {
+        /*
+          ⚠ **THE CARD'S NAME IS DECIDED BEFORE THE THROW, NOT INSIDE IT** —
+          `errorMessageInterpolation.test.ts`, which indicts an error expression
+          that MENTIONS a refusing key. `personality` and `voice` joined
+          `REFUSING_KEYS` with N2b's repair, and that guard derives its
+          population from that constant on purpose, so the two near-identical
+          templates it used to carry — each naming its own card inside the throw
+          — read as an error message handling a customer's own words.
+
+          It was a false indictment (the only thing interpolated was a cap, a
+          number we chose) and it is answered by writing the code plainly rather
+          than by excusing the site: ONE message, with the noun chosen above it.
+          The guard's allowlist is empty and stays empty, which is worth more
+          than a line excusing a message that never leaked anything.
+        */
+        const noun = input.line === "voice" ? "voice" : "personality";
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: input.line === "voice"
-            ? `Keep the voice to ${CAST_VOICE_MAX_LENGTH} characters or fewer.`
-            : `Keep the personality to ${CAST_PERSONALITY_MAX_LENGTH} characters or fewer.`,
+          message: `Keep the ${noun} to ${max} characters or fewer.`,
         });
       }
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
