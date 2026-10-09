@@ -46,6 +46,7 @@ const CSS = new URL("./castingV2.css", import.meta.url);
 const MODAL = new URL("./components/CastSettingsModal.tsx", import.meta.url);
 const FIELD = new URL("./components/BriefField.tsx", import.meta.url);
 const PAGE = new URL("../../pages/CastingV2.tsx", import.meta.url);
+const SHEET = new URL("../../pages/CastingSheet.tsx", import.meta.url);
 
 const read = async (url: URL) => {
   const text = await readFile(url, "utf8");
@@ -687,7 +688,7 @@ describe("what the hero must NOT grow back (§2f)", () => {
     its own copy of the string it is measuring cannot notice the string growing,
     which is the failure it exists to catch (working law 4).
   */
-  it("the hero placeholder fits one line — the plain example and the composed one", async () => {
+  it("the hero placeholder fits one line — the plain instruction and the composed one", async () => {
     const page = await read(PAGE);
     const literal = (name: string): string => {
       const at = page.indexOf(`const ${name} = "`);
@@ -695,14 +696,52 @@ describe("what the hero must NOT grow back (§2f)", () => {
       const from = page.indexOf('"', at) + 1;
       return page.slice(from, page.indexOf('"', from));
     };
-    const plain = literal("HERO_BRIEF_EXAMPLE");
-    const short = literal("HERO_BRIEF_EXAMPLE_SHORT");
+    const plain = literal("HERO_BRIEF_INSTRUCTION");
 
-    expect(plain.length, "the plain example must fit one line").toBeLessThanOrEqual(72);
+    expect(plain.length, "the plain instruction must fit one line").toBeLessThanOrEqual(72);
     expect(
-      `${short}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`.length,
-      "the example plus the drop offer must fit one line — it shipped wrapped at 91",
+      `${plain}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`.length,
+      "the instruction plus the drop offer must fit one line — an example plus the offer shipped wrapped at 91",
     ).toBeLessThanOrEqual(72);
+  });
+
+  /*
+    THE PLACEHOLDER IS AN INSTRUCTION, NOT AN EXAMPLE CAST (founder, 2026-10-09,
+    card 2121): *"It should be instructions not an example cast"*.
+
+    Both brief boxes are pinned here — the casting page's and the sheet page's
+    non-follow placeholder — because they are two literals in two pages and a
+    second copy drifts from the first (working law 4). The sheet's literal is
+    read out of its own placeholder expression and compared to the casting
+    page's constant, so a change to one without the other reddens. The follow
+    placeholder is pinned unchanged, because the ruling did not touch it.
+  */
+  it("both brief boxes say the instruction, and the follow placeholder is untouched", async () => {
+    const page = await read(PAGE);
+    const sheetSource = await read(SHEET);
+    const sheet = sheetSource.replace(/\s+/g, " ");
+    const at = page.indexOf('const HERO_BRIEF_INSTRUCTION = "');
+    expect(at, "the instruction must be declared in the casting page").toBeGreaterThan(-1);
+    const from = page.indexOf('"', at) + 1;
+    const instruction = page.slice(from, page.indexOf('"', from));
+
+    expect(instruction).toBe("Describe who you need");
+    expect(`${instruction}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}`).toBe(
+      "Describe who you need — or drop a picture of someone like them",
+    );
+
+    const gate = sheet.match(
+      /placeholder=\{ followLabel \? "([^"]*)" : "([^"]*)" \}/,
+    );
+    expect(gate, "the sheet's brief placeholder must be the follow / non-follow pair").not.toBeNull();
+    expect(gate![1]).toBe("Add anything that should change — the rest stays theirs");
+    expect(gate![2], "the sheet's non-follow placeholder is the same instruction").toBe(instruction);
+
+    for (const [name, source] of [["CastingV2", page], ["CastingSheet", sheetSource]] as const) {
+      expect(code(source), `${name} must not carry an example cast as a placeholder`).not.toContain(
+        "fitness creator",
+      );
+    }
   });
 
   it("each door is absent, never disabled, where the server did not open it", async () => {
@@ -742,7 +781,7 @@ describe("what the hero must NOT grow back (§2f)", () => {
       it reads now, whitespace removed.
     */
     const flat = page.replace(/\s+/g, " ");
-    expect(flat).toContain("conceptUploadEnabled ? `${HERO_BRIEF_EXAMPLE_SHORT}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}` : HERO_BRIEF_EXAMPLE");
+    expect(flat).toContain("conceptUploadEnabled ? `${HERO_BRIEF_INSTRUCTION}${CONCEPT_BRIEF_PLACEHOLDER_CLAUSE}` : HERO_BRIEF_INSTRUCTION");
     expect(page).toContain("offerFiles(");
   });
 });
