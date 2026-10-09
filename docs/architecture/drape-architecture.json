@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 54
+      "moduleCount": 55
     },
     {
       "id": "domain:client-shared",
@@ -1575,6 +1575,12 @@
     {
       "id": "module:client/src/features/castingV2/sheetState.ts",
       "path": "client/src/features/castingV2/sheetState.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/siblingsLines.ts",
+      "path": "client/src/features/castingV2/siblingsLines.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11287,6 +11293,10 @@
     {
       "id": "test:client/src/features/castingV2/shownCutSurface.test.ts",
       "path": "client/src/features/castingV2/shownCutSurface.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/siblingsLines.test.ts",
+      "path": "client/src/features/castingV2/siblingsLines.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/signTarget.test.ts",
@@ -21554,6 +21564,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/roomBusy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/siblingsLines.ts",
       "kind": "imports"
     },
     {

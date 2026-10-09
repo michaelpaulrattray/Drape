@@ -29,6 +29,7 @@ import {
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { masterLookLine } from "@/features/castingV2/masterLookLine";
+import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
   CastVoiceBadge,
@@ -1148,13 +1149,10 @@ export default function CastingRoom() {
                   </button>
                 </section>
 
-                {/* SIBLINGS — drawn sentence verbatim, tiles unlabelled. */}
+                {/* SIBLINGS — both sentences name the cast (#2141); tiles unlabelled. */}
                 <section className="dpc-rcard">
                   <span className="dpc-rcard__label">SIBLINGS</span>
-                  <p className="dpc-rcard__body">
-                    Variants from the same casting. Useful when a campaign needs a near-miss
-                    rather than a new face.
-                  </p>
+                  <p className="dpc-rcard__body">{siblingsIntroLine(data.name)}</p>
                   {/*
                     REAL FACES (founder ruling, 2026-08-02). These are the
                     candidates kept beside her on the same sheet, and retention
@@ -1217,9 +1215,7 @@ export default function CastingRoom() {
                       ))}
                     </div>
                   ) : (
-                    <p className="dpc-rcard__body">
-                      Nothing else was kept from {data.pronouns.possessive} casting.
-                    </p>
+                    <p className="dpc-rcard__body">{siblingsNoneLine(data.name)}</p>
                   )}
                   {/*
                     Offered only while the sheet still EXISTS. Her siblings'
