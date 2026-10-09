@@ -102,7 +102,9 @@ describe("the room offers no per-view Try again (card 2089)", () => {
       Sign, said by `TOTAL_LOSS_CONFESSION`, not by one tile).
     */
     expect(FAILED_SLOT_CONFESSION).toBe("This view didn't arrive");
-    expect(FAILED_SLOT_CONFESSION.toLowerCase(), "a per-view note claims no money (#1968)")
+    /* The card number stays in the comment above: this file is read by the
+       token guard, which treats an issue number in a STRING as a hex literal. */
+    expect(FAILED_SLOT_CONFESSION.toLowerCase(), "a per-view note claims no money")
       .not.toContain("refund");
     const strip = stripSpan(await roomSource());
     expect(strip).toContain('slot.state === "failed-refunded"');
