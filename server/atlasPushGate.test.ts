@@ -147,6 +147,28 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
   });
 
+  /*
+    ⚠ AND THE HOOK MUST NOT ERROR ON ITS OWN LINES, which is not implied by any
+    verdict assertion above — found the hard way on this very card. A docblock
+    edit left one comment line without its `#`, so sh executed it: every push
+    printed `.githooks/pre-push: line 316: alone: command not found` to stderr.
+    The verdict was still right, the maps were fresh, the push was taken, and
+    all thirteen arms stayed green — a hook can be broken and correct at once.
+    The whole suite asserts on MESSAGE CONTENT, so nothing here could see it.
+  */
+  it("⚠ the hook runs without sh errors of its own (#2167)", () => {
+    const { work, remote } = repoWithRemote();
+    const result = push(work);
+
+    expect(result.status, result.stderr).toBe(0);
+    /* sh names the failing script and line: `.githooks/pre-push: line N: ...`. */
+    expect(result.stderr).not.toMatch(/pre-push: line \d+:/);
+    /* Belt and braces for a shell that words it differently. */
+    expect(result.stderr).not.toContain("command not found");
+    expect(result.stderr).not.toContain("syntax error");
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
   it("REFUSES a stale map on a clean tree, and the remote does NOT move", () => {
     const { work, remote } = repoWithRemote();
     expect(push(work).status).toBe(0);

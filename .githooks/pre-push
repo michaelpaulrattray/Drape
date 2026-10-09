@@ -91,27 +91,11 @@
 # no way forward. Measured, nothing staged, one junction the only change:
 #
 #     push from the worktree, no node_modules  REFUSED — "maps are STALE"
-#     after mklink /J node_modules -> the main  architecture:check OK,
-#     tree's install, nothing else changed      capability:check OK, push taken
+#     after a junction to the main tree's      architecture:check OK,
+#     install, nothing else changed            capability:check OK, push taken
 #
-# **Not one byte of the commit changed between those two readings.** The map was
+# Not one byte of the commit changed between those two readings. The map was
 # never stale; only whether the checker could run.
-#
-# ⚠ THE EXIT CODE CANNOT TELL THEM APART, WHICH IS WHY THIS READS THE OUTPUT.
-# The obvious discriminator is 127, the shell's own command-not-found, and on
-# this road it is the wrong one: `pnpm` catches the missing binary itself and
-# exits **1**, measured in a directory with no install —
-#
-#     > tsx scripts/check-architecture.mts
-#     'tsx' is not recognized as an internal or external command,
-#      ELIFECYCLE  Command failed with exit code 1.
-#      WARN   Local package.json exists, but node_modules missing, did you mean to install?
-#     EXIT=1
-#
-# — the same 1 a genuinely stale map exits with. So `check_never_ran` reads 127
-# AND the output's own sentences, and it FAILS CLOSED: an output it does not
-# recognise is still a refusal, because the one thing this arm may never do is
-# wave a genuinely stale map through (#606, #519 are the whole point of it).
 #
 # ⚠ THREE STATED LIMITS, because a guard that half-declares one reads as coverage.
 #
@@ -139,129 +123,15 @@
 
 # ⚠ DID THE CHECK RUN AT ALL? — the question this arm did not ask until #2167.
 #
-# Takes the output and the status. True only for the shapes that mean *no
-# verdict was produced*, and false for everything else, because the default must
-# be the refusal: a map this arm waves through is a map the gate catches at 3½
-# minutes, which is the cost #606 exists to avoid.
+# Takes the check's output and its status. True only for the shapes that mean
+# *no verdict was produced*, and false for everything else, because the default
+# must be the refusal: a stale map this arm waves through is a map the gate
+# catches at 3 and a half minutes, which is the cost #606 exists to avoid.
 #
-# The sentences, each measured rather than guessed:
-#
-#   node_modules missing        pnpm's own WARN with no install present. The most
-#                               general of the four: it fires whatever binary the
-#                               script names, which is why it is first.
-#   is not recognized as an     cmd.exe, the binary absent. This is the one the
-#   internal or external        #2167 repro actually printed on this machine.
-#   command
-#   command not found /         POSIX sh, same cause, both of its spellings
-#   : not found[[:space:]]*$    (`sh: 1: tsx: not found` has no "command").
-#                               The looser half is ANCHORED at end of line on
-#                               purpose: bare `not found` is ordinary English
-#                               and would read a reworded staleness message as
-#                               an absent checker, which is the one wrong
-#                               direction here. The trailing-space class is
-#                               for CRLF — `#!/bin/sh
-#
-# TWO ARMS. ARM 1 — the rite is the only push path to production. ARM 2 — a
-# BRANCH push carries a fresh map, which until now only `main` did.
-#
-# ─────────────────────────────────────────────────────────── ARM 1
-#
-# THE RITE IS THE ONLY PUSH PATH TO PRODUCTION, BY CONSTRUCTION.
-#
-# Ordered fable-982 after the SECOND hand-push in the program's record. The
-# first (opus-630) produced a sentence in the rite's own header — "there is no
-# such thing as a deploy too small for the ceremony" — and the second happened
-# with that sentence already written. A sentence did not hold; a sentence will
-# not hold. So the ceremony stops being a discipline and becomes a gate.
-#
-# `main` deploys production — since 2026-09-06 Railway builds from it directly
-# (#508), and `local-migration`, which used to deploy beside it, is deleted. A
-# push to `main` without the rite skips the freeze check, which is the reading
-# that asks whether the founder has paid work in flight — the judgement that is
-# exactly wrong when it is wrong. (A PR merge is the other road to `main` and
-# carries the gate instead; this hook is about HAND pushes.)
-#
-# The marker is set by scripts/deploy-rite.mts on the git child it spawns, and
-# by nothing else. It is deliberately not a file, a flag or a branch name: those
-# can be produced by a shift that has decided its push is fine.
-#
-# THE ESCAPE IS ASKING, NOT --no-verify. If a push genuinely must bypass the
-# rite, say so in the mailbox and get a word back. Bypassing a hook silently is
-# the same act this hook exists to stop, one level down.
-#
-# Installed by:  git config core.hooksPath .githooks
-# The rite refuses to run when that config is absent, so the guard cannot be
-# quietly uninstalled by the next person who clones.
-
-# ─────────────────────────────────────────────────────────── ARM 2
-#
-# A BRANCH PUSH GETS THE FRESHNESS BACKSTOP `main` ALREADY HAD (cards #606, #519).
-#
-# `.githooks/pre-commit` ARM 3 (#501) regenerates the generated maps on any
-# commit that could move them, so a branch normally pushes the map of its own
-# tree. **But git does not run `pre-commit` on every road to a commit.**
-# Measured here on git 2.55.0.windows.3, one scratch repository per road:
-#
-#     road                  pre-commit  prepare-commit-msg  post-commit  post-rewrite
-#     ordinary commit           yes           yes               yes           -
-#     git revert --no-edit      NO            yes               yes           -
-#     git cherry-pick           NO            yes               yes           -
-#     git rebase (replay)       NO            yes               yes          yes
-#     git commit --amend        yes           yes               yes          yes
-#
-# So three roads skip the regeneration, and every one of them is a road shifts
-# now walk on purpose: **under deploy-on-merge (#508) every rollback proof is a
-# revert.** #606 is that, caught on PR #605 — `git revert --no-edit` deleted a
-# module and the commit carried the old map, the gate's Architecture Atlas
-# freshness step went red at ~3½ minutes, and it cost a regenerate, a second
-# commit and a second seven-minute gate. #519 is the rebase half: the merge
-# driver leaves a PLACEHOLDER for `pre-commit` to replace, and on a replayed
-# commit nothing replaces it.
-#
-# ⚠ WHY NOT REPAIR IT AT THE COMMIT, WHICH IS WHAT BOTH CARDS FIRST PROPOSED.
-# `prepare-commit-msg` fires on all three roads, so it looks like the answer.
-# Driven instead of assumed: a `prepare-commit-msg` that writes and `git add`s a
-# file lands it in a cherry-pick and in a rebase — **and NOT in a revert**,
-# where the hook fires twice and the staged file is dropped. A repair that works
-# on two of the three roads and silently fails on the third — the common one —
-# is worse than no repair, because it reads as coverage. `post-commit` cannot
-# refuse (its exit code is ignored) and cannot amend safely mid-sequencer.
-#
-# So this is a GATE rather than a repair, and it is the same reading the rite
-# already performs before it pushes `main` — `merge-atlas`'s own stated limit
-# ends *"the rite's freshness check is the backstop either way"*, which was true
-# of `main` and false of every branch, because a branch push never meets the
-# rite. This closes that asymmetry with the rite's own two commands.
-#
-# ⚠ IT REFUSES ONLY WHEN ITS VERDICT IS TRUSTWORTHY. Both checks read the bytes
-# ON DISK, not the committed tree. With uncommitted work in a path the
-# generators read, "stale" may be true of the working tree and false of the
-# commit being pushed — so in that state it WARNS and lets the push through,
-# rather than blocking a legitimate push on a question it cannot answer. The
-# population is `.githooks/atlas-paths`, shared with the commit hook so the two
-# cannot drift about which files matter.
-#
-# ⚠ AND "STALE" IS NOT THE ONLY WAY THE CHECK CAN COME BACK NON-ZERO — #2167,
-# 2026-10-10, found by the Machinist being refused by it. Until then this arm
-# read ONLY the exit code, so *the generator ran and the map is stale* and *the
-# generator could not run at all* were one answer. In a worktree cut with plain
-# `git worktree add` and no `node_modules`, a docs-only commit was refused with
-# "the working tree is clean and the generated maps are STALE" above the remedy
-# `pnpm architecture:generate`, which needs the same missing `tsx` and fails
-# identically — so an author who obeyed the instruction got the same error and
-# no way forward. Measured, nothing staged, one junction the only change:
-#
-#     push from the worktree, no node_modules  REFUSED — "maps are STALE"
-#     after mklink /J node_modules -> the main  architecture:check OK,
-#     tree's install, nothing else changed      capability:check OK, push taken
-#
-# **Not one byte of the commit changed between those two readings.** The map was
-# never stale; only whether the checker could run.
-#
-# ⚠ THE EXIT CODE CANNOT TELL THEM APART, WHICH IS WHY THIS READS THE OUTPUT.
+# ⚠ THE EXIT CODE CANNOT TELL THE TWO APART, WHICH IS WHY THIS READS THE OUTPUT.
 # The obvious discriminator is 127, the shell's own command-not-found, and on
 # this road it is the wrong one: `pnpm` catches the missing binary itself and
-# exits **1**, measured in a directory with no install —
+# exits 1, measured in a directory with no install —
 #
 #     > tsx scripts/check-architecture.mts
 #     'tsx' is not recognized as an internal or external command,
@@ -269,58 +139,31 @@
 #      WARN   Local package.json exists, but node_modules missing, did you mean to install?
 #     EXIT=1
 #
-# — the same 1 a genuinely stale map exits with. So `check_never_ran` reads 127
-# AND the output's own sentences, and it FAILS CLOSED: an output it does not
-# recognise is still a refusal, because the one thing this arm may never do is
-# wave a genuinely stale map through (#606, #519 are the whole point of it).
+# — the same 1 a genuinely stale map exits with. The sentences, each measured
+# rather than guessed:
 #
-# ⚠ THREE STATED LIMITS, because a guard that half-declares one reads as coverage.
-#
-# 1. IT JUDGES THE CURRENT WORKING TREE, WHATEVER REF IS BEING PUSHED. `git push
-#    origin some-other-branch` from this checkout gets a verdict about THIS
-#    tree — wrong in both directions, and the false-ALLOW direction (tree fresh,
-#    pushed branch stale) is silent. That is the pre-existing status quo rather
-#    than something this arm introduced, and the gate remains the backstop for
-#    it; it is named here rather than left to be discovered.
-# 2. The `printf` of the dirty list is unquoted so each name prints on its own
-#    line. A filename holding a space splits, and a glob character expands. It
-#    is display only — the refusal decision never reads it — and the tradeoff is
-#    a legible list against a cosmetic edge nothing in this tree has.
-# 3. `check_never_ran` reads SENTENCES, and a provider may reword one. A pnpm or
-#    shell release that renames "node_modules missing" lands this arm back on
-#    its OLD behaviour — a refusal carrying a remedy that cannot work — rather
-#    than on a wrong allow. That is the safe direction, and it is why the
-#    failing direction is not hidden: the refusal prints the check's own tail,
-#    so an unrecognised sentence is on screen for the next reader.
-#
-# `drape.atlasCheck` overrides the check command; its only intended use is the
-# guard's own test, which drives real temporary repositories with no generator.
-# Driven by `server/atlasPushGate.test.ts`, against real repositories and a real
-# `git push` to a real bare remote.
-
-# ⚠ DID THE CHECK RUN AT ALL? — the question this arm did not ask until #2167.
-#
-# Takes the output and the status. True only for the shapes that mean *no
-# verdict was produced*, and false for everything else, because the default must
-# be the refusal: a map this arm waves through is a map the gate catches at 3½
-# minutes, which is the cost #606 exists to avoid.
-#
-# The sentences, each measured rather than guessed:
-#
-#   node_modules missing        pnpm's own WARN with no install present. The most
-#                               general of the four: it fires whatever binary the
-#                               script names, which is why it is first.
+#   node_modules missing        pnpm's own WARN with no install present. The
+#                               most general of them: it fires whatever binary
+#                               the script names, which is why it is first.
 #   is not recognized as an     cmd.exe, the binary absent. This is the one the
 #   internal or external        #2167 repro actually printed on this machine.
 #   command
- alone misses a line ending .
+#   command not found           POSIX sh, same cause, one of its two spellings.
+#   : not found at end of line  The other spelling (`sh: 1: tsx: not found` has
+#                               no "command"), ANCHORED with [[:space:]]*$ on
+#                               purpose: bare `not found` is ordinary English,
+#                               and unanchored it would read a reworded
+#                               staleness message as an absent checker — the
+#                               one wrong direction here. The space class is
+#                               there for a CR byte sitting before the line
+#                               ending, which a bare anchor would miss.
 #   ERR_PNPM_NO_SCRIPT          the script is not declared — a renamed script is
 #                               still a verdict that was never produced.
 #   Cannot find module          node resolving against a half-written install,
 #                               which is #2148's state rather than a hypothetical.
 #
-# 127 is read too and is NOT redundant with them: it is the shell's own answer
-# when the check command itself is missing (no `pnpm` on PATH), where there is
+# 127 is read too and is NOT redundant with those: it is the shell's own answer
+# when the check COMMAND itself is missing (no `pnpm` on PATH), where there is
 # no pnpm left to print a sentence.
 check_never_ran() {
   never_ran_out=$1
@@ -353,10 +196,9 @@ atlas_push_gate() {
 
   # ⚠ BEFORE THE DIRTY READ, AND THE ORDER IS THE POINT (#2167). When the check
   # never ran, the dirty list is not the reason and must not be offered as one:
-  # a tree that happens to hold uncommitted sources would already have warned
-  # and allowed here, with a sentence blaming the wrong thing, and a clean one
-  # was refused outright. Both are the same missing question, so it is asked
-  # first and answers for itself.
+  # a tree that happened to hold uncommitted sources would already have warned
+  # here with a sentence blaming the wrong thing, and a clean one was refused
+  # outright. Both are the same missing question, so it is asked first.
   if check_never_ran "$out" "$status"; then
     echo "" >&2
     echo "atlas: ⚠ COULD NOT JUDGE — the freshness check did not run, so nothing is" >&2
