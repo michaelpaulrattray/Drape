@@ -25,7 +25,7 @@ import {
   castPersonaEditBlock,
   castPersonaSystemPrompt,
   createCastPersonaReader,
-  fitToHerCap,
+  fitToCap,
   parseCastPersonaDraft,
   PERSONA_EDIT_SENTENCE_LIMIT,
   PERSONA_EDIT_SENTENCE_MAX_CHARS,
@@ -307,27 +307,27 @@ describe("the parse, driven without an engine at all", () => {
 });
 
 /**
- * A DRAFTED LINE SHE CAN ACTUALLY EDIT — the relay's finding 3 on PR #2114.
+ * A DRAFTED LINE A CUSTOMER CAN ACTUALLY EDIT — the relay's finding 3 on PR #2114.
  *
- * The caps in `shared/inputLimits.ts` were HER ceiling and bounded nothing we
- * wrote, so a long reply was stored and drawn and then she could not save a
- * one-word change to it: `editCastPersonaField` refuses over the cap and the
- * textarea's `maxLength` will not even let her type. **The product writing a
+ * The caps in `shared/inputLimits.ts` were the CUSTOMER's ceiling and bounded
+ * nothing we wrote, so a long reply was stored and drawn and then a one-word
+ * change to it could not be saved: `editCastPersonaField` refuses over the cap
+ * and the textarea's `maxLength` will not even let it be typed. **The product writing a
  * line the product then refuses is the machinery showing through.**
  */
-describe("a drafted line is fitted to the cap she will be held to", () => {
+describe("a drafted line is fitted to the cap the customer is held to", () => {
   const reply = (personality: string, voice: string) =>
     JSON.stringify({ personality, voice });
 
   it("leaves a line that already fits exactly as it came", () => {
-    const line = "Unhurried and sure of herself — deliberate movements, holds eye contact.";
-    expect(fitToHerCap(line, CAST_PERSONALITY_MAX_LENGTH)).toBe(line);
+    const line = "Unhurried and self-assured — deliberate movements, holds eye contact.";
+    expect(fitToCap(line, CAST_PERSONALITY_MAX_LENGTH)).toBe(line);
   });
 
   it("cuts an over-long line back to its last whole sentence", () => {
     const keep = "Watchful, and slower to speak than the room expects.";
     const line = `${keep} ${"And then a second sentence that runs on. ".repeat(12)}`;
-    const fitted = fitToHerCap(line, CAST_PERSONALITY_MAX_LENGTH);
+    const fitted = fitToCap(line, CAST_PERSONALITY_MAX_LENGTH);
 
     expect(fitted.length).toBeLessThanOrEqual(CAST_PERSONALITY_MAX_LENGTH);
     expect(fitted.startsWith(keep)).toBe(true);
@@ -336,11 +336,11 @@ describe("a drafted line is fitted to the cap she will be held to", () => {
   });
 
   it("gives up rather than truncating mid-word when no sentence end is in reach", () => {
-    expect(fitToHerCap("x".repeat(CAST_VOICE_MAX_LENGTH + 40), CAST_VOICE_MAX_LENGTH)).toBe("");
+    expect(fitToCap("x".repeat(CAST_VOICE_MAX_LENGTH + 40), CAST_VOICE_MAX_LENGTH)).toBe("");
   });
 
   it("treats a full stop with nothing in front of it as no sentence at all", () => {
-    expect(fitToHerCap(`.${"x".repeat(CAST_VOICE_MAX_LENGTH + 10)}`, CAST_VOICE_MAX_LENGTH)).toBe("");
+    expect(fitToCap(`.${"x".repeat(CAST_VOICE_MAX_LENGTH + 10)}`, CAST_VOICE_MAX_LENGTH)).toBe("");
   });
 
   /* ------------------------------------------- and through the real parse */
@@ -355,7 +355,7 @@ describe("a drafted line is fitted to the cap she will be held to", () => {
     /*
       ⚠ IT KEEPS AS MANY WHOLE SENTENCES AS FIT, not just the first — which is
       what `lastIndexOf` means and is the right answer: a draft should be as
-      much of what was written as she can be held to. This arm first asserted
+      much of what was written as the customer can be held to. This arm first asserted
       `"Low and unhurried."` alone and the code was right.
     */
     expect(draft!.voice.length).toBeLessThanOrEqual(CAST_VOICE_MAX_LENGTH);
@@ -380,7 +380,7 @@ describe("a drafted line is fitted to the cap she will be held to", () => {
   it.each([
     ["personality", CAST_PERSONALITY_MAX_LENGTH],
     ["voice", CAST_VOICE_MAX_LENGTH],
-  ] as const)("whatever the parse returns for %s is within her cap", (line, cap) => {
+  ] as const)("whatever the parse returns for %s is within the cap", (line, cap) => {
     /*
       ⚠ DRIVEN OVER BOTH LINES WITH ONE LONG REPLY, because the two caps are
       different numbers and a fit applied to one line only would pass an arm

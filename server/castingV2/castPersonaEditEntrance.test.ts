@@ -1,5 +1,5 @@
 /**
- * THE ENTRANCE SHE REWRITES A LINE THROUGH — `castingV2.editCastPersonaField`,
+ * THE ENTRANCE A LINE IS REWRITTEN THROUGH — `castingV2.editCastPersonaField`,
  * driven through the REAL router (the relay's finding 6 on PR #2114, #1242).
  *
  * # Why this file exists
@@ -131,8 +131,8 @@ afterEach(() => {
 
 /* ------------------------------------------------------ 1 · it works at all */
 
-describe("she rewrites a line", () => {
-  it("writes her text and hands the card back with the badge already gone", async () => {
+describe("a customer rewrites a line", () => {
+  it("writes the text and hands the card back with the badge already gone", async () => {
     const { userId, caller: trpc } = caller();
 
     await expect(trpc.castingV2.editCastPersonaField({
@@ -156,7 +156,7 @@ describe("she rewrites a line", () => {
     expect(resolves[0]).toEqual({ userId, castId: CAST_ID });
   });
 
-  it("trims her text before storing it, so a trailing newline is not her line", async () => {
+  it("trims the text before storing it, so a trailing newline is not part of the line", async () => {
     const { caller: trpc } = caller();
     await trpc.castingV2.editCastPersonaField({
       castId: CAST_ID, line: "voice", text: "  Low and dry.\n",
@@ -202,7 +202,7 @@ describe("the per-line cap the schema cannot carry", () => {
     expect(writes).toHaveLength(0);
   });
 
-  it("refuses a line she has emptied rather than storing a blank card", async () => {
+  it("refuses an emptied line rather than storing a blank card", async () => {
     const { caller: trpc } = caller();
     await expect(trpc.castingV2.editCastPersonaField({
       castId: CAST_ID, line: "voice", text: "   ",
@@ -237,8 +237,8 @@ describe("the input is closed", () => {
 
 /* --------------------------------------------------- 4 · the two refusals */
 
-describe("a Cast that is not hers", () => {
-  it("answers NOT_FOUND when the public id resolves to nothing of hers", async () => {
+describe("a Cast that is not theirs", () => {
+  it("answers NOT_FOUND when the public id resolves to nothing of theirs", async () => {
     resolved.model = null;
     const { caller: trpc } = caller();
     await expect(trpc.castingV2.editCastPersonaField({
@@ -250,7 +250,7 @@ describe("a Cast that is not hers", () => {
   /*
     ⚠ THE SAME ANSWER FROM THE OTHER SIDE, and the sameness is the point. The
     resolve is a free refusal and the STATEMENT is the authority (invariant 1),
-    so a row that did not move — deleted between the two, or never hers — must
+    so a row that did not move — deleted between the two, or never theirs — must
     read exactly as "no such Cast". A distinct code here would tell a stranger
     that the cast exists.
   */
@@ -290,7 +290,7 @@ describe("the casting door", () => {
       message: "Casting is not available for this account yet.",
     });
     expect(writes).toHaveLength(0);
-    /* And it refuses BEFORE resolving her cast, so a closed door reveals
+    /* And it refuses BEFORE resolving the cast, so a closed door reveals
        nothing about what the account has. */
     expect(resolves).toHaveLength(0);
   });

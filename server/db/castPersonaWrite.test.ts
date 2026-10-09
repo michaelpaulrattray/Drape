@@ -26,8 +26,8 @@
  *      customer's Cast, and neither can reach a deleted one;
  *   2. **the redraft refuses an edited line and her edit does not** — the two
  *      `isNull(…EditedAt)` terms are on the mint's statement and absent from
- *      hers, which is what lets her rewrite a line twice while stopping a
- *      future redraft from deleting what she wrote;
+ *      the edit's, which is what lets a line be rewritten twice while stopping
+ *      a future redraft from deleting what the customer wrote;
  *   3. **her edit touches ONE line and one stamp** — driven over the DERIVED
  *      set of line kinds, so a third line added to `CAST_PERSONA_FIELDS`
  *      is asserted here with no edit to this file.
@@ -240,7 +240,7 @@ describe("the statement `writeCastPersonaDraft` really sends", () => {
     expect(params).toContain(MODEL_ID);
   });
 
-  it("writes the two lines and the draft stamp, and no stamp of hers", async () => {
+  it("writes the two lines and the draft stamp, and neither edit stamp", async () => {
     await writeCastPersonaDraft({
       userId: USER_ID,
       modelId: MODEL_ID,
@@ -255,10 +255,10 @@ describe("the statement `writeCastPersonaDraft` really sends", () => {
     expect(set).toContain("`voice` = ?");
     expect(set).toContain("`personaDraftedAt` = ?");
     /*
-      AND NEITHER OF HER STAMPS IS IN THE `set`. Stamping one here would badge a
-      line as HERS the moment we drafted it, and the badge is derived as
-      *drafted and not since edited* — so the card would silently lose its
-      Drafted mark on a line she has never seen.
+      AND NEITHER EDIT STAMP IS IN THE `set`. Stamping one here would mark a
+      line as the customer's the moment we drafted it, and the badge is derived
+      as *drafted and not since edited* — so the card would silently lose its
+      Drafted mark on a line nobody has seen yet.
     */
     expect(set).not.toContain("`personalityEditedAt` = ?");
     expect(set).not.toContain("`voiceEditedAt` = ?");
@@ -284,7 +284,7 @@ describe("the statement `editCastPersonaField` really sends", () => {
         userId: USER_ID,
         modelId: MODEL_ID,
         line: kind,
-        text: "her own words",
+        text: "their own words",
         now: new Date("2026-10-09T04:00:00.000Z"),
       });
 
@@ -294,7 +294,7 @@ describe("the statement `editCastPersonaField` really sends", () => {
       expect(sql).toContain("`userId` = ?");
       expect(sql).toContain("`deletedAt` is null");
       /*
-        ⚠ THE WHOLE `where` IS READ, not the statement — her text goes in the
+        ⚠ THE WHOLE `where` IS READ, not the statement — the text goes in the
         `set`, and a `set` containing the word would make a `not.toContain` arm
         over the whole SQL pass for the wrong reason.
       */
@@ -302,7 +302,7 @@ describe("the statement `editCastPersonaField` really sends", () => {
       expect(where).not.toContain("EditedAt");
       expect(params).toContain(USER_ID);
       expect(params).toContain(MODEL_ID);
-      expect(params).toContain("her own words");
+      expect(params).toContain("their own words");
     },
   );
 
@@ -311,7 +311,7 @@ describe("the statement `editCastPersonaField` really sends", () => {
     async (kind) => {
       const other = kind === "personality" ? "voice" : "personality";
       await editCastPersonaField({
-        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "her own words",
+        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "their own words",
       });
 
       const { sql } = onlyStatement();
@@ -325,10 +325,10 @@ describe("the statement `editCastPersonaField` really sends", () => {
     },
   );
 
-  it("reports false when no row was hers, so the entrance owns the refusal", async () => {
+  it("reports false when no row was theirs, so the entrance owns the refusal", async () => {
     answer.affectedRows = 0;
     await expect(editCastPersonaField({
-      userId: USER_ID, modelId: MODEL_ID, line: "voice", text: "hers",
+      userId: USER_ID, modelId: MODEL_ID, line: "voice", text: "theirs",
     })).resolves.toBe(false);
   });
 
@@ -340,7 +340,7 @@ describe("the statement `editCastPersonaField` really sends", () => {
   */
   it.each([[0], [-1], [1.5]])("refuses a userId of %s without sending anything", async (userId) => {
     await expect(editCastPersonaField({
-      userId, modelId: MODEL_ID, line: "voice", text: "hers",
+      userId, modelId: MODEL_ID, line: "voice", text: "theirs",
     })).rejects.toThrow(TypeError);
     expect(sent).toHaveLength(0);
   });

@@ -107,7 +107,7 @@ export const REDACTED = "[redacted]";
  * it is discharged rather than quoted: the schema's own docblock calls these two
  * *"the same family as `masterPrompt`"*, so an error event carrying either one
  * carries a customer's creative content and refuses exactly as the recipe group
- * does. They are real columns that the Sign writes and her edit rewrites, which
+ * does. They are real columns the Sign writes and a customer's edit rewrites, which
  * is the distinction the ⚠ above exists to draw — this is not a ninth key for a
  * field nothing can produce.
  */
