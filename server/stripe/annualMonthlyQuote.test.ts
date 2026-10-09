@@ -120,6 +120,30 @@ describe("3 · a switch off a yearly plan takes back only what was handed over",
   });
 });
 
+describe("3b · a spent credit is charged at the rate of the months handed over, never the whole year's", () => {
+  it("an instant switch off a yearly plan mid-year, all due months landed and the allowance spent", () => {
+    /* Instant only where the new month costs more than the unused year it
+       replaces (#1936 defers the rest) — found by scanning the ladder rather
+       than typed, and the arm refuses to pass vacuously. */
+    const top = PAID[PAID.length - 1];
+    const units = top === PLAN_CREDIT_SLIDER_PLAN ? PLAN_CREDIT_SLIDER_MAX_UNITS : undefined;
+    let checked = 0;
+    for (let elapsedDays = 40; elapsedDays < 360; elapsedDays += 5) {
+      const now = T0 + elapsedDays * DAY;
+      const begun = Math.min(12, Math.floor((elapsedDays / YEAR_DAYS) * 12) + 1);
+      const quote = quotePlanChange(annualState(), top as never, "monthly", now, units, 0, begun);
+      if (quote.deferred || quote.spentShareCredits === 0 || begun >= 12) continue;
+      const share = grantedShareMonths(12, begun, quote.daysRemaining, quote.totalDays);
+      const wholeYearUnused = Math.floor((quote.currentPlanPrice * quote.daysRemaining) / quote.totalDays);
+      const handedOverValue = Math.floor((quote.currentPlanPrice * share) / 12);
+      expect(quote.spentShareCharge).toBe(Math.floor((handedOverValue * quote.spentShareCredits) / quote.spentShareCredits));
+      expect(quote.spentShareCharge).toBeLessThan(wholeYearUnused);
+      checked += 1;
+    }
+    if (checked === 0) throw new Error("no instant mid-year switch exists on this ladder — the arm would assert nothing");
+  });
+});
+
 describe("4 · yearly still costs less per credit than monthly (his ruling, via Cid)", () => {
   it("on every paid rung, a year's credits cost less each than a month's", () => {
     for (const tier of PAID) {
