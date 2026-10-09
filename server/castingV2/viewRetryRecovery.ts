@@ -139,7 +139,7 @@ export type ViewRetryRecoveryDependencies = {
   /**
    * WHAT IS OWED BACK WHEN SOMETHING DID LAND — asked only then (#2133).
    *
-   * ⚠ **ABSENT MEANS ZERO, WHICH IS HIS FLAT RULE AND EVERY ROAD'S ANSWER
+   * ⚠ **ABSENT MEANS ZERO, WHICH IS THE FOUNDER'S FLAT RULE AND EVERY ROAD'S ANSWER
    * BEFORE THIS EXISTED.** Only the Regenerate's press supplies it: #2127
    * refunds one share per view a sheet the image provider refused would have
    * made, and those shares are owed even when the other sheet delivered. The
@@ -608,7 +608,7 @@ async function adjudicate(
     when none did.
   */
   /*
-    ⚠ **AND THE ONE AMENDMENT, WHEN SOMETHING LANDED (#2133).** His flat rule
+    ⚠ **AND THE ONE AMENDMENT, WHEN SOMETHING LANDED (#2133).** The founder's flat rule
     owes nothing back once a picture arrived, except #2127's shares for views a
     sheet the image provider refused would have made. Only the Regenerate's
     press supplies the reader; every other road gets zero, which is the flat
