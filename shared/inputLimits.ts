@@ -64,17 +64,17 @@ export const BOARD_NAME_MAX_LENGTH = 128;
    why the arm sweeps for the shape instead of pairing sites to schemas. */
 export const CAST_NAME_MAX_LENGTH = 60;
 
-/* -- Casting V2: who she is on camera, and how she sounds -----------------
+/* -- Casting V2: who a cast is on camera, and how they sound --------------
    N2b (#1242). ONE idea, THREE places: `castingV2.editCastPersonaField` on the
    server, and the two inline fields on `CastingRoom`.
 
-   The sizes are HER ceiling, not the drafter's. The drafted lines are two
+   The sizes are THE CUSTOMER'S ceiling, not the drafter's. The drafted lines are two
    sentences and one line -- his specimen runs to 175 and 75 characters -- so
    these are roughly double, because a cap sized to our own output would refuse
-   a customer a longer sentence than the one we wrote her for no reason a
+   a customer a longer sentence than the one we wrote them for no reason a
    customer could see. They are a bound against a paste, not a style rule: the
    craft (camera-visible, baseline then exception) lives in the drafter's
-   instruction, where his brief puts it, and never in a refusal at her keyboard.
+   instruction, where his brief puts it, and never in a refusal at the keyboard.
 
    ⚠ The personality is the longer of the two ON PURPOSE and the two are
    declared apart rather than sharing one number: they are two different things
@@ -89,9 +89,38 @@ export const CAST_NAME_MAX_LENGTH = 60;
    procedure refused it at the cap, and the textarea's `maxLength` would not
    even let it be typed. **A line we write must be a line the customer can
    edit**, so the sentence above is still true of the CRAFT -- the drafter is
-   not style-checked against these -- and no longer true of the LENGTH. */
-export const CAST_PERSONALITY_MAX_LENGTH = 400;
-export const CAST_VOICE_MAX_LENGTH = 200;
+   not style-checked against these -- and no longer true of the LENGTH.
+
+   ⚠ **AND BOTH NUMBERS MOVED ON 2026-10-09 (#2136), MEASURED RATHER THAN
+   GUESSED -- 400/200 WERE CUTTING THE EXACT HALVES HE ASKED FOR.** His craft
+   corrections gave each line two jobs: the personality's second sentence is
+   TIMING, and the voice's second part is PERFORMANCE STYLE (pace, how much is
+   said, how a question is answered). Because `fitToCap` cuts at a SENTENCE
+   END, a line one character over the cap loses its whole second sentence --
+   which is precisely the half his correction added, so the old caps deleted
+   the feature while looking like a tidy bound.
+
+   Driven through the real reader on three of his own production casts (Pigman,
+   Henry, Rina), the same frame and brief on both arms:
+
+     today's instruction   personality 155-254   voice  92-132   nothing cut
+     his craft rules       personality 348-474   voice 258-303   personality
+                                                                 cut 2 of 3,
+                                                                 voice cut 3 of 3
+
+   So the ceilings are set above the measured maximum with headroom, not at it:
+   a cap that merely fits today's three casts would cut the fourth. His own
+   Pigman specimen (323 / 215) sits inside both, which is the card's own
+   done-when. ⚠ The specimen figures quoted higher up this block -- 175 and 75
+   -- are the ORIGINAL N2b specimen's and are kept because the "roughly double"
+   reasoning above was built on them; they are not the shape being drafted now.
+
+   ⚠ The drafted lines now run LONGER than his specimen (348-474 against 323),
+   and that is reported to him rather than silently trimmed by an instruction
+   he did not ask for: a cut line loses a whole job, a long line only reads
+   long, and which of those is worse is his eye's call (law 9). */
+export const CAST_PERSONALITY_MAX_LENGTH = 500;
+export const CAST_VOICE_MAX_LENGTH = 320;
 
 /* ── Legacy casting: a model's name ───────────────────────────────────────
    `server/routes/models.ts` and `CastProfilePanel`.

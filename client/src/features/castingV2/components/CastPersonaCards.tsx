@@ -163,7 +163,30 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
       className="dpc-persona__field"
       value={draft}
       maxLength={max}
-      rows={line === "voice" ? 2 : 3}
+      /*
+        SIZED TO THE SHAPE THE CRAFT RULES PRODUCE — #2136, measured in the
+        running app rather than guessed.
+
+        It was 3 and 2, sized for the one-sentence voice and the shorter
+        personality the old instruction wrote. His craft corrections give each
+        line a second job, and the court measured the result at 348-474 and
+        258-303 characters. At `rows=3` that is a 60px box holding a 129px
+        line, with `resize: none` — so editing a line WE wrote meant scrolling
+        inside it, which is the machinery showing through on a card whose whole
+        promise is "it's just words, fix anything that's off".
+
+        7 and 5 are read off the RENDERED box rather than computed from a guess
+        at the line height: at ~18.8px a row, the widest measured personality
+        needs 7 rows and the widest voice needs 5. That also lands the edit box
+        on the same height as the read view it replaces (131px), so the card no
+        longer changes size when it is clicked into.
+
+        ⚠ These two numbers are a FIT, not a design: #2137 rebuilds this
+        editing affordance entirely (edit in place with Keep / Cancel, pick a
+        different read, say it your way) and owns the final answer. This is the
+        smallest change that stops the cap raise shipping a box it overflows.
+      */
+      rows={line === "voice" ? 5 : 7}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
