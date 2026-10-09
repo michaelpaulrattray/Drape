@@ -95,6 +95,10 @@ export {
   addTopupCredits,
   getSubscriptionByUserId,
   getCycleSpend,
+  // A cancelled plan's credits, 30 days past the paid period (#2152).
+  getPlanCreditsExpiryCandidates,
+  expirePlanCredits,
+  planCreditsExpiryLedgerRef,
   // The yearly renewal reminder's shortlist and its claim (#1941).
   getYearlyRenewalReminderCandidates,
   claimRenewalReminder,

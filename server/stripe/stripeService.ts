@@ -471,18 +471,47 @@ export function mapPlanToTier(plan: SubscriptionPlan): PlanTier | null {
 }
 
 /**
- * Calculate rollover credits based on plan tier
+ * What of a plan's unspent allowance carries into the next period: the plan's
+ * `rolloverPercent` of it, and NEVER MORE THAN ONE MONTH'S WORTH (#2152).
+ *
+ * His word, 2026-10-09 (terminal): *"pricing word card here ive approved the
+ * code changes required too"*, on the Desk item "Pricing Phase 2: final
+ * wording", whose rollover rules read: *"The bank is capped at one month's
+ * worth of plan credits"* and *"A downgrade trims the bank to the new plan's
+ * cap."*
+ *
+ * ⚠ **THE CAP IS A REQUIRED ARGUMENT, NOT A LOOKUP IN HERE.** One month's worth
+ * is the plan's base allowance PLUS the credit dial's steps on the rung that
+ * has one, and the steps are read off the paid invoice by the webhook (#1832) —
+ * this function cannot know them. A default of the base allowance would cap a
+ * customer on the dial below what they pay for each month, silently; making
+ * the caller state it means the compiler refuses a call that forgot.
+ *
+ * ⚠ **THE DOWNGRADE TRIM IS THIS SAME LINE, NOT A SECOND MECHANISM.** A
+ * decrease takes effect at the next renewal (#1936), and that renewal's
+ * invoice is billed on the NEW plan (#1930), so the caller passes the new
+ * plan's percentage and the new plan's month — the bank is trimmed to the new
+ * cap at exactly the moment the new plan begins.
+ *
+ * Purchased credits never reach this function: `refreshMonthlyCredits` hands
+ * it the plan's part of the balance only and adds the top-ups back whole
+ * (#1604), so top-ups are outside the cap by construction.
  */
 export function calculateRolloverCredits(
   unusedCredits: number,
-  planTier: PlanTier
+  planTier: PlanTier,
+  oneMonthAllowance: number,
 ): number {
   const tierConfig = PLAN_TIERS[planTier];
   const rolloverPercent = tierConfig.rolloverPercent;
   // A whole number of DISPLAY credits (#1604 done-when 2): a percentage of an
   // arbitrary balance is almost never a multiple of the display scale, and the
   // remainder would be ledger the customer holds and can never be shown.
-  return wholeDisplayLedger(Math.floor(unusedCredits * (rolloverPercent / 100)));
+  const carried = wholeDisplayLedger(Math.floor(unusedCredits * (rolloverPercent / 100)));
+  // A cap that cannot be read caps at nothing rather than at everything: the
+  // direction that cannot over-grant on a money path.
+  const cap = Number.isFinite(oneMonthAllowance) ? Math.max(0, Math.floor(oneMonthAllowance)) : 0;
+  return Math.min(carried, wholeDisplayLedger(cap));
 }
 
 /**

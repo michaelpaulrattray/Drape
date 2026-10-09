@@ -43,6 +43,7 @@ import { isPlanCreditsLookupKey } from "./stripePriceCatalogue";
 import type { BillingIntervalChoice } from "@shared/annualBilling";
 import { PLAN_TIERS, PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
+import { planCreditsExpiryFrom } from "../billing/planCreditsExpiry";
 import {
   invoiceSubscriptionId,
   invoiceSubscriptionMetadata,
@@ -939,6 +940,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
       planExpiresAt: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,
+      /* ⚠ THE PLAN'S CREDITS STAY USABLE FOR 30 DAYS PAST THE PAID PERIOD,
+         THEN EXPIRE (#2152, his word 2026-10-09). Stamped HERE, in the same
+         write, because this UPDATE nulls the period end and the subscription
+         id — after it, nothing on the row says when the paid period ended.
+         The sweep in `server/billing/planCreditsExpiry.ts` acts on it; top-ups
+         are never touched. Under the same stale guard as the downgrade, so a
+         stale delivery never stamps a resubscribed account. A same-id
+         redelivery restamps from the payload's own `ended_at` and period end,
+         so it lands on the same deadline. */
+      planCreditsExpireAt: planCreditsExpiryFrom(subscription, new Date()),
     });
     if (downgradeResult.success) {
       log.info(`[Webhook] Subscription deleted for user ${userId} (was ${previousPlan}), downgraded to free tier`);
@@ -1159,20 +1170,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
   // paid for and kept — the plan's percentage would forfeit paid-for credits.
   // A cycle that RUNS OUT still keeps only its percentage.
   //
-  // ⚠ The RULE is passed, not a number (#664 review round 2, finding 1):
-  // refreshMonthlyCredits computes the rollover from the balance its own
-  // compare-and-set write is conditioned on, so the unwind (or a spend)
-  // landing mid-refresh makes the write miss and retry instead of being
-  // silently erased by a SET computed from a stale read.
-  const computeRollover =
-    billingReason === "subscription_update"
-      ? (balance: number) => balance
-      /* ⚠ The rollover percentage is the BILLED plan's (#1930). A renewal does
-         not change plan, so for a cycle the invoice's plan and the period just
-         ended are the same rung and the two answers agree; where they part is
-         exactly the window above, and there the invoice is the period this
-         balance is being carried into. */
-      : (balance: number) => calculateRolloverCredits(balance, grantPlan);
+  // (The rule itself is built below, once the month it is capped at is known.)
 
   /* ⚠ THE CREDIT SLIDER'S STEPS ARE PART OF THE ALLOWANCE, AND THEY ARE READ
      OFF THE INVOICE THAT WAS PAID — NOT OFF THE SUBSCRIPTION AS IT STANDS NOW
@@ -1298,8 +1296,35 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     );
   }
 
-  const grantCredits =
-    (getMonthlyCredits(grantPlan) + sliderLedgerCredits) * grantMonths;
+  const oneMonthAllowance = getMonthlyCredits(grantPlan) + sliderLedgerCredits;
+  const grantCredits = oneMonthAllowance * grantMonths;
+
+  // ⚠ The RULE is passed, not a number (#664 review round 2, finding 1):
+  // refreshMonthlyCredits computes the rollover from the balance its own
+  // compare-and-set write is conditioned on, so the unwind (or a spend)
+  // landing mid-refresh makes the write miss and retry instead of being
+  // silently erased by a SET computed from a stale read.
+  const computeRollover =
+    billingReason === "subscription_update"
+      /* ⚠ The whole balance carries here — the unwind already took back the
+         unconsumed share — but it is still a bank crossing a period boundary,
+         so the one-month cap applies to it exactly as it does to a cycle
+         (#2152). Without it an interval switch would be the one road that
+         carries a bank past a month's worth. */
+      ? (balance: number) => Math.min(balance, Math.max(0, oneMonthAllowance))
+      /* ⚠ The rollover percentage is the BILLED plan's (#1930). A renewal does
+         not change plan, so for a cycle the invoice's plan and the period just
+         ended are the same rung and the two answers agree; where they part is
+         exactly the window above, and there the invoice is the period this
+         balance is being carried into. */
+      /* ⚠ AND NEVER MORE THAN ONE MONTH'S WORTH OF THE BILLED PLAN (#2152).
+         One month is the base allowance plus the dial's steps read off this
+         invoice — the same figure the grant is built from, so the cap and
+         the grant cannot disagree about what a month is. On an annual
+         invoice it is still ONE month, not the year granted. A downgrade
+         that took effect at this renewal is billed on the new plan, so the
+         bank is trimmed to the new plan's month here and nowhere else. */
+      : (balance: number) => calculateRolloverCredits(balance, grantPlan, oneMonthAllowance);
 
   /* ⚠ A PLAN CHANGE ALREADY SETTLED FOR *THIS* PERIOD IS NOT LAST PERIOD'S
      LEFTOVER, AND MUST NOT BE ROLLED (#1937).

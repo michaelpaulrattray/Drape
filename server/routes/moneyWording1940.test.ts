@@ -51,6 +51,9 @@ import { billingRouter } from "./billing";
 import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
+  CANCEL_ANY_TIME_SHORT,
+  PLAN_CREDITS_GRACE_DAYS,
+  RENEWAL_BALANCE_SENTENCE,
   cancelPlanBody,
   cancelledPlanSegment,
   planCancelledReceipt,
@@ -104,15 +107,38 @@ describe("#1940 B25 — the cancel receipt, read off the procedure", () => {
 });
 
 describe("#1940 B24/B26 — the dialog and the Billing line", () => {
-  it("the dialog's body states the date, that nothing more is charged, and that credits stay", () => {
+  it("the dialog's body states the date, that nothing more is charged, and the 30 days the plan's credits keep (#2152)", () => {
+    /* #2152 (his word 2026-10-09, Yuna's final wording): the old last sentence
+       — "Your credits stay on your balance." — stopped being true the day the
+       30-day expiry shipped, and it changed in the same change as the code. */
     const on = formatCustomerShortDate(PERIOD_END);
     expect(cancelPlanBody(PERIOD_END)).toBe(
-      `Your plan stays active until ${on}. After that you won't be charged again and your account moves to Free. Your credits stay on your balance.`,
+      `Your plan stays active until ${on}. After that you won't be charged again and your account moves to Free. You'll have 30 days to use your plan credits. Top-ups stay on your balance.`,
     );
     // superjson can hand the client a string; both shapes read the same day.
     expect(cancelPlanBody(PERIOD_END.toISOString())).toBe(cancelPlanBody(PERIOD_END));
-    expect(cancelPlanBody(null)).toContain("until the end of the period you've paid for");
+    // The no-date form keeps its own clause and takes the same last two sentences.
+    expect(cancelPlanBody(null)).toBe(
+      "Your plan stays active until the end of the period you've paid for. After that you won't be charged again and your account moves to Free. You'll have 30 days to use your plan credits. Top-ups stay on your balance.",
+    );
     expect(cancelPlanBody("not a date")).not.toContain("Invalid");
+    expect(cancelPlanBody(PERIOD_END)).not.toContain("Your credits stay on your balance");
+  });
+
+  it("#2152 — the plans page's renewal and cancel lines say the cap and the 30 days, in Yuna's words", () => {
+    expect(CANCEL_ANY_TIME_SHORT).toBe(
+      "Cancel any time. You'll have 30 days to use your plan credits after your paid period ends.",
+    );
+    expect(RENEWAL_BALANCE_SENTENCE).toBe(
+      "Unused plan credits carry into next month, up to one month's worth. If you cancel, you have 30 days to use them. Top-ups stay on your balance.",
+    );
+  });
+
+  it("#2152 — the 30 in every sentence IS the deadline the server stamps (derived, not mirrored)", () => {
+    expect(PLAN_CREDITS_GRACE_DAYS).toBe(30);
+    const webhook = read("server/billing/planCreditsExpiry.ts");
+    expect(webhook).toContain('import { PLAN_CREDITS_GRACE_DAYS } from "@shared/planCancelCopy";');
+    expect(webhook).toContain("PLAN_CREDITS_GRACE_DAYS * DAY_MS");
   });
 
   it("Billing says ends {date} · won't renew, never renews", () => {

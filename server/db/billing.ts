@@ -45,6 +45,9 @@ export async function updateUserSubscription(
     planExpiresAt?: Date | null;
     currentPeriodStart?: Date | null;
     currentPeriodEnd?: Date | null;
+    /** When a cancelled plan's credits expire (#2152). Stamped by the
+     *  subscription-deleted webhook; see {@link expirePlanCredits}. */
+    planCreditsExpireAt?: Date | null;
   }
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
@@ -52,8 +55,18 @@ export async function updateUserSubscription(
     return { success: false, error: "Database not available" };
   }
 
+  /* ⚠ A RETURN TO A PAID PLAN CANCELS A PENDING EXPIRY (#2152). A customer who
+     cancels and comes back inside the 30 days keeps their plan credits — the
+     expiry was for an account that LEFT. Cleared here, in the one write every
+     road to a paid tier passes through, rather than at each caller, so a road
+     added later cannot forget it. An explicit stamp in the same call wins. */
+  const values =
+    data.planTier !== undefined && data.planTier !== "free" && data.planCreditsExpireAt === undefined
+      ? { ...data, planCreditsExpireAt: null }
+      : data;
+
   try {
-    await db.update(credits).set(data).where(eq(credits.userId, userId));
+    await db.update(credits).set(values).where(eq(credits.userId, userId));
     return { success: true };
   } catch (error) {
     log.error({ err: error }, "[Database] Failed to update subscription:");
@@ -144,6 +157,8 @@ export async function getUserByStripeCustomerId(
  * road that has no purchased credits on it is unchanged, arithmetically and
  * not merely in intent, which is why every existing arm in
  * `server/creditRefreshRace.test.ts` still reads the same numbers.
+ * (Since #2152 that rule is identity CAPPED at one month's worth of the plan —
+ * the cap is the caller's rule, and this function still only sees a rule.)
  *
  * ⚠ AND A PLAN-CHANGE MOVE SETTLED INSIDE THE PERIOD BEING GRANTED CROSSES
  * THE BOUNDARY WHOLE, EXACTLY LIKE A PURCHASED CREDIT (#1937, `carriedWhole`).
@@ -327,6 +342,146 @@ export async function refreshMonthlyCredits(
     }
     log.error({ err: error }, "[Database] Failed to refresh monthly credits:");
     return { success: false, error: "Failed to refresh credits" };
+  }
+}
+
+/** The accounts whose cancelled-plan credits are due to expire by `now`. */
+export async function getPlanCreditsExpiryCandidates(
+  now: Date,
+): Promise<Array<{ userId: number; planCreditsExpireAt: Date }>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({ userId: credits.userId, planCreditsExpireAt: credits.planCreditsExpireAt })
+    .from(credits)
+    .where(
+      and(
+        isNotNull(credits.planCreditsExpireAt),
+        lt(credits.planCreditsExpireAt, now),
+        eq(credits.planTier, "free"),
+      ),
+    );
+  return rows.filter(
+    (row): row is { userId: number; planCreditsExpireAt: Date } => row.planCreditsExpireAt !== null,
+  );
+}
+
+/** The ledger key of one account's expiry, unique per stamped deadline. */
+export function planCreditsExpiryLedgerRef(userId: number, expireAt: Date): string {
+  return `plan-credits-expired:${userId}:${Math.floor(expireAt.getTime() / 1000)}`;
+}
+
+export type PlanCreditsExpiryResult =
+  | { outcome: "expired"; creditsRemoved: number; newBalance: number }
+  | { outcome: "nothing-to-expire" }
+  | { outcome: "not-due" }
+  | { outcome: "already-expired" }
+  | { outcome: "failed"; error: string };
+
+/**
+ * TAKE A CANCELLED PLAN'S CREDITS OFF THE BALANCE, AND NOTHING ELSE (#2152).
+ *
+ * The plan's part is `planAllowanceRemaining` — the balance minus the top-ups
+ * still on it — read off the SAME row the write is conditioned on, exactly as
+ * the renewal does it (#1604, #664 round 2). Top-ups stay, whole: the new
+ * balance IS the purchased part.
+ *
+ * ⚠ **IDEMPOTENT THREE WAYS, because a sweep runs on every server and every
+ * six hours.** (1) The write is a compare-and-set on the balance AND on the
+ * stamp it was asked about, so a spend landing mid-expiry makes it miss and
+ * re-read, and a second sweeper that already cleared the stamp makes it miss
+ * for good. (2) The stamp is cleared in that same UPDATE. (3) The ledger line's
+ * reference is unique per (account, deadline), so a duplicate insert rolls the
+ * whole transaction back and is answered `already-expired`.
+ *
+ * ⚠ **IT RE-CHECKS THE ACCOUNT IS STILL ON FREE.** The candidate read and this
+ * write are two moments; a customer who resubscribed between them has had the
+ * stamp cleared by `updateUserSubscription`, and the conditioned write misses.
+ */
+export async function expirePlanCredits(
+  userId: number,
+  expireAt: Date,
+  now: Date = new Date(),
+): Promise<PlanCreditsExpiryResult> {
+  const db = await getDb();
+  if (!db) return { outcome: "failed", error: "Database not available" };
+  const ledgerReferenceId = normalizeCreditReferenceId(planCreditsExpiryLedgerRef(userId, expireAt));
+
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const row = await getUserCredits(userId);
+      if (!row) return { outcome: "failed", error: "User credits not found" };
+      if (
+        row.planCreditsExpireAt === null ||
+        row.planCreditsExpireAt === undefined ||
+        row.planCreditsExpireAt.getTime() !== expireAt.getTime()
+      ) {
+        // Cleared by a return to a paid plan, or by another sweeper's write.
+        return { outcome: "already-expired" };
+      }
+      if (row.planTier !== "free" || expireAt.getTime() > now.getTime()) {
+        return { outcome: "not-due" };
+      }
+
+      const balanceReadFrom = row.balance;
+      const purchasedKept = purchasedCreditsRemaining(row);
+      const planPart = planAllowanceRemaining(row);
+
+      const written = await withTransaction(async (tx) => {
+        const updateResult = await tx
+          .update(credits)
+          .set({
+            balance: purchasedKept,
+            purchasedBalance: purchasedKept,
+            rolloverCredits: 0,
+            planCreditsExpireAt: null,
+          })
+          .where(
+            and(
+              eq(credits.userId, userId),
+              eq(credits.balance, balanceReadFrom),
+              eq(credits.planCreditsExpireAt, expireAt),
+              eq(credits.planTier, "free"),
+            ),
+          );
+        const affected = (updateResult as any)[0]?.affectedRows ?? 0;
+        if (affected === 0) return null;
+
+        if (planPart > 0) {
+          await tx.insert(creditTransactions).values({
+            userId,
+            amount: -planPart,
+            type: "subscription",
+            description: "Plan credits expired 30 days after the plan ended",
+            referenceId: ledgerReferenceId,
+            balanceAfter: purchasedKept,
+            toolKind: null,
+          });
+        }
+        return planPart > 0
+          ? { outcome: "expired" as const, creditsRemoved: planPart, newBalance: purchasedKept }
+          : { outcome: "nothing-to-expire" as const };
+      });
+      if (written) return written;
+    }
+    return { outcome: "failed", error: "Balance changed during expiry — retry next sweep" };
+  } catch (error) {
+    if (isDuplicateCreditReferenceError(error)) {
+      /* This deadline's line is already on the ledger (a restamp to the same
+         deadline after it ran). The transaction rolled back; clear the stamp
+         so the next pass does not ask again. */
+      try {
+        await db
+          .update(credits)
+          .set({ planCreditsExpireAt: null })
+          .where(and(eq(credits.userId, userId), eq(credits.planCreditsExpireAt, expireAt)));
+      } catch (clearError) {
+        log.warn({ err: clearError, userId }, "[Database] could not clear an already-expired stamp");
+      }
+      return { outcome: "already-expired" };
+    }
+    log.error({ err: error, userId }, "[Database] plan-credit expiry failed");
+    return { outcome: "failed", error: "Plan-credit expiry failed" };
   }
 }
 

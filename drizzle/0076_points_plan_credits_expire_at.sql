@@ -1,0 +1,45 @@
+-- WHEN A CANCELLED PLAN'S CREDITS EXPIRE — one additive column (#2152, his
+-- word 2026-10-09: "pricing word card here ive approved the code changes
+-- required too", on the Desk item "Pricing Phase 2: final wording").
+--
+-- ============================================================================
+-- THE RULE IT CARRIES
+-- ============================================================================
+--
+-- "After cancelling, plan credits stay usable for 30 days past the paid
+-- period, then expire. Top-ups never expire."
+--
+-- `handleSubscriptionDeleted` (server/stripe/webhooks.ts) fires when the paid
+-- period ends and moves the account to Free. It now stamps this column with
+-- that period's end plus 30 days. The plan-credit expiry sweep
+-- (server/billing/planCreditsExpiry.ts) reads the column, takes the plan's part
+-- of the balance off with one ledger line under a unique reference, and clears
+-- the stamp in the same compare-and-set write. A return to any paid plan clears
+-- the stamp (`updateUserSubscription`), so a customer who comes back inside the
+-- 30 days keeps their credits.
+--
+-- ============================================================================
+-- WHY A STAMPED DEADLINE AND NOT A DERIVED ONE
+-- ============================================================================
+--
+-- The downgrade write nulls `currentPeriodEnd` and `stripeSubscriptionId`, so
+-- after a cancellation nothing on the row says when the paid period ended. The
+-- deadline has to be written down at the one moment it is known, and a column
+-- is the one place a later sweep can read it.
+--
+-- ============================================================================
+-- NULL — AND WHAT THAT MEANS FOR THE ROWS THAT EXIST
+-- ============================================================================
+--
+-- Every existing row gets NULL, which is the truthful value for all of them:
+-- production was read on 2026-10-09 (card #2152) and holds 0 cancelled
+-- subscriptions and 0 paid subscribers, so nothing is due to expire. The one
+-- INSERT into this table (`initializeUserCredits`) does not name the column and
+-- does not have to: NULL is the DDL default and the Drizzle declaration's.
+-- `ALTER TABLE … ADD COLUMN` is one of the shapes
+-- `scripts/lib/ceremonyAutoApply.mts` recognises, so the deploy rite applies it
+-- before the new code takes traffic and no ceremony reaches the founder.
+--
+-- PURELY ADDITIVE. One nullable column. No row is rewritten, no index moves, no
+-- existing column changes.
+ALTER TABLE `points` ADD COLUMN `planCreditsExpireAt` timestamp NULL;

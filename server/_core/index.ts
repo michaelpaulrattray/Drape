@@ -448,6 +448,14 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start the yearly renewal reminder sweep");
     });
+
+    // #2152: a cancelled plan's credits expire 30 days past the paid period.
+    // Nobody has cancelled yet, so every pass is one read that finds nothing.
+    import("../billing/planCreditsExpiry").then(({ startPlanCreditsExpirySweep }) => {
+      startPlanCreditsExpirySweep();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start the plan-credit expiry sweep");
+    });
   });
 
   // Register shutdown handlers after server is listening

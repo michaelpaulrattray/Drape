@@ -297,6 +297,13 @@ export const credits = mysqlTable("points", {
   // Rollover tracking
   rolloverCredits: int("rolloverCredits").default(0).notNull(),
   lastRefreshAt: timestamp("lastRefreshAt"),
+  // ⚠ WHEN A CANCELLED PLAN'S CREDITS EXPIRE (#2152, migration 0076). Stamped
+  // by `handleSubscriptionDeleted` at the paid period's end plus 30 days, read
+  // by the plan-credit expiry sweep (`server/billing/planCreditsExpiry.ts`),
+  // cleared by that sweep's own write and by any return to a paid plan
+  // (`updateUserSubscription`). NULL means nothing is due to expire. Only the
+  // plan's part of the balance expires; top-ups are never touched.
+  planCreditsExpireAt: timestamp("planCreditsExpireAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

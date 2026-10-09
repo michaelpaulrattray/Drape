@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 56
+      "moduleCount": 57
     },
     {
       "id": "domain:wardrobe",
@@ -2877,6 +2877,12 @@
     {
       "id": "module:server/auditLog.ts",
       "path": "server/auditLog.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/billing/planCreditsExpiry.ts",
+      "path": "server/billing/planCreditsExpiry.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -10063,6 +10069,11 @@
       "startedFrom": "server/_core/index.ts"
     },
     {
+      "id": "worker:startPlanCreditsExpirySweep",
+      "name": "startPlanCreditsExpirySweep",
+      "startedFrom": "server/_core/index.ts"
+    },
+    {
       "id": "worker:startStorageCleanupWorker",
       "name": "startStorageCleanupWorker",
       "startedFrom": "server/_core/index.ts"
@@ -10568,6 +10579,13 @@
       "credits": 25000,
       "derivedFrom": "TOPUP_UNIT_DISPLAY_CREDITS * LEDGER_PER_DISPLAY_CREDIT",
       "file": "shared/creditTopups.ts"
+    },
+    {
+      "id": "cost:shared/planCancelCopy.ts:PLAN_CREDITS_GRACE_DAYS",
+      "name": "PLAN_CREDITS_GRACE_DAYS",
+      "constant": "PLAN_CREDITS_GRACE_DAYS",
+      "credits": 30,
+      "file": "shared/planCancelCopy.ts"
     },
     {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
@@ -11769,6 +11787,10 @@
     {
       "id": "test:server/billing.test.ts",
       "path": "server/billing.test.ts"
+    },
+    {
+      "id": "test:server/billing/planCreditsExpiry.test.ts",
+      "path": "server/billing/planCreditsExpiry.test.ts"
     },
     {
       "id": "test:server/billing/renewalReminder.test.ts",
@@ -14959,6 +14981,10 @@
       "path": "server/stripe/annualPlanChange.test.ts"
     },
     {
+      "id": "test:server/stripe/cancelledPlanCreditsStamp.test.ts",
+      "path": "server/stripe/cancelledPlanCreditsStamp.test.ts"
+    },
+    {
       "id": "test:server/stripe/checkoutProductText.test.ts",
       "path": "server/stripe/checkoutProductText.test.ts"
     },
@@ -14997,6 +15023,10 @@
     {
       "id": "test:server/stripe/refundFailed.test.ts",
       "path": "server/stripe/refundFailed.test.ts"
+    },
+    {
+      "id": "test:server/stripe/rolloverCap.test.ts",
+      "path": "server/stripe/rolloverCap.test.ts"
     },
     {
       "id": "test:server/stripe/stripePriceCatalogue.test.ts",
@@ -22345,6 +22375,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/billing/planCreditsExpiry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/billing/renewalReminder.ts",
       "kind": "imports"
     },
@@ -22596,6 +22631,26 @@
     {
       "from": "module:server/auditLog.ts",
       "to": "module:shared/auditActionCategories.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/planCreditsExpiry.ts",
+      "to": "module:server/db/billing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/planCreditsExpiry.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/planCreditsExpiry.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/planCreditsExpiry.ts",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -36356,6 +36411,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/billing/planCreditsExpiry.ts",
       "kind": "imports"
     },
     {

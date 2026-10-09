@@ -1615,8 +1615,9 @@ export function ChangePlanModal({
         <p className="dp-plan__trust">{TRUST_LINE}</p>
         {/*
           #1952 items 3–5 — his *"yes"*, 2026-10-08: what "credits back" covers,
-          how renewal works, and what cancelling does to credits (version A:
-          top-ups never expire). Said ONCE here, under the trust line it
+          how renewal works, and what cancelling does to credits (reworded by
+          #2152: the one-month cap, the 30 days after cancelling, top-ups never
+          expire). Said ONCE here, under the trust line it
           explains, in either mode — the trust line's own placement rule.
         */}
         <p className="dp-plan__terms">
@@ -1786,11 +1787,13 @@ export function ChangePlanModal({
           /* #1940 B24 — his word 2026-10-08, *"on 1 and 2 go with your
              reccomendations"*. "Drop to Free" named the destination; a
              customer leaving a plan is CANCELLING it, and the dialog now says
-             what that means for the money: the plan runs to the date she paid
-             for, nothing is charged after it, and her credits stay
-             (`handleSubscriptionDeleted` sets `planTier: "free"` and touches
-             no balance). The date is the period end `getStatus` already
-             serves — never typed, and never guessed when it is unread. */
+             what that means for the money: the plan runs to the date the
+             customer paid for, nothing is charged after it, and the plan's
+             credits stay usable for 30 days more while top-ups stay for good
+             (#2152: `handleSubscriptionDeleted` stamps the deadline and
+             `server/billing/planCreditsExpiry.ts` acts on it). The date is the
+             period end `getStatus` already serves — never typed, and never
+             guessed when it is unread. */
           title="Cancel your plan?"
           body={cancelPlanBody(status?.currentPeriodEnd ?? null)}
           confirmLabel="Cancel plan"

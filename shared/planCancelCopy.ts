@@ -22,11 +22,33 @@
  *  - cancelling sets Stripe's `cancel_at_period_end` (`server/stripe` →
  *    `cancelSubscription`), so the plan runs to its period end;
  *  - at that end `handleSubscriptionDeleted` sets `planTier: "free"` and
- *    touches no balance, so the credits stay;
- *  - top-ups never expire and a renewal leaves them alone (#1660).
+ *    ~~touches no balance, so the credits stay~~ — **no longer true as of
+ *    #2152 (2026-10-09)**: it now stamps a deadline {@link PLAN_CREDITS_GRACE_DAYS}
+ *    days past the paid period, and `server/billing/planCreditsExpiry.ts`
+ *    takes the plan's part of the balance off when it passes;
+ *  - unused plan credits carry into the next period up to one month's worth
+ *    (`calculateRolloverCredits`, #2152);
+ *  - top-ups never expire, a renewal leaves them alone (#1660), and the expiry
+ *    leaves them alone too.
+ *
+ * #2152's wording is Yuna and Quistis's final pass ("Pricing Phase 2: final
+ * wording", the Desk item his 2026-10-09 word approved), and it ships in the
+ * SAME change as the code that makes it true, so the copy never promises what
+ * the code does not do.
  */
 
 import { formatCustomerShortDate } from "./customerDate";
+
+/**
+ * How many days a cancelled plan's credits stay usable after the paid period
+ * ends (#2152). The webhook's stamp and every sentence below read this one
+ * number, so the promise and the deadline cannot drift apart.
+ */
+export const PLAN_CREDITS_GRACE_DAYS = 30;
+
+/** The two sentences every cancel line ends on (#2152). */
+const AFTER_CANCEL_CREDITS =
+  `You'll have ${PLAN_CREDITS_GRACE_DAYS} days to use your plan credits. Top-ups stay on your balance.`;
 
 type PeriodEnd = Date | string | null | undefined;
 
@@ -40,7 +62,7 @@ function shortDate(periodEnd: PeriodEnd): string | null {
 export function cancelPlanBody(periodEnd: PeriodEnd): string {
   const on = shortDate(periodEnd);
   const until = on ? `until ${on}` : "until the end of the period you've paid for";
-  return `Your plan stays active ${until}. After that you won't be charged again and your account moves to Free. Your credits stay on your balance.`;
+  return `Your plan stays active ${until}. After that you won't be charged again and your account moves to Free. ${AFTER_CANCEL_CREDITS}`;
 }
 
 /** #1940 B25 — the receipt `billing.cancelSubscription` answers with. */
@@ -65,10 +87,11 @@ export const RENEWAL_SENTENCE =
   "Your plan renews automatically, every month or every year, until you cancel. "
   + "We charge the card on your account on the renewal date shown in Billing.";
 
-/** #1952 item 5, version A — the short cancel line. */
-export const CANCEL_ANY_TIME_SHORT = "Cancel any time. Your credits stay on your balance.";
+/** #1952 item 5, reworded by #2152 — the short cancel line. */
+export const CANCEL_ANY_TIME_SHORT =
+  `Cancel any time. You'll have ${PLAN_CREDITS_GRACE_DAYS} days to use your plan credits after your paid period ends.`;
 
-/** #1952 item 5, version A — what a renewal does to credits. */
+/** #1952 item 5, reworded by #2152 — what a renewal, and a cancel, do to credits. */
 export const RENEWAL_BALANCE_SENTENCE =
-  "At each renewal, unspent plan credits follow the rule on your plan's card. "
-  + "Credits you buy as top-ups are never removed by a renewal.";
+  "Unused plan credits carry into next month, up to one month's worth. "
+  + `If you cancel, you have ${PLAN_CREDITS_GRACE_DAYS} days to use them. Top-ups stay on your balance.`;
