@@ -899,7 +899,7 @@ export function projectSignedCast(input: {
       indexLabel: String(sibling.position + 1).padStart(2, "0"),
     })),
     provenance: input.lineage.castFromAt
-      ? `Cast on ${formatCastDate(input.lineage.castFromAt)}`
+      ? `Created on ${formatCastDate(input.lineage.castFromAt)}`
       : null,
     sheetOpen: input.sheetLive ?? false,
     pronouns: castPronouns(input.model.technicalSchema),

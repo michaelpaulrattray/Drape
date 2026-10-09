@@ -104,6 +104,24 @@ describe("card 2129 — the candidates page is a casting, and only the delivered
     expect(read("client/src/pages/CastingV2.tsx")).toContain('label: "Open casting"');
   });
 
+  it("the room carries the wording he approved on the Desk, 2026-10-09", () => {
+    const room = read("client/src/pages/CastingRoom.tsx").replace(/\s+/g, " ");
+    expect(room).toContain("Delete this character");
+    expect(room).toContain("Use in a campaign · soon");
+    expect(room).toContain("Use in a new campaign");
+    expect(room).toContain("`Refine ${data.name.trim()}'s look` : \"Refine their look\"");
+    expect(room).toContain("Refining arrives soon. Until then, a new direction means making a new character.");
+    for (const retired of [
+      "Delete this cast<",
+      "Refine without recasting",
+      "Cast in a campaign",
+      "Cast into a new campaign",
+      "Refining a signed Cast arrives",
+    ]) {
+      expect(room).not.toContain(retired);
+    }
+  });
+
   it("POSITIVE AND NEGATIVE CONTROLS — reads sentences, never identifiers, enums, classes or comments", () => {
     // Must NOT flag: identifiers, a one-word enum value, a class name, a URL
     // segment, a log line, comments, and the delivered thing's own name.

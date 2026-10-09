@@ -605,7 +605,7 @@ export default function CastingRoom() {
                   Open in canvas · soon
                 </button>
                 <button type="button" className="dpc-room__cta dpc-room__cta--primary" disabled>
-                  Cast in a campaign · soon
+                  Use in a campaign · soon
                 </button>
               </div>
             </header>
@@ -817,7 +817,9 @@ export default function CastingRoom() {
                 */}
                 <section className="dpc-rcard dpc-rrefine">
                   <div className="dpc-rcard__head">
-                    <span className="dpc-rcard__title">Refine without recasting</span>
+                    <span className="dpc-rcard__title">
+                      {data.name?.trim() ? `Refine ${data.name.trim()}'s look` : "Refine their look"}
+                    </span>
                     <span className="dpc-rcard__hint">
                       Face stays locked. Everything else is fair game.
                     </span>
@@ -841,8 +843,8 @@ export default function CastingRoom() {
                     ))}
                   </div>
                   <p className="dpc-rcard__body">
-                    Refining a signed Cast arrives with refinement. Until then, a new direction
-                    means a new casting.
+                    Refining arrives soon. Until then, a new direction means making a new
+                    character.
                   </p>
                 </section>
 
@@ -959,7 +961,7 @@ export default function CastingRoom() {
                           className="dpc-room__delete"
                           onClick={() => setDeleting(true)}
                         >
-                          Delete this cast
+                          Delete this character
                         </button>
                       ) : null}
                     </span>
@@ -1142,7 +1144,7 @@ export default function CastingRoom() {
                   </p>
                   <button type="button" className="dpc-camp__add" disabled>
                     <Plus size={12} strokeWidth={1.9} aria-hidden="true" />
-                    Cast into a new campaign
+                    Use in a new campaign
                   </button>
                 </section>
 
