@@ -729,21 +729,70 @@ export async function getUserSessions(userId: number) {
     .orderBy(desc(wardrobeSessions.updatedAt));
 }
 
+/**
+ * Write a session's fields — and, when the write replaces its `history`, hand
+ * each try-on picture it DROPPED back to the cleanup worker (#2108).
+ *
+ * ⚠ **A SHORTER HISTORY IS #2104'S HOLE BY ANOTHER DOOR.** A try-on result is
+ * adopted out of its manifest into `history` (#1980), so the session row is
+ * what names it. `sessions.update` stores whatever list the client sends, and
+ * a picture missing from the new list was named by nothing the moment the
+ * write landed — public for good, out of reach of the worker and of the
+ * erasure sweep alike. So the same rule as a delete, through the same helpers
+ * and no second copy of them: each picture in the OLD history under this
+ * account's try-on prefix ({@link tryOnResultKeysIn}) gets a fresh
+ * single-object manifest through `returnWardrobeScratchKeyIn`, unless a row
+ * the account keeps still names it ({@link wardrobeKeysStillNamedIn}).
+ *
+ * The keepers are read AFTER the write and with no session excluded, so this
+ * session counts by its NEW row: a picture the new history still carries (in
+ * any spelling of its key) is kept by construction, with no diff restated
+ * here. The row is locked first, so a try-on appended concurrently
+ * (`appendSessionResult`, same lock) is either in the old history read here or
+ * lands after this write — never lost between the two.
+ *
+ * A write that does not touch `history` is the plain owner-scoped update it
+ * always was.
+ */
 export async function updateSession(
   sessionId: number,
   userId: number,
   data: Partial<InsertWardrobeSession>,
+  currentPublicUrl: string,
 ) {
-  const db = (await getDb())!;
-  await db
-    .update(wardrobeSessions)
-    .set(data)
-    .where(
-      and(
-        eq(wardrobeSessions.id, sessionId),
-        eq(wardrobeSessions.userId, userId),
-      ),
-    );
+  const ownerScope = and(
+    eq(wardrobeSessions.id, sessionId),
+    eq(wardrobeSessions.userId, userId),
+  );
+  if (data.history === undefined) {
+    const db = (await getDb())!;
+    await db.update(wardrobeSessions).set(data).where(ownerScope);
+    return;
+  }
+
+  await withTransaction(async (tx) => {
+    const [before] = await tx
+      .select({ history: wardrobeSessions.history })
+      .from(wardrobeSessions)
+      .where(ownerScope)
+      .limit(1)
+      .for("update");
+    if (!before) return;
+
+    await tx.update(wardrobeSessions).set(data).where(ownerScope);
+
+    const held = tryOnResultKeysIn([before.history], { userId, currentPublicUrl });
+    if (held.size === 0) return;
+    const stillNamed = await wardrobeKeysStillNamedIn(tx, {
+      userId,
+      currentPublicUrl,
+      excludeSessionIds: new Set(),
+    });
+    for (const key of Array.from(held)) {
+      if (stillNamed.has(key)) continue;
+      await returnWardrobeScratchKeyIn(tx, { userId, storageKey: key });
+    }
+  });
 }
 
 /**
