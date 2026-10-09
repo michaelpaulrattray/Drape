@@ -805,14 +805,23 @@ export async function buildCastPackage(
   const refundUnrecorded = failures.some((failure) => failure.refundUnrecorded);
 
   if (failures.length > 0) {
+    /*
+      ⚠ **THIS LINE SAID *"failed views refunded their slices"* UNTIL #2125,
+      and under the flat price that has been false since #1968** — a view has no
+      slice, `failView` refunds nothing, and cast 71's partial Sign printed it
+      beside `refundedCredits: 0`. It now says only what is known HERE: which
+      views did not arrive. Whether anything comes back is decided below, by
+      the flat-price rule, and that branch writes its own line when it pays.
+    */
     log.warn(
       {
         operationId: input.operationId,
         modelId: input.modelId,
         failed: failures.map((failure) => failure.angle),
+        delivered: committed.length,
         refundedCredits,
       },
-      "[packageOrchestrator] package incomplete — failed views refunded their slices",
+      "[packageOrchestrator] package incomplete — these views did not arrive",
     );
   }
 
@@ -907,7 +916,7 @@ export async function buildCastPackage(
         refundedCredits: refundedCredits + baseRefunded,
         recorded: outcome.recorded,
       },
-      "[packageOrchestrator] TOTAL LOSS — not one view landed; the whole Sign refunded, base included",
+      "[packageOrchestrator] TOTAL LOSS — not one view landed; the whole charge is being refunded",
     );
     if (!outcome.recorded) {
       log.error(
@@ -1250,7 +1259,7 @@ export async function renderViewAttempts<T>(
             method: panel.verdicts[panel.verdicts.length - 1]?.method,
           },
           "[packageOrchestrator] the sheet's panel failed conformance — the sheet had its one "
-          + "re-render and this slice refunds",
+          + "re-render and this view is not delivered",
         );
         break;
       }
@@ -1495,7 +1504,22 @@ export async function renderViewAttempts<T>(
       const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
       lastReason = "The view could not be generated";
       log.warn(
-        { operationId: input.operationId, angle, attempt, failureClass },
+        {
+          operationId: input.operationId,
+          angle,
+          attempt,
+          /*
+            ⚠ **A VIEW ON A SHEET THAT DID NOT ARRIVE LOGS THE SHEET'S OWN
+            CLASS — #2125.** The settled sheet reaches this catch wrapped in
+            `SignSheetUnavailableError`, which is not a `ProviderError`, so
+            every view on cast 71's refused face sheet logged `unknown` where
+            the provider had said `content_policy`. The wrapper carries the
+            class now (`null` when the sheet arrived and a later step failed);
+            the loop's own decisions below never read it for this error,
+            because it breaks first.
+          */
+          failureClass: error instanceof SignSheetUnavailableError ? error.failureClass : failureClass,
+        },
         "[packageOrchestrator] view generation failed",
       );
       /*
