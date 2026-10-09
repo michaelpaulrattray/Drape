@@ -109,8 +109,10 @@ describe("card 2129 — the candidates page is a casting, and only the delivered
     /* Since card 2144 the Delete item lives in the row's menu, and its words
        live in the module that builds that menu — the room draws them from
        there, which `packageRedoRow.test.ts` pins. */
+    /* And since card 2150 the menu says the short word — his "in the menu
+       just call it Regenerate and Delete not those full sentences". */
     expect(read("client/src/features/castingV2/packageRedoRow.ts"))
-      .toContain('CHARACTER_SHEET_DELETE_LABEL = "Delete this character"');
+      .toContain('CHARACTER_SHEET_DELETE_LABEL = "Delete";');
     expect(room).toContain("characterSheetMenuItems({");
     expect(room).toContain("Use in a campaign · soon");
     expect(room).toContain("Use in a new campaign");

@@ -50,18 +50,21 @@ import { slotIsBeingAsked, type BusySlotRead } from "./roomBusy";
 export const PACKAGE_REDO_LINK = "Regenerate";
 
 /**
- * THE MENU ITEM'S WORDS — his Option A of 2026-10-09 (#2144; *"Mike approved
- * Option A"*, the Desk item filed for Yuna): the character sheet row keeps one
- * visible action, Download, and Regenerate moves into the ⋯ menu as
- * **"Regenerate character sheet"**. Built from his verb rather than typed
- * twice, so the verb cannot drift from the item that carries it.
+ * THE MENU ITEM'S WORD — **"Regenerate"**, his verb alone. His Option A of
+ * 2026-10-09 (#2144; *"Mike approved Option A"*) moved Regenerate into the
+ * character sheet row's ⋯ menu, first as *"Regenerate character sheet"*; the
+ * same day, looking at the live menu, verbatim: *"in the menu just call it
+ * Regenerate and Delete not those full sentences"* (#2150). The menu already
+ * sits under the CHARACTER SHEET title and is named "Actions for the character
+ * sheet" to a screen reader, so the item does not need to repeat it. It is the
+ * verb constant itself rather than a second copy of the word.
  *
  * ⚠ **It was a link reading "Regenerate · 650 credits" until #2144**, with the
  * price joined to the words by " · ". In the menu the price is the item's own
  * grey line on the right (`packageRedoPrice`), which keeps his standing rule —
  * prices on paid buttons — on the item a customer actually presses.
  */
-export const PACKAGE_REDO_MENU_LABEL = `${PACKAGE_REDO_LINK} character sheet`;
+export const PACKAGE_REDO_MENU_LABEL = PACKAGE_REDO_LINK;
 
 /**
  * The price, as the menu item's grey line: "650 credits", from the LEDGER
@@ -84,8 +87,14 @@ export function packageRedoPrice(priceCredits: number): string {
   return `${formatCredits(displayPrice(priceCredits))} credits`;
 }
 
-/** His Desk wording for the destructive item (2026-10-09), unchanged by #2144. */
-export const CHARACTER_SHEET_DELETE_LABEL = "Delete this character";
+/**
+ * The destructive item's word — **"Delete"**, red, with its bin. It read
+ * *"Delete this character"* (his Desk wording, 2026-10-09) until his word the
+ * same day (#2150): *"in the menu just call it Regenerate and Delete not those
+ * full sentences"*. The library card's menu already says "Delete". The confirm
+ * this item opens keeps its full sentence — only the menu word is short.
+ */
+export const CHARACTER_SHEET_DELETE_LABEL = "Delete";
 
 /**
  * WHAT THE ⋯ MENU ON THE CHARACTER SHEET ROW OFFERS (#2144), in his order:
