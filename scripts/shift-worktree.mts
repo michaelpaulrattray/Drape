@@ -127,6 +127,8 @@ import {
   decideReviewRemoval,
   entryForPath,
   ignoredReadingLine,
+  installedLockfilePath,
+  judgeSharedInstall,
   junctionMustBeGone,
   looksCrlfSmudged,
   parseWorktreeList,
@@ -139,6 +141,7 @@ import {
   reviewCheckoutRef,
   reviewPlanFor,
   reviewWorktreeAddArgs,
+  sharedInstallWarning,
   shipReadingFor,
   validatePrNumber,
   validateSlug,
@@ -380,6 +383,40 @@ if (command === "add") {
     }
   }
   say("check line endings");
+
+  /* ⚠ THE SHARED INSTALL IS READ HERE, FOR THE SAME REASON THE LINE ENDINGS
+     ARE: both are a cheap read that replaces an hour of chasing a red that
+     names files you never touched. One `node_modules` serves every tree on
+     this machine and can only satisfy the ones installed from its lockfile, so
+     a dependency bump on main reddens every worktree cut after it (#2148 —
+     cookie 2.0.1's `parseCookie` against an install holding cookie 1.0.2, three
+     errors in two auth files, nobody's diff). It REPORTS and never installs:
+     the repair is a mutation under every other tree and under any running dev
+     server, so it belongs to whoever can see the machine. */
+  if (!dryRun) {
+    const readOrNull = (p: string): string | null => {
+      try {
+        return readFileSync(p, "utf8");
+      } catch {
+        return null;
+      }
+    };
+    const others = parseWorktreeList(git(worktreeListArgs()).out)
+      .filter((entry) => entry.path !== plan.path)
+      .map((entry) => ({ path: entry.path, lock: readOrNull(`${entry.path}/pnpm-lock.yaml`) }));
+    const reading = judgeSharedInstall({
+      installedLock: readOrNull(installedLockfilePath(repoRoot)),
+      treeLock: readOrNull(`${plan.path}/pnpm-lock.yaml`),
+      otherTrees: others,
+    });
+    if (reading.kind === "skew") {
+      console.log("");
+      for (const line of sharedInstallWarning(reading, repoRoot)) console.log(`  ${line}`);
+    } else if (reading.kind === "unreadable") {
+      console.log(`  (shared install not checked — ${reading.why})`);
+    }
+  }
+  say("check the shared install matches this tree's lockfile");
 
   console.log("");
   console.log(dryRun ? "--dry-run: nothing was changed." : `Ready: cd ${plan.path}`);
