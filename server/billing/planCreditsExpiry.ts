@@ -42,9 +42,9 @@
  * thing a customer sees is the sentence on the cancel dialog and the plans
  * page, *"You'll have 30 days to use your plan credits. Top-ups stay on your
  * balance."* — no decision, no term of art. The number in that sentence is
- * {@link PLAN_CREDITS_GRACE_DAYS}, the same constant this module stamps with.
+ * {@link CANCELLED_PLAN_GRACE_DAYS}, the same constant this module stamps with.
  */
-import { PLAN_CREDITS_GRACE_DAYS } from "@shared/planCancelCopy";
+import { CANCELLED_PLAN_GRACE_DAYS } from "@shared/planCancelCopy";
 import {
   expirePlanCredits,
   getPlanCreditsExpiryCandidates,
@@ -60,7 +60,7 @@ const SWEEP_FIRST_RUN_DELAY_MS = 120_000;
 
 /**
  * The deadline for a subscription that just died: its paid period's end plus
- * {@link PLAN_CREDITS_GRACE_DAYS}, and never earlier than `now` plus the same.
+ * {@link CANCELLED_PLAN_GRACE_DAYS}, and never earlier than `now` plus the same.
  *
  * ⚠ **THE PERIOD END IS READ ONLY WHERE STRIPE STATES ONE.** The shared
  * `subscriptionPeriodSec` fabricates a month when no period is present, which
@@ -91,7 +91,7 @@ export function planCreditsExpiryFrom(subscription: unknown, now: Date): Date {
   const from = Math.max(periodEndMs, endedMs);
   // Whole seconds: the column has no fractional part, and the sweep's write is
   // conditioned on the stamp it read back.
-  return new Date(Math.floor((from + PLAN_CREDITS_GRACE_DAYS * DAY_MS) / 1000) * 1000);
+  return new Date(Math.floor((from + CANCELLED_PLAN_GRACE_DAYS * DAY_MS) / 1000) * 1000);
 }
 
 export interface PlanCreditsExpiryDeps {

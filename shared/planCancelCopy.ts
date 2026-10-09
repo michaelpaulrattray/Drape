@@ -23,7 +23,7 @@
  *    `cancelSubscription`), so the plan runs to its period end;
  *  - at that end `handleSubscriptionDeleted` sets `planTier: "free"` and
  *    ~~touches no balance, so the credits stay~~ — **no longer true as of
- *    #2152 (2026-10-09)**: it now stamps a deadline {@link PLAN_CREDITS_GRACE_DAYS}
+ *    #2152 (2026-10-09)**: it now stamps a deadline {@link CANCELLED_PLAN_GRACE_DAYS}
  *    days past the paid period, and `server/billing/planCreditsExpiry.ts`
  *    takes the plan's part of the balance off when it passes;
  *  - unused plan credits carry into the next period up to one month's worth
@@ -44,11 +44,11 @@ import { formatCustomerShortDate } from "./customerDate";
  * ends (#2152). The webhook's stamp and every sentence below read this one
  * number, so the promise and the deadline cannot drift apart.
  */
-export const PLAN_CREDITS_GRACE_DAYS = 30;
+export const CANCELLED_PLAN_GRACE_DAYS = 30;
 
 /** The two sentences every cancel line ends on (#2152). */
 const AFTER_CANCEL_CREDITS =
-  `You'll have ${PLAN_CREDITS_GRACE_DAYS} days to use your plan credits. Top-ups stay on your balance.`;
+  `You'll have ${CANCELLED_PLAN_GRACE_DAYS} days to use your plan credits. Top-ups stay on your balance.`;
 
 type PeriodEnd = Date | string | null | undefined;
 
@@ -89,9 +89,9 @@ export const RENEWAL_SENTENCE =
 
 /** #1952 item 5, reworded by #2152 — the short cancel line. */
 export const CANCEL_ANY_TIME_SHORT =
-  `Cancel any time. You'll have ${PLAN_CREDITS_GRACE_DAYS} days to use your plan credits after your paid period ends.`;
+  `Cancel any time. You'll have ${CANCELLED_PLAN_GRACE_DAYS} days to use your plan credits after your paid period ends.`;
 
 /** #1952 item 5, reworded by #2152 — what a renewal, and a cancel, do to credits. */
 export const RENEWAL_BALANCE_SENTENCE =
   "Unused plan credits carry into next month, up to one month's worth. "
-  + `If you cancel, you have ${PLAN_CREDITS_GRACE_DAYS} days to use them. Top-ups stay on your balance.`;
+  + `If you cancel, you have ${CANCELLED_PLAN_GRACE_DAYS} days to use them. Top-ups stay on your balance.`;

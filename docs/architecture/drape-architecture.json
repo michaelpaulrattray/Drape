@@ -10581,13 +10581,6 @@
       "file": "shared/creditTopups.ts"
     },
     {
-      "id": "cost:shared/planCancelCopy.ts:PLAN_CREDITS_GRACE_DAYS",
-      "name": "PLAN_CREDITS_GRACE_DAYS",
-      "constant": "PLAN_CREDITS_GRACE_DAYS",
-      "credits": 30,
-      "file": "shared/planCancelCopy.ts"
-    },
-    {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",

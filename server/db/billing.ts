@@ -455,7 +455,8 @@ export async function expirePlanCredits(
             description: "Plan credits expired 30 days after the plan ended",
             referenceId: ledgerReferenceId,
             balanceAfter: purchasedKept,
-            toolKind: null,
+            // No toolKind, as the renewal's own insert above: the column's
+            // NULL already means "not a tool charge" (#401).
           });
         }
         return planPart > 0

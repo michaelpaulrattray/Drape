@@ -79,7 +79,7 @@ import {
   updateUserSubscription,
 } from "../db/billing";
 import { planCreditsExpiryFrom, runPlanCreditsExpirySweep } from "./planCreditsExpiry";
-import { PLAN_CREDITS_GRACE_DAYS } from "@shared/planCancelCopy";
+import { CANCELLED_PLAN_GRACE_DAYS } from "@shared/planCancelCopy";
 
 const DAY_MS = 86_400_000;
 const NOW = new Date("2026-11-20T12:00:00Z");
@@ -108,7 +108,7 @@ describe("1 · the expiry takes the PLAN's credits and leaves every top-up", () 
       amount: -30_000,
       balanceAfter: 20_000,
       referenceId: planCreditsExpiryLedgerRef(7, DUE),
-      toolKind: null,
+      type: "subscription",
     });
   });
 
@@ -217,15 +217,15 @@ describe("4 · a return to a paid plan cancels the pending expiry", () => {
 });
 
 describe("5 · the deadline", () => {
-  it(`is the stated period end plus ${PLAN_CREDITS_GRACE_DAYS} days`, () => {
+  it(`is the stated period end plus ${CANCELLED_PLAN_GRACE_DAYS} days`, () => {
     const endSec = Math.floor(NOW.getTime() / 1000) - 3600;
     const at = planCreditsExpiryFrom({ items: { data: [{ current_period_end: endSec }] }, ended_at: endSec }, NOW);
-    expect(at.getTime()).toBe((endSec * 1000) + PLAN_CREDITS_GRACE_DAYS * DAY_MS);
+    expect(at.getTime()).toBe((endSec * 1000) + CANCELLED_PLAN_GRACE_DAYS * DAY_MS);
   });
 
   it("never runs from a fabricated period — no period and no ended_at means from now", () => {
     const at = planCreditsExpiryFrom({}, NOW);
-    expect(at.getTime()).toBe(Math.floor((NOW.getTime() + PLAN_CREDITS_GRACE_DAYS * DAY_MS) / 1000) * 1000);
+    expect(at.getTime()).toBe(Math.floor((NOW.getTime() + CANCELLED_PLAN_GRACE_DAYS * DAY_MS) / 1000) * 1000);
   });
 });
 

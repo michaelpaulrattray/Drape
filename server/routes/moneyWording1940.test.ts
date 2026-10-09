@@ -52,7 +52,7 @@ import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
   CANCEL_ANY_TIME_SHORT,
-  PLAN_CREDITS_GRACE_DAYS,
+  CANCELLED_PLAN_GRACE_DAYS,
   RENEWAL_BALANCE_SENTENCE,
   cancelPlanBody,
   cancelledPlanSegment,
@@ -135,10 +135,10 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
   });
 
   it("#2152 — the 30 in every sentence IS the deadline the server stamps (derived, not mirrored)", () => {
-    expect(PLAN_CREDITS_GRACE_DAYS).toBe(30);
+    expect(CANCELLED_PLAN_GRACE_DAYS).toBe(30);
     const webhook = read("server/billing/planCreditsExpiry.ts");
-    expect(webhook).toContain('import { PLAN_CREDITS_GRACE_DAYS } from "@shared/planCancelCopy";');
-    expect(webhook).toContain("PLAN_CREDITS_GRACE_DAYS * DAY_MS");
+    expect(webhook).toContain('import { CANCELLED_PLAN_GRACE_DAYS } from "@shared/planCancelCopy";');
+    expect(webhook).toContain("CANCELLED_PLAN_GRACE_DAYS * DAY_MS");
   });
 
   it("Billing says ends {date} · won't renew, never renews", () => {
