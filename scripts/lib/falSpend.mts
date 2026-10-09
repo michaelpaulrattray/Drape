@@ -52,8 +52,9 @@
  *   ROLLS      open a census per candidate and write it to the LOG only, so a
  *              roll's renders are counted from the candidate ROWS instead —
  *              one GPT Image 2 render per delivered attempt.
- *   FACE SCANS mint nothing at all by design (CLAUDE.md), so their ~20
- *              segmenter calls per version looked at are invisible here. This
+ *   FACE SCANS mint nothing at all by design (CLAUDE.md), so their 21–27
+ *              segmenter calls and one body cutout per version looked at are
+ *              invisible here (`FACE_SCAN_FAL_CALLS` below). This
  *              is the largest blind spot and the derived total is a FLOOR
  *              because of it.
  */
@@ -68,19 +69,125 @@ import type { Connection } from "mysql2/promise";
 export const FAL_LOW_BALANCE_USD = 20;
 
 /**
- * WHAT ONE FACE SCAN ASKS OF fal — counted, not derived.
+ * WHAT ONE FACE SCAN ASKS OF ITS PROVIDERS — a RANGE, because a real face makes
+ * the scan ask again (#2184).
  *
- * `count-scan-reads-disposable.mts` drives the real `scanFace` through a
- * recording reader and gets **20**: twelve questions, five of them read as two
- * half-frames, one composed below-head slot costing a head read and a subject
- * matte, and one shared midline read. Every hand-derivation of this number
- * before that script was wrong, which is why the figure lives in one place and
- * carries its instrument's name.
+ * ⚠ **This was one number, `FACE_SCAN_READS_PER_VERSION = 20`, until
+ * 2026-10-10, and it was low twice over.** It was counted with a fake reader
+ * that found everything on the first ask, which no real face does: an empty
+ * anatomy read is asked once more, and a pair with one side at zero is asked
+ * once more (`server/castingV2/faceScan.ts`). And it counted the body cutout —
+ * a BiRefNet call, priced per compute-second — as if it were one more SAM 3
+ * read at half a cent. #2183 measured **21–27 SAM 3 reads plus one cutout** on
+ * eight real casts, and fal's own usage report matched the count at the wire.
  *
- * The describer call a scan also makes is NOT in here — different transport,
- * different price — and every reader of this constant names it separately.
+ * `fewest` and `most` are DERIVED: `server/faceScanSpend.test.ts` runs the real
+ * `scanFace` through the real `createFalRegionReader` against a fake `fetch`
+ * and counts the requests that reach fal, endpoint by endpoint — `fewest` when
+ * every question is answered first time, `most` when every re-ask the code has
+ * fires and every call succeeds. They are written here as numbers only so this
+ * module stays out of the server's import graph; the suite goes red the moment
+ * the scan asks a different number of questions. `measured` is what real faces
+ * do, with its source, and the suite holds it inside the derived pair.
+ *
+ * Where the two derived figures come from, as the wire counted them on
+ * 2026-10-10 (13 SAM 3 prompts):
+ *
+ *   fewest 19  one per whole-frame question (7), two per pair — one per side —
+ *              (5 pairs, 10), and the face asked twice: once for the midline the
+ *              pairs are split on, once for the head the build row is cut under
+ *   most   40  an anatomy question asked twice (lips, teeth, nose, hair, skin:
+ *              +5); an anatomy pair asked again AND healed inside that second
+ *              look (eyes, brows, ears: 6 each, +12); a worn pair healed once
+ *              (horns, earrings: 4 each, +4); worn whole-frame questions are
+ *              never asked twice (glasses, facial hair)
+ *
+ * The cutout is never asked twice and never by a re-ask; neither is the
+ * describer.
  */
-export const FACE_SCAN_READS_PER_VERSION = 20;
+export const FACE_SCAN_FAL_CALLS = {
+  sam3: {
+    fewest: 19,
+    most: 40,
+    measured: {
+      low: 21,
+      high: 27,
+      source: "#2183 (2026-10-10): 8 production casts scanned through the real scannedFace, "
+        + "183 SAM 3 calls matched fal's usage report; production history agrees at 20.9–24.6 "
+        + "reads per paid scan (fal hourly usage / casting.scan_miss audit rows)",
+    },
+  },
+  /** The whole-subject matte the build row is composed from — one per scan. */
+  cutouts: 1,
+  /** The words read (build, skin, teeth) — one per scan, on OpenRouter, not fal. */
+  describer: 1,
+} as const;
+
+/**
+ * WHAT THE PARTS OF A SCAN THAT ARE NOT SAM 3 COST — measured, not published
+ * per call.
+ *
+ * The cutout is billed by compute-second ($0.0008 each, fal's published price
+ * above). Production history bills about 0.6–2 s a scan; the #2183 run, on what
+ * was probably a cold model, billed 117 s for 8 cutouts and split per scan up to
+ * about $0.016 — which is the ceiling here. The describer is Claude Sonnet 5 via
+ * OpenRouter, ~2,700 tokens in and 45–82 out, billed per call by id.
+ */
+export const FACE_SCAN_PART_USD = {
+  cutout: {
+    low: 0.0005,
+    high: 0.016,
+    source: "#2183: production history 0.6–2 compute-s a scan (~$0.0005–$0.0016); "
+      + "the run's cold cutouts split up to ~$0.016 a scan",
+  },
+  describer: {
+    low: 0.0058,
+    high: 0.0062,
+    source: "#2183: OpenRouter's billed cost for each of 8 describer calls, by id",
+  },
+} as const;
+
+type UsdBand = { low: number; high: number };
+
+/**
+ * One scan in dollars, built from its parts rather than typed as a total.
+ *
+ * `fal` is what a fal balance drop can be charged with (SAM 3 reads plus the
+ * cutout); `total` adds the describer, which is billed at OpenRouter. The band
+ * adds independent extremes, so it is a little wider than any one measured face
+ * — #2183's eight casts ran $0.121–$0.151, all inside it.
+ */
+export function faceScanUsd(): { sam3: UsdBand; cutout: UsdBand; describer: UsdBand; fal: UsdBand; total: UsdBand } {
+  const perRead = FAL_MEASURED_USD["fal-ai/sam-3/image"].usd;
+  const reads = FACE_SCAN_FAL_CALLS.sam3.measured;
+  const sam3 = { low: reads.low * perRead, high: reads.high * perRead };
+  const cutout = {
+    low: FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low,
+    high: FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.high,
+  };
+  const describer = {
+    low: FACE_SCAN_FAL_CALLS.describer * FACE_SCAN_PART_USD.describer.low,
+    high: FACE_SCAN_FAL_CALLS.describer * FACE_SCAN_PART_USD.describer.high,
+  };
+  const fal = { low: sam3.low + cutout.low, high: sam3.high + cutout.high };
+  return {
+    sam3,
+    cutout,
+    describer,
+    fal,
+    total: { low: fal.low + describer.low, high: fal.high + describer.high },
+  };
+}
+
+/**
+ * The fewest dollars a scan can cost at fal — every question answered first
+ * time, and the cheapest cutout measured. A FLOOR for subtracting scans out of
+ * a balance drop, where an overestimate would hide a render's real price.
+ */
+export function faceScanFalFloorUsd(): number {
+  return FACE_SCAN_FAL_CALLS.sam3.fewest * FAL_MEASURED_USD["fal-ai/sam-3/image"].usd
+    + FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low;
+}
 
 /**
  * OUR OWN MEASURED PRICES, for the endpoints whose published unit is opaque.
@@ -617,10 +724,11 @@ export function falLine(
       ? [`${blind} of ${derived.traffic.refineRows} refine rows carry NO census`]
       : []),
     /* Named every time, priced never: the scan mints nothing to count. The
-       per-version figure comes from the constant above rather than from a
+       per-version figures come from the constants above rather than from a
        number typed into this sentence — the same fact in two spellings is how
        one of them goes stale. */
-    `face scans (mint nothing, ~${FACE_SCAN_READS_PER_VERSION} segmenter calls per version viewed)`,
+    `face scans (mint nothing, ${FACE_SCAN_FAL_CALLS.sam3.measured.low}–${FACE_SCAN_FAL_CALLS.sam3.measured.high}`
+      + ` segmenter calls + ${FACE_SCAN_FAL_CALLS.cutouts} cutout per version viewed)`,
   ];
   return `fal DERIVED $${derived.priced.usd.toFixed(2)} over ${days}d`
     + ` from ${calls} calls on ${derived.traffic.models.length} model(s)`
