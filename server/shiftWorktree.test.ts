@@ -54,6 +54,7 @@ import {
   ignoredReadingLine,
   installedLockfilePath,
   judgeSharedInstall,
+  sharedInstallRedDiagnosis,
   sharedInstallWarning,
   INSTALLED_LOCKFILE_RELATIVE,
   keptIgnoredHoldsWork,
@@ -2236,6 +2237,92 @@ describe("sharedInstallWarning — the words a shift reads, driven by the same s
   });
 });
 
+describe("sharedInstallRedDiagnosis — the words for the moment the red arrives (#2148, round 3)", () => {
+  const OWNER = "C:/Users/Admin/Drape";
+  const lines = (reading: Parameters<typeof sharedInstallRedDiagnosis>[0]) =>
+    sharedInstallRedDiagnosis(reading, OWNER).join("\n");
+
+  it("says nothing on a match, and nothing when the question was not answered", () => {
+    /* The same floor the `add` words have, and it matters more here: this is
+       printed under a red a shift is already reading, so a block that appears
+       when the install is FINE would send it chasing the wrong thing. */
+    expect(sharedInstallRedDiagnosis({ kind: "match" }, OWNER)).toEqual([]);
+    expect(sharedInstallRedDiagnosis({ kind: "unreadable", why: "no install" }, OWNER)).toEqual([]);
+  });
+
+  it("⚠ LEADS WITH THE FACT THE SHIFT NEEDS FIRST — that the red may not be its diff", () => {
+    /* The whole value is in the first line. A shift reading three errors in two
+       auth files it never opened spends its next twenty minutes on `sdk.ts`
+       unless something says otherwise in the first sentence it meets. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text.split("\n")[0]).toContain("MAY NOT BE YOUR DIFF");
+    expect(text).toContain("CI installs fresh");
+    /* And it names where the install actually is, because the seat's own tree
+       is not it. */
+    expect(text).toContain(OWNER);
+  });
+
+  it("⚠ IT IS WRITTEN IN THE PAST TENSE, because the red has already happened", () => {
+    /* ⚠ THE ONE THING THAT COULD NOT BE SHARED WITH `add`'s WORDS, and the
+       reason this is a second function rather than a second call. `add` says
+       *expect* a red; printing a prediction of a thing already on the screen is
+       how a block gets learned as decoration. One judge, two moments. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).not.toContain("Expect");
+    expect(text).not.toContain("to go red");
+    expect(text).toContain("reports errors in files");
+  });
+
+  it("⚠ ON A DIFFERENT-LOCKFILE OWNER IT GIVES BOTH STEPS AND FORBIDS THE FIRST ALONE", () => {
+    /* ⚠ MEASURED ON THIS MACHINE and the reason the second line exists: the
+       shared install was made from `04d1a5fd…`, the owning tree holds
+       `24d2c74c…` and this tree needs `be7c3b77…`. An install in the owner
+       produces ITS list, so the owner must advance first — and advancing it
+       ALONE moves the one tree that currently typechecks green INTO the skew.
+       A reader given only the cheap half does the damage. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "different-lockfile" });
+    expect(text).toContain("WOULD NOT FIX IT");
+    expect(text).toContain(`git -C ${OWNER} merge --ff-only origin/main`);
+    expect(text).toContain("pnpm install");
+    expect(text).toContain("never the first alone");
+    /* A seat may not run either step, and the words say so rather than leaving
+       a seat to discover it from its standing orders. */
+    expect(text).toContain("MACHINE OWNER'S ACT");
+    /* The word that would make a non-repair read as the answer. */
+    expect(text).not.toContain("repair: run");
+  });
+
+  it("⚠ POSITIVE CONTROL — a same-lockfile owner gets the one command and no two-step warning", () => {
+    /* The arm that proves the one above is not simply deleting the command.
+       After a bump everybody has merged forward, `pnpm install` in the owner
+       really is the whole fix, and a tool that cried "two steps" then would be
+       the false alarm this block cannot afford. */
+    const text = lines({ kind: "skew", collisions: [], repairTree: "same-lockfile" });
+    expect(text).toContain(`repair: run \`pnpm install\` in ${OWNER}`);
+    expect(text).not.toContain("WOULD NOT FIX IT");
+    expect(text).not.toContain("merge --ff-only");
+    expect(text).not.toContain("IS UNKNOWN");
+  });
+
+  it("⚠ AN UNREADABLE OWNER IS ITS OWN ANSWER, never the friendly one", () => {
+    const text = lines({ kind: "skew", collisions: [], repairTree: "unreadable" });
+    expect(text).toContain("IS UNKNOWN");
+    expect(text).not.toContain("repair: run");
+    expect(text).not.toContain("WOULD NOT FIX IT");
+  });
+
+  it("⚠ NEVER LISTS OTHER TREES, whatever it is handed", () => {
+    /* Round 1's measured wall, held at this caller too. preflight passes
+       `otherTrees: []` so `collisions` is empty in practice — this arm proves
+       the WORDS would not print a wall even if a later caller passed 36, which
+       is the only way the guarantee survives a new call site. */
+    const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
+    const text = lines({ kind: "skew", collisions: many, repairTree: "same-lockfile" });
+    expect(text).not.toContain("drape-shift-stale-0");
+    expect(text.split("\n").length).toBeLessThan(10);
+  });
+});
+
 describe("judgeSharedInstall reads the REPAIR TREE, which was in its input all along (#2148, round 2)", () => {
   const LOCK = "lockfileVersion: '9.0'\n\nimporters:\n  .:\n    dependencies:\n      cookie:\n        specifier: ^2.0.1\n";
   const OTHER = LOCK.replace("^2.0.1", "^1.0.2");
@@ -2312,6 +2399,64 @@ describe("the script's own text — the shared-install reading is INVOKED (#2148
       add.text,
       "`add` stopped telling the reading which tree the printed repair would run in",
     ).toContain("repairTreeLock: readOrNull(`${repoRoot}/pnpm-lock.yaml`)");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ AND `pnpm preflight` IS THE SECOND CALLER (#2148, round 3).
+
+     `sharedInstallWarning`'s own first line predicts this red — *"expect
+     `pnpm check` and `pnpm preflight` to go red naming files your diff never
+     touched"* — and for a whole day the tool that went red said nothing. The
+     instance was fixed at the door and the sibling was left, which is law 7's
+     sweep owed on this card's own fix. MEASURED in this tree before the arms
+     were written: `npx tsc --noEmit` gives three errors in `server/_core/sdk.ts`
+     and `server/routes/googleAuth.ts`, both auth files, nobody's diff, and
+     preflight stops there with five of its remaining checks never reached.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ `preflight` CALLS THE SAME JUDGE, and only under a typecheck red", () => {
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    /* Sliced out of the typecheck branch rather than grepped whole-file: a
+       whole-file `toContain` would pass on an identical line in a neighbouring
+       diagnosis block, which is the trap this describe's own header names. */
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    expect(start, "the typecheck diagnosis block is gone — preflight no longer names the install").toBeGreaterThan(-1);
+    expect(end, "the architecture diagnosis moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = preflight.slice(start, end);
+
+    expect(block, "preflight re-derives the comparison instead of calling the judge (working law 4)")
+      .toContain("judgeSharedInstall({");
+    expect(block).toContain("sharedInstallRedDiagnosis(reading,");
+    /* ⚠ THE OWNING TREE IS RESOLVED AND NOT ASSUMED TO BE `repoRoot` — round
+       2's whole lesson, one caller over. In a worktree `node_modules` is a
+       junction, so the tree whose lockfile an install would produce is the
+       target's parent; passing `repoRoot` here would name the seat's own tree
+       and print a repair that cannot be run. */
+    expect(block, "preflight stopped resolving which tree owns the install").toContain("realpathSync");
+    /* And it must not enumerate worktrees: the paths are `add`'s sentence, and
+       36 of them under a red is the wall round 1 measured. */
+    expect(block, "preflight is listing other trees under a red — that is the measured wall")
+      .toContain("otherTrees: []");
+  });
+
+  it("⚠ THE DIAGNOSIS IS NOT PRINTED ON A GREEN PREFLIGHT — a block that is always there is noise", () => {
+    /* The negative control for the clause above. A skew line on every green run
+       trains the shift to scroll past exactly the block that matters on the one
+       run it does. So the call is INSIDE `if (firstRed…)`, and this arm proves
+       it by reading where the green path ends. */
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    const greenPath = preflight.slice(preflight.indexOf("PREFLIGHT GREEN"));
+    expect(greenPath).not.toContain("sharedInstallRedDiagnosis");
+    expect(greenPath).not.toContain("judgeSharedInstall");
+  });
+
+  it("⚠ `preflight` NEVER RUNS AN INSTALL EITHER — the same refusal, the same reason", () => {
+    const preflight = readFileSync(join(import.meta.dirname, "..", "scripts", "preflight.mts"), "utf8");
+    const start = preflight.indexOf('if (firstRed.check.id === "typecheck") {');
+    const end = preflight.indexOf('if (firstRed.check.id === "architecture"');
+    const block = preflight.slice(start, end);
+    expect(block).not.toMatch(/spawnSync\(\s*"pnpm"/);
+    expect(block).not.toMatch(/"install"/);
   });
 
   it("⚠ `add` NEVER RUNS AN INSTALL ITSELF — the mutation stays with whoever can see the machine", () => {
