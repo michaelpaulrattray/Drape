@@ -390,29 +390,53 @@ export const CASTING_V2_VIEW_RETRY_PRICE_CREDITS = 1850;
 export const CASTING_V2_PACKAGE_REDO_PRICE_CREDITS = 3250;
 
 /**
- * Sign (§H.4/H.10, founder-decided 2026-07-30; repriced 2026-10-01 under his
- * approved pricing, #1601 item 1): one price, one operation, **decomposed** —
- * because a failed view has to refund its exact slice under the same charge
- * reference, and a slice you cannot name is a slice you cannot give back.
+ * SIGN, FLAT (§H.4/H.10, founder-decided 2026-07-30; repriced 2026-10-01 under
+ * his approved pricing, #1601 item 1; made FLAT by his word of 2026-10-08).
  *
- * **3,500 + 5 × 1,000 = 8,500 ledger (700 + 5 × 200 = 1,700 display).** Both
- * parts divide by 5 exactly, which is the whole reason the spec chose them: a
- * refund a customer can read has to be a whole display number too. It was
- * 200 + 5 × 50 = 450 from 2026-07-30 to 2026-10-01.
+ * **His price, verbatim, 2026-10-08 (terminal, on #1968):** *"on this card make
+ * both sign and redo/regenerate 650 credis"*. **650 display = 3,250 ledger**,
+ * and it is ONE number for the whole Sign however many views the cohort
+ * promises — the same figure {@link CASTING_V2_PACKAGE_REDO_PRICE_CREDITS}
+ * carries, because his sentence sets both in one breath.
  *
- * The promotion portion buys the thing that cannot fail once it exists: the
- * face lock, the likeness anchor, the KI id, the lineage. It is never refunded
- * once the candidate CAS is set, because at that point the Cast exists and the
- * candidate is spent — undoing it would mean un-signing.
+ * ⚠ **IT WAS 3,500 + 5 × 1,000 = 8,500 UNTIL THIS COMMIT, AND THE SHAPE
+ * MOVED WITH THE NUMBER.** The old pair was a `promotion` base plus a
+ * refundable per-view `view` slice, and the decomposition existed for exactly
+ * one reason, stated in its own docblock: *"a failed view has to refund its
+ * exact slice under the same charge reference, and a slice you cannot name is a
+ * slice you cannot give back."* His reprice ends the premise rather than the
+ * arithmetic:
  *
- * The per-view portion is the refundable unit, exactly as `rollCandidate` is
- * for a sheet. The total lives beside the canonical view list rather than here
- * (`castViewPackage.ts`), so the price is derived from the number of views the
- * cohort actually promises and cannot drift from it.
+ *   > *"Drop the 700 base + 200 per view split, since views are cut from two
+ *   > sheets and can't be refunded one by one. A failed check re-makes the
+ *   > whole sheet at our cost... Credits only come back if the Sign can't be
+ *   > delivered at all."*
+ *
+ * Since #1957 a view is a panel CUT from one of two landscape sheets, so a
+ * refused view costs the house a whole re-rendered sheet rather than a fifth of
+ * one. A per-slice refund there pays a customer back for a frame we bought.
+ *
+ * ⚠ **SO THERE IS NO `promotion` AND NO `view` CONSTANT, AND THAT ABSENCE IS
+ * THE CONTROL** — the redo's own reasoning (#1903 slice 2), which this road now
+ * shares. A surviving per-view price would leave the slice arithmetic sitting
+ * one `recordRefund` away from being re-added by somebody reading an older
+ * comment, on a money path. `server/castingV2/signFlatPrice.test.ts` refuses
+ * both names' return.
+ *
+ * **The one way credits come back is zero views delivered** — the total-loss
+ * road, which gives back the whole charge exactly once. Both settlers derive
+ * that figure rather than restating it: the live orchestrator refunds what it
+ * was charged, and the recovery sweep refunds the LEDGER's own charge minus
+ * whatever already went back, so a Sign bought at 8,500 before this commit
+ * still settles to the full 8,500 after it.
+ *
+ * ⚠ **AND HIS PRICE RESTS ON A COST CAP THAT IS ALREADY BUILT** — Cid's
+ * reprice (his finance team, 2026-10-08) holds only if every paid sheet render
+ * on one Sign stays inside two per sheet. It does, at three layers, and
+ * — measured at the code rather than assumed: `withRetry` never re-submits a
+ * frame the provider already finished (#2032), neither arrival loop re-asks for
+ * one either (#1982), and `SHEET_MAX_RENDERS` is 2 judged frames per sheet per
+ * Sign (#1904). A fourth counter beside those three would be working law 4 on
+ * a money path.
  */
-export const CASTING_V2_SIGN_COSTS = {
-  /** Face lock, anchor, KI id, lineage. Not refundable past the boundary. */
-  promotion: 3500,
-  /** One canonical view. The refundable slice. */
-  view: 1000,
-} as const;
+export const CASTING_V2_SIGN_PRICE_CREDITS = 3250;

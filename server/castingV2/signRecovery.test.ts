@@ -1,26 +1,34 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CastViewAngle } from "../../shared/boardTypes";
-import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
-import { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 
 
 /**
  * THE SIGN'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
  *
  * ⚠ **THIS SUITE PINNED `450`, `200`, `50`, `100` AND `500` AS LITERALS AND
- * EVERY ONE OF THEM WENT RED ON TWO CONSTANT EDITS.** A Sign is 3,500 + 5 x
- * 1,000 now. The arms are about the SPLIT — the promotion is kept once the Cast
- * exists, the views refund under their own references, nothing is paid twice —
- * and that is true at any price. So each number is derived from the part of the
- * price it is about, which also makes the arms say WHICH part they mean:
- * `PROMOTION` is the kept half, `VIEW_PRICE` the refundable slice, and a
- * six-view Sign's total is composed rather than typed.
+ * EVERY ONE OF THEM WENT RED ON TWO CONSTANT EDITS.** So each number is read
+ * from the product rather than typed.
+ *
+ * ⚠ **AND THE SPLIT THE OTHER CONSTANTS NAMED IS GONE — #1968.** `PROMOTION`
+ * (the kept half) and `VIEW_PRICE` (the refundable slice) described a price
+ * with two parts; his word of 2026-10-08 makes a Sign one flat charge with no
+ * per-view refund, so the only figure left is the whole one. The arms below
+ * moved with it: what they assert now is that the sweep settles from the
+ * LEDGER's own charge rather than from any constant, which is what lets one
+ * build settle a Sign bought at 8,500 and one bought at 3,250.
  */
 const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
-const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
-const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
-/** A Sign bought under the six-view package — composed, never typed. */
-const SIX_VIEW_SIGN = PROMOTION + 6 * VIEW_PRICE;
+/**
+ * What a Sign cost before #1968 — a LEDGER fact, not a product constant.
+ *
+ * The in-flight case this suite has to cover: a Sign charged under the old
+ * decomposition (3,500 + 5 × 1,000) and settled by a build that has only the
+ * flat price. It is a literal on purpose, because it is history: no constant in
+ * the tree can produce it any more, and deriving it from one would be a fiction
+ * that moves with his next price word.
+ */
+const LEGACY_EIGHT_FIVE_SIGN = 8500;
 
 /**
  * The Sign adjudicator: what a crashed ceremony resolves to, and in what order.
@@ -296,7 +304,18 @@ describe("sweep versus live", () => {
 });
 
 describe("the Cast exists", () => {
-  it("keeps the promotion and refunds only the views nobody settled", async () => {
+  /*
+    ⚠ **THIS ARM READ *"keeps the promotion and refunds only the views nobody
+    settled"* AND BOTH HALVES ARE GONE — #1968.** There is no promotion to keep
+    and no slice to refund: a Sign that delivered SOMETHING keeps its whole
+    charge, and the customer keeps what landed. His word: *"Credits only come
+    back if the Sign can't be delivered at all."*
+
+    It still drives two unsettled views, because the arm that matters is that
+    nothing moves for them — and `toEqual([])` on the refunds can tell this rule
+    from the old one, where a length check could not.
+  */
+  it("refunds NOTHING for views nobody settled, when the Cast exists", async () => {
     ledgerRows = [chargeRow()];
     cast = signedCast;
     unsettled = ["sideFull", "backFull"];
@@ -306,13 +325,8 @@ describe("the Cast exists", () => {
       promisedAngles: async () => promised,
     });
 
-    expect(refunds).toHaveLength(2);
-    expect(refunds.every((entry) => entry.amount === VIEW_PRICE)).toBe(true);
-    // Per-slot references, never the bare charge reference — refunding that
-    // would hand back the promotion on a Cast that exists.
-    expect(refunds.every((entry) => entry.reference.includes(":slot:"))).toBe(true);
-    expect(refunds.some((entry) => entry.reference === CHARGE_REFERENCE)).toBe(false);
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: SIGN_PRICE, refundedCredits: 2 * VIEW_PRICE });
+    expect(refunds, "no slice comes back for an unsettled view (#1968)").toEqual([]);
+    expect(outcome).toMatchObject({ type: "partial", chargedCredits: SIGN_PRICE, refundedCredits: 0 });
   });
 
   it("writes the confession where the ROOM reads it, not only the log", async () => {
@@ -323,9 +337,11 @@ describe("the Cast exists", () => {
       promisedAngles: async () => promised,
     });
 
-    // A slot that was refunded but has no marker renders as an empty shimmer
-    // for ever — the founder's gate condition is that it confesses in place.
-    expect(markers).toEqual([{ angle: "backFull", refunded: VIEW_PRICE }]);
+    // A slot with no marker renders as an empty shimmer for ever — the
+    // founder's gate condition is that it confesses in place. Since #1968 it
+    // confesses with no money beside it, which is the honest figure rather
+    // than a stub: nothing was owed for this view.
+    expect(markers).toEqual([{ angle: "backFull", refunded: 0 }]);
     expect(outcome.type).toBe("partial");
   });
 
@@ -355,22 +371,30 @@ describe("the Cast exists", () => {
   });
 
   it("never refunds more than was charged", async () => {
-    // The conservation ceiling. Slices come from a code constant and the ledger
-    // from the database; if they ever disagree enough to overpay, that is a
-    // support case, not a silent overpayment.
+    /*
+      The conservation ceiling — **and since #1968 it is measured against the
+      LEDGER on both sides, which is stronger than it was.** It used to compare
+      a code constant against a database row; now the amount owed IS a
+      subtraction over two database figures, so the ceiling can only be reached
+      by a ledger that already contradicts itself.
+
+      The fixture is exactly that: an old slot refund larger than the charge,
+      which is impossible to create but is what a corrupted or double-written
+      row looks like. It must park rather than pay.
+    */
     ledgerRows = [
       chargeRow(),
-      refundRow(`${CHARGE_REFERENCE}:slot:frontClose`, 5 * VIEW_PRICE),
+      refundRow(`${CHARGE_REFERENCE}:slot:frontClose`, SIGN_PRICE + 500),
     ];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(operation, {
       unsettledAngles: async () =>
         ["threeQuarter", "frontFull", "sideClose", "backFull", "frontClose"] as never,
       promisedAngles: async () => promised,
+      committedAngles: async () => [],
     });
 
-    const paidBack = 5 * VIEW_PRICE + refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    expect(paidBack).toBeLessThanOrEqual(SIGN_PRICE);
+    expect(refunds, "nothing is paid out over a ledger that cannot be trusted").toEqual([]);
     expect(outcome.type).toBe("recovery_required");
   });
 
@@ -406,13 +430,25 @@ describe("a dead end parks, and stays parked", () => {
    * seals a CLEAN receipt over the support message — the customer stays short
    * and the trail is gone.
    */
+  /*
+    ⚠ **RE-POINTED AT THE TOTAL LOSS BY #1968, BECAUSE A PARTIAL PACKAGE NO
+    LONGER REFUNDS ANYTHING.** It drove one unsettled view on a Cast that
+    exists, which used to attempt a slice refund and could therefore fail to
+    record one. With the slice gone that fixture issues no refund at all, so the
+    arm would have gone on passing while measuring nothing — the exact shape of
+    an inert guard.
+
+    The concern it exists for is untouched and now lives where the money does:
+    the total-loss refund.
+  */
   it("parks an unrecorded refund instead of sealing a receipt over it", async () => {
     ledgerRows = [chargeRow()];
     cast = signedCast;
     refundRecords = false;
     const outcome = await recoverCastingV2SignOperation(operation, {
-      unsettledAngles: async () => ["backFull"] as never,
+      unsettledAngles: async () => [...promised.angles] as never,
       promisedAngles: async () => promised,
+      committedAngles: async () => [],
     });
 
     expect(outcome.type).toBe("recovery_required");
@@ -453,9 +489,17 @@ describe("a refund that was already in the ledger", () => {
    * counted again, or the receipt overstates the refund and the conservation
    * ceiling can park a perfectly healthy Cast.
    */
-  it("is paid once and counted once", async () => {
+  /*
+    ⚠ **SINCE #1968 THIS ARM IS ABOUT A SLICE THE OLD BUILD PAID, AND IT IS THE
+    IN-FLIGHT CASE RATHER THAN AN EDGE ONE.** No build writes a slot refund any
+    more, so the only way one of these rows exists is a Sign the old code
+    part-refunded before this deploy. It must be COUNTED (it is money that
+    really went back) and never clawed back or re-issued.
+  */
+  it("counts a slice the old build already refunded, and issues nothing new", async () => {
     const slotReference = `${CHARGE_REFERENCE}:slot:backFull`;
-    ledgerRows = [chargeRow(), refundRow(slotReference, VIEW_PRICE)];
+    const legacySlice = 1000;
+    ledgerRows = [chargeRow(), refundRow(slotReference, legacySlice)];
     cast = signedCast;
 
     const outcome = await recoverCastingV2SignOperation(operation, {
@@ -463,56 +507,105 @@ describe("a refund that was already in the ledger", () => {
       promisedAngles: async () => promised,
     });
 
-    // One view back in total, not two.
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: SIGN_PRICE, refundedCredits: VIEW_PRICE });
+    expect(refunds, "nothing is re-issued and nothing is clawed back").toEqual([]);
+    expect(outcome).toMatchObject({
+      type: "partial",
+      chargedCredits: SIGN_PRICE,
+      refundedCredits: legacySlice,
+    });
   });
 });
 
-describe("a Sign bought under a different package", () => {
+describe("⚠ a Sign bought at a price this build no longer sells — #1968", () => {
   /**
-   * THE DEPLOY COLLISION, in the package's clothing.
+   * THE DEPLOY COLLISION, in the package clothing — **and the repair changed
+   * shape with his flat price.**
    *
-   * A Sign charged the six-view total, left non-terminal by the deploy that
-   * retired the walk, then swept by five-view code: settle it against today's
-   * profile and the walk's slice is charged, never generated and never
-   * refunded. Silently. The promise is read from the operation's own durable
-   * rows for exactly this reason, and where there are none to read, the price
-   * is the cross-check — a disagreement parks for a human rather than guessing.
+   * What stood here PARKED: a Sign charged a total today constants cannot
+   * reproduce was `recovery_required`, on the stated ground that *"the honest
+   * move is a human rather than a refund of the wrong size"*. That was right
+   * while the refund size came from a constant. It no longer does — the
+   * total-loss refund is `ledger.charge.credits` minus `alreadyRefunded`, read
+   * off the durable row — so there is no wrong size to guess at, and parking
+   * would leave a real customer charged for pictures they never got until
+   * somebody looked.
+   *
+   * ⚠ **The population is not hypothetical, which is why these arms exist:
+   * every Sign in flight at THIS deploy was charged 8,500** and will be settled
+   * by this code.
    */
-  it("refuses to settle a six-view Sign against a five-view profile", async () => {
-    ledgerRows = [chargeRow(SIX_VIEW_SIGN)];
+  it("settles an 8,500 Sign that delivered nothing, giving back all 8,500", async () => {
+    ledgerRows = [chargeRow(LEGACY_EIGHT_FIVE_SIGN)];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(
-      { ...operation, plannedCredits: SIX_VIEW_SIGN },
+      { ...operation, plannedCredits: LEGACY_EIGHT_FIVE_SIGN },
       {
-        unsettledAngles: async () => ["backFull"],
-        // No durable rows: the fallback is today's five-view profile, which
-        // implies the five-view total and cannot be what a six-view Sign bought.
-        promisedAngles: async () => ({ angles: promised.angles, source: "profile" }),
+        unsettledAngles: async () => [...promised.angles] as never,
+        promisedAngles: async () => promised,
+        committedAngles: async () => [],
       },
     );
-    expect(outcome.type).toBe("recovery_required");
-    expect((outcome as { reason: string }).reason).toContain("does not match");
-    expect(refunds).toHaveLength(0);
-    expect(journal).toContain("park");
+
+    /* The WHOLE legacy charge, under the one reference, and not today 3,250 —
+       which is the arm a constant-reading settler could not pass. */
+    expect(refunds).toEqual([
+      { amount: LEGACY_EIGHT_FIVE_SIGN, reference: `${CHARGE_REFERENCE}:promotion` },
+    ]);
+    expect(outcome).toMatchObject({
+      chargedCredits: LEGACY_EIGHT_FIVE_SIGN,
+      refundedCredits: LEGACY_EIGHT_FIVE_SIGN,
+    });
+    expect(journal, "it settles rather than parking for a human").not.toContain("park");
   });
 
-  it("settles a six-view Sign against the six views it actually bought", async () => {
-    ledgerRows = [chargeRow(SIX_VIEW_SIGN)];
+  it("⚠ CONTROL — it is not simply refunding the charge whatever happened", async () => {
+    /*
+      Without this the arm above passes on a settler that hands back the ledger
+      charge for every operation it meets. Views landed, so this is a PARTIAL
+      package and his rule says nothing comes back.
+    */
+    ledgerRows = [chargeRow(LEGACY_EIGHT_FIVE_SIGN)];
     cast = signedCast;
     const outcome = await recoverCastingV2SignOperation(
-      { ...operation, plannedCredits: SIX_VIEW_SIGN },
+      { ...operation, plannedCredits: LEGACY_EIGHT_FIVE_SIGN },
       {
-        unsettledAngles: async () => ["sideFull"],
-        promisedAngles: async () => ({
-          angles: ["frontClose", "threeQuarter", "frontFull", "sideClose", "sideFull", "backFull"],
-          source: "recorded",
-        }),
+        unsettledAngles: async () => ["backFull"] as never,
+        promisedAngles: async () => promised,
       },
     );
-    // The retired walk still refunds, because that Sign paid for it.
-    expect(refunds).toEqual([{ amount: VIEW_PRICE, reference: `${CHARGE_REFERENCE}:slot:sideFull` }]);
-    expect(outcome).toMatchObject({ type: "partial", chargedCredits: PROMOTION + 6 * VIEW_PRICE, refundedCredits: VIEW_PRICE });
+
+    expect(refunds).toEqual([]);
+    expect(outcome).toMatchObject({ type: "partial", refundedCredits: 0 });
+  });
+
+  it("does not pay twice when the old build had already refunded some slices", async () => {
+    /*
+      A total loss on an 8,500 Sign whose old process got three slices out
+      before it died: 5,500 is still owed, and not one credit more.
+      `readSignLedger` reads every slot reference over `CAST_VIEW_ANGLES` for
+      exactly this (D-102), which is why `packageSlotChargeReference` survives
+      as a reader key with nothing writing it.
+    */
+    ledgerRows = [
+      chargeRow(LEGACY_EIGHT_FIVE_SIGN),
+      refundRow(`${CHARGE_REFERENCE}:slot:threeQuarter`, 1000),
+      refundRow(`${CHARGE_REFERENCE}:slot:frontFull`, 1000),
+      refundRow(`${CHARGE_REFERENCE}:slot:sideClose`, 1000),
+    ];
+    cast = signedCast;
+    const outcome = await recoverCastingV2SignOperation(
+      { ...operation, plannedCredits: LEGACY_EIGHT_FIVE_SIGN },
+      {
+        unsettledAngles: async () => [...promised.angles] as never,
+        promisedAngles: async () => promised,
+        committedAngles: async () => [],
+      },
+    );
+
+    expect(refunds).toEqual([
+      { amount: 5500, reference: `${CHARGE_REFERENCE}:promotion` },
+    ]);
+    expect(outcome).toMatchObject({ refundedCredits: LEGACY_EIGHT_FIVE_SIGN });
   });
 });
 
@@ -560,9 +653,13 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    const base = refunds.filter((entry) => entry.amount === PROMOTION);
-    expect(base).toHaveLength(1);
-    expect(outcome).toMatchObject({ refundedCredits: PROMOTION });
+    /* The WHOLE charge, once, under the one reference — it was the promotion
+       alone until #1968, because five slices had refunded themselves beside
+       it. There are no slices now, so the single row IS the whole Sign. */
+    expect(refunds).toEqual([
+      { amount: SIGN_PRICE, reference: `${CHARGE_REFERENCE}:promotion` },
+    ]);
+    expect(outcome).toMatchObject({ refundedCredits: SIGN_PRICE });
   });
 
   it("keeps the promotion when one view survived the crash", async () => {
@@ -578,7 +675,11 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    expect(refunds.some((entry) => entry.amount === PROMOTION)).toBe(false);
+    /* ⚠ **NOT ONE CREDIT MOVES**, which is stronger than the old assertion
+       (that the PROMOTION was not refunded). One view survived, so the Sign was
+       delivered — his *"credits only come back if the Sign cannot be delivered
+       at all"* — and the four that did not survive refund nothing. */
+    expect(refunds).toEqual([]);
   });
 
   it("does not pay the base twice when the live process already refunded it", async () => {
@@ -589,7 +690,7 @@ describe("zero of N, settled after the crash", () => {
       second promotion.
     */
     cast = { modelId: 901, candidateSignedCastId: 901, candidateStatus: "signed" };
-    ledgerRows = [chargeRow(), refundRow(`${CHARGE_REFERENCE}:promotion`, PROMOTION)];
+    ledgerRows = [chargeRow(), refundRow(`${CHARGE_REFERENCE}:promotion`, SIGN_PRICE)];
     castAssets = [];
     unsettled = [];
 
@@ -598,9 +699,12 @@ describe("zero of N, settled after the crash", () => {
       promisedAngles: async () => promised,
     });
 
-    // The prior promotion is counted once, from the ledger — never re-issued and
-    // never added on top of itself.
-    expect(outcome).toMatchObject({ refundedCredits: PROMOTION });
+    /* The prior refund is counted once, from the ledger — never re-issued and
+       never added on top of itself. Since #1968 the owed figure is the charge
+       MINUS what already went back, so a fully-refunded Sign owes zero and
+       this pass sends nothing at all. */
+    expect(refunds, "nothing is owed, so nothing is sent").toEqual([]);
+    expect(outcome).toMatchObject({ refundedCredits: SIGN_PRICE });
   });
 });
 

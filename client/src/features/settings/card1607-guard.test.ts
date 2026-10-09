@@ -4,13 +4,17 @@ import { describe, expect, it } from "vitest";
 
 import { PLAN_TIERS } from "../../../../drizzle/schema";
 import { OFFERED_PLAN_ORDER } from "../../../../server/stripe/stripeProducts";
-import {
-  CASTING_V2_ONE_CHARACTER_CREDITS,
-  CASTING_V2_SIGN_PRICE_CREDITS,
-} from "../../../../server/castingV2/castViewPackage";
+/*
+  ⚠ **THE SIGN PRICE MOVED MODULE WITH #1968.** It was derived in
+  `castViewPackage.ts` from a promotion base plus a per-view slice; his word of
+  2026-10-08 makes it one flat number he set, so it is declared beside every
+  other price in `castingCreditCosts.ts` and imported from there.
+*/
+import { CASTING_V2_ONE_CHARACTER_CREDITS } from "../../../../server/castingV2/castViewPackage";
 import {
   CASTING_V2_REFINE_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
+  CASTING_V2_SIGN_PRICE_CREDITS,
   CREDIT_COSTS,
 } from "../../../../server/casting/castingCreditCosts";
 import { withoutComments } from "../../../../server/testing/withoutComments";

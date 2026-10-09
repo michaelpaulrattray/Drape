@@ -34,7 +34,18 @@
 export type SlotFailureRecord = {
   reason: string;
   refunded: number;
-  refundReference: string;
+  /**
+   * The reference a refund was attempted under — **absent when no refund was
+   * ever owed (#1968).**
+   *
+   * ⚠ It was required, and it could be, because every failed view refunded
+   * its own slice. A refused view on a signed package refunds nothing now, so
+   * there is no reference to quote — and its ABSENCE is what tells the room
+   * "nothing was owed" apart from "the refund failed": `refundOutcomeText`
+   * carries that table. Omitted rather than empty-stringed, so a reader that
+   * forgets the distinction gets `undefined` and not a quotable blank.
+   */
+  refundReference?: string;
   /** The per-axis verdict, so a dispute is answerable from the record. */
   conformance?: unknown;
   /**

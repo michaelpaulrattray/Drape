@@ -7,7 +7,18 @@ import {
   projectSignedCast,
 } from "./castProjection";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `LEGACY_VIEW_SLICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /*
   `storagePublicUrl` reads the R2 config from an import-time ENV snapshot and
@@ -104,7 +115,7 @@ const anchor = () =>
   });
 
 /** A written-off view: the marker the room confesses from. */
-const failed = (viewType: string, refunded = CAST_PACKAGE_VIEW_PRICE) =>
+const failed = (viewType: string, refunded = LEGACY_VIEW_SLICE) =>
   asset({
     id: 500 + viewType.length,
     viewType: viewType as ModelAsset["viewType"],
@@ -161,10 +172,17 @@ describe("what a tile offers, and what it costs", () => {
     });
     const slot = projection.slots.find((candidate) => candidate.angle === "backFull");
     expect(slot?.state).toBe("failed-refunded");
-    /* The one true sentence the tile keeps — the refund was real (the Sign's
-       per-view slice), so "refunded" is a fact, not an apology. */
+    /*
+      The one true sentence the tile keeps. ⚠ **IT NO LONGER ENDS IN
+      "— refunded", AND THIS FIXTURE IS NOW A LEGACY ROW — #1968.** The note
+      said the refund was real *"(the Sign's per-view slice)"*; his flat price
+      removes that slice, so a view refused today refunds nothing and the
+      sentence claims nothing. The marker below still carries a figure because
+      Casts signed before the reprice really were refunded per view, and the
+      room must keep reading them honestly.
+    */
     expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
-    expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
     expect(slot?.retry).toBeUndefined();
     /*
       THE REMEDY, ON THE SAME CAST — and it is the control that matters: an
@@ -197,7 +215,7 @@ describe("what a tile offers, and what it costs", () => {
     const slot = slots.get("frontClose");
     expect(slot?.standIn).toBe(true);
     /* What went back is still recorded — the refund happened. */
-    expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
+    expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
     expect(slot?.retry).toBeUndefined();
     expect(slot?.note).toBeNull();
   });
@@ -233,7 +251,7 @@ describe("what a tile offers, and what it costs", () => {
       { state: "building", refundedCredits: null },
       { state: "pending", refundedCredits: null },
       { state: "failed-refunded", refundedCredits: null },
-      { state: "failed-refunded", refundedCredits: CAST_PACKAGE_VIEW_PRICE },
+      { state: "failed-refunded", refundedCredits: LEGACY_VIEW_SLICE },
       { state: "ready", refundedCredits: null },
       { state: "ready", standIn: true, refundedCredits: 200 },
       { state: "ready", standIn: true, refundedCredits: null },

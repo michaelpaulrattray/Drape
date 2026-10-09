@@ -50,12 +50,60 @@ export function creditsReturnedText(ledgerRefunded: number): string {
     : "Your credits were returned.";
 }
 
-/** The money half of any failure sentence. */
+/**
+ * The money half of any failure sentence — **and it is EMPTY when no money was
+ * ever owed (#1968).**
+ *
+ * ⚠ **THREE STATES, NOT TWO, AND THE THIRD ARRIVED WITH HIS FLAT SIGN PRICE.**
+ * This read `refunded > 0` and treated everything else as a refund that had
+ * been attempted and failed — correct while every failed view refunded its own
+ * slice, because a zero could only mean the ledger write did not land. Since
+ * his word of 2026-10-08 a refused view on a signed package refunds NOTHING by
+ * design (views are cut from two sheets and *"can't be refunded one by one"*),
+ * so a zero now has two possible meanings and only one of them is a fault.
+ *
+ * **The `refundReference` is what tells them apart, and it is a receipt rather
+ * than a convention**: a refund that was attempted always has one, recorded or
+ * not (`recordRefund` returns its reference either way), and a road that never
+ * attempted one has nothing to quote. So:
+ *
+ * | `refunded` | reference | what the customer is told |
+ * |---|---|---|
+ * | > 0 | any | *"N credits returned."* |
+ * | 0 | present | the refund failed — quote it to support |
+ * | 0 | absent | **nothing**, because nothing was owed |
+ *
+ * ⚠ **THE EMPTY STRING IS LOAD-BEARING: every caller joins around it** with
+ * {@link joinSentences}. A surface that interpolated it blind would print a
+ * double space, or worse a dangling dash.
+ *
+ * ⚠ **AND THE DIRECTION OF THE OLD DEFAULT IS WHY THIS COULD NOT BE LEFT
+ * ALONE.** With `refunded: 0` and no reference the old reading told a customer
+ * *"The automatic refund couldn't be recorded — contact support to restore the
+ * credits."* on a view that was never refundable: an invented fault, an
+ * invented errand, about money that was never owed. Rows written before #1968
+ * all carry a reference, so their sentences are untouched.
+ */
 export function refundOutcomeText(f: RefundedFailure): string {
   if (f.refunded > 0) return creditsReturnedText(f.refunded);
-  return f.refundReference
-    ? `The automatic refund couldn't be recorded — quote ${f.refundReference} and support will restore the credits.`
-    : `The automatic refund couldn't be recorded — contact support to restore the credits.`;
+  if (!f.refundReference) return "";
+  return `The automatic refund couldn't be recorded — quote ${f.refundReference} and support will restore the credits.`;
+}
+
+/**
+ * Joins sentence parts, dropping the empty ones.
+ *
+ * Exists because {@link refundOutcomeText} may be empty and three surfaces
+ * compose it into a longer line. One join rather than three is working law 4
+ * pointed at punctuation — the kind of thing that drifts into a double space
+ * on one surface and a dangling dash on another.
+ */
+export function joinSentences(
+  ...parts: readonly (string | false | null | undefined)[]
+): string {
+  return parts
+    .filter((part): part is string => typeof part === "string" && part.length > 0)
+    .join(" ");
 }
 
 /**
@@ -71,9 +119,22 @@ export function bareReason(reason: string): string {
   return reason.trim().replace(/[.\s]+$/, "");
 }
 
-/** Short badge/annotation form for failed-slot chips and cards. */
-export function refundBadgeText(refunded: number): string {
-  return refunded > 0 ? "Credits returned" : "Refund pending — contact support";
+/**
+ * Short badge/annotation form for failed-slot chips and cards — **empty when
+ * no money was owed (#1968).**
+ *
+ * ⚠ **IT TOOK A BARE `refunded: number` AND THAT IS WHY IT HAD TO CHANGE
+ * SHAPE.** A number cannot tell "no refund was owed" from "the refund failed",
+ * and with the Sign's per-view refund gone the second reading is wrong on
+ * every refused view: the badge would have read *"refund pending — contact
+ * support"* under a picture that was never refundable. It takes the whole
+ * failure now, so it reads the same three states {@link refundOutcomeText}
+ * does.
+ */
+export function refundBadgeText(f: RefundedFailure): string {
+  if (f.refunded > 0) return "Credits returned";
+  if (!f.refundReference) return "";
+  return "Refund pending — contact support";
 }
 
 /** The full toast for a failed mint/refresh slot. `markerPersisted: false`
@@ -84,9 +145,30 @@ export function slotFailureMessage(f: RefundedFailure & {
   reason: string;
   markerPersisted?: boolean;
 }): string {
+  /*
+    ⚠ **THIS SENTENCE NAMED A CONTROL THAT NO LONGER EXISTS — found by the
+    relay on the flat-price PR, and it is PR 2098's remainder rather than this
+    card's own defect.** It read *It's marked "Try again" in the package.*,
+    which was true while a failed view carried its own Try again. That PR
+    removed the per-view offer, so the package now draws the server's confession
+    (`FAILED_SLOT_CONFESSION`, *"This view didn't arrive"*) and the remedy is
+    Regenerate for the whole set.
+
+    The verb ruling it was written to satisfy — *"one verb, Try again,
+    everywhere"*, card 1940 B18, now closed — is not what changed; the control
+    it pointed at is gone, so the claim is simply false. It says what the
+    package actually shows instead, which is also what the
+    `markerPersisted: false` branch beside it has always said in its own words.
+  */
   const marker =
     f.markerPersisted === false
-      ? " The failure couldn't be saved to the package — if it isn't shown after reopening, the view is still missing."
-      : ' It\'s marked "Try again" in the package.';
-  return `${f.label} view failed — ${bareReason(f.reason)}. ${refundOutcomeText(f)}${marker}`;
+      ? "The failure couldn't be saved to the package — if it isn't shown after reopening, the view is still missing."
+      : "It's shown as missing in the package.";
+  /* The money half can be empty (#1968), so the parts are joined rather than
+     interpolated — `joinSentences` carries why. */
+  return joinSentences(
+    `${f.label} view failed — ${bareReason(f.reason)}.`,
+    refundOutcomeText(f),
+    marker,
+  );
 }

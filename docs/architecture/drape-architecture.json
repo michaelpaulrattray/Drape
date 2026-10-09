@@ -102,7 +102,7 @@
     {
       "id": "domain:providers",
       "name": "providers",
-      "moduleCount": 8
+      "moduleCount": 9
     },
     {
       "id": "domain:referral",
@@ -5383,6 +5383,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/providers/renderBudget.ts",
+      "path": "server/providers/renderBudget.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/providers/types.ts",
       "path": "server/providers/types.ts",
       "domain": "providers",
@@ -10286,19 +10292,10 @@
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.promotion",
-      "name": "CASTING_V2_SIGN_COSTS.promotion",
-      "constant": "CASTING_V2_SIGN_COSTS",
-      "member": "promotion",
-      "credits": 3500,
-      "file": "server/casting/castingCreditCosts.ts"
-    },
-    {
-      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_COSTS.view",
-      "name": "CASTING_V2_SIGN_COSTS.view",
-      "constant": "CASTING_V2_SIGN_COSTS",
-      "member": "view",
-      "credits": 1000,
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_SIGN_PRICE_CREDITS",
+      "name": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
+      "credits": 3250,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -10379,35 +10376,11 @@
       "file": "server/castingV2/carriedGeometry.ts"
     },
     {
-      "id": "cost:server/castingV2/castViewPackage.ts:CAST_PACKAGE_VIEW_PRICE",
-      "name": "CAST_PACKAGE_VIEW_PRICE",
-      "constant": "CAST_PACKAGE_VIEW_PRICE",
-      "credits": 1000,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.view",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_ONE_CHARACTER_CREDITS",
       "name": "CASTING_V2_ONE_CHARACTER_CREDITS",
       "constant": "CASTING_V2_ONE_CHARACTER_CREDITS",
-      "credits": 11850,
+      "credits": 6600,
       "derivedFrom": "CASTING_V2_ROLL_PRICE_CREDITS + CASTING_V2_REFINE_PRICE_CREDITS + CASTING_V2_SIGN_PRICE_CREDITS",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PRICE_CREDITS",
-      "name": "CASTING_V2_SIGN_PRICE_CREDITS",
-      "constant": "CASTING_V2_SIGN_PRICE_CREDITS",
-      "credits": 8500,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length",
-      "file": "server/castingV2/castViewPackage.ts"
-    },
-    {
-      "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_SIGN_PROMOTION_PRICE",
-      "name": "CASTING_V2_SIGN_PROMOTION_PRICE",
-      "constant": "CASTING_V2_SIGN_PROMOTION_PRICE",
-      "credits": 3500,
-      "derivedFrom": "CASTING_V2_SIGN_COSTS.promotion",
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
@@ -13158,6 +13131,10 @@
       "path": "server/castingV2/signFeatureWords.test.ts"
     },
     {
+      "id": "test:server/castingV2/signFlatPrice.test.ts",
+      "path": "server/castingV2/signFlatPrice.test.ts"
+    },
+    {
       "id": "test:server/castingV2/signInkCrops.test.ts",
       "path": "server/castingV2/signInkCrops.test.ts"
     },
@@ -14220,6 +14197,10 @@
     {
       "id": "test:server/providers/providerFailureContract.test.ts",
       "path": "server/providers/providerFailureContract.test.ts"
+    },
+    {
+      "id": "test:server/providers/renderBudget.test.ts",
+      "path": "server/providers/renderBudget.test.ts"
     },
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
@@ -27650,6 +27631,11 @@
     },
     {
       "from": "module:server/castingV2/packageOrchestrator.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageOrchestrator.ts",
       "to": "module:server/casting/operationContract.ts",
       "kind": "imports"
     },
@@ -30190,7 +30176,7 @@
     },
     {
       "from": "module:server/castingV2/signRecovery.ts",
-      "to": "module:server/casting/castingCreditCosts.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
       "kind": "imports"
     },
     {
@@ -30245,6 +30231,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/casting/castPublicId.ts",
       "kind": "imports"
     },
@@ -30266,11 +30257,6 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/castPronouns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/signService.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {
@@ -30430,6 +30416,11 @@
     },
     {
       "from": "module:server/castingV2/signSheet.ts",
+      "to": "module:server/providers/renderBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheet.ts",
       "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
@@ -30461,6 +30452,11 @@
     {
       "from": "module:server/castingV2/signSheetCoordinator.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signSheetCoordinator.ts",
+      "to": "module:server/providers/renderBudget.ts",
       "kind": "imports"
     },
     {
@@ -33110,7 +33106,22 @@
     },
     {
       "from": "module:server/providers/providerQueue.ts",
+      "to": "module:server/providers/renderBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/providerQueue.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/renderBudget.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/types.ts",
+      "to": "module:server/providers/renderBudget.ts",
       "kind": "imports"
     },
     {
@@ -33966,11 +33977,6 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castPronouns.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/castingV2.ts",
-      "to": "module:server/castingV2/castViewPackage.ts",
       "kind": "imports"
     },
     {

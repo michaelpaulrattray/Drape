@@ -207,7 +207,7 @@ describe("every declared price in the product", () => {
     }
   });
 
-  it("holds this card's own six numbers at the adopted figures", () => {
+  it("holds this card's own five numbers at the adopted figures", () => {
     /*
       The sweep above would pass if every price in the product were 5. These are
       his approved prices, by name, so the suite says WHICH ledger numbers it is
@@ -218,8 +218,7 @@ describe("every declared price in the product", () => {
     expect({
       rollSlice: credits(`${CASTING}CASTING_V2_COSTS.rollCandidate`),
       followSlice: credits(`${CASTING}CASTING_V2_COSTS.followCandidate`),
-      signPromotion: credits(`${CASTING}CASTING_V2_SIGN_COSTS.promotion`),
-      signView: credits(`${CASTING}CASTING_V2_SIGN_COSTS.view`),
+      sign: credits(`${CASTING}CASTING_V2_SIGN_PRICE_CREDITS`),
       refine: credits(`${CASTING}CASTING_V2_REFINE_PRICE_CREDITS`),
       paidTryAgain: credits(`${CASTING}CASTING_V2_VIEW_RETRY_PRICE_CREDITS`),
     }).toEqual({
@@ -228,8 +227,15 @@ describe("every declared price in the product", () => {
       // and 20 before #1601 item 1. The two are still two declared prices.
       rollSlice: 200,      // 40 display × 8 = a Roll at 320
       followSlice: 200,    // 40 display × 8 = a Follow at 320, unmoved
-      signPromotion: 3500, // 700 display, kept once the Cast exists
-      signView: 1000,      // 200 display, the refundable slice × 5 views
+      /*
+        ⚠ **TWO ROWS BECAME ONE WITH #1968** — his *"make both sign and
+        redo/regenerate 650 credis"*. `CASTING_V2_SIGN_COSTS.promotion` (3,500,
+        kept once the Cast existed) and `.view` (1,000, the refundable slice
+        × 5) were a price with two parts because a failed view refunded its
+        own. There is no slice to refund now, so there is one number, and the
+        arm counts five rather than six.
+      */
+      sign: 3250,          // 650 display, flat, however many views she owns
       refine: 1750,        // 350 display
       paidTryAgain: 1850,  // 370 display — his change of 2026-10-01
     });

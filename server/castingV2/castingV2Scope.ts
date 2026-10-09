@@ -77,7 +77,7 @@ export class CastingV2TransportConfigurationError extends Error {
  * buy the preservation of a face they had already paid for on the sheet"* — and
  * `packageOrchestrator` has refunded it ever since, logging *"TOTAL LOSS — not
  * one view landed; the whole Sign refunded, base included"*. So this docblock
- * described a product that keeps 3,500 credits of a customer's money during our
+ * described a product that kept 3,500 credits of a customer's money during our
  * own outage, which is the thing the confession law forbids and the exact
  * behaviour that ruling removed. **A comment cannot be run, so nothing went
  * red for six months.**

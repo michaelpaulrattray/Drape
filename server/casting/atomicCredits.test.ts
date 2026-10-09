@@ -299,15 +299,36 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
       .toBe(`${formatCredits(displayRefund(300))} credits returned.`);
     expect(refundOutcomeText({ refunded: 300 })).not.toContain("300 credits");
     expect(refundOutcomeText({ refunded: 0, refundReference: "refund:slot-gen-9" })).toContain("quote refund:slot-gen-9");
-    expect(refundOutcomeText({ refunded: 0 })).toContain("contact support");
-    expect(refundBadgeText(300)).toBe("Credits returned");
-    expect(refundBadgeText(0)).toBe("Refund pending — contact support");
+    /*
+      ⚠ **THREE STATES SINCE #1968, AND THE THIRD IS SILENCE.** A zero with no
+      reference used to read *"contact support"*; his flat Sign price makes a
+      refused view refund nothing BY DESIGN, so that sentence would invent a
+      fault and an errand about money nobody owed. The two arms are kept
+      adjacent because the distinction is the whole repair: with a reference it
+      is a failed refund, without one there was never a refund to fail.
+    */
+    expect(refundOutcomeText({ refunded: 0 })).toBe("");
+    expect(refundBadgeText({ refunded: 300 })).toBe("Credits returned");
+    expect(refundBadgeText({ refunded: 0, refundReference: "refund:slot-gen-9" }))
+      .toBe("Refund pending — contact support");
+    expect(refundBadgeText({ refunded: 0 }), "no money was owed, so no badge").toBe("");
     const ok = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 300, markerPersisted: true });
-    /* One verb, Try again, everywhere (#1940 B18). */
-    expect(ok).toContain('"Try again"');
+    /*
+      ⚠ **IT MUST NOT PROMISE A PER-VIEW TRY AGAIN, because there is not one.**
+      This arm asserted the opposite until the flat-price card: it pinned
+      *"Try again"* on #1940 B18's one-verb ruling, and that ruling is about
+      which verb to use where the control EXISTS. PR 2098 deleted the per-view
+      offer and left this toast naming it, so the arm was holding false copy in
+      place. It now refuses the stale claim and pins what the package shows.
+    */
+    expect(ok).not.toContain("Try again");
+    expect(ok).toContain("shown as missing in the package");
     const noMarker = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 0, markerPersisted: false });
     expect(noMarker).not.toContain('"Try again"');
     expect(noMarker).toContain("couldn't be saved to the package");
+    /* The join drops the empty money half rather than leaving its space (#1968). */
+    expect(noMarker, "no doubled space where the refund sentence used to be")
+      .not.toContain("  ");
   });
 
   it("⚠ never says a refund of ZERO landed — the one sentence a refund line cannot print", async () => {

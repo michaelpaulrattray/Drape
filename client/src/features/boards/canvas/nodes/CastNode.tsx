@@ -699,7 +699,13 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                         // Batch C final correction 1: the money line is the
                         // ledger's truth, never an unconditional claim
                         <div className="text-canvas-xs text-canvas-ink-soft">
-                          Failed: {slot.failed.reason} — {refundBadgeText(slot.failed.refunded).toLowerCase()}
+                          {/* The badge is empty when no money was owed (#1968) — a
+                              refused view on a signed package refunds nothing, so the
+                              dash goes with it rather than dangling. */}
+                          Failed: {slot.failed.reason}
+                          {refundBadgeText(slot.failed)
+                            ? ` — ${refundBadgeText(slot.failed).toLowerCase()}`
+                            : null}
                         </div>
                       ) : slot.stale ? (
                         isHeadshot ? (

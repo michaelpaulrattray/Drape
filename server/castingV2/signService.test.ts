@@ -309,7 +309,7 @@ vi.mock("../storage", () => ({
 }));
 
 const { signCandidate } = await import("./signService");
-const { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } = await import("./castViewPackage");
+const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
 /**
  * ⚠ **EVERY MONEY ARM BELOW PINNED `450` UNTIL 2026-10-01 AND ALL OF THEM WENT
  * RED ON TWO CONSTANT EDITS** (#1601 item 1: a Sign is 3,500 + 5 x 1,000 =
@@ -321,8 +321,20 @@ const { CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } = await import(
  * The `450`s and `50`s left in this file are PROSE, narrating what a decision
  * cost on the day it was made; rewriting those would falsify a record.
  */
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `CAST_PACKAGE_VIEW_PRICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
-const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+const VIEW_PRICE = LEGACY_VIEW_SLICE;
 const { basicsWardrobeLine } = await import("./wardrobeLine");
 
 /** A package that behaves however the case needs it to. */

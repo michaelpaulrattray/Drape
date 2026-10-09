@@ -169,19 +169,22 @@ describe("boot validation", () => {
     six frames — the Master plus the package's five — and the six SLOTS a
     signed Cast carries, five bought plus the sealed `frontClose`).
   */
-  it("the fail-closed docblock's numbers are the product's: five views, 8,500, refunded whole", async () => {
-    const { CAST_PACKAGE_VIEWS, CASTING_V2_SIGN_PRICE_CREDITS, CAST_PACKAGE_VIEW_PRICE } =
-      await import("./castViewPackage");
-    const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
+  it("the fail-closed docblock's numbers are the product's: five views, 3,250, refunded whole", async () => {
+    const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
+    const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
 
     expect(CAST_PACKAGE_VIEWS.length).toBe(5);
-    /* 8,500 since #1601 item 1 (3,500 + 5 × 1,000); 450 before it. */
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(8500);
-    // The charge the docblock names is the promotion plus EVERY view, and a
-    // total loss gives all of it back — so the two numbers in that sentence are
-    // one number, and it is this one.
-    expect(CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length)
-      .toBe(CASTING_V2_SIGN_PRICE_CREDITS);
+    /*
+      ⚠ **3,250 SINCE #1968 (his *"make both sign and redo/regenerate 650
+      credis"*, 2026-10-08); 8,500 from #1601 item 1; 450 from 2026-07-30.**
+
+      The second assertion this arm used to carry — that the promotion plus five
+      slices equals the total — is GONE with the decomposition it checked. There
+      is nothing left to derive the price from: it is one number he set, so the
+      only honest arm is the literal, and the view COUNT is checked beside it
+      because the docblock names both.
+    */
+    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(3250);
   });
 
   it("accepts a fully configured rollout", () => {

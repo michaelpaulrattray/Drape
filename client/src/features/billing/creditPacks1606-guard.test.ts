@@ -48,7 +48,13 @@ import { join } from "node:path";
 import { withoutComments } from "../../../../server/testing/withoutComments";
 import { sourceBand } from "../../../../server/testing/sourceBand";
 import { CASTING_V2_ROLL_PRICE_CREDITS } from "../../../../server/casting/castingCreditCosts";
-import { CASTING_V2_SIGN_PRICE_CREDITS } from "../../../../server/castingV2/castViewPackage";
+/*
+  ⚠ **THE SIGN PRICE MOVED MODULE WITH #1968.** It was derived in
+  `castViewPackage.ts` from a promotion base plus a per-view slice; his word of
+  2026-10-08 makes it one flat number he set, so it is declared beside every
+  other price in `castingCreditCosts.ts` and imported from there.
+*/
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../../../../server/casting/castingCreditCosts";
 import { displayBalance, formatCredits } from "../../../../shared/creditDisplay";
 import {
   TOPUP_BRACKETS,
@@ -127,23 +133,37 @@ describe("the three packs are the bands' own first orders, biggest first", () =>
 });
 
 describe("what an amount buys — derived from the live prices, and floored", () => {
-  it("⚠ HIS DESIGN'S OWN ROLL COUNT IS STALE, WHICH IS WHY NOTHING IS TYPED", () => {
+  it("⚠ BOTH OF HIS DESIGN'S COUNTS ARE STALE NOW, WHICH IS WHY NOTHING IS TYPED", () => {
     /*
       The negative control, and the argument for this whole file. His design
-      says *about 104 Rolls* for 25,000 credits, computed at 240 display a Roll
-      hours before #1753 took a Roll to 320. The Signs figure he wrote is still
-      right, which is what makes the stale one easy to miss.
+      says *about 104 Rolls* and *about 14 Signs* for 25,000 credits.
+
+      The Roll figure was computed at 240 display a Roll, hours before #1753
+      took a Roll to 320. ⚠ **AND THE SIGNS FIGURE WENT STALE WITH #1968** — it
+      was right at 1,700 display a Sign, and his word of 2026-10-08 made a Sign
+      a flat 650, so 25,000 credits now buys nearly three times as many. This
+      arm asserted `signs === 14` under the note *"the half of his example that
+      survived the price move"*, and that sentence has expired.
+
+      **Nothing on the surface is wrong**: it derives both counts from the live
+      prices, which is the whole reason the design's own arithmetic is allowed
+      to rot. What is stale is the DESIGN DOCUMENT, and this arm is the record
+      of it rather than a reason to type a number.
     */
+    const ledger = topupLedgerCredits(TOPUP_PACKS[0].units);
     const biggest = buys(TOPUP_PACKS[0].units);
     expect(
       biggest.rolls,
       "the surface is quoting his design's arithmetic rather than the product's prices",
     ).not.toBe(104);
-    expect(biggest.rolls).toBe(
-      Math.floor(topupLedgerCredits(TOPUP_PACKS[0].units) / CASTING_V2_ROLL_PRICE_CREDITS),
-    );
-    /* And the half of his example that survived the price move. */
-    expect(biggest.signs).toBe(14);
+    expect(
+      biggest.signs,
+      "the surface is quoting his design's Signs figure rather than the live Sign price",
+    ).not.toBe(14);
+    /* Both derived from the live prices, which is the only claim that can stay
+       true across his next price word. */
+    expect(biggest.rolls).toBe(Math.floor(ledger / CASTING_V2_ROLL_PRICE_CREDITS));
+    expect(biggest.signs).toBe(Math.floor(ledger / CASTING_V2_SIGN_PRICE_CREDITS));
   });
 
   it("⚠ THE COUNT NEVER EXCEEDS WHAT THE AMOUNT COVERS, AT EVERY SELLABLE SIZE", () => {

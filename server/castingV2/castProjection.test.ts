@@ -2,7 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `CAST_PACKAGE_VIEW_PRICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /**
  * WHAT A VIEW COST AND WHAT ASKING AGAIN COSTS — two numbers since 2026-10-01
@@ -14,7 +26,7 @@ import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
  * a package. While both were 50 no arm in this file could tell which one the
  * projection was reading.
  */
-const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+const VIEW_PRICE = LEGACY_VIEW_SLICE;
 const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 
 import {
@@ -615,6 +627,18 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
       // would pass every arm above by containing nothing at all.
       expect(sentence.length).toBeGreaterThan(20);
       expect(sentence).toContain("didn't arrive");
+      /*
+        ⚠ **AND NEITHER MAY CLAIM MONEY CAME BACK FOR THIS VIEW — #1968.**
+        `FAILED_SLOT_CONFESSION` said *"— refunded"* until his flat Sign price
+        removed the per-view refund that made it true. `TOTAL_LOSS_CONFESSION`
+        is about the whole Sign and is allowed to talk about money, so the ban
+        is on the per-VIEW word rather than on the subject: a note that is
+        drawn under one tile must not describe a refund.
+      */
+      if (name === "FAILED_SLOT_CONFESSION") {
+        expect(sentence.toLowerCase(), "a per-view note cannot claim a refund (#1968)")
+          .not.toContain("refund");
+      }
     });
   }
 
