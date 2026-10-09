@@ -138,9 +138,11 @@ describe("the redo button", () => {
   });
 
   it("names the menu item in his Option A words (card 2144)", () => {
-    expect(PACKAGE_REDO_MENU_LABEL).toBe("Regenerate character sheet");
-    /* Built from his verb, so the verb and the item cannot drift apart. */
-    expect(PACKAGE_REDO_MENU_LABEL.startsWith(PACKAGE_REDO_LINK)).toBe(true);
+    /* His word, 2026-10-09 (card 2150): "in the menu just call it Regenerate
+       and Delete not those full sentences". */
+    expect(PACKAGE_REDO_MENU_LABEL).toBe("Regenerate");
+    expect(PACKAGE_REDO_MENU_LABEL).toBe(PACKAGE_REDO_LINK);
+    expect(PACKAGE_REDO_MENU_LABEL.toLowerCase()).not.toContain("character sheet");
   });
 
   it("names no engine, no model and no pipeline word, anywhere in its copy", () => {
@@ -175,8 +177,8 @@ describe("the character sheet row's menu (card 2144, his Option A)", () => {
       redo: offered, askingAll: false, deleteOffered: true, onRegenerate: noop, onDelete: noop,
     });
     expect(items.map((item) => [item.label, item.meta ?? null, item.danger ?? false])).toEqual([
-      ["Regenerate character sheet", "650 credits", false],
-      ["Delete this character", null, true],
+      ["Regenerate", "650 credits", false],
+      ["Delete", null, true],
     ]);
   });
 
@@ -198,15 +200,15 @@ describe("the character sheet row's menu (card 2144, his Option A)", () => {
     /* No redo offered by the server: no Regenerate. */
     expect(characterSheetMenuItems({
       redo: null, askingAll: false, deleteOffered: true, onRegenerate: noop, onDelete: noop,
-    }).map((item) => item.label)).toEqual(["Delete this character"]);
+    }).map((item) => item.label)).toEqual(["Delete"]);
     /* A redo already being asked for: no second Regenerate. */
     expect(characterSheetMenuItems({
       redo: offered, askingAll: true, deleteOffered: true, onRegenerate: noop, onDelete: noop,
-    }).map((item) => item.label)).toEqual(["Delete this character"]);
+    }).map((item) => item.label)).toEqual(["Delete"]);
     /* Delete door shut or still building: no Delete. */
     expect(characterSheetMenuItems({
       redo: offered, askingAll: false, deleteOffered: false, onRegenerate: noop, onDelete: noop,
-    }).map((item) => item.label)).toEqual(["Regenerate character sheet"]);
+    }).map((item) => item.label)).toEqual(["Regenerate"]);
     /* Nothing possible: an empty list, which CardMenu draws as no dots at all. */
     expect(characterSheetMenuItems({
       redo: undefined, askingAll: false, deleteOffered: false, onRegenerate: noop, onDelete: noop,
