@@ -380,7 +380,8 @@ describe("the ladder, against the product's real price table", () => {
     length, read from the ladder the server serves.
   */
 
-  it("says what carries over, up to one month's worth — Yuna's final wording (#2152)", () => {
+  // Card 2152: Yuna's final wording.
+  it("says what carries over, up to one month's worth — Yuna's final wording", () => {
     expect(rolloverSentence(100)).toEqual({
       text: "Unused plan credits carry into next month, up to one month's worth.",
       isLoss: false,
