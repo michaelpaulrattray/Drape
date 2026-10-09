@@ -1,7 +1,7 @@
 {
-  "edition": 665,
-  "updatedAt": "2026-10-09T05:35:00.000Z",
-  "shift": "Foreman — foreman-20261009-1404",
+  "edition": 666,
+  "updatedAt": "2026-10-09T15:40:00.000Z",
+  "shift": "Warden — patrol #7",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-09T00:39:28.325Z",
+      "readAt": "2026-10-09T15:34:07.243Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9851,7 +9851,7 @@
     },
     {
       "id": "sign-flat-price-1968",
-      "status": "in-review",
+      "status": "merged",
       "title": "Signing costs one flat 650 credits, and credits come back only if nothing arrives (#1968)",
       "prNumber": 2105,
       "note": "Built and green, waiting on the relay. Money surface: it stops refunding a view at a time, so a Sign already running when it ships still gets back exactly what it paid."
@@ -9990,6 +9990,13 @@
       "state": "open",
       "title": "A slow moment on the database can sign a customer out mid-session (#1990)",
       "detail": "If the database is briefly too busy to answer, the next thing the person clicks is treated as though they were never signed in — and the app then sends them to the sign-in page, in the middle of whatever they were doing. Seen twice while testing something else, both times straight after the export above overloaded the database.\n\nThe product cannot currently tell 'this person is not signed in' apart from 'we could not check whether they are signed in'. The second should be an error we own up to, not a silent sign-out. Known cause, written on the card."
+    },
+    {
+      "id": "face-scan-cap-counts-requests-2170",
+      "severity": "warning",
+      "state": "open",
+      "title": "After about fifteen faces in a day the face panel quietly stops filling in, and says nothing — it happened to you on 8 October (#2170)",
+      "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it. The limit is meant to be forty faces a day, which nobody would reach.\n\nIt is not counting faces. It is counting requests — and one face takes about three, because the panel asks again every second while the reading comes in. So the real limit is about fifteen faces, not forty.\n\nOn 8 October your own account reached it and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. The panel showed you what it already knew and said nothing, because a blocked reading was deliberately built to look exactly like a quiet one — there was no way to tell you had been stopped.\n\nNothing was charged and nothing was lost but the reading itself. This is the first time any account has ever hit it, and the first day it was ever used.\n\nThe fix is written on the card: count a face once instead of counting every request. The number itself also wants raising — on your biggest day you looked at 189 faces, so forty is too low even counted correctly. Whether a blocked reading should say something to the customer stays your decision, and it is not folded in."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10266,13 +10273,8 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-09T00:39:28.325Z",
+    "readAt": "2026-10-09T15:34:07.242Z",
     "items": [
-      {
-        "issueNumber": 1903,
-        "title": "Ditch the framing measurement and the checker's opinions — refuse only catastrophic failures; a paid redo of the whole package, on by default",
-        "urgent": true
-      },
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
@@ -10321,12 +10323,51 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "PR #1924 and card #1968 for the Sign and redo button prices, plus a job-card receipt surface that does not exist yet. Nothing else is left."
+          "because": "a job-card receipt surface that does not exist yet. It is the only unbuilt line left on this card, and nothing here needs your word."
         }
       },
       {
-        "issueNumber": 1968,
-        "title": "Sign and the whole-set redo are each a flat 650 credits with no per-view refund (his word 2026-10-08, after Cid's reprice)",
+        "issueNumber": 2115,
+        "title": "Bug hunt across the product — after all of N2 closes, before N3 starts (his word, 2026-10-09)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "N2 finishing — N2b (#1242) and the N2 milestone after it. This card's own body sets that condition in his words; it is not waiting on you, and nothing here nee…"
+        }
+      },
+      {
+        "issueNumber": 2134,
+        "title": "N2d: the Klieg ID becomes a record of creation — signed, timestamped, with a downloadable certificate (his word 2026-10-09)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2136,
+        "title": "N2b: drafted personality and voice follow his craft rules — posture-then-timing personality, timbre-plus-performance voice; the voice cap fits his own example",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2137,
+        "title": "N2b: the Personality card edits in place with three ways in — edit the lines, pick a different read, or say it your way (his Desk design, 2026-10-09)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2139,
+        "title": "N2b: the Voice card edits in place, or the customer says it their way (his Desk design, 2026-10-09)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2140,
+        "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2152,
+        "title": "Plan credits: rollover banks capped at one month's worth, a downgrade trims the bank, and cancelled plan credits expire 30 days after the paid period (his word, 2026-10-09)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2153,
+        "title": "Pricing Phase 2: drop in Yuna and Quistis's final wording on the plans page and compare table (his word, 2026-10-09)",
         "urgent": false
       }
     ]
