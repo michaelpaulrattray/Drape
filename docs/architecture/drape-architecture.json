@@ -11095,6 +11095,10 @@
       "path": "client/src/features/castingV2/clippedProse.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/components/SignConfirm.test.ts",
+      "path": "client/src/features/castingV2/components/SignConfirm.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/conceptUpload.test.ts",
       "path": "client/src/features/castingV2/conceptUpload.test.ts"
     },

@@ -119,7 +119,7 @@ export function SignConfirm({
               ref={inputRef}
               value={name}
               maxLength={CAST_NAME_MAX_LENGTH}
-              placeholder="e.g. Grounded"
+              placeholder="Give them a name"
               disabled={busy}
               autoComplete="off"
               aria-label={`Name for candidate ${indexLabel}`}
