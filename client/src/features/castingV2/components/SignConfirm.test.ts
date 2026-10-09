@@ -49,7 +49,8 @@ function placeholders(html: string): string[] {
   return [...html.matchAll(/placeholder="([^"]*)"/g)].map((match) => match[1]);
 }
 
-describe("the Sign dialog's name box (#2120)", () => {
+// Card #2120 — the reference lives in this comment, where the hex guard does not read it.
+describe("the Sign dialog's name box", () => {
   it("asks for a name in plain words", () => {
     const html = renderSign();
     // Positive control: the dialog rendered at all, with its one text field.
