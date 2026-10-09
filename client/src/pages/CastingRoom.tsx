@@ -29,6 +29,7 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import {
   CastPersonalityCard,
+  CastVoiceBadge,
   CastVoiceLine,
   type CastPersonaLineName,
 } from "@/features/castingV2/components/CastPersonaCards";
@@ -994,11 +995,36 @@ export default function CastingRoom() {
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
                   <div className="dpc-rcard__head">
-                    <span className="dpc-rcard__label">VOICE</span>
+                    <span className="dpc-persona__head">
+                      <span className="dpc-rcard__label">VOICE</span>
+                      {/* N2b's badge sits with the label, as the personality
+                          card's does — one placement for one idea. */}
+                      <CastVoiceBadge voice={data.persona?.voice ?? null} />
+                    </span>
                     <button type="button" className="dpc-rcard__quiet" disabled>
                       Change
                     </button>
                   </div>
+                  {/*
+                    HOW SHE SOUNDS - N2b (#1242), inside the EXISTING stub
+                    rather than replacing it. His brief: *"the existing Voice
+                    card stub gains this text half."*
+
+                    ⚠ **ABOVE THE PLAYER, AND THE RENDERED FRAME IS WHY.** It
+                    was below, next to the foot, and the card then read: a
+                    sentence describing how she sounds, and underneath it the
+                    words "No voice yet". Two true statements about two
+                    different things — the text line exists, the AUDIO does not
+                    — stacked into what a customer reads as a contradiction.
+                    Above the skeleton the line is what the card is about, and
+                    the skeleton with its promise is plainly the audio half
+                    that has not been built. Nothing in the stub changed.
+                  */}
+                  <CastVoiceLine
+                    voice={data.persona?.voice ?? null}
+                    onSave={savePersonaLine}
+                    savingLine={savingPersonaLine}
+                  />
                   <div className="dpc-voice__player">
                     <span className="dpc-voice__play">
                       <Play size={13} strokeWidth={2} aria-hidden="true" />
@@ -1009,18 +1035,6 @@ export default function CastingRoom() {
                       ))}
                     </span>
                   </div>
-                  {/*
-                    HOW SHE SOUNDS - N2b (#1242), inside the EXISTING stub
-                    rather than replacing it. His brief: *"the existing Voice
-                    card stub gains this text half."* The player skeleton and
-                    the "arrives with voice" promise below are both still true -
-                    there is no audio asset yet, and this line is not one.
-                  */}
-                  <CastVoiceLine
-                    voice={data.persona?.voice ?? null}
-                    onSave={savePersonaLine}
-                    savingLine={savingPersonaLine}
-                  />
                   <div className="dpc-voice__foot">
                     <span className="dpc-voice__name">No voice yet</span>
                     <span className="dpc-rcard__hint">

@@ -175,10 +175,20 @@ export function CastPersonalityCard({
   return (
     <section className="dpc-rcard" style={{ gap: 11 }}>
       <div className="dpc-rcard__head">
-        <span className="dpc-rcard__label">PERSONALITY</span>
-        {personality.drafted ? (
-          <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
-        ) : null}
+        {/*
+          ⚠ THE BADGE SITS WITH THE LABEL, LEFT, IN BOTH CARDS, and that was
+          decided at the rendered frame rather than in the markup. On the voice
+          card the head already owns a right-hand control, so a badge pinned
+          right would sit under the label on one card and beside a button on
+          the other — two placements for one idea, on two cards a customer sees
+          side by side.
+        */}
+        <span className="dpc-persona__head">
+          <span className="dpc-rcard__label">PERSONALITY</span>
+          {personality.drafted ? (
+            <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
+          ) : null}
+        </span>
       </div>
       <EditableLine
         line="personality"
@@ -190,6 +200,18 @@ export function CastPersonalityCard({
   );
 }
 
+/**
+ * THE VOICE CARD'S BADGE, for the head of the room's existing stub.
+ *
+ * Separate from the line below because the two go in different places inside a
+ * card this file does not own: the badge beside the card's own label, the line
+ * above its player skeleton.
+ */
+export function CastVoiceBadge({ voice }: { voice: PersonaLine | null }) {
+  if (!voice?.drafted) return null;
+  return <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>;
+}
+
 /** The voice line, for the inside of the room's existing VOICE card. */
 export function CastVoiceLine({
   voice,
@@ -199,9 +221,6 @@ export function CastVoiceLine({
   if (!voice) return null;
   return (
     <div className="dpc-persona__voice">
-      {voice.drafted ? (
-        <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
-      ) : null}
       <EditableLine
         line="voice"
         value={voice}

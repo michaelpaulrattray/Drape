@@ -4839,3 +4839,6 @@
   align-items: flex-start;
   gap: 7px;
 }
+
+/* The label and its badge travel together, left, on both cards (#1242). */
+.dpc-persona__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
