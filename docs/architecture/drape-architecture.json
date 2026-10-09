@@ -15138,6 +15138,10 @@
       "path": "server/wardrobe/scratchUpload.test.ts"
     },
     {
+      "id": "test:server/wardrobe/sessionHistoryRelease.test.ts",
+      "path": "server/wardrobe/sessionHistoryRelease.test.ts"
+    },
+    {
       "id": "test:server/wardrobe/sessionPhotoAndImportRefusal.test.ts",
       "path": "server/wardrobe/sessionPhotoAndImportRefusal.test.ts"
     },
