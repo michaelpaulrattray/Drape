@@ -83,12 +83,27 @@ describe("the room offers no per-view Try again (card 2089)", () => {
 
   it("keeps the refunded tile's one true sentence, drawn from the server's note", async () => {
     /*
-      The sentence is server-authored (`FAILED_SLOT_CONFESSION`) and true: the
-      Sign charges each view its own refundable slice, so a view that never
-      arrived WAS refunded. The tile draws `slot.note` once, inside the
-      confession that stands where the picture would be.
+      The sentence is server-authored (`FAILED_SLOT_CONFESSION`). The tile draws
+      `slot.note` once, inside the confession that stands where the picture
+      would be.
+
+      ⚠ **IT ENDED IN "— refunded" UNTIL #1968 AND THE REASON KEPT HERE FOR IT
+      HAS EXPIRED.** This arm read *"true: the Sign charges each view its own
+      refundable slice, so a view that never arrived WAS refunded"* — and his
+      word of 2026-10-08 (*"make both sign and redo/regenerate 650 credis"*)
+      makes a Sign one flat charge with no per-view refund at all. The claim
+      would have become false the moment that card shipped, with this arm still
+      green on the old string.
+
+      What the tile says now says less and stays true on both roads: a view
+      that failed on a delivered Sign (nothing came back, and the remedy is the
+      Regenerate button this file is about) and one that failed on a Sign that
+      delivered nothing (where the WHOLE charge came back — a fact about the
+      Sign, said by `TOTAL_LOSS_CONFESSION`, not by one tile).
     */
-    expect(FAILED_SLOT_CONFESSION).toBe("This view didn't arrive — refunded");
+    expect(FAILED_SLOT_CONFESSION).toBe("This view didn't arrive");
+    expect(FAILED_SLOT_CONFESSION.toLowerCase(), "a per-view note claims no money (#1968)")
+      .not.toContain("refund");
     const strip = stripSpan(await roomSource());
     expect(strip).toContain('slot.state === "failed-refunded"');
     expect(strip.match(/slot\.note/g)?.length).toBe(1);
