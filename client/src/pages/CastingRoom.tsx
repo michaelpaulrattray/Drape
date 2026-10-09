@@ -59,12 +59,14 @@ import {
 const POLL_MS = 2_500;
 
 /**
- * What the ? beside the Klieg ID says (#2124), verbatim from the card. It is
+ * What the ? beside the Klieg ID says — #2124 shipped it, and his word of
+ * 2026-10-09 replaced the sentence verbatim (the cast row behind the ID records
+ * its owning account and its creation time, which is what makes it true). It is
  * both the tooltip and the button's accessible name, so a screen reader hears
  * the same sentence a pointer sees.
  */
 const CAST_ID_EXPLAINED =
-  "This cast's Klieg ID. It never changes and belongs only to them — quote it if you ever contact us about this cast.";
+  "A unique identifier for this character. It records when and by whom this character was made.";
 
 /**
  * The drawn placeholders, kept as structure with honest captions.
