@@ -75,6 +75,7 @@ import {
   reviewWorktreeAddArgs,
   shipReadingFor,
   junctionMustBeGone,
+  junctionReadingLine,
   looksCrlfSmudged,
   planFor,
   validatePrNumber,
@@ -83,7 +84,7 @@ import {
   type RemovalState,
   type ShipReading,
 } from "../scripts/lib/shiftWorktree.mts";
-import { measureTree, MEASURE_ENTRY_CAP } from "../scripts/lib/riteWorktree.mts";
+import { measureTree, MEASURE_ENTRY_CAP, readJunctionAt } from "../scripts/lib/riteWorktree.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -94,7 +95,7 @@ const clean: RemovalState = {
   unpushedCommits: 0,
   dirtyFiles: [],
   registered: true,
-  junctionPresent: false,
+  junctionAt: "absent",
   /* Read, and nothing merged this branch (#1540). Explicit rather than omitted
      because the field is REQUIRED: `null` and "nobody asked" are different facts
      and an omitted field would silently pick one. Every arm below that is not
@@ -743,13 +744,44 @@ describe("readMergedPullRequest", () => {
 
 describe("junctionMustBeGone — the refusal --force cannot reach", () => {
   it("passes once the junction is gone", () => {
-    expect(junctionMustBeGone(false).ok).toBe(true);
+    expect(junctionMustBeGone("absent").ok).toBe(true);
   });
 
   it("REFUSES while the junction is present", () => {
-    const verdict = junctionMustBeGone(true);
+    const verdict = junctionMustBeGone("link");
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toContain("node_modules");
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ #2161 — A REAL DIRECTORY IS NOT A JUNCTION, AND REFUSING ON IT DEAD-ENDS.
+
+     It took a boolean (`stillOnDisk`: *is there anything there*) and refused on
+     it, so `drape-review-1910` and `drape-review-1915` — each holding a
+     `node_modules` that is a real directory, `isSymbolicLink()` false, 824
+     directories and 0 bytes from an aborted install — were refused with a
+     sentence about a link that does not exist, and could not be cleared by the
+     tool at all. The danger is the delete FOLLOWING A LINK; a real directory
+     has nothing to follow.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ PASSES on a REAL directory — there is no link for a recursive delete to follow", () => {
+    const verdict = junctionMustBeGone("real");
+    expect(verdict.ok).toBe(true);
+    expect(verdict.reason).toBe("");
+  });
+
+  it("⚠ REFUSES an UNREADABLE path — an unknown is never a permission to delete", () => {
+    /* The polarity PR #692's review bought, held across #2161's widening. The
+       tempting shape was three answers with `unreadable` folded into `real`,
+       which would quietly authorise the recursive delete on exactly the paths
+       nobody can see into. */
+    const verdict = junctionMustBeGone("unreadable");
+    expect(verdict.ok).toBe(false);
+    expect(verdict.reason).toContain("UNKNOWN");
+    expect(verdict.reason).toContain("not overridable by --force");
+    /* And it must not read as the link refusal — the two want different acts
+       from whoever reads them. */
+    expect(verdict.reason).not.toContain("Remove the link first");
   });
 
   it("⚠ IS NOT PART OF THE FORCE-ABLE VERDICT — a habitual --force must not reach it", () => {
@@ -757,10 +789,57 @@ describe("junctionMustBeGone — the refusal --force cannot reach", () => {
     // shift's work, where --force is a legitimate answer; this is about
     // emptying the machine's dependency install, where it never is. If the
     // junction check ever migrated into decideRemoval, this reddens.
-    const withJunction: RemovalState = { ...clean, junctionPresent: true };
+    const withJunction: RemovalState = { ...clean, junctionAt: "link" };
     const forced = decideRemoval(withJunction, true);
     expect(forced.proceed).toBe(true); // decideRemoval says nothing about it…
-    expect(junctionMustBeGone(withJunction.junctionPresent).ok).toBe(false); // …this still refuses.
+    expect(junctionMustBeGone(withJunction.junctionAt).ok).toBe(false); // …this still refuses.
+  });
+});
+
+describe("junctionReadingLine — `remove` says which of the four it found (#2161)", () => {
+  /* The card's own *"and says which it found"*. Before it there was no line at
+     all: a shift read a refusal naming a junction and had no way to learn that
+     the path was an ordinary directory. */
+  it("names a link as a link, and says the unlink comes first", () => {
+    expect(junctionReadingLine("link")).toContain("junction");
+    expect(junctionReadingLine("link")).toContain("unlinked first");
+  });
+
+  it("⚠ MARKS A REAL DIRECTORY AS UNUSUAL, AND SAYS THE WHOLE OF IT GOES", () => {
+    /* It must not read like business as usual: the recursive delete is about to
+       take a real directory full of files, and the reader deciding whether to
+       pass `--force` should know that is what is happening.
+
+       ⚠ AND IT MUST NOT CALL IT AN ABORTED INSTALL, which is what it said until
+       a census of all 56 `drape-*` directories found the third real-directory
+       tree: `drape-shift-relay-2152`, the relay's LIVE tree, holding a
+       deliberate per-tree install with real content — not the 0 files the two
+       review shells held. Naming only the junk causes, four lines above a
+       recursive delete, invites a reader to treat a full install as junk. */
+    const line = junctionReadingLine("real");
+    expect(line).toContain("REAL directory");
+    expect(line).toContain("⚠");
+    expect(line).toContain("recursive delete");
+    expect(line, "the sentence does not say the whole directory goes").toContain("ALL of it");
+    expect(line, "a deliberate per-tree install is a measured cause and is not named")
+      .toContain("per-tree install");
+  });
+
+  it("names the other two plainly, and the unreadable one as a refusal", () => {
+    expect(junctionReadingLine("absent")).toBe("nothing there");
+    expect(junctionReadingLine("unreadable")).toContain("UNREADABLE");
+    expect(junctionReadingLine("unreadable")).toContain("refusing");
+  });
+
+  it("⚠ COVERS ALL FOUR — a fifth reading cannot ship with no sentence", () => {
+    /* The exhaustiveness the `switch` gives at compile time, held at runtime
+       too: a widened union with a missing case returns `undefined` here, and a
+       `undefined` printed four lines above a recursive delete is worse than no
+       line. */
+    for (const at of ["link", "real", "absent", "unreadable"] as const) {
+      expect(typeof junctionReadingLine(at), `no sentence for ${at}`).toBe("string");
+      expect(junctionReadingLine(at).length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -852,9 +931,47 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
     withJunction("order", ({ link, tree, canary }) => {
       const unlinked = spawnSync("cmd", ["/c", "rmdir", link.replace(/\//g, "\\")], { encoding: "utf8" });
       expect(unlinked.status).toBe(0);
-      expect(junctionMustBeGone(existsSync(link)).ok).toBe(true);
+      /* ⚠ `readJunctionAt` AND NOT `existsSync` (#2161, and #654 before it).
+         This read `existsSync(link)` — which FOLLOWS the link, so a junction
+         whose target had gone would have read as absent — and then handed a
+         boolean to a verdict that now needs the KIND. The script itself reads
+         the same way; the text arm below pins that. */
+      expect(junctionMustBeGone(readJunctionAt(link)).ok).toBe(true);
       rmSync(tree, { recursive: true, force: true });
       expect(existsSync(canary)).toBe(true);
+      expect(readFileSync(canary, "utf8")).toBe("the main tree's install");
+    });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────────
+     ⚠ THE CARD'S OWN NAMED CONTROL (#2161), ON A REAL DISK.
+
+     The done-when asks that *"the negative control in `server/shiftWorktree.test.ts`
+     still proves a real junction is unlinked and proven gone before anything
+     recursive runs"* — so the widening is driven BOTH ways against real
+     junctions and real directories, in the same fixture shape, rather than on
+     the pure verdict alone. The pure arms cannot see a widening that is right
+     in the library and wrong at the disk.
+     ──────────────────────────────────────────────────────────────────────── */
+  it("⚠ READS A LIVE JUNCTION AS `link` AND A REAL DIRECTORY AS `real`, at the same place in the tree", () => {
+    withJunction("kinds", ({ link, tree, canary }) => {
+      /* The live junction, which must still be refused. */
+      expect(readJunctionAt(link)).toBe("link");
+      expect(junctionMustBeGone(readJunctionAt(link)).ok, "a live junction stopped refusing").toBe(false);
+
+      /* Now the measured state of the two review shells, in the same tree: the
+         link unlinked and a REAL directory left where it was. */
+      const unlinked = spawnSync("cmd", ["/c", "rmdir", link.replace(/\//g, "\\")], { encoding: "utf8" });
+      expect(unlinked.status).toBe(0);
+      mkdirSync(join(link, "some-package", "dist"), { recursive: true });
+      expect(readJunctionAt(link)).toBe("real");
+      expect(junctionMustBeGone(readJunctionAt(link)).ok, "a real directory still dead-ends the tool").toBe(true);
+
+      /* And the recursive delete is the correct act on it — with the canary
+         proving the install was never what got taken. */
+      rmSync(tree, { recursive: true, force: true });
+      expect(existsSync(tree)).toBe(false);
+      expect(existsSync(canary), "the main tree's install was touched").toBe(true);
       expect(readFileSync(canary, "utf8")).toBe("the main tree's install");
     });
   });
@@ -874,6 +991,44 @@ describe.runIf(process.platform === "win32")("junctions, against the real filesy
 
 describe("the script's own text — the sequence a reader must be able to trust", () => {
   const source = readFileSync(join(import.meta.dirname, "..", "scripts", "shift-worktree.mts"), "utf8");
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     ⚠ THE UNLINK'S OWN CONDITION, AND IT WAS THE ONE THING NO ARM HELD (#2161).
+
+     Found by sabotage, not by review: widening the CLI's guard back to
+     `=== "link" || === "real"` — the original dead end restored — landed (read
+     at the diff) and **all 169 arms stayed green**. Every arm in this suite
+     drives the LIBRARY's reading and the LIBRARY's verdict, and both would be
+     perfectly correct while the call site rmdir'd a real directory again. That
+     is invariant 7 exactly: the control is right and the thing that invokes it
+     is not, so the condition is pinned here where the source is read.
+     ────────────────────────────────────────────────────────────────────────── */
+  it("⚠ RMDIRS ONLY A LINK — a real directory never reaches the unlink", () => {
+    const start = source.indexOf("// ⚠ THE JUNCTION, FIRST");
+    const end = source.indexOf("// Two acts, because one is not enough");
+    expect(start, "the junction step's banner moved — re-anchor this arm").toBeGreaterThan(-1);
+    expect(end, "the unregister banner moved — re-anchor this arm").toBeGreaterThan(start);
+    const block = source.slice(start, end);
+
+    /* The `rmdir` that unlinks, which must appear exactly once in the sequence. */
+    const rmdirs = [...block.matchAll(/"\/c",\s*"rmdir"/g)];
+    expect(rmdirs, "the unlink is not in the junction step, or it is there twice").toHaveLength(1);
+
+    /* ⚠ THE CONDITION, READ AS A WHOLE LINE. A `toContain` on the link-only
+       form would pass on `=== "link" || === "real"` too, because the widened
+       condition CONTAINS the narrow one — the negation-contains-the-token trap
+       this repository has already paid for. So the line is matched exactly. */
+    const guard = block
+      .split(/\r?\n/)
+      .find((line) => /^if \(state\.junctionAt/.test(line.trim()));
+    expect(guard?.trim(), "the unlink's guard is not a bare link-only condition")
+      .toBe('if (state.junctionAt === "link") {');
+
+    /* And the real-directory branch exists and does something OTHER than unlink. */
+    expect(block, "nothing says what happens to a real directory").toMatch(
+      /if \(state\.junctionAt === "real"\) say\(/,
+    );
+  });
 
   it("⚠ THE LEFTOVER PATH IS REACHABLE — the git probes are skipped when git has let go (finding 1)", () => {
     // The dead end this closes: an unregistered directory's `.git` file points

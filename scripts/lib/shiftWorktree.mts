@@ -579,6 +579,41 @@ export function ignoredReadingLine(state: {
  * loop — and both directions matter equally. A helper that refuses too readily
  * gets `--force`d by habit, and then it is not a guard at all.
  */
+/**
+ * ⚠ **WHAT IS AT THE `node_modules` PATH — A LINK, OR A REAL DIRECTORY (#2161).**
+ *
+ * The question the gate above the recursive delete has to answer is *is there a
+ * LINK in the way*, and until this type existed it was answered with *is there
+ * anything in the way* (`stillOnDisk`, a boolean). Those agree on every tree
+ * this tool made — and they disagreed on the two that could not be cleared.
+ *
+ * **Measured, 2026-10-09, with a positive control:**
+ *
+ * | path | `lstat.isSymbolicLink()` |
+ * |---|---|
+ * | `drape-review-1910/node_modules` | **false** — a real directory |
+ * | `drape-review-1915/node_modules` | **false** — a real directory |
+ * | a live worktree's `node_modules` | true |
+ *
+ * Each of the two holds 58 top-level entries, **824 directories, 0 files,
+ * 0 bytes** — an aborted install or an interrupted delete. `rmdir` removes an
+ * empty directory or unlinks a reparse point and does neither here, so `remove`
+ * refused with a message about a junction that was not there and the two shells
+ * could not be cleared by the tool at all.
+ *
+ * ⚠ **AND `unreadable` IS NOT `real`.** The polarity `stillOnDisk` was given by
+ * PR #692's review — *only "it is not there" means absent* — is the whole reason
+ * this is four answers and not a boolean plus a guess. A path the process cannot
+ * `lstat` for a reason that is not absence is a path nobody may authorise a
+ * recursive delete past, and collapsing it into `real` would do exactly that,
+ * quietly, on the one predicate this module's header calls the thing standing
+ * between a sweep and the main checkout.
+ *
+ * The reading itself is `readJunctionAt` in `lib/riteWorktree.mts`, which is
+ * where the disk lives; this module stays drivable without one.
+ */
+export type JunctionReading = "link" | "real" | "absent" | "unreadable";
+
 export type RemovalState = {
   /**
    * Commits on the branch that no remote has.
@@ -596,8 +631,8 @@ export type RemovalState = {
   readonly dirtyFiles: readonly string[];
   /** Whether git still knows about this path as a worktree. */
   readonly registered: boolean;
-  /** Whether the node_modules junction is still in place. */
-  readonly junctionPresent: boolean;
+  /** What is actually AT the `node_modules` path — see {@link JunctionReading}. */
+  readonly junctionAt: JunctionReading;
   /**
    * DID THIS BRANCH ALREADY MERGE? — the fact `unpushedCommits` cannot see
    * (#1540).
@@ -1118,13 +1153,71 @@ export function removalStateFromShipReading(
  * there is nothing for `--force` to express. Keeping it out of the force-able
  * verdict is what stops a habitual `--force` from reaching it.
  */
-export function junctionMustBeGone(junctionPresent: boolean): { ok: boolean; reason: string } {
-  if (!junctionPresent) return { ok: true, reason: "" };
+/*
+ * ⚠ **IT TOOK A BOOLEAN AND THE BOOLEAN WAS THE WRONG QUESTION (#2161).** The
+ * caller passed `stillOnDisk(…)` — *is there anything there* — and this refused
+ * on it, so a `node_modules` that is a REAL DIRECTORY was refused with a
+ * sentence about a link that does not exist, and the only two trees in that
+ * state could not be cleared by the tool at all. The danger this guard exists
+ * for is the delete FOLLOWING A LINK; a real directory has nothing to follow,
+ * and `rmSync(recursive)` is the correct thing to do to it.
+ *
+ * So the refusals are now exactly two, and the second is the one that keeps the
+ * fail-closed polarity PR #692's review bought: a reading that could not be
+ * taken is never read as permission.
+ */
+export function junctionMustBeGone(at: JunctionReading): { ok: boolean; reason: string } {
+  if (at === "absent" || at === "real") return { ok: true, reason: "" };
+  if (at === "unreadable") {
+    return {
+      ok: false,
+      reason:
+        "the node_modules path could not be read, so whether a junction is still in the way is UNKNOWN — and a recursive delete past a live junction empties the MAIN tree's node_modules. Nothing was touched. This refusal is not overridable by --force; find out what is holding the path and run again.",
+    };
+  }
   return {
     ok: false,
     reason:
       "the node_modules junction is still in place — a recursive delete would follow it into the MAIN tree's node_modules and empty it. Remove the link first (cmd /c rmdir \"<path>\\node_modules\") and run again. This refusal is not overridable by --force.",
   };
+}
+
+/**
+ * The one line `remove` prints about what it found at `node_modules` — the
+ * card's own *"and says which it found"*.
+ *
+ * ⚠ Kept beside the verdict rather than in the CLI, for the reason every other
+ * words-function in this module is: this sits four lines above a recursive
+ * delete, a shift reads it to decide whether to pass `--force`, and a sentence
+ * nothing drives is a sentence that can quietly stop matching the branch it
+ * describes. A `real` directory in particular must not read like a happy path —
+ * it is unusual, it means somebody's install rather than this tool's junction —
+ * deliberate, aborted, or half-deleted — and the reader should know the
+ * recursive delete is about to take every byte of it.
+ */
+export function junctionReadingLine(at: JunctionReading): string {
+  switch (at) {
+    case "link":
+      return "a junction — it is unlinked first, and proven gone before anything recursive runs";
+    case "real":
+      /* ⚠ THE CAUSES ARE NAMED IN THE ORDER THEY WERE MEASURED, AND THE FIRST
+         ONE WAS MISSING FROM THIS SENTENCE UNTIL THE CENSUS (#2161). It read
+         "an aborted install or an interrupted delete leaves this", and then a
+         census of all 56 `drape-*` directories found a third real-directory
+         tree that is neither: `drape-shift-relay-2152`, the relay's LIVE tree
+         with PR #2157 open, holding a **real per-tree install** — 64 top-level
+         entries with real content, not the 0 files the two review shells held.
+         Somebody installed there on purpose, which is the sensible way to dodge
+         the shared-install skew of #2148.
+         The difference is not academic: this line sits four above a recursive
+         delete, and "an aborted install" invites a reader to treat a full
+         install as junk. */
+      return "⚠ a REAL directory, not a junction — nothing to unlink; the recursive delete takes ALL of it (a deliberate per-tree install, an aborted one, or an interrupted delete)";
+    case "absent":
+      return "nothing there";
+    case "unreadable":
+      return "⚠ UNREADABLE — refusing, because an unknown is not a permission";
+  }
 }
 
 /**
