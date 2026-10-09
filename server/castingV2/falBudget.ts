@@ -114,10 +114,21 @@
  *    house's own allowance; a customer's paid render should not wait longer
  *    because somebody else attached a tattoo.
  * 2. **It costs the panel nothing at the size it actually runs.** A face scan
- *    is measured at exactly 20 segmenter calls per version, and `ceil(20/6)`
- *    and `ceil(20/5)` are both **four waves**. The cut is free at 20 calls; it
+ *    was then counted at 20 segmenter calls per version, and `ceil(20/6)` and
+ *    `ceil(20/5)` are both **four waves**. The cut is free at 20 calls; it
  *    would not have been at 24, and if the scan's call count ever grows that is
  *    the moment to re-cut rather than now.
+ *
+ *    ⚠ **THE COUNT GREW — OR RATHER, 20 WAS NEVER IT (#2184, #2187).** It was
+ *    taken with a fake reader that answered everything first time. Real faces
+ *    ask again: `FACE_SCAN_FAL_CALLS` in `scripts/lib/falSpend.mts` holds the
+ *    measured 21–27 SAM 3 reads (#2183, eight production casts) inside a
+ *    wire-derived 19–40. On the same waves arithmetic that is 4–5 waves at 6
+ *    and 5–6 at 5, so **the cut now costs most real scans one wave**, which is
+ *    the case the sentence above said to re-cut at. It is NOT re-cut here: the
+ *    slot this paid for is the unowned one above, and handing it back to region
+ *    reads is growing a live pool — a capability change with its own card and
+ *    its own measurement, never a comment fix.
  *
  * ONE slot rather than two, deliberately: a mint is never on a paid render's
  * critical path, so two simultaneous uploads queueing behind each other is the

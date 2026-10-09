@@ -2,8 +2,9 @@
  * KEEPING A SCAN, AND HANDING IT BACK (migration 0032, founder yes via
  * fable-698).
  *
- * A face-version is scanned the first time it is looked at — twelve segmenter
- * questions, about ten cents — and the answer lived in memory alone. The
+ * A face-version is scanned the first time it is looked at — a run of
+ * segmenter questions priced by `faceScanUsd()` in `scripts/lib/falSpend.mts`
+ * — and the answer lived in memory alone. The
  * process dies on every deploy, and this program deploys many times a night, so
  * the same face was bought again and again: 58 paid scans for 28 distinct faces
  * across two days of ordinary live use.

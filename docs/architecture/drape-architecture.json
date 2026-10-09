@@ -14075,6 +14075,10 @@
       "path": "server/loginRefusalNotes.test.ts"
     },
     {
+      "id": "test:server/machinistFaceScanPrice.test.ts",
+      "path": "server/machinistFaceScanPrice.test.ts"
+    },
+    {
       "id": "test:server/managerFactSheet.test.ts",
       "path": "server/managerFactSheet.test.ts"
     },

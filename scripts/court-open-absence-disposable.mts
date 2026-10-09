@@ -74,7 +74,7 @@ import { fetchImageBytes } from "./lib/imageBytes.mts";
 import { createFalRegionReader } from "../server/castingV2/falRegionReader";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { assertOneWorld } from "./lib/worldGuard.mts";
-import { readFalBalance, falLine } from "./lib/falSpend.mts";
+import { FAL_MEASURED_USD, readFalBalance, falLine } from "./lib/falSpend.mts";
 
 const OUT = path.resolve("output/open-absence-court");
 
@@ -87,9 +87,10 @@ const CONTROLS = [
   { name: "horns", expect: "declines" as const },
 ];
 
-/** fal's own measured price for one segmenter call — the face scan's reading
- *  ($0.100 for 20 calls), quoted rather than guessed. */
-const USD_PER_READ = 0.005;
+/** fal's own published price for one segmenter call, read from the one table
+ *  that holds it rather than typed (#2187 — this credited it to a face scan's
+ *  "$0.100 for 20 calls", a count a real scan exceeds). */
+const USD_PER_READ = FAL_MEASURED_USD["fal-ai/sam-3/image"].usd;
 /** The product's own measured price for one GPT Image 2 frame, taken from the
  *  account balance rather than a rate card (`falImages.ts`). */
 const USD_PER_PAINT = 0.099;

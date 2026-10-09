@@ -481,11 +481,12 @@ export function validateCastingSidePhrasingEnvironment(input: {
  * # Why it needs a switch of its own, given the panel already has one
  *
  * It SPENDS. Not a customer's credits — a scan is house money on a read the
- * user never asked to pay for — but **twelve questions costing twenty segmenter
- * calls per version looked at, $0.100** (⚠ this said *fourteen calls* until
- * 2026-08-24; the counted figure was taken through `scanFace` itself with a
- * recording reader, and its neighbour at the kept-scan flag has always said
- * twelve questions and about ten cents — one file, three numbers for one fact).
+ * user never asked to pay for — every version looked at buys a run of
+ * segmenter reads, a body cutout and a describer call, priced in one place:
+ * `FACE_SCAN_FAL_CALLS` / `faceScanUsd()` in `scripts/lib/falSpend.mts`
+ * (⚠ this said *fourteen calls* until 2026-08-24, then *twenty calls, $0.100*
+ * until #2187 — a count taken with a recording reader that answered every
+ * question first time, which no real face does; #2183 measured the real one).
  * A switch is the difference between that starting when we choose and starting
  * the moment a deploy lands on whoever already has the panel.
  * `CASTING_REFERENCE_LIBRARY_SCOPE` is `all` in production — it read *"open for
@@ -591,8 +592,9 @@ export function validateCastingV2Environment(input: {
 /**
  * THE KEPT SCAN (migration 0032) — whether a finished reading is written down.
  *
- * The scan itself is `CASTING_FACE_SCAN_SCOPE`'s business: twelve segmenter
- * questions about a face-version, about ten cents, held in memory for as long
+ * The scan itself is `CASTING_FACE_SCAN_SCOPE`'s business: a run of segmenter
+ * questions about a face-version (priced by `faceScanUsd()` in
+ * `scripts/lib/falSpend.mts`), held in memory for as long
  * as the process lives. This flag governs one thing on top of that — whether
  * the answer survives the process. Off, not a row is written and not a row is
  * read, and the panel behaves exactly as it does today.

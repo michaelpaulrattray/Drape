@@ -180,6 +180,26 @@ export function faceScanUsd(): { sam3: UsdBand; cutout: UsdBand; describer: UsdB
 }
 
 /**
+ * What `looks` paid scans cost, as the words a reader prints — the per-scan
+ * parts and the band, both read off `FACE_SCAN_FAL_CALLS` and `faceScanUsd()`.
+ *
+ * It lives here rather than in its reader because its first reader,
+ * `machinist-ledger-read.mts` section E, opens a database at import and so
+ * cannot be driven by a test; that section printed a typed *"20 reads / $0.10
+ * each"* for a month after #2184 moved every other reader off it (#2187).
+ * A range is printed, never a midpoint: the band is the measurement.
+ */
+export function faceScanSpendWords(looks: number): string {
+  const usd = faceScanUsd();
+  const { low, high } = FACE_SCAN_FAL_CALLS.sam3.measured;
+  const money = (value: number) => `$${value.toFixed(value < 1 ? 3 : 2)}`;
+  return `${low}–${high} segmenter reads + ${FACE_SCAN_FAL_CALLS.cutouts} cutout at fal`
+    + ` + ${FACE_SCAN_FAL_CALLS.describer} describer call at OpenRouter,`
+    + ` ${money(usd.total.low)}–${money(usd.total.high)} each`
+    + ` = ${money(looks * usd.total.low)}–${money(looks * usd.total.high)}`;
+}
+
+/**
  * The fewest dollars a scan can cost at fal — every question answered first
  * time, and the cheapest cutout measured. A FLOOR for subtracting scans out of
  * a balance drop, where an overestimate would hide a render's real price.

@@ -41,7 +41,9 @@
  *                               one.
  *   D. candidates               casting_candidates by status + failureClass.
  *   E. face scans               casting_face_scans, split by geometry.scanned —
- *                               true is a PAID look (20 segmenter calls, $0.10);
+ *                               true is a PAID look, priced off the measured
+ *                               band in falSpend.mts (`faceScanSpendWords`,
+ *                               #2187 — it printed a typed 20 reads / $0.10);
  *                               false is a render-written carried-feature row.
  *   F. provider books           OpenRouter's own per-day activity (account-wide,
  *                               NOT per key — house courts and product traffic
@@ -73,7 +75,7 @@ import {
 } from "../server/castingV2/refineRefundLedger";
 import { SLICE_REFUND_DESCRIPTIONS } from "../server/castingV2/sliceRefundLedger";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
-import { priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
+import { faceScanSpendWords, priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
 import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
 import { readMergedPrs } from "./lib/mergedPrGateTime.mts";
 import {
@@ -497,7 +499,7 @@ const unlabelledScans = scans.length - paidScans - legacyScans - renderWritten;
 const paidLooks = paidScans + legacyScans;
 const allTime = await q(`SELECT COUNT(*) AS n, COUNT(DISTINCT candidateId) AS faces, SUM(JSON_CONTAINS_PATH(geometry, 'one', '$.carried')) AS withCarried FROM casting_face_scans`);
 console.log(`
-E. casting_face_scans in window: ${scans.length} rows — ${paidLooks} paid looks (20 reads / $0.10 each = $${(paidLooks * 0.1).toFixed(2)}; ${paidScans} scanned:true + ${legacyScans} written before the key existed), ${renderWritten} render-written (scanned:false)${unlabelledScans > 0 ? `, ${unlabelledScans} UNLABELLED (a value this reader does not know)` : ""}`);
+E. casting_face_scans in window: ${scans.length} rows — ${paidLooks} paid looks (${faceScanSpendWords(paidLooks)}; ${paidScans} scanned:true + ${legacyScans} written before the key existed), ${renderWritten} render-written (scanned:false)${unlabelledScans > 0 ? `, ${unlabelledScans} UNLABELLED (a value this reader does not know)` : ""}`);
 console.log(`   all time: ${allTime[0].n} rows over ${allTime[0].faces} faces; rows holding carried geometry (the render's writer, a010923d): ${allTime[0].withCarried}`);
 const scanDays = new Map<string, number>();
 for (const row of scans) scanDays.set(day(row.createdAt), (scanDays.get(day(row.createdAt)) ?? 0) + 1);

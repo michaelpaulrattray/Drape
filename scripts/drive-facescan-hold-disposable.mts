@@ -2,7 +2,7 @@
  * THE WIRE HOLD, DRIVEN BOTH WAYS — and the server's own rows are the judge.
  *
  * fable-694 §2 ordered an opt-in `holdFaceScan` in the drive harness so that a
- * walk stops buying ~$0.10 of segmenter reads it never declares. A hold is a
+ * walk stops buying segmenter reads it never declares. A hold is a
  * control, and a control that has only been driven in the direction it is meant
  * to block has not been driven at all (law 2): a wire hold that "worked" because
  * the sheet never asked for a scan is indistinguishable from one that works.
@@ -22,7 +22,10 @@
  * agree, and the harness cannot write the row.
  *
  * **THIS SCRIPT SPENDS HOUSE MONEY ON PURPOSE**: the BOUGHT arm is one real
- * scan, ~20 segmenter reads ≈ $0.10, plus one describer call. It is the positive
+ * scan — its measured segmenter reads, one body cutout and one describer call
+ * (`FACE_SCAN_FAL_CALLS`), priced by `faceScanUsd()` in `lib/falSpend.mts` and
+ * printed below from there rather
+ * than typed (#2187; it read *"~20 segmenter reads ≈ $0.10"*). It is the positive
  * control and it is declared in the run's own output. It buys nothing if the
  * server has already read that (candidate, version) in this process — which the
  * baseline read below detects and says.
@@ -35,6 +38,7 @@ import { SignJWT } from "jose";
 import { openDrivenPage } from "./lib/drivePage.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { readFaceScanAsk } from "./lib/faceScanWire.mts";
+import { faceScanUsd } from "./lib/falSpend.mts";
 
 function arg(name: string, fallback = ""): string {
   const index = process.argv.indexOf(`--${name}`);
@@ -176,7 +180,8 @@ check(afterHeld.length === before.length,
   "THE SERVER WROTE NO SCAN ROW — the independent instrument",
   `${before.length} rows before, ${afterHeld.length} after`);
 
-say("\n--- ARM 2: BOUGHT (hold off — the positive control, ~$0.10 of house money) ---");
+const scanBand = faceScanUsd().total;
+say(`\n--- ARM 2: BOUGHT (hold off — the positive control, $${scanBand.low.toFixed(3)}–$${scanBand.high.toFixed(3)} of house money) ---`);
 const bought = await walk(false);
 const afterBought = await scanMisses();
 const fresh = afterBought.filter((row) => !afterHeld.some((seen) => seen.id === row.id));

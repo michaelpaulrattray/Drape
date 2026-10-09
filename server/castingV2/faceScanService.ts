@@ -479,8 +479,9 @@ export async function scannedFace(input: {
   /*
     AND THE SCAN IS ON THE STOPWATCH TOO (the latency-and-cost program).
 
-    A scan is house money — around fourteen segmenter calls per version looked
-    at — and until now the only figure for it was an estimate written in a
+    A scan is house money — a run of segmenter calls per version looked at,
+    measured and priced in `scripts/lib/falSpend.mts` (`FACE_SCAN_FAL_CALLS`)
+    — and until now the only figure for it was an estimate written in a
     design note. The same census the paid render opens is opened here, so the
     courtesy read's cost is measured by the same instrument rather than by a
     second one that would disagree with it (law 4).

@@ -119,7 +119,7 @@ describe("what the walk declares", () => {
     meter.saw(delivered, false);
     /* The same version asked about twice — the client polls while a scan is
        still filling — is ONE read on the server, so it must not be priced
-       twice. This is the difference between $0.10 and a walk that reports
+       twice. This is the difference between one scan's price and a walk that reports
        dollars it never spent. */
     meter.saw(delivered, false);
     const second = readFaceScanAsk(
