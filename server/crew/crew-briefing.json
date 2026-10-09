@@ -1,7 +1,7 @@
 {
-  "edition": 666,
-  "updatedAt": "2026-10-09T15:40:00.000Z",
-  "shift": "Warden — patrol #7",
+  "edition": 667,
+  "updatedAt": "2026-10-09T16:25:00.000Z",
+  "shift": "Foreman — foreman-20261010-0213",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-09T15:34:07.243Z",
+      "readAt": "2026-10-09T16:19:52.041Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9995,8 +9995,8 @@
       "id": "face-scan-cap-counts-requests-2170",
       "severity": "warning",
       "state": "open",
-      "title": "After about fifteen faces in a day the face panel quietly stops filling in, and says nothing — it happened to you on 8 October (#2170)",
-      "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it. The limit is meant to be forty faces a day, which nobody would reach.\n\nIt is not counting faces. It is counting requests — and one face takes about three, because the panel asks again every second while the reading comes in. So the real limit is about fifteen faces, not forty.\n\nOn 8 October your own account reached it and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. The panel showed you what it already knew and said nothing, because a blocked reading was deliberately built to look exactly like a quiet one — there was no way to tell you had been stopped.\n\nNothing was charged and nothing was lost but the reading itself. This is the first time any account has ever hit it, and the first day it was ever used.\n\nThe fix is written on the card: count a face once instead of counting every request. The number itself also wants raising — on your biggest day you looked at 189 faces, so forty is too low even counted correctly. Whether a blocked reading should say something to the customer stays your decision, and it is not folded in."
+      "title": "The face panel still stops filling in after forty faces in a day, and still says nothing — the part that stopped you three times too soon is fixed and live (#2170)",
+      "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it.\n\nWhat was wrong, and is now fixed: it counted requests instead of faces. The panel asks again every second while a reading comes in, so one face spent about three of your allowance. On 8 October your own account hit the limit after about fifteen faces and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. That fix shipped today — looking at the same face again now costs nothing, and the limit counts forty faces as it was always meant to.\n\nWhat is still wrong, and why this row is still here. Forty is too low. On your biggest day you looked at 189 faces, and three of your last ten days were over forty — so you can still be stopped on a normal working day, just later than before. And when you are stopped the panel still says nothing: a blocked reading was deliberately built to look exactly like a quiet one, so there is no way to tell the difference.\n\nNothing is ever charged for a refused reading and nothing is lost but the reading itself. The number is on the card and needs no decision from you. Whether a blocked reading should say something to you is yours to decide, and it is not folded in."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10273,7 +10273,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-09T15:34:07.242Z",
+    "readAt": "2026-10-09T16:19:52.041Z",
     "items": [
       {
         "issueNumber": 1469,
