@@ -111,5 +111,5 @@ export const ANNUAL_CHARGE_SENTENCE =
  * credits lands as soon as the payment settles"*, which month-by-month
  * granting made false.
  */
-export const YEARLY_SWITCH_CREDITS_SENTENCE =
+export const YEARLY_SWITCH_ALLOWANCE_SENTENCE =
   "Your first month of credits lands as soon as the payment settles, replacing what was left of your current allowance, and your credits arrive each month after that.";

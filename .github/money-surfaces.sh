@@ -520,6 +520,15 @@
 # later module there (a receipt renderer, a dunning note) is its own
 # judgement rather than something this entry decides in advance.
 #
+# ⚠ THREE MORE `server/billing/` MODULES BY NAME (#2152, 2026-10-10), on the
+# same sentence and the same derived guard. `annualMonthlyGrant.ts` GRANTS a
+# yearly plan's months 2-12 (it imports the rollover rule from server/stripe,
+# which is what reddened the arm); `annualCreditMonths.ts` decides where those
+# months fall and how much of a paid year a plan change may take back or
+# charge for; `planCreditsExpiry.ts` takes a cancelled plan's credits off the
+# balance. Each is where credits are SET, so a diff touching only one of them
+# is a money diff. Still named, still not `^server/billing/`.
+#
 # ⚠ AND WHERE A PRICE IS *DECIDED BY A BRANCH* WAS MISSING FROM BOTH HALVES
 # UNTIL 2026-10-09 (#2068). It is the ninth position in the sentence above, and
 # it is #1622's refund-by-a-branch with the price in place of the refund:
@@ -605,7 +614,7 @@
 #
 # NAMED FILES, NEVER DIRECTORIES — `server/db/` and `server/castingV2/` stay off.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry|castingV2Sign)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/renewalReminder\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
+MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry|castingV2Sign)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/(renewalReminder|annualMonthlyGrant|annualCreditMonths|planCreditsExpiry)\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

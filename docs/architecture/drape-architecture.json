@@ -10598,14 +10598,6 @@
       "file": "shared/creditTopups.ts"
     },
     {
-      "id": "cost:shared/planCancelCopy.ts:YEARLY_SWITCH_CREDITS_SENTENCE",
-      "name": "YEARLY_SWITCH_CREDITS_SENTENCE",
-      "constant": "YEARLY_SWITCH_CREDITS_SENTENCE",
-      "credits": null,
-      "derivedFrom": "\"Your first month of credits lands as soon as the payment settles, replacing what was left of your current allowance, and your credits arrive each month after that.\"",
-      "file": "shared/planCancelCopy.ts"
-    },
-    {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "name": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
       "constant": "PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",

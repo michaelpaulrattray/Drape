@@ -30,7 +30,7 @@ import {
   scheduleSubscriptionChange,
 } from "../stripe/subscriptionSchedule";
 import { formatCustomerShortDate } from "@shared/customerDate";
-import { YEARLY_SWITCH_CREDITS_SENTENCE, planCancelledReceipt } from "@shared/planCancelCopy";
+import { YEARLY_SWITCH_ALLOWANCE_SENTENCE, planCancelledReceipt } from "@shared/planCancelCopy";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -1732,7 +1732,7 @@ export const billingRouter = router({
             : `${planName} now comes with ${dialMonthlyFigure} credits a month.`
           : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
-            ? `You are on ${planName}, billed yearly — the new billing year starts today. ${YEARLY_SWITCH_CREDITS_SENTENCE}`
+            ? `You are on ${planName}, billed yearly — the new billing year starts today. ${YEARLY_SWITCH_ALLOWANCE_SENTENCE}`
             : `You are on ${planName}, billed monthly — the new billing month starts today.`
           : quote.isUpgrade
             /* A yearly upgrade at a month's very edge owes nothing for the

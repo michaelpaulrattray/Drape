@@ -52,7 +52,7 @@ import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
   ANNUAL_CHARGE_SENTENCE,
-  YEARLY_SWITCH_CREDITS_SENTENCE,
+  YEARLY_SWITCH_ALLOWANCE_SENTENCE,
   CANCEL_ANY_TIME_SHORT,
   CANCELLED_PLAN_GRACE_DAYS,
   RENEWAL_BALANCE_SENTENCE,
@@ -145,12 +145,12 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
   });
 
   it("#2152 — nothing promises the full year of credits up front any more, on the confirm step or the receipt", () => {
-    expect(YEARLY_SWITCH_CREDITS_SENTENCE).toContain("first month of credits");
-    expect(YEARLY_SWITCH_CREDITS_SENTENCE).toContain("your credits arrive each month after that");
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toContain("first month of credits");
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toContain("your credits arrive each month after that");
     for (const file of ["client/src/features/billing/ChangePlanModal.tsx", "server/routes/billing.ts"]) {
       const source = read(file);
       expect(source, file).not.toContain("full year of credits");
-      expect(source, file).toContain("${YEARLY_SWITCH_CREDITS_SENTENCE}");
+      expect(source, file).toContain("${YEARLY_SWITCH_ALLOWANCE_SENTENCE}");
     }
   });
 

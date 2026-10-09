@@ -123,7 +123,7 @@ import {
   CANCEL_ANY_TIME_SHORT,
   RENEWAL_BALANCE_SENTENCE,
   RENEWAL_SENTENCE,
-  YEARLY_SWITCH_CREDITS_SENTENCE,
+  YEARLY_SWITCH_ALLOWANCE_SENTENCE,
   cancelPlanBody,
 } from "@shared/planCancelCopy";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
@@ -2436,7 +2436,7 @@ function describeChange(
         /* What comes off, and what is paid for instead when her credits are
            already used (#2023) — chosen by the quote, in one place. */
         yearlySwitchOffsetSentence(quote, formatDollars(quote.immediateCharge)) +
-        ` Your new billing year starts now. ${YEARLY_SWITCH_CREDITS_SENTENCE}`
+        ` Your new billing year starts now. ${YEARLY_SWITCH_ALLOWANCE_SENTENCE}`
       );
     }
     /* ⚠ The refund clause that closed this sentence is GONE (#1936): a switch
