@@ -28,6 +28,7 @@ import {
 } from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
+import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import {
   CastPersonalityCard,
   CastVoiceBadge,
@@ -750,11 +751,15 @@ export default function CastingRoom() {
                       page admits it. The lock is true whatever the checker
                       managed, and it is what the lock and the Klieg ID beside it
                       claim (that tag read IDENTITY LOCKED until #2124).
+                      Since #2124 the finished line names the cast's master look
+                      ("This is Pigman's master look. Every view starts from
+                      it.") — see masterLookLine.ts for why "and shot" waits for
+                      the cinema studio.
                     */}
                     <span className="dpc-master__retention">
                       {data.status === "building"
                         ? `Building ${data.pronouns.possessive} other views…`
-                        : "The face you signed is locked across every view."}
+                        : masterLookLine(data.name)}
                     </span>
                     {/*
                       THE LOCK WEARS THE CAST'S KLIEG ID, NOT A SLOGAN (#2124).
