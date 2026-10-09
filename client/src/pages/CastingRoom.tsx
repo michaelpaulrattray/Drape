@@ -5,6 +5,7 @@ import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 import { creditsReturnedText } from "@shared/refundCopy";
 import { Button, EmptyState, Skeleton } from "@/foundation";
 import { AppChrome } from "@/components/AppChrome";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
@@ -27,6 +28,7 @@ import {
 } from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
+import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import {
   CastPersonalityCard,
   CastVoiceBadge,
@@ -55,6 +57,14 @@ import {
  */
 
 const POLL_MS = 2_500;
+
+/**
+ * What the ? beside the Klieg ID says (#2124), verbatim from the card. It is
+ * both the tooltip and the button's accessible name, so a screen reader hears
+ * the same sentence a pointer sees.
+ */
+const CAST_ID_EXPLAINED =
+  "This cast's Klieg ID. It never changes and belongs only to them — quote it if you ever contact us about this cast.";
 
 /**
  * The drawn placeholders, kept as structure with honest captions.
@@ -739,16 +749,60 @@ export default function CastingRoom() {
                       which is delivered and charged on purpose (3 of 119 read at
                       production, 2026-10-08), and since #1903 nothing on the
                       page admits it. The lock is true whatever the checker
-                      managed, and it is what IDENTITY LOCKED beside it claims.
+                      managed, and it is what the lock and the Klieg ID beside it
+                      claim (that tag read IDENTITY LOCKED until #2124).
+                      Since #2124 the finished line names the cast's master look
+                      ("This is Pigman's master look. Every view starts from
+                      it.") — see masterLookLine.ts for why "and shot" waits for
+                      the cinema studio.
                     */}
                     <span className="dpc-master__retention">
                       {data.status === "building"
                         ? `Building ${data.pronouns.possessive} other views…`
-                        : "The face you signed is locked across every view."}
+                        : masterLookLine(data.name)}
                     </span>
+                    {/*
+                      THE LOCK WEARS THE CAST'S KLIEG ID, NOT A SLOGAN (#2124).
+                      It read IDENTITY LOCKED, which repeated the caption beside
+                      it. His word, 2026-10-09: "maybe it can be their unique
+                      identifier code? with a small tooltip ? that explain what
+                      its for". The id is `data.castId` — the public id
+                      (`models.agencyId`, KI-… or an older MOD-…) the owner's
+                      projection already carries, so nothing is widened. Clicking
+                      it copies it; the ? explains it on hover and on keyboard
+                      focus, through the house tooltip.
+                    */}
                     <span className="dpc-master__locked">
                       <Lock size={11} strokeWidth={2} aria-hidden="true" />
-                      IDENTITY LOCKED
+                      <button
+                        type="button"
+                        className="dpc-master__castid"
+                        aria-label={`Copy Klieg ID ${data.castId}`}
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(data.castId);
+                            toast("Copied");
+                          } catch {
+                            toast.error("Couldn't copy the ID. Select it and copy it by hand.");
+                          }
+                        }}
+                      >
+                        {data.castId}
+                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="dpc-master__idhelp"
+                            aria-label={CAST_ID_EXPLAINED}
+                          >
+                            ?
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" sideOffset={6} className="max-w-[260px]">
+                          {CAST_ID_EXPLAINED}
+                        </TooltipContent>
+                      </Tooltip>
                     </span>
                   </div>
                 </section>

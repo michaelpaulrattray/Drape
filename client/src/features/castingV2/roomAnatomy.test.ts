@@ -39,7 +39,7 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
   { element: "two companion cells", marker: "dpc-master__cell" },
   { element: "MASTER chip", marker: "dpc-master__tag" },
   { element: "attached footer bar", marker: "dpc-master__foot" },
-  { element: "IDENTITY LOCKED", marker: "dpc-master__locked" },
+  { element: "the lock with the Klieg ID", marker: "dpc-master__locked" },
   { element: "refine card", marker: "dpc-rrefine__shell" },
   { element: "refine input", marker: "dpc-rrefine__input" },
   { element: "refine button", marker: "dpc-rrefine__go" },
@@ -253,7 +253,8 @@ describe("the casting room is built to the drawing", () => {
       .split(String.fromCharCode(10))
       .map((line) => line.replace(/\/\/.*$/, ""))
       .join(String.fromCharCode(10));
-    expect(source).toContain("The face you signed is locked across every view.");
+    // #2124: the finished line names the cast's master look (masterLookLine.ts).
+    expect(source).toContain("masterLookLine(data.name)");
     expect(source).not.toMatch(/checked against the face/i);
   });
 });

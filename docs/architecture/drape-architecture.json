@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 53
+      "moduleCount": 54
     },
     {
       "id": "domain:client-shared",
@@ -1467,6 +1467,12 @@
     {
       "id": "module:client/src/features/castingV2/keptStrip.ts",
       "path": "client/src/features/castingV2/keptStrip.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/masterLookLine.ts",
+      "path": "client/src/features/castingV2/masterLookLine.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11159,6 +11165,10 @@
       "path": "client/src/features/castingV2/lostContact.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/masterLookLine.test.ts",
+      "path": "client/src/features/castingV2/masterLookLine.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/modalAnatomy.test.ts",
       "path": "client/src/features/castingV2/modalAnatomy.test.ts"
     },
@@ -11245,6 +11255,10 @@
     {
       "id": "test:client/src/features/castingV2/roomBusy.test.ts",
       "path": "client/src/features/castingV2/roomBusy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/roomCastId.test.ts",
+      "path": "client/src/features/castingV2/roomCastId.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/section10-guard.test.ts",
@@ -21506,12 +21520,22 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/components/ui/tooltip.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/masterLookLine.ts",
       "kind": "imports"
     },
     {

@@ -2426,6 +2426,38 @@
   color: var(--meta);
 }
 
+/* The Klieg ID (#2124): the tag's own face and colour, a button only so it can be copied. */
+.dpc-master__castid {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: copy;
+}
+
+.dpc-master__castid:hover { color: var(--metaStrong); }
+
+/* The small ? that explains the id, on hover and on keyboard focus. */
+.dpc-master__idhelp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  padding: 0;
+  font: 500 9px var(--font-sans);
+  letter-spacing: 0;
+  color: var(--meta);
+  cursor: help;
+}
+
+.dpc-master__idhelp:hover { color: var(--metaStrong); border-color: var(--meta); }
+
 .dpc-master__empty {
   font: 400 11px var(--font-sans);
   color: var(--faint);

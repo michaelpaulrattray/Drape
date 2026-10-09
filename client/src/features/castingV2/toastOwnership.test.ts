@@ -134,6 +134,15 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     match: '"Link copied"',
     because: "The clipboard has no surface at all. Nothing on screen changes.",
   },
+  // ---- CastingRoom.tsx (clicking the Klieg ID on the master — #2124)
+  {
+    match: 'toast("Copied")',
+    because: "The clipboard has no surface at all. Nothing on screen changes when the id is copied.",
+  },
+  {
+    match: "\"Couldn't copy the ID. Select it and copy it by hand.\"",
+    because: "A refused clipboard write changes nothing on screen either, and without it a click that did nothing reads as a click that worked.",
+  },
   {
     match: '"That name could not be saved."',
     because: "The dialog stays open on the old name, which is not a reason.",
