@@ -469,7 +469,7 @@ describe("the signed Cast projection", () => {
 
   it("names where it came from, in public ids only", () => {
     const projection = projectSignedCast({ model: model(), assets: ledger(anchor()), lineage });
-    expect(projection.provenance).toBe("Cast from a sheet on 2 August");
+    expect(projection.provenance).toBe("Created on 2 August");
     expect(projection.lineage.fromCandidatePublicId).toBe("candidate-public");
     expect(projection.lineage.fromRollPublicId).toBe("roll-public");
   });

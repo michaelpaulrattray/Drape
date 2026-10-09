@@ -584,7 +584,7 @@ describe("the retry is priced from the tile's own row, not from the roll-slice c
       seed({ pointsCost: recorded });
       await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
         code: "PRECONDITION_FAILED",
-        message: "That tile can't be retried just now. Nothing was charged — roll the sheet again to cast it.",
+        message: "That tile can't be retried just now. Nothing was charged — roll again to cast it.",
       });
       /* Free AND before the claim: no operation was begun, no money moved, no
          row was touched. A refusal that had already claimed would leave an

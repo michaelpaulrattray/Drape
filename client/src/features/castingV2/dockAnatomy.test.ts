@@ -288,7 +288,7 @@ describe("the sheet dock commits to one candidate", () => {
     expect(room).not.toContain("onDoubleClick");
     expect(room).toContain("setViewingImage");
     // Taking it away is a real control now, not chrome that appears on hover.
-    expect(room).toContain("Download package");
+    expect(room).toContain("Download character sheet");
     expect(room).not.toContain("dpc-media__actions");
     // The viewer still walks the package, master included.
     expect(room).toContain("packageFrames");

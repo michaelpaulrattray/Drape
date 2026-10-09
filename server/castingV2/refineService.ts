@@ -10434,7 +10434,7 @@ async function settleAbandonedRefine(input: {
       */
       throw spokenError({
         code: "INTERNAL_SERVER_ERROR",
-        message: `That refinement arrived, but its settlement was interrupted. Reload the sheet. Operation ${operationId}.`,
+        message: `That refinement arrived, but its settlement was interrupted. Reload the page. Operation ${operationId}.`,
       });
     case "paid_failure":
       throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: RECOVERED_REFINE_SENTENCE });

@@ -83,8 +83,8 @@ export function DestructiveConfirm({
       <p className="dpc-modal__explainer">
         {signed
           ? "Their signed face, all of their views and every take made with them "
-            + "go for good, and the credits it cost don't come back. The sheet they "
-            + "were cast from is untouched."
+            + "go for good, and the credits it cost don't come back. The casting they "
+            + "came from is untouched."
           : "An unsigned draft — nothing has been built on them yet, so only this "
             + "card goes."}
       </p>

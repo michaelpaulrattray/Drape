@@ -101,7 +101,7 @@ describe("the casting room is built to the drawing", () => {
     }
   });
 
-  it("leads the package strip with the Master, and the Master is not generated", async () => {
+  it("leads the character sheet strip with the Master, and the Master is not generated", async () => {
     /*
       Founder ruling: the strip presents SIX things and the first costs nothing.
       The Master is the signed sheet image itself — presentation-only, never
@@ -112,7 +112,7 @@ describe("the casting room is built to the drawing", () => {
       charge for a view nobody ordered and re-render the face she chose.
     */
     const room = await readFile(ROOM, "utf8");
-    const strip = room.slice(room.indexOf("THE PACKAGE"));
+    const strip = room.slice(room.indexOf(">CHARACTER SHEET<"));
     expect(strip).toContain("Master");
     // The Master tile is drawn from the ANCHOR, never from a slot — that is
     // what makes it free, and what stops it being re-rendered.

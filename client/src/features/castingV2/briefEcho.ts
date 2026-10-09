@@ -107,7 +107,7 @@ function categoryPhrase(role: string | null): EchoSpan[] {
   if (!role) return [];
   const lead = /^(a|an|the)\s/i.test(role) ? role : `${article(role)} ${role}`;
   return [
-    { kind: "text", text: "Everyone on this sheet is cast as " },
+    { kind: "text", text: "Everyone in this casting is cast as " },
     { kind: "role", text: lead },
   ];
 }
@@ -122,7 +122,7 @@ function subjectPhrase(locks: BriefFacts["locks"], hasRole: boolean): EchoSpan[]
 
   // With a category already named, the subject continues it rather than
   // opening a second sentence about the same people.
-  const opener = hasRole ? " — " : "Everyone on this sheet is ";
+  const opener = hasRole ? " — " : "Everyone in this casting is ";
 
   // No sex and no age: there is no subject noun phrase to write at all.
   if (!noun && !ageBand) {
@@ -180,7 +180,7 @@ function connector(spans: EchoSpan[], opening: string, continuing: string): Echo
 
 function heritagePhrase(heritage: string[], first: boolean): EchoSpan[] {
   return [
-    { kind: "text", text: first ? "Everyone on this sheet is of " : ", of " },
+    { kind: "text", text: first ? "Everyone in this casting is of " : ", of " },
     { kind: "fact", text: `${heritage.join(" and ")} heritage`, field: "heritage" },
   ];
 }
@@ -242,12 +242,12 @@ function composeSpans(
   }
 
   if (locks.energy) {
-    spans.push(connector(spans, "Everyone on this sheet reads ", ", reading "));
+    spans.push(connector(spans, "Everyone in this casting reads ", ", reading "));
     spans.push({ kind: "fact", text: locks.energy, field: "energy" });
   }
 
   if (locks.look) {
-    spans.push(connector(spans, "Everyone on this sheet is held to ", ", held to "));
+    spans.push(connector(spans, "Everyone in this casting is held to ", ", held to "));
     spans.push({ kind: "fact", text: locks.look, field: "look" });
   }
 
@@ -266,7 +266,7 @@ function composeSpans(
   */
   const stated = facts.statedAccessories ?? [];
   if (stated.length > 0) {
-    spans.push(connector(spans, "Everyone on this sheet is wearing ", ", wearing "));
+    spans.push(connector(spans, "Everyone in this casting is wearing ", ", wearing "));
     stated.forEach((accessory, index) => {
       if (index > 0) {
         spans.push({ kind: "text", text: index === stated.length - 1 ? " and " : ", " });
