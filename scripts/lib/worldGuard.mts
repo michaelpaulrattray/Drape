@@ -36,9 +36,18 @@
  *
  * A shared value between the two worlds would refuse a run that was actually
  * fine. **This DOES arise** — the R2 endpoint and credential are identical in
- * dev and production — which is why callers declare
- * `WORLD_DISCRIMINATING_KEYS` rather than every key they touch. See that
- * constant for the measurement and the rule it produced.
+ * dev and production. So callers keep declaring every key their dependencies
+ * read (the lesson of all three bites, below), and the GUARD itself never
+ * refuses over a key in `WORLD_SHARED_KEYS` — the world-keys measured as
+ * holding one value in both worlds. See `WORLD_DISCRIMINATING_KEYS` for the
+ * measurement and the rule it produced.
+ *
+ * ⚠ Until #2156 that sentence said "callers declare `WORLD_DISCRIMINATING_KEYS`",
+ * and no caller could: the constant was not exported, and it was read only by
+ * this module's own `--prove` cases, which passed it in by hand. Every caller
+ * of `APP_WRITE_PATH_KEYS` — the correct `--service Drape` run — was refused
+ * over the three shared keys, and the one real run that met it routed around
+ * the guard into a directory with no `.env`, where the guard says nothing.
  *
  *   npx tsx scripts/lib/worldGuard.mts --prove   # drives both controls
  */
@@ -136,12 +145,26 @@ export const APP_WRITE_PATH_KEYS = [
  * be — these keys start discriminating and belong in the list below. That is a
  * one-line change, and the sentence above is the test for making it.
  */
-const WORLD_DISCRIMINATING_KEYS = [
+const WORLD_DISCRIMINATING_KEYS: readonly (typeof WORLD_KEYS)[number][] = [
   "DATABASE_URL",
   "MYSQL_PUBLIC_URL",
   "R2_BUCKET",
   "R2_PUBLIC_URL",
-] as const;
+];
+
+/**
+ * THE WORLD-KEYS THAT CANNOT DISCRIMINATE — derived, never listed (working
+ * law 4): every world-key the measurement above did not find differing.
+ *
+ * This is what the mixture check skips, and it is a SUBTRACTION rather than an
+ * intersection on purpose. Intersecting a caller's declaration with
+ * `WORLD_DISCRIMINATING_KEYS` would also silently drop any key a caller
+ * declares that is not a world-key at all; subtracting only the measured-shared
+ * three keeps every other declared key exactly as guarded as it was.
+ */
+const WORLD_SHARED_KEYS: ReadonlySet<string> = new Set(
+  WORLD_KEYS.filter((key) => !WORLD_DISCRIMINATING_KEYS.includes(key)),
+);
 
 /**
  * EVERY KEY THIS PROCESS RELIES ON IS ACTUALLY THERE.
@@ -194,6 +217,14 @@ function findLocalValuesInsideRailway(
   if (!environment.RAILWAY_ENVIRONMENT_NAME) return [];
   const mixed: MixedWorld[] = [];
   for (const key of keys) {
+    /*
+      A key holding the same value in both worlds equals `.env` in a CORRECT
+      run as surely as in a mixed one, so it cannot tell them apart and is
+      never a reason to refuse (#2156). A genuinely mixed run is still caught
+      by the keys that differ — under `--service MySQL` that is R2_BUCKET and
+      R2_PUBLIC_URL, which dotenv fills from `.env` beside the shared three.
+    */
+    if (WORLD_SHARED_KEYS.has(key)) continue;
     const live = environment[key];
     if (live === undefined) continue;
     if (localFile.get(key) === live) mixed.push({ key });
@@ -257,8 +288,11 @@ if (invokedDirectly && process.argv.includes("--prove")) {
     ["R2_BUCKET", "drape-dev"],
     ["DATABASE_URL", "mysql://dev"],
     /* Identical in both worlds — the real shape, so the shared-credential
-       control is driven against a fixture that actually shares. */
+       control is driven against a fixture that actually shares. All three,
+       because a correct `--service Drape` run holds all three. */
+    ["R2_ENDPOINT", "https://the-one-account.r2"],
     ["R2_ACCESS_KEY_ID", "the-one-account"],
+    ["R2_SECRET_ACCESS_KEY", "the-one-secret"],
   ]);
 
   const cases: {
@@ -314,9 +348,32 @@ if (invokedDirectly && process.argv.includes("--prove")) {
         DATABASE_URL: "mysql://production",
         R2_PUBLIC_URL: "https://pub-DEV.r2.dev",
         R2_BUCKET: "drape-dev",
+        R2_ENDPOINT: "https://the-one-account.r2",
+        R2_ACCESS_KEY_ID: "the-one-account",
+        R2_SECRET_ACCESS_KEY: "the-one-secret",
       },
-      keys: WORLD_DISCRIMINATING_KEYS,
+      keys: APP_WRITE_PATH_KEYS,
       expect: 2,
+    },
+    {
+      /*
+        `--service MySQL` with dotenv loaded: the service defines none of the
+        app's write-path keys, so .env fills all six. The three that differ
+        between worlds must still refuse — skipping the shared three is not
+        allowed to soften this case (#2156).
+      */
+      name: "POSITIVE — `--service MySQL`: every write-path key filled from .env",
+      environment: {
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        DATABASE_URL: "mysql://dev",
+        R2_PUBLIC_URL: "https://pub-DEV.r2.dev",
+        R2_BUCKET: "drape-dev",
+        R2_ENDPOINT: "https://the-one-account.r2",
+        R2_ACCESS_KEY_ID: "the-one-account",
+        R2_SECRET_ACCESS_KEY: "the-one-secret",
+      },
+      keys: APP_WRITE_PATH_KEYS,
+      expect: 3,
     },
     {
       name: "NEGATIVE — the same roll run under a service that defines the whole set",
@@ -326,24 +383,29 @@ if (invokedDirectly && process.argv.includes("--prove")) {
         R2_PUBLIC_URL: "https://pub-PROD.r2.dev",
         R2_BUCKET: "drape-production",
       },
-      keys: WORLD_DISCRIMINATING_KEYS,
+      keys: APP_WRITE_PATH_KEYS,
       expect: 0,
     },
     {
       /*
         THE FALSE REFUSAL THAT SENT ME BACK TO THE HEADER. Production and dev
         share the R2 credential, so a correct `--service Drape` run holds three
-        keys equal to `.env` and is entirely fine. Declaring only the
-        discriminating keys is what tells the two cases apart.
+        keys equal to `.env` and is entirely fine. Until #2156 this case passed
+        `WORLD_DISCRIMINATING_KEYS` by hand — a declaration no caller could
+        make — and so proved nothing about the run callers actually make. It
+        now declares what a caller declares, and the guard does the skipping.
       */
-      name: "NEGATIVE — shared credentials: identical in both worlds, so they cannot mislead",
+      name: "NEGATIVE — `--service Drape`: shared credentials equal .env, and cannot mislead",
       environment: {
         RAILWAY_ENVIRONMENT_NAME: "production",
         DATABASE_URL: "mysql://production",
         R2_BUCKET: "drape-production",
+        R2_PUBLIC_URL: "https://pub-PROD.r2.dev",
+        R2_ENDPOINT: "https://the-one-account.r2",
         R2_ACCESS_KEY_ID: "the-one-account",
+        R2_SECRET_ACCESS_KEY: "the-one-secret",
       },
-      keys: WORLD_DISCRIMINATING_KEYS,
+      keys: APP_WRITE_PATH_KEYS,
       expect: 0,
     },
   ];
