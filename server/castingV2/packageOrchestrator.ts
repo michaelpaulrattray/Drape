@@ -104,8 +104,9 @@
  *    across a Sign rather than fifteen with backoff, to reach an answer the
  *    first one gave in full. ⚠ **It is a WAIT change and not a money change:**
  *    a slice that never landed refunds either way, which is why #1212 could
- *    file it but not take it, and the arm below asserts the 8,500 alongside the
- *    call count.
+ *    file it but not take it, and the arm below asserts the Sign's whole
+ *    charge (`CASTING_V2_SIGN_PRICE_CREDITS`, 3,250 credits since #1968)
+ *    alongside the call count.
  * 3. **A lost commit deletes its object.** If the fence refuses — the sweep got
  *    here first — nothing will ever reference those bytes, and the cleanup
  *    worker only deletes keys a row handed it. Best-effort delete now, or it is
@@ -701,7 +702,7 @@ export async function buildCastPackage(
     ⚠ **Each engine is built INSIDE its own promise for the plate's reason.**
     `castingSignSheetEngine(kind)` throws on a missing `FAL_KEY` — the door's own
     refusal, and the right one — and built eagerly in the argument list that
-    throw would be SYNCHRONOUS here, after five audit rows exist and 8,500
+    throw would be SYNCHRONOUS here, after five audit rows exist and 3,250
     credits are gone, with nothing to refund it.
   */
   /*
@@ -735,7 +736,7 @@ export async function buildCastPackage(
       plan.kind,
       /* Built inside the promise, for the plate's own reason: `castingSignSheetEngine`
          throws on a missing FAL_KEY, and eagerly in the argument list that throw
-         would be SYNCHRONOUS here — after five audit rows exist and 8,500
+         would be SYNCHRONOUS here — after five audit rows exist and 3,250
          credits are gone, with nothing to refund it. Now reachable twice. */
       Promise.resolve().then(() => settleSignSheet({
         kind: plan.kind,

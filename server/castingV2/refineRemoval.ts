@@ -390,7 +390,7 @@ export function fingerprintDelta(delta: RefineDelta): string {
 
       Sorted because "hoops, glasses" and "glasses, hoops" are the same recipe,
       and rule 4 says an existing recipe is SELECTED free — a fingerprint that
-      disagreed on order would charge 25 credits for a picture they already
+      disagreed on order would charge 1,750 credits for a picture they already
       have. Sorted HERE ONLY: the prompt keeps their own order, because
       reordering somebody's words to suit a comparison is the record drifting
       from the person.
@@ -415,7 +415,7 @@ export function fingerprintDelta(delta: RefineDelta): string {
     flat.push([`absent.${subject}`, JSON.stringify([...items].sort())]);
   }
   flat.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return flat.map(([key, value]) => `${key}=${value}`).join("");
+  return flat.map(([key, value]) => `${key}=${value}`).join("\u0001");
 }
 
 /**

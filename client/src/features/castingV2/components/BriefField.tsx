@@ -69,7 +69,7 @@ function fitToContent(field: HTMLTextAreaElement) {
  * The guard below is here because it was nearly LOST. The start page's hero was
  * the shadcn `Input`, which wraps its caller's `onKeyDown` in exactly this check
  * (`components/ui/input.tsx`) — so on that page, where Enter dispatches a
- * **160-credit roll**, a Japanese, Chinese or Korean customer pressing Enter to
+ * **1,600-credit roll**, a Japanese, Chinese or Korean customer pressing Enter to
  * accept a candidate mid-sentence never reached the page's handler. Swapping the
  * element for this one took the guard with it and left no failing test, because
  * the only other caller (the sheet) rolls from a BUTTON and so was never exposed.

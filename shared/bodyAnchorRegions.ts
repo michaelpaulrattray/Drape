@@ -61,7 +61,7 @@
  * shoulder blades and reaching past every crop. Where it is genuinely marginal
  * the answer here is **no**, and the reason is a money one: the founder ruled
  * that nothing refuses on visibility (fable-869 §2) and that an invisible-now ask
- * is accepted FREE (fable-876 §1). So a wrong `true` charges 25 credits for a
+ * is accepted FREE (fable-876 §1). So a wrong `true` charges 1,750 credits for a
  * render that returns the picture she already had; a wrong `false` gives away
  * something we could have sold. The first is worse, so marginal reads as absent.
  */

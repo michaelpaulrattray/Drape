@@ -18,7 +18,7 @@ import type { FaceSelectionModel } from "./faceSelection";
  * # Submitting is a NORMAL PAID EDIT, and Esc costs nothing
  *
  * The box calls the same handler the ask box calls — same pipeline, same price,
- * same 25 credits, no preview and no second generation (fable-180: no flow
+ * same 1,750 credits, no preview and no second generation (fable-180: no flow
  * anywhere generates a render the user can walk away from for free). Closing it
  * with Esc or a click outside spends nothing, because nothing has been sent.
  *
@@ -501,10 +501,13 @@ export function FaceRegions({
             The standing law is D-15/D-109 — a paid affordance states its price
             — and it is NOT being repealed. It is being read the way he reads
             it: **the price is stated once per SURFACE, not once per control.**
-            The refine panel under the picture already says *"… · 25 credits
-            each"*, and this popover is a second control on that same surface,
-            so a second chip was the same fact said twice, eight pixels from a
-            picture of somebody's face.
+            The refine panel under the picture said so then, in a note reading
+            *"… · N credits each"* at the refine price of the day; since #1952
+            its Refine button carries the price instead (`Refine · 350
+            credits`, the display figure of a 1,750-credit refine). This
+            popover is a second control on that same surface, so a second chip
+            was the same fact said twice, eight pixels from a picture of
+            somebody's face.
 
             The browser-drive arm that pinned the chip is AMENDED rather than
             deleted, citing this ruling — a founder ruling and a mechanised law

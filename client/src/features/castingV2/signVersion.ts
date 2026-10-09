@@ -48,7 +48,7 @@
  * control, ask a question, or put a decision in front of him.
  */
 
-/** Which of her pictures the 450 credits are about to be spent on. */
+/** Which of her pictures the 3,250 credits of a Sign are about to be spent on. */
 export type SignVersion = "original" | "edit";
 
 /**
