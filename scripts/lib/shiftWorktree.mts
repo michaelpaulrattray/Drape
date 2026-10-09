@@ -1192,6 +1192,22 @@ export function judgeSharedInstall(state: {
  * The lines `add` prints for a skew. Kept here with the judgement so the words
  * a shift reads are driven by the same suite as the verdict — a warning whose
  * text nothing tests is a warning that can lose its command.
+ *
+ * ⚠ **IT STATES THE COUNT AND NEVER THE LIST, AND THAT WAS MEASURED ON THIS
+ * MACHINE RATHER THAN REASONED.** The first shape of this printed every
+ * colliding tree's path. Driven through the real `add`, it printed **36 of
+ * them** — nearly all leftover shells from three days earlier, each a genuine
+ * checkout with a genuine older lockfile, so the judge was right and the output
+ * was a wall. A shift cannot act on 36 paths; it learns to scroll past the
+ * block, which is the same death the CRLF control exists to prevent arriving by
+ * a different door. The arms could not catch it, because an arm picks two
+ * fixtures and two paths read fine — the real output caught it, which is
+ * working law 6 pointed at a terminal instead of a screen.
+ *
+ * So the words carry the two things a shift can act on — **how many** other
+ * trees the repair would move, and **the commands that show which of them is
+ * alive** — and the paths stay on the verdict, where a caller that wants them
+ * can have them and a reader is not drowned in them.
  */
 export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: string): readonly string[] {
   if (reading.kind !== "skew") return [];
@@ -1204,11 +1220,11 @@ export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: st
   if (reading.collisions.length > 0) {
     lines.push(
       "",
-      `  ⚠ BUT THE INSTALL IS SHARED, and ${reading.collisions.length} other tree(s) on this machine are`,
-      "    on a different lockfile — the repair above moves them off theirs:",
-      ...reading.collisions.map((p) => `      ${p}`),
-      "    Check nothing is live in them first (npx tsx scripts/dev-servers.mts reads",
-      "    the running dev servers, which the install would also swap deps under).",
+      `  ⚠ BUT THE INSTALL IS SHARED, and ${reading.collisions.length} other tree(s) on this machine sit`,
+      "    on a different lockfile — the repair above moves every one of them off",
+      "    theirs. Check nothing is live first, and only then install:",
+      "      npx tsx scripts/dev-servers.mts          (what is running, and from where)",
+      "      npx tsx scripts/shift-worktree.mts list  (which trees those are)",
     );
   }
   return lines;

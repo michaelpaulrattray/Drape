@@ -2064,17 +2064,25 @@ describe("sharedInstallWarning — the words a shift reads, driven by the same s
     expect(text).toContain("CI installs fresh");
   });
 
-  it("⚠ NAMES EVERY TREE THE REPAIR WOULD MOVE, and points at the dev-server reader", () => {
-    // This is why the tool reports instead of installing: on the day it landed
-    // the repair would have reddened a live seat on a pre-bump branch and
-    // swapped the dependencies under two running dev servers.
-    const text = lines({
-      kind: "skew",
-      collisions: ["C:/Users/Admin/drape-shift-seat-1", "C:/Users/Admin/drape-shift-seat-2"],
-    });
-    expect(text).toContain("C:/Users/Admin/drape-shift-seat-1");
-    expect(text).toContain("C:/Users/Admin/drape-shift-seat-2");
+  it("⚠ COUNTS THE TREES THE REPAIR WOULD MOVE AND NEVER LISTS THEM, with the commands that show which are alive", () => {
+    // ⚠ MEASURED, NOT REASONED. The first shape printed every colliding path
+    // and the real `add` printed 36 of them — genuine older checkouts, so the
+    // judge was right and the output was a wall nobody reads. The paths stay on
+    // the verdict; the words carry the count and the two commands.
+    const many = Array.from({ length: 36 }, (_, i) => `C:/Users/Admin/drape-shift-stale-${i}`);
+    const text = lines({ kind: "skew", collisions: many });
+    expect(text).toContain("36 other tree(s)");
     expect(text).toContain("scripts/dev-servers.mts");
+    expect(text).toContain("scripts/shift-worktree.mts list");
+    // The wall is the thing being refused, so the arm refuses it by name.
+    expect(text).not.toContain("drape-shift-stale-0");
+    expect(text.split("\n").length).toBeLessThan(14);
+  });
+
+  it("says nothing about other trees when none of them disagree", () => {
+    const text = lines({ kind: "skew", collisions: [] });
+    expect(text).not.toContain("THE INSTALL IS SHARED");
+    expect(text).toContain("pnpm install");
   });
 });
 
