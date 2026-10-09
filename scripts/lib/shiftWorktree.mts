@@ -1438,3 +1438,81 @@ export function sharedInstallWarning(reading: SharedInstallReading, repoRoot: st
   }
   return lines;
 }
+
+/**
+ * ⚠ **THE WORDS FOR THE MOMENT THE RED ACTUALLY ARRIVES — `pnpm preflight`
+ * (#2148, round 3, law 7's sweep on its own fix).**
+ *
+ * `sharedInstallWarning` above is printed ONCE, by `add`, and its own first
+ * line predicts exactly this: *"Expect `pnpm check` and `pnpm preflight` to go
+ * red naming files your diff never touched."* **Then the tool that goes red
+ * said nothing.** So the instance was fixed at the door and the sibling — the
+ * place every seat is sent before a push — was left, which is the class this
+ * repository has paid for before: a warning at `add` time is read by the seat
+ * that cut the tree, and the red is met by whoever is in it an hour later,
+ * often after a `git merge origin/main` that no `add` ever ran.
+ *
+ * Measured on this machine the hour this was written, in a worktree cut from
+ * `origin/main` by the real `add`: `npx tsc --noEmit` reports three errors in
+ * `server/_core/sdk.ts` and `server/routes/googleAuth.ts` — **both auth files,
+ * neither of them anybody's diff** — preflight stops there, and **six of its
+ * nine checks are never reached.** A seat facing that either hand-assembles the
+ * remaining six or skips them; both were recorded on #2148 this week.
+ *
+ * ⚠ **ONE JUDGE, TWO CALLERS, AND THE WORDS DIFFER BECAUSE THE MOMENT DOES.**
+ * `judgeSharedInstall` is the only thing that decides, so there is no second
+ * reader to drift (working law 4). What cannot be shared is the tense: `add`
+ * says *expect a red*, and this is said with the red already on the screen —
+ * printing a prediction of a thing that has just happened is how a block gets
+ * learned as noise.
+ *
+ * ⚠ **AND IT IS PRINTED ONLY UNDER A RED.** A skew line on every green
+ * preflight is the 36-path wall of round 1 arriving by a different door: the
+ * block that is always there is the block nobody reads. `collisions` is
+ * deliberately left empty by the preflight caller too — diagnosing one red is
+ * this function's job, and planning a machine-wide refresh is `add`'s.
+ *
+ * `installOwner` is the tree that owns the real `node_modules`, **read and not
+ * guessed**: a worktree's `node_modules` is a junction, so
+ * `realpathSync` resolves it to the owning tree and the parent of that path is
+ * the tree whose lockfile an install there would produce. That is the fact
+ * `repairTree` needs, and in a worktree it is NOT the tree preflight is running
+ * in — which is precisely the mistake round 2 of this card was about.
+ */
+export function sharedInstallRedDiagnosis(
+  reading: SharedInstallReading,
+  installOwner: string,
+): readonly string[] {
+  if (reading.kind !== "skew") return [];
+  const lines = [
+    "⚠ THIS RED MAY NOT BE YOUR DIFF. The shared node_modules was installed from a",
+    "  DIFFERENT LOCKFILE than this tree's, so `pnpm check` reports errors in files",
+    "  nobody touched. CI installs fresh, so the gate is unaffected — a green gate",
+    "  over this red is the expected pair, not a contradiction.",
+    `  The install lives in ${installOwner} and serves every worktree on this machine.`,
+  ];
+  if (reading.repairTree === "same-lockfile") {
+    lines.push(
+      `  repair: run \`pnpm install\` in ${installOwner} — it is on this tree's lockfile,`,
+      "    so installing there produces the dependency list this tree needs.",
+    );
+  } else if (reading.repairTree === "different-lockfile") {
+    lines.push(
+      `  ⚠ AND \`pnpm install\` IN ${installOwner} WOULD NOT FIX IT. That tree owns the`,
+      "    install and is on a DIFFERENT lockfile from this one, so installing there",
+      "    produces ITS dependency list and this tree stays red. It has to reach this",
+      "    tree's commit FIRST. Both steps, in this order, and never the first alone:",
+      `      git -C ${installOwner} merge --ff-only origin/main`,
+      `      pnpm install        # in ${installOwner}`,
+      "    ⚠ THAT IS THE MACHINE OWNER'S ACT, NOT A SEAT'S — the tree is shared with",
+      "    live sessions, and the first step alone moves it INTO this skew.",
+    );
+  } else {
+    lines.push(
+      `  ⚠ WHETHER AN INSTALL IN ${installOwner} WOULD FIX IT IS UNKNOWN — that tree's`,
+      "    own pnpm-lock.yaml could not be read, and an install takes the lockfile of",
+      "    the tree it runs in.",
+    );
+  }
+  return lines;
+}
