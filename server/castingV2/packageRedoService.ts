@@ -103,7 +103,7 @@ import type { CastViewAngle } from "../../shared/boardTypes";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { recordRefund } from "../casting/atomicCredits";
 import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { flatPressRefundOwed } from "../casting/flatPressCharge";
+import { flatPressRefundOwed, refusedSheetViewRefund } from "../casting/flatPressCharge";
 import {
   beginDirectOperation,
   completeDirectOperationSuccess,
@@ -140,7 +140,7 @@ import {
   signSheetPlan,
   type SignSheetKind,
 } from "./signSheet";
-import { settleSignSheet, type SettledSignSheet } from "./signSheetCoordinator";
+import { settleSignSheet, sheetRefusedByProvider, type SettledSignSheet } from "./signSheetCoordinator";
 import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { castingSignSheetEngine, castingViewConformanceJudge } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
@@ -710,17 +710,47 @@ export async function redoCastPackage(
     }
   }
 
-  const owed = flatPressRefundOwed({
+  const wholeOwed = flatPressRefundOwed({
     chargedCredits: offer.priceCredits,
     delivered,
   });
+  /*
+    ⚠ **AND THE ONE AMENDMENT, ON THIS ROAD AS ON THE SIGN — #2127.** His word
+    of 2026-10-09 (*"im happy with your reccomendation on the sheet refunding
+    etc"*) refunds the views of a sheet the image provider REFUSED, after its
+    free retry; the card asks for the same rule on a Regenerate, and this press
+    renders through the same `settleSignSheet`, so it inherits the free retry
+    and owes the same share: one equal part of what THIS press charged per view
+    it asked for — a fifth of the press per view, today.
+
+    ⚠ **One refund, under the press's own reference, decided here** — the same
+    single settlement the total loss already makes, because a redo's slots move
+    no money. A total loss still pays the whole and never the shares on top.
+    The stated limit: a press that dies after its views fail and before this
+    line is settled by the sweep from the rows, which cannot see a refused
+    sheet, so that crash keeps the shares. The Sign does not have this limit
+    (it refunds a share the moment the view fails).
+  */
+  const share = refusedSheetViewRefund({
+    chargedCredits: offer.priceCredits,
+    promisedViews: claimed.length,
+  });
+  let refusedViews = 0;
+  if (wholeOwed === 0 && share > 0) {
+    for (const angle of failed) {
+      if (await sheetRefusedByProvider(signSheets, angle)) refusedViews += 1;
+    }
+  }
+  const owed = wholeOwed > 0 ? wholeOwed : share * refusedViews;
   let refundedCredits = 0;
   let refundRecorded = true;
   if (owed > 0) {
     const refund = await (dependencies.refund ?? recordRefund)(
       input.userId,
       owed,
-      "No views arrived when you asked for all of them again",
+      wholeOwed > 0
+        ? "No views arrived when you asked for all of them again"
+        : "Some views didn't arrive when you asked for all of them again",
       chargeReference,
     );
     refundedCredits = refund.recorded && !refund.duplicate ? refund.amount : 0;

@@ -32,7 +32,7 @@ import {
   CASTING_V2_SIGN_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import { LEDGER_PER_DISPLAY_CREDIT, displayPrice, displayRefund } from "../../shared/creditDisplay";
-import { flatPressRefundOwed } from "../casting/flatPressCharge";
+import { flatPressRefundOwed, refusedSheetViewRefund } from "../casting/flatPressCharge";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 
 /** HIS NUMBER, typed once in this file and nowhere else in the product. */
@@ -150,5 +150,31 @@ describe("his price for a Sign", () => {
     expect(legacyCharge).not.toBe(CASTING_V2_SIGN_PRICE_CREDITS);
     expect(flatPressRefundOwed({ chargedCredits: legacyCharge, delivered: 0 }))
       .toBe(legacyCharge);
+  });
+});
+
+/*
+  #2127 — HIS ONE AMENDMENT, IN HIS UNITS. A view lost to a sheet the image
+  provider refused gives back one equal share of what the press charged.
+*/
+describe("what a view lost to a refused sheet gives back (#2127)", () => {
+  it("is one fifth of his 650: 130 credits a view, today", () => {
+    const share = refusedSheetViewRefund({
+      chargedCredits: CASTING_V2_SIGN_PRICE_CREDITS,
+      promisedViews: CAST_PACKAGE_VIEWS.length,
+    });
+    expect(displayRefund(share)).toBe(HIS_PRICE_IN_DISPLAY_CREDITS / CAST_PACKAGE_VIEWS.length);
+    /* The card's own figure for cast 71: three views, 390 credits. */
+    expect(displayRefund(share * 3)).toBe(390);
+  });
+
+  it("rounds DOWN, so the shares can never pay past the charge", () => {
+    expect(refusedSheetViewRefund({ chargedCredits: 7, promisedViews: 5 })).toBe(1);
+    expect(refusedSheetViewRefund({ chargedCredits: 10, promisedViews: 5 })).toBe(2);
+  });
+
+  it("owes nothing on a free press or an empty promise", () => {
+    expect(refusedSheetViewRefund({ chargedCredits: 0, promisedViews: 5 })).toBe(0);
+    expect(refusedSheetViewRefund({ chargedCredits: 3250, promisedViews: 0 })).toBe(0);
   });
 });

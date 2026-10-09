@@ -379,6 +379,19 @@ export type SignedCastProjection = {
 export const FAILED_SLOT_CONFESSION = "This view didn't arrive";
 
 /**
+ * THE SAME CONFESSION, FOR A VIEW WHOSE OWN SHARE CAME BACK — #2127.
+ *
+ * His amendment of 2026-10-09 refunds a view lost to a sheet the image
+ * provider refused, and the card's own words for what the customer then sees
+ * are *"a view refunded this way reads as missing with its refund stated,
+ * never as a failure they must pay to fix"*. So the word comes back — but ONLY
+ * where the slot's own marker says money recorded (`refunded > 0`), which is
+ * the one condition under which the sentence #1968 removed is true. Every
+ * other failed view keeps {@link FAILED_SLOT_CONFESSION} unchanged.
+ */
+export const REFUNDED_SLOT_CONFESSION = "This view didn't arrive — refunded";
+
+/**
  * ⚠ **THE TWO SENTENCES THAT USED TO SIT HERE ARE GONE — his ruling,
  * 2026-09-26 (Desk reply 224), on the real strip, verbatim: *"Too heavy — the
  * good tiles have become louder than the broken one… one muted line under the
@@ -769,7 +782,7 @@ export function projectSignedCast(input: {
         label,
         state: "failed-refunded",
         url: null,
-        note: FAILED_SLOT_CONFESSION,
+        note: entry.failure.refunded > 0 ? REFUNDED_SLOT_CONFESSION : FAILED_SLOT_CONFESSION,
         refundedCredits: entry.failure.refunded,
       };
     }

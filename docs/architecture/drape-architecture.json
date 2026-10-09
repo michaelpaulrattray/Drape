@@ -13733,6 +13733,10 @@
       "path": "server/db/castingV2ReferenceLibrary.test.ts"
     },
     {
+      "id": "test:server/db/castingV2SignRefusedShare.test.ts",
+      "path": "server/db/castingV2SignRefusedShare.test.ts"
+    },
+    {
       "id": "test:server/db/castingV2SignSlotReplay.test.ts",
       "path": "server/db/castingV2SignSlotReplay.test.ts"
     },
@@ -31634,6 +31638,11 @@
     },
     {
       "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
       "to": "module:server/casting/identity/anchorSelector.ts",
       "kind": "imports"
     },
@@ -31660,6 +31669,11 @@
     {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2Sign.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {

@@ -57,6 +57,8 @@ const parked: Array<Record<string, unknown>> = [];
 
 let ledgerRows: Array<Record<string, unknown>> = [];
 let fenceWins = true;
+/** What lands in the ledger while the fence waits on the live writer's lock (#2127). */
+let onFence: (() => void) | null = null;
 let cast: Record<string, unknown> | null = null;
 let unsettled: string[] = [];
 let activation: Record<string, unknown> = { type: "activated", modelId: 901, slots: ["frontClose"] };
@@ -85,6 +87,7 @@ vi.mock("../db/generationOperations", () => ({
   DEFAULT_GENERATION_OPERATION_LEASE_MS: 5 * 60 * 1000,
   fenceCastingV2SignOperationIn: vi.fn(async () => {
     journal.push("fence");
+    onFence?.();
     return fenceWins;
   }),
   finalizeFencedCastingV2SignOperation: vi.fn(async (input: Record<string, unknown>) => {
@@ -193,6 +196,7 @@ const operation = {
 };
 
 beforeEach(() => {
+  onFence = null;
   journal.length = 0;
   refunds.length = 0;
   markers.length = 0;
@@ -749,5 +753,31 @@ describe("the receipt counts views sold, not slots sealed", () => {
     // Five, not six. The anchor's slot is not a view anybody bought.
     expect(outcome).toMatchObject({ views: 5 });
     expect(seals.at(-1)).toMatchObject({ outcome: { result: { views: 5 } } });
+  });
+});
+
+/*
+  #2127 — THE LIVE SHARE THAT LANDS BETWEEN THE SWEEP'S FIRST READ AND ITS
+  FENCE. A view lost to a refused sheet refunds its share inside the live
+  writer's `FOR UPDATE` on `running`; the sweep's fence waits for that lock,
+  so the share can commit after the sweep's pre-fence ledger read. Settling
+  from that stale read would pay the whole charge on top of the share.
+*/
+describe("⚠ a share paid while the fence waited is not paid twice (#2127)", () => {
+  it("re-reads the ledger after the fence and refunds only the remainder", async () => {
+    const SHARE = SIGN_PRICE / 5;
+    ledgerRows = [chargeRow()];
+    onFence = () => {
+      ledgerRows = [...ledgerRows, refundRow(`${CHARGE_REFERENCE}:slot:closeUp`, SHARE)];
+    };
+    cast = signedCast;
+    await recoverCastingV2SignOperation(operation, {
+      unsettledAngles: async () => [],
+      promisedAngles: async () => promised,
+      committedAngles: async () => [],
+    });
+
+    const paid = refunds.reduce((sum, entry) => sum + entry.amount, 0);
+    expect(paid, "the charge minus the share the live writer already paid").toBe(SIGN_PRICE - SHARE);
   });
 });
