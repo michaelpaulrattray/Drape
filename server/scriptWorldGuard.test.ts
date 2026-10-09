@@ -1,4 +1,3 @@
-import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -9,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
@@ -126,11 +126,14 @@ function callsTheGuard(source: string): boolean {
  * citers spell them, and the suffix is now residue.
  */
 function trackedScripts(root: string): Set<string> {
-  const listed = execFileSync("git", ["ls-files", "--", "scripts"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
+  /* Through `runHook` like every other child in this suite: a git that never
+     ran throws, and a git that ran and failed is refused by its exit code —
+     both before an empty listing could exempt the tree. (A listing past
+     spawnSync's 1 MB default buffer kills the child, which `runHook` also
+     throws on; the listing is ~24 KB today.) */
+  const run = runHook("git", ["ls-files", "--", "scripts"], { cwd: repoRoot });
+  if (run.status !== 0) throw new Error(`git ls-files exited ${run.status} — the exemption cannot be decided`);
+  const listed = run.stdout;
   const names = listed
     .split(/\r?\n/)
     .filter((line) => line !== "")
@@ -322,9 +325,10 @@ describe("the world guard on the caller's path (#2156)", () => {
         `  console.log("REFUSED " + (error as Error).message);`,
         `}`,
       ].join("\n"));
-      const child = spawnSync(process.execPath, ["--import", tsxLoader, "drive.mts", declaration], {
+      /* Through `runHook`, so a child that never ran THROWS rather than
+         handing back a status this arm could misread (#640). */
+      const child = runHook(process.execPath, ["--import", tsxLoader, "drive.mts", declaration], {
         cwd: dir,
-        encoding: "utf8",
         env: {
           PATH: process.env.PATH ?? "",
           SystemRoot: process.env.SystemRoot ?? "",
