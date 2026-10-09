@@ -13759,6 +13759,10 @@
       "path": "server/db/castingV2SignSlotReplay.test.ts"
     },
     {
+      "id": "test:server/db/castingV2ViewRetryPressRefund.test.ts",
+      "path": "server/db/castingV2ViewRetryPressRefund.test.ts"
+    },
+    {
       "id": "test:server/db/creditTransactionByRef.test.ts",
       "path": "server/db/creditTransactionByRef.test.ts"
     },
@@ -27896,11 +27900,6 @@
     },
     {
       "from": "module:server/castingV2/packageRedoService.ts",
-      "to": "module:server/casting/atomicCredits.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/packageRedoService.ts",
       "to": "module:server/casting/castingCreditCosts.ts",
       "kind": "imports"
     },
@@ -27967,6 +27966,11 @@
     {
       "from": "module:server/castingV2/packageRedoService.ts",
       "to": "module:server/castingV2/viewConformance.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/castingV2/viewRetryRecovery.ts",
       "kind": "imports"
     },
     {
@@ -31751,6 +31755,16 @@
     },
     {
       "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/casting/flatPressCharge.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
       "to": "module:server/casting/identity/anchorSelector.ts",
       "kind": "imports"
     },
@@ -31762,6 +31776,11 @@
     {
       "from": "module:server/db/castingV2ViewRetry.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castingV2ViewRetry.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {
@@ -38696,10 +38715,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/packageRedoService.ts:195",
+      "id": "finding:redeclared-shape:server/castingV2/packageRedoService.ts:212",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/packageRedoService.ts:195",
+      "subject": "server/castingV2/packageRedoService.ts:212",
       "message": "Names 3 of ViewRetryInput's 4 fields (server/castingV2/viewRetryService.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
