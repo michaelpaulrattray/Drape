@@ -1132,6 +1132,62 @@ describe("🟡 3 · the job names are asserted against the workflows, not mirror
       .toEqual(Array.from({ length: total }, (_, i) => i + 1));
   });
 
+  it("⚠ every shard job is the SAME job but for its number — a copy that drifted would gate different bytes", () => {
+    /*
+      ⚠ THIS ARM IS THE PRICE OF THE THIRD SHARD (#2164), AND IT IS PAID HERE
+      RATHER THAN DISCOVERED LATER. The shards are deliberately literal jobs
+      rather than a matrix (`gate.yml` argues why, beside them), so the
+      workflow now holds THREE near-identical forty-line blocks that are
+      copied by hand. Every field in them is load-bearing — the merge ref, the
+      full history the suite's git-reading suites need, the node version, the
+      frozen install — and exactly ONE of them had a guard: `fetch-depth`.
+
+      A copy that lost `ref: ${{ needs.resolve.outputs.ref }}` would gate the
+      branch HEAD instead of the merge with main, which is the defect review
+      finding 5 on PR #87 caught on the dispatch path — a job that passes on
+      bytes nobody proposed. It would go GREEN. Nothing else in the tree would
+      say so, because every other reading here is derived from the job NAMES
+      and a drifted body keeps its name.
+
+      So: lift each `unit-tests-N` block, neutralise the only two things that
+      are allowed to differ (its number and its shard numerator), and require
+      the rest to be identical.
+    */
+    const yaml = readFileSync(join(REPO_ROOT, ".github/workflows/gate.yml"), "utf8");
+    const lines = yaml.split(RE_LINES);
+    const starts = lines
+      .map((line, i) => [i, /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line)] as const)
+      .filter((pair): pair is readonly [number, RegExpExecArray] => pair[1] !== null);
+
+    const shards = unitShardJobNames(gateJobs);
+    const blocks = new Map<string, string>();
+    for (const [i, [start, key]] of starts.entries()) {
+      if (!shards.includes(key[1])) continue;
+      const end = starts[i + 1]?.[0] ?? lines.length;
+      blocks.set(
+        key[1],
+        lines
+          .slice(start, end)
+          .join("\n")
+          .replace(/unit-tests-\d+/g, "unit-tests-N")
+          .replace(/--shard=\d+\/(\d+)/g, "--shard=i/$1")
+          .trimEnd(),
+      );
+    }
+    /* The positive control: the population is every shard the workflow
+       declares, and there is more than one of them — an arm comparing one
+       block with itself, or none with none, would pass by checking nothing
+       (invariant 7). */
+    expect([...blocks.keys()]).toEqual(shards);
+    expect(blocks.size).toBeGreaterThanOrEqual(2);
+
+    const [first, ...rest] = [...blocks.entries()];
+    for (const [name, body] of rest) {
+      expect(body, `${name} has drifted from ${first![0]} — diff them line by line`)
+        .toBe(first![1]);
+    }
+  });
+
   it("REFUSES a workflow that declares no shard at all, rather than reading the silence as green", () => {
     const refusal = refuseNoUnitShards([], ["gate-checks", "static-shapes"], "gate.yml");
     expect(refusal).not.toBeNull();
