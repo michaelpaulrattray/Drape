@@ -1,7 +1,7 @@
 {
-  "edition": 663,
-  "updatedAt": "2026-10-08T22:20:00.000Z",
-  "shift": "Foreman — foreman-20261009-0710",
+  "edition": 664,
+  "updatedAt": "2026-10-09T00:39:58.600Z",
+  "shift": "Foreman — foreman-20261009-0907",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -126,7 +126,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-08T22:13:03.502Z",
+      "readAt": "2026-10-09T00:39:28.325Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -9837,17 +9837,24 @@
     },
     {
       "id": "garment-owns-its-pictures-1961",
-      "status": "in-review",
+      "status": "merged",
       "title": "A garment keeps its own copy of the photograph it came from (#1961)",
       "prNumber": 1979,
       "note": "Repaired and green, waiting on the relay. Also found this pull request's gate had been failing since 07:08Z on a check nobody had read."
     },
     {
       "id": "delivered-view-no-label-1903",
-      "status": "in-review",
+      "status": "merged",
       "title": "A view that arrived carries no label and no free retry — the whole-set button is the remedy (#1903)",
       "prNumber": 2088,
       "note": "Built and green, waiting on the relay. Money surface: it withdraws a free retry, so the rows it touches were counted on production first — six, all yours."
+    },
+    {
+      "id": "sign-flat-price-1968",
+      "status": "in-review",
+      "title": "Signing costs one flat 650 credits, and credits come back only if nothing arrives (#1968)",
+      "prNumber": 2105,
+      "note": "Built and green, waiting on the relay. Money surface: it stops refunding a view at a time, so a Sign already running when it ships still gets back exactly what it paid."
     }
   ],
   "problems": [
@@ -10259,7 +10266,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-08T22:13:03.501Z",
+    "readAt": "2026-10-09T00:39:28.325Z",
     "items": [
       {
         "issueNumber": 1903,
@@ -10318,23 +10325,8 @@
         }
       },
       {
-        "issueNumber": 1966,
-        "title": "A Sign sheet that never arrives is asked for again, spaced, before its views are refunded (his word on #1904)",
-        "urgent": false
-      },
-      {
         "issueNumber": 1968,
         "title": "Sign and the whole-set redo are each a flat 650 credits with no per-view refund (his word 2026-10-08, after Cid's reprice)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2089,
-        "title": "Deliver every view as it comes: no per-view 'Unchecked · Try again' under the package — the house retries catastrophic failures, and Regenerate all views is the customer's remedy",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2090,
-        "title": "Rename the whole-set button: \"Ask for all views again · 650 credits\" → \"Regenerate · 650 credits\"",
         "urgent": false
       }
     ]
