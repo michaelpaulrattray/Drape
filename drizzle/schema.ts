@@ -304,6 +304,17 @@ export const credits = mysqlTable("points", {
   // (`updateUserSubscription`). NULL means nothing is due to expire. Only the
   // plan's part of the balance expires; top-ups are never touched.
   planCreditsExpireAt: timestamp("planCreditsExpireAt"),
+  // ⚠ THE PAID YEAR A YEARLY PLAN'S MONTHLY GRANTS BELONG TO (#2152, his
+  // ruling on #2159: "yearly credits apply month by month"; migration 0077).
+  // Written only by the paid annual invoice, in the same write that lands the
+  // year's first month; read by `server/billing/annualMonthlyGrant.ts`, which
+  // grants months 1..11 at their boundaries. How many months have landed is
+  // read off the ledger, never stored. A monthly invoice, a cancellation and
+  // the move to Free clear all four. NULL means no year is in flight.
+  annualGrantSubscriptionId: varchar("annualGrantSubscriptionId", { length: 64 }),
+  annualGrantPeriodStart: timestamp("annualGrantPeriodStart"),
+  annualGrantPeriodEnd: timestamp("annualGrantPeriodEnd"),
+  annualGrantMonthlyCredits: int("annualGrantMonthlyCredits"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1905,6 +1916,11 @@ export const planChangeSettlements = mysqlTable("plan_change_settlements", {
   // The client's request id, carried for tracing; the ledger is keyed on the
   // invoice id, which is one-per-change whatever the client retries.
   clientRequestId: varchar("clientRequestId", { length: 64 }),
+  // The month's allowance an instant upgrade on a YEARLY plan installs on the
+  // paid year when this invoice is paid (#2152, migration 0077) — so the
+  // months still to come arrive at the plan that was paid for. NULL on every
+  // other settlement.
+  annualMonthlyCredits: int("annualMonthlyCredits"),
   // pending → applied (invoice settled, credits moved) or void (the invoice
   // will never settle — final payment failure). Never deleted.
   status: mysqlEnum("status", ["pending", "applied", "void"]).default("pending").notNull(),

@@ -378,11 +378,13 @@ describe("2 · the invoice and our own row name DIFFERENT plans", () => {
     expect(rolloverAskedAbout()).toBe(PLAIN_PLAN);
   });
 
-  it("⚠ a YEAR bought multiplies the BILLED rung's allowance, twelve times over", async () => {
+  it("⚠ a YEAR bought is sized by the BILLED rung — this month and every month of the paid year", async () => {
     planTierOnRecord.value = DIAL_PLAN;
     subscriptionAt(0);
     await deliver(renewal({ days: 365, billedPlan: PLAIN_PLAN }));
-    expect(grantedCredits()).toBe(allowanceOf(PLAIN_PLAN, 12));
+    /* One month now, the other eleven monthly (#2152) — all at the billed rung. */
+    expect(grantedCredits()).toBe(allowanceOf(PLAIN_PLAN));
+    expect(refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(allowanceOf(PLAIN_PLAN));
   });
 
   it("a billed plan that AGREES with the row grants the same figure it always did", async () => {

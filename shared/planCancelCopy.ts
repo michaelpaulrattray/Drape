@@ -95,3 +95,21 @@ export const CANCEL_ANY_TIME_SHORT =
 export const RENEWAL_BALANCE_SENTENCE =
   "Unused plan credits carry into next month, up to one month's worth. "
   + `If you cancel, you have ${CANCELLED_PLAN_GRACE_DAYS} days to use them. Top-ups stay on your balance.`;
+
+/**
+ * #2152, the Desk row CPM:2268 — the compare table's line under a yearly
+ * price, and it now says the second half of the rule too: a yearly plan is
+ * CHARGED once a year and its credits ARRIVE month by month (his ruling on
+ * #2159, 2026-10-10: *"yearly credits apply month by month"*).
+ */
+export const ANNUAL_CHARGE_SENTENCE =
+  "Annual plans are charged once a year. Your credits arrive each month.";
+
+/**
+ * #2152 — what a switch to yearly billing does to credits, said once for the
+ * confirm step and the receipt alike. It used to promise *"the full year of
+ * credits lands as soon as the payment settles"*, which month-by-month
+ * granting made false.
+ */
+export const YEARLY_SWITCH_CREDITS_SENTENCE =
+  "Your first month of credits lands as soon as the payment settles, replacing what was left of your current allowance, and your credits arrive each month after that.";

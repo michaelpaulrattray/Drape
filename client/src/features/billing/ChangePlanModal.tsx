@@ -119,9 +119,11 @@ import { Button } from "@/foundation";
 import { ModalScrim } from "@/foundation/CastingModal";
 import { ConfirmDialog } from "@/foundation";
 import {
+  ANNUAL_CHARGE_SENTENCE,
   CANCEL_ANY_TIME_SHORT,
   RENEWAL_BALANCE_SENTENCE,
   RENEWAL_SENTENCE,
+  YEARLY_SWITCH_CREDITS_SENTENCE,
   cancelPlanBody,
 } from "@shared/planCancelCopy";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
@@ -2268,7 +2270,7 @@ function CompareGrid({
           each CARD carries `billed yearly` under its price. A table that omits
           the thing the cards state is the same lie a step quieter.
         */}
-        {interval === "annual" ? " Annual plans are charged once a year." : ""}
+        {interval === "annual" ? ` ${ANNUAL_CHARGE_SENTENCE}` : ""}
         {/*
           ⚠ **AND IT POINTS AT THE RUNGS THAT HAVE NO COLUMN — the design's §4,
           AND THE SLIDER'S CLAUSE HAS LANDED WITH THE SLIDER (#1832).**
@@ -2434,9 +2436,7 @@ function describeChange(
         /* What comes off, and what is paid for instead when her credits are
            already used (#2023) — chosen by the quote, in one place. */
         yearlySwitchOffsetSentence(quote, formatDollars(quote.immediateCharge)) +
-        ` Your new billing year ` +
-        `starts now, and the full year of credits lands as soon as the payment settles, ` +
-        `replacing what was left of this cycle's allowance.`
+        ` Your new billing year starts now. ${YEARLY_SWITCH_CREDITS_SENTENCE}`
       );
     }
     /* ⚠ The refund clause that closed this sentence is GONE (#1936): a switch

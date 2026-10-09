@@ -28,6 +28,7 @@ import {
   planCreditSliderPriceInCents,
 } from "@shared/planCreditSlider";
 import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
+import { grantedShareMonths } from "../billing/annualCreditMonths";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import {
@@ -955,6 +956,21 @@ export function quotePlanChange(
    * there: no charge, which is the road as it stood before #1965.
    */
   planAllowanceLeftLedger?: number,
+  /**
+   * ⚠ **HOW MANY OF THE CURRENT YEAR'S MONTHS HAVE ACTUALLY BEEN GRANTED
+   * (#2152, his ruling on #2159: *"yearly credits apply month by month"*)** —
+   * read off the ledger by the caller (`getAnnualYearProgress`). A yearly
+   * plan's credits no longer arrive whole on day one, so the share of them
+   * that covers unused time is what was handed over minus what the elapsed
+   * time used (`grantedShareMonths`), and every credit figure below — the
+   * switch's take-back, the upgrade's top-up, the spent-share charge — is
+   * priced in that share instead of in the whole year.
+   *
+   * Absent or `null` means the period was granted WHOLE: every monthly plan,
+   * and a yearly one granted up front before this change. The figures are
+   * then exactly what they were.
+   */
+  annualMonthsGranted?: number | null,
 ): PlanChangeQuote {
   // Absent means KEEP the interval the customer is on. This is also the fix
   // for the sibling defect the #664 read found: the old update path minted
@@ -1012,6 +1028,16 @@ export function quotePlanChange(
     SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents;
 
   const cycleMonths = monthsBought(stripeIntervalOf(state.currentInterval));
+  /* ⚠ THE PERIOD WAS GRANTED WHOLE UNLESS THE CALLER SAYS OTHERWISE (#2152).
+     `null` here takes every expression below down its pre-#2152 road, written
+     in the same order, so a monthly plan's figures are the same to the last
+     credit. */
+  const monthsGranted =
+    annualMonthsGranted === undefined || annualMonthsGranted === null || annualMonthsGranted >= cycleMonths
+      ? null
+      : Math.max(0, Math.floor(annualMonthsGranted));
+  const grantedShare =
+    monthsGranted === null ? null : grantedShareMonths(cycleMonths, monthsGranted, daysRemaining, totalDays);
   const creditAdjustment =
     kind === "same-interval"
       ? calculateCreditAdjustment(
@@ -1026,6 +1052,10 @@ export function quotePlanChange(
           {
             currentExtraMonthlyCredits: planCreditSliderLedgerCredits(currentCreditUnits),
             targetExtraMonthlyCredits: planCreditSliderLedgerCredits(targetCreditUnits),
+            /* A yearly plan granted month by month tops up only the month in
+               hand; the months still to come arrive at the new plan through
+               the paid year's own month (#2152). */
+            ...(grantedShare === null ? {} : { grantedShareMonths: grantedShare }),
           },
         )
       : 0;
@@ -1046,10 +1076,18 @@ export function quotePlanChange(
                allowance on the balance with its money already returned. That
                is the credit-minting loop the #664 review found, one line item
                over. */
-            (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
-              + planCreditSliderLedgerCredits(currentCreditUnits)) *
-              cycleMonths *
-              (daysRemaining / totalDays),
+            grantedShare === null
+              ? (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
+                + planCreditSliderLedgerCredits(currentCreditUnits)) *
+                cycleMonths *
+                (daysRemaining / totalDays)
+              /* ⚠ ONLY WHAT WAS HANDED OVER CAN BE TAKEN BACK (#2152). On a
+                 yearly plan granted month by month the months not yet begun
+                 were never on the balance — Stripe refunds their money, and
+                 there are no credits behind it to return. */
+              : (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
+                + planCreditSliderLedgerCredits(currentCreditUnits)) *
+                grantedShare,
           ),
         )
       : 0;
@@ -1087,9 +1125,19 @@ export function quotePlanChange(
       : Math.max(0, Math.floor(planAllowanceLeftLedger));
   const spentShareCredits =
     !deferred && kind === "interval-switch" ? Math.max(0, creditUnwind - allowanceLeft) : 0;
+  /* ⚠ PRICED AT THE RATE OF THE CREDITS IT STANDS FOR (#2152). Granted whole,
+     the take-back and `unusedValue` are the same share of the same period, so
+     the rate is `unusedValue / creditUnwind` exactly as before. Granted month
+     by month, `unusedValue` also refunds months that were never handed over;
+     only the money of the share that WAS handed over prices a spent credit,
+     or a customer would be charged for months they never received. */
+  const unusedValueOfGrantedShare =
+    grantedShare === null
+      ? unusedValue
+      : Math.floor((currentPlanPrice * grantedShare) / cycleMonths);
   const spentShareCharge =
     spentShareCredits > 0 && creditUnwind > 0
-      ? Math.floor((unusedValue * spentShareCredits) / creditUnwind)
+      ? Math.floor((unusedValueOfGrantedShare * spentShareCredits) / creditUnwind)
       : 0;
   const keptUnwind = creditUnwind - spentShareCredits;
   const charged = proratedAmount + spentShareCharge;
@@ -1605,15 +1653,29 @@ export function calculateCreditAdjustment(
    * credits. Defaulting both to 0 keeps every existing caller and its arms
    * exactly as they were.
    */
-  extra: { currentExtraMonthlyCredits?: number; targetExtraMonthlyCredits?: number } = {},
+  extra: {
+    currentExtraMonthlyCredits?: number;
+    targetExtraMonthlyCredits?: number;
+    /**
+     * The months' worth of the current period still on the balance for unused
+     * time (#2152, `grantedShareMonths`) — given on a yearly plan granted month
+     * by month, where it replaces `monthsInCycle × daysRemaining / totalDays`.
+     * Absent keeps that product, and every existing caller with it.
+     */
+    grantedShareMonths?: number;
+  } = {},
 ): number {
   const currentCredits =
     PLAN_TIERS[currentPlan].monthlyCredits + (extra.currentExtraMonthlyCredits ?? 0);
   const newCredits =
     PLAN_TIERS[newPlan].monthlyCredits + (extra.targetExtraMonthlyCredits ?? 0);
 
-  const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
-  const fraction = daysRemaining / totalDays;
+  const deltaForCycle =
+    extra.grantedShareMonths === undefined
+      ? (newCredits - currentCredits) * monthsInCycle
+      : newCredits - currentCredits;
+  const fraction =
+    extra.grantedShareMonths === undefined ? daysRemaining / totalDays : extra.grantedShareMonths;
 
   // Both arms land on a whole number of DISPLAY credits (#1604 done-when 2).
   // `wholeDisplayLedger` truncates toward zero, which is the direction each arm

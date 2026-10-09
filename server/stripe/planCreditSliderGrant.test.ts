@@ -237,18 +237,19 @@ describe("1 · the grant is base + the dial's steps", () => {
     );
   });
 
-  it("⚠ a YEAR bought multiplies the WHOLE allowance, not just the plan", async () => {
+  it("⚠ a YEAR bought grants the WHOLE month now, and the paid year's month carries the steps too", async () => {
     /*
-      The arm most worth having in this file. `(base + steps) × 12` and
-      `base × 12 + steps` differ by eleven months of the add-on — on a dial at
-      20 steps that is 5.5 million ledger credits a customer paid for and did
-      not get, once a year, with no error anywhere.
+      The arm most worth having in this file. A year's credits arrive month by
+      month since #2152 (his ruling on #2159), so the eleven months still to
+      come are sized by the paid year's month — and a month that left the dial
+      out would short every one of them by the add-on, once a month, with no
+      error anywhere.
     */
     subscriptionAt(20);
     await deliver(renewal(365));
-    expect(grantedCredits()).toBe(
-      (PLAN_TIERS[PLAN].monthlyCredits + planCreditSliderLedgerCredits(20)) * 12,
-    );
+    const month = PLAN_TIERS[PLAN].monthlyCredits + planCreditSliderLedgerCredits(20);
+    expect(grantedCredits()).toBe(month);
+    expect(refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(month);
   });
 
   it("the dial at the bottom grants exactly the plan — the control", async () => {
@@ -384,13 +385,16 @@ describe("4 · the invoice is the artifact, and it disagrees with the dial", () 
     expect(grantedCredits()).toBe(expectedFor(40));
   });
 
-  it("⚠ a YEAR bought off the invoice multiplies the whole allowance", async () => {
+  it("⚠ a YEAR bought off the invoice sizes its month by the invoice's steps", async () => {
     /* The annual leg of the same defect: eleven months of the add-on ride on
        getting the multiplication on the right side of the addition, and the
        steps now come off the invoice. */
     subscriptionAt(0);
     await deliver(billedRenewal(365, 20));
-    expect(grantedCredits()).toBe(expectedFor(20, 12));
+    /* One month now (#2152), and the year's month the invoice's steps — not
+       the live subscription's zero. */
+    expect(grantedCredits()).toBe(expectedFor(20));
+    expect(refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(expectedFor(20));
   });
 
   it("a quantity past the ceiling on the INVOICE is clamped too", async () => {

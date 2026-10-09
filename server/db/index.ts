@@ -99,6 +99,10 @@ export {
   getPlanCreditsExpiryCandidates,
   expirePlanCredits,
   planCreditsExpiryLedgerRef,
+  // A yearly plan's credits, month by month (#2152, his ruling on #2159).
+  getAnnualGrantCandidates,
+  getAnnualYearProgress,
+  installAnnualMonthlyCredits,
   // The yearly renewal reminder's shortlist and its claim (#1941).
   getYearlyRenewalReminderCandidates,
   claimRenewalReminder,
@@ -107,6 +111,8 @@ export {
 export type {
   RenewalReminderCandidate,
   RenewalReminderClaim,
+  AnnualGrantCandidate,
+  AnnualGrantYear,
 } from "./billing";
 
 // Plan-change credit settlements (#711)

@@ -6,6 +6,8 @@ import {
   addCredits,
   deductCredits,
   getUserCredits,
+  getAnnualYearProgress,
+  installAnnualMonthlyCredits,
 } from "../db";
 import {
   getOrCreateStripeCustomer,
@@ -28,7 +30,7 @@ import {
   scheduleSubscriptionChange,
 } from "../stripe/subscriptionSchedule";
 import { formatCustomerShortDate } from "@shared/customerDate";
-import { planCancelledReceipt } from "@shared/planCancelCopy";
+import { YEARLY_SWITCH_CREDITS_SENTENCE, planCancelledReceipt } from "@shared/planCancelCopy";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -151,6 +153,35 @@ function planChangeRefusal(
 async function planAllowanceLeftFor(userId: number): Promise<number> {
   const row = await getUserCredits(userId);
   return row ? planAllowanceRemaining(row) : 0;
+}
+
+/**
+ * HOW MANY OF THE CURRENT YEAR'S MONTHS HAVE BEEN GRANTED, FOR THE QUOTE
+ * (#2152, his ruling on #2159: *"yearly credits apply month by month"*).
+ *
+ * - `null` — the period was granted whole: a monthly plan, or a yearly one
+ *   granted up front before this change (no year on the row). The quote then
+ *   prices exactly as it always has.
+ * - a count — read off the ledger by `getAnnualYearProgress`, never off the
+ *   calendar, so a worker running late can only make the take-back SMALLER
+ *   (what was not handed over is not taken back) and never charges a customer
+ *   for a month they were not given.
+ * - `0` — a year IS on the row but it is not the period Stripe says is current
+ *   (the new year's invoice has not landed yet): nothing of this period has
+ *   been handed over.
+ */
+async function annualMonthsGrantedFor(
+  userId: number,
+  state: { currentInterval: "monthly" | "annual"; periodStartSec: number },
+  subscriptionId: string,
+): Promise<number | null> {
+  if (state.currentInterval !== "annual") return null;
+  const year = await getAnnualYearProgress(userId);
+  if (!year) return null;
+  const sameYear =
+    year.subscriptionId === subscriptionId
+    && Math.abs(Math.floor(year.periodStart.getTime() / 1000) - state.periodStartSec) <= 60;
+  return sameYear ? year.monthsGranted : 0;
 }
 
 /**
@@ -834,6 +865,8 @@ export const billingRouter = router({
         /* The same read `changePlan` takes (#1965), so "due today" here and
            the charge there are one arithmetic. */
         await planAllowanceLeftFor(ctx.user.id),
+        /* And the same months-granted read (#2152), for the same reason. */
+        await annualMonthsGrantedFor(ctx.user.id, billingState, subscription.stripeSubscriptionId),
       );
 
       return {
@@ -1121,6 +1154,11 @@ export const billingRouter = router({
         });
       }
 
+      const annualMonthsGranted = await annualMonthsGrantedFor(
+        ctx.user.id,
+        billingState,
+        subscription.stripeSubscriptionId,
+      );
       const quote = quotePlanChange(
         billingState,
         input.newPlan,
@@ -1132,6 +1170,10 @@ export const billingRouter = router({
            (#1965). Read before the charge, from the same helper the preview
            reads it through. */
         await planAllowanceLeftFor(ctx.user.id),
+        /* ⚠ How much of a yearly plan's year has actually been handed over
+           (#2152) — the take-back, the upgrade's top-up and the spent-share
+           charge are all priced in it. */
+        annualMonthsGranted,
       );
 
       /*
@@ -1402,8 +1444,26 @@ export const billingRouter = router({
       const creditsToReturn =
         quote.kind === "interval-switch" ? quote.creditUnwind : Math.max(0, -creditAdjustment);
 
+      /* ⚠ AN INSTANT CHANGE ON A YEARLY PLAN GRANTED MONTH BY MONTH ALSO
+         RAISES THE MONTHS STILL TO COME (#2152, his ruling on #2159: "yearly
+         credits apply month by month"). The grant above covers the month in
+         hand; the rest of the year is paid for too, so the paid year's month
+         becomes the new plan's — installed by the settlement when this
+         change's invoice is PAID, never before. Only an increase reaches here
+         (a decrease is deferred to the renewal, whose invoice starts a new
+         year at the new plan). `null` when there is no year in flight: a
+         monthly plan, or a year granted up front. */
+      const annualMonthAfterChange =
+        annualMonthsGranted !== null && quote.kind === "same-interval"
+          ? monthlyLedgerCreditsFor(input.newPlan as PlanTier, quote.targetCreditUnits)
+          : null;
+
       const direction: "grant" | "unwind" | null =
-        creditAdjustment > 0 ? "grant" : creditsToReturn > 0 ? "unwind" : null;
+        creditAdjustment > 0 || (annualMonthAfterChange !== null && creditAdjustment >= 0)
+          ? "grant"
+          : creditsToReturn > 0
+            ? "unwind"
+            : null;
       let creditSettlement: "applied" | "pending" | "none" = "none";
 
       if (direction) {
@@ -1426,13 +1486,18 @@ export const billingRouter = router({
             "[Billing] plan change produced NO invoice — applying the credit move immediately (legacy road)",
           );
           if (direction === "grant") {
-            const creditResult = await addCredits(
-              ctx.user.id,
-              settlementCredits,
-              "bonus",
-              description,
-              input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
-            );
+            const creditResult = settlementCredits > 0
+              ? await addCredits(
+                  ctx.user.id,
+                  settlementCredits,
+                  "bonus",
+                  description,
+                  input.clientRequestId ? `plan-change:${input.clientRequestId}` : undefined,
+                )
+              : { success: true };
+            if (creditResult.success && annualMonthAfterChange !== null) {
+              await installAnnualMonthlyCredits(ctx.user.id, annualMonthAfterChange);
+            }
             if (!creditResult.success) {
               throw new TRPCError({
                 code: "INTERNAL_SERVER_ERROR",
@@ -1479,6 +1544,7 @@ export const billingRouter = router({
             credits: settlementCredits,
             description,
             clientRequestId: input.clientRequestId,
+            annualMonthlyCredits: direction === "grant" ? annualMonthAfterChange : null,
           });
           if (!recorded.success) {
             if (direction === "grant") {
@@ -1655,10 +1721,15 @@ export const billingRouter = router({
             : `${planName} now comes with ${dialMonthlyFigure} credits a month.`
           : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
-            ? `You are on ${planName}, billed yearly — the new billing year starts today, and the full year of credits lands as soon as the payment settles, replacing what was left of your old cycle's allowance.`
+            ? `You are on ${planName}, billed yearly — the new billing year starts today. ${YEARLY_SWITCH_CREDITS_SENTENCE}`
             : `You are on ${planName}, billed monthly — the new billing month starts today.`
           : quote.isUpgrade
-            ? creditSettlement === "pending"
+            /* A yearly upgrade at a month's very edge owes nothing for the
+               month in hand (#2152); "0 bonus credits added" would be a figure
+               with nothing behind it. */
+            ? creditAdjustment <= 0
+              ? `Upgraded to ${planName}!`
+              : creditSettlement === "pending"
               ? `Upgraded to ${planName}! Your ${formatCredits(displayBalance(creditAdjustment))} bonus credits land as soon as the payment settles.`
               : `Upgraded to ${planName}! ${formatCredits(displayBalance(creditAdjustment))} bonus credits added.`
             : `You are on ${planName}.`;

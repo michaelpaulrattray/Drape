@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 57
+      "moduleCount": 59
     },
     {
       "id": "domain:wardrobe",
@@ -2877,6 +2877,18 @@
     {
       "id": "module:server/auditLog.ts",
       "path": "server/auditLog.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/billing/annualCreditMonths.ts",
+      "path": "server/billing/annualCreditMonths.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/billing/annualMonthlyGrant.ts",
+      "path": "server/billing/annualMonthlyGrant.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -10054,6 +10066,11 @@
   ],
   "workers": [
     {
+      "id": "worker:startAnnualMonthlyGrantSweep",
+      "name": "startAnnualMonthlyGrantSweep",
+      "startedFrom": "server/_core/index.ts"
+    },
+    {
       "id": "worker:startCandidateRetentionSweep",
       "name": "startCandidateRetentionSweep",
       "startedFrom": "server/_core/index.ts"
@@ -10579,6 +10596,14 @@
       "credits": 25000,
       "derivedFrom": "TOPUP_UNIT_DISPLAY_CREDITS * LEDGER_PER_DISPLAY_CREDIT",
       "file": "shared/creditTopups.ts"
+    },
+    {
+      "id": "cost:shared/planCancelCopy.ts:YEARLY_SWITCH_CREDITS_SENTENCE",
+      "name": "YEARLY_SWITCH_CREDITS_SENTENCE",
+      "constant": "YEARLY_SWITCH_CREDITS_SENTENCE",
+      "credits": null,
+      "derivedFrom": "\"Your first month of credits lands as soon as the payment settles, replacing what was left of your current allowance, and your credits arrive each month after that.\"",
+      "file": "shared/planCancelCopy.ts"
     },
     {
       "id": "cost:shared/planCreditSlider.ts:PLAN_CREDIT_SLIDER_CENTS_PER_UNIT",
@@ -11780,6 +11805,10 @@
     {
       "id": "test:server/billing.test.ts",
       "path": "server/billing.test.ts"
+    },
+    {
+      "id": "test:server/billing/annualMonthlyGrant.test.ts",
+      "path": "server/billing/annualMonthlyGrant.test.ts"
     },
     {
       "id": "test:server/billing/planCreditsExpiry.test.ts",
@@ -14972,6 +15001,10 @@
     {
       "id": "test:server/stripe/annualInvoiceGrant.test.ts",
       "path": "server/stripe/annualInvoiceGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/annualMonthlyQuote.test.ts",
+      "path": "server/stripe/annualMonthlyQuote.test.ts"
     },
     {
       "id": "test:server/stripe/annualPlanChange.test.ts",
@@ -22372,6 +22405,11 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/billing/annualMonthlyGrant.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/billing/planCreditsExpiry.ts",
       "kind": "imports"
     },
@@ -22628,6 +22666,36 @@
     {
       "from": "module:server/auditLog.ts",
       "to": "module:shared/auditActionCategories.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/billing/annualCreditMonths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/db/billing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/db/credits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/billing/annualMonthlyGrant.ts",
+      "to": "module:server/stripe/stripeService.ts",
       "kind": "imports"
     },
     {
@@ -31277,6 +31345,11 @@
     },
     {
       "from": "module:server/db/billing.ts",
+      "to": "module:server/billing/annualCreditMonths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/billing.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -36312,6 +36385,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/billing/annualCreditMonths.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -36413,6 +36491,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/billing/planCreditsExpiry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/db/billing.ts",
       "kind": "imports"
     },
     {

@@ -52,6 +52,7 @@ import {
   deductCredits,
   getUserCredits,
   getCreditTransactionByRef,
+  installAnnualMonthlyCredits,
   recordPlanChangeSettlement,
   getPlanChangeSettlementByInvoice,
   resolvePlanChangeSettlement,
@@ -120,13 +121,31 @@ export async function applyPlanChangeSettlement(
   const ref = settlementLedgerRef(stripeInvoiceId);
 
   if (row.direction === "grant") {
-    const result = await addCredits(row.userId, row.credits, "bonus", row.description, ref);
+    /* A yearly upgrade landing at a month's very edge owes no credits for the
+       month in hand and still owes the higher months to come (#2152), so a
+       grant of nothing is recorded and moves nothing. */
+    const result = row.credits > 0
+      ? await addCredits(row.userId, row.credits, "bonus", row.description, ref)
+      : { success: true as const, duplicate: false };
     if (!result.success && !result.duplicate) {
       log.error(
         { stripeInvoiceId, userId: row.userId, error: result.error },
         "[Settlement] grant application failed — leaving the row pending so a redelivery retries",
       );
       return { outcome: "failed", error: result.error ?? "grant failed" };
+    }
+    /* ⚠ THE MONTHS STILL TO COME ARRIVE AT THE PLAN THAT WAS PAID FOR (#2152,
+       his ruling on #2159: "yearly credits apply month by month"). An upgrade
+       on a yearly plan is paid for the rest of the YEAR, and the grant above
+       covers only the month in hand — so the paid year's month is raised
+       here, when the money settles, and never before. Idempotent: a replay
+       sets the same figure. A failure leaves the row pending so the
+       redelivery tries again; the grant above is a typed duplicate then. */
+    if (row.annualMonthlyCredits !== null && row.annualMonthlyCredits !== undefined) {
+      const installed = await installAnnualMonthlyCredits(row.userId, row.annualMonthlyCredits);
+      if (!installed) {
+        return { outcome: "failed", error: "could not raise the paid year's month" };
+      }
     }
     await resolvePlanChangeSettlement(stripeInvoiceId, "applied");
     return result.duplicate

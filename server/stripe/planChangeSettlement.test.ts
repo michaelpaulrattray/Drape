@@ -66,6 +66,9 @@ const db = vi.hoisted(() => ({
   getVoidPlanChangeSettlementInvoiceIdsForUser: vi.fn().mockResolvedValue([]),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
+  /* #2152 — a yearly plan's months; null = no year in flight (every arm above). */
+  getAnnualYearProgress: vi.fn().mockResolvedValue(null),
+  installAnnualMonthlyCredits: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("../db", () => db);
@@ -171,6 +174,8 @@ beforeEach(() => {
   db.deductCredits.mockResolvedValue({ success: true, newBalance: 0 });
   db.getUserCredits.mockResolvedValue({ balance: 100_000 });
   db.refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: 1 });
+  db.getAnnualYearProgress.mockResolvedValue(null);
+  db.installAnnualMonthlyCredits.mockResolvedValue(true);
   db.voidPendingPlanChangeSettlementsForUser.mockResolvedValue([]);
   db.getVoidPlanChangeSettlementInvoiceIdsForUser.mockResolvedValue([]);
   pricesCreate.mockResolvedValue({ id: "price_minted" });
@@ -621,10 +626,12 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(db.deductCredits).toHaveBeenCalledTimes(1);
     expect(db.deductCredits.mock.calls[0].slice(0, 3)).toEqual([7, 3000, "subscription"]);
     expect(db.refreshMonthlyCredits).toHaveBeenCalledTimes(1);
-    /* The YEAR, granted once, on the invoice's own reference — and the
-       negative unused-time line is not read as a period of its own. */
+    /* The YEAR's first month, granted once, on the invoice's own reference —
+       the other eleven arrive monthly (#2152) — and the negative unused-time
+       line is not read as a period of its own. */
     expect(db.refreshMonthlyCredits.mock.calls[0][0]).toBe(7);
-    expect(db.refreshMonthlyCredits.mock.calls[0][1]).toBe(PLAN_TIERS.pro.monthlyCredits * 12);
+    expect(db.refreshMonthlyCredits.mock.calls[0][1]).toBe(PLAN_TIERS.pro.monthlyCredits);
+    expect(db.refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(PLAN_TIERS.pro.monthlyCredits);
     expect(db.refreshMonthlyCredits.mock.calls[0][3]).toBe("stripe-invoice:in_change");
     /* Deterministic order: the unwind before the grant. */
     expect(db.deductCredits.mock.invocationCallOrder[0]).toBeLessThan(
@@ -1947,5 +1954,143 @@ describe("the webhook settles what changePlan recorded", () => {
       expect(db.updateUserSubscription).not.toHaveBeenCalled();
       expect(processedEventInserts).toHaveLength(1);
     });
+  });
+});
+
+/**
+ * ⚠ #2152, his ruling on #2159 (2026-10-10): *"yearly credits apply month by
+ * month"*. An instant upgrade on a YEARLY plan tops up the month in hand and
+ * raises the months still to come — the second half only when its invoice is
+ * paid. Driven through the real `changePlan` and the real applier.
+ */
+describe("#2152 — an upgrade on a yearly plan granted month by month", () => {
+  const YEAR_START = NOW_SEC - 100 * DAY;
+  const YEAR_END = YEAR_START + 365 * DAY;
+
+  function armYearlyStarter() {
+    subscriptionsRetrieve.mockResolvedValue({
+      status: "active",
+      metadata: { plan: "starter" },
+      items: {
+        data: [
+          {
+            id: "si_1",
+            price: { recurring: { interval: "year" } },
+            current_period_start: YEAR_START,
+            current_period_end: YEAR_END,
+          },
+        ],
+      },
+    });
+  }
+
+  /** The figure the real quote computes, re-derived: the difference over the
+   *  share of the months handed over that is still unused. */
+  function monthInHandCredits(monthsGranted: number) {
+    const totalDays = 365;
+    const remaining = Math.min(totalDays, Math.max(0, Math.ceil((YEAR_END - NOW_SEC) / DAY)));
+    const share = Math.max(0, monthsGranted - 12 * ((totalDays - remaining) / totalDays));
+    return wholeDisplayLedger(
+      Math.floor((PLAN_TIERS.pro.monthlyCredits - PLAN_TIERS.starter.monthlyCredits) * share),
+    );
+  }
+
+  it("records the month-in-hand top-up AND the paid year's new month against the invoice", async () => {
+    armYearlyStarter();
+    db.getAnnualYearProgress.mockResolvedValue({
+      subscriptionId: "sub_1",
+      periodStart: new Date(YEAR_START * 1000),
+      periodEnd: new Date(YEAR_END * 1000),
+      monthsGranted: 4,
+    });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+
+    await caller().changePlan({ newPlan: "pro" });
+
+    const recorded = db.recordPlanChangeSettlement.mock.calls[0][0];
+    expect(recorded).toMatchObject({ direction: "grant", annualMonthlyCredits: PLAN_TIERS.pro.monthlyCredits });
+    expect(recorded.credits).toBe(monthInHandCredits(4));
+    /* Not the old year-sized top-up: 12 × the difference over the days left. */
+    const yearSized = wholeDisplayLedger(Math.floor(
+      (PLAN_TIERS.pro.monthlyCredits - PLAN_TIERS.starter.monthlyCredits) * 12
+        * (Math.ceil((YEAR_END - NOW_SEC) / DAY) / 365),
+    ));
+    expect(recorded.credits).toBeLessThan(yearSized);
+    /* Declined so far: nothing installed, nothing granted. */
+    expect(db.installAnnualMonthlyCredits).not.toHaveBeenCalled();
+  });
+
+  it("NEGATIVE CONTROL: a year granted up front (no year on the row) keeps the old figure and installs nothing", async () => {
+    armYearlyStarter();
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    await caller().changePlan({ newPlan: "pro" });
+    const recorded = db.recordPlanChangeSettlement.mock.calls[0][0];
+    expect(recorded.annualMonthlyCredits).toBeNull();
+    expect(recorded.credits).toBe(monthInHandCredits(12));
+  });
+
+  it("a year on the row that is NOT Stripe's current period counts as nothing handed over — still records the new month", async () => {
+    armYearlyStarter();
+    db.getAnnualYearProgress.mockResolvedValue({
+      subscriptionId: "sub_1",
+      periodStart: new Date((YEAR_START - 365 * DAY) * 1000),
+      periodEnd: new Date(YEAR_START * 1000),
+      monthsGranted: 12,
+    });
+    invoicesRetrieve.mockResolvedValue({ amount_due: 12_00, status: "open" });
+    await caller().changePlan({ newPlan: "pro" });
+    const recorded = db.recordPlanChangeSettlement.mock.calls[0][0];
+    expect(recorded).toMatchObject({ direction: "grant", credits: 0, annualMonthlyCredits: PLAN_TIERS.pro.monthlyCredits });
+  });
+
+  it("the applier installs the paid year's month when the invoice is PAID, and a zero top-up moves no credits", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      userId: 7,
+      stripeInvoiceId: "in_change",
+      direction: "grant",
+      credits: 0,
+      description: "Prorated credits for upgrade to pro",
+      status: "pending",
+      annualMonthlyCredits: PLAN_TIERS.pro.monthlyCredits,
+    });
+    const { applyPlanChangeSettlement } = await import("./planChangeSettlement");
+    const outcome = await applyPlanChangeSettlement("in_change");
+    expect(outcome).toEqual({ outcome: "applied", creditsMoved: 0 });
+    expect(db.addCredits).not.toHaveBeenCalled();
+    expect(db.installAnnualMonthlyCredits).toHaveBeenCalledWith(7, PLAN_TIERS.pro.monthlyCredits);
+    expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_change", "applied");
+  });
+
+  it("an install that fails leaves the row PENDING for the redelivery", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      userId: 7,
+      stripeInvoiceId: "in_change",
+      direction: "grant",
+      credits: 5_000,
+      description: "Prorated credits for upgrade to pro",
+      status: "pending",
+      annualMonthlyCredits: PLAN_TIERS.pro.monthlyCredits,
+    });
+    db.installAnnualMonthlyCredits.mockResolvedValue(false);
+    const { applyPlanChangeSettlement } = await import("./planChangeSettlement");
+    const outcome = await applyPlanChangeSettlement("in_change");
+    expect(outcome.outcome).toBe("failed");
+    expect(db.resolvePlanChangeSettlement).not.toHaveBeenCalled();
+  });
+
+  it("NEGATIVE CONTROL: a settlement with no year month installs nothing", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      userId: 7,
+      stripeInvoiceId: "in_change",
+      direction: "grant",
+      credits: 5_000,
+      description: "Prorated credits for upgrade to pro",
+      status: "pending",
+      annualMonthlyCredits: null,
+    });
+    const { applyPlanChangeSettlement } = await import("./planChangeSettlement");
+    await applyPlanChangeSettlement("in_change");
+    expect(db.installAnnualMonthlyCredits).not.toHaveBeenCalled();
+    expect(db.addCredits).toHaveBeenCalledTimes(1);
   });
 });

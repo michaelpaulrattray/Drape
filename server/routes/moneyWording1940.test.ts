@@ -51,6 +51,8 @@ import { billingRouter } from "./billing";
 import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
+  ANNUAL_CHARGE_SENTENCE,
+  YEARLY_SWITCH_CREDITS_SENTENCE,
   CANCEL_ANY_TIME_SHORT,
   CANCELLED_PLAN_GRACE_DAYS,
   RENEWAL_BALANCE_SENTENCE,
@@ -132,6 +134,24 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
     expect(RENEWAL_BALANCE_SENTENCE).toBe(
       "Unused plan credits carry into next month, up to one month's worth. If you cancel, you have 30 days to use them. Top-ups stay on your balance.",
     );
+  });
+
+  it("#2152 (CPM:2268) — a yearly price says it is charged once a year AND that the credits arrive each month", () => {
+    /* His ruling on #2159, 2026-10-10: "yearly credits apply month by month". */
+    expect(ANNUAL_CHARGE_SENTENCE).toBe("Annual plans are charged once a year. Your credits arrive each month.");
+    const modal = read("client/src/features/billing/ChangePlanModal.tsx");
+    expect(modal).toContain('{interval === "annual" ? ` ${ANNUAL_CHARGE_SENTENCE}` : ""}');
+    expect(modal).not.toContain('" Annual plans are charged once a year."');
+  });
+
+  it("#2152 — nothing promises the full year of credits up front any more, on the confirm step or the receipt", () => {
+    expect(YEARLY_SWITCH_CREDITS_SENTENCE).toContain("first month of credits");
+    expect(YEARLY_SWITCH_CREDITS_SENTENCE).toContain("your credits arrive each month after that");
+    for (const file of ["client/src/features/billing/ChangePlanModal.tsx", "server/routes/billing.ts"]) {
+      const source = read(file);
+      expect(source, file).not.toContain("full year of credits");
+      expect(source, file).toContain("${YEARLY_SWITCH_CREDITS_SENTENCE}");
+    }
   });
 
   it("#2152 — the 30 in every sentence IS the deadline the server stamps (derived, not mirrored)", () => {

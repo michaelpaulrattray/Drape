@@ -456,6 +456,15 @@ async function startServer() {
     }).catch(err => {
       log.error({ err }, "Scheduler: failed to start the plan-credit expiry sweep");
     });
+
+    // #2152 (his ruling on #2159): a yearly plan's credits arrive month by
+    // month. Stripe sends one invoice a year, so months 2-12 are granted here.
+    // Nobody is on a yearly plan yet, so every pass is one read that finds nothing.
+    import("../billing/annualMonthlyGrant").then(({ startAnnualMonthlyGrantSweep }) => {
+      startAnnualMonthlyGrantSweep();
+    }).catch(err => {
+      log.error({ err }, "Scheduler: failed to start the yearly plan's monthly credit grant");
+    });
   });
 
   // Register shutdown handlers after server is listening

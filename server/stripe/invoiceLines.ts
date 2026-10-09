@@ -85,6 +85,13 @@ export type PeriodBought = {
    * every event in the product's history inside the window.
    */
   startSec: number | null;
+  /**
+   * When the bought period ENDS, read off the same line as `startSec`, and
+   * `null` exactly when that is. A yearly plan's credits arrive month by month
+   * across this span (#2152), so the paid year has to be stated by the
+   * artifact that bought it.
+   */
+  endSec: number | null;
 };
 
 /**
@@ -111,10 +118,10 @@ export function periodBought(invoice: unknown): PeriodBought | null {
       // conservative grant (never twelve on a guess).
       const classicInterval =
         (line as AnyRecord)?.price?.recurring?.interval ?? (line as AnyRecord)?.plan?.interval;
-      return { monthsBought: classicInterval === "year" ? 12 : 1, spanDays: 0, startSec: null };
+      return { monthsBought: classicInterval === "year" ? 12 : 1, spanDays: 0, startSec: null, endSec: null };
     }
     const spanDays = Math.round((endSec - startSec) / 86_400);
-    return { monthsBought: spanDays >= 300 ? 12 : 1, spanDays, startSec };
+    return { monthsBought: spanDays >= 300 ? 12 : 1, spanDays, startSec, endSec };
   }
   return null;
 }

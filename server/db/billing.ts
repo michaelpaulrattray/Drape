@@ -2,7 +2,11 @@
  * Billing Domain — subscriptions, credit top-ups, and cycle spend.
  */
 
-import { eq, and, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { eq, and, gt, gte, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
+import {
+  MONTHS_IN_A_PAID_YEAR,
+  annualMonthLedgerRef,
+} from "../billing/annualCreditMonths";
 import {
   credits,
   creditTransactions,
@@ -25,6 +29,52 @@ import {
 import { netAppliedPlanChangeSettlementsSince } from "./planChangeSettlements";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/billing");
+
+/**
+ * THE PAID YEAR A YEARLY PLAN'S MONTHLY GRANTS BELONG TO (#2152, his ruling on
+ * #2159, 2026-10-10: *"yearly credits apply month by month"*). Written by the
+ * paid annual invoice in the same write as the year's first month, read by
+ * `server/billing/annualMonthlyGrant.ts`. `monthlyCredits` is one month's
+ * allowance in LEDGER credits — the base plus the dial's steps the invoice
+ * billed.
+ */
+export type AnnualGrantYear = {
+  subscriptionId: string;
+  periodStart: Date;
+  periodEnd: Date;
+  monthlyCredits: number;
+};
+
+/** The four year columns, cleared: no year is in flight. */
+export const NO_ANNUAL_YEAR = {
+  annualGrantSubscriptionId: null,
+  annualGrantPeriodStart: null,
+  annualGrantPeriodEnd: null,
+  annualGrantMonthlyCredits: null,
+} as const;
+
+function annualYearColumns(year: AnnualGrantYear | null) {
+  if (year === null) return NO_ANNUAL_YEAR;
+  return {
+    annualGrantSubscriptionId: year.subscriptionId,
+    annualGrantPeriodStart: year.periodStart,
+    annualGrantPeriodEnd: year.periodEnd,
+    annualGrantMonthlyCredits: year.monthlyCredits,
+  };
+}
+
+/**
+ * The subscription statuses under which a paid year's months keep arriving.
+ * `past_due` is in on purpose: on a yearly plan nothing falls due mid-year but
+ * an upgrade's own invoice, and an unpaid UPGRADE must not stop the months of
+ * a year that WAS paid — the upgrade's higher month is installed only when its
+ * money settles, so what keeps arriving is what was paid for. `canceled` and
+ * `unpaid` are out: the plan is over.
+ */
+export const ANNUAL_GRANT_LIVE_STATUSES = ["active", "trialing", "past_due"] as const;
+
+/** The answer a monthly grant gets when the year it was asked about is no longer the one in flight. */
+export const ANNUAL_YEAR_NOT_CURRENT = "The paid year this month belongs to is no longer in flight";
 
 export async function updateUserSubscription(
   userId: number,
@@ -60,10 +110,19 @@ export async function updateUserSubscription(
      expiry was for an account that LEFT. Cleared here, in the one write every
      road to a paid tier passes through, rather than at each caller, so a road
      added later cannot forget it. An explicit stamp in the same call wins. */
-  const values =
-    data.planTier !== undefined && data.planTier !== "free" && data.planCreditsExpireAt === undefined
-      ? { ...data, planCreditsExpireAt: null }
-      : data;
+  const returningToPaid =
+    data.planTier !== undefined && data.planTier !== "free" && data.planCreditsExpireAt === undefined;
+  /* ⚠ AND A MOVE TO FREE ENDS A YEARLY PLAN'S MONTHLY GRANTS (#2152, his
+     ruling on #2159: "yearly credits apply month by month"). Cancelling stops
+     the months still to come; the worker also refuses a Free row, so this is
+     the second of two locks, and it is here for the same reason as the clear
+     above — every road to Free passes through this one write. */
+  const leavingForFree = data.planTier === "free";
+  const values = {
+    ...data,
+    ...(returningToPaid ? { planCreditsExpireAt: null } : {}),
+    ...(leavingForFree ? NO_ANNUAL_YEAR : {}),
+  };
 
   try {
     await db.update(credits).set(values).where(eq(credits.userId, userId));
@@ -229,18 +288,42 @@ export async function refreshMonthlyCredits(
    * loop re-read the balance, and then subtract a stale net from a fresh one.
    */
   periodStartForSettlements: Date | null = null,
+  /**
+   * The yearly road (#2152, his ruling on #2159: *"yearly credits apply month
+   * by month"*).
+   *
+   * - `annualYear` — written IN THE SAME UPDATE as this grant: an object
+   *   starts a paid year (the annual invoice's first month), `null` clears one
+   *   (a monthly invoice: no year is in flight any more), absent leaves the
+   *   columns alone (the monthly worker's own grants).
+   * - `onlyWhileYear` — the monthly worker's lock. The grant lands only while
+   *   that same paid year is still the one in flight on this row, on a live
+   *   yearly subscription not moved to Free: checked on the row each attempt
+   *   reads AND in the WHERE of the write, so a cancellation, an interval
+   *   switch or the next year's invoice landing between the worker's read and
+   *   its write makes the write miss rather than grant into a year that is
+   *   over. Answered `{ success: false, error: ANNUAL_YEAR_NOT_CURRENT }`.
+   */
+  options: {
+    annualYear?: AnnualGrantYear | null;
+    onlyWhileYear?: { subscriptionId: string; periodStart: Date };
+  } = {},
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
     return { success: false, error: "Database not available" };
   }
   const ledgerReferenceId = normalizeCreditReferenceId(referenceId);
+  const lock = options.onlyWhileYear;
 
   try {
     for (let attempt = 0; attempt < 3; attempt++) {
       const userCredits = await getUserCredits(userId);
       if (!userCredits) {
         return { success: false, error: "User credits not found" };
+      }
+      if (lock && !annualYearStillCurrent(userCredits, lock)) {
+        return { success: false, error: ANNUAL_YEAR_NOT_CURRENT };
       }
 
       const balanceReadFrom = userCredits.balance;
@@ -283,8 +366,15 @@ export async function refreshMonthlyCredits(
             // stale protection into the next cycle (#1604).
             purchasedBalance: purchasedKept,
             lastRefreshAt: new Date(),
+            ...(options.annualYear !== undefined ? annualYearColumns(options.annualYear) : {}),
           })
-          .where(and(eq(credits.userId, userId), eq(credits.balance, balanceReadFrom)));
+          .where(
+            and(
+              eq(credits.userId, userId),
+              eq(credits.balance, balanceReadFrom),
+              ...(lock ? annualYearLockConditions(lock) : []),
+            ),
+          );
 
         const affected = (updateResult as any)[0]?.affectedRows ?? 0;
         if (affected === 0) {
@@ -342,6 +432,162 @@ export async function refreshMonthlyCredits(
     }
     log.error({ err: error }, "[Database] Failed to refresh monthly credits:");
     return { success: false, error: "Failed to refresh credits" };
+  }
+}
+
+type AnnualYearRow = {
+  annualGrantSubscriptionId?: string | null;
+  annualGrantPeriodStart?: Date | null;
+  stripeSubscriptionId?: string | null;
+  planTier?: string | null;
+  billingInterval?: string | null;
+  subscriptionStatus?: string | null;
+};
+
+/** The row-side half of {@link refreshMonthlyCredits}'s `onlyWhileYear` lock. */
+export function annualYearStillCurrent(
+  row: AnnualYearRow,
+  lock: { subscriptionId: string; periodStart: Date },
+): boolean {
+  return (
+    row.annualGrantSubscriptionId === lock.subscriptionId
+    && row.annualGrantPeriodStart instanceof Date
+    && row.annualGrantPeriodStart.getTime() === lock.periodStart.getTime()
+    && row.stripeSubscriptionId === lock.subscriptionId
+    && row.planTier !== "free"
+    && row.billingInterval === "year"
+    && (ANNUAL_GRANT_LIVE_STATUSES as readonly string[]).includes(row.subscriptionStatus ?? "")
+  );
+}
+
+/** The WHERE-side half of the same lock — the same six facts, so the read and the write cannot disagree. */
+function annualYearLockConditions(lock: { subscriptionId: string; periodStart: Date }) {
+  return [
+    eq(credits.annualGrantSubscriptionId, lock.subscriptionId),
+    eq(credits.annualGrantPeriodStart, lock.periodStart),
+    eq(credits.stripeSubscriptionId, lock.subscriptionId),
+    ne(credits.planTier, "free"),
+    eq(credits.billingInterval, "year"),
+    inArray(credits.subscriptionStatus, [...ANNUAL_GRANT_LIVE_STATUSES]),
+  ];
+}
+
+/** One account's paid year, as the monthly worker reads it. */
+export type AnnualGrantCandidate = {
+  userId: number;
+  planTier: PlanTier;
+  subscriptionId: string;
+  periodStart: Date;
+  periodEnd: Date;
+  monthlyCredits: number;
+};
+
+/**
+ * THE ACCOUNTS WITH A PAID YEAR IN FLIGHT (#2152) — how the monthly worker
+ * finds its due grants. A year is in flight while its columns are set, its
+ * end is still ahead, and the subscription that paid for it is the live
+ * yearly one on the row. Which of its months are due, and which have already
+ * landed, the worker works out per account (the boundaries from the period,
+ * the landed months from the ledger) — a candidate is a year, not a month.
+ */
+export async function getAnnualGrantCandidates(now: Date): Promise<AnnualGrantCandidate[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      userId: credits.userId,
+      planTier: credits.planTier,
+      subscriptionId: credits.annualGrantSubscriptionId,
+      periodStart: credits.annualGrantPeriodStart,
+      periodEnd: credits.annualGrantPeriodEnd,
+      monthlyCredits: credits.annualGrantMonthlyCredits,
+    })
+    .from(credits)
+    .where(
+      and(
+        isNotNull(credits.annualGrantSubscriptionId),
+        isNotNull(credits.annualGrantPeriodStart),
+        isNotNull(credits.annualGrantMonthlyCredits),
+        gt(credits.annualGrantPeriodEnd, now),
+        eq(credits.stripeSubscriptionId, credits.annualGrantSubscriptionId),
+        ne(credits.planTier, "free"),
+        eq(credits.billingInterval, "year"),
+        inArray(credits.subscriptionStatus, [...ANNUAL_GRANT_LIVE_STATUSES]),
+      ),
+    );
+  return rows.flatMap((row) =>
+    row.subscriptionId && row.periodStart && row.periodEnd && row.monthlyCredits !== null
+      ? [{
+          userId: row.userId,
+          planTier: row.planTier,
+          subscriptionId: row.subscriptionId,
+          periodStart: row.periodStart,
+          periodEnd: row.periodEnd,
+          monthlyCredits: row.monthlyCredits,
+        }]
+      : [],
+  );
+}
+
+/**
+ * HOW MANY OF THE YEAR IN FLIGHT'S MONTHS HAVE ACTUALLY LANDED (#2152) — read
+ * off the LEDGER, never off a counter, so it cannot drift from what the
+ * customer was given. Month 0 is the invoice's own grant and is on the row
+ * the moment the year's columns are (one write); months 1..11 are counted by
+ * their unique references.
+ *
+ * `null` means no year is in flight on this account — a monthly plan, or a
+ * yearly one granted up front before this change — and the plan-change quote
+ * then reads the period as granted whole, which is the truth for both.
+ */
+export async function getAnnualYearProgress(userId: number): Promise<{
+  subscriptionId: string;
+  periodStart: Date;
+  periodEnd: Date;
+  monthsGranted: number;
+} | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const row = await getUserCredits(userId);
+  if (!row?.annualGrantSubscriptionId || !row.annualGrantPeriodStart || !row.annualGrantPeriodEnd) {
+    return null;
+  }
+  const subscriptionId = row.annualGrantSubscriptionId;
+  const startMs = row.annualGrantPeriodStart.getTime();
+  const refs = Array.from({ length: MONTHS_IN_A_PAID_YEAR - 1 }, (_, i) =>
+    normalizeCreditReferenceId(annualMonthLedgerRef(subscriptionId, startMs, i + 1)),
+  );
+  const landed = await db
+    .select({ referenceId: creditTransactions.referenceId })
+    .from(creditTransactions)
+    .where(and(eq(creditTransactions.userId, userId), inArray(creditTransactions.referenceId, refs)));
+  return {
+    subscriptionId,
+    periodStart: row.annualGrantPeriodStart,
+    periodEnd: row.annualGrantPeriodEnd,
+    monthsGranted: 1 + new Set(landed.map((line) => line.referenceId)).size,
+  };
+}
+
+/**
+ * AN INSTANT UPGRADE ON A YEARLY PLAN RAISES THE MONTHS STILL TO COME (#2152).
+ * Called when the upgrade's invoice is PAID (the settlement applier), so a
+ * declined card never earns a higher month. Only a year in flight is touched:
+ * a row with no year (a monthly plan, or a year granted up front) has no
+ * months still to come.
+ */
+export async function installAnnualMonthlyCredits(userId: number, monthlyCredits: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db
+      .update(credits)
+      .set({ annualGrantMonthlyCredits: Math.max(0, Math.floor(monthlyCredits)) })
+      .where(and(eq(credits.userId, userId), isNotNull(credits.annualGrantPeriodStart)));
+    return true;
+  } catch (error) {
+    log.error({ err: error, userId }, "[Database] could not install the upgraded month on the paid year");
+    return false;
   }
 }
 

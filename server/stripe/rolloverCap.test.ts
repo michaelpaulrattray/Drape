@@ -281,10 +281,15 @@ describe("the one-month cap, at the renewal", () => {
     expect(carried(HUGE)).toBe(allowanceOf(DIAL_PLAN) + planCreditSliderLedgerCredits(steps));
   });
 
-  it("an annual invoice grants twelve months but the bank is still capped at ONE", async () => {
+  /* ⚠ #2152, his ruling on #2159 (2026-10-10): *"yearly credits apply month by
+     month"* — *"The one-month rollover cap applies the same way on every plan,
+     and there's no separate yearly cap."* Until then this arm read "an annual
+     invoice grants twelve months but the bank is still capped at ONE", which
+     is the harm #2159 measured: eleven months taken back at every renewal. */
+  it("an annual invoice grants ONE month, and the bank is capped at that same one month", async () => {
     planTierOnRecord.value = PLAIN_PLAN;
     await deliver(renewal({ days: 365, billedPlan: PLAIN_PLAN }));
-    expect(refreshMonthlyCredits.mock.calls[0][1]).toBe(allowanceOf(PLAIN_PLAN, 12));
+    expect(refreshMonthlyCredits.mock.calls[0][1]).toBe(allowanceOf(PLAIN_PLAN));
     expect(carried(HUGE)).toBe(allowanceOf(PLAIN_PLAN));
   });
 
@@ -294,6 +299,32 @@ describe("the one-month cap, at the renewal", () => {
     const under = allowanceOf(PLAIN_PLAN) - 5_000;
     expect(carried(under)).toBe(under); // identity, not the percentage
     expect(carried(HUGE)).toBe(allowanceOf(PLAIN_PLAN));
+  });
+});
+
+describe("#2152 — the yearly roads, consistent with month-by-month granting", () => {
+  it("an interval switch INTO yearly: one month now, the bank capped at that month, the year's month set for the rest", async () => {
+    planTierOnRecord.value = PLAIN_PLAN;
+    await deliver({ ...renewal({ days: 365, billedPlan: PLAIN_PLAN }), billing_reason: "subscription_update" });
+    expect(refreshMonthlyCredits.mock.calls[0][1]).toBe(allowanceOf(PLAIN_PLAN));
+    expect(carried(HUGE)).toBe(allowanceOf(PLAIN_PLAN));
+    expect(refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(allowanceOf(PLAIN_PLAN));
+  });
+
+  it("an interval switch OUT of yearly: one month, capped the same, and the year's months still to come are cleared", async () => {
+    planTierOnRecord.value = PLAIN_PLAN;
+    await deliver({ ...renewal({ billedPlan: PLAIN_PLAN }), billing_reason: "subscription_update" });
+    expect(carried(HUGE)).toBe(allowanceOf(PLAIN_PLAN));
+    expect(refreshMonthlyCredits.mock.calls[0][6]).toEqual({ annualYear: null });
+  });
+
+  it("a downgrade landing at a YEARLY renewal: the new plan's month now, the bank trimmed to it, and every month to come is the new plan's", async () => {
+    planTierOnRecord.value = DIAL_PLAN;
+    const dialBank = allowanceOf(DIAL_PLAN) + planCreditSliderLedgerCredits(40);
+    await deliver(renewal({ days: 365, billedPlan: PLAIN_PLAN }));
+    expect(refreshMonthlyCredits.mock.calls[0][1]).toBe(allowanceOf(PLAIN_PLAN));
+    expect(carried(dialBank)).toBe(allowanceOf(PLAIN_PLAN));
+    expect(refreshMonthlyCredits.mock.calls[0][6].annualYear.monthlyCredits).toBe(allowanceOf(PLAIN_PLAN));
   });
 });
 
