@@ -2015,7 +2015,7 @@ function CompareGrid({
         50 and `pro` is 75. **The table says so itself, in the `Unspent
         credits` row of this very group**, which reads through
         `rolloverSentence`: *"Half of anything unspent expires"*, *"A quarter of
-        anything unspent expires"*. So the contradiction sat inside ONE table,
+        anything unspent expires"* (reworded by #2152 to the one-month cap). So the contradiction sat inside ONE table,
         on a money surface, in the one place a customer is choosing between
         those exact rungs.
 

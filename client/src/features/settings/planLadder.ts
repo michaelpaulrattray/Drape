@@ -320,23 +320,38 @@ export function grantsMonthly(priceInCents: number): boolean {
 }
 
 /**
- * `Half of anything unspent expires` / `Nothing you pay for expires`.
+ * What a plan card, and the compare table's "Unspent credits" row, say about
+ * unused credits — Yuna and Quistis's final wording (#2152, his word
+ * 2026-10-09: *"pricing word card here ive approved the code changes required
+ * too"*, Desk item "Pricing Phase 2: final wording", rows PL:334/337/341).
  *
- * §6c: *"Rollover said as loss, not percentage … Same fact; only one of them
- * lands."* Read off `rolloverPercent`, which our tiers carry at 0, 50, 75 and
- * 100 — so the sentence has to cover a quarter as well as a half.
+ * ⚠ **IT SHIPS WITH THE RULE IT DESCRIBES.** Every sentence says "up to one
+ * month's worth", which is the cap `calculateRolloverCredits` enforces from the
+ * same change; the old lines (*"Nothing you pay for expires"*, *"Half of
+ * anything unspent expires"*) would have contradicted the cancel dialog's
+ * 30-day sentence on the same surface.
+ *
+ * The percentage is read off `rolloverPercent` (0, 50, 75, 100 today), never
+ * typed. 0 is the Free rung, which never renews: his ruling 9 Oct, *"Free
+ * credits last until they're used up."*
+ *
+ * ⚠ **`isLoss` is false on every rung now.** §6c said rollover *as a loss*; the
+ * approved wording states it as what carries, so drawing a carry-over sentence
+ * in the loss colour would contradict its own words. The field stays so the
+ * card keeps one reading of it.
  */
 export function rolloverSentence(rolloverPercent: number): {
   text: string;
   isLoss: boolean;
 } {
   if (rolloverPercent >= 100) {
-    return { text: "Nothing you pay for expires", isLoss: false };
+    return { text: "Unused plan credits carry into next month, up to one month's worth.", isLoss: false };
   }
   if (rolloverPercent <= 0) {
-    return { text: "Anything unspent expires at renewal", isLoss: true };
+    return { text: "Free credits last until you use them", isLoss: false };
   }
-  const lost = 100 - rolloverPercent;
-  const asFraction = lost === 50 ? "Half" : lost === 25 ? "A quarter" : `${lost}%`;
-  return { text: `${asFraction} of anything unspent expires`, isLoss: true };
+  return {
+    text: `Carries over ${rolloverPercent}% of unused credits, up to one month's worth.`,
+    isLoss: false,
+  };
 }
