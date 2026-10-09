@@ -141,6 +141,7 @@ import {
   reviewCheckoutRef,
   reviewPlanFor,
   reviewWorktreeAddArgs,
+  junctionReadingLine,
   sharedInstallWarning,
   shipReadingFor,
   validatePrNumber,
@@ -154,8 +155,11 @@ import {
   type WorktreePlan,
 } from "./lib/shiftWorktree.mts";
 /* The two disk readings that stand beside this recursive delete, shared with the
-   rite's own teardown rather than re-declared here (#654 and #1823, law 7). */
-import { measureTree, stillOnDisk } from "./lib/riteWorktree.mts";
+   rite's own teardown rather than re-declared here (#654 and #1823, law 7).
+   ⚠ `readJunctionAt` was `stillOnDisk` until #2161 — a boolean meaning *is there
+   anything there*, fed to a decision about a LINK. The two answers agree on
+   every tree this tool makes and disagreed on the only two it could not clear. */
+import { measureTree, readJunctionAt } from "./lib/riteWorktree.mts";
 
 function refuse(message: string): never {
   console.error(`shift-worktree: REFUSING — ${message}`);
@@ -642,7 +646,7 @@ const state: RemovalState = {
   keptIgnored,
   disposableIgnored,
   registered,
-  junctionPresent: stillOnDisk(plan.nodeModulesLink),
+  junctionAt: readJunctionAt(plan.nodeModulesLink),
   ...removalStateFromShipReading(ship),
 };
 
@@ -701,7 +705,12 @@ if (!verdict.proceed) refuse(verdict.reason);
 for (const warning of verdict.warnings) console.log(`  ⚠ ${warning}`);
 
 // ⚠ THE JUNCTION, FIRST, AND PROVEN GONE BEFORE ANYTHING RECURSIVE RUNS.
-if (state.junctionPresent) {
+/* ⚠ AND IT SAYS WHICH OF THE FOUR IT FOUND (#2161). This line sits four above a
+   recursive delete and a shift reads it to decide whether to pass `--force`;
+   before this card there was no line at all, and a `real` directory produced a
+   refusal naming a junction that was not there. */
+console.log(`  node_modules ${junctionReadingLine(state.junctionAt)}`);
+if (state.junctionAt === "link") {
   if (!dryRun) {
     const unlinked = run("cmd", ["/c", "rmdir", plan.nodeModulesLink.replace(/\//g, "\\")]);
     if (unlinked.status !== 0) {
@@ -712,21 +721,35 @@ if (state.junctionPresent) {
   }
   say("remove the node_modules junction");
 }
+/* ⚠ A REAL DIRECTORY IS NOT UNLINKED, AND THAT IS THE WHOLE OF #2161. `rmdir`
+   removes an empty directory or unlinks a reparse point; against the 824
+   directories each review shell holds it answers "The directory is not empty",
+   and the old code read that failure as "could not remove the junction" and
+   refused. There is no link to follow, so there is nothing for this step to do
+   — the recursive delete below is the correct and only act. */
+if (state.junctionAt === "real") say("leave the real node_modules directory to the recursive delete");
 
 // The proof, not the assumption. `rmdir` on a junction removes the LINK; if
 // something went wrong and the path is still there, the next step would walk
 // into the real install.
 //
-// ⚠ `stillOnDisk` and not `existsSync` (#654, law 7 sweep). This comment has
+// ⚠ `readJunctionAt` and not `existsSync` (#654, law 7 sweep). This comment has
 // always said "if the path is still there", and `existsSync` FOLLOWS the link
 // — so a junction whose target had gone read as absent while the link was
 // still standing in the directory about to be removed. The reading now sees
 // the link itself, which is what the sentence claims.
+//
+// ⚠ AND IT IS RE-READ, NEVER `state.junctionAt` REUSED (#2161). The point of
+// this step is that the unlink ABOVE actually took — a second look at the first
+// reading proves nothing and would make the proof a tautology. The verdict is
+// the one that moved with this card: a `real` directory passes (there is no
+// link to follow), a `link` still refuses, and an UNREADABLE path refuses too,
+// because an unknown is never a permission to delete recursively.
 if (!dryRun) {
-  const stillThere = junctionMustBeGone(stillOnDisk(plan.nodeModulesLink));
+  const stillThere = junctionMustBeGone(readJunctionAt(plan.nodeModulesLink));
   if (!stillThere.ok) refuse(stillThere.reason);
 }
-say("prove the junction is gone");
+say("prove no junction is in the way");
 
 // Two acts, because one is not enough on this machine: git 2.55 on Windows
 // reports `Invalid argument`, unregisters the worktree and leaves the
