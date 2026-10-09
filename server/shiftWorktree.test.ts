@@ -2139,17 +2139,20 @@ describe("judgeSharedInstall reads the REPAIR TREE, which was in its input all a
     judgeSharedInstall({ installedLock: OTHER, treeLock: LOCK, repairTreeLock, otherTrees: [] });
 
   it("the launching tree agreeing with this worktree reads `same-lockfile`", () => {
-    expect(skew(LOCK).kind === "skew" && skew(LOCK).repairTree).toBe("same-lockfile");
+    const agreeing = skew(LOCK);
+    expect(agreeing.kind === "skew" && agreeing.repairTree).toBe("same-lockfile");
   });
 
   it("⚠ THE LIVE CASE — the launching tree BEHIND this worktree reads `different-lockfile`", () => {
     /* The main tree sat 7 commits behind `origin/main` when this was written,
        and exactly one of those commits moved the dependency list. */
-    expect(skew(OTHER).kind === "skew" && skew(OTHER).repairTree).toBe("different-lockfile");
+    const behind = skew(OTHER);
+    expect(behind.kind === "skew" && behind.repairTree).toBe("different-lockfile");
   });
 
   it("⚠ unreadable is NOT `same-lockfile` — falling back is how the command came to be printed", () => {
-    expect(skew(null).kind === "skew" && skew(null).repairTree).toBe("unreadable");
+    const unreadable = skew(null);
+    expect(unreadable.kind === "skew" && unreadable.repairTree).toBe("unreadable");
   });
 
   it("⚠ CRLF does not make the repair tree look different either", () => {
