@@ -785,17 +785,45 @@ export async function redoCastPackage(
     nothing is lost by leaving it and nothing is paid twice.
   */
   let leaveForSweep = shareReadFailed;
+  /*
+    What the press's own RECEIPT records as refunded — which is not always what
+    THIS process paid. A refund the sweep already wrote under the same reference
+    reaches us as a duplicate: the customer HAS been refunded, so the receipt
+    says so, while `refundedCredits` (what this process moved) stays 0.
+  */
+  let receiptRefundedCredits = 0;
   if (owed > 0) {
-    const settled = await (dependencies.pressRefund ?? recordPackageRedoPressRefund)({
-      userId: input.userId,
-      pressOperationId,
-      amount: owed,
-      description: wholeOwed > 0
-        ? PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION
-        : PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
-      chargeReferenceId: chargeReference,
-    });
-    if (settled.fenced) {
+    /*
+      ⚠ **A THROW HERE IS LEFT FOR THE SWEEP, NEVER PROPAGATED (the relay's
+      finding on PR #2147).** The fenced writer re-throws everything but the
+      fence — a lock wait or deadlock on its `FOR UPDATE`, a dropped
+      connection, a duplicate-key race against a sweep refund committed after
+      its reference read. Propagating it skipped both the seal and the
+      handoff, so the press's heartbeat kept renewing its lease and the sweep
+      never saw it expire. Handed off instead: the heartbeat stops, the lease
+      expires now, and the sweep settles from the same receipts and reference.
+    */
+    let settled: Awaited<ReturnType<typeof recordPackageRedoPressRefund>> | null = null;
+    try {
+      settled = await (dependencies.pressRefund ?? recordPackageRedoPressRefund)({
+        userId: input.userId,
+        pressOperationId,
+        amount: owed,
+        description: wholeOwed > 0
+          ? PACKAGE_REDO_NOTHING_ARRIVED_REFUND_DESCRIPTION
+          : PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
+        chargeReferenceId: chargeReference,
+      });
+    } catch (error) {
+      leaveForSweep = true;
+      log.error(
+        { operationId: pressOperationId, castId: input.castId, owed, err: error },
+        "[packageRedoService] the press refund threw — handing the press to the sweep",
+      );
+    }
+    if (settled === null) {
+      /* Handed off below; the sweep owns the money. */
+    } else if (settled.fenced) {
       leaveForSweep = true;
       log.warn(
         { operationId: pressOperationId, castId: input.castId, owed },
@@ -804,6 +832,7 @@ export async function redoCastPackage(
     } else {
       const refund = settled.refund;
       refundedCredits = refund.recorded && !refund.duplicate ? refund.amount : 0;
+      receiptRefundedCredits = refund.recorded ? refund.amount : 0;
       refundRecorded = refund.recorded;
       if (!refund.recorded) {
         log.error(
@@ -841,7 +870,7 @@ export async function redoCastPackage(
     operationId: pressOperationId,
     result,
     chargedCredits: offer.priceCredits,
-    refundedCredits,
+    refundedCredits: receiptRefundedCredits,
   });
   log.info(
     {

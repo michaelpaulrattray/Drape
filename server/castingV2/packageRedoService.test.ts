@@ -180,9 +180,11 @@ let ledger: Array<{ referenceId: string; type: string; amount: number }> = [];
 /** False once the sweep has sealed the press: the live refund is fenced. */
 let pressRunning = true;
 /** What the live press's refund does — `kill` is the process dying right there. */
-let pressRefundBehaviour: "pay" | "kill" = "pay";
+let pressRefundBehaviour: "pay" | "kill" | "throw" = "pay";
 /** Runs inside the live press's refund, BEFORE it decides — the interleave seam. */
 let beforePressPays: (() => Promise<void>) | null = null;
+/** True once a killed press reached its refund and stopped there for good. */
+let killReached = false;
 
 function ledgerRefund(amount: number, chargeReferenceId: string): RefundOutcome {
   const reference = refundReferenceFor(chargeReferenceId);
@@ -405,7 +407,13 @@ function dependencies(
     */
     pressRefund: (async (request: { amount: number; chargeReferenceId: string }) => {
       journal.push("refund");
-      if (pressRefundBehaviour === "kill") throw new Error("the process was killed before the press paid");
+      /* A KILL IS NOT A THROW: a dead process runs no catch and no handoff,
+         so the press simply never returns from here. */
+      if (pressRefundBehaviour === "kill") {
+        killReached = true;
+        return new Promise<never>(() => undefined);
+      }
+      if (pressRefundBehaviour === "throw") throw new Error("Lock wait timeout exceeded; try restarting transaction");
       if (beforePressPays) await beforePressPays();
       if (!pressRunning) return { fenced: true as const };
       return { fenced: false as const, refund: ledgerRefund(request.amount, request.chargeReferenceId) };
@@ -529,6 +537,7 @@ beforeEach(() => {
   pressRunning = true;
   pressRefundBehaviour = "pay";
   beforePressPays = null;
+  killReached = false;
   committed.length = 0;
   enginePosts.length = 0;
   sheetCalls.length = 0;
@@ -1367,7 +1376,8 @@ describe("⚠ a Regenerate killed after a sheet is refused twice (#2133)", () =>
     headRefusals = 2;
     pressRefundBehaviour = "kill";
 
-    await expect(redoCastPackage(dependencies(), input)).rejects.toThrow("killed");
+    void redoCastPackage(dependencies(), input);
+    await vi.waitFor(() => expect(killReached).toBe(true));
     /* The process died with the body views landed and nothing refunded. */
     expect(committed.map((row) => row.angle).sort()).toEqual(["backFull", "frontFull"]);
     expect(refunds).toEqual([]);
@@ -1425,6 +1435,27 @@ describe("⚠ a Regenerate killed after a sheet is refused twice (#2133)", () =>
     expect(refunds[0]?.amount).toBe(SHARES);
     expect(result.refundedCredits, "a duplicate is not a payment").toBe(0);
     expect(result.refundRecorded).toBe(true);
+    /* But the press's receipt records that the customer WAS refunded. */
+    const pressReceipt = receipts.success.mock.calls
+      .map(([call]) => call as { operationId: string; refundedCredits: number })
+      .find((call) => call.operationId === PRESS);
+    expect(pressReceipt?.refundedCredits, "the receipt says nothing came back").toBe(SHARES);
+  });
+
+  it("A REFUND WRITER THAT THROWS — the press is handed to the sweep, never sealed, never left heartbeating", async () => {
+    headRefusals = 2;
+    pressRefundBehaviour = "throw";
+
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(handedOff, "the heartbeat was never stopped").toContain(PRESS);
+    expect(pressSealedLive(), "a press whose refund threw was sealed").toBe(false);
+    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+
+    /* And the sweep, reading the same receipts, pays the shares once. */
+    await sweep();
+    expect(refunds).toEqual([{ amount: SHARES, reference: `op:${PRESS}:charge` }]);
   });
 
   it("A TOTAL LOSS IS STILL ONE WHOLE REFUND — the sweep pays the whole, never the shares on top", async () => {
@@ -1432,8 +1463,8 @@ describe("⚠ a Regenerate killed after a sheet is refused twice (#2133)", () =>
     judgeRefuses = new Set(["frontFull", "backFull"]);
     pressRefundBehaviour = "kill";
 
-    await expect(redoCastPackage(dependencies({ pressLanded: (async () => false) as never }), input))
-      .rejects.toThrow("killed");
+    void redoCastPackage(dependencies({ pressLanded: (async () => false) as never }), input);
+    await vi.waitFor(() => expect(killReached).toBe(true));
     const outcome = await sweep();
 
     expect(outcome).toEqual({ type: "paid_failure", chargedCredits: PACKAGE_PRICE, refundedCredits: PACKAGE_PRICE });
