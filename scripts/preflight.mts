@@ -44,6 +44,18 @@ import {
   vitestArgv,
   type PreflightCheck,
 } from "./lib/preflight.mts";
+/* ⚠ THE JUDGE IS IMPORTED, NEVER RE-DERIVED (#2148, round 3). The shared
+   install's reading lives beside `shift-worktree`'s own use of it so that one
+   function decides and two tools print — a second comparison here is working
+   law 4's drift in the place it would be hardest to notice, because both
+   readers would be right most days. `scripts/lib/shiftWorktree.mts` is a pure
+   module (no top-level statement runs on import) and `janitor-local-branches`
+   already imports it as a library. */
+import {
+  installedLockfilePath,
+  judgeSharedInstall,
+  sharedInstallRedDiagnosis,
+} from "./lib/shiftWorktree.mts";
 
 function fail(message: string): never {
   console.error(`preflight: ${message}`);
@@ -353,6 +365,54 @@ if (firstRed) {
   console.log(`PREFLIGHT RED on ${firstRed.check.id}. Fix it, then run again — the gate would have`);
   console.log("spent ~7 minutes to tell you the same thing, and this is the run the");
   console.log("3.1-runs-per-PR figure exists to remove.");
+  if (firstRed.check.id === "typecheck") {
+    /* ⚠ THE RED THAT IS NOT YOURS, AND THE ONE THIS TOOL COULD NOT COMPLETE
+       THROUGH ON THIS MACHINE FOR A WHOLE DAY (#2148). One `node_modules`
+       serves every worktree by junction, so a dependency bump on main reddens
+       every tree cut before the install caught up — three errors in two auth
+       files, nobody's diff, and preflight stops there with six of its nine
+       checks never reached.
+
+       Read only under a typecheck red, and only read: `node_modules/.pnpm/lock.yaml`
+       is pnpm's own copy of the lockfile it installed from, so this is a byte
+       compare against an artifact the installer wrote. No `pnpm` call, no
+       network, and nothing on the green path. */
+    const readOrNull = (p: string): string | null => {
+      try {
+        return fs.readFileSync(p, "utf8");
+      } catch {
+        return null;
+      }
+    };
+    /* ⚠ THE OWNING TREE IS RESOLVED, NOT ASSUMED TO BE US (#2148, round 2's
+       lesson). In a worktree `node_modules` is a junction, so the tree whose
+       lockfile an install would produce is the junction's TARGET's parent —
+       never `repoRoot`. A tree with its own real install resolves to itself,
+       which is the same reading giving the right answer on both roads. */
+    const installOwner = ((): string | null => {
+      try {
+        return path.dirname(fs.realpathSync(path.join(repoRoot, "node_modules"))).replace(/\\/g, "/");
+      } catch {
+        return null;
+      }
+    })();
+    const reading = installOwner === null
+      ? null
+      : judgeSharedInstall({
+          installedLock: readOrNull(installedLockfilePath(repoRoot.replace(/\\/g, "/"))),
+          treeLock: readOrNull(path.join(repoRoot, "pnpm-lock.yaml")),
+          repairTreeLock: readOrNull(path.join(installOwner, "pnpm-lock.yaml")),
+          /* ⚠ EMPTY ON PURPOSE. Diagnosing THIS red is the job; which other
+             trees a refresh would move is `shift-worktree add`'s sentence, and
+             printing 36 paths under a red is the wall round 1 measured. */
+          otherTrees: [],
+        });
+    const diagnosis = reading === null ? [] : sharedInstallRedDiagnosis(reading, installOwner ?? repoRoot);
+    if (diagnosis.length > 0) {
+      console.log("");
+      for (const line of diagnosis) console.log(line);
+    }
+  }
   if (firstRed.check.id === "architecture" || firstRed.check.id === "capability") {
     // ⚠ THE COMMONEST HONEST RED, AND IT IS ABOUT ORDER RATHER THAN CORRECTNESS.
     // `.githooks/atlas-stage` regenerates both maps AT COMMIT TIME (#501), so a

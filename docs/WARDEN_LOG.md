@@ -685,3 +685,232 @@ made); whether the casting writers belong in `audit_logs` (run 2's question, sti
 no production variable, no flag, no migration. Four read-only disposables against production, all
 deleted at close. One production fast-forward of the main tree (`7ac831b5` → `f876d5d9`) to clear
 the ordinary merge race before the rite, which rewrote no history.
+
+## Run 7 — 2026-10-10 01:15–03:0x AEST (Warden, patrol #7, crew run #640)
+
+Ran because `patrol-clocks.mts` read the seat **DUE today** (7 days since run 6) with his
+Security switch ON. Read one by one rather than off the digest: no `urgent` card open at all; no
+repair owed (`pr-merge-in-order` over #2145, #2157, #2163, #1889 — `review=no-verdict` or
+`declined` on every current head, no `**Relay finding — HELD**`); no new Desk replies (271/271
+acknowledged, read at start and again before close); no card taps waiting; the Notion Founder
+Desk showing **0 `New` rows**; N2b's three build cards held by their own bodies behind PR #2145;
+and #2164's Performance card claimed by a live seat (`seat1-20261010-005320`, run row #639) one
+minute into these reads. A fired clock with its switch on outranks the category order (#505), and
+the Machinist's own patrol #7 handoff named this seat as the next shift's.
+
+**Run 6's brief worked in its stated order, and all five of its finding cards are CLOSED** —
+which is the first time this seat has opened a run with nothing of its own outstanding.
+
+**Two findings, both filed, one repaired tonight.** The headline is that the two advisories which
+arrived in the same second got opposite treatment, and the difference was entirely which one the
+gate could see.
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| **run 6's five cards** | the queue | **#1803, #1805, #1806, #1807, #1808, #1809 — all CLOSED** | #1805 on his *"add the gate step"*; #1806 on his *"this is my engineers account"*; #1807 on his *"ignore small days"*. Run 6 §E item 1, and item 4's *"did it draw a ruling"*, are both discharged. |
+| **`pnpm audit`, ALL SCOPES** (run 6 §E item 2 — the half that is the seat's, not the gate's) | `4d6f94a36`, lockfile at HEAD | ⚠ **1 — one high.** `source-map-js` <1.2.2, GHSA-68fv-2mgg-jv7q | **W7-A → #2169, repaired tonight in PR #2171.** §B. |
+| `pnpm audit --prod` | the same tree | **0** | The gate's own half is clean, which is why nothing said a word. |
+| **Dependabot alerts, NO `state` filter, counted by state HERE** (run 6 §D's instruction) | the alert list, all pages | **120 all time — 119 `fixed`, 1 `open`** | **The population is fully accounted for this run**, which run 6 could not say. The one open alert is W7-A's. |
+| **`pnpm warden:overrides`** — the standing per-run reading from run 7 on (#1815) | `package.json` + `pnpm-lock.yaml`, 716 packages | **10 overrides: 7 govern a package, 3 govern NOTHING** — `lodash-es`, `mdast-util-to-hast`, `tar` | ⚠ **And all ten are `^`-bounded, so #1808 HELD** — the six unbounded `>=` run 6 found are gone (`558af8636`). The three dead ones are recorded, **not carded**: #1815 ruled removal is its own decision with its own receipt, and the reader exits 0 on purpose. |
+| **`secrets.yml` cron of 2026-10-05** (run 6 §E item 3) | run **37381106372**, 2026-10-05T22:13:54Z, `6b255f030`, `schedule` | **4460 commits scanned, `no leaks found`** | Baseline 3390 → 3683 → 3793 → 4102 → **4460**, still zero. The cron is Monday and nothing is missing. |
+| `audit_logs` (taken every run since run 3) | production, **1187 rows**, 2026-07-10 → 2026-10-09T14:55:44Z | **1003 info · 182 warning · 2 critical.** 68 rows since run 6 | Run 6 read 1120 / 980 / 138 / 2. **The two criticals are still the only two this log has ever had** and are still #1807's health alarm, 2026-09-29. |
+| **the metadata-only boundary — THE READER REWRITTEN per run 6 §C.2** | the nine boundary keys, walked over every parsed `metadata` JSON | **157 of 1187 rows carry a boundary key, and all 157 are `system.health_alert` at `$.description`.** Zero rows under any other action, at any path | ✅ **The boundary HOLDS and this time that is EVIDENCE** — §C. |
+| **`abuse.*` rows** | production, all time | ⚠ **15 — the first this product has ever written.** `abuse.free_scan_capped`, every one `userId 1`, 2026-10-08 09:22:32Z → 09:25:58Z | **W7-B → #2170.** §D. Unchanged from run 2 until now: the login-attack detector still has nothing to report. |
+| `blocked_ips` / staff population / suspensions / lockouts | production | **0 blocked IPs · 2 admins, 4 users · 0 suspended · 0 frozen · 0 with failed logins · 0 locked** | The staff population is **unchanged from run 6** and is now explained rather than open: #1806 closed on his word. |
+| **branch protection** | `GET …/branches/main/protection` | ⚠ **CHANGED, and correctly: five required checks → SEVEN.** Now `gate-checks`, `founder-gate`, `Socket Security: Pull Request Alerts`, `static-shapes`, `bundle-budget`, **`unit-tests-1`, `unit-tests-2`** | #1811's shard (`f40dd404c`) split the unit job and **the required-check list moved with it** — so both shards are required, not merely running. `strict: false`, `enforce_admins: false`, `required_pull_request_reviews: null`, force-push and deletions off, all unchanged. `enforce_admins` is still his call (#858) and still gets no recommendation. |
+| the security surface's diff since run 6 | `git log --since=2026-10-03` over `server/security`, `_core`, the auth routes, billing, admin, stripe, `.github`, `shared/const.ts` | **31 commits.** Auth-touching: `86c560c35` (cookie 2.0.1 — `parse` → `parseCookie`), `aec960567` + `27101cbd6` (a database hiccup no longer reads as "sign in" / no longer signs a customer out), `47718d9cb` (erasure waits out a render), `3d25f5606` (the data export), `fce19fa5c` (a script changing live Stripe prices holds for review) | All narrow and all repairs. Nothing widened a surface. |
+| semgrep, tree | run **37945774253** (`team/junction-vs-directory-2161`), job `static-shapes`, semgrep 1.174.0 | **`Ran 76 rules on 2163 files: 0 findings`** | 2033 → 2163 files, which is the week's test growth the Machinist measured at the same hour (985 → 1071 test files). Row appended to `docs/WARDEN_SEMGREP.md`. |
+| access-control suites + the wired controls | `4d6f94a36` | **7 files / 205 tests green** — `approvalGate`, `staffImageBoundary`, `publicInputStrictness`, `sessionIssuanceSites`, `loginAttackAlert`, `bugReportInbox`, `moneySurfaceClassifier` | Run 6 read 7 / 172. Keyed on the **Test Files** line as well as the Tests line. Five mint sites still five. |
+
+### B. W7-A — the two advisories from one second, and only one of them was ever going to be seen
+
+`pnpm audit` all scopes reported one **high**: `source-map-js` <1.2.2, an event-loop denial of
+service, reached twice — `@tailwindcss/vite > @tailwindcss/node > source-map-js` and
+`postcss > source-map-js`. Both are devDependencies, so `--prod` is clean.
+
+**Three readers sharing no resolver agree**: `pnpm audit` at the lockfile; GitHub's dependency
+graph as **Dependabot alert 120** (`scope: development`, created **2026-10-07T08:54:06Z**, never
+dismissed, first patched `1.2.2`); and GitHub's own push warning on the repair's push.
+
+⚠ **Alert 119 was created in the same second: `proxy-addr`, CRITICAL, `scope: runtime`.** It was
+repaired within the day by `6f5f33f9f` (#1896) because it reddened every PR's gate. **Two
+advisories, one scrape, one second apart — the one the gate could see was fixed in hours and the
+one it could not had been open three days when this clock fired.**
+
+**That is not a defect in the gate, and the distinction matters for run 8.**
+`scripts/lib/dependencyAdvisories.mts` is explicit about its own scope in two places — line 51,
+*"`--prod` does not read devDependencies. The card's instance was a production dependency and
+`--prod` is what it proposed, so that is what runs"*, and the step prints *"⚠ devDependencies are
+NOT read here (--prod). A green line is a floor, not coverage"* **on every run**. The honest state
+is that **the dev half has exactly one reader — this seat, once a week** — so an advisory landing
+on a Wednesday waits up to seven days. **Not proposed as a build here**: run 4's ruling that a
+gate step is the founder's decision stands, and #1805 is the road that worked — evidence from the
+seat, the decision his.
+
+**The repair** (PR #2171): one `pnpm.overrides` line, `^`-bounded per #1808. `1.2.2` is inside
+**both** parents' declared ranges (`@tailwindcss/node@4.3.3` asks `^1.2.1`; `postcss@8.5.28` asks
+`^1.2.1`), so no parent bumps and no semver contract moves — the lockfile moves one package, one
+patch step, and nothing else resolves differently. #1808's hazard was checked rather than assumed:
+`npm view "source-map-js@^1.0.0" version` tops out at `1.2.2` and `npm view source-map-js version`
+is `1.2.2` too, so the newest inside the major IS the newest overall and no major sits behind the
+floor.
+
+**Severity honestly rather than inflated: nothing on a customer's path is exposed.** Neither
+`postcss` nor `tailwindcss` is in `dependencies` — they run in the BUILD, over source we author.
+Latent, not live, and fixed anyway because "unreachable today" describes today's call graph.
+
+⚠ **What the local run does NOT prove, stated on the PR rather than implied.** The shared
+`node_modules` is junctioned to the main tree's, sits on a **different lockfile**, and has 20
+other trees and a live builder seat on it (#2148's lane) — so the floor was moved with
+`pnpm install --lockfile-only` and **no local run executed against the new resolution**, exactly
+as PR #1804 did and for the same reason. **`pnpm preflight` is RED there on three typecheck errors
+in files the diff never touches** (`cookie` has no exported member `parseCookie`), and that was
+**proven** to be the install rather than the branch: the installed package is `cookie@1.0.2`
+exporting `parse, serialize`, the lockfile wants `cookie@2.0.1` (`86c560c35`), and **the identical
+three errors appear in the MAIN tree, which carries none of the diff.** The gate's clean install
+is the arm that matters.
+
+### C. The boundary reader is a verified instrument now, which run 6 said it was not
+
+Run 6 §C.2 recorded that `metadata like '%description%'` returned **132** hits where run 4
+returned **0**, every one a `system.health_alert` whose own metadata carries a field called
+`description` — so the boundary held but **run 4's 0 was luck, not soundness**, and a substring
+over a JSON blob cannot tell a leaked customer sentence from a legitimate field of the same name.
+
+Run 7's reader **parses the JSON and reports the PATH together with the ACTION**, and it took its
+controls before any verdict counted:
+
+```
+CONTROL positive (must find 2, nested + in-array): ["$.inner.masterPrompt","$.list[0].resultUrl"]
+CONTROL negative (must find 0): []
+```
+
+So it finds a key nested inside an object AND inside an array, and invents none. The reading:
+
+```
+1187 rows with metadata · 157 carrying any boundary key
+157   system.health_alert  $.description
+```
+
+**One action, one path, and nothing else anywhere.** `masterPrompt`, `technicalSchema`,
+`preferences`, `resultUrl`, `imageUrl`, `imageKey`, `passwordHash` and `brief` appear at **no path
+under any action**. #255's bug-report exception holds (no `bug%` action exists in the table at
+all). **A 0 from this reader is evidence from tonight on**; run 6's caveat is discharged.
+
+⚠ **One instrument failure of my own, recorded because it nearly produced a false path-one
+reading.** Asked who writes `abuse.free_scan_capped`, I grepped the string VALUE and the camelCase
+spelling over `server/` and `shared/` and got back exactly one line — the constant's own
+declaration in `shared/auditActions.ts`. That reads as *"no writer in the tree, and 15 rows in
+production"*, which is a control-from-nowhere and would have been a dramatic and completely wrong
+finding. The writer was found immediately by grepping the **symbol** `ABUSE_FREE_SCAN_CAPPED`.
+**When an action, flag or price is declared in a constants module, every call site names the SYMBOL
+and none of them contains the value** — so grepping the value is guaranteed to find only the
+declaration. Same family as the shape-vs-declaration class the Atlas collectors were fixed for.
+
+⚠ **And one reading was deliberately NOT carded.** The health alarm wrote **25 rows on
+2026-10-09**, all identical. Its metadata now carries `sampleFloor: 10` — **#1807's repair is live
+and working** — and at `total24h: 10, failed24h: 3` it is reporting a **real** 70% rate at the
+smallest sample it is allowed to judge, not a false one. The repetition is #1807's *"one row a
+day"* option, which his ruling **explicitly declined** in favour of ignoring small days (*"the
+other two make a false alarm quieter, and it would still be false"*). A closed card's reason is a
+standing verdict; refiling it as noise would be the anti-boredom rule's exact failure. Recorded
+here, nowhere else.
+
+### D. W7-B — the first `abuse.*` rows this product has ever written, and the control is counting the wrong thing
+
+`abuse.free_scan_capped` fired **15 times**, all `userId 1`, on 2026-10-08 between 09:22:32Z and
+09:25:58Z, with `scansToday` climbing **41 → 55** against `cap: 40`.
+
+The control itself is well built and does exactly what its docblock says — it counts first and
+decides second, it fails closed when the database cannot answer, it writes one row per refused
+scan on purpose, and a capped scan deliberately shows today's panel with no error under the
+disappearing-technology law. **None of that is the finding.** The finding is the arithmetic:
+
+| reading | value |
+|---|---|
+| `face_scan_daily_usage`, the whole table | **one row, all time** — `user=1, day=2026-10-08, scans=55` |
+| `casting_face_scans` that same day | **20 rows, 20 distinct `(candidateId, versionKey)` pairs** |
+| so one face cost | **55 ÷ 20 = 2.75 counts** |
+| `casting.scan_miss` beside them | newest six at one-second intervals, `cacheSize` 14 → 19 — a cold scan re-asked as it fills |
+
+`server/castingV2/faceScanDailyCap.ts` justifies the number 40 as *"forty distinct faces or
+versions looked at for the first time, which is far past any session a person actually has."*
+**Measured, that is false by about a factor of three**: forty counts bought roughly fifteen faces,
+and the refusals began while the account still had 500+ candidates it could legitimately open.
+
+Read at the code rather than inferred: `server/routes/castingV2.ts:2425` asks the cap **before**
+anything decides whether the scan is cold or already in hand; `server/db/quietLimits.ts:206`
+increments unconditionally on every call; and `client/src/pages/CastingSheet.tsx:1704` is
+`refetchInterval: 1_000` while `done === false`, over a scan the procedure's own docblock says
+takes five to ten seconds. The client's comment beside it says the free retries and refocus
+refetches *"cost nothing"* — **true of house money, false of this allowance**, which is the whole
+defect in one sentence.
+
+⚠ **And the number is ALSO too low on the distinct-face measure, which only shows once the
+counting is fixed.** Distinct faces per day for the only account that has ever scanned: **189, 56,
+43, 39, 20, 13, 8, 1, 1, 1.** Three of ten days exceed 40; a cap of 40 would have refused about
+**92% of the 22 September session**. So fixing the counting alone would still refuse real work,
+and #2170 asks for both in one change.
+
+**What makes this a card rather than a hardening proposal**: the module wrote down its own trigger
+condition — *"if it ever turns out that real people are hitting this, the row is where that will
+show, and THEN it is a copy decision with evidence behind it rather than a guess."* The rows are
+there. The counting repair needs no decision; the copy half stays his, and is not folded in.
+
+⚠ **One figure is deliberately not read and must not be guessed: what one scan costs us at fal.**
+A scan is ~20 segmenter calls, so 189 faces is ~3,780 calls in a day — but the per-call price was
+not read this shift, and the right cap is a cost decision that wants it.
+
+### E. What this run leaves standing, and run 8's brief
+
+**Filed: two findings, two cards** — **#2169** (W7-A, **repaired, PR #2171**) and **#2170** (W7-B,
+a `bug` a customer can hit, unbuilt). **Closed: nothing of this seat's** — run 6's five were all
+closed by their own shifts before this run opened.
+
+**Run 8 (~2026-10-17) takes, in order:**
+
+1. **Whether #2170 landed, and read the counting at the rows rather than at the merge.** If it has
+   shipped, `face_scan_daily_usage.scans` for a day should equal the distinct
+   `(candidateId, versionKey)` count in `casting_face_scans` for that day — the two tables are an
+   independent cross-check and neither is derived from the other. If it has not, it is the first
+   item again: it is the only finding on the board that silently refuses honest work.
+2. **`pnpm audit` with ALL SCOPES, expecting 0** — and if it is not 0, the reading is also whether
+   #2171's floor held or a new chain arrived. ⚠ Read the Dependabot alerts beside it with **no
+   `state` filter, counting by `state` yourself**: that worked this run (120 = 119 + 1, fully
+   accounted for) and is the only form that has. **The `--prod` half is the gate's, not the
+   seat's** — a non-zero `--prod` on `main` would mean something went around the gate.
+3. ⚠ **The dev-scope gap is now MEASURED rather than predicted (§B), and it is evidence for him,
+   not a build for a shift.** If a second dev-scope advisory sits open a week, that is the second
+   instance and worth putting on his Desk with both — one instance is a story, two is a pattern.
+4. **The `secrets.yml` crons of 2026-10-12 (and 10-19 if run 8 slips)**, at their logs, for the
+   commit count and the zero.
+5. **Run 6 §E item 4 — Socket's known-vulnerability alert — is STILL UNPROVEN, and its weight has
+   dropped.** Checked this run on PR #1889 (`stripe` 20.3.0 → 23.0.0, a raising lockfile diff):
+   `Pull Request Alerts` **pass**, `Project Report` **pass** — but that diff carries no published
+   advisory, so it says nothing either way, exactly as run 6's lowering diff did not. ⚠ **The
+   proof is opportunistic and must stay so** — manufacturing it would mean deliberately adding a
+   vulnerable dependency, which is not this seat's brief. **And since #1805 the question is
+   narrower: the gate now refuses on an unacknowledged PRODUCTION advisory whatever Socket says,
+   so Socket's answer only still matters for a DEV-scope one — which is §B's hole.**
+6. The `audit_logs` read, the surface diff, the override resolution and the standing two (semgrep,
+   the suites), as always. ⚠ **The boundary reader is sound now and its 0 counts** — keep the two
+   controls in front of it, because the version that needed replacing also returned 0 for a year.
+7. ⚠ **The three dead overrides (`lodash-es`, `mdast-util-to-hast`, `tar`) are NOT a finding and
+   must not become a card by accumulation.** #1815 reasoned it out: a bounded dead override becomes
+   a live floor the moment its package returns as a transitive, and removal is a separate decision
+   with its own receipt. Report the count, take no action.
+
+**Not a Warden brief, named so it is not re-proposed:** a gate `audit` step for dev scope (§B — his
+decision, evidence only); `enforce_admins` (his call, #858, still no recommendation); the Socket
+dashboard's policy (not this seat's access); a row-level reconciliation of the credit ledger (run
+5's limit); W5-E's fraud cap (his decision, already made); whether the casting writers belong in
+`audit_logs` (run 2's question, still nobody's card); the health alarm's duplicate rows (§C — his
+ruling declined it).
+
+**Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render,
+no production variable, no flag, no migration. Three read-only disposables against production, all
+deleted at close. One fast-forward of the clean main tree (`d0c2f64f9` → `4d6f94a36`) so the
+dependency floor was read at the real tip rather than twelve commits behind it — no history
+rewritten, no branch switched, and no live seat was in that tree.

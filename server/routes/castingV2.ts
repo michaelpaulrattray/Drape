@@ -77,6 +77,7 @@ import {
 } from "../castingV2/castingV2Scope";
 import {
   panelScanOf,
+  scanIsInHand,
   scanProgressOf,
   scannedFaceAlreadyRead,
   scanSettlesWithin,
@@ -2421,13 +2422,23 @@ export const castingV2Router = router({
 
         It is asked AFTER `imageKey` is resolved so that a face with no picture to
         read — which buys no scan at all — does not spend a count.
+
+        ⚠ AND IT IS NOT ASKED AT ALL FOR A FACE WHOSE READING IS ALREADY IN HAND
+        (#2170). The panel asks this procedure again every second while a
+        reading fills, and each ask used to spend a count: on the first real day
+        an account spent 55 counts on 20 faces and was then refused 15 times.
+        A count is meant to buy a distinct face-version — the cap's own stated
+        basis — so a look that `scannedFace` will answer from what it already
+        holds (in flight or settled) skips the cap and spends nothing. The
+        in-hand test reads the same entry `scannedFace` answers from, so the two
+        cannot disagree about what was already bought.
       */
-      if (imageKey !== null && await mayBuyFaceScan(ctx.user.id)) {
-        const key = {
-          userId: ctx.user.id,
-          candidateId: face.candidateId,
-          variantId: face.anchor?.id ?? null,
-        };
+      const key = {
+        userId: ctx.user.id,
+        candidateId: face.candidateId,
+        variantId: face.anchor?.id ?? null,
+      };
+      if (imageKey !== null && (scanIsInHand(key) || await mayBuyFaceScan(ctx.user.id))) {
         /*
           A FAILED SCAN IS TODAY'S PANEL, not an error. The user asked to look
           at a face, not to buy a reading, so a segmenter that is down or a
