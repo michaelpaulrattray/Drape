@@ -585,7 +585,7 @@ export const OUTFIT_PLATE_SIZE = { width: 3504, height: 2336 } as const;
  * # What it costs, stated beside the choice (disappearing-technology law, 3)
  *
  *   price     one extra render per Sign, **$0.14–$0.15** at this size. House
- *             money; no customer credit moves, and the Sign's 8,500 is untouched.
+ *             money; no customer credit moves, and the Sign's 3,250 credits are untouched.
  *
  *             ⚠ **THIS BAND IS RECORDED HERE RATHER THAN CITED, since #1554.**
  *             It read *"the band `createFalSunburstViewEngine` records"* until

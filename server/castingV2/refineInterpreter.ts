@@ -5,7 +5,7 @@
  *
  * This is a free text call, and it happens before anything is claimed or
  * charged. So "make her older" costs the user nothing and tells them the truth
- * immediately, instead of taking 25 credits to produce a picture that was never
+ * immediately, instead of taking 1,750 credits to produce a picture that was never
  * going to be what they asked for. Same arrow as the roll's compile-and-admit-
  * first: refuse while it is still free.
  *

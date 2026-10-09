@@ -16,8 +16,8 @@
  *
  *   goes    her signed LINKAGE — and that is all. Her candidate returns to
  *           `ready` on a live sheet and can be signed again: the face, the row
- *           and the 20 credits that made it belong to the SHEET, bought with
- *           the roll rather than with the Sign
+ *           and the 200 credits that made it (`CASTING_V2_COSTS.rollCandidate`)
+ *           belong to the SHEET, bought with the roll rather than with the Sign
  *   stays   every other candidate on a sheet that is STILL OPEN; they belong to
  *           the sheet, not to her, and the sheet is a living thing
  *   stays   the session and its rolls, which are shared history
@@ -123,8 +123,8 @@ export async function purgeCastLineageIn(
     Nothing about the candidate belonged to the Cast. Sign COPIES the chosen
     image to a new Cast-owned object (`storageCopyExact`), so deleting the Cast
     destroys the copy and leaves the sheet's own face untouched. The row, the
-    image and the 20 credits that produced it are the SHEET's — bought with the
-    roll, not with the Sign.
+    image and the 200 credits that produced it (`CASTING_V2_COSTS.rollCandidate`)
+    are the SHEET's — bought with the roll, not with the Sign.
 
     So on a live sheet she returns to `ready`, keeps her place in the tray if
     she was kept, and can be signed again. Deleting a Cast undoes the Sign; it

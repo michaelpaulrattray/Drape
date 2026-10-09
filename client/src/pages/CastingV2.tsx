@@ -775,7 +775,7 @@ export default function CastingV2() {
               brief box stopped being one, and the reason `BriefField` was
               written applies to this box more than to that one: past about
               sixty characters the beginning of your own sentence scrolls out
-              of view, so the thing you are about to spend 160 credits on
+              of view, so the thing you are about to spend 1,600 credits on
               cannot be checked before you spend it — and THIS is the box a
               first roll is typed into. Same component, same four-line cap, and
               the resting state is identical: it grows from one line, so a

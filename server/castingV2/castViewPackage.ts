@@ -138,10 +138,12 @@ export function referenceRuleFor(
  * retires and the **three-quarter returns**: 45° was the one genuinely missing
  * viewpoint, and it is the one downstream generation asks for most.
  *
- * **The price does not move**: still five generated views, and the total is
- * still the list's own length priced — 3,500 + 5 × 1,000 since #1601 item 1
- * (2026-10-01), 200 + 5 × 50 before it. v3.1 swapped a view; it never
- * touched the arithmetic.
+ * **The price did not move**: still five generated views, and the total was
+ * still the list's own length priced — a promotion plus five view slices, on
+ * #1601's scale from 2026-10-01 and on the older one before it. v3.1 swapped a
+ * view; it never touched the arithmetic. ⚠ Since #1968 there is no arithmetic
+ * to touch: the Sign is one flat 3,250 credits
+ * (`CASTING_V2_SIGN_PRICE_CREDITS`), whatever the view list holds.
  *
  * **Historical record, as ever.** A Cast keeps the package it bought. "Package
  * Three" keeps her Portrait forever; every Cast renders its own slots from its

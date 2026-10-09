@@ -12,7 +12,7 @@
  *
  * Every rule the stack already carried travels with it and none is restated
  * here: the ORIGINAL stays at the head and stays addressable, because that is
- * what makes backing out free rather than another 25 credits (D-121); a
+ * what makes backing out free rather than another 1,750 credits (D-121); a
  * refinement still running shows as a ghost chip drawn from server truth, so it
  * survives closing and reopening the sheet (D-161); the label is their own
  * sentence and the filing is on hover, never printed (D-162).

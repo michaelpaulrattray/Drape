@@ -162,7 +162,7 @@ export const ConceptUploadCard = forwardRef<ConceptUploadHandle, {
   /*
     ⚠ A MISSED DROP NAVIGATES THE TAB TO THE FILE, and takes her typed brief
     with it. That is the browser's default for a drop anywhere the page has not
-    claimed, and it is the single worst outcome on this page — a 160-credit
+    claimed, and it is the single worst outcome on this page — a 1,600-credit
     brief replaced by a JPEG in a viewer, with no undo.
 
     Swallowing it at the window is also the whole of his build note *"a drop

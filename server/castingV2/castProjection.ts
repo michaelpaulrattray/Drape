@@ -428,8 +428,9 @@ export const TOTAL_LOSS_CONFESSION =
  * database was bought under; the body says why each is gone.
  *
  * His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."*
- * ⚠ **The 50 in that sentence is history as of 2026-10-01 — a view is 1,000
- * ledger (200 display) under his approved pricing (#1601 item 1), and a paid
+ * ⚠ **The 50 in that sentence is history as of 2026-10-01 — a view was 1,000
+ * ledger (200 display) under his approved pricing (#1601 item 1) until #1968
+ * left a view no price of its own, and a paid
  * Try again is 1,850 (370 display), which is its own price rather than a
  * view's.** His words are kept because the RULE in them is what this function
  * is: you pay per view you keep, and asking again for a view you were refunded

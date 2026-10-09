@@ -191,7 +191,7 @@ export const GOLDEN_BRIEFS: readonly GoldenBrief[] = [
  *     names the value it lands on.
  *   `outOfTier` — a real ask the tier does NOT cover, which must be REFUSED for
  *     free. These matter more than they look: an interpreter that quietly
- *     stretches to fit "make her older" charges 25 credits to make a face that
+ *     stretches to fit "make her older" charges 1,750 credits to make a face that
  *     is not older, and the user is right to be annoyed.
  */
 export type GoldenRefinement = {

@@ -121,7 +121,7 @@ export function visibleShortlist(input: VisibleShortlistInput): StripEntry[] {
           deleted the projection's `signed` field on the strength of it). She
           therefore leaves `base`, `present` no longer holds her, and without
           this line the overlay would cheerfully ADD HER BACK from a stale
-          optimistic flag — a 450-credit purchase re-appearing in the tray she
+          optimistic flag — a 3,250-credit purchase re-appearing in the tray she
           graduated out of, and re-enterable as a Sign target.
 
           Keep is only drawn on a ready tile, so this can never fire on the
