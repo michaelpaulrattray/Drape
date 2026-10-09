@@ -106,6 +106,30 @@ class TestSignPersistenceError extends Error {
   }
 }
 
+/**
+ * WHAT THE LOG SAID, because for two of N2b's failures the sentence IS the
+ * whole defect (#1242).
+ *
+ * A reader that throws and a write that throws both leave the Sign sealed and
+ * the receipt recorded, so EVERY outcome assertion in this file is green under
+ * either. Measured by sabotage: removing the reader's own backstop and removing
+ * the write's own catch each survived five arms apiece. What actually changes is
+ * which sentence a human reads when they come looking — and the wrong one says
+ * "the package could not be sealed - leaving it for the recovery sweep" about a
+ * package that was sealed, on a money road, because two lines of prose failed.
+ */
+const logged: string[] = [];
+vi.mock("../logging/logger", () => {
+  const record = (fields: unknown, message?: string) => {
+    logged.push(typeof fields === "string" ? fields : String(message ?? ""));
+  };
+  const shape = {
+    error: record, warn: record, info: record, debug: record, fatal: record, trace: record,
+    child: () => shape,
+  };
+  return { logger: shape, createModuleLogger: () => shape };
+});
+
 vi.mock("./spendGuards", () => ({ assertNotFrozen: vi.fn(async () => undefined) }));
 
 vi.mock("../db/castingV2Sign", () => ({
@@ -440,6 +464,7 @@ beforeEach(() => {
   selectedVariant = null;
   editSentences = [];
   personaWrites.length = 0;
+  logged.length = 0;
   vi.clearAllMocks();
 });
 
@@ -1293,6 +1318,9 @@ describe("a signed Cast records its terminal event (#1429)", () => {
  * orderings — *"no step added to the Sign ceremony"* and *"a read that fails
  * leaves both lines empty"* — and an ordering is only ever visible from here.
  */
+/** The sentence the seal logs when it genuinely fails — never about these. */
+const SEAL_LIE = "the package could not be sealed";
+
 describe("N2b's two lines are born inside the Sign", () => {
   const reader = (lines: { personality: string; voice: string } | null) => ({
     read: vi.fn(async () => {
@@ -1348,17 +1376,45 @@ describe("N2b's two lines are born inside the Sign", () => {
     latency to the first picture she sees, and is exactly the step his brief
     forbids being added to the ceremony.
   */
+  /*
+    ⚠ **THIS ARM IS DEFERRED AND THE REASON IS A SURVIVING SABOTAGE.** Its first
+    shape read the journal — `persona:read` before `package`, `persona:write`
+    after `seal:success` — and turning `derivePersonaLines(...)` into
+    `await derivePersonaLines(...)` LEFT IT GREEN: a reader that resolves
+    immediately journals its entry first either way, so the arm could not tell
+    *started before* from *awaited before*, which is the entire claim.
+
+    So the reader's promise is now resolved BY the package build. If the code
+    awaits the read before dispatching the package, nothing ever resolves it and
+    this arm hangs to its timeout instead of passing — which is the discriminator
+    the first shape did not have.
+  */
   it("starts the read BEFORE the package and lands the write AFTER the seal", async () => {
+    let release: (() => void) | null = null;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const deferred = {
+      read: vi.fn(async () => {
+        journal.push("persona:read");
+        await held;
+        return LINES;
+      }),
+    };
+
     await signCandidate(
       {
         schedulePackage: awaitPackage,
-        buildPackage: packageReturning({}),
-        personaReader: () => reader(LINES),
+        /* The package is what lets the read finish, so an awaited read cannot
+           reach this at all. */
+        buildPackage: vi.fn(async (...args: unknown[]) => {
+          release?.();
+          return (packageReturning({}) as unknown as (...a: unknown[]) => Promise<unknown>)(...args);
+        }) as unknown as typeof buildCastPackage,
+        personaReader: () => deferred,
       },
       input,
     );
 
-    expect(journal.indexOf("persona:read")).toBeLessThan(journal.indexOf("package"));
+    expect(deferred.read).toHaveBeenCalledTimes(1);
     expect(journal.indexOf("persona:write")).toBeGreaterThan(journal.indexOf("seal:success"));
     expect(personaWrites).toHaveLength(1);
     expect(personaWrites[0]).toMatchObject({ modelId: expect.any(Number), ...LINES });
@@ -1416,6 +1472,16 @@ describe("N2b's two lines are born inside the Sign", () => {
     expect(journal).toContain("seal:success");
     expect(receipts).toHaveLength(1);
     expect(personaWrites).toHaveLength(0);
+    /*
+      ⚠ AND IT IS CAUGHT BY THE READ'S OWN BACKSTOP, NOT BY THE SEAL'S CATCH.
+      Both leave the Sign sealed — measured by sabotage, every assertion above
+      survives the backstop's removal — so the only thing that distinguishes
+      them is the sentence a human reads afterwards. Letting the throw reach the
+      seal's catch would log "the package could not be sealed" about a package
+      that was sealed, and that is what sends somebody looking at the money.
+    */
+    expect(logged.some((line) => line.includes("the two-line read threw"))).toBe(true);
+    expect(logged.some((line) => line.includes(SEAL_LIE))).toBe(false);
   });
 
   /*
@@ -1440,6 +1506,9 @@ describe("N2b's two lines are born inside the Sign", () => {
     expect(journal).not.toContain("seal:recovery");
     expect(receipts).toHaveLength(1);
     expect(terminalEvents).toHaveLength(1);
+    /* The sentence is the defect — see the arm above. */
+    expect(logged.some((line) => line.includes("could not be saved"))).toBe(true);
+    expect(logged.some((line) => line.includes(SEAL_LIE))).toBe(false);
   });
 
   it("asks nothing and writes nothing when she refined nothing but still gets her lines", async () => {
