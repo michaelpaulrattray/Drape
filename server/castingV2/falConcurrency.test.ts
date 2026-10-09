@@ -61,8 +61,9 @@ describe("how many at once", () => {
     process.env.FAL_CONCURRENCY = "nonsense";
     /* FIVE since 2026-08-18, when the plate mint became the fifth declared path
        and its slot came out of this — the courtesy — pool rather than a paid
-       one. The panel pays nothing for it at the size it runs: a scan is 20
-       calls, and ceil(20/6) and ceil(20/5) are both four waves. The number
+       one. That cut was judged free at a counted 20 calls a scan; real faces
+       ask 21–27 (`FACE_SCAN_FAL_CALLS`, #2183), where it costs about one wave
+       — `falBudget.ts` carries the correction and why it is not re-cut. The number
        lives in `FAL_ALLOWANCES` and is read from there, so this arm moves when
        the budget does rather than describing an older one. */
     expect(falConcurrencyLimit()).toBe(5);

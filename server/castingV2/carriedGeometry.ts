@@ -73,9 +73,10 @@ const log = createModuleLogger("castingV2/carriedGeometry");
  * THE COST TRIPWIRE, BESIDE THE CONSTANT THAT PRICES IT (fable-1443 condition
  * 4).
  *
- * A read is **$0.005** — the face scan's own measured rate, twenty segmenter
- * calls for $0.100, counted through `scanFace` with a recording reader rather
- * than derived. So this road costs $0.015–$0.030 on the three- and
+ * A read is **$0.005** — fal's published per-request price for SAM 3, the
+ * same per-read figure `FAL_MEASURED_USD` in `scripts/lib/falSpend.mts` prices
+ * a face scan's reads at (⚠ this credited it to *"twenty segmenter calls for
+ * $0.100"* until #2187; a real scan asks more than twenty). So this road costs $0.015–$0.030 on the three- and
  * six-carried-feature faces production actually holds, against a refine that
  * charges 1,750 credits and spends a repaint. That is noise.
  *
