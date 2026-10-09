@@ -109,6 +109,20 @@ describe("the refusing list has a floor, so it cannot be emptied quietly", () =>
       expect(REFUSING_KEYS).toContain(key);
     }
   });
+
+  /*
+    N2b's two lines, named by hand for the reason the block comment above gives:
+    the derived arms below cover a key that is ADDED and vanish with a key that
+    is REMOVED, so the only thing that can refuse a quiet removal is a sentence
+    like this one. The schema calls these two the same family as `masterPrompt`,
+    and the deletion tombstone scrubs them for that reason too
+    (`server/r7-final-cast-deletion.test.ts` holds that end).
+  */
+  it("carries who she is on camera and how she sounds — N2b's two lines", () => {
+    for (const key of ["personality", "voice"]) {
+      expect(REFUSING_KEYS).toContain(key);
+    }
+  });
 });
 
 describe("the refusal — a forbidden key drops the whole event", () => {

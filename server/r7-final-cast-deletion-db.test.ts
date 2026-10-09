@@ -60,10 +60,22 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
 
   async function createModel(userId: number, status: "draft" | "active" | "locked" = "draft") {
     const [inserted] = await connection.execute<ResultSetHeader>(
+      /*
+        THE FIVE PERSONA COLUMNS ARE SEEDED NON-NULL ON PURPOSE — N2b (#1242).
+
+        Without this, the tombstone arm below asserts `personality IS NULL` on a
+        row where it was never anything else, which is an arm that cannot fail
+        and reads as coverage. Seeding them here makes the deletion the only
+        thing that could have cleared them, and it costs the other arms in this
+        file nothing: no assertion anywhere reads these columns except that one.
+      */
       `INSERT INTO models
-        (userId, agencyId, name, masterPrompt, technicalSchema, preferences, status, identityRevisionId, mintedAt)
+        (userId, agencyId, name, masterPrompt, technicalSchema, preferences, status, identityRevisionId, mintedAt,
+         personality, voice, personaDraftedAt, personalityEditedAt, voiceEditedAt)
        VALUES (?, ?, 'Delete Me', 'identity prose', JSON_OBJECT('face', 'evidence'),
-         JSON_OBJECT('referenceImage', ?), ?, 'revision-secret', ?)`,
+         JSON_OBJECT('referenceImage', ?), ?, 'revision-secret', ?,
+         'Watchful, and slower to speak than the room expects.', 'Low, unhurried; the vowels sit back.',
+         NOW(), NOW(), NOW())`,
       [
         userId,
         status === "draft" ? null : `MOD-${randomUUID().slice(0, 8)}`,
@@ -309,6 +321,24 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
         status: "archived", agencyId: null, name: null, masterPrompt: "[deleted]",
         identityRevisionId: null, currentPackageSnapshotId: null, stateVersion: 0,
         sealedIdentitySnapshotId: null, sealedPackageSnapshotId: null, mintedAt: null,
+      });
+    /*
+      AND HER TWO LINES ARE GONE FROM THE ROW — N2b (#1242), the relay's finding
+      1 on PR #2114, asserted at the ROW rather than at the source text.
+
+      Read in its own statement because this one is about columns migration 0075
+      added, and `toMatchObject` cannot tell a column that is null from a column
+      the SELECT never asked for — so the five names are listed here explicitly
+      and compared to null exactly.
+
+      The gate's own arm on this is in `r7-final-cast-deletion.test.ts`, which
+      derives the population and reads the source: this suite SKIPS without a
+      disposable database, so it is the better evidence and never the only one.
+    */
+    expect(await row("SELECT personality, voice, personaDraftedAt, personalityEditedAt, voiceEditedAt FROM models WHERE id = ?", [modelId]))
+      .toEqual({
+        personality: null, voice: null, personaDraftedAt: null,
+        personalityEditedAt: null, voiceEditedAt: null,
       });
     expect(await count("model_package_snapshot_slots", "packageSnapshotId = ?", [packageSnapshotId])).toBe(0);
     expect(await count("model_package_snapshots", "modelId = ?", [modelId])).toBe(0);

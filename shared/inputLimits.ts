@@ -79,7 +79,17 @@ export const CAST_NAME_MAX_LENGTH = 60;
    ⚠ The personality is the longer of the two ON PURPOSE and the two are
    declared apart rather than sharing one number: they are two different things
    -- two sentences against one line -- and a single shared cap would be the
-   kind of accidental equality this file exists to make visible. */
+   kind of accidental equality this file exists to make visible.
+
+   ⚠ **AND "HER CEILING, NOT THE DRAFTER'S" WAS A HOLE, NOW CLOSED -- a FOURTH
+   place reads these numbers** (the relay's finding 3 on PR #2114).
+   `castPersona.ts`'s `fitToHerCap` bounds the DRAFTED line by them too, at a
+   sentence end. Nothing bounded the drafter before, so a long reply was stored
+   and drawn and then she could not save a one-word change to it: the edit
+   procedure refused her at the cap, and the textarea's `maxLength` would not let
+   her type. **A line we write her must be a line she can edit**, so the sentence
+   above is still true of the CRAFT -- the drafter is not style-checked against
+   these -- and no longer true of the LENGTH. */
 export const CAST_PERSONALITY_MAX_LENGTH = 400;
 export const CAST_VOICE_MAX_LENGTH = 200;
 

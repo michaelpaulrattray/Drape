@@ -25,12 +25,25 @@ import type { CastPersonaField } from "./castPersonaField";
 /**
  * THE REDRAFT'S REACH — one Cast, its owner, alive, and NEITHER LINE EDITED.
  *
- * The mint runs once per Sign, so today there is nothing to overwrite. The
- * recovery sweep can re-enter a Sign whose process died, though, and a second
- * derivation landing on a line she had already rewritten would be this feature
- * deleting a customer's own words. The two `isNull(…EditedAt)` terms are that
- * guard and they are IN THE STATEMENT, not in a read before it: a check-then-
- * write here would leave exactly the race invariant 1 exists to refuse.
+ * ⚠ **THERE IS NO REDRAFT ROAD TODAY, AND THIS DOCBLOCK CLAIMED THERE WAS**
+ * (the relay's finding 5 on PR #2114). It read *"the recovery sweep can re-enter
+ * a Sign whose process died"*, and nothing does: `writeCastPersonaDraft` has
+ * exactly one non-test caller, `signService.ts`'s `writePersonaDraft`, reached
+ * only from `completeSignPackage`, which is itself called once — on the live
+ * Sign. The recovery road is `signRecovery.ts`'s `recoverCastingV2SignOperation`
+ * and it does not enter that function. **So the limit, declared rather than
+ * implied (the fidelity law): a Sign whose process dies between the seal and
+ * this write never gets its two lines, the cards simply show nothing, and no
+ * sweep comes back for them.** That is accepted — the Cast, the pictures and the
+ * money are all finished and correct by that point.
+ *
+ * The two `isNull(…EditedAt)` terms stay, and they are worth their two lines for
+ * a reason that does not depend on a sweep existing: they make *her words win*
+ * a property of the STATEMENT rather than of the call graph. Whoever does build
+ * a redraft — the sweep, a repair ceremony, a re-Sign — inherits a write that
+ * cannot land on a line she has rewritten, instead of having to know that it
+ * must not. They are in the statement and not in a read before it, because a
+ * check-then-write here would leave exactly the race invariant 1 refuses.
  */
 export function castPersonaRedraftWhere(scope: { userId: number; modelId: number }) {
   return and(

@@ -71,6 +71,7 @@
  */
 import { z } from "zod";
 
+import { CAST_PERSONALITY_MAX_LENGTH, CAST_VOICE_MAX_LENGTH } from "../../shared/inputLimits";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import type { CastPronouns } from "./castPronouns";
@@ -298,14 +299,36 @@ export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
     log.warn("[castPersona] the reply did not carry both lines — no lines derived");
     return null;
   }
-  const personality = read.data.personality.trim();
-  const voice = read.data.voice.trim();
+  /*
+    FIT EACH LINE TO THE CAP SHE WILL BE HELD TO — the relay's finding 3 on
+    PR #2114.
+
+    `inputLimits.ts` says of these two numbers: *"the sizes are HER ceiling, not
+    the drafter's"*. That was the hole. Nothing bounded the DRAFTER, so a long
+    reply was stored and drawn, and then the first thing she did with it was
+    refused: `editCastPersonaField` rejects over the cap, and the textarea's own
+    `maxLength` will not even let her type — **so she could not save a one-word
+    change to a line the product wrote her, and nothing on the card could tell
+    her why.** A customer meeting our own number as a wall is the
+    disappearing-technology law failing.
+
+    It is fitted here rather than refused, because the alternative throws away a
+    good line: the "both lines or neither" rule below means one long voice line
+    would take a perfectly fine personality down with it.
+  */
+  const personality = fitToHerCap(read.data.personality.trim(), CAST_PERSONALITY_MAX_LENGTH);
+  const voice = fitToHerCap(read.data.voice.trim(), CAST_VOICE_MAX_LENGTH);
   /*
     BOTH LINES OR NEITHER, and that is a product rule rather than strictness.
 
     One line present and one empty draws a card with a badge over nothing,
     which is the "feature that looks broken" his brief rules out. A partial
     answer is a failed read.
+
+    ⚠ It is also where an unfittable line lands: `fitToHerCap` returns `""` when
+    it cannot cut one, so an over-long reply with no sentence end in reach is a
+    FAILED READ — no lines, no badge, no card — rather than a truncation mid-word
+    or a line she cannot edit.
   */
   if (!personality || !voice) {
     log.warn(
@@ -315,6 +338,50 @@ export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
     return null;
   }
   return { personality, voice };
+}
+
+/**
+ * CUT A DRAFTED LINE DOWN TO HER OWN CEILING, AT A SENTENCE END OR NOT AT ALL.
+ *
+ * Returns the line when it already fits, the longest whole-sentence prefix that
+ * fits when it does not, and `""` when even the first sentence is over — which
+ * `parseCastPersonaDraft`'s both-or-neither arm turns into a failed read.
+ *
+ * ⚠ **A SENTENCE BOUNDARY AND NEVER A CHARACTER COUNT.** Cutting at the cap
+ * would hand her *"…holds eye contact a beat too long and then lo"*, which reads
+ * as a bug rather than as a draft, and she would have to finish our sentence
+ * before she could save her own edit. A line cut after a full stop reads as a
+ * shorter line, which is what a draft is allowed to be.
+ *
+ * ⚠ **THE INSTRUCTION IS DELIBERATELY NOT CHANGED TO CARRY THESE NUMBERS.**
+ * Telling the model a character budget is the tempting second half and it is
+ * not taken here: *context is not additive* is a measured law in this
+ * repository, one clause moves every cast, and a deterministic bound at the
+ * parse costs nothing and cannot regress the writing. The craft stays in the
+ * instruction (camera-visible, baseline then exception); the arithmetic stays
+ * here.
+ */
+export function fitToHerCap(line: string, cap: number): string {
+  if (line.length <= cap) return line;
+  /* Look only inside what fits, so the boundary we find is one we can keep. */
+  const reach = line.slice(0, cap);
+  const end = Math.max(reach.lastIndexOf("."), reach.lastIndexOf("!"), reach.lastIndexOf("?"));
+  /* `< 1` and not `< 0`: a full stop at index 0 is punctuation with no sentence
+     in front of it, and cutting there would draw her a card reading "." with a
+     Drafted badge on it. */
+  if (end < 1) {
+    log.warn(
+      { cap, length: line.length },
+      "[castPersona] a drafted line was over her cap with no sentence end inside it — no lines derived",
+    );
+    return "";
+  }
+  const cut = reach.slice(0, end + 1).trim();
+  log.info(
+    { cap, from: line.length, to: cut.length },
+    "[castPersona] a drafted line was over her cap and was cut at a sentence end",
+  );
+  return cut;
 }
 
 /** Some models fence JSON despite being asked for an object. */

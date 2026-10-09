@@ -25,12 +25,17 @@ import {
   castPersonaEditBlock,
   castPersonaSystemPrompt,
   createCastPersonaReader,
+  fitToHerCap,
   parseCastPersonaDraft,
   PERSONA_EDIT_SENTENCE_LIMIT,
   PERSONA_EDIT_SENTENCE_MAX_CHARS,
   PERSONA_MAX_OUTPUT_TOKENS,
   PERSONA_TIMEOUT_MS,
 } from "./castPersona";
+import {
+  CAST_PERSONALITY_MAX_LENGTH,
+  CAST_VOICE_MAX_LENGTH,
+} from "../../shared/inputLimits";
 import type { CastPronouns } from "./castPronouns";
 
 /* A real decodable frame: `boundForJudge` re-encodes on the way out and FAILS
@@ -298,5 +303,95 @@ describe("the parse, driven without an engine at all", () => {
 
   it("refuses an empty string", () => {
     expect(parseCastPersonaDraft("")).toBeNull();
+  });
+});
+
+/**
+ * A DRAFTED LINE SHE CAN ACTUALLY EDIT — the relay's finding 3 on PR #2114.
+ *
+ * The caps in `shared/inputLimits.ts` were HER ceiling and bounded nothing we
+ * wrote, so a long reply was stored and drawn and then she could not save a
+ * one-word change to it: `editCastPersonaField` refuses over the cap and the
+ * textarea's `maxLength` will not even let her type. **The product writing a
+ * line the product then refuses is the machinery showing through.**
+ */
+describe("a drafted line is fitted to the cap she will be held to", () => {
+  const reply = (personality: string, voice: string) =>
+    JSON.stringify({ personality, voice });
+
+  it("leaves a line that already fits exactly as it came", () => {
+    const line = "Unhurried and sure of herself — deliberate movements, holds eye contact.";
+    expect(fitToHerCap(line, CAST_PERSONALITY_MAX_LENGTH)).toBe(line);
+  });
+
+  it("cuts an over-long line back to its last whole sentence", () => {
+    const keep = "Watchful, and slower to speak than the room expects.";
+    const line = `${keep} ${"And then a second sentence that runs on. ".repeat(12)}`;
+    const fitted = fitToHerCap(line, CAST_PERSONALITY_MAX_LENGTH);
+
+    expect(fitted.length).toBeLessThanOrEqual(CAST_PERSONALITY_MAX_LENGTH);
+    expect(fitted.startsWith(keep)).toBe(true);
+    /* A whole sentence, not a cut word: the last character is the full stop. */
+    expect(fitted.endsWith(".")).toBe(true);
+  });
+
+  it("gives up rather than truncating mid-word when no sentence end is in reach", () => {
+    expect(fitToHerCap("x".repeat(CAST_VOICE_MAX_LENGTH + 40), CAST_VOICE_MAX_LENGTH)).toBe("");
+  });
+
+  it("treats a full stop with nothing in front of it as no sentence at all", () => {
+    expect(fitToHerCap(`.${"x".repeat(CAST_VOICE_MAX_LENGTH + 10)}`, CAST_VOICE_MAX_LENGTH)).toBe("");
+  });
+
+  /* ------------------------------------------- and through the real parse */
+
+  it("a reply whose voice line is over the cap is fitted, not stored long", () => {
+    const voice = `Low and unhurried. ${"The vowels sit a long way back in the throat. ".repeat(6)}`;
+    expect(voice.length).toBeGreaterThan(CAST_VOICE_MAX_LENGTH);
+
+    const draft = parseCastPersonaDraft(reply("Watchful, hands still.", voice));
+
+    expect(draft).not.toBeNull();
+    /*
+      ⚠ IT KEEPS AS MANY WHOLE SENTENCES AS FIT, not just the first — which is
+      what `lastIndexOf` means and is the right answer: a draft should be as
+      much of what was written as she can be held to. This arm first asserted
+      `"Low and unhurried."` alone and the code was right.
+    */
+    expect(draft!.voice.length).toBeLessThanOrEqual(CAST_VOICE_MAX_LENGTH);
+    expect(draft!.voice.startsWith("Low and unhurried.")).toBe(true);
+    expect(draft!.voice.endsWith(".")).toBe(true);
+    /* No half sentence at the end: every sentence in it is one the reply wrote
+       in full. */
+    expect(draft!.voice).not.toMatch(/\bthe vowels sit a long way back in the$/i);
+    /* ⚠ And the OTHER line survives untouched. Failing the whole read on one
+       long line would throw away a good personality — which is what the
+       both-or-neither rule would have done if this were a refusal. */
+    expect(draft!.personality).toBe("Watchful, hands still.");
+  });
+
+  it("a reply with an unfittable line is a FAILED read, so no half card is drawn", () => {
+    const draft = parseCastPersonaDraft(
+      reply("Watchful, hands still.", "x".repeat(CAST_VOICE_MAX_LENGTH + 40)),
+    );
+    expect(draft).toBeNull();
+  });
+
+  it.each([
+    ["personality", CAST_PERSONALITY_MAX_LENGTH],
+    ["voice", CAST_VOICE_MAX_LENGTH],
+  ] as const)("whatever the parse returns for %s is within her cap", (line, cap) => {
+    /*
+      ⚠ DRIVEN OVER BOTH LINES WITH ONE LONG REPLY, because the two caps are
+      different numbers and a fit applied to one line only would pass an arm
+      written about the other. This is the arm that reddens if a third line is
+      added and left unfitted.
+    */
+    const long = `A real first sentence. ${"and then it keeps going without stopping ".repeat(20)}`;
+    const draft = parseCastPersonaDraft(
+      line === "voice" ? reply("Watchful.", long) : reply(long, "Low."),
+    );
+    expect(draft).not.toBeNull();
+    expect(draft![line].length).toBeLessThanOrEqual(cap);
   });
 });

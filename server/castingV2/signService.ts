@@ -1327,14 +1327,44 @@ async function completeSignPackage(
       terminalStatus,
     };
     /*
-      HER TWO LINES LAND AFTER THE MONEY IS SETTLED, never before it.
+      ⚠ **THE TERMINAL EVENT IS RECORDED HERE, BEFORE HER TWO LINES — and it was
+      recorded after them, which is the relay's finding 4 on PR #2114.**
 
-      A Sign's receipt must not be able to wait on a text call, so this is the
-      last thing the happy path does. It is inside the `try` on purpose: a throw
-      here is caught by the same arm that catches a failed seal, which logs and
-      hands the operation to the sweep - and the sweep re-enters a Sign whose
-      lines are missing without ever overwriting a line she has since rewritten
-      (`castPersonaRedraftWhere`).
+      The block below used to say *"a Sign's receipt must not be able to wait on
+      a text call"* and then make it wait on one: this function's tail is
+      `if (deliveredEvent) recordDirectOperationDelivered(deliveredEvent)`, and
+      N2b's `await writePersonaDraft(...)` was inserted between the event's
+      composition and that tail. The read is behind a queue of concurrency 1 with
+      a 75 s deadline and a retry, so a burst of Signs delays every one of their
+      delivered events by minutes, and a deploy inside that window loses them —
+      the strip then under-counts delivered Signs for a reason that has nothing
+      to do with Signing.
+
+      So it fires now, on the line after the receipt it describes, and
+      `deliveredEvent` is cleared so the tail cannot double-count it. The tail
+      stays for its own case, which is unchanged and is not this one: a throw
+      BEFORE this point still reaches the catch with the event uncomposed.
+
+      ⚠ Moving it INSIDE the `try` was checked rather than assumed, because a
+      throw here would reach the catch below and log *"the package could not be
+      sealed"* about a sealed package — the false-sentence class this file has
+      already been bitten by. It cannot: `recordDirectOperationDelivered` returns
+      `void` and its one statement is `captureProductEvent`, whose entire body
+      sits in a `try` that logs and swallows (`monitoring/productEvents.ts`).
+    */
+    recordDirectOperationDelivered(deliveredEvent);
+    deliveredEvent = null;
+    /*
+      HER TWO LINES LAND AFTER THE MONEY IS SETTLED AND AFTER THE RECEIPT, never
+      before either. This is the last thing the happy path does.
+
+      ⚠ **AND NO SWEEP COMES BACK FOR THEM.** This block claimed a throw here was
+      *"caught by the same arm that catches a failed seal, which logs and hands
+      the operation to the sweep"*, and that the sweep would re-draft. It does
+      not: the recovery road never enters this function, so a process that dies
+      between the seal and this write leaves a Cast with no lines and no card —
+      accepted, and declared in `castPersonaRedraftWhere`. `writePersonaDraft`
+      also catches its own write, so a throw here is not the road anyway.
     */
     await writePersonaDraft(dependencies, {
       userId: input.userId,
@@ -1354,6 +1384,15 @@ async function completeSignPackage(
       "[signService] the package could not be sealed — leaving it for the recovery sweep",
     );
   }
+  /*
+    THE BACKSTOP, AND IT NO LONGER CARRIES THE HAPPY PATH. The happy path fires
+    its own event the moment the finalizer returns (finding 4 above) and nulls
+    this, so what is left here is the one case it was always for: the event was
+    composed and then something threw before it could be recorded. Nothing
+    between the two does that today, which makes this a guard rather than a road
+    — kept because the alternative is a receipt that silently depends on no
+    statement ever being added between those two lines again.
+  */
   if (deliveredEvent) recordDirectOperationDelivered(deliveredEvent);
 }
 

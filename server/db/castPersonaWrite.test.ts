@@ -26,15 +26,33 @@
  *      customer's Cast, and neither can reach a deleted one;
  *   2. **the redraft refuses an edited line and her edit does not** — the two
  *      `isNull(…EditedAt)` terms are on the mint's statement and absent from
- *      hers, which is what lets her rewrite a line twice while stopping the
- *      recovery sweep from deleting what she wrote;
+ *      hers, which is what lets her rewrite a line twice while stopping a
+ *      future redraft from deleting what she wrote;
  *   3. **her edit touches ONE line and one stamp** — driven over the DERIVED
  *      set of line kinds, so a third line added to `CAST_PERSONA_FIELDS`
  *      is asserted here with no edit to this file.
+ *
+ * # ⚠ AND SECTION 4 IS THE ONE THE FIRST THREE COULD NOT GIVE — the relay's
+ * finding 6 on PR #2114
+ *
+ * Sections 1–3 render the PREDICATES. Nothing in them calls the writers, so the
+ * sentence they were written to prove — *neither write can reach another
+ * customer's Cast* — was never actually tested: replacing
+ * `.where(castPersonaEditWhere(...))` with `.where(eq(models.id, …))` inside
+ * `editCastPersonaField` dropped the owner from a real money-adjacent write and
+ * left every arm above GREEN. **A predicate is not a statement, and the contract
+ * is about the statement** (invariant 5, which says exactly that).
+ *
+ * So section 4 drives `writeCastPersonaDraft` and `editCastPersonaField`
+ * themselves, with `getDb` mocked to a pool that records what it is handed and
+ * never connects — the shape `accountDeletionOrphanOwnerScope.test.ts` uses on
+ * the account purge. What it reads is the SQL those two functions really emit,
+ * which is the only reading that can see a predicate swapped out at the call
+ * site rather than at its declaration.
  */
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { models } from "../../drizzle/schema";
 import { CAST_PERSONA_FIELDS } from "./castPersonaField";
@@ -51,6 +69,63 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const USER_ID = 41;
 const MODEL_ID = 907;
+
+/* ------------------------------------- the wire the real writers are driven on */
+
+/** Every statement the writers actually send, in order. */
+const sent: Array<{ sql: string; params: unknown[] }> = [];
+/** What the driver answers next, so both return values can be driven. */
+const answer = { affectedRows: 1 };
+
+/**
+ * A client that records and never connects. `query` is the one method drizzle's
+ * mysql2 driver reaches for, and it is called in three shapes across versions
+ * (string, config object, callback), so all three are read rather than assumed.
+ */
+const recordingPool = {
+  query(...args: unknown[]) {
+    const config = args[0] as { sql?: string; values?: unknown[] } | string;
+    const sql = typeof config === "string" ? config : config.sql ?? "";
+    const params = (args[1] as unknown[])
+      ?? (typeof config === "string" ? [] : config.values ?? []);
+    sent.push({ sql, params });
+    const rows = { ...answer };
+    const callback = args.find((argument) => typeof argument === "function") as
+      | ((error: unknown, rows: unknown, fields: unknown) => void)
+      | undefined;
+    if (callback) {
+      callback(null, rows, []);
+      return undefined;
+    }
+    return Promise.resolve([rows, []]);
+  },
+  execute(...args: unknown[]) {
+    return (recordingPool as unknown as { query: (...a: unknown[]) => unknown }).query(...args);
+  },
+};
+
+vi.mock("./connection", () => ({
+  getDb: async () => drizzle(recordingPool as never, { mode: "default" } as never),
+  /* Neither writer opens a transaction. Refusing rather than stubbing means a
+     writer that starts using one arrives here as a loud failure instead of a
+     silently unrecorded statement. */
+  withTransaction: () => {
+    throw new Error("castPersonaWrite.test.ts: no transaction is expected on these two writes");
+  },
+}));
+
+const { writeCastPersonaDraft, editCastPersonaField } = await import("./castingV2Sign");
+
+beforeEach(() => {
+  sent.length = 0;
+  answer.affectedRows = 1;
+});
+
+/** The one statement the writer under test sent. */
+function onlyStatement(): { sql: string; params: unknown[] } {
+  expect(sent).toHaveLength(1);
+  return sent[0]!;
+}
 
 /** Render a predicate as the statement it becomes. Nothing connects. */
 function rendered(where: ReturnType<typeof castPersonaEditWhere>) {
@@ -137,5 +212,136 @@ describe("her edit sets one line and one stamp, and leaves the other alone", () 
 
   it("the two kinds are the whole vocabulary, so a third cannot ship unasserted", () => {
     expect([...CAST_PERSONA_FIELDS]).toEqual(["personality", "voice"]);
+  });
+});
+
+/* ------------------------------------ 4 · the REAL writers, at the real wire */
+
+describe("the statement `writeCastPersonaDraft` really sends", () => {
+  it("names the owner, the Cast, liveness and both unedited stamps, with the right values", async () => {
+    await writeCastPersonaDraft({
+      userId: USER_ID,
+      modelId: MODEL_ID,
+      personality: "Watchful, and slower to speak than the room expects.",
+      voice: "Low, unhurried; the vowels sit back.",
+      now: new Date("2026-10-09T04:00:00.000Z"),
+    });
+
+    const { sql, params } = onlyStatement();
+    expect(sql).toMatch(/^update `models` set/i);
+    expect(sql).toContain("`id` = ?");
+    expect(sql).toContain("`userId` = ?");
+    expect(sql).toContain("`deletedAt` is null");
+    expect(sql).toContain("`personalityEditedAt` is null");
+    expect(sql).toContain("`voiceEditedAt` is null");
+    /* The owner's id is BOUND, not merely named — a statement naming `userId`
+       and binding something else reads identically and reaches the wrong Cast. */
+    expect(params).toContain(USER_ID);
+    expect(params).toContain(MODEL_ID);
+  });
+
+  it("writes the two lines and the draft stamp, and no stamp of hers", async () => {
+    await writeCastPersonaDraft({
+      userId: USER_ID,
+      modelId: MODEL_ID,
+      personality: "Watchful.",
+      voice: "Low.",
+      now: new Date("2026-10-09T04:00:00.000Z"),
+    });
+
+    const { sql, params } = onlyStatement();
+    const set = sql.slice(0, sql.indexOf(" where "));
+    expect(set).toContain("`personality` = ?");
+    expect(set).toContain("`voice` = ?");
+    expect(set).toContain("`personaDraftedAt` = ?");
+    /*
+      AND NEITHER OF HER STAMPS IS IN THE `set`. Stamping one here would badge a
+      line as HERS the moment we drafted it, and the badge is derived as
+      *drafted and not since edited* — so the card would silently lose its
+      Drafted mark on a line she has never seen.
+    */
+    expect(set).not.toContain("`personalityEditedAt` = ?");
+    expect(set).not.toContain("`voiceEditedAt` = ?");
+    expect(params).toContain("Watchful.");
+    expect(params).toContain("Low.");
+  });
+
+  it("reports whether a row moved rather than assuming one did", async () => {
+    const write = () => writeCastPersonaDraft({
+      userId: USER_ID, modelId: MODEL_ID, personality: "a", voice: "b",
+    });
+    await expect(write()).resolves.toBe(true);
+    answer.affectedRows = 0;
+    await expect(write()).resolves.toBe(false);
+  });
+});
+
+describe("the statement `editCastPersonaField` really sends", () => {
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "editing %s names the owner and liveness and carries NO stamp guard",
+    async (kind) => {
+      await editCastPersonaField({
+        userId: USER_ID,
+        modelId: MODEL_ID,
+        line: kind,
+        text: "her own words",
+        now: new Date("2026-10-09T04:00:00.000Z"),
+      });
+
+      const { sql, params } = onlyStatement();
+      expect(sql).toMatch(/^update `models` set/i);
+      expect(sql).toContain("`id` = ?");
+      expect(sql).toContain("`userId` = ?");
+      expect(sql).toContain("`deletedAt` is null");
+      /*
+        ⚠ THE WHOLE `where` IS READ, not the statement — her text goes in the
+        `set`, and a `set` containing the word would make a `not.toContain` arm
+        over the whole SQL pass for the wrong reason.
+      */
+      const where = sql.slice(sql.indexOf(" where "));
+      expect(where).not.toContain("EditedAt");
+      expect(params).toContain(USER_ID);
+      expect(params).toContain(MODEL_ID);
+      expect(params).toContain("her own words");
+    },
+  );
+
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "editing %s sets that line and that stamp only",
+    async (kind) => {
+      const other = kind === "personality" ? "voice" : "personality";
+      await editCastPersonaField({
+        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "her own words",
+      });
+
+      const { sql } = onlyStatement();
+      const set = sql.slice(0, sql.indexOf(" where "));
+      expect(set).toContain(`\`${kind}\` = ?`);
+      expect(set).toContain(`\`${kind}EditedAt\` = ?`);
+      /* The other card keeps its badge, and the draft stamp is never moved. */
+      expect(set).not.toContain(`\`${other}\` = ?`);
+      expect(set).not.toContain(`\`${other}EditedAt\` = ?`);
+      expect(set).not.toContain("`personaDraftedAt` = ?");
+    },
+  );
+
+  it("reports false when no row was hers, so the entrance owns the refusal", async () => {
+    answer.affectedRows = 0;
+    await expect(editCastPersonaField({
+      userId: USER_ID, modelId: MODEL_ID, line: "voice", text: "hers",
+    })).resolves.toBe(false);
+  });
+
+  /*
+    THE IDS ARE REFUSED BEFORE THE WIRE. `assertPositiveId` runs first, so a
+    zero or a float never becomes a statement at all — asserted here because a
+    guard that only exists in the predicate would let a `userId` of 0 bind
+    harmlessly and update somebody's row if the column ever allowed it.
+  */
+  it.each([[0], [-1], [1.5]])("refuses a userId of %s without sending anything", async (userId) => {
+    await expect(editCastPersonaField({
+      userId, modelId: MODEL_ID, line: "voice", text: "hers",
+    })).rejects.toThrow(TypeError);
+    expect(sent).toHaveLength(0);
   });
 });

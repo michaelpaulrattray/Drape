@@ -1427,6 +1427,44 @@ describe("N2b's two lines are born inside the Sign", () => {
     expect(journal.indexOf("persona:write")).toBeGreaterThan(journal.indexOf("seal:success"));
     expect(personaWrites).toHaveLength(1);
     expect(personaWrites[0]).toMatchObject({ modelId: expect.any(Number), ...LINES });
+    /*
+      ⚠ **AND THE RECEIPT IS RECORDED BEFORE THE LINES — the relay's finding 4 on
+      PR #2114.** The write landing after the seal was never the whole claim: the
+      terminal event sat behind it too, so a burst of Signs (one read at a time,
+      75 s deadline, one retry) delayed every delivered event by minutes and a
+      deploy inside that window lost them.
+
+      This is the arm that could not exist before the deferred-reader shape
+      above: with a reader that resolves at once, `event:delivered` and
+      `persona:write` land in the same tick and either order reads as fine. Here
+      the read cannot finish until the package build releases it, so a delivered
+      event recorded after the write is a measurably later one.
+    */
+    expect(journal.indexOf("event:delivered")).toBeLessThan(journal.indexOf("persona:write"));
+  });
+
+  /*
+    THE EVENT IS RECORDED ONCE, AND THE TAIL IS WHY THIS ARM EXISTS.
+
+    `completeSignPackage` still ends with `if (deliveredEvent) record…`, which is
+    the backstop for a throw between composing the event and recording it. The
+    happy path now records its own event and nulls the variable; forgetting that
+    null would double-count every Sign in the strip, which no ordering arm can
+    see and which the money arms would not notice either.
+  */
+  it("records the delivered event exactly once, even though a tail could record it again", async () => {
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => reader(LINES),
+      },
+      input,
+    );
+
+    expect(journal.filter((entry) => entry === "event:delivered")).toHaveLength(1);
+    expect(terminalEvents).toHaveLength(1);
+    expect(journal).toContain("persona:write");
   });
 
   it("writes nothing at all when the read comes back empty — no badge, no blank card", async () => {

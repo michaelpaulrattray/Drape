@@ -101,6 +101,15 @@ export const REDACTED = "[redacted]";
  * reader takes its presence as evidence the field is still written. When N2b
  * lands (personality and voice born at Sign, as editable text), whatever field
  * it writes joins this list in the same commit, under its real name.
+ *
+ * ✅ **N2b LANDED AND THE TWO NAMES ARE HERE — `personality` and `voice`,
+ * migration 0075 (#1242).** The sentence above was written as an obligation and
+ * it is discharged rather than quoted: the schema's own docblock calls these two
+ * *"the same family as `masterPrompt`"*, so an error event carrying either one
+ * carries a customer's creative content and refuses exactly as the recipe group
+ * does. They are real columns that the Sign writes and her edit rewrites, which
+ * is the distinction the ⚠ above exists to draw — this is not a ninth key for a
+ * field nothing can produce.
  */
 export const REFUSING_KEYS: readonly string[] = [
   "masterPrompt",
@@ -111,6 +120,8 @@ export const REFUSING_KEYS: readonly string[] = [
   "resultUrl",
   "imageKey",
   "passwordHash",
+  "personality",
+  "voice",
 ];
 
 const REFUSING_KEY_SET = new Set(REFUSING_KEYS.map((key) => key.toLowerCase()));

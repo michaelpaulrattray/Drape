@@ -357,8 +357,36 @@ export default function CastingRoom() {
     editPersona.mutate(
       { castId: data.castId, line, text },
       {
-        onSuccess: () => {
+        onSuccess: (saved) => {
           setSavingPersonaField(null);
+          /*
+            HER OWN WORDS GO STRAIGHT INTO THE CACHE — the relay's non-blocking
+            note on PR #2114, and the reason the procedure returns them at all.
+
+            Without this the card falls back to `value.text` the instant the
+            textarea closes, which is still the OLD sentence until the refetch
+            lands: **she watches her edit flash back to what it was and then
+            change again.** The entrance's reply is shaped for exactly this (its
+            own comment: *"her words, back to her, with the badge already gone -
+            so the card she is looking at does not need a refetch"*) and nothing
+            was reading it.
+
+            The `invalidate` below stays: this writes the one line the reply is
+            authoritative about, and the refetch is still what reconciles
+            everything else on the Cast.
+          */
+          utils.castingV2.getCast.setData({ castId: data.castId }, (previous) => {
+            if (!previous) return previous;
+            const line = { text: saved.text, drafted: saved.drafted };
+            return {
+              ...previous,
+              persona: {
+                personality: previous.persona?.personality ?? null,
+                voice: previous.persona?.voice ?? null,
+                [saved.line]: line,
+              },
+            };
+          });
           void utils.castingV2.getCast.invalidate({ castId: data.castId });
         },
         onError: (error) => {

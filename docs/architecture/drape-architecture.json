@@ -12367,6 +12367,10 @@
       "path": "server/castingV2/castPersona.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaEditEntrance.test.ts",
+      "path": "server/castingV2/castPersonaEditEntrance.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castPersonaProjection.test.ts",
       "path": "server/castingV2/castPersonaProjection.test.ts"
     },
@@ -26139,6 +26143,11 @@
     {
       "from": "module:server/castingV2/castPersona.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

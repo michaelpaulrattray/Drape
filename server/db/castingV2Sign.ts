@@ -1137,12 +1137,20 @@ export type SignedCastLocation = {
  * There is no read-then-write here to race: one statement, scoped by owner and
  * id together, and a row that is not hers is not updated.
  *
- * ⚠ **IT NEVER OVERWRITES A LINE SHE HAS EDITED.** The mint runs once per Sign
- * so today there is nothing to overwrite — but the recovery sweep can re-enter
- * a Sign whose process died, and a second derivation landing on top of a line
- * she had already rewritten would be this feature deleting a customer's words.
- * The two `isNull(...EditedAt)` terms are that guard, in the statement, and
- * `castPersonaWrite.test.ts` renders it at the wire and drives both directions.
+ * ⚠ **IT NEVER OVERWRITES A LINE SHE HAS EDITED — and the sweep this used to
+ * cite does not exist** (the relay's finding 5 on PR #2114). This block read
+ * *"the recovery sweep can re-enter a Sign whose process died"*; it cannot. This
+ * function has one non-test caller, and the recovery road does not reach it, so
+ * **a Sign whose process dies between the seal and this write never gets its two
+ * lines** — declared in `castPersonaRedraftWhere`'s own docblock, where the
+ * `isNull(...EditedAt)` terms live and where the reason they are still worth
+ * keeping is set out. The mint runs once per Sign, so nothing today can be
+ * overwritten by it either way.
+ *
+ * `castPersonaWrite.test.ts` drives THIS FUNCTION at the wire — the statement it
+ * really emits, through a pool that never connects — rather than rendering the
+ * predicate beside it, which is a second finding from the same review: dropping
+ * the owner from the `WHERE` here left the predicate's own arms green.
  *
  * Returns whether a row moved, so a caller can log the miss rather than assume.
  */
