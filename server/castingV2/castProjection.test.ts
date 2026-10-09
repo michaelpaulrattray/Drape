@@ -31,6 +31,7 @@ const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 
 import {
   FAILED_SLOT_CONFESSION,
+  REFUNDED_SLOT_CONFESSION,
   landedViewAsset,
   projectSignedCast,
   TOTAL_LOSS_CONFESSION,
@@ -199,7 +200,8 @@ describe("the signed Cast projection", () => {
     const slot = projection.slots.find((entry) => entry.angle === "backFull");
     expect(slot?.state).toBe("failed-refunded");
     expect(slot?.url).toBeNull();
-    expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
+    /* Its own share recorded, so the tile may say so (#2127). */
+    expect(slot?.note).toBe(REFUNDED_SLOT_CONFESSION);
     expect(slot?.refundedCredits).toBe(VIEW_PRICE);
     // It is not still "building" — that is the shimmer the ruling forbids.
     expect(slot?.state).not.toBe("building");
@@ -220,7 +222,12 @@ describe("the signed Cast projection", () => {
       ),
       lineage,
     });
-    expect(projection.slots.find((entry) => entry.angle === "backFull")?.refundedCredits).toBe(0);
+    const slot = projection.slots.find((entry) => entry.angle === "backFull");
+    expect(slot?.refundedCredits).toBe(0);
+    /* And the tile's sentence makes no refund claim either — the negative
+       control for #2127's "— refunded", which only a recorded share earns. */
+    expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
+    expect(slot?.note).not.toMatch(/refund/i);
   });
 
   it("confesses a terminal Cast's empty slot rather than shimmering forever", () => {
@@ -615,8 +622,11 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
     quietly loses a subject reads as coverage it no longer has
     (`directory-population-loses-promoted-subject`).
   */
+  /* `REFUNDED_SLOT_CONFESSION` joined the population with #2127 — it is a
+     customer-facing failure sentence, so it is held to the same arms. */
   for (const [name, sentence] of Object.entries({
     FAILED_SLOT_CONFESSION,
+    REFUNDED_SLOT_CONFESSION,
     TOTAL_LOSS_CONFESSION,
   })) {
     it(`${name} names no unbuilt repair path`, () => {

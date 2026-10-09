@@ -82,6 +82,7 @@ const {
 } = await import("./packageOrchestrator");
 const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
+const { refusedSheetViewRefund } = await import("../casting/flatPressCharge");
 /**
  * THE PACKAGE'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
  *
@@ -992,17 +993,23 @@ describe("the attempt budgets are the ones that were ruled", () => {
   10 (5 views × 2) → 4 (2 sheets × 2). Nobody waits who cannot change the answer.
 */
 describe("generation failures", () => {
-  it("does not retry a content refusal — it will refuse again", async () => {
+  it("asks for a refused sheet ONCE more at our cost, then refunds — never a third time", async () => {
+    /*
+      ⚠ **THIS ARM READ *"does not retry a content refusal — it will refuse
+      again"* UNTIL #2127**, and cast 71 disproved its premise: the provider's
+      checker refused that face sheet AFTER drawing it, and the same request,
+      sent again unchanged, was delivered. His word of 2026-10-09 accepted the
+      free retry; what this arm still pins is that it is ONE retry, unspaced.
+    */
     const result = await buildCastPackage(
       deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("content_policy", "refused")) }),
       input,
     );
 
-    // One attempt per SHEET — two frames for five dead views, never ten.
-    expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
-    expect(waitedMs, "a terminal class waits for nothing").toEqual([]);
+    expect(rendersPerSheet()).toEqual({ body: 2, head: 2 });
+    expect(waitedMs, "the free retry waits for nothing").toEqual([]);
     expect(result.failed).toHaveLength(5);
-    // Nothing landed, so the base returns with the slices — the whole Sign, not just the views.
+    // Nothing landed: the whole Sign comes back — shares and remainder together.
     expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
@@ -3328,7 +3335,7 @@ describe("⚠ the logs tell the truth about a sheet that did not arrive (#2125)"
     loggedWarnings.length = 0;
     const signSheetEngine = (kind: SignSheetKind) => (
       kind === "head"
-        ? deadSheetEngine(() => new ProviderError("content_policy", "flagged"))(kind)
+        ? deadSheetEngine(() => new ProviderError("provider_account", "402 no funds"))(kind)
         : defaultSheetEngine(kind)
     );
     const result = await buildCastPackage(deps({ signSheetEngine }), input);
@@ -3344,5 +3351,164 @@ describe("⚠ the logs tell the truth about a sheet that did not arrive (#2125)"
     for (const [, line] of loggedWarnings) {
       if (typeof line === "string") expect(line).not.toMatch(/refunded their slices|this slice refunds/);
     }
+  });
+});
+
+/*
+  #2127 — A SHEET THE PROVIDER REFUSES IS RETRIED ONCE FOR FREE, AND THE VIEWS
+  STILL MISSING ARE REFUNDED. His word, 2026-10-09 (terminal), verbatim: *"im
+  happy with your reccomendation on the sheet refunding etc"*.
+
+  Driven on each money outcome the card names — the retry delivers; the retry
+  is refused again; a sheet lost any OTHER way is unchanged — plus the total
+  loss (never paid twice) and the render budget (the retry cannot loop).
+*/
+describe("⚠ a refused sheet: one free retry, then its views are refunded (#2127)", () => {
+  /* The unit, derived from the charge and the promise and never typed:
+     3,250 ledger over five views is 650 each today. */
+  const share = refusedSheetViewRefund({
+    chargedCredits: SIGN_PRICE,
+    promisedViews: CAST_PACKAGE_VIEWS.length,
+  });
+  const HEAD_VIEWS = ["closeUp", "sideClose", "threeQuarter"];
+
+  /** A head sheet the provider refuses `refusals` times, then draws. */
+  function refusingHead(refusals: number) {
+    let calls = 0;
+    return (kind: SignSheetKind) => {
+      if (kind !== "head") return defaultSheetEngine(kind);
+      const delivering = defaultSheetEngine(kind);
+      return {
+        ...delivering,
+        editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[] }) => {
+          calls += 1;
+          if (calls <= refusals) {
+            sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+            throw new ProviderError("content_policy", "flagged by a content checker", { completed: true });
+          }
+          return delivering.editWithReferences(request);
+        }),
+      };
+    };
+  }
+
+  it("is in the units his card states: one fifth of the Sign per view", () => {
+    expect(share * CAST_PACKAGE_VIEWS.length).toBe(SIGN_PRICE);
+    expect(share).toBeGreaterThan(0);
+  });
+
+  it("THE RETRY DELIVERS — every view arrives, the head sheet cost two renders, nothing is refunded", async () => {
+    const result = await buildCastPackage(deps({ signSheetEngine: refusingHead(1) }), input);
+
+    expect(rendersPerSheet()).toEqual({ head: 2, body: 1 });
+    expect(waitedMs, "the free retry is not spaced").toEqual([]);
+    expect(result.failed).toEqual([]);
+    expect([...committed].sort()).toEqual([...CAST_PACKAGE_VIEWS].sort());
+    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+  });
+
+  it("REFUSED AGAIN — that sheet's three views are refunded one share each, the body's views stand", async () => {
+    const result = await buildCastPackage(deps({ signSheetEngine: refusingHead(2) }), input);
+
+    expect(rendersPerSheet(), "one free retry, never a third").toEqual({ head: 2, body: 1 });
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect([...committed].sort()).toEqual(["backFull", "frontFull"]);
+    /* Under each view's own slot reference — the key the recovery sweep
+       already sums, so a later total-loss settle can never pay it twice. */
+    expect([...refunds].sort((a, b) => a.reference.localeCompare(b.reference))).toEqual(
+      HEAD_VIEWS.map((angle) => ({
+        amount: share,
+        reference: packageSlotChargeReference(OPERATION_ID, angle as never),
+      })).sort((a, b) => a.reference.localeCompare(b.reference)),
+    );
+    expect(result.refundedCredits).toBe(share * HEAD_VIEWS.length);
+    expect(result.totalLoss).toBe(false);
+    /* And the marker the room reads says what recorded. */
+    for (const failure of failures) {
+      const marker = failure.failure as { refunded: number; refundReference?: string };
+      expect(marker.refunded, String(failure.angle)).toBe(share);
+      expect(marker.refundReference).toMatch(/:slot:/);
+    }
+  });
+
+  it("A SHEET LOST ANY OTHER WAY IS UNCHANGED — no retry for a refusal it never had, and nothing comes back", async () => {
+    const signSheetEngine = (kind: SignSheetKind) => (
+      kind === "head"
+        ? deadSheetEngine(() => new ProviderError("provider_account", "402 no funds"))(kind)
+        : defaultSheetEngine(kind)
+    );
+    const result = await buildCastPackage(deps({ signSheetEngine }), input);
+
+    expect(rendersPerSheet()).toEqual({ head: 1, body: 1 });
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(refunds).toEqual([]);
+    for (const failure of failures) {
+      const marker = failure.failure as { refunded: number; refundReference?: string };
+      expect(marker.refunded).toBe(0);
+      expect(marker.refundReference).toBeUndefined();
+    }
+  });
+
+  it("A VIEW THE JUDGE TOOK AWAY IS UNCHANGED — its sheet arrived, so the flat rule holds", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "closeUp" ? fail : pass);
+    const result = await buildCastPackage(deps({ judge }), input);
+
+    expect(result.failed).toEqual(["closeUp"]);
+    expect(refunds).toEqual([]);
+  });
+
+  it("BOTH SHEETS REFUSED TWICE — the whole charge comes back exactly once, shares and remainder together", async () => {
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("content_policy", "refused", { completed: true })) }),
+      input,
+    );
+
+    expect(result.totalLoss).toBe(true);
+    const paid = refunds.reduce((sum, entry) => sum + entry.amount, 0);
+    expect(paid, "never more than was charged").toBe(SIGN_PRICE);
+    expect(result.refundedCredits).toBe(SIGN_PRICE);
+  });
+
+  it("THE RETRY SPENDS INSIDE THE SHEET'S RENDER BUDGET — a spent budget refuses it, and the views are still refunded", async () => {
+    /*
+      Production's shape: the retrying loop and the budget live inside the
+      engine. The head sheet's first render bills a deadline AND a refusal
+      (two submissions = the whole budget of SHEET_MAX_RENDERS), so the free
+      retry is refused BEFORE it submits. The sheet's last error is then the
+      budget's, not the provider's — and the views must still be refunded,
+      because the provider DID refuse that sheet.
+    */
+    const submissions: SignSheetKind[] = [];
+    const signSheetEngine = (kind: SignSheetKind) => {
+      if (kind !== "head") return defaultSheetEngine(kind);
+      let submitted = 0;
+      return {
+        id: `test-sheet-${kind}`,
+        editWithReferences: vi.fn(async (request: { prompt: string; references: unknown[]; renderBudget?: RenderBudget }) => {
+          sheetCalls.push({ kind, prompt: request.prompt, references: [] });
+          return withRetry(
+            "fal.signSheet",
+            async () => {
+              submissions.push(kind);
+              submitted += 1;
+              if (submitted === 1) {
+                throw new ProviderError("timeout", "deadline", { providerRef: "req-deadline", completed: false });
+              }
+              throw new ProviderError("content_policy", "flagged", { completed: true });
+            },
+            { retries: 2, baseDelayMs: 0, ...(request.renderBudget ? { budget: request.renderBudget } : {}) },
+          );
+        }),
+        generateView: vi.fn(),
+      };
+    };
+    const result = await buildCastPackage(deps({ signSheetEngine }), input);
+
+    expect(rendersPerSheet().head, "the free retry WAS asked for").toBe(2);
+    expect(submissions.length, "and refused before it submitted: the cap holds").toBe(SHEET_MAX_RENDERS);
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(refunds.reduce((sum, entry) => sum + entry.amount, 0)).toBe(share * HEAD_VIEWS.length);
   });
 });

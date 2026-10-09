@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import {
   castSlotRetryOffer,
-  FAILED_SLOT_CONFESSION,
+  REFUNDED_SLOT_CONFESSION,
   projectSignedCast,
 } from "./castProjection";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -180,8 +180,13 @@ describe("what a tile offers, and what it costs", () => {
       sentence claims nothing. The marker below still carries a figure because
       Casts signed before the reprice really were refunded per view, and the
       room must keep reading them honestly.
+
+      ⚠ **AND SINCE #2127 IT SAYS SO AGAIN, because the marker says money
+      recorded.** A view lost to a sheet the provider refused is refunded its
+      share, and any marker carrying a recorded figure — this legacy one
+      included, which really was refunded — earns the word back.
     */
-    expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
+    expect(slot?.note).toBe(REFUNDED_SLOT_CONFESSION);
     expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
     expect(slot?.retry).toBeUndefined();
     /*

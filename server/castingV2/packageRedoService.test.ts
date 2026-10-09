@@ -122,6 +122,8 @@ vi.mock("./signService", async (importOriginal) => ({
 }));
 
 import { TRPCError } from "@trpc/server";
+import { ProviderError } from "../providers/types";
+import { refusedSheetViewRefund } from "../casting/flatPressCharge";
 import { CASTING_V2_PACKAGE_REDO_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { derivedClientRequestId } from "../casting/operationContract";
 import sharp from "sharp";
@@ -156,6 +158,10 @@ const enginePosts: Array<{ prompt: string; references: Array<{ bytes: Buffer }> 
 /** Every sheet the press asked for, by kind — two per redo, one per sheet. */
 const sheetCalls: SignSheetKind[] = [];
 let sheetBehaviour: "ok" | "throw" = "ok";
+/** How many more times the provider refuses the HEAD sheet as a whole (#2127). */
+let headRefusals = 0;
+/** A head sheet lost some other way — a provider-account fault (#2127's negative control). */
+let headDead = false;
 let balance = 10_000_000;
 /** The ONE deduct of a press either lands or does not; there are no slices. */
 let chargeFails = false;
@@ -390,6 +396,11 @@ function dependencies(
         sheetCalls.push(kind);
         enginePosts.push({ prompt: request.prompt, references: request.references ?? [] });
         if (sheetBehaviour === "throw") throw new Error("the sheet door refused");
+        if (kind === "head" && headDead) throw new ProviderError("provider_account", "402 no funds");
+        if (kind === "head" && headRefusals > 0) {
+          headRefusals -= 1;
+          throw new ProviderError("content_policy", "flagged by a content checker", { completed: true });
+        }
         return {
           bytes: sheetPngs.get(kind) as Buffer,
           contentType: "image/png",
@@ -449,6 +460,8 @@ beforeEach(() => {
   enginePosts.length = 0;
   sheetCalls.length = 0;
   sheetBehaviour = "ok";
+  headRefusals = 0;
+  headDead = false;
   balance = 10_000_000;
   chargeFails = false;
   judgeRefuses = new Set();
@@ -1143,5 +1156,59 @@ describe("one view's trouble and the other four (review finding 2)", () => {
     expect(refunds).toEqual([]);
     /* It settled in this process, so nothing was handed to the sweep. */
     expect(handedOff).toEqual([]);
+  });
+});
+
+/*
+  #2127 — THE SAME AMENDMENT ON A REGENERATE. The card: *"whether it applies to
+  a Regenerate press as well as a Sign. It should."* The redo renders through
+  the same `settleSignSheet`, so it inherits the free retry; the refund is the
+  press's own, decided once, on its own reference.
+*/
+describe("⚠ a refused sheet on a Regenerate (#2127)", () => {
+  const share = refusedSheetViewRefund({
+    chargedCredits: PACKAGE_PRICE,
+    promisedViews: CAST_PACKAGE_VIEWS.length,
+  });
+  const HEAD_VIEWS = ["closeUp", "sideClose", "threeQuarter"];
+
+  it("THE RETRY DELIVERS — every view is new and nothing comes back", async () => {
+    headRefusals = 1;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(sheetCalls.filter((kind) => kind === "head")).toHaveLength(2);
+    expect(result.failed).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
+  });
+
+  it("REFUSED AGAIN — the press gives back one share per view that sheet would have made, once", async () => {
+    headRefusals = 2;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(sheetCalls.filter((kind) => kind === "head"), "one free retry, never a third").toHaveLength(2);
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(result.refundedCredits).toBe(share * HEAD_VIEWS.length);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].amount).toBe(share * HEAD_VIEWS.length);
+  });
+
+  it("A SHEET LOST ANY OTHER WAY IS UNCHANGED — the flat rule, nothing back", async () => {
+    headDead = true;
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(result.refundedCredits).toBe(0);
+    expect(refunds).toEqual([]);
+  });
+
+  it("BOTH SHEETS GONE TO REFUSALS IS STILL ONE WHOLE REFUND, never the shares on top", async () => {
+    headRefusals = 2;
+    judgeRefuses = new Set(["frontFull", "backFull"]);
+    const result = await redoCastPackage(dependencies(), input);
+
+    expect(result.committed).toEqual([]);
+    expect(refunds).toHaveLength(1);
+    expect(refunds[0].amount).toBe(PACKAGE_PRICE);
   });
 });
