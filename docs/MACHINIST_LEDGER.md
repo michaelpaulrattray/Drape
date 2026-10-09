@@ -2191,6 +2191,32 @@ splits by **file count**; the halves are exactly 535/535 while their test-second
 are 1.52× apart, worth ~24 s of today's 304 s). Run 6's addendum predicted the
 imbalance and did not card it. **Carded now: #2164.**
 
+### H2. The gate that refused this run's own push — found by being refused by it
+
+`.githooks/pre-push` ARM 2 refused the ledger append above with *"the working
+tree is clean and the generated maps are STALE"*. **The maps were not stale.**
+The worktree was cut with plain `git worktree add` and had no `node_modules`, so
+`tsx` was absent and the checker could not execute — and the hook reads **only
+the exit code**, so *"the generator ran and found a stale map"* and *"the
+generator could not run"* are one answer to it.
+
+The before/after, with nothing in the commit changed between the two readings —
+only whether the checker could run:
+
+| | verdict |
+|---|---|
+| plain worktree, no `node_modules` | **REFUSED — "the generated maps are STALE"** |
+| after one junction to the main tree's install | `architecture:check` **OK**; `capability:check` **OK — 67 doors, 61 corpus rows, 0 error**; push accepted |
+
+⚠ **The remedy it printed cannot work**: `pnpm architecture:generate` needs the
+same missing `tsx`, so an author who obeys the instruction gets the identical
+error. This is the shape the hook's own comment records having shipped once
+before — *"a sentence that was false, above a remedy that was wrong"* (review of
+PR #610, finding 5) — one question earlier: it asks whether a staleness verdict
+is about the commit or the worktree, and never whether the check executed.
+It is live for every seat right now, because #2148 is repairing the shared
+install that every junctioned worktree reads. **#2167.**
+
 ### I. THE WORST NUMBER — run 7
 
 **The gate's unit wall is back to 304 s from the 211 s the shard delivered seven
@@ -2217,9 +2243,9 @@ conserved exactly; and the last seven days of OpenRouter cost **$2.18**.
 
 Seat: Machinist, patrol #7, one seat, shift `machinist-20261010-0000`, run row
 **#638**. Clock: run 6 was 2026-10-03, so this run is on the day; the clock counts
-from today. Ledger appended. **Two cards filed — #2164 (the worst number) and
-#2165 (a five-shift recurrence handed to the Retro, whose clock fires
-2026-10-11).** One finding investigated and **withdrawn at the rows** (§C). Three
+from today. Ledger appended. **Three cards filed — #2164 (the worst number), #2165
+(a five-shift recurrence handed to the Retro, whose clock fires 2026-10-11) and
+#2167 (§H2).** One finding investigated and **withdrawn at the rows** (§C). Three
 read-only disposables written, guarded and deleted; scratch removed. Readings
 taken from the main tree (read-only) and a worktree at `origin/main`
 `2083426c8`. No dev server started. **Spent: nothing.**
