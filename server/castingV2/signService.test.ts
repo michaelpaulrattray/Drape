@@ -356,6 +356,11 @@ vi.mock("../storage", () => ({
 }));
 
 const { signCandidate } = await import("./signService");
+/* Types only, so this import cannot change which module the mocks above
+   intercept — the value import on the line above is dynamic for exactly that
+   reason and stays as it is. */
+import type { SignServiceDependencies } from "./signService";
+import type { CastPersonaReader } from "./castPersona";
 const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
 /**
  * ⚠ **EVERY MONEY ARM BELOW PINNED `450` UNTIL 2026-10-01 AND ALL OF THEM WENT
@@ -1322,8 +1327,12 @@ describe("a signed Cast records its terminal event (#1429)", () => {
 const SEAL_LIE = "the package could not be sealed";
 
 describe("N2b's two lines are born inside the Sign", () => {
+  type PersonaAsk = Parameters<CastPersonaReader["read"]>[0];
   const reader = (lines: { personality: string; voice: string } | null) => ({
-    read: vi.fn(async () => {
+    /* The argument is DECLARED rather than inferred: `tsconfig.casting-tests`
+       reads an undeclared `vi.fn(async () => …)` as taking none, so
+       `mock.calls[0][0]` is an index into an empty tuple. */
+    read: vi.fn(async (_ask: PersonaAsk) => {
       journal.push("persona:read");
       return lines;
     }),
@@ -1393,7 +1402,7 @@ describe("N2b's two lines are born inside the Sign", () => {
     let release: (() => void) | null = null;
     const held = new Promise<void>((resolve) => { release = resolve; });
     const deferred = {
-      read: vi.fn(async () => {
+      read: vi.fn(async (_ask: PersonaAsk) => {
         journal.push("persona:read");
         await held;
         return LINES;
@@ -1405,10 +1414,10 @@ describe("N2b's two lines are born inside the Sign", () => {
         schedulePackage: awaitPackage,
         /* The package is what lets the read finish, so an awaited read cannot
            reach this at all. */
-        buildPackage: vi.fn(async (...args: unknown[]) => {
+        buildPackage: (async (...args: unknown[]) => {
           release?.();
           return (packageReturning({}) as unknown as (...a: unknown[]) => Promise<unknown>)(...args);
-        }) as unknown as typeof buildCastPackage,
+        }) as unknown as SignServiceDependencies["buildPackage"],
         personaReader: () => deferred,
       },
       input,
@@ -1462,7 +1471,7 @@ describe("N2b's two lines are born inside the Sign", () => {
         schedulePackage: awaitPackage,
         buildPackage: packageReturning({}),
         personaReader: () => ({
-          read: vi.fn(async () => {
+          read: vi.fn(async (_ask: PersonaAsk) => {
             throw new Error("the reader exploded");
           }),
         }),
