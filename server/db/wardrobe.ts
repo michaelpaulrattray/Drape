@@ -20,7 +20,7 @@ import { assertOwnedAvailableModelIn } from "./modelReferenceFence";
 import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 import { wardrobeModelPhotoKeyPrefix, wardrobeOwnedKeyPrefixes } from "./accountDeletion";
 import { returnWardrobeScratchKeyIn } from "../wardrobe/scratchUpload";
-import { classifyStorageReference } from "../casting/deletionAudit";
+import { classifyStorageReference, parseJsonValue } from "../casting/deletionAudit";
 
 function affectedRows(result: unknown): number {
   if (Array.isArray(result)) return Number((result[0] as { affectedRows?: unknown })?.affectedRows ?? 0);
@@ -479,6 +479,128 @@ export async function createSession(data: InsertWardrobeSession, currentPublicUr
 }
 
 /**
+ * Where a try-on result of THIS account lives — `wardrobe/<id>/vto-results/`
+ * (#2104). Built from the erasure sweep's own wardrobe prefix rather than
+ * restated, and the folder is the one `uploadTryOnResult` writes into, which
+ * `server/wardrobe/sessionHistoryRelease.test.ts` proves by driving the writer
+ * and reading the key it mints. The trailing slashes separate account 1 from
+ * account 12.
+ */
+export function wardrobeTryOnResultKeyPrefix(userId: number): string {
+  return `${wardrobeOwnedKeyPrefixes(userId)[0]}vto-results/`;
+}
+
+/**
+ * The storage keys of every try-on result named by these session histories
+ * that sits under this account's own try-on prefix (#2104).
+ *
+ * ⚠ **A HISTORY ENTRY IS NOT PROOF OF OWNERSHIP.** `sessions.update` stores
+ * whatever `history` the client sends (`z.array(z.string())`), so an entry may
+ * be another customer's picture, a Cast's view, a legacy host, or not a URL at
+ * all. Only a URL on the bucket we serve from today whose key carries this
+ * account's own try-on prefix is returned — the same proof the erasure sweep's
+ * `addOwnedWardrobeReference` requires, narrowed to the one folder the card
+ * names.
+ */
+export function tryOnResultKeysIn(
+  histories: readonly unknown[],
+  input: { userId: number; currentPublicUrl: string },
+): Set<string> {
+  const prefix = wardrobeTryOnResultKeyPrefix(input.userId);
+  const keys = new Set<string>();
+  for (const raw of histories) {
+    const history = parseJsonValue(raw);
+    if (!Array.isArray(history)) continue;
+    for (const url of history) {
+      if (typeof url !== "string") continue;
+      const classified = classifyStorageReference({ url, currentPublicUrl: input.currentPublicUrl });
+      if (classified.kind === "current_origin_url" && classified.key.startsWith(prefix)) {
+        keys.add(classified.key);
+      }
+    }
+  }
+  return keys;
+}
+
+/**
+ * Every public key a row THIS account keeps still names, among the wardrobe
+ * rows that may name a try-on picture (#2104): its Looks, its Outfits, its
+ * garments, and its sessions other than `excludeSessionIds` (history and
+ * photo both). Read inside the deleting transaction, each `FOR UPDATE`, so a
+ * row written against the same account waits for the delete to commit.
+ *
+ * Keys are compared, not URL strings, so one picture spelled two ways is one
+ * picture. An explicit key column (`resultThumbKey`, a garment's three) counts
+ * as written; a URL counts by the key it names on the current bucket.
+ *
+ * ⚠ **Read on the KEEPING side, so it reads every URL a row names whatever its
+ * prefix** — the opposite of the erasure sweep, which may only DELETE what it
+ * can prove is this account's. Over-reading here keeps a picture a little
+ * longer; under-reading would collect a picture a Look still shows.
+ */
+async function wardrobeKeysStillNamedIn(
+  tx: TransactionHandle,
+  input: { userId: number; currentPublicUrl: string; excludeSessionIds: ReadonlySet<number> },
+): Promise<Set<string>> {
+  const named = new Set<string>();
+  const name = (reference: { url?: unknown; storageKey?: unknown }) => {
+    const classified = classifyStorageReference({ ...reference, currentPublicUrl: input.currentPublicUrl });
+    if (classified.kind === "explicit_key" || classified.kind === "current_origin_url") named.add(classified.key);
+  };
+
+  const looks = await tx
+    .select({ imageUrl: wardrobeLooks.imageUrl })
+    .from(wardrobeLooks)
+    .where(eq(wardrobeLooks.userId, input.userId))
+    .for("update");
+  for (const look of looks) name({ url: look.imageUrl });
+
+  const outfits = await tx
+    .select({ resultThumbUrl: wardrobeOutfits.resultThumbUrl, resultThumbKey: wardrobeOutfits.resultThumbKey })
+    .from(wardrobeOutfits)
+    .where(eq(wardrobeOutfits.userId, input.userId))
+    .for("update");
+  for (const outfit of outfits) {
+    name({ storageKey: outfit.resultThumbKey });
+    name({ url: outfit.resultThumbUrl });
+  }
+
+  const garments = await tx
+    .select({
+      originalImageKey: wardrobeGarments.originalImageKey,
+      originalImageUrl: wardrobeGarments.originalImageUrl,
+      isolatedImageKey: wardrobeGarments.isolatedImageKey,
+      isolatedImageUrl: wardrobeGarments.isolatedImageUrl,
+      sourceImageKey: wardrobeGarments.sourceImageKey,
+      sourceImageUrl: wardrobeGarments.sourceImageUrl,
+    })
+    .from(wardrobeGarments)
+    .where(eq(wardrobeGarments.userId, input.userId))
+    .for("update");
+  for (const garment of garments) {
+    name({ storageKey: garment.originalImageKey });
+    name({ url: garment.originalImageUrl });
+    name({ storageKey: garment.isolatedImageKey });
+    name({ url: garment.isolatedImageUrl });
+    name({ storageKey: garment.sourceImageKey });
+    name({ url: garment.sourceImageUrl });
+  }
+
+  const sessions = await tx
+    .select({ id: wardrobeSessions.id, modelImageUrl: wardrobeSessions.modelImageUrl, history: wardrobeSessions.history })
+    .from(wardrobeSessions)
+    .where(eq(wardrobeSessions.userId, input.userId))
+    .for("update");
+  for (const session of sessions) {
+    if (input.excludeSessionIds.has(session.id)) continue;
+    name({ url: session.modelImageUrl });
+    const history = parseJsonValue(session.history);
+    if (Array.isArray(history)) for (const url of history) name({ url });
+  }
+  return named;
+}
+
+/**
  * Delete some of this account's sessions, and hand each model photo that no
  * remaining session names BACK to the cleanup worker (#2022).
  *
@@ -499,6 +621,18 @@ export async function createSession(data: InsertWardrobeSession, currentPublicUr
  * other URL) is never registered. A photo the worker had already collected is
  * registered harmlessly: there is nothing left for the worker to delete.
  *
+ * ⚠ **AND THE SESSION'S TRY-ON HISTORY, WHICH IS THE SAME HOLE ONE COLUMN OVER
+ * (#2104).** Since #1980 a try-on result is adopted out of its manifest by
+ * `appendSessionResult`, so once the session row goes nothing names it either
+ * — and the erasure sweep, which reads it through `history`, has lost its road
+ * too. So each picture in a doomed history under THIS account's try-on prefix
+ * ({@link wardrobeTryOnResultKeyPrefix}) gets a fresh single-object scratch
+ * manifest through the same `returnWardrobeScratchKeyIn` — **unless something
+ * the account keeps still names it** ({@link wardrobeKeysStillNamedIn}): a
+ * saved Look or Outfit (which adopted it, #2094), a garment, or a session that
+ * survives this delete. Those keep the picture, and the erasure sweep reads
+ * them.
+ *
  * Returns how many session rows were deleted.
  */
 async function releaseSessionPhotosAndDeleteIn(
@@ -507,7 +641,11 @@ async function releaseSessionPhotosAndDeleteIn(
 ): Promise<number> {
   if (input.sessionIds.length === 0) return 0;
   const doomed = await tx
-    .select({ id: wardrobeSessions.id, modelImageUrl: wardrobeSessions.modelImageUrl })
+    .select({
+      id: wardrobeSessions.id,
+      modelImageUrl: wardrobeSessions.modelImageUrl,
+      history: wardrobeSessions.history,
+    })
     .from(wardrobeSessions)
     .where(and(
       eq(wardrobeSessions.userId, input.userId),
@@ -536,6 +674,28 @@ async function releaseSessionPhotosAndDeleteIn(
     /* The upload's own manifest, minted by the upload's own module — kind,
        synthetic id and the day's hold are decided there, not restated here. */
     await returnWardrobeScratchKeyIn(tx, { userId: input.userId, storageKey: classified.key });
+  }
+
+  /* #2104 — and each try-on picture in the doomed history that nothing the
+     account keeps still names (`tryOnResultKeysIn`, `wardrobeKeysStillNamedIn`). */
+  const historyKeys = tryOnResultKeysIn(doomed.map((row) => row.history), {
+    userId: input.userId,
+    currentPublicUrl: input.currentPublicUrl,
+  });
+  if (historyKeys.size > 0) {
+    const stillNamed = await wardrobeKeysStillNamedIn(tx, {
+      userId: input.userId,
+      currentPublicUrl: input.currentPublicUrl,
+      excludeSessionIds: doomedIds,
+    });
+    /* A Set, so a picture in two doomed histories is handed back once. */
+    for (const key of Array.from(historyKeys)) {
+      if (stillNamed.has(key)) continue;
+      /* One manifest per picture, exactly the shape `uploadTryOnResult` left
+         it in — so a Look or Outfit saved from it inside the day adopts it
+         again (`adoptOwnedScratchKeyIn` takes a single-object batch only). */
+      await returnWardrobeScratchKeyIn(tx, { userId: input.userId, storageKey: key });
+    }
   }
 
   const result = await tx.delete(wardrobeSessions).where(and(
@@ -569,21 +729,70 @@ export async function getUserSessions(userId: number) {
     .orderBy(desc(wardrobeSessions.updatedAt));
 }
 
+/**
+ * Write a session's fields — and, when the write replaces its `history`, hand
+ * each try-on picture it DROPPED back to the cleanup worker (#2108).
+ *
+ * ⚠ **A SHORTER HISTORY IS #2104'S HOLE BY ANOTHER DOOR.** A try-on result is
+ * adopted out of its manifest into `history` (#1980), so the session row is
+ * what names it. `sessions.update` stores whatever list the client sends, and
+ * a picture missing from the new list was named by nothing the moment the
+ * write landed — public for good, out of reach of the worker and of the
+ * erasure sweep alike. So the same rule as a delete, through the same helpers
+ * and no second copy of them: each picture in the OLD history under this
+ * account's try-on prefix ({@link tryOnResultKeysIn}) gets a fresh
+ * single-object manifest through `returnWardrobeScratchKeyIn`, unless a row
+ * the account keeps still names it ({@link wardrobeKeysStillNamedIn}).
+ *
+ * The keepers are read AFTER the write and with no session excluded, so this
+ * session counts by its NEW row: a picture the new history still carries (in
+ * any spelling of its key) is kept by construction, with no diff restated
+ * here. The row is locked first, so a try-on appended concurrently
+ * (`appendSessionResult`, same lock) is either in the old history read here or
+ * lands after this write — never lost between the two.
+ *
+ * A write that does not touch `history` is the plain owner-scoped update it
+ * always was.
+ */
 export async function updateSession(
   sessionId: number,
   userId: number,
   data: Partial<InsertWardrobeSession>,
+  currentPublicUrl: string,
 ) {
-  const db = (await getDb())!;
-  await db
-    .update(wardrobeSessions)
-    .set(data)
-    .where(
-      and(
-        eq(wardrobeSessions.id, sessionId),
-        eq(wardrobeSessions.userId, userId),
-      ),
-    );
+  const ownerScope = and(
+    eq(wardrobeSessions.id, sessionId),
+    eq(wardrobeSessions.userId, userId),
+  );
+  if (data.history === undefined) {
+    const db = (await getDb())!;
+    await db.update(wardrobeSessions).set(data).where(ownerScope);
+    return;
+  }
+
+  await withTransaction(async (tx) => {
+    const [before] = await tx
+      .select({ history: wardrobeSessions.history })
+      .from(wardrobeSessions)
+      .where(ownerScope)
+      .limit(1)
+      .for("update");
+    if (!before) return;
+
+    await tx.update(wardrobeSessions).set(data).where(ownerScope);
+
+    const held = tryOnResultKeysIn([before.history], { userId, currentPublicUrl });
+    if (held.size === 0) return;
+    const stillNamed = await wardrobeKeysStillNamedIn(tx, {
+      userId,
+      currentPublicUrl,
+      excludeSessionIds: new Set(),
+    });
+    for (const key of Array.from(held)) {
+      if (stillNamed.has(key)) continue;
+      await returnWardrobeScratchKeyIn(tx, { userId, storageKey: key });
+    }
+  });
 }
 
 /**

@@ -842,7 +842,7 @@ const sessionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       const { sessionId, ...updateData } = input;
-      await updateSession(sessionId, ctx.user.id, updateData);
+      await updateSession(sessionId, ctx.user.id, updateData, process.env.R2_PUBLIC_URL ?? "");
       return { success: true };
     }),
 

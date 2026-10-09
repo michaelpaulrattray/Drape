@@ -789,13 +789,13 @@ describe.skipIf(!dbAvailable)("boards", () => {
       await expect(getSessionById(sessionId, 414)).resolves.toBeNull();
       await updateSession(sessionId, 414, {
         history: ["https://example.com/foreign.png"],
-      });
+      }, "");
       expect((await getSessionById(sessionId, 413))?.history)
         .toEqual(["https://example.com/original.png"]);
 
       await updateSession(sessionId, 413, {
         history: ["https://example.com/owned.png"],
-      });
+      }, "");
       expect((await getSessionById(sessionId, 413))?.history)
         .toEqual(["https://example.com/owned.png"]);
     });
