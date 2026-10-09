@@ -58,8 +58,24 @@ export const stillOnDisk = (p: string): boolean => {
   }
 };
 
-/** What {@link measureTree} found. `capped` makes both figures a floor. */
-export type TreeMeasure = { bytes: number; files: number; capped: boolean };
+/**
+ * What {@link measureTree} found. `capped` makes both figures a floor.
+ *
+ * ⚠ **`unreadable` IS THE FIELD THAT LETS A CALLER TRUST A ZERO, AND WITHOUT IT
+ * NOBODY COULD (#2155).** `{ bytes: 0, files: 0 }` came back for three different
+ * worlds — a directory that is genuinely empty, a directory this process may not
+ * list, and a path that is a link — and a caller deciding whether anything would
+ * be lost by deleting it cannot tell them apart. The one that is safe to act on
+ * is the first; the other two are *when in doubt, keep*, which is this module's
+ * doctrine everywhere else.
+ *
+ * ⚠ **AND THE DOCBLOCK BELOW CLAIMED `capped` SAID THIS AND IT DID NOT.** It
+ * read *"the figures are a floor whenever that happens — which `capped` says"*
+ * over the failed-`readdirSync` branch, while `capped` is set from the entry cap
+ * alone. So an unlistable directory reported a confident zero with a comment
+ * asserting it had been flagged.
+ */
+export type TreeMeasure = { bytes: number; files: number; capped: boolean; unreadable: boolean };
 
 /**
  * ⚠ THE WALK CAP, AND IT IS HERE BECAUSE THIS MEASUREMENT RUNS FOUR LINES ABOVE
@@ -96,18 +112,39 @@ export const MEASURE_ENTRY_CAP = 50_000;
  * A missing path is `0` rather than a throw: a caller asks about a path git has
  * just named, and the one-in-a-thousand race where it goes between the listing
  * and the walk must not turn a removal into an error.
+ *
+ * ⚠ **AND "MISSING" IS THE ONLY FAILURE THAT COMES BACK AS A TRUSTWORTHY ZERO
+ * (#2155).** `ENOENT` means there is provably nothing there. Every other way of
+ * failing to count — a stat refused for any other reason, a root that is a link,
+ * a directory this process cannot list, a file it cannot size — sets
+ * `unreadable`, because a caller four lines above a recursive delete must not
+ * read *could not look* as *nothing to lose*.
  */
 export const measureTree = (dir: string): TreeMeasure => {
   let bytes = 0;
   let files = 0;
   let seen = 0;
+  let unreadable = false;
   /* The root, before anything reads through it. `lstat` and not `stat`, for the
      reason `stillOnDisk` above gives at length. */
   let root: ReturnType<typeof lstatSync>;
-  try { root = lstatSync(dir); } catch { return { bytes: 0, files: 0, capped: false }; }
+  try {
+    root = lstatSync(dir);
+  } catch (error) {
+    /* ⚠ ENOENT is the one trustworthy zero: there is provably nothing there.
+       Anything else is a refused read, and a refused read is not an empty
+       directory (#2155). */
+    const missing = (error as NodeJS.ErrnoException)?.code === "ENOENT";
+    return { bytes: 0, files: 0, capped: false, unreadable: !missing };
+  }
   if (root.isSymbolicLink() || !root.isDirectory()) {
-    /* A link, or a plain file. A link is never walked; a file is its own size. */
-    return { bytes: root.isSymbolicLink() ? 0 : root.size, files: root.isSymbolicLink() ? 0 : 1, capped: false };
+    /* A link, or a plain file. A link is never walked; a file is its own size.
+       ⚠ A LINK IS `unreadable` RATHER THAN EMPTY: nothing here was counted, and
+       what it points at is outside this tree and unmeasured, so a caller asking
+       *would anything be lost* gets the keep answer. */
+    return root.isSymbolicLink()
+      ? { bytes: 0, files: 0, capped: false, unreadable: true }
+      : { bytes: root.size, files: 1, capped: false, unreadable: false };
   }
   const walk = (at: string): void => {
     /* `Dirent[]`, spelled out: `ReturnType<typeof readdirSync>` resolves to the
@@ -116,8 +153,10 @@ export const measureTree = (dir: string): TreeMeasure => {
     try {
       entries = readdirSync(at, { withFileTypes: true });
     } catch {
-      /* Gone, or unreadable. Either way there is nothing to count here, and the
-         figures are a floor whenever that happens — which `capped` says. */
+      /* Gone, or unreadable. Either way nothing here was counted, so the figures
+         are a floor — and `unreadable` is what says so. `capped` never did, which
+         is the comment this line used to carry (#2155). */
+      unreadable = true;
       return;
     }
     for (const entry of entries) {
@@ -127,11 +166,13 @@ export const measureTree = (dir: string): TreeMeasure => {
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) { walk(full); continue; }
       if (!entry.isFile()) continue;
-      try { bytes += lstatSync(full).size; files += 1; } catch { /* vanished mid-walk */ }
+      /* ⚠ A FILE THAT CANNOT BE SIZED IS A FILE THAT WAS THERE. Skipping it
+         silently is how a directory holding one unreadable file reported zero. */
+      try { bytes += lstatSync(full).size; files += 1; } catch { unreadable = true; }
     }
   };
   walk(dir);
-  return { bytes, files, capped: seen >= MEASURE_ENTRY_CAP };
+  return { bytes, files, capped: seen >= MEASURE_ENTRY_CAP, unreadable };
 };
 
 /**

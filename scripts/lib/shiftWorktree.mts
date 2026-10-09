@@ -466,7 +466,43 @@ export type KeptIgnoredPath = {
   readonly files: number;
   /** `true` when the walk hit its entry cap, so both figures are a floor. */
   readonly capped: boolean;
+  /**
+   * `true` when the walk could not finish — a refused stat, a link, a directory
+   * it could not list, a file it could not size. Both figures are then a floor
+   * and a zero means *not counted*, never *empty* (#2155).
+   */
+  readonly unreadable: boolean;
 };
+
+/**
+ * WHETHER A KEPT IGNORED PATH ACTUALLY HOLDS ANYTHING — the reading the verdict
+ * below used to take and throw away (#2155).
+ *
+ * ⚠ **MEASURED, NOT REASONED: 15 OF THE 34 LEFTOVER WORKTREES ON THIS MACHINE
+ * REFUSED REMOVAL ON AN `output/` DIRECTORY HOLDING `0 B in 0 files`** — read
+ * through the real `remove --dry-run`, then confirmed at the disk (`find -type f`
+ * returned nothing in each). The tool measured the directory, PRINTED
+ * `output/ (0 B in 0 files)`, and then refused on it anyway; a shift reads a
+ * refusal and leaves the tree, so the leftovers accumulate and every one of them
+ * keeps a live `node_modules` junction into the main tree's install — which is
+ * the hazard `#2155` and this module's own header are about.
+ *
+ * **So the class is not "shifts that ended without running the tool", which is
+ * what the card supposed.** It is this function's absence: *a verdict that
+ * discards a measurement it already took.* `#1823`'s refusal is right and is
+ * untouched for anything that holds bytes — what changes is that an empty
+ * directory is no longer called work.
+ *
+ * ⚠ **AND IT FAILS CLOSED, WHICH IS THE WHOLE REASON `measureTree` NOW REPORTS
+ * `unreadable`.** A zero that came from *could not look* must keep refusing, or
+ * this repair hands `#1823`'s 1.36 GB back to the delete by a different door. A
+ * capped walk is the same answer for the same reason: the figures are a floor,
+ * so a zero is not a measurement.
+ */
+export function keptIgnoredHoldsWork(kept: KeptIgnoredPath): boolean {
+  if (kept.unreadable || kept.capped) return true;
+  return kept.files > 0 || kept.bytes > 0;
+}
 
 /**
  * Bytes as a person reads them.
@@ -490,6 +526,10 @@ export function humanBytes(bytes: number): string {
 
 /** One kept path, worded once for the refusal, the warning and the printed line. */
 export function describeKeptIgnored(kept: KeptIgnoredPath): string {
+  /* ⚠ NOT `0 B in 0 files`, WHICH IS WHAT AN UNREADABLE PATH USED TO PRINT
+     (#2155) — the most reassuring sentence available about the one state nobody
+     measured, four lines above a recursive delete. */
+  if (kept.unreadable) return `${kept.path} (SIZE NOT READ — the walk could not finish, so it is kept)`;
   const floor = kept.capped ? "at least " : "";
   return `${kept.path} (${floor}${humanBytes(kept.bytes)} in ${floor}${kept.files} file${kept.files === 1 ? "" : "s"})`;
 }
@@ -516,11 +556,20 @@ export function ignoredReadingLine(state: {
       ? `${counted} — git is ignoring nothing in this worktree`
       : `${counted}, none worth keeping (${state.disposableIgnored.join(", ")})`;
   }
-  const kept = state.keptIgnored.map(describeKeptIgnored).join("; ");
+  /* ⚠ THE KEPT SET SPLITS IN TWO AND BOTH HALVES ARE SAID (#2155). A path in the
+     named set that measured EMPTY is not work — it no longer earns the ⚠ and no
+     longer refuses — but it is still printed, because #1823's whole lesson is
+     that silence about a population cannot be told apart from an empty one. */
+  const holding = state.keptIgnored.filter(keptIgnoredHoldsWork);
+  const empty = state.keptIgnored.filter((path) => !keptIgnoredHoldsWork(path));
+  const emptyNote = empty.length === 0
+    ? ""
+    : `; ${empty.length} kept path${empty.length === 1 ? "" : "s"} measured EMPTY (${empty.map((path) => path.path).join(", ")})`;
   const rest = state.disposableIgnored.length === 0
     ? ""
     : `; ${state.disposableIgnored.length} disposable (${state.disposableIgnored.join(", ")})`;
-  return `${counted} — ⚠ WORTH KEEPING: ${kept}${rest}`;
+  if (holding.length === 0) return `${counted}, none worth keeping${emptyNote}${rest}`;
+  return `${counted} — ⚠ WORTH KEEPING: ${holding.map(describeKeptIgnored).join("; ")}${emptyNote}${rest}`;
 }
 
 /**
@@ -670,8 +719,14 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
    * first, and a refusal naming renders over lost commits would send a shift to
    * copy a directory and `--force` past the commits.
    */
-  if (state.keptIgnored.length > 0 && !force) {
-    const named = state.keptIgnored.map(describeKeptIgnored).join("; ");
+  /* ⚠ THE SUBSET THAT HOLDS SOMETHING, NEVER THE WHOLE NAMED SET (#2155). An
+     `output/` measured at `0 B in 0 files` refused 15 of the 34 leftover
+     worktrees on this machine, and a refusal a shift cannot act on is how 37 of
+     them came to be standing with live junctions. `keptIgnoredHoldsWork` fails
+     closed, so an unreadable or capped measurement still refuses here. */
+  const keptHoldingWork = state.keptIgnored.filter(keptIgnoredHoldsWork);
+  if (keptHoldingWork.length > 0 && !force) {
+    const named = keptHoldingWork.map(describeKeptIgnored).join("; ");
     return {
       proceed: false,
       reason: `the worktree holds ignored work that is worth keeping: ${named}`
@@ -702,9 +757,9 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
      It names the paths and the bytes rather than a count, because the count is
      what the old report had: `uncommitted 0 file(s)` was a true number about the
      wrong population. */
-  if (force && state.keptIgnored.length > 0) {
+  if (force && keptHoldingWork.length > 0) {
     warnings.push(
-      `--force is destroying ignored work worth keeping: ${state.keptIgnored.map(describeKeptIgnored).join("; ")}`,
+      `--force is destroying ignored work worth keeping: ${keptHoldingWork.map(describeKeptIgnored).join("; ")}`,
     );
   }
   if (!state.registered) {

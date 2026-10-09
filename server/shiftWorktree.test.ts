@@ -56,6 +56,7 @@ import {
   judgeSharedInstall,
   sharedInstallWarning,
   INSTALLED_LOCKFILE_RELATIVE,
+  keptIgnoredHoldsWork,
   keptIgnoredPrefixFor,
   mergedPrArgs,
   parseWorktreeList,
@@ -279,7 +280,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
   });
 
   it("REFUSES the kept set, overridably — and `--force` says what it destroys", () => {
-    const court = [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }];
+    const court = [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false, unreadable: false }];
     const verdict = decideRemoval({ ...clean, keptIgnored: court }, false);
     expect(verdict.proceed).toBe(false);
     if (!verdict.proceed) {
@@ -310,7 +311,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
     /* A refusal naming renders over lost commits would send a shift to copy a
        directory and then `--force` past the commits. */
     const verdict = decideRemoval(
-      { ...clean, unpushedCommits: 2, keptIgnored: [{ path: "output/", bytes: 10, files: 1, capped: false }] },
+      { ...clean, unpushedCommits: 2, keptIgnored: [{ path: "output/", bytes: 10, files: 1, capped: false, unreadable: false }] },
       false,
     );
     expect(verdict.proceed).toBe(false);
@@ -325,7 +326,7 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
     expect(ignoredReadingLine({ keptIgnored: [], disposableIgnored: ["node_modules/", ".env"] }))
       .toBe("2 path(s), none worth keeping (node_modules/, .env)");
     const line = ignoredReadingLine({
-      keptIgnored: [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false }],
+      keptIgnored: [{ path: "output/", bytes: 1_456_822_000, files: 188, capped: false, unreadable: false }],
       disposableIgnored: ["node_modules/"],
     });
     expect(line).toContain("WORTH KEEPING");
@@ -334,8 +335,86 @@ describe("the ignored population — the fact `dirtyFiles` cannot see (#1823)", 
   });
 
   it("a capped walk reads as a FLOOR, never as a measurement", () => {
-    expect(describeKeptIgnored({ path: "output/", bytes: 2048, files: 2, capped: true }))
+    expect(describeKeptIgnored({ path: "output/", bytes: 2048, files: 2, capped: true, unreadable: false }))
       .toBe("output/ (at least 2.0 kB in at least 2 files)");
+  });
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     AN EMPTY KEPT PATH IS NOT WORK (#2155).
+
+     ⚠ MEASURED BEFORE IT WAS BUILT, THROUGH THE REAL TOOL: `remove --dry-run`
+     over the 34 leftover worktrees standing on this machine refused ALL 34, and
+     **15 of them on an `output/` reading `0 B in 0 files`** — confirmed at the
+     disk afterwards (`find -type f` returned nothing in each). The tool took the
+     measurement, printed it, and refused anyway; a shift reads a refusal and
+     leaves the tree, so the junctions accumulate. The population is the proof,
+     and these arms are the guard.
+     ────────────────────────────────────────────────────────────────────────── */
+
+  it("⚠ AN `output/` MEASURED EMPTY NO LONGER REFUSES — the 15-of-34 case", () => {
+    const emptyOutput = [{ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false }];
+    const verdict = decideRemoval({ ...clean, keptIgnored: emptyOutput }, false);
+    expect(
+      verdict.proceed,
+      "an empty directory refused a removal — this is the refusal that left 37 worktrees standing",
+    ).toBe(true);
+    /* And it is not warned about either: there is nothing to move out. */
+    if (verdict.proceed) expect(verdict.warnings.join(" ")).not.toContain("worth keeping");
+  });
+
+  it("⚠ POSITIVE CONTROL — one byte in it and the refusal is back", () => {
+    /* The arm that proves the one above is not simply switching the guard off.
+       `#1823`'s refusal is untouched for anything that holds bytes. */
+    const verdict = decideRemoval(
+      { ...clean, keptIgnored: [{ path: "output/", bytes: 1, files: 1, capped: false, unreadable: false }] },
+      false,
+    );
+    expect(verdict.proceed).toBe(false);
+    if (!verdict.proceed) expect(verdict.reason).toContain("output/ (1 B in 1 file)");
+  });
+
+  it("⚠ FAILS CLOSED — a zero that came from `could not look` still refuses", () => {
+    /* The whole reason `measureTree` now reports `unreadable`. Without this the
+       repair above hands the 1.36 GB back to the delete by a different door. */
+    for (const measure of [
+      { bytes: 0, files: 0, capped: false, unreadable: true },
+      { bytes: 0, files: 0, capped: true, unreadable: false },
+    ]) {
+      const verdict = decideRemoval({ ...clean, keptIgnored: [{ path: "output/", ...measure }] }, false);
+      expect(verdict.proceed, `an unmeasured zero (${JSON.stringify(measure)}) authorised a delete`).toBe(false);
+    }
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: true })).toBe(true);
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: true, unreadable: false })).toBe(true);
+    expect(keptIgnoredHoldsWork({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false })).toBe(false);
+  });
+
+  it("⚠ AN UNREADABLE PATH DOES NOT PRINT `0 B in 0 files` — the reassuring lie", () => {
+    const said = describeKeptIgnored({ path: "output/", bytes: 0, files: 0, capped: false, unreadable: true });
+    expect(said).toContain("SIZE NOT READ");
+    expect(said, "the one state nobody measured printed the most reassuring number available").not.toContain("0 B");
+  });
+
+  it("the printed line still names an EMPTY kept path, because silence is the other defect", () => {
+    /* #1823's lesson, held in the direction it was learned: a population nobody
+       mentions cannot be told apart from an empty one. So the ⚠ goes away and the
+       path does not. */
+    const line = ignoredReadingLine({
+      keptIgnored: [{ path: "output/", bytes: 0, files: 0, capped: false, unreadable: false }],
+      disposableIgnored: ["node_modules/", ".env"],
+    });
+    expect(line).toBe("3 path(s), none worth keeping; 1 kept path measured EMPTY (output/); 2 disposable (node_modules/, .env)");
+    expect(line, "an empty directory kept the WORTH KEEPING flag").not.toContain("WORTH KEEPING");
+
+    /* A mixed worktree says both halves, and the ⚠ belongs to the one with bytes. */
+    const mixed = ignoredReadingLine({
+      keptIgnored: [
+        { path: ".playwright-mcp/", bytes: 139_500, files: 7, capped: false, unreadable: false },
+        { path: "output/", bytes: 0, files: 0, capped: false, unreadable: false },
+      ],
+      disposableIgnored: [],
+    });
+    expect(mixed).toContain("⚠ WORTH KEEPING: .playwright-mcp/ (136.2 kB in 7 files)");
+    expect(mixed).toContain("1 kept path measured EMPTY (output/)");
   });
 
   it("⚠ humanBytes REACHES GB — the unit the 1.357 GB that filed this is read in", () => {
@@ -457,12 +536,37 @@ describe("the ignored reading, against a real repository (#1823)", () => {
       const measured = measureTree(join(tree, "node_modules"));
       expect(measured.files, "measureTree followed the junction into the real install").toBe(0);
       expect(measured.bytes).toBe(0);
+      /* ⚠ AND ITS ZERO IS NOT A MEASUREMENT (#2155). Nothing was counted and the
+         target is outside this tree, so a caller asking *would anything be lost*
+         must not read this as an empty directory. */
+      expect(measured.unreadable, "a link's uncounted zero read as a measured empty").toBe(true);
+    });
+  });
+
+  it("⚠ DRIVEN AT THE DISK — a real empty output/ in a real worktree removes", () => {
+    withWorktree(({ tree }) => {
+      mkdirSync(join(tree, "output"), { recursive: true });
+
+      /* The reading git takes, not a fixture of it: an empty ignored directory IS
+         listed by `--ignored=matching`, which is why it ever reached the verdict. */
+      const read = parseWorktreeStatus(statusIn(tree, worktreeStatusArgs()));
+      const { kept } = classifyIgnored(read.ignored);
+      expect(kept, "git stopped listing an empty ignored directory — this arm is now vacuous").toContain("output/");
+
+      const measured = measureTree(join(tree, "output"));
+      expect(measured).toEqual({ bytes: 0, files: 0, capped: false, unreadable: false });
+
+      const verdict = decideRemoval({ ...clean, keptIgnored: [{ path: "output/", ...measured }] }, false);
+      expect(verdict.proceed, "a real empty output/ still refused its own worktree's removal").toBe(true);
     });
   });
 
   it("measureTree returns zero for a path that is not there, rather than throwing", () => {
     withWorktree(({ tree }) => {
-      expect(measureTree(join(tree, "output"))).toEqual({ bytes: 0, files: 0, capped: false });
+      expect(measureTree(join(tree, "output")))
+        /* ⚠ `unreadable: false` IS THE LOAD-BEARING HALF (#2155): ENOENT means there
+           is provably nothing there, which is the one zero a caller may act on. */
+        .toEqual({ bytes: 0, files: 0, capped: false, unreadable: false });
     });
   });
 
