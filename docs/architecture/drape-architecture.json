@@ -11537,6 +11537,10 @@
       "path": "server/_core/numericEnv.test.ts"
     },
     {
+      "id": "test:server/_core/sessionCookieHeaderRead.test.ts",
+      "path": "server/_core/sessionCookieHeaderRead.test.ts"
+    },
+    {
       "id": "test:server/_core/sessionLookupFailure.test.ts",
       "path": "server/_core/sessionLookupFailure.test.ts"
     },

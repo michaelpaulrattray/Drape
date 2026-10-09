@@ -1088,3 +1088,73 @@ describe("Google OAuth — profile media boundary", () => {
     expect(asReturning.avatarUrl).toBeNull();
   });
 });
+
+/*
+  ─── #2138 — the state cookie read, header shape by header shape ───
+
+  `cookie` 2.0.0 renamed `parse` to `parseCookie`; this block is the proof the
+  STATE read in `startedInThisBrowser` did not move with the rename. Every shape
+  below was run through cookie 1.0.2's `parse` and 2.0.1's `parseCookie` side by
+  side first and gave identical entries. On a DUPLICATE name both versions keep
+  the FIRST and ignore the rest (the same `// only assign once` guard in each),
+  so both orders are pinned: a parser that took the LAST would redden exactly one.
+*/
+describe("GET /api/auth/google/callback — the state cookie read across header shapes (#2138)", () => {
+  /** A real flow, and its binding cookie's name and value, from the route itself. */
+  async function aFlow() {
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+    const flow = await aStartedFlow();
+    const [name] = flow.cookie.split("=");
+    return { ...flow, name: name! };
+  }
+
+  it("POSITIVE CONTROL: the binding among other cookies still signs the person in", async () => {
+    const flow = await aFlow();
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: `a=1; ${flow.cookie}; b=2` },
+    );
+    expect(response.location).toBe("/app");
+  });
+
+  it.each([
+    ["an EMPTY Cookie header", () => ""],
+    ["a malformed header — the name with no '='", (name: string) => name],
+    ["a malformed header — semicolons only", () => ";;;"],
+    ["the binding with an EMPTY value", (name: string) => `${name}=`],
+  ])("%s → invalid_state, and Google is never asked", async (_label, header) => {
+    const flow = await aFlow();
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: header(flow.name) },
+    );
+    expect(response.location).toBe("/login?error=invalid_state");
+    expect(google.getToken).not.toHaveBeenCalled();
+  });
+
+  it("no Cookie header at all → invalid_state", async () => {
+    const flow = await aFlow();
+    const response = await get(`/api/auth/google/callback?code=auth-code&state=${flow.state}`);
+    expect(response.location).toBe("/login?error=invalid_state");
+    expect(google.getToken).not.toHaveBeenCalled();
+  });
+
+  it("DUPLICATE NAMES, the matching binding first → signed in: the FIRST one wins", async () => {
+    const flow = await aFlow();
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: `${flow.cookie}; ${flow.name}=not-the-binding` },
+    );
+    expect(response.location).toBe("/app");
+  });
+
+  it("DUPLICATE NAMES, the matching binding second → invalid_state: the later one is never read", async () => {
+    const flow = await aFlow();
+    const response = await get(
+      `/api/auth/google/callback?code=auth-code&state=${flow.state}`,
+      { cookie: `${flow.name}=not-the-binding; ${flow.cookie}` },
+    );
+    expect(response.location).toBe("/login?error=invalid_state");
+    expect(google.getToken).not.toHaveBeenCalled();
+  });
+});
