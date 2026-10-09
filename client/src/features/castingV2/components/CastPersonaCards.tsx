@@ -78,6 +78,29 @@ type EditableLineProps = {
 function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value.text);
+  /**
+   * WHAT WAS JUST TYPED, HELD ON SCREEN UNTIL THE SAVE SETTLES — the relay's
+   * non-blocking note on PR #2114.
+   *
+   * ⚠ **THE READ VIEW SHOWED `value.text` THE INSTANT THE TEXTAREA CLOSED**, and
+   * `value.text` is the SERVER's answer — still the old sentence until the save
+   * comes back. So the customer watched their own edit flash back to what it
+   * was and then change again, which reads as the product undoing them. Measured
+   * on a real Cast before this landed: **2,230 ms of the old sentence.**
+   *
+   * Two windows had to close for that, and the cache write in `CastingRoom`
+   * alone closes only the second one (its reply landing before the refetch).
+   * This closes the first: from blur until the mutation settles, the card shows
+   * the customer's words.
+   *
+   * ⚠ **AND IT IS CLEARED ON `saving` GOING FALSE, WHICH IS WHY A FAILED SAVE
+   * IS STILL HONEST.** On success the room has already written the line into the
+   * cache in the same handler that clears `saving`, so `value.text` is the new
+   * text by then and nothing moves. On failure `value.text` is the old line, the card
+   * returns to it, and the toast says why — rather than keeping a sentence on
+   * screen that was never stored.
+   */
+  const [pending, setPending] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement | null>(null);
 
   /*
@@ -95,6 +118,12 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
     if (editing) field.current?.focus();
   }, [editing]);
 
+  /* The save has settled, whichever way. `value.text` is authoritative again:
+     the new line on success, the old one plus a toast on failure. */
+  useEffect(() => {
+    if (!saving) setPending(null);
+  }, [saving]);
+
   const max = line === "voice" ? CAST_VOICE_MAX_LENGTH : CAST_PERSONALITY_MAX_LENGTH;
 
   const commit = () => {
@@ -110,6 +139,8 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
       setDraft(value.text);
       return;
     }
+    /* The typed words stay on the card from this moment until the save settles. */
+    setPending(next);
     onSave(line, next);
   };
 
@@ -121,7 +152,7 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
         onClick={() => setEditing(true)}
         disabled={saving}
       >
-        {value.text}
+        {pending ?? value.text}
       </button>
     );
   }

@@ -186,7 +186,7 @@ describe("R7-5C final Cast deletion source contracts", () => {
  * N2b added `personality` and `voice` to `models`, declared them *"the same
  * family as `masterPrompt`"* in the schema, and did not add them to the
  * tombstone. So a permanently deleted Cast kept the two most readable sentences
- * about who she was. The fix for the instance is five lines in
+ * about who the cast was. The fix for the instance is five lines in
  * `finalCastDeletion.ts`; the fix for the CLASS is this arm, because the next
  * creative column will be added by somebody who has never read that function
  * (working law 7).
@@ -251,7 +251,7 @@ describe("the permanent-deletion tombstone scrubs every creative-content column"
     should not be: an error event carrying `personaDraftedAt` leaks nothing. They
     still belong in the tombstone, because the badge is derived as *drafted and
     not since edited*, so a surviving `personalityEditedAt` records that this
-    customer rewrote a line on a day we claim to have forgotten her cast.
+    customer rewrote a line on a day we claim to have forgotten their cast.
   */
   it.each([["personaDraftedAt"], ["personalityEditedAt"], ["voiceEditedAt"]])(
     "`%s` is nulled by the tombstone too",

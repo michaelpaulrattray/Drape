@@ -1327,7 +1327,7 @@ async function completeSignPackage(
       terminalStatus,
     };
     /*
-      ⚠ **THE TERMINAL EVENT IS RECORDED HERE, BEFORE HER TWO LINES — and it was
+      ⚠ **THE TERMINAL EVENT IS RECORDED HERE, BEFORE THE TWO LINES — and it was
       recorded after them, which is the relay's finding 4 on PR #2114.**
 
       The block below used to say *"a Sign's receipt must not be able to wait on
@@ -1355,7 +1355,7 @@ async function completeSignPackage(
     recordDirectOperationDelivered(deliveredEvent);
     deliveredEvent = null;
     /*
-      HER TWO LINES LAND AFTER THE MONEY IS SETTLED AND AFTER THE RECEIPT, never
+      THE TWO LINES LAND AFTER THE MONEY IS SETTLED AND AFTER THE RECEIPT, never
       before either. This is the last thing the happy path does.
 
       ⚠ **AND NO SWEEP COMES BACK FOR THEM.** This block claimed a throw here was

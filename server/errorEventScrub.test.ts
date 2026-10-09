@@ -118,7 +118,7 @@ describe("the refusing list has a floor, so it cannot be emptied quietly", () =>
     and the deletion tombstone scrubs them for that reason too
     (`server/r7-final-cast-deletion.test.ts` holds that end).
   */
-  it("carries who she is on camera and how she sounds — N2b's two lines", () => {
+  it("carries who a cast is on camera and how they sound — N2b's two lines", () => {
     for (const key of ["personality", "voice"]) {
       expect(REFUSING_KEYS).toContain(key);
     }

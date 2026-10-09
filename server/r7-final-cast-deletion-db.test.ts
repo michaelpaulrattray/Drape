@@ -323,7 +323,7 @@ describeWithDatabase("R7-5C atomic final Cast deletion (disposable DB)", () => {
         sealedIdentitySnapshotId: null, sealedPackageSnapshotId: null, mintedAt: null,
       });
     /*
-      AND HER TWO LINES ARE GONE FROM THE ROW — N2b (#1242), the relay's finding
+      AND THE TWO LINES ARE GONE FROM THE ROW — N2b (#1242), the relay's finding
       1 on PR #2114, asserted at the ROW rather than at the source text.
 
       Read in its own statement because this one is about columns migration 0075

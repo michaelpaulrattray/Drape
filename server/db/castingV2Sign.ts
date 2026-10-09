@@ -1137,7 +1137,7 @@ export type SignedCastLocation = {
  * There is no read-then-write here to race: one statement, scoped by owner and
  * id together, and a row that is not hers is not updated.
  *
- * ⚠ **IT NEVER OVERWRITES A LINE SHE HAS EDITED — and the sweep this used to
+ * ⚠ **IT NEVER OVERWRITES AN EDITED LINE — and the sweep this used to
  * cite does not exist** (the relay's finding 5 on PR #2114). This block read
  * *"the recovery sweep can re-enter a Sign whose process died"*; it cannot. This
  * function has one non-test caller, and the recovery road does not reach it, so
