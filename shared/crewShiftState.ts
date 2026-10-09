@@ -57,12 +57,16 @@ export type CrewShiftRunState = "running" | "stalled" | "finished";
  * that rate teaches him to scroll past it. The first one he then believes is
  * the false one, which costs more than having no alarm at all.
  *
- * **Three hours.** The bar is that the window must clear the longest run the
+ * **Three hours.** ~~The bar is that the window must clear the longest run the
  * team has ever recorded — 138 min — measured with NO heartbeat sent at all,
  * because the heartbeat is manual and a shift may skip it; a window chosen
- * against the p99 instead would accuse the tail of legitimate shifts.
- * `server/crewHeartbeat.test.ts` pins it against that measured maximum rather
- * than against a literal, so lowering it back reddens and says why.
+ * against the p99 instead would accuse the tail of legitimate shifts.~~
+ * ⚠ **That bar is SUPERSEDED by road A below (#2118, ruled by the relay
+ * 2026-10-09): the window now clears the p99, not the all-time maximum** —
+ * read the last section of this block for why the maximum was the wrong bar.
+ * The struck sentence stays because it is what three hours was chosen against.
+ * `server/crewHeartbeat.test.ts` pins the window against the measured bar
+ * rather than against a literal, so lowering it back reddens and says why.
  *
  * ⚠ **Two hours was tried first and the arm refused it**, which is the whole
  * value of pinning a bar instead of a number: 120 < 138, so the shift that ran
@@ -131,8 +135,30 @@ export type CrewShiftRunState = "running" | "stalled" | "finished";
  * genuinely dead row sit vouched-for for longer (the #548 and #607 incidents
  * are what that costs), and the present window mislabels about one run in two
  * hundred. **0.5% is far from the 31% that made the hour untenable**, so
- * nothing here is urgent and the number stands until he or the relay rules on
- * it.
+ * nothing here is urgent and the number stands until the founder or the relay
+ * rules on it.
+ *
+ * # ✅ RULED: ROAD A — THE WINDOW STAYS AT THREE HOURS AND THE BAR MOVES TO
+ * THE p99 (#2118, ruled by the relay 2026-10-09)
+ *
+ * The section above left a vice in `server/crewHeartbeat.test.ts`: one arm
+ * needed the window above the longest run ever recorded (248 min by then), the
+ * other capped it at four hours (240 min), and no window satisfies both. Three
+ * roads were put up — A, re-base the bar on a percentile and leave the window;
+ * B, raise the window to 3½ hours and exclude runner recoveries from the bar;
+ * C, raise the four-hour ceiling past 248. **The relay ruled A**, verbatim in
+ * part: *"A window sized to the all-time max can never catch a dead shift
+ * inside the range shifts actually run in. The errors are also not symmetric:
+ * a false* stalled *costs one glance, while a false* running *is the #548 /
+ * #607 defect."*
+ *
+ * Re-read when this was built (not quoted from #2118, because the population
+ * grows every shift): the same `## Runner close-stamp` trailers, exit code 0,
+ * `exit:` minus `shift launched`, **594 runs — median 58, p95 124, p99 161
+ * (nearest rank), max 248**; 3 of 594 exceed three hours (207, 209, 248). The
+ * suite's bar is now that p99, with its reasoning in its own body. **Nothing
+ * this constant does changed** — it was three hours before the ruling and is
+ * three hours after it; what changed is the question the suite asks of it.
  */
 export const CREW_SHIFT_STALL_MS = 3 * 60 * 60 * 1000;
 
@@ -529,7 +555,8 @@ export type RunSupersession =
  * # ⚠ IT IS NOT A TIMEOUT, AND THAT IS THE WHOLE DESIGN
  *
  * Reading SILENCE as death is the defect, not the fix — `CREW_SHIFT_STALL_MS`
- * is three hours against a measured max shift of 138 minutes, and a shift that
+ * is three hours against a measured p99 shift of 161 minutes and a longest of
+ * 248 (re-read 2026-10-09, #2118), and a shift that
  * is merely slow is exactly the row #288 says must not be stamped terminal. So
  * this reads a **POSITIVE** fact instead: *later sessions of the same launcher
  * opened AND CLOSED while this row sat silent.* A launcher that was running one

@@ -32,9 +32,11 @@
  *
  * One hour, chosen in #272 before any shift had been timed. Measured since over
  * **83 close-stamped runs, 31% ran longer than an hour** and the longest ran
- * 138 minutes. The arm below pins the window against that measured maximum
- * rather than against a literal, so a change back reddens and says why
- * (memory: *magic number pins the fixture* — assert the bar, not the value).
+ * 138 minutes. The arm below pins the window against a measured bar rather
+ * than against a literal, so a change back reddens and says why (memory:
+ * *magic number pins the fixture* — assert the bar, not the value). ⚠ The bar
+ * was that maximum until 2026-10-09 and is the p99 since — road A of #2118,
+ * ruled by the relay; the bar's own docblock carries why.
  *
  * # ⚠ THE POSITIVE CONTROLS ARE THE POINT
  *
@@ -69,42 +71,83 @@ function code(source: string): string {
 }
 
 /**
- * The longest run the team has ever recorded, in minutes.
+ * The p99 of every shift the team has run, in minutes — the bar the stall
+ * window must clear (road A of #2118, ruled by the relay 2026-10-09).
  *
- * Provenance, so the number is re-derivable rather than remembered: the
- * runner's own `## Runner close-stamp` trailers in `.agents/mailbox/*.md`,
- * `exit:` minus `shift launched`, 83 completed runs spanning 2026-08-27 →
- * 2026-08-30. Distribution: median 47, p75 67, p90 88, p95 99, p99 115.
+ * # PROVENANCE, SO THE NUMBER IS RE-DERIVABLE RATHER THAN REMEMBERED
+ *
+ * The runner's own `## Runner close-stamp` trailers in `.agents/mailbox/*.md`
+ * (`exit: <iso> · code <n> · shift launched HH:MM:SS`), exit code 0 only,
+ * `exit:` minus `shift launched` with a midnight wrap. That is a real PROCESS
+ * lifetime, written after the process exited, which no later shift can move.
+ * Re-read 2026-10-09 for this commit: **594 runs — median 58, p95 124, p99 161
+ * (nearest rank: the 589th of 594 sorted), max 248.** The tail above the p99:
+ * 169, 169, 207, 209, 248.
  *
  * ⚠ It is quoted rather than computed BECAUSE `.agents/` is gitignored — CI
  * cannot see the population, so a test that tried to recompute it would pass
- * vacuously on the machine that matters. A stale bar that is too LOW is the
- * safe direction here: the window must clear it, and shifts only get longer.
+ * vacuously on the machine that matters.
  *
- * ⚠ **AND IT IS STALE NOW — RE-MEASURED 2026-10-09 (#2086), AND DELIBERATELY
- * LEFT AT 138.** The same trailers over the whole history, exit code 0: **589
- * runs, median 58, p90 102, p95 123, p99 155, max 247**. So the clause above
- * came true — shifts only got longer — and 16 of 589 now exceed this bar while
- * **3 of 589 (0.5%) exceed the three-hour window itself**.
+ * # WHY THE p99 AND NOT THE ALL-TIME MAXIMUM — THE REASONING THE RULING ASKED
+ * FOR, IN THIS BODY
  *
- * Bumping this constant to 247 reddens the arm below, because 180 < 247. That
- * is the guard working, not a defect: the ONLY way to green it is to move
- * `CREW_SHIFT_STALL_MS`, which is a judgement about what his page says about a
- * silent shift and is named as its own decision in that constant's header. A
- * shift that raises the window raises this bar in the same commit; neither
- * moves alone.
+ * This constant was `LONGEST_RECORDED_SHIFT_MINUTES = 138` until 2026-10-09,
+ * and the bar was "the window must clear the longest shift ever run". Three
+ * things are wrong with that bar, and the first is arithmetic:
+ *
+ *   1. **It had become unsatisfiable.** The longest run grew to 248 minutes,
+ *      and the ceiling arm below holds the window at or under 240. Bumping the
+ *      old constant to its true value reddened the suite whatever the window
+ *      was set to — the two arms were in a vice.
+ *   2. **A maximum only ever grows**, so a window chasing it ratchets upward
+ *      forever, one outlier at a time, and the ceiling is what it eventually
+ *      breaks.
+ *   3. **A window sized to the longest run ever recorded can never flag a dead
+ *      shift inside the range shifts actually run in** — it is toothless at
+ *      exactly the extreme it exists for.
+ *
+ * And the two ways of being wrong do not cost the same. A false *stalled* on a
+ * live shift costs one glance and stops nothing: the shift keeps working and
+ * closes normally. A false *running* on a dead shift is the measured defect
+ * this family exists about — row #548 sat 9.5 hours vouched-for, and #607 was
+ * stamped closed 678 minutes after its last breath. So the window is allowed to
+ * mislabel the rare live shift past the p99 (3 of 594 at three hours, 0.5%),
+ * and is never allowed to fall below the run that 99 in 100 shifts finish
+ * inside.
+ *
+ * Nearest rank rather than interpolation on purpose: it is always a run that
+ * really happened, and on this population it is the higher of the two (an
+ * interpolated p99 reads 156), which is the direction that keeps the window
+ * honest about long live shifts.
+ *
+ * ⚠ A stale bar that is too LOW is still the safe direction: the window must
+ * clear it, and shifts only get longer. Re-read it when the population has
+ * moved, never from a card that quotes it.
  */
-const LONGEST_RECORDED_SHIFT_MINUTES = 138;
+const P99_SHIFT_MINUTES = 161;
+
+/** The bar as a function, so the arm and its negative control ask ONE question. */
+const clearsTheBar = (windowMs: number) => windowMs / 60_000 > P99_SHIFT_MINUTES;
 
 describe("the stall window clears a real shift", () => {
   /*
     THE ARM THIS HALF EXISTS FOR. At one hour the banner fired on 26 of 83
-    runs — an alarm that is wrong a third of the time is one he learns to
+    runs — an alarm that is wrong a third of the time is one the founder learns to
     scroll past, and then the first one he believes is the false one.
   */
-  it("is longer than the longest shift the team has ever run", () => {
-    const windowMinutes = CREW_SHIFT_STALL_MS / 60_000;
-    expect(windowMinutes).toBeGreaterThan(LONGEST_RECORDED_SHIFT_MINUTES);
+  it("is longer than the run 99 in 100 shifts finish inside", () => {
+    expect(clearsTheBar(CREW_SHIFT_STALL_MS)).toBe(true);
+  });
+
+  /*
+    THE NEGATIVE CONTROL. Two hours was tried first in #295 and the old bar
+    refused it; the new bar must refuse it too, or the arm above could not go
+    red on the window being lowered back. And the hour #272 started from is
+    refused by a wider margin still.
+  */
+  it("refuses the two-hour and one-hour windows that were tried before", () => {
+    expect(clearsTheBar(2 * 60 * 60 * 1000)).toBe(false);
+    expect(clearsTheBar(60 * 60 * 1000)).toBe(false);
   });
 
   /*
@@ -115,6 +158,15 @@ describe("the stall window clears a real shift", () => {
   */
   it("is still short enough to catch a dead shift the same night", () => {
     expect(CREW_SHIFT_STALL_MS).toBeLessThanOrEqual(4 * 60 * 60 * 1000);
+  });
+
+  /*
+    THE VICE IS GONE, AND THIS ARM SAYS SO. The bar sits under the ceiling, so
+    there exists at least one window that satisfies both arms above — the
+    defect #2118 was filed about was that none did.
+  */
+  it("leaves room between the bar and the ceiling", () => {
+    expect(P99_SHIFT_MINUTES).toBeLessThan(4 * 60);
   });
 });
 
