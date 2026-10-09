@@ -124,10 +124,10 @@ export const MEASURE_ENTRY_CAP = 50_000;
  * tool prints beside an ignored path worth keeping (#1823).
  *
  * **It lives here and not in `shiftWorktree.mts` for the same reason
- * `stillOnDisk` does**, and the header above is the whole argument: that module
- * takes numbers and booleans so both directions of every verdict drive without a
- * disk. This is the disk half, beside the only other disk reading this delete
- * makes.
+ * `readJunctionAt` does**, and the header above is the whole argument: that
+ * module takes numbers and readings so both directions of every verdict drive
+ * without a disk. This is the disk half, beside the only other disk reading this
+ * delete makes.
  *
  * ⚠ **IT NEVER FOLLOWS A LINK, WHICH IS THIS MODULE'S DOCTRINE AND NOT A
  * PRECAUTION.** libuv maps a Windows junction to `UV_DIRENT_LINK`, so
@@ -159,7 +159,7 @@ export const measureTree = (dir: string): TreeMeasure => {
   let seen = 0;
   let unreadable = false;
   /* The root, before anything reads through it. `lstat` and not `stat`, for the
-     reason `stillOnDisk` above gives at length. */
+     reason `readJunctionAt` above gives at length. */
   let root: ReturnType<typeof lstatSync>;
   try {
     root = lstatSync(dir);

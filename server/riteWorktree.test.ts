@@ -28,7 +28,7 @@
  * DELETED**, which is a guard over nothing — the class this repository keeps
  * paying for. The load-bearing arm is therefore the gate's own DECISION: the
  * returned verdict and the directory left standing. Delete the
- * `stillOnDisk(junction)` check and that arm goes red, because the fallback
+ * `readJunctionAt(junction)` check and that arm goes red, because the fallback
  * then fires and takes the directory. The decoy is still checked, as a
  * documented redundancy that costs nothing — never as the proof.
  */
