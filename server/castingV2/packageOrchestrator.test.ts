@@ -62,6 +62,7 @@ vi.mock("../db/generations", () => ({
 vi.mock("../db/castingV2Sign", () => ({
   commitPackageSlotAsset: vi.fn(),
   recordPackageSlotFailure: vi.fn(),
+  recordRefusedSheetSlotFailure: vi.fn(),
   activateSignedCast: vi.fn(),
   listCastAssets: vi.fn(async () => []),
   listOperationViewSteps: vi.fn(async () => []),
@@ -179,6 +180,8 @@ const captured: Array<{
  */
 const waitedMs: number[] = [];
 let refundRecords = true;
+/** The Sign's fence refuses every marker write — the sweep has taken the operation (#2127 review). */
+let markerFenced = false;
 
 /**
  * THE SHEETS EVERY SIGN NOW RENDERS, as synthetic frames (#1904, reshaped to
@@ -332,6 +335,19 @@ function rendersPerSheet(): Record<SignSheetKind, number> {
   ) as Record<SignSheetKind, number>;
 }
 
+/** The ledger every refund double writes to — one place, so both writers agree. */
+async function ledgerRefund(amount: number, reference: string) {
+  if (!refundRecords) {
+    return { recorded: false, amount: 0, reference: `refund:${reference}`, duplicate: false };
+  }
+  // A repeat under the same reference is recorded but is NOT a payment —
+  // the ledger absorbed it. Modelled so the receipt totals can be trusted.
+  const already = refunds.some((entry) => entry.reference === reference);
+  if (already) return { recorded: true, amount, reference: `refund:${reference}`, duplicate: true };
+  refunds.push({ amount, reference });
+  return { recorded: true, amount, reference: `refund:${reference}`, duplicate: false };
+}
+
 function deps(overrides: Record<string, unknown> = {}) {
   return {
     signSheetEngine: defaultSheetEngine,
@@ -360,20 +376,34 @@ function deps(overrides: Record<string, unknown> = {}) {
       return committed.length;
     }),
     recordFailure: vi.fn(async (input: Record<string, unknown>) => {
+      if (markerFenced) return false;
       failures.push(input);
       return true;
     }),
-    refund: vi.fn(async (_userId: number, amount: number, _label: string, reference: string) => {
-      if (!refundRecords) {
-        return { recorded: false, amount: 0, reference: `refund:${reference}`, duplicate: false };
-      }
-      // A repeat under the same reference is recorded but is NOT a payment —
-      // the ledger absorbed it. Modelled so the receipt totals can be trusted.
-      const already = refunds.some((entry) => entry.reference === reference);
-      if (already) return { recorded: true, amount, reference: `refund:${reference}`, duplicate: true };
-      refunds.push({ amount, reference });
-      return { recorded: true, amount, reference: `refund:${reference}`, duplicate: false };
+    /*
+      The share and its marker in ONE fenced write (#2127 review) — modelled
+      the way the real writer behaves: a fenced operation pays nothing and
+      writes nothing; otherwise the share lands and the marker records it.
+    */
+    recordRefusedFailure: vi.fn(async (request: {
+      angle: string;
+      failure: Record<string, unknown>;
+      refund: { amount: number; chargeReferenceId: string };
+    } & Record<string, unknown>) => {
+      if (markerFenced) return { fenced: true as const };
+      const refund = await ledgerRefund(request.refund.amount, request.refund.chargeReferenceId);
+      failures.push({
+        ...request,
+        failure: {
+          ...request.failure,
+          refunded: refund.recorded ? refund.amount : 0,
+          refundReference: refund.reference,
+        },
+      });
+      return { fenced: false as const, refund };
     }),
+    refund: vi.fn(async (_userId: number, amount: number, _label: string, reference: string) =>
+      ledgerRefund(amount, reference)),
     activate: vi.fn(async () => ({
       type: "activated" as const,
       modelId: 901,
@@ -439,6 +469,7 @@ beforeEach(() => {
   waitedMs.length = 0;
   generations.length = 0;
   refundRecords = true;
+  markerFenced = false;
   vi.clearAllMocks();
 });
 
@@ -3469,6 +3500,36 @@ describe("⚠ a refused sheet: one free retry, then its views are refunded (#212
     const paid = refunds.reduce((sum, entry) => sum + entry.amount, 0);
     expect(paid, "never more than was charged").toBe(SIGN_PRICE);
     expect(result.refundedCredits).toBe(SIGN_PRICE);
+  });
+
+  it("A SIGN THE SWEEP HAS FENCED PAYS NO SHARE — the refund lives under the fence, never before it (relay finding on #2132)", async () => {
+    /*
+      The race the relay drove: the lease lapsed while the live process was
+      still rendering, the sweep fenced the operation and refunds the whole
+      charge itself. The first shape of this card then paid 650 per refused
+      view under the slot references anyway — two references, so the ledger
+      could not see the repeat. The marker write is the fence; when it says
+      no, nothing may land.
+    */
+    markerFenced = true;
+    const result = await buildCastPackage(deps({ signSheetEngine: refusingHead(2) }), input);
+
+    expect([...result.failed].sort()).toEqual(HEAD_VIEWS);
+    expect(refunds, "no share and no total-loss refund from a fenced writer").toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+    expect(failures).toEqual([]);
+  });
+
+  it("a fenced plain marker is a fenced slot too — the live total-loss refund stands down", async () => {
+    markerFenced = true;
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("provider_account", "402 no funds")) }),
+      input,
+    );
+
+    expect(result.failed).toHaveLength(5);
+    expect(result.totalLoss).toBe(false);
+    expect(refunds).toEqual([]);
   });
 
   it("THE RETRY SPENDS INSIDE THE SHEET'S RENDER BUDGET — a spent budget refuses it, and the views are still refunded", async () => {

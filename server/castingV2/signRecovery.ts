@@ -187,7 +187,7 @@ export async function recoverCastingV2SignOperation(
     };
   }
 
-  const ledger = await readSignLedger(db, operation);
+  let ledger = await readSignLedger(db, operation);
   if (ledger.charge.kind === "ambiguous") {
     // Pre-fence, so the operation is still `running` and the standard marker
     // owns it. A ledger nobody can read is a human's problem, not a retry's.
@@ -261,6 +261,25 @@ export async function recoverCastingV2SignOperation(
       // The live process finished between the sweep's read and this statement.
       // Its settlement stands.
       return { type: "free_failure", reason: "the Sign settled itself first" };
+    }
+    /*
+      ⚠ **READ THE LEDGER AGAIN, NOW THAT NOTHING LIVE CAN WRITE TO IT — #2127.**
+      The read above is pre-fence, and since #2127 the live process can still
+      refund a view's share (a sheet the provider refused) in the window between
+      that read and the fence — inside its own `FOR UPDATE` on `running`,
+      which this fence then waits for. Settling from the stale read would pay
+      `charge − alreadyRefunded` without that share and refund it twice. After
+      the fence no live writer can commit anything on this Sign
+      (`requireRunningSignOperationIn`), so this reading is final.
+    */
+    ledger = await readSignLedger(db, operation);
+    if (ledger.charge.kind === "ambiguous") {
+      return park(options, operation, {
+        type: "recovery_required",
+        reason: ledger.charge.reason,
+        chargedCredits: operation.chargedCredits,
+        refundedCredits: operation.refundedCredits,
+      });
     }
   }
 

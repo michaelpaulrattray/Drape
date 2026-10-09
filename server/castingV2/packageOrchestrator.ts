@@ -124,6 +124,7 @@ import {
   commitPackageSlotAsset,
   listCastAssets,
   recordPackageSlotFailure,
+  recordRefusedSheetSlotFailure,
 } from "../db/castingV2Sign";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storagePut } from "../storage";
@@ -327,6 +328,8 @@ export type PackageOrchestratorDependencies = {
   }) => Promise<{ key: string; url: string }>;
   commitSlot?: typeof commitPackageSlotAsset;
   recordFailure?: typeof recordPackageSlotFailure;
+  /** The refused-sheet share and its marker, one fenced transaction (#2127). */
+  recordRefusedFailure?: typeof recordRefusedSheetSlotFailure;
   refund?: typeof recordRefund;
   activate?: typeof activateSignedCast;
   deleteObject?: typeof storageDelete;
@@ -2164,34 +2167,13 @@ async function failView(
     `signRecovery` already sums into `alreadyRefunded` (D-102), so a total-loss
     refund — live or swept — pays only the remainder and never twice.
 
-    It refunds BEFORE the marker for the reason the old slice did: the marker
-    records what actually recorded, so the room can never claim money moved
-    that did not.
+    ⚠ **THE SHARE AND THE MARKER ARE ONE TRANSACTION UNDER THE SIGN'S FENCE**
+    (`recordRefusedSheetSlotFailure`) — the relay's finding on PR #2132. The
+    first shape refunded here and wrote the marker afterwards, ignoring the
+    marker's fenced `false`, so a Sign the sweep had already taken over was paid
+    the shares on top of the sweep's whole refund. The writer's own docblock
+    carries the serialization.
   */
-  let refundedForSlot = 0;
-  let refundedCredits = 0;
-  let refundUnrecorded = false;
-  let refundReference: string | undefined;
-  if (detail.refundCredits > 0) {
-    const outcome = await (dependencies.refund ?? recordRefund)(
-      input.userId,
-      detail.refundCredits,
-      `Cast package: ${detail.label} didn't arrive`,
-      packageSlotChargeReference(input.operationId, angle),
-    );
-    /* The SLOT shows what came back for this view, an earlier duplicate
-       included; the RECEIPT counts only what this process moved. */
-    refundedForSlot = outcome.recorded ? outcome.amount : 0;
-    refundedCredits = outcome.recorded && !outcome.duplicate ? outcome.amount : 0;
-    refundUnrecorded = !outcome.recorded;
-    refundReference = outcome.reference;
-    if (!outcome.recorded) {
-      log.error(
-        { operationId: input.operationId, angle, reference: outcome.reference },
-        "[packageOrchestrator] a refused sheet's view refund did not record — the owner remains charged",
-      );
-    }
-  }
   if (detail.auditId) {
     await updateGeneration(detail.auditId, {
       status: "failed",
@@ -2200,56 +2182,102 @@ async function failView(
     }).catch(() => undefined);
   }
 
-  await (dependencies.recordFailure ?? recordPackageSlotFailure)({
+  const failure = {
+    reason: detail.reason,
+    /*
+      The FINAL verdict stays where it was, under the same key, because the
+      room and any dispute read that shape — widening it would be a projection
+      change for a record nobody asked to see differently.
+
+      The earlier attempts ride alongside it under their own key. A slot that
+      failed twice now says so, and says what the first draw was rejected for.
+    */
+    ...(detail.verdicts.length > 0
+      ? {
+          conformance: {
+            axes: detail.verdicts[detail.verdicts.length - 1].axes,
+            method: detail.verdicts[detail.verdicts.length - 1].method,
+          },
+        }
+      : {}),
+    ...(detail.verdicts.length > 1
+      ? {
+          earlierAttempts: detail.verdicts.slice(0, -1).map((verdict) => ({
+            axes: verdict.axes,
+            method: verdict.method,
+          })),
+        }
+      : {}),
+  };
+
+  /*
+    ⚠ **A FENCED MARKER IS A FENCED SLOT, ON BOTH ROADS.** A `false` here means
+    the operation has left `running` — the sweep owns this slot and its money —
+    and it was ignored until #2127's review. It is reported as `fenced`, which
+    is what makes `buildCastPackage` keep its hands off the total-loss refund.
+  */
+  const fencedOutcome: PackageSlotOutcome = {
+    angle,
+    status: "failed",
+    reason: detail.reason,
+    refundedCredits: 0,
+    refundUnrecorded: false,
+    fenced: true,
+  };
+
+  if (detail.refundCredits <= 0) {
+    const written = await (dependencies.recordFailure ?? recordPackageSlotFailure)({
+      userId: input.userId,
+      operationId: input.operationId,
+      modelId: input.modelId,
+      angle,
+      /*
+        Nothing comes back for a view lost any way but a refused sheet (#1968),
+        and `refundReference` is OMITTED rather than blanked: its absence is
+        what tells the room nothing was owed, as against a refund that was
+        attempted and failed. `refundOutcomeText` carries the table.
+      */
+      failure: { ...failure, refunded: 0 },
+    });
+    if (written === false) return fencedOutcome;
+    return { angle, status: "failed", reason: detail.reason, refundedCredits: 0, refundUnrecorded: false };
+  }
+
+  const settled = await (dependencies.recordRefusedFailure ?? recordRefusedSheetSlotFailure)({
     userId: input.userId,
     operationId: input.operationId,
     modelId: input.modelId,
     angle,
-    failure: {
-      reason: detail.reason,
-      /*
-        What ACTUALLY recorded, so the room never claims money moved that did
-        not. Nothing comes back for a view lost any way but a refused sheet
-        (#1968), and there `refundReference` is OMITTED rather than blanked:
-        its absence is what tells the room nothing was owed, as against a
-        refund that was attempted and failed (#2127 is the one road that
-        attempts one). `refundOutcomeText` carries the table.
-      */
-      refunded: refundedForSlot,
-      ...(refundReference === undefined ? {} : { refundReference }),
-      /*
-        The FINAL verdict stays where it was, under the same key, because the
-        room and any dispute read that shape — widening it would be a projection
-        change for a record nobody asked to see differently.
-
-        The earlier attempts ride alongside it under their own key. A slot that
-        failed twice now says so, and says what the first draw was rejected for.
-      */
-      ...(detail.verdicts.length > 0
-        ? {
-            conformance: {
-              axes: detail.verdicts[detail.verdicts.length - 1].axes,
-              method: detail.verdicts[detail.verdicts.length - 1].method,
-            },
-          }
-        : {}),
-      ...(detail.verdicts.length > 1
-        ? {
-            earlierAttempts: detail.verdicts.slice(0, -1).map((verdict) => ({
-              axes: verdict.axes,
-              method: verdict.method,
-            })),
-          }
-        : {}),
+    failure,
+    refund: {
+      amount: detail.refundCredits,
+      description: `Cast package: ${detail.label} didn't arrive`,
+      chargeReferenceId: packageSlotChargeReference(input.operationId, angle),
     },
   });
-
+  if (settled.fenced) {
+    log.warn(
+      { operationId: input.operationId, angle },
+      "[packageOrchestrator] a refused sheet's view met the fence — the sweep owns it, and no share was paid here",
+    );
+    return fencedOutcome;
+  }
+  const outcome = settled.refund;
+  if (!outcome.recorded) {
+    log.error(
+      { operationId: input.operationId, angle, reference: outcome.reference },
+      "[packageOrchestrator] a refused sheet's view refund did not record — the owner remains charged",
+    );
+  }
+  /* The SLOT shows what came back for this view, an earlier duplicate
+     included; the RECEIPT counts only what this process moved. */
+  const refundedForSlot = outcome.recorded ? outcome.amount : 0;
   return {
     angle,
     status: "failed",
     reason: detail.reason,
-    refundedCredits,
-    refundUnrecorded,
+    refundedCredits: outcome.recorded && !outcome.duplicate ? outcome.amount : 0,
+    refundUnrecorded: !outcome.recorded,
     ...(refundedForSlot > 0 ? { refundedForSlot } : {}),
   };
 }

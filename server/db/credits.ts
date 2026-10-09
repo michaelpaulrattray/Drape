@@ -19,7 +19,7 @@ import {
   InsertPoints,
   InsertPointTransaction,
 } from "../../drizzle/schema";
-import { getDb, withTransaction, type DbInstance } from "./connection";
+import { getDb, withTransaction, type DbInstance, type TransactionHandle } from "./connection";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/credits");
 
@@ -522,96 +522,8 @@ export async function addCredits(
     : undefined;
 
   try {
-    return await withTransaction(async (tx) => {
-      // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions.
-      // The unique ledger index, not a prior SELECT, arbitrates concurrent
-      // references. If the insert loses, this update rolls back before the
-      // catch below classifies the already-committed row.
-      const isPurchase =
-        type === "purchase" || type === "topup" || type === "subscription";
-
-      /*
-        ⚠ THE PURCHASED UPPER BOUND IS SETTLED AGAINST THE BALANCE *BEFORE*
-        THIS GRANT LANDS (#1604), AND IT IS ITS OWN STATEMENT ON PURPOSE.
-
-        `purchasedBalance` is an upper bound that `purchasedCreditsRemaining`
-        reads as `min(column, balance)` — exact, because purchased credits
-        spend last. The one thing that can make the bound meaningless is a
-        grant: an account that bought 25,000 credits and spent every one of
-        them still carries 25,000 in the column, so the next bonus or admin
-        adjustment would arrive and be read as purchased credits the customer
-        never has. Settling the bound to the pre-grant balance is what closes
-        that, and it runs for EVERY grant kind.
-
-        It is a separate UPDATE rather than a clause because the clamp must
-        read the OLD balance. MySQL evaluates `SET` assignments left to right,
-        so a clamp folded into the statement below would be correct only while
-        it sat ABOVE the `balance` assignment — a silent, order-dependent
-        correctness nobody reading the SQL would suspect. Two statements inside
-        one transaction cost a grant one round trip, grants are not the hot
-        path (the deduct is, and this card does not touch it), and the second
-        statement below is still the one whose `affectedRows` decides whether
-        the account exists.
-      */
-      await tx.execute(
-        sql`UPDATE ${credits}
-            SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
-            WHERE ${credits.userId} = ${userId}`
-      );
-
-      /*
-        Three statements, and the two predicates are deliberately NOT one.
-        `isPurchase` decides the lifetime analytics counter and keeps its own
-        three types including `subscription`; `isPurchasedCreditGrant` decides
-        what a renewal must protect and excludes it. See the predicate's own
-        docblock — folding them would make a plan's allowance immune to its
-        plan's rollover rule.
-      */
-      const grantStatement = isPurchasedCreditGrant(type)
-        ? sql`UPDATE ${credits}
-                SET ${credits.balance} = ${credits.balance} + ${amount},
-                    ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount},
-                    ${credits.purchasedBalance} = ${credits.purchasedBalance} + ${amount}
-                WHERE ${credits.userId} = ${userId}`
-        : isPurchase
-          ? sql`UPDATE ${credits}
-                SET ${credits.balance} = ${credits.balance} + ${amount},
-                    ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}
-                WHERE ${credits.userId} = ${userId}`
-          : sql`UPDATE ${credits}
-                SET ${credits.balance} = ${credits.balance} + ${amount}
-                WHERE ${credits.userId} = ${userId}`;
-
-      const updateResult = await tx.execute(grantStatement);
-
-      const affectedRows =
-        (updateResult as any)[0]?.affectedRows ??
-        (updateResult as any).affectedRows ??
-        0;
-
-      if (affectedRows === 0) {
-        return { success: false, error: "User credits not found" };
-      }
-
-      // Read the new balance AFTER the atomic update for the transaction log
-      const userCreditsResult = await tx
-        .select({ balance: credits.balance })
-        .from(credits)
-        .where(eq(credits.userId, userId))
-        .limit(1);
-      const newBalance = userCreditsResult[0]?.balance ?? 0;
-
-      await tx.insert(creditTransactions).values({
-        userId,
-        amount,
-        type,
-        description,
-        referenceId: ledgerReferenceId,
-        balanceAfter: newBalance,
-      });
-
-      return { success: true, newBalance };
-    });
+    return await withTransaction((tx) =>
+      addCreditsIn(tx, userId, amount, type, description, ledgerReferenceId));
   } catch (error) {
     if (ledgerReferenceId && isDuplicateCreditReferenceError(error)) {
       return resolveDuplicateCreditReference(
@@ -625,4 +537,119 @@ export async function addCredits(
     log.error({ err: error }, "[Database] Failed to add credits:");
     return { success: false, error: "Failed to add credits" };
   }
+}
+
+/**
+ * THE GRANT ITSELF, INSIDE A TRANSACTION THE CALLER ALREADY HOLDS (#2127).
+ *
+ * `addCredits` is this plus its own transaction and the duplicate-reference
+ * classification, and it is unchanged in behaviour — its body moved here
+ * verbatim. The reason to expose it is a refund that must be decided under a
+ * lock the caller holds: a Sign view lost to a refused sheet refunds its share
+ * in the SAME transaction that holds the Sign's operation row `FOR UPDATE`,
+ * so the recovery sweep (which moves that row out of `running` before it
+ * refunds) and the live refund are serialized by the database rather than
+ * by timing.
+ *
+ * ⚠ **A duplicate reference THROWS here and rolls the caller's transaction
+ * back** — there is no classification inside a transaction that has already
+ * failed. A caller that can meet a repeat checks for the reference first, in
+ * the same transaction.
+ */
+export async function addCreditsIn(
+  tx: TransactionHandle,
+  userId: number,
+  amount: number,
+  type: CreditTransactionType,
+  description: string,
+  ledgerReferenceId: string | undefined,
+): Promise<CreditWriteResult> {
+  // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions.
+  // The unique ledger index, not a prior SELECT, arbitrates concurrent
+  // references. If the insert loses, this update rolls back before the
+  // catch below classifies the already-committed row.
+  const isPurchase =
+    type === "purchase" || type === "topup" || type === "subscription";
+
+  /*
+    ⚠ THE PURCHASED UPPER BOUND IS SETTLED AGAINST THE BALANCE *BEFORE*
+    THIS GRANT LANDS (#1604), AND IT IS ITS OWN STATEMENT ON PURPOSE.
+
+    `purchasedBalance` is an upper bound that `purchasedCreditsRemaining`
+    reads as `min(column, balance)` — exact, because purchased credits
+    spend last. The one thing that can make the bound meaningless is a
+    grant: an account that bought 25,000 credits and spent every one of
+    them still carries 25,000 in the column, so the next bonus or admin
+    adjustment would arrive and be read as purchased credits the customer
+    never has. Settling the bound to the pre-grant balance is what closes
+    that, and it runs for EVERY grant kind.
+
+    It is a separate UPDATE rather than a clause because the clamp must
+    read the OLD balance. MySQL evaluates `SET` assignments left to right,
+    so a clamp folded into the statement below would be correct only while
+    it sat ABOVE the `balance` assignment — a silent, order-dependent
+    correctness nobody reading the SQL would suspect. Two statements inside
+    one transaction cost a grant one round trip, grants are not the hot
+    path (the deduct is, and this card does not touch it), and the second
+    statement below is still the one whose `affectedRows` decides whether
+    the account exists.
+  */
+  await tx.execute(
+    sql`UPDATE ${credits}
+        SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
+        WHERE ${credits.userId} = ${userId}`
+  );
+
+  /*
+    Three statements, and the two predicates are deliberately NOT one.
+    `isPurchase` decides the lifetime analytics counter and keeps its own
+    three types including `subscription`; `isPurchasedCreditGrant` decides
+    what a renewal must protect and excludes it. See the predicate's own
+    docblock — folding them would make a plan's allowance immune to its
+    plan's rollover rule.
+  */
+  const grantStatement = isPurchasedCreditGrant(type)
+    ? sql`UPDATE ${credits}
+            SET ${credits.balance} = ${credits.balance} + ${amount},
+                ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount},
+                ${credits.purchasedBalance} = ${credits.purchasedBalance} + ${amount}
+            WHERE ${credits.userId} = ${userId}`
+    : isPurchase
+      ? sql`UPDATE ${credits}
+            SET ${credits.balance} = ${credits.balance} + ${amount},
+                ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}
+            WHERE ${credits.userId} = ${userId}`
+      : sql`UPDATE ${credits}
+            SET ${credits.balance} = ${credits.balance} + ${amount}
+            WHERE ${credits.userId} = ${userId}`;
+
+  const updateResult = await tx.execute(grantStatement);
+
+  const affectedRows =
+    (updateResult as any)[0]?.affectedRows ??
+    (updateResult as any).affectedRows ??
+    0;
+
+  if (affectedRows === 0) {
+    return { success: false, error: "User credits not found" };
+  }
+
+  // Read the new balance AFTER the atomic update for the transaction log
+  const userCreditsResult = await tx
+    .select({ balance: credits.balance })
+    .from(credits)
+    .where(eq(credits.userId, userId))
+    .limit(1);
+  const newBalance = userCreditsResult[0]?.balance ?? 0;
+
+  await tx.insert(creditTransactions).values({
+    userId,
+    amount,
+    type,
+    description,
+    referenceId: ledgerReferenceId,
+    balanceAfter: newBalance,
+  });
+
+  return { success: true, newBalance };
 }
