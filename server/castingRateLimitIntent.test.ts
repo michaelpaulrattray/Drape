@@ -156,6 +156,9 @@ describe("which bucket each casting procedure was handed", () => {
       // A retry is a paid render of one slice (#122 shape 1) — the same bucket as the roll it re-renders.
       retry: "generation",
       retryView: "generation",
+      /* A redo is five paid renders from one press (#1903 slice 2) — the
+         generation bucket, like every other road on this Cast that spends. */
+      redoPackage: "generation",
       selectVariant: "castingSheet",
       variants: "castingRead",
       roster: "castingRead",

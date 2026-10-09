@@ -64,10 +64,23 @@ describe("the sheet dock commits to one candidate", () => {
     expect(confirm).toContain("dpc-modal__cost");
     /* Routed through the display helper (#1600). */
     expect(confirm).toContain("{formatCredits(displayPrice(priceCredits))} credits");
-    // Approximate, and the tilde stays — generation cost varies, and a number
-    // presented as exact that then differs is worse than one that never
-    // claimed to be.
-    expect(confirm).toContain("dpc-modal__tilde");
+    /*
+      ⚠ **THE TILDE IS GONE AND THIS ARM NOW REFUSES IT — #1968.** It read
+      `toContain("dpc-modal__tilde")` under the note *"Approximate, and the
+      tilde stays — generation cost varies"*. That was true while a failed view
+      refunded its slice, so what a Sign finally cost really did vary. His word
+      of 2026-10-08 makes it one flat charge with no per-view refund, so the
+      figure above the button is exact and a hedge in front of it is the
+      misleading thing.
+
+      The SLOT and the word `credits` are untouched (#1727): the element must
+      stay whatever the price reads, because `.dpc-modal__cost +
+      .dpc-modal__actions` zeroes the actions' top margin.
+    */
+    /* The card number stays in the comment above: this guard reads a hex
+       literal out of a string, and an issue number is valid hex. */
+    expect(confirm, "a flat Sign price is exact, so it carries no hedge")
+      .not.toContain("dpc-modal__tilde");
     // Never on the button itself.
     const signButton = confirm.slice(confirm.indexOf('className="dpc-modal__primary"'));
     expect(signButton.slice(0, 300)).not.toContain("priceCredits");

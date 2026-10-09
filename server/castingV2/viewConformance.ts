@@ -77,35 +77,29 @@ const log = createModuleLogger("castingV2/viewConformance");
 export const CONFORMANCE_AXES = ["identity", "intact", "people"] as const;
 export type ConformanceAxis = (typeof CONFORMANCE_AXES)[number];
 
-/**
- * ⚠ **THE AXIS NAMES A LANDED ROW MAY STILL CARRY — AND THIS IS A MEASURED
- * REQUIREMENT, NOT A PRECAUTION.**
- *
- * {@link viewDeliveredUnchecked} reads the STORED record, and a row written
- * before this card carries `angle` and `wardrobe`. Read at production the hour
- * this change was written (60 rows carry a conformance record, all time):
- * **three landed rows carry a failing `angle` axis under a real judge method**
- * — assets 383, 389 and 391, delivered unchecked by #1612 part 2 after it
- * merged that morning — and three more carry all three axes false under
- * `unavailable`.
- *
- * So iterating only the CURRENT axis set would have stopped seeing those three
- * rows, and each of them is a view somebody paid for that is owed a free Try
- * again. **The retired names stay in the reader until the free Try again itself
- * is retired** (this card's slice 2), and they are deliberately absent from
- * {@link CONFORMANCE_AXES} so nothing can ever ASK the judge for them again.
- *
- * ⚠ The docblock on {@link viewDeliveredUnchecked} said *"0 landed rows carry a
- * failing axis today"* and was true the day it was written — #1612 part 2 had
- * not merged yet. It is the reason this was read rather than carried.
- */
-const RETIRED_CONFORMANCE_AXES = ["angle", "wardrobe"] as const;
+/*
+  ⚠ **TWO AXIS LISTS STOOD HERE AND ARE RETIRED WITH THE READER THAT WAS THEIR
+  ONLY CONSUMER — #1903 slice 3.**
 
-/** Every axis name a stored row may carry — current and retired, one list. */
-const RECORDED_CONFORMANCE_AXES: readonly string[] = [
-  ...CONFORMANCE_AXES,
-  ...RETIRED_CONFORMANCE_AXES,
-];
+  `RETIRED_CONFORMANCE_AXES` carried `angle` and `wardrobe` — names #1903 slice
+  1 stopped asking the judge for, but which landed rows written in the hours
+  #1612 part 2 was live still carry. They existed so the free Try again could
+  still see those rows, and **its own docblock named this commit as its end**:
+  *"the retired names stay in the reader until the free Try again itself is
+  retired."*
+
+  **The six rows it protected were re-read at production before this landed, not
+  carried from that docblock** (`scripts/_1903-unchecked-population-disposable.mts`):
+  of 119 landed rows with a provenance, six are what the product called unchecked
+  — assets 317, 322 and 324 under `unavailable`, and 383, 389 and 391 with a
+  failing `angle` — and **all six belong to user 1.** So retiring the free ask
+  takes nothing from a paying stranger; the only other account that has ever cast
+  is the team's own design agent.
+
+  Nothing reads a stored axis name any more. {@link CONFORMANCE_AXES} is the
+  live set and was always deliberately free of the retired two, so that nothing
+  could ask the judge for them again.
+*/
 
 /**
  * ⚠ **WHICH AXES REFUSE ON *"I CANNOT TELL"* — the one place the asymmetry
@@ -824,55 +818,24 @@ export function viewConformanceRefuses(verdict: ViewConformanceVerdict): boolean
   return CONFORMANCE_AXES.some((axis) => !verdict.axes[axis].pass);
 }
 
-/**
- * WAS THIS VIEW DELIVERED WITHOUT A COMPLETE CHECK? — read at the row, and
- * written here beside the function that writes the row.
- *
- * It answers the question the room's `Unchecked · Try again` and the retry
- * entrance's price both turn on, and it has TWO roads into it now:
- *
- *  - `conformanceMethod === "unavailable"` — **nobody looked at all** (D-246,
- *    #1220). Unchanged, and still an equality on a contract value.
- *  - **a recorded axis that did not pass** — somebody looked, framing or
- *    wardrobe did not hold, and {@link viewConformanceRefuses} delivered it
- *    anyway (#1612 part 2). Before that rule no landed row could be in this
- *    state, which is why one reading used to be enough.
- *
- * ⚠ **A ROW WITH NO CONFORMANCE RECORD AT ALL KEEPS TODAY'S ANSWER — CHECKED —
- * AND THAT IS A MEASURED CHOICE, NOT AN OVERSIGHT.** Read at production before
- * this function was written: of 69 landed views, 46 carry a full judged record,
- * 3 carry `unavailable`, and **20 carry no `conformance` key whatsoever** —
- * views that landed before the field existed. Reading absence as *unchecked*
- * would hand every one of those 20 a free Try again tonight, retroactively, on
- * a money surface, for a change about something else entirely. **0 landed rows
- * carry a failing axis today**, so the second road above moves no history at
- * all: it can only describe views delivered from here on.
- *
- * ⚠ **THAT LAST SENTENCE WAS TRUE WHEN IT WAS WRITTEN AND IS NOT TRUE NOW —
- * AND READING IT AGAIN RATHER THAN CARRYING IT IS WHAT MADE #1903 SAFE.** #1612
- * part 2 merged the morning of 2026-10-07 and immediately began writing the
- * rows it describes. Read at production the same day, all time: **three landed
- * rows carry a failing `angle` axis under a real judge method** (assets 383,
- * 389, 391), plus three older rows under `unavailable`.
- *
- * So the second road is live history, and #1903's axis rename would have
- * silently stopped seeing it — **three customers losing a free Try again they
- * are owed, with nothing failing.** The reader iterates
- * {@link RECORDED_CONFORMANCE_AXES}, which carries the retired names beside the
- * current ones, for exactly as long as the free Try again itself exists.
- */
-export function viewDeliveredUnchecked(provenance: unknown): boolean {
-  if (provenance === null || typeof provenance !== "object") return false;
-  const record = provenance as { conformanceMethod?: unknown; conformance?: unknown };
-  if (record.conformanceMethod === "unavailable") return true;
-  const axes = record.conformance;
-  if (axes === null || typeof axes !== "object") return false;
-  return RECORDED_CONFORMANCE_AXES.some((axis) => {
-    const entry = (axes as Record<string, unknown>)[axis];
-    if (entry === null || typeof entry !== "object") return false;
-    return (entry as { pass?: unknown }).pass !== true;
-  });
-}
+/*
+  ⚠ **`viewDeliveredUnchecked` STOOD HERE AND IS RETIRED — #1903 slice 3, his
+  ruling of 2026-10-07.**
+
+  It answered one question — *was this picture delivered without a complete
+  check?* — and exactly one thing turned on the answer: whether the room showed
+  *"Unchecked · Try again"* and whether that ask was free. His ruling removed
+  both, so the reading has no consumer. **A reader with no caller is the dead
+  control this repository keeps finding months later**, and the honest moment to
+  delete it is the commit that removes its last reader, not a sweep afterwards.
+
+  **What it was reading is NOT being deleted.** The judge still records its
+  verdict on every landed row (`conformanceProvenance`, below), and D-246 still
+  DELIVERS a view nobody could judge rather than charging nothing for a picture
+  that may be perfect. What has gone is the customer-facing consequence: an
+  apology label and a free per-view ask. The record stays for diagnosis; the
+  remedy is now the paid whole-package redo.
+*/
 
 /**
  * Reads the object out of a reply that may be wrapped in prose or a fence.

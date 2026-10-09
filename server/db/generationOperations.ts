@@ -141,6 +141,15 @@ interface ClaimGenerationOperationInput {
    * was asked to pay for it. Nothing charged, nothing inconsistent — she simply
    * found a free thing gone.
    *
+   * ⚠ **THAT READER IS DELETED AND THIS CLAUSE IS KEPT AS THE ORIGIN — #1903
+   * slice 3 (2026-10-07) retired the free Try again, and with it the filter
+   * named above. THE RULE DOES NOT RELAX.** Writing the figure at the claim is
+   * still load-bearing for a different and larger reason: **the recovery sweep
+   * refunds an unsettled row's PLANNED credits**, so a row that dies in the gap
+   * with a default `0` is a refund that never happens. What has gone is only
+   * the free/paid consequence — on the Try again road there is no free ask
+   * left to be read as spent.
+   *
    * ⚠ **IT DOES NOT TOUCH `payloadHash`, which is the thing that could have
    * made this dangerous, and that is read at the code rather than assumed**:
    * `hashGenerationOperationSubject` (`server/casting/operationContract.ts`)

@@ -28,17 +28,35 @@ const {
   subscriptionsRetrieve,
   invoicesRetrieve,
   schedulesRelease,
+  productsRetrieve,
 } = vi.hoisted(() => ({
   pricesList: vi.fn(),
   subscriptionsUpdate: vi.fn(),
   subscriptionsRetrieve: vi.fn(),
   invoicesRetrieve: vi.fn(),
   schedulesRelease: vi.fn(),
+  productsRetrieve: vi.fn(),
+}));
+
+/* The module logger, doubled so the DEGRADED road's loud line can be read
+   (the relay's finding on PR #2053 asks for it, so it is asserted). Same
+   shape as `voidInvoiceStatus.test.ts`. */
+const logged = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+}));
+
+vi.mock("../logging/logger", () => ({
+  logger: logged,
+  createModuleLogger: () => logged,
 }));
 
 vi.mock("stripe", () => ({
   default: class StripeDouble {
     prices = { create: vi.fn(), list: pricesList };
+    products = { retrieve: productsRetrieve };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
     subscriptionSchedules = {
       create: vi.fn(),
@@ -62,7 +80,7 @@ import {
   updateSubscriptionPlan,
   type SubscriptionBillingState,
 } from "./stripeService";
-import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
+import { SPENT_SHARE_PRODUCT, SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
 import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
 import { priceLookupKey } from "./stripePriceCatalogue";
 import { periodPriceInCents } from "@shared/annualBilling";
@@ -262,10 +280,14 @@ beforeEach(() => {
   subscriptionsRetrieve.mockReset().mockResolvedValue(liveSubscription());
   schedulesRelease.mockReset();
   invoicesRetrieve.mockReset().mockResolvedValue({ amount_due: 10_000, status: "paid" });
+  productsRetrieve
+    .mockReset()
+    .mockImplementation(async (id: string) => ({ id, name: SPENT_SHARE_PRODUCT.name, active: true }));
+  logged.error.mockReset();
 });
 
 describe("#1965 — the spent share reaches the outgoing subscriptions.update", () => {
-  it("⚠ a charge rides the SAME update as the switch, inline-priced under the plan's own product", async () => {
+  it("⚠ a charge rides the SAME update as the switch, inline-priced under its OWN product (#2023)", async () => {
     const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1", undefined, 4_321);
 
     expect(result.success).toBe(true);
@@ -274,7 +296,7 @@ describe("#1965 — the spent share reaches the outgoing subscriptions.update", 
     expect(args.proration_behavior).toBe("always_invoice");
     expect(args.add_invoice_items).toEqual([
       {
-        price_data: { currency: "usd", product: "prod_pro", unit_amount: 4_321 },
+        price_data: { currency: "usd", product: SPENT_SHARE_PRODUCT.id, unit_amount: 4_321 },
         quantity: 1,
         metadata: { kind: "spent-allowance-share", ...environmentMetadata() },
       },
@@ -291,28 +313,54 @@ describe("#1965 — the spent share reaches the outgoing subscriptions.update", 
     }
   });
 
-  it("an expanded product object is read by its id", async () => {
-    subscriptionsRetrieve.mockResolvedValue(
-      liveSubscription({
-        items: {
-          data: [
-            {
-              id: "si_1",
-              price: { product: { id: "prod_expanded" }, recurring: { interval: "month" } },
-              current_period_start: T0,
-              current_period_end: T0 + 30 * DAY,
-            },
-          ],
-        },
-      }),
-    );
+  it("⚠ the plan's product is NEVER the line's — her invoice does not read the plan's name twice (#2023)", async () => {
     await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1", undefined, 100);
-    expect(subscriptionsUpdate.mock.calls[0][1].add_invoice_items[0].price_data.product).toBe(
-      "prod_expanded",
-    );
+    expect(productsRetrieve).toHaveBeenCalledWith(SPENT_SHARE_PRODUCT.id);
+    const line = subscriptionsUpdate.mock.calls[0][1].add_invoice_items[0];
+    expect(line.price_data.product).toBe(SPENT_SHARE_PRODUCT.id);
+    expect(line.price_data.product).not.toBe("prod_pro");
+    expect(line.price_data).not.toHaveProperty("product_data");
   });
 
-  it("⚠ a line that cannot be built REFUSES before anything is written — never the switch without its charge", async () => {
+  it("NEGATIVE CONTROL — no charge: the product is not even read", async () => {
+    await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1", undefined, 0);
+    expect(productsRetrieve).not.toHaveBeenCalled();
+    expect(subscriptionsUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  /* ⚠ THE RELAY'S FINDING ON PR #2053 — a catalogue that does not hold the
+     product DEGRADES the invoice and never refuses the customer's upgrade.
+     The first shape of #2023 refused here, so until the ceremony had been run
+     against the running service's Stripe account every monthly → yearly
+     switch out of a spent month was refused. These arms are the repair, and
+     they are the ones that redden if the refusal is ever put back. */
+  for (const [why, answer] of [
+    ["missing from this mode's catalogue", () => Promise.reject(Object.assign(new Error("No such product"), { code: "resource_missing" }))],
+    ["archived", async () => ({ id: SPENT_SHARE_PRODUCT.id, name: SPENT_SHARE_PRODUCT.name, active: false })],
+  ] as const) {
+    it(`⚠ a spent-share product ${why} DEGRADES to the plan's product — the switch still goes through, loudly logged`, async () => {
+      productsRetrieve.mockImplementation(answer);
+
+      const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1", undefined, 4_321);
+
+      /* The customer's upgrade completes. */
+      expect(result.success).toBe(true);
+      expect(subscriptionsUpdate).toHaveBeenCalledTimes(1);
+      /* The charge is still on the invoice — the #1965 mint stays closed. */
+      const line = subscriptionsUpdate.mock.calls[0][1].add_invoice_items[0];
+      expect(line.price_data.unit_amount).toBe(4_321);
+      /* Under the PLAN's product: the doubled name is the degraded state. */
+      expect(line.price_data.product).toBe("prod_pro");
+      /* And somebody is told, by name, which ceremony closes it. */
+      const said = logged.error.mock.calls.map((call) => String(call[1] ?? call[0]));
+      expect(said.some((m) => m.includes("ceremony-spent-share-product-2023.mts"))).toBe(true);
+    });
+  }
+
+  it("⚠ NEITHER product readable REFUSES — a line with no product at all cannot be built", async () => {
+    productsRetrieve.mockRejectedValue(
+      Object.assign(new Error("No such product"), { code: "resource_missing" }),
+    );
     subscriptionsRetrieve.mockResolvedValue(
       liveSubscription({
         schedule: "sub_sched_pending",
@@ -320,7 +368,34 @@ describe("#1965 — the spent share reaches the outgoing subscriptions.update", 
           data: [
             {
               id: "si_1",
-              price: { recurring: { interval: "month" } },
+              /* A subscription whose own price names no product either. */
+              price: { currency: "usd", recurring: { interval: "month" } },
+              current_period_start: T0,
+              current_period_end: T0 + 30 * DAY,
+            },
+          ],
+        },
+      }),
+    );
+
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "annual", "si_1", undefined, 4_321);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/nothing was changed/i);
+    expect(subscriptionsUpdate).not.toHaveBeenCalled();
+    expect(schedulesRelease).not.toHaveBeenCalled();
+  });
+
+  it("⚠ a line that cannot be built REFUSES before anything is written — never the switch without its charge", async () => {
+    subscriptionsRetrieve.mockResolvedValue(
+      liveSubscription({
+        schedule: "sub_sched_pending",
+        currency: undefined,
+        items: {
+          data: [
+            {
+              id: "si_1",
+              price: { product: "prod_pro", recurring: { interval: "month" } },
               current_period_start: T0,
               current_period_end: T0 + 30 * DAY,
             },

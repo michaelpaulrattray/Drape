@@ -51,6 +51,7 @@ import {
   addCredits,
   deductCredits,
   getUserCredits,
+  getCreditTransactionByRef,
   recordPlanChangeSettlement,
   getPlanChangeSettlementByInvoice,
   resolvePlanChangeSettlement,
@@ -201,6 +202,99 @@ export async function applyPlanChangeSettlement(
   return result.duplicate
     ? { outcome: "already-applied" }
     : { outcome: "applied", creditsMoved: returnable };
+}
+
+/** The ledger key for the part of an unwind collected after the period grant
+ *  (#2054). Its own family, so it can never collide with the settlement's. */
+export function settlementShortfallLedgerRef(stripeInvoiceId: string): string {
+  return `plan-change-settle-shortfall:${stripeInvoiceId}`;
+}
+
+export type ShortfallResult =
+  | { outcome: "none" }
+  | { outcome: "already-collected" }
+  | { outcome: "collected"; creditsMoved: number }
+  | { outcome: "failed"; error: string };
+
+/**
+ * ⚠ **CREDITS SPENT WHILE A SWITCH INVOICE WAITS ARE TAKEN FROM THE PERIOD IT
+ * BUYS (#2054).**
+ *
+ * The quote fixes the take-back (`creditUnwind`) and the spent-share charge at
+ * Confirm, and Stripe credits the unused days' money for exactly that take-back
+ * on the switch invoice. The take-back itself lands when that invoice is PAID,
+ * floored at what is left of the allowance then. On a card that pays at once
+ * the two moments are the same. On a 3DS card they are not: the invoice sits
+ * open while she authenticates, the subscription has already moved, and
+ * anything she spends in that window was refunded in money AND spent — the
+ * floor turned it into money with nothing behind it.
+ *
+ * So once the invoice's own period grant has landed, whatever the floor could
+ * not take is taken from the plan's part of the balance — which now holds the
+ * new period's allowance. Her balance ends exactly where the confirm step said
+ * it would (old balance − take-back + new grant), less what she spent since.
+ * Never more than the quoted take-back, never out of credits she bought, and
+ * no second charge to her card.
+ *
+ * Durable rather than carried: the shortfall is the settlement row's quoted
+ * `credits` minus what the ledger says the settlement actually moved, so a
+ * redelivery, or a settlement applied earlier by `changePlan`'s own fresh
+ * read, computes the same number. Its own ledger key makes it run once.
+ *
+ * ⚠ **IT NEEDS THE PERIOD GRANT, WHICH #2069 MADE REAL.** Until that fix the
+ * new year was billed as a PRORATION line, `periodBought` skipped it, and the
+ * webhook exited before the grant and before this — so this collected nothing
+ * (the plan's-part floor found nothing to take), the safe direction. Since
+ * `billing_cycle_anchor: "now"` the year is an ordinary period line; re-driven
+ * in test mode on the 3DS card, the year was granted once and the 56,000
+ * credits spent in the window came back out of it.
+ *
+ * Declined alternatives, named: charging the difference in money (a second
+ * charge after Confirm, possibly a second 3DS, not on the confirm step); and
+ * holding or refusing her spending while the invoice is open (a product
+ * decision about blocking her account).
+ */
+export async function collectPlanChangeShortfall(
+  stripeInvoiceId: string,
+): Promise<ShortfallResult> {
+  const row = await getPlanChangeSettlementByInvoice(stripeInvoiceId);
+  if (!row || row.direction !== "unwind" || row.status !== "applied") return { outcome: "none" };
+
+  const shortfallRef = settlementShortfallLedgerRef(stripeInvoiceId);
+  if (await getCreditTransactionByRef(row.userId, shortfallRef)) {
+    return { outcome: "already-collected" };
+  }
+
+  const moveLine = await getCreditTransactionByRef(row.userId, settlementLedgerRef(stripeInvoiceId));
+  const moved = moveLine ? Math.max(0, -Number(moveLine.amount)) : 0;
+  const shortfall = Math.max(0, row.credits - moved);
+  if (shortfall <= 0) return { outcome: "none" };
+
+  const liveCredits = await getUserCredits(row.userId);
+  const collectable = Math.min(shortfall, liveCredits ? planAllowanceRemaining(liveCredits) : 0);
+  if (collectable <= 0) return { outcome: "none" };
+
+  const result = await deductCredits(
+    row.userId,
+    collectable,
+    "subscription",
+    "Credits used between confirming your plan switch and its payment going through",
+    shortfallRef,
+    { toolKind: null },
+  );
+  if (!result.success && !result.duplicate) {
+    log.error(
+      { stripeInvoiceId, userId: row.userId, collectable, error: result.error },
+      "[Settlement] shortfall collection failed — failing the event so a redelivery retries",
+    );
+    return { outcome: "failed", error: result.error ?? "shortfall failed" };
+  }
+  if (result.duplicate) return { outcome: "already-collected" };
+  log.info(
+    { stripeInvoiceId, userId: row.userId, quoted: row.credits, moved, collectable },
+    "[Settlement] collected the part of a switch take-back spent before its invoice was paid",
+  );
+  return { outcome: "collected", creditsMoved: collectable };
 }
 
 /**

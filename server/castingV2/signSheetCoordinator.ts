@@ -51,6 +51,7 @@
 
 import type { CastViewAngle } from "../../shared/boardTypes";
 import { createModuleLogger } from "../logging/logger";
+import { createRenderBudget, type RenderBudget } from "../providers/renderBudget";
 import {
   ProviderError,
   mayStillArrive,
@@ -191,7 +192,7 @@ export type SettleSignSheetInput = {
    * thunk rather than a pre-awaited promise because the second call has to be
    * a second render.
    */
-  readonly render: () => Promise<RenderedSignSheet>;
+  readonly render: (budget: RenderBudget) => Promise<RenderedSignSheet>;
   readonly judge: ViewConformanceJudge;
   /** Her signed master — the face every panel is judged against. */
   readonly anchor: { bytes: Buffer; contentType: string };
@@ -280,13 +281,14 @@ export type SettleSignSheetInput = {
 async function renderWithArrivalRetries(
   input: SettleSignSheetInput,
   generation: number,
+  budget: RenderBudget,
 ): Promise<RenderedSignSheet> {
   const wait = input.wait ?? waitMs;
   let arrivalFailures = 0;
 
   for (;;) {
     try {
-      return await input.render();
+      return await input.render(budget);
     } catch (error) {
       /*
         ⚠ **A NON-`ProviderError` IS TERMINAL — it means the frame arrived.**
@@ -402,7 +404,21 @@ export async function settleSignSheet(
     the asset row and is the honest record D-246 asks for.
   */
 
-  const first = await renderWithArrivalRetries(input, 1);
+  /*
+    ⚠ **ONE POOL FOR THIS SHEET, AND THIS IS WHERE "PER SIGN, PER SHEET" IS
+    MADE TRUE (#1968).** Cid's reprice holds only at *"at most 2 head-sheet and
+    2 body-sheet renders per Sign, re-makes and arrival retries from one pool"*,
+    and it is created here because this function IS one sheet of one Sign: the
+    head and body sheets each get their own two, and the redo inherits the same
+    bound by sharing this road.
+
+    The limit is `SHEET_MAX_RENDERS` rather than a 2 typed again — the re-make
+    below is exactly the second paid render, so the two facts are one number and
+    a second copy of it is the drift working law 4 is about.
+  */
+  const budget = createRenderBudget(SHEET_MAX_RENDERS);
+
+  const first = await renderWithArrivalRetries(input, 1, budget);
   let judged = await judgeAll(first, 1);
 
   const refusedIn = (
@@ -438,7 +454,15 @@ export async function settleSignSheet(
         + "our cost, and all of its views will come from the new frame",
       );
       try {
-        const second = await renderWithArrivalRetries(input, 2);
+        /*
+          The SAME budget, which is the whole of Cid's condition: a first
+          generation that spent both its renders on arrival retries leaves no
+          room here, so this call refuses before it submits and the existing
+          catch below settles from generation 1 — the asymmetry this function's
+          docblock already describes, now reached for a money reason as well as
+          an outage one.
+        */
+        const second = await renderWithArrivalRetries(input, 2, budget);
         renders = 2;
         /*
           Generation 1's verdicts are kept beside generation 2's for every panel
@@ -459,8 +483,8 @@ export async function settleSignSheet(
               sheet: input.kind,
               refused: refusedSecond.map((row) => row.angle),
             },
-            "[signSheetCoordinator] the re-rendered sheet still has refused views — those "
-            + "slices refund and the rest are delivered; there is no third render",
+            "[signSheetCoordinator] the re-rendered sheet still has refused views — they are "
+            + "kept with the rest and nothing refunds per view; there is no third render",
           );
         } else {
           log.info(

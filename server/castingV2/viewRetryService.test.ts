@@ -121,24 +121,74 @@ vi.mock("./signService", async (importOriginal) => ({
   }),
 }));
 
+/*
+  ⚠ **THE OFFER THIS SUITE DRIVES IS THE RETIRED ONE, ON PURPOSE — #2089.**
+
+  His word of 2026-10-08, *"regenerate is the only option"*, made the real
+  `castSlotRetryOffer` answer null for EVERY slot, so the real entrance now
+  refuses every press at admission. But the road behind that admission is KEPT
+  (the card's own instruction): a Try again already in flight at the deploy
+  still claims, renders, settles and is recovered by the sweep, and every arm
+  below is about what that road does with its money. Driving it needs a press
+  that gets past admission, and no production seam may exist to let one in.
+
+  So the offer is replaced HERE, in the test, by the rule it answered until
+  #2089 — a refunded view (or the legacy stand-in whose close-up was refunded)
+  offers the Try again price, everything else nothing — and
+  `offerMode.real` switches it back to the real function. **The arms that pin the retirement run
+  the REAL function** (the `#2089` describe at the end of this file sets
+  `offerMode.real`) and each has a control in the same harness under
+  the retired rule, so a refusal cannot pass because the harness could never
+  reach the till in the first place.
+*/
+const offerMode = vi.hoisted(() => ({ real: false }));
+vi.mock("./castProjection", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./castProjection")>();
+  return {
+    ...actual,
+    castSlotRetryOffer: (
+      slot: Parameters<typeof actual.castSlotRetryOffer>[0],
+      price: number,
+    ): ReturnType<typeof actual.castSlotRetryOffer> => {
+      if (offerMode.real) return actual.castSlotRetryOffer(slot, price);
+      if (slot.state === "failed-refunded") return { priceCredits: price, reason: "refunded" };
+      if (slot.state === "ready" && slot.standIn === true && slot.refundedCredits !== null) {
+        return { priceCredits: price, reason: "refunded" };
+      }
+      return null;
+    },
+  };
+});
+
 import { TRPCError } from "@trpc/server";
 import {
   castViewRetrySubjectHash,
   hashGenerationOperationClaim,
 } from "../casting/operationContract";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `LEGACY_VIEW_SLICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /**
  * TWO PRICES SINCE 2026-10-01, AND THIS SUITE READ ONE CONSTANT FOR BOTH.
  *
  * ⚠ **#1601 item 1 made the paid Try again its own price (1,850 ledger / 370
  * display) where it had been a view's (1,000 / 200).** Every arm below that
- * said `CAST_PACKAGE_VIEW_PRICE` was saying one of two different things, and
+ * said `LEGACY_VIEW_SLICE` was saying one of two different things, and
  * while the numbers agreed nothing could tell them apart:
  *
  *   • what went BACK for the original view — the view's own slice, which is
- *     what was charged for it. Still `CAST_PACKAGE_VIEW_PRICE`.
+ *     what was charged for it. Still `LEGACY_VIEW_SLICE`.
  *   • what asking AGAIN costs — the Try again price, which is what this
  *     service charges, refunds and writes onto the new row.
  *
@@ -161,6 +211,8 @@ const journal: string[] = [];
 const deducts: Array<{ amount: number; reference: string }> = [];
 const refunds: Array<{ amount: number; reference: string }> = [];
 const committed: Array<{ angle: string; pointsCost: number; provenance: Record<string, unknown> }> = [];
+/** The fenced exit's handoffs (#2073) — the one write that exit may make. */
+const handoffs: Array<{ userId: number; operationId: string }> = [];
 let chargeSucceeds = true;
 let refundRecords = true;
 /**
@@ -194,8 +246,10 @@ function slot(overrides: Partial<CastSlotProjection> = {}): CastSlotProjection {
     label: "Back",
     state: "failed-refunded",
     url: null,
-    note: "This view didn't arrive — refunded",
-    refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+    /* The confession lost its money clause with #1968 — `castProjection.ts`
+       carries why. This fixture stands for a LEGACY row either way. */
+    note: "This view didn't arrive",
+    refundedCredits: LEGACY_VIEW_SLICE,
     /*
       ⚠ The `as` below means this object does NOT have to satisfy the type, so
       `reason` was the only one of the three fixtures in this file that the
@@ -214,16 +268,19 @@ function dependencies(
 ): ViewRetryServiceDependencies {
   return {
     /*
-      `freeRetrySpentAngles` is EMPTY in the default fixture, so every arm in this
-      file keeps the answer it had before #1601 item 4: an unchecked view's first
-      ask is free. An arm that wants the SECOND ask overrides `readSlots` and says
-      which angle is spent — `viewRetryFreeOnce.test.ts` owns the rule itself, and
-      what this file owns is what the till does with it.
+      ⚠ **A SPENT-FREE-ASK LIST STOOD IN THIS FIXTURE AND IS RETIRED — #1903
+      slice 3.** It was EMPTY by default so that every arm kept the pre-#1601
+      answer (an unchecked view's first ask is free), and an arm wanting the
+      SECOND ask overrode `readSlots` to say which angle was spent. There is no
+      free ask to ration now, so the read carries two facts instead of three and
+      `viewRetryNoFreeAsk.test.ts` owns the rule; what this file owns is still
+      what the till does with it.
 
-      ⚠ Its ABSENCE was how this fixture announced the change, and the lesson is
-      about the READING rather than about the compiler: 36 arms in this file went
-      red at RUN time on `read.freeRetrySpentAngles.includes`, and `pnpm check`
-      would have named this line instead. Driven after the fact — the bare
+      ⚠ The lesson below is KEPT because it is about the READING and not about
+      the deleted field, and it was paid for twice — once when the field arrived
+      and again when it left: 36 arms in this file went red at RUN time on the
+      removed property, and `pnpm check` would have named the line instead.
+      Driven after the fact — the bare
       `tsc -p tsconfig.json` that had been run exits 0 (the root project excludes
       every test file) while `pnpm check` exits 2 and points at the property.
       Two of its five projects exist to typecheck tests, and BOTH of them include
@@ -235,7 +292,11 @@ function dependencies(
       A hand-assembled typecheck is not the typecheck.
     */
     readSlots: async () => ({
-      modelId: 7, slots, deliveredOutfitKeys, freeRetrySpentAngles: [],
+      /* `ready` on every fixture in this file: a Try again is only ever
+         offered on a terminal package, and `castSlotRetryOffer` refuses any
+         slot that is not. The field arrived with the redo (#1903), which reads
+         it to refuse a Cast still being made. */
+      modelId: 7, status: "ready" as const, slots, deliveredOutfitKeys,
     }),
     readOutfitBytes: async (key: string) => {
       outfitReads.push(key);
@@ -323,6 +384,10 @@ function dependencies(
     storeImage: async () => ({ key: "views/new.png", url: "https://public/views/new.png" }),
     deleteObject: async () => ({ success: true as const }),
     wait: async () => undefined,
+    handoffToRecovery: (async (request: { userId: number; operationId: string }) => {
+      journal.push("handoff");
+      handoffs.push({ userId: request.userId, operationId: request.operationId });
+    }) as ViewRetryServiceDependencies["handoffToRecovery"],
     ...overrides,
   };
 }
@@ -335,10 +400,12 @@ const input = {
 };
 
 beforeEach(() => {
+  offerMode.real = false;
   journal.length = 0;
   deducts.length = 0;
   refunds.length = 0;
   committed.length = 0;
+  handoffs.length = 0;
   enginePrompts.length = 0;
   chargeSucceeds = true;
   refundRecords = true;
@@ -463,164 +530,55 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(committed).toHaveLength(0);
   });
 
-  it("an UNJUDGED view is FREE — the deduct is never called at all", async () => {
-    const free = slot({
+  /**
+   * ⚠ **FIVE ARMS ON THE FREE ROAD STOOD HERE AND ARE REPLACED BY ONE ON THE
+   * ROAD THAT REPLACED IT — #1903 slice 3, his ruling of 2026-10-07.**
+   *
+   * They drove: an unjudged view charged nothing; the SECOND ask on it charged
+   * (#1601 item 4's one-free-then-paid rule); that second ask refunding when it
+   * failed; a spent ask on one angle leaving another alone; and a free ask that
+   * failed refunding nothing. Every one of them was right about the rule it
+   * tested, and **the rule is deleted** — there is no free per-view ask, so
+   * there is nothing to ration and no second price to reach.
+   *
+   * What replaces them is the arm below, and it is deliberately the HARDEST of
+   * the five rather than the easiest: the stale free button. That is the only
+   * one of these shapes that can still arrive at the till in production — a tab
+   * left open before this deploy, carrying `priceCredits: 0`, pressed after it.
+   * The suite's own neighbour ("the server re-reads the offer and never trusts
+   * the button") is the rule it rests on; this holds that rule against the
+   * specific payload this change creates.
+   */
+  it("⚠ a STALE free button from before #1903 is REFUSED, not honoured at 0", async () => {
+    /*
+      Byte-for-byte the slot the deleted arms drove — `ready`, holding her
+      picture, with a `retry` saying the ask is free. A client that cached this
+      before the deploy sends exactly this.
+
+      `unjudged` is deliberately NOT set: it is off the wire now, so a payload
+      that still carries it would be testing a field the server no longer reads.
+      What makes this press refusable is the SLOT's state, which is the only
+      thing `castSlotRetryOffer` looks at.
+    */
+    const stale = slot({
       state: "ready",
       url: "https://cdn.example/view.png",
-      unjudged: true,
-      /* His ruling of 2026-09-26 replaced the sentence with the row's one word,
-         so the note is null and the reason is what the room reads (#1347). */
       note: null,
       refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
+      retry: { priceCredits: 0, reason: "refunded" },
     });
-    const result = await retryCastView(dependencies([free]), input);
-    expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(0);
+    await expect(retryCastView(dependencies([stale]), input)).rejects.toThrow(TRPCError);
     /*
-      Asserted as ABSENCE, not as a zero: "charged 0" and "never charged" are
-      different rows in a ledger, and only one of them is his ruling.
+      THE MONEY ARMS, and they run in both directions.
+
+      Not charged is the obvious half. The half that matters as much: nothing
+      was CLAIMED and nothing RENDERED — so a stale free button cannot buy a 2K
+      view at the house's expense either, which is the loop #1601 item 4 was
+      filed about and this closes by removing the road rather than metering it.
     */
-    expect(journal).toEqual(["claim", "running", "render", "commit"]);
     expect(deducts).toHaveLength(0);
-  });
-
-  it("the SECOND ask on an unchecked view is charged — the free one is spent (#1601 item 4)", async () => {
-    /*
-      HIS RULE, END TO END AT THE TILL: *"the first Try again on an unchecked view
-      is free, once; the second is paid."*
-
-      The slot is byte-for-byte the one the arm above drives — still `ready`, still
-      unjudged, still holding her picture — because **a free retry does not move
-      the slot's state**, and that is the whole defect this closes: a second
-      unchecked picture is still unchecked, so the free branch used to renew
-      itself for as long as the conformance judge stayed unavailable.
-
-      The only thing that differs is a fact the slot cannot carry, read off the
-      operation rows: this angle's free ask is gone. Note the `retry` on the slot
-      still says 0 — a deliberately STALE button, which is the shape a second tab
-      or a page left open really produces — and the till charges anyway, because
-      it re-reads the offer rather than trusting what was sent.
-    */
-    const spent = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      note: null,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const result = await retryCastView(
-      dependencies([spent], {
-        readSlots: async () => ({
-          modelId: 7,
-          slots: [spent],
-          deliveredOutfitKeys,
-          freeRetrySpentAngles: [input.angle],
-        }),
-      }),
-      input,
-    );
-    expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
-    expect(deducts).toEqual([
-      { amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` },
-    ]);
-    expect(journal).toEqual(["claim", "running", "deduct", "render", "commit"]);
-  });
-
-  it("a spent-free SECOND ask that fails refunds what it charged", async () => {
-    /*
-      The other half of the ledger, and it is not implied by the arm above: the
-      free road has nothing to give back, so every refund arm in this file was
-      written against the REFUNDED road. This is the first time an UNCHECKED view
-      can owe a refund at all, and conservation on it has never been driven.
-    */
-    engineAnswers = ["throw"];
-    const spent = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const result = await retryCastView(
-      dependencies([spent], {
-        readSlots: async () => ({
-          modelId: 7,
-          slots: [spent],
-          deliveredOutfitKeys,
-          freeRetrySpentAngles: [input.angle],
-        }),
-      }),
-      input,
-    );
-    expect(result.outcome).toBe("failed");
-    expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
-    /*
-      ONE reference, and the refund is taken against the CHARGE's — item 5's
-      no-double-refund rule, which this road inherits rather than restates:
-      `recordRefund` derives the refund's own reference from the charge's, so a
-      second settle of the same operation is a duplicate and gives nothing back
-      twice. Asserted as the SAME string the deduct used, because that identity is
-      the property; a literal `:refund` here would be a second spelling of a rule
-      the ledger owns.
-    */
-    expect(refunds).toEqual([
-      { amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` },
-    ]);
-    expect(refunds[0]?.reference).toBe(deducts[0]?.reference);
-    /* Her picture is untouched: the view she paid for is still the one on screen,
-       and no failure marker is written over it (#1233). */
-    expect(committed).toHaveLength(0);
-  });
-
-  it("a spent free ask on ANOTHER view does not charge this one", async () => {
-    /*
-      The negative control for the pair above, and the one that would catch the
-      cheapest mistake available here — reading the spent set as a CAST-level fact
-      rather than a per-slot one. #1235 is this surface's own record of what
-      cast-level reasoning costs on it.
-    */
-    const free = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const result = await retryCastView(
-      dependencies([free], {
-        readSlots: async () => ({
-          modelId: 7,
-          slots: [free],
-          deliveredOutfitKeys,
-          /* A different angle entirely — her close-up, not the back she asked for. */
-          freeRetrySpentAngles: ["closeUp"],
-        }),
-      }),
-      input,
-    );
-    expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(0);
-    expect(deducts).toHaveLength(0);
-  });
-
-  it("a FREE try again that fails refunds nothing, and leaves the picture she has alone", async () => {
-    engineAnswers = ["throw"];
-    const free = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const result = await retryCastView(dependencies([free]), input);
-    expect(result.outcome).toBe("failed");
-    expect(result.chargedCredits).toBe(0);
     expect(refunds).toHaveLength(0);
-    expect(journal).not.toContain("refund");
-    /* Nothing committed — so the delivered view is still what the room shows. */
+    expect(journal).toEqual([]);
     expect(committed).toHaveLength(0);
   });
 
@@ -646,7 +604,7 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     const filled = slot({ state: "ready", url: "https://cdn.example/x.png", retry: undefined });
     await expect(retryCastView(dependencies([filled]), input)).rejects.toThrow(
-      /isn't one you can ask for again/,
+      /can't be asked for again on its own/,
     );
   });
 
@@ -672,6 +630,142 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     expect(refunds).toHaveLength(0);
     expect(deducts).toHaveLength(1);
+    /*
+      ⚠ AND NO RECEIPT IS SEALED HERE — THE LEASE IS HANDED OVER (#2073).
+      The fence now refuses while the sweep is mid-adjudication with the row
+      still `running`; a failure receipt from this exit would land first with
+      `refundedCredits: 0` over the refund the sweep is recording, and the
+      sweep's own seal would then find nothing `running` to correct. The
+      handoff is the positive control: this exit still does its one write.
+    */
+    expect(receipts.failure).not.toHaveBeenCalled();
+    expect(receipts.success).not.toHaveBeenCalled();
+    expect(handoffs).toEqual([{ userId: input.userId, operationId: OPERATION_ID }]);
+    expect(journal.at(-1)).toBe("handoff");
+  });
+
+  it("a handoff the sweep has already overtaken still answers the customer the same way", async () => {
+    /* The row was sealed before this exit ran, so the handoff (which needs
+       `running`) refuses. That is logged, never thrown at her: she reads the
+       same sentence, and still nothing is refunded or sealed from here. */
+    const deps = dependencies([slot()], {
+      commitRetried: (async () => null) as ViewRetryServiceDependencies["commitRetried"],
+      handoffToRecovery: (async () => {
+        throw new Error("Only the owned running operation can enter recovery");
+      }) as ViewRetryServiceDependencies["handoffToRecovery"],
+    });
+    await expect(retryCastView(deps, input)).rejects.toThrow(/settled while it rendered/);
+    expect(refunds).toHaveLength(0);
+    expect(receipts.failure).not.toHaveBeenCalled();
+  });
+
+  /*
+    ⚠ **A COMMIT THAT COMMITTED AND LOST ITS ACKNOWLEDGEMENT (#2080).**
+
+    The fake below is the database's side of that fault, faithfully: the row
+    is written (into `rows`, which is what `retriedViewLanded` reads — the
+    stamp the real commit writes), and THEN the call throws. Before the card
+    the loop's catch dropped the bytes the row points at and the failed exit
+    refunded 50 credits — a refund AND a broken tile.
+  */
+  describe("a commit that throws after it committed (#2080)", () => {
+    const LIVE_KEY = "views/new.png";
+    let rows: Array<{ retryOperationId: string; storageKey: string }>;
+    let dropped: string[];
+    let landedAsks: number;
+
+    function lostAck(options: { writes: boolean; landedRead?: "throws" }) {
+      return dependencies([slot()], {
+        commitRetried: (async (request: {
+          operationId: string;
+          storageKey: string;
+        }) => {
+          journal.push("commit");
+          if (options.writes) {
+            rows.push({ retryOperationId: request.operationId, storageKey: request.storageKey });
+          }
+          throw new Error("Connection lost: The server closed the connection.");
+        }) as ViewRetryServiceDependencies["commitRetried"],
+        retriedLanded: (async (request: { operationId: string }) => {
+          landedAsks += 1;
+          journal.push("landed?");
+          if (options.landedRead === "throws") throw new Error("Connection lost again");
+          return rows.some((row) => row.retryOperationId === request.operationId);
+        }) as ViewRetryServiceDependencies["retriedLanded"],
+        deleteObject: (async (key: string) => {
+          dropped.push(key);
+          return { success: true as const };
+        }) as ViewRetryServiceDependencies["deleteObject"],
+      });
+    }
+
+    beforeEach(() => {
+      rows = [];
+      dropped = [];
+      landedAsks = 0;
+    });
+
+    it("THE CARD: the row landed — delivered, ONE asset, its bytes live, nothing refunded", async () => {
+      const result = await retryCastView(lostAck({ writes: true }), input);
+
+      expect(result.outcome).toBe("ready");
+      expect(result.url).toBe("https://public/views/new.png");
+      expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+      expect(result.refundedCredits).toBe(0);
+      expect(refunds, "a landed view was refunded").toHaveLength(0);
+      /* Exactly one asset, and the object it points at was never deleted. */
+      expect(rows).toEqual([{ retryOperationId: OPERATION_ID, storageKey: LIVE_KEY }]);
+      expect(dropped, "the bytes the landed row points at were deleted").not.toContain(LIVE_KEY);
+      /* Never another frame (#1994): one render, one commit, one question. */
+      expect(engineCalls).toBe(1);
+      expect(journal).toEqual(["claim", "running", "deduct", "render", "commit", "landed?"]);
+      expect(receipts.success).toHaveBeenCalledTimes(1);
+      expect(handoffs).toHaveLength(0);
+    });
+
+    it("CONTROL: the commit truly failed — the bytes are dropped and the 50 credits go back", async () => {
+      const result = await retryCastView(lostAck({ writes: false }), input);
+
+      expect(result.outcome).toBe("failed");
+      expect(result.url).toBeNull();
+      expect(result.refundedCredits).toBe(TRY_AGAIN_PRICE);
+      expect(refunds).toHaveLength(1);
+      expect(rows).toHaveLength(0);
+      expect(dropped).toEqual([LIVE_KEY]);
+      expect(landedAsks).toBe(1);
+      expect(engineCalls, "a failed commit bought another frame").toBe(1);
+    });
+
+    it("CONTROL: a commit that does NOT throw never asks the question", async () => {
+      await retryCastView(dependencies([slot()], {
+        retriedLanded: (async () => {
+          landedAsks += 1;
+          return false;
+        }) as ViewRetryServiceDependencies["retriedLanded"],
+      }), input);
+      expect(landedAsks).toBe(0);
+    });
+
+    it("the question cannot be answered — no refund, no drop, the sweep owns it", async () => {
+      await expect(retryCastView(lostAck({ writes: true, landedRead: "throws" }), input))
+        .rejects.toThrow(/could not be read/);
+
+      /* Neither reading is acted on: the bytes stay for a row that may point
+         at them, and no refund is written for a view she may be holding. The
+         operation is left `running` — no receipt — so the sweep reads the
+         asset rows and settles it. */
+      expect(dropped).toHaveLength(0);
+      expect(refunds).toHaveLength(0);
+      expect(receipts.success).not.toHaveBeenCalled();
+      expect(receipts.failure).not.toHaveBeenCalled();
+      expect(engineCalls).toBe(1);
+    });
+  });
+
+  it("CONTROL: a view that lands seals its receipt and never hands off", async () => {
+    await retryCastView(dependencies([slot()]), input);
+    expect(receipts.success).toHaveBeenCalledTimes(1);
+    expect(handoffs).toHaveLength(0);
   });
 
   it("a refund that does not record is never reported as 'you weren't charged'", async () => {
@@ -803,7 +897,7 @@ describe("try again on one view — what moves, and in what order", () => {
     */
     const nothing = slot({ state: "ready", url: "https://cdn.example/x.png", retry: undefined });
     await expect(retryCastView(dependencies([nothing]), input)).rejects.toThrow(
-      /isn't one you can ask for again/,
+      /can't be asked for again on its own/,
     );
     const asking = slot({ state: "building", url: null, retrying: true, retry: undefined });
     await expect(retryCastView(dependencies([asking]), input)).rejects.toThrow(
@@ -947,38 +1041,22 @@ describe("try again on one view — what moves, and in what order", () => {
     expect(claims[0]!.plannedCredits, "the fixture's price is the default 0 — this arm proves nothing").not.toBe(0);
   });
 
-  it("⚠ AND THE OTHER DIRECTION: a FREE ask claims 0, so the figure is the price and not a flag (#1767)", async () => {
-    /*
-      Without this the arm above is satisfied by an entrance that writes the paid
-      price onto every claim, free ones included — which would spend a customer's
-      free ask the moment she used it and then hand it back forever after. The
-      column is the PRICE, and on a free ask the price is 0.
-    */
-    const claims: Array<{ plannedCredits?: number }> = [];
-    /* The same unjudged fixture the free-deduct arm above uses, so the two arms
-       are asking about one slot rather than two different ones. */
-    const free = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      note: null,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const deps = dependencies([free], {
-      begin: async (claim) => {
-        claims.push(claim as never);
-        return { type: "execute" as const, operationId: OPERATION_ID };
-      },
-    });
+  /*
+    ⚠ **THE OTHER-DIRECTION ARM STOOD HERE AND IS RETIRED — #1903 slice 3, and
+    its JOB IS DISCHARGED RATHER THAN DROPPED.**
 
-    await retryCastView(deps, input);
+    It drove a FREE ask and held `plannedCredits` at 0, as the control stopping
+    the arm above from being satisfied by an entrance that wrote the paid price
+    onto every claim — which would have spent a customer's free ask the moment
+    she used it.
 
-    expect(claims).toHaveLength(1);
-    expect(claims[0]!.plannedCredits, "a free Try again claimed a price").toBe(0);
-    /* A free ask never touches the deduct at all — the fixture really is free. */
-    expect(deducts).toEqual([]);
-  });
+    **With no free ask there is no second value on this road, so the worry it
+    guarded cannot exist**: writing the Try again price onto every
+    `castingV2.viewRetry` claim is now simply correct. What survives of the
+    control is the line immediately above — `.not.toBe(0)` — which is what stops
+    the sibling passing on a fixture whose price was the column default all
+    along, and that is the half that was ever about this suite's own honesty.
+  */
 
   it("a second view may be asked for while the first one renders — the key is per slot", async () => {
     /*
@@ -1034,7 +1112,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
     resolution: "2K",
     storageUrl: "https://cdn.example/view.png",
     storageKey: "key",
-    pointsCost: CAST_PACKAGE_VIEW_PRICE,
+    pointsCost: LEGACY_VIEW_SLICE,
     pinned: false,
     status: null,
     provenance: {},
@@ -1072,7 +1150,7 @@ describe("deliveredOutfitKeysFrom — which key belongs to which angle (#1474)",
         viewType: "frontFull",
         storageUrl: "",
         storageKey: "a-key-on-a-confession",
-        status: { state: "failed", reason: "didn't arrive", refunded: CAST_PACKAGE_VIEW_PRICE },
+        status: { state: "failed", reason: "didn't arrive", refunded: LEGACY_VIEW_SLICE },
       }),
     ])).toEqual({});
   });
@@ -1321,7 +1399,7 @@ describe("only a catastrophe takes a retried picture away", () => {
   it("a PAID try again nobody could judge still ARRIVES — charged, kept, not refunded", async () => {
     const refunded = slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
@@ -1339,7 +1417,7 @@ describe("only a catastrophe takes a retried picture away", () => {
   it("⚠ and one whose IDENTITY is turned down still does not arrive, and the money goes back", async () => {
     const refunded = slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
     const result = await retryCastView(
@@ -1363,25 +1441,33 @@ describe("only a catastrophe takes a retried picture away", () => {
     ⚠ Driven on the unreachable judge since #1903 — `wardrobe` was the axis
     that used to produce "unchecked again" and it no longer exists.
   */
-  it("a FREE try again that comes back unchecked again delivers, and nothing is charged", async () => {
-    const free = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      note: null,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
+  /**
+   * ⚠ **THIS ARM DROVE A FREE ASK UNTIL #1903 SLICE 3 AND NOW DRIVES A PAID
+   * ONE — same question, and the money answer is the one that moved.**
+   *
+   * Its question is D-246's and is untouched: a retry whose own result nobody
+   * could judge **delivers** rather than being thrown away. What changed is
+   * that the only Try again left is PAID, so the interesting half is no longer
+   * *"nothing is charged"* but **"the charge STANDS"** — an unjudgeable result
+   * is not a refund, because the customer has the picture.
+   */
+  it("a PAID try again that comes back unjudged still delivers, and the charge STANDS", async () => {
     const result = await retryCastView(
-      dependencies([free], { judge: unreachableJudge }),
+      dependencies([slot()], { judge: unreachableJudge }),
       input,
     );
 
     expect(result.outcome).toBe("ready");
-    expect(result.chargedCredits).toBe(0);
-    expect(refunds).toHaveLength(0);
-    expect(deducts).toHaveLength(0);
+    /* Delivered, and paid for — the two halves of D-246 under his pricing. */
     expect(committed).toHaveLength(1);
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+    expect(deducts).toHaveLength(1);
+    /*
+      AND NOTHING WENT BACK. This is the arm that would catch a reader treating
+      "could not be judged" as a failure: she would keep the picture AND the
+      money, which is the shape #2073 was filed about on the other road.
+    */
+    expect(refunds).toHaveLength(0);
   });
 
   /*
@@ -1394,7 +1480,7 @@ describe("only a catastrophe takes a retried picture away", () => {
     it(`a PAID try again refused on ${axis} does not arrive, and the money goes back`, async () => {
       const refunded = slot({
         state: "failed-refunded",
-        refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+        refundedCredits: LEGACY_VIEW_SLICE,
         retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
       });
       const result = await retryCastView(
@@ -1437,7 +1523,7 @@ describe("the settled line, one per Try again (#1608)", () => {
   const paidSlot = () =>
     slot({
       state: "failed-refunded",
-      refundedCredits: CAST_PACKAGE_VIEW_PRICE,
+      refundedCredits: LEGACY_VIEW_SLICE,
       retry: { priceCredits: TRY_AGAIN_PRICE, reason: "refunded" },
     });
 
@@ -1519,19 +1605,33 @@ describe("the settled line, one per Try again (#1608)", () => {
     });
   });
 
-  it("a FREE try again is marked unpaid, so the rate never mixes the two populations", async () => {
-    const free = slot({
-      state: "ready",
-      url: "https://cdn.example/view.png",
-      unjudged: true,
-      note: null,
-      refundedCredits: null,
-      retry: { priceCredits: 0, reason: "unchecked" },
-    });
-    const result = await retryCastView(dependencies([free]), input);
+  /**
+   * ⚠ **THIS ARM HELD `paid: false` UNTIL #1903 SLICE 3 — THE UNPAID
+   * POPULATION NO LONGER EXISTS ON THIS ROAD.**
+   *
+   * It drove a free ask and asserted the settled line marked it unpaid, so a
+   * failure rate could never mix the free population with the paid one. Every
+   * Try again is paid now, so `paid` cannot read `false` here.
+   *
+   * ⚠ **THE FIELD IS KEPT, DELIBERATELY, AND IT IS A JUDGEMENT WORTH SAYING OUT
+   * LOUD.** It is `price > 0` — still a true statement about the row rather
+   * than a flag with a dead branch — and this is the `retry settled` line P1
+   * named as a monitoring surface, so silently changing its shape would break a
+   * reader outside this suite for a tidiness gain. What the arm holds now is
+   * the live fact: a Try again reports itself PAID, with the price beside it, so
+   * the rate it feeds is one population by construction instead of by a filter.
+   */
+  it("a Try again is marked PAID with its price, so the rate is one population", async () => {
+    const result = await retryCastView(dependencies([slot()]), input);
 
     expect(result.outcome).toBe("ready");
-    expect(settled()[0]).toMatchObject({ paid: false, chargedCredits: 0, attempts: 1 });
+    expect(settled()[0]).toMatchObject({
+      paid: true,
+      chargedCredits: TRY_AGAIN_PRICE,
+      attempts: 1,
+    });
+    /* The control: the figure really is the price and not a flag coerced to 1. */
+    expect(TRY_AGAIN_PRICE).toBeGreaterThan(1);
   });
 
   it("a view that never arrived settles with judged null — not false", async () => {
@@ -1577,5 +1677,84 @@ describe("the settled line, one per Try again (#1608)", () => {
 
     expect(settled()).toHaveLength(0);
     expect(deducts).toHaveLength(0);
+  });
+});
+
+/**
+ * ⚠ **#2089 — A STALE PER-VIEW TRY AGAIN IS REFUSED AT THE SERVER, FREE.**
+ *
+ * His word, 2026-10-08 (terminal), verbatim and entire: *"regenerate is the
+ * only option"*. The room no longer draws a per-view row, but a tab opened
+ * before that deploy still does, and its press arrives here carrying a request
+ * the client had every reason to believe was valid. **These arms run the REAL
+ * `castSlotRetryOffer`**, not the retired rule the rest of this file drives the
+ * road with, so they fail the moment the real function offers anything again.
+ *
+ * Each refusal has its CONTROL in the same harness: the identical press under
+ * the retired rule reaches the claim and the deduct. Without it, "nothing was
+ * claimed" could be true because this harness never claims anything.
+ */
+describe("#2089 — the real offer refuses every per-view Try again", () => {
+  const refunded = () => slot();
+  const standIn = () => slot({
+    angle: "frontClose",
+    label: "Portrait",
+    state: "ready",
+    url: "https://cdn.example/anchor.png",
+    note: null,
+    /* A legacy row: the per-view slice is gone with #1968. */
+    refundedCredits: LEGACY_VIEW_SLICE,
+    standIn: true,
+  });
+  const delivered = () => slot({
+    state: "ready",
+    url: "https://cdn.example/view.png",
+    note: null,
+    refundedCredits: null,
+    retry: undefined,
+  });
+
+  for (const [name, make, angle] of [
+    ["a REFUNDED view", refunded, "backFull"],
+    ["the legacy stand-in whose close-up was REFUNDED", standIn, "frontClose"],
+    ["a DELIVERED view", delivered, "backFull"],
+  ] as const) {
+    it(`${name} is refused PRECONDITION_FAILED before the claim — nothing claimed, charged or rendered`, async () => {
+      offerMode.real = true;
+      const press = { ...input, angle: angle as typeof input.angle };
+      const refusal = await retryCastView(dependencies([make()]), press).catch((error: unknown) => error);
+
+      expect(refusal).toBeInstanceOf(TRPCError);
+      expect((refusal as TRPCError).code).toBe("PRECONDITION_FAILED");
+      /* The refusal tells her what to do, in the page's own word. */
+      expect((refusal as TRPCError).message).toContain("Regenerate");
+      expect((refusal as TRPCError).message).toContain("Nothing was charged");
+      expect(journal).toEqual([]);
+      expect(deducts).toHaveLength(0);
+      expect(refunds).toHaveLength(0);
+      expect(engineCalls).toBe(0);
+      expect(committed).toHaveLength(0);
+      expect(receipts.success).not.toHaveBeenCalled();
+    });
+  }
+
+  it("CONTROL — the same refunded press under the RETIRED rule reaches the claim and the till", async () => {
+    offerMode.real = false;
+    const result = await retryCastView(dependencies([refunded()]), input);
+
+    expect(result.outcome).toBe("ready");
+    expect(journal.slice(0, 3)).toEqual(["claim", "running", "deduct"]);
+    expect(deducts).toEqual([{ amount: TRY_AGAIN_PRICE, reference: `op:${OPERATION_ID}:charge` }]);
+  });
+
+  it("CONTROL — the stand-in under the RETIRED rule reaches the till too", async () => {
+    offerMode.real = false;
+    const result = await retryCastView(
+      dependencies([standIn()]),
+      { ...input, angle: "frontClose" as typeof input.angle },
+    );
+
+    expect(result.chargedCredits).toBe(TRY_AGAIN_PRICE);
+    expect(deducts).toHaveLength(1);
   });
 });

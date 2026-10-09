@@ -1307,7 +1307,7 @@ export default function CastingSheet() {
     surfaces that must agree about who is in the tray all read it: the strip
     itself, the kept count, and the Sign target below.
 
-    It is deliberately ABOVE `keptTiles`: aiming the 8,500-credit ceremony at the
+    It is deliberately ABOVE `keptTiles`: aiming the 3,250-credit ceremony at the
     server's list while the strip drew the optimistic one is exactly the ring
     and target disagreeing that `signTarget.ts` was written to end.
   */
@@ -1328,7 +1328,7 @@ export default function CastingSheet() {
     question and the two of them disagreeing is how a click armed a different
     woman (fable-729 §5). Today the server's loader keeps signed candidates out
     of the shortlist entirely (fable-744 §3b), so this filter passes everything;
-    it stays because the ceremony it aims costs 8,500 credits.
+    it stays because the ceremony it aims costs 3,250 credits.
 
     Aimed at the VISIBLE tray rather than the server's: a face just kept is the
     newest keep, so she is the one the button offers, and Sign takes a
@@ -1543,7 +1543,7 @@ export default function CastingSheet() {
     than folded in; it is not what the founder hit and it wants its own design.)
 
     ⚠ It is `null` while the answer is in flight and `null` if the read fails.
-    That is deliberate too: this is a claim about where 8,500 credits are going,
+    That is deliberate too: this is a claim about where 3,250 credits are going,
     and an absent sentence is exactly today's product while a wrong one would be
     a defect worse than the card.
   */
@@ -3398,7 +3398,7 @@ export default function CastingSheet() {
               drawing always put it).
 
               It was a quiet text button under each tile, which the founder
-              could not find on his first look at his own product — an 8,500-credit
+              could not find on his first look at his own product — a 3,250-credit
               action hiding in the same visual weight as "Discard". The drawing
               puts it bottom-right in the dock, filled, acting on the current
               selection, and that is where a decision of this size belongs.

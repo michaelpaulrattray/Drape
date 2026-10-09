@@ -56,6 +56,7 @@
 import sharp from "sharp";
 
 import type { CastViewAngle } from "../../shared/boardTypes";
+import type { RenderBudget } from "../providers/renderBudget";
 import type { ImageResult, ReferenceImage } from "../providers/types";
 /* `capitalize` rather than a local one: `castPronouns` already exports it for
    exactly this job ("He came from this sheet."), and a second copy of a
@@ -1104,6 +1105,12 @@ export async function renderSignSheet(input: {
   featureWords?: readonly CarriedFeatureWords[];
   operationId?: number | string | null;
   signal?: AbortSignal;
+  /**
+   * This sheet's share of the Sign's paid renders (#1968). Passed straight
+   * through to the engine — `settleSignSheet` owns it, one per sheet, so the
+   * re-make and every arrival retry draw on the same pool.
+   */
+  renderBudget?: RenderBudget;
 }): Promise<RenderedSignSheet> {
   const started = Date.now();
   const panelOrder = input.panelOrder ?? SIGN_SHEET_PANEL_ORDER;
@@ -1153,6 +1160,7 @@ export async function renderSignSheet(input: {
     ],
     resolution: "2K",
     ...(input.signal ? { signal: input.signal } : {}),
+    ...(input.renderBudget ? { renderBudget: input.renderBudget } : {}),
   });
 
   const cut = await cutSignSheet(image.bytes, panelOrder);

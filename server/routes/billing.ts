@@ -59,11 +59,11 @@ import {
   SELF_SERVE_PLAN_ORDER,
   ownPlanFacts,
 } from "../stripe/stripeProducts";
+import { CASTING_V2_ONE_CHARACTER_CREDITS } from "../castingV2/castViewPackage";
 import {
-  CASTING_V2_ONE_CHARACTER_CREDITS,
+  CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_SIGN_PRICE_CREDITS,
-} from "../castingV2/castViewPackage";
-import { CASTING_V2_ROLL_PRICE_CREDITS } from "../casting/castingCreditCosts";
+} from "../casting/castingCreditCosts";
 import { appBaseUrl, PRODUCTION_APP_HOSTNAME } from "../_core/appOrigin";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { z } from "zod";

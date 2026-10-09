@@ -2,7 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `CAST_PACKAGE_VIEW_PRICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /**
  * WHAT A VIEW COST AND WHAT ASKING AGAIN COSTS — two numbers since 2026-10-01
@@ -14,7 +26,7 @@ import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
  * a package. While both were 50 no arm in this file could tell which one the
  * projection was reading.
  */
-const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
+const VIEW_PRICE = LEGACY_VIEW_SLICE;
 const TRY_AGAIN_PRICE = CASTING_V2_VIEW_RETRY_PRICE_CREDITS;
 
 import {
@@ -252,7 +264,10 @@ describe("the signed Cast projection", () => {
       what earns `reason: "refunded"`, and the room draws `Refunded · Try again`.
     */
     expect(slot?.note).toBeNull();
-    expect(slot?.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    /* ⚠ NO OFFER SINCE #2089 (his *"regenerate is the only option"*). It
+       carried the refunded Try again here until then; the remedy is the
+       whole-set redo, and the refund itself is still recorded above. */
+    expect(slot?.retry).toBeUndefined();
   });
 
   it("opens the room on the signed master while the package is still building", () => {
@@ -478,9 +493,11 @@ describe("a view being asked for again (#1235)", () => {
     const assets = ledger(anchor(), failed("backFull"));
 
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
-    // The control: without a running retry this is a confession WITH an offer.
+    // The control: without a running retry this is a confession at rest. Since
+    // #2089 it carries no offer either way, so the fact under test is the STATE.
     expect(atRest.state).toBe("failed-refunded");
-    expect(atRest.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    expect(atRest.note).not.toBeNull();
+    expect(atRest.retry).toBeUndefined();
     expect(atRest.retrying).toBeUndefined();
 
     const asking = backFull(projectSignedCast({
@@ -498,10 +515,18 @@ describe("a view being asked for again (#1235)", () => {
 
   it("keeps the picture she already has while the new one renders", () => {
     /*
-      An UNJUDGED view: delivered, charged, kept, and nobody looked at it. Its
-      Try again is free, and its picture is hers until a new one lands — the
-      retry never writes a failure marker over it (#1233), so the url stays and
-      the room draws the working state over the top of it.
+      A DELIVERED view: charged, kept, and nobody was able to look at it. Its
+      picture is hers until a new one lands — the re-render never writes a
+      failure marker over it (#1233), so the url stays and the room draws the
+      working state over the top of it.
+
+      ⚠ **WHAT PUTS IT IN `retryingAngles` IS NOW THE WHOLE-PACKAGE REDO — #1903
+      slice 3.** This arm used to assert `retry` was a free offer at rest and
+      read `unjudged: true` off the wire; both are retired, and a delivered view
+      can no longer be asked for on its own at all. It can still be RE-RENDERED,
+      because `listRunningViewRetryAngles` reads every view-replacing kind and
+      the redo is one — so the #1233 question this arm exists for is live and
+      arrives by a different road.
     */
     const unjudged = asset({
       viewType: "backFull",
@@ -510,8 +535,12 @@ describe("a view being asked for again (#1235)", () => {
     const assets = ledger(anchor(), unjudged);
 
     const atRest = backFull(projectSignedCast({ model: model(), assets, lineage }));
-    expect(atRest.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    expect(atRest.unjudged).toBe(true);
+    /* Nothing to ask for, and nothing said about it — the slice-3 rule. */
+    expect(atRest.retry).toBeUndefined();
+    expect(atRest.note).toBeNull();
+    /* The control for the arm below: she really does have the picture at rest,
+       so "the url survives" is about the retry and not about an empty slot. */
+    expect(atRest.url).toBe(unjudged.storageUrl);
 
     const asking = backFull(projectSignedCast({
       model: model(),
@@ -539,7 +568,9 @@ describe("a view being asked for again (#1235)", () => {
       room held one angle in one string and disabled every button from it.
     */
     expect(other.state).toBe("failed-refunded");
-    expect(other.retry).toEqual({ priceCredits: TRY_AGAIN_PRICE, reason: "refunded" });
+    /* Untouched means its confession too; no slot carries an offer since #2089. */
+    expect(other.note).not.toBeNull();
+    expect(other.retry).toBeUndefined();
     expect(other.retrying).toBeUndefined();
   });
 
@@ -596,6 +627,18 @@ describe("the failure copy promises nothing that does not exist (#1208)", () => 
       // would pass every arm above by containing nothing at all.
       expect(sentence.length).toBeGreaterThan(20);
       expect(sentence).toContain("didn't arrive");
+      /*
+        ⚠ **AND NEITHER MAY CLAIM MONEY CAME BACK FOR THIS VIEW — #1968.**
+        `FAILED_SLOT_CONFESSION` said *"— refunded"* until his flat Sign price
+        removed the per-view refund that made it true. `TOTAL_LOSS_CONFESSION`
+        is about the whole Sign and is allowed to talk about money, so the ban
+        is on the per-VIEW word rather than on the subject: a note that is
+        drawn under one tile must not describe a refund.
+      */
+      if (name === "FAILED_SLOT_CONFESSION") {
+        expect(sentence.toLowerCase(), "a per-view note cannot claim a refund (#1968)")
+          .not.toContain("refund");
+      }
     });
   }
 

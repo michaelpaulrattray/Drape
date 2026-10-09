@@ -626,7 +626,7 @@ export function createFalSunburstPlateEngine(config: {
 }): IdentityEngine {
   if (!config.apiKey) {
     /* Refused at construction for the reason its sibling is: a Sign that
-       reaches dispatch has already taken 8,500 credits. */
+       reaches dispatch has already taken 3,250 credits. */
     throw new ProviderError("capability", "the outfit plate needs FAL_KEY to render");
   }
   const model = config.model ?? FAL_GPT_IMAGE_25_SUNBURST_EDIT;
@@ -805,7 +805,7 @@ export function createFalSunburstSheetEngine(config: {
 }): IdentityEngine {
   if (!config.apiKey) {
     /* Refused at construction for the reason both its siblings are: a Sign that
-       reaches dispatch has already taken 8,500 credits, so a credential nobody
+       reaches dispatch has already taken 3,250 credits, so a credential nobody
        set is a configuration fault and never a generation failure a customer
        should have to be refunded for. */
     throw new ProviderError("capability", "the Sign sheet needs FAL_KEY to render");
@@ -884,7 +884,15 @@ export function createFalSunburstSheetEngine(config: {
             provenance: { provider: "fal" as const, model, providerRef: job.requestId },
           };
         },
-        { signal: request.signal },
+        /*
+          ⚠ **The sheet is the one engine that carries a render budget (#1968),
+          because it is the one whose price was set on a bounded render count.**
+          Cid's flat 650 for a Sign holds at 2 paid renders per sheet; the
+          counting happens inside `withRetry`, which is the only layer that sees
+          each submission. A caller that passes none is unbounded exactly as
+          before.
+        */
+        { signal: request.signal, ...(request.renderBudget ? { budget: request.renderBudget } : {}) },
       ),
     );
   }

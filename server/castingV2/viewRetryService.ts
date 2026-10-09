@@ -60,8 +60,8 @@ import { deductCredits } from "../db/credits";
 import {
   commitRetriedViewAsset,
   listRunningViewRetryAngles,
-  listSpentFreeViewRetryAngles,
   readCastViewRenderSource,
+  retriedViewLanded,
 } from "../db/castingV2ViewRetry";
 import {
   getCastLineage,
@@ -69,7 +69,10 @@ import {
   listCastAssets,
   listCastPromisedAngles,
 } from "../db/castingV2Sign";
-import { markGenerationOperationRunning } from "../db/generationOperations";
+import {
+  handoffGenerationOperationToRecovery,
+  markGenerationOperationRunning,
+} from "../db/generationOperations";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete, storageReadBytes } from "../storage";
 import { castPronouns } from "./castPronouns";
@@ -78,6 +81,7 @@ import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCos
 import { castPackageView } from "./castViewPackage";
 import {
   renderViewAttempts,
+  ViewLandingUndecidedError,
   type PackageOrchestratorDependencies,
   type ViewAttemptTally,
 } from "./packageOrchestrator";
@@ -102,6 +106,13 @@ export type ViewRetryServiceDependencies = PackageOrchestratorDependencies & {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   commitRetried?: typeof commitRetriedViewAsset;
+  /** Asked only when the commit THREW (#2080): did this operation's row land
+   *  anyway? Injected so an arm can make the commit lose its acknowledgement
+   *  and see the answer the database gives. */
+  retriedLanded?: typeof retriedViewLanded;
+  /** The fenced exit's one write (#2073) — injected so an arm can see it is
+   *  called and that no receipt is sealed beside it. */
+  handoffToRecovery?: typeof handoffGenerationOperationToRecovery;
   readSource?: typeof readCastViewRenderSource;
   readAnchorBytes?: typeof storageReadBytes;
   /**
@@ -123,16 +134,23 @@ export type CastSlotsRead = {
   modelId: number;
   slots: ReturnType<typeof projectSignedCast>["slots"];
   /**
-   * THE VIEWS WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
+   * `building` while a package is still streaming in, `ready` once it is
+   * terminal — the projection's own word, carried out rather than re-derived
+   * (#1903).
    *
-   * Carried out of the read rather than re-queried at the till, for the reason
-   * this whole type exists: the offer the room was shown and the offer the money
-   * moves against have to come from ONE reading. The entrance re-asks
-   * `castSlotRetryOffer` — it does not trust the client's price — and this is the
-   * third fact that answer needs, so it travels with the slots that are the
-   * other two.
+   * Read by the redo entrance, which refuses a Cast whose first package has not
+   * finished: a redo of views that are still arriving would charge for a second
+   * render of pictures the customer has not been shown once. The Try again road
+   * does not consult it, because `castSlotRetryOffer` already refuses every slot
+   * that is not `ready`.
    */
-  freeRetrySpentAngles: readonly CastViewAngle[];
+  status: ReturnType<typeof projectSignedCast>["status"];
+  /*
+    ⚠ **A SPENT-FREE-ASK LIST STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+    was the third fact `castSlotRetryOffer` needed while a view's first Try
+    again was free (#1601 item 4). The free ask is gone, so the offer now needs
+    two facts and this read carries two.
+  */
   /**
    * THE STORAGE KEY OF EACH DELIVERED FULL-LENGTH VIEW THAT HAS ONE (#1474).
    *
@@ -172,8 +190,18 @@ export type ViewRetryResult = {
   refundRecorded: boolean;
 };
 
+/**
+ * THE FREE REFUSAL A PRESS MEETS WHEN THE SLOT OFFERS NOTHING — and since #2089
+ * that is EVERY slot (his *"regenerate is the only option"*, 2026-10-08), so
+ * the customer who meets it is the one holding a tab opened before that deploy.
+ *
+ * ⚠ **It says what to do, not only what was refused** — the
+ * disappearing-technology law's rule for a refusal. It read *"That view isn't
+ * one you can ask for again"*, which was true and left her nowhere to go; the
+ * remedy is the whole-set button on the same page, named by its own label.
+ */
 export const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
-  "That view isn't one you can ask for again. Nothing was charged.";
+  "That view can't be asked for again on its own — Regenerate makes every view again. Nothing was charged.";
 
 /**
  * A SECOND PRESS ON A VIEW ALREADY BEING MADE — free, and it says which of the
@@ -231,11 +259,18 @@ export function deliveredOutfitKeysFrom(
  * thing the customer is looking at. Deriving it any other way is the parallel
  * copy working law 4 forbids, on a surface where the copy's drift is a wrong
  * price.
+ *
+ * ⚠ **EXPORTED FOR THE REDO (#1903), AND THAT IS THE WHOLE REASON IT IS NOT
+ * COPIED.** A redo spends money against the same five slots this read
+ * describes, so the two roads have to agree about what is already in flight,
+ * what each slot holds and which full-length view would dress a render. A
+ * second `readCastSlots` next door would be working law 4's parallel copy on
+ * the one surface where its drift is a wrong charge.
  */
-async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
+export async function readCastSlots(userId: number, castPublicId: string): Promise<CastSlotsRead | null> {
   const model = await getOwnedCastByPublicId(userId, castPublicId);
   if (!model) return null;
-  const [assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles] = await Promise.all([
+  const [assets, lineage, promisedAngles, retryingAngles] = await Promise.all([
     listCastAssets(userId, model.id),
     getCastLineage(userId, model),
     listCastPromisedAngles(userId, model.id),
@@ -243,18 +278,14 @@ async function readCastSlots(userId: number, castPublicId: string): Promise<Cast
        the same statement, which is what makes a slot's Try again disappear and
        this entrance refuse for the same reason at the same moment. */
     listRunningViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
-    /* WHOSE FREE ASK IS ALREADY SPENT (#1601 item 4). Read here and not at the
-       till for the same reason the line above is: one reading behind the button
-       and the charge. */
-    listSpentFreeViewRetryAngles({ userId, modelId: model.id, castId: castPublicId }),
   ]);
   const projection = projectSignedCast({
-    model, assets, lineage, promisedAngles, retryingAngles, freeRetrySpentAngles,
+    model, assets, lineage, promisedAngles, retryingAngles,
   });
   return {
     modelId: model.id,
     slots: projection.slots,
-    freeRetrySpentAngles,
+    status: projection.status,
     /* #1474 — derived from the assets this function already read, never from a
        second query. */
     deliveredOutfitKeys: deliveredOutfitKeysFrom(assets),
@@ -449,6 +480,14 @@ export async function retryCastView(
     throw new TRPCError({ code: "NOT_FOUND", message: VIEW_RETRY_NOTHING_TO_ASK_MESSAGE });
   }
   /*
+    ⚠ **SINCE #2089 THIS REFUSES EVERY PRESS** — his *"regenerate is the only
+    option"* — because `castSlotRetryOffer` answers null for every slot. That is
+    the server half of retiring the per-view door: a tab still drawing
+    *"Refunded · Try again"* from before the deploy is refused here, free and
+    before the claim. Everything below this exit is kept for the operations
+    already in flight and for the recovery sweep that settles them; the road
+    itself retires on its own card.
+
     THE OFFER IS RE-READ HERE, NOT TRUSTED FROM THE CLIENT.
 
     The button carried a price; this is the server asking the same function the
@@ -456,13 +495,7 @@ export async function retryCastView(
     been filled — by a sweep, by another tab — offers nothing, and the answer
     is a free refusal rather than a second picture nobody asked for.
   */
-  const offer = castSlotRetryOffer(
-    slot,
-    CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-    /* THE THIRD FACT, from the SAME read the slot came out of (#1601 item 4) —
-       never a second query here, which would be a reading the room never had. */
-    read.freeRetrySpentAngles.includes(input.angle),
-  );
+  const offer = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
   if (!offer) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
@@ -554,12 +587,20 @@ export async function retryCastView(
       WHAT THIS TRY AGAIN COSTS, WRITTEN WHERE THE ROW IS BORN (#1767) — and on
       THIS road it is not housekeeping, it is the defect itself.
 
-      `plannedCredits = 0` is how the product recognises a FREE Try again
+      `plannedCredits = 0` WAS how the product recognised a FREE Try again
       (`spentFreeViewRetryFilter`). Until this line the column was written one
       statement below, so a PAID retry whose `markRunning` threw settled as
       `failed` carrying the schema default — indistinguishable from the free ask
       the customer had not used. She then found her one free Try again on that
       view already spent and was asked to pay 370 credits for it.
+
+      ⚠ **THAT READER IS DELETED — #1903 slice 3 — AND THE LINE STAYS WHERE IT
+      IS.** Every Try again is paid now, so nothing reads a zero on this kind
+      and no row can be mistaken for a spent free ask. The reason the figure
+      belongs at the CLAIM rather than one statement down outlives the defect
+      that found it: the recovery sweep refunds an unsettled row's planned
+      credits, and a row that dies in the gap carrying the default is a refund
+      that never happens.
 
       The figure is the same `price` the running transition writes, read off the
       offer forty-five lines above; nothing here chooses a number.
@@ -631,7 +672,7 @@ export async function retryCastView(
   const drop = dependencies.deleteObject ?? storageDelete;
   const commit = dependencies.commitRetried ?? commitRetriedViewAsset;
 
-  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ assetId: number; url: string }>>>;
+  let rendered: Awaited<ReturnType<typeof renderViewAttempts<{ url: string }>>>;
   /* HOISTED for the settled line (#1608), not for the render. `outfitReference`
      is computed inside the try below and the settle point sits after the catch,
      so the one fact the line needs about the wardrobe — was a fresh plate minted
@@ -744,7 +785,7 @@ export async function retryCastView(
          real type, which is working law 4's shape and is exactly why a third
          conformance field could be added to one writer and missed here. */
       async (landed) => {
-        const assetId = await commit({
+        const commitInput = {
           userId: input.userId,
           operationId,
           modelId: read.modelId,
@@ -762,8 +803,66 @@ export async function retryCastView(
             ...landed.provenance,
             ...conformanceProvenance(landed.verdict),
           },
-        });
-        return assetId === null ? null : { assetId, url: landed.stored.url };
+        };
+        /*
+          ⚠ **A COMMIT THAT THROWS MAY STILL HAVE COMMITTED (#2080).**
+
+          The transaction can commit and its acknowledgement be lost on the
+          wire, so the throw arrives while the row exists. On this road a
+          throw after the frame was bought is terminal (#1994 — no replay, so
+          #2065's idempotent commit is never reached), and the loop's catch
+          then DROPPED the stored bytes and its `failed` exit REFUNDED: the
+          customer got her 50 credits back AND a tile pointing at a deleted
+          object, because `slotEvidence` shows the newest filled asset.
+
+          So the throw is not believed until the database is asked. The
+          question is `retriedViewLanded` — the sweep's own question, keyed on
+          the `retryOperationId` the commit stamps from the typed operation id
+          — asked once, with no engine call: **never another frame (#1994).**
+
+          - It landed → delivered. Returned as a landing, so the loop keeps
+            the bytes and the charge stands. The row can only be THIS
+            attempt's: on this road a commit throw is terminal, so no earlier
+            attempt of this operation ever reached the commit.
+          - It did not → the original throw, unchanged, and everything behaves
+            as it did before this card (drop, refund).
+          - The question itself fails → {@link ViewLandingUndecidedError}: the
+            loop passes it out WITHOUT dropping the bytes, the operation stays
+            `running`, and the sweep — which asks the same question of the
+            same rows — settles the money.
+
+          The value carries no asset id because nothing reads one, and the
+          landed-anyway answer does not have it.
+        */
+        let assetId: number | null;
+        try {
+          assetId = await commit(commitInput);
+        } catch (commitError) {
+          let didLand: boolean;
+          try {
+            didLand = await (dependencies.retriedLanded ?? retriedViewLanded)({
+              userId: input.userId,
+              modelId: read.modelId,
+              operationId,
+            });
+          } catch (readError) {
+            log.error(
+              { operationId, castId: input.castId, angle: input.angle, err: commitError, readErr: readError },
+              "[viewRetryService] the commit threw and whether it landed cannot be read — the sweep decides",
+            );
+            throw new ViewLandingUndecidedError(
+              "the retried view's commit threw and whether it landed could not be read",
+              { cause: commitError },
+            );
+          }
+          if (!didLand) throw commitError;
+          log.warn(
+            { operationId, castId: input.castId, angle: input.angle, err: commitError },
+            "[viewRetryService] the commit threw but its row LANDED — a lost acknowledgement, delivering",
+          );
+          return { url: landed.stored.url };
+        }
+        return assetId === null ? null : { url: landed.stored.url };
       },
     );
   } catch (error) {
@@ -824,10 +923,22 @@ export async function retryCastView(
   }
 
   /*
-    FENCED: this operation is no longer running, so a sweep owns its money and
-    its bytes were already dropped by the loop. Nothing is refunded here —
-    refunding under a reference the sweep is about to use is how one failure
-    becomes two refunds.
+    FENCED: the sweep owns this operation's money and its bytes were already
+    dropped by the loop. Nothing is refunded here — refunding under a reference
+    the sweep is about to use is how one failure becomes two refunds.
+
+    ⚠ **AND NOTHING IS SEALED HERE EITHER (#2073).** The fence now refuses a
+    commit the moment the sweep has CLAIMED the row (`recoveryAttemptedAt`),
+    which is while the row is still `running` — the sweep is reading the
+    ledger and recording its refund at that instant and seals afterwards. A
+    failure receipt written from here would win that race with
+    `refundedCredits: 0` over a refund the sweep had just recorded, and the
+    sweep's own seal would then find no `running` row to write the truth onto:
+    the money right and the receipt lying about it. So this exit does what the
+    redo's fenced exit already does — hands the lease to the sweep, writes no
+    receipt — and tells the customer the same sentence it always has. A row the
+    sweep has already sealed refuses the handoff, which is logged and is the
+    right answer too: there is nothing left to hand.
   */
   if (rendered.status === "fenced") {
     log.warn(
@@ -850,15 +961,18 @@ export async function retryCastView(
       tally: rendered.tally,
       judged: judgedOf(rendered.verdicts),
     });
-    return completeDirectOperationFailure({
+    await (dependencies.handoffToRecovery ?? handoffGenerationOperationToRecovery)({
       userId: input.userId,
       operationId,
-      error: new TRPCError({
-        code: "CONFLICT",
-        message: "That view was settled while it rendered. Refresh the Cast — nothing extra was charged.",
-      }),
-      chargedCredits: price,
-      refundedCredits: 0,
+    }).catch((handoffError: unknown) => {
+      log.warn(
+        { operationId, castId: input.castId, angle: input.angle, err: handoffError },
+        "[viewRetryService] the recovery handoff did not write — the sweep already holds the row",
+      );
+    });
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "That view was settled while it rendered. Refresh the Cast — nothing extra was charged.",
     });
   }
 

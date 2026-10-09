@@ -213,6 +213,75 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
   });
 });
 
+/*
+  WHAT HER SCREEN SHOWS (#2058) — the thrown error through the formatter the
+  server wires (`withSpokenFlag`) and the client's own rule (`readableFailure`).
+  The client never reads an unmarked INTERNAL_SERVER_ERROR aloud, so before
+  this card the refund truth — and the reference support needs when a refund
+  did not record — was replaced by the surface's fallback. The fallback here is
+  a stand-in: what matters is only whether the server's sentence beats it.
+*/
+describe("the refund truth reaches her screen (#2058)", () => {
+  const FALLBACK = "(the surface's own fallback)";
+  const settle = (referenceId: string, operation: () => Promise<never>) =>
+    withAtomicCredits(
+      { userId: 1, amount: 350, description: "Model iteration", referenceId, toolKind: "image" as const },
+      operation,
+    ).then(() => null, (error: unknown) => error);
+  const shownToHer = async (error: unknown) => {
+    const { withSpokenFlag } = await import("../_core/spokenError");
+    const { readableFailure } = await import("../../client/src/lib/failureSentence");
+    return readableFailure(
+      withSpokenFlag({ message: (error as Error).message, data: { code: (error as { code?: string }).code } }, error),
+      FALLBACK,
+    );
+  };
+
+  it("an engine failure is spoken: the refund that landed is read out", async () => {
+    const { SpokenError } = await import("../_core/spokenError");
+    const error = await settle("gen-2058a", async () => { throw new Error("engine down"); });
+    expect(error).toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+    expect(error).toBeInstanceOf(SpokenError);
+    expect(await shownToHer(error)).toBe(`The operation failed. ${formatCredits(displayRefund(350))} credits returned.`);
+  });
+
+  it("a refund that did not record is spoken too: she keeps the reference support needs", async () => {
+    ledger.failNextAdd = true;
+    const error = await settle("gen-2058b", async () => { throw new Error("engine down"); });
+    expect(await shownToHer(error)).toContain("quote reference refund:gen-2058b");
+    /* Raw provider text still never travels — the sanitizer is unchanged. */
+    expect(await shownToHer(error)).not.toContain("engine down");
+  });
+
+  it("an inner refusal that was already spoken keeps its marker through the rebuild", async () => {
+    const { SpokenError, spokenError } = await import("../_core/spokenError");
+    const error = await settle("gen-2058c", async () => {
+      throw spokenError({ code: "INTERNAL_SERVER_ERROR", message: "That one did not finish." });
+    });
+    expect(error).toBeInstanceOf(SpokenError);
+    expect(await shownToHer(error)).toBe(`That one did not finish. ${formatCredits(displayRefund(350))} credits returned.`);
+  });
+
+  it("NEGATIVE: an UNMARKED inner TRPCError is not promoted — its words are not known to be hers", async () => {
+    const { TRPCError } = await import("@trpc/server");
+    const { SpokenError } = await import("../_core/spokenError");
+    const error = await settle("gen-2058d", async () => {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No image generated" });
+    });
+    expect(error).not.toBeInstanceOf(SpokenError);
+    expect(await shownToHer(error)).toBe(FALLBACK);
+  });
+
+  it("NEGATIVE: an unauthored failure that never reached the catch is not marked", async () => {
+    const { deductCredits } = await import("../db");
+    const { SpokenError } = await import("../_core/spokenError");
+    vi.mocked(deductCredits).mockRejectedValueOnce(new Error("connection lost"));
+    const error = await settle("gen-2058e", async () => { throw new Error("unreached"); });
+    expect(error).not.toBeInstanceOf(SpokenError);
+    expect(await shownToHer(error)).toBe(FALLBACK);
+  });
+});
+
 describe("shared refund copy helpers (client surfaces, final correction 1)", () => {
   it("branches on the recorded outcome — never an unconditional 'not charged'", async () => {
     const { refundOutcomeText, refundBadgeText, slotFailureMessage } = await import("../../shared/refundCopy");
@@ -230,15 +299,36 @@ describe("shared refund copy helpers (client surfaces, final correction 1)", () 
       .toBe(`${formatCredits(displayRefund(300))} credits returned.`);
     expect(refundOutcomeText({ refunded: 300 })).not.toContain("300 credits");
     expect(refundOutcomeText({ refunded: 0, refundReference: "refund:slot-gen-9" })).toContain("quote refund:slot-gen-9");
-    expect(refundOutcomeText({ refunded: 0 })).toContain("contact support");
-    expect(refundBadgeText(300)).toBe("Credits returned");
-    expect(refundBadgeText(0)).toBe("Refund pending — contact support");
+    /*
+      ⚠ **THREE STATES SINCE #1968, AND THE THIRD IS SILENCE.** A zero with no
+      reference used to read *"contact support"*; his flat Sign price makes a
+      refused view refund nothing BY DESIGN, so that sentence would invent a
+      fault and an errand about money nobody owed. The two arms are kept
+      adjacent because the distinction is the whole repair: with a reference it
+      is a failed refund, without one there was never a refund to fail.
+    */
+    expect(refundOutcomeText({ refunded: 0 })).toBe("");
+    expect(refundBadgeText({ refunded: 300 })).toBe("Credits returned");
+    expect(refundBadgeText({ refunded: 0, refundReference: "refund:slot-gen-9" }))
+      .toBe("Refund pending — contact support");
+    expect(refundBadgeText({ refunded: 0 }), "no money was owed, so no badge").toBe("");
     const ok = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 300, markerPersisted: true });
-    /* One verb, Try again, everywhere (#1940 B18). */
-    expect(ok).toContain('"Try again"');
+    /*
+      ⚠ **IT MUST NOT PROMISE A PER-VIEW TRY AGAIN, because there is not one.**
+      This arm asserted the opposite until the flat-price card: it pinned
+      *"Try again"* on #1940 B18's one-verb ruling, and that ruling is about
+      which verb to use where the control EXISTS. PR 2098 deleted the per-view
+      offer and left this toast naming it, so the arm was holding false copy in
+      place. It now refuses the stale claim and pins what the package shows.
+    */
+    expect(ok).not.toContain("Try again");
+    expect(ok).toContain("shown as missing in the package");
     const noMarker = slotFailureMessage({ label: "Side profile", reason: "gate", refunded: 0, markerPersisted: false });
     expect(noMarker).not.toContain('"Try again"');
     expect(noMarker).toContain("couldn't be saved to the package");
+    /* The join drops the empty money half rather than leaving its space (#1968). */
+    expect(noMarker, "no doubled space where the refund sentence used to be")
+      .not.toContain("  ");
   });
 
   it("⚠ never says a refund of ZERO landed — the one sentence a refund line cannot print", async () => {

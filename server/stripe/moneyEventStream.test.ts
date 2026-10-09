@@ -118,6 +118,7 @@ vi.mock("./invoiceLines", async (importOriginal) => ({
 
 vi.mock("./planChangeSettlement", () => ({
   applyPlanChangeSettlement: vi.fn().mockResolvedValue({ outcome: "none" }),
+  collectPlanChangeShortfall: vi.fn().mockResolvedValue({ outcome: "none" }),
   voidPlanChangeSettlement: vi.fn().mockResolvedValue({ success: true }),
 }));
 

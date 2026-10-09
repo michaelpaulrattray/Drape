@@ -26,6 +26,14 @@
  * shows they need.
  */
 
+/*
+  TYPE-ONLY, and deliberately so: `renderBudget.ts` imports `ProviderError` and
+  `providerMayHaveBilled` from this file, so a value import here would be a
+  runtime cycle. The budget's reasoning lives with its factory rather than being
+  split across the two.
+*/
+import type { RenderBudget } from "./renderBudget";
+
 /* ----------------------------------------------------------------- failures */
 
 /**
@@ -415,6 +423,49 @@ export function providerAlreadyBilled(error: unknown): boolean {
   return error instanceof ProviderError && error.completed;
 }
 
+/**
+ * MAY this attempt have cost us money? — the question a render BUDGET has to
+ * ask, and it is not the same question as {@link providerAlreadyBilled}
+ * (#1968, Cid's reprice condition).
+ *
+ * `completed` answers *did the provider finish the job*, and it exists to stop
+ * a loop re-buying a frame it already owns. A budget needs the weaker fact: not
+ * *was it billed* but *could it have been*, because that is what a worst case
+ * is made of. The gap between the two is the whole reason the cap was missing —
+ * on the deadline exit `falTransport` cancels and throws `timeout` with
+ * `completed: false` unless fal answers 400 ALREADY_COMPLETED, and that file's
+ * own note says plainly that *"whether this cancel stops a job already
+ * IN_PROGRESS is unverified"*. So `completed` is false and the frame may be
+ * rendering and billing anyway.
+ *
+ * ⚠ **IT IS FAIL-CLOSED, WHICH IS THE OPPOSITE OF `completed`'s DEFAULT, AND
+ * THE ASYMMETRY IS THE POINT.** `completed` defaults false so the doubt favours
+ * retrying for a customer who has paid. Here the doubt has to favour the cap:
+ * an over-count costs one rescue, an under-count costs the margin on every
+ * Sign, so this answers false ONLY where the error proves the job never reached
+ * the provider's queue.
+ *
+ * **The proof it looks for is the absence of a provider reference**, and that
+ * is a declaration rather than a shape. `providerRef` is fal's `request_id`,
+ * and `falTransport` cannot know one until the queue has accepted the job: its
+ * three pre-id faults — an unreachable host, a refused submit, a 200 carrying
+ * no request id — are exactly the three sites that pass no `providerRef`, and
+ * every site after it passes one. The engines' own pre-dispatch refusals (a bad
+ * size, a missing key, too many references) and the queue's `busy` and
+ * `cancelled before dispatch` carry none either, correctly: nothing was sent.
+ *
+ * ⚠ **A fault that is NOT a `ProviderError` is charged**, which looks severe
+ * and is the honest reading. On the sheet road the thunk carries the decode,
+ * the panel geometry, the cut and the provenance check as well as the engine
+ * call, and `signSheetCoordinator`'s docblock records what those are: *"every
+ * one of them is a frame that ARRIVED and was paid for"*.
+ */
+export function providerMayHaveBilled(error: unknown): boolean {
+  if (!(error instanceof ProviderError)) return true;
+  if (error.completed) return true;
+  return error.providerRef !== undefined;
+}
+
 /* ------------------------------------------------------------- provenance */
 
 /**
@@ -729,6 +780,16 @@ export type IdentityEditRequest = {
   resolution: "1K" | "2K" | "4K";
   aspectRatio?: string;
   signal?: AbortSignal;
+  /**
+   * How many paid renders this request may cost, when its caller has been
+   * priced on a bound (#1968).
+   *
+   * Optional, and only the Sign sheet engine reads it today: a caller that
+   * passes none is counted not at all, which is what every other engine on this
+   * contract wants. See `renderBudget.ts` for why it is charged inside
+   * `withRetry` rather than in either of the loops above it.
+   */
+  renderBudget?: RenderBudget;
 };
 
 export interface IdentityEngine {

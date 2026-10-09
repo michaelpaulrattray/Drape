@@ -19,10 +19,12 @@ import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { storagePublicUrl } from "../storage";
 import type { CastLineage } from "../db/castingV2Sign";
-import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
+import {
+  CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
+  CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
+} from "../casting/castingCreditCosts";
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
-import { viewDeliveredUnchecked } from "./viewConformance";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -64,28 +66,26 @@ export type CastSlotProjection = {
    * nothing does.
    */
   standIn?: true;
-  /**
-   * TRUE when the picture is here and it was NOT FULLY CHECKED.
-   *
-   * The judge answering "this is wrong" and the judge not answering at all are
-   * different facts about a view the customer paid for, and only the first is a
-   * reason to take the picture away. D-246 delivers the second, loudly — and
-   * until now "loudly" meant a log line and a column, which the room never
-   * read. It is what makes this slot's Try again FREE: the view was charged and
-   * kept, so asking for it again costs nothing.
-   *
-   * ⚠ **IT COVERS A SECOND CASE SINCE #1612 PART 2, AND THE NAME IS NOW ONE
-   * CASE NARROWER THAN THE FACT.** A view whose FRAMING or WARDROBE did not
-   * hold is delivered too (his ruling, 2026-09-30) — somebody looked, they
-   * said one axis was wrong, and the picture is still the signed likeness, so
-   * it is hers. The word the customer reads has always been *Unchecked* rather
-   * than *unjudged*, and it is true of both roads; the field keeps its name
-   * because it is on the wire and the room, the retry offer and the entrance
-   * all read it, and renaming a live projection field to improve a docblock is
-   * a change with no customer in it. {@link viewDeliveredUnchecked} is the one
-   * reading behind it.
-   */
-  unjudged?: true;
+  /*
+    ⚠ **`unjudged?: true` STOOD HERE AND IS RETIRED — #1903 slice 3, his
+    ruling of 2026-10-07.** It was the wire fact behind the room's
+    *"Unchecked · Try again"*, and what it bought the customer was a FREE ask
+    for a view the judge could not vouch for (D-246, #1220).
+
+    **His ruling removed the thing it was a basis for, not merely the label.**
+    The remedy for a view she does not like is now the paid whole-package redo
+    (slice 2, live) — one price, every view re-made together, no fault to be
+    found first — so a per-view free ask has nothing left to mean. Keeping the
+    field to keep the word would be the machinery showing through with no
+    decision behind it, which is the disappearing-technology law's own second
+    question answered wrongly.
+
+    ⚠ **A DELIVERED VIEW NOW CARRIES NO LABEL AND NO PER-VIEW OFFER AT ALL**,
+    which is his sentence verbatim. ~~The only Try again left belongs to a view
+    that was REFUNDED~~ — and since #2089 (his *"regenerate is the only
+    option"*) not even that: no slot carries a per-view offer, and the redo is
+    the room's one remedy. See {@link castSlotRetryOffer}.
+  */
   /**
    * TRUE while a Try again on this view is actually running (#1235).
    *
@@ -107,6 +107,10 @@ export type CastSlotProjection = {
    * the SAME function the retry entrance authorizes with — a second reading of
    * "may this be retried" would be working law 4's parallel copy on a money
    * surface, and it would drift toward offering a button the server refuses.
+   *
+   * ⚠ **NEVER SET SINCE #2089** — that function answers null for every slot,
+   * so no per-view offer reaches the room, and the room no longer reads the
+   * field. It leaves the wire with the `viewRetry` road, on its own card.
    */
   retry?: CastSlotRetry;
 };
@@ -152,8 +156,79 @@ export type CastSlotRetry = {
    * *"Refunded"* (`client/src/features/castingV2/viewRetryRow.ts`), the same
    * split the refine's stage words take.
    */
-  reason: "unchecked" | "refunded";
+  reason: "refunded";
 };
+
+/**
+ * ASKING FOR ALL HER VIEWS AGAIN — the package-level offer (#1903).
+ *
+ * One field, and it is the price, because this offer has no roads to tell
+ * apart: a redo needs no fault to be found first (his ruling: *"incase they
+ * didnt like the outfit that was invented or whatever"*), so there is no
+ * reason word and no free branch. `null` is the whole of "not now".
+ *
+ * ⚠ **THE PRICE IS ON THIS ONE, UNLIKE THE SLOT'S.** His 2026-09-26 ruling took
+ * the number off the Try again row — *"No credit count in the row"* — because
+ * that row sits under a picture as a muted line and had become louder than the
+ * broken tile beside it. This is a button the customer presses on purpose, and
+ * his older standing rule applies to it instead: **prices on paid buttons.**
+ * The two are not in tension; they are a caption and a button.
+ */
+export type CastPackageRedo = {
+  /** Ledger credits for the whole package. The client converts for display. */
+  priceCredits: number;
+};
+
+/**
+ * MAY ALL HER VIEWS BE ASKED FOR AGAIN, AND WHAT WOULD IT COST?
+ *
+ * Pure, and read by BOTH the room and the entrance that spends — the Try again
+ * road's rule applied one level up: *"a second opinion is how a customer comes
+ * to press a free button and be charged."* Here the failure would be louder,
+ * because the number is printed on the button.
+ *
+ * Two refusals and nothing else:
+ *
+ * - **She is still being made.** A redo of views that are still arriving would
+ *   charge for a second render of pictures nobody has seen once.
+ * - **Something of hers is already in flight.** Server truth per slot (#1235),
+ *   from this same projection — so the button disappears for the same reason,
+ *   at the same moment, that the entrance refuses.
+ *
+ * ⚠ **A FAILED OR UNCHECKED SLOT IS NOT A REFUSAL HERE, and that is the
+ * difference from {@link castSlotRetryOffer}.** That function asks *may this
+ * view be asked for again*, which is a question about a remedy and is therefore
+ * about state. This asks *may the customer buy the whole package again*, which
+ * is a question about taste. A Cast with one refunded slot may be redone; a
+ * Cast with five may be redone; the money is the same either way, which is
+ * exactly what makes the offer simple.
+ */
+export function castPackageRedoOffer(
+  cast: {
+    status: SignedCastProjection["status"];
+    slots: readonly Pick<CastSlotProjection, "retrying">[];
+  },
+  /**
+   * THE WHOLE PRESS, FLAT ⚠ **AND IT USED TO BE ONE VIEW'S SLICE** (#1903,
+   * his word of 2026-10-08: *"make both sign and redo/regenerate 650 credis"*).
+   *
+   * The paragraph this replaces argued that a package is a historical record
+   * — two live Casts own a retired `walk` — so a per-view slice had to be
+   * multiplied by the slots she ACTUALLY owns, or a six-view Cast would print
+   * one number on the button and charge another at the till. That reasoning is
+   * sound and it is now moot: there is one number, it does not depend on the
+   * slot count, and the button and the till read the same constant.
+   *
+   * What survives of it is the REFUSALS below, which are still about her own
+   * slots rather than about today's profile.
+   */
+  priceCredits: number,
+): CastPackageRedo | null {
+  if (cast.status !== "ready") return null;
+  if (cast.slots.length === 0) return null;
+  if (cast.slots.some((slot) => slot.retrying === true)) return null;
+  return { priceCredits };
+}
 
 export type CastCapability = "full" | "calibrated" | "unsupported";
 
@@ -166,6 +241,14 @@ export type SignedCastProjection = {
   anchorUrl: string | null;
   slots: CastSlotProjection[];
   identityLocked: true;
+  /**
+   * ASK FOR ALL HER VIEWS AGAIN — the offer, or `null` when not now (#1903).
+   *
+   * Derived by {@link castPackageRedoOffer} from the slots immediately above,
+   * so the button the room draws and the spend the entrance authorizes are one
+   * reading. It carries the price because the price goes on the button.
+   */
+  redo: CastPackageRedo | null;
   /**
    * A room-level sentence, or null. Today it carries exactly one event — the
    * total loss — because that is the only fact about a Cast that the strip
@@ -251,7 +334,36 @@ export type SignedCastProjection = {
  * once. Saying a count truthfully needs the count on the row, which is the Try
  * again slice's work, where the sentence is read rather than assumed.
  */
-export const FAILED_SLOT_CONFESSION = "This view didn't arrive — refunded";
+/*
+  ⚠ **THE WORD `refunded` IS GONE FROM THIS SENTENCE — #1968, AND IT IS THE
+  ONE CUSTOMER-FACING CLAIM HIS REPRICE MADE FALSE.**
+
+  It read *"This view didn't arrive — refunded"*, and it was true for as long as
+  a failed view gave its own slice back. His word of 2026-10-08 ends that:
+  views are cut from two sheets and *"can't be refunded one by one... Credits
+  only come back if the Sign can't be delivered at all."* So a tile wearing this
+  note is a view that cost its owner money and did not arrive, and telling her
+  it was refunded is the worst kind of wrong copy — a promise about money that
+  did not keep.
+
+  **What it says now says less and stays true on both roads:** a view that
+  failed on a delivered Sign (no refund, and the remedy is the whole-set redo),
+  and a view that failed on a Sign that delivered nothing at all (where the
+  WHOLE charge went back, which is a fact about the Sign rather than about this
+  tile, and the package's own `TOTAL_LOSS_CONFESSION` is where it is said).
+
+  ⚠ **It was found by LOOKING, which is working law 6 earning its place.** No
+  suite could have caught it: every failed-slot marker in the dev database
+  carries `refunded: 50` from an earlier Sign price, so the sentence was true
+  of every row on screen. It only becomes a lie on a row this build writes.
+
+  ⚠ **AND PR #2098 (card #2089) ARGUES THE OTHER WAY ON AN EXPIRED PREMISE.**
+  Its capability-atlas prose keeps this word with the reasoning *"which is true
+  because the Sign still charges each view its own refundable slice"* — the
+  exact sentence this card deletes. Named on both pull requests rather than
+  resolved by whichever merges second.
+*/
+export const FAILED_SLOT_CONFESSION = "This view didn't arrive";
 
 /**
  * ⚠ **THE TWO SENTENCES THAT USED TO SIT HERE ARE GONE — his ruling,
@@ -307,24 +419,13 @@ export const TOTAL_LOSS_CONFESSION =
   + "including the Sign itself. The face you chose is still yours.";
 
 /**
- * Was this picture delivered without a complete check? Read at the row the
- * judge wrote, never inferred from the picture being here.
- *
- * ⚠ **THE READING ITSELF MOVED OUT OF THIS FILE — #1612 part 2.** It was one
- * equality (`conformanceMethod === "unavailable"`) and it now has a second road
- * (a recorded axis that did not pass, delivered anyway), so it lives beside
- * `conformanceProvenance`, the function that WRITES the field it reads. Two
- * readers of one record, in two files, is working law 4's shape on a surface
- * where drift would mean the room offering a free Try again the entrance
- * charges for — or the reverse.
- */
-function wasDeliveredUnjudged(asset: ModelAsset): boolean {
-  return viewDeliveredUnchecked(asset.provenance);
-}
-
-/**
  * WHAT ASKING FOR THIS VIEW AGAIN COSTS — the single authority, read by the
  * room and by the entrance that spends the money.
+ *
+ * ⚠ **IT ANSWERS NULL FOR EVERY SLOT SINCE #2089 (his *"regenerate is the only
+ * option"*, 2026-10-08).** The paragraphs below describe the offers it USED to
+ * make and are kept as the record of what a `viewRetry` operation row in the
+ * database was bought under; the body says why each is gone.
  *
  * His rule, verbatim (2026-09-25): *"you pay 50 for each view you keep."*
  * ⚠ **The 50 in that sentence is history as of 2026-10-01 — a view is 1,000
@@ -368,59 +469,45 @@ function wasDeliveredUnjudged(asset: ModelAsset): boolean {
  * because there is one reading and the server does it.
  */
 export function castSlotRetryOffer(
-  slot: Pick<CastSlotProjection, "state" | "standIn" | "unjudged" | "refundedCredits">,
-  paidRetryPrice: number,
-  /**
-   * HAS THIS VIEW'S ONE FREE TRY AGAIN ALREADY BEEN SPENT? (#1601 item 4.)
-   *
-   * A third ARGUMENT rather than a field on the slot, and the distinction is
-   * deliberate: `CastSlotProjection` is the wire shape the room is sent, and
-   * whether a free ask has been spent is not something the customer's screen
-   * needs to know — only its PRICE is, which the offer already carries. A field
-   * would have widened the contract for nothing and given the client a second
-   * place to re-derive a price from.
-   *
-   * Defaulted to `false` so the pure-reading callers that do not spend money
-   * (and every arm that predates this item) keep their old answer, and so the
-   * two roads that DO spend have to say the word.
-   */
-  freeRetrySpent = false,
+  _slot: Pick<CastSlotProjection, "state" | "standIn" | "refundedCredits">,
+  _paidRetryPrice: number,
 ): CastSlotRetry | null {
-  if (slot.state === "failed-refunded") {
-    return { priceCredits: paidRetryPrice, reason: "refunded" };
-  }
-  if (slot.state !== "ready") return null;
   /*
-    THE STAND-IN IS A REFUNDED VIEW WEARING A PICTURE, so it says the same word
-    as the empty tile. Its own close-up never arrived and the money went back —
-    the only difference is that the signed face fills the hole rather than a
-    confession, which is a fact about the PICTURE and not about what happened.
+    ⚠ **NOTHING IS OFFERED ON ANY SLOT — #2089, his word of 2026-10-08
+    (terminal), verbatim and entire: *"regenerate is the only option"*.**
+
+    Two branches stood here and both are retired. A `failed-refunded` slot
+    answered a paid ask at the Try again price, and the legacy stand-in (a
+    `frontClose` whose own close-up was refunded, wearing her Master) answered
+    the same. #1903 slice 3 had already removed the third — the free ask under
+    a delivered view — and kept these two because she paid for a picture she
+    never received. His ruling on #2089 answers that case too: the remedy for
+    ANY view, arrived or refunded, is the whole-set redo
+    ({@link castPackageRedoOffer}, the priced *Regenerate* button), because views
+    are cut from two sheets and a single view re-made on its own matches its
+    siblings less well than a set made together.
+
+    **This stays the single authority rather than being deleted**, and that
+    is the point of answering null here instead of at each caller: the room's
+    offer pass and the retry entrance's admission (`viewRetryService.ts`) both
+    ask THIS function, so the tile cannot draw a row and the till cannot take a
+    press that the other refuses. A tab left open before this deploy, still
+    showing *"Refunded · Try again"*, presses into a free `PRECONDITION_FAILED`
+    before the claim — nothing claimed, nothing charged, nothing rendered.
+
+    **The `viewRetry` road behind the admission is kept** — its claim, render,
+    settle and its recovery sweep — so a Try again already in flight at the
+    deploy still lands or refunds exactly as it was bought. Retiring the road
+    itself, and this signature with it, is a separate card; until then the
+    parameters are kept so the two callers read the same question they always
+    asked.
+
+    ⚠ **What the refunded tile still says is unchanged and still true**: the
+    Sign charges each view its own refundable slice (`CAST_PACKAGE_VIEW_PRICE`),
+    so a view that never arrived WAS refunded — {@link FAILED_SLOT_CONFESSION}.
+    A redo never writes a failure marker (a slot that does not re-arrive keeps
+    the picture it had), so the redo's flat price cannot reach that sentence.
   */
-  if (slot.standIn === true) {
-    return slot.refundedCredits === null
-      ? null
-      : { priceCredits: paidRetryPrice, reason: "refunded" };
-  }
-  if (slot.unjudged === true) {
-    /*
-      ONE FREE TRY AGAIN, THEN IT IS A PURCHASE (#1601 item 4).
-
-      The reason word does not change and that is the point: she is still
-      holding a picture nothing vouched for, which is what the row says. What
-      changed is that she has already had the free look at it once, so the
-      second ask is an ordinary paid ask at the Try again price — the same
-      number a refunded view's ask costs.
-
-      ⚠ Before this, the free branch was a pure function of a state that a free
-      retry DOES NOT MOVE: an unchecked view whose retry also arrived unchecked
-      is still unchecked, so the free ask renewed itself every time the judge
-      was unavailable. The slot could not see the difference; only the operation
-      rows can (`listSpentFreeViewRetryAngles`).
-    */
-    return freeRetrySpent
-      ? { priceCredits: paidRetryPrice, reason: "unchecked" }
-      : { priceCredits: 0, reason: "unchecked" };
-  }
   return null;
 }
 
@@ -542,28 +629,17 @@ export function projectSignedCast(input: {
    * from the same state the room was shown rather than from a second opinion.
    */
   retryingAngles?: readonly CastViewAngle[];
-  /**
-   * The views of this Cast whose ONE free Try again has already been spent
-   * (`listSpentFreeViewRetryAngles`, #1601 item 4).
-   *
-   * ⚠ **ABSENT MEANS "NOT SPENT", WHICH IS THE GENEROUS DIRECTION, AND IT IS
-   * SAFE ONLY BECAUSE THE ENTRANCE PASSES IT.** The optional shape is here for
-   * the same reason `retryingAngles` has one — a caller that does not spend
-   * money should not have to take a read it has no use for — but the direction
-   * is the opposite of that one's: an absent busy list costs a tile its
-   * skeleton, an absent spent list offers a free render. What makes it safe is
-   * that `castSlotRetryOffer` is asked again by the one road that spends
-   * (`viewRetryService`), from a read that always includes this, so the worst a
-   * missing list can do is show a free price on a row that then charges.
-   * `viewRetryFreeOnce.test.ts` holds BOTH callers of this function to passing
-   * it, so the room and the till cannot part company by omission.
-   */
-  freeRetrySpentAngles?: readonly CastViewAngle[];
+  /*
+    ⚠ **A SPENT-FREE-ASK LIST STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+    carried the views whose one free Try again had been spent (#1601 item 4), so
+    that the room and the till agreed on which asks were still free. With the
+    free ask itself gone there is nothing to ration, and a list nobody consults
+    is the parallel copy working law 4 names.
+  */
 }): SignedCastProjection {
   const evidence = slotEvidence(input.assets);
   const building = input.model.status === "provisioning";
   const retrying = new Set(input.retryingAngles ?? []);
-  const freeRetrySpent = new Set(input.freeRetrySpentAngles ?? []);
   const anchor = evidence.get("frontClose")?.anchor ?? null;
 
   /*
@@ -629,13 +705,14 @@ export function projectSignedCast(input: {
         label,
         state: "ready",
         url: entry.landed.storageUrl,
-        /* Nobody looked at this one — the room needs the fact, not only the
-           log (D-246, #1220). It is what makes its Try again free, and since
-           2026-09-26 the fact reaches the customer as the row's one word rather
-           than as a sentence: `unjudged` below is what the word is read from. */
+        /* ⚠ **A DELIVERED VIEW CARRIES NOTHING — #1903 slice 3.** A spread
+           stood here setting `unjudged: true` from the judge's own record, and
+           it was the wire fact behind *"Unchecked · Try again"*. His ruling
+           retired the free per-view ask it paid for, so there is no word, no
+           caption and no offer under a picture that arrived — whatever the
+           judge was able to say about it. */
         note: null,
         refundedCredits: null,
-        ...(wasDeliveredUnjudged(entry.landed) ? { unjudged: true as const } : {}),
       };
     }
 
@@ -741,11 +818,7 @@ export function projectSignedCast(input: {
       : slot))
     .map((slot) => {
       if (building) return slot;
-      const retry = castSlotRetryOffer(
-        slot,
-        CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-        freeRetrySpent.has(slot.angle),
-      );
+      const retry = castSlotRetryOffer(slot, CASTING_V2_VIEW_RETRY_PRICE_CREDITS);
       return retry ? { ...slot, retry } : slot;
     });
 
@@ -756,6 +829,15 @@ export function projectSignedCast(input: {
     anchorUrl: anchor?.storageUrl ?? null,
     slots,
     identityLocked: true,
+    /*
+      ASK FOR ALL HER VIEWS AGAIN (#1903) — derived from the slots just built,
+      never from a second reading of the Cast. The entrance asks the same
+      function the same question at the moment the money would move.
+    */
+    redo: castPackageRedoOffer(
+      { status: building ? "building" : "ready", slots },
+      CASTING_V2_PACKAGE_REDO_PRICE_CREDITS,
+    ),
     /*
       Derived from the slots themselves rather than stored on the Cast, for the
       same reason everything else here is: a finished room is rendered from its

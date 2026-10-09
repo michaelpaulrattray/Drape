@@ -241,6 +241,11 @@ export const PRODUCT_NOUN: Record<string, string> = {
   "castingV2.refine": "refine",
   "castingV2.retry": "retry",
   "castingV2.viewRetry": "view retry",
+  /* His own noun for it, from the card: a REDO of the whole set of views
+     (#1903). One operation per view, five per press, so the word is singular —
+     a dashboard row is one view's slice, not the press. */
+  "castingV2.packageRedo": "view redo",
+  "castingV2.packageRedoPress": "views redo",
 
   /* The legacy studio. Still reachable, so still counted — and named in the
      same English, because a dashboard that speaks two vocabularies makes its

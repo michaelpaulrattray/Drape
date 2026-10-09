@@ -749,6 +749,16 @@ export const STORAGE_CLEANUP_BATCH_KINDS = [
     policy nobody would want guessed at.
   */
   "casting_diagnostic_cleanup",
+  /*
+    Wardrobe SCRATCH uploads (#1961, migration 0074). A customer's photograph
+    put to a public key so a detector can read it, with no row anywhere that
+    names it — the orphan-at-birth this value exists to end. Its own value for
+    the reason the two above got theirs: this retention is "the request is
+    over", which is nothing like a candidate's lifecycle or a diagnostic
+    frame's, and one enum value covering two policies makes the worker's
+    batches ambiguous.
+  */
+  "wardrobe_scratch_cleanup",
 ] as const;
 export type StorageCleanupBatchKind = typeof STORAGE_CLEANUP_BATCH_KINDS[number];
 
@@ -1898,6 +1908,39 @@ export const planChangeSettlements = mysqlTable("plan_change_settlements", {
 ]);
 export type PlanChangeSettlement = typeof planChangeSettlements.$inferSelect;
 export type InsertPlanChangeSettlement = typeof planChangeSettlements.$inferInsert;
+
+// ============================================================================
+// YEARLY RENEWAL REMINDERS (#1941)
+// ============================================================================
+// One row per reminder a customer was actually sent, and it is a CLAIM rather
+// than a log: the insert happens BEFORE the send and is deleted if the send
+// fails, so the unique index below — not a prior SELECT — is what makes
+// "exactly one notice per renewal" true when two sweeps overlap. The shape is
+// `stripeWebhookEvents`'s, for the reason given in `drizzle/0073_*.sql`.
+//
+// The key is (subscription, periodEnd) and not the subscription alone, because
+// every renewal of the same subscription earns its own notice. The three facts
+// beside it record what the customer was TOLD; Stripe's upcoming-invoice
+// preview will say something else by the time anybody asks.
+//
+// ⚠ `sentAt` is declared first on purpose — the migration's last section has
+// the reason, and it is about `periodEnd` never acquiring MySQL's implicit
+// `ON UPDATE CURRENT_TIMESTAMP` while it is half of a unique key.
+export const subscriptionRenewalReminders = mysqlTable("subscription_renewal_reminders", {
+  id: int("id").autoincrement().primaryKey(),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+  userId: int("userId").notNull(),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }).notNull(),
+  periodEnd: timestamp("periodEnd").notNull(),
+  planTier: varchar("planTier", { length: 32 }).notNull(),
+  amountCents: int("amountCents").notNull(),
+  currency: varchar("currency", { length: 8 }).notNull(),
+}, (table) => [
+  uniqueIndex("uq_renewal_reminder_sub_period").on(table.stripeSubscriptionId, table.periodEnd),
+  index("idx_renewal_reminder_user").on(table.userId),
+]);
+export type SubscriptionRenewalReminder = typeof subscriptionRenewalReminders.$inferSelect;
+export type InsertSubscriptionRenewalReminder = typeof subscriptionRenewalReminders.$inferInsert;
 
 // ============================================================================
 // BUG REPORTS (User-submitted feedback)

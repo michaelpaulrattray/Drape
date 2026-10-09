@@ -20,10 +20,10 @@ import { createModuleLogger } from "../logging/logger";
 import { WARDROBE_CREDIT_COSTS } from "../wardrobe/creditCosts";
 import { buildOutfitContext, selectDescribableGarments } from "../wardrobe/garmentDescription";
 import {
-  createGarment, getGarmentById, getUserGarments, getUserGarmentsBySlot,
+  createGarment, getGarmentById, getOwnedGarmentsByIds, getUserGarments, getUserGarmentsBySlot,
   updateGarment, deleteGarment,
   createOutfit, getUserOutfits, getOutfitById, deleteOutfit,
-  createSession, getSessionById, getUserSessions, updateSession, deleteSession,
+  createSession, getSessionById, getUserSessions, updateSession, deleteSession, appendSessionResult,
   getLatestUserSession, getRecentUserSessions, capUserSessions,
   createGeneration,
   saveLook, getUserLooksByModel, getUserLooks, renameLook, deleteLook,
@@ -33,7 +33,14 @@ import {
   getUserMintedModelsWithThumbnailForRead,
 } from "../casting/modelReadProjections";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
-import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "../wardrobe/scratchUpload";
+import {
+  adoptGarmentPictures,
+  garmentRowPictures,
+  importPictureChoice,
+  spokenImportRefusal,
+} from "../wardrobe/garmentAdoption";
+import { wardrobeModelPhotoKeyPrefix } from "../db/accountDeletion";
 import { detectGarmentsInImage } from "../wardrobe/garmentDetection";
 import { digitizeGarment } from "../wardrobe/garmentDigitization";
 import { assertWardrobeTryOnOpen } from "../wardrobe/tryOnDoor";
@@ -131,23 +138,34 @@ const garmentRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Upload original image to S3
+      /* THE PHOTOGRAPH IS REGISTERED BEFORE IT IS WRITTEN (#2021). It used to
+         be a bare `storagePut` one statement ahead of the insert, so a request
+         that died in between — a database hiccup, a deploy — left her
+         photograph on a permanently public key that no row and no manifest
+         named. Now a held manifest names the key first, and `createGarment`
+         discharges it IN THE SAME TRANSACTION as the insert: either the row
+         owns the key, or the worker collects it. */
       const suffix = randomUUID();
       const fileKey = `${ctx.user.id}-wardrobe/original-${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: originalUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      const { url: originalUrl, cleanupBatchId: originalReceipt } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
-      // Create garment record (status: processing)
+      // Create garment record (status: processing) — the row adopts the photograph.
       const garmentId = await createGarment({
         userId: ctx.user.id,
         slotType: input.slotType,
         originalImageUrl: originalUrl,
         originalImageKey: fileKey,
         status: "processing",
-      });
+      }, [originalReceipt]);
 
       // Create generation record
       const genResult = await createGeneration({
@@ -193,17 +211,22 @@ const garmentRouter = router({
           },
         );
 
-        // Update garment record with results
+        /* The row records the flat-lay's KEY and discharges its receipt in one
+           transaction (#2095). A throw anywhere before here — the analysis
+           above, most likely — leaves the manifest standing, and the worker
+           collects the flat-lay instead of it sitting public for ever. */
         const qualityIssues = result.quality.issues.length > 0 ? result.quality.issues : null;
-        await updateGarment(garmentId, {
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           qualityIssues,
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         log.info(`Garment ${garmentId} processed for user ${ctx.user.id}: ${result.metadata.shortName}`);
 
@@ -215,7 +238,7 @@ const garmentRouter = router({
           status: "ready" as const,
         };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -233,7 +256,17 @@ const garmentRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url: sourceImageUrl } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). Nothing read this key, so no
+         cleanup could ever reach the object and it stayed at a permanently
+         public URL for good. The detector inlines the bytes it is handed, so
+         the upload exists only to give the client a URL `import` can persist —
+         which is why it is registered-and-swept rather than removed. */
+      const { url: sourceImageUrl } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       // Run lightweight detection (no credits — UX guard only)
       const detected = await detectGarmentsInImage(sourceImageUrl);
@@ -282,19 +315,25 @@ const vtoRouter = router({
         readMode,
       });
 
-      // Fetch garments and validate ownership
-      const garments = await Promise.all(
-        input.garmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          if (g.status !== "ready") {
-            throw new TRPCError({ code: "BAD_REQUEST", message: `Garment ${id} is still processing` });
-          }
-          return g;
-        }),
-      );
+      /* ONE OWNER-SCOPED READ OF EVERY GARMENT NAMED, never one query per id
+         fired at once (#2000). The input array carries no `.max()`, so the old
+         `Promise.all` held one slot of the shared pool (20 + 50) per garment
+         and a request naming more than about seventy of them was refused with
+         `Queue limit reached.`. The owner is now in the statement rather than
+         checked after it (invariant 1), and the ids are walked in the
+         CUSTOMER'S order, so the id named in a refusal is the first missing
+         one rather than whichever lookup lost the race. */
+      const ownedGarments = await getOwnedGarmentsByIds(ctx.user.id, input.garmentIds);
+      const garments = input.garmentIds.map((id) => {
+        const g = ownedGarments.get(id);
+        if (!g) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
+        }
+        if (g.status !== "ready") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Garment ${id} is still processing` });
+        }
+        return g;
+      });
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -324,20 +363,25 @@ const vtoRouter = router({
         },
       );
 
-      // Update session history if provided
+      /* THE SESSION ADOPTS THE RESULT, OR THE WORKER COLLECTS IT (#1980). The
+         result was registered in a cleanup manifest before its bytes were
+         written; `appendSessionResult` writes it onto the history and
+         discharges that manifest in one transaction. With no session, or one
+         that is not this account's, nothing discharges it — the picture stays
+         reachable for the scratch hold and is then swept, where it used to sit
+         at a public URL that nothing named, for ever. */
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.garmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       log.info(`VTO generated for user ${ctx.user.id} with ${garments.length} garments`);
@@ -377,26 +421,23 @@ const vtoRouter = router({
         readMode,
       });
 
-      // Fetch all garments
-      const allGarments = await Promise.all(
-        input.allGarmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          return g;
-        }),
-      );
-
-      const changedGarments = await Promise.all(
-        input.changedGarmentIds.map(async (id) => {
-          const g = await getGarmentById(id);
-          if (!g || g.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
-          }
-          return g;
-        }),
-      );
+      /* BOTH LISTS IN ONE OWNER-SCOPED READ (#2000 — see `compose` above for
+         the whole reasoning). The two arrays overlap by design, so they are
+         read together and answered separately; `getOwnedGarmentsByIds`
+         de-duplicates, which the two fan-outs did not. */
+      const ownedGarments = await getOwnedGarmentsByIds(ctx.user.id, [
+        ...input.allGarmentIds,
+        ...input.changedGarmentIds,
+      ]);
+      const requireGarment = (id: number) => {
+        const g = ownedGarments.get(id);
+        if (!g) {
+          throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
+        }
+        return g;
+      };
+      const allGarments = input.allGarmentIds.map(requireGarment);
+      const changedGarments = input.changedGarmentIds.map(requireGarment);
 
       const genResult = await createGeneration({
         userId: ctx.user.id,
@@ -430,20 +471,19 @@ const vtoRouter = router({
         },
       );
 
-      // Persist incremental result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+          patch: {
             activeGarmentIds: input.allGarmentIds,
             ...(input.tattooMap ? { tattooMapData: input.tattooMap } : {}),
             ...(input.styleNotes ? { styleNotes: input.styleNotes } : {}),
-          });
-        }
+          },
+        });
       }
 
       return { resultUrl: result.resultUrl };
@@ -477,13 +517,11 @@ const vtoRouter = router({
       let garmentReferenceUrls: { label: string; url: string }[] | undefined;
 
       if (input.allGarmentIds && input.allGarmentIds.length > 0) {
-        const allGarments = await Promise.all(
-          input.allGarmentIds.map(async (id) => {
-            const g = await getGarmentById(id);
-            if (!g || g.userId !== ctx.user.id) return null;
-            return g;
-          }),
-        );
+        /* One owner-scoped read (#2000). An id that is not this account's
+           still reads as `null` here, exactly as the per-row check did — this
+           road describes what it can and skips what it cannot. */
+        const owned = await getOwnedGarmentsByIds(ctx.user.id, input.allGarmentIds);
+        const allGarments = input.allGarmentIds.map((id) => owned.get(id) ?? null);
         const validGarments = selectDescribableGarments(allGarments);
 
         if (validGarments.length > 0) {
@@ -532,17 +570,14 @@ const vtoRouter = router({
         },
       );
 
-      // Persist refinement result to DB session
+      // The session adopts the result, or the worker collects it (#1980 — see `generate`).
       if (input.sessionId) {
-        const session = await getSessionById(input.sessionId, ctx.user.id);
-        if (session) {
-          const history = (session.history as string[] || []);
-          history.push(result.resultUrl);
-          await updateSession(input.sessionId, ctx.user.id, {
-            history,
-            historyIndex: history.length - 1,
-          });
-        }
+        await appendSessionResult({
+          sessionId: input.sessionId,
+          userId: ctx.user.id,
+          resultUrl: result.resultUrl,
+          cleanupBatchId: result.cleanupBatchId,
+        });
       }
 
       return { resultUrl: result.resultUrl };
@@ -604,7 +639,15 @@ const decomposeRouter = router({
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961) — the same orphan as quickDetect's,
+         and the crops `decomposeOutfit` cuts from it are registered the same
+         way, which the card did not name and the class sweep found. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       const result = await withAtomicCredits(
         {
@@ -616,7 +659,7 @@ const decomposeRouter = router({
           toolKind: "image",
         },
         async () => {
-          return decomposeOutfit(url, String(ctx.user.id));
+          return decomposeOutfit(url, ctx.user.id);
         },
       );
 
@@ -634,18 +677,55 @@ const decomposeRouter = router({
       throwIfRateLimited(ctx.user.id);
       await enforceDailyQuota(ctx.user.id);
 
-      // Use crop URL if available (decomposed garment), otherwise fall back to source
-      const garmentImageUrl = input.cropUrl || input.sourceImageUrl;
+      /*
+        THE GARMENT TAKES ITS OWN COPIES (#1961, the relay's finding on PR
+        #1979). Both URLs name SCRATCH objects, registered for the cleanup
+        worker by `quickDetect` and `decompose.analyze` — so writing them onto
+        the row left a garment pointing at objects the worker was promised it
+        could delete, about five minutes later. Copying first makes the row's
+        pictures the row's own and puts their KEYS on it, which is what
+        `accountDeletion.ts` reads.
 
-      // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
-      const garmentId = await createGarment({
-        userId: ctx.user.id,
-        slotType: input.slotType,
-        originalImageUrl: garmentImageUrl,
-        sourceImageUrl: input.cropUrl ? input.sourceImageUrl : undefined,
-        shortName: input.label,
-        status: "processing",
-      });
+        It runs BEFORE the credit hold on purpose: a refusal here costs the
+        customer nothing, and a copy that fails must not leave a charged import.
+
+        ⚠ Every step is a named function with arms, including the two that look
+        like one line of route code. The crop-or-photograph choice and the row's
+        picture fields are where the defect lived, and nothing in `pnpm test`
+        can drive a decision written inside a tRPC handler.
+      */
+      const chosen = importPictureChoice(input);
+      /* SPOKEN, NOT A 500 (#2028). The two refusals this block can raise — a
+         picture that is not this account's, and a receipt the garment could not
+         take over — are both BEFORE the credit hold, so "nothing was charged"
+         is true of every one of them. The receipt refusals `updateGarment` can
+         raise further down are AFTER the charge and are deliberately not
+         wrapped: that sentence would be false there. */
+      let adopted: Awaited<ReturnType<typeof adoptGarmentPictures>>;
+      let garmentId: number;
+      try {
+        adopted = await adoptGarmentPictures({
+          userId: ctx.user.id,
+          imageUrl: chosen.imageUrl,
+          sourceUrl: chosen.sourceUrl,
+          currentPublicUrl: process.env.R2_PUBLIC_URL ?? "",
+        });
+
+        // Create garment record — originalImageUrl is the crop, sourceImageUrl is the full outfit
+        garmentId = await createGarment({
+          userId: ctx.user.id,
+          slotType: input.slotType,
+          ...garmentRowPictures(adopted),
+          shortName: input.label,
+          status: "processing",
+        }, adopted.receipts);
+      } catch (err) {
+        throw spokenImportRefusal(err);
+      }
+      /* The digitize reads the garment's OWN object from here on, never the
+         scratch key it was cut from — one source of truth for what this row is
+         made of. */
+      const garmentImageUrl = adopted.image.url;
 
       try {
         const result = await withAtomicCredits(
@@ -671,18 +751,21 @@ const decomposeRouter = router({
           },
         );
 
-        await updateGarment(garmentId, {
+        // The garment adopts its flat-lay, or the worker collects it (#2095 — see `upload`).
+        const flatLay = result.digitized.flatLay;
+        await updateGarment(garmentId, ctx.user.id, {
           shortName: result.metadata.shortName,
           description: result.metadata.description,
           tags: result.metadata.tags,
           suggestedActions: result.metadata.suggestedActions,
           isolatedImageUrl: result.digitized.flatLayUrl,
+          ...(flatLay ? { isolatedImageKey: flatLay.key } : {}),
           status: "ready",
-        });
+        }, flatLay ? [flatLay.cleanupBatchId] : []);
 
         return { garmentId, shortName: result.metadata.shortName };
       } catch (err) {
-        await updateGarment(garmentId, { status: "failed" });
+        await updateGarment(garmentId, ctx.user.id, { status: "failed" }, []);
         throw err;
       }
     }),
@@ -701,6 +784,9 @@ const sessionRouter = router({
         requestedImageUrl: input.modelImageUrl,
         readMode,
       });
+      /* An upload-only session ADOPTS its photograph out of the scratch
+         manifest `models.upload` registered (#2022), so a session resumed after
+         the day's hold still has its picture. */
       const sessionId = await createSession({
         userId: ctx.user.id,
         modelId: input.modelId ?? null,
@@ -708,9 +794,9 @@ const sessionRouter = router({
         history: [],
         historyIndex: 0,
         activeGarmentIds: [],
-      });
-      // Enforce session cap — delete oldest beyond limit
-      await capUserSessions(ctx.user.id);
+      }, process.env.R2_PUBLIC_URL ?? "");
+      // Enforce session cap — delete oldest beyond limit (each one's photo back to the worker, #2022)
+      await capUserSessions(ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { sessionId };
     }),
 
@@ -756,7 +842,7 @@ const sessionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
       const { sessionId, ...updateData } = input;
-      await updateSession(sessionId, ctx.user.id, updateData);
+      await updateSession(sessionId, ctx.user.id, updateData, process.env.R2_PUBLIC_URL ?? "");
       return { success: true };
     }),
 
@@ -767,7 +853,7 @@ const sessionRouter = router({
       if (!session) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
       }
-      await deleteSession(input.sessionId, ctx.user.id);
+      await deleteSession(input.sessionId, ctx.user.id, process.env.R2_PUBLIC_URL ?? "");
       return { success: true };
     }),
 
@@ -820,19 +906,30 @@ const outfitRouter = router({
   save: protectedProcedure
     .input(wardrobeOutfitSaveInput)
     .mutation(async ({ ctx, input }) => {
+      /* A FIFTH SITE THE CARD DID NOT NAME, and it is the same shape at
+         different odds (#2000's sweep). This one is a SEQUENTIAL loop, so it
+         never held more than one pool slot and could not trip the ceiling —
+         but it is still one round trip per garment, and it is one owner-scoped
+         read now like its four neighbours. Nothing about the refusal moves:
+         an id that is not this account's is still "not found", in the order
+         the customer sent. */
+      const owned = await getOwnedGarmentsByIds(ctx.user.id, input.garmentIds);
       for (const id of input.garmentIds) {
-        const g = await getGarmentById(id);
-        if (!g || g.userId !== ctx.user.id) {
+        if (!owned.has(id)) {
           throw new TRPCError({ code: "NOT_FOUND", message: `Garment ${id} not found` });
         }
       }
+      /* A thumbnail made with no session is still in this account's scratch
+         manifest; the insert adopts it in its own transaction (#2094), or it
+         would be collected after the hold and the Outfit would point at
+         nothing. Another account's picture is never adopted. */
       const outfitId = await createOutfit({
         userId: ctx.user.id,
         name: input.name,
         garmentIds: input.garmentIds,
         styleNotes: input.styleNotes,
         resultThumbUrl: input.resultThumbUrl,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       return { outfitId };
     }),
 
@@ -884,12 +981,22 @@ const modelRouter = router({
       throwIfRateLimited(ctx.user.id);
 
       const suffix = randomUUID();
-      const fileKey = `${ctx.user.id}-models/upload-${Date.now()}-${suffix}.png`;
+      /* The prefix is the erasure sweep's own (#2022) — imported, not
+         restated, because it is what makes a session's photo this account's. */
+      const fileKey = `${wardrobeModelPhotoKeyPrefix(ctx.user.id)}${Date.now()}-${suffix}.png`;
       const imageBuffer = Buffer.from(
         input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
         "base64",
       );
-      const { url } = await storagePut(fileKey, imageBuffer, "image/png");
+      /* REGISTERED BEFORE IT EXISTS (#1961). The quietest of the four: the
+         studio keeps this URL in a Zustand store and no row anywhere has ever
+         held the key. */
+      const { url } = await putWardrobeScratchUpload({
+        userId: ctx.user.id,
+        key: fileKey,
+        bytes: imageBuffer,
+        contentType: "image/png",
+      });
 
       log.info(`Model photo uploaded for user ${ctx.user.id}: ${fileKey}`);
       return { url, fileKey };
@@ -927,6 +1034,7 @@ const looksRouter = router({
       garmentIds: z.array(z.number()),
     }))
     .mutation(async ({ ctx, input }) => {
+      // The Look adopts a session-less try-on picture, or it would be collected (#2094 — see `outfits.save`).
       const lookId = await saveLook({
         userId: ctx.user.id,
         sessionId: input.sessionId ?? null,
@@ -934,7 +1042,7 @@ const looksRouter = router({
         imageUrl: input.imageUrl,
         name: input.name ?? null,
         garmentIds: input.garmentIds,
-      });
+      }, process.env.R2_PUBLIC_URL ?? "");
       log.info(`Look saved: id=${lookId} model=${input.modelId} user=${ctx.user.id}`);
       return { lookId };
     }),

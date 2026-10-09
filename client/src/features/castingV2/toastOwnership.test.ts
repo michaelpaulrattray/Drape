@@ -49,16 +49,29 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     because:
       "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's credits came back. The server's own sentence passes through readableGatedFailure; the page's fallback, when it has none, claims no refund (card 2033).",
   },
-  // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2)
+  // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2) — RETIRED by
+  // #2089 (his "regenerate is the only option", 2026-10-08) with the press that
+  // raised both of its toasts; their rows go with them.
+  // ---- CastingRoom.tsx (the paid redo of a whole package — #1903 slice 2)
   {
-    match: "It didn't arrive again.",
+    match: "of the views didn't arrive.",
     because:
-      "A Try again (issue 1208, slice 2) that failed a second time. NOTHING on the surface changes — the tile wears the same confession it wore before the press — so without this the press reads as having done nothing at all. It also carries the money, which the room never shows: the 50 came back, or (the truthful third branch) the refund could not be recorded, which is never reported as 'you weren't charged'. The SUCCESS case has no toast on purpose: the picture arriving is the notice.",
+      "A paid redo (issue 1903, slice 2) where some views did not arrive. The strip shows the new pictures and leaves the OLD picture in a failed slot — which is the right behaviour and is exactly why it cannot explain itself: a slot that kept its old view looks identical to one nobody asked about, so the surface cannot say that a view was missed or that its slice came back. It also carries the money, which the room never shows. The all-arrived case has NO toast on purpose: the new pictures are the notice.",
   },
   {
-    match: "readableFailure(error, \"That view couldn't be asked for again.\")",
+    match: "None of the views arrived this time.",
     because:
-      "A REFUSED Try again — not enough credits, or a slot filled by a sweep or another tab between the button being drawn and pressed. The tile is unchanged and a refusal has no surface of its own. The server's own sentence carries the price when the balance is short; this is only the fallback when it has none.",
+      "The total-loss branch of the same press — every view failed, so the strip looks exactly as it did before the button was pressed and nothing on it says the 650 credits went back. The one case where the surface shows literally no change at all.",
+  },
+  {
+    match: '"Some views didn\'t arrive — and the refund couldn\'t be recorded. Support can restore it."',
+    because:
+      "The truthful third branch of a redo's money (the refund law since D-64): a refund we owed could not be written, so the owner remains charged. It is never reported as 'you weren't charged', and it names support because that is the only road out of it.",
+  },
+  {
+    match: "readableFailure(error, \"Those views couldn't be asked for again.\")",
+    because:
+      "A REFUSED redo — not enough credits, a Cast that started making something between the button being drawn and pressed, or a slot locked in that window. The strip is unchanged and a refusal has no surface of its own. The server's own sentence carries the whole price when the balance is short; this is only the fallback when it has none.",
   },
   {
     match: '"Discarded — undo is only available on the latest roll"',

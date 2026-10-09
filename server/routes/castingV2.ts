@@ -107,6 +107,7 @@ const tuple = <T extends string>(values: readonly T[]) => values as unknown as [
 import { createRoll, cancelRoll } from "../castingV2/rollService";
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { retryCandidate } from "../castingV2/retryService";
+import { redoCastPackage } from "../castingV2/packageRedoService";
 import { retryCastView } from "../castingV2/viewRetryService";
 import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
@@ -124,7 +125,7 @@ import {
   selectVariant,
 } from "../db/castingV2Variants";
 import { filedSubjectsOf } from "../castingV2/refineDelta";
-import { CASTING_V2_SIGN_PRICE_CREDITS } from "../castingV2/castViewPackage";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_ROLL_TYPICAL_SECONDS } from "../castingV2/rollDuration";
 import { projectSignedCast } from "../castingV2/castProjection";
@@ -139,7 +140,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
 } from "../db/castingV2Sign";
-import { listRunningViewRetryAngles, listSpentFreeViewRetryAngles } from "../db/castingV2ViewRetry";
+import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
 import { updateModel } from "../db/models";
 import {
@@ -156,6 +157,7 @@ import {
   getOwnedCastingSession,
   getOwnedRoll,
   getRollLineage,
+  OPEN_SESSION_CARD_CHUNK,
   listKeptCandidates,
   listOpenCastingSessions,
   listRollCandidates,
@@ -271,7 +273,7 @@ async function loadRollProjection(userId: number, rollPublicId: string): Promise
   const lineage = await getRollLineage(userId, roll);
   /*
     Signed candidates need their Cast's public id, or the tile can badge but not
-    LINK — which is the half-fix that leaves an 8,500-credit purchase as decoration.
+    LINK — which is the half-fix that leaves a 3,250-credit purchase as decoration.
   */
   const castPublicIdByCandidateId = await listCastPublicIdsForCandidates(userId, candidates);
   return projectRoll({
@@ -1055,77 +1057,92 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const sessions = await listOpenCastingSessions(ctx.user.id);
-      return Promise.all(
-        sessions.map(async (session) => {
-          const rolls = await listSessionRolls(ctx.user.id, session.id);
-          const kept = await listKeptCandidates(ctx.user.id, session.id);
-          const latest = rolls[rolls.length - 1] ?? null;
+      /* ⚠ THE CARDS ARE BUILT IN SEQUENTIAL CHUNKS, NEVER ALL AT ONCE (#2000).
+         Each card is four reads, and the ceiling on open sheets is 40
+         (`OPEN_SESSION_CEILING`), so the old `Promise.all` over every session
+         held up to forty of the shared pool's slots at one moment
+         (`server/db/connection.ts`: 20 connections + 50 queued, and the 71st
+         query is refused with `Queue limit reached.`). Forty is under the
+         ceiling by itself, which is why this road failed for nobody — but it
+         is more than half the pool held by one lobby read, so two of them
+         beside anything else is the refusal. The chunk bounds what one request
+         can hold; the cards themselves are unchanged, and so is their order. */
+      const card = async (session: (typeof sessions)[number]) => {
+        const rolls = await listSessionRolls(ctx.user.id, session.id);
+        const kept = await listKeptCandidates(ctx.user.id, session.id);
+        const latest = rolls[rolls.length - 1] ?? null;
 
+        /*
+          A few faces, so the card looks like the sheet it opens.
+
+          This procedure used to say "counts only — a summary, not a preview",
+          on the reasoning that candidate images belong on the one page whose
+          retention and cancellation rules are written about them. The founder
+          has reversed that, and the original worry does not survive contact:
+          these are the owner's own faces, on an owner-scoped projection,
+          read-only, and nothing on this card can keep, discard or cancel
+          anything.
+
+          Kept candidates first — a sheet you have shortlisted should show
+          what you shortlisted — and the newest roll otherwise. Four, because
+          that is what the strip holds.
+        */
+        /*
+          A SHEET CARD ALWAYS PREVIEWS (founder bug, 2026-08-02).
+
+          After a Sign from this sheet the card went blank — "3 rolls · 1
+          kept" above an empty strip. Two causes, and both are fixed: the
+          signed candidate no longer counts as kept (§F, above), and the
+          fallback is now applied to the RESULT rather than to the source. A
+          kept list that yields no projectable face falls through to the
+          latest roll instead of leaving a hole where the sheet should be.
+        */
+        const rollCandidates = latest
+          ? await listRollCandidates(ctx.user.id, latest.id)
+          : [];
+        /*
+          A CARD SHOWS THE SHEET'S STATE, NOT ONLY ITS FACES (his bug, #1086).
+
+          Faces lead — the kept ones first, then the latest roll's — and the
+          latest roll's unfinished slices fill whatever is left: a quiet frame
+          while a picture is being cast, a plain one where the engine refused
+          or nothing arrived. Until this, `ready` was the only status that
+          projected at all, so a sheet with a roll in flight and a sheet whose
+          roll was refused both rendered as "4 rolls" over an empty strip —
+          the first reading as no roll, the second as broken.
+
+          The rule and its three past failures live in
+          `castingV2/sheetPreview.ts`, where they are pinned by test — it had
+          been wrong twice before this in ways that looked right on the card.
+        */
+        const previewTiles = sheetPreviewTiles(kept, rollCandidates).map((tile) =>
+          tile.kind === "face"
+            ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
+            : tile);
+
+        return {
+          sessionId: session.publicId,
+          briefText: latest?.briefText ?? null,
+          previewTiles,
+          rollCount: rolls.length,
+          keptCount: kept.length,
           /*
-            A few faces, so the card looks like the sheet it opens.
-
-            This procedure used to say "counts only — a summary, not a preview",
-            on the reasoning that candidate images belong on the one page whose
-            retention and cancellation rules are written about them. The founder
-            has reversed that, and the original worry does not survive contact:
-            these are the owner's own faces, on an owner-scoped projection,
-            read-only, and nothing on this card can keep, discard or cancel
-            anything.
-
-            Kept candidates first — a sheet you have shortlisted should show
-            what you shortlisted — and the newest roll otherwise. Four, because
-            that is what the strip holds.
+            Who SURVIVES this sheet's deletion (D-107). Names rather than a
+            count, because the confirm copy promises the user something about
+            their own work and a bare number is a claim they cannot check.
           */
-          /*
-            A SHEET CARD ALWAYS PREVIEWS (founder bug, 2026-08-02).
-
-            After a Sign from this sheet the card went blank — "3 rolls · 1
-            kept" above an empty strip. Two causes, and both are fixed: the
-            signed candidate no longer counts as kept (§F, above), and the
-            fallback is now applied to the RESULT rather than to the source. A
-            kept list that yields no projectable face falls through to the
-            latest roll instead of leaving a hole where the sheet should be.
-          */
-          const rollCandidates = latest
-            ? await listRollCandidates(ctx.user.id, latest.id)
-            : [];
-          /*
-            A CARD SHOWS THE SHEET'S STATE, NOT ONLY ITS FACES (his bug, #1086).
-
-            Faces lead — the kept ones first, then the latest roll's — and the
-            latest roll's unfinished slices fill whatever is left: a quiet frame
-            while a picture is being cast, a plain one where the engine refused
-            or nothing arrived. Until this, `ready` was the only status that
-            projected at all, so a sheet with a roll in flight and a sheet whose
-            roll was refused both rendered as "4 rolls" over an empty strip —
-            the first reading as no roll, the second as broken.
-
-            The rule and its three past failures live in
-            `castingV2/sheetPreview.ts`, where they are pinned by test — it had
-            been wrong twice before this in ways that looked right on the card.
-          */
-          const previewTiles = sheetPreviewTiles(kept, rollCandidates).map((tile) =>
-            tile.kind === "face"
-              ? { kind: "face" as const, url: storagePublicUrl(tile.key) }
-              : tile);
-
-          return {
-            sessionId: session.publicId,
-            briefText: latest?.briefText ?? null,
-            previewTiles,
-            rollCount: rolls.length,
-            keptCount: kept.length,
-            /*
-              Who SURVIVES this sheet's deletion (D-107). Names rather than a
-              count, because the confirm copy promises the user something about
-              their own work and a bare number is a claim they cannot check.
-            */
-            signedCastNames: await listSessionSignedCastNames(ctx.user.id, session.id),
-            lastActivityAt: session.lastActivityAt.toISOString(),
-            expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
-          };
-        }),
-      );
+          signedCastNames: await listSessionSignedCastNames(ctx.user.id, session.id),
+          lastActivityAt: session.lastActivityAt.toISOString(),
+          expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
+        };
+      };
+      const cards: Array<Awaited<ReturnType<typeof card>>> = [];
+      for (let at = 0; at < sessions.length; at += OPEN_SESSION_CARD_CHUNK) {
+        cards.push(
+          ...(await Promise.all(sessions.slice(at, at + OPEN_SESSION_CARD_CHUNK).map(card))),
+        );
+      }
+      return cards;
     }),
 
   /** The resumable unsigned sheet: its rolls, and the cross-roll tray. */
@@ -2046,7 +2063,7 @@ export const castingV2Router = router({
       if (model.status === "provisioning") {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "She's still building — you can delete her once her package finishes.",
+          message: "This Cast is still building — you can delete it once the package finishes.",
         });
       }
       return runFinalCastDeletionCeremony({
@@ -2075,7 +2092,7 @@ export const castingV2Router = router({
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
       if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
       const [
-        assets, lineage, promisedAngles, sessionId, retryingAngles, freeRetrySpentAngles,
+        assets, lineage, promisedAngles, sessionId, retryingAngles,
       ] = await Promise.all([
         listCastAssets(ctx.user.id, model.id),
         getCastLineage(ctx.user.id, model),
@@ -2098,20 +2115,12 @@ export const castingV2Router = router({
           castId: input.castId,
         }),
         /*
-          WHOSE ONE FREE TRY AGAIN IS ALREADY SPENT (#1601 item 4).
-
-          The same statement the retry entrance makes, for the same reason as the
-          read above it: an unchecked view's first ask is free and its second is
-          an ordinary paid ask, and the row's link must mean what the till will
-          do. Read here rather than inferred from the slot, because a free ask
-          does not change the slot — a second unchecked picture is still
-          unchecked, which is exactly how the free ask used to renew itself.
+          ⚠ **A SIXTH READ STOOD HERE AND IS RETIRED — #1903 slice 3.** It
+          asked which views had already spent their one free Try again (#1601
+          item 4), so the row's link would mean what the till would do. There is
+          no free ask left for it to ration, so the statement is not made: a
+          query whose answer nothing consults is a cost with no reader.
         */
-        listSpentFreeViewRetryAngles({
-          userId: ctx.user.id,
-          modelId: model.id,
-          castId: input.castId,
-        }),
       ]);
       const siblingRows = sessionId && model.sourceCandidateId
         ? await listCastSiblings({
@@ -2137,7 +2146,6 @@ export const castingV2Router = router({
         lineage,
         promisedAngles,
         retryingAngles,
-        freeRetrySpentAngles,
         siblings,
         // Whether her sheet is still a place you can go (§G.6 protects the
         // candidates, not the session).
@@ -2433,6 +2441,40 @@ export const castingV2Router = router({
         clientRequestId: input.clientRequestId,
         castId: input.castId,
         angle: input.angle,
+      });
+    }),
+
+  /**
+   * ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2).
+   *
+   * **His ruling, verbatim (2026-10-07):** *"maybe we should allow retry by
+   * default incase they didnt like the outfit that was invented or whatever but
+   * it costs per retry and regens all views not just one"*.
+   *
+   * No fault has to be found first — this is the one road on the Cast that
+   * answers taste rather than a defect — and it is never free. The price on the
+   * button comes from the same reading that authorizes the spend
+   * (`castPackageRedoOffer`, over the projection the room is shown), and it is
+   * priced from the slots SHE owns rather than today's profile.
+   *
+   * A PAID procedure, so it sits in the paid bucket with `createRoll`, `refine`,
+   * `retry` and `retryView`. `clientRequestId` is the idempotency key for the
+   * whole press: the service derives one id per view from it, so the same press
+   * replays the same five operations rather than buying a second package.
+   */
+  redoPackage: protectedProcedure
+    .input(z.object({
+      clientRequestId: z.string(),
+      castId: z.string().min(1).max(32),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      assertClientRequestId(input.clientRequestId);
+      return redoCastPackage({}, {
+        userId: ctx.user.id,
+        clientRequestId: input.clientRequestId,
+        castId: input.castId,
       });
     }),
 

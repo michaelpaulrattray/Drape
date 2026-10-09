@@ -131,6 +131,51 @@ function priceVocabulary(): { values: ReadonlySet<number>; constants: readonly s
 }
 
 /**
+ * ⚠ EVERY FIGURE THE ATLAS PRICE LIST HAS CARRIED SINCE THIS GUARD WAS BORN —
+ * the ENROLMENT vocabulary, which is deliberately not the STALENESS one (#2106).
+ *
+ * A module joins the population when its prose states a current price. Until
+ * #2106 that same set was used to decide enrolment, so a module enrolled ONLY by
+ * a prose figure left the population at the instant that figure stopped being a
+ * price — which is the instant its sentence went stale. Measured on #1968:
+ * `KeptTray.tsx` was enrolled by *"an 8,500-credit ceremony"*, the Sign moved to
+ * 3,250, and the module dropped out with both of its stale sentences unread;
+ * `outfitPlate.ts`, `directOperation.ts` and `falImages.ts` dropped out the same
+ * way and carried four more, found only by this repair.
+ *
+ * So enrolment reads a figure that IS **or WAS** a price, and "was" has a written
+ * definition: any figure the Atlas's `creditCosts` carried at any commit from
+ * `721a8dd62` (#1784, the commit that created this guard) to `ebf8aa12f` (#1968),
+ * read off all 80 maps in that window with `git show`, not remembered. That is
+ * exactly the set of figures that could ever have enrolled a module, so no
+ * module this guard has read can stop being read by its figure retiring. The
+ * four that are no longer current, each retired by #1968: 1,000 (a delivered
+ * view, `CAST_PACKAGE_VIEW_PRICE`), 3,500 (the Sign's promotion), 8,500 (the
+ * Sign) and 11,850 (`CASTING_V2_ONE_CHARACTER_CREDITS`).
+ *
+ * ⚠ **IT ONLY GROWS, AND THE ARM BELOW IS WHAT MAKES THAT AUTOMATIC.** Every
+ * current price must already be on this list, so a NEW figure reddens this suite
+ * the day it is declared — and the day it later retires, it is already here and
+ * the modules it enrolled stay enrolled. Removing a figure is the one edit that
+ * re-opens #2106, so never remove one.
+ *
+ * Its stated limit: figures retired BEFORE the guard existed (a Refine's 25, a
+ * Roll's 160, a Sign's 450, a slice's 20) are not on it, because no module was
+ * ever enrolled by them — that is the guard's pre-existing remainder, not a
+ * module leaving. Measured: adding them raises 38 prose figures across 31
+ * modules, almost all dated incident records, and it is its own card (#2110).
+ */
+const FIGURES_THE_PRICE_LIST_HAS_CARRIED: ReadonlySet<number> = new Set([
+  0, 0.5, 5, 8, 10, 50, 100, 200, 250, 300, 350, 900,
+  1000, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850, 25000,
+]);
+
+/** What enrols a module: a figure that is a price now, or ever was one here. */
+function enrollingFigures(values: ReadonlySet<number>): ReadonlySet<number> {
+  return new Set([...values, ...FIGURES_THE_PRICE_LIST_HAS_CARRIED]);
+}
+
+/**
  * A figure stated as a price: `1,750 credits`, `25 credit`, `450-credit`.
  *
  * Separators are tolerated because the product writes both (`1,750` in prose and
@@ -179,6 +224,16 @@ type Module = { relative: string; source: string };
  * entry can be gone before it is opened, and skipping it is the correct answer
  * rather than a tolerated failure (`server/testing/listedSource.ts`).
  */
+function enrols(
+  source: string,
+  constants: readonly string[],
+  enrolling: ReadonlySet<number>,
+): boolean {
+  const names = new RegExp(`\\b(?:${constants.join("|")})\\b`);
+  if (names.test(source)) return true;
+  return priceFiguresInProse(source).some((figure) => enrolling.has(figure.credits));
+}
+
 function pricedModules(constants: readonly string[], values: ReadonlySet<number>): Module[] {
   /*
     ⚠ **A MODULE THAT STATES A CURRENT PRICE HAS OPTED IN — the relay's own
@@ -205,15 +260,20 @@ function pricedModules(constants: readonly string[], values: ReadonlySet<number>
     itself, which the card's hand-written enumeration never reached — and the
     other fifteen are records, declared below.
 
-    ⚠ **ITS HONEST LIMIT IS THE MIRROR OF THE FIRST POPULATION'S.** A module
-    whose prose names ONLY stale figures and no constant is still invisible:
-    nothing about it is current, so nothing opts it in. The entrance is a
-    correct sentence, which means this reading protects a line from GOING
-    stale and cannot find one that already is.
+    ⚠ **AND AS FIRST WRITTEN IT UNINSTALLED ITSELF AT THE MOMENT IT WAS
+    NEEDED (#2106).** The opt-in was read against the CURRENT prices, so the
+    day 8,500 left the vocabulary the sentence saying it did not become a
+    finding — its module left the population instead, and nothing read it.
+    Enrolment now reads `FIGURES_THE_PRICE_LIST_HAS_CARRIED` (is OR WAS a
+    price), staleness still reads the current set, and the two are kept apart
+    on purpose.
+
+    ⚠ **ITS HONEST LIMIT IS NARROWER THAN IT WAS, AND STILL THERE.** A module
+    whose prose names only figures retired before this guard existed, and no
+    constant, is still invisible — nothing ever opted it in. The list's own
+    docblock carries the measured size of that remainder.
   */
-  const statesCurrentPrice = (source: string): boolean =>
-    priceFiguresInProse(source).some((figure) => values.has(figure.credits));
-  const names = new RegExp(`\\b(?:${constants.join("|")})\\b`);
+  const enrolling = enrollingFigures(values);
   const found: Module[] = [];
   const walk = (dir: string): void => {
     const entries = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
@@ -230,7 +290,7 @@ function pricedModules(constants: readonly string[], values: ReadonlySet<number>
       if (/\.test\.tsx?$/.test(entry)) continue;
       const source = readListedSource(full);
       if (source === null) continue;
-      if (!names.test(source) && !statesCurrentPrice(source)) continue;
+      if (!enrols(source, constants, enrolling)) continue;
       found.push({ relative: path.relative(repoRoot, full).replace(/\\/g, "/"), source });
     }
   };
@@ -578,18 +638,38 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "typographic specimen, not a claim about what anything costs.",
   },
   {
+    file: "server/castingV2/castingV2Scope.ts",
+    credits: 3500,
+    quote: "kept 3,500 credits of a customer's money during our",
+    why:
+      "A RECORD OF A DOCBLOCK THAT WAS WRONG, not a claim about a price. The "
+      + "sentence narrates what this file's own fail-closed paragraph used to "
+      + "DESCRIBE — a Sign that kept its promotion through a total loss — and the "
+      + "founder's ruling of 2026-08-02 removed that behaviour. The figure is the "
+      + "promotion portion of the Sign price at the time, and #1968 deleted the "
+      + "promotion itself (his *make both sign and redo 650 credis*), so 3,500 is "
+      + "no longer any part of any price. ⚠ It is DECLARED rather than rewritten: "
+      + "moving the number would make the sentence describe a product that kept "
+      + "3,250, which was never true of anything. The tense was corrected "
+      + "(describes → described) because the paragraph is about a past state.",
+  },
+  {
     file: "client/src/features/castingV2/components/KeptTray.tsx",
     credits: 500,
-    quote: "the price the day he said it; 8,500 since #1601",
+    quote: "the price the day he said it; 3,250 since #1968",
     why:
       "THE FOUNDER'S OWN FINDING, at the Sign price of the day — the tray's one "
       + "job is comparing a shortlist before a Sign, and 24px chips were not "
-      + "comparable. ⚠ It is STAMPED rather than rewritten (`500 … 8,500 since "
-      + "#1601`), which is the one shape that serves both readers: a human sees "
+      + "comparable. ⚠ It is STAMPED rather than rewritten (`500 … 3,250 since "
+      + "#1968`), which is the one shape that serves both readers: a human sees "
       + "today's price without the record being falsified, and this declaration "
       + "quotes the stamp so a bare `500` coming back is still a finding. The "
-      + "claim about today in the same file — *an 8,500-credit ceremony* — is "
-      + "corrected rather than declared, which is the distinction this card names.",
+      + "claim about today in the same file — *a 3,250-credit ceremony* — is "
+      + "corrected rather than declared, which is the distinction this card names. "
+      + "⚠ The stamp moved 8,500 → 3,250 with #1968 and this guard is what asked "
+      + "for it: the stale `since` figure raised its own finding on the same line, "
+      + "which made the 500 exemption unreachable — a stamp is only honest while "
+      + "the price it stamps is today’s.",
   },
   {
     file: "client/src/features/settings/sections/UsageSection.tsx",
@@ -862,6 +942,107 @@ describe("the price vocabulary comes from the Atlas, not from this file", () => 
     const current = priceFiguresInProse("/** Refine one face — one paid edit, 1,750 credits. */\n");
     expect(current).toHaveLength(1);
     expect(values.has(current[0]!.credits), "1,750 must be a current price").toBe(true);
+  });
+});
+
+describe("a module enrolled by its prose stays enrolled when that figure retires (#2106)", () => {
+  /*
+    THE CARD'S OWN SPECIMEN, VERBATIM. These are the two comment blocks of
+    `client/src/features/castingV2/components/KeptTray.tsx` as they stood at
+    `68e1fc51e` — the parent of #1968's merge, the last tree in which 8,500
+    was the Sign price. The module names no price constant; *"an 8,500-credit
+    ceremony"* was its only way in. Quoted rather than read with `git show` so
+    the control does not depend on how deep a checkout's history is.
+  */
+  const KEPT_TRAY_BEFORE_1968 = [
+    "/**",
+    " * The shortlist, at a size that can actually do its job.",
+    " *",
+    " * It was four 24×30px chips, overlapping, with a `title` tooltip and no click.",
+    " * The founder's finding: the tray's one job is comparing a shortlist before a",
+    " * 500-credit Sign (the price the day he said it; 8,500 since #1601), and",
+    " * nothing is comparable at 24px — it read as a decorative",
+    " * stack rather than as the thing you decide with.",
+    " */",
+    "export type KeptEntry = {",
+    "  /**",
+    "   * labelled *\"Sign 03 from ROLL 02\"*, whose click wrote a selection nothing",
+    "   * could honour while the accent ring stayed on a different woman. A dead",
+    "   * click on the control that aims an 8,500-credit ceremony.",
+    "   */",
+    "  signed?: boolean;",
+    "};",
+    "",
+  ].join("\n");
+
+  it("⚠ POSITIVE CONTROL — the specimen is enrolled, and its stale 8,500 is a finding", () => {
+    const { values, constants } = priceVocabulary();
+    expect(values.has(8500), "8,500 must no longer be a current price").toBe(false);
+
+    /* The defect, reproduced through the same function: read against the
+       CURRENT prices alone, as the population was until #2106, the module is
+       not enrolled at all, so nothing below would ever read it. */
+    expect(enrols(KEPT_TRAY_BEFORE_1968, constants, values)).toBe(false);
+
+    expect(enrols(KEPT_TRAY_BEFORE_1968, constants, enrollingFigures(values))).toBe(true);
+    const stale = priceFiguresInProse(KEPT_TRAY_BEFORE_1968)
+      .filter((figure) => !values.has(figure.credits));
+    expect(stale.map((figure) => [figure.line, figure.credits])).toEqual([
+      [6, 500],
+      [14, 8500],
+    ]);
+    expect(
+      stale.filter((figure) => declaredFor(
+        "client/src/features/castingV2/components/KeptTray.tsx",
+        figure,
+      )),
+      "neither old sentence is absolved by today's KeptTray declaration",
+    ).toEqual([]);
+  });
+
+  it("⚠ NEGATIVE CONTROL — a module that names no price and never did stays out", () => {
+    const { values, constants } = priceVocabulary();
+    const enrolling = enrollingFigures(values);
+    /* No figure at all. */
+    expect(enrols("/** Strips comments, keeps strings. */\nexport const a = 1;\n", constants, enrolling))
+      .toBe(false);
+    /* A credit figure that is not and never was a price — a balance specimen.
+       Enrolling on ANY figure would take this in; enrolling on was-a-price does not. */
+    expect(FIGURES_THE_PRICE_LIST_HAS_CARRIED.has(1240)).toBe(false);
+    expect(enrols("/** A balance reads `1,240 credits · Owner`. */\n", constants, enrolling))
+      .toBe(false);
+    /* And on the real tree: a module with no price in it is not in the walk. */
+    const modules = pricedModules(constants, values).map((module) => module.relative);
+    expect(modules).not.toContain("server/testing/withoutComments.ts");
+  });
+
+  it("⚠ every current price is already on the list, so the next retirement cannot drop a module", () => {
+    /*
+      THE ARM THAT MAKES THE LIST GROW BY ITSELF. A figure declared today must be
+      on `FIGURES_THE_PRICE_LIST_HAS_CARRIED` before it can ever retire, so the
+      day it does, every module it enrolled is still read. Without this arm the
+      list is a snapshot and #2106 recurs at the next repricing.
+    */
+    const { values } = priceVocabulary();
+    const missing = [...values].filter((figure) => !FIGURES_THE_PRICE_LIST_HAS_CARRIED.has(figure));
+    expect(
+      missing,
+      "a price figure the list has never seen. Add it to FIGURES_THE_PRICE_LIST_HAS_CARRIED "
+      + "and never remove one: that list is what keeps a module enrolled when its figure retires.",
+    ).toEqual([]);
+  });
+
+  it("the modules #1968 dropped are back in the population", () => {
+    const { values, constants } = priceVocabulary();
+    const modules = pricedModules(constants, values).map((module) => module.relative);
+    for (const named of [
+      "client/src/features/castingV2/components/KeptTray.tsx",
+      "server/castingV2/outfitPlate.ts",
+      "server/casting/directOperation.ts",
+      "server/providers/falImages.ts",
+    ]) {
+      expect(modules, `${named} must be in the population`).toContain(named);
+    }
   });
 });
 

@@ -587,6 +587,11 @@ export async function signCandidateIntoCast(
  *
  * Returns `null` when the write did not land, so the caller can delete the
  * object it just stored rather than orphaning it in the bucket.
+ *
+ * ⚠ **One operation lands one picture per angle (#2082)**: a second commit
+ * for the same Sign and angle — a replay after a lost acknowledgement — never
+ * inserts again. It moves that slot's existing row onto the replay's live
+ * bytes and returns its id. The shape is #2065's, in `commitRetriedViewAsset`.
  */
 export async function commitPackageSlotAsset(input: {
   userId: number;
@@ -618,6 +623,76 @@ export async function commitPackageSlotAsset(input: {
         .for("update");
       if (!model) throw new SignPersistenceError("commit_conflict");
 
+      /*
+        ⚠ **ONE SIGN LANDS ONE PICTURE PER ANGLE, AND A REPLAY IS ANSWERED BY
+        THE ROW ALREADY THERE (#2082 — #2065's shape, on the Sign's road).**
+
+        The class: a write whose durability is reported by a channel that can
+        fail AFTER the write succeeded. This transaction commits, the
+        acknowledgement is lost on the wire, and the throw is not a
+        `SignPersistenceError`, so it leaves this function and reaches
+        `renderViewAttempts`, which reads it as "nothing landed". A Sign always
+        renders on the sheet road (`buildCastPackage` hands every view its
+        `signSheets`), where `paidFrameInHand` is false and an `unknown` throw is
+        RETRIED on purpose: the loop's catch drops that attempt's stored bytes,
+        the next attempt re-stores the same settled panel under a new key, and
+        arrived here — where it inserted a SECOND asset for one slot, the first
+        pointing at an object the loop had just deleted.
+
+        **The key is the typed `input.operationId` together with the angle**,
+        read back through the `signOperationId` stamp the insert below writes
+        from the typed input. No migration, and no new lock: the operation
+        row's `FOR UPDATE` in `requireRunningSignOperationIn` already
+        serialises every commit for this Sign, and the `models` row lock above
+        serialises every commit for this Cast, so this locking read sees
+        whatever an earlier attempt committed.
+
+        ⚠ **IT REPOINTS RATHER THAN NO-OPS**, because the attempt that lost its
+        acknowledgement had its bytes dropped by the loop's catch
+        (`packageOrchestrator.ts`, `if (stored) await drop(stored.key)`).
+        Answering the row's id unchanged would deliver a broken picture; the
+        replay's bytes are live and are the same settled panel, so the row is
+        moved onto them and its id is returned.
+
+        It runs AFTER both fences on purpose: a replay of an operation the sweep
+        has since fenced out of `running` is refused before any replay is
+        honoured, and a Cast already activated is a straggler, not a replay.
+
+        ⚠ **Two different angles of one Sign, and two different Signs, still
+        each land** — the key is the operation AND the angle, never either
+        alone, and a row this commit did not stamp (the 1K anchor, a failure
+        marker, a row written before this stamp existed) never matches.
+      */
+      const sameAngle = await tx
+        .select({
+          id: modelAssets.id,
+          storageKey: modelAssets.storageKey,
+          provenance: modelAssets.provenance,
+        })
+        .from(modelAssets)
+        .where(and(
+          eq(modelAssets.modelId, input.modelId),
+          eq(modelAssets.viewType, input.angle),
+        ))
+        .orderBy(modelAssets.id)
+        .for("update");
+      const already = sameAngle.find((row) => {
+        const provenance = row.provenance as { signOperationId?: unknown } | null;
+        return provenance?.signOperationId === input.operationId;
+      });
+      if (already) {
+        if (already.storageKey !== input.storageKey) {
+          await tx
+            .update(modelAssets)
+            .set({ storageKey: input.storageKey, storageUrl: input.storageUrl })
+            .where(and(
+              eq(modelAssets.id, already.id),
+              eq(modelAssets.modelId, input.modelId),
+            ));
+        }
+        return already.id;
+      }
+
       const [inserted] = await tx
         .insert(modelAssets)
         .values({
@@ -637,6 +712,12 @@ export async function commitPackageSlotAsset(input: {
               revisionId: input.identityRevisionId,
               identityText: input.identityText,
             }),
+            /*
+              THE REPLAY KEY (#2082), written from the TYPED input and last, so
+              no bag a caller composes can omit, misspell or override the field
+              the read above depends on.
+            */
+            signOperationId: input.operationId,
           },
         })
         .$returningId();

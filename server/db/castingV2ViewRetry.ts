@@ -24,7 +24,7 @@
  * Sign's to cover both would have relaxed a live money path to serve a new
  * one.
  */
-import { and, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import {
   castingCandidateVariants,
@@ -36,7 +36,10 @@ import {
 } from "../../drizzle/schema";
 import { CAST_VIEW_ANGLES, type CastViewAngle } from "../../shared/boardTypes";
 import { identityStampFor } from "../casting/identity/anchorSelector";
-import { castViewRetrySubjectHash } from "../casting/operationContract";
+import {
+  castViewSubjectHash,
+  VIEW_REPLACING_OPERATION_KINDS,
+} from "../casting/operationContract";
 import { getDb, withTransaction } from "./connection";
 
 /** A positive integer id, or a throw — the same assertion `castingV2Sign` makes
@@ -252,16 +255,79 @@ export async function readCastViewRenderSource(
 }
 
 /**
+ * THIS COMMIT FAILED, AND IT IS NOT A FENCE.
+ *
+ * The distinction this class exists to carry is the whole of #1903's review
+ * finding 1: a `null` from the commit below means *another process owns this
+ * operation's money*, and anything else going wrong means *nobody does*. The
+ * two have opposite correct answers — leave it alone, versus refund it — and
+ * for as long as they shared one return value the second was answered with the
+ * first's behaviour and a customer paid for a picture that never existed.
+ *
+ * It extends `Error` and nothing more. `renderViewAttempts` classifies a
+ * non-`ProviderError` throw as `unknown`, and `mayStillArrive("unknown")` is
+ * deliberately TRUE (`providers/types.ts`) — so the loop re-attempts and then
+ * fails the slice, which is exactly the handling a lost commit wants. Making
+ * this a `ProviderError` to be tidy would hand it a failure class it has not
+ * got and could change that decision.
+ */
+export class RetriedViewCommitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RetriedViewCommitError";
+  }
+}
+
+/**
  * Land a retried view on a LIVE Cast.
  *
- * Returns the new asset's id, or `null` when the fence refused — this Try
- * again is no longer `running`, so a sweep owns its money and these bytes will
- * never be referenced. The caller drops them; it never writes a receipt.
+ * Returns the new asset's id, or `null` when A FENCE REFUSED — and that is
+ * now the only thing `null` can mean.
+ *
+ * ⚠ **THERE ARE TWO FENCES AND BOTH ANSWER ONE QUESTION: does this process
+ * still own the money?** This operation being `running` is the first. The
+ * second, for a slot of a flat-priced press, is the PRESS being `running`
+ * (#1903 review finding 1) — the money is on that row, so a slot whose press
+ * the sweep has already refunded must not land its picture. Both are proven
+ * inside the transaction that inserts, never before it.
+ *
+ * ⚠ **IT MEANT FOUR THINGS UNTIL #1903's REVIEW, AND THREE OF THEM LOST A
+ * CUSTOMER'S MONEY.** `renderViewAttempts` reads `null` as *fenced* — "this
+ * operation is no longer `running`, so a sweep owns its money" — and both
+ * callers then seal a receipt WITHOUT A REFUND on that reading, because a
+ * refund under a reference the sweep is about to use is how one failure
+ * becomes two. That reasoning is right about a real fence and catastrophic
+ * about anything else: this function also answered `null` for a model that is
+ * gone, for an insert that returned no id, and — the reachable one — **for any
+ * error thrown inside the transaction**, in every case while the operation was
+ * still `running` and therefore owned by nobody. The service closed it
+ * `succeeded`, charged, nothing refunded, and because the row was then
+ * terminal the sweep never looked at it again.
+ *
+ * **So the fence keeps `null` and everything else THROWS.** A throw lands in
+ * the attempt loop's catch, which drops the stored bytes and counts an arrival
+ * failure exactly as a failed render does — and the loop's `failed` exit is the
+ * one that refunds. The money follows the picture again.
+ *
+ * ⚠ **The reachable road is the transaction error, and THIS road makes it
+ * likelier than any other.** A redo is FIVE of these transactions at once
+ * (#1903), each taking `.for("update")` on the same `models` row, so a lock
+ * wait or a deadlock here is a designed-in concurrency shape rather than a
+ * freak. `!model` is inert today by construction and stays checked anyway:
+ * `finalCastDeletion.ts` refuses to delete a Cast carrying a `claimed`,
+ * `running` or `recovery_required` operation, transactionally and under a row
+ * lock, so a customer pressing *Delete this cast* mid-redo meets *"This Cast
+ * still has work in progress"* and never reaches here.
  *
  * ⚠ **IT INSERTS, IT NEVER UPDATES.** `slotEvidence` takes the NEWEST filled
  * asset per angle, so a new row supersedes whatever was in the slot — a
  * failure marker, or a delivered view nobody judged. The old row stays as the
  * record of what happened, which is the repo's settled selection law.
+ *
+ * ⚠ **The one exception is its OWN row (#2065)**: a second commit for the same
+ * operation — a replay after a lost acknowledgement — never inserts again. It
+ * moves that operation's existing row onto the replay's live bytes and returns
+ * its id. Another operation's row is never touched.
  */
 export async function commitRetriedViewAsset(input: {
   userId: number;
@@ -274,67 +340,266 @@ export async function commitRetriedViewAsset(input: {
   identityText: string;
   pointsCost: number;
   provenance: Record<string, unknown>;
+  /**
+   * THE ROW THE MONEY IS ON, when this view is one slot of a flat-priced
+   * press (#1903). Absent on the Try again, whose charge is its own row.
+   *
+   * ⚠ **IT IS A NAMED INPUT AND NOT READ OUT OF `provenance`, deliberately.**
+   * The same id is written into the provenance bag below for the sweep to read
+   * back, but a FENCE must not be keyed on a free-form `Record<string,
+   * unknown>` a caller composes: a typo there would not fail — it would
+   * silently skip the fence and read as this road being unfenced, which is the
+   * defect itself wearing the repair's clothes. In the signature the type
+   * system asks for it.
+   */
+  pressOperationId?: string;
 }): Promise<number | null> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
-  try {
-    return await withTransaction(async (tx) => {
-      const [operation] = await tx
+  /* NO try/catch. A thrown transaction error is this commit's loudest signal
+     and swallowing it into `null` is what made a lost picture read as a
+     settled one — see the header. The attempt loop above us owns it. */
+  return await withTransaction(async (tx) => {
+    const [operation] = await tx
+      .select({ id: generationOperations.id })
+      .from(generationOperations)
+      .where(and(
+        eq(generationOperations.id, input.operationId),
+        eq(generationOperations.userId, input.userId),
+        /*
+          THE FENCE ADMITS EITHER ROAD THAT MAY REPLACE A VIEW, FROM THE ONE
+          DECLARED SET (#1903).
+
+          ⚠ **It carried the retry kind as a literal, and a second kind
+          arriving beside a hard-coded one fails in the worst direction
+          available here.** A redo's commit would return `null`, which
+          `renderViewAttempts` reads as FENCED — "this process is no longer
+          the authority" — so the service would hand the slice to the sweep,
+          the sweep would find no asset under the operation and refund it,
+          and the picture that actually rendered would be thrown away. The
+          customer would watch five renders happen and get nothing, refunded.
+          The set is read rather than respelled for exactly that reason.
+        */
+        inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
+        eq(generationOperations.status, "running"),
+        /*
+          ⚠ **AND THE SWEEP HAS NOT TAKEN IT (#2073).** `running` alone was not
+          a fence against the sweep, because the sweep does not move a row out
+          of `running` until it SEALS — and it seals after it has read *did a
+          picture land* and recorded its refund. A Try again whose lease lapsed
+          (its heartbeat latches on its first failure and never renews) was
+          claimed, read as *nothing landed* — true, nothing had YET — refunded,
+          and only then sealed; a commit in between was admitted, because the
+          row was still `running`. **She kept the view AND the 50 credits.**
+
+          The claim is the one write the sweep makes before it reads anything
+          (`claimRecoveryAttempt` stamps `recoveryAttemptedAt`, and nothing on
+          the live road ever writes it), so this clause turns the claim INTO the
+          fence, with no migration and no second status. The row lock does the
+          rest in both orders: a commit already holding this `FOR UPDATE` makes
+          the claim's UPDATE wait until the picture is committed, so the sweep's
+          read then sees it; a claim that got there first is read here as the
+          latest committed version (a locking read), so the commit is refused.
+          Either way no refund can be written for a view that landed.
+
+          ⚠ **Refusal here means the sweep owns the money, which is exactly what
+          `null` has always meant.** The Try again's fenced exit hands the lease
+          over and writes no receipt; the redo's slot already did. A sweep that
+          throws after claiming leaves the row `running` and stamped, so the
+          live process is refused from then on and the next pass settles it —
+          the direction that fails closed. It holds for a redo's slot too, which
+          is its own operation; a PRESS is never this clause's subject (its
+          slots land under their own ids), so its deferred pass, which also
+          stamps it, cannot refuse them.
+        */
+        isNull(generationOperations.recoveryAttemptedAt),
+      ))
+      .limit(1)
+      .for("update");
+    if (!operation) return null;
+
+    /*
+      ⚠ **THE PRESS THAT HOLDS THE MONEY IS FENCED TOO, IN THIS SAME
+      TRANSACTION (#1903 review finding 1).**
+
+      A flat-priced press keeps its charge on ONE row and spends it on five
+      slots. Each slot's own fence above proves *this slot* is still ours; it
+      says nothing about whether the row the money sits on is still alive. The
+      gap that leaves is a customer paid twice over:
+
+      - the press's lease lapses (its heartbeat latches on its first failure
+        and never renews again — `startOperationHeartbeat`, and the lease is
+        five minutes while two sheets, a house re-make and the spaced arrival
+        attempts can plausibly run past it);
+      - the sweep reads `pressViewLanded` = false, because nothing has
+        committed YET, refunds the whole press and finalizes it failed;
+      - the slots then commit anyway, and **she keeps the new views as well as
+        the credits.** Nothing claws a recorded refund back.
+
+      ⚠ **IT IS CHECKED IN THE STATEMENT THAT WRITES, which is invariant 1 and
+      not decoration.** A `SELECT` for the press followed by this insert is the
+      same check-then-write race one lease-expiry wide; `.for("update")` inside
+      the slot's own transaction is what makes the reading hold until the row
+      lands.
+
+      ⚠ **AND A REFUSAL HERE IS A FENCE — `null`, not a throw.** `null` means
+      *another process owns this operation's money*, which is exactly true: the
+      sweep has already settled the press. So the attempt loop seals without a
+      refund, because the refund has happened. Throwing would take the loop's
+      `failed` exit and refund a second time under a reference the sweep has
+      used — one failure becoming two, which is the whole reason the two
+      meanings were separated in the header above.
+
+      The Try again road passes no `pressOperationId`: its money row is its own
+      operation, fenced above. ⚠ This line said that made it *immune*, and it
+      was not — `running` was no fence against a sweep that had claimed the row
+      and not yet sealed it (#2073), which is what the claim clause above
+      closes.
+    */
+    if (input.pressOperationId !== undefined) {
+      const [press] = await tx
         .select({ id: generationOperations.id })
         .from(generationOperations)
         .where(and(
-          eq(generationOperations.id, input.operationId),
+          eq(generationOperations.id, input.pressOperationId),
           eq(generationOperations.userId, input.userId),
-          eq(generationOperations.kind, "castingV2.viewRetry"),
           eq(generationOperations.status, "running"),
         ))
         .limit(1)
         .for("update");
-      if (!operation) return null;
+      if (!press) return null;
+    }
 
-      const [model] = await tx
-        .select({ id: models.id })
-        .from(models)
-        .where(and(
-          eq(models.id, input.modelId),
-          eq(models.userId, input.userId),
-          eq(models.status, "active"),
-          isNull(models.deletedAt),
-        ))
-        .limit(1)
-        .for("update");
-      if (!model) return null;
+    const [model] = await tx
+      .select({ id: models.id })
+      .from(models)
+      .where(and(
+        eq(models.id, input.modelId),
+        eq(models.userId, input.userId),
+        eq(models.status, "active"),
+        isNull(models.deletedAt),
+      ))
+      .limit(1)
+      .for("update");
+    if (!model) {
+      /* NOT a fence — the operation is still `running`, so nothing else is
+         coming to settle it. Throwing hands it to the attempt loop, whose
+         failed exit refunds the slice and leaves the picture the customer
+         already had. Inert today: deletion refuses over an unsettled
+         operation (header). */
+      throw new RetriedViewCommitError(
+        "the Cast is no longer live, so a retried view cannot land on it",
+      );
+    }
 
-      const [inserted] = await tx
-        .insert(modelAssets)
-        .values({
-          modelId: input.modelId,
-          viewType: input.angle,
-          // §H.10: signed package views are 2K, whoever asked for them.
-          resolution: "2K",
-          storageUrl: input.storageUrl,
-          storageKey: input.storageKey,
-          pointsCost: input.pointsCost,
-          pinned: false,
-          provenance: {
-            ...input.provenance,
-            /*
-              `display`, never `anchor` — the signed original stays the identity
-              authority, exactly as it does for a Sign's own views.
-            */
-            ...identityStampFor({
-              role: "display",
-              revisionId: input.identityRevisionId,
-              identityText: input.identityText,
-            }),
-          },
-        })
-        .$returningId();
-      return inserted?.id ?? null;
+    /*
+      ⚠ **ONE OPERATION LANDS ONE PICTURE, AND A REPLAY IS ANSWERED BY THE ROW
+      ALREADY THERE (#2065).**
+
+      The shape this closes: a write whose durability is reported by a channel
+      that can fail AFTER the write succeeded. This transaction commits, the
+      acknowledgement is lost on the wire, the helper throws while the row
+      exists — and `renderViewAttempts` reads the throw as "nothing landed".
+      On the sheet road (a redo's slot) a throw is retried on purpose, because
+      re-storing a settled panel costs no engine call, so the next attempt
+      arrived here and inserted a SECOND asset for one operation.
+
+      **The key is the typed `input.operationId`**, read back through the same
+      `retryOperationId` stamp `retriedViewLanded` reads, and that stamp is
+      now written by THIS statement from the typed input (below) rather than
+      trusted from the caller's bag. No migration: the operation row's
+      `FOR UPDATE` above already serialises every commit for one operation,
+      and the `models` lock serialises every commit for one Cast, so this
+      locking read sees whatever an earlier attempt committed.
+
+      ⚠ **IT REPOINTS RATHER THAN NO-OPS, and the reason is in the loop, not
+      here.** The attempt that lost its acknowledgement then ran the loop's
+      catch, which DROPS that attempt's stored bytes
+      (`packageOrchestrator.ts`, `if (stored) await drop(stored.key)`). So the
+      row already here points at an object that has just been deleted, and
+      answering its id unchanged would deliver a broken picture. The replay's
+      bytes are live and are the same settled panel, so the row is moved onto
+      them and its id is returned — one row, live bytes, delivered.
+
+      It runs AFTER both fences on purpose: a replay of an operation the sweep
+      has since claimed is refused as a fence, and the sweep's own landed read
+      finds this row and charges for it.
+
+      ⚠ **Two different operations on one angle still both land** — a newer
+      Try again superseding an older view is behaviour the room relies on
+      (`slotEvidence` takes the newest filled asset per angle), and the key is
+      the operation, never the angle alone.
+    */
+    const sameAngle = await tx
+      .select({
+        id: modelAssets.id,
+        storageKey: modelAssets.storageKey,
+        provenance: modelAssets.provenance,
+      })
+      .from(modelAssets)
+      .where(and(
+        eq(modelAssets.modelId, input.modelId),
+        eq(modelAssets.viewType, input.angle),
+      ))
+      .orderBy(modelAssets.id)
+      .for("update");
+    const already = sameAngle.find((row) => {
+      const provenance = row.provenance as { retryOperationId?: unknown } | null;
+      return provenance?.retryOperationId === input.operationId;
     });
-  } catch {
-    return null;
-  }
+    if (already) {
+      if (already.storageKey !== input.storageKey) {
+        await tx
+          .update(modelAssets)
+          .set({ storageKey: input.storageKey, storageUrl: input.storageUrl })
+          .where(and(
+            eq(modelAssets.id, already.id),
+            eq(modelAssets.modelId, input.modelId),
+          ));
+      }
+      return already.id;
+    }
+
+    const [inserted] = await tx
+      .insert(modelAssets)
+      .values({
+        modelId: input.modelId,
+        viewType: input.angle,
+        // §H.10: signed package views are 2K, whoever asked for them.
+        resolution: "2K",
+        storageUrl: input.storageUrl,
+        storageKey: input.storageKey,
+        pointsCost: input.pointsCost,
+        pinned: false,
+        provenance: {
+          ...input.provenance,
+          /*
+            `display`, never `anchor` — the signed original stays the identity
+            authority, exactly as it does for a Sign's own views.
+          */
+          ...identityStampFor({
+            role: "display",
+            revisionId: input.identityRevisionId,
+            identityText: input.identityText,
+          }),
+          /*
+            THE REPLAY KEY, written from the TYPED input and last, so no bag a
+            caller composes can omit or misspell it (#2065). Both callers
+            already wrote this same value; it is the read above that now
+            depends on it, and a fence-shaped read must not be keyed on a
+            free-form field.
+          */
+          retryOperationId: input.operationId,
+        },
+      })
+      .$returningId();
+    /* Same reasoning as the model road: an insert that produced no id is this
+       process failing, not another process winning. */
+    if (!inserted?.id) {
+      throw new RetriedViewCommitError("the retried view's asset insert returned no id");
+    }
+    return inserted.id;
+  });
 }
 
 /**
@@ -389,7 +654,18 @@ export function runningViewRetryFilter(input: { userId: number; modelId: number 
   return and(
     eq(generationOperations.userId, input.userId),
     eq(generationOperations.modelId, input.modelId),
-    eq(generationOperations.kind, "castingV2.viewRetry"),
+    /*
+      EITHER ROAD THAT MAY BE REPLACING THIS VIEW RIGHT NOW (#1903) — one
+      declared set, the same one the commit fence reads.
+
+      A redo renders all five views, so while one is in flight every slot IS
+      being made. Left on the retry kind alone this read answered "nothing is
+      running" through the whole redo: the room would draw five ready tiles
+      with a Try again under each, over five renders in flight, and a press
+      would charge against a slot already being replaced — #1235's double
+      charge arriving by a new door.
+    */
+    inArray(generationOperations.kind, [...VIEW_REPLACING_OPERATION_KINDS]),
     inArray(generationOperations.status, [...RUNNING_VIEW_RETRY_STATUSES]),
     isNull(generationOperations.subjectDeletedAt),
   );
@@ -421,11 +697,23 @@ export async function listRunningViewRetryAngles(input: {
     .where(runningViewRetryFilter({ userId: input.userId, modelId: input.modelId }));
   if (rows.length === 0) return [];
   const running = new Set(rows.map((row) => row.payloadHash));
-  return CAST_VIEW_ANGLES.filter((angle) => running.has(castViewRetrySubjectHash({
-    modelId: input.modelId,
-    castId: input.castId,
-    angle,
-  })));
+  /*
+    ONE HASH PER (ROAD, ANGLE), because the kind is mixed into the hash.
+
+    The filter above admits both kinds, so matching on the retry's hash alone
+    would widen the query and narrow the answer in the same breath — a redo's
+    rows would come back and then match nothing. The candidate hashes are
+    DERIVED from the same declared set the filter uses, so a third road added
+    to that set is seen here with no edit.
+  */
+  return CAST_VIEW_ANGLES.filter((angle) => VIEW_REPLACING_OPERATION_KINDS.some((kind) =>
+    running.has(castViewSubjectHash({
+      kind,
+      modelId: input.modelId,
+      castId: input.castId,
+      angle,
+    }),
+  )));
 }
 
 /**
@@ -460,115 +748,138 @@ export async function retriedViewLanded(input: {
 }
 
 /**
- * The status a claim is written at, before anything about it is known.
+ * DID ANY VIEW OF THIS PRESS LAND? — the money question a flat-priced redo
+ * asks, and the only one it asks (#1903, his word of 2026-10-08).
  *
- * This is `generation_operations.status`'s own schema DEFAULT, spelled here
- * because drizzle does not expose a column's default as a value. It is therefore
- * a second spelling of one fact (working law 4) and it is held to the first:
- * `viewRetryFreeOnce.test.ts` reads the default out of the drizzle column config
- * and reddens if the two part company. Without that arm, renaming the status
- * would leave this module quietly admitting every claimed row — which is the
- * direction that hands out free renders.
+ * {@link retriedViewLanded} answers *did a picture land under this OPERATION*,
+ * which is right for a road where every slot carries its own slice. Under one
+ * flat charge the question moved up a level: credits come back only when
+ * nothing could be delivered at all, so the sweep has to see the whole press.
+ *
+ * ⚠ **IT READS THE SAME ROWS AND THE SAME PROVENANCE, one key along.**
+ * Every slot of a redo writes `pressOperationId` beside its own
+ * `retryOperationId`, so this is the sibling reader rather than a second
+ * source of truth — and a press whose slots all failed has no asset naming
+ * it, which is exactly the state that owes a refund.
  */
-const CLAIMED_OPERATION_STATUS = "claimed";
-
-/**
- * THE ONE FREE TRY AGAIN, SPENT OR NOT — read at the operation rows (#1601 item 4).
- *
- * His rule, from the card: an unchecked view's first Try again is free, **once**;
- * the second is paid. Until this read existed the free offer was a pure function
- * of the slot's state, and that state does not change when a free retry is taken
- * — a view delivered unchecked is still unchecked after a second unchecked
- * picture lands on it. So the free ask renewed itself every time the judge was
- * unavailable, and a customer could have the house render a 2K view without limit
- * for nothing.
- *
- * # Why this needs no migration, and no column
- *
- * The same reason {@link listRunningViewRetryAngles} needs none, and it is the
- * #1235 reading reused rather than re-invented: `generation_operations` carries
- * **no payload and no angle**, but it carries the HASH of the claim's subject,
- * and {@link castViewRetrySubjectHash} recomputes that hash per angle from the
- * same payload builder the entrance claims with. A closed vocabulary of five
- * angles makes the recomputation exhaustive. Nothing is mirrored, and a changed
- * payload shape reddens a test rather than silently handing out free renders.
- *
- * # Why `plannedCredits = 0` is the free/paid discriminator
- *
- * `markGenerationOperationRunning` writes the price the entrance read from
- * {@link castSlotRetryOffer} into `plannedCredits`, and the two roads are 0 and
- * `CASTING_V2_VIEW_RETRY_PRICE_CREDITS`. It is the house's own way of asking this
- * question — `inkAddAcceptance` and `inkAddCancellation` both filter the same
- * column for the same reason.
- *
- * ⚠ **`status <> 'claimed'` IS KEPT, AND ITS REASON CHANGED UNDER IT (#1767) —
- * RE-READ BEFORE TOUCHING IT.** It was written because `plannedCredits`
- * defaulted to 0 at the claim and was written one statement later, so a row
- * still at `claimed` read 0 whatever it was going to cost and every PAID Try
- * again would have consumed the free one for its angle during the milliseconds
- * between the two statements. **That reason is now discharged**: the entrance
- * passes the price INTO the claim, so a paid retry's row says 370 from the
- * moment it exists.
- *
- * The arm stays, on the other reason the paragraph above always carried and
- * which no change to the claim path can discharge: **a claim that never reached
- * `running` dispatched no render, so the customer has had nothing and keeps
- * their free ask.** A FREE retry's claim truthfully carries 0 from birth now,
- * so without this filter a free ask that was claimed and then died would read
- * as spent — the filter is what stops that, and it is a product answer rather
- * than a timing one. Removing it would hand that customer's free Try again to a
- * row that rendered nothing. `viewRetryFreeOnce.test.ts` has an arm naming it.
- *
- * ✅ **THE LIMIT THIS PARAGRAPH USED TO STATE IS CLOSED (#1767).** It read: *a
- * PAID retry whose `markRunning` throws is settled as a failure with
- * `plannedCredits` still at its default 0, so it reads here as a spent free ask
- * on that angle* — the exact closure named there was `plannedCredits` written
- * at the CLAIM, *"a change to the shared claim path every road in the product
- * takes — not this slice's to make"*. It was carded as #1767 and made: see
- * `claimGenerationOperation`'s `plannedCredits` docblock, and
- * `server/plannedCreditsAtClaim.test.ts`, which drives this very sequence — a
- * paid claim whose `markRunning` throws — and reads the claim at the wire.
- *
- * ⚠ **A FREE ASK THAT DID NOT ARRIVE STILL COUNTS**, which is the card's own
- * wording and the reason there is no landed-asset arm here. The asset row would
- * have been the easier read — `pointsCost` 0 with a `castingV2.viewRetry`
- * provenance — and it is the WRONG one: a free render that failed would renew
- * the free ask, which is the loop this item exists to close.
- *
- * Unlike the busy read, an unavailable database THROWS rather than answering [].
- * The sibling may answer "nothing is running" safely because its empty direction
- * costs a tile its skeleton; the empty direction here hands out a free render.
- * `listCastPromisedAngles` takes the same refusal for the same kind of fact.
- */
-export function spentFreeViewRetryFilter(input: { userId: number; modelId: number }) {
-  return and(
-    eq(generationOperations.userId, input.userId),
-    eq(generationOperations.modelId, input.modelId),
-    eq(generationOperations.kind, "castingV2.viewRetry"),
-    eq(generationOperations.plannedCredits, 0),
-    ne(generationOperations.status, CLAIMED_OPERATION_STATUS),
-    isNull(generationOperations.subjectDeletedAt),
-  );
-}
-
-export async function listSpentFreeViewRetryAngles(input: {
+export async function pressViewLanded(input: {
   userId: number;
   modelId: number;
-  castId: string;
-}): Promise<CastViewAngle[]> {
+  pressOperationId: string;
+}): Promise<boolean> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) return false;
   const rows = await db
-    .select({ payloadHash: generationOperations.payloadHash })
-    .from(generationOperations)
-    .where(spentFreeViewRetryFilter({ userId: input.userId, modelId: input.modelId }));
-  if (rows.length === 0) return [];
-  const spent = new Set(rows.map((row) => row.payloadHash));
-  return CAST_VIEW_ANGLES.filter((angle) => spent.has(castViewRetrySubjectHash({
-    modelId: input.modelId,
-    castId: input.castId,
-    angle,
-  })));
+    .select({ provenance: modelAssets.provenance })
+    .from(modelAssets)
+    .innerJoin(models, and(
+      eq(models.id, modelAssets.modelId),
+      eq(models.userId, input.userId),
+    ))
+    .where(eq(modelAssets.modelId, input.modelId));
+  return rows.some((row) => {
+    const provenance = row.provenance as { pressOperationId?: unknown } | null;
+    return provenance?.pressOperationId === input.pressOperationId;
+  });
 }
+
+/**
+ * CAN A PICTURE STILL LAND ON THIS CAST? — the question the sweep has to ask
+ * BEFORE it decides a flat-priced press owes a refund (#1903 review finding,
+ * the sweep side of B1).
+ *
+ * {@link pressViewLanded} asks *has* a picture landed. That reading is taken
+ * with a plain, unlocked select, and on its own it is a check-then-write race
+ * one whole adjudication wide:
+ *
+ * - the press's lease lapses while its slots are alive (`startOperationHeartbeat`
+ *   latches on its FIRST failure and never renews again, so this needs a
+ *   transient error rather than a dead process);
+ * - the sweep reads landed = false, because nothing has committed YET;
+ * - it records the refund and only then seals the press failed;
+ * - a slot commits inside that window — legitimately, because the press is
+ *   still `running` and so the fence in {@link commitRetriedViewAsset} admits
+ *   it — and **she keeps the new view as well as the 3,250.**
+ *
+ * ⚠ **IT NEEDS NO TIMING LUCK.** A slot transaction that already holds the
+ * press row lock with an uncommitted asset is invisible to the sweep's read by
+ * ordinary isolation, so "nothing landed" can be true of the snapshot and false
+ * of the world at the same instant.
+ *
+ * ⚠ **WHAT MAKES THIS ANSWER SUFFICIENT IS THE SLOT'S OWN FENCE, not this
+ * read.** A commit requires ITS OWN operation to be `running`
+ * ({@link commitRetriedViewAsset}, first statement, `FOR UPDATE`), so a slot
+ * that is terminal can never land a picture again — and a slot that is NOT
+ * terminal holds its row lock through its whole commit, which is why a
+ * terminal status in a committed snapshot proves no commit is in flight. So
+ * "no view-replacing operation is open on this Cast" is exactly "nothing more
+ * can arrive", and the sweep may read the ledger and settle.
+ *
+ * ⚠ **IT IS DERIVED FROM {@link runningViewRetryFilter}, AND THAT FILTER IS A
+ * SUPERSET OF THIS PRESS'S OWN SLOTS — deliberately, and stated because
+ * deriving from a set that answers a DIFFERENT question is a silent behaviour
+ * change.** The filter admits both view-replacing kinds, so a Try again
+ * elsewhere on the same Cast also reads as "something can still arrive". That
+ * is wrong about whose picture it is and right about the only thing this
+ * caller does with the answer: it defers a settlement for one sweep pass. The
+ * narrower reading — derive the five slot `clientRequestId`s from the press's
+ * own — is exact and fails OPEN if the derivation or the payload shape ever
+ * moves, which on this road means refunding a press that delivered. A gate on
+ * a money path takes the reading that fails closed.
+ *
+ * It excludes `recovery_required` and a deleted subject for the same reason
+ * the filter does, and both are right for this question too: neither can
+ * commit a picture ever again.
+ *
+ * ⚠ **A DATABASE THAT CANNOT ANSWER REPORTS `true`** — the opposite direction
+ * from {@link pressViewLanded}'s `false`, and the opposite is correct here.
+ * Unknown must mean "do not settle yet"; a press deferred costs one sweep pass
+ * and settles itself on the next, while a press refunded on a silence costs a
+ * customer's credits and a delivered view at once.
+ */
+export async function viewReplacementInFlight(input: {
+  userId: number;
+  modelId: number;
+}): Promise<boolean> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await getDb();
+  if (!db) return true;
+  const rows = await db
+    .select({ id: generationOperations.id })
+    .from(generationOperations)
+    .where(runningViewRetryFilter({ userId: input.userId, modelId: input.modelId }))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/*
+  ⚠ **THE ONE-FREE-TRY-AGAIN ACCOUNTING STOOD HERE AND IS RETIRED — #1903
+  slice 3, his ruling of 2026-10-07.**
+
+  Two declarations went: `spentFreeViewRetryFilter` (the condition — a
+  `castingV2.viewRetry` row with `plannedCredits = 0` that reached `running`)
+  and `listSpentFreeViewRetryAngles` (the read that turned it into angles).
+  Together they answered *has this view already had its free ask?*, which was
+  #1601 item 4: the first Try again on an unchecked view was free, the second
+  paid.
+
+  **There is no free ask any more, so there is nothing to ration.** His ruling
+  retired the check that produced *"Unchecked"* and the free ask under it; the
+  remedy for a delivered view she does not like is the paid whole-package redo.
+  Every Try again that remains belongs to a REFUNDED view and is paid, so
+  `plannedCredits = 0` can no longer be written on this kind at all.
+
+  ⚠ **AN IN-FLIGHT FREE RETRY AT THE DEPLOY STILL SETTLES CORRECTLY, AND THAT
+  IS CHECKED RATHER THAN HOPED.** The sweep that closes a crashed retry reads
+  the LEDGER, never this filter (`viewRetryRecovery.ts`): an empty ledger
+  closes `free_failure` with nothing refunded — the same road a paid retry
+  takes when it dies before its deduct. So a `plannedCredits = 0` row left
+  running across this deploy needs no reader here.
+
+  Deleted in the commit that orphaned them rather than left for a later sweep:
+  a money-path condition nothing invokes is the dead control this repository
+  keeps rediscovering months later.
+*/

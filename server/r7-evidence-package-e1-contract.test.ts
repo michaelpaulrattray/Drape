@@ -122,6 +122,16 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // module, which is the purity this suite is actually about.
       "castingV2/castProjection.ts",
       "castingV2/castViewPackage.ts",
+      // ⚠ A FOURTH PRICE READER ARRIVED ON 2026-10-07 (#1903 slice 2), and this
+      // inventory surfaced it before the gate did — again, which is the job it
+      // was written for. The paid redo quotes
+      // `CASTING_V2_PACKAGE_REDO_VIEW_PRICE_CREDITS` per view. Still a
+      // declaration-only read: no dependency is added to the price module,
+      // which is the purity this suite is actually about. Worth noticing what
+      // is NOT here beside it — the redo declares no package TOTAL, because
+      // `castPackageRedoOffer` prices the slots a Cast actually owns, so the
+      // projection above reads the slice and nothing reads a total.
+      "castingV2/packageRedoService.ts",
       // Refine (M8) quotes its one-unit price the same way. The adjudicator is
       // deliberately NOT here: it reads the charge back off the ledger rather
       // than re-deriving it from today's price, so a price change can never
@@ -137,13 +147,26 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // still exists and is still read, by routes/castingV2.ts below, as the
       // account-level quote the client draws on the button.
       "castingV2/rollService.ts",
-      // The Sign adjudicator reads the promotion price to cross-check the
-      // promised package against what was actually charged (package v2).
-      "castingV2/signRecovery.ts",
+      // ⚠ **signRecovery.ts LEFT this list with #1968, and WHY it left is the
+      // whole of that card.** It read `CASTING_V2_SIGN_COSTS.promotion` twice:
+      // once to cross-check the promised package against what was charged, and
+      // once as the size of the total-loss refund. His flat price removes the
+      // decomposition the cross-check compared against, and the refund is now
+      // `ledger.charge.credits` minus what already went back — a durable row
+      // rather than a build-time constant. So the adjudicator reads NO price
+      // module at all, which is the same purity `refineService.ts`'s own note
+      // above describes and for the identical reason: a price change must never
+      // retroactively alter what an old operation is owed.
+      //
+      // ⚠ **AND signService.ts REJOINED it in the same commit**, having left
+      // with #108 slice 2b because its only import then fed a re-export nothing
+      // read through it. The Sign's price is a flat number he set, declared
+      // beside every other price in `castingCreditCosts.ts` rather than derived
+      // in `castViewPackage.ts`, so the entrance that charges it now imports it
+      // directly. One module out, one in, on one card — which is this
+      // inventory doing its job rather than drifting.
+      "castingV2/signService.ts",
       "castingV2/viewRetryService.ts",
-      // signService.ts LEFT this list with #108 slice 2b: its only import of
-      // castingCreditCosts fed a re-export (`CASTING_V2_SIGN_COSTS`) nothing
-      // read through it; the sign price it charges comes via castViewPackage.
       "db/castingV2.ts",
       "db/inkAddCandidates.ts",
       // ⚠ A BILLING SURFACE ARRIVED ON 2026-10-02 (#1606 slice 2) — the third

@@ -32,7 +32,7 @@ import {
 import {
   CASTING_V2_REFINE_PRICE_CREDITS,
   CASTING_V2_ROLL_PRICE_CREDITS,
-  CASTING_V2_SIGN_COSTS,
+  CASTING_V2_SIGN_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import { pronounsForSex, type CastPronouns } from "./castPronouns";
 import { PHOTOREAL_HUMAN_BLOCKS } from "./cohortPhotorealHuman";
@@ -160,29 +160,29 @@ export const CAST_PACKAGE_VIEWS: readonly CastViewAngle[] = [
   "backFull",
 ];
 
-/** The refundable slice, per view. */
-export const CAST_PACKAGE_VIEW_PRICE = CASTING_V2_SIGN_COSTS.view;
+/*
+  ⚠ **THERE IS NO PER-VIEW PRICE AND NO PROMOTION BASE HERE ANY MORE — #1968,
+  his word of 2026-10-08: *"on this card make both sign and redo/regenerate 650
+  credis"*.**
 
-/**
- * The base — what promotion itself costs.
- *
- * Retained on a partial package, where it buys what it says it buys. Refunded
- * whole on a total loss, because nothing arrived to be permanent about (founder
- * ruling, 2026-08-02).
- */
-export const CASTING_V2_SIGN_PROMOTION_PRICE = CASTING_V2_SIGN_COSTS.promotion;
+  What stood here was `CAST_PACKAGE_VIEW_PRICE` (*"the refundable slice, per
+  view"*) and `CASTING_V2_SIGN_PROMOTION_PRICE` (*"the base — what promotion
+  itself costs"*), plus a total DERIVED from them and the view list's length so
+  that *"a profile that promises five views cannot quote a price for six"*.
 
-/**
- * 3,500 + 5 × 1,000 = 8,500 credits (§H.10, amended by the package-v2 ruling;
- * the figures set to the adopted scale by #1601 item 1 on 2026-10-01, where
- * they read 200 + 5 × 50 = 450).
- *
- * Derived from the view list's own length, so a profile that promises five
- * views cannot quote a price for six. The client is served this number; it
- * never carries a literal (D-15).
- */
-export const CASTING_V2_SIGN_PRICE_CREDITS =
-  CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length;
+  All three are gone because the Sign's price no longer depends on how many
+  views the cohort promises: it is one flat figure, declared once as
+  `CASTING_V2_SIGN_PRICE_CREDITS` in `castingCreditCosts.ts` beside every other
+  price. The derivation existed to keep a REFUNDABLE slice honest, and his
+  reprice removed the slice — views are cut from two sheets and cannot be
+  refunded one by one, so the only refund left is the whole charge on a total
+  loss. The absence of a per-view constant is the control, and
+  `signFlatPrice.test.ts` refuses its return; the reasoning is on the constant.
+
+  `CAST_PACKAGE_VIEWS` above is still the promise — which views a Sign owes —
+  and the recovery sweep still reads it to know what was unsettled. It just no
+  longer multiplies anything.
+*/
 
 /**
  * WHAT ONE FINISHED CHARACTER COSTS — the plan card's worked example, derived

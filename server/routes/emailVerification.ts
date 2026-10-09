@@ -9,9 +9,10 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { randomBytes } from "crypto";
-import { Resend } from "resend";
 import { eq } from "drizzle-orm";
 import { ASSETS_BASE_URL, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
+import { PRODUCT_NAME } from "@shared/brand";
+import { escapeEmailHtml, sendProductEmail, type ProductEmail } from "../mail";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db/connection";
@@ -53,17 +54,6 @@ export function generateVerificationToken(): string {
 }
 
 /**
- * Get the Resend client (lazy init)
- */
-function getResendClient(): Resend {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
-  }
-  return new Resend(apiKey);
-}
-
-/**
  * Build the verification URL from the request origin
  */
 function buildVerifyUrl(req: Request, token: string): string {
@@ -76,25 +66,28 @@ function buildVerifyUrl(req: Request, token: string): string {
 }
 
 /**
- * Send a verification email via Resend
+ * THE VERIFICATION EMAIL'S BODY, as a pure builder.
+ *
+ * Extracted from {@link sendVerificationEmail} by the relay's finding on
+ * PR #1975: the finding was about an unescaped name in the renewal notice, and
+ * this email had the same defect — but it could not be DRIVEN, because its
+ * html was an argument to the transport inside an async function that needs an
+ * Express request and a mail provider. A fix without a failing reproduction is
+ * half a fix (the standing orders), so the body is now a function of its three
+ * facts and the suite reads it. Nothing about the markup changed.
  */
-export async function sendVerificationEmail(
-  req: Request,
-  email: string,
-  name: string,
-  token: string
-): Promise<{ success: boolean; error?: string }> {
-  const verifyUrl = buildVerifyUrl(req, token);
-  const resend = getResendClient();
-
+export function verificationEmail(to: string, name: string, verifyUrl: string): ProductEmail {
   const logoUrl = `${ASSETS_BASE_URL}/drape-logo-tight.png`;
-  const firstName = name ? name.split(" ")[0] : "there";
+  /* ⚠ ESCAPED — the sibling of the relay's finding on PR #1975, swept here in
+     the same commit (working law 7). `users.name` is free text, and this
+     greeting has been dropping it into HTML unescaped since the email shipped;
+     see `escapeEmailHtml`'s header for the class. */
+  const firstName = escapeEmailHtml(name ? name.split(" ")[0] : "there");
 
-  const { error } = await resend.emails.send({
-    from: "Klieg <verify@mail.klieglabs.com>",
-    replyTo: "support@klieglabs.com",
-    to: email,
-    subject: "Verify your email — Klieg",
+  return {
+    purpose: "verify",
+    to,
+    subject: `Verify your email — ${PRODUCT_NAME}`,
     html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -183,11 +176,25 @@ export async function sendVerificationEmail(
 </body>
 </html>
     `,
-  });
+  };
+}
 
-  if (error) {
-    log.error({ err: error }, "[EmailVerification] Failed to send verification email");
-    return { success: false, error: error.message };
+/**
+ * Send a verification email via Resend
+ */
+export async function sendVerificationEmail(
+  req: Request,
+  email: string,
+  name: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  const verifyUrl = buildVerifyUrl(req, token);
+
+  const result = await sendProductEmail(verificationEmail(email, name, verifyUrl));
+
+  if (!result.success) {
+    log.error({ err: result.error }, "[EmailVerification] Failed to send verification email");
+    return { success: false, error: result.error };
   }
 
   return { success: true };

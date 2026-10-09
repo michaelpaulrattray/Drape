@@ -15,7 +15,7 @@ import {
   withImageQueue,
   toInlinePart,
   diagnoseResponse,
-  uploadBase64ToS3,
+  uploadTryOnResult,
   sanitizeDescription,
   type GeminiAspectRatio,
 } from "./utils";
@@ -42,6 +42,8 @@ export interface RefinementParams {
 
 export interface RefinementResult {
   resultUrl: string;
+  /** Collects `resultUrl` unless a session adopts it (#1980) — see `VTOResult`. */
+  cleanupBatchId: string;
 }
 
 /**
@@ -144,14 +146,14 @@ Return the edited image.`;
       );
     }
 
-    const resultUrl = await uploadBase64ToS3(
+    const { url: resultUrl, cleanupBatchId } = await uploadTryOnResult(
       diagnosis.imageBase64,
-      `wardrobe/${params.userId}/vto-results`,
+      params.userId,
     );
 
     log.info(
       `Refined "${params.garmentLabel}" in session ${params.sessionId}: "${params.instruction}"`,
     );
-    return { resultUrl };
+    return { resultUrl, cleanupBatchId };
   }, "garment-refinement");
 }

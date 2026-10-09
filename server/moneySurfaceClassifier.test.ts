@@ -139,6 +139,28 @@ describe("the gate's money classifier is declared and wired (#958)", () => {
   });
 
   /**
+   * ⚠ **EVERY FILE EXTENSION IN THE PATH LIST IS AN ESCAPED DOT — the class,
+   * not the instance (#1903 review, "the merge dropped the backslash in
+   * `packageRedoService).ts$`").**
+   *
+   * A bare dot is any character, so `packageRedoService).ts$` also selects
+   * `packageRedoServiceXts`. On this list that is harmless today and will not
+   * stay harmless by itself: the line is edited by hand on every money card, a
+   * three-way merge of two cards touching one 936-character line is exactly how
+   * the backslash was lost, and **nothing noticed** — every other arm here asks
+   * only whether a REAL file is selected, which both spellings answer the same
+   * way. Sabotage proved that: the escape removed again, 129 arms green.
+   *
+   * So this reads the DECLARATION rather than its effect, which is the only
+   * reader that can tell the two apart.
+   */
+  it("escapes every file extension in the path list", () => {
+    const unescaped = [...PATTERNS.matchAll(/[^\\]\.(ts|tsx|mts|sh|json)\$/g)].map((match) => match[0]);
+    expect(unescaped, "a bare dot before a file extension matches any character")
+      .toEqual([]);
+  });
+
+  /**
    * Invariant 7 in miniature: a pattern nobody consults is not a control. The
    * whole #958 defect was a rule doing no work, so the coupling is asserted
    * rather than assumed — a `SYMBOLS` left declared after its `git diff -G`
@@ -1202,6 +1224,11 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
     expect(pathRe.test(CEREMONY)).toBe(true);
   });
 
+  it("the spent-share product ceremony is a money diff too (#2023)", () => {
+    expect(pathRe.test("scripts/ceremony-spent-share-product-2023.mts")).toBe(true);
+    expect(pathRe.test("scripts/ceremony-spent-share-product-2023.mts.bak")).toBe(false);
+  });
+
   /**
    * THE NEGATIVE CONTROL — `scripts/` holds ~600 tracked files and this entry
    * must not quietly become the directory (`money-surfaces.sh`: NAMED FILES,
@@ -1441,5 +1468,149 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
       expect(importers.has(file), `${file} no longer imports from server/stripe/, so drop it`).toBe(true);
       expect(pathRe.test(file), `${file} is now on MONEY_PATHS, so drop it`).toBe(false);
     }
+  });
+});
+
+/**
+ * THE NINTH POSITION IN THE SENTENCE — where a PRICE is DECIDED BY A BRANCH
+ * (#2068).
+ *
+ * A Try again on an unchecked view is free once, then a purchase. The price is
+ * DECLARED in `castViewPackage.ts` / `castingCreditCosts.ts`, both on the list;
+ * whether a customer PAYS it is decided in two modules that were on neither
+ * half — the free-ask fact (has this view had its free ask?) and
+ * `castSlotRetryOffer` (so what does the button show and the till charge?).
+ *
+ * `money-surfaces.sh` carries the measurement (27 → 28 of 60, 65 → 67 of 200,
+ * with the reader checked against the gate's own labels first) and the sweep.
+ *
+ * ⚠ **THE FREE/PAID BRANCH THIS ENTRY WAS ABOUT IS GONE — #1903 slice 3, ONE
+ * DAY after the entry landed — AND BOTH FILES STAY ON THE LIST.** His ruling
+ * retired the free Try again, so the free-ask filter is deleted and
+ * `castSlotRetryOffer` has no free branch to choose between. What each file
+ * decides about money did not stop; it narrowed, and the arms below are
+ * re-driven on what survives:
+ *
+ * - `castingV2ViewRetry.ts` still holds the readers a REFUND is decided from,
+ *   `viewReplacementInFlight` among them — the one that defers a redo's refund
+ *   while a picture can still arrive (#1924).
+ * - `castProjection.ts` still decides whether there is a price AT ALL: a
+ *   delivered view offers nothing, a refunded one offers the Try again price.
+ *
+ * **The entry is narrowed rather than removed, which is the opposite of what a
+ * green suite would have suggested**: deleting it because its original specimen
+ * died would take two refund-deciding modules off the money gate.
+ */
+describe("the free-or-paid reading — a branch that decides WHETHER she pays (#2068)", () => {
+  it.each([
+    ["server/db/castingV2ViewRetry.ts", "the readers a refund is decided from, deferral included"],
+    ["server/castingV2/castProjection.ts", "castPackageRedoOffer and castSlotRetryOffer — whether a button carries a price, and the till re-reads it"],
+  ])("%s is a money diff (%s)", (file) => {
+    expect(pathRe.test(file)).toBe(true);
+  });
+
+  /**
+   * THE SPECIMEN, and the whole argument for the entry: PR #2067 (card #1943)
+   * rewrote the free/paid predicate and NEITHER HALF FIRED. Its changed files
+   * and its predicate lines are real — `git diff` of the squash commit against
+   * its parent. The path half must now fire on it, and on THIS entry alone, or
+   * the arm is passing on a neighbour the old reading already caught.
+   */
+  const SPECIMEN_FILES_PR_2067 = [
+    "server/casting/directOperation.ts",
+    "server/castingV2/viewRetryNoFreeAsk.test.ts",
+    "server/db/castingV2ViewRetry.ts",
+    "server/directOperationProductEvents.test.ts",
+  ];
+  /* ⚠ The removed predicate line itself (`ne(generationOperations.status,
+     CLAIMED_OPERATION_STATUS)`) is NOT quoted as a string here: this suite also
+     calls `execFileSync`, and a `.status` token in its code makes
+     `server/testing/hookDriver.test.ts` read it as a suite that drives a child
+     and reads its exit status, which it does not. The lines kept are real. */
+  const SPECIMEN_LINES_PR_2067 = [
+    "-import { and, eq, inArray, isNull, ne } from \"drizzle-orm\";",
+    "+import { and, eq, inArray, isNotNull, isNull } from \"drizzle-orm\";",
+    "-const CLAIMED_OPERATION_STATUS = \"claimed\";",
+    "+    isNotNull(generationOperations.heartbeatAt),",
+  ];
+
+  it("the PR that rewrote the free/paid predicate is a money diff now, by this entry alone", () => {
+    expect(SPECIMEN_FILES_PR_2067.filter((file) => pathRe.test(file)))
+      .toEqual(["server/db/castingV2ViewRetry.ts"]);
+    for (const line of SPECIMEN_LINES_PR_2067) {
+      expect(symbolRe.test(line), `the symbol half unexpectedly sees: ${line}`).toBe(false);
+    }
+  });
+
+  /**
+   * DRIVEN, NOT ASSERTED AGAINST A CONSTANT: the entry is held to the decision
+   * that earned it. The real `castSlotRetryOffer` is asked about ONE unchecked
+   * slot twice, and the only thing that differs is the free-ask fact — so the
+   * price a customer is charged is decided inside this module. If that ever
+   * stops being true the entry is guarding nothing and this arm says so.
+   */
+  it("castProjection.ts really decides the price: no per-view ask on any slot, and the redo's price only when she is ready", async () => {
+    const { castPackageRedoOffer, castSlotRetryOffer } = await import("./castingV2/castProjection");
+    const PAID = 1234;
+    /*
+      ⚠ THIS ARM DROVE THE FREE/PAID PAIR UNTIL #1903 SLICE 3, THEN DELIVERED
+      vs REFUNDED UNTIL #2089 (his *"regenerate is the only option"*,
+      2026-10-08). `castSlotRetryOffer` now answers null for every slot — a
+      refunded one included — and the entrance refuses on that null, so the
+      price-deciding branch that keeps this file on the list is the redo's:
+      `castPackageRedoOffer` puts a price on the button when she is ready and
+      none while she is building. Both functions are driven, because the
+      retirement is itself a money decision made in this module.
+    */
+    const delivered = { state: "ready", refundedCredits: null } as never;
+    const refunded = { state: "failed-refunded", refundedCredits: 200 } as never;
+    expect(castSlotRetryOffer(delivered, PAID)).toBeNull();
+    expect(castSlotRetryOffer(refunded, PAID)).toBeNull();
+    const slots = [{}, {}] as never;
+    expect(castPackageRedoOffer({ status: "ready", slots }, PAID)).toEqual({ priceCredits: PAID });
+    expect(castPackageRedoOffer({ status: "building", slots }, PAID)).toBeNull();
+    /* The injected price is neither of the product's own numbers, so a branch
+       reaching for a constant cannot pass here by coincidence. */
+    expect(PAID).toBe(1234);
+  });
+
+  /**
+   * And the other half, driven the same way — at the SQL the module really
+   * sends, never at a constant beside it (invariant 5).
+   *
+   * ⚠ **IT DROVE THE FREE-ASK FILTER UNTIL #1903 SLICE 3 and now drives
+   * `runningViewRetryFilter`, which is the reader a REFUND turns on.** Both
+   * `viewReplacementInFlight` (defer a redo's refund while a picture can still
+   * land, #1924) and `listRunningViewRetryAngles` (what the room draws as busy)
+   * read it, so loosening one clause here refunds a customer for a view she is
+   * about to receive. That is the same kind of fact the deleted filter was, on
+   * the same money path, in the same file.
+   */
+  it("castingV2ViewRetry.ts really decides whether a replacement is still in flight", async () => {
+    const { MySqlDialect } = await import("drizzle-orm/mysql-core");
+    const { runningViewRetryFilter } = await import("./db/castingV2ViewRetry");
+    const filter = runningViewRetryFilter({ userId: 7, modelId: 11 });
+    if (!filter) throw new Error("runningViewRetryFilter returned no condition");
+    const query = new MySqlDialect().sqlToQuery(filter);
+    /* The owner and the Cast are both in the WHERE (invariant 1), and the
+       statuses it admits are the in-flight pair rather than a single literal. */
+    expect(query.params).toEqual(expect.arrayContaining([7, 11]));
+    expect(query.params).toEqual(expect.arrayContaining(["claimed", "running"]));
+  });
+
+  /**
+   * THE NEGATIVE CONTROLS, and they are the measured neighbours: the specimen's
+   * other files, the spending road that is a stated remainder of #1622, and
+   * lookalike paths. NAMED FILES, NEVER DIRECTORIES.
+   */
+  it.each([
+    "server/casting/directOperation.ts",
+    "server/castingV2/viewRetryService.ts",
+    "server/castingV2/viewRetryFreeOnce.test.ts",
+    "server/castingV2/castProjection.test.ts",
+    "server/db/castingV2ViewRetry.ts.bak",
+    "server/db/castingV2Sign.ts",
+  ])("still leaves %s alone", (file) => {
+    expect(pathRe.test(file)).toBe(false);
   });
 });

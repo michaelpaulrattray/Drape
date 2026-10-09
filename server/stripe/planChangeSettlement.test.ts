@@ -17,7 +17,7 @@
  * moving nothing (arm 1 — red against the pre-#711 code), and the final
  * failure voiding the pending move (arm: void).
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type Stripe from "stripe";
 
 const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, invoicesRetrieve, invoicesVoid } =
@@ -33,6 +33,9 @@ const { pricesCreate, pricesList, subscriptionsUpdate, subscriptionsRetrieve, in
 vi.mock("stripe", () => ({
   default: class StripeDouble {
     prices = { create: pricesCreate, list: pricesList };
+    /* The spent-share line's own catalogue product (#2023), read before a
+       switch that carries one — present and active, as the ceremony leaves it. */
+    products = { retrieve: vi.fn(async (id: string) => ({ id, active: true })) };
     subscriptions = { retrieve: subscriptionsRetrieve, update: subscriptionsUpdate };
     invoices = { retrieve: invoicesRetrieve, voidInvoice: invoicesVoid };
     customers = { retrieve: vi.fn(), create: vi.fn() };
@@ -106,7 +109,7 @@ vi.mock("../auditLog", async () => {
 
 import { billingRouter } from "../routes/billing";
 import { handleStripeWebhook } from "./webhooks";
-import { settlementLedgerRef } from "./planChangeSettlement";
+import { settlementLedgerRef, settlementShortfallLedgerRef } from "./planChangeSettlement";
 import { PLAN_TIERS } from "../../drizzle/schema";
 import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
 import { periodPriceInCents } from "@shared/annualBilling";
@@ -557,6 +560,46 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_change", "applied");
   });
 
+  /**
+   * ⚠ **THE SWITCH INVOICE'S REAL SHAPE (#2069).** This arm used to feed a
+   * single year line with `proration: false` and no unused-time credit — a
+   * shape Stripe never sent on this road, which is why the suite stayed green
+   * while every real monthly → yearly switch granted nothing. Below is the
+   * invoice Stripe sends since `updateSubscriptionPlan` asks for
+   * `billing_cycle_anchor: "now"` on a switch, transcribed from the test-mode
+   * drive (`2026-01-28.clover` dialect: the proration flag under `parent`,
+   * the price as an id): the old month's unused time as a NEGATIVE proration
+   * line, and the year as an ordinary period line.
+   */
+  const switchLines = (yearIsProration: boolean) => ({
+    data: [
+      {
+        amount: -2700,
+        description: "Unused time on Klieg Starter after 08 Oct 2026",
+        quantity: 1,
+        period: { start: NOW_SEC, end: NOW_SEC + 31 * DAY },
+        pricing: { price_details: { price: "price_starter_monthly" } },
+        parent: {
+          type: "subscription_item_details",
+          subscription_item_details: { proration: true, subscription_item: "si_1" },
+        },
+      },
+      {
+        amount: 26900,
+        description: yearIsProration
+          ? "Remaining time on Klieg Starter after 08 Oct 2026"
+          : "1 × Klieg Starter (at $269.00 / year)",
+        quantity: 1,
+        period: { start: NOW_SEC, end: NOW_SEC + 365 * DAY },
+        pricing: { price_details: { price: "price_starter_yearly" } },
+        parent: {
+          type: "subscription_item_details",
+          subscription_item_details: { proration: yearIsProration, subscription_item: "si_1" },
+        },
+      },
+    ],
+  });
+
   it("an interval switch settles WHOLE: the unwind lands, then the same invoice's period grant", async () => {
     db.getPlanChangeSettlementByInvoice.mockResolvedValue({
       ...grantRow,
@@ -569,27 +612,52 @@ describe("the webhook settles what changePlan recorded", () => {
     const result = await deliverEvent("invoice.payment_succeeded", {
       id: "in_change",
       customer: "cus_1",
-      subscription: "sub_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
       billing_reason: "subscription_update",
-      lines: {
-        data: [
-          {
-            price: { recurring: { interval: "year" } },
-            proration: false,
-            period: { start: NOW_SEC, end: NOW_SEC + 365 * DAY },
-          },
-        ],
-      },
+      lines: switchLines(false),
     });
 
     expect(result.success).toBe(true);
     expect(db.deductCredits).toHaveBeenCalledTimes(1);
     expect(db.deductCredits.mock.calls[0].slice(0, 3)).toEqual([7, 3000, "subscription"]);
     expect(db.refreshMonthlyCredits).toHaveBeenCalledTimes(1);
+    /* The YEAR, granted once, on the invoice's own reference — and the
+       negative unused-time line is not read as a period of its own. */
+    expect(db.refreshMonthlyCredits.mock.calls[0][0]).toBe(7);
+    expect(db.refreshMonthlyCredits.mock.calls[0][1]).toBe(PLAN_TIERS.pro.monthlyCredits * 12);
+    expect(db.refreshMonthlyCredits.mock.calls[0][3]).toBe("stripe-invoice:in_change");
     /* Deterministic order: the unwind before the grant. */
     expect(db.deductCredits.mock.invocationCallOrder[0]).toBeLessThan(
       db.refreshMonthlyCredits.mock.invocationCallOrder[0],
     );
+  });
+
+  /**
+   * The shape the anchor exists to avoid, pinned so nobody mistakes the reader
+   * for the fix: WITHOUT `billing_cycle_anchor: "now"` Stripe bills the year as
+   * a PRORATION line, and the grant does not read proration lines — so the
+   * repair for #2069 lives on the request (`annualPlanChange.test.ts`), and
+   * `periodBought` keeps one rule for every road. The unwind still lands.
+   */
+  it("the pre-#2069 switch shape — the year as a proration line — grants no period", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      ...grantRow,
+      direction: "unwind" as const,
+      credits: 3000,
+    });
+    db.getUserCredits.mockResolvedValue({ balance: 10_000 });
+
+    const result = await deliverEvent("invoice.payment_succeeded", {
+      id: "in_change",
+      customer: "cus_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_update",
+      lines: switchLines(true),
+    });
+
+    expect(result.success).toBe(true);
+    expect(db.deductCredits).toHaveBeenCalledTimes(1);
+    expect(db.refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 
   it("the unwind floors at the LIVE balance at application time — spent credits are spent", async () => {
@@ -1171,6 +1239,194 @@ describe("the webhook settles what changePlan recorded", () => {
     expect(result.success).toBe(true);
     expect(db.voidPendingPlanChangeSettlementsForUser).not.toHaveBeenCalled();
     expect(invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  /**
+   * ⚠ #2054 — CREDITS SPENT WHILE A 3DS SWITCH INVOICE WAITS.
+   *
+   * The quote fixes the take-back at Confirm and Stripe credits its money on
+   * the switch invoice; the take-back lands when that invoice is PAID, floored
+   * at what is left then. Spend in between and the floor turns those credits
+   * into money with nothing behind them. These arms run a small STATEFUL
+   * ledger — the row flips to `applied` when resolved, a deduct writes a
+   * signed line and moves the balance, the period grant adds to it — so the
+   * shortfall is read off what the settlement really moved, the way the
+   * product reads it, and never off a number the arm hands it.
+   */
+  describe("#2054 — a take-back spent before its switch invoice is paid comes out of the period it buys", () => {
+    const QUOTED = 3000;
+    const GRANT = 120_000;
+    type RowStatus = "pending" | "applied" | "void";
+    function armLedger(opts: { balanceAtPayment: number; purchased?: number; grant?: number; status?: RowStatus }) {
+      const state = {
+        row: {
+          ...grantRow,
+          direction: "unwind" as "unwind" | "grant",
+          credits: QUOTED,
+          description: "Unused monthly cycle credits returned with its refund",
+          status: (opts.status ?? "pending") as RowStatus,
+        },
+        balance: opts.balanceAtPayment,
+        purchased: opts.purchased ?? 0,
+        lines: new Map<string, { amount: number }>(),
+      };
+      db.getPlanChangeSettlementByInvoice.mockImplementation(async () => ({ ...state.row }));
+      db.resolvePlanChangeSettlement.mockImplementation(async (_id: string, status: RowStatus) => {
+        state.row.status = status;
+        return true;
+      });
+      db.getUserCredits.mockImplementation(async () => ({
+        balance: state.balance,
+        purchasedBalance: state.purchased,
+      }));
+      db.getCreditTransactionByRef.mockImplementation(async (_u: number, ref: string) =>
+        state.lines.get(ref) ?? null,
+      );
+      db.deductCredits.mockImplementation(
+        async (_u: number, amount: number, _t: string, _d: string, ref: string) => {
+          if (state.lines.has(ref)) return { success: true, duplicate: true, newBalance: state.balance };
+          state.lines.set(ref, { amount: -amount });
+          state.balance -= amount;
+          return { success: true, newBalance: state.balance };
+        },
+      );
+      db.refreshMonthlyCredits.mockImplementation(async () => {
+        state.balance += opts.grant ?? GRANT;
+        return { success: true, newBalance: state.balance };
+      });
+      return state;
+    }
+    /* The switch invoice Stripe really sends since #2069's anchor reset —
+       re-driven in test mode for this arm set (`in_1UOLGODkTxTcXBCH7ynzFzvh`:
+       a −2,700 unused-time proration line and `1 × Klieg Starter (at $269.00
+       / year)`, proration false, 365 days). */
+    const switchInvoice = {
+      id: "in_change",
+      customer: "cus_1",
+      parent: { subscription_details: { subscription: "sub_1" } },
+      billing_reason: "subscription_update",
+      lines: switchLines(false),
+    };
+    const shortfallCalls = () =>
+      db.deductCredits.mock.calls.filter((c) => c[4] === settlementShortfallLedgerRef("in_change"));
+
+    afterEach(() => {
+      db.getCreditTransactionByRef.mockReset();
+      db.getCreditTransactionByRef.mockResolvedValue(null);
+      db.getPlanChangeSettlementByInvoice.mockReset();
+      db.refreshMonthlyCredits.mockReset();
+      db.getUserCredits.mockReset();
+      db.deductCredits.mockReset();
+      db.resolvePlanChangeSettlement.mockReset();
+    });
+
+    it("she spent 2,600 of the 3,000 between Confirm and paying: the 2,600 comes out of the new year, after its grant", async () => {
+      /* 3,000 was left at Confirm (the quote's take-back); she spent 2,600 of it
+         while the card asked her to authenticate. */
+      const state = armLedger({ balanceAtPayment: 400 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(result.success).toBe(true);
+      /* The settlement floored at the 400 that was left — unchanged. */
+      expect(state.lines.get(settlementLedgerRef("in_change"))).toEqual({ amount: -400 });
+      /* The rest is taken from the plan's part AFTER the year's grant landed. */
+      expect(shortfallCalls()).toHaveLength(1);
+      expect(shortfallCalls()[0].slice(0, 3)).toEqual([7, 2600, "subscription"]);
+      expect(db.refreshMonthlyCredits.mock.invocationCallOrder[0]).toBeLessThan(
+        db.deductCredits.mock.invocationCallOrder[1],
+      );
+      /* Exactly where an instant payment would have left her: the old month's
+         3,000 handed back (2,600 of it already spent), plus the year. */
+      expect(state.balance).toBe(GRANT - 2600);
+    });
+
+    it("the CONTROL: nothing spent in the window → the whole take-back moved and nothing more is taken", async () => {
+      const state = armLedger({ balanceAtPayment: 10_000 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(result.success).toBe(true);
+      expect(state.lines.get(settlementLedgerRef("in_change"))).toEqual({ amount: -QUOTED });
+      expect(shortfallCalls()).toHaveLength(0);
+      expect(state.balance).toBe(10_000 - QUOTED + GRANT);
+    });
+
+    it("a settlement already applied by changePlan's own fresh read is still made whole — the shortfall is read off the ledger, not carried", async () => {
+      const state = armLedger({ balanceAtPayment: 0, status: "applied" });
+      /* changePlan applied it in its own breath and moved 1,000. */
+      state.lines.set(settlementLedgerRef("in_change"), { amount: -1000 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(result.success).toBe(true);
+      expect(shortfallCalls()).toHaveLength(1);
+      expect(shortfallCalls()[0][1]).toBe(2000);
+    });
+
+    it("a REDELIVERY takes nothing twice", async () => {
+      const state = armLedger({ balanceAtPayment: 400 });
+      await deliverEvent("invoice.payment_succeeded", switchInvoice);
+      processedEventInserts.length = 0;
+      /* The grant's own ledger key makes its replay a no-op in the product. */
+      db.refreshMonthlyCredits.mockResolvedValue({ success: true, newBalance: state.balance });
+      const after = state.balance;
+
+      const again = await redeliverLastEvent();
+
+      expect(again.success).toBe(true);
+      expect(shortfallCalls()).toHaveLength(1);
+      expect(state.balance).toBe(after);
+    });
+
+    it("never reaches credits she BOUGHT — the shortfall floors at the plan's part too", async () => {
+      /* A grant of 0 isolates the floor: after the period lands, every credit
+         left is one she bought, so nothing may be taken. */
+      const state = armLedger({ balanceAtPayment: 5000, purchased: 5000, grant: 0 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(result.success).toBe(true);
+      expect(shortfallCalls()).toHaveLength(0);
+      expect(state.balance).toBe(5000);
+    });
+
+    it("a failed collection FAILS the event, so Stripe redelivers", async () => {
+      armLedger({ balanceAtPayment: 400 });
+      const settle = db.deductCredits.getMockImplementation()!;
+      db.deductCredits.mockImplementation(async (...args: unknown[]) =>
+        args[4] === settlementShortfallLedgerRef("in_change")
+          ? { success: false, error: "db down" }
+          : (settle as (...a: unknown[]) => unknown)(...args),
+      );
+
+      const result = await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(result.success).toBe(false);
+    });
+
+    it("with no period grant (the pre-#2069 shape) it takes NOTHING — the floor finds no plan's part to take", async () => {
+      const state = armLedger({ balanceAtPayment: 400 });
+
+      const result = await deliverEvent("invoice.payment_succeeded", {
+        ...switchInvoice,
+        lines: switchLines(true),
+      });
+
+      expect(result.success).toBe(true);
+      expect(db.refreshMonthlyCredits).not.toHaveBeenCalled();
+      expect(shortfallCalls()).toHaveLength(0);
+      expect(state.balance).toBe(0);
+    });
+
+    it("a GRANT row is never treated as a take-back", async () => {
+      const state = armLedger({ balanceAtPayment: 0, status: "applied" });
+      state.row.direction = "grant";
+
+      await deliverEvent("invoice.payment_succeeded", switchInvoice);
+
+      expect(shortfallCalls()).toHaveLength(0);
+    });
   });
 
   it("an invoice with NO settlement recorded settles nothing and changes nothing (the control)", async () => {

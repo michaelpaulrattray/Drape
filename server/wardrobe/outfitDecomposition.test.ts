@@ -6,13 +6,21 @@ vi.mock("./garmentDetection", () => ({
   detectGarmentsInImage: vi.fn(),
 }));
 
-vi.mock("../storage", () => ({
-  storagePut: vi.fn(),
+/*
+  #1961 — the crops are written through `putWardrobeScratchUpload`, which
+  registers the key in a cleanup manifest BEFORE it stores the bytes. This
+  suite's subject is the cropping, so the registration road is faked here and
+  driven on its own in `server/wardrobe/scratchUpload.test.ts`; what matters
+  is that these arms still read the key, the bytes and the content type, which
+  they do one level out.
+*/
+vi.mock("./scratchUpload", () => ({
+  putWardrobeScratchUpload: vi.fn(),
 }));
 
-vi.mock("./utils", () => ({
-  uploadBase64ToS3: vi.fn(),
-}));
+/* #2095 deleted `uploadBase64ToS3`, the one export this mock carried; the
+   module stays mocked so nothing it reaches loads a provider client. */
+vi.mock("./utils", () => ({}));
 
 vi.mock("../logging/logger", () => ({
   createModuleLogger: () => ({
@@ -25,10 +33,10 @@ vi.mock("../logging/logger", () => ({
 
 import { decomposeOutfit } from "./outfitDecomposition";
 import { detectGarmentsInImage } from "./garmentDetection";
-import { storagePut } from "../storage";
+import { putWardrobeScratchUpload } from "./scratchUpload";
 
 const mockDetect = vi.mocked(detectGarmentsInImage);
-const mockStoragePut = vi.mocked(storagePut);
+const mockScratchPut = vi.mocked(putWardrobeScratchUpload);
 
 /**
  * Create a 200x400 red PNG test image buffer using sharp.
@@ -57,7 +65,7 @@ describe("decomposeOutfit", () => {
   it("returns empty garments when detection finds nothing", async () => {
     mockDetect.mockResolvedValue([]);
 
-    const result = await decomposeOutfit("https://example.com/outfit.jpg", "user-1");
+    const result = await decomposeOutfit("https://example.com/outfit.jpg", 1);
 
     expect(result.garments).toHaveLength(0);
     expect(result.sourceImageUrl).toBe("https://example.com/outfit.jpg");
@@ -95,12 +103,13 @@ describe("decomposeOutfit", () => {
       },
     ]);
 
-    mockStoragePut.mockImplementation(async (key: string) => ({
+    mockScratchPut.mockImplementation(async ({ key }) => ({
       key,
       url: `https://s3.example.com/${key}`,
+      cleanupBatchId: "batch-1961",
     }));
 
-    const result = await decomposeOutfit("https://example.com/outfit.jpg", "user-1");
+    const result = await decomposeOutfit("https://example.com/outfit.jpg", 1);
 
     // Should have 2 garments
     expect(result.garments).toHaveLength(2);
@@ -109,18 +118,22 @@ describe("decomposeOutfit", () => {
     for (const garment of result.garments) {
       expect(garment.cropUrl).not.toBe("https://example.com/outfit.jpg");
       expect(garment.cropUrl).toContain("s3.example.com");
-      expect(garment.cropUrl).toContain("user-1-wardrobe/decomposed/");
+      expect(garment.cropUrl).toContain("1-wardrobe/decomposed/");
     }
 
-    // storagePut should have been called once per garment
-    expect(mockStoragePut).toHaveBeenCalledTimes(2);
+    // one registered-then-stored crop per garment
+    expect(mockScratchPut).toHaveBeenCalledTimes(2);
 
     // Verify the uploaded buffers are valid PNGs (not the full source image)
-    for (const call of mockStoragePut.mock.calls) {
-      const [key, buffer, contentType] = call;
-      expect(key).toContain("user-1-wardrobe/decomposed/");
+    for (const call of mockScratchPut.mock.calls) {
+      const [{ key, bytes: buffer, contentType, userId }] = call;
+      expect(key).toContain("1-wardrobe/decomposed/");
       expect(contentType).toBe("image/png");
       expect(Buffer.isBuffer(buffer)).toBe(true);
+      /* #1961 — the manifest's own column is an int, and this module
+         namespaces its paths with a string. A NaN here would write a manifest
+         nobody's account owns. */
+      expect(Number.isInteger(userId)).toBe(true);
 
       // The crop should be smaller than the source image
       const cropMeta = await sharp(buffer as Buffer).metadata();
@@ -166,12 +179,13 @@ describe("decomposeOutfit", () => {
       },
     ]);
 
-    mockStoragePut.mockImplementation(async (key: string) => ({
+    mockScratchPut.mockImplementation(async ({ key }) => ({
       key,
       url: `https://s3.example.com/${key}`,
+      cleanupBatchId: "batch-1961",
     }));
 
-    const result = await decomposeOutfit("https://example.com/outfit.jpg", "user-1");
+    const result = await decomposeOutfit("https://example.com/outfit.jpg", 1);
 
     // Only the valid garment should be in results
     expect(result.garments).toHaveLength(1);
@@ -207,17 +221,17 @@ describe("decomposeOutfit", () => {
       },
     ]);
 
-    mockStoragePut.mockImplementation(async (key: string, buffer: Buffer | Uint8Array | string) => {
-      const meta = await sharp(buffer as Buffer).metadata();
+    mockScratchPut.mockImplementation(async ({ key, bytes }) => {
+      const meta = await sharp(bytes).metadata();
       // Verify exact pixel dimensions
       expect(meta.width).toBe(600);   // (0.8 - 0.2) * 1000
       expect(meta.height).toBe(1000); // (0.6 - 0.1) * 2000
-      return { key, url: `https://s3.example.com/${key}` };
+      return { key, url: `https://s3.example.com/${key}`, cleanupBatchId: "batch-1961" };
     });
 
-    await decomposeOutfit("https://example.com/outfit.jpg", "user-1");
+    await decomposeOutfit("https://example.com/outfit.jpg", 1);
 
-    expect(mockStoragePut).toHaveBeenCalledTimes(1);
+    expect(mockScratchPut).toHaveBeenCalledTimes(1);
 
     globalThis.fetch = originalFetch;
   });

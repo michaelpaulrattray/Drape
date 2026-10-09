@@ -318,7 +318,10 @@ const FROM_THE_CODE = {
   },
   // server/castingV2/castViewPackage.ts — CASTING_V2_ONE_CHARACTER_CREDITS
   // = Roll 1,600 + Refine 1,750 + Sign 8,500, in ledger credits.
-  oneFinishedCharacterCredits: 11850,
+  // 6,600 since #1968: a Roll 1,600 + a Refine 1,750 + a Sign 3,250. It was
+  // 11,850 while a Sign was 8,500 — his flat 650-display price moved it, and
+  // `pricingPhase2Prototype-guard.test.ts` is what caught the stale figure.
+  oneFinishedCharacterCredits: 6600,
   // shared/creditTopups.ts — TOPUP_UNIT_DISPLAY_CREDITS. The plan slider's
   // step is the SAME unit as Add credits', which is the whole point of it.
   sliderStepDisplayCredits: 5000,

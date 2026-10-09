@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { CANONICAL_VIEW_ANGLES, CAST_VIEW_ANGLES } from "../../shared/boardTypes";
-import { CASTING_V2_SIGN_COSTS } from "../casting/castingCreditCosts";
+import { CASTING_V2_SIGN_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import {
   PHOTOREAL_HUMAN_BLOCKS,
   photorealHumanConstant,
@@ -20,10 +20,8 @@ import {
   NEGATIVE_LINES,
 } from "./houseBlock";
 import {
-  CASTING_V2_SIGN_PRICE_CREDITS,
   CAST_PACKAGE_VIEWS,
   CAST_PACKAGE_WARDROBE_SPEC,
-  CAST_PACKAGE_VIEW_PRICE,
   FACE_FROM_REFERENCE,
   castPackageView,
   composePackageViewPrompt,
@@ -368,19 +366,26 @@ describe("the canonical view package", () => {
     }
   });
 
-  it("derives the Sign price from the number of views it actually promises", () => {
-    // §H.10 as amended, repriced #1601 item 1: 3,500 promotion + 5 × 1,000.
-    // Derived, so retiring a view
-    // reprices the product rather than leaving a literal behind.
-    /* ⚠ **8,500 SINCE 2026-10-01 (#1601 item 1); it was 450 from 2026-07-30.**
-       Pinned by literal on purpose — the identity below would hold at any
-       price, so one side of it has to be a number somebody decided. */
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(8500);
-    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(
-      CASTING_V2_SIGN_COSTS.promotion + CAST_PACKAGE_VIEW_PRICE * CAST_PACKAGE_VIEWS.length,
-    );
-    // The refundable slice is an integer, because the ledger is.
-    expect(Number.isSafeInteger(CAST_PACKAGE_VIEW_PRICE)).toBe(true);
+  /*
+    ⚠ **THIS ARM READ *"derives the Sign price from the number of views it
+    actually promises"* AND THERE IS NOTHING LEFT TO DERIVE — #1968.** His word
+    of 2026-10-08 makes the Sign one flat charge *"however many views she
+    owns"*, so the old identity (promotion + slice × views) is not merely
+    unchecked, it is the rule the card removed. What is still worth pinning is
+    the number itself and that the ledger can hold it.
+  */
+  it("prices a Sign at one flat figure, whatever the package promises", () => {
+    /* ⚠ **3,250 SINCE #1968 (650 display); 8,500 from #1601 item 1 on
+       2026-10-01; 450 from 2026-07-30.** A literal on purpose: it is a number
+       he set rather than one the product computes, so an arm that re-derived it
+       would only be restating the constant to itself. */
+    expect(CASTING_V2_SIGN_PRICE_CREDITS).toBe(3250);
+    // The charge is an integer, because the ledger is.
+    expect(Number.isSafeInteger(CASTING_V2_SIGN_PRICE_CREDITS)).toBe(true);
+    /* And it does NOT move with the view list, which is the whole of "flat" —
+       the one arm that can tell this rule from the one it replaced. */
+    expect(CASTING_V2_SIGN_PRICE_CREDITS % CAST_PACKAGE_VIEWS.length)
+      .not.toBe(CASTING_V2_SIGN_PRICE_CREDITS / CAST_PACKAGE_VIEWS.length);
   });
 
   it("gives every slot both a customer-facing spec and a generator directive", () => {

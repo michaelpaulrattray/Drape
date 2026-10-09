@@ -22,10 +22,9 @@ import {
   slotShowsWorking,
 } from "@/features/castingV2/roomBusy";
 import {
-  VIEW_RETRY_LINK,
-  VIEW_RETRY_SEPARATOR,
-  VIEW_RETRY_WORDS,
-} from "@/features/castingV2/viewRetryRow";
+  PACKAGE_REDO_WORKING,
+  packageRedoLabel,
+} from "@/features/castingV2/packageRedoRow";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
@@ -144,14 +143,13 @@ export default function CastingRoom() {
   }).data?.enabled ?? false;
   const deleteCast = trpc.castingV2.deleteCast.useMutation();
   /*
-    TRY AGAIN ON ONE VIEW (#1208 slice 2, #1220 slice 2).
-
-    His rule, verbatim: *"you pay 50 for each view you keep."* The price is not
-    decided here and is not a constant in this file — it arrives on the slot
-    (`slot.retry.priceCredits`), from the same server reading that authorizes
-    the spend, so the button and the till can never disagree.
+    ⚠ **TRY AGAIN ON ONE VIEW STOOD HERE AND IS RETIRED — #2089, his word of
+    2026-10-08 (terminal), verbatim and entire: *"regenerate is the only
+    option"*.** The `retryView` mutation, its press handler and its toasts are
+    gone with the row that called them; the server answers no per-view offer on
+    any slot and refuses a stale press for free. The one remedy on this page is
+    the whole-set redo below.
   */
-  const retryView = trpc.castingV2.retryView.useMutation();
   /**
    * The angles WE have just pressed — the optimistic first frame, nothing more
    * (#1235).
@@ -165,6 +163,24 @@ export default function CastingRoom() {
    * makes the press visible before the next read lands.
    */
   const [asking, setAsking] = useState<ReadonlySet<string>>(() => new Set());
+  /*
+    ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2).
+
+    His ruling: a redo for a customer who simply does not like what arrived, no
+    fault needing to be found first. The price is not decided here and is not a
+    constant in this file — it arrives on the Cast (`data.redo.priceCredits`),
+    from the same server reading that authorizes the spend, so the button and
+    the till can never disagree.
+  */
+  const redoPackage = trpc.castingV2.redoPackage.useMutation();
+  /*
+    OUR OWN PRESS, for the first frame only — the same job `asking` does for one
+    tile, and it is a boolean because a redo is one press on the whole Cast.
+    The server's answer takes over the moment it lands: every slot reads
+    `retrying`, so all five tiles draw the working state they draw for any view
+    being made, and `data.redo` is withheld for as long as the operations run.
+  */
+  const [askingAll, setAskingAll] = useState(false);
   /** The sibling face being looked at, if any. */
   const [viewingSibling, setViewingSibling] = useState<
     // Derived from the projection rather than restated, so a field added
@@ -196,65 +212,89 @@ export default function CastingRoom() {
 
   const data = cast.data;
 
-  /** Let this tile go once its own answer is in — the others are untouched. */
-  const release = (angle: string) => setAsking((current) => {
-    const next = new Set(current);
-    next.delete(angle);
-    return next;
-  });
-
   /**
-   * Ask for one view again.
+   * Ask for all her views again.
    *
-   * The whole affordance: one press, no choice, no second dialog. The server
-   * re-reads whether this view may be asked for at all and what it costs, so a
-   * tile left open in another tab cannot spend against a slot that has since
-   * been filled.
+   * One press, no choice, no second dialog — the price is on the button, so the
+   * decision was made before the finger landed. The server re-reads whether she
+   * may be asked at all and what it costs, so a room left open in another tab
+   * cannot spend against a Cast that has since started making something.
    */
-  const askAgain = (angle: string) => {
-    /* Per ANGLE, never per room: a second press on THIS tile is the only thing
-       to hold off, and the server refuses it anyway from the slot's own state
-       (#1235). Pressing a different view while this one renders is a thing the
-       product can do and now does. */
-    if (!data || asking.has(angle)) return;
-    setAsking((current) => new Set(current).add(angle));
-    retryView.mutate(
-      { clientRequestId: createClientRequestId(), castId: data.castId, angle: angle as never },
+  const askForAllViewsAgain = () => {
+    if (!data || askingAll) return;
+    setAskingAll(true);
+    /*
+      EVERY TILE GOES TO WORK IN THE SAME FRAME THE FINGER LEAVES THE BUTTON.
+
+      The per-slot set already exists for the Try again and already drives
+      `slotShowsWorking`, so a redo reuses it rather than teaching the strip a
+      second way to look busy — five tiles that behave exactly as one does when
+      it is being asked for again. The server's `retrying` takes over on the
+      next read; this is only the first frame.
+    */
+    setAsking(new Set(data.slots.map((slot) => slot.angle)));
+    redoPackage.mutate(
+      { clientRequestId: createClientRequestId(), castId: data.castId },
       {
         onSuccess: (result) => {
-          release(angle);
+          setAskingAll(false);
+          setAsking(new Set());
           void utils.castingV2.getCast.invalidate({ castId: data.castId });
           /*
-            NO TOAST ON SUCCESS — D-110's question, answered honestly: the
-            picture replacing the confession IS the notice, and it is a better
-            one than a sentence about it. The price was on the button before
-            the press, so nothing about the money is news either.
+            NO TOAST WHEN THEY ALL ARRIVED — the retry road's answer and the
+            same reasoning: the new pictures ARE the notice, and a better one
+            than a sentence about them. The price was on the button before the
+            press, so nothing about the money is news either.
           */
-          if (result.outcome === "ready") return;
+          if (result.failed.length === 0) return;
           /*
-            Truthful about the money even when it went wrong: a refund that did
-            not record is never reported as "you weren't charged" (the refund
-            law this product has had since D-64).
+            Truthful about the money even when it went wrong, and the test stays
+            on the LEDGER with only the printed number converted (#1600).
+            Branching on the displayed figure would say "you weren't charged" to
+            somebody who was charged and refunded a sum too small to show.
           */
+          if (!result.refundRecorded) {
+            toast("Some views didn't arrive — and the refund couldn't be recorded. Support can restore it.");
+            return;
+          }
+          /* NO PRONOUN. A Cast is referred to by the pronouns on her own
+             record (`castPronouns`) or by name — never by one typed into a
+             sentence, which is how Jericho came to be called the wrong thing on
+             his own page. These say "the views", which needs no record at all
+             and reads the same for every cast. */
           /*
-            The test stays on the LEDGER and only the printed number is
-            converted (#1600). Branching on the displayed figure would say
-            "You weren't charged" to somebody who was charged and refunded a
-            sum too small to show — and `creditDisplayFloor.test.ts` is
-            what keeps that sum impossible, at the price table rather than here.
+            ⚠ **NOTHING COMES BACK FOR ONE VIEW UNDER THE FLAT PRICE, so this
+            line says nothing about money unless money actually moved** (#1968,
+            his word of 2026-10-08; #1903's card names it — *"nothing may imply
+            credits came back for that view"*). Repaired on PR #1924 when
+            `main` merged forward.
+
+            It used to end with a sentence telling her she had not been charged
+            — and under the flat price that is the ORDINARY partial failure,
+            because her slot rows cost nothing and `refundedCredits` is 0. True
+            of the pipeline, false to the person who paid 650 for the set. So
+            the claim is removed rather than reworded: the honest line says
+            which views are new and makes none about the till.
+
+            ⚠ **And when money DID come back it is said in the product's one
+            refund vocabulary** (`creditsReturnedText`, #1940). The spelling
+            this branch had — *"Your N credits … are back."* — is one of the
+            four that helper was built to retire, reintroduced on a branch cut
+            before it landed. Exactly the drift `shared/refundCopy.ts` exists
+            to prevent.
           */
-          /* #1940 / #1952: *"{N} credits returned."* and *"Nothing was made,
-             so nothing was charged."* — his approved receipts, 2026-10-08. */
-          toast(result.refundRecorded
-            ? (result.refundedCredits > 0
-              ? `It didn't arrive again. ${creditsReturnedText(result.refundedCredits)}`
-              : "It didn't arrive again. Nothing was made, so nothing was charged.")
-            : "It didn't arrive again — and the refund couldn't be recorded. Support can restore it.");
+          const back = result.refundedCredits > 0
+            ? ` ${creditsReturnedText(result.refundedCredits)}`
+            : "";
+          toast(result.committed.length === 0
+            ? `None of the views arrived this time.${back}`
+            : `${result.failed.length} of the views didn't arrive.${back} The rest are new.`);
         },
         onError: (error) => {
-          release(angle);
-          logRawFailure('castingV2.retryView', error);
-          toast.error(readableFailure(error, "That view couldn't be asked for again."));
+          setAskingAll(false);
+          setAsking(new Set());
+          logRawFailure('castingV2.redoPackage', error);
+          toast.error(readableFailure(error, "Those views couldn't be asked for again."));
         },
       },
     );
@@ -612,10 +652,19 @@ export default function CastingRoom() {
                       `castPronouns.ts` was written at all: the room used to call
                       every Cast "she", and Jericho is male.
                     */}
+                    {/*
+                      THE FINISHED LINE PROMISES THE LOCK, NOT A CHECK (#2087).
+                      It read "Every view here was checked against the face you
+                      signed." — false for a view the checker never reached,
+                      which is delivered and charged on purpose (3 of 119 read at
+                      production, 2026-10-08), and since #1903 nothing on the
+                      page admits it. The lock is true whatever the checker
+                      managed, and it is what IDENTITY LOCKED beside it claims.
+                    */}
                     <span className="dpc-master__retention">
                       {data.status === "building"
                         ? `Building ${data.pronouns.possessive} other views…`
-                        : "Every view here was checked against the face you signed."}
+                        : "The face you signed is locked across every view."}
                     </span>
                     <span className="dpc-master__locked">
                       <Lock size={11} strokeWidth={2} aria-hidden="true" />
@@ -726,6 +775,47 @@ export default function CastingRoom() {
                         before: absent while she builds, absent while the
                         server's door is shut.
                       */}
+                      {/*
+                        ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — on the row
+                        of things you do to the WHOLE Cast rather than to one
+                        picture, which is where the other one already is.
+
+                        ⚠ **BEFORE Delete and not after**, because that button
+                        carries its own standing rule two comments down: it is
+                        accent-coloured and LAST *"because it is the last thing
+                        anyone should reach for"*. The first draft of this row
+                        put the redo after it and the frame said so — a reading
+                        no test could have given, and law 6 exactly.
+
+                        ⚠ **THE OFFER DECIDES WHETHER IT IS DRAWN, NOT THIS
+                        COMPONENT.** The server withholds `redo` while she is
+                        building and while anything of hers is in flight, so
+                        there is no second rule here to drift from it — and no
+                        disabled button wearing a verb, which is the shape #1235
+                        took off the tiles.
+                      */}
+                      {askingAll ? (
+                        /* ⚠ NOT `dpc-slot__row`, which is the muted line UNDER
+                           A TILE. Borrowing it put a second element with that
+                           class above the strip, and the row's own guard (deleted with the row, #2089)
+                           slices the component from the FIRST one — so his two
+                           Try again sentences were being read out of this header
+                           instead. A guard whose anchor another element can
+                           steal is the shape that memory is about. */
+                        <span className="dpc-room__redo-working" role="status">{PACKAGE_REDO_WORKING}</span>
+                      ) : data.redo ? (
+                        <button
+                          type="button"
+                          className="dpc-room__redo"
+                          onClick={askForAllViewsAgain}
+                        >
+                          {/* The LEDGER price, straight off the wire. The copy
+                              module converts it through the one converter
+                              (#1600) so the routing is visible where it happens;
+                              this file does no arithmetic at all. */}
+                          {packageRedoLabel(data.redo.priceCredits)}
+                        </button>
+                      ) : null}
                       {deleteDoorOpen && data.status !== "building" ? (
                         <button
                           type="button"
@@ -818,47 +908,18 @@ export default function CastingRoom() {
                         </button>
                         <span className="dpc-slot__label">{slot.label}</span>
                         {/*
-                          ONE MUTED LINE UNDER THE NAME, NOTHING ELSE (#1347) —
-                          his ruling on the real strip, 2026-09-26 (Desk reply
-                          224): *"Too heavy — the good tiles have become louder
-                          than the broken one… one muted line under the name,
-                          nothing else."* So the row is two lines everywhere:
-                          the name, then `Unchecked · Try again` or `Refunded ·
-                          Try again`. A good view carries nothing, as it always
-                          did.
-
-                          **It supersedes two things he had ruled before, and
-                          both deliberately.** The caption that used to sit here
-                          (*"We didn't get to check this one"*, #1220) is gone —
-                          the single word says it. And the PRICE has left the
-                          link (#1208's *"one price on the button"*) on his
-                          *"No credit count in the row."*
-
-                          The word comes from the offer's own `reason`, so a
-                          word can never be drawn without the link under it, nor
-                          the link without its word — there is no shape in which
-                          the server offers one and not the other.
-
-                          ⚠ **AND THE WHOLE ROW LEAVES WHILE THE VIEW IS BEING
-                          MADE** rather than sitting there disabled with a verb
-                          on it (#1235). A tile that is working has nothing to
-                          offer: the server withholds the offer for as long as
-                          the operation runs, so a press that came back to a
-                          reloaded page cannot buy the same view twice.
+                          ⚠ **NOTHING UNDER THE NAME, ON ANY VIEW — #2089, his
+                          word of 2026-10-08: *"regenerate is the only
+                          option"*.** A muted `Refunded · Try again` row stood
+                          here (#1347's shape, his Desk reply 224) under a view
+                          that never arrived, and #1903 slice 3 had already
+                          taken its `Unchecked` sibling. Both are gone: the
+                          empty tile keeps its one true sentence above, and the
+                          remedy for any view, arrived or refunded, is the
+                          whole-set *Regenerate* on the row of things done to
+                          the whole Cast. The server offers no per-view ask, so
+                          there is nothing here for a client to draw.
                         */}
-                        {slot.retry && !beingAsked ? (
-                          <span className="dpc-slot__row">
-                            {VIEW_RETRY_WORDS[slot.retry.reason]}
-                            <span aria-hidden="true">{VIEW_RETRY_SEPARATOR}</span>
-                            <button
-                              type="button"
-                              className="dpc-slot__again"
-                              onClick={() => askAgain(slot.angle)}
-                            >
-                              {VIEW_RETRY_LINK}
-                            </button>
-                          </span>
-                        ) : null}
                       </article>
                       );
                     })}

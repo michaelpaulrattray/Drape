@@ -299,3 +299,48 @@ describe("Working now draws every open run (#1358)", () => {
     expect(html).not.toContain("live");
   });
 });
+
+/**
+ * RECENT SHIFTS TIMES A FINISHED SHIFT FROM ITS LAST CHECK-IN (#2096).
+ *
+ * Production row #607 last checked in at 10:25:44Z and was stamped closed at
+ * 21:43:32Z by a different shift — 678 minutes later — so at 21:45 his strip
+ * said it had finished "2 min ago" over work that stopped eleven hours earlier.
+ * Rendered, not grepped: the arm reads the markup of the real component.
+ */
+describe("Recent shifts says when a finished shift was last alive, not when it was stamped", () => {
+  /* Two minutes to the second after the close stamp — the "2 min ago" he read. */
+  const NOW = new Date("2026-10-08T21:45:32Z").getTime();
+  const ROW_607 = runRow({
+    id: 607,
+    shift: "seat1-20261008-195540",
+    startedAt: new Date("2026-10-08T09:55:40Z"),
+    heartbeatAt: new Date("2026-10-08T10:25:44Z"),
+    endedAt: new Date("2026-10-08T21:43:32Z"),
+    outcome: "stopped",
+  });
+  const recent = (row: unknown) => {
+    const html = renderToStaticMarkup(
+      createElement(CrewWorkingNow, { shiftRuns: { available: true, open: [], past: [row] } as never, now: NOW }),
+    );
+    return html.slice(html.indexOf("Recent shifts"));
+  };
+
+  it("⚠ row #607 reads eleven hours ago, not two minutes", () => {
+    const html = recent(ROW_607);
+    expect(html).toContain("seat1-20261008-195540, 11 h ago");
+    expect(html).not.toContain("2 min ago");
+  });
+
+  it("the control — the same row without a check-in after its start is timed from its close, as before", () => {
+    /* A row that never checked in carries heartbeatAt === startedAt. No
+       information is no licence to sharpen: it keeps the close stamp. */
+    const silent = { ...ROW_607, heartbeatAt: ROW_607.startedAt };
+    expect(recent(silent)).toContain("seat1-20261008-195540, 2 min ago");
+  });
+
+  it("a row the shift closed itself is unchanged — check-in and close a minute apart", () => {
+    const own = { ...ROW_607, heartbeatAt: new Date("2026-10-08T21:42:32Z") };
+    expect(recent(own)).toContain("seat1-20261008-195540, 3 min ago");
+  });
+});

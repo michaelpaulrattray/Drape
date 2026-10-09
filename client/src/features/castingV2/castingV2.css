@@ -2173,7 +2173,8 @@
 /*
   `.dpc-slot__refund` — the "50 CR BACK" pill — was deleted 2026-09-26 with its
   only consumer, on his ruling (Desk reply 224): the empty tile's own sentence
-  already says refunded, and the row underneath says it again in one word.
+  already says refunded. (The row underneath that said it again in one word is
+  gone too, #2089.)
 */
 
 .dpc-slot__label {
@@ -2182,51 +2183,12 @@
 }
 
 /*
-  ONE MUTED LINE UNDER THE NAME (#1347) — his ruling, 2026-09-26, on the real
-  strip: *"one muted line under the name, nothing else … in our design
-  language."*
-
-  It carries a word and a link on ONE baseline, at the caption's own size, so a
-  room of five good views and one that needs something does not read as a room
-  of buttons. The word is the quieter of the two colours and the link is the
-  stronger, which is the only thing telling the eye where to press — no chip, no
-  border, no fill.
+  `.dpc-slot__row` and `.dpc-slot__again` — the muted *"Refunded · Try again"*
+  line under a view and its link (#1347, #1208 slice 2) — were deleted with
+  their only emitter on #2089, his word of 2026-10-08: *"regenerate is the only
+  option"*. No view carries a per-view ask any more; the remedy is the
+  whole-Cast `.dpc-room__redo` below.
 */
-.dpc-slot__row {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  font: 400 10.5px/1.35 var(--font-sans);
-  color: var(--faint);
-}
-
-/*
-  TRY AGAIN (#1208 slice 2, restyled #1347) — the quietest possible link.
-
-  ⚠ **THE PRICE LEFT IT 2026-09-26** (*"No credit count in the row."*), so the
-  label is two words and nothing else, and it inherits the row's type rather
-  than setting its own — a second font size here is what made this a separate
-  line instead of part of one.
-*/
-.dpc-slot__again {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  letter-spacing: 0.01em;
-  color: var(--meta);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.dpc-slot__again:hover:not(:disabled) { color: var(--ink); }
-
-.dpc-slot__again:disabled {
-  color: var(--faint);
-  cursor: default;
-  text-decoration: none;
-}
 
 /* ---- signed: the state whose absence lost a Cast ----------------------- */
 
@@ -2794,6 +2756,41 @@
 
 .dpc-room__delete:hover { opacity: 1; text-decoration: underline; }
 .dpc-room__delete:focus-visible { outline: 2px solid var(--accentSolid); outline-offset: 2px; }
+
+/* ASK FOR ALL HER VIEWS AGAIN (#1903 slice 2) — the other whole-Cast action,
+   and a deliberate SIBLING of the sentence above rather than of the tile's
+   `dpc-slot__again`.
+
+   ⚠ It wore `dpc-slot__again` first and the frame is what said no: that class
+   is `font: inherit` with a standing underline, written for a muted line under
+   a picture, and in this header it inherited the row's larger type and became
+   the loudest thing on a line whose only coloured word is meant to be Delete.
+   Same 12px as its neighbour, `--meta` because nothing here is destructive,
+   and the underline arrives on hover exactly as the delete sentence's does —
+   three actions, one rhythm, one coloured. */
+.dpc-room__redo {
+  margin-left: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--meta);
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.dpc-room__redo:hover { color: var(--ink); text-decoration: underline; }
+.dpc-room__redo:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* What stands in its place while the new set is being made — the same type and
+   the same colour, so the row does not shift when the button becomes a
+   sentence. Not pressable and says so by being a span, rather than by being a
+   button wearing a verb and a disabled attribute (#1235's shape). */
+.dpc-room__redo-working {
+  margin-left: 12px;
+  font: 400 12px/1.4 var(--font-sans);
+  color: var(--meta);
+}
 
 @keyframes dpc-modal-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dpc-modal-rise {

@@ -1,7 +1,14 @@
 import pLimit from "p-limit";
 
 import { createModuleLogger } from "../logging/logger";
-import { ProviderError, isRetryable, providerAlreadyBilled, type ProviderFailureClass } from "./types";
+import { renderBudgetSpent, type RenderBudget } from "./renderBudget";
+import {
+  ProviderError,
+  isRetryable,
+  providerAlreadyBilled,
+  providerMayHaveBilled,
+  type ProviderFailureClass,
+} from "./types";
 
 const log = createModuleLogger("providers/providerQueue");
 
@@ -179,24 +186,62 @@ export class ProviderQueue {
  * same predicate both arrival loops ask (law 4: one copy of a money decision).
  * Every fal engine reaches its provider through this function, so the one line
  * covers rolls, refines, plates and the Sign sheet together.
+ *
+ * ⚠ **AND THAT LAST SENTENCE IS WHY THE RENDER BUDGET IS CHARGED HERE (#1968).**
+ * `options.budget` is how a caller that has been PRICED on a bounded number of
+ * paid renders gets one — because this loop is the only place that sees each
+ * submission. Above it on the Sign road sit the arrival retry and the house
+ * re-make, and a counter in either of those would still let this one multiply
+ * underneath it: 3 x 3 x 2 = 18 submissions where Cid priced 2.
+ *
+ * The budget is asked BEFORE an attempt and charged AFTER it, and a failure is
+ * charged only when it may have reached the provider
+ * ({@link providerMayHaveBilled}) — so a pre-submit fault keeps its free retry
+ * and only money counts against money. Absent, nothing is counted and this
+ * function behaves exactly as it did before: rolls, refines and plates are
+ * untouched.
  */
 export async function withRetry<T>(
   label: string,
   attempt: () => Promise<T>,
-  options: { retries?: number; baseDelayMs?: number; signal?: AbortSignal } = {},
+  options: {
+    retries?: number;
+    baseDelayMs?: number;
+    signal?: AbortSignal;
+    budget?: RenderBudget;
+  } = {},
 ): Promise<T> {
   const retries = options.retries ?? 2;
   const baseDelayMs = options.baseDelayMs ?? 500;
+  const budget = options.budget;
 
   let lastError: unknown;
   for (let tryIndex = 0; tryIndex <= retries; tryIndex += 1) {
     if (options.signal?.aborted) {
       throw new ProviderError("capability", "cancelled before dispatch");
     }
+    /*
+      ⚠ **The budget is spent, so there is no attempt to make.** Thrown rather
+      than returned because every caller above is a render road expecting bytes
+      or a fault, and `renderBudgetSpent` is terminal for all three loops — see
+      its own docblock for why its class is `capability`.
+    */
+    if (budget && !budget.hasRoom()) {
+      throw renderBudgetSpent(label, budget);
+    }
     try {
-      return await attempt();
+      const result = await attempt();
+      /* Bytes in hand: this one was certainly paid for. */
+      budget?.charge();
+      return result;
     } catch (error) {
       lastError = error;
+      /*
+        Charged before any decision about retrying, because what we owe for an
+        attempt does not depend on what we do next. A fault raised before the
+        queue accepted the job cost nothing and is not charged.
+      */
+      if (budget && providerMayHaveBilled(error)) budget.charge();
       if (providerAlreadyBilled(error)) throw error;
       const failureClass =
         error instanceof ProviderError ? error.failureClass : ("unknown" as ProviderFailureClass);

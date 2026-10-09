@@ -297,6 +297,22 @@ const {
   ROLL_RECOVERY_SENTENCE,
 } = await import("./rollRecovery");
 const { recordRefund } = await import("../casting/atomicCredits");
+const { SpokenError, withSpokenFlag } = await import("../_core/spokenError");
+const { TRPCError } = await import("@trpc/server");
+const { readableFailure } = await import("../../client/src/lib/failureSentence");
+
+/*
+  WHAT HER SCREEN SHOWS (#2058, the roll's twin of #2049) — the thrown error
+  through the formatter the server wires and the client's own rule. The
+  fallback is a stand-in, not a copy of the sheet's: what matters is that the
+  server's sentence beats it, because the fallback cannot carry the operation
+  id she would quote to support.
+*/
+const SHEET_FALLBACK = "(the surface's own fallback)";
+const shownToHer = (error: unknown) => readableFailure(
+  withSpokenFlag({ message: (error as Error).message, data: { code: (error as { code?: string }).code } }, error),
+  SHEET_FALLBACK,
+);
 const { ROLL_UNSEEN_REFUND_DESCRIPTION } = await import("./sliceRefundLedger");
 const { ProviderError } = await import("../providers/types");
 const { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS, castingSliceCredits } = await import("../casting/castingCreditCosts");
@@ -2155,10 +2171,14 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
       type: "recovery_required", reason: "duplicate charge rows for one operation", chargedCredits: ROLL_PRICE, refundedCredits: 2 * SLICE,
     });
 
-    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+    const refusal = await createRoll(baseDependencies(), INPUT).then(() => null, (error: unknown) => error);
+    expect(refusal).toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: ROLL_RECOVERY_SENTENCE.supportReview(OPERATION_ID),
     });
+    /* #2058: spoken, so the sheet reads it aloud with the operation number. */
+    expect(refusal).toBeInstanceOf(SpokenError);
+    expect(shownToHer(refusal)).toBe(ROLL_RECOVERY_SENTENCE.supportReview(OPERATION_ID));
     expect(adjudicator.park).toHaveBeenCalledWith({
       userId: INPUT.userId,
       operationId: OPERATION_ID,
@@ -2176,10 +2196,18 @@ describe("a slice whose dispatch WRITE throws — the live-process collision (#8
       Object.assign(new Error("Got timeout reading communication packets"), { code: "ER_NET_READ_INTERRUPTED" }),
     );
 
-    await expect(createRoll(baseDependencies(), INPUT)).rejects.toMatchObject({
+    const refusal = await createRoll(baseDependencies(), INPUT).then(() => null, (error: unknown) => error);
+    expect(refusal).toMatchObject({
       code: "INTERNAL_SERVER_ERROR",
       message: `This sheet is still being settled. Operation ${OPERATION_ID}.`,
     });
+    /* #2058: spoken, so the sheet reads it aloud with the operation number. */
+    expect(refusal).toBeInstanceOf(SpokenError);
+    expect(shownToHer(refusal)).toContain(OPERATION_ID);
+    /* Negative control: the same words on the same code WITHOUT the marker are
+       still replaced, so the arm above passes on the marker, not the words. */
+    expect(shownToHer(new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: (refusal as Error).message })))
+      .toBe(SHEET_FALLBACK);
     /* The export road's precedent: stop the heartbeat FIRST, expire the lease,
        and the sweep — already proven on the dead-process case — settles it on
        its next pass. No second receipt, no guessed refund. */

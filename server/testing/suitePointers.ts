@@ -112,6 +112,28 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "viewRetryFreeOnce.test.ts": {
+    why:
+      "Deleted with the free Try again it drove (#1903 slice 3, 2026-10-07, on his ruling 'i " +
+      "think we ditch the measure and checker... it should only detect catastropic failure'). " +
+      "All 18 of its arms were about #1601 item 4 — the first ask on an unchecked view is free, " +
+      "once, the second is paid — and both halves of that rule are gone: there is no free ask, " +
+      "so there is nothing to ration, and `spentFreeViewRetryFilter` and " +
+      "`listSpentFreeViewRetryAngles` are deleted with it. " +
+      "⚠ THE POINTER THAT NAMES IT IS IN ITS REPLACEMENT, `viewRetryNoFreeAsk.test.ts`, AND " +
+      "THAT IS DELIBERATE: the absence is the content of that suite's own docblock, which has " +
+      "to say what coverage was removed and what replaced it, because a deletion that only " +
+      "removes arms leaves the product less guarded than the day before. The replacement " +
+      "INVERTS them — it holds that NO slot shape can produce a zero price, walked over the " +
+      "offer's whole input space, which is strictly stronger than the rule it replaces because " +
+      "the old one permitted a free ask and this one permits none. " +
+      "⚠ AND ITS ARMS WERE CHECKED FOR ONE THAT WAS NOT COVERAGE OF THE DELETED THING, which " +
+      "is the lesson the entry below this one paid for: the one worth keeping was the stale " +
+      "free button — a tab opened before this deploy, carrying `priceCredits: 0`, pressed " +
+      "after it — and it is carried into `viewRetryService.test.ts` as the hardest of the five " +
+      "money arms rather than the easiest, because it is the only one of those shapes that can " +
+      "still arrive at the till in production.",
+  },
   "falSignViewWire.test.ts": {
     why:
       "Deleted with `createFalSunburstViewEngine` (#1554, 2026-09-30, on his ruling 'DELETE'). " +

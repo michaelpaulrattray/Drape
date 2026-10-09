@@ -80,6 +80,19 @@ function code(source: string): string {
  * cannot see the population, so a test that tried to recompute it would pass
  * vacuously on the machine that matters. A stale bar that is too LOW is the
  * safe direction here: the window must clear it, and shifts only get longer.
+ *
+ * ⚠ **AND IT IS STALE NOW — RE-MEASURED 2026-10-09 (#2086), AND DELIBERATELY
+ * LEFT AT 138.** The same trailers over the whole history, exit code 0: **589
+ * runs, median 58, p90 102, p95 123, p99 155, max 247**. So the clause above
+ * came true — shifts only got longer — and 16 of 589 now exceed this bar while
+ * **3 of 589 (0.5%) exceed the three-hour window itself**.
+ *
+ * Bumping this constant to 247 reddens the arm below, because 180 < 247. That
+ * is the guard working, not a defect: the ONLY way to green it is to move
+ * `CREW_SHIFT_STALL_MS`, which is a judgement about what his page says about a
+ * silent shift and is named as its own decision in that constant's header. A
+ * shift that raises the window raises this bar in the same commit; neither
+ * moves alone.
  */
 const LONGEST_RECORDED_SHIFT_MINUTES = 138;
 
@@ -390,5 +403,104 @@ describe("the close leaves the row's last check-in alone", () => {
       `${SET_ANCHOR},\n            heartbeatAt = UTC_TIMESTAMP()`,
     );
     expect(reportedColumns(underPromised)).not.toEqual(assignedColumns(closeUpdate(underPromised)));
+  });
+});
+
+/**
+ * A CLOSED ROW'S PRINTED MINUTES ARE ITS LIFE, NOT ITS CLOSE STAMP (#2086).
+ *
+ * `crew-shift-state.mts` printed `endedAt - startedAt` and called it a shift's
+ * length. `endedAt` is a stamp any later shift may apply at any hour, so row
+ * **#613 read as 303 minutes for a 19-minute life** and #607 as 693 for 15;
+ * over production's 54 honestly stamped rows the two readings run median 57
+ * against 35 and max 693 against 128.
+ *
+ * ⚠ The arms are on the BYTES because that script is a database reader and a
+ * unit run has no database — and the whole reason it exists is that an operator
+ * wanting to look reached for a writer instead, so it cannot grow a dev-only
+ * mode to be driven through. The arithmetic itself IS driven, in
+ * `server/crewRunSupersession.test.ts`, against this same row #612; what these
+ * arms add is that the script reaches for it, which is the half that would
+ * otherwise go inert without anything saying so (invariant 7).
+ */
+describe("a closed row's printed minutes are its life, not its close stamp", () => {
+  const READER = "scripts/crew-shift-state.mts";
+  /* Anchors asserted unique rather than assumed — a slice taken at the second
+     of two matches reads a statement nobody edited (memory: *guard arm
+     satisfied by a sibling*).
+     ⚠ The start anchor is the closed SELECT's own WHERE and NOT the printed
+     heading, because the SELECT must be inside the slice: the OPEN-runs query
+     thirty lines above also names `heartbeatAt`, and the first shape of the
+     arm below passed a sabotage that deleted the column from the closed one
+     because that sibling satisfied it. */
+  const START_ANCHOR = "WHERE endedAt IS NOT NULL";
+  const END_ANCHOR = "This command wrote nothing.";
+
+  /** The closed-run query and its loop, as the file holds it — comments out. */
+  function closedBlock(source: string): string {
+    const text = code(source);
+    for (const anchor of [START_ANCHOR, END_ANCHOR]) {
+      const hits = text.split(anchor).length - 1;
+      expect(hits, `\`${anchor}\` must appear exactly once in code, found ${hits}`).toBe(1);
+    }
+    const at = text.indexOf(START_ANCHOR);
+    const start = text.lastIndexOf("SELECT", at);
+    const end = text.indexOf(END_ANCHOR);
+    expect(start, "the closed query's SELECT must sit before its WHERE").toBeGreaterThan(-1);
+    expect(end, "the closing line must sit after the query it follows").toBeGreaterThan(at);
+    return text.slice(start, end);
+  }
+
+  it("the figure printed as a shift's length comes from its last proof of life", () => {
+    const block = closedBlock(read(READER));
+    expect(block).toContain("laneRunLastProofOfLife");
+    expect(block).toMatch(/const minutes = Math\.round\(\(lifeEnd - started\)/);
+    /* And it says WHICH figure it is, which is the other half of the card's
+       done-when: *"either shows the provable life or says which figure it is"*. */
+    expect(block).toMatch(/min alive/);
+  });
+
+  it("⚠ and the row's last check-in is SELECTED, or the whole reading is inert", () => {
+    /* A SELECT that omits the column hands `laneRunLastProofOfLife` a null and
+       it falls back to the close stamp SILENTLY — the reading would be exactly
+       as wrong as before with nothing anywhere going red. Scoped to the closed
+       query's own slice: the first shape of this arm read the whole file and
+       the OPEN-runs SELECT satisfied it, so the sabotage passed. */
+    expect(closedBlock(read(READER))).toMatch(/SELECT[^`]*\bheartbeatAt\b/);
+  });
+
+  it("a late close is named on its own line rather than passing as a lifetime", () => {
+    const block = closedBlock(read(READER));
+    expect(block).toMatch(/stamped closed \$\{[^}]+\} min after its last check-in/);
+  });
+
+  it("⚠ and that line sits behind a DERIVED bar, not an invented one or none at all", () => {
+    /*
+      The first shape of it had no bar and fired on eight of production's eight
+      newest rows, because an ordinary close sits minutes after the *edition
+      written* heartbeat — the deploy rite and the mailbox entry come after it.
+      A ⚠ on eight of eight is the alarm `CREW_SHIFT_STALL_MS`'s own header is
+      about: one he learns to scroll past, and then the first one he believes is
+      the false one.
+
+      So the arm is on the CONSTANT and not on a number: half the stall window
+      is the same bar the close script already uses for the sibling question, and
+      a literal here would be a second number free to drift from it (working
+      law 4).
+    */
+    expect(closedBlock(read(READER))).toMatch(/>\s*CREW_SHIFT_STALL_MS \/ 2/);
+  });
+
+  it("and that reading can say no", () => {
+    /* POSITIVE CONTROL: the old arithmetic put back, in the shape it had. The
+       arm must fail — otherwise the slice never reached the statement, which is
+       how this kind of arm usually passes for the wrong reason. */
+    const doctored = read(READER).replace(
+      "const minutes = Math.round((lifeEnd - started) / 60_000);",
+      "const minutes = Math.round((new Date(row.endedAt).getTime() - started) / 60_000);",
+    );
+    expect(doctored, "the statement being doctored must exist in the file").not.toBe(read(READER));
+    const block = closedBlock(doctored);
+    expect(block).not.toMatch(/const minutes = Math\.round\(\(lifeEnd - started\)/);
   });
 });

@@ -52,6 +52,17 @@ export const FEATURE_TRANSITION_AUTHORITY:
     // Pre-Sign, like the roll it re-renders one slice of.
     "castingV2.retry": "not_applicable",
     "castingV2.viewRetry": "not_applicable",
+    /*
+      Post-Sign, and not blind: a redo renders through `carriedInkCrops` and
+      `carriedFeatureWords` — the Sign's own two readers — so her accepted
+      tattoos and the features her master cannot show ride into every view it
+      replaces. `evidence_blind` exists for the legacy operations that would
+      quietly drop them; this road carries them by construction, which is the
+      same ground the Try again above stands on.
+    */
+    "castingV2.packageRedo": "not_applicable",
+    /* The press row renders nothing and commits nothing (#1903). */
+    "castingV2.packageRedoPress": "not_applicable",
   };
 
 export const FEATURE_BLIND_OPERATION_MESSAGE =

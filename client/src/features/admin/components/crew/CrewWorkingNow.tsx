@@ -68,7 +68,7 @@
  * page worth acting on tonight, and brief 07's own rule one surface over is
  * that fine is colourless and red means urgent. Nothing else here is coloured.
  */
-import { deriveShiftRunState } from "@shared/crewShiftState";
+import { deriveShiftRunState, laneRunLastProofOfLife } from "@shared/crewShiftState";
 import { cn } from "@/lib/utils";
 import { SectionHead, SectionShell } from "./CrewShell";
 import type { CrewShiftRunView, CrewShiftRunsView } from "./crewTypes";
@@ -156,6 +156,30 @@ function RunBody({ run, now }: { run: CrewShiftRunView; now: number }) {
 }
 
 /**
+ * WHEN A FINISHED SHIFT STOPPED WORKING — its last check-in, not its close
+ * stamp (#2096).
+ *
+ * The line used to read `ago(run.endedAt ?? run.startedAt)`. `endedAt` is a
+ * stamp whichever shift gets round to it applies, at any hour: production row
+ * #607 last checked in at 10:25:44Z and was stamped closed at 21:43:32Z by a
+ * different shift, so at 21:45 this line said it had finished *"2 min ago"*
+ * over work that stopped eleven hours earlier. A row a shift closed itself is
+ * unchanged — its check-in and its close are minutes apart.
+ *
+ * The reading is `laneRunLastProofOfLife`, the one definition the seat cut and
+ * the shift ledger already share (#2079, #2086), so this page cannot disagree
+ * with them about when a shift was last alive. It carries the never-checked-in
+ * fallback: a row whose heartbeat never moved past its start is timed from its
+ * close stamp as before, because no information is no licence to sharpen. A row
+ * with neither (it cannot reach this list, which is finished runs only) falls
+ * back to its start rather than to "unknown".
+ */
+function lastAlive(run: CrewShiftRunView): Date | string {
+  const at = laneRunLastProofOfLife(run);
+  return Number.isFinite(at) ? new Date(at) : run.startedAt;
+}
+
+/**
  * One finished run, in the short list beneath.
  *
  * #272 asks for "the last three shifts, so he can see the recent past without
@@ -186,7 +210,7 @@ function PastRun({ run, now }: { run: CrewShiftRunView; now: number }) {
           </span>
         )}
         <span className="dp-crew__body--quiet">
-          {" "}· {run.shift}, {ago(run.endedAt ?? run.startedAt, now)}
+          {" "}· {run.shift}, {ago(lastAlive(run), now)}
         </span>
       </span>
     </li>

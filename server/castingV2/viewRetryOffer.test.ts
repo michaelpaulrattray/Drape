@@ -1,13 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
-import { VIEW_RETRY_WORDS } from "../../client/src/features/castingV2/viewRetryRow";
 import {
   castSlotRetryOffer,
+  FAILED_SLOT_CONFESSION,
   projectSignedCast,
 } from "./castProjection";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
-import { CAST_PACKAGE_VIEW_PRICE } from "./castViewPackage";
+/**
+ * What a view's slice was refunded under the rule #1968 retired — a LEDGER and
+ * ROW fact, not a product constant.
+ *
+ * ⚠ **It was `LEGACY_VIEW_SLICE` and that constant is gone.** His word of
+ * 2026-10-08 makes a Sign one flat charge with no per-view refund, so nothing
+ * in the tree can produce this number any more — but Casts signed before it
+ * carry slot markers that say exactly this, and the room still reads them. A
+ * literal on purpose: deriving it from a live constant would be a fiction that
+ * moves with his next price word.
+ */
+const LEGACY_VIEW_SLICE = 1000;
 
 /*
   `storagePublicUrl` reads the R2 config from an import-time ENV snapshot and
@@ -104,7 +115,7 @@ const anchor = () =>
   });
 
 /** A written-off view: the marker the room confesses from. */
-const failed = (viewType: string, refunded = CAST_PACKAGE_VIEW_PRICE) =>
+const failed = (viewType: string, refunded = LEGACY_VIEW_SLICE) =>
   asset({
     id: 500 + viewType.length,
     viewType: viewType as ModelAsset["viewType"],
@@ -139,174 +150,143 @@ function slotsOf(
 }
 
 describe("what a tile offers, and what it costs", () => {
-  it("a view that failed was refunded, so asking again is a PAID ask at the Try again price", () => {
-    /*
-      ⚠ **IT WAS THE VIEW'S PRICE UNTIL 2026-10-01 AND THIS ARM COULD NOT TELL
-      WHICH CONSTANT THE CODE READ.** Both callers passed
-      `CAST_PACKAGE_VIEW_PRICE` into `castSlotRetryOffer`, so an arm asserting
-      the view price proved only that the offer carried SOME number. A paid Try
-      again is its own price under his approved pricing (#1601 item 1) — 1,850
-      against a view's 1,000 — so the two are asserted apart and the arm names
-      which one belongs on a tile.
-    */
-    const slots = slotsOf([anchor(), asset(), failed("backFull")]);
-    expect(slots.get("backFull")?.state).toBe("failed-refunded");
-    expect(slots.get("backFull")?.retry).toEqual({
-      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-      reason: "refunded",
+  /**
+   * ⚠ **EVERY ARM IN THIS BLOCK NOW ASSERTS THE SAME ANSWER — NOTHING — AND
+   * THAT IS #2089, his word of 2026-10-08 (terminal), verbatim and entire:
+   * *"regenerate is the only option"*.**
+   *
+   * Until then a REFUNDED view (and the legacy stand-in whose close-up was
+   * refunded) offered a paid Try again at `CASTING_V2_VIEW_RETRY_PRICE_CREDITS`,
+   * and these arms held that price. The fixtures are kept exactly as they were,
+   * because they are the shapes most likely to bring a per-view offer back by
+   * accident; what they assert is the retirement. The remedy for any view is
+   * the whole-set redo, whose offer is a different function and is held below
+   * to stay ON for the very Cast whose slots offer nothing.
+   */
+  it("a view that failed was refunded — it confesses, and offers NOTHING", () => {
+    const projection = projectSignedCast({
+      model: model(),
+      assets: [anchor(), asset(), failed("backFull")].sort((a, b) => b.id - a.id),
+      lineage,
+      promisedAngles: ["frontFull", "threeQuarter", "sideFull", "backFull", "closeUp"],
     });
-    /* The control that the arm above is about the Try again price and not
-       about a view's: a code path still reading the view price fails here. */
-    expect(CASTING_V2_VIEW_RETRY_PRICE_CREDITS).not.toBe(CAST_PACKAGE_VIEW_PRICE);
+    const slot = projection.slots.find((candidate) => candidate.angle === "backFull");
+    expect(slot?.state).toBe("failed-refunded");
+    /*
+      The one true sentence the tile keeps. ⚠ **IT NO LONGER ENDS IN
+      "— refunded", AND THIS FIXTURE IS NOW A LEGACY ROW — #1968.** The note
+      said the refund was real *"(the Sign's per-view slice)"*; his flat price
+      removes that slice, so a view refused today refunds nothing and the
+      sentence claims nothing. The marker below still carries a figure because
+      Casts signed before the reprice really were refunded per view, and the
+      room must keep reading them honestly.
+    */
+    expect(slot?.note).toBe(FAILED_SLOT_CONFESSION);
+    expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
+    expect(slot?.retry).toBeUndefined();
+    /*
+      THE REMEDY, ON THE SAME CAST — and it is the control that matters: an
+      arm that only said "no per-view offer" would pass on a projection that
+      offered nothing at all, which would leave her with no remedy.
+    */
+    expect(projection.redo).not.toBeNull();
+    expect(projection.redo?.priceCredits).toBeGreaterThan(0);
   });
 
-  it("a view nobody checked was charged and kept, so asking again is FREE — and it says why", () => {
+  it("a view nobody could check is DELIVERED and offers NOTHING — no label, no free ask", () => {
     const slots = slotsOf([anchor(), unjudged("closeUp")]);
     const slot = slots.get("closeUp");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBe(true);
-    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    /*
-      The word is not decoration: a free link under one tile and not the others,
-      with nothing said, is a control nobody has a basis for pressing. It used to
-      be a SENTENCE here (`UNJUDGED_SLOT_NOTE`, *"We didn't get to check this
-      one"*) and it is one word on the row since his ruling of 2026-09-26 — so
-      the note is null and the reason carries the fact.
-    */
+    expect(slot?.url).toBeTruthy();
     expect(slot?.note).toBeNull();
+    expect(slot?.retry).toBeUndefined();
   });
 
   it("a view that arrived and WAS checked offers nothing at all", () => {
     const slots = slotsOf([anchor(), asset()]);
     const slot = slots.get("frontFull");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
     expect(slot?.note).toBeNull();
   });
 
-  it("the headshot standing in for a refunded close-up is the PAID case wearing a picture", () => {
-    const slots = slotsOf(
-      [anchor(), failed("frontClose")],
-      {},
-    );
+  it("the headshot standing in for a refunded close-up offers NOTHING too", () => {
+    const slots = slotsOf([anchor(), failed("frontClose")]);
     const slot = slots.get("frontClose");
     expect(slot?.standIn).toBe(true);
-    /* What went BACK is the view's slice — that is what was charged for it. */
-    expect(slot?.refundedCredits).toBe(CAST_PACKAGE_VIEW_PRICE);
-    /* What asking again COSTS is the Try again price, which is a different
-       number since #1601 item 1. The two sit side by side here on purpose:
-       this slot is the one place a refund and a re-purchase are both visible,
-       and conflating them is exactly the mistake the old arm could not see. */
-    expect(slot?.retry).toEqual({
-      priceCredits: CASTING_V2_VIEW_RETRY_PRICE_CREDITS,
-      reason: "refunded",
-    });
-    /*
-      ⚠ AND ITS SENTENCE IS GONE WITH THE OTHER ONE (#1347). This slot said
-      *"The face you signed, standing in — the close-up didn't arrive; refunded"*
-      until 2026-09-26; under his *"one muted line, nothing else"* it says
-      `Refunded` like the empty tile, and the fact that the picture is her Master
-      rather than her Portrait is no longer stated. Asserted rather than left
-      implicit, because it is the one thing this change actually costs.
-    */
+    /* What went back is still recorded — the refund happened. */
+    expect(slot?.refundedCredits).toBe(LEGACY_VIEW_SLICE);
+    expect(slot?.retry).toBeUndefined();
     expect(slot?.note).toBeNull();
   });
 
   it("a stand-in with NOTHING refunded is a Cast that never bought that view — no offer", () => {
-    /*
-      The negative control for the arm above, and the reason the rule keys on
-      the refund rather than on the stand-in flag: a headshot that is simply
-      the signed face has no failed view behind it and nothing to ask for.
-    */
     const slots = slotsOf(
       [anchor(), asset()],
       {},
-      /* An era that BOUGHT a headshot, so the slot is rendered at all. */
       ["frontClose", "frontFull", "threeQuarter", "sideFull", "backFull", "closeUp"],
     );
     expect(slots.get("frontClose")?.standIn).toBe(true);
     expect(slots.get("frontClose")?.retry).toBeUndefined();
   });
 
-  it("NOTHING is offered while the package is still building — the Sign still owns every slot", () => {
-    const building = slotsOf([anchor(), unjudged("closeUp")], { status: "provisioning" });
+  it("nothing is offered while building, AND nothing once terminal — building is no longer the only refusal", () => {
+    const building = slotsOf([anchor(), asset(), failed("backFull")], { status: "provisioning" });
     expect([...building.values()].every((slot) => slot.retry === undefined)).toBe(true);
-    /*
-      The positive control that keeps the arm above from passing for the wrong
-      reason: the SAME rows, terminal, do offer.
-    */
-    const terminal = slotsOf([anchor(), unjudged("closeUp")]);
-    expect(terminal.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+    const terminal = slotsOf([anchor(), asset(), failed("backFull")]);
+    /* The same rows, terminal, hold a refunded slot — the shape that offered
+       until #2089 — so this is about the refunded slot and not an empty fixture. */
+    expect(terminal.get("backFull")?.state).toBe("failed-refunded");
+    expect([...terminal.values()].every((slot) => slot.retry === undefined)).toBe(true);
   });
 
-  it("the rule is a pure reading of the slot, and it refuses every other state", () => {
+  it("the rule answers null for EVERY state the slot can be in, at any price", () => {
     /*
-      An INJECTED price, and a number that is neither of the product's two
-      (a view's 1,000, a Try again's 1,850), so this arm is about the states
-      and cannot accidentally pass because a caller happened to pass the same
-      constant the function reached for. The function takes no constant of its
-      own — both its callers hand it one.
+      An INJECTED price that is neither of the product's numbers, so this arm
+      cannot pass because a caller happened to pass a constant the function
+      reached for. Every shape that offered before #2089 is here by name.
     */
     const price = 777;
-    expect(castSlotRetryOffer(
+    const shapes: Array<Parameters<typeof castSlotRetryOffer>[0]> = [
       { state: "building", refundedCredits: null },
-      price,
-    )).toBeNull();
-    expect(castSlotRetryOffer(
       { state: "pending", refundedCredits: null },
-      price,
-    )).toBeNull();
-    expect(castSlotRetryOffer(
       { state: "failed-refunded", refundedCredits: null },
-      price,
-    )).toEqual({ priceCredits: price, reason: "refunded" });
-    expect(castSlotRetryOffer(
-      { state: "ready", unjudged: true, refundedCredits: null },
-      price,
-    )).toEqual({ priceCredits: 0, reason: "unchecked" });
+      { state: "failed-refunded", refundedCredits: LEGACY_VIEW_SLICE },
+      { state: "ready", refundedCredits: null },
+      { state: "ready", standIn: true, refundedCredits: 200 },
+      { state: "ready", standIn: true, refundedCredits: null },
+    ];
+    for (const shape of shapes) {
+      expect(castSlotRetryOffer(shape, price), JSON.stringify(shape)).toBeNull();
+      expect(castSlotRetryOffer(shape, CASTING_V2_VIEW_RETRY_PRICE_CREDITS), JSON.stringify(shape)).toBeNull();
+    }
   });
 
-  /*
-    THE PAIR HIS ROW RESTS ON (#1347), and it is asserted rather than assumed.
-
-    His line is a word and a link that appear together or not at all. The offer
-    carries both, so the shapes that would break it are structurally impossible
-    — but "structurally impossible" is a claim about a type, and a branch added
-    later can still return a price with a reason that has no word behind it.
-    These two arms hold the population from BOTH ends over every slot shape the
-    projection can produce, so a third road cannot ship half-drawn.
-  */
-  it("every offer carries a reason, and every reason is one the row has a word for", () => {
+  /**
+   * THE WHOLE POPULATION, WALKED — every slot of every shape the projection can
+   * produce from these fixtures carries no offer. The FLOOR below is what keeps
+   * the walk honest: it must actually visit the refunded and stand-in slots
+   * that offered before #2089, or an empty walk would pass.
+   */
+  it("no slot of any projected shape carries an offer, and the walk visits the shapes that used to", () => {
     const shapes: Array<[string, ReturnType<typeof slotsOf>]> = [
       ["failed", slotsOf([anchor(), asset(), failed("backFull")])],
       ["unjudged", slotsOf([anchor(), unjudged("closeUp")])],
       ["stand-in refunded", slotsOf([anchor(), failed("frontClose")])],
       ["all good", slotsOf([anchor(), asset()])],
-      ["building", slotsOf([anchor(), unjudged("closeUp")], { status: "provisioning" })],
+      ["building", slotsOf([anchor(), asset(), failed("backFull")], { status: "provisioning" })],
     ];
-    let offers = 0;
+    let formerlyOffered = 0;
     for (const [name, slots] of shapes) {
       for (const slot of slots.values()) {
-        if (!slot.retry) continue;
-        offers += 1;
-        expect(
-          VIEW_RETRY_WORDS[slot.retry.reason],
-          `${name}/${slot.angle}: reason "${slot.retry.reason}" has no word on the row`,
-        ).toBeTruthy();
+        expect(slot.retry, `${name}/${slot.angle} carries a per-view offer`).toBeUndefined();
+        if (
+          (slot.state === "failed-refunded")
+          || (slot.state === "ready" && slot.standIn === true && slot.refundedCredits !== null)
+        ) formerlyOffered += 1;
       }
     }
-    /* The floor, so a reader that found no offer at all cannot pass silently. */
-    expect(offers).toBeGreaterThanOrEqual(3);
-  });
-
-  it("the row has no word the server cannot ask for — the map is not wider than the union", () => {
-    /*
-      The other direction, and the one working law 4 is about: a word sitting in
-      the client's map with no reason producing it is a sentence nobody can ever
-      read, and it would make the arm above pass forever.
-    */
-    expect(Object.keys(VIEW_RETRY_WORDS).sort()).toEqual(["refunded", "unchecked"]);
+    expect(formerlyOffered).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -331,12 +311,21 @@ describe("what a tile offers, and what it costs", () => {
  * can reach this state: every axis the judge still has is a catastrophe and
  * refuses. But the rows below are not fixtures of a dead road — **three real
  * production rows carry exactly this shape** (assets 383, 389 and 391, written
- * in the hours #1612 part 2 was live), and each is a view somebody paid for
- * that is owed a free Try again.
+ * in the hours #1612 part 2 was live).
  *
- * So this describe is the MONEY side of the retired-axis reading: it holds the
- * price those three rows are offered, through the same function the entrance
- * authorizes with. The axis names in it are deliberately the retired ones.
+ * ⚠ **AND WHAT THEY HOLD IS NOW THE OPPOSITE ANSWER — SLICE 3 TOOK THE FREE
+ * ASK AWAY, AND THESE THREE ROWS ARE EXACTLY WHO IT WAS TAKEN FROM.** This
+ * header used to end *"each is a view somebody paid for that is owed a free Try
+ * again"*, and the arms held the price at 0. They now hold that the same rows
+ * are offered NOTHING.
+ *
+ * **That is a money change, so it was measured before it was made, not after**
+ * (`scripts/_1903-unchecked-population-disposable.mts`, production, read-only):
+ * six rows in the whole product read unchecked — 317, 322 and 324 under
+ * `unavailable` and these three — and **every one of them belongs to user 1.**
+ * The only other account that has ever cast is the team's design agent. So the
+ * withdrawal reaches no paying stranger, and the arms below are the record of
+ * what it does reach.
  */
 describe("a delivered view whose row carries a RETIRED failing axis (history, and three live rows)", () => {
   /** Delivered, judged, and one axis did not hold (#1612 part 2, retired by #1903). */
@@ -359,22 +348,24 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
       },
     });
 
-  it("was charged and kept, so asking again is FREE and says the same word", () => {
+  it("was charged and kept, and is now offered NOTHING — the free ask is retired", () => {
     const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "angle")]);
     const slot = slots.get("closeUp");
+    /* She keeps the picture. That half never changed and is not being retired:
+       the view was delivered and charged, and it is still on her tile. */
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBe(true);
-    expect(slot?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
-    /* One word, and it is the word that already existed. A customer never meets
-       an axis name, a verdict word or a percentage — the whole surface of this
-       change is copy the product already shipped. */
+    expect(slot?.url).toBeTruthy();
+    /* What changed: no word, no link, no price. */
     expect(slot?.note).toBeNull();
-    expect(VIEW_RETRY_WORDS.unchecked).toBe("Unchecked");
+    expect(slot?.retry).toBeUndefined();
+    /* The row's word map (`viewRetryRow.ts`) that this line used to hold
+       against is deleted with the row itself (#2089) — no word can come back
+       without a module to live in. */
   });
 
   it("reads the same whether the axis said differs or unsure", () => {
     const slots = slotsOf([anchor(), deliveredUnchecked("closeUp", "wardrobe")]);
-    expect(slots.get("closeUp")?.retry).toEqual({ priceCredits: 0, reason: "unchecked" });
+    expect(slots.get("closeUp")?.retry).toBeUndefined();
   });
 
   it("⚠ CONTROL — a view whose retired axes all passed still offers nothing", () => {
@@ -394,7 +385,6 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
       }),
     ]);
     const slot = slots.get("frontFull");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
   });
 
@@ -416,7 +406,6 @@ describe("a delivered view whose row carries a RETIRED failing axis (history, an
     ]);
     const slot = slots.get("frontFull");
     expect(slot?.state).toBe("ready");
-    expect(slot?.unjudged).toBeUndefined();
     expect(slot?.retry).toBeUndefined();
   });
 });

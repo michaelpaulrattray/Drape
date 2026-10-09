@@ -4,6 +4,8 @@ import sharp from "sharp";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProviderError } from "../providers/types";
+import { withRetry } from "../providers/providerQueue";
+import type { RenderBudget } from "../providers/renderBudget";
 /* The REAL composition the failed-slot row is stored with — #1492's seam arm
    below drives the writer's own function rather than a copy of it. */
 import { slotFailureStatus } from "./slotFailureRecord";
@@ -11,7 +13,6 @@ import {
   CONFORMANCE_AXES,
   unjudgedVerdict,
   viewConformanceRefuses,
-  viewDeliveredUnchecked,
   type ViewConformanceVerdict,
 } from "./viewConformance";
 import { pronounsForSex } from "./castPronouns";
@@ -79,20 +80,24 @@ const {
   VIEW_STORE_ATTEMPTS,
   VIEW_STORE_BACKOFF_MS,
 } = await import("./packageOrchestrator");
-const { CAST_PACKAGE_VIEWS, CAST_PACKAGE_VIEW_PRICE, CASTING_V2_SIGN_PRICE_CREDITS } = await import("./castViewPackage");
-const { CASTING_V2_SIGN_COSTS } = await import("../casting/castingCreditCosts");
+const { CAST_PACKAGE_VIEWS } = await import("./castViewPackage");
+const { CASTING_V2_SIGN_PRICE_CREDITS } = await import("../casting/castingCreditCosts");
 /**
  * THE PACKAGE'S MONEY, READ FROM THE PRODUCT — #1601 item 1, 2026-10-01.
  *
  * ⚠ **`50`, `200` AND `450` WERE LITERALS IN EVERY MONEY ARM HERE, AND THEY ALL
- * WENT RED ON TWO CONSTANT EDITS** (a view is 1,000 now and the promotion
- * 3,500). The arms are about WHICH references a refund lands under and whether
- * the base comes back — true at any price — so they read the price. The
- * literals left in this file are prose narrating what a ruling cost on the day
- * it was made.
+ * WENT RED ON TWO CONSTANT EDITS.** The arms are about WHICH reference a refund
+ * lands under and whether anything comes back at all — true at any price — so
+ * they read the price. The literals left in this file are prose narrating what
+ * a ruling cost on the day it was made.
+ *
+ * ⚠ **AND THERE IS ONLY ONE NUMBER LEFT, WHICH IS THE WHOLE OF #1968.**
+ * `VIEW_PRICE` (a view's refundable slice) and `PROMOTION` (the base) are gone
+ * with the decomposition they named: his word of 2026-10-08 made the Sign one
+ * flat charge with no per-view refund, so there is nothing for a per-slice
+ * figure to assert about. An arm that still wanted one would be asserting the
+ * old rule.
  */
-const VIEW_PRICE = CAST_PACKAGE_VIEW_PRICE;
-const PROMOTION = CASTING_V2_SIGN_COSTS.promotion;
 const SIGN_PRICE = CASTING_V2_SIGN_PRICE_CREDITS;
 import type { CastViewAngle } from "../../shared/boardTypes";
 import {
@@ -102,7 +107,7 @@ import {
   type SignSheetKind,
 } from "./signSheet";
 import { SHEET_MAX_RENDERS } from "./signSheetCoordinator";
-import { refundOutcomeText } from "../../shared/refundCopy";
+import { joinSentences, refundOutcomeText } from "../../shared/refundCopy";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { readListedSource } from "../testing/listedSource";
 
@@ -405,6 +410,12 @@ const input = {
   identityRevisionId: "rev-1",
   identityText: "identity",
   anchor: { bytes: ANCHOR_PNG, contentType: "image/png" },
+  /*
+    What this Sign was charged — read from the live constant rather than typed,
+    so his next price word moves every money arm in this suite with it (#1968).
+    The orchestrator refunds THIS figure on a total loss and nothing else.
+  */
+  chargedCredits: CASTING_V2_SIGN_PRICE_CREDITS,
 };
 
 beforeAll(async () => {
@@ -637,19 +648,26 @@ describe("one regeneration, then named-and-refunded", () => {
     expect(storedKeys).toHaveLength(5);
   });
 
-  it("fails and refunds exactly one slice when both attempts fail conformance", async () => {
+  /*
+    ⚠ **THIS ARM READ *"fails and refunds exactly one slice"* UNTIL #1968, AND
+    THE INVERSION IS THE CARD.** His word of 2026-10-08: views are cut from two
+    sheets and *"can't be refunded one by one... Credits only come back if the
+    Sign can't be delivered at all."* So a refused view now refunds NOTHING
+    and the four that landed are still delivered.
+
+    It asserts on `refunds` being EMPTY rather than on the absence of one
+    amount, because a reader keyed on a figure goes quietly inert the day the
+    figure changes — and the whole of this card is a figure changing.
+  */
+  it("refunds NOTHING for a view refused twice, and still delivers the rest", async () => {
     const judge = () => vi.fn(async (request: { angle: string }) =>
       request.angle === "backFull" ? fail : pass);
     const result = await buildCastPackage(deps({ judge }), input);
 
     expect(result.failed).toEqual(["backFull"]);
-    expect(refunds).toHaveLength(1);
-    expect(refunds[0]).toEqual({
-      amount: VIEW_PRICE,
-      reference: packageSlotChargeReference(OPERATION_ID, "backFull"),
-    });
-    expect(result.refundedCredits).toBe(VIEW_PRICE);
-    // Five landed. A failed view never blocks the others.
+    expect(refunds, "no slice comes back for a refused view (#1968)").toEqual([]);
+    expect(result.refundedCredits).toBe(0);
+    // Four landed. A failed view never blocks the others.
     expect(committed).toHaveLength(4);
   });
 
@@ -734,15 +752,18 @@ describe("one regeneration, then named-and-refunded", () => {
       state: string;
       reason: string;
       refunded: number;
-      refundReference: string;
+      refundReference?: string;
       conformance?: { axes: Record<string, { pass: boolean }> };
       earlierAttempts?: Array<{ axes: Record<string, { pass: boolean }> }>;
       at: string;
     };
 
-    /* The row the room already reads is untouched. */
+    /* The row the room already reads keeps its shape; since #1968 its money
+       line is zero and it quotes no reference, because nothing was owed. */
     expect(stored.state).toBe("failed");
-    expect(stored.refunded).toBe(VIEW_PRICE);
+    expect(stored.refunded).toBe(0);
+    expect(stored.refundReference, "no refund was attempted, so there is nothing to quote")
+      .toBeUndefined();
     expect(stored.conformance?.axes.intact.pass).toBe(true);
     expect(stored.at).toBe("2026-09-30T00:00:00.000Z");
     /* And the draw nobody heard about is IN THE ROW. */
@@ -755,7 +776,10 @@ describe("one regeneration, then named-and-refunded", () => {
        carrying nothing — the old conditional spreads existed for this reason
        and the derived version has to keep it. */
     const stored = slotFailureStatus(
-      { reason: "The view could not be generated", refunded: VIEW_PRICE, refundReference: "ref" },
+      /* A REFUNDED fixture on purpose: this arm is about `slotFailureStatus`
+         dropping absent keys, and the refresh/mint road still refunds per slot,
+         so a record carrying money is still a legal one to derive from. */
+      { reason: "The view could not be generated", refunded: 1000, refundReference: "ref" },
       "2026-09-30T00:00:00.000Z",
     );
     expect(Object.keys(stored).sort())
@@ -882,8 +906,10 @@ describe("a refused view keeps its frame", () => {
     const result = await buildCastPackage(deps({ judge, capture }), input);
 
     expect(result.failed).toEqual(["backFull"]);
-    /* The money still moved and the other four still landed. */
-    expect(refunds).toHaveLength(1);
+    /* The refusal still stood and the other four still landed. No money moves
+       for a refused view since #1968, so the arm reads the DELIVERY rather than
+       the refund it used to read. */
+    expect(refunds).toEqual([]);
     expect(committed).toHaveLength(4);
     /*
       ⚠ AND THE ROAD IS UNCHANGED, WHICH IS THE ARM THAT MATTERS AND THE ONE
@@ -1459,16 +1485,43 @@ describe("the fence", () => {
 });
 
 describe("honesty about money that did not move", () => {
-  it("reports an unrecorded refund and records 0 on the slot, never the view's price", async () => {
+  /*
+    ⚠ **RE-POINTED AT THE TOTAL LOSS BY #1968.** It drove a single refused view
+    with `refundRecords = false`, because that view used to attempt a slice
+    refund that could fail. Nothing is attempted for a refused view now, so that
+    fixture had stopped being able to produce an unrecorded refund at all — it
+    would have passed forever on `refundUnrecorded: false` and measured nothing.
+
+    The honesty it guards is the same and now sits on the only road that pays:
+    a Sign that delivered nothing, whose one refund did not record, must say so
+    rather than sealing a clean receipt.
+  */
+  it("reports an unrecorded refund on a total loss, and never claims money moved", async () => {
     refundRecords = false;
-    const judge = () => vi.fn(async (request: { angle: string }) =>
-      request.angle === "backFull" ? fail : pass);
-    const result = await buildCastPackage(deps({ judge }), input);
+    const result = await buildCastPackage(
+      deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("provider_account", "out of funds")) }),
+      input,
+    );
 
     expect(result.refundUnrecorded).toBe(true);
+    /* It ASKED for the whole charge and the ledger did not take it, so the
+       receipt reports zero moved — never the amount it tried to send. */
     expect(result.refundedCredits).toBe(0);
+    expect(result.totalLoss).toBe(true);
+  });
+
+  it("records 0 on a refused view's slot, with no reference to quote", async () => {
+    const judge = () => vi.fn(async (request: { angle: string }) =>
+      request.angle === "backFull" ? fail : pass);
+    await buildCastPackage(deps({ judge }), input);
+
     const marker = failures.find((entry) => entry.angle === "backFull");
     expect((marker?.failure as { refunded: number }).refunded).toBe(0);
+    /* ⚠ The ABSENCE is the signal (#1968): a zero with a reference means a
+       refund failed, and a zero without one means none was owed. The room draws
+       a different sentence for each, so the row must not carry a blank. */
+    expect((marker?.failure as { refundReference?: string }).refundReference)
+      .toBeUndefined();
   });
 });
 
@@ -1527,8 +1580,17 @@ describe("the promise a Cast was actually charged against", () => {
   });
 });
 
-describe("zero of N — the base goes back too", () => {
-  it("refunds the promotion under its own reference when nothing lands", async () => {
+describe("zero of N — the whole charge goes back", () => {
+  /*
+    ⚠ **THIS DESCRIBE READ *"the base goes back too"* AND ITS ARM COUNTED FIVE
+    SLICES PLUS A BASE — #1968.** His flat price makes a Sign one charge, so a
+    total loss is ONE refund of the whole thing under ONE reference. The
+    assertion is now a complete statement of the refunds rather than a filter
+    over amounts: `toEqual` on the array would have been satisfied by five
+    slices and a base before, and is satisfied by exactly one row now, so the
+    arm can tell the two rules apart. A filter could not.
+  */
+  it("refunds the WHOLE charge, once, under one reference when nothing lands", async () => {
     const result = await buildCastPackage(
       deps({ signSheetEngine: deadSheetEngine(() => new ProviderError("provider_account", "out of funds")) }),
       input,
@@ -1536,12 +1598,14 @@ describe("zero of N — the base goes back too", () => {
 
     expect(result.totalLoss).toBe(true);
     expect(result.committed).toHaveLength(0);
-    // Five slices plus the base, each under its own idempotent reference — so a
-    // recovery pass that arrives later finds duplicates, not a second payment.
-    expect(refunds.filter((entry) => entry.amount === VIEW_PRICE)).toHaveLength(5);
-    const base = refunds.filter((entry) => entry.amount === PROMOTION);
-    expect(base).toHaveLength(1);
-    expect(base[0].reference).toBe(packagePromotionChargeReference(input.operationId));
+    /* ONE row, the whole charge, under the idempotent reference — so a recovery
+       pass arriving later finds a duplicate, not a second payment. */
+    expect(refunds).toEqual([
+      {
+        amount: SIGN_PRICE,
+        reference: packagePromotionChargeReference(input.operationId),
+      },
+    ]);
     expect(result.refundedCredits).toBe(SIGN_PRICE);
   });
 
@@ -1565,7 +1629,13 @@ describe("zero of N — the base goes back too", () => {
 
     expect(result.committed).toEqual(["closeUp", "threeQuarter", "sideClose"]);
     expect(result.totalLoss).toBe(false);
-    expect(refunds.some((entry) => entry.amount === PROMOTION)).toBe(false);
+    /* ⚠ **NOT ONE CREDIT MOVES ON A PARTIAL PACKAGE SINCE #1968**, which is a
+       stronger statement than the one this arm used to make (that the BASE was
+       not refunded). Two of five views were refused and nothing comes back for
+       them: his *"credits only come back if the Sign can't be delivered at
+       all"*. The customer has three views and a Cast to keep them in. */
+    expect(refunds).toEqual([]);
+    expect(result.refundedCredits).toBe(0);
   });
 
   it("still activates the Cast — she keeps the face she chose", async () => {
@@ -2073,13 +2143,14 @@ describe("only a catastrophe takes a picture away", () => {
     expect(deletedKeys).toHaveLength(0);
   });
 
-  it("⚠ still refuses and refunds when IDENTITY differs — the promise a signed Cast makes", async () => {
+  it("⚠ still REFUSES when IDENTITY differs — the promise a signed Cast makes", async () => {
     await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "differs" }) }), input);
 
     expect(committed).not.toContain("sideClose");
-    expect(refunds).toEqual([
-      { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
-    ]);
+    /* The refusal is the promise; the refund is not. Since #1968 a refused view
+       returns nothing — and this arm is deliberately kept pointing at IDENTITY,
+       because that is the one axis #1903 left able to refuse a view at all. */
+    expect(refunds).toEqual([]);
     const marker = failures.find((entry) => entry.angle === "sideClose");
     expect((marker?.failure as { reason: string }).reason)
       .toBe("This view didn't clearly look like this character, so we didn't keep it");
@@ -2240,24 +2311,30 @@ describe("only a catastrophe takes a picture away", () => {
     await buildCastPackage(deps({ judge: rejecting("sideClose", { identity: "unsure" }) }), input);
 
     expect(committed).not.toContain("sideClose");
-    expect(refunds).toHaveLength(1);
+    /* It refuses. It does not refund — #1968. */
+    expect(refunds).toEqual([]);
   });
 
   /*
     ⚠ **HIS OTHER TWO CATASTROPHES, AT THE MONEY** — a broken picture and the
-    wrong number of people each refuse and refund exactly as identity does.
-    They are new refusal roads on a money path, so they are driven here and not
-    only as pure functions: the refund, the failure marker and the dropped
-    object are what a customer actually experiences.
+    wrong number of people each refuse exactly as identity does.
+    They are refusal roads on a money path, so they are driven here and not
+    only as pure functions: the failure marker and what the customer is charged
+    are what she actually experiences.
+
+    ⚠ **AND SINCE #1968 WHAT THEY PROVE AT THE MONEY IS THAT NOTHING MOVES.**
+    They read *"refuses and refunds"* while a view was a refundable slice; his
+    reprice makes the refusal free of money in both directions, and the arm
+    says so rather than being deleted for having nothing left to check — "a
+    catastrophe refunds nothing" is precisely the rule a later reader would
+    otherwise re-add a slice refund against.
   */
   for (const axis of ["intact", "people"] as const) {
-    it(`refuses and refunds when ${axis} DIFFERS — his catastrophe list, at the money`, async () => {
+    it(`refuses and refunds NOTHING when ${axis} DIFFERS — his catastrophe list, at the money`, async () => {
       await buildCastPackage(deps({ judge: rejecting("sideClose", { [axis]: "differs" }) }), input);
 
       expect(committed).not.toContain("sideClose");
-      expect(refunds).toEqual([
-        { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "sideClose") },
-      ]);
+      expect(refunds).toEqual([]);
     });
   }
 
@@ -2268,7 +2345,9 @@ describe("only a catastrophe takes a picture away", () => {
     );
 
     expect(committed).not.toContain("sideClose");
-    expect(refunds).toHaveLength(1);
+    /* It refuses, and refunds nothing (#1968). */
+    expect(refunds).toEqual([]);
+    expect(failures.some((entry) => entry.angle === "sideClose")).toBe(true);
   });
 
   /*
@@ -2355,9 +2434,17 @@ describe("only a catastrophe takes a picture away", () => {
     /* The verdict IS persisted — support can still read what was asked. */
     expect(provenance.conformanceMethod).toBe("judge:test");
     expect(provenance.conformance?.intact.verdict).toBe("unsure");
-    /* And it reads as checked through the SAME function the room uses. */
+    /* And the axis the judge was unsure about PASSED, which is the whole of
+       "unsure is not a catastrophe": the row records the doubt and the view is
+       delivered clean.
+
+       ⚠ **A LINE BELOW THIS USED TO RE-READ THE ROW THROUGH THE ROOM'S OWN
+       delivered-unchecked reader — that function is deleted with the free ask
+       (#1903 slice 3), so there is no second reader left to agree with.** What
+       replaced it is the stronger statement the deletion makes possible: the
+       room cannot mark this row at all, because nothing reads a stored axis any
+       more. `viewRetryNoFreeAsk.test.ts` holds that end. */
     expect(provenance.conformance?.intact.pass).toBe(true);
-    expect(viewDeliveredUnchecked(provenance)).toBe(false);
   });
 
   /*
@@ -2405,7 +2492,15 @@ describe("only a catastrophe takes a picture away", () => {
     await buildCastPackage(deps({ judge }), input);
 
     expect(committed).not.toContain("sideClose");
-    expect(refunds).toHaveLength(1);
+    /*
+      ⚠ **THIS CONTROL READ `refunds).toHaveLength(1)` AND #1968 TOOK ITS SIGNAL
+      AWAY.** A refused view moves no money, so a refund count can no longer
+      tell "walked the refusal path" from "did nothing at all" — both are now
+      zero. It reads the FAILURE MARKER instead, which is the durable thing the
+      refusal road writes and the room confesses from.
+    */
+    expect(refunds).toEqual([]);
+    expect(failures.map((entry) => entry.angle)).toEqual(["sideClose"]);
   });
 
   /*
@@ -2431,15 +2526,22 @@ describe("only a catastrophe takes a picture away", () => {
     });
     const result = await buildCastPackage(deps({ judge }), input);
 
-    const charged = CAST_PACKAGE_VIEWS.length * VIEW_PRICE;
+    /*
+      ⚠ **THE CONSERVATION SUM HERE WAS `kept + refunded === charged` OVER
+      PER-VIEW SLICES, AND #1968 DISSOLVES IT RATHER THAN RE-DERIVING IT.**
+      There are no slices to add up: one flat charge buys the package, and the
+      customer keeps whatever landed. So the money statement is the whole of
+      what moves — nothing — and the DELIVERY statement is what this arm was
+      really about: an unsure non-identity axis delivers, a differing one does
+      not, in the same package.
+    */
     const refunded = refunds.reduce((sum, entry) => sum + entry.amount, 0);
-    const kept = committed.length * VIEW_PRICE;
 
     expect(committed).toContain("sideClose");
     expect(committed).not.toContain("backFull");
-    expect(refunded).toBe(VIEW_PRICE);
-    expect(kept + refunded).toBe(charged);
-    expect(result.refundedCredits).toBe(VIEW_PRICE);
+    expect(refunded, "a partial package refunds nothing (#1968)").toBe(0);
+    expect(result.refundedCredits).toBe(0);
+    expect(result.totalLoss, "four of five landed, so this is not a total loss").toBe(false);
   });
 });
 
@@ -2567,12 +2669,10 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
     expect(
       committedProvenance.find((entry) => entry.angle === "frontFull")?.providerRef,
     ).toBe("sheet-ref-body-gen1");
-    /* Only the refused slice refunds, and the base stays — this is a PARTIAL
-       package, not a total loss. */
+    /* A PARTIAL package, not a total loss — and since #1968 nothing comes back
+       for the refused view either. */
     expect(result.failed).toEqual(["backFull"]);
-    expect(refunds).toEqual([
-      { amount: VIEW_PRICE, reference: packageSlotChargeReference(OPERATION_ID, "backFull") },
-    ]);
+    expect(refunds).toEqual([]);
     expect(result.totalLoss).toBe(false);
   });
 
@@ -2653,11 +2753,17 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
 
     expect(rendersPerSheet())
       .toEqual({ body: SHEET_MAX_RENDERS, head: SHEET_MAX_RENDERS });
-    /* Five slices and the base — nothing extra was charged for the re-renders,
-       and nothing was withheld because of them. */
+    /* ⚠ **THE WHOLE CHARGE, ONCE** — nothing extra was charged for the four
+       re-rendered frames, and nothing was withheld because of them. It read as
+       five slices plus a base until #1968; one row is the stronger assertion,
+       because it also refuses a build that paid a slice on top. */
     expect(result.refundedCredits).toBe(SIGN_PRICE);
-    expect(refunds.filter((entry) => entry.amount === VIEW_PRICE)).toHaveLength(5);
-    expect(refunds.filter((entry) => entry.amount === PROMOTION)).toHaveLength(1);
+    expect(refunds).toEqual([
+      {
+        amount: SIGN_PRICE,
+        reference: packagePromotionChargeReference(input.operationId),
+      },
+    ]);
   });
 
   it("judges each rendered panel exactly ONCE", async () => {
@@ -2722,12 +2828,25 @@ describe("⚠ the free re-render is OURS, and its limits", () => {
  * change with it.
  */
 describe("⚠ the refusal line a customer reads, end to end", () => {
+  /*
+    ⚠ **THE MONEY HALF OF THIS SENTENCE IS GONE, AND THAT IS #1968.**
+
+    It composed `refundOutcomeText({ refunded: VIEW_PRICE })` and asserted the
+    line contained *" credits returned."*. A refused view on a signed package
+    refunds nothing now, so the honest line ends at Yuna's sentence — and the
+    arm below proves the line says nothing about money AT ALL, in either
+    direction. That second half is the one worth having: the old reading of
+    `refunded: 0` would have appended *"The automatic refund couldn't be
+    recorded — contact support to restore the credits."*, an invented fault and
+    an invented errand under a picture that was never refundable.
+  */
   const compose = (reason: string) =>
     /* `client/src/features/casting/components/ImageViewer/ViewTabs.tsx`'s
-       `FailedSlot`: `${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}`
-       — #1940 B18. The lead is `{label}:` because the reason is already the
-       whole account of what happened (see that component's own note). */
-    `Front: ${reason}. ${refundOutcomeText({ refunded: VIEW_PRICE })}`;
+       `FailedSlot`, composed through the same `joinSentences` so an empty money
+       half cannot leave a double space — #1940 B18, #1968. The lead is
+       `{label}:` because the reason is already the whole account of what
+       happened (see that component's own note). */
+    joinSentences(`Front: ${reason}.`, refundOutcomeText({ refunded: 0 }));
 
   it("reads as one sentence, with no doubled stop and no term of art", () => {
     for (const axis of CONFORMANCE_AXES) {
@@ -2737,11 +2856,21 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
          verdict word, and the term his ruling removed. */
       expect(line.toLowerCase(), axis).not.toContain("likeness");
       expect(line.toLowerCase(), axis).not.toMatch(/identity|intact|people|axis|verdict|judge/);
-      /* It says what happened, what we did, and what came back — in that order. */
+      /* It says what happened and what we did, and stops. */
       expect(line, axis).toContain("so we didn't keep it.");
-      /* #1940 B13 — the money half is *"{N} credits returned."* */
-      expect(line, axis).toContain(" credits returned.");
+      /*
+        ⚠ **AND IT SAYS NOTHING ABOUT MONEY, IN EITHER DIRECTION — #1968.**
+        No credits came back for this view, so a line claiming they did would be
+        false and a line sending her to support would invent a fault. Both
+        spellings are refused by name.
+      */
+      expect(line, axis).not.toContain("credits returned");
       expect(line, axis).not.toContain("refunded");
+      expect(line.toLowerCase(), axis).not.toContain("support");
+      expect(line.toLowerCase(), axis).not.toContain("credits");
+      /* No trailing join artefact where the money half used to be. */
+      expect(line, axis).toBe(line.trim());
+      expect(line, axis).not.toContain("  ");
     }
   });
 
@@ -2769,12 +2898,21 @@ describe("⚠ the refusal line a customer reads, end to end", () => {
       "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
     ));
     expect(source, "the surface this arm derives from is gone — re-point it").not.toBeNull();
-    expect(source!).toContain("${label}: ${bareReason(failure.reason)}. ${refundOutcomeText(failure)}");
+    /*
+      ⚠ **THE DERIVED STRINGS MOVED WITH #1968 AND THAT IS THIS ARM EARNING ITS
+      KEEP.** The surface used to interpolate the money half directly; it now
+      joins around it, because the half can be empty. Both halves of the real
+      composition are read: the reason still carries its own full stop, and the
+      money still goes through `refundOutcomeText` rather than being spelled out
+      at the surface.
+    */
+    expect(source!).toContain("`${label}: ${bareReason(failure.reason)}.`");
+    expect(source!).toContain("refundOutcomeText(failure)");
+    expect(source!, "the join is what lets the money half be empty").toContain("joinSentences(");
   });
   it("names the Cast in the line, or calls it this character", () => {
     expect(compose(refusedViewReason(["identity"], "Sifr")))
-      .toBe("Front: This view didn't clearly look like Sifr, so we didn't keep it. "
-        + `${refundOutcomeText({ refunded: VIEW_PRICE })}`);
+      .toBe("Front: This view didn't clearly look like Sifr, so we didn't keep it.");
     expect(compose(refusedViewReason(["identity"]))).toContain("this character");
   });
 });
@@ -2952,5 +3090,185 @@ describe("⚠ a view that arrived is never bought twice (#1994)", () => {
 
     expect(result.failed, "a free re-store was turned into a refunded view").toHaveLength(0);
     expect(rendersPerSheet()).toEqual({ body: 1, head: 1 });
+  });
+});
+
+/**
+ * ⚠ **CID'S PAID-RENDER CAP, COUNTED IN SUBMISSIONS RATHER THAN IN RENDER
+ * CALLS — the condition his flat price rests on (card 1968, his word
+ * 2026-10-08).**
+ *
+ * The card labels it required: *"at most 2 head-sheet and 2 body-sheet renders
+ * per Sign, re-makes and arrival retries from one pool, or Cid's figure is
+ * about 1,100."*
+ *
+ * ⚠ **AND THE ENGINE FIXTURE HERE ROUTES THROUGH THE REAL `withRetry`, WHICH
+ * IS THE ONLY REASON THESE ARMS MEAN ANYTHING.** `deadSheetEngine` above calls
+ * nothing but the thunk, so it records ONE `sheetCalls` row per `render()` and
+ * can never see the third loop — and the third loop is where the multiplying
+ * happens. Production's sheet engine is
+ * `queue.run(… withRetry("fal.signSheet", () => runFalImageJob(…)))`, so one
+ * `editWithReferences` is up to THREE submissions. This fixture has the same
+ * shape and counts attempts, so the number it reports is the number of jobs fal
+ * would have been sent and could have billed for.
+ */
+describe("the Sign's paid renders are capped per sheet", () => {
+  /** Submissions — one per job the provider would have been sent. */
+  const submissions: SignSheetKind[] = [];
+
+  /**
+   * Production's shape: the retrying loop lives INSIDE the engine, under the
+   * budget the request carries.
+   */
+  function retryingSheetEngine(makeError: () => unknown) {
+    return (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: {
+        prompt: string;
+        references: unknown[];
+        renderBudget?: RenderBudget;
+      }) => {
+        sheetCalls.push({
+          kind,
+          prompt: request.prompt,
+          references: (request.references as Array<{ bytes: Buffer; contentType: string }>).map(
+            (reference) => ({ bytes: reference.bytes.toString(), contentType: reference.contentType }),
+          ),
+        });
+        return withRetry(
+          "fal.signSheet",
+          async () => {
+            submissions.push(kind);
+            throw makeError();
+          },
+          {
+            retries: 2,
+            baseDelayMs: 0,
+            ...(request.renderBudget ? { budget: request.renderBudget } : {}),
+          },
+        );
+      }),
+      generateView: vi.fn(),
+    });
+  }
+
+  const submissionsPerSheet = () =>
+    Object.fromEntries(
+      signSheetPlan().map((plan) => [
+        plan.kind,
+        submissions.filter((kind) => kind === plan.kind).length,
+      ]),
+    ) as Record<SignSheetKind, number>;
+
+  beforeEach(() => {
+    submissions.length = 0;
+  });
+
+  it("THE CAP — a sheet that keeps hitting the deadline costs two renders, not eighteen", async () => {
+    /*
+      ⚠ **THE DEADLINE IS THE ONE FAULT THAT CAN BILL WITHOUT SAYING SO**, and
+      it is why reading the three existing guards was not enough to discharge
+      this condition. `falTransport` cancels on the deadline and sets
+      `completed` only when fal answers 400 ALREADY_COMPLETED; its own note
+      records that whether a cancel stops a job already IN_PROGRESS is
+      unverified. `timeout` is retryable and is not arrival-terminal, so before
+      this cap all three loops ran: withRetry 3 x arrival 3 x re-make 2 = 18
+      submissions on one sheet, every one of them possibly billed, under a flat
+      price that paid for two.
+    */
+    const result = await buildCastPackage(
+      deps({
+        signSheetEngine: retryingSheetEngine(() =>
+          new ProviderError("timeout", "fal.ai did not complete within the deadline", {
+            providerRef: "req-deadline",
+            completed: false,
+          })),
+      }),
+      input,
+    );
+
+    expect(submissionsPerSheet()).toEqual({ body: SHEET_MAX_RENDERS, head: SHEET_MAX_RENDERS });
+
+    /* And the customer is not left charged for nothing: nothing was delivered,
+       so the whole flat charge goes back under the one idempotent reference. */
+    expect(result.totalLoss).toBe(true);
+    expect(result.committed).toHaveLength(0);
+    expect(refunds).toEqual([
+      { amount: SIGN_PRICE, reference: packagePromotionChargeReference(input.operationId) },
+    ]);
+  });
+
+  it("THE CONTROL — a fault that never reached the provider keeps its free retries", async () => {
+    /*
+      ⚠ **Without this arm the one above is satisfied by any change that simply
+      breaks the arrival retry.** Cid's note asks for the distinction in as many
+      words: *"a transport failure that returned no frame is usually not billed
+      by the provider. Say on the PR which attempts actually cost money, and
+      count those."* An unreachable host is the free case, so its rescue is
+      untouched and it spends none of the budget.
+    */
+    await buildCastPackage(
+      deps({ signSheetEngine: retryingSheetEngine(() => new ProviderError("transport", "fal.ai unreachable")) }),
+      input,
+    );
+
+    /* Three withRetry attempts x three arrival attempts, charged nothing. */
+    const perSheet = submissionsPerSheet();
+    expect(perSheet.head).toBeGreaterThan(SHEET_MAX_RENDERS);
+    expect(perSheet).toEqual({ body: 9, head: 9 });
+  });
+
+  it("the re-make and the arrival retries draw on ONE pool, not two", async () => {
+    /*
+      The money shape the card names: a first generation that spent both its
+      renders cannot then buy a house re-make. The first submission DELIVERS a
+      sheet the judge refuses — so the re-make is wanted — and the second
+      hits the deadline, which leaves the pool empty. The re-make must refuse
+      before it submits, and the sheet settles from the frame we have.
+    */
+    let calls = 0;
+    const signSheetEngine = (kind: SignSheetKind) => ({
+      id: `test-sheet-${kind}`,
+      editWithReferences: vi.fn(async (request: {
+        prompt: string;
+        references: unknown[];
+        renderBudget?: RenderBudget;
+      }) => withRetry(
+        "fal.signSheet",
+        async () => {
+          submissions.push(kind);
+          calls += 1;
+          if (calls > 1) {
+            throw new ProviderError("timeout", "deadline", {
+              providerRef: `req-${calls}`,
+              completed: false,
+            });
+          }
+          return defaultSheetEngine(kind).editWithReferences(request as never);
+        },
+        {
+          retries: 2,
+          baseDelayMs: 0,
+          ...(request.renderBudget ? { budget: request.renderBudget } : {}),
+        },
+      )),
+      generateView: vi.fn(),
+    });
+
+    await buildCastPackage(
+      deps({
+        signSheetEngine,
+        judge: () => vi.fn(async () => fail),
+      }),
+      input,
+    );
+
+    /*
+      Two per sheet and no more — the delivered frame plus one deadline. The
+      pool is the cap whichever road spends it.
+    */
+    for (const count of Object.values(submissionsPerSheet())) {
+      expect(count).toBeLessThanOrEqual(SHEET_MAX_RENDERS);
+    }
   });
 });
