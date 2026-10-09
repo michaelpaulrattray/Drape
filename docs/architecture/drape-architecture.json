@@ -11243,6 +11243,10 @@
       "path": "client/src/features/castingV2/roomBusy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/roomCastId.test.ts",
+      "path": "client/src/features/castingV2/roomCastId.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/section10-guard.test.ts",
       "path": "client/src/features/castingV2/section10-guard.test.ts"
     },
@@ -21498,6 +21502,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/components/ui/tooltip.tsx",
       "kind": "imports"
     },
     {

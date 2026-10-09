@@ -39,7 +39,7 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
   { element: "two companion cells", marker: "dpc-master__cell" },
   { element: "MASTER chip", marker: "dpc-master__tag" },
   { element: "attached footer bar", marker: "dpc-master__foot" },
-  { element: "IDENTITY LOCKED", marker: "dpc-master__locked" },
+  { element: "the lock with the Klieg ID", marker: "dpc-master__locked" },
   { element: "refine card", marker: "dpc-rrefine__shell" },
   { element: "refine input", marker: "dpc-rrefine__input" },
   { element: "refine button", marker: "dpc-rrefine__go" },
