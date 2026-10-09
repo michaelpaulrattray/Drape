@@ -58,6 +58,7 @@ import {
   collectPlanChangeShortfall,
   voidPlanChangeSettlement,
 } from "./planChangeSettlement";
+import { invoicePaymentRefs } from "./stripeService";
 import {
   voidPendingPlanChangeSettlementsForUser,
   getVoidPlanChangeSettlementInvoiceIdsForUser,
@@ -1349,6 +1350,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
     }
     annualYear = {
       subscriptionId,
+      invoiceId: invoice.id as string,
       periodStart: new Date(startSec * 1000),
       periodEnd: new Date(endSec * 1000),
       monthlyCredits: oneMonthAllowance,
@@ -1524,6 +1526,21 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       log.info(`[Webhook] Final payment failure on user ${userId}'s UPGRADE invoice ${invoice.id} — the upgrade is voided; the plan and period already paid for are kept`);
       await voidPlanChangeSettlement(invoice.id as string);
       const upgradeVoid = await voidInvoice(invoice.id as string);
+      /* ⚠ AND OUR RECORD GOES BACK TO THE PLAN THAT WAS PAID FOR (#2152, the
+         relay's finding on head e85357f6a, repair 3). `changePlan` wrote the
+         new tier the moment Stripe accepted the change; nothing paid for it.
+         Under the same stale guard as every downgrade: an event about an old
+         subscription never writes over a newer one. Whether Stripe's own
+         price is reverted too is the founder's decision and is not built
+         here — until it is, a later `subscription.updated` can re-derive the
+         upgraded tier from Stripe, which the relay has been told. */
+      const storedSub = userWithCredits.credits?.stripeSubscriptionId;
+      const previousTier = failedChange.previousPlanTier ?? null;
+      let revertFailed = false;
+      if (previousTier && (!storedSub || storedSub === subscriptionId)) {
+        const revert = await updateUserSubscription(userId, { planTier: previousTier as PlanTier });
+        revertFailed = !revert.success;
+      }
       /* `detail` rather than an inline literal on `metadata` — an AUDIT row,
          not Stripe-bound (environmentTag.test.ts reads inline blocks here as
          Stripe writes). */
@@ -1540,10 +1557,10 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
         metadata: upgradeFailureDetail,
         severity: "warning",
       });
-      if (upgradeVoid === "failed") {
+      if (upgradeVoid === "failed" || revertFailed) {
         return {
           success: false,
-          message: `Upgrade invoice ${invoice.id} for user ${userId} could not be voided — redeliver to retry`,
+          message: `Upgrade invoice ${invoice.id} for user ${userId} could not be voided or the plan record could not be put back — redeliver to retry`,
         };
       }
       return {
@@ -1615,12 +1632,20 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
         currentPeriodStart: null,
         currentPeriodEnd: null,
         /* ⚠ THE 30 DAYS RUN FROM THE END OF THE PERIOD THAT WAS PAID FOR
-           (#2152, the relay's finding on head 18315b5f1, repair 3). This drop
-           to Free used to carry no stamp, and the later `subscription.deleted`
-           measured from the UNPAID period it died in — a failed yearly
-           renewal kept plan credits about thirteen months. The failed
-           invoice's own period line starts where the paid period ended. */
-        planCreditsExpireAt: planCreditsExpiryFromPaidEnd(periodBought(invoice)?.startSec ?? null, new Date()),
+           (#2152, the relay's findings on heads 18315b5f1 and e85357f6a). This
+           drop to Free used to carry no stamp, and the later
+           `subscription.deleted` measured from the UNPAID period it died in.
+           For a failed RENEWAL the failed invoice's period line starts where
+           the paid period ended. For a failed interval SWITCH it does not —
+           the switch anchored a new period at the moment of the change — so
+           the end of the period the switch left, recorded on its settlement,
+           is used instead. */
+        planCreditsExpireAt: planCreditsExpiryFromPaidEnd(
+          failedChange?.previousPeriodEnd instanceof Date
+            ? Math.floor(failedChange.previousPeriodEnd.getTime() / 1000)
+            : periodBought(invoice)?.startSec ?? null,
+          new Date(),
+        ),
       });
       if (!downgradeResult.success) {
         downgradeFailed = true;
@@ -1970,17 +1995,12 @@ async function handleDisputeCreated(dispute: Stripe.Dispute): Promise<WebhookRes
     // 1. Suspend the user account
     //    Using userId 0 as "system" since this is an automated action
     const suspendResult = await suspendUser(userId, `Chargeback filed: ${dispute.id} — $${(amount / 100).toFixed(2)} ${currency.toUpperCase()} — reason: ${reason}`, 0);
-    /* ⚠ AND NO MORE OF A YEARLY PLAN'S MONTHS ARRIVE (#2152, the relay's
-       finding on head 18315b5f1, repair 2). Month-by-month granting opened
-       this road: the money behind the year is disputed, so the months still
-       to come stop here. A failed clear fails the event like the suspend. */
-    const yearCleared = await clearAnnualYear(userId);
-    if (!yearCleared) {
-      mustRedeliver = true;
-      actions.push("paid year could not be cleared");
-    } else {
-      actions.push("yearly months stopped");
-    }
+    /* ⚠ THE PAID YEAR IS NOT CLEARED HERE (#2152 — the relay's finding on
+       head e85357f6a reversed its own earlier repair). A dispute is filed over
+       ANY charge, a top-up's included, and one that is WON must give nothing
+       back. The suspension just above already stops the months while it is
+       open (the worker skips suspended accounts); only a LOST dispute over the
+       year's own invoice ends the year — `handleDisputeClosed`. */
     if (suspendResult.success) {
       actions.push("account suspended");
       log.info(`[Webhook] User ${userId} auto-suspended due to dispute ${dispute.id}`);
@@ -2066,6 +2086,8 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
   let userId: number | undefined;
   let userName: string | undefined;
   let stripeSubscriptionId: string | null | undefined;
+  let yearInvoiceOnRow: string | null = null;
+  let yearOnRow: Record<string, unknown> | null = null;
 
   const disputeCustomerId = (dispute as any).customer as string | undefined;
 
@@ -2075,6 +2097,16 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
       userId = userWithCredits.id;
       userName = userWithCredits.name || userWithCredits.email || `User #${userWithCredits.id}`;
       stripeSubscriptionId = userWithCredits.credits?.stripeSubscriptionId;
+      const c = userWithCredits.credits as Record<string, any> | null | undefined;
+      yearInvoiceOnRow = c?.annualGrantInvoiceId ?? null;
+      yearOnRow = yearInvoiceOnRow
+        ? {
+            subscriptionId: c?.annualGrantSubscriptionId ?? null,
+            periodStart: c?.annualGrantPeriodStart ?? null,
+            periodEnd: c?.annualGrantPeriodEnd ?? null,
+            monthlyCredits: c?.annualGrantMonthlyCredits ?? null,
+          }
+        : null;
     }
   }
 
@@ -2166,6 +2198,51 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<WebhookResu
   } else if (userId && status === "lost") {
     // DISPUTE LOST: Keep suspended, cancel subscription
     actions.push("account remains suspended");
+
+    /* ⚠ A LOST DISPUTE OVER THE YEAR'S OWN INVOICE ENDS THE YEAR'S MONTHS
+       (#2152, the relay's finding on head e85357f6a, repair 2). The money for
+       the year is gone, so the months still to come stop — but only when the
+       disputed payment IS the invoice that opened the year on the row: a
+       dispute over a top-up, or over last year's invoice, leaves a paid year
+       alone. Matched by the invoice's own payments, read from Stripe; an
+       unreadable invoice fails the event so the redelivery decides. The clear
+       is scoped to that invoice in its write, and what was cleared is written
+       to the audit log. */
+    const yearInvoiceId = yearInvoiceOnRow;
+    if (yearInvoiceId) {
+      const paidBy = await invoicePaymentRefs(yearInvoiceId);
+      const disputedPi = typeof (dispute as any).payment_intent === "string"
+        ? (dispute as any).payment_intent as string
+        : (dispute as any).payment_intent?.id ?? null;
+      if (paidBy === null) {
+        mustRedeliver = true;
+        actions.push("annual invoice could not be read");
+      } else if (paidBy.includes(chargeId) || (disputedPi !== null && paidBy.includes(disputedPi))) {
+        const cleared = await clearAnnualYear(userId, yearInvoiceId);
+        if (cleared === null) {
+          mustRedeliver = true;
+          actions.push("paid year could not be cleared");
+        } else if (cleared) {
+          actions.push("yearly months stopped");
+          const yearClearedDetail = {
+            targetUserId: userId,
+            disputeId: dispute.id,
+            annualInvoiceId: yearInvoiceId,
+            yearCleared: yearOnRow,
+          };
+          await logAuditEvent({
+            userId,
+            action: AUDIT_ACTIONS.BILLING_CHARGEBACK_RESOLVED,
+            resourceType: "billing",
+            resourceId: dispute.id,
+            metadata: yearClearedDetail,
+            severity: "warning",
+          });
+        }
+      } else {
+        actions.push("disputed payment is not the paid year's — year kept");
+      }
+    }
 
     // Cancel the user's Stripe subscription if they have one
     if (stripeSubscriptionId) {

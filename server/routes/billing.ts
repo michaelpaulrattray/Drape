@@ -1556,6 +1556,11 @@ export const billingRouter = router({
             clientRequestId: input.clientRequestId,
             annualMonthlyCredits: direction === "grant" ? annualMonthAfterChange : null,
             annualPeriodStart: direction === "grant" && annualMonthAfterChange !== null ? annualYear.yearStart : null,
+            /* The paid state this change leaves (#2152): a failed upgrade puts
+               the record back on this plan; a failed switch's 30 days run
+               from this period's end. */
+            previousPlanTier: billingState.currentPlan,
+            previousPeriodEnd: new Date(billingState.periodEndSec * 1000),
           });
           if (!recorded.success) {
             if (direction === "grant") {

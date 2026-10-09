@@ -314,6 +314,9 @@ export const credits = mysqlTable("points", {
   annualGrantSubscriptionId: varchar("annualGrantSubscriptionId", { length: 64 }),
   annualGrantPeriodStart: timestamp("annualGrantPeriodStart"),
   annualGrantPeriodEnd: timestamp("annualGrantPeriodEnd"),
+  // The paid invoice that opened the year (#2152) — a LOST dispute clears the
+  // year only when it is over this invoice.
+  annualGrantInvoiceId: varchar("annualGrantInvoiceId", { length: 128 }),
   annualGrantMonthlyCredits: int("annualGrantMonthlyCredits"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -1925,6 +1928,11 @@ export const planChangeSettlements = mysqlTable("plan_change_settlements", {
   // conditioned on it still being the year on the row, so a late-paid upgrade
   // can never write its month onto the next year.
   annualPeriodStart: timestamp("annualPeriodStart"),
+  // The paid state the change left (#2152): the plan a failed UPGRADE puts
+  // the record back on, and the end of the period a failed SWITCH's 30-day
+  // deadline runs from.
+  previousPlanTier: varchar("previousPlanTier", { length: 32 }),
+  previousPeriodEnd: timestamp("previousPeriodEnd"),
   // pending → applied (invoice settled, credits moved) or void (the invoice
   // will never settle — final payment failure). Never deleted.
   status: mysqlEnum("status", ["pending", "applied", "void"]).default("pending").notNull(),

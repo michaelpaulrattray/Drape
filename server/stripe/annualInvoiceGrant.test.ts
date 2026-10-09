@@ -162,6 +162,7 @@ describe("the period-bought grant rule", () => {
     expect(options).toEqual({
       annualYear: {
         subscriptionId: "sub_1",
+        invoiceId: "in_annual_create",
         periodStart: new Date(LIVE_START * 1000),
         periodEnd: new Date(LIVE_END * 1000),
         monthlyCredits: MONTHLY_CREDITS,

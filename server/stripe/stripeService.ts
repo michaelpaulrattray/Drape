@@ -1991,3 +1991,32 @@ export function calculateProportionalRefund(
     unusedCredits,
   };
 }
+
+/**
+ * EVERY PAYMENT REFERENCE THAT PAID AN INVOICE — its payment intents and its
+ * charges, in either dialect (#2152): a LOST dispute ends a yearly plan's
+ * months only when the disputed payment is one of these for the invoice that
+ * opened the year. Clover lists them under `payments` (expanded); the classic
+ * shape carries `payment_intent` and `charge` on the invoice. `null` when the
+ * invoice cannot be read — the caller must not guess.
+ */
+export async function invoicePaymentRefs(invoiceId: string): Promise<string[] | null> {
+  try {
+    const invoice = (await stripe.invoices.retrieve(invoiceId, { expand: ["payments"] })) as any;
+    const refs = new Set<string>();
+    const add = (value: unknown) => {
+      if (typeof value === "string" && value) refs.add(value);
+      else if (value && typeof (value as { id?: unknown }).id === "string") refs.add((value as { id: string }).id);
+    };
+    add(invoice?.payment_intent);
+    add(invoice?.charge);
+    for (const row of invoice?.payments?.data ?? []) {
+      add(row?.payment?.payment_intent);
+      add(row?.payment?.charge);
+    }
+    return Array.from(refs);
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Could not read the payments of invoice ${invoiceId}`);
+    return null;
+  }
+}

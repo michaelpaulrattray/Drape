@@ -40,6 +40,8 @@ const log = createModuleLogger("db/billing");
  */
 export type AnnualGrantYear = {
   subscriptionId: string;
+  /** The paid invoice that opened the year — a lost dispute is matched against it. */
+  invoiceId: string;
   periodStart: Date;
   periodEnd: Date;
   monthlyCredits: number;
@@ -48,6 +50,7 @@ export type AnnualGrantYear = {
 /** The four year columns, cleared: no year is in flight. */
 export const NO_ANNUAL_YEAR = {
   annualGrantSubscriptionId: null,
+  annualGrantInvoiceId: null,
   annualGrantPeriodStart: null,
   annualGrantPeriodEnd: null,
   annualGrantMonthlyCredits: null,
@@ -57,6 +60,7 @@ function annualYearColumns(year: AnnualGrantYear | null) {
   if (year === null) return NO_ANNUAL_YEAR;
   return {
     annualGrantSubscriptionId: year.subscriptionId,
+    annualGrantInvoiceId: year.invoiceId,
     annualGrantPeriodStart: year.periodStart,
     annualGrantPeriodEnd: year.periodEnd,
     annualGrantMonthlyCredits: year.monthlyCredits,
@@ -486,19 +490,24 @@ function annualYearLockConditions(lock: AnnualYearLock) {
 }
 
 /**
- * STOP A YEARLY PLAN'S MONTHS STILL TO COME (#2152, the relay's finding on
- * head 18315b5f1, repair 2): the money behind the year is disputed or
- * refunded. Scoped to the owner in the write; nothing is read first.
+ * STOP A YEARLY PLAN'S MONTHS STILL TO COME — ONLY WHEN THE YEAR'S OWN MONEY
+ * WAS LOST IN A DISPUTE (#2152; the relay's findings on heads 18315b5f1 and
+ * e85357f6a). Scoped to the owner AND to the invoice that opened the year, in
+ * the write itself: a dispute decided after the next year began, or a year
+ * already cleared, matches nothing. Answers whether a year was cleared.
  */
-export async function clearAnnualYear(userId: number): Promise<boolean> {
+export async function clearAnnualYear(userId: number, openedByInvoiceId: string): Promise<boolean | null> {
   const db = await getDb();
-  if (!db) return false;
+  if (!db) return null;
   try {
-    await db.update(credits).set(NO_ANNUAL_YEAR).where(eq(credits.userId, userId));
-    return true;
+    const result = await db
+      .update(credits)
+      .set(NO_ANNUAL_YEAR)
+      .where(and(eq(credits.userId, userId), eq(credits.annualGrantInvoiceId, openedByInvoiceId)));
+    return ((result as any)[0]?.affectedRows ?? 0) > 0;
   } catch (error) {
     log.error({ err: error, userId }, "[Database] could not clear the paid year");
-    return false;
+    return null;
   }
 }
 

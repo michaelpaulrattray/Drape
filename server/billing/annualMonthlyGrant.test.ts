@@ -219,13 +219,14 @@ describe("2 · the write that carries the paid year", () => {
     rows.push(liveRow(0, { annualGrantSubscriptionId: null, annualGrantPeriodStart: null }));
     const result = await refreshMonthlyCredits(
       7, MONTH, (b) => calculateRolloverCredits(b, PLAN, MONTH), "stripe-invoice:in_1", undefined, null,
-      { annualYear: { subscriptionId: SUB, periodStart: START, periodEnd: END, monthlyCredits: MONTH } },
+      { annualYear: { subscriptionId: SUB, invoiceId: "in_1", periodStart: START, periodEnd: END, monthlyCredits: MONTH } },
     );
     expect(result.success).toBe(true);
     expect(updateSets).toHaveLength(1);
     expect(updateSets[0]).toMatchObject({
       balance: MONTH,
       annualGrantSubscriptionId: SUB,
+      annualGrantInvoiceId: "in_1",
       annualGrantPeriodStart: START,
       annualGrantPeriodEnd: END,
       annualGrantMonthlyCredits: MONTH,
@@ -356,15 +357,22 @@ describe("3 · how the worker finds due grants", () => {
     expect(ANNUAL_GRANT_LIVE_STATUSES).not.toContain("canceled");
   });
 
-  it("a dispute or full refund clears the year, scoped to the owner in the write", async () => {
-    expect(await clearAnnualYear(7)).toBe(true);
+  it("a lost dispute clears the year scoped to the OWNER and the INVOICE that opened it, in the write", async () => {
+    expect(await clearAnnualYear(7, "in_year_open")).toBe(true);
     expect(updateSets[0]).toEqual({
       annualGrantSubscriptionId: null,
+      annualGrantInvoiceId: null,
       annualGrantPeriodStart: null,
       annualGrantPeriodEnd: null,
       annualGrantMonthlyCredits: null,
     });
     expect(updateWheres[0]).toMatch(/`points`\.`userId` = \?/);
+    expect(updateWheres[0]).toMatch(/`annualGrantInvoiceId` = \?/);
+  });
+
+  it("a year opened by a DIFFERENT invoice matches nothing — answered false, not cleared", async () => {
+    updateAnswers = [0];
+    expect(await clearAnnualYear(7, "in_last_year")).toBe(false);
   });
 
   it("a final payment failure's deadline runs from the END OF THE PAID PERIOD plus the grace days (#2152 repair 3)", () => {

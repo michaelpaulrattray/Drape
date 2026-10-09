@@ -8,6 +8,8 @@ vi.mock("./stripeService", () => ({
   calculateRolloverCredits: vi.fn().mockReturnValue(0),
   getMonthlyCredits: vi.fn().mockReturnValue(100),
   cancelSubscription: vi.fn().mockResolvedValue(true),
+  /* #2152: the payments that paid the invoice that opened a yearly plan. */
+  invoicePaymentRefs: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("../db", () => ({
@@ -17,7 +19,7 @@ vi.mock("../db", () => ({
   getUserCredits: vi.fn().mockResolvedValue({ balance: 100 }),
   suspendUser: vi.fn().mockResolvedValue({ success: true }),
   unsuspendUser: vi.fn().mockResolvedValue({ success: true }),
-  /* #2152 repair 2: a chargeback stops a yearly plan's months still to come. */
+  /* #2152: a LOST dispute over the year's own invoice ends its months. */
   clearAnnualYear: vi.fn().mockResolvedValue(true),
   deductCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 0 }),
   addCredits: vi.fn().mockResolvedValue({ success: true, newBalance: 75 }),
@@ -67,7 +69,7 @@ vi.mock("../db/connection", () => ({
 }));
 
 import { handleStripeWebhook } from "./webhooks";
-import { constructWebhookEvent } from "./stripeService";
+import { constructWebhookEvent, invoicePaymentRefs } from "./stripeService";
 import { cancelSubscription } from "./stripeService";
 import {
   getUserByStripeCustomerId,
@@ -130,18 +132,6 @@ describe("Webhook Security", () => {
   // DISPUTE CREATED — AUTO-SUSPEND + REVOKE CREDITS
   // ============================================================
   describe("Chargeback: dispute.created — Auto-suspend + Revoke Credits", () => {
-    it("#2152 — a paid year that cannot be cleared FAILS THE EVENT so Stripe redelivers", async () => {
-      const event = makeEvent("charge.dispute.created", {
-        id: "dp_test_year", charge: "ch_y", amount: 5000, currency: "usd",
-        reason: "fraudulent", customer: "cus_test_user42", status: "needs_response",
-      });
-      vi.mocked(constructWebhookEvent).mockReturnValue(event);
-      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(mockUser as any);
-      vi.mocked(clearAnnualYear).mockResolvedValueOnce(false);
-      const result = await handleStripeWebhook("payload", "sig");
-      expect(result.success).toBe(false);
-    });
-
     it("should suspend user and revoke all credits when dispute is filed", async () => {
       const dispute = {
         id: "dp_test_suspend",
@@ -163,9 +153,10 @@ describe("Webhook Security", () => {
       expect(result.message).toContain("suspended");
       expect(result.message).toContain("75 credits revoked");
 
-      /* #2152 repair 2 — the disputed year's months still to come stop. */
-      expect(clearAnnualYear).toHaveBeenCalledWith(42);
-      expect(result.message).toContain("yearly months stopped");
+      /* #2152 (relay finding on e85357f6a, repair 2): a FILED dispute never
+         clears the paid year — it may be over a top-up, and a won one must
+         give nothing back. The suspension stops the months meanwhile. */
+      expect(clearAnnualYear).not.toHaveBeenCalled();
 
       // Verify user was suspended with correct reason
       expect(suspendUser).toHaveBeenCalledWith(
@@ -691,6 +682,75 @@ describe("Webhook Security", () => {
   // ============================================================
   // DISPUTE CLOSED (LOST) — KEEP SUSPENDED + CANCEL SUBSCRIPTION
   // ============================================================
+  /* ⚠ #2152, the relay's finding on head e85357f6a, repair 2: a LOST dispute
+     ends a yearly plan's months ONLY when the disputed payment paid the
+     invoice that opened the year on the row. */
+  describe("#2152 — a LOST dispute and the paid year", () => {
+    const yearlyUser = {
+      ...mockUser,
+      credits: {
+        ...mockUser.credits,
+        annualGrantInvoiceId: "in_year_open",
+        annualGrantSubscriptionId: "sub_test_abc123",
+        annualGrantPeriodStart: new Date("2026-11-01T00:00:00Z"),
+        annualGrantPeriodEnd: new Date("2027-11-01T00:00:00Z"),
+        annualGrantMonthlyCredits: 36_000,
+      },
+    };
+    const lost = (over: Record<string, unknown> = {}) => ({
+      id: "dp_year", charge: "ch_year", amount: 50000, currency: "usd",
+      reason: "fraudulent", customer: "cus_test_user42", status: "lost", ...over,
+    });
+
+    it("over the year's own invoice: the year is cleared, scoped to that invoice, and the clear is written to the audit log", async () => {
+      vi.mocked(constructWebhookEvent).mockReturnValue(makeEvent("charge.dispute.closed", lost({ payment_intent: "pi_year" })));
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(yearlyUser as any);
+      vi.mocked(invoicePaymentRefs).mockResolvedValue(["pi_year"]);
+      const result = await handleStripeWebhook("payload", "sig");
+      expect(result.success).toBe(true);
+      expect(invoicePaymentRefs).toHaveBeenCalledWith("in_year_open");
+      expect(clearAnnualYear).toHaveBeenCalledWith(42, "in_year_open");
+      expect(logAuditEvent).toHaveBeenCalledWith(expect.objectContaining({
+        resourceId: "dp_year",
+        metadata: expect.objectContaining({ annualInvoiceId: "in_year_open", yearCleared: expect.objectContaining({ monthlyCredits: 36_000 }) }),
+      }));
+    });
+
+    it("matched by the CHARGE too, where the invoice lists its charge", async () => {
+      vi.mocked(constructWebhookEvent).mockReturnValue(makeEvent("charge.dispute.closed", lost()));
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(yearlyUser as any);
+      vi.mocked(invoicePaymentRefs).mockResolvedValue(["ch_year"]);
+      await handleStripeWebhook("payload", "sig");
+      expect(clearAnnualYear).toHaveBeenCalledWith(42, "in_year_open");
+    });
+
+    it("⚠ NEGATIVE CONTROL: a lost dispute over a TOP-UP leaves the paid year alone", async () => {
+      vi.mocked(constructWebhookEvent).mockReturnValue(makeEvent("charge.dispute.closed", lost({ charge: "ch_topup", payment_intent: "pi_topup" })));
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(yearlyUser as any);
+      vi.mocked(invoicePaymentRefs).mockResolvedValue(["pi_year", "ch_year"]);
+      const result = await handleStripeWebhook("payload", "sig");
+      expect(result.success).toBe(true);
+      expect(clearAnnualYear).not.toHaveBeenCalled();
+    });
+
+    it("a WON dispute never touches the year", async () => {
+      vi.mocked(constructWebhookEvent).mockReturnValue(makeEvent("charge.dispute.closed", lost({ status: "won", payment_intent: "pi_year" })));
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(yearlyUser as any);
+      vi.mocked(invoicePaymentRefs).mockResolvedValue(["pi_year"]);
+      await handleStripeWebhook("payload", "sig");
+      expect(clearAnnualYear).not.toHaveBeenCalled();
+    });
+
+    it("an annual invoice Stripe cannot read FAILS THE EVENT — the redelivery decides, never a guess", async () => {
+      vi.mocked(constructWebhookEvent).mockReturnValue(makeEvent("charge.dispute.closed", lost({ payment_intent: "pi_year" })));
+      vi.mocked(getUserByStripeCustomerId).mockResolvedValue(yearlyUser as any);
+      vi.mocked(invoicePaymentRefs).mockResolvedValue(null);
+      const result = await handleStripeWebhook("payload", "sig");
+      expect(result.success).toBe(false);
+      expect(clearAnnualYear).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Chargeback: dispute.closed (lost) — Finalize Suspension", () => {
     it("should keep user suspended and cancel subscription when dispute is lost", async () => {
       const dispute = {

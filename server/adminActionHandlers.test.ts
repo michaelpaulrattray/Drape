@@ -37,7 +37,7 @@ const db = {
   unsuspendUser: vi.fn(),
   addCredits: vi.fn(),
   adjustUserCredits: vi.fn(),
-  /* #2152 repair 2: a FULL refund stops a yearly plan's months still to come. */
+  /* #2152: present so a refund that reached for it would be SEEN, not crash. */
   clearAnnualYear: vi.fn(),
   blockIp: vi.fn(),
   unblockIp: vi.fn(),
@@ -322,10 +322,13 @@ describe("cr_stripeRefund", () => {
     expect(db.adjustUserCredits.mock.calls[0][1]).toBe(-30);
   });
 
-  it("#2152 — a FULL refund stops the yearly plan's months still to come; a proportional one does not", async () => {
+  /* ⚠ #2152, the relay's finding on head e85357f6a, repair 1 — its OWN
+     earlier finding reversed. `cr_stripeRefund` refunds TOP-UP purchases
+     only (`server/routes/moderator.ts` refuses any ledger row not of type
+     `topup`), so refunding a credit pack in full must leave a yearly plan the
+     customer DID pay for exactly as it was. */
+  it("#2152 — refunding a TOP-UP, in full or in part, leaves a paid yearly plan's months alone", async () => {
     await runCr("cr_stripeRefund", { ...PURCHASE, refundType: "full" });
-    expect(db.clearAnnualYear).toHaveBeenCalledWith(42);
-    db.clearAnnualYear.mockClear();
     await runCr("cr_stripeRefund", PURCHASE);
     expect(db.clearAnnualYear).not.toHaveBeenCalled();
   });
