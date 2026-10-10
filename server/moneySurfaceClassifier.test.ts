@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { once } from "./testing/once";
 import { codeOnly, withoutComments } from "./testing/withoutComments";
 
 /* This suite reads every module the Atlas lists (the direct-balance guard) and,
@@ -80,6 +81,53 @@ const declaration = read(".github/money-surfaces.sh");
 const gateYml = read(".github/workflows/gate.yml");
 const reviewYml = read(".github/workflows/review.yml");
 
+/**
+ * THE DETERMINISTIC WORK IS DONE ONCE; THE POPULATIONS ARE UNTOUCHED (#2172).
+ *
+ * This suite was 22.4 s of the gate's unit `tests` total, and all of it is
+ * repetition rather than breadth: four tree sweeps are each called two or three
+ * times by their own arms, so the tree was read and comment-stripped **eleven
+ * times**, and the 1.2 MB Atlas document was `JSON.parse`d **seven**. Nothing
+ * here mutates anything it reads and `codeOnly`/`withoutComments` are pure
+ * character walks, so the second answer can only ever equal the first.
+ *
+ * ⚠ **WHAT IS SHARED IS THE WORK, NEVER A POPULATION.** Each sweep keeps its
+ * own list exactly as it was — the Atlas's modules under two roots or three,
+ * `git ls-files` filtered to code — because a shared population is the one
+ * change that could make a module invisible to one guard and visible to
+ * another, which is what `atlasModulesUnder` was written to prevent (#1711).
+ * The cache is keyed on the PATH, so two sweeps that happen to name the same
+ * file share the read and the walk and nothing else.
+ *
+ * ⚠ **A vanished file is still a vanished file.** `null` is cached as `null`,
+ * never as empty content, which is `readListedSource`'s own contract (#223).
+ */
+/** One listed module's bytes and its two strippings, each paid for once. */
+type ListedCode = {
+  readonly raw: string;
+  /** Comments and literal CONTENTS gone — what every symbol reader here asks. */
+  readonly code: () => string;
+  /** Comments gone, literals kept — what the Stripe import reader asks. */
+  readonly withComments: () => string;
+};
+const listedCodeCache = new Map<string, ListedCode | null>();
+
+/**
+ * A listed file's source and strippings, or `null` when the file is gone from
+ * the tree between the listing and the read. The strippings are lazy: the
+ * import reading is wanted on one sweep's population only, and paying for it
+ * everywhere would hand back a third of the saving.
+ */
+function listedCode(relative: string): ListedCode | null {
+  const cached = listedCodeCache.get(relative);
+  if (cached !== undefined) return cached;
+  const raw = readListedSource(path.join(repoRoot, relative));
+  const entry: ListedCode | null =
+    raw === null ? null : { raw, code: once(() => codeOnly(raw)), withComments: once(() => withoutComments(raw)) };
+  listedCodeCache.set(relative, entry);
+  return entry;
+}
+
 /** The `Money/auth surface check` step of `gate.yml`, and nothing else. */
 function moneyStep(): string {
   const start = gateYml.indexOf("- name: Money/auth surface check");
@@ -114,13 +162,15 @@ function shellVar(name: string): string {
  * empty reports a complete answer either way, and every absence arm in this file
  * would pass on silence.
  */
-function atlasModulesUnder(root: RegExp): string[] {
+const atlasModuleList = once(() => {
   const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
     modules?: { path?: string }[];
   };
-  const modules = (atlas.modules ?? [])
-    .map((module) => module.path ?? "")
-    .filter((p) => root.test(p) && !/\.test\.tsx?$/.test(p));
+  return (atlas.modules ?? []).map((module) => module.path ?? "");
+});
+
+function atlasModulesUnder(root: RegExp): string[] {
+  const modules = atlasModuleList().filter((p) => root.test(p) && !/\.test\.tsx?$/.test(p));
   if (modules.length === 0) {
     throw new Error(`the Atlas lists no module under ${root} — reader broken`);
   }
@@ -545,8 +595,8 @@ describe("the cash-price reading — where a year's price is SET (#1711)", () =>
     const others = atlasModulesUnder(/^(server|shared|client\/src)\//)
       .filter((file) => file !== "shared/annualBilling.ts")
       .filter((file) => {
-        const source = readListedSource(path.join(repoRoot, file));
-        return source !== null && /\bconst\s+ANNUAL_RATE\s*=/.test(codeOnly(source));
+        const entry = listedCode(file);
+        return entry !== null && /\bconst\s+ANNUAL_RATE\s*=/.test(entry.code());
       });
     expect(
       others,
@@ -846,12 +896,9 @@ describe("the direct-balance reading — a module that writes the ledger itself 
   const DIRECT_BALANCE_WRITE = /\.\s*(?:update|insert|delete)\s*\(\s*(?:credits|creditTransactions)\s*\)/;
 
   function atlasModules(): string[] {
-    const atlas = JSON.parse(read("docs/architecture/drape-architecture.json")) as {
-      modules?: { path?: string }[];
-    };
-    const modules = (atlas.modules ?? [])
-      .map((m) => m.path ?? "")
-      .filter((p) => /^(server|shared)\//.test(p) && !/\.test\.tsx?$/.test(p));
+    const modules = atlasModuleList().filter(
+      (p) => /^(server|shared)\//.test(p) && !/\.test\.tsx?$/.test(p),
+    );
     /* A collector that can come up empty reports a complete answer either way. */
     if (modules.length === 0) {
       throw new Error("the Atlas lists no server/ or shared/ module — reader broken");
@@ -859,17 +906,18 @@ describe("the direct-balance reading — a module that writes the ledger itself 
     return modules;
   }
 
-  function directBalanceWriters(): string[] {
+  /* Three arms ask this, and the tree does not change between them (#2172). */
+  const directBalanceWriters = once((): string[] => {
     const writers: string[] = [];
     for (const module of atlasModules()) {
       /* A listed path can be gone from a shared working tree between the Atlas
          being written and this read; a vanished file is skipped, never empty. */
-      const source = readListedSource(path.join(repoRoot, module));
-      if (source === null) continue;
-      if (DIRECT_BALANCE_WRITE.test(codeOnly(source))) writers.push(module);
+      const entry = listedCode(module);
+      if (entry === null) continue;
+      if (DIRECT_BALANCE_WRITE.test(entry.code())) writers.push(module);
     }
     return writers.sort();
-  }
+  });
 
   it("the reader finds the writers everybody already agrees about", () => {
     const writers = directBalanceWriters();
@@ -879,14 +927,15 @@ describe("the direct-balance reading — a module that writes the ledger itself 
   });
 
   it("the reader does not count a docblock example as a writer", () => {
-    const source = readListedSource(path.join(repoRoot, "server/db/connection.ts"));
-    if (source === null) throw new Error("server/db/connection.ts is gone — re-aim this control");
+    const entry = listedCode("server/db/connection.ts");
+    if (entry === null) throw new Error("server/db/connection.ts is gone — re-aim this control");
+    const source = entry.raw;
     expect(
       DIRECT_BALANCE_WRITE.test(source),
       "server/db/connection.ts no longer carries the docblock example this control is built on — "
         + "find another comment-only specimen or this arm proves nothing",
     ).toBe(true);
-    expect(DIRECT_BALANCE_WRITE.test(codeOnly(source))).toBe(false);
+    expect(DIRECT_BALANCE_WRITE.test(entry.code())).toBe(false);
     expect(directBalanceWriters()).not.toContain("server/db/connection.ts");
   });
 
@@ -1123,17 +1172,18 @@ describe("the authorisation reading — where a staff money action is APPROVED (
       + "from the shared map rather than declaring one. It authorises nothing.",
   };
 
-  function typeKeyedDeciders(): string[] {
+  /* Three arms ask this, and the tree does not change between them (#2172). */
+  const typeKeyedDeciders = once((): string[] => {
     const found: string[] = [];
     for (const module of atlasModulesUnder(/^(server|shared|client\/src)\//)) {
       /* A listed path can be gone from a shared working tree between the Atlas
          being written and this read; a vanished file is skipped, never empty. */
-      const source = readListedSource(path.join(repoRoot, module));
-      if (source === null) continue;
-      if (TYPE_KEYED_DECISION.test(codeOnly(source))) found.push(module);
+      const entry = listedCode(module);
+      if (entry === null) continue;
+      if (TYPE_KEYED_DECISION.test(entry.code())) found.push(module);
     }
     return found.sort();
-  }
+  });
 
   it("the reader finds the decision tables everybody already agrees about", () => {
     const found = typeKeyedDeciders();
@@ -1147,13 +1197,13 @@ describe("the authorisation reading — where a staff money action is APPROVED (
        "billing.stripe_refund_issued"` — the type name is in both the key and the
        value as a SUBSTRING, and neither is a key equal to the type. This is the
        measured specimen that a looser reader would have counted. */
-    const source = readListedSource(path.join(repoRoot, "shared/auditActions.ts"));
-    if (source === null) throw new Error("shared/auditActions.ts is gone — re-aim this control");
+    const entry = listedCode("shared/auditActions.ts");
+    if (entry === null) throw new Error("shared/auditActions.ts is gone — re-aim this control");
     expect(
-      /stripe_refund/.test(source),
+      /stripe_refund/.test(entry.raw),
       "shared/auditActions.ts no longer mentions stripe_refund — this control proves nothing now",
     ).toBe(true);
-    expect(TYPE_KEYED_DECISION.test(codeOnly(source))).toBe(false);
+    expect(TYPE_KEYED_DECISION.test(entry.code())).toBe(false);
     expect(typeKeyedDeciders()).not.toContain("shared/auditActions.ts");
   });
 
@@ -1193,10 +1243,10 @@ describe("the authorisation reading — where a staff money action is APPROVED (
   it("each stated exclusion is real, still keyed by a type, and genuinely off the list", () => {
     for (const [module, reason] of Object.entries(NOT_AUTHORISATION)) {
       expect(reason.length, `${module}'s exclusion carries no reason`).toBeGreaterThan(40);
-      const source = readListedSource(path.join(repoRoot, module));
-      expect(source, `${module} is excluded but is not in the tree — drop the entry`).not.toBeNull();
+      const entry = listedCode(module);
+      expect(entry, `${module} is excluded but is not in the tree — drop the entry`).not.toBeNull();
       expect(
-        TYPE_KEYED_DECISION.test(codeOnly(source ?? "")),
+        TYPE_KEYED_DECISION.test(entry?.code() ?? ""),
         `${module} no longer keys by a change-request type, so excluding it guards nothing`,
       ).toBe(true);
       expect(pathRe.test(module), `${module} is both excluded and on the list`).toBe(false);
@@ -1297,7 +1347,15 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
     return STRIPE_CLIENT.test(code) || STRIPE_WRITE.test(code) || STRIPE_VALUE_IMPORT.test(withoutComments(source));
   }
 
-  function trackedCodeFiles(): string[] {
+  /** The same question of a file already read, off the shared strippings. */
+  function entryWritesToStripe(entry: ListedCode): boolean {
+    const code = entry.code();
+    return STRIPE_CLIENT.test(code) || STRIPE_WRITE.test(code) || STRIPE_VALUE_IMPORT.test(entry.withComments());
+  }
+
+  /* Two sweeps walk this list and five arms ask them, so the `ls-files` process
+     ran five times for one answer that cannot change under them (#2172). */
+  const trackedCodeFiles = once((): string[] => {
     const listed = execFileSync("git", ["ls-files", "-z"], { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\0")
       .filter((p) => /\.(?:ts|tsx|mts|cts|js|mjs|cjs)$/.test(p))
@@ -1307,17 +1365,17 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
       throw new Error("git ls-files returned no scripts/ or no server/ code — reader broken");
     }
     return listed;
-  }
+  });
 
-  function stripeWriters(): string[] {
+  const stripeWriters = once((): string[] => {
     const writers: string[] = [];
     for (const file of trackedCodeFiles()) {
-      const source = readListedSource(path.join(repoRoot, file));
-      if (source === null) continue;
-      if (writesToStripe(source)) writers.push(file);
+      const entry = listedCode(file);
+      if (entry === null) continue;
+      if (entryWritesToStripe(entry)) writers.push(file);
     }
     return writers.sort();
-  }
+  });
 
   it("the reader is driven on constructed sources, both directions", () => {
     expect(writesToStripe("await stripe.prices.update(id, { active: false });")).toBe(true);
@@ -1373,8 +1431,12 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
 
   /** Every module specifier `file` really imports, resolved to a repo path where it is relative. */
   function importedPaths(file: string, source: string): string[] {
-    const kept = withoutComments(source);
-    const codeLines = codeOnly(source).split("\n");
+    return importedPathsOf(file, withoutComments(source), codeOnly(source));
+  }
+
+  /** The same reading off strippings already paid for (#2172). */
+  function importedPathsOf(file: string, kept: string, code: string): string[] {
+    const codeLines = code.split("\n");
     const lineOf = (offset: number) => codeLines[kept.slice(0, offset).split("\n").length - 1] ?? "";
     const resolve = (spec: string) =>
       spec.startsWith(".") ? path.posix.normalize(path.posix.join(path.posix.dirname(file), spec)) : spec;
@@ -1397,6 +1459,9 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
   const reachesStripeHelper = (file: string, source: string) =>
     importedPaths(file, source).some((p) => /^server\/stripe\//.test(p));
 
+  const entryReachesStripeHelper = (file: string, entry: ListedCode) =>
+    importedPathsOf(file, entry.withComments(), entry.code()).some((p) => /^server\/stripe\//.test(p));
+
   /*
     The two server modules that import a `server/stripe/` helper and are NOT on
     MONEY_PATHS on the day this arm landed. A STATED REMAINDER, not a verdict:
@@ -1412,15 +1477,15 @@ describe("the Stripe-write reading — code that changes what Stripe holds (#190
     "server/routes/moderator.ts",
   ]);
 
-  function stripeHelperImporters(): string[] {
+  const stripeHelperImporters = once((): string[] => {
     const importers: string[] = [];
     for (const file of trackedCodeFiles()) {
-      const source = readListedSource(path.join(repoRoot, file));
-      if (source === null) continue;
-      if (reachesStripeHelper(file, source)) importers.push(file);
+      const entry = listedCode(file);
+      if (entry === null) continue;
+      if (entryReachesStripeHelper(file, entry)) importers.push(file);
     }
     return importers.sort();
-  }
+  });
 
   it("the importer reader is driven on constructed sources, both directions", () => {
     const script = "scripts/refund-everyone.mts";
