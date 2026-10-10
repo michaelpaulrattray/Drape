@@ -320,15 +320,15 @@ describe("the rite actually calls it (invariant 7)", () => {
    * of the arm; `server/exitSafeFetch.test.ts` owns the arm about the clear.
    */
   it("hands the judge a head that times out, which is what makes the bound safe", () => {
+    /* ⚠ READ AT THE SHARED HEAD NOW (#2232). The rite's own inline HEAD carried
+       the timeout but not #1177's pause-retry, so the head moved to
+       `lib/eyeFrameHead.mts` for both callers; the bound is asserted on its
+       exported constant there (`server/eyeFrameHead.test.ts`), and what is
+       asserted HERE is that the rite goes through it. */
     const block = rite.slice(rite.indexOf("AND THE EYE FRAMES IT NAMES"), rite.indexOf("AND THE SCRIPT GUARDS"));
-    expect(block).toContain("fetchWithClearedTimeout(");
-    const timeout = block.match(/fetchWithClearedTimeout\([^;]*?,\s*(\d[\d_]*)\)/);
-    expect(timeout).not.toBeNull();
-    const ms = Number(timeout![1]!.replaceAll("_", ""));
-    /* Long enough that a real answer is never cut off, short enough that a
-       dead bucket costs waves of seconds rather than waves of minutes. */
-    expect(ms).toBeGreaterThanOrEqual(5_000);
-    expect(ms).toBeLessThanOrEqual(30_000);
+    expect(block).toContain("createEyeFrameHead().head");
+    const owner = readFileSync(path.join(repoRoot, "scripts/lib/eyeFrameHead.mts"), "utf8");
+    expect(owner).toMatch(/fetchWithClearedTimeout\(url, \{ method: "HEAD" \}, EYE_FRAME_HEAD_TIMEOUT_MS\)/);
   });
 
   it("judges the briefing at the COMMIT being pushed, not the working tree", () => {

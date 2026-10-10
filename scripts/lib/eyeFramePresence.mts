@@ -324,3 +324,47 @@ export const judgeUploadedFrame = async (
   }
   return await judgeEyeFramePresence([key], base, head);
 };
+
+/**
+ * WHAT TO DO ABOUT A REFUSAL — READ OFF THE VERDICT, NOT ASSUMED (#2232).
+ *
+ * The verdict has always kept `missing` and `unread` apart, and the docblock at
+ * the top of this file says why: *"they are different facts and only one of them
+ * names a repair."* The callers' printed repair did not listen. The rite printed
+ * ONE repair — re-upload the frames — on every refusal, and the only refusal it
+ * had ever printed it under was 365 of 365 UNREAD on a network blip. A shift
+ * obeying it would have re-uploaded 365 frames and rewritten the briefing for
+ * two seconds of lost packets.
+ *
+ * So the repair is chosen here, once, for both callers:
+ *
+ * - **UNREAD** — the bucket did not answer. Nothing is known to be wrong with a
+ *   frame, so the repair is to re-run before changing anything.
+ * - **MISSING** — the bucket answered and the frame is not there. That is the
+ *   #320 incident, and the caller's own re-upload wording applies (it differs
+ *   by road: the rite commits and re-runs, the gate step pushes).
+ * - Both at once prints both, each naming its own keys' count.
+ * - Neither — the verdict refused before asking (no briefing, no base) — says
+ *   so rather than telling anyone to re-upload a frame nobody found missing.
+ *
+ * It returns lines and never prints, so the arms read exactly what a caller would.
+ */
+export const eyeFrameRefusalRepair = (
+  verdict: Pick<EyeFramePresence, "missing" | "unread">,
+  reupload: string,
+): string[] => {
+  const lines: string[] = [];
+  if (verdict.unread.length > 0) {
+    lines.push(
+      `UNREAD ${verdict.unread.length}: the bucket did not answer — that is the network, not the frames. `
+      + "Re-run before changing anything; do not re-upload or edit the briefing on an unread.",
+    );
+  }
+  if (verdict.missing.length > 0) {
+    lines.push(`MISSING ${verdict.missing.length}: ${reupload}`);
+  }
+  if (lines.length === 0) {
+    lines.push("no frame was found missing or unread — the line above names what could not be judged; fix that and re-run.");
+  }
+  return lines;
+};
