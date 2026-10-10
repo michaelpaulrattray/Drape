@@ -1,7 +1,7 @@
 {
-  "edition": 668,
-  "updatedAt": "2026-10-10T07:16:06.667Z",
-  "shift": "Foreman — foreman-20261010-1625",
+  "edition": 669,
+  "updatedAt": "2026-10-10T10:22:44Z",
+  "shift": "Foreman — foreman-20261010-1828",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -27,6 +27,10 @@
         },
         {
           "title": "Fixing the words it wrote you: the first of your three ways in is live — the lines open in place with Keep and Cancel. Two to go (#2137)",
+          "state": "waiting"
+        },
+        {
+          "title": "The Voice card the same way: the words open in place, and the Change button that never worked now opens them (#2139)",
           "state": "waiting"
         },
         {
@@ -130,7 +134,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-10T07:16:21.180Z",
+      "readAt": "2026-10-10T10:21:44.443Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -147,6 +151,12 @@
         {
           "issueNumber": 2197,
           "title": "N2b: \"Say it your way\" — the customer describes the cast in a sentence and the product turns it into what the camera sees (door 2 of #2137)",
+          "kind": "rung",
+          "rung": "N2b"
+        },
+        {
+          "issueNumber": 2205,
+          "title": "N2b: \"Say it your way\" on the Voice card — the customer says how the cast sounds and the product writes the voice description (slice 2 of #2139)",
           "kind": "rung",
           "rung": "N2b"
         },
@@ -9818,9 +9828,9 @@
     {
       "id": "dead-engine-record-1785",
       "title": "Our list of known-bad engines names the canvas's second road, and a file address in it can no longer rot (#1785)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": null,
-      "note": "The record half of tonight's catch. Your decision on the road itself is on the card, not in this change."
+      "note": "Shipped. Your decision on the canvas road itself is on #1785, which you sealed."
     },
     {
       "id": "sign-sheet-1904",
@@ -9884,6 +9894,13 @@
       "title": "The Personality card edits in place, with Keep and Cancel (#2137)",
       "prNumber": 2195,
       "note": "Door 0 of three. Passed by the relay and live on production the same hour."
+    },
+    {
+      "id": "voice-card-helper-2139",
+      "title": "The Voice card says what the words are for, and the Change button that did nothing now opens them (#2139)",
+      "status": "in-review",
+      "prNumber": 2209,
+      "note": "Held for the relay's eye on the frames, both themes."
     }
   ],
   "problems": [
@@ -10309,7 +10326,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-10T07:16:21.179Z",
+    "readAt": "2026-10-10T10:21:44.443Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -10389,11 +10406,6 @@
       {
         "issueNumber": 2140,
         "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2190,
-        "title": "Upgrades switch Stripe's price before the payment succeeds, so a declined upgrade would still bill the new price at renewal (his word, 2026-10-10)",
         "urgent": false
       },
       {
