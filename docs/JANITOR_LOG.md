@@ -3495,3 +3495,265 @@ the shift row and its heartbeats, plus the focus card's own edition and merge.
 6. **Run 12's items 5, 7 and 8 were not reached by this half-shift** (the
    junction canary re-drive, the knip types SET diff, and the directory census
    at run-12 depth). Carry them forward as run 12 wrote them.
+
+## Run 14 — 2026-10-11 01:54–03:0x AEST (Janitor, patrol #14, card #2228; #2176 and #1882 discharged)
+
+**A FULL patrol, and it took run 13's item 1 as the whole unit of work** — which is
+what run 12 asked for and what two runs had deliberately deferred: *"deletion is
+the one act a gate cannot give back, so it is a unit of work rather than the tail
+of one. Do not take it in the last twenty minutes of a shift."* The focus was
+CLEAR (N2b closed at the milestone gate), no `founder-ordered` card was on offer,
+and no repair was owed on any open PR, so the patrol was the admissible brief.
+
+| run 13's next-run item | outcome |
+|---|---|
+| 1 — the disposable sweep, 2 runs untaken, 860 files | ✅ **TAKEN AND DONE — 914 at this reading, 216 swept, archive verified.** §A, §B |
+| 2 — the 11 `%TEMP%` trees pass their floor 2026-10-14 | ⚠ **LEFT, as instructed — and there are now 123, oldest `2026-10-07T16:15:59Z`, so NO floor has passed.** §F |
+| 3 — #1796 and #1797 "still filed and unworked" | ⚠ **STALE — both were CLOSED on 2026-10-02.** #1797's own receipt hands its backlog to *"the next janitor pass"*, which is this one: §D |
+| 4 — portless dev servers, anchor on the EXECUTABLE | ✅ **5 processes, 171.4 MB, one dead session — and run 13's own anchor would have missed one of them.** §C |
+| 5 — #1098 still waits on this seat, past six firings | ⚠ **STILL NOT TAKEN**, and now past seven. Named again below |
+| 6 — run 12's items 5, 7, 8 | ⚠ Not reached again. Carried forward |
+
+### A. THE CONTROLS CAME FIRST, AND C3 IS THE ONE A GREEN SUITE WOULD NOT HAVE GIVEN ME
+
+`scripts/disposable-age.mts` has a 42-test suite and it passes. **That proves the
+pure functions and not the verdicts on this tree**, and the verdicts were the
+input to deleting 216 files — so working law 2 was driven on the live population
+before anything was removed (`output/janitor-run14/controls.mjs`, **6 of 6 PASS**).
+
+| control | the direction it proves | result |
+|---|---|---|
+| C1a | a citation in a **tracked** file protects a candidate | keep — *cited by docs/JANITOR_LOG.md* |
+| C1b | a citation in an **untracked `scripts/`** file protects one | keep — *cited by `_1098-control-citer-disposable.mts`* |
+| C2 | an **OPEN** card protects an old file | keep — *#2228 is still open* |
+| C3 | a **CLOSED** card + old mtime + uncited is **NOMINATED** | **sweep** — *#8 closed 35d ago* |
+| C4 | a name it **cannot date** is kept, never swept | keep — *points at no card or edition* |
+
+⚠ **C3 is load-bearing and the others could not stand in for it.** Four controls
+proving the reader PROTECTS things are all satisfied by a reader that protects
+EVERYTHING — which is exactly the hoarding failure #526 was filed about, returning
+through the door built to fix it. Only a control that makes it FIRE distinguishes a
+careful reader from an inert one. It needed a backdated mtime, because `agedOut`
+requires the card closed >7d **and** the mtime >7d; a freshly written control file
+can never be nominated however old its card.
+
+⚠ **THE DRIVER LIVES IN `output/`, NOT `scripts/`, AND THAT IS NOT TIDINESS.**
+`internalCitationLines` folds **every untracked file under `scripts/`** into the
+citation index, so a driver placed there would have named its own control files and
+turned all of them into KEEPs — six passes, every one vacuous, the instrument
+having corrupted its own subject. Read out of that function's docblock before
+writing the driver rather than discovered after.
+
+**And a no-op control, because a manifest built on a drifting reading is worthless:**
+after the controls were removed and `docs/JANITOR_LOG.md` restored to its exact
+sha1, the reader was re-run and compared verdict-for-verdict with the baseline —
+**0 of 890 moved.** The manifest step refuses to emit on any drift.
+
+⚠ **ONE FAILURE OF MY OWN, RECORDED BECAUSE THE REPAIR IS THE LESSON.** The
+driver's first run **planted its controls and then threw**, leaving four files
+under `scripts/` and an edited tracked document. The throw was
+`spawnSync npx.cmd EINVAL` — this machine's `.cmd`-without-a-shell class, the
+third instance on the record and the second in two shifts (evidence posted to
+**#2227**, whose proposed guard would not catch this shape). Two things changed:
+the launch is `process.execPath` + tsx by its file, and **the restore moved into a
+`finally`**. A planting driver without one is a tree-corrupting instrument that
+looks like a reader.
+
+### B. THE SWEEP, AND THE ARITHMETIC CLOSES EXACTLY
+
+- **Manifest** — `output/janitor-run14/manifest.{json,md}`: **216 rows, 919,938
+  bytes (898.4 kB)**, bytes + sha1 + verdict + reason + anchor card + mtime per row.
+  59 distinct anchor cards, every anchor closed between **2026-09-22** and
+  **2026-10-03**; 214 distinct sha1.
+- **Archive** — `scripts-disposables-run14.zip`, 427,263 bytes, **verified 216/216
+  by name and size out of the zip's own central directory AND by sha1 out of a full
+  extraction**, with 0 entries in the zip absent from the manifest. ⚠ **Not verified
+  by the writer exiting 0**: the first write failed outright and still printed
+  `zip written: 0 bytes`, which is the whole argument for reading the central
+  directory instead of trusting the act.
+- **Two gates at the instant of deletion**, because a builder seat (row #654) was
+  live under `scripts/` in the same minutes: every row re-read as still non-keep
+  (**0 moved**) and every row's bytes still matching the archived sha1 (**0
+  drifted**). Either refuses the whole sweep.
+
+| reading | before | after |
+|---|---|---|
+| untracked under `scripts/` | 914 | **698** |
+| reader population | 890 | **674** |
+| sweepable | 216 | **0** |
+| kept only by a file being swept (chain) | 9 | **0** |
+| cited by a file that stays | 121 | **121** |
+| unresolved by name (kept on purpose) | 533 | **533** |
+
+⚠ **`chain 0` after is a real check and not a restatement of the act.** The 9 chain
+rows were swept together with the citers that were keeping them, so a shallow chain
+reader would have left a SECOND-ORDER chain exposed the moment they went. None
+appeared: the sweep reached a fixed point in one pass.
+
+**Guards after:** script exit + connection discipline **18/18**, `pnpm check:scripts`
+**exit 0 / 0 TS errors**, `server/queueReaderBuildState.test.ts` **8/8**,
+`server/disposableAge.test.ts` **42/42**, `server/shiftWorktree.test.ts` **177/177**,
+`server/localBranchSweep.test.ts` **40/40**.
+
+⚠ **THE REAL REMAINDER IS NOT THE SWEPT SET, IT IS THE 533.** Seventy-nine per cent
+of what is left is **permanent litter for want of a card number at the front of a
+name** — `_probe-…`, `_read-…`, `court-…` — and the reader keeps them on purpose,
+because a wrong guess deletes somebody's working file. No sweep can ever reduce that
+number; only shifts naming their disposables `_<card>-<what>-disposable.mts` can.
+**The sweep is the symptom's cure and the naming is the cause's.**
+
+### C. THE DEV SERVERS — AND RUN 13'S OWN ANCHOR WOULD HAVE MISSED ONE OF FIVE
+
+`netstat` on 3000–3010: **nothing**. Run 13's anchor (executable `node.exe`/`cmd.exe`
+plus a command line matching `tsx watch` / `cross-env` / `pnpm dev`) found **4**
+processes, one chain, rooted in `C:\Users\Admin\drape-shift-relay-2197-client`.
+
+**Before killing anything, the tree was established as DEAD rather than assumed** —
+#2176 exists precisely because the relay's LIVE tree reads as litter:
+
+- its owning shell (pid 10480) was **GONE**;
+- it held **no listening socket on ANY port**, not merely outside 3000–3010 (the dev
+  script auto-increments, so the narrow scan is not an answer);
+- **no ESTABLISHED connection**;
+- the worktree was **not registered** with git, and its `node_modules` was **already
+  deleted** — a dev server that cannot serve;
+- card **#2197 had merged** (`cbb115b5c`) and no open PR named it.
+
+⚠ **THEN A FIFTH PROCESS TURNED UP THAT THE FILTER COULD NOT SEE, AND THIS IS THE
+CORRECTION RUN 15 NEEDS.** pid 11172 was the real `tsx watch` child, and its command
+line reads `…/tsx/dist/cli.mjs" "watch"` — **it does not contain the contiguous
+string `tsx watch`**, so an anchor on that literal misses it while matching its
+parents. Re-read anchored on the **dev entry point** (`server/_core/index.ts`,
+`cross-env`, `pnpm.cjs dev`) and it appeared immediately: orphaned, socket-less,
+56.1 MB. **Run 13's figure of 24 was therefore a floor, not a count**, and by the
+same arithmetic so was run 12's.
+
+**Killed: 5 processes, 171.4 MB**, children first. **The protected set was printed
+before the act** — the Foreman runner (pid 31812), this shift's session (11116), the
+other live seat (26564), and two of his own claude sessions from 2026-10-08 — and
+**all three re-read ALIVE afterwards**. Verification read the SUBJECT: dev-shaped
+processes anywhere on this machine **0** by the WIDER anchor, listening sockets
+3000–3010 **none**. Of 10 processes still naming a `drape-shift-` tree, 7 had already
+exited on their own and the rest resolved by ancestry to the live seat and to this
+session's own shell — **named, not killed** (run 12's `process-filter-matches-itself`
+hazard, three runs running).
+
+### D. THE LOCAL BRANCH SWEEP — #1797'S OWN RECEIPT DELEGATED IT TO THIS PASS
+
+Run 13's list called #1796 and #1797 *"still filed and unworked"*. **Both closed on
+2026-10-02**, and #1797's closing comment is an instruction to this seat: *"The
+backlog itself (298 local branches at the PR's reading) is swept by the next janitor
+pass under the new rule, not by hand."*
+
+`scripts/janitor-local-branches.mts`, whose criterion is a MERGED pull request and
+its recorded head — never `git branch --merged`, which is wrong here because every
+merge is a squash:
+
+```
+local 563 team/* branch(es) · reader A 1135 pull request(s) · reader B 1135 pull head(s)
+held by a worktree: 27
+deletable 305 · keep 234 · held 24
+```
+
+**Its claim was checked before it was believed.** The manifest says every row has two
+restore roads and that the second *"works forever"*; `git ls-remote origin
+refs/pull/<n>/head` was run on three rows and returned **the manifest's tip sha
+exactly, 3 of 3**. The tool also runs its own pre-act re-read (*"305 unchanged, 0
+moved or gone, 0 newly held"*) — the same gate shape §B built by hand.
+
+**Deleted 305 refs: 563 → 258.** Re-read after: **deletable 0**, keep 234, held 24
+(234 + 24 = 258). All **27** worktree branch holds intact, `HEAD` still `main`,
+working tree unchanged. Suite **40/40**.
+
+### E. 22 EMPTY DIRECTORIES — AND THE FIRST READING OF THEM WAS WRONG
+
+22 of the 55 `drape-*` directories held **0 entries**. These are the documented
+git-on-Windows behaviour the standing orders name — `git worktree remove` unregisters
+the tree and leaves the directory, so the second command never ran.
+
+⚠ **My first classifier said all 22 were still REGISTERED and it was broken.** A
+`sed` in the pipeline failed, the comparison string came out empty, and
+`grep -qiF ""` matches every line — so everything read as registered. **It failed
+toward "leave it", which is the hoarding direction, and it was caught only because
+`relay-2197-client` had already been read as UNregistered minutes earlier and the two
+readings disagreed.** Redone in node with `path.resolve` normalisation and **both
+controls**: the main tree must read registered (it does) and an impossible path must
+read absent (it does). Answer: **0 still registered, 22 unregistered.**
+
+Removed with **`rmdir`, not `rm -rf`** — it refuses a non-empty directory, so
+emptiness is re-checked at the instant of the act by the tool itself rather than by
+my earlier reading. **22 removed, 0 refused.** `drape-*` directories **55 → 33**.
+
+**Worktrees themselves were NOT touched**: 27 are registered and full checkouts, and
+they belong to **#2155**, which is `blocked` on three decisions *"none a seat's"* —
+re-read this run and the hold is still real.
+
+### F. THE COUNTS
+
+| | run 13 close | run 14 close | Δ over 3 days |
+|---|---|---|---|
+| untracked under `scripts/` | 860 | **698** | **−162** (914 before the sweep: +54 then −216) |
+| …of which permanent for want of a name | — | **533** | 79% of the remainder |
+| untracked repo-wide | — | **758** | |
+| local `team/*` branches | 383 | **258** | **−305 swept** (563 before: +180 then −305) |
+| remote `origin/team/*` refs | 71 | **222** | +151 |
+| `drape-*` directories | 32 | **33** | 55 before §E removed 22 |
+| `drape-*` loose files | — | **6** | 5.3 MB, next-run item 5 |
+| registered worktrees | 20 | **27** | +7 — #2155's, untouched |
+| dev-server PROCESSES killed | 24 | **5** | 171.4 MB, from 1 dead session |
+| live listening dev servers | 0 | **0** | |
+| `%TEMP%` `drape-*` trees | 11 | **123** | 1,453 files; **no floor passed** |
+| memory-index faults | 0 | **0** | 319 files, 319 pointed at (was 303) |
+| retention: expired / kept | 0 / 1 | **0 / 1** | the keep is grounded, 31 of 31 unrecoverable elsewhere |
+| `.git` garbage | 0 | **0** | |
+
+**`%TEMP%` 11 → 123 is the fastest-growing number on this table** and it is **NOT
+carded**, because run 13 drove this to a no-defect verdict (a completed run cleans up
+after itself; these are the orphans of interrupted vitest runs) and nothing this run
+contradicts it. Read in UTC as run 13 instructed: oldest `2026-10-07T16:15:59Z`,
+newest `2026-10-10T16:15:23Z` — *the same minute as the reading*, so the producer is
+live. **The oldest batch's floor passes `2026-10-14T16:15:59Z`, which is after run
+15's likely date; run 16 is the first that may sweep them.**
+
+### G. Anti-boredom check
+
+Every act traces to **run 13's own numbered next-run list** (items 1, 2, 3, 4), to
+**#1797's closing receipt naming this pass**, to the standing instructions in this
+log's header (memory index, backup retention), or to **queue drift found while
+reading** (#2176 shipped 8 h earlier and still read as being built). **Two cards
+closed with receipts** (#2176, #2228), **two commented with receipts** (#1882's three
+measurable done-whens discharged and its hold handed to the relay; #2227 given a
+third instance that its proposed guard would not catch). **One card filed: #2228**,
+the sweep's own, before the sweep began. **No code was changed by this patrol** — the
+only tracked edit is this log entry.
+
+**Spend: nothing** — no credits, no house money, no paid model call, no image call,
+no production variable, no migration, no flag flip. Production writes: the shift row
+and its heartbeats, and the queue counts under his switches.
+
+**Next run (~2026-10-14):**
+
+1. ⚠ **ANCHOR THE DEV-SERVER READ ON THE ENTRY POINT, NOT ON `tsx watch`** — §C.
+   The resolved child reads `cli.mjs" "watch"` and a contiguous-string match misses
+   it. Runs 12 and 13 both counted with the narrow anchor, so both figures are floors.
+2. **The `%TEMP%` trees: 123, oldest floor passes `2026-10-14T16:15:59Z`.** Read the
+   mtime in UTC and compare in UTC. If your run is before that instant, LEAVE them
+   and say so; they are not a defect.
+3. ⚠ **The 533 unnameable disposables are the standing remainder and no sweep
+   touches them.** Do not propose a cleverer fallback for the name — the reader keeps
+   what it cannot date on purpose. The only lever is shifts naming their own files.
+4. **#1098 still waits on this seat — now past SEVEN of its clock firings** and still
+   on no run's agenda. Either take it or write down why it keeps being skipped.
+5. **The 6 `drape-scratch-*` loose files, 5.3 MB** (cards #1940 and #2121, both
+   CLOSED). ⚠ **The 7-day rule KEEPS all six at this reading** — mtimes 2026-10-08/09,
+   floors passing 2026-10-15 and 2026-10-16 — so no judgement was needed and none was
+   invented. **No manifest rule covers `C:\Users\Admin\drape-scratch-*`**; a run that
+   wants to sweep them writes that rule first.
+6. **Run 12's items 5, 7 and 8 are now THREE runs unreached** (the junction canary
+   re-drive, the knip types SET diff, the directory census at run-12 depth). Either
+   carry them deliberately or retire them; silently carrying forward is how a list
+   stops being read.
+7. **Remote `origin/team/*` is 222 and nothing sweeps it.** The local sweeper is
+   explicitly local; `delete_branch_on_merge` handles the merged ones, so these 222
+   are the un-merged remainder. Not a defect on this reading — measured so the next
+   run can see whether it moves.
