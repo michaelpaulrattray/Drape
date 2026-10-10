@@ -362,6 +362,11 @@ export const ALWAYS_RUN_SUITES: ReadonlyArray<{ readonly file: string; readonly 
     reason:
       "derives its population (every tracked client, server and shared source file that could put a number in front of a customer) from `git ls-files` via `creditDisplayPopulation()`; a credit number rendered under ANY tree is its subject and it names no path literal. ⚠ THE FIFTH, and the derived arm found it the same way it found the third and the fourth — the guard was written, `server/preflight.test.ts` reddened naming it, and the set gained a member nobody had to remember (#1600, #1037).",
   },
+  {
+    file: "server/shellLessPathLaunch.test.ts",
+    reason:
+      "derives its population (every tracked source file that hands a shell-less env to a launcher resolved through a shell) from `git ls-files` via `shellLessPathLaunches()`; an arm that strips a child's PATH and then runs it through `npx` is its subject wherever it is written, and it names no path literal. ⚠ THE SIXTH, and it arrived exactly as the third, fourth and fifth did — the guard was written, this arm reddened naming it, and the set gained a member nobody had to remember (#2227, #1037).",
+  },
 ];
 
 /** A helper module that enumerates the suite population, and the exported functions that do it. */
