@@ -686,6 +686,28 @@ export type RemovalState = {
    * that lost the court said.
    */
   readonly disposableIgnored: readonly string[];
+  /**
+   * PULL REQUESTS STILL OPEN ON THIS BRANCH (#2176).
+   *
+   * ⚠ **IT DECIDES NOTHING AND IS CARRIED ANYWAY** — the same posture as
+   * `disposableIgnored` above, for a sharper reason. A tree being worked by a
+   * shift that pushes as it goes passes all three existing refusals honestly
+   * (`unpushedCommits 0` — it pushed; `dirtyFiles 0` — it committed;
+   * `keptIgnored` empty), because every one of them reads *would bytes be
+   * lost*, and the answer genuinely is no. What would be lost is a live
+   * session's working directory, which is a different kind of loss and nothing
+   * read for it.
+   *
+   * Refusing on this is REFUSED, by the card that asked for it: the prescribed
+   * road is open the PR and then take the tree down, so a refusal here would
+   * fire on the tool's commonest correct use. `readOpenPullRequests`' docblock
+   * carries that argument and the measurement that killed the one signal a
+   * refusal could have used.
+   *
+   * `null` means the question was not asked — a refusal already stood, so there
+   * was nothing a network call could change.
+   */
+  readonly openPullRequests: readonly OpenPullRequest[] | { readonly unreadable: string } | null;
 };
 
 /** `true` when the merged-PR read did not land. One owner, two consumers. */
@@ -800,6 +822,38 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
   if (!state.registered) {
     warnings.push("git does not have this path registered as a worktree — removing the directory only");
   }
+  /*
+    ⚠ **THE LAST THING SAID BEFORE A TREE IS DELETED, AND IT REFUSES NOTHING
+    (#2176).** Every refusal above has already passed, which is exactly the
+    state the card is about: a tree somebody is working in right now passes all
+    three honestly. This does not add a fourth gate — the card measured that a
+    refusal here would fire on the tool's commonest correct use and be forced
+    away within a week — it adds the fact those two seats had to supply from
+    their own heads on consecutive nights.
+
+    It is the LAST warning on purpose: a reader skimming a proceed verdict reads
+    the end of it, and this is the line that would change a mind.
+  */
+  /* `?? null` rather than a bare `!== null`: an ABSENT field means the question
+     was not asked, which is the same fact as `null`, and letting `undefined`
+     fall through would word it as *could not tell* — a reading nobody took,
+     printed as a reading that failed. */
+  const openPrs = state.openPullRequests ?? null;
+  if (openPrs !== null) {
+    if (openPrReadFailed(openPrs)) {
+      warnings.push(
+        `could not tell whether a pull request is open on this branch — ${openPrs.unreadable}`,
+      );
+    } else if (openPrs.length > 0) {
+      const named = openPrs
+        .map((pr) => `#${pr.number}${pr.isDraft ? " (draft)" : ""}`)
+        .join(", ");
+      warnings.push(
+        `PR ${named} is still OPEN on this branch — ordinary after a seat has shipped, `
+        + "and the one shape that looks identical to somebody's live tree. If this is not yours, stop",
+      );
+    }
+  }
   return { proceed: true, warnings };
 }
 
@@ -813,6 +867,92 @@ export function decideRemoval(state: RemovalState, force: boolean): RemovalVerdi
  */
 export function mergedPrArgs(branch: string): string[] {
   return ["pr", "list", "--head", branch, "--state", "merged", "--limit", "5", "--json", "number,mergedAt"];
+}
+
+/**
+ * IS A PULL REQUEST STILL OPEN ON THIS BRANCH? — #2176.
+ *
+ * ⚠ **THIS NAMES A FACT AND REFUSES NOTHING, AND THAT IS THE WHOLE DESIGN.**
+ * #2176's own reading: refusing on an open pull request would refuse the tool's
+ * commonest CORRECT use, because the prescribed road is *open the PR, then take
+ * the worktree down* — the standing orders say "Remove the worktree when the PR
+ * is opened", and a seat's PR stays open for hours after its tree is finished
+ * with. A refusal there would fire on every one of those and be `--force`d away
+ * inside a week, which is how a guard stops being a guard.
+ *
+ * So the question is ASKED and the answer is PRINTED, and the verdict is
+ * unchanged. Two seats kept the relay's live tree against this tool's verdict on
+ * consecutive nights, each correct and neither aided by it; what was missing was
+ * not a refusal but the fact. Before this, the words "pull request" appeared in
+ * `remove`'s output only about the MERGED question.
+ *
+ * ⚠ **AND THE SIGNAL A REFUSAL WOULD NEED DOES NOT EXIST — MEASURED, 2026-10-10,
+ * so the next hand does not build the inert version.** #2176 named
+ * `crew_shift_runs` as *"the candidate worth measuring first"*: a tree whose
+ * branch belongs to an OPEN shift row. Read at the rows, the same minute:
+ *
+ *     PRODUCTION  :23768, what `railway run --service MySQL` reaches   1 open run
+ *     DEV         :52008, what every worktree's `.env` names           0 open runs
+ *
+ * **The heartbeat writes to production and `.env` points at dev** — same host,
+ * same database name, different port. So that query, run from a worktree, would
+ * answer *no open shift* for every branch that has ever existed: a guard inert
+ * by construction, failing OPEN, and failing SILENTLY — because the read
+ * SUCCEEDS. There is no `unreadable` to fall back to, which is strictly worse
+ * than having no answer. It would need `railway run`, i.e. the Railway link,
+ * which only the main tree has.
+ *
+ * The card's other candidate — `add` stamping the owning shift id into the tree
+ * — is not refuted here, but it has a hole worth stating before anyone builds
+ * it: `add` writes no such stamp today, so every tree that already exists would
+ * read as unknown, including `drape-shift-relay-2152`, the specimen the card
+ * was filed about.
+ *
+ * The shape is `readMergedPullRequest`'s, clause for clause, including the one
+ * that matters: **every failure is `unreadable` and never an empty list.** An
+ * absent `gh` must not be able to assert that nothing is open.
+ */
+export function openPrArgs(branch: string): string[] {
+  return ["pr", "list", "--head", branch, "--state", "open", "--limit", "5", "--json", "number,isDraft"];
+}
+
+/** One open pull request on this branch, as the printed line needs it. */
+export type OpenPullRequest = { readonly number: number; readonly isDraft: boolean };
+
+export function readOpenPullRequests(
+  branch: string,
+  gh: (args: string[]) => { status: number; out: string; err: string },
+): readonly OpenPullRequest[] | { readonly unreadable: string } {
+  let result: { status: number; out: string; err: string };
+  try {
+    result = gh(openPrArgs(branch));
+  } catch (failure) {
+    const why = failure instanceof Error ? failure.message : String(failure);
+    return { unreadable: "`gh pr list` could not run: " + why };
+  }
+  if (result.status !== 0) {
+    const why = (result.err || result.out).trim().split(/\r?\n/)[0] ?? "no reason given";
+    return { unreadable: "`gh pr list` exited " + result.status + ": " + why };
+  }
+  let rows: unknown;
+  try {
+    rows = JSON.parse(result.out);
+  } catch {
+    return { unreadable: "`gh pr list` did not answer with JSON" };
+  }
+  if (!Array.isArray(rows)) return { unreadable: "`gh pr list` did not answer with a list" };
+  return rows
+    .map((row) => (row && typeof row === "object" ? row as { number?: unknown; isDraft?: unknown } : null))
+    .filter((row): row is { number: number; isDraft?: unknown } =>
+      row !== null && Number.isSafeInteger(row.number) && (row.number as number) > 0)
+    .map((row) => ({ number: row.number, isDraft: row.isDraft === true }));
+}
+
+/** `true` when the open-PR read did not land. One owner, two consumers. */
+export function openPrReadFailed(
+  state: readonly OpenPullRequest[] | { readonly unreadable: string },
+): state is { readonly unreadable: string } {
+  return !Array.isArray(state);
 }
 
 /**

@@ -69,6 +69,9 @@ import {
   prReadFailed,
   readHeadAgainstPrHead,
   readMergedPullRequest,
+  openPrArgs,
+  openPrReadFailed,
+  readOpenPullRequests,
   readShippedCommits,
   removalStateFromShipReading,
   reviewCheckoutRef,
@@ -105,6 +108,11 @@ const clean: RemovalState = {
   /* No merged pull request was found, so there is nothing past one either
      (#1540, at review). Required for the same reason as the field above. */
   unshippedPastMerge: null,
+  /* ⚠ THE QUESTION WAS NOT ASKED (#2176) — required rather than optional for
+     the `mergedPullRequest` reason above: `null` (nobody asked, because a
+     refusal already stood) and an empty list (asked, nothing is open) are
+     different facts, and an omitted field would silently pick one. */
+  openPullRequests: null,
   /* ⚠ GIT WAS ASKED ABOUT IGNORED FILES AND FOUND NOTHING (#1823) — required
      rather than optional for exactly the `mergedPullRequest` reason above, and it
      is the whole lesson of the card: an EMPTY list and a reading nobody took were
@@ -2644,5 +2652,161 @@ describe("the script's own text — the shared-install reading is INVOKED (#2148
     // name the tradeoff rather than quietly taking the easy half.
     expect(addBlock().text).not.toMatch(/run\(\s*"pnpm"/);
     expect(addBlock().text).not.toMatch(/"install"/);
+  });
+});
+
+/**
+ * ⚠ **AN OPEN PULL REQUEST ON THE BRANCH — NAMED, NEVER REFUSED (#2176).**
+ *
+ * The card's finding: `remove` asks whether a MERGED pull request names the
+ * branch and never whether an OPEN one does, so a worktree holding live work
+ * under review reads to the tool as ordinary litter. Two consecutive seats kept
+ * the relay's tree against the tool's verdict, each correct and neither aided
+ * by it.
+ *
+ * ⚠ **AND THE CARD REFUSED THE OBVIOUS FIX IN ADVANCE, WHICH IS WHY THESE ARMS
+ * ARE SHAPED THE WAY THEY ARE.** Refusing on an open pull request would refuse
+ * the tool's commonest CORRECT use — the prescribed road is open the PR, then
+ * take the tree down — and would be `--force`d away inside a week. So the
+ * second arm below is the one that matters: **a finished seat's own tree with
+ * its PR open still removes.**
+ */
+describe("an open pull request on this branch is a FACT, not a refusal (#2176)", () => {
+  const openPr = (number: number, isDraft = false) => ({ number, isDraft });
+
+  it("⚠ names the open pull request in the warnings, and still proceeds", () => {
+    const verdict = decideRemoval({ ...clean, openPullRequests: [openPr(2157)] }, false);
+    expect(verdict.proceed, "an open pull request refused a removal").toBe(true);
+    if (!verdict.proceed) return;
+    expect(verdict.warnings.join(" ")).toContain("PR #2157 is still OPEN on this branch");
+    /* It tells the reader what to DO with the fact, which is the whole of its
+       value — two seats had to supply that sentence themselves. */
+    expect(verdict.warnings.join(" ")).toContain("If this is not yours, stop");
+  });
+
+  it("⚠ THE ARM THAT MATTERS — a finished seat's own tree with its PR open STILL REMOVES", () => {
+    /*
+      The case a naive fix breaks, named by the card. `relay-2152`'s reading is
+      the fixture: clean tree, nothing unpushed, PR head identical to HEAD —
+      every signal the tool reads is the same on both trees, which is why the
+      answer here can only be a warning.
+    */
+    const verdict = decideRemoval({ ...clean, openPullRequests: [openPr(2157)] }, false);
+    expect(verdict.proceed).toBe(true);
+  });
+
+  it("says nothing at all when nothing is open — asked, and the answer was no", () => {
+    const verdict = decideRemoval({ ...clean, openPullRequests: [] }, false);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) return;
+    expect(verdict.warnings.join(" ")).not.toContain("OPEN on this branch");
+  });
+
+  it("⚠ a read that did not land says SO, and still proceeds", () => {
+    /* `unreadable` and "nothing is open" are one word apart and opposite in
+       meaning. An absent `gh` must not be able to assert that nothing is
+       open — the same clause `readMergedPullRequest` carries. */
+    const verdict = decideRemoval(
+      { ...clean, openPullRequests: { unreadable: "gh pr list exited 4: not logged in" } },
+      false,
+    );
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) return;
+    expect(verdict.warnings.join(" ")).toContain("could not tell whether a pull request is open");
+    expect(verdict.warnings.join(" ")).toContain("not logged in");
+  });
+
+  it("⚠ `null` is the question UNASKED and prints nothing — not an unreadable reading", () => {
+    /* The sweep road: a refusal already stood, so no network call was made.
+       Wording that as *could not tell* would report a reading nobody took as a
+       reading that failed. */
+    const verdict = decideRemoval({ ...clean, openPullRequests: null }, false);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) return;
+    expect(verdict.warnings.join(" ")).not.toContain("pull request is open");
+    expect(verdict.warnings.join(" ")).not.toContain("could not tell");
+  });
+
+  it("a draft is said to be a draft — it is the likeliest *not finished* reading", () => {
+    const verdict = decideRemoval({ ...clean, openPullRequests: [openPr(2157, true)] }, false);
+    expect(verdict.proceed).toBe(true);
+    if (!verdict.proceed) return;
+    expect(verdict.warnings.join(" ")).toContain("#2157 (draft)");
+  });
+
+  it("⚠ ASSERTED AT THE WIRE — the call asks for OPEN pull requests (working law 5)", () => {
+    /* The whole defect was a call that asked `--state merged` and nothing else.
+       A constant near the call would not have caught it. */
+    expect(openPrArgs("team/relay-2152")).toEqual([
+      "pr", "list", "--head", "team/relay-2152", "--state", "open", "--limit", "5", "--json", "number,isDraft",
+    ]);
+  });
+
+  it("⚠ every failure is `unreadable` and never an empty list", () => {
+    /* Driven over the injected runner, both directions, with no network. An
+       empty list means ASKED AND NOTHING IS OPEN, which would let an absent
+       `gh` quietly assert the safe answer. */
+    const failures: Array<[string, { status: number; out: string; err: string }]> = [
+      ["a non-zero exit", { status: 4, out: "", err: "gh: not logged in" }],
+      ["prose instead of JSON", { status: 0, out: "no pull requests match", err: "" }],
+      ["JSON that is not a list", { status: 0, out: JSON.stringify({ number: 1 }), err: "" }],
+    ];
+    for (const [why, result] of failures) {
+      const read = readOpenPullRequests("team/x", () => result);
+      expect(openPrReadFailed(read), why).toBe(true);
+    }
+    /* And a THROWN runner — no `gh` binary at all. */
+    expect(openPrReadFailed(readOpenPullRequests("team/x", () => { throw new Error("ENOENT"); }))).toBe(true);
+
+    /* ⚠ THE POSITIVE CONTROL, or every arm above passes against a reader that
+       calls everything unreadable. */
+    const good = readOpenPullRequests("team/x", () => ({
+      status: 0,
+      out: JSON.stringify([{ number: 2157, isDraft: false }, { number: 2158, isDraft: true }]),
+      err: "",
+    }));
+    expect(openPrReadFailed(good)).toBe(false);
+    if (openPrReadFailed(good)) return;
+    expect(good.map((pr) => pr.number)).toEqual([2157, 2158]);
+    expect(good[1]!.isDraft).toBe(true);
+    /* An empty answer from a working read IS an empty list, not a failure. */
+    const none = readOpenPullRequests("team/x", () => ({ status: 0, out: "[]", err: "" }));
+    expect(openPrReadFailed(none)).toBe(false);
+  });
+});
+
+describe("the script's own text — the open-PR read is INVOKED and is not a fourth gate (#2176)", () => {
+  /*
+    ⚠ The library can be perfect and unreached. These hold the three properties
+    the arms above cannot see: that the script calls it, that it only calls it
+    when the removal would otherwise proceed, and that nothing refuses on it.
+  */
+  const source = readFileSync(join(process.cwd(), "scripts", "shift-worktree.mts"), "utf8");
+
+  it("the remove path calls it", () => {
+    expect(source).toContain("readOpenPullRequests(branchRead.branch");
+  });
+
+  it("⚠ it is asked only when the removal would otherwise PROCEED — a refused tree costs no `gh` call", () => {
+    /* `remove` is what a sweep calls over every tree on the machine, and one
+       `gh` call per tree on the one Actions budget every seat shares is a real
+       cost for a line nobody reads on a tree that is already being refused. */
+    expect(source).toContain("decideRemoval(state, force).proceed");
+  });
+
+  it("⚠ NOTHING REFUSES ON IT — held at the library's bytes", () => {
+    /* The card's own ⚠: refusing here would fire on the tool's commonest
+       correct use. A later hand "tightening" this is the regression to catch. */
+    const library = readFileSync(join(process.cwd(), "scripts", "lib", "shiftWorktree.mts"), "utf8");
+    const block = library.slice(library.indexOf("const openPrs = state.openPullRequests ?? null;"));
+    const printed = block.slice(0, block.indexOf("return { proceed: true, warnings };"));
+    expect(printed.length, "the open-PR block must be found inside decideRemoval").toBeGreaterThan(0);
+    expect(printed).not.toContain("proceed: false");
+    expect(printed).not.toContain("reason:");
+  });
+
+  it("a review worktree is not asked — it is detached, so there is no branch", () => {
+    expect(source).toContain("reviewPr === null");
+    expect(source).toContain("&& !branchReadFailed(branchRead)");
   });
 });
