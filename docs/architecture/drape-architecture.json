@@ -22466,6 +22466,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/criticalAlert.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/env.ts",
       "to": "module:server/casting/evidence/evidenceComposerScope.ts",
       "kind": "imports"

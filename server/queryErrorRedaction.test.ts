@@ -64,7 +64,12 @@ import {
   initErrorTracker,
   resetErrorTrackerForTests,
 } from "./monitoring/errorTracker";
-import { redactQueryValuesInText, withoutQueryValues } from "./monitoring/queryErrorRedaction";
+import { buildCriticalErrorAlert } from "./_core/criticalAlert";
+import {
+  redactQueryValuesInText,
+  UNREDUCIBLE_ERROR_MESSAGE,
+  withoutQueryValues,
+} from "./monitoring/queryErrorRedaction";
 import { createTrpcErrorReporter } from "./monitoring/trpcErrorReport";
 
 const SENTINEL = "SENTINEL-the-customer-wrote-this-7f3a";
@@ -168,6 +173,47 @@ describe("the reduction itself", () => {
     expect(everything(safe)).not.toContain(SENTINEL);
   });
 
+  it("never throws — a null-prototype object is reduced, an unreadable one becomes a placeholder, never the raw value", () => {
+    const bare = Object.create(null) as Record<string, unknown>;
+    bare.params = [SENTINEL];
+    let reduced: unknown;
+    expect(() => {
+      reduced = withoutQueryValues(bare);
+    }).not.toThrow();
+    expect(reduced).toBeInstanceOf(Error);
+    /* Reduced, not rescued by the catch: the placeholder would also pass the line above. */
+    expect((reduced as Error).message).not.toBe(UNREDUCIBLE_ERROR_MESSAGE);
+    expect(everything(reduced)).not.toContain(SENTINEL);
+
+    const hostile = new Error(`params-free message ${SENTINEL}`);
+    Object.defineProperty(hostile, "cause", {
+      get() {
+        throw new Error("the getter refuses");
+      },
+    });
+    let answered: unknown;
+    expect(() => {
+      answered = withoutQueryValues(hostile);
+    }).not.toThrow();
+    expect(answered === hostile).toBe(false);
+    expect((answered as Error).message).toBe(UNREDUCIBLE_ERROR_MESSAGE);
+  });
+
+  it("withholds the values in a string — a rejection reason that is not an Error", () => {
+    expect(withoutQueryValues(`Failed query: update x set y = ?\nparams: ${SENTINEL}`)).toBe(
+      "Failed query: update x set y = ?\nparams: [withheld]",
+    );
+  });
+
+  it("the critical audit row withholds them from a string reason and from an Error", async () => {
+    const fromString = buildCriticalErrorAlert("Unhandled Rejection", (await failedWrite()).message);
+    expect(fromString.description).toContain("Failed query: update `casts`");
+    expect(fromString.description).not.toContain(SENTINEL);
+    const fromError = buildCriticalErrorAlert("Uncaught Exception", await failedWrite());
+    expect(fromError.description).toContain("Failed query: update `casts`");
+    expect(fromError.description).not.toContain(SENTINEL);
+  });
+
   it("rewrites the three MySQL phrasings that quote a value back, and leaves other prose alone", () => {
     expect(redactQueryValuesInText(`Incorrect integer value: '${SENTINEL}' for column 'id' at row 1`)).not.toContain(SENTINEL);
     expect(redactQueryValuesInText(`You have an error in your SQL syntax; check the manual near '${SENTINEL}' at line 1`)).not.toContain(SENTINEL);
@@ -196,14 +242,65 @@ describe("the logger never writes the values", () => {
     expect(out).not.toContain(SENTINEL);
   });
 
-  it("an ordinary error logs exactly as pino would log it unaided", () => {
+  it("an ordinary error under `err` logs exactly as pino would log it unaided", () => {
     const plain = captureLogger({});
     const ours = captureLogger({ serializers: loggerSerializers, hooks: loggerHooks });
     const ordinary = new Error("ordinary");
-    plain.logger.error({ err: ordinary, error: ordinary }, "same");
-    ours.logger.error({ err: ordinary, error: ordinary }, "same");
+    plain.logger.error({ err: ordinary }, "same");
+    ours.logger.error({ err: ordinary }, "same");
     const strip = (s: string) => s.replace(/"time":\d+,/, "");
     expect(strip(ours.text())).toBe(strip(plain.text()));
+  });
+
+  /* CHANGED ARM (relay finding 3 on PR #2223): this used to assert that an
+     ordinary error under `error` logged byte-identically to unaided pino —
+     which was `{}`, because pino has no serializer there and JSON drops an
+     Error's message and stack. Under `error` and `cause` it now keeps them. */
+  it("an ordinary error under `error` or `cause` keeps its message and stack, which unaided pino dropped", () => {
+    const plain = captureLogger({});
+    const ours = captureLogger({ serializers: loggerSerializers, hooks: loggerHooks });
+    const ordinary = new TypeError("cannot read properties of undefined");
+    plain.logger.error({ cause: ordinary }, "plain");
+    ours.logger.error({ cause: ordinary, error: ordinary }, "ours");
+    expect(JSON.parse(plain.text()).cause).toEqual({});
+    const line = JSON.parse(ours.text());
+    for (const key of ["cause", "error"]) {
+      expect(line[key].type).toBe("TypeError");
+      expect(line[key].message).toBe("cannot read properties of undefined");
+      expect(line[key].stack).toMatch(/\n\s+at /);
+    }
+  });
+
+  it("NEGATIVE CONTROL: with the serializers but no hook, `log.error(err)` and `log.error({ err })` put the sentinel in msg", async () => {
+    const { logger, text } = captureLogger({ serializers: loggerSerializers });
+    logger.error(await failedWrite());
+    logger.error({ err: await failedWrite() });
+    const lines = text().trim().split("\n").map((line) => JSON.parse(line));
+    expect(lines).toHaveLength(2);
+    for (const line of lines) expect(line.msg).toContain(SENTINEL);
+  });
+
+  it("`log.error(err)` and `log.error({ err })` with no message keep the sentinel out of msg", async () => {
+    const { logger, text } = captureLogger({ serializers: loggerSerializers, hooks: loggerHooks });
+    logger.error(await failedWrite());
+    logger.error({ err: await failedWrite() });
+    const out = text();
+    expect(out).not.toContain(SENTINEL);
+    const lines = out.trim().split("\n").map((line) => JSON.parse(line));
+    for (const line of lines) expect(line.msg).toMatch(/^Failed query: update `casts`.*params: \[withheld\]/s);
+  });
+
+  it("NEGATIVE CONTROL then the fix: a failed write inside an AggregateError", async () => {
+    const aggregate = new AggregateError([new Error("fine"), await failedWrite()], "two writes failed");
+    const plain = captureLogger({});
+    plain.logger.error({ err: aggregate }, "aggregate");
+    expect(plain.text()).toContain(SENTINEL);
+    const ours = captureLogger({ serializers: loggerSerializers, hooks: loggerHooks });
+    ours.logger.error({ err: aggregate }, "aggregate");
+    expect(ours.text()).not.toContain(SENTINEL);
+    const line = JSON.parse(ours.text());
+    expect(line.err.aggregateErrors).toHaveLength(2);
+    expect(line.err.aggregateErrors[1].message).toContain("Failed query: update `casts`");
   });
 
   it("is what the server's own module loggers carry", () => {

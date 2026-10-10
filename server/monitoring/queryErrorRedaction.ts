@@ -83,15 +83,18 @@ function carriesValues(node: unknown): boolean {
   return typeof message === "string" && redactQueryValuesInText(message) !== message;
 }
 
-function chainCarriesValues(error: unknown): boolean {
-  const seen = new Set<unknown>();
-  let node: unknown = error;
-  for (let depth = 0; depth < MAX_CAUSE_DEPTH && isObject(node) && !seen.has(node); depth += 1) {
-    if (carriesValues(node)) return true;
-    seen.add(node);
-    node = node.cause;
-  }
-  return false;
+/**
+ * Does any link carry values — down the `cause` chain and across an
+ * `AggregateError`'s `errors[]` (pino serializes those as `aggregateErrors`,
+ * so a failed write inside one reached the log whole).
+ */
+function chainCarriesValues(node: unknown, depth: number, seen: Set<unknown>): boolean {
+  if (!isObject(node) || depth >= MAX_CAUSE_DEPTH || seen.has(node)) return false;
+  seen.add(node);
+  if (carriesValues(node)) return true;
+  const errors = node.errors;
+  if (Array.isArray(errors) && errors.some((child) => chainCarriesValues(child, depth + 1, seen))) return true;
+  return chainCarriesValues(node.cause, depth + 1, seen);
 }
 
 /** The stack's frame lines only — the header line repeats the message. */
@@ -119,7 +122,11 @@ function rebuild(node: unknown, depth: number, seen: Set<unknown>): unknown {
   if (node instanceof DrizzleQueryError || (typeof node.query === "string" && Array.isArray(node.params))) {
     message = `Failed query: ${String(node.query)}\nparams: ${WITHHELD}`;
   } else {
-    message = redactQueryValuesInText(typeof node.message === "string" ? node.message : String(node));
+    /* `Object.prototype.toString`, never `String(node)`: a null-prototype
+       object has no `toString` and `String` throws on it. */
+    message = redactQueryValuesInText(
+      typeof node.message === "string" ? node.message : Object.prototype.toString.call(node),
+    );
   }
 
   const safe = new Error(message) as Error & Record<string, unknown>;
@@ -136,18 +143,39 @@ function rebuild(node: unknown, depth: number, seen: Set<unknown>): unknown {
 
   const cause = rebuild(node.cause, depth + 1, seen);
   if (cause !== undefined) safe.cause = cause;
+  const errors = node.errors;
+  if (Array.isArray(errors)) {
+    safe.errors = errors
+      .map((child) => (isObject(child) ? rebuild(child, depth + 1, seen) : child))
+      .filter((child) => child !== undefined);
+  }
   return safe;
 }
 
+/** What comes back when the reduction itself fails — never the raw value. */
+export const UNREDUCIBLE_ERROR_MESSAGE = "[error withheld: could not be reduced]";
+
 /**
  * The error, with every value a failed query carried withheld — or the SAME
- * object when nothing in its cause chain carries one.
+ * object when nothing in its cause chain carries one. A string (a rejection
+ * reason) comes back with its values withheld.
  *
  * The whole chain is rebuilt when any link carries values, because a wrapper's
  * message often repeats its cause's (tRPC's does: an unknown throw becomes an
  * `INTERNAL_SERVER_ERROR` whose message IS the cause's message).
+ *
+ * ⚠ IT NEVER THROWS. It runs inside the login catch blocks and the crash
+ * handlers, where a throw would skip the audit row and the response. An object
+ * that cannot be read (a throwing getter, a hostile proxy) is answered with a
+ * placeholder error — never with the raw value, which is the thing that could
+ * not be proven safe.
  */
-export function withoutQueryValues<T>(error: T): T | Error {
-  if (!chainCarriesValues(error)) return error;
-  return rebuild(error, 0, new Set()) as Error;
+export function withoutQueryValues<T>(error: T): T | Error | string {
+  try {
+    if (typeof error === "string") return redactQueryValuesInText(error);
+    if (!chainCarriesValues(error, 0, new Set())) return error;
+    return rebuild(error, 0, new Set()) as Error;
+  } catch {
+    return new Error(UNREDUCIBLE_ERROR_MESSAGE);
+  }
 }
