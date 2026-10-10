@@ -7,11 +7,13 @@ import {
   CREW_HOLD_ORDER,
   CREW_HOLD_REASON_MAX,
   CREW_HOLD_WORD,
+  FOUNDER_HELD_CARDS,
   heldStateFromLabels,
   heldStatesFromLabels,
   holdOwnerFromReason,
   holdReasonFromBody,
   planDeskHoldLabels,
+  planFounderHeldDrift,
   planUnreadableHolds,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
@@ -541,5 +543,83 @@ describe("a live hold that does not say whose it is gets NAMED, never repaired",
     expect(planUnreadableHolds({ open: [held(90, null), held(9, null), held(50, null)] })
       .map((h) => h.issueNumber)).toEqual([9, 50, 90]);
     expect(planUnreadableHolds({ open: [] })).toEqual([]);
+  });
+
+  /**
+   * ⚠ **A CARD THAT IS HIS IS MARKED, NEVER DROPPED (#2117).**
+   *
+   * The finding this answers was measured rather than supposed: the sweep asked
+   * five consecutive shifts to repair #1995, and **both repairs it offers are
+   * acts his own order forbids** — writing a `**Waiting on:**` line edits his
+   * card, and dropping the hold label is the thing he named outright. Each
+   * shift correctly did nothing; what it cost is that a block whose finding is
+   * always unactionable teaches its reader to skim the rows beside it.
+   */
+  it("⚠ a card of HIS stays in the population and carries his words with it", () => {
+    const found = planUnreadableHolds({ open: [held(1995, null)] });
+    /* STILL FOUND. Filtering it out would make the sweep silent about a live
+       hold nothing draws, which is the silence this reader was written to end. */
+    expect(found.map((h) => h.issueNumber)).toEqual([1995]);
+    expect(found[0].founderHeld).toBe(FOUNDER_HELD_CARDS.get(1995));
+    expect(found[0].founderHeld).toContain("dont let the crew touch it");
+  });
+
+  it("⚠ CONTROL — an ordinary held card is NOT marked, or the field excuses everything", () => {
+    /* Without this arm a `founderHeld` that answered truthy for every card
+       would pass the arm above and empty the repair band entirely. */
+    const found = planUnreadableHolds({ open: [held(1468, null), held(1337, null)] });
+    expect(found.every((h) => h.founderHeld === null)).toBe(true);
+  });
+
+  it("marks only the hold, never the hold TEST — an exempt card with a readable owner is still silent", () => {
+    /* The exemption decides which BAND a finding is printed in. It must not
+       become a second way of being exempt from the reader itself: a card of his
+       that said whose hold it was would be drawn by his page and reported by
+       nobody, exactly as any other such card is. */
+    expect(planUnreadableHolds({ open: [held(1995, "you — a yes or no")] })).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ **THE EXEMPTION LIST CANNOT ROT QUIETLY (#2117), WHICH IS THE ONLY THING
+ * THAT MAKES A HAND-WRITTEN LIST DEFENSIBLE UNDER WORKING LAW 4.**
+ *
+ * A list of card numbers is a second list, and this repository has been bitten
+ * by those. The difference here is that there is no other machine-readable
+ * source to drift FROM — a label would be the tidier shape and applying one to
+ * #1995 would mean editing #1995 — so the real risk is not disagreement with a
+ * source, it is an entry outliving its card and silently excusing nothing for
+ * ever. These arms are what stops that.
+ */
+describe("a founder-held exemption that no longer names an open card is reported", () => {
+  it("says nothing while the card is open", () => {
+    expect(planFounderHeldDrift({ openIssueNumbers: [1, 1995, 2117] })).toEqual([]);
+  });
+
+  it("⚠ names the entry, and quotes his words, once the card has gone", () => {
+    const drift = planFounderHeldDrift({ openIssueNumbers: [1, 2117] });
+    expect(drift.map((row) => row.issueNumber)).toEqual([1995]);
+    /* The reason travels with the finding: a shift deleting the line should see
+       what it is deleting, not just a number. */
+    expect(drift[0].why).toBe(FOUNDER_HELD_CARDS.get(1995));
+  });
+
+  it("⚠ a queue that could not be READ is never drift — an outage must not empty the list", () => {
+    /* The sweep passes `null` when `gh` did not answer. Treating that as "no
+       card is open" would report every exemption as stale and invite a shift to
+       delete the lot, which is the fail-open direction on a control. */
+    expect(planFounderHeldDrift({ openIssueNumbers: null })).toEqual([]);
+  });
+
+  it("every entry carries a date and his own words, so the next reader can check it", () => {
+    /* Not decoration. The sweep prints this sentence instead of a repair, so an
+       entry saying only "his" would make the row as unactionable as the one it
+       replaced — a reader has to be able to tell whether it is still true. */
+    expect(FOUNDER_HELD_CARDS.size).toBeGreaterThan(0);
+    for (const [issueNumber, why] of FOUNDER_HELD_CARDS) {
+      expect(Number.isSafeInteger(issueNumber) && issueNumber > 0, `card ${issueNumber}`).toBe(true);
+      expect(why, `card ${issueNumber} has no date`).toMatch(/\d{4}-\d{2}-\d{2}/);
+      expect(why, `card ${issueNumber} does not quote him`).toMatch(/"/);
+    }
   });
 });

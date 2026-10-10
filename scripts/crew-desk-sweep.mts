@@ -97,6 +97,7 @@ import {
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
   planDeskHoldLabels,
+  planFounderHeldDrift,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
 import {
@@ -789,31 +790,84 @@ if (unreadableHolds.length > 0) {
   const titles = new Map<number, string>(
     (allOpen ?? []).map((row) => [Number(row?.number), String(row?.title ?? "")]),
   );
-  const silent = unreadableHolds.filter((hold) => hold.reason === null);
-  const unclear = unreadableHolds.filter((hold) => hold.reason !== null);
+  /*
+    ⚠ **HIS OWN CARDS LEAVE THE REPAIR BAND FIRST (#2117).**
+
+    Both repairs this block asks for — write the sentence, or drop the hold
+    label — are acts a seat is forbidden to perform on a card he keeps for
+    himself (#1995, his *"dont let the crew touch it"*). So those rows are still
+    SHOWN, because a live hold nothing draws is exactly what this block exists
+    to surface; what changes is that nobody is asked to fix them.
+
+    **Measured before it was built: five consecutive shifts met the same row and
+    each one correctly did nothing.** The row was never the expensive part — a
+    block whose finding is always unactionable teaches its reader to skim the
+    ones beside it that are real, and those are the four this sweep is for.
+  */
+  const founderHeld = unreadableHolds.filter((hold) => hold.founderHeld !== null);
+  const ours = unreadableHolds.filter((hold) => hold.founderHeld === null);
+  const silent = ours.filter((hold) => hold.reason === null);
+  const unclear = ours.filter((hold) => hold.reason !== null);
+  if (founderHeld.length > 0) {
+    console.log("");
+    console.log(`· ${founderHeld.length} held card(s) are HIS OWN — worth a glance, nothing to do:`);
+    for (const hold of founderHeld) {
+      console.log(`  · #${hold.issueNumber} [${hold.heldStates.join(",")}] ${hold.founderHeld}`);
+    }
+    console.log("  Not repairable by a seat either way: writing the sentence edits his card, and");
+    console.log("  dropping the label is the act his own order names. Shown so the hold is never");
+    console.log("  invisible — read the sentence above and check it is still true.");
+  }
+  if (ours.length > 0) {
+    console.log("");
+    console.log(
+      `⚠ ${ours.length} held card(s) do not say whose hold it is — so his page cannot draw`,
+    );
+    console.log("  them and, until this line existed, nothing named them either (#1467).");
+    console.log("  NOT repaired here: what a hold is waiting on is a judgement about work, and a");
+    console.log("  sentence nobody meant is worse than none because the next reader believes it.");
+    if (silent.length > 0) {
+      console.log(`  NO \`${CREW_HOLD_MARKER}\` LINE IN THE BODY — write one, or drop the hold label:`);
+      for (const hold of silent) {
+        console.log(
+          `  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${(titles.get(hold.issueNumber) ?? "").slice(0, 70)}`,
+        );
+      }
+    }
+    if (unclear.length > 0) {
+      console.log("  A LINE IS THERE and the first word after the marker names nobody — rewrite it so");
+      console.log("  it begins with who is waited on (`you`, a person, a card, a clock):");
+      for (const hold of unclear) {
+        console.log(`  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${JSON.stringify(hold.reason)}`);
+      }
+    }
+    console.log("  ⚠ A comment does not count — the body is what is read (the founder-ordered clause).");
+  }
+}
+
+/*
+  ⚠ **AND THE EXEMPTION LIST IS CHECKED AGAINST THE QUEUE EVERY RUN (#2117).**
+
+  The one way a hand-written exemption rots: the card he kept is closed or
+  handed back, and the entry stays here for ever quietly excusing nothing. The
+  list is only defensible under working law 4 because this says so out loud.
+
+  Deleting the line IS the repair, so unlike its neighbours above this one names
+  an act a shift may actually perform — and it is reported rather than applied,
+  for the same reason everything else here is: whether a card has stopped being
+  his is his to say.
+*/
+const founderHeldDrift = planFounderHeldDrift({
+  openIssueNumbers: allOpen === null ? null : allOpen.map((row) => Number(row?.number)),
+});
+if (founderHeldDrift.length > 0) {
   console.log("");
-  console.log(
-    `⚠ ${unreadableHolds.length} held card(s) do not say whose hold it is — so his page cannot draw`,
-  );
-  console.log("  them and, until this line existed, nothing named them either (#1467).");
-  console.log("  NOT repaired here: what a hold is waiting on is a judgement about work, and a");
-  console.log("  sentence nobody meant is worse than none because the next reader believes it.");
-  if (silent.length > 0) {
-    console.log(`  NO \`${CREW_HOLD_MARKER}\` LINE IN THE BODY — write one, or drop the hold label:`);
-    for (const hold of silent) {
-      console.log(
-        `  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${(titles.get(hold.issueNumber) ?? "").slice(0, 70)}`,
-      );
-    }
+  console.log(`⚠ ${founderHeldDrift.length} founder-held exemption(s) name a card that is not open.`);
+  console.log("  Delete the line in `FOUNDER_HELD_CARDS` (`shared/crewNextUpHold.ts`) — an exemption");
+  console.log("  that outlives its card is a permanent silent pass:");
+  for (const stale of founderHeldDrift) {
+    console.log(`  ! #${stale.issueNumber} — ${stale.why}`);
   }
-  if (unclear.length > 0) {
-    console.log("  A LINE IS THERE and the first word after the marker names nobody — rewrite it so");
-    console.log("  it begins with who is waited on (`you`, a person, a card, a clock):");
-    for (const hold of unclear) {
-      console.log(`  ! #${hold.issueNumber} [${hold.heldStates.join(",")}] ${JSON.stringify(hold.reason)}`);
-    }
-  }
-  console.log("  ⚠ A comment does not count — the body is what is read (the founder-ordered clause).");
 }
 
 if (shellDamage.length > 0) {
