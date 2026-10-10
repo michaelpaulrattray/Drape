@@ -1293,21 +1293,43 @@ export const PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE =
  * has to clear a scheduled one before it writes; when the instant change then
  * fails, the scheduled one is put back — and if it could not be, the customer
  * is told so, with the date, rather than finding out at the renewal.
+ *
+ * ⚠ **THE INSTRUCTIONS ARE IN THE ORDER THEY CAN BE FOLLOWED** (the relay's
+ * third note on head 1759052fc). `confirm-blocked-by-schedule` used to say
+ * *set the scheduled change again, then try again and confirm with your bank*
+ * — and setting it again recreates the very block that refused the
+ * confirmation. The retry comes first in every variant now, and the scheduled
+ * change is named as something to put back afterwards.
  */
 export function planChangeNotChargedSentence(input: {
-  reason: "declined" | "confirm-blocked-by-schedule";
+  reason: "declined" | "confirm-blocked-by-schedule" | "unconfirmed" | "not-recorded";
   scheduleLostOn: Date | null;
 }): string {
   const lost = input.scheduleLostOn
-    ? ` The change you had scheduled for ${formatCustomerShortDate(input.scheduleLostOn)} was cleared, so set it again in Settings, under Billing, if you still want it.`
+    ? ` The change you had scheduled for ${formatCustomerShortDate(input.scheduleLostOn)} was cleared, so set it again in Settings, under Billing, once your plan is where you want it.`
     : "";
   if (input.reason === "confirm-blocked-by-schedule") {
     return input.scheduleLostOn
-      ? `Your bank wants you to confirm this payment, so nothing was charged and your plan has not changed.${lost} Then try again and confirm with your bank.`
+      ? `Your bank wants you to confirm this payment, so nothing was charged and your plan has not changed. Try the change again and confirm with your bank.${lost}`
       : "Your bank wants you to confirm this payment, which cannot be done while a plan change is scheduled. Nothing was charged and your plan has not changed. Choose Keep my plan in Settings, under Billing, then try again.";
   }
+  /* ⚠ **WE COULD NOT SEE WHAT HAPPENED, WHICH IS NOT THE SAME AS A DECLINE**
+     (the relay's finding 1 on head 1759052fc). Telling someone to check their
+     card is wrong advice when the card may be perfectly fine; and the hold is
+     deliberately left alone, so the only honest instruction is to look at
+     Billing in a moment. A scheduled change the attempt cleared is REPORTED
+     rather than silently rebuilt: the hold may still be paid, and a schedule
+     put back beside a live hold would undo a just-paid change at the renewal. */
+  if (input.reason === "unconfirmed") {
+    return `We could not confirm whether this payment went through, so your plan has not been changed yet. Open Settings, under Billing, in a few minutes to see where things stand before you try again.${lost}`;
+  }
+  /* The charge was held and has been cancelled, but the reason was ours, not
+     the card's — so it says nothing about the card. */
+  if (input.reason === "not-recorded") {
+    return `Your card was not charged, so your plan has not changed.${lost} Try again in a moment.`;
+  }
   return input.scheduleLostOn
-    ? `Your card was not charged, so your plan has not changed.${lost} Check your card with Update card, then try again.`
+    ? `Your card was not charged, so your plan has not changed. Check your card with Update card, then try again.${lost}`
     : PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE;
 }
 
@@ -1460,6 +1482,16 @@ export async function updateSubscriptionPlan(
   /** A scheduled change had to be cleared for this one and was put back
    *  (`true`), could not be put back (`false`), or there was none (absent). */
   scheduledChangeRestored?: boolean;
+  /**
+   * Stripe held the change and its invoice COULD NOT BE READ, so why it was
+   * held is unknown (the relay's finding 1 on head 1759052fc). The hold is
+   * deliberately left alone — cancelling on a silence would void a payment
+   * the customer may be confirming with their bank — and it lapses by itself
+   * within Stripe's 23-hour window if nobody pays it. `success` is false and
+   * this is NOT `paymentDeclined`: the caller must raise a retryable error,
+   * never the declined sentence.
+   */
+  outcomeUnknown?: true;
   error?: string;
 }> {
   try {
@@ -1759,6 +1791,8 @@ export async function updateSubscriptionPlan(
         · **a decline** — the hold is cancelled by voiding its invoice (Stripe's
           documented way; measured, it left the old price and old
           `metadata.plan`), and the customer can try again with another card.
+        · **the invoice could not be READ** — nothing is decided on a silence;
+          see the branch's own note below.
 
        In every road that ends with the change NOT applied, a scheduled change
        the release above cleared is put back; if that fails the customer is
@@ -1767,6 +1801,51 @@ export async function updateSubscriptionPlan(
       const held = invoiceId ? await readHeldInvoice(invoiceId) : null;
       const scheduled = scheduledBefore.outcome === "pending" ? scheduledBefore.change : null;
       const clearedSchedule = released.outcome === "released" && scheduled !== null;
+
+      /* ⚠ **A READ THAT COULD NOT BE MADE IS NOT A DECLINE** (the relay's
+         finding 1 on head 1759052fc). {@link readHeldInvoice} answers `null`
+         for any Stripe error, and the first shape then fell through to
+         {@link cancelHeldChange} — which would void a payment the customer's
+         bank may be about to confirm, and hand them the declined sentence
+         telling them to check a card that is probably fine.
+
+         So the hold is LEFT: it lapses by itself inside Stripe's 23-hour
+         window if nobody pays it, and the caller raises a RETRYABLE error.
+         ⚠ A scheduled change this attempt cleared is REPORTED with its date
+         rather than silently rebuilt — putting one back beside a hold that may
+         still be paid would undo the just-paid change at the renewal, and a
+         hold whose state cannot be read is exactly the case where that cannot
+         be ruled out. The customer is told, which is the same remedy finding 2
+         settled on for a restore that fails.
+
+         ⚠ **STATED LIMIT, because leaving the hold has a price of its own.**
+         No settlement is queued against that invoice (the caller refuses
+         before it gets there), so if the customer finds the hold and pays it
+         from a provider email rather than retrying here, the plan lands by
+         `customer.subscription.updated` and only the PRORATED part of the
+         credits is missed — their plan's own allowance still refreshes. The
+         rejected alternative is queueing the settlement here: it would cover
+         that case, and it would also leave a pending row against an invoice
+         whose payability after the hold lapses is not measured, so a retry
+         that succeeds could grant twice. A missed proration in a provider
+         blip is the smaller of the two. */
+      if (invoiceId && held === null) {
+        log.error(
+          { subscriptionId, invoiceId, newPlan, targetInterval, clearedSchedule },
+          "[Stripe] A plan change was HELD and its invoice could not be read — the hold is left to lapse on its own and the caller must retry; nothing was voided",
+        );
+        return {
+          success: false,
+          outcomeUnknown: true,
+          invoiceId,
+          invoiceStatus: null,
+          invoicedAmount: null,
+          error: planChangeNotChargedSentence({
+            reason: "unconfirmed",
+            scheduleLostOn: clearedSchedule ? scheduled!.effectiveAt : null,
+          }),
+        };
+      }
 
       /* A held invoice already PAID needs no branch of its own: {@link
          cancelHeldChange} reads it before voiding and answers "paid", and the

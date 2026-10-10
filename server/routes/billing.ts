@@ -22,6 +22,8 @@ import {
   updateSubscriptionPlan,
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
   PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+  planChangeNotChargedSentence,
+  cancelHeldChange,
   getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
@@ -1411,6 +1413,28 @@ export const billingRouter = router({
          declined upgrade read as an upgrade. The sentence is spoken, so the
          customer reads it instead of the client's "we lost contact" fallback,
          which would send them to check a plan that certainly did not change. */
+      /* ⚠ **AND A HOLD WHOSE INVOICE COULD NOT BE READ IS NOT A DECLINE** (the
+         relay's finding 1 on head 1759052fc). The service leaves that hold
+         alone — it may be a payment the customer's bank is about to confirm —
+         so this is a RETRYABLE error, not the declined refusal: a 500 the
+         client may offer to retry, carrying the service's own sentence so the
+         customer is not told to check a card that is probably fine. */
+      if (result.outcomeUnknown) {
+        log.error(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+          },
+          "[Billing] plan change was held and its invoice could not be read — refusing retryably, with the hold left to lapse",
+        );
+        throw spokenError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result.error || "We could not confirm whether this payment went through. Try again in a moment.",
+        });
+      }
+
       if (result.paymentDeclined) {
         log.warn(
           {
@@ -1605,6 +1629,27 @@ export const billingRouter = router({
             previousPeriodEnd: new Date(billingState.periodEndSec * 1000),
           });
           if (!recorded.success) {
+            /* ⚠ **ON THE CONFIRM ROAD A LOST SETTLEMENT IS CANCELLED, NOT
+               ACCEPTED** (the relay's finding 2 on head 1759052fc). Here the
+               plan has NOT changed: Stripe is holding it, waiting for the
+               customer's bank. Letting this pass left an invoice that is still
+               payable from the customer's own invoice list — paying it applies
+               the plan with no settlement row, so the prorated credits are
+               never granted — and the grant branch below would have told them
+               *"The plan changed, but…"*, which is untrue on this road. So the
+               hold is voided and the honest sentence is spoken. It says
+               nothing about their card, because the card is not the problem. */
+            if (awaitingConfirmation) {
+              const cancelled = result.invoiceId ? await cancelHeldChange(result.invoiceId) : "failed";
+              log.error(
+                { userId: ctx.user.id, invoiceId: result.invoiceId, direction, cancelled },
+                "[Billing] a held plan change's credit settlement could not be recorded — the hold is cancelled so nothing can be paid for a change that would never settle",
+              );
+              throw spokenError({
+                code: "BAD_REQUEST",
+                message: planChangeNotChargedSentence({ reason: "not-recorded", scheduleLostOn: null }),
+              });
+            }
             if (direction === "grant") {
               // The customer's money is (or will be) taken and nothing now
               // owes them the credits — that must not pass as success.

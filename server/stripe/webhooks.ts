@@ -1714,8 +1714,27 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
       };
     }
     if (changeRead.outcome === "found" && planChangeWasHeld(invoice, changeRead.subscription)) {
+      /* ⚠ **A READ THAT COULD NOT BE MADE IS NOT A DECLINE** (the relay's
+         finding 1 on head 1759052fc). {@link readHeldInvoice} answers `null`
+         for any Stripe error, and `null?.paymentIntentStatus` is not
+         `requires_action` — so the first shape fell straight through to
+         {@link cancelHeldChange}, which re-reads the invoice and voids it if
+         THAT read happens to succeed. A customer sent to confirm with their
+         bank, whose failure event arrives during a Stripe blip, would have had
+         the hold cancelled under them and its settlement voided with it.
+         Nothing is decided on a silence: the event fails, Stripe redelivers,
+         and the hold lapses by itself within 23 hours if nobody pays it. */
       const heldInvoice = await readHeldInvoice(invoice.id as string);
-      if (heldInvoice?.status !== "paid" && heldInvoice?.paymentIntentStatus === "requires_action") {
+      if (heldInvoice === null) {
+        log.error(
+          `[Webhook] Held plan-change invoice ${invoice.id} for user ${userId} could not be read from Stripe — failing the event so Stripe redelivers, rather than cancelling a payment that may be waiting on the customer's bank`,
+        );
+        return {
+          success: false,
+          message: `The held plan change's invoice ${invoice.id} for user ${userId} could not be read — redeliver to retry`,
+        };
+      }
+      if (heldInvoice.status !== "paid" && heldInvoice.paymentIntentStatus === "requires_action") {
         log.info(
           `[Webhook] Plan-change invoice ${invoice.id} for user ${userId} is waiting on the customer's bank to confirm — left held`,
         );

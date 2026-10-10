@@ -118,6 +118,7 @@ vi.mock("../auditLog", async () => {
 import {
   updateSubscriptionPlan,
   planOfPlanPrice,
+  planChangeNotChargedSentence,
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
   PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
 } from "./stripeService";
@@ -203,9 +204,14 @@ const invoice = {
   amountDue: 2_777,
   paidOnVoid: false,
   voidFails: false,
+  /* ⚠ The relay's finding 1 on head 1759052fc, modelled the way it bites:
+     only the read that EXPANDS the payment attempt fails, so the plain read
+     `cancelHeldChange` makes still succeeds and its void would go through.
+     A blanket Stripe outage hides the defect, because the void fails too. */
+  expandedReadFails: false,
 };
 function invoiceIs(next: Partial<typeof invoice>) {
-  Object.assign(invoice, { paidOnVoid: false, voidFails: false }, next);
+  Object.assign(invoice, { paidOnVoid: false, voidFails: false, expandedReadFails: false }, next);
 }
 
 const SCHEDULED = { plan: "starter", interval: "monthly" as const, effectiveSec: NOW + 20 * DAY };
@@ -235,12 +241,15 @@ beforeEach(() => {
   invoiceIs({ status: "paid", pi: "succeeded", hosted: "https://invoice.stripe.example/i/held", amountDue: 2_777 });
   s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly"));
   s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change", pending_update: null });
-  s.invoicesRetrieve.mockImplementation(async () => ({
-    status: invoice.status,
-    amount_due: invoice.amountDue,
-    hosted_invoice_url: invoice.hosted,
-    payments: { data: invoice.pi ? [{ payment: { payment_intent: { status: invoice.pi } } }] : [] },
-  }));
+  s.invoicesRetrieve.mockImplementation(async (_id: string, params?: { expand?: string[] }) => {
+    if (params?.expand && invoice.expandedReadFails) throw new Error("Stripe is having a moment");
+    return {
+      status: invoice.status,
+      amount_due: invoice.amountDue,
+      hosted_invoice_url: invoice.hosted,
+      payments: { data: invoice.pi ? [{ payment: { payment_intent: { status: invoice.pi } } }] : [] },
+    };
+  });
   s.invoicesVoid.mockImplementation(async () => {
     if (invoice.paidOnVoid) {
       invoice.status = "paid";
@@ -333,6 +342,39 @@ describe("updateSubscriptionPlan — Stripe is asked to hold the change until it
     expect(result.paymentDeclined).toBe(true);
     expect(result.heldChangeCancelled).toBe(false);
     expect(s.invoicesVoid).toHaveBeenCalledTimes(3);
+  });
+
+  it("R1 · a hold whose invoice CANNOT BE READ is left alone — nothing voided, and the answer is retryable rather than 'your card was declined'", async () => {
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    /* The plain read and the void both still work, which is exactly why the
+       first shape cancelled a payment it could not see the state of. */
+    invoiceIs({ status: "open", pi: "requires_action", expandedReadFails: true });
+
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
+
+    expect(result).toMatchObject({ success: false, outcomeUnknown: true, invoiceId: "in_held" });
+    expect(result.paymentDeclined).toBeUndefined();
+    expect(result.confirmationRequired).toBeUndefined();
+    expect(result.error).toBe(
+      planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null }),
+    );
+    /* The one thing that must not have happened. */
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+    /* And nothing was told to the customer about their card. */
+    expect(result.error).not.toContain("Update card");
+  });
+
+  it("R1 · a scheduled change this attempt cleared is NAMED with its date and deliberately NOT rebuilt beside a hold that may still be paid", async () => {
+    withScheduledDecrease();
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_action", expandedReadFails: true });
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(result.outcomeUnknown).toBe(true);
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+    expect(s.schedulesCreate).not.toHaveBeenCalled();
+    expect(result.error).toContain(formatCustomerShortDate(new Date(SCHEDULED.effectiveSec * 1000)));
   });
 
   it("F3 · a BANK CONFIRMATION (requires_action) is KEPT — not voided — and comes back with its page and the confirm sentence", async () => {
@@ -601,6 +643,22 @@ describe("invoice.payment_failed on a plan-change invoice", () => {
     expect(s.invoicesVoid).not.toHaveBeenCalled();
     expect(cancelCalls()).toHaveLength(0);
     expect(db.resolvePlanChangeSettlement).not.toHaveBeenCalled();
+  });
+
+  it("R1 · a held invoice that CANNOT BE READ voids nothing and fails the event, so Stripe redelivers — never cancelling a payment the bank may be about to confirm", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly", { pending_update: HELD }));
+    /* The payment really is waiting on the bank; only the read that would
+       have said so fails. The plain read and the void still work, so the
+       first shape fell through and cancelled it. */
+    invoiceIs({ status: "open", pi: "requires_action", expandedReadFails: true });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice());
+
+    expect(result.success).toBe(false);
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+    expect(cancelCalls()).toHaveLength(0);
+    expect(db.resolvePlanChangeSettlement).not.toHaveBeenCalled();
+    expect(db.updateUserSubscription).not.toHaveBeenCalled();
   });
 
   it("a live read that fails fails the event, so Stripe redelivers rather than this guessing", async () => {

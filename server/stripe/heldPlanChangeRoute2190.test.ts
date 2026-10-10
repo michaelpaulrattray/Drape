@@ -40,6 +40,7 @@ vi.mock("./stripeService", async (importOriginal) => {
     readSubscriptionBillingState: vi.fn(),
     quotePlanChange: vi.fn(),
     updateSubscriptionPlan: vi.fn(),
+    cancelHeldChange: vi.fn(),
     getInvoiceStatus: vi.fn(),
     getCustomerInvoices: vi.fn(),
     getAllCustomerInvoices: vi.fn(),
@@ -73,6 +74,7 @@ import {
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
   PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
   planChangeNotChargedSentence,
+  cancelHeldChange,
   getInvoiceStatus,
   quotePlanChange,
   readSubscriptionBillingState,
@@ -132,6 +134,7 @@ beforeEach(() => {
   vi.mocked(updateUserSubscription).mockResolvedValue({ success: true });
   vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: true } as never);
   vi.mocked(applyPlanChangeSettlement).mockResolvedValue({ outcome: "applied", creditsMoved: 90_000 } as never);
+  vi.mocked(cancelHeldChange).mockResolvedValue("voided" as never);
 });
 
 describe("changePlan — a charge that did not go through", () => {
@@ -223,6 +226,116 @@ describe("changePlan — the bank wants a confirmation (the relay's finding 3)",
 
     expect(result.confirmPaymentUrl).toBeNull();
   });
+
+  /* The relay's finding 2 on head 1759052fc: with the plan held at Stripe,
+     a settlement row that could not be written leaves an invoice the customer
+     can still pay from their own invoice list — and paying it would apply the
+     plan with nothing owing them the credits. */
+  it("R2 · a settlement that cannot be recorded CANCELS the hold and says nothing changed — never 'the plan changed, but…'", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      invoiceStatus: "open",
+      invoicedAmount: null,
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: false } as never);
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as Error).message).toBe(
+      planChangeNotChargedSentence({ reason: "not-recorded", scheduleLostOn: null }),
+    );
+    expect((error as Error).message).not.toContain("The plan changed");
+    /* The hold is gone, so that invoice can no longer be paid. */
+    expect(cancelHeldChange).toHaveBeenCalledWith("in_3ds");
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+    expect(addCredits).not.toHaveBeenCalled();
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it("R2 · an UNWIND whose settlement cannot be recorded is cancelled too — a payable hold is the customer's problem whichever way the credits were going", async () => {
+    vi.mocked(quotePlanChange).mockReturnValue({
+      kind: "interval-switch",
+      currentInterval: "monthly",
+      targetInterval: "annual",
+      isUpgrade: true,
+      proratedAmount: 60_000,
+      immediateCharge: 60_000,
+      creditBalance: 0,
+      newPlanPrice: 68_000,
+      currentPlanPrice: 2_700,
+      currentCreditUnits: 0,
+      targetCreditUnits: 0,
+      daysRemaining: 20,
+      totalDays: 30,
+      creditAdjustment: 0,
+      creditUnwind: 12_000,
+      spentShareCredits: 0,
+      spentShareCharge: 0,
+      deferred: false,
+      effectiveAtSec: PERIOD_END_SEC,
+    } as never);
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      invoiceStatus: "open",
+      invoicedAmount: null,
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: false } as never);
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SpokenError);
+    expect(cancelHeldChange).toHaveBeenCalledWith("in_3ds");
+  });
+
+  it("POSITIVE CONTROL — the same failure on an APPLIED change keeps its old road: no void, and the plan did change", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: true,
+      invoiceId: "in_paid",
+      invoiceStatus: "paid",
+      invoicedAmount: 4_100,
+    });
+    vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: false } as never);
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect((error as Error).message).toContain("The plan changed");
+    expect(cancelHeldChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("changePlan — the hold's invoice could not be read (the relay's finding 1 on head 1759052fc)", () => {
+  it("R1 · refuses RETRYABLY with the service's own sentence — not the declined refusal, and nothing is written", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      outcomeUnknown: true,
+      invoiceId: "in_held",
+      invoiceStatus: null,
+      invoicedAmount: null,
+      error: planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null }),
+    });
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as { code?: string }).code).toBe("INTERNAL_SERVER_ERROR");
+    expect((error as Error).message).toBe(
+      planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null }),
+    );
+    expect((error as Error).message).not.toBe(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE);
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+    expect(queuePlanChangeSettlement).not.toHaveBeenCalled();
+    expect(cancelHeldChange).not.toHaveBeenCalled();
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe("the sentence itself", () => {
@@ -238,8 +351,37 @@ describe("the sentence itself", () => {
       planChangeNotChargedSentence({ reason: "declined", scheduleLostOn: new Date(1_780_000_000_000) }),
       planChangeNotChargedSentence({ reason: "confirm-blocked-by-schedule", scheduleLostOn: null }),
       planChangeNotChargedSentence({ reason: "confirm-blocked-by-schedule", scheduleLostOn: new Date(1_780_000_000_000) }),
+      planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null }),
+      planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: new Date(1_780_000_000_000) }),
+      planChangeNotChargedSentence({ reason: "not-recorded", scheduleLostOn: null }),
     ];
     for (const sentence of all) expect(sentence).not.toMatch(/stripe|invoice|pending|webhook|3d secure|schedule /i);
+  });
+
+  /* The relay's third note on head 1759052fc: setting the scheduled change
+     again is what blocked the confirmation, so it cannot come first. */
+  it("R3 · every variant that mentions a lost scheduled change puts the RETRY before setting it again", () => {
+    const lostOn = new Date(1_780_000_000_000);
+    for (const reason of ["declined", "confirm-blocked-by-schedule"] as const) {
+      const sentence = planChangeNotChargedSentence({ reason, scheduleLostOn: lostOn });
+      const lower = sentence.toLowerCase();
+      expect(lower).toContain("try");
+      expect(lower.indexOf("try")).toBeLessThan(lower.indexOf("you had scheduled"));
+      expect(sentence).not.toMatch(/scheduled for[^.]*\.\s*Then try/i);
+    }
+  });
+
+  it("R1 · the unconfirmed sentence says nothing about the card, because the card may be fine", () => {
+    const sentence = planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null });
+    expect(sentence).not.toMatch(/card/i);
+    expect(sentence).toContain("has not been changed");
+    expect(sentence).toContain("Billing");
+  });
+
+  it("R2 · the not-recorded sentence says nothing about the card either, and does not claim the plan changed", () => {
+    const sentence = planChangeNotChargedSentence({ reason: "not-recorded", scheduleLostOn: null });
+    expect(sentence).not.toMatch(/Update card/i);
+    expect(sentence).toContain("has not changed");
   });
 
   it("the routed refusal speaks the service's own sentence, so a lost scheduled change is said", async () => {
