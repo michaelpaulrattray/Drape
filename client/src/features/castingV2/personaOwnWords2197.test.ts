@@ -157,10 +157,18 @@ describe("the voice card draws the row only under its OPEN box", () => {
     expect(draw(true, null)).not.toContain(PERSONA_OWN_WORDS_TITLE);
   });
 
+  /*
+    ⚠ Since #2238 the editor stays MOUNTED under an open door (so its typed
+    words survive Escape), HIDDEN — so the line is in the markup only inside
+    the hidden editor, and never as the read view.
+  */
   it("an open door REPLACES the line with the panel", () => {
     const html = draw(true, ownDoor({ stage: "writing" }));
     expect(html).toContain(personaOwnWordsPrompt("voice", "Pigman"));
-    expect(html).not.toContain("A wet, dragging rumble.");
+    expect(html).not.toContain('class="dpc-persona__read"');
+    const hidden = html.indexOf('<div class="dpc-persona__edit" hidden="">');
+    expect(hidden).toBeGreaterThan(-1);
+    expect(html.indexOf("A wet, dragging rumble.")).toBeGreaterThan(hidden);
   });
 });
 
@@ -256,11 +264,13 @@ describe("the panel, stage by stage", () => {
     );
   });
 
+  /* Since #2238 the press back is the failure line's own Try again. */
   it("failed: the plain sentence, the box editable again, the press back", () => {
     const html = panel("personality", { stage: "failed", failure: PERSONA_OWN_WORDS_BUSY });
     expect(html).toContain(PERSONA_OWN_WORDS_BUSY);
     expect(textareaTag(html)).not.toContain("readOnly");
-    expect(html).toContain(personaOwnWordsGoLabel("personality"));
+    expect(html).toContain(">Try again</button>");
+    expect(html).not.toContain(personaOwnWordsGoLabel("personality"));
   });
 
   it("the voice footer has the way back and no link to door 1", () => {

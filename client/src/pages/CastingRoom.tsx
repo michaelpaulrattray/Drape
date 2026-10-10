@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
 
@@ -16,7 +16,7 @@ import {
   type ViewerFrame,
 } from "@/features/castingV2/components/CandidateViewer";
 import { CardMenu } from "@/foundation";
-import { DestructiveConfirm } from "@/foundation";
+import { ConfirmDialog, DestructiveConfirm } from "@/foundation";
 import {
   castRoomIsWorking,
   slotIsBeingAsked,
@@ -33,10 +33,12 @@ import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
-  CastVoiceBadge,
   CastVoiceLine,
-  PersonaChangeButton,
+  PersonaEditButton,
+  PersonaLabel,
   PERSONA_OWN_WORDS_SHUT,
+  armUnsavedLeaveGuard,
+  personaLeaveBody,
   personaOwnWordsAfter,
   type CastPersonaFieldName,
   type CastReadOption,
@@ -211,6 +213,55 @@ export default function CastingRoom() {
   const [ownWordsDoors, setOwnWordsDoors] = useState<Record<CastPersonaFieldName, PersonaOwnWordsState>>(
     { personality: PERSONA_OWN_WORDS_SHUT, voice: PERSONA_OWN_WORDS_SHUT },
   );
+  /*
+    A DOOR CLOSED MID-WAIT STAYS CLOSED (#2238). Escape or *Back to the draft*
+    during the ~14 s reads wait (or the few seconds of a translation) shut the
+    door, and the answer arriving afterwards used to throw it open again under
+    the customer. Each ask takes a ticket; closing the door moves the ticket on,
+    and an answer holding an old ticket is dropped.
+  */
+  const readsTicket = useRef(0);
+  const ownWordsTicket = useRef<Record<CastPersonaFieldName, number>>({ personality: 0, voice: 0 });
+  /*
+    UNSAVED PERSONA EDITS, AND THE ASK BEFORE LEAVING THEM (#2238). Each card
+    reports whether it holds words not yet kept; while either does, the leave
+    guard is armed (tab close, in-app moves, back/forward), and an in-app move
+    is held behind the room's own dialog.
+  */
+  const [unsavedLines, setUnsavedLines] = useState<Record<CastPersonaFieldName, boolean>>(
+    { personality: false, voice: false },
+  );
+  const reportUnsaved = useCallback((line: CastPersonaFieldName, unsaved: boolean) => {
+    setUnsavedLines((was) => (was[line] === unsaved ? was : { ...was, [line]: unsaved }));
+  }, []);
+  const anyUnsaved = unsavedLines.personality || unsavedLines.voice;
+  const [leaveAsk, setLeaveAsk] = useState<(() => void) | null>(null);
+  const closeLeaveAsk = useCallback(() => setLeaveAsk(null), []);
+  const disarmLeave = useRef<((stay?: boolean) => void) | null>(null);
+  /*
+    WHETHER THE ROOM IS GOING AWAY, read by the guard's cleanup below: a guard
+    standing down because the edit was kept steps off its back-button sentinel
+    (`stay`), and one standing down because the room is unmounting must not —
+    that `history.back()` would land after the page being opened. Declared
+    BEFORE the guard's effect because React runs cleanups in declaration order;
+    reset in the setup so a StrictMode remount does not leave it stuck true.
+  */
+  const unmounting = useRef(false);
+  useEffect(() => {
+    unmounting.current = false;
+    return () => {
+      unmounting.current = true;
+    };
+  }, []);
+  useEffect(() => {
+    if (!anyUnsaved) return;
+    const disarm = armUnsavedLeaveGuard(window, (proceed) => setLeaveAsk(() => proceed));
+    disarmLeave.current = disarm;
+    return () => {
+      disarm(!unmounting.current);
+      disarmLeave.current = null;
+    };
+  }, [anyUnsaved]);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -495,12 +546,14 @@ export default function CastingRoom() {
    */
   const openReadsDoor = () => {
     if (!data) return;
+    const ticket = ++readsTicket.current;
     setReadsState("drafting");
     setReads([]);
     draftReads.mutate(
       { castId: data.castId },
       {
         onSuccess: (drafted) => {
+          if (ticket !== readsTicket.current) return;
           setReads(drafted.reads);
           setReadsState("open");
         },
@@ -511,8 +564,9 @@ export default function CastingRoom() {
             replaced its body — a toast over an empty panel would leave them
             with a blank card and a message that scrolls away.
           */
-          setReadsState("failed");
           logRawFailure('castingV2.draftCastReads', error);
+          if (ticket !== readsTicket.current) return;
+          setReadsState("failed");
         },
       },
     );
@@ -546,14 +600,20 @@ export default function CastingRoom() {
     setOwnWordsDoors((doors) => ({ ...doors, [line]: next }));
   const askOwnWords = (line: CastPersonaFieldName, ownWords: string) => {
     if (!data) return;
+    const ticket = ++ownWordsTicket.current[line];
+    const current = () => ticket === ownWordsTicket.current[line];
     setOwnWords(line, { stage: "reading", result: null, failure: null });
     translateOwnWords.mutate(
       { castId: data.castId, line, ownWords },
       {
-        onSuccess: (answer) => setOwnWords(line, personaOwnWordsAfter(answer)),
+        onSuccess: (answer) => {
+          if (current()) setOwnWords(line, personaOwnWordsAfter(answer));
+        },
         onError: (error) => {
           logRawFailure('castingV2.translateOwnWords', error);
-          setOwnWords(line, personaOwnWordsAfter({ kind: "error", code: error.data?.code ?? null }));
+          if (current()) {
+            setOwnWords(line, personaOwnWordsAfter({ kind: "error", code: error.data?.code ?? null }));
+          }
         },
       },
     );
@@ -574,7 +634,10 @@ export default function CastingRoom() {
         kept();
       },
     }),
-    onBack: () => setOwnWords(line, PERSONA_OWN_WORDS_SHUT),
+    onBack: () => {
+      ownWordsTicket.current[line] += 1;
+      setOwnWords(line, PERSONA_OWN_WORDS_SHUT);
+    },
   });
 
   const keepRead = (read: CastReadOption) => {
@@ -1251,6 +1314,7 @@ export default function CastingRoom() {
                     reads,
                     onOpen: openReadsDoor,
                     onBack: () => {
+                      readsTicket.current += 1;
                       setReadsState("shut");
                       setReads([]);
                     },
@@ -1258,38 +1322,25 @@ export default function CastingRoom() {
                   }}
                   /* Door 2 (#2197): the same ownership split as door 1. */
                   ownWordsDoor={ownWordsDoor("personality")}
+                  onUnsavedChange={reportUnsaved}
+                  /* The reads header says "carry himself / herself /
+                     themselves" off the Cast's own record (#2238). */
+                  pronouns={data.pronouns}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
                   <div className="dpc-rcard__head">
-                    <span className="dpc-persona__head">
-                      <span className="dpc-rcard__label">VOICE</span>
-                      {/* N2b's badge sits with the label, as the personality
-                          card's does — one placement for one idea. */}
-                      <CastVoiceBadge voice={data.persona?.voice ?? null} />
-                    </span>
+                    {/* The label and its ? (#2238), as the personality card draws them. */}
+                    <PersonaLabel line="voice" name={data.name ?? null} />
                     {/*
-                      CHANGE OPENS THE VOICE LINE — #2139, and until this card
-                      it was `disabled` and did nothing.
-
-                      ⚠ **A dead button labelled *Change*, on the card this
-                      rung makes editable, is the defect rather than a
-                      placeholder.** The refine card's dead controls are honest
-                      because a sentence under them says *"Refining arrives
-                      soon"*; this one had no such line, so a customer who
-                      wanted to change the voice pressed the one control named
-                      for it and nothing happened.
-
-                      It is DRAWN only when there is a line to open and the box
-                      is shut — both halves out of his frames: the #2137 design
-                      shows *Change* on the closed voice card, and all three
-                      #2139 frames show it gone once the card is open. With no
-                      voice line the card draws no text either, so a *Change*
-                      there would open an empty box.
+                      THE EDIT ICON OPENS THE VOICE LINE — #2139 made the head's
+                      control work (it shipped `disabled`), #2214 made it one
+                      button for both cards, and #2238 made it a quiet pen and
+                      the only way in. Drawn only when there is a line to open
+                      and the box is shut; the rule lives inside it, once.
                     */}
-                    {/* One button for both persona cards since #2214; the
-                        shown/absent rule above lives inside it, once. */}
-                    <PersonaChangeButton
+                    <PersonaEditButton
+                      line="voice"
                       present={Boolean(data.persona?.voice)}
                       editing={voiceEditing}
                       saving={savingPersonaField === "voice"}
@@ -1323,6 +1374,7 @@ export default function CastingRoom() {
                     onEditingChange={setVoiceEditing}
                     /* Door 2 on the Voice card (#2205). */
                     ownWordsDoor={ownWordsDoor("voice")}
+                    onUnsavedChange={reportUnsaved}
                   />
                   {/*
                     THE PLAYER AND ITS FOOT STEP ASIDE WHILE DOOR 2 IS OPEN —
@@ -1488,6 +1540,9 @@ export default function CastingRoom() {
                 toast(`${data.name ?? "That cast"} was deleted.`);
                 // Her room is the page we are standing on, so leaving is part
                 // of the ceremony rather than something to do afterwards.
+                // An unsaved line on a deleted cast has nothing left to keep,
+                // so the leave guard stands down first (#2238).
+                disarmLeave.current?.();
                 navigate("/app/casting");
               } catch (error) {
                 toast(error instanceof Error
@@ -1495,6 +1550,23 @@ export default function CastingRoom() {
                   : `${data.name ?? "That cast"} could not be deleted.`);
               }
             }}
+          />
+        ) : null}
+
+        {leaveAsk ? (
+          <ConfirmDialog
+            title="Leave without keeping your edit?"
+            body={personaLeaveBody(unsavedLines, data?.name ?? null)}
+            confirmLabel="Leave"
+            busyLabel="Leaving…"
+            busy={false}
+            cancelLabel="Stay"
+            onConfirm={() => {
+              const proceed = leaveAsk;
+              setLeaveAsk(null);
+              proceed();
+            }}
+            onCancel={closeLeaveAsk}
           />
         ) : null}
 

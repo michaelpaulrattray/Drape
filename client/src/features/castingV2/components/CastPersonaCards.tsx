@@ -16,9 +16,16 @@
  *     only after the fact: keep this or change it — with the draft in front of
  *     her, which is the whole basis it needs.
  *  3. **Where does the technology show?** Nowhere. No model name, no
- *     confidence, no "generated". **The badge says *Drafted for you***, which
- *     is the customer's word for what happened — and it is not *Read from your
- *     brief*, because the picture she chose and her own corrections fed it too.
+ *     confidence, no "generated" — and since #2238 no badge at all.
+ *
+ * ⚠ **#2238 (his word, 2026-10-11): ONE DOOR, NO BADGE, AN EXPLAINER.** *"dont
+ * allow the text to be editable until its been clicked i dont want two doors
+ * into editing the text, remove drafted for you badge and put a hover tooltip
+ * next to personality and voice that explain what it is for"*. So the words are
+ * a plain paragraph now (#2214's click-the-words door is reversed by that
+ * sentence), the edit icon on each card's head is the only way in, the *Drafted
+ * for you* badge is gone from both cards, and a ? beside each label says what
+ * the line is for, in the wording he approved on the card.
  *
  * ============================================================================
  * WHAT IT DOES NOT DRAW, AND WHY EACH ABSENCE IS DELIBERATE
@@ -40,10 +47,13 @@
  * away now leaves the box open instead of quietly storing.
  *
  * **No price, no spinner over the whole card.** The edit is free and is not a
- * generation — the only feedback it needs is that the badge goes.
+ * generation — the only feedback it needs is the kept line itself (#2238 took
+ * the badge whose going used to be the receipt).
  */
 import { useEffect, useRef, useState } from "react";
+import { Check, PenLine } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CAST_PERSONA_OWN_WORDS_MAX_LENGTH,
   CAST_PERSONALITY_MAX_LENGTH,
@@ -63,15 +73,233 @@ export type PersonaField = { text: string; drafted: boolean; ownWords?: string |
 export type CastPersonaFieldName = "personality" | "voice";
 
 /**
- * THE BADGE'S WORDS, in one place.
+ * WHAT EACH LINE IS FOR — the ? beside PERSONALITY and VOICE (#2238).
  *
- * ⚠ **IT IS *Drafted for you* AND THE CARD SETTLED THAT** — not *Read from your
- * brief*, the earlier design's wording, because the frame she signed and her own
- * corrections feed the draft as much as her brief does. A badge that names only
- * the brief would be telling her something untrue about where her own words
- * went.
+ * His word, 2026-10-11: *"put a hover tooltip next to personality and voice
+ * that explain what it is for etc. (essentially its used for video creation)"*.
+ * The personality sentence is the wording he approved on the card; the voice
+ * sentence is the same register, given on the card beside it.
+ *
+ * ⚠ **"when you make video" and not "it guides … in your videos"**: video is
+ * not built, and nothing reads these lines yet (`server/castingV2/castPersona.ts`
+ * says so in its header). The sentence describes what the line is FOR without
+ * claiming a road that exists today. No engine is named and nobody is gendered:
+ * the cast's name, or "they" when there is none.
  */
-export const PERSONA_DRAFT_BADGE = "Drafted for you";
+export function personaExplainer(line: CastPersonaFieldName, name?: string | null): string {
+  const named = name?.trim();
+  if (line === "voice") {
+    return named
+      ? `How ${named} sounds on camera. It guides ${named}'s voice when you make video.`
+      : "How they sound on camera. It guides their voice when you make video.";
+  }
+  return named
+    ? `How ${named} carries themselves on camera. It guides ${named}'s performance when you make video.`
+    : "How they carry themselves on camera. It guides their performance when you make video.";
+}
+
+/** The quiet note in an open box that holds changes not yet kept (#2238). */
+export const PERSONA_UNSAVED = "Unsaved";
+
+/**
+ * WHAT A KEY DOES IN A PERSONA TEXT BOX — one function, so the rule is driven
+ * by a test rather than read off a handler (#2238).
+ *
+ * ⚠ **ENTER IS NOT HERE, AND THAT IS THE RULE.** Enter used to keep the line
+ * (and send the sentence in *Say it your way*), so a half-finished edit was
+ * stored the moment someone reached for a new line. Now Enter does what Enter
+ * does in a text box — a new line — and only Keep, or the panel's send button,
+ * acts. Escape is the one key with a meaning: put the line back (the editor)
+ * or close the panel (the doors).
+ */
+export function personaKeyAction(key: string): "escape" | null {
+  return key === "Escape" ? "escape" : null;
+}
+
+/**
+ * THE QUIET ? BESIDE A CARD'S LABEL, opening the explainer on hover, on
+ * keyboard focus, and on a tap — a phone has no hover, so the press toggles it
+ * (Radix closes a tooltip on click by default; `preventDefault` stops that).
+ */
+export function PersonaExplainer({ line, name }: { line: CastPersonaFieldName; name?: string | null }) {
+  const [open, setOpen] = useState(false);
+  const words = personaExplainer(line, name);
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="dpc-master__idhelp dpc-persona__help"
+          aria-label={words}
+          onClick={(event) => {
+            event.preventDefault();
+            setOpen((was) => !was);
+          }}
+        >
+          ?
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6} className="max-w-[260px]">
+        {words}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** A card's label and its ?, together, on both cards. */
+export function PersonaLabel({ line, name }: { line: CastPersonaFieldName; name?: string | null }) {
+  return (
+    <span className="dpc-persona__head">
+      <span className="dpc-rcard__label">{line === "voice" ? "VOICE" : "PERSONALITY"}</span>
+      <PersonaExplainer line={line} name={name} />
+    </span>
+  );
+}
+
+/**
+ * WHERE A LEAVE IS ASKED ABOUT — the room's window, or a stand-in a test drives.
+ */
+export type LeaveGuardWindow = {
+  history: History;
+  location: { pathname: string; href: string };
+  addEventListener: (type: string, listener: EventListener) => void;
+  removeEventListener: (type: string, listener: EventListener) => void;
+};
+
+/**
+ * WARN BEFORE AN UNSAVED PERSONA EDIT IS LEFT BEHIND (#2238).
+ *
+ * Three roads out of the room, one guard:
+ *  - **closing or reloading the tab** — `beforeunload`, the browser's own ask;
+ *  - **any in-app move** — every wouter `navigate` and `<Link>` goes through
+ *    `history.pushState` / `replaceState`, so those are wrapped while armed and
+ *    a call that would change the PATH is held and handed to `ask`. A same-path
+ *    call (a query string) passes untouched;
+ *  - **the back button** — see the sentinel below.
+ *
+ * ⚠ **THE BACK BUTTON NEEDS A SENTINEL, AND THAT WAS MEASURED, NOT ASSUMED.**
+ * The first shape put the path back from a `popstate` listener. In the running
+ * app the dialog came up over a room whose cards had REMOUNTED with the edit
+ * gone: a browser-dispatched popstate runs a microtask checkpoint after each
+ * listener, the router's listener is registered first, and React rendered the
+ * page being left before this one ran (capture did not change the order in
+ * Edge — read off a probe, `bubble` before `cap`). So arming pushes one extra
+ * entry for the SAME page. Back then lands on the room's own entry — the same
+ * path, so the router renders nothing — and this listener puts the sentinel
+ * back and asks. Leaving goes two steps back, to where the button was going.
+ *
+ * `ask(proceed)` shows the room's own dialog; `proceed` disarms and completes
+ * the move. Returns `disarm(stay)`: idempotent, restores both history methods,
+ * and with `stay` (the edit was kept or cancelled, the customer is staying)
+ * steps off the sentinel so the next Back is not a dead press.
+ */
+const LEAVE_SENTINEL = "__personaLeaveGuard";
+
+export function armUnsavedLeaveGuard(
+  win: LeaveGuardWindow,
+  ask: (proceed: () => void) => void,
+): (stay?: boolean) => void {
+  const history = win.history;
+  const push = history.pushState;
+  const replace = history.replaceState;
+  const home = win.location.pathname;
+  let homeHref = win.location.href;
+  let armed = true;
+
+  const onSentinel = (state: unknown): boolean =>
+    typeof state === "object" && state !== null && (state as Record<string, unknown>)[LEAVE_SENTINEL] === true;
+  const plantSentinel = () => push.call(history, { [LEAVE_SENTINEL]: true }, "", homeHref);
+  plantSentinel();
+
+  const leaves = (url: string | URL | null | undefined): boolean => {
+    if (url === null || url === undefined) return false;
+    try {
+      return new URL(String(url), win.location.href).pathname !== home;
+    } catch {
+      return false;
+    }
+  };
+
+  const wrap = (original: History["pushState"], isPush: boolean): History["pushState"] =>
+    function wrapped(data, unused, url) {
+      if (armed && leaves(url)) {
+        ask(() => {
+          disarm();
+          /* Leaving FROM the sentinel replaces it, so Back from the next page
+             lands on the room once rather than twice. */
+          const go = isPush && onSentinel(history.state) ? replace : original;
+          go.call(history, data, unused, url);
+        });
+        return;
+      }
+      /* A same-page replace on the sentinel keeps it a sentinel. */
+      const keep = !isPush && onSentinel(history.state) && (data === null || typeof data === "object")
+        ? { ...(data as object | null), [LEAVE_SENTINEL]: true }
+        : data;
+      original.call(history, keep, unused, url);
+      homeHref = win.location.href;
+    };
+  const wrappedPush = wrap(push, true);
+  const wrappedReplace = wrap(replace, false);
+  history.pushState = wrappedPush;
+  history.replaceState = wrappedReplace;
+
+  const onBeforeUnload = (event: BeforeUnloadEvent) => {
+    event.preventDefault();
+    /* Older browsers read the return value rather than the default. */
+    event.returnValue = "";
+  };
+  const onPopState = (event: PopStateEvent) => {
+    if (!armed || onSentinel(event.state)) return;
+    if (win.location.pathname === home) {
+      /* Back stepped off the sentinel onto the room's own entry: nothing has
+         rendered. Put the sentinel back and ask; leaving goes two steps back. */
+      plantSentinel();
+      ask(() => {
+        disarm();
+        history.go(-2);
+      });
+      return;
+    }
+    /* Further than one step (or Forward somewhere): put the room back and ask. */
+    const targetHref = win.location.href;
+    const targetState: unknown = event.state;
+    plantSentinel();
+    ask(() => {
+      disarm();
+      replace.call(history, targetState, "", targetHref);
+    });
+  };
+  win.addEventListener("beforeunload", onBeforeUnload as EventListener);
+  win.addEventListener("popstate", onPopState as EventListener);
+
+  function disarm(stay = false) {
+    if (!armed) return;
+    armed = false;
+    if (history.pushState === wrappedPush) history.pushState = push;
+    if (history.replaceState === wrappedReplace) history.replaceState = replace;
+    win.removeEventListener("beforeunload", onBeforeUnload as EventListener);
+    win.removeEventListener("popstate", onPopState as EventListener);
+    /* Staying: step off the sentinel (same page, so nothing renders). */
+    if (stay && onSentinel(history.state)) history.back();
+  }
+  return disarm;
+}
+
+/** The leave dialog's body, naming which line holds the edit. */
+export function personaLeaveBody(
+  unsaved: Record<CastPersonaFieldName, boolean>,
+  name?: string | null,
+): string {
+  const named = name?.trim();
+  const whose = named ? `${named}'s` : "the cast's";
+  const what = unsaved.personality && unsaved.voice
+    ? "personality and voice"
+    : unsaved.voice
+      ? "voice"
+      : "personality";
+  return `Your edit to ${whose} ${what} has not been kept. If you leave now, it is lost.`;
+}
 
 type EditableLineProps = {
   line: CastPersonaFieldName;
@@ -101,16 +329,20 @@ type EditableLineProps = {
    */
   editing: boolean;
   onEditingChange: (open: boolean) => void;
+  /**
+   * A DOOR HAS THE CARD (#2238). The editor stays MOUNTED and hidden, so the
+   * words typed in it are still there when Escape or *Back to the draft*
+   * returns — it used to unmount, and every typed word went with it.
+   */
+  concealed?: boolean;
+  /** Whether the open box holds words not yet kept — the room's leave guard. */
+  onUnsavedChange?: (unsaved: boolean) => void;
 };
 
 /**
- * ONE LINE, READ UNTIL IT IS CLICKED.
- *
- * ⚠ **A `<button>` wrapping the text, not a click handler on a `<p>`.** The
- * line has to be reachable by keyboard and announced as something that does
- * something; a div with an `onClick` is reachable by a mouse alone, and the
- * room's own design laws already refuse an inner focus outline on a text field
- * rather than refusing the outline everywhere.
+ * ONE LINE, READ — and since #2238 only READ. The words are a paragraph; the
+ * edit icon on the card's head is the one door into the box (his word: *"i
+ * dont want two doors into editing the text"*).
  */
 function EditableLine({
   line,
@@ -120,6 +352,8 @@ function EditableLine({
   helper = null,
   editing,
   onEditingChange,
+  concealed = false,
+  onUnsavedChange,
 }: EditableLineProps) {
   const [draft, setDraft] = useState(value.text);
   /**
@@ -158,9 +392,21 @@ function EditableLine({
     if (!editing) setDraft(value.text);
   }, [value.text, editing]);
 
+  /* Focus on open, and again on the way back from a door. */
   useEffect(() => {
-    if (editing) field.current?.focus();
-  }, [editing]);
+    if (editing && !concealed) field.current?.focus();
+  }, [editing, concealed]);
+
+  /*
+    UNSAVED: the box is open and its words differ from the stored line. Trimmed,
+    because `commit` treats trailing space as no change and the hint must agree
+    with what Keep would actually do.
+  */
+  const unsaved = editing && draft.trim() !== value.text;
+  useEffect(() => {
+    onUnsavedChange?.(unsaved);
+  }, [unsaved, onUnsavedChange]);
+  useEffect(() => () => onUnsavedChange?.(false), [onUnsavedChange]);
 
   /* The save has settled, whichever way. `value.text` is authoritative again:
      the new line on success, the old one plus a toast on failure. */
@@ -195,16 +441,9 @@ function EditableLine({
   };
 
   if (!editing) {
-    return (
-      <button
-        type="button"
-        className="dpc-persona__read"
-        onClick={() => onEditingChange(true)}
-        disabled={saving}
-      >
-        {pending ?? value.text}
-      </button>
-    );
+    /* Words, not a control: the edit icon is the one door (#2238). */
+    if (concealed) return null;
+    return <p className="dpc-persona__read">{pending ?? value.text}</p>;
   }
 
   /*
@@ -225,7 +464,7 @@ function EditableLine({
     Cancel both still put the line back exactly as it was.
   */
   return (
-    <div className="dpc-persona__edit">
+    <div className="dpc-persona__edit" hidden={concealed}>
       <textarea
         ref={field}
         className="dpc-persona__field"
@@ -256,16 +495,11 @@ function EditableLine({
         */
         rows={line === "voice" ? 5 : 7}
         onChange={(event) => setDraft(event.target.value)}
+        aria-label={line === "voice" ? "Voice" : "Personality"}
         onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            /* Abandon: the line comes back exactly as it was. */
-            abandon();
-            return;
-          }
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            commit();
-          }
+          /* Escape abandons: the line comes back exactly as it was. Enter is a
+             new line and nothing else — only Keep stores (#2238). */
+          if (personaKeyAction(event.key) === "escape") abandon();
         }}
       />
       {helper ? <p className="dpc-persona__helper">{helper}</p> : null}
@@ -288,6 +522,9 @@ function EditableLine({
         <button type="button" className="dpc-persona__cancel" onClick={abandon}>
           Cancel
         </button>
+        {unsaved ? (
+          <span className="dpc-persona__unsaved" role="status">{PERSONA_UNSAVED}</span>
+        ) : null}
       </div>
     </div>
   );
@@ -410,20 +647,38 @@ function castName(name?: string | null): string {
   return name?.trim() ?? "";
 }
 
+/**
+ * THE CAST'S OWN PRONOUNS, AS THE ROOM IS HANDED THEM — the subject word is
+ * all the header needs. Read off the Cast's record on the server
+ * (`castPronouns`), never guessed from a face or a name.
+ */
+export type PersonaPronouns = { subject: string };
+
+/**
+ * "CARRY HIMSELF / HERSELF / THEMSELVES" — #2238, his reviewer: the header
+ * hard-coded *themselves* on every cast. Derived from the recorded pronouns;
+ * anything other than he or she, or none recorded, is *themselves*.
+ */
+export function personaReflexive(pronouns?: PersonaPronouns | null): string {
+  const subject = pronouns?.subject?.trim().toLowerCase();
+  if (subject === "he") return "himself";
+  if (subject === "she") return "herself";
+  return "themselves";
+}
+
+/** Who the header is about: the name, or the cast's own subject word. */
+function readsSubject(name?: string | null, pronouns?: PersonaPronouns | null): string {
+  return castName(name) || pronouns?.subject?.trim() || "they";
+}
+
 /** The row under the open box: what the door is, before it is opened. */
-export function personaReadsRowSubtitle(name?: string | null): string {
-  const named = castName(name);
-  return named
-    ? `Six ways ${named} could carry themselves, in plain words`
-    : "Six ways they could carry themselves, in plain words";
+export function personaReadsRowSubtitle(name?: string | null, pronouns?: PersonaPronouns | null): string {
+  return `Six ways ${readsSubject(name, pronouns)} could carry ${personaReflexive(pronouns)}, in plain words`;
 }
 
 /** The line above the six, once they are there. */
-export function personaReadsListSubtitle(name?: string | null): string {
-  const named = castName(name);
-  return named
-    ? `Six ways ${named} could carry themselves. Pick the one you recognise.`
-    : "Six ways they could carry themselves. Pick the one you recognise.";
+export function personaReadsListSubtitle(name?: string | null, pronouns?: PersonaPronouns | null): string {
+  return `Six ways ${readsSubject(name, pronouns)} could carry ${personaReflexive(pronouns)}. Pick the one you recognise.`;
 }
 
 /**
@@ -615,11 +870,12 @@ export function personaDoorRowSpecs(
   name: string | null | undefined,
   readsDoor: PersonaReadsDoor | null,
   ownWordsDoor: PersonaOwnWordsDoor | null,
+  pronouns?: PersonaPronouns | null,
 ): PersonaDoorRowSpec[] {
   const doors: PersonaDoorRowSpec[] = [];
   /* Door 1 is the Personality card's alone — six ways to carry themselves. */
   if (readsDoor && line === "personality") {
-    doors.push({ title: PERSONA_READS_TITLE, subtitle: personaReadsRowSubtitle(name), onOpen: readsDoor.onOpen });
+    doors.push({ title: PERSONA_READS_TITLE, subtitle: personaReadsRowSubtitle(name, pronouns), onOpen: readsDoor.onOpen });
   }
   if (ownWordsDoor) {
     doors.push({
@@ -694,6 +950,8 @@ export function PersonaOwnWordsPanel({
   name,
   saving,
   initialWords,
+  words: heldWords = null,
+  onWordsChange,
   onKept,
   onPickRead,
 }: {
@@ -702,12 +960,24 @@ export function PersonaOwnWordsPanel({
   name?: string | null;
   saving: boolean;
   initialWords?: string | null;
+  /**
+   * THE SENTENCE, HELD BY THE CARD (#2238) so closing the panel — Escape or
+   * *Back to the draft* — and opening it again finds the words still there.
+   * `null` is "not typed yet": the box opens on the sentence last kept.
+   */
+  words?: string | null;
+  onWordsChange?: (words: string) => void;
   /** Shut the card's box once the keep has landed. */
   onKept: () => void;
   /** The Personality card's link across to door 1; absent on Voice. */
   onPickRead?: (() => void) | null;
 }) {
-  const [words, setWords] = useState(initialWords ?? "");
+  const [ownWords, setOwnWords] = useState(heldWords ?? initialWords ?? "");
+  const words = heldWords ?? ownWords;
+  const setWords = (next: string) => {
+    setOwnWords(next);
+    onWordsChange?.(next);
+  };
   const field = useRef<HTMLTextAreaElement | null>(null);
   const settled = door.stage === "reading" || door.stage === "read";
 
@@ -718,12 +988,21 @@ export function PersonaOwnWordsPanel({
 
   const sentence = words.trim();
   const ask = () => {
-    if (!sentence || settled) return;
+    if (!sentence || door.stage === "reading" || door.stage === "read") return;
     door.onTranslate(sentence);
   };
 
   return (
-    <div className="dpc-persona__picker">
+    <div
+      className="dpc-persona__picker"
+      onKeyDown={(event) => {
+        /* Escape closes the panel and returns to the draft, words kept (#2238). */
+        if (personaKeyAction(event.key) === "escape") {
+          event.stopPropagation();
+          door.onBack();
+        }
+      }}
+    >
       <p className="dpc-persona__pickerTitle">{PERSONA_OWN_WORDS_TITLE}</p>
       <p className="dpc-persona__ownPrompt">{personaOwnWordsPrompt(line, name)}</p>
       <textarea
@@ -734,20 +1013,13 @@ export function PersonaOwnWordsPanel({
         rows={2}
         readOnly={settled}
         aria-label={personaOwnWordsPrompt(line, name)}
+        /* Enter is a new line; only the button below sends (#2238). */
         onChange={(event) => setWords(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            ask();
-          }
-        }}
       />
 
-      {door.stage === "reading" ? (
-        <p className="dpc-persona__working">{PERSONA_OWN_WORDS_WORKING}</p>
-      ) : null}
+      {door.stage === "reading" ? <PersonaWait words={PERSONA_OWN_WORDS_WORKING} /> : null}
       {door.stage === "failed" && door.failure ? (
-        <p className="dpc-persona__working">{door.failure}</p>
+        <PersonaFailure words={door.failure} onRetry={ask} disabled={!sentence} />
       ) : null}
       {door.stage === "read" && door.result ? (
         <div className="dpc-persona__result">
@@ -776,7 +1048,7 @@ export function PersonaOwnWordsPanel({
               Reword it
             </button>
           </>
-        ) : (
+        ) : door.stage === "failed" ? null : (
           <button
             type="button"
             className="dpc-persona__keep"
@@ -804,6 +1076,42 @@ export function PersonaOwnWordsPanel({
 }
 
 /**
+ * THE WAIT, SEEN AS WELL AS SAID (#2238). The sentence names what is happening
+ * to their cast (#55); the line under it moves, so a 3- or 14-second wait reads
+ * as working rather than stuck. It is not a bar that fills — there is no
+ * progress to report and a filling bar would be a number nobody can act on —
+ * just a quiet sweep, which stops under reduced motion.
+ */
+export function PersonaWait({ words }: { words: string }) {
+  return (
+    <div className="dpc-persona__wait" role="status" aria-busy="true">
+      <p className="dpc-persona__working">{words}</p>
+      <span className="dpc-persona__pulse" aria-hidden="true" />
+    </div>
+  );
+}
+
+/** A failure line and its Try again, on every door (#2238). */
+export function PersonaFailure({
+  words,
+  onRetry,
+  disabled = false,
+}: {
+  words: string;
+  onRetry: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="dpc-persona__failed" role="alert">
+      <p className="dpc-persona__working">{words}</p>
+      <button type="button" className="dpc-persona__cancel dpc-persona__retry" onClick={onRetry} disabled={disabled}>
+        Try again
+      </button>
+    </div>
+  );
+}
+
+/**
  * THE SIX, AND THE ONE THE CUSTOMER RECOGNISES.
  *
  * ⚠ **NOTHING IS PICKED WHEN THE LIST OPENS, AND THAT IS READ OFF HIS FRAME
@@ -820,25 +1128,46 @@ export function CastReadsPicker({
   name,
   saving,
   onSayItYourWay = null,
+  pronouns = null,
 }: {
   door: PersonaReadsDoor;
   name?: string | null;
+  /** The cast's recorded pronouns, for "carry himself" (#2238). */
+  pronouns?: PersonaPronouns | null;
   saving: boolean;
   /** Across to door 2, when the room has one. */
   onSayItYourWay?: (() => void) | null;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const chosen = door.reads.find((read) => read.label === picked) ?? null;
+  /*
+    THE PANEL TAKES FOCUS WHEN IT OPENS, so Escape reaches it (#2238). The row
+    that opened it has just unmounted, which would otherwise leave focus on the
+    page body where no key press reaches the panel.
+  */
+  const panel = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    panel.current?.focus();
+  }, []);
   return (
-    <div className="dpc-persona__picker">
+    <div
+      ref={panel}
+      tabIndex={-1}
+      className="dpc-persona__picker"
+      onKeyDown={(event) => {
+        /* Escape closes the list and returns to the draft, words kept (#2238). */
+        if (personaKeyAction(event.key) === "escape") {
+          event.stopPropagation();
+          door.onBack();
+        }
+      }}
+    >
       <p className="dpc-persona__pickerTitle">{PERSONA_READS_TITLE}</p>
-      <p className="dpc-persona__pickerSub">{personaReadsListSubtitle(name)}</p>
+      <p className="dpc-persona__pickerSub">{personaReadsListSubtitle(name, pronouns)}</p>
 
-      {door.state === "drafting" ? (
-        <p className="dpc-persona__working">{PERSONA_READS_WORKING}</p>
-      ) : null}
+      {door.state === "drafting" ? <PersonaWait words={PERSONA_READS_WORKING} /> : null}
       {door.state === "failed" ? (
-        <p className="dpc-persona__working">{PERSONA_READS_FAILED}</p>
+        <PersonaFailure words={PERSONA_READS_FAILED} onRetry={door.onOpen} />
       ) : null}
 
       {door.state === "open"
@@ -854,7 +1183,12 @@ export function CastReadsPicker({
               >
                 <span className="dpc-persona__optionHead">
                   <span className="dpc-persona__optionName">{read.label}</span>
-                  {isPicked ? <span className="dpc-persona__picked">Picked</span> : null}
+                  {isPicked ? (
+                    <span className="dpc-persona__picked">
+                      <Check size={10} strokeWidth={2.25} aria-hidden="true" />
+                      Picked
+                    </span>
+                  ) : null}
                 </span>
                 <span className="dpc-persona__optionBody">{read.personality}</span>
               </button>
@@ -868,8 +1202,14 @@ export function CastReadsPicker({
         has nothing to say, and a disabled button with an empty name reads as a
         feature that failed to load.
       */}
+      {/*
+        ⚠ PINNED (#2238), his word: *"After you pick one, Keep "The warm host"
+        sits below the bottom of the screen, so it looks like nothing
+        happened."* The row sticks to the bottom of the viewport while the list
+        is on screen, so the button the pick produced is always in view.
+      */}
       {chosen ? (
-        <div className="dpc-persona__acts">
+        <div className="dpc-persona__acts dpc-persona__pin">
           <button
             type="button"
             className="dpc-persona__keep"
@@ -917,7 +1257,11 @@ export function CastPersonalityCard({
   name,
   readsDoor = null,
   ownWordsDoor = null,
+  onUnsavedChange,
+  pronouns = null,
 }: Omit<CastPersonaCardsProps, "voice"> & {
+  /** The cast's recorded pronouns, for the reads header (#2238). */
+  pronouns?: PersonaPronouns | null;
   /**
    * DOOR 1, OR NOTHING AT ALL (#2196).
    *
@@ -928,6 +1272,8 @@ export function CastPersonalityCard({
   readsDoor?: PersonaReadsDoor | null;
   /** DOOR 2, OR NOTHING AT ALL (#2197) — the same optional shape as door 1. */
   ownWordsDoor?: PersonaOwnWordsDoor | null;
+  /** Whether this card holds an edit not yet kept — the room's leave guard (#2238). */
+  onUnsavedChange?: (line: CastPersonaFieldName, unsaved: boolean) => void;
 }) {
   /*
     ⚠ ABOVE THE EARLY RETURN, AND THAT IS NOT STYLE. A hook declared under a
@@ -936,18 +1282,24 @@ export function CastPersonalityCard({
     the common one here, a Cast signed before N2b with no line to draw.
 
     The voice line's open state is NOT held here: it lives in the room, because
-    the voice card's *Change* button sits in a head this file does not own.
-    This card's *Change* (#2214) sits in a head this card DOES own, so its
-    state has no reason to leave — the same controlled pair, held one level up
-    from the line in both cases.
+    the voice card's edit icon sits in a head this file does not own. This
+    card's icon sits in a head this card DOES own, so its state stays here.
   */
   const [editing, setEditing] = useState(false);
+  const [editorUnsaved, setEditorUnsaved] = useState(false);
+  /* The "say it your way" sentence, kept across closing the panel (#2238). */
+  const [ownWords, setOwnWords] = useState<string | null>(null);
   /* Door 1 has the card whenever the room says it is past `shut` — the room
      owns that state because the room owns the call that moves it. */
   const inPicker = readsDoor ? readsDoor.state !== "shut" : false;
   const inOwnWords = ownWordsDoor ? ownWordsDoor.stage !== "shut" : false;
+  const unsaved =
+    editorUnsaved || (ownWordsDoor ? personaOwnWordsUnsaved(ownWordsDoor, ownWords, personality?.ownWords) : false);
+  useEffect(() => {
+    onUnsavedChange?.("personality", unsaved);
+  }, [unsaved, onUnsavedChange]);
   if (!personality) return null;
-  const doors = personaDoorRowSpecs("personality", name, readsDoor, ownWordsDoor);
+  const doors = personaDoorRowSpecs("personality", name, readsDoor, ownWordsDoor, pronouns);
   /* The two footers cross to each other's door, as his two frames draw. */
   const toOwnWords = readsDoor && ownWordsDoor
     ? () => { readsDoor.onBack(); ownWordsDoor.onOpen(); }
@@ -958,40 +1310,37 @@ export function CastPersonalityCard({
   return (
     <section className="dpc-rcard" style={{ gap: 11 }}>
       <div className="dpc-rcard__head">
-        {/*
-          ⚠ THE BADGE SITS WITH THE LABEL, LEFT, IN BOTH CARDS, and that was
-          decided at the rendered frame rather than in the markup. On the voice
-          card the head already owns a right-hand control, so a badge pinned
-          right would sit under the label on one card and beside a button on
-          the other — two placements for one idea, on two cards a customer sees
-          side by side.
-        */}
-        <span className="dpc-persona__head">
-          <span className="dpc-rcard__label">PERSONALITY</span>
-          {personality.drafted ? (
-            <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
-          ) : null}
-        </span>
-        <PersonaChangeButton
+        <PersonaLabel line="personality" name={name} />
+        <PersonaEditButton
+          line="personality"
           present
-          /* While door 1 has the card, *Change* has nothing to open — the box
-             is already what *Back to the draft* returns to. Treated as open
-             for the same reason the box's own press is. */
+          /* While a door has the card, the icon has nothing to open — the box
+             is already what *Back to the draft* returns to. */
           editing={editing || inPicker || inOwnWords}
           saving={savingLine === "personality"}
           onOpen={() => setEditing(true)}
         />
       </div>
       {/*
-        DOOR 1 REPLACES THE CARD'S BODY, it does not sit under it — his
+        A DOOR REPLACES THE CARD'S BODY, it does not sit under it — his
         `02-door1-dark.png` shows the words and the edit box gone and the six
-        in their place. Drawing both would put two things to read and two
-        things to press on one card, which is the busyness his design removes.
+        in their place. ⚠ Since #2238 the editor stays MOUNTED and hidden
+        underneath, so the words typed in it survive the trip.
       */}
       {inPicker && readsDoor ? (
         <CastReadsPicker
-          door={readsDoor}
+          /* Keeping a read closes the box too: its draft is the line being
+             replaced, and reopening onto it would show the old words marked
+             unsaved over the read just kept. */
+          door={{
+            ...readsDoor,
+            onKeep: (read) => {
+              setEditing(false);
+              readsDoor.onKeep(read);
+            },
+          }}
           name={name}
+          pronouns={pronouns}
           saving={savingLine === "personality"}
           onSayItYourWay={toOwnWords}
         />
@@ -1002,84 +1351,102 @@ export function CastPersonalityCard({
           name={name}
           saving={savingLine === "personality"}
           initialWords={personality.ownWords ?? null}
-          onKept={() => setEditing(false)}
+          words={ownWords}
+          onWordsChange={setOwnWords}
+          onKept={() => {
+            setOwnWords(null);
+            setEditing(false);
+          }}
           onPickRead={toReads}
         />
-      ) : (
-        <>
-          <EditableLine
-            line="personality"
-            value={personality}
-            onSave={onSave}
-            saving={savingLine === "personality"}
-            helper={personaEditHelper(name)}
-            editing={editing}
-            onEditingChange={setEditing}
-          />
-          {/*
-            THE DOOR IS OFFERED ONLY FROM THE OPEN BOX, which is where his
-            frame puts it: `01-door0-dark.png` draws the *or* divider and the
-            door rows UNDER the open editor, never on the card at rest. A shut
-            card stays one line of words and a quiet *Change* — adding a second
-            control to it would make the common case busier to serve the rarer
-            one.
-          */}
-          {editing ? (
-            <PersonaDoorRows doors={doors} disabled={savingLine === "personality"} />
-          ) : null}
-        </>
-      )}
+      ) : null}
+      <EditableLine
+        line="personality"
+        value={personality}
+        onSave={onSave}
+        saving={savingLine === "personality"}
+        helper={personaEditHelper(name)}
+        editing={editing}
+        onEditingChange={setEditing}
+        concealed={inPicker || inOwnWords}
+        onUnsavedChange={setEditorUnsaved}
+      />
+      {/*
+        THE DOOR IS OFFERED ONLY FROM THE OPEN BOX, which is where his frame
+        puts it: `01-door0-dark.png` draws the *or* divider and the door rows
+        UNDER the open editor, never on the card at rest.
+      */}
+      {editing && !inPicker && !inOwnWords ? (
+        <PersonaDoorRows doors={doors} disabled={savingLine === "personality"} />
+      ) : null}
     </section>
   );
 }
 
 /**
- * THE QUIET *Change* ON A PERSONA CARD'S HEAD — ONE BUTTON FOR BOTH CARDS (#2214).
+ * WHETHER AN OPEN "SAY IT YOUR WAY" PANEL HOLDS SOMETHING NOT YET KEPT — a
+ * sentence typed that differs from the one last kept, or a translation on
+ * screen that has not been kept. A shut panel holds nothing at risk: the line
+ * itself is unchanged.
+ */
+export function personaOwnWordsUnsaved(
+  door: Pick<PersonaOwnWordsDoor, "stage" | "result">,
+  typed: string | null,
+  kept: string | null | undefined,
+): boolean {
+  if (door.stage === "shut") return false;
+  if (door.stage === "read" && door.result) return true;
+  return typed !== null && typed.trim() !== (kept ?? "").trim();
+}
+
+/**
+ * THE EDIT ICON ON A PERSONA CARD'S HEAD — THE ONE DOOR INTO THE BOX (#2238).
  *
- * #2139 drew it on the voice card alone, and the personality card beside it had
- * none although clicking its words already opened the same editor. His word on
- * the two cards side by side, 2026-10-10: *"yes go ahead"* — to the relay's
- * recommendation that *Change* be a SECOND way in on both cards and never a
- * required step. So clicking the words keeps working, and this is the other
- * door.
+ * His word, 2026-10-11: *"change the "change" button to an editor icon which
+ * fits our design language. dont allow the text to be editable until its been
+ * clicked i dont want two doors into editing the text"*. So the quiet *Change*
+ * text of #2139/#2214 is a lucide pen in the same quiet register, the same on
+ * both cards, named for a screen reader and explained on hover.
  *
  * ⚠ **THE SHOWN/ABSENT RULE LIVES HERE, ONCE.** Drawn only when there is a
- * line to open and its box is shut: with no line the card draws no text, so a
- * *Change* would open an empty box, and once the box is open the button has
- * nothing left to do (his #2139 frames show it gone). Two cards each spelling
- * that condition for themselves is the drift working law 4 forbids.
+ * line to open and its box is shut: with no line there is nothing to edit, and
+ * once the box is open the icon has nothing left to do.
  */
-export function PersonaChangeButton({
+export function PersonaEditButton({
+  line,
   present,
   editing,
   saving,
   onOpen,
 }: {
+  line: CastPersonaFieldName;
   /** Whether the card has a line at all. */
   present: boolean;
   editing: boolean;
-  /** That line's save is in flight — the same refusal the read view has. */
+  /** That line's save is in flight. */
   saving: boolean;
   onOpen: () => void;
 }) {
   if (!present || editing) return null;
+  const label = line === "voice" ? "Edit voice" : "Edit personality";
   return (
-    <button type="button" className="dpc-rcard__quiet" onClick={onOpen} disabled={saving}>
-      Change
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="dpc-rcard__quiet dpc-persona__editIcon"
+          aria-label={label}
+          onClick={onOpen}
+          disabled={saving}
+        >
+          <PenLine size={13} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
   );
-}
-
-/**
- * THE VOICE CARD'S BADGE, for the head of the room's existing stub.
- *
- * Separate from the line below because the two go in different places inside a
- * card this file does not own: the badge beside the card's own label, the line
- * above its player skeleton.
- */
-export function CastVoiceBadge({ voice }: { voice: PersonaField | null }) {
-  if (!voice?.drafted) return null;
-  return <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>;
 }
 
 /**
@@ -1087,9 +1454,8 @@ export function CastVoiceBadge({ voice }: { voice: PersonaField | null }) {
  *
  * ⚠ **ITS OPEN STATE COMES FROM THE ROOM, which is the one asymmetry with the
  * personality card and it is structural rather than a preference.** The voice
- * card's head carries a *Change* button and the head belongs to the room; a
- * line holding its own state could never be opened from up there, which is why
- * that button sat `disabled` on the one card whose subject is editing.
+ * card's edit icon sits in a head the room draws; a line holding its own state
+ * could never be opened from up there.
  */
 export function CastVoiceLine({
   voice,
@@ -1099,6 +1465,7 @@ export function CastVoiceLine({
   editing,
   onEditingChange,
   ownWordsDoor = null,
+  onUnsavedChange,
 }: Omit<CastPersonaCardsProps, "personality"> & {
   editing: boolean;
   onEditingChange: (open: boolean) => void;
@@ -1108,26 +1475,37 @@ export function CastVoiceLine({
    * line #2139 shipped.
    */
   ownWordsDoor?: PersonaOwnWordsDoor | null;
+  /** Whether this card holds an edit not yet kept — the room's leave guard (#2238). */
+  onUnsavedChange?: (line: CastPersonaFieldName, unsaved: boolean) => void;
 }) {
+  /* Above the early return (React #310). */
+  const [editorUnsaved, setEditorUnsaved] = useState(false);
+  const [ownWords, setOwnWords] = useState<string | null>(null);
+  const inOwnWords = ownWordsDoor ? ownWordsDoor.stage !== "shut" : false;
+  const unsaved =
+    editorUnsaved || (ownWordsDoor ? personaOwnWordsUnsaved(ownWordsDoor, ownWords, voice?.ownWords) : false);
+  useEffect(() => {
+    onUnsavedChange?.("voice", unsaved);
+  }, [unsaved, onUnsavedChange]);
   if (!voice) return null;
-  /* His `05-your-way-dark.png`: the door replaces the line, as door 1 does on
-     the Personality card. */
-  if (ownWordsDoor && ownWordsDoor.stage !== "shut") {
-    return (
-      <div className="dpc-persona__voice">
+  return (
+    <div className="dpc-persona__voice">
+      {/* His `05-your-way-dark.png`: the door replaces the line. */}
+      {inOwnWords && ownWordsDoor ? (
         <PersonaOwnWordsPanel
           line="voice"
           door={ownWordsDoor}
           name={name}
           saving={savingLine === "voice"}
           initialWords={voice.ownWords ?? null}
-          onKept={() => onEditingChange(false)}
+          words={ownWords}
+          onWordsChange={setOwnWords}
+          onKept={() => {
+            setOwnWords(null);
+            onEditingChange(false);
+          }}
         />
-      </div>
-    );
-  }
-  return (
-    <div className="dpc-persona__voice">
+      ) : null}
       <EditableLine
         line="voice"
         value={voice}
@@ -1136,9 +1514,11 @@ export function CastVoiceLine({
         helper={voiceEditHelper(name)}
         editing={editing}
         onEditingChange={onEditingChange}
+        concealed={inOwnWords}
+        onUnsavedChange={setEditorUnsaved}
       />
       {/* His `04-edit-in-place-dark.png`: one row, under the open box only. */}
-      {editing && ownWordsDoor ? (
+      {editing && !inOwnWords && ownWordsDoor ? (
         <PersonaDoorRows
           doors={personaDoorRowSpecs("voice", name, null, ownWordsDoor)}
           disabled={savingLine === "voice"}

@@ -11311,12 +11311,12 @@
       "path": "client/src/features/castingV2/panelBridge.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/personaChange2214.test.ts",
-      "path": "client/src/features/castingV2/personaChange2214.test.ts"
-    },
-    {
       "id": "test:client/src/features/castingV2/personaDoor0.test.ts",
       "path": "client/src/features/castingV2/personaDoor0.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/personaOneDoor2238.test.ts",
+      "path": "client/src/features/castingV2/personaOneDoor2238.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/personaOwnWords2197.test.ts",
@@ -18603,6 +18603,11 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:shared/refineSteps.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "to": "module:client/src/components/ui/tooltip.tsx",
       "kind": "imports"
     },
     {

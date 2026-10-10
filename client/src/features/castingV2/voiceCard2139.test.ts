@@ -157,7 +157,9 @@ describe("the voice line is handed the helper and its open state", () => {
     const cut = voiceLine();
     expect(cut).toContain("editing={editing}");
     expect(cut).toContain("onEditingChange={onEditingChange}");
-    expect(cut).not.toContain("useState");
+    /* #2238 gave it state of its own (its unsaved flag and the "say it your
+       way" sentence), but never the OPEN state — that stays the caller's. */
+    expect(cut).not.toMatch(/\[editing, setEditing\] = useState/);
   });
 
   /*
@@ -183,7 +185,7 @@ describe("the personality card keeps its own open state, above its early return"
     const card = slice(
       CARDS,
       "export function CastPersonalityCard(",
-      "\n/**\n * THE VOICE CARD'S BADGE",
+      "\n/**\n * WHETHER AN OPEN \"SAY IT YOUR WAY\"",
     );
     const hook = card.indexOf("const [editing, setEditing] = useState(false);");
     const bail = card.indexOf("if (!personality) return null;");
@@ -197,7 +199,7 @@ describe("Change opens the voice line, and is absent when there is nothing to op
   const head = () =>
     slice(
       ROOM,
-      '<span className="dpc-rcard__label">VOICE</span>',
+      '<PersonaLabel line="voice"',
       "<CastVoiceLine",
     );
 
@@ -208,13 +210,15 @@ describe("Change opens the voice line, and is absent when there is nothing to op
     any one of them.
   */
   /*
-    ⚠ SINCE #2214 THE BUTTON IS THE SHARED `PersonaChangeButton`, drawn by both
+    ⚠ SINCE #2214 THE BUTTON IS SHARED by both persona cards — since #2238 the edit
+    icon `PersonaEditButton`, drawn by both
     persona cards, and its shown/absent rule lives inside it once. These arms
-    read the room's call into it; `personaChange2214.test.ts` DRIVES the rule.
+    read the room's call into it; `personaOneDoor2238.test.ts` DRIVES the rule.
   */
   it("is no longer a dead control", () => {
     const cut = head();
-    expect(cut).toContain("<PersonaChangeButton");
+    /* #2238: the shared button is the edit icon now, `PersonaEditButton`. */
+    expect(cut).toContain("<PersonaEditButton");
     expect(cut).toContain("onOpen={() => setVoiceEditing(true)}");
     /* `disabled` survives, but only as the in-flight one the read view has. */
     expect(cut).toContain('saving={savingPersonaField === "voice"}');
