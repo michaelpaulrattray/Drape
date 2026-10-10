@@ -4949,7 +4949,7 @@
   background: none;
   cursor: pointer;
 }
-.dpc-persona__door:hover { border-color: var(--ink); }
+.dpc-persona__door:hover:not(:disabled) { border-color: var(--ink); }
 .dpc-persona__door:disabled { cursor: default; opacity: 0.5; }
 .dpc-persona__doorText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dpc-persona__doorTitle { font: 500 11.5px var(--font-sans); color: var(--ink); }
