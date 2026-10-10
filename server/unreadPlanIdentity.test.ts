@@ -862,7 +862,7 @@ describe("an unread plan is not the free plan (#1741)", () => {
       change,
       "the held line names no machinery and tells the customer what to do — the"
       + " disappearing-technology law's refusal clause. #1747.",
-    ).toContain("We could not read which plan you are on just now");
+    ).toContain("We couldn't load your plan just now. Close this and try again in a moment.");
   });
 
   /**

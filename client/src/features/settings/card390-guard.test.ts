@@ -135,36 +135,28 @@ describe("card 390 — the ladder on screen is the product's, never the mockup's
       component may not contain ANY rung's name, ours included. Every one of the
       twelve reaches the screen through `billing.getPlans` → `planLadder`.
 
-      ⚠ **ONE EXPRESSION IS CUT OUT BEFORE THE SCAN, AND IT IS NOT A RUNG'S
-      NAME — card 1834, 2026-10-03.** The compare table's `Price a month` row
-      answers a price of nothing with the WORD, which is his approved frame 04:
-      `plan.priceInCents === 0 ? "Free" : formatWholeDollars(...)`. That literal
-      is a PRICE, and it coincides with a rung's name only because the rung is
-      named after its price — rename `free` to `Trial` tomorrow and *"Free"* in
-      a price cell is still the right word, which is precisely the case this
-      arm's rule is not about.
+      ⚠ **THE ONE EXPRESSION THAT USED TO BE CUT OUT BEFORE THE SCAN IS GONE
+      — #2153, 2026-10-09.** From card 1834 (2026-10-03) the compare table's
+      `Price a month` row answered a price of nothing with the WORD
+      (`plan.priceInCents === 0 ? "Free" : formatWholeDollars(...)`), and this
+      arm cut that one anchored expression out as a price word rather than a
+      rung's name. Yuna and Quistis's table, which he approved, made the cell
+      `$0` — the word is the plan's name and the column head already carries it
+      — so the cell is the one formatter every column uses and **the scan now
+      reads the whole file with no exemption at all**. The arm below pins the
+      cell's shape, so a returning `"Free"` in it reddens twice.
 
-      **The cut is one anchored expression rather than a word on an allowlist**,
-      so a `"Free"` anywhere else in the modal — a card heading, a plan
-      identity, a chip — still reddens. The slice is asserted present, so a
-      refactor that moves the expression turns this into a RED to be read rather
-      than a carve-out that quietly covers the whole file.
-
-      ⚠ **And the band's heading went the other way in this same commit**: its
-      first draft typed `Enterprise` and THIS ARM CAUGHT IT. It reads
-      `plans.tiers[BAND_TIER].name` off the wire now. The exemption below is a
-      price word; a rung's name is still a defect, and the proof is that the one
-      found here was fixed in the surface rather than exempted in the guard.
+      ⚠ **And the band's heading went the other way in card 1834**: its first
+      draft typed `Enterprise` and THIS ARM CAUGHT IT. It reads
+      `plans.tiers[BAND_TIER].name` off the wire now. A rung's name is a
+      defect, and the proof is that the one found here was fixed in the surface
+      rather than exempted in the guard.
     */
-    const whole = code(read(MODAL));
-    /* The zero-price reading, anchored on both ends so it cannot grow. */
-    const PRICE_WORD = /plan\.priceInCents === 0 \? "Free" : formatWholeDollars\(priceOf\(plan\)\)/;
+    const surface = code(read(MODAL));
     expect(
-      whole,
-      "the compare table's zero-price reading has moved — re-read it and re-anchor this cut, " +
-        "because an unanchored exemption would cover every `Free` in the file",
-    ).toMatch(PRICE_WORD);
-    const surface = whole.replace(PRICE_WORD, " PRICE_WORD ");
+      surface,
+      "the compare table's price cell no longer reads every column through the one formatter",
+    ).toContain("read: (plan) => formatWholeDollars(priceOf(plan)),");
     for (const tier of Object.values(PLAN_TIERS)) {
       expect(surface, `\`${tier.name}\` is hard-coded in the modal`).not.toContain(
         `"${tier.name}"`,
@@ -532,8 +524,9 @@ describe("card 390 item 2 — annual is a rate, not a bigger number", () => {
     );
     /* And the interval is carried by a word instead of by the number. */
     expect(surface).toContain("billed yearly");
-    /* The badge is untouched — §6b's one framing everywhere. */
-    expect(surface).toContain("{monthsFree()} MONTHS FREE");
+    /* The badge is untouched in shape — §6b's one framing everywhere — and
+       says OFF rather than FREE since #2153 (his approved table, 2026-10-09). */
+    expect(surface).toContain("{monthsFree()} MONTHS OFF");
   });
 });
 

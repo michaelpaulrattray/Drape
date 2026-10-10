@@ -182,7 +182,10 @@ describe("section 03 — five modals became three surfaces", () => {
       join(CLIENT, "features", "billing", "AddCreditsModal.tsx"),
     ]) {
       const body = code(read(file));
-      expect(body, `${file} hard-codes the badge`).toContain("{monthsFree()} MONTHS FREE");
+      /* `OFF` rather than `FREE` since #2153 (his approved table, 2026-10-09:
+         "No 'free'"), on BOTH modals — one framing everywhere is this arm. */
+      expect(body, `${file} hard-codes the badge`).toContain("{monthsFree()} MONTHS OFF");
+      expect(body, `${file} still says FREE on the badge`).not.toContain("MONTHS FREE");
       expect(body, `${file} still shows a percentage`).not.toMatch(/[-−]\s?17\s?%/);
     }
   });
