@@ -32,6 +32,8 @@ let account: Account;
 const ledger: Array<Record<string, unknown>> = [];
 /** Each `set` write's WHERE, rendered — the conditions a compare-and-set rests on. */
 const wheres: string[] = [];
+/** Each `set` write's keys, in order — what a write is allowed to touch. */
+const setKeys: string[][] = [];
 /** Runs once, between the next plain read and its answer — an interleave. */
 let betweenReadAndWrite: (() => Promise<void>) | null = null;
 
@@ -121,6 +123,7 @@ const db = {
         const rendered = await render(condition);
         const text = rendered.sql.replace(/`points`\./g, "");
         wheres.push(text);
+        setKeys.push(Object.keys(values));
         if (!whereHolds(text, rendered.params)) return [{ affectedRows: 0 }];
         for (const [key, value] of Object.entries(values)) account[key] = await applySetValue(key, value);
         return [{ affectedRows: 1 }];
@@ -329,6 +332,29 @@ describe("6 · the relay's finding 1 on PR #2208: a sweep between a charge and i
     await spend(200, "roll:6b"); // 200 of the promo
     await expirePromoCredits(7, at(90), at(91));
     expect(account).toMatchObject({ balance: 2_000, purchasedBalance: 2_000, promoBalance: 0, promoCreditsExpireAt: null });
+  });
+
+  it("⚠ with a promo to take, the write names the balance, the promo bound and its stamp — and no other column", async () => {
+    /*
+      The relay's second finding on PR #2208. With credits to take, every
+      bound already equals its reading, so restoring a settle here changes no
+      number today — which is exactly why it must be pinned by what the write
+      NAMES: a settle on a timer is the defect #2193's refunds cannot survive,
+      and the keys are the only place it shows.
+    */
+    promoAndTopUp();
+    await spend(200, "roll:6k");
+    setKeys.length = 0;
+    expect(await expirePromoCredits(7, at(90), at(91))).toMatchObject({ outcome: "expired", creditsRemoved: 300 });
+    expect(setKeys).toEqual([["balance", "promoBalance", "promoCreditsExpireAt"]]);
+  });
+
+  it("with nothing to take, the write names the stamp alone", async () => {
+    promoAndTopUp();
+    await spend(1_000, "roll:6z");
+    setKeys.length = 0;
+    expect(await expirePromoCredits(7, at(90), at(91))).toEqual({ outcome: "nothing-to-expire" });
+    expect(setKeys).toEqual([["promoCreditsExpireAt"]]);
   });
 
   it("the plan-credit expiry with nothing to take settles no bound either", async () => {
