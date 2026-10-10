@@ -14,8 +14,7 @@
  * negative control that proves the fixture CAN fail (working law 2): the same
  * blackout with the pause removed is refused UNREAD.
  */
-import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,6 +26,7 @@ import {
   EYE_FRAME_HEAD_TIMEOUT_MS,
 } from "../scripts/lib/eyeFrameHead.mts";
 import { eyeFrameRefusalRepair, judgeEyeFramePresence } from "../scripts/lib/eyeFramePresence.mts";
+import { baseUrlOf, listenOnFetchablePort } from "./testing/fetchablePort";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (relative: string): string => readFileSync(path.join(repoRoot, relative), "utf8");
@@ -48,7 +48,7 @@ afterEach(async () => {
 const startBucket = async (options: { blackoutMs: number; present: string[]; foreverDown?: boolean }): Promise<Bucket> => {
   const asks = new Map<string, number>();
   let blackoutUntil: number | null = null;
-  const server: Server = createServer((request, response) => {
+  const handler = (request: IncomingMessage, response: ServerResponse) => {
     const key = (request.url ?? "/").slice(1);
     asks.set(key, (asks.get(key) ?? 0) + 1);
     if (blackoutUntil === null) blackoutUntil = Date.now() + options.blackoutMs;
@@ -58,11 +58,10 @@ const startBucket = async (options: { blackoutMs: number; present: string[]; for
     }
     response.statusCode = options.present.includes(key) ? 200 : 404;
     response.end();
-  });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const { port } = server.address() as AddressInfo;
+  };
+  const server: Server = await listenOnFetchablePort((port) => createServer(handler).listen(port, "127.0.0.1"));
   const bucket: Bucket = {
-    base: `http://127.0.0.1:${port}`,
+    base: baseUrlOf(server),
     asks,
     close: async () => {
       server.closeAllConnections();
