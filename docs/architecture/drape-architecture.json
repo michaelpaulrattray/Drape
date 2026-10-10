@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 62
+      "moduleCount": 64
     },
     {
       "id": "domain:wardrobe",
@@ -6031,6 +6031,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/shellLessPathLaunches.ts",
+      "path": "server/testing/shellLessPathLaunches.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/sourceBand.ts",
       "path": "server/testing/sourceBand.ts",
       "domain": "unassigned",
@@ -6063,6 +6069,12 @@
     {
       "id": "module:server/testing/throwawayRepo.ts",
       "path": "server/testing/throwawayRepo.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/tsxCli.ts",
+      "path": "server/testing/tsxCli.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -15101,6 +15113,10 @@
     {
       "id": "test:server/sharpTestCeiling.test.ts",
       "path": "server/sharpTestCeiling.test.ts"
+    },
+    {
+      "id": "test:server/shellLessPathLaunch.test.ts",
+      "path": "server/shellLessPathLaunch.test.ts"
     },
     {
       "id": "test:server/shiftDigest.test.ts",
@@ -36934,6 +36950,11 @@
     {
       "from": "module:server/testing/errorMessageInterpolations.ts",
       "to": "module:shared/errorEventScrub.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/shellLessPathLaunches.ts",
+      "to": "module:server/testing/listedSource.ts",
       "kind": "imports"
     },
     {
