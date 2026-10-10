@@ -1,6 +1,6 @@
 {
-  "edition": 669,
-  "updatedAt": "2026-10-10T10:22:44Z",
+  "edition": 670,
+  "updatedAt": "2026-10-10T11:03:46Z",
   "shift": "Foreman — foreman-20261010-1828",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -134,7 +134,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-10T10:21:44.443Z",
+      "readAt": "2026-10-10T11:03:40.001Z",
       "items": [
         {
           "issueNumber": 1242,
@@ -295,6 +295,12 @@
         {
           "issueNumber": 2182,
           "title": "Adopting stripe 23 means deciding what a customer may pay with — the 'card only' setting is gone and its replacement works differently",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 2210,
+          "title": "Before the first promo ships: a refund of a promo-funded charge that lands after the promo expired returns as plan credits",
           "kind": "roadmap",
           "rung": null
         }
@@ -9898,9 +9904,9 @@
     {
       "id": "voice-card-helper-2139",
       "title": "The Voice card says what the words are for, and the Change button that did nothing now opens them (#2139)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2209,
-      "note": "Held for the relay's eye on the frames, both themes."
+      "note": "Live. Pressing Change on the Voice card opens the words now — it was greyed out and did nothing."
     }
   ],
   "problems": [
@@ -10326,7 +10332,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-10T10:21:44.443Z",
+    "readAt": "2026-10-10T11:03:40.001Z",
     "items": [
       {
         "issueNumber": 1469,
