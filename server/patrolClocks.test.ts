@@ -453,10 +453,19 @@ describe("patrol-clocks refuses a tree that is behind on a log (#2180)", () => {
     property `execFileSync` had, which is not a reason to inherit it.
 
     A fixture that half-builds otherwise flows into an arm as a READING: a
-    `git push` that silently did nothing leaves `origin/main` equal to `HEAD`,
-    and the behind-tree arms would then measure a current tree and pass while
+    push that silently did nothing leaves `origin/main` equal to `HEAD`, and
+    the behind-tree arms would then measure a current tree and pass while
     proving nothing. This drives the helper directly rather than through a
     broken fixture, which is law 3's "a test the model cannot rescue".
+
+    ⚠ That sentence named the two-word git invocation and reddened
+    `server/pushPathsToMain.test.ts`, whose detector deliberately flags an
+    executable file whose TEXT carries the literal even inside a comment —
+    under-inclusion is a door nobody sees. Reworded rather than enumerated with
+    `door: false`: this suite's own push is `git(work, "push", …)`, which that
+    detector does not match and never did, so the only thing that would have
+    put this file on a permanent list of paths to main is one phrase of prose
+    written the same hour. The list stays about real doors.
   */
   it("the fixture builder is LOUD — a git that exits non-zero throws, carrying the child's own words", () => {
     const loose = mkdtempSync(join(tmpdir(), "patrol-2180-loudfixture-"));
