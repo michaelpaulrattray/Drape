@@ -32,16 +32,18 @@
  * then fires and takes the directory. The decoy is still checked, as a
  * documented redundancy that costs nothing — never as the proof.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
   existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync,
-  readdirSync, rmSync, symlinkSync, writeFileSync,
+  readdirSync, rmSync, symlinkSync, utimesSync, writeFileSync,
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { inWorktreeOf, readJunctionAt, removeThrowawayDir } from "../scripts/lib/riteWorktree.mts";
+import { STALE_RITE_LOCK_MS, sweepStaleRiteWorktrees } from "../scripts/lib/staleRiteWorktrees.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { makeThrowawayRepo, type ThrowawayRepo } from "./testing/throwawayRepo";
 
 /* This suite spawns real `git` — #548's class. Without the declaration it runs
    inside vitest's 5s default and goes red under load on somebody's machine
@@ -179,9 +181,18 @@ describe("removeThrowawayDir — the recursive fallback is gated on the junction
 });
 
 describe("inWorktreeOf leaves no directory behind on the failure shape #654 measured", () => {
+  /* ⚠ A ONE-FILE REPOSITORY, NOT THIS ONE (#2212): what this arm reproduces is
+     a registration lost from under a live tree, and nothing in it asks about
+     this repository's files. A full checkout was 2.5 s on a quiet machine and
+     29.6 s into `%TEMP%` the day the rite refused a correct tree five times on
+     arms of exactly this shape. */
+  let repo: ThrowawayRepo;
+  beforeAll(() => { repo = makeThrowawayRepo(); }, CHILD_PROCESS_TEST_TIMEOUT_MS);
+  afterAll(() => repo?.remove());
+
   it("sweeps the throwaway even when `worktree remove` cannot find the tree", () => {
     let dir = "";
-    inWorktreeOf(ROOT, "HEAD", (tree) => {
+    inWorktreeOf(repo.root, "HEAD", (tree) => {
       dir = path.dirname(tree);
       expect(existsSync(path.join(tree, "package.json"))).toBe(true);
       /*
@@ -210,15 +221,14 @@ describe("inWorktreeOf leaves no directory behind on the failure shape #654 meas
       /* The remove genuinely fails now — asserted, so a future git that
          tolerates this cannot leave the arm quietly testing the happy path. */
       expect(() => execFileSync("git", ["worktree", "remove", "--force", tree],
-        { cwd: ROOT, encoding: "utf8", stdio: "pipe" })).toThrow();
+        { cwd: repo.root, encoding: "utf8", stdio: "pipe" })).toThrow();
       return null;
     });
     expect(dir).not.toBe("");
     /* No per-arm number: the file-level `vi.setConfig` above is the house rule
        ("declared once per file, never per arm"). 30 s is ~3x the load-adjusted
-       cost of this arm — it checks out ONE tree at 2.5 s solo, against the
-       sibling two-tree arm in `scriptGuards.test.ts` that measured 4.8 s solo
-       and 20.5 s inside a full 680-file run. */
+       cost of this arm as it stood then — ONE tree of the whole repository at
+       2.5 s solo. On the one-file fixture (#2212) it is a fraction of that. */
     expect(existsSync(dir), "the throwaway directory is the 7.8 GB that was leaking").toBe(false);
   });
 });
@@ -395,5 +405,132 @@ describe("the junction reading has ONE declaration and both recursive-delete roa
       writeFileSync(asFile, "not a directory at all");
       expect(readJunctionAt(asFile)).toBe("real");
     });
+  });
+});
+
+describe("the rite takes down the trees a killed run left LOCKED, and nothing else (#2212)", () => {
+  /*
+    The shape on the record: three `drape-rite-XXXXXX` + `/tree` registrations, LOCKED,
+    standing when a shift started on 2026-10-10 — the marker `git worktree add`
+    writes while it checks out, left by runs killed mid-checkout. Prune honours
+    the marker (#969), so nothing collected them, and clearing them by hand took
+    the rite's failure set from six arms to one.
+
+    Every arm builds the REAL shape: a real registration of a throwaway
+    repository, locked by git itself with the reason `add` uses, under a stand-in
+    for `%TEMP%`, aged by setting the marker's clock. Each negative arm keeps
+    exactly one condition false, so each condition is proven to be load-bearing.
+  */
+  let repo: ThrowawayRepo;
+  let tmpRoot = "";
+  let n = 0;
+  beforeAll(() => {
+    repo = makeThrowawayRepo();
+    tmpRoot = mkdtempSync(path.join(os.tmpdir(), "drape-fake-temp-"));
+  }, CHILD_PROCESS_TEST_TIMEOUT_MS);
+  afterAll(() => {
+    try { execFileSync("git", ["worktree", "prune"], { cwd: repo.root, stdio: "pipe" }); } catch { /* fixture */ }
+    repo?.remove();
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: repo.root, encoding: "utf8", stdio: "pipe" });
+  const registered = (tree: string): boolean =>
+    git("worktree", "list", "--porcelain").split(/\r?\n/)
+      .some((line) => line.startsWith("worktree ") && path.resolve(line.slice(9)).toLowerCase() === path.resolve(tree).toLowerCase());
+  const adminDirOf = (tree: string) => readFileSync(path.join(tree, ".git"), "utf8").replace(/^gitdir:\s*/, "").trim();
+  const ageLock = (tree: string, ms: number) => {
+    const marker = path.join(adminDirOf(tree), "locked");
+    const then = (Date.now() - ms) / 1000;
+    utimesSync(marker, then, then);
+  };
+  /** A rite-shaped tree, registered and LOCKED the way `add` locks it. */
+  const leftover = (opts: { parentName?: string; base?: string; lock?: boolean } = {}) => {
+    n += 1;
+    const parent = path.join(opts.base ?? tmpRoot, opts.parentName ?? `drape-rite-fx${String(n).padStart(4, "0")}`);
+    mkdirSync(parent, { recursive: true });
+    const tree = path.join(parent, "tree");
+    git("worktree", "add", "--quiet", "--detach", ...(opts.lock === false ? [] : ["--lock", "--reason", "initializing"]), tree, repo.sha);
+    return { parent, tree };
+  };
+  const STALE = STALE_RITE_LOCK_MS + 60_000;
+
+  it("SWEEPS a stale locked rite tree — registration and directory — and unlinks the junction before anything recursive", () => {
+    const { parent, tree } = leftover();
+    const decoy = path.join(tmpRoot, `decoy-${n}`);
+    mkdirSync(decoy);
+    writeFileSync(path.join(decoy, "CANARY.txt"), "the main checkout's node_modules");
+    symlinkSync(decoy, path.join(tree, "node_modules"), "junction");
+    ageLock(tree, STALE);
+    expect(registered(tree), "the fixture must start registered").toBe(true);
+
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot });
+    expect(result).toContainEqual({ tree, verdict: "swept" });
+    expect(registered(tree), "the registration no prune would collect").toBe(false);
+    expect(existsSync(parent), "the partial checkout nothing would delete").toBe(false);
+    expect(readFileSync(path.join(decoy, "CANARY.txt"), "utf8")).toBe("the main checkout's node_modules");
+  });
+
+  it("SWEEPS a stale locked registration whose directory is already gone", () => {
+    const { parent, tree } = leftover();
+    ageLock(tree, STALE);
+    rmSync(parent, { recursive: true, force: true });
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot });
+    expect(result).toContainEqual({ tree, verdict: "swept" });
+    expect(registered(tree)).toBe(false);
+  });
+
+  it("KEEPS a lock younger than the stale age — an `add` may be checking out right now", () => {
+    const { tree } = leftover();
+    ageLock(tree, 30_000);
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot });
+    expect(result).toContainEqual({ tree, verdict: "kept-young" });
+    expect(registered(tree)).toBe(true);
+    expect(existsSync(tree)).toBe(true);
+  });
+
+  it("LEAVES an UNLOCKED rite tree alone however old — it is prune's, or a live body", () => {
+    const { tree } = leftover({ lock: false });
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot, now: Date.now() + 10 * STALE });
+    expect(result.map((r) => r.tree)).not.toContain(tree);
+    expect(registered(tree)).toBe(true);
+  });
+
+  it("LEAVES a stale locked tree that is not the rite's shape — another parent name, or outside the temp root", () => {
+    const named = leftover({ parentName: `drape-review-fx${n + 1}` });
+    const elsewhere = leftover({ base: path.join(repo.root, "..", path.basename(tmpRoot) + "-elsewhere") });
+    ageLock(named.tree, STALE);
+    ageLock(elsewhere.tree, STALE);
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot });
+    expect(result.map((r) => r.tree)).not.toContain(named.tree);
+    expect(result.map((r) => r.tree)).not.toContain(elsewhere.tree);
+    expect(registered(named.tree)).toBe(true);
+    expect(registered(elsewhere.tree)).toBe(true);
+    git("worktree", "unlock", elsewhere.tree);
+    git("worktree", "remove", "--force", elsewhere.tree);
+    rmSync(path.dirname(elsewhere.parent), { recursive: true, force: true });
+  });
+
+  it("KEEPS a stale locked tree whose node_modules is a REAL directory — not a shape this module makes", () => {
+    const { tree } = leftover();
+    mkdirSync(path.join(tree, "node_modules"));
+    writeFileSync(path.join(tree, "node_modules", "KEEP.txt"), "not ours to judge");
+    ageLock(tree, STALE);
+    const result = sweepStaleRiteWorktrees(repo.root, { tmpRoot });
+    expect(result).toContainEqual({ tree, verdict: "kept-real-node-modules" });
+    expect(registered(tree)).toBe(true);
+    expect(existsSync(path.join(tree, "node_modules", "KEEP.txt"))).toBe(true);
+  });
+});
+
+describe("the rite calls the sweep before its first checkout (#2212)", () => {
+  it("is invoked in deploy-rite.mts, after the rite lock and before the first inWorktreeOf", () => {
+    const rite = readFileSync(path.join(ROOT, "scripts", "deploy-rite.mts"), "utf8");
+    const sweep = rite.indexOf("sweepStaleRiteWorktrees(path.resolve");
+    const lock = rite.indexOf("acquireRiteLock({");
+    const firstCheckout = rite.indexOf("inWorktreeOf(path.resolve");
+    expect(sweep, "the sweep is not called — a control that is not invoked does not exist").toBeGreaterThan(-1);
+    expect(sweep).toBeGreaterThan(lock);
+    expect(sweep).toBeLessThan(firstCheckout);
   });
 });

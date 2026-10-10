@@ -89,6 +89,7 @@ import path from "node:path";
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { inWorktreeOf } from "./lib/riteWorktree.mts";
+import { sweepStaleRiteWorktrees } from "./lib/staleRiteWorktrees.mts";
 import { closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
@@ -360,6 +361,27 @@ const lockFs: RiteLockFs = { mkdirSync, writeFileSync, readFileSync, unlinkSync 
        swallowed, because it is the one reading that says the exclusion failed. */
     if (outcome === "not-ours") console.log(`[deploy-rite] the rite lock is no longer ours — ${RITE_LOCK_PATH}`);
   });
+}
+
+/*
+  THE TREES A KILLED RUN LEFT LOCKED GO BEFORE THIS RUN MAKES ITS OWN (#2212).
+
+  `git worktree add` locks a registration while it checks out, and prune
+  honours the lock — so a rite killed mid-checkout leaves a registration and a
+  partial checkout that nothing will ever collect. Three stood on 2026-10-10,
+  two of them another seat's, and clearing them took the failure set from six
+  arms to one: each refused run made the next refusal likelier. Here, under the
+  rite lock and before the first checkout below, so no other rite is mid-add;
+  the sweep's own age rule covers a seat's suite that might be. It never
+  refuses — a tree it could not take is printed and left, and the run goes on.
+*/
+try {
+  for (const swept of sweepStaleRiteWorktrees(path.resolve(import.meta.dirname, ".."))) {
+    if (swept.verdict === "kept-young") continue;
+    say(`  stale rite worktree: ${swept.verdict} — ${swept.tree}`);
+  }
+} catch (error) {
+  say(`  stale rite worktree sweep could not run — ${String((error as Error)?.message ?? error).split("\n")[0]}`);
 }
 
 /*
