@@ -17,6 +17,8 @@ import {
   subscriptionItemsOf,
   readSubscriptionBillingState,
   planCreditsAddonPriceId,
+  planOfPlanPrice,
+  readInvoiceForRenewalCheck,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
@@ -731,6 +733,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   }
   const planTier = mappedTier ?? (userWithCredits.credits?.planTier || "free");
 
+  /* THE RENEWAL MISMATCH FLAG (#2190, his word: "add a check that compares the
+     app's plan with Stripe's price at renewal and flags any mismatch before
+     Stripe charges"). Read-only and never fatal — see its own docblock. */
+  await flagRenewalPlanMismatch(userId, live, planTier);
+
   // The period lives on the subscription ITEM on this API version (#664 —
   // see subscriptionPeriods.ts): the sub-level read was writing a fabricated
   // month into currentPeriodStart/End on every event.
@@ -786,6 +793,95 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
 
   log.info(`[Webhook] Updated subscription for user ${userId}: ${planTier} (${live.status}, from the live read)`);
   return { success: true, message: `Updated subscription for user ${userId}` };
+}
+
+/**
+ * FLAG A RENEWAL THAT IS ABOUT TO BILL A PLAN THE APP DOES NOT HOLD (#2190).
+ *
+ * **When.** Stripe rolls the period and creates the renewal invoice as a
+ * DRAFT in the same moment, and `customer.subscription.updated` (an event this
+ * endpoint already receives) fires for the roll. The draft is charged about an
+ * hour later — measured on a test clock against this account, whose endpoint
+ * is not subscribed to `invoice.created`: one minute after the roll the
+ * renewal was `draft` with `next_payment_attempt` exactly 3,600 s after it,
+ * and two hours after the roll it was `paid`. So this check runs on the event
+ * we already get and acts only while the subscription's latest invoice is a
+ * `subscription_cycle` draft — before the charge. `invoice.created` is the
+ * card's suggested hook and would need a registration on the endpoint; it is
+ * not needed for this.
+ *
+ * **What is compared.** The plan of the price Stripe will bill (the base
+ * item's `lookup_key`, read by {@link planOfPlanPrice}) against the plan this
+ * handler is about to record for the account. The second is the honest "app's
+ * plan" at this instant: a decrease scheduled for the renewal has already put
+ * its phase's plan on the subscription, so comparing against the row BEFORE
+ * this write would flag every scheduled downgrade on its own renewal.
+ *
+ * **What it does.** A warning audit row — the admin overview's alerts feed
+ * and the staff audit log's Billing filter — naming both plans, the invoice,
+ * the amount and when it will be charged. It does NOT fix anything: which side
+ * is wrong is a person's call (his: *"flags any mismatch"*).
+ *
+ * **What it never does** is fail the event or throw. It is a flag on a road
+ * whose real work is the write below; a Stripe or database blip here is
+ * logged and the write goes ahead. A price it cannot read (no lookup key, an
+ * arranged-directly price) answers "cannot say", not "agrees", and is logged.
+ */
+async function flagRenewalPlanMismatch(
+  userId: number,
+  live: Stripe.Subscription,
+  appPlan: string,
+): Promise<void> {
+  try {
+    const basePrice = subscriptionItemsOf(live).base?.price;
+    const billed = planOfPlanPrice(basePrice);
+    if (!billed) {
+      log.info(
+        `[Webhook] Renewal check: subscription ${live.id}'s plan price (${basePrice?.lookup_key ?? "no lookup key"}) is not one this catalogue composes — cannot compare it with user ${userId}'s plan`,
+      );
+      return;
+    }
+    if (billed.plan === appPlan) return;
+
+    const latest = (live as any).latest_invoice;
+    const invoiceId: string | null =
+      (typeof latest === "string" ? latest : latest?.id) ?? null;
+    if (!invoiceId) return;
+    const invoice = await readInvoiceForRenewalCheck(invoiceId);
+    if (!invoice || invoice.status !== "draft" || invoice.billingReason !== "subscription_cycle") {
+      return;
+    }
+
+    /* `detail`, not an inline literal on `metadata` — an AUDIT row, not a
+       Stripe write (environmentTag.test.ts reads inline blocks here as Stripe
+       writes). */
+    const mismatchDetail = {
+      targetUserId: userId,
+      stripeSubscriptionId: live.id,
+      stripeInvoiceId: invoiceId,
+      appPlan,
+      billedPlan: billed.plan,
+      billedInterval: billed.interval,
+      billedLookupKey: basePrice?.lookup_key ?? null,
+      amountDueCents: invoice.amountDueCents,
+      currency: invoice.currency,
+      chargesAt: invoice.nextPaymentAttemptSec
+        ? new Date(invoice.nextPaymentAttemptSec * 1000).toISOString()
+        : null,
+      reason: `The renewal is about to bill ${billed.plan} (${billed.interval}) while the app holds ${appPlan} — check before the charge; nothing was changed`,
+    };
+    log.error(mismatchDetail, "[Webhook] RENEWAL PLAN MISMATCH — flagged for staff, nothing changed");
+    await logAuditEvent({
+      userId,
+      action: AUDIT_ACTIONS.BILLING_RENEWAL_PLAN_MISMATCH,
+      resourceType: "billing",
+      resourceId: live.id,
+      metadata: mismatchDetail,
+      severity: "warning",
+    });
+  } catch (err) {
+    log.warn({ err, subscriptionId: live.id }, "[Webhook] Renewal check could not run — the subscription write goes ahead");
+  }
 }
 
 /**
@@ -1504,6 +1600,55 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
 
   const userId = userWithCredits.id;
 
+  /* ⚠ **A PLAN CHANGE THAT WAS HELD IS NOT A PLAN THAT FAILED (#2190).** Every
+     plan change now asks Stripe to hold it until its invoice is paid
+     (`pending_if_incomplete`, `updateSubscriptionPlan`). When that charge is
+     declined the subscription is untouched — measured in test mode: still on
+     the old price, still `active` — and Stripe sends this event with
+     `next_payment_attempt` null, which the final-failure road below reads as
+     "the plan is dead": it would cancel a customer's paid plan and drop them
+     to Free because a card failed on an UPGRADE. So a failed change invoice on
+     a subscription Stripe still holds as `active` ends here, with the change
+     cancelled and everything else left exactly as it was.
+
+     The discriminator is read live, never off the payload: a change made on
+     the old road (before #2190, applied at once) left the subscription
+     `past_due` on the same decline, measured the same way, and keeps the
+     roads below — the upgrade branch for a grant, the cancel for a switch. */
+  if ((invoice as any).billing_reason === "subscription_update") {
+    const changeRead = await retrieveLiveSubscription(subscriptionId);
+    if (changeRead.outcome === "failed") {
+      log.error(
+        `[Webhook] A plan-change invoice ${invoice.id} failed for user ${userId} but subscription ${subscriptionId} could not be read live — failing the event so Stripe redelivers`,
+      );
+      return {
+        success: false,
+        message: `Subscription ${subscriptionId} could not be read live from Stripe — redeliver to retry`,
+      };
+    }
+    if (changeRead.outcome === "found" && changeRead.subscription.status === "active") {
+      /* Both voids are idempotent: `changePlan` has normally voided the
+         invoice already (`already-closed` costs one read), and no settlement
+         is queued for a held change — the void is the belt for one queued by
+         an earlier road. */
+      await voidPlanChangeSettlement(invoice.id as string);
+      const heldVoid = await voidInvoice(invoice.id as string);
+      if (heldVoid === "failed") {
+        return {
+          success: false,
+          message: `The held plan change's invoice ${invoice.id} for user ${userId} could not be voided — redeliver to retry`,
+        };
+      }
+      log.info(
+        `[Webhook] Plan-change invoice ${invoice.id} for user ${userId} was not paid — the change was held, never applied, and is cancelled; the plan and price are unchanged`,
+      );
+      return {
+        success: true,
+        message: `Plan change for user ${userId} was not paid — held change cancelled, plan unchanged`,
+      };
+    }
+  }
+
   // Check if Stripe has exhausted all retries (next_payment_attempt is null)
   const nextAttempt = (invoice as any).next_payment_attempt;
   const isFinalFailure = !nextAttempt;
@@ -1530,10 +1675,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
          relay's finding on head e85357f6a, repair 3). `changePlan` wrote the
          new tier the moment Stripe accepted the change; nothing paid for it.
          Under the same stale guard as every downgrade: an event about an old
-         subscription never writes over a newer one. Whether Stripe's own
-         price is reverted too is the founder's decision and is not built
-         here — until it is, a later `subscription.updated` can re-derive the
-         upgraded tier from Stripe, which the relay has been told. */
+         subscription never writes over a newer one. ⚠ Since #2190 this branch
+         serves only a change made on the OLD road (applied before it was
+         paid, so Stripe still holds the new price): every change since is
+         held by Stripe until paid, and a declined one ends in the
+         held-change branch at the top of this handler instead. Stripe's
+         price on an old-road change is not reverted here; if it survives to
+         a renewal, the renewal check flags it. */
       const storedSub = userWithCredits.credits?.stripeSubscriptionId;
       const previousTier = failedChange.previousPlanTier ?? null;
       let revertFailed = false;

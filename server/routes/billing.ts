@@ -20,6 +20,7 @@ import {
   readSubscriptionBillingState,
   quotePlanChange,
   updateSubscriptionPlan,
+  PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
   getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
@@ -1398,6 +1399,32 @@ export const billingRouter = router({
           interval: quote.targetInterval,
         });
       });
+
+      /* ⚠ **A CHARGE THAT DID NOT GO THROUGH CHANGED NOTHING, AND IS SAID SO
+         (#2190).** Stripe held the change instead of applying it and
+         `updateSubscriptionPlan` cancelled the hold, so the plan, the price and
+         the record are all where they were. Nothing below this line may run:
+         no settlement is queued (there is no money for it to wait on), and the
+         record is NOT written to the new plan — which is what used to make a
+         declined upgrade read as an upgrade. The sentence is spoken, so the
+         customer reads it instead of the client's "we lost contact" fallback,
+         which would send them to check a plan that certainly did not change. */
+      if (result.paymentDeclined) {
+        log.warn(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+            heldChangeCancelled: result.heldChangeCancelled ?? null,
+          },
+          "[Billing] plan change refused — the charge did not go through and the change was not applied",
+        );
+        throw spokenError({
+          code: "BAD_REQUEST",
+          message: PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+        });
+      }
 
       if (!result.success) {
         throw new TRPCError({

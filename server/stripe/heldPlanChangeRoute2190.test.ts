@@ -1,0 +1,183 @@
+/**
+ * `billing.changePlan` WHEN THE CHARGE DID NOT GO THROUGH (#2190) — driven
+ * through the real router, with Stripe's service, the database, the schedule
+ * module and the settlement module doubled at their boundaries.
+ *
+ * Before #2190 a declined upgrade still returned success: the record was
+ * written to the new plan, a settlement was queued, and the customer read
+ * "Upgraded to Pro! Your bonus credits land as soon as the payment settles".
+ * Stripe now holds an unpaid change and `updateSubscriptionPlan` cancels the
+ * hold, so the honest answer is a refusal in the customer's own words — and
+ * nothing after it may run. The paid change is this file's positive control:
+ * the same entrance, the same quote, and every one of those steps happens.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../db", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getUserById: vi.fn(),
+  getSubscriptionByUserId: vi.fn(),
+  updateUserSubscription: vi.fn(),
+  addCredits: vi.fn(),
+  deductCredits: vi.fn(),
+  getUserCredits: vi.fn(),
+}));
+
+vi.mock("./stripeService", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./stripeService")>();
+  return {
+    stripe: {},
+    PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE: actual.PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+    getOrCreateStripeCustomer: vi.fn(),
+    createSubscriptionCheckoutSession: vi.fn(),
+    createTopupCheckoutSession: vi.fn(),
+    createCustomerPortalSession: vi.fn(),
+    getSubscriptionDetails: vi.fn(),
+    cancelSubscription: vi.fn(),
+    reactivateSubscription: vi.fn(),
+    readSubscriptionBillingState: vi.fn(),
+    quotePlanChange: vi.fn(),
+    updateSubscriptionPlan: vi.fn(),
+    getInvoiceStatus: vi.fn(),
+    getCustomerInvoices: vi.fn(),
+    getAllCustomerInvoices: vi.fn(),
+  };
+});
+
+vi.mock("./subscriptionSchedule", () => ({
+  scheduleSubscriptionChange: vi.fn(),
+  releaseScheduleBeforeWrite: vi.fn(),
+  readPendingPlanChange: vi.fn(),
+}));
+
+vi.mock("./planChangeSettlement", () => ({
+  queuePlanChangeSettlement: vi.fn(),
+  applyPlanChangeSettlement: vi.fn(),
+}));
+
+vi.mock("../auditLog", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  logAuditEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { billingRouter } from "../routes/billing";
+import {
+  addCredits,
+  getSubscriptionByUserId,
+  getUserById,
+  updateUserSubscription,
+} from "../db";
+import {
+  PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+  quotePlanChange,
+  readSubscriptionBillingState,
+  updateSubscriptionPlan,
+} from "./stripeService";
+import { releaseScheduleBeforeWrite } from "./subscriptionSchedule";
+import { applyPlanChangeSettlement, queuePlanChangeSettlement } from "./planChangeSettlement";
+import { logAuditEvent } from "../auditLog";
+import { SpokenError } from "../_core/spokenError";
+
+const USER = { id: 42, approved: true, suspendedAt: null, lockedUntil: null };
+const caller = () => billingRouter.createCaller({ user: USER, req: { headers: {} } } as never);
+const PERIOD_END_SEC = 1_780_000_000;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(getUserById).mockResolvedValue({ id: 42, frozenAt: null, email: "c@example.com" } as never);
+  vi.mocked(getSubscriptionByUserId).mockResolvedValue({
+    stripeSubscriptionId: "sub_1",
+    stripeCustomerId: "cus_1",
+    planTier: "starter",
+  } as never);
+  vi.mocked(readSubscriptionBillingState).mockResolvedValue({
+    subscriptionItemId: "si_base",
+    currentPlan: "starter",
+    currentInterval: "monthly",
+    periodStartSec: PERIOD_END_SEC - 30 * 86_400,
+    periodEndSec: PERIOD_END_SEC,
+    currentCreditUnits: 0,
+    creditItemId: null,
+    endsAtSec: null,
+    status: "active",
+    collectionPaused: false,
+  } as never);
+  vi.mocked(quotePlanChange).mockReturnValue({
+    kind: "same-interval",
+    currentInterval: "monthly",
+    targetInterval: "monthly",
+    isUpgrade: true,
+    proratedAmount: 4_100,
+    immediateCharge: 4_100,
+    creditBalance: 0,
+    newPlanPrice: 6_800,
+    currentPlanPrice: 2_700,
+    currentCreditUnits: 0,
+    targetCreditUnits: 0,
+    daysRemaining: 20,
+    totalDays: 30,
+    creditAdjustment: 90_000,
+    creditUnwind: 0,
+    spentShareCredits: 0,
+    spentShareCharge: 0,
+    deferred: false,
+    effectiveAtSec: PERIOD_END_SEC,
+  } as never);
+  vi.mocked(releaseScheduleBeforeWrite).mockResolvedValue({ outcome: "nothing-to-release" } as never);
+  vi.mocked(updateUserSubscription).mockResolvedValue({ success: true });
+  vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: true } as never);
+  vi.mocked(applyPlanChangeSettlement).mockResolvedValue({ outcome: "applied", creditsMoved: 90_000 } as never);
+});
+
+describe("changePlan — a charge that did not go through", () => {
+  it("refuses in the customer's words, and writes no plan, queues no credits and logs no plan change", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      paymentDeclined: true,
+      heldChangeCancelled: true,
+      invoiceId: "in_held",
+      invoiceStatus: null,
+      error: PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+    });
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE);
+    /* Marked as a sentence written for a person, so the formatter flags it
+       `spoken` and the client shows it rather than its own fallback. */
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as { code?: string }).code).toBe("BAD_REQUEST");
+
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+    expect(queuePlanChangeSettlement).not.toHaveBeenCalled();
+    expect(applyPlanChangeSettlement).not.toHaveBeenCalled();
+    expect(addCredits).not.toHaveBeenCalled();
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it("POSITIVE CONTROL — a paid change still writes the new plan, settles its credits and is logged", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: true,
+      invoiceId: "in_paid",
+      invoiceStatus: "paid",
+      invoicedAmount: 4_100,
+    });
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(result.success).toBe(true);
+    expect(updateUserSubscription).toHaveBeenCalledWith(42, expect.objectContaining({ planTier: "pro" }));
+    expect(queuePlanChangeSettlement).toHaveBeenCalledTimes(1);
+    expect(applyPlanChangeSettlement).toHaveBeenCalledWith("in_paid");
+    expect(logAuditEvent).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the sentence itself", () => {
+  it("names no engine or vendor and says what to do, in the label the customer sees", () => {
+    expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).not.toMatch(/stripe|invoice|pending|webhook/i);
+    expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).toContain("Update card");
+    expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).toContain("has not changed");
+  });
+});

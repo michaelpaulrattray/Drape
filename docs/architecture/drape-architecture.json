@@ -15027,6 +15027,14 @@
       "path": "server/stripe/environmentTag.test.ts"
     },
     {
+      "id": "test:server/stripe/heldPlanChange2190.test.ts",
+      "path": "server/stripe/heldPlanChange2190.test.ts"
+    },
+    {
+      "id": "test:server/stripe/heldPlanChangeRoute2190.test.ts",
+      "path": "server/stripe/heldPlanChangeRoute2190.test.ts"
+    },
+    {
       "id": "test:server/stripe/invoiceBilledPlanGrant.test.ts",
       "path": "server/stripe/invoiceBilledPlanGrant.test.ts"
     },
