@@ -11307,6 +11307,10 @@
       "path": "client/src/features/castingV2/personaDoor0.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/personaOwnWords2197.test.ts",
+      "path": "client/src/features/castingV2/personaOwnWords2197.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/personaReads2196.test.ts",
       "path": "client/src/features/castingV2/personaReads2196.test.ts"
     },

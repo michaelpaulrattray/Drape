@@ -4890,7 +4890,9 @@
   font: 400 11.5px var(--font-sans);
   cursor: pointer;
 }
-.dpc-persona__cancel:hover { border-color: var(--ink); }
+.dpc-persona__cancel:hover:not(:disabled) { border-color: var(--ink); }
+/* Reword it wears this shape and is switched off while a keep is in flight. */
+.dpc-persona__cancel:disabled { cursor: default; opacity: 0.4; }
 
 /* The badge sits where a card's action sits, in the label's own register, so
    it reads as a note about the card and never as a control. */
@@ -5017,3 +5019,46 @@
   text-underline-offset: 2px;
 }
 .dpc-persona__back:hover { color: var(--ink); }
+
+/* ---- door 2 of #2137 / slice 2 of #2139: "say it your way" (#2197, #2205) ----
+
+   His `03-door2-dark.png` and `05-your-way-dark.png`: the ask in the ink
+   colour, a plain box, and the line it would store set off by a rule on its
+   left in a sunk well — so the customer reads it as OUR reading of their
+   sentence rather than as more of their own words. One set of rules for both
+   cards, because it is one door on two cards. */
+.dpc-persona__ownPrompt { font: 500 11.5px/1.5 var(--font-sans); color: var(--ink); margin: 0; }
+
+/* The base field pulls itself out by its own padding so the read view and the
+   open box sit on one edge; this box has no read view to align with, so it
+   sits inside the card's edge like every other input in the room. */
+.dpc-persona__ownField { margin: 0; padding: 8px 10px; }
+.dpc-persona__ownField:read-only { color: var(--metaStrong); }
+
+.dpc-persona__result {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 10px;
+  border-left: 2px solid var(--lineStrong);
+  border-radius: 0 8px 8px 0;
+  background: var(--well);
+}
+.dpc-persona__resultHead { font: 400 10.5px/1.45 var(--font-sans); color: var(--meta); margin: 0; }
+.dpc-persona__resultBody { font: 400 11.5px/1.5 var(--font-sans); color: var(--ink); margin: 0; }
+
+/* The footer: a rule, then the reassurance, then the links — his frames put
+   the cross-link on the left and the way back on the right. */
+.dpc-persona__assure {
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.dpc-persona__links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.dpc-persona__backEnd { margin-left: auto; }

@@ -26,7 +26,8 @@ import {
   PERSONA_READS_FAILED,
   PERSONA_READS_TITLE,
   PERSONA_READS_WORKING,
-  PersonaReadsDoorRow,
+  PersonaDoorRows,
+  personaDoorRowSpecs,
   personaReadsListSubtitle,
   personaReadsReassurance,
   personaReadsRowSubtitle,
@@ -168,15 +169,16 @@ describe("where the door is offered, which is read off his frame", () => {
       from here — this holds the CONDITION in the source instead, beside the
       rendered arms above that prove the shut case.
     */
-    expect(source(CARDS)).toContain("{editing && readsDoor ? (");
+    expect(source(CARDS)).toContain("<PersonaDoorRows doors={doors}");
+    expect(source(CARDS)).toMatch(/\{editing \? \(\s*<PersonaDoorRows doors=\{doors\}/);
     expect(renderToStaticMarkup(
-      createElement(PersonaReadsDoorRow, { name: "Pigman", onOpen: vi.fn(), disabled: false }),
+      createElement(PersonaDoorRows, { doors: personaDoorRowSpecs("personality", "Pigman", door(), null), disabled: false }),
     )).toContain("or</span>");
   });
 
   it("the row says what the door is, in his words", () => {
     const html = renderToStaticMarkup(
-      createElement(PersonaReadsDoorRow, { name: "Pigman", onOpen: vi.fn(), disabled: false }),
+      createElement(PersonaDoorRows, { doors: personaDoorRowSpecs("personality", "Pigman", door(), null), disabled: false }),
     );
     expect(html).toContain(PERSONA_READS_TITLE);
     expect(html).toContain(personaReadsRowSubtitle("Pigman"));
@@ -191,30 +193,15 @@ describe("where the door is offered, which is read off his frame", () => {
     expect(html).not.toContain("dpc-persona__field");
   });
 
-  /* The unbuilt sibling is card #2197 — named in a comment, because the token
-     guard reads a `#2197` in code as a hex literal and is right to. Its SERVER
-     half is on main; its client half is not, and this arm is what keeps the
-     row from arriving before the door behind it. */
-  it("⚠ *Say it your way* is NOT drawn, because its own card is not built", () => {
-    /*
-      His design has two rows here. A row that opens nothing is the lesser path
-      shipped silently — the same call #2205 recorded for the voice card.
-
-      ⚠ **THE FIRST SHAPE OF THIS ARM SURVIVED ITS OWN SABOTAGE.** It asserted
-      against a SHUT card, which draws no rows at all, so an unbuilt row added
-      to the row component was invisible to it — and its source check looked
-      for `Say it your way"` with a trailing quote, which a bare JSX text node
-      does not carry. It now renders the row component itself, which is the
-      only place the second row could be added, and counts the doors.
-    */
-    const row = renderToStaticMarkup(
-      createElement(PersonaReadsDoorRow, { name: "Pigman", onOpen: vi.fn(), disabled: false }),
-    );
-    expect(row).not.toContain("Say it your way");
+  /* Door 2 (card 2197, named in a comment because the token guard reads a
+     hash-number in code as a hex literal) arrived with its client half; its
+     own suite is personaOwnWords2197.test.ts. This arm keeps door 1 honest
+     about being FIRST when both are handed over, and ALONE when door 2 is not. */
+  it("door 1 is the first of the rows, and the only one when door 2 is not handed over", () => {
+    const alone = personaDoorRowSpecs("personality", "Pigman", door(), null);
+    expect(alone.map((row) => row.title)).toEqual([PERSONA_READS_TITLE]);
+    const row = renderToStaticMarkup(createElement(PersonaDoorRows, { doors: alone, disabled: false }));
     expect(row.match(/<button/g) ?? []).toHaveLength(1);
-    /* And the reason, held rather than asserted once: no client caller for the
-       translation exists, so a row drawn here would open onto nothing. */
-    expect(source(ROOM)).not.toContain("translateOwnWords");
     expect(drawCard(door({ state: "shut", reads: [] }))).not.toContain("Say it your way");
   });
 });
