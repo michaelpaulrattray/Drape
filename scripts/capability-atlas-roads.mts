@@ -345,6 +345,36 @@ export const ROADS: readonly Road[] = [
     ],
   },
   {
+    id: "persona-say-it-your-way",
+    title: "Say it your way — the customer's own sentence, turned into a cast's personality or voice line",
+    entrances: ["server/routes/castingV2.ts", "server/castingV2/castPersonaTranslate.ts"],
+    procedures: ["castingV2.translateOwnWords"],
+    summary:
+      "#2197 (the Personality card) and #2205 (the Voice card), one road for both: the customer types one sentence "
+      + "about their cast the way they would say it to a friend, and one press returns the line the card would store "
+      + "— his craft note, 'the translation from feeling-words to camera-words is the engine's job, never the "
+      + "customer's'. ONE house-paid text call per press under its own census word `persona.translate`, text only, "
+      + "on the persona reader's model (`castPersonaModel`), with the Sign's own craft blocks "
+      + "(`castPersonaCraftRules`) rather than a second copy. It WRITES NOTHING: Keep this is "
+      + "`castingV2.editCastPersonaField` carrying `ownWords`, which stores the line and the sentence in one "
+      + "owner-scoped statement (`personalityOwnWords` / `voiceOwnWords`, migration 0079). Free to the customer; "
+      + "rewording is bounded by `RATE_LIMITS.castPersonaTranslate`, sixty presses an hour per account.",
+    doors: [],
+    doorsNote:
+      "THIS ROAD DECLARES NO DOOR, on re-imagine's own argument. Outside casting it is `requireCastingV2`'s "
+      + "refusal; another account's Cast is `NOT_FOUND` before the engine is asked; the ceiling is "
+      + "`RATE_LIMITS.castPersonaTranslate` (`server/security/rateLimit.ts`); and every other outcome is the free "
+      + "answer `{ kind: \"nothing\" }` — no text engine configured, the call failed or came back cut off, or the "
+      + "line could not be fitted to its cap at a sentence end (`translateCastPersonaOwnWords`, "
+      + "`server/castingV2/castPersonaTranslate.ts`). No corpus row can reach it: the corpus drives "
+      + "`refineCandidate` only.",
+    flags: ["CASTING_V2_SCOPE"],
+    notes: [
+      "SERVER HALF FIRST, declared: the procedure, the store and Keep this's `ownWords` ship before the client door, on the relay's instruction; the door's box, its stage word and its frames follow in the client PR.",
+      "The customer's own sentence is the `masterPrompt` family: on `REFUSING_KEYS` (both columns and the `ownWords` input field), on no staff projection, nulled by the permanent-deletion tombstone, and never written into a log line by this road.",
+    ],
+  },
+  {
     id: "concept-upload",
     title: "Upload a concept — a picture in, a description of the person out",
     entrances: ["server/routes/castingV2.ts", "server/castingV2/conceptDescribe.ts"],

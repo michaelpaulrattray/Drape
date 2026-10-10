@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 195
+      "moduleCount": 196
     },
     {
       "id": "domain:castingV2",
@@ -3801,6 +3801,12 @@
     {
       "id": "module:server/castingV2/castPersonaProjection.ts",
       "path": "server/castingV2/castPersonaProjection.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castPersonaTranslate.ts",
+      "path": "server/castingV2/castPersonaTranslate.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7990,6 +7996,16 @@
       "id": "route:castingV2.sign",
       "namespace": "castingV2",
       "name": "sign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.translateOwnWords",
+      "namespace": "castingV2",
+      "name": "translateOwnWords",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -12505,6 +12521,14 @@
       "path": "server/castingV2/castPersonaProjection.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaTranslate.test.ts",
+      "path": "server/castingV2/castPersonaTranslate.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPersonaTranslateEntrance.test.ts",
+      "path": "server/castingV2/castPersonaTranslateEntrance.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castProjection.test.ts",
       "path": "server/castingV2/castProjection.test.ts"
     },
@@ -14077,6 +14101,10 @@
       "path": "server/gdprExportBounded.test.ts"
     },
     {
+      "id": "test:server/gdprExportPersona.test.ts",
+      "path": "server/gdprExportPersona.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },
@@ -14823,6 +14851,10 @@
     {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
+    },
+    {
+      "id": "test:server/riteFailureMemory.test.ts",
+      "path": "server/riteFailureMemory.test.ts"
     },
     {
       "id": "test:server/riteLock.test.ts",
@@ -26459,6 +26491,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/db/castPersonaField.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34475,6 +34537,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castPersonaTranslate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castProjection.ts",
       "kind": "imports"
     },
@@ -34596,6 +34663,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/sheetPreview.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
     {

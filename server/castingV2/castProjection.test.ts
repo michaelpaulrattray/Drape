@@ -744,9 +744,27 @@ describe("N2b's two lines on the signed Cast projection", () => {
       lineage,
     });
     expect(projection.persona).toEqual({
-      personality: { text: "Unhurried, hands still.", drafted: true },
-      voice: { text: "Low and level.", drafted: true },
+      personality: { text: "Unhurried, hands still.", drafted: true, ownWords: null },
+      voice: { text: "Low and level.", drafted: true, ownWords: null },
     });
+  });
+
+  /* "Say it your way" (#2197 / #2205): the customer's own sentence reaches the
+     room beside the line it produced — through the payload the room is really
+     handed, not only through the little derivation. */
+  it("carries the customer's own sentence beside the line it was kept from", () => {
+    const projection = projectSignedCast({
+      model: model({
+        personality: "Shoulders squared at the door.",
+        voice: "Gravel, slow.",
+        personalityEditedAt: new Date("2026-10-10T01:00:00Z"),
+        personalityOwnWords: "Basically a tired old bouncer.",
+      } as Partial<Model>),
+      assets: ledger(anchor(), asset()),
+      lineage,
+    });
+    expect(projection.persona?.personality?.ownWords).toBe("Basically a tired old bouncer.");
+    expect(projection.persona?.voice?.ownWords).toBeNull();
   });
 
   it("carries null for every Cast signed before N2b, so the room draws no card", () => {

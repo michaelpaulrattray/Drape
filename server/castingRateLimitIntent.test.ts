@@ -170,6 +170,10 @@ describe("which bucket each casting procedure was handed", () => {
          spend; a bucket of its own would be a third window to reason about for
          a write that costs nothing and renders nothing. */
       editCastPersonaField: "castingSheet",
+      /* "SAY IT YOUR WAY" (#2197 / #2205) — free to the customer, one house
+         text call per press, so its own bucket for re-imagine's reason: a
+         window nothing else spends, bounding the house's money per account. */
+      translateOwnWords: "castPersonaTranslate",
       deleteCast: "castingSheet",
       getCast: "castingRead",
       /* Panel v2's read — a read, on the read bucket, like its v1 sibling. */

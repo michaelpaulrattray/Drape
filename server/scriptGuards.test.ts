@@ -333,8 +333,17 @@ describe("the rite's guard refusal names what it can read, not a culprit it gues
   });
 
   it("POSITIVE CONTROL — the assertions fail on the sentence they replaced", () => {
+    /*
+      ⚠ RE-ANCHORED FOR #2212, AND THIS ARM IS WHY THE RE-ANCHORING HAPPENED AT
+      ALL. The anchor used to end on `a refusal that repeats on the same commit
+      is the first kind.");`, which #2212 replaced with the remembered-runs
+      verdict — so the sabotage matched nothing, `before` equalled `block`, and
+      this control reddened on exactly the thing it exists for: an arm whose
+      sabotage has gone inert looks identical to an arm that is passing. The end
+      anchor is now the die call's own close after `memory.sentence`.
+    */
     const before = block
-      .replace(/⚠ this is ONE OF TWO THINGS[\s\S]*?a refusal that repeats on the same commit is the first kind\."\);/,
+      .replace(/⚠ this is ONE OF TWO THINGS[\s\S]*?memory\.sentence[\s\S]*?\);/,
         '  repair: fix the named script in the commit, commit, re-run");');
     expect(before).not.toEqual(block); // the sabotage landed
     expect(before).not.toMatch(/ONE OF TWO THINGS/);

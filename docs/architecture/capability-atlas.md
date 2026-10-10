@@ -194,6 +194,19 @@ _Called as:_ `castingV2.reimagine`
 - AN EDITING INSTRUCTION IN THE BOX ('make her young', '50s') is applied by the SAME press and returns one clean brief (decision 11) — never appended to the sentence, never handled on the way to the engine.
 - The reader is `about: "author"` on the engine, so a census pricing authored prose counts these presses with the roll's author calls rather than missing them.
 
+### Say it your way — the customer's own sentence, turned into a cast's personality or voice line
+
+#2197 (the Personality card) and #2205 (the Voice card), one road for both: the customer types one sentence about their cast the way they would say it to a friend, and one press returns the line the card would store — his craft note, 'the translation from feeling-words to camera-words is the engine's job, never the customer's'. ONE house-paid text call per press under its own census word `persona.translate`, text only, on the persona reader's model (`castPersonaModel`), with the Sign's own craft blocks (`castPersonaCraftRules`) rather than a second copy. It WRITES NOTHING: Keep this is `castingV2.editCastPersonaField` carrying `ownWords`, which stores the line and the sentence in one owner-scoped statement (`personalityOwnWords` / `voiceOwnWords`, migration 0079). Free to the customer; rewording is bounded by `RATE_LIMITS.castPersonaTranslate`, sixty presses an hour per account.
+
+_Entrances:_ `server/routes/castingV2.ts` · `server/castingV2/castPersonaTranslate.ts`  ·  _Flags:_ `CASTING_V2_SCOPE`
+
+_Called as:_ `castingV2.translateOwnWords`
+
+> THIS ROAD DECLARES NO DOOR, on re-imagine's own argument. Outside casting it is `requireCastingV2`'s refusal; another account's Cast is `NOT_FOUND` before the engine is asked; the ceiling is `RATE_LIMITS.castPersonaTranslate` (`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: "nothing" }` — no text engine configured, the call failed or came back cut off, or the line could not be fitted to its cap at a sentence end (`translateCastPersonaOwnWords`, `server/castingV2/castPersonaTranslate.ts`). No corpus row can reach it: the corpus drives `refineCandidate` only.
+
+- SERVER HALF FIRST, declared: the procedure, the store and Keep this's `ownWords` ship before the client door, on the relay's instruction; the door's box, its stage word and its frames follow in the client PR.
+- The customer's own sentence is the `masterPrompt` family: on `REFUSING_KEYS` (both columns and the `ownWords` input field), on no staff projection, nulled by the permanent-deletion tombstone, and never written into a log line by this road.
+
 ### Upload a concept — a picture in, a description of the person out
 
 A picture of a person is read ONCE, inline, and dropped; what comes back is WORDS, which land in her own brief box where she reads and edits them before she spends anything. There is no row, no table, no storage write and no purge path — which is what makes this road smaller than the attach door beside it rather than a variant of it, and why no stranger's photograph ends up at a permanently public URL. Reached from the start page, before any cast exists.
@@ -218,7 +231,7 @@ _Called as:_ `castingV2.concept.describe`
 - EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 
-## Every way in — the 30 procedures the casting entrance exposes
+## Every way in — the 31 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
@@ -252,6 +265,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.roster` | life-of-a-cast |
 | `castingV2.selectVariant` | life-of-a-cast |
 | `castingV2.sign` | sign-views |
+| `castingV2.translateOwnWords` | persona-say-it-your-way |
 | `castingV2.undo` | life-of-a-cast |
 | `castingV2.variants` | life-of-a-cast |
 
