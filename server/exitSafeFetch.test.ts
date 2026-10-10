@@ -318,7 +318,7 @@ describe("the rite drains on the refusal road, and only there", () => {
     const branch = rite.indexOf("if (!frames.ok && !DRY) {");
     const settle = rite.indexOf("await settleSockets(", branch);
     const exit = rite.indexOf(
-      "an eye frame this edition names is not in the production bucket",
+      "an eye frame this edition names is not confirmed in the production bucket",
       branch,
     );
     expect(branch).toBeGreaterThan(-1);

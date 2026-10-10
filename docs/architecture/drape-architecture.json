@@ -14079,6 +14079,10 @@
       "path": "server/eyeFrameGate.test.ts"
     },
     {
+      "id": "test:server/eyeFrameHead.test.ts",
+      "path": "server/eyeFrameHead.test.ts"
+    },
+    {
       "id": "test:server/eyeFramePresence.test.ts",
       "path": "server/eyeFramePresence.test.ts"
     },

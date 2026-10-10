@@ -3,8 +3,8 @@
  * BROWSER WILL ASK?
  *
  * The judge is `lib/eyeFramePresence.mts` (#320) and it is unchanged; the base's
- * confirmation and the diff filter are `lib/eyeFrameGate.mts`. This file is
- * their I/O and the fetch policy, and it exists because that judge had **one
+ * confirmation and the diff filter are `lib/eyeFrameGate.mts`, and the fetch
+ * policy is `lib/eyeFrameHead.mts` (#2232). This file is their I/O, and it exists because that judge had **one
  * caller, the deploy rite** — a road editions stopped taking at #1249.
  *
  *   npx tsx scripts/check-eye-frames.mts                      # check the tree's briefing
@@ -22,12 +22,13 @@
  * connection and never answers takes 306.6s to reject (measured, node 24,
  * undici's `headersTimeout` — `eyeFramePresence.mts` carries the reading). Ten
  * seconds is ~100x a live HEAD against this bucket, so a real answer is never cut
- * off, and the judge owns no fetch policy of its own.
+ * off. The timeout and the pause-retry are `lib/eyeFrameHead.mts`'s, shared with
+ * the rite (#2232); the judge owns no fetch policy of its own.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
+import { eyeFrameKeysOf, eyeFrameRefusalRepair, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
 import {
   eyeFrameGateShouldRun,
   judgeBucketBaseAgainstCsp,
@@ -36,6 +37,7 @@ import {
 } from "./lib/eyeFrameGate.mts";
 import { BRIEFING_PATH } from "./lib/quietEdition.mts";
 import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
+import { createEyeFrameHead } from "./lib/eyeFrameHead.mts";
 
 const args = process.argv.slice(2);
 const KNOWN = ["--base-ref"];
@@ -95,61 +97,20 @@ if (keys !== null && keys.length === 0) {
 }
 
 /**
- * ⚠ **ONE ASK IS NOT AN ANSWER, AND THE JUDGE'S OWN RETRY IS NOT ENOUGH ON ITS
- * OWN — MEASURED BEFORE THIS WAS WRITTEN, NOT AFTER.**
+ * ⚠ **ONE ASK IS NOT AN ANSWER — AND THE PAUSE-RETRY THAT SAYS SO LIVES IN
+ * `lib/eyeFrameHead.mts` NOW, NOT HERE (#2232).**
  *
- * `judgeEyeFramePresence` launches every key at once (#1177 measured that a
- * bounded pool prevents no drops, costs a second, and makes a dead host twenty
- * times worse) and then re-asks the unread ones serially. With 321 keys off a
- * home connection that was **not enough**: four consecutive runs on a clean tree
- * gave `ok · UNREAD 2 · ok · UNREAD 1`, so **the check refused on half of them
- * with nothing wrong**. Every failure was UNREAD, never missing.
- *
- * A guard that reddens a correct PR every other run is worse than the guard
- * being absent — it gets ignored, then removed, and the third broken card
- * reaches him anyway. And the fix does not belong in the judge: its docblock says
- * it owns no fetch policy, and a pause between attempts is exactly that. So the
- * retry lives HERE, where the policy already is.
- *
- * ⚠ **The pause is the whole medicine.** The judge's serial retry fires
- * immediately, while the burst it is recovering from is still draining. One
- * re-ask after a real gap clears it: **9 runs of 9 green after this, against 2
- * refusals in 4 before.**
- *
- * ⚠ **AND IT COSTS WALL CLOCK, WHICH THE RUN NOW SAYS OUT LOUD RATHER THAN
- * LEAVING TO BE GUESSED.** A stalled ask is not refused quickly — it burns the
- * whole 10 s abort window before the retry starts, so the run's length IS the
- * drop count: measured on this machine, `1 retry → 13.8 s · 16 → 26.0 s · 26 →
- * 34.0 s`, against 5.6 s for a run that needed none. That is why the verdict line
- * carries the number: a 34-second run and a 6-second run are the same verdict
- * about the frames and different facts about the network, and a future reader
- * staring at a slow step should not have to re-derive that. CI's network is not
- * this one and the figure there will be its own; the step sits in a 30-minute
- * job, and the bound per key is one timeout plus one retry.
+ * #1177 measured it on this script: the judge's own serial retry fires
+ * immediately, while the burst it is recovering from is still draining, and
+ * four clean-tree runs went `ok · UNREAD 2 · ok · UNREAD 1`. One re-ask after a
+ * real 400 ms gap cleared it — **9 runs of 9 green after, against 2 refusals in
+ * 4 before**, every failure UNREAD and never missing. The policy was written
+ * HERE, and the rite — the other caller, and the one that blocks a push — never
+ * got it, so a two-second blip refused 365 of 365 frames there. One module owns
+ * it now and both callers build their head from it; the measurement and the
+ * wall-clock reading moved with it.
  */
-const HEAD_RETRY_PAUSE_MS = 400;
-/* WHAT IT SAW, not just what it concluded (D-235). A run that quietly needed 40
-   re-asks and a run that needed none are different facts about the network, and
-   only one of them explains a wall-clock reading to whoever reads this log next. */
-let retried = 0;
-const head = async (url: string): Promise<number | null> => {
-  /* ⚠ THE TIMER IS CLEARED (#1517, was `AbortSignal.timeout`). That form never
-     clears its timer when the fetch resolves, so with 321 keys it left 321
-     pending handles for this script to exit through — and the settle below is a
-     WINDOW, which is a weaker thing to rely on than having nothing open. */
-  const ask = async (): Promise<number | null> =>
-    await fetchWithClearedTimeout(url, { method: "HEAD" }, 10_000)
-      .then((response) => response.status)
-      .catch(() => null);
-  const first = await ask();
-  /* A STATUS is an answer, whatever it says — a 404 is the finding, not a
-     failure, and re-asking it would only make an absent frame cost twice as long
-     to report. Only an unmade request is retried. */
-  if (first !== null) return first;
-  retried += 1;
-  await new Promise((resolve) => setTimeout(resolve, HEAD_RETRY_PAUSE_MS));
-  return await ask();
-};
+const eyeFrameHead = createEyeFrameHead();
 
 /**
  * ⚠ **EXITING STRAIGHT OUT OF A FETCH CRASHES NODE ON WINDOWS, AND THE NUMBER
@@ -225,17 +186,21 @@ if (!agreement.ok) {
   code = 1;
 } else {
   console.log(`  bucket: ${agreement.why}`);
-  const verdict = await judgeEyeFramePresence(keys, PRODUCTION_PUBLIC_BUCKET_BASE, head);
+  const verdict = await judgeEyeFramePresence(keys, PRODUCTION_PUBLIC_BUCKET_BASE, eyeFrameHead.head);
+  const retried = eyeFrameHead.retried();
   const asked = retried === 0 ? "every key answered first time" : `${retried} key(s) needed a second ask`;
   if (verdict.ok) {
     console.log(`eye frames: ok — ${verdict.why} (${asked})`);
   } else {
     console.log(`  network: ${asked}`);
-    console.log(`REFUSED: an eye frame this edition names is not in the production bucket — his card would draw broken images (#320, #1330).
-    ${verdict.why}
-  repair: re-upload the frame(s) under the PRODUCTION R2 variables, naming that bucket —
+    /* THE REPAIR IS READ OFF THE VERDICT (#2232): an UNREAD says re-run, and
+       only a MISSING says re-upload. */
+    const repair = eyeFrameRefusalRepair(verdict, `re-upload the frame(s) under the PRODUCTION R2 variables, naming that bucket —
     railway.cmd run --service Drape -- npx tsx scripts/crew-upload-eye-frame.mts <path> --bucket <name>
   then put the new key(s) in ${BRIEFING_PATH} and push`);
+    console.log(`REFUSED: an eye frame this edition names is not confirmed in the production bucket — the founder's card could draw broken images (#320, #1330).
+    ${verdict.why}
+${repair.map((line) => `  repair: ${line}`).join("\n")}`);
     code = 1;
   }
 }

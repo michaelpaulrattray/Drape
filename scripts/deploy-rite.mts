@@ -152,7 +152,8 @@ import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { briefingReadingSuites, judgeBriefingConformance } from "./lib/briefingConformance.mts";
 import { pushedDocSuites } from "./lib/pushedDocSuites.mts";
-import { eyeFrameKeysOf, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
+import { eyeFrameKeysOf, eyeFrameRefusalRepair, judgeEyeFramePresence } from "./lib/eyeFramePresence.mts";
+import { createEyeFrameHead } from "./lib/eyeFrameHead.mts";
 import { probeProductionHealth } from "./lib/productionHealthProbe.mts";
 import { probeInvocation, readProbeStep } from "./lib/trackerProbeStep.mts";
 import { fetchWithClearedTimeout, settleSockets } from "./lib/exitSafeFetch.mts";
@@ -1097,26 +1098,16 @@ function productionUrl(): string | undefined {
     : await judgeEyeFramePresence(
       eyeFrameKeysOf(shown.stdout),
       base,
-      /* ⚠ THE TIMEOUT IS NOT A NICETY — IT IS WHAT MAKES THE JUDGE'S BOUNDED
-         POOL SAFE (#1177). A bare HEAD against a host that accepts the
-         connection and never answers takes 306.6s to reject (measured, node 24,
-         undici's `headersTimeout`). Unbounded that cost is paid ONCE for all
-         314 keys in parallel; bounded, it would be paid once per wave. Ten
-         seconds is ~100x a live HEAD against this bucket, so a real answer is
-         never cut off, and the module owns no fetch policy of its own.
-
-         ⚠ AND THE TIMER IS CLEARED, WHICH IS THE #1517 FIX (was
-         `AbortSignal.timeout`). That form never clears its timer when the fetch
-         resolves, so it leaves a pending libuv handle — and `die()` below is
-         `process.exit(1)`, which on Windows can abort node itself while a handle
-         is still closing, reporting 3221226505 instead of 1. #1509 made exactly
-         this repair on `crew-upload-eye-frame.mts` and left the rite on the
-         terser form because *"the rite keeps running afterwards"*; that premise
-         was false of this block, whose next statement exits. */
-      async (url) =>
-        await fetchWithClearedTimeout(url, { method: "HEAD" }, 10_000)
-          .then((response) => response.status)
-          .catch(() => null),
+      /* ⚠ THE HEAD IS THE SHARED ONE, AND THAT IS THE #2232 REPAIR. This was a
+         bare `fetchWithClearedTimeout` HEAD — the timeout (#1177) and the cleared
+         timer (#1517) but NOT #1177's pause-retry, which reached only
+         `check-eye-frames.mts`. So a two-second blip refused 365 of 365 frames
+         here as UNREAD, while the checker alone two minutes later answered
+         "every key answered first time". The timeout, the clear and the
+         re-ask-after-a-pause now live once in `lib/eyeFrameHead.mts`, and both
+         callers build their head from it — a policy in one caller is a policy
+         the other does not have (working law 4). */
+      createEyeFrameHead().head,
     );
   if (!frames.ok && !DRY) {
     /*
@@ -1131,9 +1122,10 @@ function productionUrl(): string | undefined {
       nothing, so it sits HERE rather than on the happy road.
     */
     await settleSockets("the eye-frame HEADs");
-    die(`an eye frame this edition names is not in the production bucket — the push does not fire; his card would draw broken images (#320).
+    die(`an eye frame this edition names is not confirmed in the production bucket — the push does not fire; the founder's card could draw broken images (#320).
     ${frames.why}
-  repair: re-upload the frame(s) against the PRODUCTION R2 variables, put the new key(s) in ${BRIEFING_PATH}, commit, re-run`);
+${eyeFrameRefusalRepair(frames, `re-upload the frame(s) against the PRODUCTION R2 variables, put the new key(s) in ${BRIEFING_PATH}, commit, re-run`)
+    .map((line) => `  repair: ${line}`).join("\n")}`);
   }
   say(`  eye frames: ${frames.ok ? `ok — ${frames.why}` : `WOULD REFUSE (dry run) — ${frames.why}`}`);
 }
