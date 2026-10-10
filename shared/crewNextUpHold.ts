@@ -446,6 +446,45 @@ export function holdOwnerFromReason(reason: string | null | undefined): CrewHold
   return FOUNDER_HOLD_WORDS.has(first) ? "you" : "other";
 }
 
+/**
+ * ⚠ **THE CARDS THAT ARE HIS OWN, NOT THE CREW'S — #2117, 2026-10-10.**
+ *
+ * A card here is one the founder keeps for himself and has forbidden the team
+ * to touch. `planUnreadableHolds` still finds it — it genuinely has a live hold
+ * and no readable sentence — but it is marked rather than put in the repair
+ * band, because **both repairs the sweep offers are things a seat is barred
+ * from doing**: writing a `**Waiting on:**` line into the body is editing his
+ * card, and dropping the hold label is the one act his order names outright.
+ *
+ * **The cost of not having this was measured before it was built: five
+ * consecutive shifts met the same row and each one correctly did nothing**
+ * (`foreman-20261009-0115`, `-1240`, `-1604`, `-1626`, `-1740`). A checker
+ * whose finding is always the same and always unactionable teaches its reader
+ * to skim, and the other rows in that block are real — which is the one thing a
+ * close-of-shift sweep cannot afford.
+ *
+ * ⚠ **WHY A DECLARATION HERE AND NOT A LABEL ON THE CARD.** A label is the
+ * tidier shape and it was the card's own first suggestion — and applying one to
+ * #1995 means editing #1995, which is precisely what his order forbids
+ * (*"dont let the crew touch it"*). The relay could apply it; no seat can. So
+ * the fact lives where the reader is, and it is a DECLARATION rather than a
+ * mirror of some other machine-readable source — there is no such source, which
+ * is why nothing could see this before.
+ *
+ * ⚠ **AND IT CANNOT ROT QUIETLY, WHICH IS THE ONLY THING THAT MAKES A LIST
+ * HERE DEFENSIBLE UNDER WORKING LAW 4.** `planFounderHeldDrift` reports an
+ * entry that no longer names an open card, so an exemption outliving its card
+ * is itself a finding rather than a silent permanent pass. Entries carry his
+ * words and the date so the next reader can check the sentence is still true.
+ */
+export const FOUNDER_HELD_CARDS: ReadonlyMap<number, string> = new Map([
+  [
+    1995,
+    "his own prototyping with his team — 2026-10-08, verbatim: \"dont let the crew "
+      + "touch it , this is just prototyping im working on with my team\"",
+  ],
+]);
+
 /** One held card whose hold sentence cannot say whose hold it is. */
 export type UnreadableHold = {
   readonly issueNumber: number;
@@ -458,6 +497,15 @@ export type UnreadableHold = {
    * report distinguishes them rather than saying "unreadable" about both.
    */
   readonly reason: string | null;
+  /**
+   * Why this one is HIS, or `null` for an ordinary card (#2117).
+   *
+   * ⚠ **IT IS A FIELD AND NOT A FILTER, deliberately.** Dropping his cards from
+   * the population would make the sweep silent about a live hold nothing draws,
+   * which is the exact silence `planUnreadableHolds` was written to end. The
+   * row still appears; what changes is that it is not asked to be repaired.
+   */
+  readonly founderHeld: string | null;
 };
 
 /**
@@ -509,7 +557,46 @@ export function planUnreadableHolds(input: {
     if (heldStates.length === 0) continue;
     const reason = holdReasonFromBody(row.body);
     if (holdOwnerFromReason(reason) !== "unknown") continue;
-    found.push({ issueNumber: row.issueNumber, heldStates, reason });
+    found.push({
+      issueNumber: row.issueNumber,
+      heldStates,
+      reason,
+      founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
+    });
   }
   return found.sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
+/**
+ * ⚠ **AN EXEMPTION THAT NO LONGER NAMES AN OPEN CARD (#2117).**
+ *
+ * The one failure a hand-written exemption list can have, and the reason the
+ * list is allowed to exist: a card he kept gets closed, or handed back, and the
+ * entry sits here for ever quietly excusing something that is not there. That
+ * would be working law 4's drift arriving by the slow road.
+ *
+ * So the list is checked against the queue every run. An entry naming a card
+ * the open queue does not hold is REPORTED — the shift deletes the line, and
+ * deleting it is the whole repair.
+ *
+ * ⚠ **IT TAKES THE OPEN QUEUE AND NOT THE HELD SUBSET.** A card of his that is
+ * open but has dropped its hold label is not drift — it has simply stopped
+ * being flagged, and the exemption costs nothing while it waits. Keying on the
+ * held subset would report every such card as stale the moment its hold lifted,
+ * which is noise about a correct state.
+ *
+ * ⚠ **A READ THAT FAILED IS NEVER DRIFT.** The caller passes `null` when the
+ * queue could not be read, and this answers with nothing rather than declaring
+ * every entry stale — a `gh` outage must not read as "he no longer keeps any of
+ * these."
+ */
+export function planFounderHeldDrift(input: {
+  readonly openIssueNumbers: readonly number[] | null;
+}): ReadonlyArray<{ readonly issueNumber: number; readonly why: string }> {
+  if (input.openIssueNumbers === null) return [];
+  const open = new Set(input.openIssueNumbers);
+  return Array.from(FOUNDER_HELD_CARDS)
+    .filter(([issueNumber]) => !open.has(issueNumber))
+    .map(([issueNumber, why]) => ({ issueNumber, why }))
+    .sort((a, b) => a.issueNumber - b.issueNumber);
 }
