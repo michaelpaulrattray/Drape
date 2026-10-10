@@ -133,6 +133,18 @@ export type CrewCardBuildState =
  * `buildStateHoldsOffOffer` therefore still returns `false` for a refusal — the
  * card is ANNOTATED and still offered, exactly as it was when the refusal was a
  * comment. What changed is only whether the annotation can be SEEN.
+ *
+ * ⚠ **AND SINCE #2231 THE LABEL IS ALSO A COUNT-ONLY EXCLUSION, WHICH IS NOT A
+ * CRACK IN THAT RULING — IT IS THE OTHER QUESTION.** `shared/crewQueueExclusions.ts`
+ * carries a `refused` row with `holdsOffWork: false`, so the NUMBER under his
+ * background switches stops calling a declined card fresh work while the CUT
+ * goes on offering it. The two had one answer for six reasons and this is the
+ * first that needed two: *subtract it from his number* and *never hand it to a
+ * seat* are different sentences. **Nothing here moves, and nothing may**: a
+ * reader that wants a refusal off a seat's offer is overturning his option A,
+ * not reading this file. The cost of not having it: `#2198` kept a category off
+ * zero, so the park gate could not park and the card was re-offered every pass
+ * — six sessions in one day.
  */
 export const CREW_NOT_BUILT_LABEL = "not-built";
 

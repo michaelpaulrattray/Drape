@@ -157,6 +157,34 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: "shared/crewWorkSwitches.ts",
     why: "imported by the briefing schema judging this push, at module load",
   },
+  {
+    /* THE NINTH, TENTH AND ELEVENTH, and they arrived as ONE hop exactly like
+       the seventh and eighth (#2231): the refusal label is declared once, on
+       `CREW_NOT_BUILT_LABEL`, and the exclusion vocabulary now imports it so a
+       refusal can be a count-only exclusion — which drags that module and the
+       two it reaches in behind it. **Nothing about the rite changed; what
+       changed is that these three files are now reached.** The derived arm in
+       `server/dirtyTreeGuard.test.ts` named all three the hour the import
+       landed, which is the third time it has paid for itself on this exact
+       shape.
+
+       ⚠ **THE COST IS REAL AND IT IS THE PRICE OF NOT TYPING A LABEL TWICE.**
+       A dirty `shared/handVerdict.ts` now blocks a rite that would have run
+       before. The alternative was a second spelling of `"not-built"` inside
+       `shared/crewQueueExclusions.ts`, whose own header is about exactly that
+       kind of second list — and #1548 took this same trade for this same
+       reason, one module over. */
+    path: "shared/crewCardBuildState.ts",
+    why: "reached by the briefing schema through crewQueueExclusions' CREW_NOT_BUILT_LABEL import, at module load",
+  },
+  {
+    path: "shared/crewShiftState.ts",
+    why: "reached one hop further, through crewCardBuildState's cardNumberToken import, at module load",
+  },
+  {
+    path: "shared/handVerdict.ts",
+    why: "reached one hop further, through crewCardBuildState's verdict reader, at module load",
+  },
 ];
 
 /**

@@ -496,7 +496,33 @@ describe("what is already happening to each card — his order 2026-09-26, \"so 
     expect(desk.builds.items.map((row) => row.issueNumber)).not.toContain(1258);
   });
 
-  it("⚠ AND IT IS STILL OFFERED — his ruling was A, so the switch count does NOT subtract it", () => {
+  /**
+   * ⚠ **THIS ARM READ THE OTHER WAY UNTIL #2231, AND THE TITLE IT CARRIED WAS
+   * THE DEFECT: *"his ruling was A, so the switch count does NOT subtract it"*.**
+   *
+   * **His ruling A answered one question** — *"should a refused card stay open
+   * with a mark on it, or close?"* (Crew reply #237, 2026-09-29) — and said
+   * nothing about the NUMBER under his background switches. That the count went
+   * on offering the card was an inference the build drew, and **#1337's own body
+   * argues the opposite**: it filed *"every queue reader and his own Background
+   * Work panel keep offering it as work somebody could take"* under **What is
+   * wrong**, and named the chosen state as one where a refused card *"stops
+   * being offered as work while remaining open and overturnable"*.
+   *
+   * **What it cost:** a standing refusal kept a category off zero, the park
+   * gate's short road needs every enabled category at zero on fresh counts, and
+   * so **every pass re-offered the card**. `#2198` took six sessions in one day
+   * before a seat stopped it by hand with `blocked`.
+   *
+   * ⚠ **AND THE HALF HIS RULING DOES GOVERN IS PINNED HERE TOO, UNCHANGED.** The
+   * card keeps its work label, keeps its phrase on his page, and
+   * `buildStateHoldsOffOffer` still hands it to a seat willing to overturn the
+   * reading — `server/seatBatches.test.ts` drives that end. **Where #1337's body
+   * is genuinely ambiguous is whether *stops being offered as work* reaches the
+   * SEAT CUT as well as the count; #2231's body forbids touching the cut, so it
+   * is untouched, and widening it is a decision of his rather than a reading.**
+   */
+  it("⚠ #2231 — it leaves the COUNT and keeps its phrase, and the reason is said out loud", () => {
     const labelled = [item({ number: 1217, labels: ["seat:janitor", "not-built"] })];
     const desk = deriveLiveDesk(
       { ...reading(labelled), readAt: "2026-09-26T02:30:00Z" },
@@ -504,8 +530,16 @@ describe("what is already happening to each card — his order 2026-09-26, \"so 
       { facts: [], why: null },
     );
     const housekeeping = desk.work.counts.find((row) => row.categoryKey === "housekeeping");
-    expect(housekeeping?.openCount, "a refusal annotates a card; it does not retire it").toBe(1);
-    expect(housekeeping?.excluded, "and nothing is subtracted for it").toEqual({});
+    expect(housekeeping?.openCount, "a declined card is not fresh work in the number his park gate reads").toBe(0);
+    /* ⚠ NEVER A SILENTLY SMALLER NUMBER — this module's founding rule (#324).
+       The row reads `0 on offer, 1 refused`, so the count and the reason it is
+       smaller than the label's population are one fact in one parenthesis. */
+    expect(housekeeping?.excluded, "and his panel says why it is smaller").toEqual({ refused: 1 });
+    /* CONTROL — the card did not leave the board. It still carries its phrase,
+       which is the half his ruling A actually settled. */
+    expect(desk.builds.items).toEqual([
+      { issueNumber: 1217, phrase: "not built — the reason is on the card" },
+    ]);
   });
 
   /**
