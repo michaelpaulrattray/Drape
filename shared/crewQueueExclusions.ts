@@ -58,6 +58,7 @@
  * EXCLUSIONS, which draws exactly the panel he has today.
  */
 
+import { CREW_NOT_BUILT_LABEL } from "./crewCardBuildState";
 import { CREW_HOLD_LABELS } from "./crewNextUpHold";
 
 /**
@@ -86,6 +87,24 @@ export const RESEARCH_LABEL = "research";
  *
  * `label` is the words the panel says — lower case, because it is read inside
  * a parenthesis mid-sentence: *(11 on offer, 2 already queued)*.
+ *
+ * ⚠ **`holdsOffWork` IS THE FIELD THAT ARRIVED WITH THE SEVENTH ROW, AND IT
+ * EXISTS BECAUSE THIS VOCABULARY ACQUIRED A SECOND KIND OF READER** (#2231).
+ * For six rows the count's question and the seat cut's question had one answer:
+ * *not offered* meant both *subtract it from his number* and *never hand it to a
+ * seat*. `refused` separates them — his own ruling is that a refusal ANNOTATES a
+ * card and leaves it on offer (`shared/crewCardBuildState.ts`'s
+ * `CREW_NOT_BUILT_LABEL`, Crew reply #237, option A), while the number under his
+ * switches must stop calling declined work fresh. So every row answers the
+ * question out loud: `true` — real work no seat may take; `false` — a reason the
+ * COUNT reports and the CUT ignores.
+ *
+ * ⚠ **IT IS REQUIRED ON EVERY ROW ON PURPOSE AND TYPESCRIPT ENFORCES THAT.**
+ * `as const` makes this array a tuple of literal types, so `[number]` is a union
+ * and `reason.holdsOffWork` does not typecheck if ONE row omits it — an eighth
+ * row cannot be added without answering the question, which is the whole reason
+ * it is a field rather than a list of count-only keys kept somewhere else
+ * (working law 4, the shape this module's own header is about).
  */
 export const QUEUE_EXCLUSION_REASONS = [
   {
@@ -115,6 +134,8 @@ export const QUEUE_EXCLUSION_REASONS = [
      */
     queueLabel: RESEARCH_LABEL,
     label: "research",
+    /* A proposal is not work at all, so it is the strongest no of the seven. */
+    holdsOffWork: true,
     blurb: "Your team's proposals — decided on your Notion desk, never work for a seat.",
   },
   {
@@ -147,6 +168,9 @@ export const QUEUE_EXCLUSION_REASONS = [
      */
     queueLabel: null,
     label: "being built",
+    /* An open pull request or a live claim — a second seat on it is the
+       collision the board exists to prevent. */
+    holdsOffWork: true,
     blurb: "Somebody is on it right now — an open pull request, or a claim on the card.",
   },
   {
@@ -154,6 +178,8 @@ export const QUEUE_EXCLUSION_REASONS = [
     /** The relay's label on a card he asked for by name. */
     queueLabel: "founder-ordered",
     label: "already queued",
+    /* The focus lane's, never a seat's — the cut says exactly that. */
+    holdsOffWork: true,
     /**
      * ⚠ **THIS IS HIS OWN QUESTION AND IT OUTRANKS `parked`.** A card that is
      * both ordered and parked counts here and not below: what he needs to know
@@ -165,6 +191,8 @@ export const QUEUE_EXCLUSION_REASONS = [
     key: "parked",
     queueLabel: "parked",
     label: "parked",
+    /* Stopped on his own ruling; a seat overturning that is not a reading. */
+    holdsOffWork: true,
     /**
      * ⚠ **`Security (0)` WAS TRUE OF THE LABEL AND FALSE OF THE PRODUCT.**
      * `#45` — the scoped penetration probe — is a real security card, and
@@ -181,6 +209,7 @@ export const QUEUE_EXCLUSION_REASONS = [
     key: "blocked",
     queueLabel: CREW_HOLD_LABELS.blocked,
     label: "blocked",
+    holdsOffWork: true,
     /**
      * ⚠ **`Process (5)` WAS TRUE OF THE LABEL AND FALSE OF THE PRODUCT, AND IT
      * IS THE `Security (0)` DEFECT ABOVE WEARING THE OTHER SIGN.** That one was
@@ -216,6 +245,7 @@ export const QUEUE_EXCLUSION_REASONS = [
     key: "fable",
     queueLabel: CREW_HOLD_LABELS.fable,
     label: "awaiting Fable",
+    holdsOffWork: true,
     /**
      * ⚠ **THE `blocked` DEFECT AGAIN, ONE LABEL OVER (#999).** `#541`'s rule
      * makes this label mean *a design decision, or a change to what he judges*,
@@ -240,12 +270,71 @@ export const QUEUE_EXCLUSION_REASONS = [
     key: "sitting",
     queueLabel: CREW_HOLD_LABELS.sitting,
     label: "awaiting a sitting",
+    holdsOffWork: true,
     /**
      * The third hold label, included for the same reason and found by the same
      * sweep: no open card carries it today (`#279` did, and closed), so this row
      * costs nothing until one does, and then it cannot inflate a count by one.
      */
     blurb: "Waits on you at the machine — the card says what.",
+  },
+  {
+    key: "refused",
+    /**
+     * ⚠ **THE ONLY COUNT-ONLY ROW, AND THE FIRST REASON HERE THAT DOES NOT MEAN
+     * *nobody may work this*** (#2231, Retro patrol #7's R19). A shift that
+     * reads a card and declines it applies `not-built`, and **his ruling is
+     * that this neither closes the card nor takes it off offer** (Crew reply
+     * #237, option A — a refusal is a shift's READING and readings are
+     * overturned here). The argument lives on `CREW_NOT_BUILT_LABEL`.
+     *
+     * **But the NUMBER under his switches is a different question from the
+     * CUT**, and it was answering the cut's. A standing refusal kept a category
+     * off zero for as long as the label sat there, so:
+     *
+     *  - his panel read *Bugs — N open* over cards seats had already declined;
+     *  - the park gate's short road (`.agents/foreman/check-park.ps1`, #504)
+     *    needs every enabled category at zero on fresh counts, so the team
+     *    could not park and **every pass re-offered the card**.
+     *
+     * **#2198 cost six sessions in one day** — five that wrote on the card and a
+     * sixth whose decline survives only in a shift close note — and the seat
+     * that got there sixth stopped it BY HAND, by applying `blocked`. A label a
+     * shift chose is not a thing the machinery did, which is why this row
+     * exists. Measured at the fix (2026-10-11, read at `gh issue list`): three
+     * open cards carry `not-built`; `#1736` (`bug` + `not-built`) was the whole
+     * of *Bugs — 1 on offer*, and `#1585` carries no work label so no switch
+     * count ever consulted this function about it. **The card's own figure of
+     * two was true when it was filed and is one at HEAD** — because `#2198` is
+     * the card that was stopped by hand.
+     *
+     * ⚠ **AND IT IS LAST, WHICH IS CORRECTNESS HERE AND NOT PROSE.** First match
+     * wins, so a row placed above a work-holding one would hand the cut the word
+     * *refused* for a card that is also `parked` or `blocked` — and the cut
+     * ignores this row, so it would then OFFER a parked card. Being last makes
+     * that unreachable; `workHoldExclusionFor` below makes it unreachable even if
+     * somebody reorders the array, and both arms are driven. `#2198` is exactly
+     * that shape today (`bug` + `blocked` + `not-built`) and reads as *blocked*.
+     *
+     * ⚠ **THE TRADEOFF IS HIS AND IT IS STATED RATHER THAN BURIED** (the card's
+     * own closing paragraph): the team CAN now park while a refused card sits
+     * open. That is the intended effect. A park un-parks on queue activity, a
+     * reply, a new pull request or the 24-hour heartbeat, so the refusal is
+     * re-looked at on the next real signal instead of being re-read by a fresh
+     * session every pass.
+     */
+    queueLabel: CREW_NOT_BUILT_LABEL,
+    label: "refused",
+    /**
+     * ⚠ **`false`, AND IT IS THE ONLY `false` IN THIS ARRAY.** The card must
+     * still reach a seat that wants to overturn the reading — that is his
+     * ruling, and this row does not reopen it. `buildStateHoldsOffOffer` is
+     * untouched, the refusal still travels into the batch as the seat's
+     * `annotation`, and `server/seatBatches.test.ts` keeps the arm that proves a
+     * refused card is STILL takeable.
+     */
+    holdsOffWork: false,
+    blurb: "A shift read it and declined — the reason is on the card, and it is still on offer.",
   },
 ] as const;
 
@@ -258,7 +347,15 @@ export type CrewQueueExclusions = Readonly<Partial<Record<CrewQueueExclusionKey,
 const REASON_KEYS: readonly string[] = QUEUE_EXCLUSION_REASONS.map((reason) => reason.key);
 
 /**
- * Which reason excludes this card, or `null` if it is genuinely on offer.
+ * Which reason excludes this card from THE COUNT, or `null` if it is genuinely
+ * on offer.
+ *
+ * ⚠ **THIS IS THE COUNT'S QUESTION AND SINCE #2231 IT IS NOT THE CUT'S.** Every
+ * row answers here, including the count-only `refused`; a seat asks
+ * `workHoldExclusionFor` above, which never sees that row. The two were one
+ * question for six rows and the seventh separated them — his panel must stop
+ * calling a declined card fresh work, and the card must still reach a seat that
+ * wants to overturn the reading.
  *
  * ⚠ **FIRST MATCH WINS, AND THE ORDER IS THE VOCABULARY'S.** A card can carry
  * both labels; counting it twice would make the exclusions sum to more than the
@@ -269,11 +366,65 @@ const REASON_KEYS: readonly string[] = QUEUE_EXCLUSION_REASONS.map((reason) => r
  * until #1548 and was already wrong — `building` went above `ordered` with
  * #1094 and this line was not moved with it.** A docblock naming which row is
  * first is a second copy of the array's order, so it names none of them now.
+ * ⚠ **What the order still decides, and it is correctness rather than prose: a
+ * count-only row goes LAST**, so a card carrying both a refusal and a real hold
+ * answers with the hold. `refused`'s own block carries the reasoning, and
+ * `workHoldExclusionFor` makes the cut safe against a reorder either way.
  *
  * Written to take the raw label list a `gh issue list --json labels` row
  * carries, so the caller does no shaping and cannot shape it differently from
  * the next caller.
  */
+/**
+ * THE REASONS THAT HOLD A CARD OFF A SEAT — the subset the SEAT CUT asks about
+ * (#2231).
+ *
+ * Derived from the field rather than listed, so a row added above cannot quietly
+ * join or leave this set, and nothing here is a second copy of the array's
+ * order. `scripts/lib/seatBatches.mts` is its one production consumer.
+ */
+export const WORK_HOLDING_REASONS = QUEUE_EXCLUSION_REASONS.filter((reason) => reason.holdsOffWork);
+
+/**
+ * The walk both questions share — first match over whichever rows were handed in.
+ *
+ * ⚠ **ONE WALKER, TWO POPULATIONS.** The alternative was a second loop in
+ * `workHoldExclusionFor`, which is the `beingBuilt` special case written twice
+ * — and the day somebody adds a second label-less row, one of the two copies
+ * gets it. This module's whole header is about not doing that.
+ */
+function firstMatchOver(
+  rows: readonly { readonly key: string; readonly queueLabel: string | null }[],
+  labels: readonly string[],
+  beingBuilt: boolean,
+): CrewQueueExclusionKey | null {
+  for (const reason of rows) {
+    if (reason.queueLabel === null) {
+      if (reason.key === "building" && beingBuilt) return reason.key as CrewQueueExclusionKey;
+      continue;
+    }
+    if (labels.includes(reason.queueLabel)) return reason.key as CrewQueueExclusionKey;
+  }
+  return null;
+}
+
+/**
+ * WHY A SEAT MAY NOT TAKE THIS CARD, or `null` — the CUT's question, which is
+ * narrower than the count's (#2231).
+ *
+ * Same labels, same first-match rule, same `beingBuilt` contract — over the
+ * work-holding rows alone. A count-only reason (`refused` today) answers `null`
+ * here, which is his ruling that a refusal annotates a card and leaves it on
+ * offer; a card carrying BOTH a refusal and a real hold still answers with the
+ * hold, because this walk never sees the count-only row at all.
+ */
+export function workHoldExclusionFor(
+  labels: readonly string[],
+  beingBuilt: boolean = false,
+): CrewQueueExclusionKey | null {
+  return firstMatchOver(WORK_HOLDING_REASONS, labels, beingBuilt);
+}
+
 export function exclusionFor(
   labels: readonly string[],
   /**
@@ -286,14 +437,7 @@ export function exclusionFor(
    */
   beingBuilt: boolean = false,
 ): CrewQueueExclusionKey | null {
-  for (const reason of QUEUE_EXCLUSION_REASONS) {
-    if (reason.queueLabel === null) {
-      if (reason.key === "building" && beingBuilt) return reason.key;
-      continue;
-    }
-    if (labels.includes(reason.queueLabel)) return reason.key;
-  }
-  return null;
+  return firstMatchOver(QUEUE_EXCLUSION_REASONS, labels, beingBuilt);
 }
 
 /**

@@ -37344,6 +37344,11 @@
     },
     {
       "from": "module:shared/crewQueueExclusions.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewQueueExclusions.ts",
       "to": "module:shared/crewNextUpHold.ts",
       "kind": "imports"
     },

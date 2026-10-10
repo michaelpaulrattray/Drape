@@ -52,6 +52,7 @@ import {
   type SeatTakeableCard,
 } from "../scripts/lib/seatBatches.mts";
 import type { ManagerCardRow } from "../scripts/lib/managerFactSheet.mts";
+import { CREW_NOT_BUILT_LABEL } from "../shared/crewCardBuildState";
 import { buildBoard, factsFromRows } from "../scripts/lib/cardBuildState.mts";
 import type { OpenPullRequest } from "../scripts/lib/cardClaimWarning.mts";
 
@@ -483,6 +484,38 @@ describe("what a background seat may take", () => {
     );
     expect(takeable.map((c) => c.number)).toEqual([19]);
     expect(takeable[0]!.annotation).toContain("not built");
+  });
+
+  it("⚠ #2231 — STILL takes a card refused by LABEL, now that the label excludes it from his COUNT", () => {
+    /* The arm above drives the COMMENT road; this is the LABEL road, and it is
+       the one #2231 could have broken. `not-built` became an exclusion reason so
+       the number under his background switches stops calling a declined card
+       fresh work — and the whole constraint on that change was that the card
+       must still reach a seat willing to overturn the reading (his Crew reply
+       #237, option A). A swap of this gate back to `exclusionFor` passes every
+       other arm in this file and empties the lane of every refused card. */
+    const { takeable } = population(
+      [card(21, ["bug", CREW_NOT_BUILT_LABEL])],
+      ALL_ON,
+      boardOf([], [], new Set([21])),
+    );
+    expect(takeable.map((c) => c.number)).toEqual([21]);
+    expect(takeable[0]!.annotation).toContain("not built");
+  });
+
+  it("⚠ #2231 — a refusal beside a REAL hold is still held, and the skip names the hold", () => {
+    /* `#2198`'s own label shape at the fix: `bug` + `blocked` + `not-built`.
+       The count-only row is last in the vocabulary AND absent from the subset
+       this gate walks, so neither reordering nor the subset alone can make this
+       card takeable — if either guard went, the cut would offer a blocked card
+       on the strength of a word it was told to ignore. */
+    const { takeable, skipped } = population(
+      [card(22, ["bug", "blocked", CREW_NOT_BUILT_LABEL])],
+      ALL_ON,
+      boardOf([], [], new Set([22])),
+    );
+    expect(takeable).toEqual([]);
+    expect(skipped[0]!.why).toContain("blocked");
   });
 });
 
@@ -1980,7 +2013,14 @@ describe("the cut derives rather than mirrors", () => {
     const checks: ReadonlyArray<readonly [string, RegExp]> = [
       ["homeWorkCategoryFor", /homeWorkCategoryFor\(card\.labels\)/],
       ["backgroundWorkAllowed", /backgroundWorkAllowed\(input\.switches, category\)/],
-      ["exclusionFor", /exclusionFor\(card\.labels\)/],
+      /* ⚠ #2231: the cut asks the WORK-HOLDING subset of the exclusion
+         vocabulary, never the whole of it — the seventh row (`refused`) is a
+         reason the COUNT under his switches reports and this cut must ignore,
+         because his ruling leaves a refused card on offer. The pattern is
+         anchored on `workHoldExclusionFor` so a well-meaning swap BACK to
+         `exclusionFor` — which would silently take every refused card off every
+         seat's offer — reddens here rather than on his page. */
+      ["workHoldExclusionFor", /workHoldExclusionFor\(card\.labels\)/],
       ["the build board", /input\.board\.holdsOffOffer\(/],
       ["RUNG_LABEL_PREFIX", /startsWith\(RUNG_LABEL_PREFIX\)/],
       ["sortOrderedBand", /sortOrderedBand\(band\)/],

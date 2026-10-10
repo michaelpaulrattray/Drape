@@ -59,10 +59,16 @@
  *     ruling about double-counted cards);
  *  2. `backgroundWorkAllowed` — whether that band's switch, and his master
  *     switch, are on right now;
- *  3. `exclusionFor` — the queue's own exclusion vocabulary
+ *  3. `workHoldExclusionFor` — the queue's own exclusion vocabulary
  *     (`shared/crewQueueExclusions.ts`): `founder-ordered` reads as *already
  *     queued*, which is exactly "in NEXT UP", plus `parked`, `blocked`,
- *     `awaiting-fable` and `awaiting-a-sitting`;
+ *     `awaiting-fable` and `awaiting-a-sitting`. ⚠ **It is the WORK-HOLDING
+ *     subset of that vocabulary and not the whole of it (#2231)**, because the
+ *     seventh row — `refused` — is a reason the COUNT under his switches reports
+ *     and this cut must ignore: his ruling is that a refusal annotates a card
+ *     and leaves it on offer, and the paragraph below is where that is argued.
+ *     The subset is DERIVED from each row's own `holdsOffWork`, so a reason
+ *     added there cannot quietly join or leave this gate;
  *  4. **the card build BOARD** — `scripts/lib/cardBuildState.mts`'s `buildBoard`
  *     (#1094 piece 2), which is *"the ONE reader every queue reader consults"*.
  *     This cut is the sixth such reader and it consults the same board, so a
@@ -77,6 +83,16 @@
  * `annotation`** that travels into the batch, so the seat reads the refusal
  * before it starts rather than rediscovering it. Inventing a stricter rule in a
  * derived reader is how six readers come to disagree again.
+ *
+ * ⚠ **AND #2231 IS THE OTHER HALF OF THAT SENTENCE, WHICH THIS FILE DOES NOT
+ * PAY FOR AND HIS PANEL DID.** Leaving a refusal on offer here is right; leaving
+ * it in the NUMBER under his switches was not — a standing refusal kept a
+ * category off zero, so the park gate could not park and **every pass re-offered
+ * the card** (`#2198`: six sessions in one day, stopped by a seat applying
+ * `blocked` by hand). The repair is in the count, not here: `refused` is a
+ * count-only row and this gate asks the subset that excludes it. **Nothing about
+ * what a seat may take has changed, and the arm that proves a refused card is
+ * still takeable is deliberately unmoved.**
  *
  * ⚠ **THE RUNG LIMB IS THE ONE RULE THIS FILE ADDS, AND SINCE #1496 IT IS THE
  * SENTENCE IT SERVES RATHER THAN A STRICTER STAND-IN FOR IT.** The instruction
@@ -171,7 +187,7 @@ import { CREW_HOLD_WORD, heldStateFromLabels, type CrewHeldState } from "../../s
 import type { ManagerCardRow } from "./managerFactSheet.mts";
 import { sortOrderedBand } from "../../shared/crewOrderedBand.js";
 import { RUNG_LABEL_PREFIX, currentLadderRung } from "../../shared/crewPipelineGroups.js";
-import { exclusionFor, QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL } from "../../shared/crewQueueExclusions.js";
+import { QUEUE_EXCLUSION_REASONS, RESEARCH_LABEL, workHoldExclusionFor } from "../../shared/crewQueueExclusions.js";
 import {
   backgroundWorkAllowed,
   CREW_WORK_CATEGORIES,
@@ -965,7 +981,12 @@ export function seatPopulation(input: {
       note(`the ${CATEGORY_LABEL.get(category) ?? category} switch is off`);
       continue;
     }
-    const exclusion = exclusionFor(card.labels);
+    /* ⚠ THE WORK-HOLDING SUBSET, NEVER THE WHOLE VOCABULARY (#2231) — the
+       count's question and this one parted company at the seventh row, and the
+       module docblock above carries the argument. A card carrying BOTH a refusal
+       and a real hold still answers with the hold, because this walk never sees
+       the count-only row: driven both ways in `server/seatBatches.test.ts`. */
+    const exclusion = workHoldExclusionFor(card.labels);
     if (exclusion !== null) {
       note(exclusion === "ordered"
         ? "in NEXT UP — the focus lane's, never a seat's"

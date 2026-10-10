@@ -24,11 +24,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   QUEUE_EXCLUSION_REASONS,
+  WORK_HOLDING_REASONS,
   exclusionFor,
   parseQueueExclusions,
   queueExclusionSentence,
   serializeQueueExclusions,
+  workHoldExclusionFor,
 } from "../shared/crewQueueExclusions";
+import { CREW_NOT_BUILT_LABEL } from "../shared/crewCardBuildState";
 import { CREW_HOLD_LABELS } from "../shared/crewNextUpHold";
 
 describe("the exclusion vocabulary", () => {
@@ -44,7 +47,20 @@ describe("the exclusion vocabulary", () => {
        quietly, so the repair is to state the new list here with its reasoning
        — never to loosen the assertion to a length or a `toContain`. */
     expect(QUEUE_EXCLUSION_REASONS.map((reason) => reason.queueLabel))
-      .toEqual(["research", null, "founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting"]);
+      .toEqual(["research", null, "founder-ordered", "parked", "blocked", "awaiting-fable", "needs-sitting", "not-built"]);
+    /* ⚠ AND IT WENT RED A SIXTH TIME FOR #2231, WHICH ADDED `not-built` AT THE
+       END — the first row that does NOT mean *nobody may work this*. His ruling
+       (Crew reply #237, option A) leaves a refused card on offer, and the row
+       exists only so the NUMBER under his switches stops calling declined work
+       fresh: `#2198` kept Bugs off zero, the park gate could not park, and the
+       card was re-offered every pass until a seat applied `blocked` by hand.
+       **It is LAST, and that is correctness rather than tidiness** — the row is
+       invisible to the cut, so above a work-holding row it would hand the cut
+       the word *refused* for a parked card and the cut would then offer it. The
+       arms for both halves are in this file and in `server/seatBatches.test.ts`.
+       The LITERAL is written here rather than `CREW_NOT_BUILT_LABEL`, for the
+       `research` reason three lines down: this arm pins the spelling GitHub
+       actually carries. */
     /* ⚠ AND IT WENT RED A FIFTH TIME FOR #1548, WHICH ADDED `research` AT THE
        FRONT — and it is the queue's own label like the rest: the relay applies it
        to his research team's proposals (#1465, #1535 carry it today, both alone).
@@ -76,6 +92,60 @@ describe("the exclusion vocabulary", () => {
     for (const label of Object.values(CREW_HOLD_LABELS)) {
       expect(excluded, `hold label \`${label}\` has no exclusion row`).toContain(label);
     }
+  });
+
+  it("⚠ #2231 — EVERY hold label's row HOLDS WORK OFF, so a hold can never become count-only", () => {
+    /* The drift this closes is the one #2231 opened the door to: the moment a
+       row can say `holdsOffWork: false`, a hold label landing on a count-only
+       row would be subtracted from his number AND handed to a seat. Derived
+       from the hold vocabulary, so a fourth hold label reddens this too. */
+    for (const label of Object.values(CREW_HOLD_LABELS)) {
+      const row = QUEUE_EXCLUSION_REASONS.find((reason) => reason.queueLabel === label);
+      expect(row, `hold label \`${label}\` has no exclusion row`).toBeDefined();
+      expect(row!.holdsOffWork, `hold label \`${label}\` must hold work off a seat`).toBe(true);
+    }
+  });
+
+  it("⚠ #2231 — the work-holding subset is DERIVED, and `refused` is the only row outside it", () => {
+    /* Both directions, because the interesting failure is a row drifting INTO
+       the subset as much as out of it. The count-only keys are named here so an
+       eighth row answering `false` is a deliberate act with an arm to update,
+       never something that reaches the park gate unnoticed. */
+    expect(WORK_HOLDING_REASONS.map((reason) => reason.key))
+      .toEqual(["research", "building", "ordered", "parked", "blocked", "fable", "sitting"]);
+    expect(QUEUE_EXCLUSION_REASONS.filter((reason) => !reason.holdsOffWork).map((reason) => reason.key))
+      .toEqual(["refused"]);
+    /* A count-only row placed above a work-holding one is the ordering hazard
+       `refused`'s own block names: it must stay last. */
+    expect(QUEUE_EXCLUSION_REASONS.at(-1)!.holdsOffWork).toBe(false);
+  });
+
+  it("⚠ #2231 — a refusal leaves the COUNT and stays on offer to a seat", () => {
+    /* The live specimen at the fix, read at `gh issue list` 2026-10-11: `#1736`
+       carries `bug` + `not-built` and was the whole of *Bugs — 1 on offer*. */
+    expect(exclusionFor(["bug", CREW_NOT_BUILT_LABEL])).toBe("refused");
+    expect(queueExclusionSentence({ refused: 1 })).toBe("1 refused");
+    /* ⚠ THE HALF HIS RULING IS ABOUT, AND IT IS THE POINT OF THE WHOLE CHANGE:
+       the cut's reader says nothing about a refusal, so the card is still
+       handed to a seat that wants to overturn the reading. */
+    expect(workHoldExclusionFor(["bug", CREW_NOT_BUILT_LABEL])).toBeNull();
+  });
+
+  it("⚠ #2231 — a refusal beside a real hold answers with the HOLD, in both readers", () => {
+    /* `#2198`'s own shape at the fix: `bug` + `blocked` + `not-built`, the card
+       a seat stopped by hand. If the count answered *refused* here, his panel
+       would say a blocked card had merely been declined; if the CUT answered
+       `null`, it would offer a blocked card — which is the failure the ordering
+       and the derived subset each close independently. */
+    expect(exclusionFor(["bug", "blocked", CREW_NOT_BUILT_LABEL])).toBe("blocked");
+    expect(workHoldExclusionFor(["bug", "blocked", CREW_NOT_BUILT_LABEL])).toBe("blocked");
+    expect(exclusionFor(["bug", "parked", CREW_NOT_BUILT_LABEL])).toBe("parked");
+    expect(workHoldExclusionFor(["bug", "parked", CREW_NOT_BUILT_LABEL])).toBe("parked");
+    /* And `beingBuilt` reaches the subset the same way it reaches the whole
+       vocabulary — the label-less row is in both populations, so the one walker
+       cannot have two contracts. */
+    expect(workHoldExclusionFor(["bug"], true)).toBe("building");
+    expect(workHoldExclusionFor(["bug"], false)).toBeNull();
   });
 
   it("names a card held for a Fable session, or for a sitting", () => {
