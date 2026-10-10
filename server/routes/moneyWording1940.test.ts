@@ -146,13 +146,23 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
   });
 
   it("#2152 — nothing promises the full year of credits up front any more, on the confirm step or the receipt", () => {
-    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toContain("first month of credits");
-    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toContain("your credits arrive each month after that");
+    /* His wording, 2026-10-10, verbatim. The clause about unused credits being
+       replaced stays out until Cid confirms it is true. */
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toBe(
+      "Your first month of credits arrives once the payment goes through. After that, new credits arrive each month.",
+    );
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).not.toContain("replacing");
     for (const file of ["client/src/features/billing/ChangePlanModal.tsx", "server/routes/billing.ts"]) {
-      const source = read(file);
-      expect(source, file).not.toContain("full year of credits");
-      expect(source, file).toContain("${YEARLY_SWITCH_ALLOWANCE_SENTENCE}");
+      expect(read(file), file).not.toContain("full year of credits");
     }
+    expect(read("client/src/features/billing/ChangePlanModal.tsx")).toContain("${YEARLY_SWITCH_ALLOWANCE_SENTENCE}");
+  });
+
+  it("#2152 — his confirmation wording: You are on Pro yearly now / Pro Plus now, yearly only when the period changed", () => {
+    const billing = read("server/routes/billing.ts");
+    expect(billing).toContain("? `You're on ${planName} yearly now.`");
+    expect(billing).toContain('? `You\x27re on ${planName}${quote.targetInterval === "annual" && quote.currentInterval !== "annual" ? " yearly" : ""} now.`');
+    expect(billing).not.toContain("? `Upgraded to ${planName}!`");
   });
 
   it("#2152 (relay repair 4) — the add-credits yearly switch no longer says the year's credits land with the payment", () => {

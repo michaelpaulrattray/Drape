@@ -30,7 +30,7 @@ import {
   scheduleSubscriptionChange,
 } from "../stripe/subscriptionSchedule";
 import { formatCustomerShortDate } from "@shared/customerDate";
-import { YEARLY_SWITCH_ALLOWANCE_SENTENCE, planCancelledReceipt } from "@shared/planCancelCopy";
+import { planCancelledReceipt } from "@shared/planCancelCopy";
 import {
   queuePlanChangeSettlement,
   applyPlanChangeSettlement,
@@ -1737,14 +1737,16 @@ export const billingRouter = router({
             : `${planName} now comes with ${dialMonthlyFigure} credits a month.`
           : quote.kind === "interval-switch"
           ? quote.targetInterval === "annual"
-            ? `You are on ${planName}, billed yearly — the new billing year starts today. ${YEARLY_SWITCH_ALLOWANCE_SENTENCE}`
+            /* His wording, 2026-10-10: "Confirmation, same plan moving to yearly: You're on Pro yearly now." */
+            ? `You're on ${planName} yearly now.`
             : `You are on ${planName}, billed monthly — the new billing month starts today.`
           : quote.isUpgrade
             /* A yearly upgrade at a month's very edge owes nothing for the
                month in hand (#2152); "0 bonus credits added" would be a figure
                with nothing behind it. */
             ? creditAdjustment <= 0
-              ? `Upgraded to ${planName}!`
+              /* His wording, 2026-10-10: "Confirmation, moving to a different plan: You're on Pro Plus now." and "Only add yearly when the billing period has changed." */
+              ? `You're on ${planName}${quote.targetInterval === "annual" && quote.currentInterval !== "annual" ? " yearly" : ""} now.`
               : creditSettlement === "pending"
               ? `Upgraded to ${planName}! Your ${formatCredits(displayBalance(creditAdjustment))} bonus credits land as soon as the payment settles.`
               : `Upgraded to ${planName}! ${formatCredits(displayBalance(creditAdjustment))} bonus credits added.`
