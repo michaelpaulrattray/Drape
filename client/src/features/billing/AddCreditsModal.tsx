@@ -79,6 +79,7 @@ import {
 } from "@shared/creditTopups";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { announcePlanChange } from "./planChangeToast";
 
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
@@ -554,7 +555,9 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
 
   const changePlan = trpc.billing.changePlan.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      /* One voice for both doors, including a change held for the bank to
+         confirm (#2190) — see `planChangeToast.ts`. */
+      announcePlanChange(data);
       setWorking(false);
       void utils.credits.getBalance.invalidate();
       void utils.billing.getStatus.invalidate();

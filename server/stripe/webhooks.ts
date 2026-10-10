@@ -19,6 +19,9 @@ import {
   planCreditsAddonPriceId,
   planOfPlanPrice,
   readInvoiceForRenewalCheck,
+  readCurrentPhasePlan,
+  readHeldInvoice,
+  cancelHeldChange,
   REFUND_METADATA_USER_KEY,
   REFUND_METADATA_CHANGE_REQUEST_KEY,
 } from "./stripeService";
@@ -45,7 +48,7 @@ import {
 import { SubscriptionPlan } from "./stripeProducts";
 import { isPlanCreditsLookupKey } from "./stripePriceCatalogue";
 import type { BillingIntervalChoice } from "@shared/annualBilling";
-import { PLAN_TIERS, PlanTier, stripeWebhookEvents } from "../../drizzle/schema";
+import { PLAN_TIERS, PlanTier, stripeWebhookEvents, auditLogs } from "../../drizzle/schema";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import { planCreditsExpiryFrom, planCreditsExpiryFromPaidEnd } from "../billing/planCreditsExpiry";
 import type { AnnualGrantYear } from "../db/billing";
@@ -53,6 +56,7 @@ import {
   invoiceSubscriptionId,
   invoiceSubscriptionMetadata,
   nonProrationSubscriptionLines,
+  chargedSubscriptionLines,
   periodBought,
 } from "./invoiceLines";
 import {
@@ -82,7 +86,7 @@ import { getDb } from "../db/connection";
    second copy of six lines here is the mirror this repository keeps paying for
    (working law 4), so it is imported. */
 import { isDuplicateCreditReferenceError } from "../db/credits";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 const log = createModuleLogger("stripe/webhooks");
 
 /**
@@ -736,7 +740,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
   /* THE RENEWAL MISMATCH FLAG (#2190, his word: "add a check that compares the
      app's plan with Stripe's price at renewal and flags any mismatch before
      Stripe charges"). Read-only and never fatal — see its own docblock. */
-  await flagRenewalPlanMismatch(userId, live, planTier);
+  await flagRenewalPlanMismatch(userId, live, userWithCredits.credits?.planTier ?? null);
 
   // The period lives on the subscription ITEM on this API version (#664 —
   // see subscriptionPeriods.ts): the sub-level read was writing a fabricated
@@ -806,31 +810,36 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
  * renewal was `draft` with `next_payment_attempt` exactly 3,600 s after it,
  * and two hours after the roll it was `paid`. So this check runs on the event
  * we already get and acts only while the subscription's latest invoice is a
- * `subscription_cycle` draft — before the charge. `invoice.created` is the
- * card's suggested hook and would need a registration on the endpoint; it is
- * not needed for this.
+ * `subscription_cycle` draft — before the charge.
  *
- * **What is compared.** The plan of the price Stripe will bill (the base
- * item's `lookup_key`, read by {@link planOfPlanPrice}) against the plan this
- * handler is about to record for the account. The second is the honest "app's
- * plan" at this instant: a decrease scheduled for the renewal has already put
- * its phase's plan on the subscription, so comparing against the row BEFORE
- * this write would flag every scheduled downgrade on its own renewal.
+ * **What is compared — and why it is OUR ROW, read before this handler writes
+ * it** (the relay's finding 1 on head dd580ce2). The first shape compared the
+ * billed price with the plan this handler was about to record, which comes off
+ * `metadata.plan` — written by Stripe in the same request as the price, so it
+ * compared Stripe with itself and could never see the one case this exists
+ * for: an old-road declined upgrade puts our row back on Starter while Stripe
+ * keeps the Pro price and `metadata.plan` "pro". So the app's plan is
+ * `credits.planTier` as it stood when the event arrived. The ONE expected
+ * disagreement is a decrease scheduled for this very renewal: the schedule's
+ * phase has already moved the price, and our row is written by this event. A
+ * billed plan that matches the phase in progress ({@link readCurrentPhasePlan})
+ * is therefore silent.
  *
- * **What it does.** A warning audit row — the admin overview's alerts feed
- * and the staff audit log's Billing filter — naming both plans, the invoice,
- * the amount and when it will be charged. It does NOT fix anything: which side
- * is wrong is a person's call (his: *"flags any mismatch"*).
+ * **What it does.** One warning audit row per renewal invoice — keyed on the
+ * invoice id (the relay's note: a second `updated` event inside the draft
+ * hour is a different event id, so the replay guard does not stop it) — on
+ * the admin overview's alerts feed and the audit log's Billing filter. It
+ * does NOT fix anything: which side is wrong is a person's call (his: *"flags
+ * any mismatch"*).
  *
- * **What it never does** is fail the event or throw. It is a flag on a road
- * whose real work is the write below; a Stripe or database blip here is
- * logged and the write goes ahead. A price it cannot read (no lookup key, an
- * arranged-directly price) answers "cannot say", not "agrees", and is logged.
+ * **What it never does** is fail the event or throw. A price it cannot read
+ * (no lookup key, an arranged-directly price) answers "cannot say", not
+ * "agrees", and is logged.
  */
 async function flagRenewalPlanMismatch(
   userId: number,
   live: Stripe.Subscription,
-  appPlan: string,
+  appPlan: string | null,
 ): Promise<void> {
   try {
     const basePrice = subscriptionItemsOf(live).base?.price;
@@ -841,7 +850,8 @@ async function flagRenewalPlanMismatch(
       );
       return;
     }
-    if (billed.plan === appPlan) return;
+    const heldPlan = appPlan ?? "free";
+    if (billed.plan === heldPlan) return;
 
     const latest = (live as any).latest_invoice;
     const invoiceId: string | null =
@@ -852,6 +862,12 @@ async function flagRenewalPlanMismatch(
       return;
     }
 
+    /* A scheduled change entering its phase at this renewal is the expected
+       disagreement, and only that: the phase in progress names the billed plan. */
+    if ((await readCurrentPhasePlan(live)) === billed.plan) return;
+
+    if (await renewalMismatchAlreadyFlagged(invoiceId)) return;
+
     /* `detail`, not an inline literal on `metadata` — an AUDIT row, not a
        Stripe write (environmentTag.test.ts reads inline blocks here as Stripe
        writes). */
@@ -859,7 +875,7 @@ async function flagRenewalPlanMismatch(
       targetUserId: userId,
       stripeSubscriptionId: live.id,
       stripeInvoiceId: invoiceId,
-      appPlan,
+      appPlan: heldPlan,
       billedPlan: billed.plan,
       billedInterval: billed.interval,
       billedLookupKey: basePrice?.lookup_key ?? null,
@@ -868,19 +884,46 @@ async function flagRenewalPlanMismatch(
       chargesAt: invoice.nextPaymentAttemptSec
         ? new Date(invoice.nextPaymentAttemptSec * 1000).toISOString()
         : null,
-      reason: `The renewal is about to bill ${billed.plan} (${billed.interval}) while the app holds ${appPlan} — check before the charge; nothing was changed`,
+      reason: `The renewal is about to bill ${billed.plan} (${billed.interval}) while the app holds ${heldPlan} — check before the charge; nothing was changed`,
     };
     log.error(mismatchDetail, "[Webhook] RENEWAL PLAN MISMATCH — flagged for staff, nothing changed");
     await logAuditEvent({
       userId,
       action: AUDIT_ACTIONS.BILLING_RENEWAL_PLAN_MISMATCH,
       resourceType: "billing",
-      resourceId: live.id,
+      resourceId: invoiceId,
       metadata: mismatchDetail,
       severity: "warning",
     });
   } catch (err) {
     log.warn({ err, subscriptionId: live.id }, "[Webhook] Renewal check could not run — the subscription write goes ahead");
+  }
+}
+
+/**
+ * Has this renewal invoice already been flagged? One row per invoice. A read
+ * that fails answers "no" — a duplicate row is the cheaper mistake than a
+ * missing one. Two deliveries racing inside the same instant can still both
+ * write; that is the stated limit, and it costs one extra row.
+ */
+async function renewalMismatchAlreadyFlagged(invoiceId: string): Promise<boolean> {
+  try {
+    const db = await getDb();
+    if (!db) return false;
+    const rows = await db
+      .select({ id: auditLogs.id })
+      .from(auditLogs)
+      .where(
+        and(
+          eq(auditLogs.action, AUDIT_ACTIONS.BILLING_RENEWAL_PLAN_MISMATCH),
+          eq(auditLogs.resourceId, invoiceId),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  } catch (err) {
+    log.warn({ err, invoiceId }, "[Webhook] Could not read whether this renewal was already flagged — flagging");
+    return false;
   }
 }
 
@@ -1577,6 +1620,39 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<W
 }
 
 /**
+ * WAS THIS PLAN-CHANGE INVOICE'S CHANGE HELD RATHER THAN APPLIED? (#2190, the
+ * relay's finding 4.) Read off the invoice's own charging lines against the
+ * live subscription's items — see the held-change branch in
+ * `handleInvoicePaymentFailed` for the measurement. A line that charges for a
+ * (price, quantity) the subscription does not carry is a change that never
+ * landed. With no readable charging line, Stripe's `pending_update` naming
+ * this invoice decides; with neither, it is NOT called held, and the old
+ * roads keep it.
+ */
+function planChangeWasHeld(invoice: Stripe.Invoice, live: Stripe.Subscription): boolean {
+  const charged = chargedSubscriptionLines(invoice);
+  if (charged.length > 0) {
+    const items: Array<{ priceId: string | null; quantity: number | null }> = (
+      ((live as any).items?.data ?? []) as any[]
+    ).map((item) => ({
+      priceId: typeof item?.price === "string" ? item.price : (item?.price?.id ?? null),
+      quantity: typeof item?.quantity === "number" ? item.quantity : null,
+    }));
+    return charged.some(
+      (line) =>
+        !items.some(
+          (item) =>
+            item.priceId === line.priceId
+            && (line.quantity === null || item.quantity === null || item.quantity === line.quantity),
+        ),
+    );
+  }
+  const latest = (live as any).latest_invoice;
+  const latestId = typeof latest === "string" ? latest : latest?.id;
+  return !!(live as any).pending_update && latestId === invoice.id;
+}
+
+/**
  * Handle invoice.payment_failed event
  */
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<WebhookResult> {
@@ -1603,18 +1679,29 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
   /* ⚠ **A PLAN CHANGE THAT WAS HELD IS NOT A PLAN THAT FAILED (#2190).** Every
      plan change now asks Stripe to hold it until its invoice is paid
      (`pending_if_incomplete`, `updateSubscriptionPlan`). When that charge is
-     declined the subscription is untouched — measured in test mode: still on
-     the old price, still `active` — and Stripe sends this event with
+     declined the subscription is untouched, and Stripe sends this event with
      `next_payment_attempt` null, which the final-failure road below reads as
      "the plan is dead": it would cancel a customer's paid plan and drop them
-     to Free because a card failed on an UPGRADE. So a failed change invoice on
-     a subscription Stripe still holds as `active` ends here, with the change
-     cancelled and everything else left exactly as it was.
+     to Free because a card failed on a plan CHANGE.
 
-     The discriminator is read live, never off the payload: a change made on
-     the old road (before #2190, applied at once) left the subscription
-     `past_due` on the same decline, measured the same way, and keeps the
-     roads below — the upgrade branch for a grant, the cancel for a switch. */
+     ⚠ **DECIDED FROM THE INVOICE, NOT FROM THE SUBSCRIPTION'S STATUS** (the
+     relay's finding 4 on head dd580ce2). The first shape asked whether the
+     subscription was `active`, so a `past_due` customer's declined upgrade
+     skipped this branch and was cancelled to Free. The question is whether
+     the change the invoice charged for is ON the subscription, and the
+     invoice says what it charged for: its positive lines carry the target
+     price and the new quantity (measured — *"Remaining time on Klieg Pro"* at
+     quantity 1; a dial move at its new quantity). Every one of them matching a
+     live item means Stripe applied it (the old road, before #2190); any one
+     missing means it was held. Lines that say nothing fall back to Stripe's
+     own `pending_update` naming this invoice.
+
+     A held change whose payment is waiting on the customer's bank
+     (`requires_action`) is LEFT held — that is the confirmation the customer
+     was sent to make (finding 3). One whose invoice was paid in the gap
+     APPLIED, and is left for the payment's own event (finding 5). Otherwise
+     the hold is cancelled with any credits queued against it, and nothing
+     else moves. */
   if ((invoice as any).billing_reason === "subscription_update") {
     const changeRead = await retrieveLiveSubscription(subscriptionId);
     if (changeRead.outcome === "failed") {
@@ -1626,19 +1713,34 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<Webh
         message: `Subscription ${subscriptionId} could not be read live from Stripe — redeliver to retry`,
       };
     }
-    if (changeRead.outcome === "found" && changeRead.subscription.status === "active") {
-      /* Both voids are idempotent: `changePlan` has normally voided the
-         invoice already (`already-closed` costs one read), and no settlement
-         is queued for a held change — the void is the belt for one queued by
-         an earlier road. */
-      await voidPlanChangeSettlement(invoice.id as string);
-      const heldVoid = await voidInvoice(invoice.id as string);
-      if (heldVoid === "failed") {
+    if (changeRead.outcome === "found" && planChangeWasHeld(invoice, changeRead.subscription)) {
+      const heldInvoice = await readHeldInvoice(invoice.id as string);
+      if (heldInvoice?.status !== "paid" && heldInvoice?.paymentIntentStatus === "requires_action") {
+        log.info(
+          `[Webhook] Plan-change invoice ${invoice.id} for user ${userId} is waiting on the customer's bank to confirm — left held`,
+        );
+        return {
+          success: true,
+          message: `Plan change for user ${userId} is waiting on a bank confirmation — left held`,
+        };
+      }
+      const cancelled = await cancelHeldChange(invoice.id as string);
+      if (cancelled === "paid") {
+        log.info(
+          `[Webhook] Plan-change invoice ${invoice.id} for user ${userId} has been paid since this failure — the change applied; its payment event settles it`,
+        );
+        return {
+          success: true,
+          message: `Plan change for user ${userId} was paid after this failure — nothing to cancel`,
+        };
+      }
+      if (cancelled === "failed") {
         return {
           success: false,
           message: `The held plan change's invoice ${invoice.id} for user ${userId} could not be voided — redeliver to retry`,
         };
       }
+      await voidPlanChangeSettlement(invoice.id as string);
       log.info(
         `[Webhook] Plan-change invoice ${invoice.id} for user ${userId} was not paid — the change was held, never applied, and is cancelled; the plan and price are unchanged`,
       );

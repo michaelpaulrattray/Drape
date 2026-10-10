@@ -21,6 +21,7 @@ import {
   quotePlanChange,
   updateSubscriptionPlan,
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+  PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
   getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
@@ -1369,6 +1370,7 @@ export const billingRouter = router({
           changeKind: quote.kind,
           deferred: true as const,
           effectiveAt: scheduled.effectiveAt,
+          confirmPaymentUrl: null as string | null,
         };
       }
 
@@ -1417,16 +1419,29 @@ export const billingRouter = router({
             interval: quote.targetInterval,
             invoiceId: result.invoiceId ?? null,
             heldChangeCancelled: result.heldChangeCancelled ?? null,
+            scheduledChangeRestored: result.scheduledChangeRestored ?? null,
           },
           "[Billing] plan change refused — the charge did not go through and the change was not applied",
         );
         throw spokenError({
           code: "BAD_REQUEST",
-          message: PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+          /* The service composes the sentence, because only it knows whether a
+             scheduled change had to be put back and whether that worked. */
+          message: result.error || PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
         });
       }
 
-      if (!result.success) {
+      /* ⚠ **THE BANK WANTS A CONFIRMATION: THE CHANGE IS HELD, NOT REFUSED (#2190,
+         the relay's finding 3).** Stripe keeps it until its invoice is paid on
+         the confirmation page, and then applies it by itself — so from here the
+         road is the one a slow payment already takes: the credits are queued
+         against that invoice and move when its payment event lands, and the
+         plan is recorded by the `subscription.updated` that the application
+         fires. What this request must NOT do is write the new plan or log a
+         plan change, because neither has happened yet. */
+      const awaitingConfirmation = result.confirmationRequired === true;
+
+      if (!result.success && !awaitingConfirmation) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: result.error || "Failed to change plan.",
@@ -1655,6 +1670,33 @@ export const billingRouter = router({
       // lands. Until then the account reads its old tier — minutes, normally.
       // The audit row says which road the record took, so support can tell a
       // deferred write from a written one.
+      if (awaitingConfirmation) {
+        log.info(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+            creditSettlement,
+          },
+          "[Billing] plan change held for the customer's bank to confirm — credits queued against its invoice, plan not yet recorded",
+        );
+        return {
+          success: true,
+          message: result.error || PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+          proratedAmount: quote.proratedAmount,
+          creditAdjustment,
+          creditSettlement,
+          targetInterval: quote.targetInterval,
+          changeKind: quote.kind,
+          deferred: false as const,
+          effectiveAt: null,
+          /* The page that confirms the payment — Stripe's own, for this invoice.
+             The client puts it behind a "Confirm payment" button. */
+          confirmPaymentUrl: (result.confirmUrl ?? null) as string | null,
+        };
+      }
+
       const localRecord = await updateUserSubscription(ctx.user.id, {
         planTier: input.newPlan,
         billingInterval: stripeIntervalOf(quote.targetInterval),
@@ -1792,6 +1834,8 @@ export const billingRouter = router({
            (the client's `onSuccess` is one handler for both). */
         deferred: false as const,
         effectiveAt: null,
+        /* Only a change held for a bank confirmation carries a page (#2190). */
+        confirmPaymentUrl: null as string | null,
       };
     }),
 });

@@ -7,22 +7,25 @@
  * Three subjects, each driven through its real entrance with Stripe and the
  * database doubled at their module boundaries:
  *
- *  1. THE WIRE — `updateSubscriptionPlan`'s outgoing request carries
- *     `payment_behavior: "pending_if_incomplete"` on every change (monthly,
- *     yearly, and the interval switch), and a change Stripe HELD comes back
- *     refused with the held change cancelled (working law 5: proven on the
- *     request, not on a constant beside it).
- *  2. THE FAILED-CHARGE WEBHOOK — a declined change invoice on a subscription
- *     Stripe still holds as `active` cancels the change and touches nothing
- *     else. Its negative control is the old road (`past_due`), which must
- *     still end the plan exactly as before.
- *  3. THE RENEWAL FLAG — a renewal draft about to bill a plan the app does
- *     not hold raises a warning audit row; agreement, a non-draft invoice, an
- *     unreadable price and a failed invoice read all stay silent.
+ *  1. THE WIRE — `updateSubscriptionPlan` asks Stripe to hold every change
+ *     until paid, and then reads WHY a held change was held: a decline is
+ *     cancelled (and a scheduled change it cleared is put back, or the
+ *     customer is told it was not), a bank confirmation is KEPT with its page,
+ *     and an invoice paid in the gap is a change that went through.
+ *  2. THE FAILED-CHARGE WEBHOOK — decided from the invoice's own lines
+ *     against the live items, never from the subscription's status: a held
+ *     change is cancelled and nothing else moves, whether the subscription is
+ *     `active` or `past_due`; the old road (Stripe applied it) still ends the
+ *     plan; a bank confirmation is left alone; and when the confirmation is
+ *     paid, the payment's event runs the credit settlement.
+ *  3. THE RENEWAL FLAG — our row (before this event writes it) against the
+ *     billed price, in the renewal's draft hour; a scheduled change entering
+ *     its phase is the one expected disagreement; one row per invoice.
  *
  * What Stripe really does with each request was measured in test mode on the
- * pinned 2026-01-28.clover, card 4000 0000 0000 0341 — the receipts are in the
- * PR body. These arms prove what THIS code does with those answers.
+ * pinned 2026-01-28.clover — the receipts are on the PR. These arms prove what
+ * THIS code does with those answers. Arms named for the relay's findings on
+ * head dd580ce2 carry its number (F1–F6).
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type Stripe from "stripe";
@@ -35,6 +38,10 @@ const s = vi.hoisted(() => ({
   invoicesVoid: vi.fn(),
   productsRetrieve: vi.fn(),
   constructEvent: vi.fn(),
+  schedulesRetrieve: vi.fn(),
+  schedulesRelease: vi.fn(),
+  schedulesCreate: vi.fn(),
+  schedulesUpdate: vi.fn(),
 }));
 
 vi.mock("stripe", () => ({
@@ -42,7 +49,12 @@ vi.mock("stripe", () => ({
     prices = { create: vi.fn(), list: s.pricesList };
     products = { retrieve: s.productsRetrieve };
     subscriptions = { retrieve: s.subscriptionsRetrieve, update: s.subscriptionsUpdate };
-    subscriptionSchedules = { create: vi.fn(), update: vi.fn(), release: vi.fn(), retrieve: vi.fn() };
+    subscriptionSchedules = {
+      create: s.schedulesCreate,
+      update: s.schedulesUpdate,
+      release: s.schedulesRelease,
+      retrieve: s.schedulesRetrieve,
+    };
     invoices = { retrieve: s.invoicesRetrieve, voidInvoice: s.invoicesVoid };
     customers = { retrieve: vi.fn(), create: vi.fn() };
     checkout = { sessions: { create: vi.fn(), retrieve: vi.fn() } };
@@ -70,6 +82,7 @@ const db = vi.hoisted(() => ({
   getCreditTransactionByRef: vi.fn(),
   voidPendingPlanChangeSettlementsForUser: vi.fn(),
   getVoidPlanChangeSettlementInvoiceIdsForUser: vi.fn(),
+  installAnnualMonthlyCredits: vi.fn(),
   getDb: vi.fn().mockResolvedValue(null),
   withTransaction: vi.fn(),
 }));
@@ -77,8 +90,10 @@ vi.mock("../db", () => db);
 
 /* The replay guard's claim — shaped like the guard (insert first, the unique
    index arbitrates, release on failure), as `subscriptionNewerGuard.test.ts`
-   carries why. */
+   carries why — plus the one SELECT this card adds: whether a renewal invoice
+   has already been flagged (`flaggedRows` is what that read finds). */
 const claims = vi.hoisted(() => [] as string[]);
+const flaggedRows = vi.hoisted(() => ({ rows: [] as Array<{ id: number }> }));
 vi.mock("../db/connection", () => ({
   getDb: vi.fn().mockImplementation(async () => ({
     insert: () => ({
@@ -90,6 +105,7 @@ vi.mock("../db/connection", () => ({
       },
     }),
     delete: () => ({ where: async () => { claims.pop(); } }),
+    select: () => ({ from: () => ({ where: () => ({ limit: async () => flaggedRows.rows }) }) }),
   })),
 }));
 
@@ -103,17 +119,20 @@ import {
   updateSubscriptionPlan,
   planOfPlanPrice,
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+  PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
 } from "./stripeService";
 import { handleStripeWebhook } from "./webhooks";
 import { priceLookupKey, planCreditsPriceLookupKey } from "./stripePriceCatalogue";
 import { SUBSCRIPTION_PRODUCTS } from "./stripeProducts";
 import { periodPriceInCents } from "@shared/annualBilling";
+import { formatCustomerShortDate } from "@shared/customerDate";
 import { ENV_TAG_KEY } from "./environmentTag";
 import { deploymentTag } from "../_core/env";
 import { AUDIT_ACTIONS } from "../../drizzle/schema";
 
 const NOW = Math.floor(Date.now() / 1000);
 const DAY = 86_400;
+const priceId = (plan: string, interval: "monthly" | "annual") => `price_${priceLookupKey(plan, interval)}`;
 
 /** The catalogue answers whatever key is asked, as Stripe's list does. */
 function catalogue() {
@@ -153,7 +172,7 @@ function liveSub(plan: string, interval: "monthly" | "annual", overrides: Record
           id: "si_base",
           quantity: 1,
           price: {
-            id: `price_${priceLookupKey(plan, interval)}`,
+            id: priceId(plan, interval),
             lookup_key: priceLookupKey(plan, interval),
             product: "prod_plan",
             currency: "usd",
@@ -171,17 +190,90 @@ function liveSub(plan: string, interval: "monthly" | "annual", overrides: Record
 /** What Stripe's `pending_update` looks like on a held change (trimmed). */
 const HELD = { expires_at: NOW + 23 * 3600, subscription_items: [{ id: "si_base" }], metadata: null };
 
+/**
+ * One invoice as Stripe holds it, mutable the way Stripe's is: `retrieve`
+ * reads it (with or without the expanded payment attempt), `voidInvoice`
+ * voids it. `paidOnVoid` models a payment landing between the read and the
+ * void — Stripe then refuses the void, and the invoice reads paid.
+ */
+const invoice = {
+  status: "paid" as string,
+  pi: null as string | null,
+  hosted: "https://invoice.stripe.example/i/held" as string | null,
+  amountDue: 2_777,
+  paidOnVoid: false,
+  voidFails: false,
+};
+function invoiceIs(next: Partial<typeof invoice>) {
+  Object.assign(invoice, { paidOnVoid: false, voidFails: false }, next);
+}
+
+const SCHEDULED = { plan: "starter", interval: "monthly" as const, effectiveSec: NOW + 20 * DAY };
+/** A subscription with a decrease to Starter scheduled for its renewal. */
+function withScheduledDecrease() {
+  s.subscriptionsRetrieve.mockResolvedValue(liveSub("pro", "monthly", { schedule: "sub_sched_old" }));
+  s.schedulesRetrieve.mockResolvedValue({
+    id: "sub_sched_old",
+    status: "active",
+    current_phase: { start_date: NOW - 10 * DAY, end_date: SCHEDULED.effectiveSec },
+    phases: [
+      { start_date: NOW - 10 * DAY, items: [{ price: priceId("pro", "monthly"), quantity: 1 }], metadata: { plan: "pro" } },
+      {
+        start_date: SCHEDULED.effectiveSec,
+        items: [{ price: priceId(SCHEDULED.plan, SCHEDULED.interval), quantity: 1 }],
+        metadata: { plan: SCHEDULED.plan, interval: SCHEDULED.interval },
+      },
+    ],
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   claims.length = 0;
+  flaggedRows.rows = [];
   catalogue();
+  invoiceIs({ status: "paid", pi: "succeeded", hosted: "https://invoice.stripe.example/i/held", amountDue: 2_777 });
   s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly"));
   s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_change", pending_update: null });
-  s.invoicesRetrieve.mockResolvedValue({ status: "paid", amount_due: 2_777 });
-  s.invoicesVoid.mockResolvedValue({ status: "void" });
+  s.invoicesRetrieve.mockImplementation(async () => ({
+    status: invoice.status,
+    amount_due: invoice.amountDue,
+    hosted_invoice_url: invoice.hosted,
+    payments: { data: invoice.pi ? [{ payment: { payment_intent: { status: invoice.pi } } }] : [] },
+  }));
+  s.invoicesVoid.mockImplementation(async () => {
+    if (invoice.paidOnVoid) {
+      invoice.status = "paid";
+      throw new Error("You can only void an open invoice");
+    }
+    if (invoice.voidFails) throw new Error("Stripe is having a moment");
+    invoice.status = "void";
+    return { status: "void" };
+  });
+  s.schedulesRetrieve.mockResolvedValue(null);
+  s.schedulesRelease.mockResolvedValue({ id: "sub_sched_old", status: "released" });
+  s.schedulesCreate.mockResolvedValue({
+    id: "sub_sched_new",
+    phases: [
+      {
+        start_date: NOW - 10 * DAY,
+        end_date: SCHEDULED.effectiveSec,
+        items: [{ price: priceId("pro", "monthly"), quantity: 1 }],
+        metadata: { plan: "pro" },
+      },
+    ],
+  });
+  s.schedulesUpdate.mockImplementation(async (_id: string, params: Record<string, any>) => ({
+    id: "sub_sched_new",
+    phases: params.phases.map((phase: Record<string, any>, i: number) => ({
+      ...phase,
+      start_date: i === 0 ? NOW - 10 * DAY : SCHEDULED.effectiveSec,
+    })),
+  }));
   db.updateUserSubscription.mockResolvedValue({ success: true });
   db.getPlanChangeSettlementByInvoice.mockResolvedValue(null);
   db.resolvePlanChangeSettlement.mockResolvedValue(true);
+  db.addCredits.mockResolvedValue({ success: true });
   db.getUserByStripeCustomerId.mockResolvedValue({
     id: 7,
     name: "seven",
@@ -207,17 +299,16 @@ describe("updateSubscriptionPlan — Stripe is asked to hold the change until it
     const params = s.subscriptionsUpdate.mock.calls[0][1];
     expect(params.payment_behavior).toBe("pending_if_incomplete");
     expect(params.proration_behavior).toBe("always_invoice");
-    expect(params.items[0]).toEqual({ id: "si_base", price: `price_${priceLookupKey("pro", to)}` });
+    expect(params.items[0]).toEqual({ id: "si_base", price: priceId("pro", to) });
     /* The plan's metadata rides the SAME request, so Stripe holds it with the
        price and applies both or neither (measured at the pinned version). */
     expect(params.metadata.plan).toBe("pro");
-    /* A paid change voids nothing. */
     expect(s.invoicesVoid).not.toHaveBeenCalled();
   });
 
-  it("a change Stripe HELD (the charge did not go through) comes back refused, with the hold cancelled by voiding its invoice", async () => {
+  it("a DECLINE (requires_payment_method) is refused, with the hold cancelled by voiding its invoice", async () => {
     s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
-    s.invoicesRetrieve.mockResolvedValue({ status: "open", amount_due: 4_100 });
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
 
     const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
 
@@ -228,14 +319,13 @@ describe("updateSubscriptionPlan — Stripe is asked to hold the change until it
       invoiceId: "in_held",
       error: PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
     });
-    expect(s.invoicesVoid).toHaveBeenCalledTimes(1);
+    expect(result.scheduledChangeRestored).toBeUndefined();
     expect(s.invoicesVoid).toHaveBeenCalledWith("in_held");
   });
 
   it("a hold whose void keeps failing is still refused — tried three times and reported as not cancelled, never as applied", async () => {
     s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
-    s.invoicesRetrieve.mockResolvedValue({ status: "open" });
-    s.invoicesVoid.mockRejectedValue(new Error("Stripe is having a moment"));
+    invoiceIs({ status: "open", pi: "requires_payment_method", voidFails: true });
 
     const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
 
@@ -243,6 +333,111 @@ describe("updateSubscriptionPlan — Stripe is asked to hold the change until it
     expect(result.paymentDeclined).toBe(true);
     expect(result.heldChangeCancelled).toBe(false);
     expect(s.invoicesVoid).toHaveBeenCalledTimes(3);
+  });
+
+  it("F3 · a BANK CONFIRMATION (requires_action) is KEPT — not voided — and comes back with its page and the confirm sentence", async () => {
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_3ds", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_action", hosted: "https://invoice.stripe.example/i/3ds" });
+
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
+
+    expect(result).toMatchObject({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    expect(result.paymentDeclined).toBeUndefined();
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  it("F5 · a held invoice already PAID when it is read is a change that went through", async () => {
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    invoiceIs({ status: "paid", pi: "succeeded" });
+
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
+
+    expect(result).toMatchObject({ success: true, invoiceId: "in_held", invoiceStatus: "paid" });
+    expect(result.paymentDeclined).toBeUndefined();
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+  });
+
+  it("F5 · a payment landing between the read and the void is a change that went through, and files no 'paid after the plan ended' alarm", async () => {
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_payment_method", paidOnVoid: true });
+
+    const result = await updateSubscriptionPlan("sub_1", "pro", 7, "monthly", "si_base");
+
+    expect(result).toMatchObject({ success: true, invoiceId: "in_held", invoiceStatus: "paid" });
+    expect(audit.logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it("F2 · a declined change PUTS BACK the scheduled change it had to clear, with the same plan and date", async () => {
+    withScheduledDecrease();
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(s.schedulesRelease).toHaveBeenCalledWith("sub_sched_old");
+    expect(result).toMatchObject({ paymentDeclined: true, scheduledChangeRestored: true });
+    expect(result.error).toBe(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE);
+    /* Put back AFTER the hold is cancelled, from the subscription as it now
+       stands, with the target the customer had chosen. */
+    expect(s.schedulesCreate).toHaveBeenCalledWith({ from_subscription: "sub_1" });
+    expect(s.invoicesVoid.mock.invocationCallOrder[0]).toBeLessThan(s.schedulesCreate.mock.invocationCallOrder[0]);
+    const phases = s.schedulesUpdate.mock.calls[0][1].phases;
+    expect(phases[1].metadata).toMatchObject({ plan: SCHEDULED.plan, interval: SCHEDULED.interval });
+    expect(phases[1].items).toEqual([{ price: priceId(SCHEDULED.plan, SCHEDULED.interval) }]);
+  });
+
+  it("F2 · a scheduled change that cannot be put back is SAID, with its date — never 'your plan has not changed' alone", async () => {
+    withScheduledDecrease();
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_held", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
+    s.schedulesCreate.mockRejectedValue(new Error("Stripe is having a moment"));
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(result).toMatchObject({ paymentDeclined: true, scheduledChangeRestored: false });
+    expect(result.error).toContain("was cleared");
+    expect(result.error).toContain(formatCustomerShortDate(new Date(SCHEDULED.effectiveSec * 1000)));
+  });
+
+  it("F2 + F3 · a bank confirmation that had to clear a scheduled change is cancelled, the schedule put back, and the customer told what to do", async () => {
+    withScheduledDecrease();
+    s.subscriptionsUpdate.mockResolvedValue({ latest_invoice: "in_3ds", pending_update: HELD });
+    invoiceIs({ status: "open", pi: "requires_action" });
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(result.confirmationRequired).toBeUndefined();
+    expect(result).toMatchObject({ paymentDeclined: true, scheduledChangeRestored: true });
+    expect(s.invoicesVoid).toHaveBeenCalledWith("in_3ds");
+    expect(result.error).toContain("Keep my plan");
+  });
+
+  it("NEGATIVE CONTROL — a PAID change with a scheduled one does not put the schedule back (the change replaced it)", async () => {
+    withScheduledDecrease();
+    invoiceIs({ status: "paid", pi: "succeeded" });
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(result.success).toBe(true);
+    expect(s.schedulesRelease).toHaveBeenCalledWith("sub_sched_old");
+    expect(s.schedulesCreate).not.toHaveBeenCalled();
+  });
+
+  it("a schedule that cannot be READ refuses before anything is released or charged", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("pro", "monthly", { schedule: "sub_sched_old" }));
+    s.schedulesRetrieve.mockRejectedValue(new Error("Stripe is having a moment"));
+
+    const result = await updateSubscriptionPlan("sub_1", "studio", 7, "monthly", "si_base");
+
+    expect(result.success).toBe(false);
+    expect(s.schedulesRelease).not.toHaveBeenCalled();
+    expect(s.subscriptionsUpdate).not.toHaveBeenCalled();
   });
 });
 
@@ -281,26 +476,41 @@ function cancelCalls() {
   return s.subscriptionsUpdate.mock.calls.filter(([, p]) => p?.cancel_at_period_end === true);
 }
 
-/** A declined change invoice, as Stripe sends `invoice.payment_failed` for one. */
-const CHANGE_INVOICE = {
-  id: "in_held",
-  customer: "cus_1",
-  billing_reason: "subscription_update",
-  next_payment_attempt: null,
-  amount_due: 4_100,
-  currency: "usd",
-  parent: { type: "subscription_details", subscription_details: { subscription: "sub_1" } },
-  lines: { data: [] },
-};
+/** A clover invoice line for a subscription item (the shape measured). */
+function line(price: string, amount: number, quantity = 1, proration = true) {
+  return {
+    amount,
+    quantity,
+    pricing: { price_details: { price } },
+    parent: { type: "subscription_item_details", subscription_item_details: { proration } },
+  };
+}
+
+/** A declined Starter → Pro change invoice, as `invoice.payment_failed` sends it. */
+function changeInvoice(lines: unknown[] = [
+  line(priceId("starter", "monthly"), -2_700),
+  line(priceId("pro", "monthly"), 6_800),
+]) {
+  return {
+    id: "in_held",
+    customer: "cus_1",
+    billing_reason: "subscription_update",
+    next_payment_attempt: null,
+    amount_due: 4_100,
+    currency: "usd",
+    parent: { type: "subscription_details", subscription_details: { subscription: "sub_1" } },
+    lines: { data: lines },
+  };
+}
 
 // ─── 2 · THE FAILED-CHARGE WEBHOOK ──────────────────────────────────────────
 
-describe("invoice.payment_failed on a HELD plan change", () => {
-  it("cancels the change and nothing else — no cancel, no drop to Free, no record write", async () => {
+describe("invoice.payment_failed on a plan-change invoice", () => {
+  it("a HELD change (its target price is not on the subscription) is cancelled and nothing else moves", async () => {
     s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly", { pending_update: HELD }));
-    s.invoicesRetrieve.mockResolvedValue({ status: "open" });
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
 
-    const result = await deliver("invoice.payment_failed", CHANGE_INVOICE);
+    const result = await deliver("invoice.payment_failed", changeInvoice());
 
     expect(result.success).toBe(true);
     expect(cancelCalls()).toHaveLength(0);
@@ -311,11 +521,37 @@ describe("invoice.payment_failed on a HELD plan change", () => {
     );
   });
 
-  it("NEGATIVE CONTROL — a change made on the old road (Stripe moved the price, the subscription went past_due) still ends the plan as before", async () => {
-    s.subscriptionsRetrieve.mockResolvedValue(liveSub("pro", "annual", { status: "past_due" }));
-    s.invoicesRetrieve.mockResolvedValue({ status: "open" });
+  it("F4 · a held change on a PAST_DUE subscription is cancelled too — never a cancel to Free over a declined change", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly", { status: "past_due" }));
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
 
-    const result = await deliver("invoice.payment_failed", CHANGE_INVOICE);
+    const result = await deliver("invoice.payment_failed", changeInvoice());
+
+    expect(result.success).toBe(true);
+    expect(cancelCalls()).toHaveLength(0);
+    expect(db.updateUserSubscription).not.toHaveBeenCalledWith(7, expect.objectContaining({ planTier: "free" }));
+    expect(s.invoicesVoid).toHaveBeenCalledWith("in_held");
+  });
+
+  it("F4 · a held DIAL move is read by its quantity — the add-on price is on the subscription, at the old quantity", async () => {
+    const addon = `price_${planCreditsPriceLookupKey("studio", "monthly")}`;
+    const live = liveSub("studio", "monthly", { status: "past_due" });
+    (live.items.data as unknown[]).push({ id: "si_addon", quantity: 2, price: { id: addon, lookup_key: planCreditsPriceLookupKey("studio", "monthly") } });
+    s.subscriptionsRetrieve.mockResolvedValue(live);
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice([line(addon, -1_800, 2), line(addon, 2_700, 3)]));
+
+    expect(result.success).toBe(true);
+    expect(cancelCalls()).toHaveLength(0);
+    expect(s.invoicesVoid).toHaveBeenCalledWith("in_held");
+  });
+
+  it("NEGATIVE CONTROL — a change Stripe APPLIED (old road: the target price IS on the subscription) still ends the plan as before", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("pro", "monthly", { status: "past_due" }));
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice());
 
     expect(result.success).toBe(true);
     expect(cancelCalls()).toHaveLength(1);
@@ -325,14 +561,87 @@ describe("invoice.payment_failed on a HELD plan change", () => {
     );
   });
 
+  it("lines that say nothing fall back to Stripe's own pending_update naming this invoice", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(
+      liveSub("starter", "monthly", { status: "past_due", pending_update: HELD, latest_invoice: "in_held" }),
+    );
+    invoiceIs({ status: "open", pi: "requires_payment_method" });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice([]));
+
+    expect(result.success).toBe(true);
+    expect(cancelCalls()).toHaveLength(0);
+    expect(s.invoicesVoid).toHaveBeenCalledWith("in_held");
+  });
+
+  it("F3 · a change waiting on the customer's BANK is left held — no void, no cancel", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly", { pending_update: HELD }));
+    invoiceIs({ status: "open", pi: "requires_action" });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice());
+
+    expect(result.success).toBe(true);
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+    expect(cancelCalls()).toHaveLength(0);
+    expect(db.resolvePlanChangeSettlement).not.toHaveBeenCalled();
+  });
+
+  it("F5 · an invoice PAID since the failure applied its change — no void, no cancel, its payment event settles it", async () => {
+    s.subscriptionsRetrieve.mockResolvedValue(liveSub("starter", "monthly"));
+    invoiceIs({ status: "paid", pi: "succeeded" });
+    /* Its credits are queued and owed: voiding that row here would leave a
+       paid change with no credits, which is the half of F5 a void hides. */
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      stripeInvoiceId: "in_held", userId: 7, direction: "grant", credits: 90_000, status: "pending",
+    });
+
+    const result = await deliver("invoice.payment_failed", changeInvoice());
+
+    expect(result.success).toBe(true);
+    expect(s.invoicesVoid).not.toHaveBeenCalled();
+    expect(cancelCalls()).toHaveLength(0);
+    expect(db.resolvePlanChangeSettlement).not.toHaveBeenCalled();
+  });
+
   it("a live read that fails fails the event, so Stripe redelivers rather than this guessing", async () => {
     s.subscriptionsRetrieve.mockRejectedValue(new Error("Stripe is having a moment"));
 
-    const result = await deliver("invoice.payment_failed", CHANGE_INVOICE);
+    const result = await deliver("invoice.payment_failed", changeInvoice());
 
     expect(result.success).toBe(false);
     expect(cancelCalls()).toHaveLength(0);
     expect(db.updateUserSubscription).not.toHaveBeenCalled();
+  });
+});
+
+describe("F3 · paying the bank's confirmation later", () => {
+  it("runs the credit settlement queued against that invoice when its payment lands", async () => {
+    db.getPlanChangeSettlementByInvoice.mockResolvedValue({
+      stripeInvoiceId: "in_3ds",
+      userId: 7,
+      direction: "grant",
+      credits: 90_000,
+      status: "pending",
+      description: "Prorated credits for upgrade to pro",
+      annualMonthlyCredits: null,
+      annualPeriodStart: null,
+    });
+
+    await deliver("invoice.payment_succeeded", {
+      ...changeInvoice(),
+      id: "in_3ds",
+      status: "paid",
+      amount_paid: 4_100,
+    });
+
+    expect(db.addCredits).toHaveBeenCalledWith(
+      7,
+      90_000,
+      "bonus",
+      "Prorated credits for upgrade to pro",
+      expect.stringContaining("in_3ds"),
+    );
+    expect(db.resolvePlanChangeSettlement).toHaveBeenCalledWith("in_3ds", "applied");
   });
 });
 
@@ -350,14 +659,26 @@ describe("customer.subscription.updated while a change is held", () => {
 
 // ─── 3 · THE RENEWAL FLAG ───────────────────────────────────────────────────
 
-/** A renewal moment: the subscription bills `pricePlan` while its metadata (and
- *  so the app) says `appPlan`, and its latest invoice is `invoice`. */
-function renewal(pricePlan: string, appPlan: string, invoice: Record<string, unknown> | "throws") {
-  const live = liveSub(pricePlan, "monthly", { latest_invoice: "in_renew" });
-  (live.metadata as Record<string, string>).plan = appPlan;
+/** A renewal moment: Stripe bills `pricePlan` with `metadata.plan` `metaPlan`;
+ *  our row says `rowPlan`; the latest invoice is `inv`. */
+function renewal(
+  pricePlan: string,
+  rowPlan: string,
+  inv: Record<string, unknown> | "throws",
+  metaPlan: string = pricePlan,
+  overrides: Record<string, unknown> = {},
+) {
+  const live = liveSub(pricePlan, "monthly", { latest_invoice: "in_renew", ...overrides });
+  (live.metadata as Record<string, string>).plan = metaPlan;
   s.subscriptionsRetrieve.mockResolvedValue(live);
-  if (invoice === "throws") s.invoicesRetrieve.mockRejectedValue(new Error("Stripe is having a moment"));
-  else s.invoicesRetrieve.mockResolvedValue(invoice);
+  db.getUserByStripeCustomerId.mockResolvedValue({
+    id: 7,
+    name: "seven",
+    email: "u@example.com",
+    credits: { planTier: rowPlan, balance: 4000, stripeSubscriptionId: "sub_1", billingInterval: "month" },
+  });
+  if (inv === "throws") s.invoicesRetrieve.mockRejectedValue(new Error("Stripe is having a moment"));
+  else s.invoicesRetrieve.mockResolvedValue(inv);
   return live;
 }
 const DRAFT_RENEWAL = {
@@ -374,8 +695,8 @@ function mismatchRows() {
 }
 
 describe("the renewal mismatch flag", () => {
-  it("a renewal draft about to bill Pro for an account the app holds on Starter raises one warning row, before the charge, and changes nothing", async () => {
-    const live = renewal("pro", "starter", DRAFT_RENEWAL);
+  it("F1 · THE CASE IT EXISTS FOR — our row says Starter, Stripe bills Pro with metadata 'pro' — one warning row before the charge, nothing changed", async () => {
+    const live = renewal("pro", "starter", DRAFT_RENEWAL, "pro");
 
     const result = await deliver("customer.subscription.updated", live);
 
@@ -385,7 +706,7 @@ describe("the renewal mismatch flag", () => {
     expect(rows[0][0]).toMatchObject({
       userId: 7,
       severity: "warning",
-      resourceId: "sub_1",
+      resourceId: "in_renew",
       metadata: expect.objectContaining({
         appPlan: "starter",
         billedPlan: "pro",
@@ -395,13 +716,10 @@ describe("the renewal mismatch flag", () => {
         chargesAt: new Date((NOW + 3600) * 1000).toISOString(),
       }),
     });
-    /* Flagged, never fixed: no Stripe write, and the record write is the
-       handler's ordinary one. */
     expect(s.subscriptionsUpdate).not.toHaveBeenCalled();
-    expect(db.updateUserSubscription).toHaveBeenCalledTimes(1);
   });
 
-  it("NEGATIVE CONTROL — when the price and the app agree it stays silent and does not even read the invoice", async () => {
+  it("NEGATIVE CONTROL — when the price and our row agree it stays silent and does not even read the invoice", async () => {
     const live = renewal("pro", "pro", DRAFT_RENEWAL);
 
     await deliver("customer.subscription.updated", live);
@@ -410,12 +728,50 @@ describe("the renewal mismatch flag", () => {
     expect(s.invoicesRetrieve).not.toHaveBeenCalled();
   });
 
+  it("a decrease SCHEDULED for this renewal (the phase in progress names the billed plan) is the expected disagreement — silent", async () => {
+    const live = renewal("starter", "pro", DRAFT_RENEWAL, "starter", { schedule: "sub_sched_1" });
+    s.schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      current_phase: { start_date: NOW, end_date: NOW + 30 * DAY },
+      phases: [
+        { start_date: NOW - 30 * DAY, metadata: { plan: "pro" } },
+        { start_date: NOW, metadata: { plan: "starter" } },
+      ],
+    });
+
+    await deliver("customer.subscription.updated", live);
+
+    expect(mismatchRows()).toHaveLength(0);
+  });
+
+  it("…but a schedule whose phase names a DIFFERENT plan does not excuse it", async () => {
+    const live = renewal("pro", "starter", DRAFT_RENEWAL, "pro", { schedule: "sub_sched_1" });
+    s.schedulesRetrieve.mockResolvedValue({
+      id: "sub_sched_1",
+      current_phase: { start_date: NOW, end_date: NOW + 30 * DAY },
+      phases: [{ start_date: NOW, metadata: { plan: "starter" } }],
+    });
+
+    await deliver("customer.subscription.updated", live);
+
+    expect(mismatchRows()).toHaveLength(1);
+  });
+
+  it("one row per renewal invoice — a second event in the draft hour finds it flagged and writes nothing", async () => {
+    const live = renewal("pro", "starter", DRAFT_RENEWAL, "pro");
+    flaggedRows.rows = [{ id: 1 }];
+
+    await deliver("customer.subscription.updated", live);
+
+    expect(mismatchRows()).toHaveLength(0);
+  });
+
   it.each([
     ["already charged", { ...DRAFT_RENEWAL, status: "paid" }],
     ["open (finalised)", { ...DRAFT_RENEWAL, status: "open" }],
     ["a change's invoice, not a renewal", { ...DRAFT_RENEWAL, billing_reason: "subscription_update" }],
-  ])("a mismatch outside the renewal's draft window — %s — is not flagged here", async (_n, invoice) => {
-    const live = renewal("pro", "starter", invoice);
+  ])("a mismatch outside the renewal's draft window — %s — is not flagged here", async (_n, inv) => {
+    const live = renewal("pro", "starter", inv, "pro");
 
     await deliver("customer.subscription.updated", live);
 
@@ -423,7 +779,7 @@ describe("the renewal mismatch flag", () => {
   });
 
   it("a price this catalogue does not compose is 'cannot say', not a mismatch", async () => {
-    const live = renewal("pro", "starter", DRAFT_RENEWAL);
+    const live = renewal("pro", "starter", DRAFT_RENEWAL, "pro");
     (live.items.data[0].price as Record<string, unknown>).lookup_key = null;
 
     await deliver("customer.subscription.updated", live);
@@ -432,7 +788,7 @@ describe("the renewal mismatch flag", () => {
   });
 
   it("an invoice read that fails never fails the event — the subscription write goes ahead", async () => {
-    const live = renewal("pro", "starter", "throws");
+    const live = renewal("pro", "starter", "throws", "pro");
 
     const result = await deliver("customer.subscription.updated", live);
 

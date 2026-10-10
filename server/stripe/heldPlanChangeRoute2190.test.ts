@@ -28,6 +28,8 @@ vi.mock("./stripeService", async (importOriginal) => {
   return {
     stripe: {},
     PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE: actual.PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+    PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE: actual.PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    planChangeNotChargedSentence: actual.planChangeNotChargedSentence,
     getOrCreateStripeCustomer: vi.fn(),
     createSubscriptionCheckoutSession: vi.fn(),
     createTopupCheckoutSession: vi.fn(),
@@ -69,6 +71,9 @@ import {
 } from "../db";
 import {
   PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+  PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+  planChangeNotChargedSentence,
+  getInvoiceStatus,
   quotePlanChange,
   readSubscriptionBillingState,
   updateSubscriptionPlan,
@@ -174,10 +179,83 @@ describe("changePlan — a charge that did not go through", () => {
   });
 });
 
+describe("changePlan — the bank wants a confirmation (the relay's finding 3)", () => {
+  it("answers with the confirmation page, QUEUES the credits against that invoice, and writes no plan and logs no change yet", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      invoiceStatus: "open",
+      invoicedAmount: null,
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    vi.mocked(getInvoiceStatus).mockResolvedValue("open");
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(result).toMatchObject({
+      success: true,
+      message: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+      confirmPaymentUrl: "https://invoice.stripe.example/i/3ds",
+      creditSettlement: "pending",
+    });
+    /* The credits wait on THAT invoice — its payment event settles them. */
+    expect(queuePlanChangeSettlement).toHaveBeenCalledWith(
+      expect.objectContaining({ stripeInvoiceId: "in_3ds", direction: "grant", credits: 90_000, previousPlanTier: "starter" }),
+    );
+    expect(applyPlanChangeSettlement).not.toHaveBeenCalled();
+    expect(addCredits).not.toHaveBeenCalled();
+    /* Nothing has happened yet, so nothing says it has. */
+    expect(updateUserSubscription).not.toHaveBeenCalled();
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it("an ordinary paid change carries no confirmation page", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: true,
+      invoiceId: "in_paid",
+      invoiceStatus: "paid",
+      invoicedAmount: 4_100,
+    });
+
+    const result = await caller().changePlan({ newPlan: "pro" });
+
+    expect(result.confirmPaymentUrl).toBeNull();
+  });
+});
+
 describe("the sentence itself", () => {
   it("names no engine or vendor and says what to do, in the label the customer sees", () => {
     expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).not.toMatch(/stripe|invoice|pending|webhook/i);
     expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).toContain("Update card");
     expect(PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE).toContain("has not changed");
+  });
+
+  it("every variant names no engine or vendor", () => {
+    const all = [
+      PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+      planChangeNotChargedSentence({ reason: "declined", scheduleLostOn: new Date(1_780_000_000_000) }),
+      planChangeNotChargedSentence({ reason: "confirm-blocked-by-schedule", scheduleLostOn: null }),
+      planChangeNotChargedSentence({ reason: "confirm-blocked-by-schedule", scheduleLostOn: new Date(1_780_000_000_000) }),
+    ];
+    for (const sentence of all) expect(sentence).not.toMatch(/stripe|invoice|pending|webhook|3d secure|schedule /i);
+  });
+
+  it("the routed refusal speaks the service's own sentence, so a lost scheduled change is said", async () => {
+    const lost = planChangeNotChargedSentence({ reason: "declined", scheduleLostOn: new Date(1_780_000_000_000) });
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      paymentDeclined: true,
+      heldChangeCancelled: true,
+      scheduledChangeRestored: false,
+      invoiceId: "in_held",
+      invoiceStatus: null,
+      error: lost,
+    });
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect((error as Error).message).toBe(lost);
   });
 });

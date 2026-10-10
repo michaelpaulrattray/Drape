@@ -113,6 +113,7 @@ import { spentShareSentence, yearlySwitchOffsetSentence } from "./spentShareSent
 import { topupEligibility } from "@shared/creditTopups";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { announcePlanChange } from "./planChangeToast";
 
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/foundation";
@@ -484,7 +485,9 @@ export function ChangePlanModal({
 
   const changePlan = trpc.billing.changePlan.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      /* One voice for both doors, including a change held for the bank to
+         confirm (#2190) — see `planChangeToast.ts`. */
+      announcePlanChange(data);
       setPending(null);
       setConfirming(null);
       void refetchStatus();
