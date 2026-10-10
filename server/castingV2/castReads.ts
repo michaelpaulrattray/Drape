@@ -492,7 +492,13 @@ export function castingCastReadsReader(): CastReadsReader | null {
   return readerMemo;
 }
 
-/** Test seam: drops the memoized reader so config changes take effect. */
-export function resetCastReadsReaderForTests(): void {
-  readerMemo = null;
-}
+/*
+  NO TEST SEAM HERE, AND THAT IS DELIBERATE RATHER THAN AN OMISSION.
+
+  Its siblings export a `reset…ForTests` beside their memo, so one was written
+  here too — and `check-cleanup-dispositions` called it `unread` at the first
+  preflight, correctly: this road's suite builds its reader directly with
+  `createCastReadsReader` and a fake engine, so nothing ever needed it. An
+  export added because the neighbours have one is the dead-control shape with a
+  test's name on it. The day a suite needs the memo dropped, that suite adds it.
+*/
