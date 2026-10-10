@@ -1643,11 +1643,28 @@ export const billingRouter = router({
               const cancelled = result.invoiceId ? await cancelHeldChange(result.invoiceId) : "failed";
               log.error(
                 { userId: ctx.user.id, invoiceId: result.invoiceId, direction, cancelled },
-                "[Billing] a held plan change's credit settlement could not be recorded — the hold is cancelled so nothing can be paid for a change that would never settle",
+                "[Billing] a held plan change's credit settlement could not be recorded — cancelling the hold so nothing can be paid for a change that would never settle",
               );
+              /* ⚠ **AND WHAT THE CANCEL ANSWERED DECIDES WHAT IS SAID** — the
+                 same lesson as the relay's finding 5, one road along.
+                 `cancelHeldChange` reads before it voids, so "paid" means the
+                 charge landed in that instant and the change APPLIED: saying
+                 "your card was not charged" there would be the lie this whole
+                 card exists to remove. "failed" means the hold is still live
+                 and still payable, so the outcome is not ours to state. Only
+                 a hold that is actually gone earns the not-charged sentence. */
+              if (cancelled === "paid") {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+                });
+              }
               throw spokenError({
-                code: "BAD_REQUEST",
-                message: planChangeNotChargedSentence({ reason: "not-recorded", scheduleLostOn: null }),
+                code: cancelled === "failed" ? "INTERNAL_SERVER_ERROR" : "BAD_REQUEST",
+                message: planChangeNotChargedSentence({
+                  reason: cancelled === "failed" ? "unconfirmed" : "not-recorded",
+                  scheduleLostOn: null,
+                }),
               });
             }
             if (direction === "grant") {

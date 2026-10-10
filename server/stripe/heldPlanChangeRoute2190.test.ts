@@ -257,6 +257,50 @@ describe("changePlan — the bank wants a confirmation (the relay's finding 3)",
     expect(logAuditEvent).not.toHaveBeenCalled();
   });
 
+  /* What the cancel ANSWERED decides what is said — the relay's finding 5
+     one road along. Only a hold that is actually gone earns "not charged". */
+  it("R2 · a hold PAID in that instant is a change that went through, and is never reported as 'your card was not charged'", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      invoiceStatus: "open",
+      invoicedAmount: null,
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: false } as never);
+    vi.mocked(cancelHeldChange).mockResolvedValue("paid" as never);
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect((error as Error).message).toContain("The plan changed");
+    expect((error as Error).message).not.toContain("was not charged");
+    expect((error as { code?: string }).code).toBe("INTERNAL_SERVER_ERROR");
+  });
+
+  it("R2 · a hold that could NOT be cancelled is still payable, so the outcome is not stated as 'not charged'", async () => {
+    vi.mocked(updateSubscriptionPlan).mockResolvedValue({
+      success: false,
+      confirmationRequired: true,
+      confirmUrl: "https://invoice.stripe.example/i/3ds",
+      invoiceId: "in_3ds",
+      invoiceStatus: "open",
+      invoicedAmount: null,
+      error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+    });
+    vi.mocked(queuePlanChangeSettlement).mockResolvedValue({ success: false } as never);
+    vi.mocked(cancelHeldChange).mockResolvedValue("failed" as never);
+
+    const error = await caller().changePlan({ newPlan: "pro" }).catch((e: unknown) => e);
+
+    expect((error as Error).message).toBe(
+      planChangeNotChargedSentence({ reason: "unconfirmed", scheduleLostOn: null }),
+    );
+    expect((error as Error).message).not.toContain("was not charged");
+    expect((error as { code?: string }).code).toBe("INTERNAL_SERVER_ERROR");
+  });
+
   it("R2 · an UNWIND whose settlement cannot be recorded is cancelled too — a payable hold is the customer's problem whichever way the credits were going", async () => {
     vi.mocked(quotePlanChange).mockReturnValue({
       kind: "interval-switch",

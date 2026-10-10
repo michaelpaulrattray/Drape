@@ -1819,16 +1819,22 @@ export async function updateSubscriptionPlan(
          settled on for a restore that fails.
 
          ⚠ **STATED LIMIT, because leaving the hold has a price of its own.**
-         No settlement is queued against that invoice (the caller refuses
-         before it gets there), so if the customer finds the hold and pays it
-         from a provider email rather than retrying here, the plan lands by
-         `customer.subscription.updated` and only the PRORATED part of the
-         credits is missed — their plan's own allowance still refreshes. The
-         rejected alternative is queueing the settlement here: it would cover
-         that case, and it would also leave a pending row against an invoice
-         whose payability after the hold lapses is not measured, so a retry
-         that succeeds could grant twice. A missed proration in a provider
-         blip is the smaller of the two. */
+         No settlement is queued against that invoice IN EITHER DIRECTION (the
+         caller refuses before it gets there), so if the customer finds the
+         hold and pays it from a provider email rather than retrying here, the
+         plan lands by `customer.subscription.updated` and the prorated move
+         is missed: on a grant the customer misses the proration (their plan's
+         own allowance still refreshes), on an unwind the house misses the
+         clawback. Both are bounded by one period's proration and both are on
+         the `error` line above, which is the alert.
+
+         The rejected alternative is queueing the settlement here: it would
+         cover both, and it would also leave a pending row against an invoice
+         whose payability after the hold lapses is not measured — so a retry
+         that succeeds could move the same proration twice, which on the
+         unwind side is the customer's own credits taken twice. A missed
+         proration in a provider blip is the smaller of the two, and it is
+         the direction that cannot take anything from anybody. */
       if (invoiceId && held === null) {
         log.error(
           { subscriptionId, invoiceId, newPlan, targetInterval, clearedSchedule },
