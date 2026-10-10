@@ -5,9 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
+  declaresTsxEntry,
   SHELL_RESOLVED_LAUNCHERS,
   shellLessPathLaunches,
   shellLessPathLaunchesIn,
+  TSX_ENTRY_MODULE,
 } from "./testing/shellLessPathLaunches";
 
 /* This suite runs `git ls-files` and then parses every tracked source file, so
@@ -48,9 +50,12 @@ function bytesAt(commit: string, file: string): string {
   });
 }
 
-describe("a stripped PATH never launches through a shell-resolved launcher (#2227)", () => {
-  const reading = shellLessPathLaunches(ROOT);
+/* ONE walk of the tree for every arm in this file that needs one — it parses
+   every tracked source file, so a second reading would double the cost to
+   answer a question the first already answered. */
+const reading = shellLessPathLaunches(ROOT);
 
+describe("a stripped PATH never launches through a shell-resolved launcher (#2227)", () => {
   it("read a real population — a clean answer over no files is not an answer", () => {
     /* The deriver throws on an empty `git ls-files`; these are the other half,
        and they are the arms that catch a parser that quietly stopped walking.
@@ -187,37 +192,37 @@ describe("the remedy is declared once (#2227)", () => {
       above points at the shared module, so advice that pointed at a path string
       would make the next suite a third copy.
 
-      Read at `git ls-files` rather than at a list, so a third declaration is
-      caught wherever it is written.
+      Taken off the SAME tree reading as the arms above rather than from a
+      second `git ls-files` of its own: two listings of one tree answering
+      questions about the same files is the mirror shape, and the first draft of
+      this arm had one.
     */
-    const tracked = execFileSync("git", ["ls-files", "*.ts", "*.tsx", "*.mts", "*.mjs"], {
-      cwd: ROOT,
-      encoding: "utf8",
-      maxBuffer: 64 * 1024 * 1024,
-    })
-      .split("\n")
-      .map((line) => line.trim().replace(/\\/g, "/"))
-      .filter((line) => line.length > 0);
-
-    const declarers = tracked.filter((file) => {
-      if (file === "server/testing/tsxCli.ts") return false;
-      /* `readFileSync` and not the listed-source reader: every file here came
-         out of `git ls-files` one statement ago, and a tracked file that has
-         vanished mid-run means nothing in the run is trustworthy. */
-      let source: string;
-      try {
-        source = readFileSync(resolve(ROOT, file), "utf8");
-      } catch {
-        return false;
-      }
-      return /=\s*resolve\(\s*["'`]node_modules\/tsx\/dist\/cli\.mjs["'`]\s*\)/.test(source);
-    });
-
     expect(
-      declarers,
-      'tsx\'s own entry is declared in `server/testing/tsxCli.ts`. Import `TSX_CLI` from ' +
+      reading.tsxEntryDeclarers,
+      `tsx's own entry is declared in \`${TSX_ENTRY_MODULE}\`. Import \`TSX_CLI\` from ` +
         "there rather than resolving the path again — a second copy of one fact is the " +
         "shape working law 4 is about.",
     ).toEqual([]);
+  });
+
+  it("the declaration reader reads a DECLARATION, not the path in prose", () => {
+    /*
+      ⚠ THE ARM THAT KEEPS THIS HONEST, and the tree holds its own counterexample:
+      `scripts/lib/devServerTrees.mts` draws tsx's entry inside a process-tree
+      diagram and `server/devServerTrees.test.ts` carries whole command lines
+      containing it. A substring test indicts both for describing a command
+      line, which is why the question is asked of the parse.
+    */
+    expect(declaresTsxEntry("f.ts", 'const TSX = resolve("node_modules/tsx/dist/cli.mjs");')).toBe(true);
+    expect(declaresTsxEntry("f.ts", '/* node node_modules/tsx/dist/cli.mjs x.ts */\nconst a = 1;')).toBe(false);
+    expect(declaresTsxEntry("f.ts", 'const line = "node node_modules/tsx/dist/cli.mjs x.ts";')).toBe(false);
+    /* And the live counterexamples themselves, by name. */
+    for (const file of ["scripts/lib/devServerTrees.mts", "server/devServerTrees.test.ts"]) {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(source, `${file} no longer carries the path — this control is spent`).toContain(
+        "node_modules/tsx/dist/cli.mjs",
+      );
+      expect(declaresTsxEntry(file, source), `${file} describes the path, it does not declare it`).toBe(false);
+    }
   });
 });

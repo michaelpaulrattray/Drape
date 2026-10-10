@@ -282,6 +282,49 @@ export function countShellResolvedLaunches(file: string, source: string): number
   return found;
 }
 
+/** The one module allowed to declare tsx's entry. */
+export const TSX_ENTRY_MODULE = "server/testing/tsxCli.ts";
+
+/** The file tsx's entry resolves to, spelled once. */
+const TSX_ENTRY_PATH = "node_modules/tsx/dist/cli.mjs";
+
+/**
+ * Does this file resolve tsx's entry for itself?
+ *
+ * ⚠ **ASKED OF THE DECLARATION, NOT OF THE TEXT**, because the path appears in
+ * prose and inside fixture strings elsewhere in the tree —
+ * `scripts/lib/devServerTrees.mts` draws it in a process-tree diagram and
+ * `server/devServerTrees.test.ts` carries whole command lines containing it. A
+ * substring test would indict both for describing a command line.
+ */
+export function declaresTsxEntry(file: string, source: string): boolean {
+  const sourceFile = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ false,
+    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) return;
+    if (
+      ts.isVariableDeclaration(node) &&
+      node.initializer &&
+      ts.isCallExpression(node.initializer) &&
+      ts.isIdentifier(node.initializer.expression) &&
+      node.initializer.expression.text === "resolve" &&
+      node.initializer.arguments.length === 1
+    ) {
+      const argument = node.initializer.arguments[0]!;
+      if (ts.isStringLiteral(argument) && argument.text === TSX_ENTRY_PATH) found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
 /**
  * The reading over the whole tree, with the FLOOR beside it.
  *
@@ -293,6 +336,8 @@ export function shellLessPathLaunches(repoRoot: string): {
   sites: LaunchSite[];
   files: number;
   launches: number;
+  /** Files other than `TSX_ENTRY_MODULE` that resolve tsx's entry for themselves. */
+  tsxEntryDeclarers: string[];
 } {
   const tracked = execFileSync("git", ["ls-files", ...SOURCE_GLOBS], {
     encoding: "utf8",
@@ -312,16 +357,23 @@ export function shellLessPathLaunches(repoRoot: string): {
   }
 
   const sites: LaunchSite[] = [];
+  const tsxEntryDeclarers: string[] = [];
   let files = 0;
   let launches = 0;
 
+  /* ⚠ ONE LISTING AND ONE READ FOR BOTH FACTS. The first shape of the guard ran
+     its own `git ls-files` with its own copy of the glob list for the
+     declared-once arm — a second listing of the same tree answering a question
+     about the same files, which is working law 4 in the one repository that has
+     paid for it most. */
   for (const file of tracked) {
     const source = readListedSource(join(repoRoot, file));
     if (source === null) continue;
     files += 1;
     launches += countShellResolvedLaunches(file, source);
     sites.push(...shellLessPathLaunchesIn(file, source));
+    if (file !== TSX_ENTRY_MODULE && declaresTsxEntry(file, source)) tsxEntryDeclarers.push(file);
   }
 
-  return { sites, files, launches };
+  return { sites, files, launches, tsxEntryDeclarers };
 }
