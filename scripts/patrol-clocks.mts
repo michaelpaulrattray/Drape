@@ -52,6 +52,41 @@
  * the switch category each seat answers to and leaves the comparison to the
  * shift, which has already read the switches at start.
  *
+ * # ⚠ AND IT REFUSES WHEN ITS INPUT IS A TREE THAT IS BEHIND (#2180)
+ *
+ * Measured by `foreman-20261010-0213` on 2026-10-10: this reader reported
+ * **Warden DUE about three hours after the Warden patrol had run.** It was not
+ * wrong about anything it could see — the tree was four commits behind
+ * `origin/main` and patrol run 7's append to `docs/WARDEN_LOG.md` was in one of
+ * them. So it read a log that did not yet hold the run, **and answered
+ * confidently**, which is the worse half of the shape the whole module is
+ * written against: a reader that refuses tells you something; one that returns
+ * a confident wrong answer from stale input sends a shift to re-run a patrol
+ * that ran hours ago (which the anti-boredom rule forbids) or hides one that is
+ * genuinely due.
+ *
+ * So before any clock is printed, the four log paths are compared between
+ * `HEAD` and `refs/remotes/origin/main`, and a tree missing a commit that
+ * touches one of them is a REFUSAL — the same posture this reader already takes
+ * toward a log it cannot parse. **Only those four paths count**: a tree behind
+ * on anything else cannot change a clock, and refusing for it would redden
+ * every seat branch for no reason.
+ *
+ * ⚠ **IT FAILS OPEN, AND THAT IS THE CARD'S OWN CONDITION** — *"a refusal must
+ * not be able to stop a shift starting"*. This runs at standing orders §2z
+ * before any work, so when the check itself cannot be made — no git, no
+ * repository, no `origin/main` ref (which is the ordinary state of a shallow CI
+ * checkout), a git that hangs — it prints a NOTE naming the reason and reads
+ * the tree as it stands. A check that cannot run never decides anything here.
+ *
+ * ⚠ **Stated limit: it compares against the `origin/main` ALREADY FETCHED.** It
+ * runs no `git fetch`, because the no-network promise above is what makes this
+ * free, offline and gate-testable — the rejected alternative was reading the
+ * logs at `origin/main` after a fetch, which buys an answer independent of the
+ * tree and costs the network. So it catches *"behind what this clone has seen"*
+ * and not *"behind the remote this minute"*. That is the measured incident
+ * exactly: the shift knew it was four commits behind, so the ref was there.
+ *
  *     npx tsx scripts/patrol-clocks.mts
  *     npx tsx scripts/patrol-clocks.mts --dir <path> --today YYYY-MM-DD   # arms
  *
@@ -59,6 +94,7 @@
  * the shift that appended `--dry-run` to a script that had never heard of it
  * and stamped a running row terminal (#288).
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -133,6 +169,72 @@ type Reading = {
  * the difference. Only the verdict's question changed.
  */
 const hasFired = (row: Reading): boolean => row.overdueDays >= 0;
+
+/**
+ * IS THIS TREE MISSING A COMMIT THAT TOUCHES ONE OF THE LOGS? (#2180)
+ *
+ * `git` is run with the LOGS' OWN DIRECTORY as its working directory, so the
+ * pathspecs are the bare log names and the question is asked of exactly the
+ * four files this reader reads — a tree behind on anything else cannot change a
+ * clock. `HEAD..refs/remotes/origin/main` is a local ref walk: no network, no
+ * fetch, and nothing written.
+ *
+ * Returns the logs that moved, or a REASON the question could not be asked.
+ * Every failure road — no git on the path, not a repository, no `origin/main`
+ * ref, an unborn `HEAD`, a git that hangs past ten seconds — lands in
+ * `unreadable`, because the caller must fail open on all of them.
+ */
+type Freshness =
+  | { kind: "current" }
+  | { kind: "behind"; behind: { log: string; commits: number }[] }
+  | { kind: "unreadable"; reason: string };
+
+function readFreshness(dir: string): Freshness {
+  const git = (args: string[]): string =>
+    execFileSync("git", args, {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: 10_000,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  const reason = (error: unknown): string =>
+    (error instanceof Error ? error.message : String(error)).split("\n")[0]!.trim();
+
+  try {
+    git(["rev-parse", "--is-inside-work-tree"]);
+  } catch (error) {
+    return { kind: "unreadable", reason: `not a git working tree here (${reason(error)})` };
+  }
+  try {
+    /* `--verify --quiet` exits 1 on a missing ref, which `execFileSync` throws.
+       A shallow CI checkout has no `origin/main` at all, and that is the single
+       most common road through here — it must cost nothing. */
+    git(["rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"]);
+  } catch {
+    return { kind: "unreadable", reason: "this clone has no refs/remotes/origin/main to compare against" };
+  }
+
+  const behind: { log: string; commits: number }[] = [];
+  for (const entry of SEATS) {
+    let count: number;
+    try {
+      count = Number(
+        git(["rev-list", "--count", "HEAD..refs/remotes/origin/main", "--", entry.log]).trim(),
+      );
+    } catch (error) {
+      return { kind: "unreadable", reason: `git could not compare ${entry.log} (${reason(error)})` };
+    }
+    /* A reading that is not a number is not a reading. Failing open here rather
+       than treating NaN as zero: zero is an ANSWER ("current") and this is the
+       absence of one. */
+    if (!Number.isFinite(count)) {
+      return { kind: "unreadable", reason: `git gave no commit count for ${entry.log}` };
+    }
+    if (count > 0) behind.push({ log: entry.log, commits: count });
+  }
+  return behind.length === 0 ? { kind: "current" } : { kind: "behind", behind };
+}
 
 function readSeat(
   dir: string,
@@ -290,6 +392,36 @@ function main(argv: string[]): number {
   } catch (error) {
     console.error(`patrol-clocks REFUSES: ${(error as Error).message}`);
     return 1;
+  }
+
+  /* ⚠ **THE INPUT IS CHECKED BEFORE IT IS READ (#2180).** A tree missing a
+     commit that touches one of these logs cannot be asked what the clocks are,
+     and the measured cost of answering anyway was "Warden DUE" three hours
+     after the Warden ran. The marker word `behind` is in the first line on
+     purpose: this refusal is a fact about the TREE, not about the logs, and the
+     suite tells the two apart by it. */
+  const freshness = readFreshness(dir);
+  if (freshness.kind === "behind") {
+    const named = freshness.behind
+      .map((row) => `${row.log} (${row.commits} commit${row.commits === 1 ? "" : "s"})`)
+      .join(", ");
+    console.error(`patrol-clocks REFUSES: this tree is behind origin/main on ${named}`);
+    console.error(
+      "The runs origin/main records are not in this tree, so a seat can read as DUE hours after it ran (#2180).",
+    );
+    console.error(
+      "Bring the tree up to date — `git pull` on main, or `git merge origin/main` in a worktree — and run it again.",
+    );
+    return 1;
+  }
+  if (freshness.kind === "unreadable") {
+    /* FAILS OPEN, by the card's own condition: this runs before any work, so a
+       check that cannot be made never stops a shift starting. The note is on
+       stderr so the table on stdout stays machine-readable. */
+    console.error(
+      `patrol-clocks NOTE: could not check whether this tree is current — ${freshness.reason}.`,
+    );
+    console.error("The clocks below are read from the tree exactly as it stands.");
   }
 
   const readings: Reading[] = [];

@@ -1,6 +1,7 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
@@ -340,6 +341,17 @@ describe("patrol-clocks reader", () => {
       );
     }
     const result = run();
+    /* ⚠ **TWO REFUSALS NOW REACH THIS ARM AND ONLY ONE OF THEM IS ITS SUBJECT
+       (#2180).** This arm is about the LOGS being readable. Since #2180 the
+       reader also refuses when THIS TREE is behind `origin/main` on a log —
+       which is a fact about the tree, true of any seat branch the moment a
+       patrol appends a run to main, and asserting exit 0 through it would make
+       this guard red for a reason it is not guarding. So the freshness refusal
+       is tolerated BY NAME, and nothing else is. */
+    if (result.status === 1 && /REFUSES: this tree is behind origin\/main/.test(result.stderr)) {
+      expect(result.stdout).not.toContain("THE PATROL CLOCKS");
+      return;
+    }
     expect(result.status).toBe(0);
     for (const seat of ["Retro", "Janitor", "Warden", "Machinist"]) {
       expect(result.stdout).toContain(seat);
@@ -369,5 +381,187 @@ describe("patrol-clocks reader", () => {
       declared,
       "a docs/ log declares a **Clock:** line that scripts/patrol-clocks.mts does not read — add it to SEATS or drop the line",
     ).toEqual([...REAL_LOGS].sort());
+  });
+});
+
+/**
+ * THE INPUT'S OWN FRESHNESS (#2180).
+ *
+ * The measured defect: this reader said **Warden DUE about three hours after
+ * the Warden ran**, because the tree was four commits behind `origin/main` and
+ * run 7's append to `docs/WARDEN_LOG.md` was in one of them. It read a log that
+ * did not hold the run and answered confidently — the worse half of the shape
+ * the reader's own docblock is written against.
+ *
+ * ⚠ **DRIVEN AGAINST REAL REPOSITORIES, with a real bare remote and real
+ * commits.** A faked `git` would prove the branch is reachable and nothing
+ * about whether the question it asks is the right question — and the question
+ * is the whole repair: `HEAD..refs/remotes/origin/main` limited to the four log
+ * paths. This repository's doctrine for anything deciding on git is a real
+ * repository (`atlasCommitHook.test.ts`, `atlasMergeDriver.test.ts`).
+ *
+ * BOTH DIRECTIONS ON EVERY ARM. The refusal is the headline, but the three
+ * controls beside it are what stop the repair being a reader that refuses
+ * everything: a current tree answers, a tree behind on something that is NOT a
+ * log answers, and a check that cannot be made answers with a note. That last
+ * one is the card's own condition — *"a refusal must not be able to stop a
+ * shift starting"* — because this runs at standing orders §2z before any work.
+ */
+describe("patrol-clocks refuses a tree that is behind on a log (#2180)", () => {
+  const repos: string[] = [];
+
+  afterAll(() => {
+    for (const path of repos) rmSync(path, { recursive: true, force: true });
+  });
+
+  const git = (cwd: string, ...args: string[]) =>
+    execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" });
+
+  /**
+   * A clone whose `origin/main` carries `remoteLogs` and whose working tree is
+   * one commit behind it. `localLogs` is what the TREE holds.
+   *
+   * Built the way the incident happened rather than by rewriting refs: commit
+   * the local state, push it, commit the remote-only change, push that, then
+   * reset the branch back one — so `refs/remotes/origin/main` is genuinely
+   * ahead of `HEAD` by a real commit touching a real file.
+   */
+  function cloneBehindBy(remoteOnly: Record<string, string>): string {
+    const root = mkdtempSync(join(tmpdir(), "patrol-2180-"));
+    repos.push(root);
+    const bare = join(root, "remote.git");
+    const work = join(root, "work");
+    mkdirSync(work, { recursive: true });
+    git(root, "init", "--quiet", "--bare", "--initial-branch=main", bare);
+    git(root, "init", "--quiet", "--initial-branch=main", work);
+    git(work, "config", "user.email", "seat@example.invalid");
+    git(work, "config", "user.name", "seat");
+    git(work, "config", "commit.gpgsign", "false");
+    git(work, "remote", "add", "origin", bare);
+
+    const docs = join(work, "docs");
+    mkdirSync(docs, { recursive: true });
+    for (const name of REAL_LOGS) writeFileSync(join(docs, name), logFile(7, ["2026-09-02"]), "utf8");
+    writeFileSync(join(work, "unrelated.txt"), "one\n", "utf8");
+    git(work, "add", "--all");
+    git(work, "commit", "--quiet", "--no-verify", "-m", "the tree a shift has");
+    const behindSha = git(work, "rev-parse", "HEAD").trim();
+    git(work, "push", "--quiet", "origin", "main");
+
+    for (const [file, text] of Object.entries(remoteOnly)) {
+      const full = join(work, file);
+      mkdirSync(dirname(full), { recursive: true });
+      writeFileSync(full, text, "utf8");
+    }
+    git(work, "add", "--all");
+    git(work, "commit", "--quiet", "--no-verify", "-m", "what origin/main has and this tree does not");
+    git(work, "push", "--quiet", "origin", "main");
+    /* The tree goes back to where the shift's was; `origin/main` stays ahead.
+       `--hard` is safe here: this is a throwaway repository built two lines
+       above, never a tree anybody is working in. */
+    git(work, "reset", "--quiet", "--hard", behindSha);
+    return join(work, "docs");
+  }
+
+  it("REFUSES when origin/main has a commit touching a log that this tree does not have", () => {
+    const docs = cloneBehindBy({
+      "docs/WARDEN_LOG.md": logFile(7, ["2026-09-02", "2026-09-09"]),
+    });
+
+    const result = run("--dir", docs, "--today", "2026-09-09");
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("REFUSES: this tree is behind origin/main");
+    expect(result.stderr).toContain("WARDEN_LOG.md (1 commit)");
+    expect(result.stderr).toContain("#2180");
+    /* The incident in one assertion: the tree's own copy of the Warden log says
+       the last run was a week ago, so answering from it would have printed a
+       fired clock. Nothing is printed at all. */
+    expect(result.stdout).not.toContain("THE PATROL CLOCKS");
+    expect(result.stdout).not.toContain("Warden");
+  });
+
+  it("NEGATIVE CONTROL — the same clone, current, answers normally", () => {
+    const docs = cloneBehindBy({
+      "docs/WARDEN_LOG.md": logFile(7, ["2026-09-02", "2026-09-09"]),
+    });
+    git(join(docs, ".."), "merge", "--quiet", "--ff-only", "refs/remotes/origin/main");
+
+    const result = run("--dir", docs, "--today", "2026-09-09");
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("REFUSES");
+    expect(result.stdout).toContain("THE PATROL CLOCKS");
+    /* ⚠ **AND THIS IS THE INCIDENT IN ONE PAIR OF LINES.** The commit the
+       behind tree was missing is a Warden run on 2026-09-09, which is today —
+       so the current tree reads the Warden as `due in 7 days`, while the three
+       seats whose logs did not move still read `DUE today` off their 2026-09-02
+       run. A reader answering from the behind tree would have put the Warden in
+       that same fired group, which is exactly what it did on 2026-10-10. */
+    expect(result.stdout).toMatch(/Warden\s+due in 7 days.*last run 2026-09-09/);
+    expect(result.stdout).toMatch(/Retro\s+DUE today/);
+  });
+
+  it("NEGATIVE CONTROL — a tree behind on something that is NOT a log is not refused", () => {
+    const docs = cloneBehindBy({ "unrelated.txt": "two\n" });
+
+    const result = run("--dir", docs, "--today", "2026-09-09");
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("REFUSES");
+    expect(result.stdout).toContain("THE PATROL CLOCKS");
+  });
+
+  it("the card's condition: a check that CANNOT BE MADE never stops a shift — no repository", () => {
+    const loose = mkdtempSync(join(tmpdir(), "patrol-2180-loose-"));
+    repos.push(loose);
+    for (const name of REAL_LOGS) writeFileSync(join(loose, name), logFile(7, ["2026-09-02"]), "utf8");
+
+    const result = run("--dir", loose, "--today", "2026-09-09");
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("NOTE: could not check whether this tree is current");
+    expect(result.stderr).toContain("not a git working tree here");
+    expect(result.stdout).toContain("THE PATROL CLOCKS");
+  });
+
+  it("…and the same when the clone has no origin/main to compare against — the shallow-CI case", () => {
+    const root = mkdtempSync(join(tmpdir(), "patrol-2180-noremote-"));
+    repos.push(root);
+    git(root, "init", "--quiet", "--initial-branch=main", ".");
+    git(root, "config", "user.email", "seat@example.invalid");
+    git(root, "config", "user.name", "seat");
+    git(root, "config", "commit.gpgsign", "false");
+    const docs = join(root, "docs");
+    mkdirSync(docs, { recursive: true });
+    for (const name of REAL_LOGS) writeFileSync(join(docs, name), logFile(7, ["2026-09-02"]), "utf8");
+    git(root, "add", "--all");
+    git(root, "commit", "--quiet", "--no-verify", "-m", "tree");
+
+    const result = run("--dir", docs, "--today", "2026-09-09");
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("no refs/remotes/origin/main");
+    expect(result.stdout).toContain("THE PATROL CLOCKS");
+  });
+
+  it("…and the same when there is no git at all on the PATH", () => {
+    /* The one road none of the arms above can build, driven by taking `git`
+       away from the child rather than by faking a failure: a shift on a box
+       without git still gets its clocks. */
+    const loose = mkdtempSync(join(tmpdir(), "patrol-2180-nogit-"));
+    repos.push(loose);
+    const docs = join(loose, "docs");
+    mkdirSync(docs, { recursive: true });
+    for (const name of REAL_LOGS) writeFileSync(join(docs, name), logFile(7, ["2026-09-02"]), "utf8");
+
+    const result = runHook("npx", ["tsx", SCRIPT, "--dir", docs, "--today", "2026-09-09"], {
+      shell: process.platform === "win32",
+      env: { ...process.env, PATH: dirname(process.execPath), Path: dirname(process.execPath) },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("NOTE: could not check whether this tree is current");
+    expect(result.stdout).toContain("THE PATROL CLOCKS");
   });
 });
