@@ -48,17 +48,17 @@ export type ThrowawayRepo = {
   remove: () => void;
 };
 
-export const makeThrowawayRepo = (prefix = "drape-fixture-repo-"): ThrowawayRepo => {
+export const makeThrowawayRepo = (prefix = "rite-fixture-repo-"): ThrowawayRepo => {
   const root = mkdtempSync(path.join(os.tmpdir(), prefix));
   const git = (...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
   try {
     git("init", "--quiet");
-    git("config", "user.email", "suite@drape.test");
+    git("config", "user.email", "suite@fixture.test");
     git("config", "user.name", "suite");
     /* `inWorktreeOf` junctions `<root>/node_modules` into every tree it makes,
        so the fixture carries one — a real, empty, untracked directory. */
     mkdirSync(path.join(root, "node_modules"));
-    writeFileSync(path.join(root, "package.json"), '{ "name": "drape-fixture" }\n');
+    writeFileSync(path.join(root, "package.json"), '{ "name": "rite-fixture" }\n');
     git("add", "package.json");
     git("commit", "--quiet", "-m", "fixture");
     const sha = git("rev-parse", "HEAD").trim();
