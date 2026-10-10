@@ -7,6 +7,7 @@ import { readListedSource } from "./testing/listedSource";
 
 import { runHook } from "./testing/hookDriver";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { TSX_CLI } from "./testing/tsxCli";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
@@ -39,10 +40,6 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  */
 
 const SCRIPT = resolve("scripts/patrol-clocks.mts");
-/* tsx's own entry, for the one arm that runs the script under a stripped PATH
-   and therefore cannot reach `npx`. Same spelling as
-   `server/nextUpEscalation.test.ts`, which pays for the same reading. */
-const TSX_CLI = resolve("node_modules/tsx/dist/cli.mjs");
 const REAL_LOGS = [
   "RETRO_LOG.md",
   "JANITOR_LOG.md",

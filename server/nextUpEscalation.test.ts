@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { runHook } from "./testing/hookDriver";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { TSX_CLI } from "./testing/tsxCli";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
@@ -43,8 +44,6 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  */
 
 const SCRIPT = resolve("scripts/next-up-escalation.mts");
-/** tsx by its file, for the hostile-PATH arm: `npx` would need `sh`, which that PATH withholds. */
-const TSX_CLI = resolve("node_modules/tsx/dist/cli.mjs");
 const SWEEP = resolve("scripts/crew-desk-sweep.mts");
 
 type Row = { number: number; title: string; createdAt: string; labels: { name: string }[] };
