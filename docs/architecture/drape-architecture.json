@@ -15059,6 +15059,10 @@
       "path": "server/stripe/rolloverCap.test.ts"
     },
     {
+      "id": "test:server/stripe/stripeApiVersionPin.test.ts",
+      "path": "server/stripe/stripeApiVersionPin.test.ts"
+    },
+    {
       "id": "test:server/stripe/stripePriceCatalogue.test.ts",
       "path": "server/stripe/stripePriceCatalogue.test.ts"
     },
