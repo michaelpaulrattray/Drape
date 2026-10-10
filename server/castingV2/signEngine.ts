@@ -45,7 +45,7 @@ import { createFalSunburstPlateEngine, createFalSunburstSheetEngine } from "../p
 import { falAllowanceOf } from "./falBudget";
 import { SIGN_SHEET_SIZES, type SignSheetKind } from "./signSheet";
 import { ProviderQueue } from "../providers/providerQueue";
-import type { IdentityEngine } from "../providers/types";
+import type { IdentityEngine, TextEngine } from "../providers/types";
 import { CAST_PACKAGE_VIEWS } from "./castViewPackage";
 import { createCastPersonaReader, type CastPersonaReader } from "./castPersona";
 import {
@@ -72,6 +72,7 @@ let plateEngine: IdentityEngine | null = null;
 const sheetEngines: Record<SignSheetKind, IdentityEngine | null> = { head: null, body: null };
 let judge: ViewConformanceJudge | null = null;
 let personaReader: CastPersonaReader | null = null;
+let personaTranslator: TextEngine | null = null;
 
 function castPackageQueue(): ProviderQueue {
   if (!viewQueue) {
@@ -287,12 +288,53 @@ export function castingCastPersonaReader(): CastPersonaReader | null {
     personaReader = createCastPersonaReader({
       engine: createOpenRouterTextEngine({
         apiKey,
-        model: process.env.SIGN_JUDGE_MODEL || DEFAULT_INTERPRETER_MODEL,
+        model: castPersonaModel(),
         queue: new ProviderQueue({ name: "openrouter-cast-persona", concurrency: 1, maxQueueDepth: 16 }),
       }),
     });
   }
   return personaReader;
+}
+
+/**
+ * WHICH MODEL WRITES A CAST'S TWO LINES — one answer for both roads that do.
+ *
+ * The Sign's draft and the "say it your way" translation (#2197 / #2205) share
+ * one set of craft rules (`castPersonaCraftRules`), and those rules were tuned
+ * by court on this model. A translation that drifted onto a different model
+ * than the draft would be the same instruction read by a different reader,
+ * which is the shape the reader court measured going wrong (CLAUDE.md, the
+ * disappearing-technology law, clause 2).
+ */
+export function castPersonaModel(): string {
+  return process.env.SIGN_JUDGE_MODEL || DEFAULT_INTERPRETER_MODEL;
+}
+
+/**
+ * THE TRANSLATOR'S ENGINE — "say it your way" (#2197 / #2205).
+ *
+ * The persona reader's model, and its own queue rather than the reader's: the
+ * reader runs at ONE in flight because a Sign makes one call, while this road
+ * has a customer waiting at the card on every press, so a Sign's draft must
+ * not hold a translation behind it, nor the other way round. Two in flight
+ * per process; the per-account rate bucket (`castPersonaTranslate`) is what
+ * bounds the house's spend.
+ *
+ * `null` with no OpenRouter credential, the reader's own rule: the door then
+ * answers "nothing" and the customer's typed words stand, rather than the
+ * card failing.
+ */
+export function castingCastPersonaTranslator(): TextEngine | null {
+  if (!personaTranslator) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) return null;
+    personaTranslator = createOpenRouterTextEngine({
+      apiKey,
+      model: castPersonaModel(),
+      queue: new ProviderQueue({ name: "openrouter-cast-persona-translate", concurrency: 2, maxQueueDepth: 32 }),
+    });
+  }
+  return personaTranslator;
 }
 
 /** Test seam: drops the memoized engines so config changes take effect. */
@@ -312,4 +354,5 @@ export function resetSignEnginesForTests(): void {
   for (const kind of Object.keys(sheetEngines) as SignSheetKind[]) sheetEngines[kind] = null;
   judge = null;
   personaReader = null;
+  personaTranslator = null;
 }

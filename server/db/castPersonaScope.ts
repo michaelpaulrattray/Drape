@@ -89,8 +89,32 @@ export function castPersonaEditPatch(
   line: CastPersonaField,
   text: string,
   now: Date,
-): { personality: string; personalityEditedAt: Date } | { voice: string; voiceEditedAt: Date } {
-  return line === "personality"
-    ? { personality: text, personalityEditedAt: now }
-    : { voice: text, voiceEditedAt: now };
+  ownWords?: string,
+):
+  | { personality: string; personalityEditedAt: Date; personalityOwnWords?: string }
+  | { voice: string; voiceEditedAt: Date; voiceOwnWords?: string } {
+  /*
+    THE CUSTOMER'S OWN SENTENCE RIDES THE SAME STATEMENT — "say it your way"
+    (#2197 / #2205). Keep this stores the line and the sentence that produced
+    it together, so the two can never disagree about which keep they came from.
+
+    ⚠ **ABSENT MEANS "NOT KEPT FROM A SENTENCE", AND THE COLUMN IS THEN LEFT
+    ALONE.** A plain in-place edit carries no sentence and does not touch the
+    one already stored: the customer's sentence is still what they said, and
+    wiping it because they then tidied a word of our line would delete their
+    words for an edit to ours. Only this line's column is named — the other
+    card's sentence is as untouched as its line.
+  */
+  if (line === "personality") {
+    return {
+      personality: text,
+      personalityEditedAt: now,
+      ...(ownWords === undefined ? {} : { personalityOwnWords: ownWords }),
+    };
+  }
+  return {
+    voice: text,
+    voiceEditedAt: now,
+    ...(ownWords === undefined ? {} : { voiceOwnWords: ownWords }),
+  };
 }

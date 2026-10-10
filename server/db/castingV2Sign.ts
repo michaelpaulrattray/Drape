@@ -1308,6 +1308,10 @@ export async function editCastPersonaField(input: {
   modelId: number;
   line: CastPersonaField;
   text: string;
+  /** The customer's own sentence the line was kept from ("say it your way",
+   *  #2197 / #2205). Absent on a plain in-place edit, which then leaves the
+   *  stored sentence alone (`castPersonaEditPatch`). */
+  ownWords?: string;
   now?: Date;
 }): Promise<boolean> {
   assertPositiveId(input.userId, "userId");
@@ -1317,7 +1321,7 @@ export async function editCastPersonaField(input: {
 
   const written = await db
     .update(models)
-    .set(castPersonaEditPatch(input.line, input.text, now))
+    .set(castPersonaEditPatch(input.line, input.text, now, input.ownWords))
     .where(castPersonaEditWhere({ userId: input.userId, modelId: input.modelId }));
 
   return affectedRows(written) > 0;

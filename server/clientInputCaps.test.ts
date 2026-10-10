@@ -89,6 +89,14 @@ const SINGLE_ENDED: Record<string, { missing: "client" | "server"; why: string }
       "customer's bio is still in her own GDPR export and on the admin user view. Delete this " +
       "line the day a bio editor returns.",
   },
+  CAST_PERSONA_OWN_WORDS_MAX_LENGTH: {
+    missing: "client",
+    why:
+      "#2197 / #2205 ship in two halves on the relay's instruction: this PR is the SERVER " +
+      "half (the store, the translation, `editCastPersonaField`'s `ownWords`), and the " +
+      "\"Say it your way\" box that reads this cap is the client PR that follows. The arm " +
+      "below reddens the day that box imports it, and this line goes in that PR.",
+  },
 };
 
 describe("no client input types its own copy of a server cap", () => {

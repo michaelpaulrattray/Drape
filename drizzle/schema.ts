@@ -486,6 +486,22 @@ export const models = mysqlTable("models", {
   personaDraftedAt: timestamp("personaDraftedAt"),
   personalityEditedAt: timestamp("personalityEditedAt"),
   voiceEditedAt: timestamp("voiceEditedAt"),
+  /*
+    THE CUSTOMER'S OWN SENTENCE BEHIND EACH LINE — "say it your way", #2197 /
+    #2205, migration 0079, additive.
+
+    One store for both doors, keyed by line and kept beside the line it
+    produced: the customer types a sentence the way they would say it to a
+    friend, the product turns it into the line above, and Keep this stores the
+    line AND the sentence together. NULL means the line was never kept from a
+    sentence (drafted at Sign, or typed in place).
+
+    The customer's own words, so the same family as `masterPrompt`, the brief
+    and the two lines: owner-only, on `REFUSING_KEYS`, out of every staff
+    projection, and nulled by the deletion tombstone.
+  */
+  personalityOwnWords: text("personalityOwnWords"),
+  voiceOwnWords: text("voiceOwnWords"),
   // provisioning = invisible evidence-aware Fork under construction
   // draft = work in progress, mutable
   // active = minted with agencyId, identity locked

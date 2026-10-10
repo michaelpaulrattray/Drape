@@ -134,6 +134,54 @@ describe("staff image boundary", () => {
     }
   });
 
+  it("keeps the customer's own sentence behind each persona line out of every staff surface (#2197 / #2205)", () => {
+    /*
+      "Say it your way" stores the sentence the customer typed — their own
+      words, verbatim — beside the line it produced. The `masterPrompt` class.
+      Two ways it could reach staff, and both are refused here:
+
+        1. a staff file NAMING the column (or the input field);
+        2. a staff file reading a WHOLE `models` row — `.select().from(models)`
+           — which would carry every column, these two included, with nothing
+           on the staff surface naming them.
+
+      DERIVED population, the refusal-loop arm's: every moderator route, every
+      admin route, and the two staff query modules they lean on.
+    */
+    const staffFiles = [
+      "db/moderatorQueries.ts",
+      "db/admin.ts",
+      ...fs.readdirSync(path.join(serverRoot, "routes"))
+        .filter((name) => name.startsWith("moderator") && name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        .map((name) => `routes/${name}`),
+      ...fs.readdirSync(path.join(serverRoot, "routes/admin"))
+        .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
+        .map((name) => `routes/admin/${name}`),
+    ];
+    expect(staffFiles).toContain("routes/moderator.ts");
+    expect(staffFiles.length).toBeGreaterThan(5);
+
+    const wholeModelsRow = /\.select\(\)\s*\.from\(models\)/;
+    /* POSITIVE CONTROLS, before the finding: the pattern really matches a
+       whole-row read of `models` as this tree writes one (the owner's own
+       resolve), and the columns really exist and really reach the OWNER's
+       projection — so the absences below are about live things. */
+    expect(source("db/castingV2Sign.ts")).toMatch(wholeModelsRow);
+    const schema = fs.readFileSync(path.join(serverRoot, "../drizzle/schema.ts"), "utf8");
+    expect(schema).toContain('personalityOwnWords: text("personalityOwnWords")');
+    expect(schema).toContain('voiceOwnWords: text("voiceOwnWords")');
+    expect(source("castingV2/castPersonaProjection.ts")).toContain("row.personalityOwnWords");
+
+    for (const file of staffFiles) {
+      const text = source(file);
+      for (const needle of ["personalityOwnWords", "voiceOwnWords", "ownWords"]) {
+        expect(text, `${file} must not read the customer's own sentence`).not.toContain(needle);
+      }
+      expect(text, `${file} must not read a whole models row — it would carry the customer's sentence`)
+        .not.toMatch(wholeModelsRow);
+    }
+  });
+
   it("leaves non-evidence rows alone apart from the boundary", () => {
     const row = {
       type: "castingImage",

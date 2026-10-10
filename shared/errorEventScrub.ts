@@ -122,6 +122,13 @@ export const REFUSING_KEYS: readonly string[] = [
   "passwordHash",
   "personality",
   "voice",
+  /* The customer's own sentence behind each line ("say it your way", #2197 /
+     #2205, migration 0079) — real columns Keep this writes, and the input
+     field of the translation and the edit carries the same name, so an event
+     holding either refuses. */
+  "personalityOwnWords",
+  "voiceOwnWords",
+  "ownWords",
 ];
 
 const REFUSING_KEY_SET = new Set(REFUSING_KEYS.map((key) => key.toLowerCase()));

@@ -122,6 +122,24 @@ export const CAST_NAME_MAX_LENGTH = 60;
 export const CAST_PERSONALITY_MAX_LENGTH = 500;
 export const CAST_VOICE_MAX_LENGTH = 320;
 
+/* -- Casting V2: the customer's own sentence, "say it your way" ----------
+   #2197 (the Personality card) and #2205 (the Voice card). ONE number for
+   both doors, on purpose and unlike the pair above: what it bounds is the
+   SAME thing on both cards -- one sentence typed the way the customer would
+   say it to a friend -- where the two lines above are two different shapes.
+   #2205's own note: *"two different limits on two halves of one idea is the
+   machinery showing through."*
+
+   His two examples run to 98 and 57 characters ("Basically a tired old
+   bouncer who's seen everything and stopped being surprised." / "Sounds like a
+   tired blues singer who smokes too much."). 400 is four times the longer one:
+   a bound against a paste, never a style rule, so a customer who says two
+   sentences instead of one is not refused for it. It bounds the house-paid
+   call's input as well -- this is the only customer text that rides the
+   translation. Read by `castingV2.translatePersonaLine` and
+   `castingV2.editCastPersonaField`'s `ownWords`. */
+export const CAST_PERSONA_OWN_WORDS_MAX_LENGTH = 400;
+
 /* ── Legacy casting: a model's name ───────────────────────────────────────
    `server/routes/models.ts` and `CastProfilePanel`.
 

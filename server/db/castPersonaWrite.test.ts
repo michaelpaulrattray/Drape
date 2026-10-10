@@ -325,6 +325,40 @@ describe("the statement `editCastPersonaField` really sends", () => {
     },
   );
 
+  /*
+    "SAY IT YOUR WAY"'s KEEP THIS (#2197 / #2205): the customer's own sentence
+    rides the SAME statement as the line, on that line's column only — and a
+    plain edit names neither sentence column, so it cannot wipe one.
+  */
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "keeping %s from a sentence writes that line's sentence column and not the other's",
+    async (kind) => {
+      const other = kind === "personality" ? "voice" : "personality";
+      await editCastPersonaField({
+        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "our line", ownWords: "their own sentence",
+      });
+
+      const { sql, params } = onlyStatement();
+      const set = sql.slice(0, sql.indexOf(" where "));
+      expect(set).toContain(`\`${kind}\` = ?`);
+      expect(set).toContain(`\`${kind}OwnWords\` = ?`);
+      expect(set).not.toContain(`\`${other}OwnWords\` = ?`);
+      expect(params).toContain("their own sentence");
+      /* Still the owner's living Cast — the sentence does not widen the reach. */
+      expect(sql).toContain("`userId` = ?");
+      expect(sql).toContain("`deletedAt` is null");
+    },
+  );
+
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "a plain edit of %s names NO sentence column, so a stored sentence survives it",
+    async (kind) => {
+      await editCastPersonaField({ userId: USER_ID, modelId: MODEL_ID, line: kind, text: "our line" });
+      const { sql } = onlyStatement();
+      expect(sql).not.toContain("OwnWords");
+    },
+  );
+
   it("reports false when no row was theirs, so the entrance owns the refusal", async () => {
     answer.affectedRows = 0;
     await expect(editCastPersonaField({

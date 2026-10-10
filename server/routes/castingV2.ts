@@ -168,10 +168,13 @@ import {
 } from "../db/castingV2";
 import {
   CAST_NAME_MAX_LENGTH,
+  CAST_PERSONA_OWN_WORDS_MAX_LENGTH,
   CAST_PERSONALITY_MAX_LENGTH,
   CAST_VOICE_MAX_LENGTH,
 } from "../../shared/inputLimits";
 import { CAST_PERSONA_FIELDS } from "../db/castPersonaField";
+import { translateCastPersonaOwnWords } from "../castingV2/castPersonaTranslate";
+import { castingCastPersonaTranslator } from "../castingV2/signEngine";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
@@ -2065,12 +2068,20 @@ export const castingV2Router = router({
    * against a card that looks broken applies to a line she emptied exactly as
    * it applies to one we failed to draft. Clearing a line is not a feature
    * anybody asked for; if it becomes one it is a door of its own.
+   *
+   * ⚠ **`ownWords` IS "SAY IT YOUR WAY"'s KEEP THIS (#2197 / #2205).** The
+   * translation (`translatePersonaLine` below) writes nothing; Keep this is
+   * this same edit carrying the customer's own sentence beside the line, so
+   * the line and the sentence it came from land in ONE owner-scoped statement
+   * and can never disagree about which keep they belong to. Optional, so the
+   * in-place edit is unchanged and leaves a stored sentence alone.
    */
   editCastPersonaField: protectedProcedure
     .input(z.object({
       castId: z.string().min(1).max(32),
       line: z.enum(CAST_PERSONA_FIELDS),
       text: z.string().trim().min(1).max(CAST_PERSONALITY_MAX_LENGTH),
+      ownWords: z.string().trim().min(1).max(CAST_PERSONA_OWN_WORDS_MAX_LENGTH).optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
@@ -2114,6 +2125,7 @@ export const castingV2Router = router({
         modelId: model.id,
         line: input.line,
         text: input.text,
+        ...(input.ownWords === undefined ? {} : { ownWords: input.ownWords }),
       });
       if (!written) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
@@ -2126,6 +2138,60 @@ export const castingV2Router = router({
         text: input.text,
         drafted: false as const,
       };
+    }),
+
+  /**
+   * "SAY IT YOUR WAY" — THE CUSTOMER'S SENTENCE, TURNED INTO ONE LINE (#2197,
+   * the Personality card; #2205, the Voice card).
+   *
+   * The customer types one sentence about their cast the way they would say it
+   * to a friend; this answers with the line the card would store. It WRITES
+   * NOTHING — Keep this is `editCastPersonaField` carrying `ownWords`, so a
+   * press the customer walks away from leaves no trace on their cast.
+   *
+   * ⚠ **FREE, AND THE COST IS OURS TO BOUND** — both cards' reword question,
+   * answered once for both. One house-paid text call per press, never a
+   * credit, never an operation row, no price on the control. Its own rate
+   * bucket (`castPersonaTranslate`, sixty an hour per account) is the bound,
+   * set where rewording a sentence never meets it and a loop does. The price
+   * and the latency per press are measured and stated on the pull request.
+   *
+   * The Cast is resolved owner-scoped BEFORE the call (invariant 1's free
+   * refusal): another account's Cast answers `NOT_FOUND` and spends nothing.
+   * The pronouns come from the Cast's own record (`castPronouns`), the same
+   * three words its Sign draft was written with; the record itself never
+   * leaves this function.
+   *
+   * `nothing` is an honest state, not an error — the call failed, came back
+   * cut off, or could not be fitted to the line's cap. The card says one quiet
+   * sentence for all of them, because the customer's next act is the same.
+   * An explicit projection (invariant 8): the line kind and the text, and no
+   * model, no latency, no provider prose.
+   */
+  translatePersonaLine: protectedProcedure
+    .input(z.object({
+      castId: z.string().min(1).max(32),
+      line: z.enum(CAST_PERSONA_FIELDS),
+      ownWords: z.string().trim().min(1).max(CAST_PERSONA_OWN_WORDS_MAX_LENGTH),
+    }).strict())
+    .mutation(async ({ ctx, input }): Promise<
+      | { kind: "line"; line: (typeof CAST_PERSONA_FIELDS)[number]; text: string }
+      | { kind: "nothing"; line: (typeof CAST_PERSONA_FIELDS)[number] }
+    > => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castPersonaTranslate);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      const engine = castingCastPersonaTranslator();
+      if (!engine) return { kind: "nothing", line: input.line };
+      const outcome = await translateCastPersonaOwnWords({
+        engine,
+        line: input.line,
+        ownWords: input.ownWords,
+        pronouns: castPronouns(model.technicalSchema),
+      });
+      if (outcome.kind === "line") return { kind: "line", line: input.line, text: outcome.text };
+      return { kind: "nothing", line: input.line };
     }),
 
   /**
