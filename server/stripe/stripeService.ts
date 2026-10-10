@@ -41,8 +41,24 @@ import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
 
+/**
+ * WHICH VERSION OF STRIPE'S RULES EVERY CALL ASKS FOR (#2181). Every request
+ * carries a `Stripe-Version` header, and a client built without `apiVersion`
+ * sends whatever the installed library's own default is — so a routine
+ * package update would move checkout, subscriptions, invoices and webhooks to
+ * new rules at once, with nothing in this repository naming the change.
+ *
+ * The value is the one stripe 20.3.0 already sent before it was written here,
+ * so pinning it changed nothing on the wire. The type is the library's own
+ * single-literal `LatestApiVersion`: the next SDK bump makes this line a
+ * compile error, which turns a silent move into a decision someone takes.
+ * `server/stripe/stripeApiVersionPin.test.ts` reads the header off the
+ * outgoing request under a simulated library bump.
+ */
+export const STRIPE_API_VERSION: Stripe.LatestApiVersion = "2026-01-28.clover";
+
 // Initialize Stripe client
-const stripe = new Stripe(ENV.stripeSecretKey);
+const stripe = new Stripe(ENV.stripeSecretKey, { apiVersion: STRIPE_API_VERSION });
 
 export { stripe };
 
