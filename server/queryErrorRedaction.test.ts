@@ -19,7 +19,7 @@
  * real event with its linked-errors integration and handing it to the tracker's
  * own `beforeSend`, and `captureServerError` handing the SDK its error.
  */
-import { createServer, type Server } from "node:http";
+import type { Server } from "node:http";
 import { inspect } from "node:util";
 
 import { initTRPC } from "@trpc/server";
@@ -71,6 +71,7 @@ import {
   withoutQueryValues,
 } from "./monitoring/queryErrorRedaction";
 import { createTrpcErrorReporter } from "./monitoring/trpcErrorReport";
+import { baseUrlOf, listenOnFetchablePort } from "./testing/fetchablePort";
 
 const SENTINEL = "SENTINEL-the-customer-wrote-this-7f3a";
 
@@ -346,10 +347,8 @@ describe("the tRPC report, over a real request", () => {
         }),
       }),
     );
-    server = createServer(app);
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const address = server.address();
-    url = `http://127.0.0.1:${typeof address === "object" && address ? address.port : 0}/api/trpc/savePersona`;
+    server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
+    url = `${baseUrlOf(server)}/api/trpc/savePersona`;
   });
 
   afterEach(async () => {
