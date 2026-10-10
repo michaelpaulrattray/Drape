@@ -5,9 +5,10 @@
  * `assertFalBudget()` proves at boot that the declared paths' concurrency
  * allowances fit inside the provider account's ceiling of 20 requests in flight
  * (`ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 +
- * `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 5 = 19 of 20; it was five
- * paths summing to exactly 20 until the plate mint's row retired with the ink
- * studio, #1158 slice 4d). **That arithmetic counts requests, not models.**
+ * `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 6 = 20 of 20 since #2206; it
+ * was five paths summing to exactly 20 until the plate mint's row retired with
+ * the ink studio, #1158 slice 4d, then four summing to 19 until his word put
+ * region reads back to 6). **That arithmetic counts requests, not models.**
  * So the moment the roll
  * road gained a second engine, the thing keeping it honest stopped being the
  * boot check and became one line — the queue instance both engines are handed.

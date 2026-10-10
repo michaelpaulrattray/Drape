@@ -55,8 +55,8 @@ const log = createModuleLogger("castingV2/falConcurrency");
  * How many fal calls this reader may have in flight at once.
  *
  * Read from the shared budget rather than from the variable directly: the
- * account's ceiling is spent by five paths and a boot check proves they fit
- * (`falBudget.ts`). Two readings of one number is how the arithmetic that check
+ * account's ceiling is spent by four paths (five while the plate mint lived)
+ * and a boot check proves they fit (`falBudget.ts`). Two readings of one number is how the arithmetic that check
  * performs stops describing what the code actually does — and this reader is
  * the reason that matters, because when the plate mint took its slot out of the
  * courtesy pool this limit moved with it, in one place, without an edit here.

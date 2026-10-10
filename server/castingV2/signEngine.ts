@@ -34,7 +34,8 @@
  *
  * ⚠ **ALL THREE SHARE ONE QUEUE AND THAT IS THE WHOLE BUDGET STORY.** The fal
  * account's ceiling is spent by four DECLARED paths (`falBudget.ts`) summing to
- * 19 of 20, and `assertFalBudget()` refuses to boot on a fifth. The plate is a
+ * 20 of 20 (19 until #2206 put region reads back to 6), and
+ * `assertFalBudget()` refuses to boot on a fifth. The plate is a
  * new road, not a new path: it draws from `SIGN_VIEW_CONCURRENCY` like the
  * views beside it, so the arithmetic that table exists to protect is unmoved.
  */
