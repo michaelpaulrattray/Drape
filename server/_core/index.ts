@@ -35,6 +35,8 @@ import {
   initErrorTracker,
 } from "../monitoring/errorTracker";
 import { initProductEvents, shutdownProductEvents } from "../monitoring/productEvents";
+import { withoutQueryValues } from "../monitoring/queryErrorRedaction";
+import { createTrpcErrorReporter } from "../monitoring/trpcErrorReport";
 const log = createModuleLogger("server");
 
 
@@ -67,7 +69,10 @@ async function alertCriticalError(label: string, error: unknown): Promise<void> 
   }
 }
 
-process.on("uncaughtException", async (error: Error) => {
+process.on("uncaughtException", async (raw: Error) => {
+  /* A failed query's bound values are withheld before the error reaches the
+     log, the tracker or the staff-readable audit row (#2218). */
+  const error = withoutQueryValues(raw);
   log.fatal({ err: error }, "Uncaught exception");
   /* The stack leaves the building before the process does — the audit row says
      a crash happened, this says WHERE (#509). Both are best-effort and neither
@@ -79,7 +84,8 @@ process.on("uncaughtException", async (error: Error) => {
   setTimeout(() => process.exit(1), 2000);
 });
 
-process.on("unhandledRejection", async (reason: unknown) => {
+process.on("unhandledRejection", async (rawReason: unknown) => {
+  const reason = withoutQueryValues(rawReason);
   log.fatal({ err: reason }, "Unhandled promise rejection");
   await captureServerError(reason, { kind: "unhandledRejection" });
   await alertCriticalError("Unhandled Rejection", reason);
@@ -330,32 +336,9 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
-      onError({ error, path, type, ctx }) {
-        // Log all server-side tRPC errors with correlation ID for traceability
-        const severity = error.code === "INTERNAL_SERVER_ERROR" ? "ERROR" : "WARN";
-        const cid = (ctx as any)?.correlationId ?? "unknown";
-        log.error(
-          { correlationId: cid, trpcType: type, path: path ?? "unknown", code: error.code, ...(error.code === "INTERNAL_SERVER_ERROR" ? { cause: error.cause } : {}) },
-          `tRPC ${severity}: ${error.message}`
-        );
-        /*
-          ONLY `INTERNAL_SERVER_ERROR` IS REPORTED, AND THAT IS THE WHOLE RULE
-          (#509). Every other code is the API working: a `FORBIDDEN` is the
-          approval gate, a `TOO_MANY_REQUESTS` is a rate limit doing its job, a
-          `BAD_REQUEST` is `.strict()` refusing an unknown field. Sending those
-          would fill the tracker with correct behaviour and make the one row that
-          matters unfindable — the same reason this log line has always split
-          ERROR from WARN on exactly this code.
-        */
-        if (error.code === "INTERNAL_SERVER_ERROR") {
-          void captureServerError(error.cause ?? error, {
-            kind: "trpc",
-            route: path ?? "unknown",
-            trpcType: type,
-            trpcCode: error.code,
-          });
-        }
-      },
+      /* The report, with every value a failed query carried withheld (#2218) —
+         see `server/monitoring/trpcErrorReport.ts`. */
+      onError: createTrpcErrorReporter({ log, capture: captureServerError }),
     })
   );
 
