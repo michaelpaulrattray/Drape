@@ -37,6 +37,7 @@ import {
   CastVoiceLine,
   PersonaChangeButton,
   type CastPersonaFieldName,
+  type CastReadOption,
 } from "@/features/castingV2/components/CastPersonaCards";
 
 /**
@@ -149,6 +150,15 @@ export default function CastingRoom() {
   const config = trpc.castingV2.config.useQuery({});
   const rename = trpc.castingV2.renameCast.useMutation();
   const editPersona = trpc.castingV2.editCastPersonaField.useMutation();
+  /*
+    ⚠ A MUTATION AND NOT A QUERY, and the reason is money rather than REST.
+
+    Opening door 1 costs the house a measured $0.0154 and takes ~13.8 s. A
+    `useQuery` would be refetched on window focus and on reconnect, so a
+    customer who tabbed away and back would pay again — and the six they were
+    reading would be replaced by six different ones under their cursor.
+  */
+  const draftReads = trpc.castingV2.draftCastReads.useMutation();
   const utils = trpc.useUtils();
   /** Inline rename on the title. Null when not editing. */
   const [draftName, setDraftName] = useState<string | null>(null);
@@ -161,6 +171,17 @@ export default function CastingRoom() {
     load of this page (memory `hooks-below-early-return`).
   */
   const [savingPersonaField, setSavingPersonaField] = useState<CastPersonaFieldName | null>(null);
+  /*
+    DOOR 1 — SIX WAYS THIS CAST COULD CARRY THEMSELVES (#2196).
+
+    Held HERE for the same two reasons the voice line's open state is: the room
+    owns every tRPC call in this surface, and a `useState` must sit above the
+    early returns further down this file (React #310).
+
+    `shut` is the door offered but unopened, so nothing has been paid for.
+  */
+  const [readsState, setReadsState] = useState<"shut" | "drafting" | "open" | "failed">("shut");
+  const [reads, setReads] = useState<readonly CastReadOption[]>([]);
   /*
     WHETHER THE VOICE LINE'S BOX IS OPEN — #2139, and it is held HERE rather
     than inside the line for one reason: the voice card's *Change* button sits
@@ -429,6 +450,56 @@ export default function CastingRoom() {
         },
       },
     );
+  };
+
+  /**
+   * DOOR 1 — THE SIX ARE ASKED FOR WHEN THE DOOR IS OPENED (#2196).
+   *
+   * ⚠ **ON OPEN AND NOT AT SIGN, decided on the measurement the card required
+   * before anything was drawn.** $0.0154 and ~13.8 s either way — but at Sign
+   * every customer pays it whether or not they ever open this, the six would
+   * need a store this card does not have, and a set drafted at Sign is stale
+   * the moment the line underneath it is edited, which is the very thing this
+   * door exists to help with.
+   */
+  const openReadsDoor = () => {
+    if (!data) return;
+    setReadsState("drafting");
+    setReads([]);
+    draftReads.mutate(
+      { castId: data.castId },
+      {
+        onSuccess: (drafted) => {
+          setReads(drafted.reads);
+          setReadsState("open");
+        },
+        onError: (error) => {
+          /*
+            THE REFUSAL IS DRAWN ON THE CARD, NOT THROWN AT A TOAST, because
+            the card is where the customer is looking and the picker has
+            replaced its body — a toast over an empty panel would leave them
+            with a blank card and a message that scrolls away.
+          */
+          setReadsState("failed");
+          logRawFailure('castingV2.draftCastReads', error);
+        },
+      },
+    );
+  };
+
+  /**
+   * KEEPING A READ IS THE EDIT THE PRODUCT ALREADY HAS (#2196).
+   *
+   * No new write path, no new column: a read's two sentences ARE a personality
+   * line, so this is `savePersonaField` with the read's words. The door shuts
+   * on the way so the customer lands back on the card showing what they chose,
+   * which is the receipt — the same "the badge going is the receipt" rule door
+   * 0 ships under.
+   */
+  const keepRead = (read: CastReadOption) => {
+    savePersonaField("personality", read.personality);
+    setReadsState("shut");
+    setReads([]);
   };
 
   /*
@@ -1091,6 +1162,19 @@ export default function CastingRoom() {
                      and Pigman's look." The card handles a blank name with the
                      room's own "their look" fallback. */
                   name={data.name ?? null}
+                  /* Door 1 (#2196). The room holds the state and owns the
+                     call; the card draws the row, the wait, the six and the
+                     refusal, and decides none of them. */
+                  readsDoor={{
+                    state: readsState,
+                    reads,
+                    onOpen: openReadsDoor,
+                    onBack: () => {
+                      setReadsState("shut");
+                      setReads([]);
+                    },
+                    onKeep: keepRead,
+                  }}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>

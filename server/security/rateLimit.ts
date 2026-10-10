@@ -292,6 +292,26 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_concept_describe',
   },
   /*
+    SIX ALTERNATIVE READS — door 1 of the Personality card (#2196).
+
+    A house-paid text call the CUSTOMER starts, measured at $0.0154 and ~13.8 s
+    an open. 20 an hour is far more opening and re-opening than the door is for
+    and still bounds the house at about 31 cents an hour per account — sized
+    from the measurement rather than copied from a neighbour, which is why it
+    is not the concept reader's 12 (that one posts a whole picture and costs
+    more) nor the reference attach's 24.
+
+    ⚠ It is a CEILING on abuse, never a budget the customer can feel: nobody
+    reaching this bound is using the feature as designed, and a customer who
+    somehow did would meet a real TOO_MANY_REQUESTS (invariant 6) rather than a
+    200 carrying an error.
+  */
+  castingReadsDraft: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 20,
+    keyPrefix: 'casting_reads_draft',
+  },
+  /*
     RE-IMAGINE (#535). Its own bucket for the concept describer's reason: the
     press is free to the customer and spends house money on every call (one
     author text call, sometimes two on a re-ask), so it must not share a

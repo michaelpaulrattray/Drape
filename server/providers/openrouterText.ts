@@ -154,7 +154,33 @@ export function createOpenRouterTextEngine(config: OpenRouterTextConfig): TextEn
                   ],
                   temperature: request.temperature ?? 0.4,
                   max_tokens: request.maxOutputTokens ?? 900,
-                  ...(request.json ? { response_format: { type: "json_object" } } : {}),
+                  /*
+                    A SCHEMA WHEN THE CALLER HAS ONE, THE LOOSE HINT OTHERWISE.
+
+                    `json_schema` is checked FIRST because the two cannot both
+                    be sent — `response_format` is one field — and a caller
+                    that supplies a schema has said which of the two it wants.
+                    Callers set `json: true` as well, so a road keeps asking
+                    for an object even if its schema is ever dropped.
+
+                    Measured before it was wired (#2196): under the loose hint
+                    the same ask returned a fenced reply with an invented key
+                    and the wrong nesting; under the schema, the exact shape.
+                  */
+                  ...(request.jsonSchema
+                    ? {
+                        response_format: {
+                          type: "json_schema",
+                          json_schema: {
+                            name: request.jsonSchema.name,
+                            strict: true,
+                            schema: request.jsonSchema.schema,
+                          },
+                        },
+                      }
+                    : request.json
+                      ? { response_format: { type: "json_object" } }
+                      : {}),
                   /*
                     `max_tokens` IS NOT A BUDGET FOR THE ANSWER — it is a budget
                     for everything the model emits, and reasoning is emitted

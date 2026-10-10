@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 195
+      "moduleCount": 197
     },
     {
       "id": "domain:castingV2",
@@ -3799,6 +3799,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/castPersonaCraft.ts",
+      "path": "server/castingV2/castPersonaCraft.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/castPersonaProjection.ts",
       "path": "server/castingV2/castPersonaProjection.ts",
       "domain": "casting-v2",
@@ -3813,6 +3819,12 @@
     {
       "id": "module:server/castingV2/castPronouns.ts",
       "path": "server/castingV2/castPronouns.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castReads.ts",
+      "path": "server/castingV2/castReads.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -7785,6 +7797,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.draftCastReads",
+      "namespace": "castingV2",
+      "name": "draftCastReads",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.editCastPersonaField",
       "namespace": "castingV2",
       "name": "editCastPersonaField",
@@ -11257,6 +11279,10 @@
       "path": "client/src/features/castingV2/personaDoor0.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/personaReads2196.test.ts",
+      "path": "client/src/features/castingV2/personaReads2196.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
@@ -12485,6 +12511,10 @@
       "path": "server/castingV2/castPersona.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaCraft.test.ts",
+      "path": "server/castingV2/castPersonaCraft.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castPersonaEditEntrance.test.ts",
       "path": "server/castingV2/castPersonaEditEntrance.test.ts"
     },
@@ -12499,6 +12529,10 @@
     {
       "id": "test:server/castingV2/castPronouns.test.ts",
       "path": "server/castingV2/castPronouns.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castReads.test.ts",
+      "path": "server/castingV2/castReads.test.ts"
     },
     {
       "id": "test:server/castingV2/castViewPackage.test.ts",
@@ -26409,6 +26443,11 @@
     },
     {
       "from": "module:server/castingV2/castPersona.ts",
+      "to": "module:server/castingV2/castPersonaCraft.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersona.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -26430,6 +26469,11 @@
     {
       "from": "module:server/castingV2/castPersona.ts",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaCraft.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
     {
@@ -26470,6 +26514,51 @@
     {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/castPersonaCraft.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/providers/openrouterText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -34435,6 +34524,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castReads.ts",
       "kind": "imports"
     },
     {
