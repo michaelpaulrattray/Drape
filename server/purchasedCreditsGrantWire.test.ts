@@ -131,14 +131,25 @@ describe("the settle statement", () => {
     expect(text(executed[0])).not.toContain("+");
   });
 
-  it("runs for EVERY grant kind, because any grant can resurrect a spent bound", async () => {
-    for (const kind of ["topup", "purchase", "subscription", "bonus", "refund", "signup"] as const) {
+  it("runs for every grant kind that adds NEW credits, because any of them can resurrect a spent bound", async () => {
+    for (const kind of ["topup", "purchase", "subscription", "bonus", "signup"] as const) {
       executed.length = 0;
       executeAnswers = [1, 1];
       await addCredits(7, 1_000, kind, `a ${kind}`, `${kind}:k1`);
+      expect(executed).toHaveLength(2);
       expect(columns(executed[0])).toContain("purchasedBalance");
       expect(text(executed[0])).toContain("LEAST(");
     }
+  });
+
+  it("⚠ a REFUND sends no settle (#2185) — it gives back a spend, and the settle would forget the top-up that spend used", async () => {
+    executeAnswers = [1];
+    selectAnswer = [{ balance: 1_000 }];
+    const result = await addCredits(7, 1_000, "refund", "a refund", "refund:k1");
+    expect(result.success).toBe(true);
+    expect(executed).toHaveLength(1);
+    expect(text(executed[0])).not.toContain("LEAST(");
+    expect(columns(executed[0])).not.toContain("purchasedBalance");
   });
 });
 
@@ -172,7 +183,8 @@ describe("the grant statement", () => {
       executed.length = 0;
       executeAnswers = [1, 1];
       await addCredits(7, 1_000, kind, `a ${kind}`, `${kind}:k2`);
-      const grant = new Set(columns(executed[1]));
+      // The grant is the LAST statement: a refund sends no settle before it (#2185).
+      const grant = new Set(columns(executed[executed.length - 1]));
       expect(grant).not.toContain("purchasedBalance");
       expect(grant).not.toContain("creditsPurchased");
       expect(grant).toContain("balance");

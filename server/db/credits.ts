@@ -73,6 +73,51 @@ export function isPurchasedCreditGrant(type: CreditTransactionType | string): bo
 }
 
 /**
+ * WHICH GRANTS GIVE BACK A SPEND RATHER THAN ADD NEW CREDITS (#2185).
+ *
+ * A `refund` puts back credits a charge took: a failed roll, a lost Sign view,
+ * a dispute the customer won, a Stripe refund that never went back. It is not
+ * new money and not a gift, so it must come back to the bucket it left. The
+ * settle in `addCreditsIn` cannot do that — it clamps the purchased bound to
+ * the balance AFTER the charge, so the top-up credits the charge used are
+ * forgotten before the refund lands, and the refund comes back as plan
+ * credits that a cancelled plan's expiry, a renewal's rollover or a downgrade
+ * then takes away.
+ *
+ * Worked, the card's own example: 10,000 plan credits and a 5,000 top-up
+ * (balance 15,000, bound 5,000). A 15,000 roll spends the plan credits first
+ * and the top-up last: balance 0, bound still 5,000 — the deduct never writes
+ * it. The roll fails and 15,000 comes back. With the settle, the bound became
+ * `min(5,000, 0)` = 0 first, and at day 30 the whole 15,000 expired. Without
+ * it, `min(5,000, 15,000)` = 5,000 is still the customer's top-up and only the
+ * 10,000 plan credits expire.
+ *
+ * ⚠ WHY SKIPPING THE SETTLE IS EXACT, NOT GENEROUS. Between two settles the
+ * bound only ever moves on a grant; charges and refunds leave it alone, so
+ * `min(bound, balance)` is the "plan spends first" rule applied to the NET of
+ * every charge and refund since the last grant. A refund undoes its charge in
+ * that net, which is what restoring the charge's own bucket means. Where
+ * several charges were in flight, the net is the right reading: once one is
+ * refunded, the plan-first rule bills the ones that remain to the plan first.
+ * It can never protect more than the bound, which is a number the customer
+ * paid for at the last grant.
+ *
+ * ⚠ ITS STATED LIMIT: a grant that lands BETWEEN the charge and its refund (a
+ * renewal, a top-up, a bonus) settles the bound and forgets the charge, so
+ * that refund comes back as plan credits, as every refund did before this
+ * card. Roll and Sign refunds settle within minutes; a dispute can take weeks.
+ * Closing that needs the charge's purchased share written on its own ledger
+ * row, which is a schema change and its own card.
+ *
+ * Bonuses, signup credits and staff goodwill are NOT reversals and keep the
+ * settle: how they should expire is the founder's decision on #2185, not this
+ * predicate's.
+ */
+export function isSpendReversal(type: CreditTransactionType | string): boolean {
+  return type === "refund";
+}
+
+/**
  * HOW MANY OF A BALANCE'S CREDITS THE CUSTOMER PAID FOR — the only reader of
  * `points.purchasedBalance`, and the whole of #1604's arithmetic.
  *
@@ -582,7 +627,7 @@ export async function addCreditsIn(
     them still carries 25,000 in the column, so the next bonus or admin
     adjustment would arrive and be read as purchased credits the customer
     never has. Settling the bound to the pre-grant balance is what closes
-    that, and it runs for EVERY grant kind.
+    that, and it runs for every grant kind but one (below).
 
     It is a separate UPDATE rather than a clause because the clamp must
     read the OLD balance. MySQL evaluates `SET` assignments left to right,
@@ -593,12 +638,18 @@ export async function addCreditsIn(
     path (the deduct is, and this card does not touch it), and the second
     statement below is still the one whose `affectedRows` decides whether
     the account exists.
+
+    ⚠ EXCEPT A REFUND (#2185). A refund gives back a spend, and the settle
+    would forget which credits that spend used — so a refunded top-up came
+    back as plan credits and expired with the plan. See `isSpendReversal`.
   */
-  await tx.execute(
-    sql`UPDATE ${credits}
-        SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
-        WHERE ${credits.userId} = ${userId}`
-  );
+  if (!isSpendReversal(type)) {
+    await tx.execute(
+      sql`UPDATE ${credits}
+          SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
+          WHERE ${credits.userId} = ${userId}`
+    );
+  }
 
   /*
     Three statements, and the two predicates are deliberately NOT one.
