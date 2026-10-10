@@ -360,12 +360,16 @@ export async function adjustUserCredits(
           balance: credits.balance,
           purchasedBalance: credits.purchasedBalance,
           keptBalance: credits.keptBalance,
-          signupBalance: credits.signupBalance,
           promoBalance: credits.promoBalance,
         })
         .from(credits)
         .where(eq(credits.userId, userId))
-        .limit(1);
+        .limit(1)
+        /* ⚠ LOCKED (#2185, the relay's finding 3 on PR #2208). The write below
+           states the balance and all four bounds outright from this read, so a
+           spend or a grant landing in between would be overwritten. Its sibling
+           `addCreditsIn` reads the same row the same way. */
+        .for("update");
 
       if (!userCredits) {
         return { success: false, error: "User credits record not found" };

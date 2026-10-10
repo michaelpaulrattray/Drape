@@ -133,21 +133,23 @@ export function isSpendReversal(type: CreditTransactionType | string): boolean {
 }
 
 /**
- * WHICH CREDITS ON A BALANCE ARE WHICH — the only reader of the four bound
- * columns (`purchasedBalance`, `keptBalance`, `signupBalance`, `promoBalance`),
- * and the whole of #1604's arithmetic, widened by #2185.
+ * WHICH CREDITS ON A BALANCE ARE WHICH — the only reader of the three bound
+ * columns (`purchasedBalance`, `keptBalance`, `promoBalance`), and the whole of
+ * #1604's arithmetic, widened by #2185.
  *
- * His ruling on #2185, 2026-10-10 (terminal), verbatim: *"Referral credits
- * (proposed) Never expire, same as top-ups."*, *"promo and signup bonuses
- * after 90 days? Expire after 90 days."* and, on the Free account's starting
- * credits, *"the free plan credits can last forever sure"*. So:
+ * His rulings on #2185, 2026-10-10, verbatim: *"Referral credits (proposed)
+ * Never expire, same as top-ups."*, *"promo and signup bonuses after 90 days?
+ * Expire after 90 days."*, and then, superseding the second for the starting
+ * credits: *"starting credits are just a default every account starts with
+ * lets make them never expire to simplify things."* So:
  *
- *   purchased  top-ups                 never expire
- *   kept       referral, staff goodwill never expire
- *   signup     starting credits        never on Free; 90 days after an upgrade
- *   promo      promo bonuses           90 days after the grant
- *   plan       everything else         the plan's rules (rollover, downgrade
- *                                      trim, 30 days after a cancel)
+ *   purchased  top-ups                              never expire
+ *   kept       starting credits, referral rewards,  never expire
+ *              staff goodwill
+ *   promo      promo bonuses                        90 days after the grant
+ *   plan       everything else                      the plan's rules (rollover,
+ *                                                   downgrade trim, 30 days
+ *                                                   after a cancel)
  *
  * **The spend order is {@link BUCKET_SPEND_ORDER}: the plan's credits go
  * first, then the ones that expire, then the ones that never do, and top-ups
@@ -170,15 +172,14 @@ export function isSpendReversal(type: CreditTransactionType | string): boolean {
  * those credits as the PLAN's — the direction that cannot invent protection
  * for credits nobody was given.
  */
-export type CreditBucket = "plan" | "promo" | "signup" | "kept" | "purchased";
+export type CreditBucket = "plan" | "promo" | "kept" | "purchased";
 
 /** First spent to last spent. Every reader derives from this list. */
-export const BUCKET_SPEND_ORDER: readonly CreditBucket[] = ["plan", "promo", "signup", "kept", "purchased"];
+export const BUCKET_SPEND_ORDER: readonly CreditBucket[] = ["plan", "promo", "kept", "purchased"];
 
 /** The column holding each non-plan bucket's upper bound. */
 export const BUCKET_BOUND_COLUMN = {
   promo: "promoBalance",
-  signup: "signupBalance",
   kept: "keptBalance",
   purchased: "purchasedBalance",
 } as const satisfies Record<Exclude<CreditBucket, "plan">, string>;
@@ -191,11 +192,10 @@ export type CreditBucketRow = {
   balance: number;
   purchasedBalance?: number | null;
   keptBalance?: number | null;
-  signupBalance?: number | null;
   promoBalance?: number | null;
 };
 
-/** How long a timed bonus lasts: a promo from its grant, starting credits from an upgrade. */
+/** How long a promo lasts from its grant. */
 export const TIMED_BONUS_LIFE_DAYS = 90;
 
 function wholeNonNegative(value: number | null | undefined): number {
@@ -204,7 +204,7 @@ function wholeNonNegative(value: number | null | undefined): number {
 
 export function creditBuckets(row: CreditBucketRow): Record<CreditBucket, number> {
   let left = wholeNonNegative(row.balance);
-  const out = { plan: 0, promo: 0, signup: 0, kept: 0, purchased: 0 } as Record<CreditBucket, number>;
+  const out = { plan: 0, promo: 0, kept: 0, purchased: 0 } as Record<CreditBucket, number>;
   // Last spent is read first: it keeps the most of what is left.
   for (const bucket of [...BUCKET_SPEND_ORDER].reverse()) {
     if (bucket === "plan") {
@@ -224,7 +224,6 @@ export function settledCreditBounds(row: CreditBucketRow): CreditBucketBounds {
   return {
     purchasedBalance: buckets.purchased,
     keptBalance: buckets.kept,
-    signupBalance: buckets.signup,
     promoBalance: buckets.promo,
   };
 }
@@ -241,8 +240,8 @@ export function planAllowanceRemaining(row: CreditBucketRow): number {
 
 /**
  * The credits the plan's rules never touch — the balance minus the plan's
- * part. A renewal and a cancelled plan's expiry carry these across whole;
- * starting credits and promos leave only by their own expiry.
+ * part. A renewal and a cancelled plan's expiry carry these across whole; a
+ * promo leaves only by its own 90-day expiry.
  */
 export function creditsOutsidePlanRules(row: CreditBucketRow): number {
   return wholeNonNegative(row.balance) - planAllowanceRemaining(row);
@@ -268,7 +267,9 @@ export function grantBucket(
   if (isSpendReversal(type)) return "reversal";
   if (isPurchasedCreditGrant(type)) return "purchased";
   if (type === "admin_add") return "kept";
-  if (type === "signup") return "signup";
+  // Starting credits are a default every account starts with, and never
+  // expire (his ruling on #2185, 2026-10-10).
+  if (type === "signup") return "kept";
   if (type === "bonus") {
     if (bonusSource === "referral" || bonusSource === "goodwill") return "kept";
     if (bonusSource === "promo") return "promo";
@@ -459,9 +460,9 @@ export async function initializeUserCredits(userId: number): Promise<void> {
         // `migration-before-code`): a new account has bought nothing, and the
         // row says so instead of inheriting it.
         purchasedBalance: 0,
-        // The starting credits are their own bucket (#2185): they never expire
-        // while the account is on Free, and expire 90 days after an upgrade.
-        signupBalance: INITIAL_CREDITS,
+        // The starting credits never expire, on any plan (his ruling on #2185,
+        // 2026-10-10): they land in the kept bucket beside referral rewards.
+        keptBalance: INITIAL_CREDITS,
         rolloverCredits: 0,
       });
 
@@ -707,7 +708,7 @@ export async function addCredits(
 }
 
 /** A deadline `TIMED_BONUS_LIFE_DAYS` after `from`, in whole seconds (the column has no fraction). */
-export function timedCreditDeadline(from: Date): Date {
+function timedCreditDeadline(from: Date): Date {
   return new Date(Math.floor((from.getTime() + TIMED_BONUS_LIFE_DAYS * 86_400_000) / 1000) * 1000);
 }
 
@@ -765,7 +766,7 @@ export async function addCreditsIn(
 
   /*
     ⚠ EVERY BOUND IS SETTLED AGAINST THE BALANCE *BEFORE* THIS GRANT LANDS
-    (#1604, widened to all four bounds by #2185).
+    (#1604, widened to all three bounds by #2185).
 
     Each bound is an upper bound that `creditBuckets` reads as the lesser of
     it and what the later-spent buckets leave over — exact, because the spend
@@ -790,7 +791,6 @@ export async function addCreditsIn(
         balance: credits.balance,
         purchasedBalance: credits.purchasedBalance,
         keptBalance: credits.keptBalance,
-        signupBalance: credits.signupBalance,
         promoBalance: credits.promoBalance,
         promoCreditsExpireAt: credits.promoCreditsExpireAt,
       })

@@ -19,8 +19,8 @@
  *      credits nobody was given.
  *  2 · EACH GRANT RAISES ITS OWN BUCKET'S BOUND AND NO OTHER (#2185).
  *      `topup` / `purchase` raise `purchasedBalance`; a referral or goodwill
- *      `bonus` and `admin_add` raise `keptBalance`; `signup` raises
- *      `signupBalance`; a promo `bonus` raises `promoBalance`. `subscription`
+ *      `bonus`, `admin_add` and `signup` (the starting credits) raise
+ *      `keptBalance`; a promo `bonus` raises `promoBalance`. `subscription`
  *      is a purchase for the lifetime analytics counter and raises NO bound:
  *      a plan's monthly allowance is exactly what its rollover percentage
  *      governs. A `bonus` that states no source is a plan change's proration
@@ -131,7 +131,7 @@ beforeEach(() => {
   selectAnswer = [{ balance: 0 }];
 });
 
-const BOUND_KEYS = ["purchasedBalance", "keptBalance", "signupBalance", "promoBalance"];
+const BOUND_KEYS = ["purchasedBalance", "keptBalance", "promoBalance"];
 
 describe("the settle", () => {
   it("⚠ runs FIRST — a locked read, then one write of the four bounds, then the grant", async () => {
@@ -143,11 +143,11 @@ describe("the settle", () => {
 
   it("writes the bounds and nothing else, each settled to its bucket's reading", async () => {
     // 1,000 on the balance; the bounds remember far more than is left.
-    selectAnswer = [{ balance: 1_000, purchasedBalance: 600, keptBalance: 900, signupBalance: 13_500, promoBalance: 50 }];
+    selectAnswer = [{ balance: 1_000, purchasedBalance: 600, keptBalance: 900, promoBalance: 50 }];
     await addCredits(7, 5_000, "bonus", "A bonus", "bonus:b1");
     expect(Object.keys(updateSets[0]).sort()).toEqual([...BOUND_KEYS].sort());
-    // Spent plan → promo → signup → kept → purchased, so read in reverse:
-    expect(updateSets[0]).toEqual({ purchasedBalance: 600, keptBalance: 400, signupBalance: 0, promoBalance: 0 });
+    // Spent plan → promo → kept → purchased, so read in reverse:
+    expect(updateSets[0]).toEqual({ purchasedBalance: 600, keptBalance: 400, promoBalance: 0 });
   });
 
   it("runs for every grant kind that adds NEW credits, because any of them can resurrect a spent bound", async () => {
@@ -187,7 +187,7 @@ describe("the grant statement — each grant raises its own bucket's bound and n
   it.each([
     ["topup", undefined, "purchasedBalance"],
     ["purchase", undefined, "purchasedBalance"],
-    ["signup", undefined, "signupBalance"],
+    ["signup", undefined, "keptBalance"],
     ["bonus", "referral", "keptBalance"],
     ["bonus", "goodwill", "keptBalance"],
     ["bonus", "promo", "promoBalance"],
@@ -250,6 +250,12 @@ describe("the admin adjustment — the law-7 sibling, found by sweeping every wr
     expect(updateSets[0].balance).toBe(10_000);
     expect(updateSets[0].purchasedBalance).toBe(0);
     expect(updateSets[0].keptBalance).toBe(10_000);
+  });
+
+  it("⚠ the admin add reads the row it overwrites FOR UPDATE (the relay's finding 3 on PR #2208)", async () => {
+    selectAnswer = [{ balance: 0, purchasedBalance: 0 }];
+    await adjustUserCredits(7, 1_000, "a goodwill top-up", 1, "adj:lock");
+    expect(events.slice(0, 2)).toEqual(["for:update", "set"]);
   });
 
   it("it settles rather than erasing — a live bound survives the adjustment", async () => {

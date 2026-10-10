@@ -31,9 +31,9 @@
  *
  * ## What it never touches
  *
- *  - **Top-ups, referral rewards, staff goodwill, starting credits and promos**
- *    (#2185). The new balance IS `creditsOutsidePlanRules`; starting credits
- *    and promos leave only by their own clock ({@link runTimedCreditsExpirySweep}).
+ *  - **Top-ups, starting credits, referral rewards, staff goodwill and promos**
+ *    (#2185). The new balance IS `creditsOutsidePlanRules`; promos leave only by
+ *    their own clock ({@link runPromoCreditsExpirySweep}).
  *  - **An account that came back.** `updateUserSubscription` clears the stamp
  *    on any move to a paid tier, and the write is conditioned on `planTier =
  *    'free'` too, so a resubscription between the read and the write wins.
@@ -52,10 +52,9 @@ import {
   getPlanCreditsExpiryCandidates,
 } from "../db";
 import {
-  expireTimedCredits,
-  getTimedCreditsExpiryCandidates,
+  expirePromoCredits,
+  getPromoCreditsExpiryCandidates,
   type PlanCreditsExpiryResult,
-  type TimedCreditKind,
 } from "../db/billing";
 import { createModuleLogger } from "../logging/logger";
 
@@ -159,46 +158,47 @@ export async function runPlanCreditsExpirySweep(
   return result;
 }
 
-export interface TimedCreditsExpiryDeps {
+export interface PromoCreditsExpiryDeps {
   now: () => Date;
-  candidates: (now: Date) => Promise<Array<{ userId: number; kind: TimedCreditKind; expireAt: Date }>>;
-  expire: (userId: number, kind: TimedCreditKind, expireAt: Date, now: Date) => Promise<PlanCreditsExpiryResult>;
+  candidates: (now: Date) => Promise<Array<{ userId: number; expireAt: Date }>>;
+  expire: (userId: number, expireAt: Date, now: Date) => Promise<PlanCreditsExpiryResult>;
 }
 
-const defaultTimedDeps: TimedCreditsExpiryDeps = {
+const defaultPromoDeps: PromoCreditsExpiryDeps = {
   now: () => new Date(),
-  candidates: (now) => getTimedCreditsExpiryCandidates(now),
-  expire: (userId, kind, expireAt, now) => expireTimedCredits(userId, kind, expireAt, now),
+  candidates: (now) => getPromoCreditsExpiryCandidates(now),
+  expire: (userId, expireAt, now) => expirePromoCredits(userId, expireAt, now),
 };
 
 /**
- * ONE PASS OVER THE CREDITS THAT EXPIRE ON THEIR OWN CLOCK (#2185, his ruling
- * 2026-10-10: "promo and signup bonuses after 90 days? Expire after 90
- * days."): starting credits 90 days after a move to a paid plan, promos 90
- * days after they were given. It rides this sweep's six-hour timer because it
- * is the same shape — a stamped deadline, a compare-and-set, one ledger line
- * under a unique reference — and a second timer would be a second thing to
- * keep alive for no gain.
+ * ONE PASS OVER THE PROMOS THAT HAVE RUN OUT (#2185, his ruling 2026-10-10:
+ * "promo and signup bonuses after 90 days? Expire after 90 days.", then for
+ * the starting credits: "starting credits are just a default every account
+ * starts with lets make them never expire to simplify things." — so a promo
+ * is the only credit with its own clock). It rides this sweep's six-hour timer
+ * because it is the same shape — a stamped deadline, a compare-and-set, one
+ * ledger line under a unique reference — and a second timer would be a second
+ * thing to keep alive for no gain.
  */
-export async function runTimedCreditsExpirySweep(
-  deps: TimedCreditsExpiryDeps = defaultTimedDeps,
+export async function runPromoCreditsExpirySweep(
+  deps: PromoCreditsExpiryDeps = defaultPromoDeps,
 ): Promise<PlanCreditsExpirySweepResult> {
   const now = deps.now();
   const due = await deps.candidates(now);
   const result: PlanCreditsExpirySweepResult = { considered: due.length, outcomes: {}, creditsRemoved: 0 };
   for (const candidate of due) {
-    const verdict = await deps.expire(candidate.userId, candidate.kind, candidate.expireAt, now);
+    const verdict = await deps.expire(candidate.userId, candidate.expireAt, now);
     result.outcomes[verdict.outcome] = (result.outcomes[verdict.outcome] ?? 0) + 1;
     if (verdict.outcome === "expired") {
       result.creditsRemoved += verdict.creditsRemoved;
       log.info(
-        { userId: candidate.userId, kind: candidate.kind, creditsRemoved: verdict.creditsRemoved },
-        "[planCreditsExpiry] timed credits expired",
+        { userId: candidate.userId, creditsRemoved: verdict.creditsRemoved },
+        "[planCreditsExpiry] promo credits expired",
       );
     } else if (verdict.outcome === "failed") {
       log.error(
-        { userId: candidate.userId, kind: candidate.kind, error: verdict.error },
-        "[planCreditsExpiry] timed expiry failed — retried next pass",
+        { userId: candidate.userId, error: verdict.error },
+        "[planCreditsExpiry] promo expiry failed — retried next pass",
       );
     }
   }
@@ -214,10 +214,10 @@ export function startPlanCreditsExpirySweep(): void {
       log.error({ err: error }, "[planCreditsExpiry] sweep failed");
     }
     try {
-      const timed = await runTimedCreditsExpirySweep();
-      if (timed.considered > 0) log.info({ ...timed }, "[planCreditsExpiry] timed sweep complete");
+      const promo = await runPromoCreditsExpirySweep();
+      if (promo.considered > 0) log.info({ ...promo }, "[planCreditsExpiry] promo sweep complete");
     } catch (error) {
-      log.error({ err: error }, "[planCreditsExpiry] timed sweep failed");
+      log.error({ err: error }, "[planCreditsExpiry] promo sweep failed");
     }
   };
   setTimeout(() => void run(), SWEEP_FIRST_RUN_DELAY_MS);
