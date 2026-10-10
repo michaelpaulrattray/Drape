@@ -17,6 +17,73 @@ Every Retro run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. Attempted-and-
 reverted guards are recorded as plainly as wins.
 
+## The seat's standing readings
+
+| reader | command | in the gate | record |
+|---|---|---|---|
+| **the next cap wording** — can the park-at-the-cap control still read the message his account prints? | `pnpm retro:cap-wordings` | **no, and deliberately not** — see below | `scripts/lib/capWordingWatch.mts` header |
+
+⚠ **THE ROW ABOVE IS THIS SEAT'S FIRST STANDING READING, ADDED BETWEEN RUNS BY
+#2236, AND IT IS A PER-RUN READING FROM RUN 8 ON.** It answers one question:
+*is there a log on disk carrying a cap- or transient-shaped line the live
+patterns cannot match?* **It is free and offline** — no database, no `gh`, no
+network, about four seconds over the whole corpus — so it belongs beside §A
+rather than in a gate, by the Warden log's own test for the difference (*"a
+reading belongs in the gate when it can honestly REFUSE"*; this one reads
+untracked `.agents/`, which CI does not have, and reports a wording nobody has
+seen rather than a fault anyone can be held to).
+
+**Why the seat needs it.** #2198 found that `$CAP_PATTERN` held the phrase `hit
+your limit` while the message his account actually prints is *"You've hit your
+**weekly** limit"*. **One adjective defeated the whole control**, his standing
+park-at-the-cap order was inoperative for four months, and **750 logs on disk
+had been read as GENUINE** — three separate nights, only one of which parked at
+all, and that one naming the wrong reason. Nothing anywhere went red, because a
+phrase that stops matching produces silence rather than an error.
+
+**#2236 then swept the class** and named five more phrases of the same shape —
+`limit reached`, `out of credits`, `insufficient credits`, `service
+unavailable`, `request timed out` — each defeatable by a modifier dropped into
+its interior. ⚠ **None has ever appeared in the corpus**, so widening the
+parking control to cover them was REFUSED on his own ground (what counts as a
+cap is his ruling — #495, and #721 option A) and on the asymmetry: a missed cap
+costs one extra 15-minute back-off, a false cap stops the nights. Option A on
+that card — *make the next real cap self-reporting* — is this reader.
+
+⚠ **IT NEVER PARKS, EDITS OR DECIDES, AND THAT IS WHAT MAKES IT POSSIBLE.**
+Because it only prints, its net can be far looser than the control it watches: a
+false positive costs one line of output. The net is **DERIVED from the
+classifier's own phrases** at run time rather than keyed on #2236's five, so a
+sixth phrase added next year gets its trigger for free — a reader keyed on the
+five would stop watching the day the list moved.
+
+**Its own control is the strongest part of it and runs against a real
+artifact**: pointed at `classify-shift-failure.before-2198.ps1`, the pre-fix
+file still on disk, it reports **750 findings** (748 `hit your weekly limit`, 2
+`hit your session limit`), each naming the phrase to repair and the line to use
+as the fixture — **#2198's four-month defect found on the first night,
+reproduced rather than argued.** Pointed at the live classifier over the same
+corpus it reports **nothing**. Read 2026-10-11: 3,977 `*.log`, 3,775 non-empty,
+3,484 of them UTF-16LE, 774 matched by the live cap reading, **0 unrecognised
+wordings**. ⚠ The 748/2 split is an independent second reading of #2198's own
+commit-message figure (*"748 carried the weekly wording, 2 the session wording
+nobody had noticed"*) — that card's BODY says 749/2, and the commit and this
+reader agree against it.
+
+**What a run does with a finding.** A `class=GENUINE` verdict beside one is
+#2198's defect happening again: file it with the line as the fixture, and
+**whether the phrase is added is HIS ruling, never a shift's**. A `class=CAP`
+verdict beside one means the control catches it by another phrase and only the
+net was loose — report it and widen nothing. `server/capWordingWatch.test.ts`
+is the control that proves the reader can fail: 31 arms, 8 of 8 sabotage cases
+caught, and ⚠ **its negative control found a real defect in the first draft on
+the first run** — the reader had chosen its own lead of 32 and rejected a
+shift's own column output only when the line STARTED with a pipe, so *"743  743
+log(s) | hit your foo limit"* (lead 18, the line #2198's header warns about)
+was reported. The lead is read off `$CAP_HEAD` now, which is his classifier's
+own measured answer to that question; the historical control still reports all
+750 at the narrower lead, so the correction cost no real coverage.
+
 ---
 
 ## Run 1 — 2026-08-26 07:16–07:30 AEST (Retro, patrol #1, card #95)

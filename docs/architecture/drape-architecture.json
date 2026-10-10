@@ -11991,6 +11991,10 @@
       "path": "server/canvasCastSeal.test.ts"
     },
     {
+      "id": "test:server/capWordingWatch.test.ts",
+      "path": "server/capWordingWatch.test.ts"
+    },
+    {
       "id": "test:server/capabilityAtlas.test.ts",
       "path": "server/capabilityAtlas.test.ts"
     },

@@ -28,6 +28,7 @@
     "machinist:latency": "tsx scripts/drive-interaction-latency.mts",
     "janitor:knip": "knip --no-progress --reporter compact",
     "warden:overrides": "tsx scripts/override-resolution-read.mts",
+    "retro:cap-wordings": "tsx scripts/retro-cap-wordings.mts",
     "warden:semgrep": "semgrep scan --config p/nodejs --config p/expressjs --config p/typescript --config p/javascript --metrics=off --error"
   },
   "dependencies": {
