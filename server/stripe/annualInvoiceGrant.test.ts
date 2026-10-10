@@ -60,9 +60,14 @@ vi.mock("../db", () => ({
   resolvePlanChangeSettlement: vi.fn().mockResolvedValue(true),
 }));
 
-const { MONTHLY_CREDITS, PERCENT_ROLLOVER } = vi.hoisted(() => ({
+const { MONTHLY_CREDITS, PERCENT_ROLLOVER, readSubscriptionBillingState, LIVE_START, LIVE_END } = vi.hoisted(() => ({
   MONTHLY_CREDITS: 5_000,
   PERCENT_ROLLOVER: 800,
+  /* The subscription's own current period — read ONLY when the invoice's line
+     states none (the classic shapes below), to date the paid year (#2152). */
+  readSubscriptionBillingState: vi.fn(),
+  LIVE_START: 1_788_000_000,
+  LIVE_END: 1_788_000_000 + 365 * 86_400,
 }));
 
 vi.mock("./stripeService", () => ({
@@ -72,6 +77,7 @@ vi.mock("./stripeService", () => ({
   calculateRolloverCredits: vi.fn().mockReturnValue(PERCENT_ROLLOVER),
   getMonthlyCredits: vi.fn().mockReturnValue(MONTHLY_CREDITS),
   cancelSubscription: vi.fn().mockResolvedValue(true),
+  readSubscriptionBillingState,
 }));
 
 import { handleStripeWebhook } from "./webhooks";
@@ -127,10 +133,13 @@ const cloverProrationLine = {
 beforeEach(() => {
   refreshMonthlyCredits.mockClear();
   getUserCredits.mockReset().mockResolvedValue({ balance: 4_000 });
+  readSubscriptionBillingState.mockReset().mockResolvedValue({ periodStartSec: LIVE_START, periodEndSec: LIVE_END });
 });
 
 describe("the period-bought grant rule", () => {
-  it("a YEAR bought grants 12 × the monthly allowance, up front, and says so on the ledger", async () => {
+  /* ⚠ #2152, his ruling on #2159 (2026-10-10): *"yearly credits apply month by
+     month"*. Until then a year bought granted twelve months here, up front. */
+  it("a YEAR bought grants ONE month, and starts the paid year in the same write", async () => {
     const result = await deliver({
       id: "in_annual_create",
       customer: "cus_1",
@@ -140,16 +149,52 @@ describe("the period-bought grant rule", () => {
     });
     expect(result.success).toBe(true);
     expect(refreshMonthlyCredits).toHaveBeenCalledTimes(1);
-    const [userId, grant, computeRollover, ref, description] = refreshMonthlyCredits.mock.calls[0];
+    const [userId, grant, computeRollover, ref, description, , options] = refreshMonthlyCredits.mock.calls[0];
     expect(userId).toBe(7);
-    expect(grant).toBe(MONTHLY_CREDITS * 12);
+    expect(grant).toBe(MONTHLY_CREDITS);
     /* The rollover is a RULE now (round-2 finding 1): the refresh computes it
        from the balance its compare-and-set is conditioned on. A create keeps
        the plan's percentage. */
     expect(computeRollover(4_000)).toBe(PERCENT_ROLLOVER);
     expect(ref).toBe("stripe-invoice:in_annual_create");
-    expect(description).toContain("Annual");
-    expect(description).toContain("12 months");
+    expect(description).toContain("month 1 of 12");
+    /* The classic line states no period, so the subscription's own dates the year. */
+    expect(options).toEqual({
+      annualYear: {
+        subscriptionId: "sub_1",
+        invoiceId: "in_annual_create",
+        periodStart: new Date(LIVE_START * 1000),
+        periodEnd: new Date(LIVE_END * 1000),
+        monthlyCredits: MONTHLY_CREDITS,
+      },
+    });
+  });
+
+  it("a MONTH bought clears any paid year still on the row — a switch to monthly ends the year's months to come", async () => {
+    await deliver({
+      id: "in_monthly_clears",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_cycle",
+      lines: { data: [periodLine("month")] },
+    });
+    const options = refreshMonthlyCredits.mock.calls[0][6];
+    expect(options).toEqual({ annualYear: null });
+    expect(readSubscriptionBillingState).not.toHaveBeenCalled();
+  });
+
+  it("⚠ a YEAR nobody can date is REFUSED loudly, never scheduled on a guess", async () => {
+    readSubscriptionBillingState.mockResolvedValue(null);
+    const result = await deliver({
+      id: "in_annual_undatable",
+      customer: "cus_1",
+      subscription: "sub_1",
+      billing_reason: "subscription_cycle",
+      lines: { data: [periodLine("year")] },
+    });
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("could not date");
+    expect(refreshMonthlyCredits).not.toHaveBeenCalled();
   });
 
   it("a MONTH bought is the unchanged renewal — one month's grant, the plan's rollover, the default ledger line", async () => {
@@ -192,13 +237,14 @@ describe("the period-bought grant rule", () => {
     });
     expect(result.success).toBe(true);
     const [, grant, computeRollover] = refreshMonthlyCredits.mock.calls[0];
-    expect(grant).toBe(MONTHLY_CREDITS * 12);
+    /* One month of the new year (#2152) — the other eleven arrive monthly. */
+    expect(grant).toBe(MONTHLY_CREDITS);
     /* The whole conditioned balance, not the 800 the percentage would keep —
        the unwind in changePlan is what made carrying it through honest. */
     expect(computeRollover(4_000)).toBe(4_000);
   });
 
-  it("⚠ CLOVER dialect: a year read off the line's own period span grants 12× — the shape production actually receives", async () => {
+  it("⚠ CLOVER dialect: a year read off the line's own period span grants one month and dates the year by that line — the shape production actually receives", async () => {
     const result = await deliver({
       id: "in_clover_annual",
       customer: "cus_1",
@@ -208,8 +254,12 @@ describe("the period-bought grant rule", () => {
       lines: { data: [cloverPeriodLine(365)] },
     });
     expect(result.success).toBe(true);
-    const [, grant] = refreshMonthlyCredits.mock.calls[0];
-    expect(grant).toBe(MONTHLY_CREDITS * 12);
+    const [, grant, , , , , options] = refreshMonthlyCredits.mock.calls[0];
+    expect(grant).toBe(MONTHLY_CREDITS);
+    /* The line itself states the year, so the subscription is never asked. */
+    expect(options.annualYear.periodStart).toEqual(new Date(T * 1000));
+    expect(options.annualYear.periodEnd).toEqual(new Date((T + 365 * DAY_S) * 1000));
+    expect(readSubscriptionBillingState).not.toHaveBeenCalled();
   });
 
   it("CLOVER dialect: a month's span grants one month", async () => {

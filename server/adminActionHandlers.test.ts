@@ -37,6 +37,8 @@ const db = {
   unsuspendUser: vi.fn(),
   addCredits: vi.fn(),
   adjustUserCredits: vi.fn(),
+  /* #2152: present so a refund that reached for it would be SEEN, not crash. */
+  clearAnnualYear: vi.fn(),
   blockIp: vi.fn(),
   unblockIp: vi.fn(),
   updateChangeRequestStatus: vi.fn(),
@@ -97,6 +99,7 @@ beforeEach(() => {
   db.getUserCredits.mockResolvedValue({ balance: 500 });
   db.suspendUser.mockResolvedValue({ success: true });
   db.unsuspendUser.mockResolvedValue({ success: true });
+  db.clearAnnualYear.mockResolvedValue(true);
   db.addCredits.mockResolvedValue({ success: true, newBalance: 600 });
   db.adjustUserCredits.mockResolvedValue({ success: true, newBalance: 400 });
   db.blockIp.mockResolvedValue({ success: true });
@@ -317,6 +320,17 @@ describe("cr_stripeRefund", () => {
     expect(stripe.issueStripeRefund.mock.calls[0][1]).toBe(1000);
     // 100 credits bought, only 30 left — a customer is never taken below zero.
     expect(db.adjustUserCredits.mock.calls[0][1]).toBe(-30);
+  });
+
+  /* ⚠ #2152, the relay's finding on head e85357f6a, repair 1 — its OWN
+     earlier finding reversed. `cr_stripeRefund` refunds TOP-UP purchases
+     only (`server/routes/moderator.ts` refuses any ledger row not of type
+     `topup`), so refunding a credit pack in full must leave a yearly plan the
+     customer DID pay for exactly as it was. */
+  it("#2152 — refunding a TOP-UP, in full or in part, leaves a paid yearly plan's months alone", async () => {
+    await runCr("cr_stripeRefund", { ...PURCHASE, refundType: "full" });
+    await runCr("cr_stripeRefund", PURCHASE);
+    expect(db.clearAnnualYear).not.toHaveBeenCalled();
   });
 
   it("#418 PINNED — a figure smuggled into params cannot set the refund; the charge itself does", async () => {

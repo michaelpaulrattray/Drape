@@ -380,20 +380,21 @@ describe("the ladder, against the product's real price table", () => {
     length, read from the ladder the server serves.
   */
 
-  it("says rollover as a LOSS, and only where there is one", () => {
-    /*
-      §6c: *"Rollover said as loss, not percentage … Same fact; only one of them
-      lands."* Ours carries 0, 50, 75 and 100, so the sentence has to cover a
-      quarter as well as a half.
-    */
+  // Card 2152: Yuna's final wording.
+  it("says what carries over, up to one month's worth — Yuna's final wording", () => {
     expect(rolloverSentence(100)).toEqual({
-      text: "Nothing you pay for expires",
+      text: "Unused plan credits carry into next month, up to one month's worth.",
       isLoss: false,
     });
-    expect(rolloverSentence(50).text).toBe("Half of anything unspent expires");
-    expect(rolloverSentence(75).text).toBe("A quarter of anything unspent expires");
-    expect(rolloverSentence(0).text).toBe("Anything unspent expires at renewal");
-    expect(rolloverSentence(0).isLoss).toBe(true);
+    expect(rolloverSentence(50).text).toBe("Carries over 50% of unused credits, up to one month's worth.");
+    expect(rolloverSentence(75).text).toBe("Carries over 75% of unused credits, up to one month's worth.");
+    // Free never renews: his ruling, 9 Oct — Free credits last until they're used up.
+    expect(rolloverSentence(0).text).toBe("Free credits last until you use them");
+    for (const percent of [0, 50, 75, 100]) expect(rolloverSentence(percent).isLoss).toBe(false);
+    // NEGATIVE CONTROL: no rung still promises that nothing expires.
+    for (const percent of [0, 50, 75, 100]) {
+      expect(rolloverSentence(percent).text).not.toMatch(/nothing you pay for expires|anything unspent expires/i);
+    }
 
     /* Every rung of the real table produces a sentence, none of them empty. */
     for (const plan of LADDER) {

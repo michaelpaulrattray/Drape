@@ -57,6 +57,8 @@ vi.mock("./db/connection", () => ({
 
 import { refreshMonthlyCredits } from "./db/billing";
 import { planAllowanceRemaining, purchasedCreditsRemaining } from "./db/credits";
+import { calculateRolloverCredits } from "./stripe/stripeService";
+import { PLAN_TIERS } from "../drizzle/schema";
 
 /** Starter's rule, quoted from `PLAN_TIERS.starter.rolloverPercent`. */
 const half = (balance: number) => Math.floor(balance * 0.5);
@@ -278,5 +280,22 @@ describe("the renewal", () => {
     updateAnswers = [1];
     const result = await refreshMonthlyCredits(7, 75_000, () => -50_000, "stripe-invoice:in_p15_9");
     expect(result.newBalance).toBe(75_000 + 0 + 25_000);
+  });
+
+  it("⚠ TOP-UPS NEVER COUNT TOWARD THE ONE-MONTH CAP (#2152) — the real rule, a full bank, and bought credits beside it", async () => {
+    /* A Pro Plus customer with three months of unspent plan credits AND 25,000
+       bought ones. The real rollover rule caps the PLAN's part at one month;
+       the bought credits are added back whole, outside the cap. */
+    const month = PLAN_TIERS.studio.monthlyCredits;
+    rows.push({ balance: 3 * month + 25_000, purchasedBalance: 25_000 });
+    updateAnswers = [1];
+    const result = await refreshMonthlyCredits(
+      7,
+      month,
+      (b) => calculateRolloverCredits(b, "studio", month),
+      "stripe-invoice:in_2152_cap",
+    );
+    expect(result.newBalance).toBe(month + month + 25_000);
+    expect(updateSets[0]).toMatchObject({ rolloverCredits: month, purchasedBalance: 25_000 });
   });
 });

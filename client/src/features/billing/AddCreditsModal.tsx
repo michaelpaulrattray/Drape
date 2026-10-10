@@ -99,6 +99,7 @@ import {
 } from "@/features/settings/planMath";
 import { charactersFor, charactersPhrase, grantsMonthly } from "@/features/settings/planLadder";
 import { useCycleSpend } from "./useCycleSpend";
+import { ANNUAL_ALLOWANCE_ARRIVES_SENTENCE } from "@shared/planCancelCopy";
 
 /**
  * ⚠ **ONE SENTENCE, TWO SURFACES — #1734.** The picker and the button below it
@@ -1033,7 +1034,11 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
                means the status answered, so this cannot be the unread state --
                the spelling is the file's, not a second gate. */
             ? annual === true
-              ? "Billed for the whole year today — your new billing year starts now, and the year's credits land with the payment."
+              /* #2152 — the relay's finding, repair 4: "the year's credits
+                 land with the payment" is false under month-by-month
+                 granting. The second half is the Desk's approved CPM:2268
+                 sentence, imported rather than retyped. */
+              ? `Billed for the whole year today — your new billing year starts now. ${ANNUAL_ALLOWANCE_ARRIVES_SENTENCE}`
               : "Billed monthly from today. This month's allowance takes the place of what was left of your year's."
             : hasSubscription === false
               ? "Charged today, then on the same date each period."

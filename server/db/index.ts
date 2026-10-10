@@ -95,6 +95,15 @@ export {
   addTopupCredits,
   getSubscriptionByUserId,
   getCycleSpend,
+  // A cancelled plan's credits, 30 days past the paid period (#2152).
+  getPlanCreditsExpiryCandidates,
+  expirePlanCredits,
+  planCreditsExpiryLedgerRef,
+  // A yearly plan's credits, month by month (#2152, his ruling on #2159).
+  getAnnualGrantCandidates,
+  getAnnualYearProgress,
+  installAnnualMonthlyCredits,
+  clearAnnualYear,
   // The yearly renewal reminder's shortlist and its claim (#1941).
   getYearlyRenewalReminderCandidates,
   claimRenewalReminder,
@@ -103,6 +112,8 @@ export {
 export type {
   RenewalReminderCandidate,
   RenewalReminderClaim,
+  AnnualGrantCandidate,
+  AnnualGrantYear,
 } from "./billing";
 
 // Plan-change credit settlements (#711)

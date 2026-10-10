@@ -139,23 +139,28 @@ describe("Billing - Subscription Products", () => {
 });
 
 describe("Billing - Rollover Calculation", () => {
+  /** One month's worth of a rung's own allowance — the cap (#2152). Far above
+   *  every balance the percentage arms below use, so those arms still read the
+   *  percentage alone. */
+  const monthOf = (tier: PlanTier) => PLAN_TIERS[tier].monthlyCredits;
+
   it("should calculate 0% rollover for free tier", () => {
-    const rollover = calculateRolloverCredits(100, "free");
+    const rollover = calculateRolloverCredits(100, "free", monthOf("free"));
     expect(rollover).toBe(0);
   });
 
   it("should calculate 50% rollover for starter tier", () => {
-    const rollover = calculateRolloverCredits(100, "starter");
+    const rollover = calculateRolloverCredits(100, "starter", monthOf("starter"));
     expect(rollover).toBe(50);
   });
 
   it("should calculate 75% rollover for pro tier", () => {
-    const rollover = calculateRolloverCredits(100, "pro");
+    const rollover = calculateRolloverCredits(100, "pro", monthOf("pro"));
     expect(rollover).toBe(75);
   });
 
   it("should calculate 100% rollover for studio tier", () => {
-    const rollover = calculateRolloverCredits(100, "studio");
+    const rollover = calculateRolloverCredits(100, "studio", monthOf("studio"));
     expect(rollover).toBe(100);
   });
 
@@ -165,7 +170,7 @@ describe("Billing - Rollover Calculation", () => {
        displayed credits — so a customer carrying 16 would be SHOWN 3 and the
        odd one could never be spent knowingly. The rollover is quantised to 15,
        which is exactly 3 displayed credits. */
-    const rollover = calculateRolloverCredits(33, "starter"); // 33 * 0.5 = 16.5 -> 16 -> 15
+    const rollover = calculateRolloverCredits(33, "starter", monthOf("starter")); // 33 * 0.5 = 16.5 -> 16 -> 15
     expect(rollover).toBe(15);
     expect(rollover % LEDGER_PER_DISPLAY_CREDIT).toBe(0);
   });
@@ -176,15 +181,52 @@ describe("Billing - Rollover Calculation", () => {
     const leaky: string[] = [];
     for (const tier of Object.keys(PLAN_TIERS) as PlanTier[]) {
       for (let unused = 0; unused <= 1_000; unused++) {
-        const rollover = calculateRolloverCredits(unused, tier);
+        const rollover = calculateRolloverCredits(unused, tier, monthOf(tier));
         if (rollover % LEDGER_PER_DISPLAY_CREDIT !== 0) leaky.push(`${tier}:${unused}=${rollover}`);
       }
     }
     expect(leaky).toEqual([]);
   });
 
+  describe("⚠ the bank is capped at ONE MONTH'S WORTH of plan credits (#2152)", () => {
+    it("a Pro Plus bank of three unspent months carries one month, not three (100% rung)", () => {
+      const month = monthOf("studio");
+      expect(PLAN_TIERS.studio.rolloverPercent).toBe(100);
+      expect(calculateRolloverCredits(month * 3, "studio", month)).toBe(month);
+    });
+
+    it("a Pro bank whose 75% is over a month carries exactly a month", () => {
+      const month = monthOf("pro");
+      // 75% of two months is 1.5 months — over the cap.
+      expect(calculateRolloverCredits(month * 2, "pro", month)).toBe(month);
+    });
+
+    it("POSITIVE CONTROL: under the cap the percentage alone decides", () => {
+      const month = monthOf("starter");
+      // 50% of one month is half a month — the cap does not bite.
+      expect(calculateRolloverCredits(month, "starter", month)).toBe(month / 2);
+    });
+
+    it("the cap is the month the CALLER states — a dial rung's month includes its steps", () => {
+      const base = monthOf("studio");
+      const withSteps = base + 50_000;
+      expect(calculateRolloverCredits(base * 4, "studio", withSteps)).toBe(withSteps);
+    });
+
+    it("a downgrade trims the bank to the NEW plan's month", () => {
+      // A Pro Plus bank renewing onto Starter: Starter's 50%, capped at Starter's month.
+      const bank = monthOf("studio") * 2;
+      expect(calculateRolloverCredits(bank, "starter", monthOf("starter"))).toBe(monthOf("starter"));
+    });
+
+    it("an unreadable cap carries nothing rather than everything", () => {
+      expect(calculateRolloverCredits(10_000, "studio", Number.NaN)).toBe(0);
+      expect(calculateRolloverCredits(10_000, "studio", -5)).toBe(0);
+    });
+  });
+
   it("should handle zero unused credits", () => {
-    const rollover = calculateRolloverCredits(0, "pro");
+    const rollover = calculateRolloverCredits(0, "pro", monthOf("pro"));
     expect(rollover).toBe(0);
   });
 });

@@ -51,6 +51,12 @@ import { billingRouter } from "./billing";
 import { getSubscriptionByUserId } from "../db";
 import { cancelSubscription } from "../stripe/stripeService";
 import {
+  ANNUAL_CHARGE_SENTENCE,
+  ANNUAL_ALLOWANCE_ARRIVES_SENTENCE,
+  YEARLY_SWITCH_ALLOWANCE_SENTENCE,
+  CANCEL_ANY_TIME_SHORT,
+  CANCELLED_PLAN_GRACE_DAYS,
+  RENEWAL_BALANCE_SENTENCE,
   cancelPlanBody,
   cancelledPlanSegment,
   planCancelledReceipt,
@@ -104,15 +110,74 @@ describe("#1940 B25 — the cancel receipt, read off the procedure", () => {
 });
 
 describe("#1940 B24/B26 — the dialog and the Billing line", () => {
-  it("the dialog's body states the date, that nothing more is charged, and that credits stay", () => {
+  it("the dialog's body states the date, that nothing more is charged, and the 30 days the plan's credits keep (#2152)", () => {
+    /* #2152 (his word 2026-10-09, Yuna's final wording): the old last sentence
+       — "Your credits stay on your balance." — stopped being true the day the
+       30-day expiry shipped, and it changed in the same change as the code. */
     const on = formatCustomerShortDate(PERIOD_END);
     expect(cancelPlanBody(PERIOD_END)).toBe(
-      `Your plan stays active until ${on}. After that you won't be charged again and your account moves to Free. Your credits stay on your balance.`,
+      `Your plan stays active until ${on}. After that you won't be charged again and your account moves to Free. You'll have 30 days to use your plan credits. Top-ups stay on your balance.`,
     );
     // superjson can hand the client a string; both shapes read the same day.
     expect(cancelPlanBody(PERIOD_END.toISOString())).toBe(cancelPlanBody(PERIOD_END));
-    expect(cancelPlanBody(null)).toContain("until the end of the period you've paid for");
+    // The no-date form keeps its own clause and takes the same last two sentences.
+    expect(cancelPlanBody(null)).toBe(
+      "Your plan stays active until the end of the period you've paid for. After that you won't be charged again and your account moves to Free. You'll have 30 days to use your plan credits. Top-ups stay on your balance.",
+    );
     expect(cancelPlanBody("not a date")).not.toContain("Invalid");
+    expect(cancelPlanBody(PERIOD_END)).not.toContain("Your credits stay on your balance");
+  });
+
+  it("#2152 — the plans page's renewal and cancel lines say the cap and the 30 days, in Yuna's words", () => {
+    expect(CANCEL_ANY_TIME_SHORT).toBe(
+      "Cancel any time. You'll have 30 days to use your plan credits after your paid period ends.",
+    );
+    expect(RENEWAL_BALANCE_SENTENCE).toBe(
+      "Unused plan credits carry into next month, up to one month's worth. If you cancel, you have 30 days to use them. Top-ups stay on your balance.",
+    );
+  });
+
+  it("#2152 (CPM:2268) — a yearly price says it is charged once a year AND that the credits arrive each month", () => {
+    /* His ruling on #2159, 2026-10-10: "yearly credits apply month by month". */
+    expect(ANNUAL_CHARGE_SENTENCE).toBe("Annual plans are charged once a year. Your credits arrive each month.");
+    const modal = read("client/src/features/billing/ChangePlanModal.tsx");
+    expect(modal).toContain('{interval === "annual" ? ` ${ANNUAL_CHARGE_SENTENCE}` : ""}');
+    expect(modal).not.toContain('" Annual plans are charged once a year."');
+  });
+
+  it("#2152 — nothing promises the full year of credits up front any more, on the confirm step or the receipt", () => {
+    /* His wording, 2026-10-10, verbatim. The clause about unused credits being
+       replaced stays out until Cid confirms it is true. */
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).toBe(
+      "Your first month of credits arrives once the payment goes through. After that, new credits arrive each month.",
+    );
+    expect(YEARLY_SWITCH_ALLOWANCE_SENTENCE).not.toContain("replacing");
+    for (const file of ["client/src/features/billing/ChangePlanModal.tsx", "server/routes/billing.ts"]) {
+      expect(read(file), file).not.toContain("full year of credits");
+    }
+    expect(read("client/src/features/billing/ChangePlanModal.tsx")).toContain("${YEARLY_SWITCH_ALLOWANCE_SENTENCE}");
+  });
+
+  it("#2152 — his confirmation wording: You are on Pro yearly now / Pro Plus now, yearly only when the period changed", () => {
+    const billing = read("server/routes/billing.ts");
+    expect(billing).toContain("? `You're on ${planName} yearly now.`");
+    expect(billing).toContain('? `You\x27re on ${planName}${quote.targetInterval === "annual" && quote.currentInterval !== "annual" ? " yearly" : ""} now.`');
+    expect(billing).not.toContain("? `Upgraded to ${planName}!`");
+  });
+
+  it("#2152 (relay repair 4) — the add-credits yearly switch no longer says the year's credits land with the payment", () => {
+    const modal = read("client/src/features/billing/AddCreditsModal.tsx");
+    expect(modal).not.toContain("the year's credits land with the payment");
+    expect(modal).toContain("your new billing year starts now. ${ANNUAL_ALLOWANCE_ARRIVES_SENTENCE}`");
+    /* The half it uses is the approved CPM:2268 sentence's own second half. */
+    expect(ANNUAL_CHARGE_SENTENCE.endsWith(ANNUAL_ALLOWANCE_ARRIVES_SENTENCE)).toBe(true);
+  });
+
+  it("#2152 — the 30 in every sentence IS the deadline the server stamps (derived, not mirrored)", () => {
+    expect(CANCELLED_PLAN_GRACE_DAYS).toBe(30);
+    const webhook = read("server/billing/planCreditsExpiry.ts");
+    expect(webhook).toContain('import { CANCELLED_PLAN_GRACE_DAYS } from "@shared/planCancelCopy";');
+    expect(webhook).toContain("CANCELLED_PLAN_GRACE_DAYS * DAY_MS");
   });
 
   it("Billing says ends {date} · won't renew, never renews", () => {

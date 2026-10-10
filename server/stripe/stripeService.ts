@@ -28,6 +28,7 @@ import {
   planCreditSliderPriceInCents,
 } from "@shared/planCreditSlider";
 import { planCreditSliderUnitsAllowed } from "./planCreditSlider";
+import { grantedShareMonths } from "../billing/annualCreditMonths";
 import { environmentMetadata } from "./environmentTag";
 import { subscriptionPeriodSec } from "./subscriptionPeriods";
 import {
@@ -471,18 +472,47 @@ export function mapPlanToTier(plan: SubscriptionPlan): PlanTier | null {
 }
 
 /**
- * Calculate rollover credits based on plan tier
+ * What of a plan's unspent allowance carries into the next period: the plan's
+ * `rolloverPercent` of it, and NEVER MORE THAN ONE MONTH'S WORTH (#2152).
+ *
+ * His word, 2026-10-09 (terminal): *"pricing word card here ive approved the
+ * code changes required too"*, on the Desk item "Pricing Phase 2: final
+ * wording", whose rollover rules read: *"The bank is capped at one month's
+ * worth of plan credits"* and *"A downgrade trims the bank to the new plan's
+ * cap."*
+ *
+ * ⚠ **THE CAP IS A REQUIRED ARGUMENT, NOT A LOOKUP IN HERE.** One month's worth
+ * is the plan's base allowance PLUS the credit dial's steps on the rung that
+ * has one, and the steps are read off the paid invoice by the webhook (#1832) —
+ * this function cannot know them. A default of the base allowance would cap a
+ * customer on the dial below what they pay for each month, silently; making
+ * the caller state it means the compiler refuses a call that forgot.
+ *
+ * ⚠ **THE DOWNGRADE TRIM IS THIS SAME LINE, NOT A SECOND MECHANISM.** A
+ * decrease takes effect at the next renewal (#1936), and that renewal's
+ * invoice is billed on the NEW plan (#1930), so the caller passes the new
+ * plan's percentage and the new plan's month — the bank is trimmed to the new
+ * cap at exactly the moment the new plan begins.
+ *
+ * Purchased credits never reach this function: `refreshMonthlyCredits` hands
+ * it the plan's part of the balance only and adds the top-ups back whole
+ * (#1604), so top-ups are outside the cap by construction.
  */
 export function calculateRolloverCredits(
   unusedCredits: number,
-  planTier: PlanTier
+  planTier: PlanTier,
+  oneMonthAllowance: number,
 ): number {
   const tierConfig = PLAN_TIERS[planTier];
   const rolloverPercent = tierConfig.rolloverPercent;
   // A whole number of DISPLAY credits (#1604 done-when 2): a percentage of an
   // arbitrary balance is almost never a multiple of the display scale, and the
   // remainder would be ledger the customer holds and can never be shown.
-  return wholeDisplayLedger(Math.floor(unusedCredits * (rolloverPercent / 100)));
+  const carried = wholeDisplayLedger(Math.floor(unusedCredits * (rolloverPercent / 100)));
+  // A cap that cannot be read caps at nothing rather than at everything: the
+  // direction that cannot over-grant on a money path.
+  const cap = Number.isFinite(oneMonthAllowance) ? Math.max(0, Math.floor(oneMonthAllowance)) : 0;
+  return Math.min(carried, wholeDisplayLedger(cap));
 }
 
 /**
@@ -926,6 +956,21 @@ export function quotePlanChange(
    * there: no charge, which is the road as it stood before #1965.
    */
   planAllowanceLeftLedger?: number,
+  /**
+   * ⚠ **HOW MANY OF THE CURRENT YEAR'S MONTHS HAVE ACTUALLY BEEN GRANTED
+   * (#2152, his ruling on #2159: *"yearly credits apply month by month"*)** —
+   * read off the ledger by the caller (`getAnnualYearProgress`). A yearly
+   * plan's credits no longer arrive whole on day one, so the share of them
+   * that covers unused time is what was handed over minus what the elapsed
+   * time used (`grantedShareMonths`), and every credit figure below — the
+   * switch's take-back, the upgrade's top-up, the spent-share charge — is
+   * priced in that share instead of in the whole year.
+   *
+   * Absent or `null` means the period was granted WHOLE: every monthly plan,
+   * and a yearly one granted up front before this change. The figures are
+   * then exactly what they were.
+   */
+  annualMonthsGranted?: number | null,
 ): PlanChangeQuote {
   // Absent means KEEP the interval the customer is on. This is also the fix
   // for the sibling defect the #664 read found: the old update path minted
@@ -983,6 +1028,16 @@ export function quotePlanChange(
     SUBSCRIPTION_PRODUCTS[state.currentPlan].priceInCents;
 
   const cycleMonths = monthsBought(stripeIntervalOf(state.currentInterval));
+  /* ⚠ THE PERIOD WAS GRANTED WHOLE UNLESS THE CALLER SAYS OTHERWISE (#2152).
+     `null` here takes every expression below down its pre-#2152 road, written
+     in the same order, so a monthly plan's figures are the same to the last
+     credit. */
+  const monthsGranted =
+    annualMonthsGranted === undefined || annualMonthsGranted === null || annualMonthsGranted >= cycleMonths
+      ? null
+      : Math.max(0, Math.floor(annualMonthsGranted));
+  const grantedShare =
+    monthsGranted === null ? null : grantedShareMonths(cycleMonths, monthsGranted, daysRemaining, totalDays);
   const creditAdjustment =
     kind === "same-interval"
       ? calculateCreditAdjustment(
@@ -997,6 +1052,10 @@ export function quotePlanChange(
           {
             currentExtraMonthlyCredits: planCreditSliderLedgerCredits(currentCreditUnits),
             targetExtraMonthlyCredits: planCreditSliderLedgerCredits(targetCreditUnits),
+            /* A yearly plan granted month by month tops up only the month in
+               hand; the months still to come arrive at the new plan through
+               the paid year's own month (#2152). */
+            ...(grantedShare === null ? {} : { grantedShareMonths: grantedShare }),
           },
         )
       : 0;
@@ -1017,10 +1076,18 @@ export function quotePlanChange(
                allowance on the balance with its money already returned. That
                is the credit-minting loop the #664 review found, one line item
                over. */
-            (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
-              + planCreditSliderLedgerCredits(currentCreditUnits)) *
-              cycleMonths *
-              (daysRemaining / totalDays),
+            grantedShare === null
+              ? (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
+                + planCreditSliderLedgerCredits(currentCreditUnits)) *
+                cycleMonths *
+                (daysRemaining / totalDays)
+              /* ⚠ ONLY WHAT WAS HANDED OVER CAN BE TAKEN BACK (#2152). On a
+                 yearly plan granted month by month the months not yet begun
+                 were never on the balance — Stripe refunds their money, and
+                 there are no credits behind it to return. */
+              : (PLAN_TIERS[state.currentPlan as PlanTier].monthlyCredits
+                + planCreditSliderLedgerCredits(currentCreditUnits)) *
+                grantedShare,
           ),
         )
       : 0;
@@ -1058,9 +1125,19 @@ export function quotePlanChange(
       : Math.max(0, Math.floor(planAllowanceLeftLedger));
   const spentShareCredits =
     !deferred && kind === "interval-switch" ? Math.max(0, creditUnwind - allowanceLeft) : 0;
+  /* ⚠ PRICED AT THE RATE OF THE CREDITS IT STANDS FOR (#2152). Granted whole,
+     the take-back and `unusedValue` are the same share of the same period, so
+     the rate is `unusedValue / creditUnwind` exactly as before. Granted month
+     by month, `unusedValue` also refunds months that were never handed over;
+     only the money of the share that WAS handed over prices a spent credit,
+     or a customer would be charged for months they never received. */
+  const unusedValueOfGrantedShare =
+    grantedShare === null
+      ? unusedValue
+      : Math.floor((currentPlanPrice * grantedShare) / cycleMonths);
   const spentShareCharge =
     spentShareCredits > 0 && creditUnwind > 0
-      ? Math.floor((unusedValue * spentShareCredits) / creditUnwind)
+      ? Math.floor((unusedValueOfGrantedShare * spentShareCredits) / creditUnwind)
       : 0;
   const keptUnwind = creditUnwind - spentShareCredits;
   const charged = proratedAmount + spentShareCharge;
@@ -1576,15 +1653,29 @@ export function calculateCreditAdjustment(
    * credits. Defaulting both to 0 keeps every existing caller and its arms
    * exactly as they were.
    */
-  extra: { currentExtraMonthlyCredits?: number; targetExtraMonthlyCredits?: number } = {},
+  extra: {
+    currentExtraMonthlyCredits?: number;
+    targetExtraMonthlyCredits?: number;
+    /**
+     * The months' worth of the current period still on the balance for unused
+     * time (#2152, `grantedShareMonths`) — given on a yearly plan granted month
+     * by month, where it replaces `monthsInCycle × daysRemaining / totalDays`.
+     * Absent keeps that product, and every existing caller with it.
+     */
+    grantedShareMonths?: number;
+  } = {},
 ): number {
   const currentCredits =
     PLAN_TIERS[currentPlan].monthlyCredits + (extra.currentExtraMonthlyCredits ?? 0);
   const newCredits =
     PLAN_TIERS[newPlan].monthlyCredits + (extra.targetExtraMonthlyCredits ?? 0);
 
-  const deltaForCycle = (newCredits - currentCredits) * monthsInCycle;
-  const fraction = daysRemaining / totalDays;
+  const deltaForCycle =
+    extra.grantedShareMonths === undefined
+      ? (newCredits - currentCredits) * monthsInCycle
+      : newCredits - currentCredits;
+  const fraction =
+    extra.grantedShareMonths === undefined ? daysRemaining / totalDays : extra.grantedShareMonths;
 
   // Both arms land on a whole number of DISPLAY credits (#1604 done-when 2).
   // `wholeDisplayLedger` truncates toward zero, which is the direction each arm
@@ -1899,4 +1990,33 @@ export function calculateProportionalRefund(
     creditsUsed,
     unusedCredits,
   };
+}
+
+/**
+ * EVERY PAYMENT REFERENCE THAT PAID AN INVOICE — its payment intents and its
+ * charges, in either dialect (#2152): a LOST dispute ends a yearly plan's
+ * months only when the disputed payment is one of these for the invoice that
+ * opened the year. Clover lists them under `payments` (expanded); the classic
+ * shape carries `payment_intent` and `charge` on the invoice. `null` when the
+ * invoice cannot be read — the caller must not guess.
+ */
+export async function invoicePaymentRefs(invoiceId: string): Promise<string[] | null> {
+  try {
+    const invoice = (await stripe.invoices.retrieve(invoiceId, { expand: ["payments"] })) as any;
+    const refs = new Set<string>();
+    const add = (value: unknown) => {
+      if (typeof value === "string" && value) refs.add(value);
+      else if (value && typeof (value as { id?: unknown }).id === "string") refs.add((value as { id: string }).id);
+    };
+    add(invoice?.payment_intent);
+    add(invoice?.charge);
+    for (const row of invoice?.payments?.data ?? []) {
+      add(row?.payment?.payment_intent);
+      add(row?.payment?.charge);
+    }
+    return Array.from(refs);
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Could not read the payments of invoice ${invoiceId}`);
+    return null;
+  }
 }
