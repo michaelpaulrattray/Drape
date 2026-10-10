@@ -14089,6 +14089,10 @@
       "path": "server/gdprExportBounded.test.ts"
     },
     {
+      "id": "test:server/gdprExportPersona.test.ts",
+      "path": "server/gdprExportPersona.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },

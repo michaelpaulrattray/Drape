@@ -68,6 +68,17 @@ export interface GdprExportData {
     agencyId: string | null;
     status: string;
     createdAt: string;
+    /**
+     * The cast's personality and voice lines, and the customer's own sentence
+     * behind each one (#2219). The customer's own words, so they belong in the
+     * customer's export. The cast's recipe (`masterPrompt`, `technicalSchema`,
+     * `preferences`) is deliberately NOT here: whether it belongs in an export
+     * is a separate question that has not been put to the founder.
+     */
+    personality: string | null;
+    voice: string | null;
+    personalityOwnWords: string | null;
+    voiceOwnWords: string | null;
     assets: Array<{
       viewType: string;
       resolution: string;
@@ -241,6 +252,10 @@ export async function exportUserData(
     agencyId: model.agencyId,
     status: model.status,
     createdAt: model.createdAt.toISOString(),
+    personality: model.personality,
+    voice: model.voice,
+    personalityOwnWords: model.personalityOwnWords,
+    voiceOwnWords: model.voiceOwnWords,
     assets: (assetsByModel.get(model.id) ?? []).map((a) => ({
       viewType: a.viewType,
       resolution: a.resolution,
