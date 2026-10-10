@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 59
+      "moduleCount": 60
     },
     {
       "id": "domain:wardrobe",
@@ -5985,6 +5985,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/once.ts",
+      "path": "server/testing/once.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },

@@ -18,6 +18,7 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { once } from "../testing/once";
 
 /* Its arms do real work in process — a tree sweep, a sheet compile, a sharp
    encode — and under the parallel run that cost multiplies by fifteen or twenty
@@ -102,11 +103,24 @@ function countingReader(box = { x: 10, y: 20, width: 30, height: 40 }): RegionRe
   return built;
 }
 
-/** A real JPEG of the frame's size — `sharp` reads its dimensions for real. */
-async function frameBytes(): Promise<Buffer> {
-  return sharp({
+/**
+ * A real JPEG of the frame's size — `sharp` reads its dimensions for real.
+ *
+ * ⚠ **ENCODED ONCE PER RUN (#2172).** It is one constant 1000×1500 grey frame
+ * and 30 arms asked for it, so `sharp` encoded the same image 30 times for an
+ * answer that cannot differ — this suite was 18.7 s of the gate's unit `tests`
+ * total. The buffer is already shared across every `readBytes` call WITHIN an
+ * arm (`dependencies` reads it once and closes over it), so sharing it across
+ * arms takes on no risk that was not already taken: nothing in the scan road
+ * writes to the bytes it is handed, and `sharp` does not mutate its input.
+ */
+const frameBytesOnce = once(async () =>
+  sharp({
     create: { width: FRAME.width, height: FRAME.height, channels: 3, background: { r: 90, g: 90, b: 90 } },
-  }).jpeg().toBuffer();
+  }).jpeg().toBuffer(),
+);
+async function frameBytes(): Promise<Buffer> {
+  return frameBytesOnce();
 }
 
 async function dependencies(reader: RegionReader) {
