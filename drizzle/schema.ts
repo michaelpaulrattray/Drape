@@ -285,7 +285,7 @@ export const credits = mysqlTable("points", {
   // The invariant, and the reason nothing has to be written on the spend path:
   // purchased credits are the LAST to go. So the purchased credits REMAINING
   // are `min(purchasedBalance, balance)` — spending drops the balance, and the
-  // lesser of the two is the answer, exactly. `purchasedCreditsRemaining()`
+  // lesser of the two is the answer, exactly. `creditBuckets()`
   // (server/db/credits.ts) is the only reader, and nothing reads this column
   // raw. A deduct therefore touches it never.
   //
@@ -294,6 +294,18 @@ export const credits = mysqlTable("points", {
   // customer has already spent, and it is re-stated by the renewal inside the
   // same compare-and-set that writes the new balance.
   purchasedBalance: int("purchasedBalance").default(0).notNull(),
+  // ⚠ THE OTHER CREDITS THAT ARE NOT THE PLAN'S, EACH AN UPPER BOUND READ THE
+  // SAME WAY (#2185, his rulings 2026-10-10; migration 0078). The balance is
+  // spent plan → promo → kept → purchased, so each bucket remaining is the
+  // lesser of its bound and what the buckets spent after it leave over
+  // (`creditBuckets()` in server/db/credits.ts is the only reader).
+  //   keptBalance    starting credits, referral rewards and staff goodwill —
+  //                  never expire
+  //   promoBalance   promo bonuses — expire `promoCreditsExpireAt`, 90 days
+  //                  after the grant (no promo grant exists yet)
+  keptBalance: int("keptBalance").default(0).notNull(),
+  promoBalance: int("promoBalance").default(0).notNull(),
+  promoCreditsExpireAt: timestamp("promoCreditsExpireAt"),
   // Rollover tracking
   rolloverCredits: int("rolloverCredits").default(0).notNull(),
   lastRefreshAt: timestamp("lastRefreshAt"),

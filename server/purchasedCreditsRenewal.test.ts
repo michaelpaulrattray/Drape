@@ -56,7 +56,10 @@ vi.mock("./db/connection", () => ({
 }));
 
 import { refreshMonthlyCredits } from "./db/billing";
-import { planAllowanceRemaining, purchasedCreditsRemaining } from "./db/credits";
+import { creditBuckets, planAllowanceRemaining, type CreditBucketRow } from "./db/credits";
+
+/** The purchased bucket — `creditBuckets` is the one reader since #2185. */
+const purchasedCreditsRemaining = (row: CreditBucketRow) => creditBuckets(row).purchased;
 import { calculateRolloverCredits } from "./stripe/stripeService";
 import { PLAN_TIERS } from "../drizzle/schema";
 

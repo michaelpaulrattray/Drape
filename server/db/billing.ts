@@ -22,13 +22,37 @@ import {
   getUserCredits,
   isDuplicateCreditReferenceError,
   normalizeCreditReferenceId,
+  creditBuckets,
+  creditsOutsidePlanRules,
   planAllowanceRemaining,
-  purchasedCreditsRemaining,
+  settledCreditBounds,
   type CreditWriteResult,
 } from "./credits";
 import { netAppliedPlanChangeSettlementsSince } from "./planChangeSettlements";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("db/billing");
+
+/**
+ * ⚠ THE THREE BOUNDS EXACTLY AS THEY WERE READ, FOR A COMPARE-AND-SET'S WHERE
+ * (#2185, the relay's finding 2 on PR #2208). A write that states the balance
+ * and the bounds outright from an earlier read is safe only if NEITHER moved in
+ * between. `eq(balance, …)` alone is not enough: a grant and an equal spend
+ * between the read and the write leave the balance where it was and the bounds
+ * changed — a 2,000 referral landing and 2,000 spent, and a renewal would write
+ * the referral bound back to 0, turning the reward into plan credits. With the
+ * bounds in the WHERE, that interleave misses and the loop re-reads.
+ */
+function boundsAsRead(row: {
+  purchasedBalance?: number | null;
+  keptBalance?: number | null;
+  promoBalance?: number | null;
+}) {
+  return [
+    eq(credits.purchasedBalance, row.purchasedBalance ?? 0),
+    eq(credits.keptBalance, row.keptBalance ?? 0),
+    eq(credits.promoBalance, row.promoBalance ?? 0),
+  ];
+}
 
 /**
  * THE PAID YEAR A YEARLY PLAN'S MONTHLY GRANTS BELONG TO (#2152, his ruling on
@@ -336,7 +360,9 @@ export async function refreshMonthlyCredits(
 
       const balanceReadFrom = userCredits.balance;
       // Both halves come off the one row the UPDATE below is conditioned on.
-      const purchasedKept = purchasedCreditsRemaining(userCredits);
+      // What the plan's rules never touch — top-ups, referral rewards, staff
+      // goodwill, starting credits and promos (#1604, #2185) — crosses whole.
+      const outsidePlan = creditsOutsidePlanRules(userCredits);
       const planAllowance = planAllowanceRemaining(userCredits);
       // The part of the plan's allowance the percentage actually governs:
       // anything settled for the period being GRANTED is not last period's
@@ -358,10 +384,11 @@ export async function refreshMonthlyCredits(
       const carriedKept = Math.min(carried, planAllowance);
       const rolloverBase = Math.max(0, planAllowance - carriedKept);
       const rolloverCredits = Math.max(0, Math.floor(computeRollover(rolloverBase)));
-      // Purchased credits are added OUTSIDE the clamp: an unwind bigger than
-      // the new grant empties the plan's part and stops there (#1604).
+      // The credits outside the plan's rules are added OUTSIDE the clamp: an
+      // unwind bigger than the new grant empties the plan's part and stops
+      // there (#1604).
       const newBalance =
-        purchasedKept + Math.max(0, monthlyCredits + rolloverCredits + carriedKept);
+        outsidePlan + Math.max(0, monthlyCredits + rolloverCredits + carriedKept);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx
@@ -369,10 +396,10 @@ export async function refreshMonthlyCredits(
           .set({
             balance: newBalance,
             rolloverCredits: rolloverCredits,
-            // The upper bound settled against the balance it was read beside —
-            // a customer who spent their bought credits down does not carry a
-            // stale protection into the next cycle (#1604).
-            purchasedBalance: purchasedKept,
+            // Every bound settled against the balance it was read beside — a
+            // customer who spent a bucket down does not carry a stale
+            // protection into the next cycle (#1604, #2185).
+            ...settledCreditBounds(userCredits),
             lastRefreshAt: new Date(),
             ...(options.annualYear !== undefined ? annualYearColumns(options.annualYear) : {}),
           })
@@ -380,6 +407,7 @@ export async function refreshMonthlyCredits(
             and(
               eq(credits.userId, userId),
               eq(credits.balance, balanceReadFrom),
+              ...boundsAsRead(userCredits),
               ...(lock ? annualYearLockConditions(lock) : []),
             ),
           );
@@ -683,10 +711,12 @@ export type PlanCreditsExpiryResult =
 /**
  * TAKE A CANCELLED PLAN'S CREDITS OFF THE BALANCE, AND NOTHING ELSE (#2152).
  *
- * The plan's part is `planAllowanceRemaining` — the balance minus the top-ups
- * still on it — read off the SAME row the write is conditioned on, exactly as
- * the renewal does it (#1604, #664 round 2). Top-ups stay, whole: the new
- * balance IS the purchased part.
+ * The plan's part is `planAllowanceRemaining` — the balance minus the top-ups,
+ * referral rewards, staff goodwill, starting credits and promos still on it
+ * (#2185) — read off the SAME row the write is conditioned on, exactly as the
+ * renewal does it (#1604, #664 round 2). Those stay, whole: the new balance
+ * IS `creditsOutsidePlanRules`. Promos leave only by their own clock
+ * ({@link expirePromoCredits}).
  *
  * ⚠ **IDEMPOTENT THREE WAYS, because a sweep runs on every server and every
  * six hours.** (1) The write is a compare-and-set on the balance AND on the
@@ -726,15 +756,25 @@ export async function expirePlanCredits(
       }
 
       const balanceReadFrom = row.balance;
-      const purchasedKept = purchasedCreditsRemaining(row);
+      // Top-ups, referral rewards, staff goodwill, starting credits and promos
+      // stay (#2185); only the plan's part expires here.
+      const keptWhole = creditsOutsidePlanRules(row);
       const planPart = planAllowanceRemaining(row);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx
           .update(credits)
           .set({
-            balance: purchasedKept,
-            purchasedBalance: purchasedKept,
+            balance: keptWhole,
+            /* ⚠ NO SETTLE ON A TIMER (#2185, the relay's finding 1 on PR
+               #2208). #2193's refunds rely on no settle landing between a
+               charge and its refund, and this sweep runs every six hours. A
+               bound can stand above what its bucket holds only when every
+               bucket spent before it is empty — the plan's part included — so
+               with plan credits to take, every bound already equals its
+               reading and writing it changes nothing; with none, no bound is
+               written at all. */
+            ...(planPart > 0 ? settledCreditBounds(row) : {}),
             rolloverCredits: 0,
             planCreditsExpireAt: null,
           })
@@ -742,6 +782,7 @@ export async function expirePlanCredits(
             and(
               eq(credits.userId, userId),
               eq(credits.balance, balanceReadFrom),
+              ...boundsAsRead(row),
               eq(credits.planCreditsExpireAt, expireAt),
               eq(credits.planTier, "free"),
             ),
@@ -756,13 +797,13 @@ export async function expirePlanCredits(
             type: "subscription",
             description: "Plan credits expired 30 days after the plan ended",
             referenceId: ledgerReferenceId,
-            balanceAfter: purchasedKept,
+            balanceAfter: keptWhole,
             // No toolKind, as the renewal's own insert above: the column's
             // NULL already means "not a tool charge" (#401).
           });
         }
         return planPart > 0
-          ? { outcome: "expired" as const, creditsRemoved: planPart, newBalance: purchasedKept }
+          ? { outcome: "expired" as const, creditsRemoved: planPart, newBalance: keptWhole }
           : { outcome: "nothing-to-expire" as const };
       });
       if (written) return written;
@@ -785,6 +826,126 @@ export async function expirePlanCredits(
     }
     log.error({ err: error, userId }, "[Database] plan-credit expiry failed");
     return { outcome: "failed", error: "Plan-credit expiry failed" };
+  }
+}
+
+/**
+ * THE ONE KIND OF CREDIT THAT EXPIRES ON ITS OWN CLOCK — A PROMO, 90 DAYS
+ * AFTER IT WAS GIVEN (#2185, his ruling 2026-10-10: "promo and signup bonuses
+ * after 90 days? Expire after 90 days.", then for the starting credits:
+ * "starting credits are just a default every account starts with lets make
+ * them never expire to simplify things."). Stamped by the grant in
+ * `addCreditsIn`; no promo grant exists yet. A promo runs out on any plan,
+ * Free included.
+ */
+export async function getPromoCreditsExpiryCandidates(
+  now: Date,
+): Promise<Array<{ userId: number; expireAt: Date }>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({ userId: credits.userId, expireAt: credits.promoCreditsExpireAt })
+    .from(credits)
+    .where(and(isNotNull(credits.promoCreditsExpireAt), lt(credits.promoCreditsExpireAt, now)));
+  return rows.flatMap((row) => (row.expireAt ? [{ userId: row.userId, expireAt: row.expireAt }] : []));
+}
+
+/** The ledger key of one promo expiry, unique per (account, deadline). */
+export function promoCreditsExpiryLedgerRef(userId: number, expireAt: Date): string {
+  return `promo-credits-expired:${userId}:${Math.floor(expireAt.getTime() / 1000)}`;
+}
+
+/**
+ * TAKE THE PROMO BUCKET OFF THE BALANCE, AND NOTHING ELSE (#2185).
+ *
+ * The same three locks as {@link expirePlanCredits}, for the same reasons: a
+ * compare-and-set on the balance, the bounds AND the stamp, the stamp cleared
+ * in the same write, and a ledger reference unique per (account, deadline).
+ * What is removed is the promo bucket's reading off the row the write is
+ * conditioned on; every other bucket reads the same after it as before.
+ */
+export async function expirePromoCredits(
+  userId: number,
+  expireAt: Date,
+  now: Date = new Date(),
+): Promise<PlanCreditsExpiryResult> {
+  const db = await getDb();
+  if (!db) return { outcome: "failed", error: "Database not available" };
+  const ledgerReferenceId = normalizeCreditReferenceId(promoCreditsExpiryLedgerRef(userId, expireAt));
+
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const row = await getUserCredits(userId);
+      if (!row) return { outcome: "failed", error: "User credits not found" };
+      const stamped = row.promoCreditsExpireAt;
+      if (!(stamped instanceof Date) || stamped.getTime() !== expireAt.getTime()) {
+        return { outcome: "already-expired" };
+      }
+      if (expireAt.getTime() > now.getTime()) {
+        return { outcome: "not-due" };
+      }
+
+      const balanceReadFrom = row.balance;
+      const removed = creditBuckets(row).promo;
+      const newBalance = balanceReadFrom - removed;
+
+      const written = await withTransaction(async (tx) => {
+        const updateResult = await tx
+          .update(credits)
+          /* ⚠ ONLY THE PROMO BOUND AND THE STAMP — NEVER A SETTLE (#2185, the
+             relay's finding 1 on PR #2208). #2193's refunds rely on no settle
+             landing between a charge and its refund, and this sweep runs on a
+             timer. Removing the promo holding cannot change any other
+             bucket's reading: a bound above its holding exists only when every
+             bucket spent before it is empty, and then the promo holds nothing
+             to remove. With nothing to remove, the stamp alone is cleared. */
+          .set(
+            removed > 0
+              ? { balance: newBalance, promoBalance: 0, promoCreditsExpireAt: null }
+              : { promoCreditsExpireAt: null },
+          )
+          .where(
+            and(
+              eq(credits.userId, userId),
+              eq(credits.balance, balanceReadFrom),
+              ...boundsAsRead(row),
+              eq(credits.promoCreditsExpireAt, expireAt),
+            ),
+          );
+        const affected = (updateResult as any)[0]?.affectedRows ?? 0;
+        if (affected === 0) return null;
+
+        if (removed > 0) {
+          await tx.insert(creditTransactions).values({
+            userId,
+            amount: -removed,
+            type: "bonus",
+            description: "Promo credits expired 90 days after they were given",
+            referenceId: ledgerReferenceId,
+            balanceAfter: newBalance,
+          });
+        }
+        return removed > 0
+          ? { outcome: "expired" as const, creditsRemoved: removed, newBalance }
+          : { outcome: "nothing-to-expire" as const };
+      });
+      if (written) return written;
+    }
+    return { outcome: "failed", error: "Balance changed during expiry — retry next sweep" };
+  } catch (error) {
+    if (isDuplicateCreditReferenceError(error)) {
+      try {
+        await db
+          .update(credits)
+          .set({ promoCreditsExpireAt: null })
+          .where(and(eq(credits.userId, userId), eq(credits.promoCreditsExpireAt, expireAt)));
+      } catch (clearError) {
+        log.warn({ err: clearError, userId }, "[Database] could not clear an already-expired promo stamp");
+      }
+      return { outcome: "already-expired" };
+    }
+    log.error({ err: error, userId }, "[Database] promo-credit expiry failed");
+    return { outcome: "failed", error: "Promo-credit expiry failed" };
   }
 }
 

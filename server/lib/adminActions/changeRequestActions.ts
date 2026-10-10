@@ -173,7 +173,8 @@ export async function executeChangeRequestAction(
       const targetUser = await getUserById(userId);
       if (!targetUser) throw new Error("User not found");
 
-      const creditResult = await addCredits(userId, amount, "bonus", `Credits added via change request #${changeRequestId}: ${reason}`, `cr-${changeRequestId}`);
+      // Staff goodwill never expires (#2185) — the same bucket as `admin_add`.
+      const creditResult = await addCredits(userId, amount, "bonus", `Credits added via change request #${changeRequestId}: ${reason}`, `cr-${changeRequestId}`, { bonusSource: "goodwill" });
       if (!creditResult.success) throw new Error(creditResult.error || "Failed to add credits");
 
       await updateChangeRequestStatus(changeRequestId, { status: "approved" }, "pending_execution");
