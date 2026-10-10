@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 19
+      "moduleCount": 21
     },
     {
       "id": "domain:profile",
@@ -5401,8 +5401,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/queryErrorRedaction.ts",
+      "path": "server/monitoring/queryErrorRedaction.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/monitoring/trackerVerdict.ts",
       "path": "server/monitoring/trackerVerdict.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/monitoring/trpcErrorReport.ts",
+      "path": "server/monitoring/trpcErrorReport.ts",
       "domain": "platform",
       "lifecycle": "active"
     },
@@ -14433,6 +14445,10 @@
       "path": "server/pushedDocSuites.test.ts"
     },
     {
+      "id": "test:server/queryErrorRedaction.test.ts",
+      "path": "server/queryErrorRedaction.test.ts"
+    },
+    {
       "id": "test:server/queryStringReads.test.ts",
       "path": "server/queryStringReads.test.ts"
     },
@@ -22585,6 +22601,16 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/monitoring/productEvents.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/trpcErrorReport.ts",
       "kind": "imports"
     },
     {
@@ -33368,6 +33394,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/logging/logger.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -33390,6 +33421,11 @@
     {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -33440,6 +33476,16 @@
     {
       "from": "module:server/monitoring/trackerVerdict.ts",
       "to": "module:shared/monitoringProjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/errorTracker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -34864,6 +34910,11 @@
     },
     {
       "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/routes/emailAuthInput.ts",
       "kind": "imports"
     },
@@ -35610,6 +35661,11 @@
     {
       "from": "module:server/routes/googleAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/googleAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
