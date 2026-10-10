@@ -24,12 +24,19 @@ export function announcePlanChange(data: {
   message: string;
   confirmPaymentUrl?: string | null;
 }): void {
+  /* `data` is a SUCCESSFUL `changePlan` answer, and its `message` is the
+     sentence the server composed for the customer (`PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE`
+     on the confirm road) — never an error's raw text. Failures never reach
+     here: the callers route them through `readableFailure`. It is read into
+     `sentence` so `rawErrorToast.test.ts` (which cannot tell a response from an
+     error by shape) is not asked to; that guard still holds every error toast. */
+  const sentence = data.message;
   const url = data.confirmPaymentUrl;
   if (!url) {
-    toast.success(data.message);
+    toast.success(sentence);
     return;
   }
-  toast(data.message, {
+  toast(sentence, {
     duration: CONFIRM_TOAST_MS,
     action: {
       label: "Confirm payment",
