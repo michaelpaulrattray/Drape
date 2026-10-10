@@ -942,3 +942,168 @@ two stale `0.3` comments were left alone as **#1837's live claim**.
 Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
 run 5 2026-09-27, **run 6 2026-10-04** (on its clock, the first on-time run since
 run 4). Next due ~2026-10-11.
+
+---
+
+## Run 7 — 2026-10-11 03:20–04:3x AEST (Retro, patrol #7, run #657)
+
+**Window:** 2026-10-03 14:40Z (run 6's close) → 2026-10-10 17:30Z. **100 mailbox
+files** — 54 seat-stamped (52 foreman, 1 warden, 1 janitor) and 46 runner notices
+(41 pass digests, **3 `runner-close-*`**, 1 parked, 1 reloaded). **0
+`runner-escalated-*`. 183 PRs merged. 251 `gate.yml` runs.** ⚠ The corpus
+boundary is a floor and not a precision, for run 6's reason: entry filenames mix
+UTC and local stamps, so an entry within ±10 h of the boundary could fall either
+side. Population read by `find -newermt`, which is mtime and not the stamp.
+
+**Why the Retro ran today, and why it ran SECOND.** Its clock fired on the day
+(`patrol-clocks.mts`: last run 2026-10-04, every 7 days) with switch **Process
+ON**, and **0 of his 11 open ordered cards are on offer** (all 11 rung-held,
+parked or blocked; focus CLEAR since N2b hit the milestone gate). But the shift's
+FIRST unit was a **repair owed** — PR #2229's gate was red and the seat that
+opened it had ended — because his order of 2026-10-08 puts a repair owed ahead of
+any new card. The patrol is this entry; the repair is in `foreman-20261011-0320`.
+
+### A. Audit ledger
+
+**The instrument first (working law 2), and it produced this run's own finding.**
+
+1. **Close-stamps, anchored on the LAST heading** (run 4's correction, kept):
+   **53 of 54 verified, 0 UNVERIFIED, 1 carrying no stamp.** Run 6 measured 75 of
+   83 with **8** unstamped; run 5, 1 of 102. The unstamped one is
+   `foreman-20261008-1156`. ⚠ **Not attributed**: run 6 left four such entries
+   unexplained on #1859 after two roads failed to settle them, and nothing here
+   settles this one either. Said so rather than reaching for a cause.
+2. ⚠ **AND THE DOUBLE-STAMP SEARCH — run 6's corroboration that the stamp does
+   not mis-target — CAME BACK 12 THIS WINDOW, AND THE ANSWER IS NOT A
+   MIS-TARGET.** Read at the bytes of two of them: the first heading is the
+   **shift's own hand-written placeholder** (`## Runner close-stamp
+   (machine-written)` + *"(appended by the runner after this process exits)"*),
+   with the runner's real verdict appended below it. Run 6 measured zero; the
+   habit appeared in this window and is spreading by copying. **It is a finding
+   because the verifier `break`s at that heading** — see R18 below and **#2230**,
+   where it is measured: in 12 of 12 the placeholder sits last, so **1 non-blank
+   line and 0 merge claims were hidden, and the cost so far is nothing.** The
+   direction is what earns the card.
+3. **One report audited end to end at the artifacts** — `foreman-20261011-0154`,
+   the immediate predecessor (Janitor patrol #14, a claim-dense entry).
+   **Every claim read held**: commit `da688ed08` exists and touches
+   `docs/JANITOR_LOG.md` alone (+262); **#2228 CLOSED** 16:19Z and **#2176
+   CLOSED** 16:18Z; the deploy receipt
+   `output/deploy-receipts/2026-10-10T16-27-58-519Z-27568.txt` exists (5,187
+   bytes); untracked under `scripts/` reads **698**, the figure claimed.
+   ⚠ **One claim needed its population named to reconcile, and that is a method
+   note rather than a miss**: *"305 refs deleted, 563 → 258"* is
+   `refs/heads/team/*` (its own manifest header says so), not all local heads —
+   `refs/heads` reads **359** today, of which **259** are `team/*` (258 plus one
+   branch created since) and **100** are outside the sweep's population by
+   design (`backup/*`, `census/*`, `ci/*`, `feat/*`).
+4. **Reopened cards: 0 — and the one search hit is a CONFIRMED FALSE POSITIVE,
+   which is the second measured instance of this instrument lying.** GitHub's
+   `reopened:2026-10-03..2026-10-11` returned **#1612**; its timeline holds
+   **no `reopened` event and no `closed` event at all** (44 comments, 27
+   cross-references, 3 labelled, 1 unlabelled) while the issue is closed with
+   `closed_at` 2026-10-07T22:43Z. Run 5 measured two false positives on the same
+   qualifier. **The timeline is the artifact; the qualifier is not** — a later
+   run should read events, not the search.
+5. **QUIET declarations under #360's rule: 5** (run 6: 0) —
+   `foreman-20261004-1255`, `-1504`, `-1639`, `foreman-20261009-1626`, `-1840`.
+   See "also read" below: three of the five are one shape, and it is a race
+   rather than a defect.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R18** (new) | **A defect in the team's own honesty machinery whose repair lives in untracked `.agents/`, so no seat may ship it, no suite may guard it, and the cards accumulate while every refusal is individually right** | **#2198** — the cap detector's pattern misses both live wordings (`You've hit your weekly limit`, `You've hit your session limit`), driven at the live file by the fifth session on it; **six sessions in one day**, and the runner parked on 2026-10-10 04:06 saying *"The log names no cap"* over a log whose first line is one. **#2230** (filed this run) — `close-stamp.ps1`'s verifier `break`s at a bare close-stamp heading that **12 of this window's 54 entries now hand-write**, so a shift's own placeholder can truncate the check that stamps it `verified` | invariant 7 one floor down: the controls that keep the team honest are the ones its own rules cannot reach | **Carded: #2230**, with the one-line repair, a second option, and the constraint named (no tracked diff, no gate, no reviewer; `drive-close-stamp.ps1` is its only coverage and must be run after any edit). The CLASS wants an owner rather than a guard — the relay's or a main-tree shift's, taken as a primary unit, which is what both cards say in their own bodies | **Open — #2198 (his word sets the boundary), #2230 (filed, not worked)** |
+| **R19** (new) | **A card a shift has REFUSED still counts as open work in the number his park gate reads, so a refusal is re-offered every pass** | At the count his page carried this shift (16:40Z), **Bugs read 2 open and both were refusals** — #2198 and #1736, each `bug, not-built`; the other three open bug cards were correctly excluded (2 `parked`, 1 `blocked`). Read at the code: `QUEUE_EXCLUSION_REASONS` (`shared/crewQueueExclusions.ts`) carries research/building/ordered/parked/blocked/fable/sitting and **nothing for a refusal**. The sixth session on #2198 stopped the loop **by hand**, by applying `blocked` | a deliberate design decision (a refusal stays on offer — his option-B ruling) meeting a count that was never told about it | **Carded: #2231.** Report a refusal as an exclusion in the **COUNT only**, the way `security` reads `0 open · 1 parked`; ⚠ **it must not touch `buildStateHoldsOffOffer`** — the card must still reach a seat that wants to overturn the reading. The tradeoff is on the card rather than buried: the team would then park with a refused card open, and un-park on the next real signal | **Carded, not worked** |
+| **R16** (run 6) | the close-stamp and the no-report alarm are focus-lane only | — | — | ✅ **CLOSED as a recurrence, verified at the code and not at the card.** #1859 closed 2026-10-03; `closingPullRequestFinding` (`shared/crewCardBuildState.ts`) is called from `scripts/crew-shift-close.mts`, so a seat's `shipped` close is tested against what its own pull request says. ⚠ **AND THE STAMP IT DECLINED IS NOW R18's SECOND INSTANCE** — the reason given for declining it (a stamp lives where no suite can guard it) is exactly why #2230 exists | **Closed as a recurrence** |
+| **R17** (run 6) | the seat gate's focus has two sources of truth | — | — | ✅ **CLOSED as a recurrence.** #1860 closed 2026-10-03; `server/seatFocusTwoTruths.test.ts` holds `PROGRAM.md`'s declaration equal to the briefing's ladder, and the rule held at this window's own milestone boundary: N2b's gate edition moved the `current` rung and the `CURRENT FOCUS` line in ONE commit, which is the rule #1840 wrote and did not itself honour | **Closed as a recurrence** |
+| **R14** (runs 5–6) | a receipt composed rather than pasted | **0 new instances found**, and the close-ceremony line is still in force | — | ⚠ **Method limit unchanged and worth restating: `.agents/` is gitignored, so no suite can ever read a shift entry and a CONCEALED instance is not findable mechanically.** This row can only ever report self-declared ones | **Watched**, line in force |
+
+**Also read, and NOT findings:**
+
+- **The three `runner-close-*` files are NOT R7's harmful shape, and the
+  difference matters.** All three are usage-cap deaths whose recovered output is
+  the cap message and nothing else (`You've hit your session limit`,
+  `You've hit your weekly limit` twice) — no claims, no receipts, nothing to
+  verify. Run 6's row read 0 for a fifth week and corrected its own reach
+  (focus-lane only); this window's three are a shift that never started rather
+  than a shift that died mid-claim. **What IS wrong in them is R18's #2198**:
+  the park that followed told him the log named no cap.
+- **Three of the five QUIET shifts are one shape, and it is a RACE rather than a
+  missing exclusion.** Their own entries say so with timings: *"taken by a
+  builder seat eleven seconds before my row"* (`-1504`), *"built five minutes
+  before I opened my row"* (`-1626`), *"four live seats claimed every takeable
+  card in the nine minutes before this shift opened"* (`-1840`). ⚠ **The
+  tempting finding was checked and is FALSE**: the queue count does NOT ignore
+  claimed cards — `exclusionFor` takes `board.holdsOffOffer`, and
+  `buildStateHoldsOffOffer` returns true for both an open pull request and a
+  live claim. So nothing is miscounted; the window is seconds to minutes and no
+  count can close it. Each of the three stood off correctly and handed its
+  reading over. **A board fully occupied by seats is the opposite of a stall**,
+  and the only waste is the read-in, which the digest already minimises. No card.
+- **Gate health, both numbers, on 251 runs: 21 failures (8.4%)** against run 6's
+  18 of 255 (7.1%), and **3 cancelled (1.2%)** against 8 of 255 (3.1%). First
+  failing step per failed run: **Unit tests 14** (10 in shard 1, 4 in shard 2),
+  **Typecheck 3**, **Dependency advisories 3**, **Atlas freshness 1**.
+- **The unit-test bucket still has no shared cause**: 14 failures over 11
+  distinct branches, the only repeats being one branch twice
+  (`team/relay-2218`, `team/relay-2190`) — a fix-and-retry, not a class.
+- **The dependency-advisory step made its first real catch, and it is the good
+  direction.** Three dependabot PRs reddened on 2026-10-07 for one cause:
+  **CRITICAL `proxy-addr` (GHSA-jqcg-44mw-7w3h, IP spoofing via IPv4-mapped IPv6
+  trust subnet), reached via `express > proxy-addr`.** Repaired, not
+  acknowledged — `package.json` pins `"proxy-addr": "^2.0.8"` in
+  `pnpm.overrides`, and the step is green on a fresh tree today. His *"add the
+  gate step"* (#1805) earned itself inside a week.
+- **Preflight's load-sensitive class (#548) fired on this shift's own repair and
+  is recorded as noise rather than as a red**: `server/atlasPushGate.test.ts`
+  reddened the first preflight run, passed **14/14 in 63 s alone**, and the
+  re-run was GREEN 9/9. A suite that drives real `git` in temporary repositories
+  under full parallel load is the shape preflight's own message names.
+
+### C. The anti-boredom read
+
+**183 of 183 merged PRs cite a card number in title or body. 0 findings.**
+⚠ Method is run 6's and no better: citation PRESENCE, not "the cited card
+existed before the pull request".
+
+### D. The items the window's shifts addressed to this seat — both ruled, both closed
+
+Two cards were filed explicitly FOR this seat to decide, and in both the decision
+had already been taken by a seat that shipped the work; the Retro's act was to
+verify at the artifacts and close.
+
+- **#2117** (the desk sweep flags #1995 every shift and no seat may fix it) —
+  **option 1 shipped**: PR #2200, squash `b41c536a`. Verified by RUNNING the
+  sweep this shift, exit 0: #1995 now prints under *"1 held card(s) are HIS OWN
+  — worth a glance, nothing to do"* with his verbatim words, and the exemption
+  list carries its own drift check. **#1995 itself untouched**, which the card
+  insisted on. Closed with that receipt.
+- **#2165** (a merged money PR reading `in-review` on his page) — **both halves
+  discharged**: edition **671** carries `sign-flat-price-1968` as `merged` and
+  the briefing now has **0 non-merged pipeline rows at all**; the loop got its
+  guard in PR #2202 (`server/crewPipelineRowStates.test.ts`). Closed with that
+  receipt.
+- **#2227** (this seat's own card, the `npx`-under-a-stripped-PATH class) —
+  built as PR #2229, **repaired by this shift** and merged, squash `e376bfe2`.
+  Closed.
+
+### E. The seat's own work, audited the same way
+
+This run **closed three of its own cards at artifacts rather than at their
+cards** (#2117 by driving the sweep, #2165 by reading the deployed edition,
+#2227 by its merged squash), **filed two** (#2230, #2231), and **killed one
+finding of its own before believing it** — the claim that the switch counts
+ignore claimed cards, which `buildStateHoldsOffOffer` disproves at the code.
+Four readings are stated as floors with the method named: the corpus boundary
+(mtime), the gate-step attribution (first failed step per run), the anti-boredom
+citation read, and the unstamped entry left unattributed. One thing it did NOT
+settle, for the second run running: **why an ordinary `foreman-*` entry carries
+no stamp** (#1859's remainder).
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
+run 5 2026-09-27, run 6 2026-10-04, **run 7 2026-10-11** (on its clock, the
+third on-time run running). Next due ~2026-10-18.
