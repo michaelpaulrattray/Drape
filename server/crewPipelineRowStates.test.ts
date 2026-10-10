@@ -30,7 +30,9 @@ import {
   type PipelineRowPullRequest,
   type PlannablePipelineRow,
   planPipelineRowStates,
+  planPipelineRowsWithoutPullRequests,
 } from "../shared/crewShiftState.js";
+import { cardNumbersIn } from "../shared/crewQueuePossiblyDone.js";
 
 const SWEEP = resolve("scripts/crew-desk-sweep.mts");
 
@@ -355,5 +357,139 @@ describe("the sweep's live call still asks for the fields the plan depends on", 
     /* Nothing in this block may write to the briefing. */
     expect(printed).not.toContain("item.status =");
     expect(printed).not.toContain("item.note =");
+  });
+});
+
+/**
+ * ⚠ **THE ROWS THAT READER CANNOT SEE AT ALL (#2165).**
+ *
+ * `planPipelineRowStates` opens with `if (typeof row.prNumber !== "number")
+ * continue;` — so a live row naming no pull request is outside every one of its
+ * four verdicts by construction. Not promoted, not stuck, not closed-unmerged,
+ * not even unreadable: it says whatever it was written saying, for ever.
+ *
+ * **The specimen was live when this was written.** `dead-engine-record-1785`
+ * had said `in-review` since its card closed on 2026-10-03 (his word on #1785:
+ * *"1758) seal."*), with `prNumber: null`, through a week of sweeps that had no
+ * rule able to notice it. #2165 was filed about a different row —
+ * `sign-flat-price-1968`, which HAD a PR number, was repaired by the reader
+ * above, and cleared itself at edition 668 — so this is the half of that card's
+ * class that genuinely cannot self-heal.
+ */
+describe("a live pipeline row with no pull request, judged by its card (#2165)", () => {
+  const row = (id: string, status: string, title: string, prNumber: number | null = null) =>
+    ({ id, status, title, prNumber });
+
+  /** The three-state card reader the sweep hands in, as a table. */
+  const openness = (open: readonly number[], unknown: readonly number[] = []) =>
+    (card: number): boolean | null => {
+      if (unknown.indexOf(card) !== -1) return null;
+      return open.indexOf(card) !== -1;
+    };
+
+  it("⚠ names the specimen: no PR, card closed, still saying `in-review`", () => {
+    const found = planPipelineRowsWithoutPullRequests(
+      [row("dead-engine-record-1785", "in-review", "Our list of known-bad engines (#1785)")],
+      cardNumbersIn,
+      openness([]),
+    );
+    expect(found.map((one) => one.id)).toEqual(["dead-engine-record-1785"]);
+    /* The cards travel with the finding so the report can name what it judged
+       the row against, rather than asserting "closed" with nothing behind it. */
+    expect(found[0]!.cards).toEqual([1785]);
+  });
+
+  it("⚠ CONTROL — a row whose card is OPEN is not a finding", () => {
+    /* Without this the reader could answer for every PR-less row and the arm
+       above would still pass, which is an enumeration guard enumerating
+       everything. */
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("live-1785", "in-review", "Something (#1785)")],
+      cardNumbersIn,
+      openness([1785]),
+    )).toEqual([]);
+  });
+
+  it("⚠ a card it CANNOT TELL about is left alone — the cap guard", () => {
+    /*
+      The sweep answers `null` when the open queue came back AT `OPEN_QUEUE_LIMIT`,
+      because a card missing from a capped list is either closed or past the cap
+      and those are opposite answers. Reporting a live card as closed is the
+      finding-shaped lie the whole sweep exists to prevent.
+    */
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("unknowable", "in-review", "Something (#1785)")],
+      cardNumbersIn,
+      openness([], [1785]),
+    )).toEqual([]);
+  });
+
+  it("EVERY card closed, not any — a row naming one live card still describes live work", () => {
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("two-cards", "in-review", "A thing (#1785) and another (#1786)")],
+      cardNumbersIn,
+      openness([1786]),
+    )).toEqual([]);
+    /* And with both closed it IS a finding, or the arm above passes for the
+       wrong reason — a reader that never fires satisfies it too. */
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("two-cards", "in-review", "A thing (#1785) and another (#1786)")],
+      cardNumbersIn,
+      openness([]),
+    ).map((one) => one.cards)).toEqual([[1785, 1786]]);
+  });
+
+  it("is silent about a row that HAS a pull request — that is the other reader's population", () => {
+    /* The two readers partition the rows; an overlap would print two blocks
+       about one row, which is the shape this script's header says it exists to
+       kill. */
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("has-a-pr", "in-review", "A thing (#1785)", 2105)],
+      cardNumbersIn,
+      openness([]),
+    )).toEqual([]);
+  });
+
+  it("is silent about a row whose title names no card at all", () => {
+    /* There is nothing to judge it against, and reading a number out of its
+       `id` — which happens to end in one — would be a slug passed off as
+       evidence. */
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("dead-engine-record-1785", "in-review", "Our list of known-bad engines")],
+      cardNumbersIn,
+      openness([]),
+    )).toEqual([]);
+  });
+
+  it("is silent about a row that is already DONE", () => {
+    expect(planPipelineRowsWithoutPullRequests(
+      [row("finished", "merged", "A thing (#1785)")],
+      cardNumbersIn,
+      openness([]),
+    )).toEqual([]);
+  });
+
+  it("⚠ the block REPAIRS NOTHING — it prints and moves on", () => {
+    /* The same arm its neighbour carries, for the same reason: a card closes
+       for reasons other than its work shipping, so a status written here would
+       be one nobody meant. */
+    const source = readFileSync(SWEEP, "utf8");
+    const block = source.slice(source.indexOf("if (pipelineNoPr.length > 0)"));
+    expect(block.length, "the PR-less block must be found").toBeGreaterThan(0);
+    const printed = block.slice(0, block.indexOf("if (liars.length > 0)"));
+    expect(printed).not.toContain("item.status =");
+    expect(printed).not.toContain("item.note =");
+  });
+
+  it("⚠ the sweep hands in a reader that can answer `null`, held at the sweep's own bytes", () => {
+    /*
+      #1099's lesson, inherited: every arm above drives a table that can answer
+      three states, so a sweep that passed a two-state reader would leave them
+      all green while the cap guard went silent in the one place it matters.
+    */
+    const source = readFileSync(SWEEP, "utf8");
+    expect(source).toContain("planPipelineRowsWithoutPullRequests");
+    expect(source).toContain("queueIsAFloor");
+    expect(source).toContain("if (openCardNumbers === null || queueIsAFloor) return null;");
   });
 });
