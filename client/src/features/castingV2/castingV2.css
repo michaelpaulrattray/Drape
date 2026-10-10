@@ -4890,7 +4890,9 @@
   font: 400 11.5px var(--font-sans);
   cursor: pointer;
 }
-.dpc-persona__cancel:hover { border-color: var(--ink); }
+.dpc-persona__cancel:hover:not(:disabled) { border-color: var(--ink); }
+/* Reword it wears this shape and is switched off while a keep is in flight. */
+.dpc-persona__cancel:disabled { cursor: default; opacity: 0.4; }
 
 /* The badge sits where a card's action sits, in the label's own register, so
    it reads as a note about the card and never as a control. */
