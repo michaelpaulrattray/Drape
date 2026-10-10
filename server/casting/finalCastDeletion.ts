@@ -1178,6 +1178,11 @@ export async function executeFinalCastDeletion(input: {
       personaDraftedAt: null,
       personalityEditedAt: null,
       voiceEditedAt: null,
+      /* And the customer's own sentence behind each line ("say it your way",
+         #2197 / #2205, migration 0079) — their words, verbatim, which is the
+         most readable thing of all about a cast they asked us to destroy. */
+      personalityOwnWords: null,
+      voiceOwnWords: null,
       status: "archived",
       identityRevisionId: null,
       currentPackageSnapshotId: null,

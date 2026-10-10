@@ -628,7 +628,17 @@ export type ReadPurpose =
    * again cannot tell which of the two it is, and this whole paragraph exists
    * because somebody would have had to ask.
    */
-  | "persona";
+  | "persona"
+  /**
+   * ONE LINE TRANSLATED FROM THE CUSTOMER'S OWN SENTENCE — "say it your way"
+   * (#2197 / #2205). Its own word rather than `persona`, on `persona`'s own
+   * argument: that bucket prices a line per SIGN, and this one prices a line
+   * per PRESS, paid by the house as often as the customer rewords. Lumped
+   * together, neither question — what a Sign costs, what a reword costs —
+   * could be answered, and the disappearing-technology law's third clause
+   * obliges both to be.
+   */
+  | "persona.translate";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -647,6 +657,7 @@ export const READ_PURPOSES = Object.freeze([
   "gate",
   "author",
   "persona",
+  "persona.translate",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

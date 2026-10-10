@@ -68,7 +68,12 @@ describe("the read stage's purpose vocabulary", () => {
     that filed it under `interpret` would price the interpreter for work it
     never did.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author` and `persona`", () => {
+  /*
+    FOURTEEN since #2197: `persona.translate` is "say it your way" — a line
+    per PRESS, where `persona` is a line per Sign, and a reword is priced on
+    its own so both questions stay answerable.
+  */
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona` and `persona.translate`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -83,6 +88,7 @@ describe("the read stage's purpose vocabulary", () => {
       "gate",
       "author",
       "persona",
+      "persona.translate",
     ]);
   });
 
