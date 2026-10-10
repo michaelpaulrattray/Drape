@@ -19,26 +19,41 @@
  * byte-identical to a run that passed quietly — the shape that reported 0/7 on
  * a driver the night before this landed (#11).
  */
-import { describe, expect, it, vi } from "vitest";
-import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readCheckRun, runTypecheckOnCommit } from "../scripts/lib/typecheckOnCommit.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { makeThrowawayRepo, type ThrowawayRepo } from "./testing/throwawayRepo";
 
 /* This suite drives a real child process, so it declares the class's timeout
    rather than racing vitest's 5 s default under a parallel run (#548). */
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
-const ROOT = path.resolve(import.meta.dirname, "..");
+/*
+  ⚠ A WORKTREE OF A ONE-FILE REPOSITORY, NOT OF THIS ONE (#2212). Every arm
+  below drove `inWorktreeOf(ROOT, "HEAD", …)` — a full checkout of the whole
+  repository per arm, six of them, each carrying a hand-typed `60_000`. That
+  checkout measured 2.5 s on a quiet afternoon and pushed these arms to 55–83 s
+  on 2026-10-10, failing a different few of them on each of five rite runs over
+  one unchanged commit. Nothing here asks a question about this repository's
+  files: the checker is stubbed, so what is proven is the recipe's plumbing,
+  and the fixture drives the same recipe — real `git worktree add`, real
+  junction, real teardown — for a fraction of a second. The per-arm numbers
+  went with the cost; the file-level floor above is the house rule.
+*/
+let repo: ThrowawayRepo;
+let FIXTURE = "";
+beforeAll(() => { repo = makeThrowawayRepo(); FIXTURE = repo.root; }, CHILD_PROCESS_TEST_TIMEOUT_MS);
+afterAll(() => repo?.remove());
 
 /** A check that never runs `pnpm`, so these arms cost a worktree and not a minute. */
 const fakeCheck = (status: number | null, output: string) => () => ({ status, output });
 
 describe("the typecheck verdict (#263)", () => {
   it("status 0 is ok", () => {
-    const verdict = runTypecheckOnCommit(ROOT, "HEAD", { check: fakeCheck(0, "no errors\n") });
+    const verdict = runTypecheckOnCommit(FIXTURE, "HEAD", { check: fakeCheck(0, "no errors\n") });
     expect(verdict.ok).toBe(true);
     expect(verdict.seconds).toBeGreaterThanOrEqual(0);
-  }, 60_000);
+  });
 
   it("a non-zero status is NOT ok, and it names the file at fault", () => {
     const compilerOutput = [
@@ -47,23 +62,23 @@ describe("the typecheck verdict (#263)", () => {
       "server/thing.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.",
       " ELIFECYCLE  Command failed with exit code 2.",
     ].join("\n");
-    const verdict = runTypecheckOnCommit(ROOT, "HEAD", { check: fakeCheck(2, compilerOutput) });
+    const verdict = runTypecheckOnCommit(FIXTURE, "HEAD", { check: fakeCheck(2, compilerOutput) });
     expect(verdict.ok).toBe(false);
     /* The rite prints `printed` verbatim into its refusal, so the error line
        reaching it is the difference between "it is red" and "here is why". */
     expect(verdict.printed).toContain("server/thing.ts(1,14): error TS2322");
     /* Blank lines dropped, so twelve lines of budget are twelve lines of signal. */
     expect(verdict.printed.split("\n")).toHaveLength(3);
-  }, 60_000);
+  });
 
   it("keeps only the LAST lines of a long report — where tsc puts the summary", () => {
     const noisy = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join("\n");
-    const verdict = runTypecheckOnCommit(ROOT, "HEAD", { check: fakeCheck(1, noisy) });
+    const verdict = runTypecheckOnCommit(FIXTURE, "HEAD", { check: fakeCheck(1, noisy) });
     const lines = verdict.printed.split("\n");
     expect(lines).toHaveLength(12);
     expect(lines.at(-1)).toBe("line 40");
     expect(lines[0]).toBe("line 29");
-  }, 60_000);
+  });
 
   /*
     ⚠ THIS ARM ASSERTED A THROW UNTIL #967 AND ITS PROPERTY IS UNCHANGED: a
@@ -76,28 +91,28 @@ describe("the typecheck verdict (#263)", () => {
     same way and would both have blamed the commit for it.
   */
   it("a commit that cannot be checked out REFUSES, and clears the commit of blame", () => {
-    const verdict = runTypecheckOnCommit(ROOT, "no-such-commit-0000", { check: fakeCheck(0, "fine") });
+    const verdict = runTypecheckOnCommit(FIXTURE, "no-such-commit-0000", { check: fakeCheck(0, "fine") });
     /* The half the old `toThrow()` was really protecting: a blind run is not a
        pass, whatever the stubbed checker said. */
     expect(verdict.ok, "blind refuses, never allows").toBe(false);
     expect(verdict.couldNotRun, "the verdict must SAY it could not run").toBeTruthy();
     expect(verdict.couldNotRun).toMatch(/no-such-commit-0000|invalid reference|not a valid object/i);
-  }, 60_000);
+  });
 
   it("POSITIVE CONTROL — a real compiler failure is NOT dressed as 'could not run'", () => {
     /* The dangerous direction: if this field were set on every red, the rite
        would tell a shift to re-run over a genuinely broken commit. */
-    const verdict = runTypecheckOnCommit(ROOT, "HEAD", { check: fakeCheck(2, "server/x.ts(1,1): error TS2304\n") });
+    const verdict = runTypecheckOnCommit(FIXTURE, "HEAD", { check: fakeCheck(2, "server/x.ts(1,1): error TS2304\n") });
     expect(verdict.ok).toBe(false);
     expect(verdict.couldNotRun, "the compiler RAN — the commit is implicated").toBeUndefined();
     expect(verdict.printed).toContain("TS2304");
-  }, 60_000);
+  });
 
   it("a throw from the CHECKER still propagates — it cannot borrow the commit's alibi", () => {
-    expect(() => runTypecheckOnCommit(ROOT, "HEAD", {
+    expect(() => runTypecheckOnCommit(FIXTURE, "HEAD", {
       check: () => { throw new Error("the checker exploded"); },
     })).toThrow(/the checker exploded/);
-  }, 60_000);
+  });
 });
 
 describe("THE ARM THAT MATTERS — a run that never happened is not a pass (#263)", () => {
