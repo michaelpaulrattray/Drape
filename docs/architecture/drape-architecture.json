@@ -14809,6 +14809,10 @@
       "path": "server/reviewerCharter.test.ts"
     },
     {
+      "id": "test:server/riteFailureMemory.test.ts",
+      "path": "server/riteFailureMemory.test.ts"
+    },
+    {
       "id": "test:server/riteLock.test.ts",
       "path": "server/riteLock.test.ts"
     },
