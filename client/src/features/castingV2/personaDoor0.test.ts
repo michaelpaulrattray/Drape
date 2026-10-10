@@ -89,11 +89,19 @@ describe("the field no longer saves on blur, which is what lets Cancel exist", (
     server's line back, or Cancel would close the box over a changed draft and
     the next open would show the abandoned words.
   */
+  /*
+    ⚠ THE CLOSE IS `onEditingChange(false)` AND IT WAS `setEditing(false)`
+    UNTIL #2139. The open state moved out of this component so the voice
+    card's *Change* button — which lives in a head this file does not own —
+    could open the box; the assertion is the same one, in the spelling the
+    controlled component now uses. `voiceCard2139.test.ts` holds the lift
+    itself, so a quiet return to local state reddens there rather than here.
+  */
   it("abandon restores the server's text and closes", () => {
     const slice = editableLine();
     const body = slice.slice(slice.indexOf("const abandon = () =>"));
     expect(body).toContain("setDraft(value.text);");
-    expect(body).toContain("setEditing(false);");
+    expect(body).toContain("onEditingChange(false);");
   });
 });
 

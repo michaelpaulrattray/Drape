@@ -72,11 +72,27 @@ type EditableLineProps = {
   onSave: (line: CastPersonaFieldName, text: string) => void;
   saving: boolean;
   /**
-   * The sentence under the open box saying where the words came from, or
-   * `null` for a line that does not carry one. Personality's is door 0's, out
-   * of his design; the voice line has none until #2139 designs its own.
+   * The sentence under the open box saying where the words came from. Each
+   * line has its own, out of his design: personality's came with door 0 of
+   * #2137, voice's with #2139 — and they say different things, because the
+   * voice line has a rule to teach (the sound, then how it is used) and the
+   * personality line does not. `null` is still allowed, for a line whose own
+   * design has not been written.
    */
   helper?: string | null;
+  /**
+   * WHETHER THE BOX IS OPEN, HELD BY THE CALLER — #2139.
+   *
+   * ⚠ **IT USED TO BE THIS COMPONENT'S OWN `useState`, AND THE VOICE CARD'S
+   * *Change* BUTTON IS WHY IT MOVED.** That button sits in the card's HEAD,
+   * which the room owns and this file does not — so a line that keeps the open
+   * state to itself can never be opened by it, and *Change* stayed `disabled`
+   * on a card whose whole subject is editing. Always controlled rather than
+   * sometimes: one shape for both callers is cheaper to read than a component
+   * that is its own master on one card and not on the other.
+   */
+  editing: boolean;
+  onEditingChange: (open: boolean) => void;
 };
 
 /**
@@ -88,8 +104,15 @@ type EditableLineProps = {
  * room's own design laws already refuse an inner focus outline on a text field
  * rather than refusing the outline everywhere.
  */
-function EditableLine({ line, value, onSave, saving, helper = null }: EditableLineProps) {
-  const [editing, setEditing] = useState(false);
+function EditableLine({
+  line,
+  value,
+  onSave,
+  saving,
+  helper = null,
+  editing,
+  onEditingChange,
+}: EditableLineProps) {
   const [draft, setDraft] = useState(value.text);
   /**
    * WHAT WAS JUST TYPED, HELD ON SCREEN UNTIL THE SAVE SETTLES — the relay's
@@ -141,7 +164,7 @@ function EditableLine({ line, value, onSave, saving, helper = null }: EditableLi
 
   const commit = () => {
     const next = draft.trim();
-    setEditing(false);
+    onEditingChange(false);
     /*
       NOTHING IS SENT WHEN NOTHING CHANGED, and an emptied line is ABANDONED
       rather than saved. The server refuses a blank line (it would draw a card
@@ -160,7 +183,7 @@ function EditableLine({ line, value, onSave, saving, helper = null }: EditableLi
   /** Put the line back exactly as it was and close. Cancel and Escape share it. */
   const abandon = () => {
     setDraft(value.text);
-    setEditing(false);
+    onEditingChange(false);
   };
 
   if (!editing) {
@@ -168,7 +191,7 @@ function EditableLine({ line, value, onSave, saving, helper = null }: EditableLi
       <button
         type="button"
         className="dpc-persona__read"
-        onClick={() => setEditing(true)}
+        onClick={() => onEditingChange(true)}
         disabled={saving}
       >
         {pending ?? value.text}
@@ -308,6 +331,46 @@ export function personaEditHelper(name?: string | null): string {
 }
 
 /**
+ * THE VOICE LINE'S OWN SENTENCE — #2139, and it is NOT the personality one.
+ *
+ * His Desk design (Notion, *"Voice card: editing redesign (casting room)"*,
+ * section 1, filed by Yuna with his approval): *"Written from your brief and
+ * Pigman's look. Describe the sound, then how Pigman uses it. New takes follow
+ * these words."*
+ *
+ * **The middle sentence is the whole reason this is a second helper rather
+ * than a shared one.** It teaches #2136's voice rule in the place a customer
+ * is about to use it — his own correction, verbatim on the design: *"The voice
+ * text carries timbre AND performance style. The sound of him, then how he
+ * uses it: pace, how much he says, how he answers."* A customer who edits this
+ * line without that sentence writes half of it, and the half they drop is the
+ * one that makes the cast directable.
+ *
+ * ⚠ **AND THE LAST SENTENCE IS DROPPED, ON THE SAME READING #2137 MADE AND
+ * RE-TAKEN AT THE CODE HERE.** *"New takes follow these words"* is untrue
+ * twice over today:
+ *
+ *  - **There are no takes.** The room's refine card draws its input, its
+ *    button and its chips all `disabled`, under its own honest line *"Refining
+ *    arrives soon."*
+ *  - **Nothing reads this line.** `server/castingV2/castPersona.ts` says so in
+ *    its own header, and a grep for a prompt builder reading `personality` or
+ *    `voice` returns the sign write, the owner projection, the field edit and
+ *    the deletion scrub — and no composer at all.
+ *
+ * It returns, in his words, in the commit that makes it true.
+ */
+export function voiceEditHelper(name?: string | null): string {
+  const named = name?.trim();
+  const look = named ? `${named}'s look` : "their look";
+  /* The verb has to agree with whichever subject the fallback produces — "how
+     Pigman uses it" against "how they use it" — so the clause is chosen whole
+     rather than interpolated into one sentence shape. */
+  const uses = named ? `how ${named} uses it` : "how they use it";
+  return `Written from your brief and ${look}. Describe the sound, then ${uses}.`;
+}
+
+/**
  * THE PERSONALITY CARD — new, and drawn only when there is a line to draw.
  *
  * The VOICE card is NOT here: it is the existing stub on the room, and his
@@ -321,6 +384,17 @@ export function CastPersonalityCard({
   savingLine,
   name,
 }: Omit<CastPersonaCardsProps, "voice">) {
+  /*
+    ⚠ ABOVE THE EARLY RETURN, AND THAT IS NOT STYLE. A hook declared under a
+    conditional `return null` runs on some renders and not others, which React
+    ends the whole page on (#310) — and the render it would die on is exactly
+    the common one here, a Cast signed before N2b with no line to draw.
+
+    The voice line's open state is NOT held here: it lives in the room, because
+    the voice card's *Change* button sits in a head this file does not own.
+    Personality has no such button, so its state has no reason to leave.
+  */
+  const [editing, setEditing] = useState(false);
   if (!personality) return null;
   return (
     <section className="dpc-rcard" style={{ gap: 11 }}>
@@ -346,6 +420,8 @@ export function CastPersonalityCard({
         onSave={onSave}
         saving={savingLine === "personality"}
         helper={personaEditHelper(name)}
+        editing={editing}
+        onEditingChange={setEditing}
       />
     </section>
   );
@@ -363,12 +439,26 @@ export function CastVoiceBadge({ voice }: { voice: PersonaField | null }) {
   return <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>;
 }
 
-/** The voice line, for the inside of the room's existing VOICE card. */
+/**
+ * THE VOICE LINE, for the inside of the room's existing VOICE card.
+ *
+ * ⚠ **ITS OPEN STATE COMES FROM THE ROOM, which is the one asymmetry with the
+ * personality card and it is structural rather than a preference.** The voice
+ * card's head carries a *Change* button and the head belongs to the room; a
+ * line holding its own state could never be opened from up there, which is why
+ * that button sat `disabled` on the one card whose subject is editing.
+ */
 export function CastVoiceLine({
   voice,
   onSave,
   savingLine,
-}: Omit<CastPersonaCardsProps, "personality">) {
+  name,
+  editing,
+  onEditingChange,
+}: Omit<CastPersonaCardsProps, "personality"> & {
+  editing: boolean;
+  onEditingChange: (open: boolean) => void;
+}) {
   if (!voice) return null;
   return (
     <div className="dpc-persona__voice">
@@ -377,6 +467,9 @@ export function CastVoiceLine({
         value={voice}
         onSave={onSave}
         saving={savingLine === "voice"}
+        helper={voiceEditHelper(name)}
+        editing={editing}
+        onEditingChange={onEditingChange}
       />
     </div>
   );
