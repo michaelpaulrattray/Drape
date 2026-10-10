@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -6,6 +5,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { runHook } from "./testing/hookDriver";
 import { TSX_CLI } from "./testing/tsxCli";
 
 import {
@@ -461,18 +461,18 @@ describe("the entrance", () => {
   /* ⚠ `entrance-before-the-road`: five commits of finished road, unreachable.
      Everything above drives the library. This drives the thing a Retro actually
      types, once, over fixtures and with the oracle off so no PowerShell is
-     spawned inside it. */
+     spawned inside it.
+
+     Through `runHook`, not a bare `execFileSync` — `hookDriver.test.ts` polices
+     that shape and is right to: `execFileSync` hides the child's stderr behind
+     the thrown error, so an arm reading a status it never got reports a
+     launcher failure as the subject's verdict. `process.execPath` + `TSX_CLI`
+     needs no PATH lookup and no shell (`server/testing/tsxCli.ts`). */
   function run(args: string[]): { status: number; out: string } {
-    try {
-      const out = execFileSync(process.execPath, [TSX_CLI, SCRIPT, ...args], {
-        encoding: "utf8",
-        timeout: CHILD_PROCESS_TEST_TIMEOUT_MS,
-      });
-      return { status: 0, out };
-    } catch (error) {
-      const e = error as { status?: number; stdout?: string; stderr?: string };
-      return { status: e.status ?? 1, out: `${e.stdout ?? ""}${e.stderr ?? ""}` };
-    }
+    const result = runHook(process.execPath, [TSX_CLI, SCRIPT, ...args], {
+      timeout: CHILD_PROCESS_TEST_TIMEOUT_MS,
+    });
+    return { status: result.status, out: `${result.stdout}${result.stderr}` };
   }
 
   it("runs, prints its net, names the finding, and still exits 0", () => {
