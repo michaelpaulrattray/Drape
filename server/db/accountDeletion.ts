@@ -33,6 +33,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { and, eq, or, inArray, sql } from "drizzle-orm";
+import { redactQueryValuesInText } from "../monitoring/queryErrorRedaction";
 import {
   users,
   credits,
@@ -1360,7 +1361,10 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       cleanupBatchId: null,
       cleanupObjects: 0,
       deletedCounts: counts,
-      error: error instanceof Error ? error.message : "Unknown error",
+      /* The transaction's failure is a failed query, whose message carries every
+         value it was writing (#2222); the caller reads `error`, so it never
+         carries them. */
+      error: error instanceof Error ? redactQueryValuesInText(error.message) : "Unknown error",
     };
   }
 }

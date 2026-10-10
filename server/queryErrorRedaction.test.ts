@@ -24,12 +24,8 @@ import { inspect } from "node:util";
 
 import { initTRPC } from "@trpc/server";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { eq } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
-import { int, mysqlTable, text } from "drizzle-orm/mysql-core";
-import { drizzle } from "drizzle-orm/mysql2";
 import express from "express";
-import mysql from "mysql2";
 import pino from "pino";
 import { Writable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -72,36 +68,7 @@ import {
 } from "./monitoring/queryErrorRedaction";
 import { createTrpcErrorReporter } from "./monitoring/trpcErrorReport";
 import { baseUrlOf, listenOnFetchablePort } from "./testing/fetchablePort";
-
-const SENTINEL = "SENTINEL-the-customer-wrote-this-7f3a";
-
-const casts = mysqlTable("casts", { id: int("id").primaryKey(), persona: text("persona") });
-
-/** A real DrizzleQueryError from a real drizzle UPDATE, carrying the sentinel. */
-async function failedWrite(
-  serverMessage = `Duplicate entry '${SENTINEL}' for key 'casts.persona'`,
-): Promise<DrizzleQueryError> {
-  const client = {
-    query: async (query: { sql: string } | string, params: unknown[]) => {
-      const sqlText = typeof query === "string" ? query : query.sql;
-      const driverError = new Error(serverMessage) as Error & Record<string, unknown>;
-      driverError.code = "ER_DUP_ENTRY";
-      driverError.errno = 1062;
-      driverError.sqlState = "23000";
-      driverError.sqlMessage = driverError.message;
-      driverError.sql = mysql.format(sqlText, params as never[]);
-      throw driverError;
-    },
-  };
-  const db = drizzle({ client: client as never });
-  try {
-    await db.update(casts).set({ persona: SENTINEL }).where(eq(casts.id, 1));
-  } catch (error) {
-    if (error instanceof DrizzleQueryError) return error;
-    throw error;
-  }
-  throw new Error("the fixture's write did not fail");
-}
+import { failedWrite, SENTINEL } from "./testing/failedWrite";
 
 /** Everything an error could show a reader, at any depth. */
 function everything(value: unknown): string {

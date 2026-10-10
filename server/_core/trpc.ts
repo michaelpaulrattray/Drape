@@ -6,7 +6,8 @@ import type { TrpcContext } from "./context";
 import { validateAdminAccess, logUnauthorizedAdminAccess } from "../security/adminSecurity";
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
 import { waitPhrase } from "@shared/waitPhrase";
-import { withSpokenFlag } from "./spokenError";
+import { SpokenError, withSpokenFlag } from "./spokenError";
+import { redactQueryValuesInText } from "../monitoring/queryErrorRedaction";
 import { invalidInputMessage } from "./invalidInputMessage";
 import { judgeRequestOrigin } from "../security/crossSiteGuard";
 
@@ -21,6 +22,64 @@ export function appUpdateRequiredMessage(cause: unknown): string | null {
   return cause.issues.some((issue) => issue.message === APP_UPDATE_REQUIRED_MESSAGE)
     ? APP_UPDATE_REQUIRED_MESSAGE
     : null;
+}
+
+/**
+ * WHAT THE BROWSER READS WHEN THE SERVER FAILED IN A WAY NOBODY WROTE A
+ * SENTENCE FOR (#2222).
+ *
+ * An unknown throw reaches tRPC as a plain error and is wrapped as
+ * `INTERNAL_SERVER_ERROR` whose message IS the cause's message
+ * (`getTRPCErrorFromUnknown` → `new TRPCError({ cause })`). For a failed
+ * database write that message is drizzle's `Failed query: <SQL>\nparams: <every
+ * value>` — so the response carried table and column names and the customer's
+ * own words, and every `toast.error(err.message)` surface would have put it on
+ * screen. #2218 kept those values out of the logs and Sentry; this is the
+ * response half.
+ *
+ * Two shapes are machine text, and both become one plain sentence:
+ * - an `INTERNAL_SERVER_ERROR` that is tRPC's wrap of an unknown throw — its
+ *   message is its cause's, word for word, and its cause is not a `TRPCError`;
+ * - ANY message carrying a failed query — the `Failed query:` prefix, or a
+ *   MySQL phrasing that quotes a value back (`redactQueryValuesInText` is the
+ *   one reader of those, from #2218; never a second copy here). That catches a
+ *   route that copied a helper's `result.error` into an authored throw.
+ *
+ * ⚠ WHAT IS DELIBERATELY KEPT: a `SpokenError` is never touched, and neither is
+ * an `INTERNAL_SERVER_ERROR` a route wrote its own sentence for without the
+ * marker. There are dozens of those (`"Couldn't start the edit — you weren't
+ * charged. Try again."`, the billing sentences that say nothing was charged),
+ * and several surfaces show `err.message` directly, so rewriting every unmarked
+ * INTERNAL would have replaced money language with a generic line. The broader
+ * rule was the simpler one and was declined for that reason.
+ *
+ * The stack goes with a rewritten message: tRPC adds it to `data` outside
+ * production, and its first line repeats the message.
+ */
+export const INTERNAL_FAILURE_SENTENCE = "Something went wrong on our side. Please try again in a moment.";
+
+function isUnauthoredInternal(error: TRPCError): boolean {
+  if (error.code !== "INTERNAL_SERVER_ERROR") return false;
+  const cause = error.cause as unknown;
+  if (cause === undefined || cause === null || cause instanceof TRPCError) return false;
+  const causeMessage = (cause as { message?: unknown }).message;
+  return typeof causeMessage === "string" && causeMessage === error.message;
+}
+
+function carriesFailedQuery(message: string): boolean {
+  return /Failed query:/.test(message) || redactQueryValuesInText(message) !== message;
+}
+
+/** Exported and pure so the suite drives the function wired into `initTRPC`. */
+export function withoutMachineMessage<Shape extends { message: string; data?: Record<string, unknown> }>(
+  shape: Shape,
+  error: TRPCError,
+): Shape {
+  if (error instanceof SpokenError) return shape;
+  if (!isUnauthoredInternal(error) && !carriesFailedQuery(shape.message)) return shape;
+  const data = { ...(shape.data ?? {}) };
+  delete data.stack;
+  return { ...shape, message: INTERNAL_FAILURE_SENTENCE, data };
 }
 
 const t = initTRPC.context<TrpcContext>().create({
@@ -56,7 +115,8 @@ const t = initTRPC.context<TrpcContext>().create({
       already shows them. Marking them would spend the marker's meaning on the
       one case it was not built for.
     */
-    return withSpokenFlag(updateMessage ? { ...shape, message: updateMessage } : shape, error);
+    const spoken = withSpokenFlag(updateMessage ? { ...shape, message: updateMessage } : shape, error);
+    return withoutMachineMessage(spoken, error);
   },
 });
 

@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:wardrobe",
@@ -5983,6 +5983,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/failedWrite.ts",
+      "path": "server/testing/failedWrite.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/fetchablePort.ts",
       "path": "server/testing/fetchablePort.ts",
       "domain": "unassigned",
@@ -11637,6 +11643,10 @@
       "path": "client/src/staffPagesLazy.test.ts"
     },
     {
+      "id": "test:server/_core/internalErrorWire.test.ts",
+      "path": "server/_core/internalErrorWire.test.ts"
+    },
+    {
       "id": "test:server/_core/invalidInputWire.test.ts",
       "path": "server/_core/invalidInputWire.test.ts"
     },
@@ -11667,6 +11677,10 @@
     {
       "id": "test:server/accountDeletionCoverage.test.ts",
       "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionErrorValues.test.ts",
+      "path": "server/accountDeletionErrorValues.test.ts"
     },
     {
       "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
@@ -22777,6 +22791,11 @@
     },
     {
       "from": "module:server/_core/trpc.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
       "to": "module:server/security/adminSecurity.ts",
       "kind": "imports"
     },
@@ -31478,6 +31497,11 @@
     {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {

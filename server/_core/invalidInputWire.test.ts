@@ -27,7 +27,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { castingV2Router } from "../routes/castingV2";
 import { modelCreateInputSchema } from "../routes/modelCreateInput";
 import { waitlistRouter } from "../routes/waitlist";
-import { router, publicProcedure } from "./trpc";
+import { router, publicProcedure, INTERNAL_FAILURE_SENTENCE } from "./trpc";
 import { spokenError } from "./spokenError";
 import { INVALID_INPUT_FALLBACK, invalidInputMessage } from "./invalidInputMessage";
 import { APP_UPDATE_REQUIRED_MESSAGE } from "@shared/clientRequestId";
@@ -302,9 +302,12 @@ describe("negative controls — the rewrite is narrow", () => {
   it("does not rewrite a message that is not an input failure", async () => {
     const error = await callOverTheWire("crashed", {});
 
-    // Untouched — the client is what replaces a crash's text with our own, and
-    // it can only do that if the formatter has not disguised it as a refusal.
-    expect(error.message).toBe("read ECONNRESET");
+    // Not disguised as a refusal: the code stays INTERNAL and unmarked, so the
+    // client still answers it with its own fallback. CHANGED ARM (#2222): the
+    // crash's own text no longer rides along — an unknown throw's message is
+    // machinery (for a failed write, the SQL and its values), so the wire
+    // carries one plain sentence instead (`./internalErrorWire.test.ts`).
+    expect(error.message).toBe(INTERNAL_FAILURE_SENTENCE);
     expect(error.data?.code).toBe("INTERNAL_SERVER_ERROR");
     expect(error.data?.spoken).toBeUndefined();
   });
