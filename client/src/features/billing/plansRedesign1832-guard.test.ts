@@ -546,7 +546,7 @@ describe("the brief's new copy claims only what the tree holds (#1607's rule)", 
       code(MODAL),
       `a signed cast now comes with ${CAST_PACKAGE_VIEWS.length} views and the compare` +
         " table still says five",
-    ).toContain(`the same ${word} views, on every plan`);
+    ).toContain(`the same ${word} views on every plan`);
   });
 
   it("the `on every plan` list names only routes that exist, and the COMING line names no engine", () => {
@@ -557,7 +557,10 @@ describe("the brief's new copy claims only what the tree holds (#1607's rule)", 
       the half that can go false without anybody touching this file.
     */
     const app = code(join(HERE, "..", "..", "App.tsx"));
-    for (const route of ["/app/casting", "/app/canvas", "/app/garments"]) {
+    /* Boards and the wardrobe left the line on his word (#2153, 2026-10-09:
+       the wardrobe *"removed for now"*, the canvas moved to COMING), so the
+       casting studio is the one route it names now. */
+    for (const route of ["/app/casting"]) {
       expect(app, `${route} is gone, so the ON EVERY PLAN line names a door that is shut`)
         .toContain(route);
     }
@@ -650,8 +653,8 @@ describe("the brief's new copy claims only what the tree holds (#1607's rule)", 
       );
     }
     /* The half of that sentence that was always true still points at the band. */
-    expect(modal, "the footnote stopped pointing at the rungs with no column").toContain(
-      "Enterprise is arranged with us directly",
+    expect(footnote, "the footnote stopped pointing at the rungs with no column").toContain(
+      "Talk to us about Enterprise.",
     );
   });
 });

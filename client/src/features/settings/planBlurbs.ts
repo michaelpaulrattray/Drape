@@ -81,15 +81,23 @@
  * ⚠ **HE EDITS THIS TABLE AND NOTHING ELSE.** When his words land, the strings
  * change and no other file moves — that is the whole reason this is a map and
  * not seven literals in the JSX.
+ *
+ * ✅ **FOUR OF THE SEVEN ARE HIS NOW (#2153, 2026-10-09)** — `starter`, `pro`,
+ * `studio` and `enterprise` are Quistis's who-lines from the Pricing Phase 2
+ * wording table, which he approved (*"pricing word card here ive approved the
+ * code changes required too"*). The table kept `free` and does not cover
+ * `business` or `scale`, so those three are still the placeholders above.
+ * The new lines name films, ads and video as what a person is FOR; the compare
+ * table carries those as COMING, so no line reads as a live feature.
  */
 export const PLAN_BLURBS: Record<string, string> = {
   free: "For trying the studio out before you commit.",
-  starter: "For one creator casting a handful of faces a month.",
-  pro: "For a creator posting weekly and building a roster.",
-  studio: "For a team shooting a campaign a month.",
+  starter: "For one creator making UGC videos with a handful of characters.",
+  pro: "For a creator making videos every week with characters they keep.",
+  studio: "For one marketer or producer making ads or a short film a month.",
   business: "For a brand team casting across several campaigns at once.",
   scale: "For agencies running many brands with constant output.",
-  enterprise: "For studios where casting never stops.",
+  enterprise: "For studios and marketing teams making films and ads at volume.",
 };
 
 /**

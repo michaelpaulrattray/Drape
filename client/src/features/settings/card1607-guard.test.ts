@@ -303,7 +303,9 @@ describe("Card 1607 — the four lines, derived", () => {
       "the trust line is stated twice, or not at all",
     ).toBe(1);
     expect(surface).toContain("See the price before you make anything.");
-    expect(surface).toContain("Credits back if a result doesn't arrive.");
+    /* #2153: Yuna's wording after his refund ruling of 2026-10-09 (failed
+       and blocked generations are refunded, badly broken ones often are). */
+    expect(surface).toContain("Credits back if a generation fails.");
     expect(code(read(CSS))).toMatch(/\.dp-plan__trust\s*\{/);
     /* The disappearing-technology law's clause 5: no engine name on a path
        somebody must walk. A billing surface is such a path. */

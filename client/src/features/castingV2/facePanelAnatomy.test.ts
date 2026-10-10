@@ -412,6 +412,81 @@ describe("the panel's copy, classified", () => {
     expect(panel).not.toContain("Reading her features");
   });
 
+  /*
+    ⚠ THE QUIET LINE WHEN THE DAY'S READINGS ARE SPENT — his ruling, 2026-10-10
+    (#2170), verbatim: *"Yes, show the quiet line when someone hits the cap,
+    instead of failing silently."*
+
+    This reverses #1603's own choice, which declined a sentence here on the
+    disappearing-technology law and said out loud what that cost: *"an account
+    at its cap cannot tell a quiet day from a refusal."* It also named the
+    condition that would change it — real people hitting it, visible in the
+    audit row — and that condition was met on 8 October, fifteen refusals in
+    four minutes on the only account that has ever scanned.
+
+    So the arms below hold the two things that make the new line legal under the
+    same law that declined the old one: it carries NO number and NO engine name.
+    A line that said "40 a day" or named the segmenter would be exactly the
+    clause-6 failure #1603 refused, and it is an easy edit for a later shift
+    wanting to be helpful.
+  */
+  it("says ONE quiet line when the day's readings are spent, with no number in it", async () => {
+    const { FACE_SCAN_CAPPED_LINE } = await import("./components/FacePanel");
+
+    /* His own suggested wording, kept word for word. */
+    expect(FACE_SCAN_CAPPED_LINE).toBe(
+      "You've looked at a lot of faces today — readings come back tomorrow.",
+    );
+
+    /* ⚠ THE LAW, not the copy: no digit anywhere in the sentence. A ceiling is
+       a number the customer has no basis to act on (clause 6), and "40 a day"
+       is the single most tempting thing to add here. */
+    expect(FACE_SCAN_CAPPED_LINE, "the quiet line names a number").not.toMatch(/\d/);
+
+    /* And no engine on a path someone must walk to reach their picture. */
+    for (const engine of ["sam", "fal", "nano banana", "gpt image", "sunburst", "segmenter"]) {
+      expect(
+        FACE_SCAN_CAPPED_LINE.toLowerCase(),
+        `the quiet line names ${engine}`,
+      ).not.toContain(engine);
+    }
+  });
+
+  it("the capped line OUTRANKS the working line — nothing is being read while the day is shut", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    /* Gated on its own prop, so the line is absent — not merely invisible — the
+       rest of the time, exactly as the working line is. */
+    expect(panel).toContain("capped");
+    /* The ternary's order is the claim: `capped` is tested first, so a panel
+       whose day is shut never says "Reading their features…" over it. */
+    const branch = panel.slice(panel.indexOf("dpc-face__capped") - 400);
+    expect(branch.indexOf("capped")).toBeLessThan(branch.indexOf("working ?"));
+  });
+
+  it("⚠ a capped panel with no library rows is NOT nothing — or the sentence has nowhere to go", async () => {
+    /*
+      The panel returns `null` when it has no rows to draw and nothing in
+      flight. A capped face on a cast with an empty library hits exactly that,
+      and without `capped` in the test the quiet line would be written, wired,
+      and unreachable — which is the silent failure his ruling is about, one
+      layer further in.
+    */
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+    const guard = panel.slice(panel.indexOf("if (drawn.length === 0"));
+    expect(guard.slice(0, guard.indexOf("return null;"))).toContain("!capped");
+  });
+
+  it("the page reads it off the SCAN's own answer, never inferred from an empty panel", async () => {
+    /*
+      A failed scan and an unreachable database both leave the panel unscanned
+      and neither is something to tell a customer about, so the fact has to come
+      from the server's own word rather than from the shape of the payload. The
+      resolver sends `capped` only for a real refusal.
+    */
+    const sheet = withoutProse(await readFile(SHEET, "utf8"));
+    expect(sheet).toContain("capped={Boolean(scannedFaceData?.capped)}");
+  });
+
   it("DERIVES that state from the scan query, so a dead scan cannot leave it stuck", async () => {
     const sheet = withoutProse(await readFile(SHEET, "utf8"));
     expect(sheet).toContain("faceScan.isPending");

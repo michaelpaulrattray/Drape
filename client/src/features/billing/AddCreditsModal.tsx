@@ -761,7 +761,7 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
               <span className="dp-set__label">Billing adjustment</span>
               <span className="dp-set__spacer" />
               <span className="dp-set__note">Annual</span>
-              <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
+              <span className="dp-plan__badge">{monthsFree()} MONTHS OFF</span>
               <button
                 type="button"
                 className="dp-set__toggle"

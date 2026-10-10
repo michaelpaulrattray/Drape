@@ -201,7 +201,10 @@ const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only diffe
  * (`castingV2/components/SignConfirm.tsx`), a view's Try again
  * (`casting/components/ImageViewer/ViewTabs.tsx`).
  *
- * **"Credits back if a result doesn't arrive"** — and the wording is precise
+ * **"Credits back if a generation fails"** (#2153, Yuna's wording after his
+ * refund ruling of 2026-10-09: *failed generations, a content block among
+ * them, are refunded, and badly botched ones sometimes are*; it read *"Credits
+ * back if a result doesn't arrive"* until then) — and the wording is precise
  * rather than generous. Under the founder's catastrophic-only refund ruling a
  * frame the verification layer merely DISPUTES is delivered and charged
  * (`castingV2/refineService.ts`), so a promise of credits back on a result
@@ -217,7 +220,7 @@ const ONE_FOR_EVERY_PLAN = `${EVERY_PLAN_PERK}, on every plan — the only diffe
  * is about what a plan includes, this one is about what spending is like.
  */
 const TRUST_LINE =
-  "See the price before you make anything. Credits back if a result doesn't arrive.";
+  "See the price before you make anything. Credits back if a generation fails.";
 
 /**
  * WHAT "CREDITS BACK" COVERS — #1952 item 3, his *"yes"* 2026-10-08, beside the
@@ -229,7 +232,8 @@ const TRUST_LINE =
  * below is true either way — it only promises what the button says.
  */
 const CREDITS_BACK_COVERS =
-  "Credits come back if a result fails, is blocked, or doesn't arrive. "
+  "If a generation fails or is blocked, you get the credits back. "
+  + "If one comes out badly broken, we'll often refund it too. "
   + "If a result arrives and you want a different one, making it again costs the credits shown on the button.";
 
 /**
@@ -237,9 +241,11 @@ const CREDITS_BACK_COVERS =
  * three times inside them (#1832, the design's §3 and §8).
  *
  * ⚠ **EVERY ITEM IS A ROUTE A SIGNED-IN CUSTOMER CAN OPEN RIGHT NOW, read at
- * `App.tsx` rather than assumed** — the casting studio (`/app/casting`), boards
- * (`/app/canvas`), the wardrobe (`/app/garments`) — and the fourth is the Add
- * credits checkout, live since #1606. The heading is **ON EVERY PLAN** and not
+ * `App.tsx` rather than assumed** — the casting studio (`/app/casting`) — and
+ * the second is the Add credits checkout, live since #1606. **Boards and the
+ * wardrobe left this line on his word (#2153, 2026-10-09)**: the wardrobe is
+ * *"removed for now"*, and the canvas moved to the COMING line below. Both
+ * routes still open; the line lists what a plan is sold on, not every route. The heading is **ON EVERY PLAN** and not
  * *on every account*, which is the precise difference `topupEligibility`
  * enforces: credit packs are a plan holder's road, and Free is not a plan.
  *
@@ -247,7 +253,7 @@ const CREDITS_BACK_COVERS =
  * re-derive every string against present capability before shipping.
  */
 const OPEN_TODAY =
-  "Casting studio · Boards · Wardrobe · Credit packs whenever you need them";
+  "Casting studio · Credit packs whenever you need them";
 
 /**
  * THE FORWARD-LOOKING HALF — his own brief asked for *"way better copy based on
@@ -258,13 +264,27 @@ const OPEN_TODAY =
  * *"we'll say when"* is this product's existing voice for an unshipped thing
  * (`CastSettingsModal.tsx`: *"Not available yet — we'll say when it lands."*).
  *
- * ⚠ **IT NAMES A STUDIO AND TWO GENERATORS, NEVER AN ENGINE.** That is the
+ * ⚠ **IT NAMES A STUDIO, TWO GENERATORS AND THE CANVAS, NEVER AN ENGINE.**
+ * (The canvas joined it in #2153, moving here from the line above.) That is the
  * disappearing-technology law's third question answered in the copy itself: a
  * COMING mark on a thing a customer wants is a promise; a COMING mark on a
  * model name is our homework on their screen.
  */
 const COMING_LINE =
-  "The cinema studio — write the script, direct the takes, add voice, cut the film — and the image and video generators. We'll say when they land.";
+  "The cinema studio: write the script, direct the takes, add voice, cut the film. The image and video generators, and the canvas. We'll say when each one lands.";
+
+/**
+ * THE SLIDER'S HELPER LINE (#2153, Yuna and Quistis's final wording, approved
+ * by him 2026-10-09: *"pricing word card here ive approved the code changes
+ * required too"*).
+ *
+ * It says what the control DOES in the customer's terms and names **no rate**
+ * — the Desk item's own note, *"No rate on the card"*: the price at the top of
+ * the card and the credits figure above the thumb already move as it moves, so
+ * a "$9 per 5,000" here would be a sum to do rather than a thing to see. It is
+ * drawn only on the card that has the slider.
+ */
+const SLIDER_HELP = "Slide for more credits each month. The price updates as you go.";
 
 /**
  * THE ENTERPRISE BAND'S BODY (#1833, his brief: *"anything really high would be
@@ -279,7 +299,7 @@ const COMING_LINE =
  * these rungs and the reason the band can carry three of them at once.
  */
 const ENTERPRISE_BODY =
-  "A pool built around your volume, invoiced, and arranged with us directly. Tell us what you are making and we will price it.";
+  "A pool of credits sized to your volume, invoiced and arranged with us directly. Tell us what you're making and we'll price it.";
 
 /**
  * WHERE *Let's talk* GOES — the address the product already has.
@@ -889,7 +909,7 @@ export function ChangePlanModal({
     either would truncate the subject and invent a mailto parameter.
   */
   const openSalesMail = () => {
-    const parts = [currentName ? `on ${currentName}` : null, status ? `${formatCredits(displayBalance(status.balance))} credits` : null]
+    const parts = [currentName ? `on ${currentName}` : null, status ? `${formatCredits(displayBalance(status.balance))} credits left` : null]
       .filter(Boolean)
       .join(", ");
     const subject = parts ? `Enterprise plan — ${parts}` : "Enterprise plan";
@@ -1090,7 +1110,7 @@ export function ChangePlanModal({
               <p className="dp-plan__reasonbody">
                 {grantsMonthly(ownPriceInCents)
                   ? "Your credits top up at the start of every billing period."
-                  : "Your free credits arrived once when you signed up. A plan tops you up every month."}
+                  : "Your starting credits arrived once, when you joined. A plan adds credits every month."}
               </p>
             </div>
             {status ? (
@@ -1166,7 +1186,7 @@ export function ChangePlanModal({
                 onClick={() => setIntervalChoice("annual")}
               >
                 Annual
-                <span className="dp-plan__badge">{monthsFree()} MONTHS FREE</span>
+                <span className="dp-plan__badge">{monthsFree()} MONTHS OFF</span>
               </button>
             </span>
           )}
@@ -1221,8 +1241,7 @@ export function ChangePlanModal({
             a slow status would show this for that gap.
           */
           <p className="dp-plan__held">
-            We could not read which plan you are on just now, so there is nothing to
-            compare against. Close this and open it again in a moment.
+            We couldn't load your plan just now. Close this and try again in a moment.
           </p>
         ) : (
           <>
@@ -1484,6 +1503,7 @@ export function ChangePlanModal({
                              the sighted customer reads above it. */
                           aria-valuetext={`${formatCredits(displayBalance(planCredits))} credits a month`}
                         />
+                        <span className="dp-plan__dialhint">{SLIDER_HELP}</span>
                       </span>
                     ) : null}
                     {/*
@@ -1861,7 +1881,7 @@ type CompareRow = {
  * sentence that is true of every column.
  *
  * `rows` may be EMPTY and that is not a degenerate case — it is the point.
- * *Cinema* and *Help* have nothing that differs by rung, so each is a heading
+ * *Films, images and video* and *Help* have nothing that differs by rung, so each is a heading
  * and a line rather than four identical cells; drawing them as rows is exactly
  * what made the old table read as repetition.
  */
@@ -1959,7 +1979,7 @@ function CompareGrid({
         reddens this sentence rather than quietly making it false.
       */
       note:
-        "A finished character is a roll to find her, a refine to correct her, and a sign that fixes her face. Every signed cast comes with the same five views, on every plan.",
+        "A finished character is one you've found, refined and locked, with the same five views on every plan.",
     },
     {
       title: "Credits",
@@ -1998,7 +2018,7 @@ function CompareGrid({
           */
           label: "Buy extra credits",
           read: (plan) =>
-            topupEligibility(plan.id) === "may-buy" ? "Any time, in packs" : "On a plan",
+            topupEligibility(plan.id) === "may-buy" ? "Any time, in packs" : "With a plan",
         },
       ],
       /*
@@ -2037,7 +2057,7 @@ function CompareGrid({
         nothing to compare yet — a heading and one honest line is the labelled
         slot for the day there is.
       */
-      title: "Cinema",
+      title: "Films, images and video",
       rows: [],
       note: COMING_LINE,
       coming: true,
@@ -2063,14 +2083,16 @@ function CompareGrid({
             changes under the customer is not a comparison; the interval changes
             the RATE and the row goes on measuring the same thing.
 
-            `Free` rather than `$0`: a price of nothing is a word, and the
-            column's own name already says it.
+            `$0` rather than `Free` (#2153, Yuna and Quistis's table, approved
+            2026-10-09): it read `Free` until then, and the word is the PLAN's
+            name, which the column head already carries — in the price row it
+            read as a second price unit. `PLAN_TIERS.free.price` is 0, so the
+            one formatter every other column uses says it.
           */
           label: "Price a month",
           mono: true,
           price: true,
-          read: (plan) =>
-            plan.priceInCents === 0 ? "Free" : formatWholeDollars(priceOf(plan)),
+          read: (plan) => formatWholeDollars(priceOf(plan)),
         },
       ],
     },
@@ -2298,12 +2320,12 @@ function CompareGrid({
           <>
             {" "}
             {plans[plans.length - 1].name} goes up to{" "}
-            {formatCredits(displayBalance(sliderCeilingCredits))} credits a month on its own
+            {formatCredits(displayBalance(sliderCeilingCredits))} credits a month with its
             slider.
           </>
         ) : null}
         {plans.length > 0 ? (
-          <> Need more than {plans[plans.length - 1].name}? Enterprise is arranged with us directly.</>
+          <> Need more than {plans[plans.length - 1].name}? Talk to us about Enterprise.</>
         ) : null}
       </p>
     </div>

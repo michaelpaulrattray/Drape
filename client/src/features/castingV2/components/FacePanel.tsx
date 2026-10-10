@@ -321,10 +321,30 @@ export function drawnGroups(
     .filter((group) => group.rows.length > 0);
 }
 
+/**
+ * WHAT THE PANEL SAYS WHEN THE DAY'S READINGS ARE SPENT — his ruling,
+ * 2026-10-10 (#2170), verbatim: *"Yes, show the quiet line when someone hits
+ * the cap, instead of failing silently."*
+ *
+ * His own suggested wording, kept word for word. It names **no number, no
+ * ceiling and no engine**, which is what keeps it inside the
+ * disappearing-technology law: it says what is happening to their picture and
+ * when it changes, never what is doing it or what a limit is. A customer who
+ * reaches this has done nothing wrong and there is nothing to decide — so there
+ * is no control, no link and no retry beside it.
+ *
+ * Declared here rather than inline so the suite can hold the shipped sentence
+ * against the law (no digits, no engine name) instead of against a copy of
+ * itself.
+ */
+export const FACE_SCAN_CAPPED_LINE =
+  "You've looked at a lot of faces today — readings come back tomorrow.";
+
 export function FacePanel({
   groups,
   possessive,
   working,
+  capped = false,
   carried = false,
   selection,
   onScope,
@@ -359,6 +379,21 @@ export function FacePanel({
    * its work is the invisible-run lesson wearing UI clothes.
    */
   working: boolean;
+  /**
+   * THE DAY'S READINGS ARE SPENT, SO NO NEW ONE IS COMING (#2170).
+   *
+   * The server's own word, carried straight through: the daily face-scan cap
+   * refused this look. It is deliberately NOT the same thing as a scan that
+   * failed or a database that could not answer — both of those also leave the
+   * panel unscanned, and neither is something to tell a customer about. The
+   * resolver sends `capped` only for a real refusal, which is why this is one
+   * field and not a reading of `working` and `done` together.
+   *
+   * It outranks `working`: nothing is being read while the day is shut, so
+   * "Reading their features…" over a capped panel would be the one lie this
+   * line exists to remove.
+   */
+  capped?: boolean;
   /**
    * IS EVERY ROW HERE ANOTHER VERSION'S ANSWER?
    *
@@ -399,7 +434,11 @@ export function FacePanel({
     blank column either.
   */
   const drawn = drawnGroups(groups, carried);
-  if (drawn.length === 0 && !working) return null;
+  /* AND A CAPPED PANEL IS NEVER NOTHING (#2170). A face with no library rows
+     and a shut day would otherwise render as an empty column — which is the
+     silent failure his ruling is about, with the sentence written and nowhere
+     to put it. */
+  if (drawn.length === 0 && !working && !capped) return null;
 
   return (
     <div className="dpc-face" aria-labelledby="dpc-face-title">
@@ -408,8 +447,12 @@ export function FacePanel({
         <p className="dpc-face__sub">Everything here can be changed. Tap one to talk about it.</p>
         {/* `role="status"` so a screen reader is told once, politely, that more
             is coming — and told nothing at all when it lands, because the rows
-            arriving are their own announcement. */}
-        {working ? <p className="dpc-face__working" role="status">Reading {possessive} features…</p> : null}
+            arriving are their own announcement. The capped line takes the same
+            role and the same place: it answers the same question ("is anything
+            coming?") with the other answer. */}
+        {capped
+          ? <p className="dpc-face__capped" role="status">{FACE_SCAN_CAPPED_LINE}</p>
+          : working ? <p className="dpc-face__working" role="status">Reading {possessive} features…</p> : null}
       </div>
       {drawn.map((group) => (
         <section className="dpc-face__group" key={group.group}>

@@ -178,15 +178,15 @@ export const NUMERIC_ENV_VARS = {
   ROLL_IMAGE_MAX_QUEUE_DEPTH: 64,
   SIGN_VIEW_MAX_QUEUE_DEPTH: 24,
   /*
-    THE FOUR QUIET SIGNUP CAPS (#1603, P1-4). They are here rather than read at
-    their own modules for exactly the reason this table exists: each one is a
-    number a careless blank variable would turn into `NaN`, and a `NaN` cap on
-    a signup path fails in the WORST direction — `claims < NaN` is false, so
-    every comparison reads as "under the cap" and the control silently admits
-    everybody. The four fal allowances are excluded from this table because
-    `Number("")` is 0 there and a zero allowance is what their own check
-    refuses; here a zero cap would refuse every signup, so neither raw reading
-    is safe and `envInt` owns all four.
+    THE FIVE QUIET SIGNUP CAPS (#1603, P1-4; the fifth added by #2170). They are
+    here rather than read at their own modules for exactly the reason this table
+    exists: each one is a number a careless blank variable would turn into
+    `NaN`, and a `NaN` cap on a signup path fails in the WORST direction —
+    `claims < NaN` is false, so every comparison reads as "under the cap" and
+    the control silently admits everybody. The four fal allowances are excluded
+    from this table because `Number("")` is 0 there and a zero allowance is what
+    their own check refuses; here a zero cap would refuse every signup, so
+    neither raw reading is safe and `envInt` owns all five.
 
     The defaults are set to be invisible to an honest customer and are stated
     on #1603: a household or a small office shares one network and may
@@ -197,7 +197,19 @@ export const NUMERIC_ENV_VARS = {
   FREE_GRANT_MAX_PER_DEVICE: 3,
   FREE_GRANT_MAX_PER_NETWORK: 10,
   FREE_GRANT_WINDOW_HOURS: 168,
+  /*
+    ⚠ **THE FACE-SCAN CEILING IS TWO NUMBERS, ONE PER TIER — his ruling,
+    2026-10-10 (#2170), verbatim: *"Free accounts: keep the cap at 40 a day.
+    Paid accounts: raise it to 100 a day, not 250."*** The pair is read, and an
+    account's side of it chosen, in `castingV2/faceScanDailyCap.ts` — the only
+    module that knows which tier an account is on. This table owns the numbers
+    and the boot refusal that stops a blank variable deleting either.
+
+    Two independent names rather than one number with a multiplier: his ruling
+    names two numbers, and a multiplier would make moving one move the other.
+  */
   FREE_SCAN_DAILY_CAP: 40,
+  PAID_SCAN_DAILY_CAP: 100,
 } as const;
 
 export type NumericEnvVar = keyof typeof NUMERIC_ENV_VARS;

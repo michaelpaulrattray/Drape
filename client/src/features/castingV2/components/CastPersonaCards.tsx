@@ -29,8 +29,15 @@
  * leaves both lines empty with the badge absent — never a blank card that looks
  * like a feature missing."* So the absence is silence, not an empty state.
  *
- * **No Save button.** Blur saves and Escape abandons, which is how text behaves
- * on a page. A button would be a second thing to learn for a free edit.
+ * ⚠ **THERE IS A KEEP BUTTON NOW, AND THIS PARAGRAPH SAID THE OPPOSITE UNTIL
+ * #2137 (door 0).** It read: *"No Save button. Blur saves and Escape abandons,
+ * which is how text behaves on a page. A button would be a second thing to
+ * learn for a free edit."* That reasoning was sound on its own terms and his
+ * design overrules it for a reason the old shape could not answer — **a Cancel
+ * button cannot exist beside a blur-saving field**, because clicking Cancel
+ * blurs the box first and the edit is already sent. Keep and Cancel arrive
+ * together or neither does. The cost is named at the return below: clicking
+ * away now leaves the box open instead of quietly storing.
  *
  * **No price, no spinner over the whole card.** The edit is free and is not a
  * generation — the only feedback it needs is that the badge goes.
@@ -64,10 +71,16 @@ type EditableLineProps = {
   /** Free, and never a generation — so there is no price and no credit here. */
   onSave: (line: CastPersonaFieldName, text: string) => void;
   saving: boolean;
+  /**
+   * The sentence under the open box saying where the words came from, or
+   * `null` for a line that does not carry one. Personality's is door 0's, out
+   * of his design; the voice line has none until #2139 designs its own.
+   */
+  helper?: string | null;
 };
 
 /**
- * ONE LINE, READ UNTIL SHE CLICKS IT.
+ * ONE LINE, READ UNTIL IT IS CLICKED.
  *
  * ⚠ **A `<button>` wrapping the text, not a click handler on a `<p>`.** The
  * line has to be reachable by keyboard and announced as something that does
@@ -75,7 +88,7 @@ type EditableLineProps = {
  * room's own design laws already refuse an inner focus outline on a text field
  * rather than refusing the outline everywhere.
  */
-function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
+function EditableLine({ line, value, onSave, saving, helper = null }: EditableLineProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value.text);
   /**
@@ -132,8 +145,8 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
     /*
       NOTHING IS SENT WHEN NOTHING CHANGED, and an emptied line is ABANDONED
       rather than saved. The server refuses a blank line (it would draw a card
-      with nothing in it); refusing it here too means she gets her line back
-      instead of an error about a thing she did not mean to do.
+      with nothing in it); refusing it here too means the customer gets their
+      line back instead of an error about a thing they did not mean to do.
     */
     if (!next || next === value.text) {
       setDraft(value.text);
@@ -142,6 +155,12 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
     /* The typed words stay on the card from this moment until the save settles. */
     setPending(next);
     onSave(line, next);
+  };
+
+  /** Put the line back exactly as it was and close. Cancel and Escape share it. */
+  const abandon = () => {
+    setDraft(value.text);
+    setEditing(false);
   };
 
   if (!editing) {
@@ -157,51 +176,89 @@ function EditableLine({ line, value, onSave, saving }: EditableLineProps) {
     );
   }
 
+  /*
+    THE OPEN BOX, ITS HELPER AND ITS TWO BUTTONS — door 0 of #2137.
+
+    ⚠ **`onBlur` NO LONGER SAVES, AND REMOVING IT IS THE WHOLE REASON THIS IS
+    A CODE CHANGE RATHER THAN TWO BUTTONS.** A Cancel button inside a blur-
+    saving field cannot work: pressing it blurs the textarea FIRST, `commit`
+    runs and the edit is already sent by the time the click lands — so the
+    button that exists to throw the edit away would have saved it, every time,
+    and nothing on screen would say so. Explicit Keep is what his design asks
+    for and it is also the only shape in which Cancel means anything.
+
+    What that costs is the one road blur-save gave for free: clicking off the
+    card now leaves the box open with the words still in it, rather than
+    quietly storing them. That is the safer of the two — an unsaved edit is
+    visible and recoverable, a silently-saved one is neither — and Escape and
+    Cancel both still put the line back exactly as it was.
+  */
   return (
-    <textarea
-      ref={field}
-      className="dpc-persona__field"
-      value={draft}
-      maxLength={max}
-      /*
-        SIZED TO THE SHAPE THE CRAFT RULES PRODUCE — #2136, measured in the
-        running app rather than guessed.
-
-        It was 3 and 2, sized for the one-sentence voice and the shorter
-        personality the old instruction wrote. His craft corrections give each
-        line a second job, and the court measured the result at 348-474 and
-        258-303 characters. At `rows=3` that is a 60px box holding a 129px
-        line, with `resize: none` — so editing a line WE wrote meant scrolling
-        inside it, which is the machinery showing through on a card whose whole
-        promise is "it's just words, fix anything that's off".
-
-        7 and 5 are read off the RENDERED box rather than computed from a guess
-        at the line height: at ~18.8px a row, the widest measured personality
-        needs 7 rows and the widest voice needs 5. That also lands the edit box
-        on the same height as the read view it replaces (131px), so the card no
-        longer changes size when it is clicked into.
-
-        ⚠ These two numbers are a FIT, not a design: #2137 rebuilds this
-        editing affordance entirely (edit in place with Keep / Cancel, pick a
-        different read, say it your way) and owns the final answer. This is the
-        smallest change that stops the cap raise shipping a box it overflows.
-      */
-      rows={line === "voice" ? 5 : 7}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          /* Abandon: her line comes back exactly as it was. */
-          setDraft(value.text);
-          setEditing(false);
-          return;
-        }
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          commit();
-        }
-      }}
-    />
+    <div className="dpc-persona__edit">
+      <textarea
+        ref={field}
+        className="dpc-persona__field"
+        value={draft}
+        maxLength={max}
+        /*
+          SIZED TO THE SHAPE THE CRAFT RULES PRODUCE — #2136, measured in the
+          running app rather than guessed.
+  
+          It was 3 and 2, sized for the one-sentence voice and the shorter
+          personality the old instruction wrote. His craft corrections give each
+          line a second job, and the court measured the result at 348-474 and
+          258-303 characters. At `rows=3` that is a 60px box holding a 129px
+          line, with `resize: none` — so editing a line WE wrote meant scrolling
+          inside it, which is the machinery showing through on a card whose whole
+          promise is "it's just words, fix anything that's off".
+  
+          7 and 5 are read off the RENDERED box rather than computed from a guess
+          at the line height: at ~18.8px a row, the widest measured personality
+          needs 7 rows and the widest voice needs 5. That also lands the edit box
+          on the same height as the read view it replaces (131px), so the card no
+          longer changes size when it is clicked into.
+  
+          ⚠ These two numbers are a FIT, not a design: #2137 rebuilds this
+          editing affordance entirely (edit in place with Keep / Cancel, pick a
+          different read, say it your way) and owns the final answer. This is the
+          smallest change that stops the cap raise shipping a box it overflows.
+        */
+        rows={line === "voice" ? 5 : 7}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            /* Abandon: the line comes back exactly as it was. */
+            abandon();
+            return;
+          }
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            commit();
+          }
+        }}
+      />
+      {helper ? <p className="dpc-persona__helper">{helper}</p> : null}
+      <div className="dpc-persona__acts">
+        {/*
+          KEEP IS THE COMMIT AND IT IS REFUSED ON AN EMPTY BOX, which is the
+          same rule `commit` already has one function up — a blank line is
+          abandoned, never stored, because the server refuses it and a card
+          with nothing in it is not a thing to store. Disabling the button
+          says that before the press instead of swallowing it after.
+        */}
+        <button
+          type="button"
+          className="dpc-persona__keep"
+          onClick={commit}
+          disabled={!draft.trim()}
+        >
+          Keep
+        </button>
+        <button type="button" className="dpc-persona__cancel" onClick={abandon}>
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -210,7 +267,45 @@ export type CastPersonaCardsProps = {
   voice: PersonaField | null;
   onSave: (line: CastPersonaFieldName, text: string) => void;
   savingLine: CastPersonaFieldName | null;
+  /** The cast's own name, for the helper line. Blank or absent is handled. */
+  name?: string | null;
 };
+
+/**
+ * THE SENTENCE UNDER THE OPEN BOX — door 0's helper, and the one place it is
+ * written.
+ *
+ * ⚠ **HIS DESIGN'S LAST CLAUSE IS NOT HERE, AND THAT IS A MEASURED CALL RATHER
+ * THAN AN EDIT TO HIS WORDS.** The Desk design reads *"Written from your brief
+ * and {name}'s look. Fix anything that's off. It's just words, and new takes
+ * follow them."* — and **#2137's own body asks for exactly this check**: *"'new
+ * takes follow them': takes are not built yet, so check this claim is honest
+ * today."*
+ *
+ * Read at the code on the day this shipped, and it is untrue twice over:
+ *
+ *  - **There are no takes.** The room's refine card renders its input, its
+ *    button and its chips all `disabled` (`CastingRoom.tsx`, the REFINE
+ *    section), under its own honest line *"Refining arrives soon."* Nothing a
+ *    customer can press produces a take.
+ *  - **Nothing reads these lines.** `server/castingV2/castPersona.ts` says so
+ *    in its own header — *"nothing reads these two lines to build a prompt
+ *    anywhere"* — so even once takes exist, the clause is a promise about
+ *    wiring that does not exist either.
+ *
+ * So the clause is dropped rather than softened: a sentence promising that an
+ * edit changes future work, on a product where no future work can be started,
+ * is the honesty contract failing on the one line whose whole job is to make
+ * editing feel safe. **It returns, in his words, in the commit that makes it
+ * true** — the card carries that note, and it is one string in one file.
+ */
+export function personaEditHelper(name?: string | null): string {
+  const named = name?.trim();
+  /* The room's own established fallback for a nameless cast, not a second one:
+     `Refine ${name}'s look` / `Refine their look` one file over. */
+  const look = named ? `${named}'s look` : "their look";
+  return `Written from your brief and ${look}. Fix anything that's off. It's just words.`;
+}
 
 /**
  * THE PERSONALITY CARD — new, and drawn only when there is a line to draw.
@@ -224,6 +319,7 @@ export function CastPersonalityCard({
   personality,
   onSave,
   savingLine,
+  name,
 }: Omit<CastPersonaCardsProps, "voice">) {
   if (!personality) return null;
   return (
@@ -249,6 +345,7 @@ export function CastPersonalityCard({
         value={personality}
         onSave={onSave}
         saving={savingLine === "personality"}
+        helper={personaEditHelper(name)}
       />
     </section>
   );

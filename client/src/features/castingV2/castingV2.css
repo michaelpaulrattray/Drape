@@ -3744,6 +3744,27 @@
   .dpc-face__working { animation: none; opacity: 0.8; }
 }
 
+/*
+  THE DAY'S READINGS ARE SPENT, AND THE PANEL SAYS SO (#2170, his ruling: *"Yes,
+  show the quiet line when someone hits the cap, instead of failing silently."*).
+
+  It sits exactly where the working line sits and reads at the same weight — the
+  two answer one question ("is anything more coming?") with opposite answers, so
+  a difference in size or colour between them would be the panel raising its
+  voice about the quieter of the two. It does NOT breathe: the working line
+  animates because something is happening, and animating a settled fact is the
+  surface pretending to be busy.
+
+  It draws from --onScrim rather than a fixed ink, so the line reads in both
+  themes the same way every other word in this panel does.
+*/
+.dpc-face__capped {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--onScrim) 48%, transparent);
+}
+
 .dpc-face__group { display: flex; flex-direction: column; gap: 2px; }
 
 /*
@@ -4811,6 +4832,56 @@
   resize: none;
 }
 .dpc-persona__field:focus { outline: none; }
+
+/* ---- door 0 of #2137: the open box, its helper and its two buttons ----
+
+   The wrapper exists so the box, the sentence under it and the button row are
+   one stack with one gap, rather than three siblings each spacing themselves
+   against whatever the card's own `gap` happens to be. */
+.dpc-persona__edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+}
+
+/* The sentence under the box. `--meta` and not `--metaStrong`: it is a note
+   about the field, in the same register as every other hint in the room, and
+   it must not compete with the words the customer is there to read. */
+.dpc-persona__helper {
+  font: 400 11px/1.5 var(--font-sans);
+  color: var(--meta);
+  margin: 0;
+}
+
+.dpc-persona__acts { display: flex; align-items: center; gap: 8px; }
+
+/* Keep is the commit, so it carries the room's filled-button shape — the same
+   ink-on-surface pair `dpc-rrefine__go` uses, without its disabled dressing,
+   because this one works. */
+.dpc-persona__keep {
+  padding: 6px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  font: 500 11.5px var(--font-sans);
+  cursor: pointer;
+}
+.dpc-persona__keep:disabled { cursor: default; opacity: 0.4; }
+
+/* Cancel is outlined and quiet: it is the way back, never the thing to press. */
+.dpc-persona__cancel {
+  padding: 6px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--borderInput);
+  background: none;
+  color: var(--ink);
+  font: 400 11.5px var(--font-sans);
+  cursor: pointer;
+}
+.dpc-persona__cancel:hover { border-color: var(--ink); }
 
 /* The badge sits where a card's action sits, in the label's own register, so
    it reads as a note about the card and never as a control. */

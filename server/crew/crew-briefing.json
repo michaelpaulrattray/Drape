@@ -1,7 +1,7 @@
 {
-  "edition": 667,
-  "updatedAt": "2026-10-09T16:25:00.000Z",
-  "shift": "Foreman — foreman-20261010-0213",
+  "edition": 668,
+  "updatedAt": "2026-10-10T07:16:06.667Z",
+  "shift": "Foreman — foreman-20261010-1625",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -11,7 +11,7 @@
       "quotedAt": "2026-10-08T12:02:19+11:00"
     },
     "milestone": {
-      "title": "N2b — a cast is born with a personality and a voice at Sign, written as text you can edit. Not a menu, not a fixed list: words that come with her and that you can change.",
+      "title": "N2b — a cast is born with a personality and a voice at Sign, written as text you can edit. Not a menu, not a fixed list: words that come with the cast and that you can change.",
       "steps": [
         {
           "title": "The persona-word clean-up it writes into — already done and migrated (#1241)",
@@ -22,8 +22,12 @@
           "state": "done"
         },
         {
-          "title": "Both are editable text on her page, never a picker",
+          "title": "Both are editable text on the cast's page, never a picker",
           "state": "done"
+        },
+        {
+          "title": "Fixing the words it wrote you: the first of your three ways in is live — the lines open in place with Keep and Cancel. Two to go (#2137)",
+          "state": "waiting"
         },
         {
           "title": "Your eye on a real Sign's words before the rung closes",
@@ -126,11 +130,23 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-09T16:19:52.041Z",
+      "readAt": "2026-10-10T07:16:21.180Z",
       "items": [
         {
           "issueNumber": 1242,
           "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
+          "kind": "rung",
+          "rung": "N2b"
+        },
+        {
+          "issueNumber": 2196,
+          "title": "N2b: \"Pick a different read\" — six ways this cast could carry themselves, picked by recognising one (door 1 of #2137)",
+          "kind": "rung",
+          "rung": "N2b"
+        },
+        {
+          "issueNumber": 2197,
+          "title": "N2b: \"Say it your way\" — the customer describes the cast in a sentence and the product turns it into what the camera sees (door 2 of #2137)",
           "kind": "rung",
           "rung": "N2b"
         },
@@ -263,6 +279,12 @@
         {
           "issueNumber": 1788,
           "title": "A workspace: several people, one shared pool of credits, one bill — the dependency a per-seat Team plan cannot ship without",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 2182,
+          "title": "Adopting stripe 23 means deciding what a customer may pay with — the 'card only' setting is gone and its replacement works differently",
           "kind": "roadmap",
           "rung": null
         }
@@ -9855,6 +9877,13 @@
       "title": "Signing costs one flat 650 credits, and credits come back only if nothing arrives (#1968)",
       "prNumber": 2105,
       "note": "Built and green, waiting on the relay. Money surface: it stops refunding a view at a time, so a Sign already running when it ships still gets back exactly what it paid."
+    },
+    {
+      "id": "persona-door0-2137",
+      "status": "merged",
+      "title": "The Personality card edits in place, with Keep and Cancel (#2137)",
+      "prNumber": 2195,
+      "note": "Door 0 of three. Passed by the relay and live on production the same hour."
     }
   ],
   "problems": [
@@ -9997,6 +10026,13 @@
       "state": "open",
       "title": "The face panel still stops filling in after forty faces in a day, and still says nothing — the part that stopped you three times too soon is fixed and live (#2170)",
       "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it.\n\nWhat was wrong, and is now fixed: it counted requests instead of faces. The panel asks again every second while a reading comes in, so one face spent about three of your allowance. On 8 October your own account hit the limit after about fifteen faces and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. That fix shipped today — looking at the same face again now costs nothing, and the limit counts forty faces as it was always meant to.\n\nWhat is still wrong, and why this row is still here. Forty is too low. On your biggest day you looked at 189 faces, and three of your last ten days were over forty — so you can still be stopped on a normal working day, just later than before. And when you are stopped the panel still says nothing: a blocked reading was deliberately built to look exactly like a quiet one, so there is no way to tell the difference.\n\nNothing is ever charged for a refused reading and nothing is lost but the reading itself. The number is on the card and needs no decision from you. Whether a blocked reading should say something to you is yours to decide, and it is not folded in."
+    },
+    {
+      "id": "park-reason-wrong-2198",
+      "severity": "warning",
+      "state": "open",
+      "title": "The nights stopped last night and told you the wrong reason (#2198)",
+      "detail": "At 4am the team stopped itself and left you a note saying two shifts had failed and that \"the log names no cap\". The log says, in its first seven words: \"You've hit your weekly limit, resets Oct 14, 4pm\". Nothing was wrong with the team — your Claude allowance had run out for the moment, and it has since come back; two shifts are running now.\n\nThe cause is one word. The alarm looks for the phrase \"hit your limit\" and the real message says \"hit your weekly limit\", so it did not recognise it. Driven at the real log with controls: remove the word \"weekly\" and the same alarm fires correctly.\n\nTwo costs. It wasted a session, because a known allowance problem stops the team at once while an unknown failure gets a second try. And the dangerous one it did not hit this time: if a shift had succeeded in between, the team would have kept starting shifts into an allowance that could not serve them, with nothing ever saying why."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10273,7 +10309,7 @@
     271
   ],
   "nextUp": {
-    "readAt": "2026-10-09T16:19:52.041Z",
+    "readAt": "2026-10-10T07:16:21.179Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -10341,11 +10377,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 2136,
-        "title": "N2b: drafted personality and voice follow his craft rules — posture-then-timing personality, timbre-plus-performance voice; the voice cap fits his own example",
-        "urgent": false
-      },
-      {
         "issueNumber": 2137,
         "title": "N2b: the Personality card edits in place with three ways in — edit the lines, pick a different read, or say it your way (his Desk design, 2026-10-09)",
         "urgent": false
@@ -10361,13 +10392,13 @@
         "urgent": false
       },
       {
-        "issueNumber": 2152,
-        "title": "Plan credits: rollover banks capped at one month's worth, a downgrade trims the bank, and cancelled plan credits expire 30 days after the paid period (his word, 2026-10-09)",
+        "issueNumber": 2190,
+        "title": "Upgrades switch Stripe's price before the payment succeeds, so a declined upgrade would still bill the new price at renewal (his word, 2026-10-10)",
         "urgent": false
       },
       {
-        "issueNumber": 2153,
-        "title": "Pricing Phase 2: drop in Yuna and Quistis's final wording on the plans page and compare table (his word, 2026-10-09)",
+        "issueNumber": 2191,
+        "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
         "urgent": false
       }
     ]
