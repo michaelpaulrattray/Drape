@@ -386,6 +386,24 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
     + " (#209 item 1)",
     "each LITERAL_ALLOWED carve-out, a two-name list guarded by existsSync",
   ],
+  /*
+     JOINED THE CLASS ON 2026-10-11 (#2236), and the row is the reason rather
+     than a quieting. The module walks `.agents/shift-logs` — a directory the
+     runner writes into LIVE and the Janitor sweeps, so it is the strongest case
+     this rule has ever had, and all three of its listed-entry touches go
+     through `statIfPresent`/`readBytesIfPresent`. The one bare read left is the
+     CLASSIFIER, by fixed path, and it must keep throwing: a watch whose subject
+     has vanished mid-read has lost its subject, and the entrance already answers
+     the ordinary absence with an `existsSync` skip. A tolerance here would turn
+     the whole reading green by making it blind — the one answer it must never
+     give by accident is "no unrecognised wordings".
+  */
+  "scripts/lib/capWordingWatch.mts": [
+    "CLASSIFIER — `.agents/foreman/classify-shift-failure.ps1` by fixed path,"
+    + " behind the entrance's existsSync, and it must keep THROWING: reading a"
+    + " short pattern set builds a short net, and a short net reports a clean"
+    + " corpus",
+  ],
   "scripts/lib/stopline.mts": [
     "STOPLINE_PATH — the freeze file by fixed path, behind its own existsSync; its"
     + " catch answers `(present, unreadable)` rather than absent, which is the"
