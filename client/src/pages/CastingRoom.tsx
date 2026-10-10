@@ -1076,6 +1076,10 @@ export default function CastingRoom() {
                   personality={data.persona?.personality ?? null}
                   onSave={savePersonaField}
                   savingLine={savingPersonaField}
+                  /* Door 0's helper names the cast — "Written from your brief
+                     and Pigman's look." The card handles a blank name with the
+                     room's own "their look" fallback. */
+                  name={data.name ?? null}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>

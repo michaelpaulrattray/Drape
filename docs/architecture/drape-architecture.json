@@ -11195,6 +11195,10 @@
       "path": "client/src/features/castingV2/panelBridge.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/personaDoor0.test.ts",
+      "path": "client/src/features/castingV2/personaDoor0.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
       "path": "client/src/features/castingV2/pronounGrammar.test.ts"
     },
