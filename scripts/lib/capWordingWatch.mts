@@ -81,8 +81,10 @@
  * it would sweep the whole corpus, find nothing, and read as a clean bill of
  * health. The decode below is BOM-first for that reason.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+
+import { readBytesIfPresent, statIfPresent } from "./listedEntry.mts";
 
 /** Where the patterns live, and the only place they are allowed to live. */
 export const DEFAULT_CLASSIFIER = ".agents/foreman/classify-shift-failure.ps1";
@@ -364,9 +366,16 @@ export function scanLogs(options: ScanOptions): ScanResult {
 
   for (const name of names) {
     const path = join(options.dir, name);
-    if (statSync(path).size === 0) continue;
+    /* ⚠ ENOENT-TOLERANT, and this is the directory where it matters MOST: the
+       runner is writing into it live and the Janitor sweeps it, so an entry can
+       leave between the listing and the read for reasons that have nothing to
+       do with this reading (#589/#591, `listedEntry.mts`). A thrown ENOENT here
+       would take down the whole reading over one departed log. */
+    const stat = statIfPresent(path);
+    if (stat === null || stat.size === 0) continue;
+    const buf = readBytesIfPresent(path);
+    if (buf === null) continue; /* left between the stat and the read */
     result.nonEmpty++;
-    const buf = readFileSync(path);
     if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) result.utf16++;
     const text = decode(buf);
     if (liveCap.test(text)) result.liveCapMatches++;
