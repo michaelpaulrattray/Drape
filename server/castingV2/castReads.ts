@@ -23,11 +23,12 @@
  * THE CRAFT IS THE DRAFTED LINE'S CRAFT, SHARED RATHER THAN RESTATED
  * ============================================================================
  *
- * `castPersonaCraft.ts` holds the rules both instructions obey — rest-then-
- * timing, camera-visible only, the three pronouns, his length ruling, the form
- * example. The card asked for exactly this (*"Reuse `castPersonaSystemPrompt`'s
- * rules rather than writing a second copy of them"*), and the extraction is
- * proven to have left the drafted line's instruction byte-identical.
+ * `castPersonaCraftRules` in `castPersona.ts` holds the rules every persona
+ * instruction obeys — rest-then-timing, camera-visible only, the three
+ * pronouns, his length ruling, the form example — and this road composes from
+ * it rather than restating any of them. The card asked for exactly this
+ * (*"Reuse `castPersonaSystemPrompt`'s rules rather than writing a second copy
+ * of them"*).
  *
  * What is NOT shared is this file's own job: that there are six, that they must
  * differ from each other AND from the line already on the card, and that each
@@ -59,15 +60,7 @@ import { z } from "zod";
 import { CAST_PERSONALITY_MAX_LENGTH } from "../../shared/inputLimits";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
-import { castPersonaEditBlock, fitToCap } from "./castPersona";
-import {
-  cameraVisibleLines,
-  forbiddenMentionLines,
-  lengthRuleLines,
-  personalityCraftLines,
-  personalityFormExampleLines,
-  pronounRuleLines,
-} from "./castPersonaCraft";
+import { castPersonaCraftRules, castPersonaEditBlock, fitToCap } from "./castPersona";
 import type { CastPronouns } from "./castPronouns";
 import { interpreterTextQueue } from "./interpreter";
 import { boundForJudge } from "./judgeFrame";
@@ -193,6 +186,20 @@ export type CastReadsReader = {
  * craft rules both instructions share.
  */
 export function castReadsSystemPrompt(pronouns: CastPronouns): string {
+  /*
+    THE SAME RULES THE DRAFTED LINE OBEYS, from the one place that holds them.
+
+    ⚠ **THIS FILE SHIPPED ITS OWN `castPersonaCraft.ts` FOR HALF A DAY AND IT
+    IS GONE.** #2197's server half landed the same extraction on main, hours
+    apart and for the same reason, which is two answers to one need — exactly
+    the second-list shape working law 4 forbids, and the thing the card asked
+    this road to avoid. `castPersonaCraftRules` is the one with real customers
+    (the drafted line AND the translator), so it is the one that stands, and
+    this road composes from it. The only thing that came across from the
+    deleted module is its `where` parameter, because the pronoun rule's last
+    clause is the single sentence that cannot be shared verbatim.
+  */
+  const rules = castPersonaCraftRules(pronouns, `any of the ${CAST_READS_COUNT}`);
   return [
     `You write ${CAST_READS_COUNT} alternative reads of ONE performer for a casting`,
     "studio's cast page. The customer has already cast this performer and is",
@@ -209,9 +216,9 @@ export function castReadsSystemPrompt(pronouns: CastPronouns): string {
     "",
     "The description follows exactly the rules below.",
     "",
-    ...personalityCraftLines(pronouns),
+    ...rules.personality,
     "",
-    ...cameraVisibleLines(),
+    ...rules.cameraOnly,
     "",
     `All ${CAST_READS_COUNT} are the SAME person — the one in the photograph, with the same`,
     "body, the same face and the same history. You are not casting six people;",
@@ -224,17 +231,16 @@ export function castReadsSystemPrompt(pronouns: CastPronouns): string {
     "what this performer does with stillness, with speed, and with being looked",
     "at.",
     "",
-    ...pronounRuleLines(pronouns, `any of the ${CAST_READS_COUNT}`),
-    ...forbiddenMentionLines(),
+    ...rules.writing,
     "",
-    ...lengthRuleLines(),
+    ...rules.length,
     "",
     "The example below is the FORM to produce — a label, then the two jobs in",
     "two sentences, at that rhythm and that length. Its WORDING is not available",
     "to you: do not reuse its phrases, and do not describe this performer as",
     "doing the same things.",
     "  LABEL: The ring-turner",
-    ...personalityFormExampleLines(),
+    ...rules.personalityExample,
     "",
     "Answer with JSON only, with exactly " + CAST_READS_COUNT + " entries, and with",
     "no field on an entry beyond these two:",

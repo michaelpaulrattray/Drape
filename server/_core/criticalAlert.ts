@@ -21,6 +21,8 @@
  * reporting a crash is worse than one that says nothing.
  */
 
+import { redactQueryValuesInText } from "../monitoring/queryErrorRedaction";
+
 export interface CriticalErrorAlert {
   type: "critical_security_server_crash";
   severity: "critical";
@@ -33,8 +35,12 @@ export function buildCriticalErrorAlert(label: string, error: unknown): Critical
     type: "critical_security_server_crash",
     severity: "critical",
     title: `Server ${label}`,
+    /* A failed query's values are withheld here too (#2218): the crash
+       handlers reduce an Error before calling, but a STRING rejection reason
+       arrives as-is, and this row is read by staff. Message and stack are
+       reduced separately, because the params tail runs to the end of a text. */
     description: error instanceof Error
-      ? `${error.message}\n\`\`\`${error.stack?.slice(0, 500)}\`\`\``
-      : String(error),
+      ? `${redactQueryValuesInText(error.message)}\n\`\`\`${redactQueryValuesInText(String(error.stack?.slice(0, 500)))}\`\`\``
+      : redactQueryValuesInText(String(error)),
   };
 }

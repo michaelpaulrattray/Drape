@@ -74,14 +74,6 @@ import { z } from "zod";
 import { CAST_PERSONALITY_MAX_LENGTH, CAST_VOICE_MAX_LENGTH } from "../../shared/inputLimits";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
-import {
-  cameraVisibleLines,
-  forbiddenMentionLines,
-  lengthRuleLines,
-  personalityCraftLines,
-  personalityFormExampleLines,
-  pronounRuleLines,
-} from "./castPersonaCraft";
 import type { CastPronouns } from "./castPronouns";
 import { boundForJudge } from "./judgeFrame";
 
@@ -171,6 +163,80 @@ export type CastPersonaReader = {
  * against the card without opening a prompt builder.
  */
 export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
+  const rules = castPersonaCraftRules(pronouns);
+  return [
+    "You write two short lines for a casting studio's cast page. They describe a",
+    "performer the customer has just cast, and the customer reads them as a first",
+    "draft they are free to rewrite.",
+    "",
+    ...rules.personality,
+    "",
+    ...rules.cameraOnly,
+    "",
+    ...rules.voice,
+    "",
+    ...rules.writing,
+    "",
+    ...rules.length,
+    "",
+    "The two examples below are the FORM to produce — the two jobs per line, the",
+    "rhythm, and the length. Their WORDING is not available to you: do",
+    "not reuse their phrases, and do not describe this performer as doing the",
+    "same things.",
+    ...rules.personalityExample,
+    ...rules.voiceExample,
+    "",
+    'Answer with JSON only: {"personality": "...", "voice": "..."}',
+  ].join("\n");
+}
+
+/**
+ * THE CRAFT RULES, ONE COPY — shared by the Sign's draft above and by the
+ * "say it your way" translation (`castPersonaTranslate.ts`, #2197 / #2205).
+ *
+ * His craft note for that door is why it reuses these rather than carrying its
+ * own: *"The translation from feeling-words to camera-words is the engine's
+ * job, never the customer's."* That sentence is already the camera-only block
+ * below, and a second copy of it would be the first thing to drift (working
+ * law 4). Each block is exactly the lines the Sign's instruction has always
+ * carried: `castPersonaSystemPrompt` is composed from them, and its bytes did
+ * not move when they were factored out — `castPersonaTranslate.test.ts` pins
+ * the composed text against a digest of the instruction as it stood before.
+ */
+export type CastPersonaCraftRules = {
+  /** The PERSONALITY paragraph: rest with one break, then timing. */
+  personality: string[];
+  /** Feeling-words become physical tells — the customer never does that work. */
+  cameraOnly: string[];
+  /** The VOICE paragraph and the rule on where its break may land. */
+  voice: string[];
+  /** Third person, the given pronouns only, no name, no photography. */
+  writing: string[];
+  /** One new thing per sentence, his examples' length, the cap is a ceiling. */
+  length: string[];
+  /** His personality specimen, indented, for FORM only. */
+  personalityExample: string[];
+  /** His voice specimen, indented, for FORM only. */
+  voiceExample: string[];
+};
+
+export function castPersonaCraftRules(
+  pronouns: CastPronouns,
+  /*
+    WHAT THE PRONOUN RULE BINDS, and the ONE thing a caller may vary (#2196).
+
+    The rule ends "and no other pronoun in either line", which is true of the
+    two-line draft and of one translated line, and FALSE of the six
+    alternatives door 1 offers. It is a parameter rather than a second copy of
+    the block because the rest of the sentence — including the clause about
+    never reading pronouns off a face — is identical and must stay identical.
+
+    The default is the drafted line's own wording, so every caller that does
+    not pass it renders exactly the bytes it rendered before this parameter
+    existed; `castPersonaCraft.test.ts` holds that against a golden.
+  */
+  where: string = "either line",
+): CastPersonaCraftRules {
   const subject = pronouns.subject;
   /*
     ⚠ THE OBJECT FORM IS A SEPARATE WORD AND TWO CLAUSES NEED IT.
@@ -187,42 +253,64 @@ export function castPersonaSystemPrompt(pronouns: CastPronouns): string {
   */
   const object = pronouns.object;
   const possessive = pronouns.possessive;
-  return [
-    "You write two short lines for a casting studio's cast page. They describe a",
-    "performer the customer has just cast, and the customer reads them as a first",
-    "draft they are free to rewrite.",
-    "",
-    ...personalityCraftLines(pronouns),
-    "",
-    ...cameraVisibleLines(),
-    "",
-    "VOICE — two parts in one short passage. FIRST the sound of it: timbre, pitch,",
-    "weight, texture, and the one thing that breaks the pattern. THEN how this",
-    `performer USES it — the pace, how much ${subject} says, and how a question`,
-    "gets answered. Both halves are required: a line that only says what the voice",
-    "sounds like is half the line.",
-    "",
-    "Whatever breaks the voice lands on something a performer can DO: a breath, an",
-    "exhale, a laugh, a pause, the end of a sentence, a question. Never a speech",
-    'sound and never a letter — not "on certain vowels", not "on a hard',
-    'consonant" — because nobody can rehearse which sounds those are.',
-    "",
-    ...pronounRuleLines(pronouns, "either line"),
-    ...forbiddenMentionLines(),
-    "",
-    ...lengthRuleLines(),
-    "",
-    "The two examples below are the FORM to produce — the two jobs per line, the",
-    "rhythm, and the length. Their WORDING is not available to you: do",
-    "not reuse their phrases, and do not describe this performer as doing the",
-    "same things.",
-    ...personalityFormExampleLines(),
-    "  VOICE: A dry, light voice pitched higher than the frame suggests, even and",
-    "  unhurried until a laugh clips it short. Talks in long unbroken runs",
-    "  and meets a question with a question, giving the answer two turns later.",
-    "",
-    'Answer with JSON only: {"personality": "...", "voice": "..."}',
-  ].join("\n");
+  return {
+    personality: [
+      "PERSONALITY — exactly two sentences, and each one has its own job.",
+      "SENTENCE ONE is how this performer is at REST: the set of the body, where the",
+      `gaze goes, what ${possessive} hands are doing when nothing is being asked of`,
+      `${object}. Inside that first sentence, name the ONE thing that breaks the`,
+      "rest — a baseline and a single break, never a list of quirks.",
+      "SENTENCE TWO is TIMING: how this performer moves and when they react. Speed",
+      "of movement, how long a reply takes, what happens on the way from still to",
+      "moving.",
+    ],
+    cameraOnly: [
+      "Describe ONLY what a camera can see. A feeling-word on its own is not a line",
+      "we can store: menacing, warm, confident, kind and trustworthy are claims",
+      "nobody can point at. Turning a feeling into something visible is YOUR work",
+      "and not the customer's — so do not write that this performer is menacing,",
+      "write the physical tell: the movement that would read as menacing to",
+      "someone watching it happen.",
+    ],
+    voice: [
+      "VOICE — two parts in one short passage. FIRST the sound of it: timbre, pitch,",
+      "weight, texture, and the one thing that breaks the pattern. THEN how this",
+      `performer USES it — the pace, how much ${subject} says, and how a question`,
+      "gets answered. Both halves are required: a line that only says what the voice",
+      "sounds like is half the line.",
+      "",
+      "Whatever breaks the voice lands on something a performer can DO: a breath, an",
+      "exhale, a laugh, a pause, the end of a sentence, a question. Never a speech",
+      'sound and never a letter — not "on certain vowels", not "on a hard',
+      'consonant" — because nobody can rehearse which sounds those are.',
+    ],
+    writing: [
+      `Write about ${object} in the third person. Use ONLY the three pronouns given`,
+      `below — "${subject}", "${object}", "${possessive}" — and no other pronoun in`,
+      `${where}. The pronouns are a fact about this performer that you are given;`,
+      "they are never read off the face or guessed from the picture.",
+      "Do not use a name. Do not mention photography, framing, lighting, cameras,",
+      "image quality, or that this is a generated picture. Do not mention clothing",
+      "unless the way it is worn is itself a physical mannerism.",
+    ],
+    length: [
+      "Every sentence states one new thing the camera can see, said once. Match the",
+      "length of the founder's examples — the character limit is a ceiling for rare",
+      "cases, never a target to fill.",
+    ],
+    personalityExample: [
+      "  PERSONALITY: Sits back with the shoulders dropped and both hands loose and",
+      "  open on the table, the gaze level and parked on whoever is speaking; the one",
+      "  break is the left hand, which turns a ring over and over and is never looked",
+      "  at. Answers almost before a question has landed, then stops dead in the",
+      "  middle of a sentence to think, and starts again somewhere else.",
+    ],
+    voiceExample: [
+      "  VOICE: A dry, light voice pitched higher than the frame suggests, even and",
+      "  unhurried until a laugh clips it short. Talks in long unbroken runs",
+      "  and meets a question with a question, giving the answer two turns later.",
+    ],
+  };
 }
 
 /** Her own words, bounded and in order, or a sentence saying there are none. */

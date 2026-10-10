@@ -127,6 +127,29 @@ function onlyStatement(): { sql: string; params: unknown[] } {
   return sent[0]!;
 }
 
+/**
+ * Apply a recorded UPDATE's `set` clause to an in-memory row, binding its
+ * placeholders to the params in order — so a SEQUENCE of real statements can
+ * be read for its end state without a database. Refuses a clause it cannot
+ * read rather than returning a row that silently ignored part of it.
+ */
+function replaySet(
+  statement: { sql: string; params: unknown[] },
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const set = statement.sql.slice(statement.sql.indexOf(" set ") + 5, statement.sql.indexOf(" where "));
+  const next = { ...row };
+  let at = 0;
+  const assignments = set.split(", ");
+  for (const assignment of assignments) {
+    const match = /^`(\w+)` = (\?|null)$/.exec(assignment.trim());
+    if (!match) throw new Error(`replaySet cannot read: ${assignment}`);
+    next[match[1]!] = match[2] === "?" ? statement.params[at++] : null;
+  }
+  expect(at, "every placeholder in the set clause was bound").toBeGreaterThan(0);
+  return next;
+}
+
 /** Render a predicate as the statement it becomes. Nothing connects. */
 function rendered(where: ReturnType<typeof castPersonaEditWhere>) {
   const pool = mysql.createPool({ host: "127.0.0.1", user: "never-connects", database: "x" });
@@ -206,7 +229,12 @@ describe("her edit sets one line and one stamp, and leaves the other alone", () 
         make the derivation answer about the wrong moment.
       */
       expect(patch).not.toHaveProperty("personaDraftedAt");
-      expect(Object.keys(patch)).toHaveLength(2);
+      /* Three keys: the text, its stamp, and its OWN sentence cleared — a
+         plain edit is not kept from a sentence (finding 1 on PR #2217). The
+         other card's sentence is not among them. */
+      expect(patch[`${kind}OwnWords`]).toBeNull();
+      expect(patch).not.toHaveProperty(`${other}OwnWords`);
+      expect(Object.keys(patch)).toHaveLength(3);
     },
   );
 
@@ -322,6 +350,68 @@ describe("the statement `editCastPersonaField` really sends", () => {
       expect(set).not.toContain(`\`${other}\` = ?`);
       expect(set).not.toContain(`\`${other}EditedAt\` = ?`);
       expect(set).not.toContain("`personaDraftedAt` = ?");
+    },
+  );
+
+  /*
+    "SAY IT YOUR WAY"'s KEEP THIS (#2197 / #2205): the customer's own sentence
+    rides the SAME statement as the line, on that line's column only — and a
+    plain edit CLEARS that line's sentence and only that line's (the relay's
+    finding 1 on PR #2217), so a kept sentence always describes its line.
+  */
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "keeping %s from a sentence writes that line's sentence column and not the other's",
+    async (kind) => {
+      const other = kind === "personality" ? "voice" : "personality";
+      await editCastPersonaField({
+        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "our line", ownWords: "their own sentence",
+      });
+
+      const { sql, params } = onlyStatement();
+      const set = sql.slice(0, sql.indexOf(" where "));
+      expect(set).toContain(`\`${kind}\` = ?`);
+      expect(set).toContain(`\`${kind}OwnWords\` = ?`);
+      expect(set).not.toContain(`\`${other}OwnWords\` = ?`);
+      expect(params).toContain("their own sentence");
+      /* Still the owner's living Cast — the sentence does not widen the reach. */
+      expect(sql).toContain("`userId` = ?");
+      expect(sql).toContain("`deletedAt` is null");
+    },
+  );
+
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "a plain edit of %s sets THAT line's sentence to NULL and leaves the other card's alone",
+    async (kind) => {
+      const other = kind === "personality" ? "voice" : "personality";
+      await editCastPersonaField({ userId: USER_ID, modelId: MODEL_ID, line: kind, text: "our line" });
+      const row = replaySet(onlyStatement(), { [`${kind}OwnWords`]: "kept", [`${other}OwnWords`]: "kept" });
+      expect(row[`${kind}OwnWords`]).toBeNull();
+      expect(row[`${other}OwnWords`]).toBe("kept");
+    },
+  );
+
+  /*
+    THE SEQUENCE THE FINDING NAMED: Keep this with the customer's words, then a
+    plain edit of the same line. Both statements the writer really sends are
+    replayed, in order, onto one row — the column ends NULL. The first step is
+    the positive control: after the Keep alone, the sentence IS there.
+  */
+  it.each(CAST_PERSONA_FIELDS.map((kind) => [kind] as const))(
+    "Keep with words, then a plain edit of %s, leaves the sentence column NULL",
+    async (kind) => {
+      let row: Record<string, unknown> = { [`${kind}OwnWords`]: null };
+      await editCastPersonaField({
+        userId: USER_ID, modelId: MODEL_ID, line: kind, text: "kept line", ownWords: "their own sentence",
+      });
+      row = replaySet(onlyStatement(), row);
+      expect(row[`${kind}OwnWords`]).toBe("their own sentence");
+      expect(row[kind]).toBe("kept line");
+
+      sent.length = 0;
+      await editCastPersonaField({ userId: USER_ID, modelId: MODEL_ID, line: kind, text: "hand-edited line" });
+      row = replaySet(onlyStatement(), row);
+      expect(row[kind]).toBe("hand-edited line");
+      expect(row[`${kind}OwnWords`]).toBeNull();
     },
   );
 

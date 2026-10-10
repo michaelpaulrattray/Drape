@@ -192,7 +192,9 @@ describe("where the door is offered, which is read off his frame", () => {
   });
 
   /* The unbuilt sibling is card #2197 — named in a comment, because the token
-     guard reads a `#2197` in code as a hex literal and is right to. */
+     guard reads a `#2197` in code as a hex literal and is right to. Its SERVER
+     half is on main; its client half is not, and this arm is what keeps the
+     row from arriving before the door behind it. */
   it("⚠ *Say it your way* is NOT drawn, because its own card is not built", () => {
     /*
       His design has two rows here. A row that opens nothing is the lesser path
@@ -210,6 +212,9 @@ describe("where the door is offered, which is read off his frame", () => {
     );
     expect(row).not.toContain("Say it your way");
     expect(row.match(/<button/g) ?? []).toHaveLength(1);
+    /* And the reason, held rather than asserted once: no client caller for the
+       translation exists, so a row drawn here would open onto nothing. */
+    expect(source(ROOM)).not.toContain("translateOwnWords");
     expect(drawCard(door({ state: "shut", reads: [] }))).not.toContain("Say it your way");
   });
 });

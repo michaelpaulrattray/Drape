@@ -642,7 +642,17 @@ export type ReadPurpose =
    * One bucket, one road, one price — which is what the disappearing-technology
    * law's third clause obliges this feature to be able to say out loud.
    */
-  | "reads";
+  | "reads"
+  /**
+   * ONE LINE TRANSLATED FROM THE CUSTOMER'S OWN SENTENCE — "say it your way"
+   * (#2197 / #2205). Its own word rather than `persona`, on `persona`'s own
+   * argument: that bucket prices a line per SIGN, and this one prices a line
+   * per PRESS, paid by the house as often as the customer rewords. Lumped
+   * together, neither question — what a Sign costs, what a reword costs —
+   * could be answered, and the disappearing-technology law's third clause
+   * obliges both to be.
+   */
+  | "persona.translate";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -662,6 +672,7 @@ export const READ_PURPOSES = Object.freeze([
   "author",
   "persona",
   "reads",
+  "persona.translate",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

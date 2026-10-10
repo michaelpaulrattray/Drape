@@ -27,6 +27,7 @@ import { generateVerificationToken, sendVerificationEmail, storeVerificationToke
 import { loginSchema, registerSchema } from "./emailAuthInput";
 import { noteFailedLogin } from "../security/loginAttackAlert";
 import { refuseCrossSiteAuthRequest } from "../security/crossSiteExpressGuard";
+import { redactQueryValuesInText, withoutQueryValues } from "../monitoring/queryErrorRedaction";
 import { mayGrantFreeCredits, noteFreeGrantMade } from "../security/freeGrantLimit";
 
 const BCRYPT_ROUNDS = 12;
@@ -247,14 +248,14 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
     // Redirect to verify-email page instead of dashboard
     res.status(201).json({ success: true, redirect: "/verify-email", email, needsVerification: true });
   } catch (error) {
-    console.error("[EmailAuth] Registration failed:", error);
+    console.error("[EmailAuth] Registration failed:", withoutQueryValues(error));
     await logAuditEvent({
       action: AUDIT_ACTIONS.LOGIN_FAILED,
       resourceType: "auth",
       metadata: {
         reason: "Registration error",
         email,
-        error: error instanceof Error ? error.message : "Unknown",
+        error: error instanceof Error ? redactQueryValuesInText(error.message) : "Unknown",
       },
       severity: "warning",
       ipAddress: clientIp,
@@ -422,14 +423,14 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
 
     res.json({ success: true, redirect: "/app" });
   } catch (error) {
-    console.error("[EmailAuth] Login failed:", error);
+    console.error("[EmailAuth] Login failed:", withoutQueryValues(error));
     await logAuditEvent({
       action: AUDIT_ACTIONS.LOGIN_FAILED,
       resourceType: "auth",
       metadata: {
         reason: "Login error",
         email,
-        error: error instanceof Error ? error.message : "Unknown",
+        error: error instanceof Error ? redactQueryValuesInText(error.message) : "Unknown",
       },
       severity: "warning",
       ipAddress: clientIp,

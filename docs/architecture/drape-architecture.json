@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 19
+      "moduleCount": 21
     },
     {
       "id": "domain:profile",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 61
+      "moduleCount": 62
     },
     {
       "id": "domain:wardrobe",
@@ -3799,14 +3799,14 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/castPersonaCraft.ts",
-      "path": "server/castingV2/castPersonaCraft.ts",
+      "id": "module:server/castingV2/castPersonaProjection.ts",
+      "path": "server/castingV2/castPersonaProjection.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/castPersonaProjection.ts",
-      "path": "server/castingV2/castPersonaProjection.ts",
+      "id": "module:server/castingV2/castPersonaTranslate.ts",
+      "path": "server/castingV2/castPersonaTranslate.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -5413,8 +5413,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/queryErrorRedaction.ts",
+      "path": "server/monitoring/queryErrorRedaction.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/monitoring/trackerVerdict.ts",
       "path": "server/monitoring/trackerVerdict.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/monitoring/trpcErrorReport.ts",
+      "path": "server/monitoring/trpcErrorReport.ts",
       "domain": "platform",
       "lifecycle": "active"
     },
@@ -5973,6 +5985,12 @@
     {
       "id": "module:server/testing/errorMessageInterpolations.ts",
       "path": "server/testing/errorMessageInterpolations.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/failedWrite.ts",
+      "path": "server/testing/failedWrite.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -8000,6 +8018,16 @@
       "id": "route:castingV2.sign",
       "namespace": "castingV2",
       "name": "sign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.translateOwnWords",
+      "namespace": "castingV2",
+      "name": "translateOwnWords",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -11635,6 +11663,10 @@
       "path": "client/src/staffPagesLazy.test.ts"
     },
     {
+      "id": "test:server/_core/internalErrorWire.test.ts",
+      "path": "server/_core/internalErrorWire.test.ts"
+    },
+    {
       "id": "test:server/_core/invalidInputWire.test.ts",
       "path": "server/_core/invalidInputWire.test.ts"
     },
@@ -11665,6 +11697,10 @@
     {
       "id": "test:server/accountDeletionCoverage.test.ts",
       "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionErrorValues.test.ts",
+      "path": "server/accountDeletionErrorValues.test.ts"
     },
     {
       "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
@@ -12521,6 +12557,14 @@
     {
       "id": "test:server/castingV2/castPersonaProjection.test.ts",
       "path": "server/castingV2/castPersonaProjection.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPersonaTranslate.test.ts",
+      "path": "server/castingV2/castPersonaTranslate.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPersonaTranslateEntrance.test.ts",
+      "path": "server/castingV2/castPersonaTranslateEntrance.test.ts"
     },
     {
       "id": "test:server/castingV2/castProjection.test.ts",
@@ -14099,6 +14143,10 @@
       "path": "server/gdprExportBounded.test.ts"
     },
     {
+      "id": "test:server/gdprExportPersona.test.ts",
+      "path": "server/gdprExportPersona.test.ts"
+    },
+    {
       "id": "test:server/ghQueueTransport.test.ts",
       "path": "server/ghQueueTransport.test.ts"
     },
@@ -14465,6 +14513,10 @@
     {
       "id": "test:server/pushedDocSuites.test.ts",
       "path": "server/pushedDocSuites.test.ts"
+    },
+    {
+      "id": "test:server/queryErrorRedaction.test.ts",
+      "path": "server/queryErrorRedaction.test.ts"
     },
     {
       "id": "test:server/queryStringReads.test.ts",
@@ -14841,6 +14893,10 @@
     {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
+    },
+    {
+      "id": "test:server/riteFailureMemory.test.ts",
+      "path": "server/riteFailureMemory.test.ts"
     },
     {
       "id": "test:server/riteLock.test.ts",
@@ -22452,6 +22508,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/criticalAlert.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/env.ts",
       "to": "module:server/casting/evidence/evidenceComposerScope.ts",
       "kind": "imports"
@@ -22623,6 +22684,16 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/trpcErrorReport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routers.ts",
       "kind": "imports"
     },
@@ -22744,6 +22815,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -26443,11 +26519,6 @@
     },
     {
       "from": "module:server/castingV2/castPersona.ts",
-      "to": "module:server/castingV2/castPersonaCraft.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castPersona.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },
@@ -26472,8 +26543,33 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/castPersonaCraft.ts",
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
       "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/db/castPersonaField.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -26519,11 +26615,6 @@
     {
       "from": "module:server/castingV2/castReads.ts",
       "to": "module:server/castingV2/castPersona.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/castReads.ts",
-      "to": "module:server/castingV2/castPersonaCraft.ts",
       "kind": "imports"
     },
     {
@@ -31477,6 +31568,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/admin.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33457,6 +33553,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/logging/logger.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -33479,6 +33580,11 @@
     {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -33529,6 +33635,16 @@
     {
       "from": "module:server/monitoring/trackerVerdict.ts",
       "to": "module:shared/monitoringProjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/errorTracker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -34518,6 +34634,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castPersonaTranslate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castProjection.ts",
       "kind": "imports"
     },
@@ -34644,6 +34765,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/sheetPreview.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
     {
@@ -34954,6 +35080,11 @@
     {
       "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -35704,6 +35835,11 @@
     {
       "from": "module:server/routes/googleAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/googleAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {

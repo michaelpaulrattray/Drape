@@ -462,10 +462,12 @@ export const PERSONA_READS_FAILED = "We could not write the other reads just now
  * THE DOOR ROW under the open box — his *"or"* divider and one way in.
  *
  * ⚠ **HIS DESIGN DRAWS TWO ROWS HERE AND THIS SHIPS ONE.** The second is *Say
- * it your way* (#2197), which is not built: its store is still being designed,
- * and it is the sibling of the voice card's own second door. A row that opens
- * nothing is the lesser path shipped silently — the same call #2205 recorded
- * for the voice card, made here the same way. It arrives when #2197 does.
+ * it your way*, whose SERVER half landed on main while this was being built
+ * (#2197 — the shared store and the translation call) and whose CLIENT half
+ * has not: nothing in `client/src` calls `translateOwnWords`, so the row would
+ * open onto nothing. A control that does nothing is the lesser path shipped
+ * silently — the same call #2205 recorded for the voice card, made here the
+ * same way. It arrives in the commit that draws its door.
  */
 export function PersonaReadsDoorRow({
   name,
