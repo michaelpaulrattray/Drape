@@ -148,6 +148,7 @@ import {
   validateSlug,
   worktreeListArgs,
   worktreeStatusArgs,
+  readOpenPullRequests,
   type KeptIgnoredPath,
   type RemovalState,
   type ReviewRemovalVerdict,
@@ -647,6 +648,8 @@ const state: RemovalState = {
   disposableIgnored,
   registered,
   junctionAt: readJunctionAt(plan.nodeModulesLink),
+  /* Asked below, once anything that already refuses has had its say (#2176). */
+  openPullRequests: null,
   ...removalStateFromShipReading(ship),
 };
 
@@ -700,7 +703,36 @@ if (reviewVerdict !== null) {
   console.log(`  ${reviewVerdict.note}`);
 }
 
-const verdict = decideRemoval(state, force);
+/*
+  ⚠ **IS A PULL REQUEST STILL OPEN ON THIS BRANCH? ASKED ONLY WHEN THE ANSWER
+  COULD STILL REACH A READER (#2176).**
+
+  `decideRemoval` is run twice: once over this state with the question
+  unasked, to find out whether anything already refuses — and if something
+  does, no network call is made at all, because the reader is about to be
+  stopped by a sentence that outranks this one. The second run is the real
+  verdict and carries the answer.
+
+  **Why not ask it always:** `remove` is also what a SWEEP calls over every
+  tree on the machine, and one `gh` call per tree on the one Actions budget
+  every seat and the crew share is a real cost for a line nobody would read on
+  a tree that is already being refused.
+
+  **Why not ask it never:** this is the one shape the three existing refusals
+  cannot see — a tree somebody is working in right now, which has pushed and
+  committed and so passes all three honestly. The whole of #2176.
+
+  A review worktree is detached, so there is no branch to ask about; an
+  unreadable branch is not guessed at either.
+*/
+const openPrs = reviewPr === null
+  && !branchReadFailed(branchRead)
+  && decideRemoval(state, force).proceed
+  ? readOpenPullRequests(branchRead.branch, (args) => runOptional("gh", args))
+  : null;
+const stateWithOpenPrs: RemovalState = { ...state, openPullRequests: openPrs };
+
+const verdict = decideRemoval(stateWithOpenPrs, force);
 if (!verdict.proceed) refuse(verdict.reason);
 for (const warning of verdict.warnings) console.log(`  ⚠ ${warning}`);
 
