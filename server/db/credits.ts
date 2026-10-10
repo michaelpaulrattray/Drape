@@ -92,22 +92,34 @@ export function isPurchasedCreditGrant(type: CreditTransactionType | string): bo
  * it, `min(5,000, 15,000)` = 5,000 is still the customer's top-up and only the
  * 10,000 plan credits expire.
  *
- * ⚠ WHY SKIPPING THE SETTLE IS EXACT, NOT GENEROUS. Between two settles the
- * bound only ever moves on a grant; charges and refunds leave it alone, so
- * `min(bound, balance)` is the "plan spends first" rule applied to the NET of
- * every charge and refund since the last grant. A refund undoes its charge in
- * that net, which is what restoring the charge's own bucket means. Where
- * several charges were in flight, the net is the right reading: once one is
- * refunded, the plan-first rule bills the ones that remain to the plan first.
- * It can never protect more than the bound, which is a number the customer
- * paid for at the last grant.
+ * ⚠ WHAT SKIPPING THE SETTLE READS. Between two settles the bound only ever
+ * moves on a grant; charges and refunds leave it alone, so `min(bound,
+ * balance)` is the "plan spends first" rule applied to the NET of every charge
+ * and refund since the last grant. For a refund of a charge made SINCE that
+ * grant, the refund undoes its charge in that net, which is what restoring the
+ * charge's own bucket means. Where several such charges were in flight, the
+ * net is the reading: once one is refunded, the plan-first rule bills the ones
+ * that remain to the plan first.
  *
- * ⚠ ITS STATED LIMIT: a grant that lands BETWEEN the charge and its refund (a
- * renewal, a top-up, a bonus) settles the bound and forgets the charge, so
- * that refund comes back as plan credits, as every refund did before this
- * card. Roll and Sign refunds settle within minutes; a dispute can take weeks.
- * Closing that needs the charge's purchased share written on its own ledger
- * row, which is a schema change and its own card.
+ * ⚠ ITS STATED LIMIT, AND IT RUNS BOTH WAYS. A refund of a charge made BEFORE
+ * the last grant (a renewal, a top-up, a bonus — any grant settles the bound
+ * and forgets the charge) is not restored to its own bucket. Which way it
+ * lands depends on what was spent since that grant:
+ *   - it can come back as PLAN credits when its charge used top-up credits —
+ *     the top-up share is lost, as every refund's was before this card;
+ *   - it can be read as PURCHASED when its charge used plan credits and the
+ *     top-up has been spent since — the customer's way. Worked: a renewal
+ *     settles the bound to 5,000 on a balance of 15,000; a 15,000 charge spends
+ *     the plan credits, then the top-up (balance 0, bound still 5,000); a 2,000
+ *     refund of a PRE-renewal plan charge lands and `min(5,000, 2,000)` reads
+ *     all 2,000 as purchased, so they escape expiry, rollover and a downgrade
+ *     trim. Pinned in `server/refundRestoresItsBucket.test.ts`.
+ * Either way the purchased reading is capped by the bound, a number the
+ * customer paid for at the last grant, so a refund can never make more
+ * credits protected than were bought. Roll and Sign refunds settle within
+ * minutes, so they rarely straddle a grant; a dispute can take weeks. Closing
+ * the limit needs the charge's purchased share written on its own ledger row,
+ * which is a schema change and its own card.
  *
  * Bonuses, signup credits and staff goodwill are NOT reversals and keep the
  * settle: how they should expire is the founder's decision on #2185, not this

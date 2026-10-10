@@ -201,12 +201,36 @@ describe("3 · negative controls: every grant that is NOT a refund still settles
   });
 });
 
-describe("4 · the stated limit: a grant BETWEEN a charge and its refund", () => {
+describe("4 · the stated limit, both ways: a grant BETWEEN a charge and its refund", () => {
   it("the grant settles the bound, so that refund comes back as plan credits (needs the charge's share on its ledger row)", async () => {
     await roll(15_000, "roll:h");
     await addCredits(7, 1_000, "subscription", "Monthly credit refresh", "sub:h");
     await addCredits(7, 15_000, "refund", "Refund", "refund:roll:h");
     expect(account.balance).toBe(16_000);
     expect(purchasedCreditsRemaining(account)).toBe(0);
+  });
+
+  it("⚠ the OTHER direction: a refund of a PRE-renewal plan charge, after the top-up is spent, reads as purchased (capped by the bound)", async () => {
+    /*
+      The relay's counter-example on PR #2193, pinned as the documented
+      behaviour so a change to it is a decision rather than an accident. A
+      renewal settles the bound to 5,000 on 15,000; a 15,000 charge spends
+      the plan credits and then the top-up; a 2,000 refund of a charge made
+      BEFORE the renewal (plan credits) lands, and all 2,000 read as purchased.
+    */
+    account = { ...cardAccount(), balance: 14_000, purchasedBalance: 5_000 };
+    await addCredits(7, 1_000, "subscription", "Monthly credit refresh", "sub:i");
+    expect(account.balance).toBe(15_000);
+    expect(account.purchasedBalance).toBe(5_000);
+
+    await roll(15_000, "roll:i");
+    expect(account.balance).toBe(0);
+    expect(account.purchasedBalance).toBe(5_000);
+
+    await addCredits(7, 2_000, "refund", "Refund of a pre-renewal charge", "refund:roll:before-renewal");
+    expect(account.balance).toBe(2_000);
+    expect(purchasedCreditsRemaining(account)).toBe(2_000);
+    // Capped by the bound: it can never exceed what was bought at the last grant.
+    expect(purchasedCreditsRemaining(account)).toBeLessThanOrEqual(account.purchasedBalance);
   });
 });
