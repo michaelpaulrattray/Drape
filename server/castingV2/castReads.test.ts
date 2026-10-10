@@ -24,10 +24,12 @@ import {
   castReadsCurrentBlock,
   castReadsSystemPrompt,
   createCastReadsReader,
+  dropTrailingFragments,
   parseCastReads,
   trimTrailingJunk,
 } from "./castReads";
 import { castPronouns } from "./castPronouns";
+import { castPersonaSystemPrompt } from "./castPersona";
 import type { ReferenceImage, TextEngine, TextRequest } from "../providers/types";
 
 const pronouns = castPronouns({ subject: { sex: "male" } });
@@ -260,5 +262,81 @@ describe("what the instruction asks for", () => {
 
   it("marks the one example it DOES carry as form whose wording is unavailable", () => {
     expect(instruction).toContain("WORDING is not available");
+  });
+});
+
+describe("#2238 — a read is held short by the instruction and ends on a whole sentence", () => {
+  const instruction = castReadsSystemPrompt(pronouns);
+
+  it("asks for one new fact per clause and his examples' length, with no cutting cap", () => {
+    expect(instruction).toContain("Every clause adds one NEW thing the camera can see");
+    expect(instruction).toContain("never restate a");
+    expect(instruction).toContain("Aim for about 300 to 330 characters per description");
+    expect(instruction).toContain("End on a full sentence.");
+  });
+
+  it("the safety net is still the card's own 500, so a 420-character read is kept whole", () => {
+    const long = "Stands square with both hands flat on the counter and the gaze parked on the door, ".repeat(4).trim()
+      + " Answers late and all at once.";
+    expect(long.length).toBeGreaterThan(330);
+    expect(long.length).toBeLessThan(500);
+    const reads = parseCastReads(JSON.stringify({ reads: SIX.map((read, i) => (i === 0 ? { ...read, personality: long } : read)) }));
+    expect(reads?.[0]?.personality).toBe(long);
+  });
+
+  it("⚠ MEASURED — the stray \"able.\" his own Pigman got is cut off, leaving the whole sentence", () => {
+    const stray = "Stands wide-legged and chest forward, holding the new ground. Reacts instantly to proximity with a hard stamp forward. able.";
+    expect(dropTrailingFragments(stray)).toBe(
+      "Stands wide-legged and chest forward, holding the new ground. Reacts instantly to proximity with a hard stamp forward.",
+    );
+    const reads = parseCastReads(JSON.stringify({
+      reads: SIX.map((read, i) => (i === 2 ? { ...read, personality: stray } : read)),
+    }));
+    expect(reads).toHaveLength(CAST_READS_COUNT);
+    expect(reads?.[2]?.personality.endsWith("able.")).toBe(false);
+    expect(reads?.[2]?.personality.endsWith("stamp forward.")).toBe(true);
+  });
+
+  it("a fragment glued on with no space, or behind a marker, goes too", () => {
+    expect(dropTrailingFragments("Stands still. Moves late and all at once.able.")).toBe("Stands still. Moves late and all at once.");
+    expect(dropTrailingFragments("Stands still. Moves late and all at once.</s>able.")).toBe("Stands still. Moves late and all at once.");
+  });
+
+  it("a whole read is left exactly as it is (negative control)", () => {
+    for (const whole of [
+      "Stands still with the hands at rest. Moves late and all at once.",
+      "Still as furniture; the eyes track without the head turning. Moves only when it matters, then all at once.",
+      "Back straight, heels together. Never hurries.",
+    ]) {
+      expect(dropTrailingFragments(whole)).toBe(whole);
+    }
+  });
+
+  it("nothing whole left means nothing kept — and six-or-nothing drops the list", () => {
+    expect(dropTrailingFragments("able.")).toBe("");
+    expect(dropTrailingFragments("and then")).toBe("");
+    const bad = JSON.stringify({ reads: SIX.map((read, i) => (i === 0 ? { ...read, personality: "able." } : read)) });
+    expect(parseCastReads(bad)).toBeNull();
+  });
+});
+
+describe("#2238 — every read says where the eyes are, and only visible things set it moving", () => {
+  const instruction = castReadsSystemPrompt(pronouns);
+
+  it("makes the gaze a hard requirement of every read's first sentence", () => {
+    expect(instruction).toContain("FOR EVERY READ, the first sentence must state BOTH the posture AND where the");
+    expect(instruction).toContain("eyes are");
+  });
+
+  it("requires a visible or audible trigger for any change, never a thought or a decision", () => {
+    expect(instruction).toContain("is set off by something the camera\ncan see or hear");
+    expect(instruction).toContain("Never by a thought, a decision, a\nrealisation or a feeling; the camera cannot see those happen.");
+  });
+
+  it("⚠ the Sign's own instruction carries neither clause (its golden holds the rest)", () => {
+    const sign = castPersonaSystemPrompt(pronouns);
+    expect(sign).not.toContain("FOR EVERY READ");
+    expect(sign).not.toContain("Never by a thought, a decision");
+    expect(sign).not.toContain("Aim for about 300 to 330 characters");
   });
 });

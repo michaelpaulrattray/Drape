@@ -77,11 +77,16 @@ describe("the field no longer saves on blur, which is what lets Cancel exist", (
     expect(editableLine()).not.toContain("onBlur=");
   });
 
-  it("still abandons on Escape and still commits on Enter", () => {
+  /*
+    ⚠ ENTER NO LONGER COMMITS — #2238, his word 2026-10-11: Enter stored a
+    half-finished edit. Enter is a new line now and only Keep stores; the key
+    rule itself is `personaKeyAction`, driven in `personaOneDoor2238.test.ts`.
+  */
+  it("still abandons on Escape, and Enter no longer commits", () => {
     const slice = editableLine();
-    expect(slice).toContain('if (event.key === "Escape")');
+    expect(slice).toContain('personaKeyAction(event.key) === "escape"');
     expect(slice).toContain("abandon();");
-    expect(slice).toContain('if (event.key === "Enter" && !event.shiftKey)');
+    expect(slice).not.toContain('"Enter"');
   });
 
   /*

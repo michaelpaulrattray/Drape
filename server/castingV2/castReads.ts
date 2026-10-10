@@ -218,6 +218,24 @@ export function castReadsSystemPrompt(pronouns: CastPronouns): string {
     "",
     ...rules.personality,
     "",
+    /*
+      ⚠ TWO REQUIREMENTS THE SHARED BLOCK STATES SOFTLY, MADE HARD FOR THE SIX
+      (#2238, his reviewer on the six his own Pigman got). Added HERE and never
+      into `rules.personality`, so the Sign's instruction is byte-identical.
+       - GAZE: the shared block lists "where the gaze goes" among three things,
+         and 3 of 6 reads said nothing about the eyes.
+       - TRIGGERS: one read broke into motion "once something has definitely
+         been decided" — an inner state no camera can see.
+    */
+    "FOR EVERY READ, the first sentence must state BOTH the posture AND where the",
+    "eyes are — where the gaze rests, what it follows, or what it avoids. A read",
+    "that does not say where the eyes are is not finished.",
+    "",
+    "Any change — a move, a turn, a reaction — is set off by something the camera",
+    "can see or hear: a sound, a voice, a question, a touch, someone stepping",
+    "closer, something entering the frame. Never by a thought, a decision, a",
+    "realisation or a feeling; the camera cannot see those happen.",
+    "",
     ...rules.cameraOnly,
     "",
     `All ${CAST_READS_COUNT} are the SAME person — the one in the photograph, with the same`,
@@ -234,6 +252,23 @@ export function castReadsSystemPrompt(pronouns: CastPronouns): string {
     ...rules.writing,
     "",
     ...rules.length,
+    /*
+      ⚠ THE READS' OWN TIGHTENING, ADDED BESIDE THE SHARED BLOCK AND NEVER INTO
+      IT (#2238). His word, 2026-10-11: *"The options are walls of text. Each
+      one is a 4 to 5 line paragraph"*. Measured on the six his own Pigman got,
+      the reads ran ~350–420 characters against the shared example's length.
+      The ruling forwarded on the card is to hold length through the
+      INSTRUCTION, not a cutting cap: every clause one new fact, nothing said
+      twice, and his examples' length as the target. `rules.length` and
+      `rules.personalityExample` are untouched, so the Sign and the translator
+      render byte-identical instructions (their golden holds them); the 500
+      ceiling stays a safety net and nothing is truncated to fit a smaller one.
+    */
+    "Six of these sit side by side next to the face, so each one must be read at a",
+    "glance. Every clause adds one NEW thing the camera can see; never restate a",
+    "fact another clause already gave, and never pad a sentence with a second way",
+    "of saying the first. Aim for about 300 to 330 characters per description —",
+    "the length of the example below, not longer. End on a full sentence.",
     "",
     "The example below is the FORM to produce — a label, then the two jobs in",
     "two sentences, at that rhythm and that length. Its WORDING is not available",
@@ -353,10 +388,14 @@ export function parseCastReads(raw: string): CastRead[] | null {
   for (const entry of read.data.reads) {
     const label = trimTrailingJunk(entry.label.trim(), { sentence: false });
     /* The drafted line's own fitter, so a read is held to the cap the customer
-       is held to — and cut at a sentence end or not at all. */
-    const personality = fitToCap(
-      trimTrailingJunk(entry.personality.trim(), { sentence: true }),
-      CAST_PERSONALITY_MAX_LENGTH,
+       is held to — and cut at a sentence end or not at all. A stray fragment is
+       cut off before and after the fit (#2238), so a read ends on a whole
+       sentence or is dropped. */
+    const personality = dropTrailingFragments(
+      fitToCap(
+        dropTrailingFragments(trimTrailingJunk(entry.personality.trim(), { sentence: true })),
+        CAST_PERSONALITY_MAX_LENGTH,
+      ),
     );
     if (!label || label.length > CAST_READ_LABEL_MAX_LENGTH || !personality) continue;
     kept.push({ label, personality });
@@ -456,6 +495,41 @@ export function trimTrailingJunk(value: string, options: { sentence: boolean }):
     end += 1;
   }
   return value.slice(0, end).trim();
+}
+
+/**
+ * A READ ENDS ON A WHOLE SENTENCE OR IS DROPPED — #2238, his word: *"One also
+ * has a stray "able." on the end."*
+ *
+ * ⚠ **WHY `trimTrailingJunk` LET IT THROUGH.** That cut keeps everything up to
+ * the LAST full stop, and a fragment that ends in a full stop — `…holding the
+ * new ground. able.` — has one. So the litter survived the very rule written
+ * against litter, because the rule asked "where does the prose end" and the
+ * fragment answered for it.
+ *
+ * The question asked here is the other one: is the LAST sentence a sentence? A
+ * real one in a read starts on a capital (the craft asks for two sentences, each
+ * opening a job) and is more than one word. A tail that fails either is
+ * cut back to the sentence before it; if nothing whole is left, the read is
+ * `""` and the six-or-nothing rule drops the list rather than drawing it.
+ */
+export function dropTrailingFragments(value: string): string {
+  let text = value.trim();
+  for (;;) {
+    if (!text) return "";
+    const ends = /[.!?]$/.test(text);
+    const body = ends ? text.slice(0, -1) : text;
+    const before = Math.max(body.lastIndexOf("."), body.lastIndexOf("!"), body.lastIndexOf("?"));
+    const tail = text.slice(before + 1).trim();
+    const firstLetter = tail.split("").find((ch) => ch.toLowerCase() !== ch.toUpperCase()) ?? "";
+    const whole = ends
+      && firstLetter !== ""
+      && firstLetter === firstLetter.toUpperCase()
+      && tail.split(/\s+/).filter(Boolean).length > 1;
+    if (whole) return text;
+    if (before < 1) return "";
+    text = text.slice(0, before + 1).trim();
+  }
 }
 
 /** Some models fence JSON despite being asked for an object. */

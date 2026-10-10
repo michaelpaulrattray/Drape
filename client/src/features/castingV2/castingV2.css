@@ -4814,20 +4814,20 @@
 
    ⚠ NO INNER FOCUS OUTLINE ON THE FIELD (the room's own design law, and a
    mechanized assertion elsewhere in the suite) — the border carries focus. */
+/* ⚠ #2238: the words are a paragraph, not a button — the edit icon is the one
+   door (his word, 2026-10-11). The transparent border and the pulled-out
+   padding stay so the open box still lands on the words' own edge.
+   `pre-line` because Enter now makes a new line, and a kept line break must
+   read as one. */
 .dpc-persona__read {
   font: 400 11.5px/1.5 var(--font-sans);
   color: var(--metaStrong);
-  text-align: left;
-  background: none;
   border: 1px solid transparent;
-  border-radius: 8px;
   padding: 4px 6px;
   margin: -4px -6px;
-  cursor: text;
   width: 100%;
+  white-space: pre-line;
 }
-.dpc-persona__read:hover { border-color: var(--border); }
-.dpc-persona__read:disabled { cursor: default; opacity: 0.55; }
 
 .dpc-persona__field {
   font: 400 11.5px/1.5 var(--font-sans);
@@ -4854,6 +4854,9 @@
   gap: 9px;
   width: 100%;
 }
+/* While a door has the card the editor stays mounted (its words survive the
+   trip) and hidden — `display: flex` above would otherwise beat `[hidden]`. */
+.dpc-persona__edit[hidden] { display: none; }
 
 /* The sentence under the box. `--meta` and not `--metaStrong`: it is a note
    about the field, in the same register as every other hint in the room, and
@@ -4864,7 +4867,32 @@
   margin: 0;
 }
 
-.dpc-persona__acts { display: flex; align-items: center; gap: 8px; }
+.dpc-persona__acts { display: flex; align-items: center; gap: 8px; width: 100%; }
+
+/* "Unsaved" — a note in the hint register, at the row's far end, never a
+   warning colour: nothing is wrong, the words are simply not kept yet. */
+.dpc-persona__unsaved {
+  margin-left: auto;
+  font: 400 11px var(--font-sans);
+  color: var(--meta);
+}
+
+/* THE EDIT ICON (#2238) — the quiet *Change* of #2214, as a pen: same colour,
+   same hover, the house quiet-control shape. A 24px hit area around a 13px
+   glyph, pulled back by its own padding so the head's right edge does not move. */
+.dpc-persona__editIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -5px -6px -5px 0;
+  border-radius: 6px;
+}
+
+/* The ? beside each label shares the Klieg ID's ? rule (`.dpc-master__idhelp`)
+   rather than copying it; this only keeps it from shrinking in the flex head. */
+.dpc-persona__help { flex: none; }
 
 /* Keep is the commit, so it carries the room's filled-button shape — the same
    ink-on-surface pair `dpc-rrefine__go` uses, without its disabled dressing,
@@ -4879,6 +4907,7 @@
   cursor: pointer;
 }
 .dpc-persona__keep:disabled { cursor: default; opacity: 0.4; }
+.dpc-persona__keep:hover:not(:disabled) { opacity: 0.88; }
 
 /* Cancel is outlined and quiet: it is the way back, never the thing to press. */
 .dpc-persona__cancel {
@@ -4894,16 +4923,6 @@
 /* Reword it wears this shape and is switched off while a keep is in flight. */
 .dpc-persona__cancel:disabled { cursor: default; opacity: 0.4; }
 
-/* The badge sits where a card's action sits, in the label's own register, so
-   it reads as a note about the card and never as a control. */
-.dpc-persona__badge {
-  font: 400 10.5px var(--font-sans);
-  color: var(--meta);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 1px 7px;
-  white-space: nowrap;
-}
 
 /* The voice line lives INSIDE the existing stub, above its foot. */
 .dpc-persona__voice {
@@ -4968,10 +4987,56 @@
 .dpc-persona__pickerTitle { font: 500 12px var(--font-sans); color: var(--ink); margin: 0; }
 .dpc-persona__pickerSub { font: 400 11px/1.5 var(--font-sans); color: var(--meta); margin: 0; }
 
-/* The wait and the refusal share a register: a sentence in the hint colour,
-   never a spinner and never a bar — there is no progress to report, and a bar
-   that fills on a timer is a number nobody can act on (#55). */
+/* The wait and the refusal share a register: a sentence in the hint colour.
+   ⚠ #2238 adds a moving sign under the wait, because a sentence alone for 3 to
+   14 seconds read as stuck. It is a SWEEP, never a bar that fills — there is no
+   progress to report, and a bar that fills on a timer is a number nobody can
+   act on (#55). Under reduced motion it holds still. */
 .dpc-persona__working { font: 400 11.5px/1.5 var(--font-sans); color: var(--meta); margin: 0; }
+
+.dpc-persona__wait {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+}
+.dpc-persona__pulse {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+.dpc-persona__pulse::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 32%;
+  border-radius: 999px;
+  background: var(--meta);
+  animation: dpc-persona-sweep 1.5s ease-in-out infinite;
+}
+@keyframes dpc-persona-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(320%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpc-persona__pulse::after { animation: none; width: 100%; opacity: 0.5; }
+}
+
+/* A failure line and its Try again, stacked: the sentence says what was
+   refused, the button is what to do (#2238). */
+.dpc-persona__failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
 
 /* One of the six. The ring is a border change and not a shadow, so the row
    keeps its height when it is picked and the list does not shift under the
@@ -4988,8 +5053,12 @@
   background: none;
   cursor: pointer;
 }
-.dpc-persona__option:hover { border-color: var(--ink); }
-.dpc-persona__option.is-picked { border-color: var(--ink); }
+/* ⚠ #2238: hover and picked used to be the SAME border, so a row the pointer
+   rested on read as chosen. Hover is a mid-grey border (ink at a third); picked is the full ink
+   border, a filled tint and the tag with its check — three differences, in
+   both themes, none of which change the row's height. */
+.dpc-persona__option:hover { border-color: color-mix(in srgb, var(--ink) 32%, var(--border)); }
+.dpc-persona__option.is-picked { border-color: var(--ink); background: var(--well); }
 .dpc-persona__optionHead { display: flex; align-items: center; gap: 8px; }
 .dpc-persona__optionName { font: 500 11.5px var(--font-sans); color: var(--ink); }
 .dpc-persona__optionBody { font: 400 11.5px/1.5 var(--font-sans); color: var(--metaStrong); }
@@ -4998,9 +5067,12 @@
    same border — because they are the same kind of thing: a note about the row
    it sits in, never a control. */
 .dpc-persona__picked {
-  font: 400 10.5px var(--font-sans);
-  color: var(--meta);
-  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: 500 10.5px var(--font-sans);
+  color: var(--ink);
+  border: 1px solid var(--ink);
   border-radius: 999px;
   padding: 1px 7px;
   white-space: nowrap;
@@ -5062,3 +5134,51 @@
   width: 100%;
 }
 .dpc-persona__backEnd { margin-left: auto; }
+
+/* KEEP STAYS IN VIEW (#2238). After a pick the Keep row sticks to the bottom
+   of the viewport while the list is on screen — on the card's own surface, with
+   a hairline above it, so the rows scroll under it rather than through it. */
+.dpc-persona__pin {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 10px 0 12px;
+  background: var(--surface);
+  box-shadow: 0 -1px 0 var(--border);
+}
+
+/* ---- #2238: focus, and phone width ----
+
+   FOCUS. Buttons and the edit icon wear the house accent ring from
+   `tokens.css`'s blanket `.dp-root :focus-visible` — derived, not restated
+   here. ROWS (the six reads and the door rows) take the room's quieter row
+   mark instead, the same one `.dpc-face__row` and `.dp-pop__option` wear: the
+   border carries focus, no ring around a row. `.dp-root ` is load-bearing — a
+   bare selector ties the blanket at (0,2,0) and loses on order (see
+   `.dpc-face__open`). The picker itself takes focus so Escape reaches it; it is
+   a container, not a control, so it wears no mark. Text fields wear none
+   either: `foundation.css` excludes every textarea from the ring at the root. */
+.dp-root .dpc-persona__option:focus-visible,
+.dp-root .dpc-persona__door:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 52%, transparent);
+}
+.dp-root .dpc-persona__picker:focus-visible,
+.dp-root .dpc-persona__picker:focus { outline: none; }
+
+/* PHONE WIDTH (≤ 460px). The buttons stack full-width so a thumb can hit them
+   and nothing runs off the card; the footer links wrap rather than squeeze. */
+@media (max-width: 460px) {
+  .dpc-persona__acts { flex-direction: column; align-items: stretch; }
+  .dpc-persona__keep,
+  .dpc-persona__cancel { width: 100%; padding: 9px 15px; }
+  .dpc-persona__unsaved { margin-left: 0; align-self: flex-end; }
+  .dpc-persona__failed { align-items: stretch; }
+  .dpc-persona__links { flex-wrap: wrap; row-gap: 8px; }
+  .dpc-persona__option,
+  .dpc-persona__door { min-width: 0; }
+  .dpc-persona__optionBody,
+  .dpc-persona__doorSub,
+  .dpc-persona__read { overflow-wrap: anywhere; }
+}

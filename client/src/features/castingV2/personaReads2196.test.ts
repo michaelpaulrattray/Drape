@@ -157,10 +157,10 @@ describe("the wait and the refusal", () => {
 });
 
 describe("where the door is offered, which is read off his frame", () => {
-  it("a SHUT card offers nothing — one line of words and a quiet Change", () => {
+  it("a SHUT card offers nothing — one line of words and the quiet edit icon (card 2238)", () => {
     const html = drawCard(door({ state: "shut", reads: [] }));
     expect(html).not.toContain(PERSONA_READS_TITLE);
-    expect(html).toContain("Change");
+    expect(html).toContain('aria-label="Edit personality"');
   });
 
   it("the row and its `or` appear only once the box is open", () => {
@@ -170,7 +170,7 @@ describe("where the door is offered, which is read off his frame", () => {
       rendered arms above that prove the shut case.
     */
     expect(source(CARDS)).toContain("<PersonaDoorRows doors={doors}");
-    expect(source(CARDS)).toMatch(/\{editing \? \(\s*<PersonaDoorRows doors=\{doors\}/);
+    expect(source(CARDS)).toMatch(/\{editing && !inPicker && !inOwnWords \? \(\s*<PersonaDoorRows doors=\{doors\}/);
     expect(renderToStaticMarkup(
       createElement(PersonaDoorRows, { doors: personaDoorRowSpecs("personality", "Pigman", door(), null), disabled: false }),
     )).toContain("or</span>");
