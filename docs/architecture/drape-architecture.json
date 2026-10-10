@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 59
+      "moduleCount": 60
     },
     {
       "id": "domain:wardrobe",
@@ -5985,6 +5985,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/once.ts",
+      "path": "server/testing/once.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -11829,6 +11835,10 @@
       "path": "server/billing/planCreditsExpiry.test.ts"
     },
     {
+      "id": "test:server/billing/promoCreditsSweepWiring.test.ts",
+      "path": "server/billing/promoCreditsSweepWiring.test.ts"
+    },
+    {
       "id": "test:server/billing/renewalReminder.test.ts",
       "path": "server/billing/renewalReminder.test.ts"
     },
@@ -13585,6 +13595,10 @@
       "path": "server/creditDisplayGuard.test.ts"
     },
     {
+      "id": "test:server/creditExpiryRules.test.ts",
+      "path": "server/creditExpiryRules.test.ts"
+    },
+    {
       "id": "test:server/creditPriceScale.test.ts",
       "path": "server/creditPriceScale.test.ts"
     },
@@ -13833,12 +13847,20 @@
       "path": "server/db/migrationLag.test.ts"
     },
     {
+      "id": "test:server/db/promoCreditsCandidates.test.ts",
+      "path": "server/db/promoCreditsCandidates.test.ts"
+    },
+    {
       "id": "test:server/db/referenceReadDemand.test.ts",
       "path": "server/db/referenceReadDemand.test.ts"
     },
     {
       "id": "test:server/db/referralClaimRace.test.ts",
       "path": "server/db/referralClaimRace.test.ts"
+    },
+    {
+      "id": "test:server/db/referralCreditsNeverExpire.test.ts",
+      "path": "server/db/referralCreditsNeverExpire.test.ts"
     },
     {
       "id": "test:server/db/storageCleanupHold.test.ts",

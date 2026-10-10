@@ -12,17 +12,19 @@
  *
  * Two facts here are load-bearing and invisible in the SQL itself:
  *
- *  1 · THE SETTLE IS ITS OWN STATEMENT AND IT RUNS FIRST. It clamps
- *      `purchasedBalance` to the balance BEFORE this grant lands. Folded into
- *      the grant as a clause it would be correct only while it sat above the
- *      `balance` assignment, because MySQL evaluates `SET` assignments left to
- *      right — an order-dependent correctness nobody reading the SQL would
- *      suspect. Run second it would clamp to the POST-grant balance, which
- *      protects credits the customer did not buy.
- *  2 · ONLY `topup` AND `purchase` RAISE THE PROTECTED AMOUNT. `subscription`
- *      is a purchase for the lifetime analytics counter and is NOT one here:
+ *  1 · THE SETTLE IS ITS OWN WRITE AND IT RUNS FIRST. Since #2185 it is a
+ *      locked read (`FOR UPDATE`) of the row and one write of all four bounds,
+ *      each settled to its bucket's reading, BEFORE this grant lands. Run
+ *      second it would settle against the POST-grant balance, which protects
+ *      credits nobody was given.
+ *  2 · EACH GRANT RAISES ITS OWN BUCKET'S BOUND AND NO OTHER (#2185).
+ *      `topup` / `purchase` raise `purchasedBalance`; a referral or goodwill
+ *      `bonus`, `admin_add` and `signup` (the starting credits) raise
+ *      `keptBalance`; a promo `bonus` raises `promoBalance`. `subscription`
+ *      is a purchase for the lifetime analytics counter and raises NO bound:
  *      a plan's monthly allowance is exactly what its rollover percentage
- *      governs, so protecting it would mean no renewal ever forfeits anything.
+ *      governs. A `bonus` that states no source is a plan change's proration
+ *      and is the plan's too.
  *
  * The negative control is the deduct: the hot path must name this column
  * never. An arm reddens if a clause appears there.
@@ -33,17 +35,28 @@ const executed: unknown[] = [];
 let executeAnswers: number[] = [];
 const inserted: Array<Record<string, unknown>> = [];
 const updateSets: Array<Record<string, unknown>> = [];
+/** Every write and locked read, in the order the function sent them. */
+const events: string[] = [];
 let selectAnswer: Array<Record<string, unknown>> = [{ balance: 0 }];
 
 const txDouble = {
   execute: async (query: unknown) => {
     executed.push(query);
+    events.push("execute");
     return [{ affectedRows: executeAnswers.shift() ?? 1 }];
   },
   select: () => ({
     from: () => ({
       where: () => ({
-        limit: async () => selectAnswer,
+        limit: () => {
+          const rows = selectAnswer;
+          return Object.assign(Promise.resolve(rows), {
+            for: async (mode: string) => {
+              events.push(`for:${mode}`);
+              return rows;
+            },
+          });
+        },
       }),
     }),
   }),
@@ -51,6 +64,7 @@ const txDouble = {
     set: (values: Record<string, unknown>) => ({
       where: async () => {
         updateSets.push(values);
+        events.push("set");
         return [{ affectedRows: 1 }];
       },
     }),
@@ -82,6 +96,11 @@ function tokens(query: unknown): string[] {
   const out: string[] = [];
   for (const chunk of chunks) {
     if (chunk && typeof chunk === "object") {
+      // A clause composed as its own `sql` fragment (#2185's grant) is walked in place.
+      if (Array.isArray((chunk as { queryChunks?: unknown }).queryChunks)) {
+        out.push(...tokens(chunk));
+        continue;
+      }
       const named = chunk as { name?: unknown; value?: unknown };
       if (typeof named.name === "string") {
         out.push(`col:${named.name}`);
@@ -108,109 +127,108 @@ beforeEach(() => {
   executeAnswers = [];
   inserted.length = 0;
   updateSets.length = 0;
+  events.length = 0;
   selectAnswer = [{ balance: 0 }];
 });
 
-describe("the settle statement", () => {
-  it("⚠ runs FIRST, and clamps the protected amount to the balance with LEAST", async () => {
-    executeAnswers = [1, 1];
-    await addCredits(7, 5_000, "topup", "Credit top-up: 5000 credits", "topup:t1");
+const BOUND_KEYS = ["purchasedBalance", "keptBalance", "promoBalance"];
 
-    expect(executed).toHaveLength(2);
-    const settle = executed[0];
-    expect(columns(settle)).toEqual(["purchasedBalance", "purchasedBalance", "balance", "userId"]);
-    expect(text(settle)).toContain("LEAST(");
-    expect(text(settle)).toContain("UPDATE");
+describe("the settle", () => {
+  it("⚠ runs FIRST — a locked read, then one write of the four bounds, then the grant", async () => {
+    selectAnswer = [{ balance: 1_000, purchasedBalance: 25_000 }];
+    await addCredits(7, 5_000, "topup", "Credit top-up: 5000 credits", "topup:t1");
+    expect(events.slice(0, 3)).toEqual(["for:update", "set", "execute"]);
+    expect(executed).toHaveLength(1);
   });
 
-  it("names no other column — it can move nothing but the bound", async () => {
-    executeAnswers = [1, 1];
+  it("writes the bounds and nothing else, each settled to its bucket's reading", async () => {
+    // 1,000 on the balance; the bounds remember far more than is left.
+    selectAnswer = [{ balance: 1_000, purchasedBalance: 600, keptBalance: 900, promoBalance: 50 }];
     await addCredits(7, 5_000, "bonus", "A bonus", "bonus:b1");
-    const named = new Set(columns(executed[0]));
-    expect(named).toEqual(new Set(["purchasedBalance", "balance", "userId"]));
-    expect(text(executed[0])).not.toContain("+");
+    expect(Object.keys(updateSets[0]).sort()).toEqual([...BOUND_KEYS].sort());
+    // Spent plan → promo → kept → purchased, so read in reverse:
+    expect(updateSets[0]).toEqual({ purchasedBalance: 600, keptBalance: 400, promoBalance: 0 });
   });
 
   it("runs for every grant kind that adds NEW credits, because any of them can resurrect a spent bound", async () => {
     for (const kind of ["topup", "purchase", "subscription", "bonus", "signup"] as const) {
-      executed.length = 0;
-      executeAnswers = [1, 1];
+      events.length = 0;
+      updateSets.length = 0;
+      selectAnswer = [{ balance: 0, purchasedBalance: 25_000 }];
       await addCredits(7, 1_000, kind, `a ${kind}`, `${kind}:k1`);
-      expect(executed).toHaveLength(2);
-      expect(columns(executed[0])).toContain("purchasedBalance");
-      expect(text(executed[0])).toContain("LEAST(");
+      expect(events.slice(0, 3)).toEqual(["for:update", "set", "execute"]);
+      expect(updateSets[0].purchasedBalance).toBe(0);
     }
   });
 
-  it("⚠ a REFUND sends no settle (#2185) — it gives back a spend, and the settle would forget the top-up that spend used", async () => {
+  it("⚠ a REFUND sends no settle (#2185) — it gives back a spend, and the settle would forget the buckets that spend used", async () => {
     executeAnswers = [1];
     selectAnswer = [{ balance: 1_000 }];
     const result = await addCredits(7, 1_000, "refund", "a refund", "refund:k1");
     expect(result.success).toBe(true);
-    expect(executed).toHaveLength(1);
-    expect(text(executed[0])).not.toContain("LEAST(");
-    expect(columns(executed[0])).not.toContain("purchasedBalance");
+    expect(events).toEqual(["execute"]);
+    expect(updateSets).toHaveLength(0);
+    for (const key of BOUND_KEYS) expect(columns(executed[0])).not.toContain(key);
+  });
+
+  it("⚠ a missing account is refused at the locked read, before anything is written", async () => {
+    selectAnswer = [];
+    const result = await addCredits(7, 1_000, "bonus", "A bonus", "bonus:b2");
+    expect(result).toEqual({ success: false, error: "User credits not found" });
+    expect(executed).toHaveLength(0);
+    expect(updateSets).toHaveLength(0);
+    expect(inserted).toHaveLength(0);
   });
 });
 
-describe("the grant statement", () => {
-  it("⚠ a TOP-UP raises the protected amount", async () => {
-    executeAnswers = [1, 1];
-    await addCredits(7, 5_000, "topup", "Credit top-up: 5000 credits", "topup:t2");
-    const grant = columns(executed[1]);
-    expect(grant).toContain("purchasedBalance");
-    expect(grant).toContain("creditsPurchased");
-    expect(grant).toContain("balance");
+describe("the grant statement — each grant raises its own bucket's bound and no other", () => {
+  const boundsIn = (query: unknown) => columns(query).filter((c) => BOUND_KEYS.includes(c));
+
+  it.each([
+    ["topup", undefined, "purchasedBalance"],
+    ["purchase", undefined, "purchasedBalance"],
+    ["signup", undefined, "keptBalance"],
+    ["bonus", "referral", "keptBalance"],
+    ["bonus", "goodwill", "keptBalance"],
+    ["bonus", "promo", "promoBalance"],
+  ] as const)("⚠ a %s (%s) raises %s", async (kind, bonusSource, bound) => {
+    selectAnswer = [{ balance: 0 }];
+    await addCredits(7, 1_000, kind, `a ${kind}`, `${kind}:g`, { bonusSource });
+    expect(boundsIn(executed[0])).toEqual([bound, bound]);
   });
 
-  it("a `purchase` raises it too", async () => {
-    executeAnswers = [1, 1];
-    await addCredits(7, 5_000, "purchase", "A purchase", "purchase:p1");
-    expect(columns(executed[1])).toContain("purchasedBalance");
-  });
-
-  it("⚠ a SUBSCRIPTION grant does NOT — a plan's allowance is what rollover governs", async () => {
-    executeAnswers = [1, 1];
+  it("⚠ a SUBSCRIPTION grant raises no bound — a plan's allowance is what rollover governs", async () => {
+    selectAnswer = [{ balance: 0 }];
     await addCredits(7, 75_000, "subscription", "Monthly credit refresh", "sub:s1");
-    const grant = columns(executed[1]);
-    expect(grant).not.toContain("purchasedBalance");
+    expect(boundsIn(executed[0])).toEqual([]);
     /* …and it still feeds the lifetime analytics counter, unchanged. */
-    expect(grant).toContain("creditsPurchased");
+    expect(columns(executed[0])).toContain("creditsPurchased");
   });
 
-  it("a bonus, a refund and a signup move the balance alone", async () => {
-    for (const kind of ["bonus", "refund", "signup"] as const) {
+  it("a bonus with no stated source (a plan change's proration) and a refund move the balance alone", async () => {
+    for (const kind of ["bonus", "refund"] as const) {
       executed.length = 0;
-      executeAnswers = [1, 1];
+      selectAnswer = [{ balance: 0 }];
       await addCredits(7, 1_000, kind, `a ${kind}`, `${kind}:k2`);
-      // The grant is the LAST statement: a refund sends no settle before it (#2185).
-      const grant = new Set(columns(executed[executed.length - 1]));
-      expect(grant).not.toContain("purchasedBalance");
-      expect(grant).not.toContain("creditsPurchased");
-      expect(grant).toContain("balance");
+      expect(boundsIn(executed[0])).toEqual([]);
+      expect(columns(executed[0])).not.toContain("creditsPurchased");
+      expect(columns(executed[0])).toContain("balance");
     }
   });
 
-  it("⚠ it is still the statement whose affectedRows decides the account exists", async () => {
-    /*
-      The settle runs first and matches nothing on a missing account. The
-      not-found verdict must come from the GRANT, exactly as before this card,
-      or a new statement has silently become the gate.
-    */
-    executeAnswers = [0, 0];
-    const result = await addCredits(7, 1_000, "bonus", "A bonus", "bonus:b2");
-    expect(result.success).toBe(false);
-    expect(result.error).toBe("User credits not found");
-    expect(executed).toHaveLength(2);
-    expect(inserted).toHaveLength(0);
+  it("⚠ a promo is stamped 90 days from its grant, in the settle's write", async () => {
+    selectAnswer = [{ balance: 0 }];
+    const now = new Date("2026-10-10T00:00:00Z");
+    await addCredits(7, 1_000, "bonus", "A promo", "promo:p1", { bonusSource: "promo", now });
+    expect(updateSets[0].promoCreditsExpireAt).toEqual(new Date("2027-01-08T00:00:00Z"));
   });
 
-  it("a settle that matches nothing does not stop a grant that does", async () => {
-    executeAnswers = [0, 1];
-    selectAnswer = [{ balance: 1_000 }];
+  it("the grant's affectedRows still refuses an account that vanished between the read and the grant", async () => {
+    executeAnswers = [0];
+    selectAnswer = [{ balance: 0 }];
     const result = await addCredits(7, 1_000, "bonus", "A bonus", "bonus:b3");
-    expect(result.success).toBe(true);
-    expect(result.newBalance).toBe(1_000);
+    expect(result).toEqual({ success: false, error: "User credits not found" });
+    expect(inserted).toHaveLength(0);
   });
 });
 
@@ -223,7 +241,7 @@ describe("the admin adjustment — the law-7 sibling, found by sweeping every wr
     protecting the admin's gift at the next renewal as if the customer had paid
     for it. It fails the customer's way, which is why nothing would complain.
   */
-  it("⚠ an admin ADD settles the bound against the balance it read", async () => {
+  it("⚠ an admin ADD settles the bound against the balance it read, and lands as goodwill that never expires (#2185)", async () => {
     selectAnswer = [{ balance: 0, purchasedBalance: 25_000 }];
     const result = await adjustUserCredits(7, 10_000, "a goodwill top-up", 1, "adj:a1");
 
@@ -231,6 +249,13 @@ describe("the admin adjustment — the law-7 sibling, found by sweeping every wr
     expect(updateSets).toHaveLength(1);
     expect(updateSets[0].balance).toBe(10_000);
     expect(updateSets[0].purchasedBalance).toBe(0);
+    expect(updateSets[0].keptBalance).toBe(10_000);
+  });
+
+  it("⚠ the admin add reads the row it overwrites FOR UPDATE (the relay's finding 3 on PR #2208)", async () => {
+    selectAnswer = [{ balance: 0, purchasedBalance: 0 }];
+    await adjustUserCredits(7, 1_000, "a goodwill top-up", 1, "adj:lock");
+    expect(events.slice(0, 2)).toEqual(["for:update", "set"]);
   });
 
   it("it settles rather than erasing — a live bound survives the adjustment", async () => {

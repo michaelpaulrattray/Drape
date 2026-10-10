@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { containedIn, trackedFiles } from "../../scripts/lib/trackedFiles.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./childProcessTimeout";
 import { readListedSource } from "./listedSource";
+import { once } from "./once";
 import { codeOnly, withoutComments } from "./withoutComments";
 
 /* Two derived populations claim this suite and it declares one floor for both.
@@ -152,18 +153,65 @@ function flatWalkAsItStoodBefore1635(source: string): string {
   return out;
 }
 
-function scannedFiles(extension?: "ts" | "tsx"): string[] {
+/**
+ * THE TREE IS LISTED ONCE AND READ ONCE (#2172).
+ *
+ * This suite is 28.5 s of the gate's unit `tests` total and FOUR of its arms
+ * sweep the tracked tree, so it asked `git ls-files` five times and read every
+ * tracked source file off disk four times for bytes that cannot change under
+ * it. Measured on this box before the change, per arm: the parser comparison
+ * 24.7 s, the `codeOnly` comparison 20.8 s, the end-of-file sentinel 18.9 s,
+ * the JSX census 2.7 s — and the sentinel arm does no parsing at all, which is
+ * what says the READ is a real share of this rather than the parser alone.
+ *
+ * ⚠ **THE POPULATIONS ARE UNTOUCHED.** Each arm keeps its own list (all files,
+ * `.ts` only, `.tsx` only) and its own assertion; one listing is filtered three
+ * ways exactly as three listings were.
+ *
+ * ⚠ **AND THE PARSE IS DELIBERATELY *NOT* SHARED — the obvious next step was
+ * tried, driven and declined.** Both parser readings come from one
+ * `ts.SourceFile`, so building it once per file and keeping both strippings
+ * removes a whole parser pass over the tree. It also moves that pass onto
+ * whichever arm runs FIRST, and that arm is the 24.7 s one: driven here, it
+ * went to **41.0 s and blew this suite's own 30 s per-arm budget**, turning a
+ * saving into a red. Sharing the bytes can only ever take work off a LATER
+ * arm; sharing the parse adds work to an EARLIER one. The remaining parser
+ * cost is therefore left, and named, rather than traded for a flaky gate.
+ */
+const allScannedFiles = once((): string[] => {
   const contains = containedIn(REPO_ROOT);
   const out: string[] = [];
   for (const absolute of trackedFiles(REPO_ROOT)) {
     const relative = path.relative(REPO_ROOT, absolute).split(path.sep).join("/");
     if (!/\.(ts|tsx)$/.test(relative)) continue;
-    if (extension === "ts" && relative.endsWith(".tsx")) continue;
-    if (extension === "tsx" && !relative.endsWith(".tsx")) continue;
     if (!contains(absolute)) continue;
     out.push(relative);
   }
   return out.sort();
+});
+
+function scannedFiles(extension?: "ts" | "tsx"): string[] {
+  return allScannedFiles().filter((relative) => {
+    if (extension === "ts" && relative.endsWith(".tsx")) return false;
+    if (extension === "tsx" && !relative.endsWith(".tsx")) return false;
+    return true;
+  });
+}
+
+const sourceCache = new Map<string, string | null>();
+
+/**
+ * A listed file's bytes, read once per run — `null`, and only, when the file is
+ * gone from the tree between the listing and the read. `null` is cached as
+ * `null` and never as empty content, which is `readListedSource`'s own contract
+ * (#223): a file that is not there is not a file that holds nothing.
+ */
+function listedSource(relative: string): string | null {
+  const cached = sourceCache.get(relative);
+  if (cached !== undefined) return cached;
+  const bytes = readListedSource(path.join(REPO_ROOT, relative));
+  sourceCache.set(relative, bytes);
+  return bytes;
 }
 
 describe("withoutComments — the one comment stripper (#1635)", () => {
@@ -281,7 +329,7 @@ describe("withoutComments — the one comment stripper (#1635)", () => {
   it("agrees with the TypeScript parser on every tracked source file", () => {
     const disagreements: string[] = [];
     for (const relative of scannedFiles()) {
-      const source = readListedSource(path.join(REPO_ROOT, relative));
+      const source = listedSource(relative);
       if (source === null) continue;
       let expected: string;
       try {
@@ -533,7 +581,7 @@ describe("codeOnly — the same walk, with the literals dropped (#1638)", () => 
 
     const disagreements: string[] = [];
     for (const relative of files) {
-      const source = readListedSource(path.join(REPO_ROOT, relative));
+      const source = listedSource(relative);
       if (source === null) continue;
       let expected: string;
       try {
@@ -556,7 +604,7 @@ describe("codeOnly — the same walk, with the literals dropped (#1638)", () => 
     const SENTINEL = "ZZ_SENTINEL_1638_ZZ";
     const swallowed: string[] = [];
     for (const relative of scannedFiles()) {
-      const source = readListedSource(path.join(REPO_ROOT, relative));
+      const source = listedSource(relative);
       if (source === null) continue;
       if (!codeOnly(`${source}${NEWLINE}${SENTINEL}${NEWLINE}`).includes(SENTINEL)) swallowed.push(relative);
     }
@@ -573,7 +621,7 @@ describe("codeOnly — the same walk, with the literals dropped (#1638)", () => 
     const differ: string[] = [];
     const quoted: string[] = [];
     for (const relative of scannedFiles("tsx")) {
-      const source = readListedSource(path.join(REPO_ROOT, relative));
+      const source = listedSource(relative);
       if (source === null) continue;
       if (hasQuotedJsxText(source, relative)) quoted.push(relative);
       let expected: string;

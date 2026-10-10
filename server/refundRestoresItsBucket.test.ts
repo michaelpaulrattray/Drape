@@ -58,7 +58,11 @@ async function applyRaw(query: unknown): Promise<number> {
   if (/set `balance` = `balance` \+ \?/i.test(text)) {
     account.balance += amount;
     if (/`creditsPurchased` = COALESCE/i.test(text)) account.creditsPurchased += amount;
-    if (/`purchasedBalance` = `purchasedBalance` \+ \?/i.test(text)) account.purchasedBalance += amount;
+    // Whichever bucket's bound the grant names rises with it (#2185).
+    for (const [, bound] of text.matchAll(/`(\w+Balance)` = `\w+Balance` \+ \?/gi)) {
+      const row = account as unknown as Record<string, number>;
+      row[bound] = (row[bound] ?? 0) + amount;
+    }
     return 1;
   }
   throw new Error(`the double does not know this statement: ${text}`);
@@ -69,7 +73,10 @@ const txDouble = {
   select: () => ({
     from: () => ({
       where: () => ({
-        limit: async () => [{ ...account }],
+        // The grant's settle reads the row `FOR UPDATE` (#2185); a plain read
+        // awaits the same answer.
+        limit: () =>
+          Object.assign(Promise.resolve([{ ...account }]), { for: async () => [{ ...account }] }),
       }),
     }),
   }),
@@ -93,7 +100,10 @@ vi.mock("./db/connection", () => ({
   withTransaction: vi.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(txDouble)),
 }));
 
-import { addCredits, deductCredits, purchasedCreditsRemaining } from "./db/credits";
+import { addCredits, creditBuckets, deductCredits, type CreditBucketRow } from "./db/credits";
+
+/** The purchased bucket — `creditBuckets` is the one reader since #2185. */
+const purchasedCreditsRemaining = (row: CreditBucketRow) => creditBuckets(row).purchased;
 import { expirePlanCredits } from "./db/billing";
 
 const DUE = new Date("2026-11-19T00:00:00Z");
@@ -179,7 +189,7 @@ describe("2 · two rolls, one refunded: plan credits still pay for what remains"
 });
 
 describe("3 · negative controls: every grant that is NOT a refund still settles", () => {
-  it("⚠ a BONUS after the same spend is not a top-up — it lands as plan credits, as before (his rule is open on #2185)", async () => {
+  it("⚠ a BONUS that states no source (a plan change's proration) after the same spend is not a top-up — it lands as plan credits", async () => {
     await roll(15_000, "roll:f");
     await addCredits(7, 15_000, "bonus", "A bonus", "bonus:f");
     expect(account.balance).toBe(15_000);
