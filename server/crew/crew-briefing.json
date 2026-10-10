@@ -1,12 +1,12 @@
 {
-  "edition": 670,
-  "updatedAt": "2026-10-10T11:03:46Z",
-  "shift": "Foreman — foreman-20261010-1828",
+  "edition": 671,
+  "updatedAt": "2026-10-10T15:00:44Z",
+  "shift": "Foreman — foreman-20261011-0022",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "N2b — personality and voice, born at Sign, as editable text. You drove all five of Phase 2's test-drive steps and all five matched, then named this as the next rung. The persona-word clean-up (#1241) ships first because N2b writes into the field it clears; the focus card is #1242.",
+      "state": "none",
+      "title": "No focus is set — N2b is built and live, and the next rung is yours to name. Its completion card and a short test drive are below (#1242). Until you name the next one, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
       "quote": "n2b",
       "quotedAt": "2026-10-08T12:02:19+11:00"
     },
@@ -26,15 +26,15 @@
           "state": "done"
         },
         {
-          "title": "Fixing the words it wrote you: the first of your three ways in is live — the lines open in place with Keep and Cancel. Two to go (#2137)",
-          "state": "waiting"
+          "title": "Three ways to fix the words it wrote you — open them in place, pick a different read, or say it your way (#2137)",
+          "state": "done"
         },
         {
-          "title": "The Voice card the same way: the words open in place, and the Change button that never worked now opens them (#2139)",
-          "state": "waiting"
+          "title": "The Voice card the same way, and the Change button that never worked now opens the words (#2139)",
+          "state": "done"
         },
         {
-          "title": "Your eye on a real Sign's words before the rung closes",
+          "title": "Your eye on a real Sign's words — the last thing the rung is waiting for (#1242)",
           "state": "waiting"
         }
       ]
@@ -3706,6 +3706,33 @@
         }
       ],
       "recommendation": "Keep three and drop the SLA one. An account manager, custom integration work and hands-on onboarding are all things you can genuinely agree to for one customer; a written uptime guarantee is the only one of the four you would have to build something to honour."
+    },
+    {
+      "id": "n2b-complete-1242",
+      "title": "Personality and voice are built and live — drive them, then name the next rung",
+      "productImpact": "A cast used to be a face and nothing else. Sign one now and its page carries two short lines it wrote for you: who this person is on camera, and how they sound. Both are badged Drafted for you, and both are yours to change — they are plain text, not a menu.\n\nThere are three ways in when a line is not right. Open the words and edit them. Press Pick a different read and six other ways the cast could carry themselves appear, each with a short name — pick the one you recognise. Or press Say it your way, describe the person as you would to a friend, and we turn your sentence into the line. Your own sentence is kept beside the line it made.\n\nNothing new sits in front of the Sign button, and none of it costs you a credit. We pay for the writing: about one and a half cents and thirteen to sixteen seconds for a set of six reads, about a third of a cent and two to five seconds for Say it your way. Both measured through the real door, not read off a price list.\n\nI read every one of those back off production this morning rather than off the merge notes.",
+      "workedExample": "Six things worth a few minutes. Open a signed cast, then its page in the casting room.\n\n1. Sign a new cast. Do the Personality and Voice cards carry two drafted lines, each badged Drafted for you?\n2. Click the words, or press Change. The box opens with Keep and Cancel. Does Cancel put the line back exactly as it was, and does clicking away leave it alone?\n3. Press Pick a different read on Personality. After about fifteen seconds six named reads appear. ⚠ This is the one I want your eye on: each read is about two sentences and fifty to seventy-five words, so six of them fill the panel. Your sketch had them much shorter. Too long?\n4. Press Say it your way on either card and describe the cast in your own words. Does what comes back sound like the person you described?\n5. Do both cards look and behave the same, in light and in dark?\n6. Settings, then your data download — it now carries each cast's lines and your own sentences.",
+      "options": [
+        {
+          "key": "n2c",
+          "label": "N2c — Campaigns: the cast library's named collections (#1469)",
+          "consequence": "Your own stated order, and the design is already approved on the card. A campaign is the production unit the cinema studio will open — a script and its cast."
+        },
+        {
+          "key": "n2d",
+          "label": "N2d — the Klieg ID becomes a record of creation (#2134)",
+          "consequence": "Signed, timestamped, with a certificate a customer can download. Your word on 9 October; smaller than N2c."
+        },
+        {
+          "key": "n4b",
+          "label": "N4b — Listen and pick: real voices made from the voice text (#2140)",
+          "consequence": "The voice line is text today. This makes it audible, which is the half the rung deliberately left out."
+        }
+      ],
+      "recommendation": "N2c — Campaigns. It is the rung you named yourself, its design is approved on the card, and it is the piece the cinema studio needs to exist before it can open anything.",
+      "state": "waiting",
+      "filedAt": "2026-10-10T15:00:44Z",
+      "issueNumber": 1242
     }
   ],
   "eyeItems": [
@@ -9907,6 +9934,13 @@
       "status": "merged",
       "prNumber": 2209,
       "note": "Live. Pressing Change on the Voice card opens the words now — it was greyed out and did nothing."
+    },
+    {
+      "id": "patrol-clock-freshness-2180",
+      "title": "The patrol clock reader refuses a tree that is behind, instead of answering from it",
+      "status": "merged",
+      "prNumber": 2213,
+      "note": "Its two red gate arms repaired and merged; the no-git arm was the second instance of a measured class."
     }
   ],
   "problems": [
