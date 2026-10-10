@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -40,6 +39,10 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  */
 
 const SCRIPT = resolve("scripts/patrol-clocks.mts");
+/* tsx's own entry, for the one arm that runs the script under a stripped PATH
+   and therefore cannot reach `npx`. Same spelling as
+   `server/nextUpEscalation.test.ts`, which pays for the same reading. */
+const TSX_CLI = resolve("node_modules/tsx/dist/cli.mjs");
 const REAL_LOGS = [
   "RETRO_LOG.md",
   "JANITOR_LOG.md",
@@ -414,8 +417,34 @@ describe("patrol-clocks refuses a tree that is behind on a log (#2180)", () => {
     for (const path of repos) rmSync(path, { recursive: true, force: true });
   });
 
-  const git = (cwd: string, ...args: string[]) =>
-    execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" });
+  /**
+   * The fixture repositories' own git, through the house driver rather than a
+   * bare `execFileSync` — PR #2213's first relay finding.
+   *
+   * `server/testing/hookDriver.test.ts` pins the population of suites that
+   * spawn a child AND read a `.status`, and this file matched: the bare call
+   * below was fixture CONSTRUCTION while every VERDICT already went through
+   * `runHook`, which is the "declared remainder" shape three entries on that
+   * list carry. ⚠ **The remedy taken is the one the guard's own docblock
+   * prefers** — *"which is the point at which somebody asks whether it should
+   * be on `runHook` instead"* — because a tenth declaration is how a pinned
+   * population rots, and that guard says so about itself.
+   *
+   * Non-zero THROWS, so nothing here is quieter than the call it replaces: a
+   * fixture that half-built would otherwise flow into an arm as a reading. It
+   * is in fact louder — `execFileSync` hides the child's stderr behind
+   * `error.stderr`, and a fixture repository that will not build is diagnosed
+   * from that text and nothing else.
+   */
+  const git = (cwd: string, ...args: string[]): string => {
+    const run = runHook("git", args, { cwd });
+    if (run.status !== 0) {
+      throw new Error(
+        `fixture git ${args.join(" ")} exited ${run.status} in ${cwd}: ${run.stderr.trim() || "(no stderr)"}`,
+      );
+    }
+    return run.stdout;
+  };
 
   /**
    * A clone whose `origin/main` carries `remoteLogs` and whose working tree is
@@ -555,13 +584,63 @@ describe("patrol-clocks refuses a tree that is behind on a log (#2180)", () => {
     mkdirSync(docs, { recursive: true });
     for (const name of REAL_LOGS) writeFileSync(join(docs, name), logFile(7, ["2026-09-02"]), "utf8");
 
-    const result = runHook("npx", ["tsx", SCRIPT, "--dir", docs, "--today", "2026-09-09"], {
-      shell: process.platform === "win32",
-      env: { ...process.env, PATH: dirname(process.execPath), Path: dirname(process.execPath) },
-    });
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      PATH: dirname(process.execPath),
+      Path: dirname(process.execPath),
+    };
 
-    expect(result.status).toBe(0);
+    /*
+      ⚠ THE INSTRUMENT'S OWN CONTROL, AND THIS ARM NEEDS IT MORE THAN MOST:
+      the fixture is a bare `mkdtemp` directory, so if `git` WERE still
+      reachable the script would answer `not a git working tree here` and print
+      the very same NOTE — the assertion below would pass for the reason the
+      arm two above it already covers. A stripped PATH that still finds the
+      binary makes this a green that means nothing.
+
+      Probed through `runHook` rather than a bare `spawnSync` so this suite
+      stays off `hookDriver`'s pinned population (PR #2213's first finding),
+      and in a `try` because a reachable-nothing PATH is exactly the
+      `SpawnFailure` road.
+    */
+    const reachable = (probeEnv: NodeJS.ProcessEnv): boolean => {
+      try {
+        return runHook("git", ["--version"], { env: probeEnv }).status === 0;
+      } catch {
+        return false;
+      }
+    };
+
+    /* ⚠ BOTH DIRECTIONS, because a probe that has stopped being able to say YES
+       reports an unreachable binary on every PATH there is — including the real
+       one — and this arm would then be green on a machine where nothing was
+       ever stripped. The positive control is the inherited environment, where
+       `git` is reachable by construction: this suite's own fixtures are built
+       with it twenty lines up. */
+    expect(reachable(process.env), "the probe cannot find `git` even on the real PATH — it cannot say no").toBe(true);
+    expect(reachable(env), "the stripped PATH still finds `git`, so this arm would prove nothing").toBe(false);
+
+    /* ⚠ node ITSELF by its absolute path, and tsx by its file — never `npx`.
+       This is the SECOND instance of a measured class, and the first is written
+       up at `server/nextUpEscalation.test.ts`: `npx` spawns `sh` to run the
+       bin, `sh` lives in `/bin`, and a PATH stripped to node's own directory
+       deliberately does not carry it — on the runner that was `spawn sh ENOENT`
+       (run 36219309593 there, and `expected 254 to be +0` here, run
+       38047540460). `process.execPath` needs no PATH lookup at all, and tsx
+       starts its child from the same path, so nothing consults the shell and
+       the arm tests the script instead of its own plumbing. */
+    const result = runHook(
+      process.execPath,
+      [TSX_CLI, SCRIPT, "--dir", docs, "--today", "2026-09-09"],
+      { env },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
     expect(result.stderr).toContain("NOTE: could not check whether this tree is current");
+    /* The reason, not only the note: `ENOENT` is what tells a missing binary
+       apart from the not-a-repository road, and it is the only thing in this
+       arm that the arm above could not also produce. */
+    expect(result.stderr).toMatch(/ENOENT/);
     expect(result.stdout).toContain("THE PATROL CLOCKS");
   });
 });
