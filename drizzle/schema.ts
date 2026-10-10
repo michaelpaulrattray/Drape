@@ -3315,8 +3315,11 @@ export type InsertCastingReferenceReadRow = typeof castingReferenceReads.$inferI
  * THE FACE SCAN, KEPT — one row per (candidate, version) (migration 0032).
  *
  * The panel scans a face-version the first time it is looked at: twelve
- * segmenter questions, about ten cents, and until now remembered in memory
- * alone. The memory dies with the process, and this program deploys many times
+ * segmenter questions, which real faces turn into 21–27 reads plus one body
+ * cutout and one describer call — $0.111–$0.157 a scan, as `faceScanUsd()` in
+ * `scripts/lib/falSpend.mts` builds it from `FACE_SCAN_FAL_CALLS` (measured on
+ * #2183; read the range there, not here). This line said *"about ten cents"*
+ * until #2189. And until now the scan was remembered in memory alone. The memory dies with the process, and this program deploys many times
  * a night, so the same face was bought again and again — 58 paid scans for 28
  * distinct faces across two days of ordinary live use.
  *
