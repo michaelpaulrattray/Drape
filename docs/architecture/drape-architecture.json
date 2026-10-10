@@ -11369,6 +11369,10 @@
       "path": "client/src/features/castingV2/viewerCompare.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/voiceCard2139.test.ts",
+      "path": "client/src/features/castingV2/voiceCard2139.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/waitNotice.test.ts",
       "path": "client/src/features/castingV2/waitNotice.test.ts"
     },
