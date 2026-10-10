@@ -2073,8 +2073,10 @@ export const castingV2Router = router({
    * translation (`translateOwnWords` below) writes nothing; Keep this is
    * this same edit carrying the customer's own sentence beside the line, so
    * the line and the sentence it came from land in ONE owner-scoped statement
-   * and can never disagree about which keep they belong to. Optional, so the
-   * in-place edit is unchanged and leaves a stored sentence alone.
+   * and can never disagree about which keep they belong to. Optional: an
+   * in-place edit (no sentence) CLEARS that line's stored sentence, so a kept
+   * sentence always describes the line beside it and the customer can remove
+   * their own words by editing (the relay's finding 1 on PR #2217).
    */
   editCastPersonaField: protectedProcedure
     .input(z.object({

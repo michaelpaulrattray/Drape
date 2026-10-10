@@ -146,7 +146,7 @@ describe("a customer says it their way", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]!.about).toBe("persona.translate");
     /* Trimmed by the schema before it is paid for. */
-    expect(requests[0]!.user).toContain(`\n${BOUNCER}`);
+    expect(requests[0]!.user).toContain(`<customer_sentence>${BOUNCER}</customer_sentence>`);
     /* The cast's OWN pronouns, read off its record — a male cast is "him". */
     expect(requests[0]!.system).toContain("Write about him in the third person");
     /* Invariant 3: the owner it was resolved under is the session's. */
@@ -254,7 +254,9 @@ describe("Keep this stores the line and the customer's own sentence together", (
     });
   });
 
-  it("a plain in-place edit carries NO sentence key, so the stored one is left alone", async () => {
+  /* The entrance hands the writer no sentence key on a plain edit; the WRITER
+     then clears that line's sentence (castPersonaWrite.test.ts drives that). */
+  it("a plain in-place edit hands the writer NO sentence key", async () => {
     const { trpc } = caller();
     await trpc.castingV2.editCastPersonaField({
       castId: CAST_ID, line: "voice", text: "Low and dry.",

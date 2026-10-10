@@ -1309,8 +1309,8 @@ export async function editCastPersonaField(input: {
   line: CastPersonaField;
   text: string;
   /** The customer's own sentence the line was kept from ("say it your way",
-   *  #2197 / #2205). Absent on a plain in-place edit, which then leaves the
-   *  stored sentence alone (`castPersonaEditPatch`). */
+   *  #2197 / #2205). Absent on a plain in-place edit, which then CLEARS this
+   *  line's stored sentence (`castPersonaEditPatch`). */
   ownWords?: string;
   now?: Date;
 }): Promise<boolean> {

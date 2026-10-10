@@ -91,30 +91,34 @@ export function castPersonaEditPatch(
   now: Date,
   ownWords?: string,
 ):
-  | { personality: string; personalityEditedAt: Date; personalityOwnWords?: string }
-  | { voice: string; voiceEditedAt: Date; voiceOwnWords?: string } {
+  | { personality: string; personalityEditedAt: Date; personalityOwnWords: string | null }
+  | { voice: string; voiceEditedAt: Date; voiceOwnWords: string | null } {
   /*
     THE CUSTOMER'S OWN SENTENCE RIDES THE SAME STATEMENT — "say it your way"
     (#2197 / #2205). Keep this stores the line and the sentence that produced
     it together, so the two can never disagree about which keep they came from.
 
-    ⚠ **ABSENT MEANS "NOT KEPT FROM A SENTENCE", AND THE COLUMN IS THEN LEFT
-    ALONE.** A plain in-place edit carries no sentence and does not touch the
-    one already stored: the customer's sentence is still what they said, and
-    wiping it because they then tidied a word of our line would delete their
-    words for an edit to ours. Only this line's column is named — the other
-    card's sentence is as untouched as its line.
+    ⚠ **ABSENT MEANS "NOT KEPT FROM A SENTENCE", AND THE COLUMN IS CLEARED**
+    (the relay's finding 1 on PR #2217). A plain in-place edit carries no
+    sentence, and the line it writes is no longer the one the sentence
+    produced — so leaving the old sentence beside it would present the
+    customer's words as "behind" a line they did not make, and would leave
+    the customer no way to remove their own words short of deleting the cast.
+    So a plain edit writes NULL into this line's sentence column in the same
+    owner-scoped statement: the sentence always describes the line beside it.
+    Only this line's column is named — the other card's sentence is as
+    untouched as its line.
   */
   if (line === "personality") {
     return {
       personality: text,
       personalityEditedAt: now,
-      ...(ownWords === undefined ? {} : { personalityOwnWords: ownWords }),
+      personalityOwnWords: ownWords ?? null,
     };
   }
   return {
     voice: text,
     voiceEditedAt: now,
-    ...(ownWords === undefined ? {} : { voiceOwnWords: ownWords }),
+    voiceOwnWords: ownWords ?? null,
   };
 }
