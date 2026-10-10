@@ -630,6 +630,20 @@ export type ReadPurpose =
    */
   | "persona"
   /**
+   * SIX ALTERNATIVE PERSONALITY READS, ONCE PER OPEN — door 1 of #2137 (#2196).
+   *
+   * Its own word rather than `persona`, on `persona`'s own argument one clause
+   * up: that bucket answers *"what does a personality line cost us per Sign"*,
+   * and a Sign is a thing that happens once. This road fires when a customer
+   * OPENS a door, as often as they like, and folding the two together would
+   * make both questions unanswerable at once — the per-Sign cost would drift
+   * upward with door traffic, and the door's own cost would never be visible.
+   *
+   * One bucket, one road, one price — which is what the disappearing-technology
+   * law's third clause obliges this feature to be able to say out loud.
+   */
+  | "reads"
+  /**
    * ONE LINE TRANSLATED FROM THE CUSTOMER'S OWN SENTENCE — "say it your way"
    * (#2197 / #2205). Its own word rather than `persona`, on `persona`'s own
    * argument: that bucket prices a line per SIGN, and this one prices a line
@@ -657,6 +671,7 @@ export const READ_PURPOSES = Object.freeze([
   "gate",
   "author",
   "persona",
+  "reads",
   "persona.translate",
 ] as const) satisfies readonly ReadPurpose[];
 
@@ -698,6 +713,37 @@ export type TextRequest = {
   images?: readonly ReferenceImage[];
   /** Ask the provider for a JSON object. A hint, never a guarantee. */
   json?: boolean;
+  /**
+   * ASK THE PROVIDER TO ENFORCE A SHAPE, rather than to hope for one (#2196).
+   *
+   * ⚠ **`json: true` IS A HINT AND THIS IS NOT, AND THE DIFFERENCE WAS
+   * MEASURED RATHER THAN READ OFF A DOC.** `json` sends
+   * `response_format: {type: "json_object"}`; the same ask under it came back
+   * fenced, carrying an invented top-level key, with an array of STRINGS where
+   * objects were asked for. Under a schema it came back unfenced, exactly the
+   * shape, no extra keys — same model, same prompt, 1.8 s against 2.1 s.
+   *
+   * The road that needed it is #2196's six alternative reads, where the loose
+   * mode kept **losing the per-entry braces**: a reply arrived as ONE object
+   * carrying twelve duplicate keys, which `JSON.parse` collapses to the last
+   * pair, so six reads silently became one. That is the worst shape of this
+   * failure — valid JSON, wrong content, no error anywhere.
+   *
+   * **Opt-in, and nothing already shipped sets it**, so no existing road's
+   * behaviour moves. Set it beside `json: true` rather than instead of it: a
+   * transport that one day cannot honour a schema still asks for an object.
+   *
+   * ⚠ **The schema is DERIVED from the zod object the reply is parsed with**
+   * (`z.toJSONSchema`), never hand-written beside it — two declarations of one
+   * shape is working law 4, and the first thing they would drift on is which
+   * fields are required.
+   */
+  jsonSchema?: {
+    /** A name for the shape; the provider echoes it in errors. */
+    name: string;
+    /** A JSON Schema document, derived from the parser's own zod object. */
+    schema: unknown;
+  };
   temperature?: number;
   maxOutputTokens?: number;
   signal?: AbortSignal;

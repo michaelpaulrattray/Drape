@@ -24,7 +24,7 @@ import { sheetPreviewTiles } from "../castingV2/sheetPreview";
 import { castPronouns } from "../castingV2/castPronouns";
 import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import { assertFinalModelDeleteEnabled } from "./models";
-import { storagePublicUrl } from "../storage";
+import { storagePublicUrl, storageReadBytes } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_FOLLOW_PRICE_CREDITS,
@@ -141,6 +141,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
   editCastPersonaField,
+  getCastReadsSources,
 } from "../db/castingV2Sign";
 import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -173,6 +174,7 @@ import {
   CAST_VOICE_MAX_LENGTH,
 } from "../../shared/inputLimits";
 import { CAST_PERSONA_FIELDS } from "../db/castPersonaField";
+import { castingCastReadsReader } from "../castingV2/castReads";
 import { translateCastPersonaOwnWords } from "../castingV2/castPersonaTranslate";
 import { castingCastPersonaTranslator } from "../castingV2/signEngine";
 
@@ -2078,6 +2080,85 @@ export const castingV2Router = router({
    * sentence always describes the line beside it and the customer can remove
    * their own words by editing (the relay's finding 1 on PR #2217).
    */
+  /**
+   * SIX WAYS THIS CAST COULD CARRY THEMSELVES — door 1 of #2137 (#2196).
+   *
+   * His design: under the open Personality card, *"Pick a different read"*
+   * opens six alternatives, each a short label plus the exact two sentences it
+   * would store. The customer picks the one they recognise and presses Keep.
+   *
+   * ⚠ **IT WRITES NOTHING.** Keeping a read is the edit the product already
+   * has — `editCastPersonaField` with `line: "personality"` — so this door
+   * needs no column, no migration and no second write path. The mutation verb
+   * below is about SPEND, not about storage: it costs the house a measured
+   * $0.0154 and takes ~13.8 s, and a `query` would be retried by TanStack
+   * Query on focus and on reconnect, paying again each time.
+   *
+   * ⚠ **DRAFTED ON OPEN AND NOT AT SIGN, decided on the measurement the card
+   * asked for rather than on a preference.** Same price either way, but at
+   * Sign every customer pays it whether or not they ever open the door, the
+   * six would need somewhere to live (a store this card does not have, and
+   * which #2197/#2205 are already designing for a different fact), and a set
+   * drafted at Sign goes stale the moment the line underneath it is edited —
+   * which is precisely what this door exists to help with.
+   */
+  draftCastReads: protectedProcedure
+    .input(z.object({ castId: z.string().min(1).max(32) }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReadsDraft);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+
+      const reader = castingCastReadsReader();
+      if (!reader) {
+        /* No transport on this deployment. The door says it could not do it
+           rather than drawing an empty list that looks like six of nothing. */
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      const sources = await getCastReadsSources({ userId: ctx.user.id, modelId: model.id });
+      if (!sources?.anchorStorageKey) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This cast has no signed picture to read from.",
+        });
+      }
+
+      let anchor;
+      try {
+        anchor = await storageReadBytes(sources.anchorStorageKey);
+      } catch {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      const reads = await reader.read({
+        anchor,
+        brief: sources.briefText,
+        editSentences: sources.editSentences,
+        /* The line on the card right now, so the six are alternatives to it
+           rather than six guesses that might include it. */
+        current: model.personality ?? null,
+        pronouns: castPronouns(model.technicalSchema),
+      });
+      if (!reads) {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      /* An explicit projection (invariant 8): two fields per read and nothing
+         of the Cast's own row, which carries the recipe field group. */
+      return { castId: input.castId, reads: reads.map((read) => ({ label: read.label, personality: read.personality })) };
+    }),
+
   editCastPersonaField: protectedProcedure
     .input(z.object({
       castId: z.string().min(1).max(32),

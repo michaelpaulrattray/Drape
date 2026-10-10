@@ -220,7 +220,23 @@ export type CastPersonaCraftRules = {
   voiceExample: string[];
 };
 
-export function castPersonaCraftRules(pronouns: CastPronouns): CastPersonaCraftRules {
+export function castPersonaCraftRules(
+  pronouns: CastPronouns,
+  /*
+    WHAT THE PRONOUN RULE BINDS, and the ONE thing a caller may vary (#2196).
+
+    The rule ends "and no other pronoun in either line", which is true of the
+    two-line draft and of one translated line, and FALSE of the six
+    alternatives door 1 offers. It is a parameter rather than a second copy of
+    the block because the rest of the sentence — including the clause about
+    never reading pronouns off a face — is identical and must stay identical.
+
+    The default is the drafted line's own wording, so every caller that does
+    not pass it renders exactly the bytes it rendered before this parameter
+    existed; `castPersonaCraft.test.ts` holds that against a golden.
+  */
+  where: string = "either line",
+): CastPersonaCraftRules {
   const subject = pronouns.subject;
   /*
     ⚠ THE OBJECT FORM IS A SEPARATE WORD AND TWO CLAUSES NEED IT.
@@ -271,7 +287,7 @@ export function castPersonaCraftRules(pronouns: CastPronouns): CastPersonaCraftR
     writing: [
       `Write about ${object} in the third person. Use ONLY the three pronouns given`,
       `below — "${subject}", "${object}", "${possessive}" — and no other pronoun in`,
-      "either line. The pronouns are a fact about this performer that you are given;",
+      `${where}. The pronouns are a fact about this performer that you are given;`,
       "they are never read off the face or guessed from the picture.",
       "Do not use a name. Do not mention photography, framing, lighting, cameras,",
       "image quality, or that this is a generated picture. Do not mention clothing",

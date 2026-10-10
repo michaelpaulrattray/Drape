@@ -170,6 +170,10 @@ describe("which bucket each casting procedure was handed", () => {
          spend; a bucket of its own would be a third window to reason about for
          a write that costs nothing and renders nothing. */
       editCastPersonaField: "castingSheet",
+      /* Door 1 of the Personality card (#2196): a house-paid text call the
+         customer starts, so a bucket of its own rather than the sheet's — 20
+         an hour, sized from the measured $0.0154 and ~13.8 s an open. */
+      draftCastReads: "castingReadsDraft",
       /* "SAY IT YOUR WAY" (#2197 / #2205) — free to the customer, one house
          text call per press, so its own bucket for re-imagine's reason: a
          window nothing else spends, bounding the house's money per account. */
