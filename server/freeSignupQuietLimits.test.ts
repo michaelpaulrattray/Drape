@@ -98,6 +98,7 @@ const REPO_ROOT = join(__dirname, "..");
 const PER_DEVICE = NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_DEVICE;
 const PER_NETWORK = NUMERIC_ENV_VARS.FREE_GRANT_MAX_PER_NETWORK;
 const SCAN_CAP = NUMERIC_ENV_VARS.FREE_SCAN_DAILY_CAP;
+const PAID_SCAN_CAP = NUMERIC_ENV_VARS.PAID_SCAN_DAILY_CAP;
 
 /**
  * A request and a response with exactly the surface these modules touch.
@@ -351,22 +352,36 @@ describe("the claim recorded after a grant", () => {
 });
 
 describe("the daily face-scan cap", () => {
+  /*
+    ⚠ EVERY ARM IN THIS BLOCK RUNS ON THE **FREE** CEILING, AND NOT BY ACCIDENT
+    (#2170). `getSubscriptionByUserId` is unmocked here and the suite has no
+    database (`vitest.setup.ts` strips `DATABASE_URL`), so it answers `null` and
+    the cap reads the account as free — which is both the fail-closed direction
+    the module argues for and the state of every account that has no plan. The
+    PAID ceiling has its own arms below, with the plan read faked.
+  */
   it("allows the scan that lands ON the cap", async () => {
     vi.mocked(countFaceScanAgainstDay).mockResolvedValue(SCAN_CAP);
-    expect(await mayBuyFaceScan(7)).toBe(true);
+    expect(await mayBuyFaceScan(7)).toBe("allowed");
     expect(auditRows()).toHaveLength(0);
   });
 
   it("refuses the one past it, and writes an abuse row naming the day and the cap", async () => {
     vi.mocked(countFaceScanAgainstDay).mockResolvedValue(SCAN_CAP + 1);
 
-    expect(await mayBuyFaceScan(7)).toBe(false);
+    expect(await mayBuyFaceScan(7)).toBe("capped");
     expect(auditRows()).toHaveLength(1);
     expect(auditRows()[0]).toMatchObject({
       userId: 7,
       action: AUDIT_ACTIONS.ABUSE_FREE_SCAN_CAPPED,
       severity: "warning",
-      metadata: expect.objectContaining({ cap: SCAN_CAP, scansToday: SCAN_CAP + 1 }),
+      /* `onFreeCeiling` is the row's answer to WHICH of the two numbers
+         decided, which is the only thing `cap` alone cannot say (#2170). */
+      metadata: expect.objectContaining({
+        cap: SCAN_CAP,
+        scansToday: SCAN_CAP + 1,
+        onFreeCeiling: true,
+      }),
     });
   });
 
@@ -380,7 +395,15 @@ describe("the daily face-scan cap", () => {
 
   it("REFUSES when the day cannot be counted — house money, so it fails closed", async () => {
     vi.mocked(countFaceScanAgainstDay).mockRejectedValue(new Error("database unavailable"));
-    expect(await mayBuyFaceScan(7)).toBe(false);
+    /*
+      ⚠ AND IT SAYS `unavailable`, NOT `capped` — the distinction his quiet
+      line depends on (#2170). Both refuse the scan; only one of them is a
+      sentence to put in front of a customer, and a boolean here would have
+      told a customer they had looked at a lot of faces today because OUR
+      database was down.
+    */
+    expect(await mayBuyFaceScan(7)).toBe("unavailable");
+    expect(auditRows(), "an outage wrote an abuse row against the customer").toHaveLength(0);
   });
 
   it("asks the day in UTC, so the boundary does not depend on where the process runs", async () => {
@@ -422,11 +445,11 @@ describe("the rows can actually be SEEN — the half that has been forgotten bef
   });
 });
 
-describe("the four caps are boot-validated, so a blank variable cannot delete a control", () => {
+describe("the five caps are boot-validated, so a blank variable cannot delete a control", () => {
   it("each one is in the table the boot check reads", () => {
     /*
       A blank Railway variable is `""`, which `??` passes straight to `parseInt`,
-      and `claims < NaN` is false — so a careless blank on any of these four would
+      and `claims < NaN` is false — so a careless blank on any of these five would
       read as "under the cap" and admit everybody. `NUMERIC_ENV_VARS` is the
       table `assertNumericEnv` walks at boot, so the failure lands on the deploy
       rather than on the control.
@@ -436,7 +459,31 @@ describe("the four caps are boot-validated, so a blank variable cannot delete a 
       FREE_GRANT_MAX_PER_NETWORK: expect.any(Number),
       FREE_GRANT_WINDOW_HOURS: expect.any(Number),
       FREE_SCAN_DAILY_CAP: expect.any(Number),
+      /* The fifth, added by #2170 with the paid ceiling. A blank on THIS one is
+         the nastier half: the cap would read the paid number as `NaN` and
+         `scans <= NaN` is false, so a paying account would be refused every
+         scan past the free ceiling with nothing in the logs saying why. */
+      PAID_SCAN_DAILY_CAP: expect.any(Number),
     });
+  });
+
+  it("⚠ the shipped pair is HIS pair, and the paid ceiling is the looser one", () => {
+    /*
+      His ruling, 2026-10-10 (#2170), verbatim: *"Free accounts: keep the cap at
+      40 a day. Paid accounts: raise it to 100 a day, not 250."* Both numbers
+      are pinned because a shift that read only the first sentence would leave
+      one cap for everybody, and a shift that read only the second would raise
+      the free one too.
+
+      ⚠ AND THE ORDER IS PINNED SEPARATELY FROM THE VALUES. The cap
+      short-circuits on `Math.min` of the two precisely so a paid ceiling set
+      BELOW the free one cannot admit a paid account past its own number — but
+      that is a safety net for a misconfigured deployment, not an invitation to
+      ship the pair inverted.
+    */
+    expect(SCAN_CAP).toBe(40);
+    expect(PAID_SCAN_CAP).toBe(100);
+    expect(PAID_SCAN_CAP).toBeGreaterThan(SCAN_CAP);
   });
 
   it("the network cap is looser than the device cap — a shared office is one address", () => {

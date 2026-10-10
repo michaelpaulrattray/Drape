@@ -26741,12 +26741,22 @@
     },
     {
       "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/faceScanDailyCap.ts",
       "to": "module:server/auditLog.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanDailyCap.ts",
+      "to": "module:server/db/billing.ts",
       "kind": "imports"
     },
     {

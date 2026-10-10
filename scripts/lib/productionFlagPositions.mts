@@ -593,9 +593,22 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   FREE_SCAN_DAILY_CAP: {
     position: UNSET,
     why:
-      "how many face scans one account may buy in a UTC day, read by "
+      "how many face scans a FREE account may buy in a UTC day, read by "
       + "assertNumericEnv() at boot. A scan is house money and the customer is never "
-      + "charged for it. Never set on the service — the declared default of 40",
+      + "charged for it. Never set on the service — the declared default of 40, kept "
+      + "there by his ruling of 2026-10-10 (#2170: \"Free accounts: keep the cap at "
+      + "40 a day\"); its paid twin is PAID_SCAN_DAILY_CAP and the two are argued "
+      + "together at castingV2/faceScanDailyCap.ts",
+  },
+  PAID_SCAN_DAILY_CAP: {
+    position: UNSET,
+    why:
+      "the same ceiling for an account on a plan that costs money, read by "
+      + "assertNumericEnv() at boot. Never set on the service — the declared default "
+      + "of 100, his number on 2026-10-10 (#2170: \"Paid accounts: raise it to 100 a "
+      + "day, not 250. That still covers almost all of your real busy days\"). Which "
+      + "of the two an account is on is read off the plan table billing reads, never "
+      + "typed, and only once a day's count has passed the lower of the two",
   },
   ROLL_IMAGE_CONCURRENCY: {
     position: UNSET,
