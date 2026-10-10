@@ -446,6 +446,29 @@ describe("patrol-clocks refuses a tree that is behind on a log (#2180)", () => {
     return run.stdout;
   };
 
+  /*
+    ⚠ THE FIXTURE BUILDER'S OWN ARM, and a sabotage is what asked for it: with
+    the throw above deleted, six arms stayed green, because no happy path ever
+    runs a git command that fails. So the net was there and untested — the same
+    property `execFileSync` had, which is not a reason to inherit it.
+
+    A fixture that half-builds otherwise flows into an arm as a READING: a
+    `git push` that silently did nothing leaves `origin/main` equal to `HEAD`,
+    and the behind-tree arms would then measure a current tree and pass while
+    proving nothing. This drives the helper directly rather than through a
+    broken fixture, which is law 3's "a test the model cannot rescue".
+  */
+  it("the fixture builder is LOUD — a git that exits non-zero throws, carrying the child's own words", () => {
+    const loose = mkdtempSync(join(tmpdir(), "patrol-2180-loudfixture-"));
+    repos.push(loose);
+
+    /* A real git, a real non-zero exit, a real message — not a stub. */
+    expect(() => git(loose, "rev-parse", "--definitely-not-a-flag-2180"))
+      .toThrow(/exited [1-9]\d*/);
+    expect(() => git(loose, "rev-parse", "--definitely-not-a-flag-2180"))
+      .toThrow(/definitely-not-a-flag-2180/);
+  });
+
   /**
    * A clone whose `origin/main` carries `remoteLogs` and whose working tree is
    * one commit behind it. `localLogs` is what the TREE holds.
