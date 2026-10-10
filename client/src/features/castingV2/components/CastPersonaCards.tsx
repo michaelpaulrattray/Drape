@@ -331,7 +331,7 @@ type EditableLineProps = {
   onEditingChange: (open: boolean) => void;
   /**
    * A DOOR HAS THE CARD (#2238). The editor stays MOUNTED and hidden, so the
-   * words typed in it are still there when Escape or *Back to the draft*
+   * words typed in it are still there when Escape or *Back*
    * returns — it used to unmount, and every typed word went with it.
    */
   concealed?: boolean;
@@ -962,7 +962,7 @@ export function PersonaOwnWordsPanel({
   initialWords?: string | null;
   /**
    * THE SENTENCE, HELD BY THE CARD (#2238) so closing the panel — Escape or
-   * *Back to the draft* — and opening it again finds the words still there.
+   * *Back* — and opening it again finds the words still there.
    * `null` is "not typed yet": the box opens on the sentence last kept.
    */
   words?: string | null;
@@ -1068,7 +1068,7 @@ export function PersonaOwnWordsPanel({
           </button>
         ) : null}
         <button type="button" className="dpc-persona__back dpc-persona__backEnd" onClick={door.onBack}>
-          Back to the draft
+          Back
         </button>
       </div>
     </div>
@@ -1224,7 +1224,7 @@ export function CastReadsPicker({
       <p className="dpc-persona__helper">{personaReadsReassurance(name)}</p>
       {/*
         HIS FOOTER, BOTH LINKS — `02-door1-dark.png` reads *None of these? Say
-        it your way ›* on the left and *Back to the draft* on the right. The
+        it your way ›* on the left and *Back* on the right. The
         first link waited for door 2's client half (#2197) and arrives with it;
         absent when the room has no door 2 to open.
       */}
@@ -1235,7 +1235,7 @@ export function CastReadsPicker({
           </button>
         ) : null}
         <button type="button" className="dpc-persona__back dpc-persona__backEnd" onClick={door.onBack}>
-          Back to the draft
+          Back
         </button>
       </div>
     </div>
@@ -1315,7 +1315,7 @@ export function CastPersonalityCard({
           line="personality"
           present
           /* While a door has the card, the icon has nothing to open — the box
-             is already what *Back to the draft* returns to. */
+             is already what *Back* returns to. */
           editing={editing || inPicker || inOwnWords}
           saving={savingLine === "personality"}
           onOpen={() => setEditing(true)}
