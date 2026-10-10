@@ -88,8 +88,14 @@ import { readListedSource } from "./listedSource";
  */
 export const SHELL_RESOLVED_LAUNCHERS = ["npx", "npm", "pnpm"] as const;
 
-/** Where the population is read from. */
-const SOURCE_GLOBS = ["*.ts", "*.tsx", "*.mts", "*.mjs"];
+/**
+ * Where the population is read from.
+ *
+ * Exported because the guard asserts its own vendored evidence file is NOT in
+ * here — that fixture is a live `npx:inline` site, and a second copy of this
+ * list in the suite could agree with it today and not tomorrow.
+ */
+export const SOURCE_GLOBS = ["*.ts", "*.tsx", "*.mts", "*.mjs"];
 
 export type LaunchSite = {
   /** Repo-relative, forward-slashed. */

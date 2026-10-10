@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -9,6 +10,7 @@ import {
   SHELL_RESOLVED_LAUNCHERS,
   shellLessPathLaunches,
   shellLessPathLaunchesIn,
+  SOURCE_GLOBS,
   TSX_ENTRY_MODULE,
 } from "./testing/shellLessPathLaunches";
 
@@ -37,18 +39,38 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
  */
 const ROOT = resolve(import.meta.dirname, "..");
 
-/** Instance 2's failing bytes: the commit before its within-PR repair. */
-const INSTANCE_TWO_BEFORE = "3a038d5d5";
-/** …and the repair itself, so the pair is a before and an after. */
-const INSTANCE_TWO_AFTER = "bdbac55c9";
+/**
+ * Instance 2's failing bytes, VENDORED — and the vendoring is this arm's
+ * repair rather than a convenience (#2227, on PR #2229's first gate).
+ *
+ * The arm read them with `git show 3a038d5d5:server/patrolClocks.test.ts`,
+ * which is the right instinct and does not survive a clone it did not make.
+ * That commit sits on `team/patrol-clock-freshness-2180`; PR #2213 was
+ * **squash**-merged, and a squash leaves the branch's own commits an ancestor
+ * of nothing. So the runner answered `fatal: invalid object name '3a038d5d5'`
+ * and the gate reddened on the guard's own evidence arm — run 38068436303,
+ * `unit-tests-2`. ⚠ **`fetch-depth: 0` does not close it**, which is the half
+ * worth writing down: the depth applies to the ref being checked out, and this
+ * object is reachable from no ref the runner fetches at any depth.
+ *
+ * ⚠ **VENDORED IS NOT RETYPED.** The objection in this arm's own comment — a
+ * retyped fixture proves the reader reads the fixture — is about bytes somebody
+ * composed, not about where real bytes are kept. These are the blob's 27,270
+ * bytes written straight out of git, and {@link INSTANCE_TWO_SHA} is their
+ * sha256: anyone who can still reach the commit re-derives it in one command,
+ * and an edit to the fixture reddens here rather than quietly changing what
+ * this guard claims to have caught.
+ *
+ *     git show 3a038d5d5:server/patrolClocks.test.ts | sha256sum
+ *
+ * `.gitattributes` checks every text file out as LF on every machine (#71), so
+ * that digest is the same here and on the runner — which is the one thing a
+ * pinned hash over a vendored text file depends on.
+ */
+const INSTANCE_TWO_FIXTURE = "server/__fixtures__/shellLessPathLaunch.instance2-before.ts.txt";
 
-function bytesAt(commit: string, file: string): string {
-  return execFileSync("git", ["show", `${commit}:${file}`], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
-}
+/** sha256 of `3a038d5d5:server/patrolClocks.test.ts`, which the fixture copies. */
+const INSTANCE_TWO_SHA = "62733516263c0fd272667d489ac669e4a8c0085de7b80b0af429347ea758c8d3";
 
 /* ONE walk of the tree for every arm in this file that needs one — it parses
    every tracked source file, so a second reading would double the cost to
@@ -90,8 +112,9 @@ describe("the reading can fail — driven on the bytes that actually failed", ()
       THE ARM THAT GIVES THIS GUARD ITS ONLY REAL EVIDENCE. Both subjects are
       repaired on main, so every arm above is green on an empty population —
       which is indistinguishable from a reader that finds nothing ever. These
-      bytes come out of git rather than being retyped, because a retyped fixture
-      proves the reader reads the fixture.
+      are the real failing bytes rather than a retyped fixture, which would only
+      prove the reader reads the fixture; where they are kept, and why they are
+      no longer read out of history, is on `INSTANCE_TWO_FIXTURE` above.
 
       `3a038d5d5` is PR #2213's shape before `bdbac55c9` repaired it:
       `runHook("npx", [...], { env: { ...process.env, PATH: dirname(process.execPath), … } })`
@@ -99,11 +122,51 @@ describe("the reading can fail — driven on the bytes that actually failed", ()
       38047540460.
     */
     const file = "server/patrolClocks.test.ts";
-    const before = shellLessPathLaunchesIn(file, bytesAt(INSTANCE_TWO_BEFORE, file));
+    const beforeBytes = readFileSync(resolve(ROOT, INSTANCE_TWO_FIXTURE), "utf8");
+    expect(
+      createHash("sha256").update(beforeBytes).digest("hex"),
+      "the fixture is no longer the commit's bytes, so this arm is reading something nobody measured",
+    ).toBe(INSTANCE_TWO_SHA);
+    const before = shellLessPathLaunchesIn(file, beforeBytes);
     expect(before.map((site) => `${site.launcher}:${site.via}`)).toEqual(["npx:inline"]);
 
-    const after = shellLessPathLaunchesIn(file, bytesAt(INSTANCE_TWO_AFTER, file));
+    /* The AFTER half reads the LIVE file, the way instance 1's arm reads its
+       own: the repair is what `main` carries, so there is nothing to vendor and
+       nothing to look up in history. */
+    const after = shellLessPathLaunchesIn(file, readFileSync(resolve(ROOT, file), "utf8"));
     expect(after, "the repair that closed instance 2 must read clean").toEqual([]);
+  });
+
+  it("the vendored fixture is tracked, and outside the population this guard walks", () => {
+    /*
+      ⚠ THE FIXTURE IS ITSELF A LIVE `npx:inline` SITE, so two facts have to
+      hold at once and neither is obvious from looking at it.
+
+      TRACKED, or the runner has no fixture and this arm dies the way the
+      `git show` did — a second time, one layer down.
+
+      OUTSIDE THE WALK, or the tree reading flags the guard's own evidence and
+      *no suite hands a shell-less env to one of them* reddens on a file that is
+      not a suite. That holds only because the name ends `.ts.txt`, which makes
+      an extension load-bearing — so it is asserted against the reader's OWN
+      glob list rather than a copy of it (working law 4: the two must not be
+      able to disagree).
+    */
+    const listed = (globs: readonly string[]): string[] =>
+      execFileSync("git", ["ls-files", ...globs], { cwd: ROOT, encoding: "utf8" })
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    expect(
+      listed(["--", INSTANCE_TWO_FIXTURE]),
+      "the fixture is not tracked, so no fresh checkout can read it",
+    ).toEqual([INSTANCE_TWO_FIXTURE]);
+    expect(
+      listed(SOURCE_GLOBS),
+      `${INSTANCE_TWO_FIXTURE} is in the walked population, so the guard flags its own ` +
+        "evidence file. Keep the fixture's extension outside SOURCE_GLOBS.",
+    ).not.toContain(INSTANCE_TWO_FIXTURE);
   });
 
   it("instance 1's spelling is caught too — the env by REFERENCE, not inline", () => {
