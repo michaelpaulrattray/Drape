@@ -207,17 +207,23 @@ describe("Change opens the voice line, and is absent when there is nothing to op
     room has other disabled buttons and a whole-file arm would be satisfied by
     any one of them.
   */
+  /*
+    ⚠ SINCE #2214 THE BUTTON IS THE SHARED `PersonaChangeButton`, drawn by both
+    persona cards, and its shown/absent rule lives inside it once. These arms
+    read the room's call into it; `personaChange2214.test.ts` DRIVES the rule.
+  */
   it("is no longer a dead control", () => {
     const cut = head();
-    expect(cut).toContain('className="dpc-rcard__quiet"');
-    expect(cut).toContain("onClick={() => setVoiceEditing(true)}");
+    expect(cut).toContain("<PersonaChangeButton");
+    expect(cut).toContain("onOpen={() => setVoiceEditing(true)}");
     /* `disabled` survives, but only as the in-flight one the read view has. */
-    expect(cut).toContain('disabled={savingPersonaField === "voice"}');
+    expect(cut).toContain('saving={savingPersonaField === "voice"}');
     expect(cut).not.toContain('className="dpc-rcard__quiet" disabled');
   });
 
   it("is drawn only with a voice line present and the box shut", () => {
-    expect(head()).toContain("{data.persona?.voice && !voiceEditing ? (");
+    expect(head()).toContain("present={Boolean(data.persona?.voice)}");
+    expect(head()).toContain("editing={voiceEditing}");
   });
 
   it("the room holds the open state above every early return", () => {

@@ -392,7 +392,9 @@ export function CastPersonalityCard({
 
     The voice line's open state is NOT held here: it lives in the room, because
     the voice card's *Change* button sits in a head this file does not own.
-    Personality has no such button, so its state has no reason to leave.
+    This card's *Change* (#2214) sits in a head this card DOES own, so its
+    state has no reason to leave — the same controlled pair, held one level up
+    from the line in both cases.
   */
   const [editing, setEditing] = useState(false);
   if (!personality) return null;
@@ -413,6 +415,12 @@ export function CastPersonalityCard({
             <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
           ) : null}
         </span>
+        <PersonaChangeButton
+          present
+          editing={editing}
+          saving={savingLine === "personality"}
+          onOpen={() => setEditing(true)}
+        />
       </div>
       <EditableLine
         line="personality"
@@ -424,6 +432,43 @@ export function CastPersonalityCard({
         onEditingChange={setEditing}
       />
     </section>
+  );
+}
+
+/**
+ * THE QUIET *Change* ON A PERSONA CARD'S HEAD — ONE BUTTON FOR BOTH CARDS (#2214).
+ *
+ * #2139 drew it on the voice card alone, and the personality card beside it had
+ * none although clicking its words already opened the same editor. His word on
+ * the two cards side by side, 2026-10-10: *"yes go ahead"* — to the relay's
+ * recommendation that *Change* be a SECOND way in on both cards and never a
+ * required step. So clicking the words keeps working, and this is the other
+ * door.
+ *
+ * ⚠ **THE SHOWN/ABSENT RULE LIVES HERE, ONCE.** Drawn only when there is a
+ * line to open and its box is shut: with no line the card draws no text, so a
+ * *Change* would open an empty box, and once the box is open the button has
+ * nothing left to do (his #2139 frames show it gone). Two cards each spelling
+ * that condition for themselves is the drift working law 4 forbids.
+ */
+export function PersonaChangeButton({
+  present,
+  editing,
+  saving,
+  onOpen,
+}: {
+  /** Whether the card has a line at all. */
+  present: boolean;
+  editing: boolean;
+  /** That line's save is in flight — the same refusal the read view has. */
+  saving: boolean;
+  onOpen: () => void;
+}) {
+  if (!present || editing) return null;
+  return (
+    <button type="button" className="dpc-rcard__quiet" onClick={onOpen} disabled={saving}>
+      Change
+    </button>
   );
 }
 

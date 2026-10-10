@@ -35,6 +35,7 @@ import {
   CastPersonalityCard,
   CastVoiceBadge,
   CastVoiceLine,
+  PersonaChangeButton,
   type CastPersonaFieldName,
 } from "@/features/castingV2/components/CastPersonaCards";
 
@@ -1119,16 +1120,14 @@ export default function CastingRoom() {
                       voice line the card draws no text either, so a *Change*
                       there would open an empty box.
                     */}
-                    {data.persona?.voice && !voiceEditing ? (
-                      <button
-                        type="button"
-                        className="dpc-rcard__quiet"
-                        onClick={() => setVoiceEditing(true)}
-                        disabled={savingPersonaField === "voice"}
-                      >
-                        Change
-                      </button>
-                    ) : null}
+                    {/* One button for both persona cards since #2214; the
+                        shown/absent rule above lives inside it, once. */}
+                    <PersonaChangeButton
+                      present={Boolean(data.persona?.voice)}
+                      editing={voiceEditing}
+                      saving={savingPersonaField === "voice"}
+                      onOpen={() => setVoiceEditing(true)}
+                    />
                   </div>
                   {/*
                     HOW THEY SOUND - N2b (#1242), inside the EXISTING stub
