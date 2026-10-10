@@ -31,7 +31,7 @@ import {
   getUserCredits,
   isDuplicateCreditReferenceError,
   normalizeCreditReferenceId,
-  purchasedCreditsRemaining,
+  settledCreditBounds,
   type CreditWriteResult,
 } from "./credits";
 import { createModuleLogger } from "../logging/logger";
@@ -356,7 +356,13 @@ export async function adjustUserCredits(
   try {
     return await withTransaction(async (tx) => {
       const [userCredits] = await tx
-        .select({ balance: credits.balance, purchasedBalance: credits.purchasedBalance })
+        .select({
+          balance: credits.balance,
+          purchasedBalance: credits.purchasedBalance,
+          keptBalance: credits.keptBalance,
+          signupBalance: credits.signupBalance,
+          promoBalance: credits.promoBalance,
+        })
         .from(credits)
         .where(eq(credits.userId, userId))
         .limit(1);
@@ -390,16 +396,24 @@ export async function adjustUserCredits(
           only while it sat above that line. It is no more racy than the balance
           write beside it, because it is the same read.
 
-          The deduct branch below needs nothing: `purchasedCreditsRemaining`
-          reads `min(column, balance)`, so a falling balance settles the answer
+          The deduct branch below needs nothing: `creditBuckets` reads each
+          bound against the balance, so a falling balance settles the answer
           without a write — the same reason `deductCredits` is untouched.
+
+          ⚠ AND THE GIFT ITSELF IS STAFF GOODWILL, WHICH NEVER EXPIRES (#2185 —
+          the relay's default, which his ruling of 2026-10-10 did not
+          overrule). It lands in the kept bucket, beside referral rewards, so a
+          cancelled plan's expiry, a renewal's rollover and a downgrade trim all
+          leave it alone. Every bound is settled first, as `addCreditsIn` does.
         */
+        const settled = settledCreditBounds(userCredits);
         await tx
           .update(credits)
           .set({
             balance: newBalance,
             creditsPurchased: sql`${credits.creditsPurchased} + ${amount}`,
-            purchasedBalance: purchasedCreditsRemaining(userCredits),
+            ...settled,
+            keptBalance: settled.keptBalance + amount,
           })
           .where(eq(credits.userId, userId));
       } else {

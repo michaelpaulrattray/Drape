@@ -385,7 +385,9 @@ export async function completeReferral(referredUserId: number): Promise<boolean>
     reward,
     "bonus",
     `Welcome bonus: referred by a friend`,
-    `referral-referred-${referral.id}`
+    `referral-referred-${referral.id}`,
+    // Referral credits never expire, same as top-ups (#2185, his ruling 2026-10-10).
+    { bonusSource: "referral" },
   );
 
   // Mark status as completed (referee credited), referrer awaits paid action
@@ -471,7 +473,9 @@ export async function creditReferrerOnPaidAction(
     reward,
     "bonus",
     `Referral bonus: friend subscribed to a paid plan`,
-    `referral-referrer-${referral.id}`
+    `referral-referrer-${referral.id}`,
+    // Referral credits never expire, same as top-ups (#2185, his ruling 2026-10-10).
+    { bonusSource: "referral" },
   );
 
   await db

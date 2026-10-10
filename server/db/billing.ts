@@ -22,8 +22,11 @@ import {
   getUserCredits,
   isDuplicateCreditReferenceError,
   normalizeCreditReferenceId,
+  creditBuckets,
+  creditsOutsidePlanRules,
   planAllowanceRemaining,
-  purchasedCreditsRemaining,
+  settledCreditBounds,
+  timedCreditDeadline,
   type CreditWriteResult,
 } from "./credits";
 import { netAppliedPlanChangeSettlementsSince } from "./planChangeSettlements";
@@ -106,7 +109,9 @@ export async function updateUserSubscription(
     /** When a cancelled plan's credits expire (#2152). Stamped by the
      *  subscription-deleted webhook; see {@link expirePlanCredits}. */
     planCreditsExpireAt?: Date | null;
-  }
+  },
+  /** The clock an upgrade's 90 days for the starting credits run from (#2185). */
+  now: Date = new Date(),
 ): Promise<{ success: boolean; error?: string }> {
   const db = await getDb();
   if (!db) {
@@ -126,10 +131,31 @@ export async function updateUserSubscription(
      the second of two locks, and it is here for the same reason as the clear
      above — every road to Free passes through this one write. */
   const leavingForFree = data.planTier === "free";
+  /* ⚠ THE STARTING CREDITS' CLOCK STARTS AT THE MOVE TO A PAID PLAN (#2185,
+     his ruling 2026-10-10: "promo and signup bonuses after 90 days? Expire
+     after 90 days." and, on the Free account's starting credits, "the free
+     plan credits can last forever sure"). So: never on Free, and 90 days
+     after an upgrade whatever is left of them expires
+     (`expireTimedCredits`). Stamped here for the same reason as the two
+     clears above — every road to a paid tier passes through this write.
+
+     The stamp is written only when there is none and the row holds starting
+     credits, so a renewal or a paid-to-paid change never restarts the clock;
+     the CASE reads only columns this statement does not assign, so MySQL's
+     left-to-right `SET` order cannot change its answer. A move back to Free
+     clears it — Free credits last until they are used, the compare table's
+     promise — and the next upgrade starts a fresh 90 days. */
+  const movingToPaid = data.planTier !== undefined && data.planTier !== "free";
+  const signupClock = movingToPaid
+    ? {
+        signupCreditsExpireAt: sql`CASE WHEN ${credits.signupCreditsExpireAt} IS NULL AND ${credits.signupBalance} > 0 THEN ${sql.param(timedCreditDeadline(now), credits.signupCreditsExpireAt)} ELSE ${credits.signupCreditsExpireAt} END`,
+      }
+    : {};
   const values = {
     ...data,
     ...(returningToPaid ? { planCreditsExpireAt: null } : {}),
-    ...(leavingForFree ? NO_ANNUAL_YEAR : {}),
+    ...signupClock,
+    ...(leavingForFree ? { ...NO_ANNUAL_YEAR, signupCreditsExpireAt: null } : {}),
   };
 
   try {
@@ -336,7 +362,9 @@ export async function refreshMonthlyCredits(
 
       const balanceReadFrom = userCredits.balance;
       // Both halves come off the one row the UPDATE below is conditioned on.
-      const purchasedKept = purchasedCreditsRemaining(userCredits);
+      // What the plan's rules never touch — top-ups, referral rewards, staff
+      // goodwill, starting credits and promos (#1604, #2185) — crosses whole.
+      const outsidePlan = creditsOutsidePlanRules(userCredits);
       const planAllowance = planAllowanceRemaining(userCredits);
       // The part of the plan's allowance the percentage actually governs:
       // anything settled for the period being GRANTED is not last period's
@@ -358,10 +386,11 @@ export async function refreshMonthlyCredits(
       const carriedKept = Math.min(carried, planAllowance);
       const rolloverBase = Math.max(0, planAllowance - carriedKept);
       const rolloverCredits = Math.max(0, Math.floor(computeRollover(rolloverBase)));
-      // Purchased credits are added OUTSIDE the clamp: an unwind bigger than
-      // the new grant empties the plan's part and stops there (#1604).
+      // The credits outside the plan's rules are added OUTSIDE the clamp: an
+      // unwind bigger than the new grant empties the plan's part and stops
+      // there (#1604).
       const newBalance =
-        purchasedKept + Math.max(0, monthlyCredits + rolloverCredits + carriedKept);
+        outsidePlan + Math.max(0, monthlyCredits + rolloverCredits + carriedKept);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx
@@ -369,10 +398,10 @@ export async function refreshMonthlyCredits(
           .set({
             balance: newBalance,
             rolloverCredits: rolloverCredits,
-            // The upper bound settled against the balance it was read beside —
-            // a customer who spent their bought credits down does not carry a
-            // stale protection into the next cycle (#1604).
-            purchasedBalance: purchasedKept,
+            // Every bound settled against the balance it was read beside — a
+            // customer who spent a bucket down does not carry a stale
+            // protection into the next cycle (#1604, #2185).
+            ...settledCreditBounds(userCredits),
             lastRefreshAt: new Date(),
             ...(options.annualYear !== undefined ? annualYearColumns(options.annualYear) : {}),
           })
@@ -683,10 +712,12 @@ export type PlanCreditsExpiryResult =
 /**
  * TAKE A CANCELLED PLAN'S CREDITS OFF THE BALANCE, AND NOTHING ELSE (#2152).
  *
- * The plan's part is `planAllowanceRemaining` — the balance minus the top-ups
- * still on it — read off the SAME row the write is conditioned on, exactly as
- * the renewal does it (#1604, #664 round 2). Top-ups stay, whole: the new
- * balance IS the purchased part.
+ * The plan's part is `planAllowanceRemaining` — the balance minus the top-ups,
+ * referral rewards, staff goodwill, starting credits and promos still on it
+ * (#2185) — read off the SAME row the write is conditioned on, exactly as the
+ * renewal does it (#1604, #664 round 2). Those stay, whole: the new balance
+ * IS `creditsOutsidePlanRules`. Starting credits and promos leave only by
+ * their own clock ({@link expireTimedCredits}).
  *
  * ⚠ **IDEMPOTENT THREE WAYS, because a sweep runs on every server and every
  * six hours.** (1) The write is a compare-and-set on the balance AND on the
@@ -726,15 +757,17 @@ export async function expirePlanCredits(
       }
 
       const balanceReadFrom = row.balance;
-      const purchasedKept = purchasedCreditsRemaining(row);
+      // Top-ups, referral rewards, staff goodwill, starting credits and promos
+      // stay (#2185); only the plan's part expires here.
+      const keptWhole = creditsOutsidePlanRules(row);
       const planPart = planAllowanceRemaining(row);
 
       const written = await withTransaction(async (tx) => {
         const updateResult = await tx
           .update(credits)
           .set({
-            balance: purchasedKept,
-            purchasedBalance: purchasedKept,
+            balance: keptWhole,
+            ...settledCreditBounds(row),
             rolloverCredits: 0,
             planCreditsExpireAt: null,
           })
@@ -756,13 +789,13 @@ export async function expirePlanCredits(
             type: "subscription",
             description: "Plan credits expired 30 days after the plan ended",
             referenceId: ledgerReferenceId,
-            balanceAfter: purchasedKept,
+            balanceAfter: keptWhole,
             // No toolKind, as the renewal's own insert above: the column's
             // NULL already means "not a tool charge" (#401).
           });
         }
         return planPart > 0
-          ? { outcome: "expired" as const, creditsRemoved: planPart, newBalance: purchasedKept }
+          ? { outcome: "expired" as const, creditsRemoved: planPart, newBalance: keptWhole }
           : { outcome: "nothing-to-expire" as const };
       });
       if (written) return written;
@@ -785,6 +818,156 @@ export async function expirePlanCredits(
     }
     log.error({ err: error, userId }, "[Database] plan-credit expiry failed");
     return { outcome: "failed", error: "Plan-credit expiry failed" };
+  }
+}
+
+/**
+ * THE TWO KINDS OF CREDIT THAT EXPIRE ON THEIR OWN CLOCK (#2185, his ruling
+ * 2026-10-10: "promo and signup bonuses after 90 days? Expire after 90 days."):
+ *
+ *   signup  a new account's starting credits, 90 days after its move to a
+ *           paid plan — and never while it is on Free (stamped and cleared by
+ *           `updateUserSubscription`)
+ *   promo   a promo bonus, 90 days after it was given (stamped by the grant in
+ *           `addCreditsIn`; no promo grant exists yet)
+ */
+export type TimedCreditKind = "signup" | "promo";
+
+const TIMED_CREDIT_STAMP = {
+  signup: credits.signupCreditsExpireAt,
+  promo: credits.promoCreditsExpireAt,
+} as const;
+
+/** The accounts holding a timed bucket whose deadline has passed by `now`. */
+export async function getTimedCreditsExpiryCandidates(
+  now: Date,
+): Promise<Array<{ userId: number; kind: TimedCreditKind; expireAt: Date }>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const out: Array<{ userId: number; kind: TimedCreditKind; expireAt: Date }> = [];
+  for (const kind of ["signup", "promo"] as const) {
+    const stamp = TIMED_CREDIT_STAMP[kind];
+    const rows = await db
+      .select({ userId: credits.userId, expireAt: stamp })
+      .from(credits)
+      .where(
+        and(
+          isNotNull(stamp),
+          lt(stamp, now),
+          // Starting credits never expire while the account is on Free.
+          ...(kind === "signup" ? [ne(credits.planTier, "free")] : []),
+        ),
+      );
+    for (const row of rows) {
+      if (row.expireAt) out.push({ userId: row.userId, kind, expireAt: row.expireAt });
+    }
+  }
+  return out;
+}
+
+/** The ledger key of one timed expiry, unique per (kind, account, deadline). */
+export function timedCreditsExpiryLedgerRef(kind: TimedCreditKind, userId: number, expireAt: Date): string {
+  return `${kind}-credits-expired:${userId}:${Math.floor(expireAt.getTime() / 1000)}`;
+}
+
+const TIMED_EXPIRY_LINE = {
+  signup: { type: "signup", description: "Starting credits expired 90 days after the move to a paid plan" },
+  promo: { type: "bonus", description: "Promo credits expired 90 days after they were given" },
+} as const;
+
+/**
+ * TAKE ONE TIMED BUCKET OFF THE BALANCE, AND NOTHING ELSE (#2185).
+ *
+ * The same three locks as {@link expirePlanCredits}, for the same reasons: a
+ * compare-and-set on the balance AND the stamp, the stamp cleared in the same
+ * write, and a ledger reference unique per (kind, account, deadline). What is
+ * removed is that bucket's reading off the row the write is conditioned on;
+ * every other bucket reads the same after it as before.
+ *
+ * ⚠ **STARTING CREDITS RE-CHECK THE ACCOUNT IS STILL PAID**, in the read and
+ * in the write: a move back to Free clears the stamp, and the conditioned
+ * write misses rather than taking credits that now last until they are used.
+ */
+export async function expireTimedCredits(
+  userId: number,
+  kind: TimedCreditKind,
+  expireAt: Date,
+  now: Date = new Date(),
+): Promise<PlanCreditsExpiryResult> {
+  const db = await getDb();
+  if (!db) return { outcome: "failed", error: "Database not available" };
+  const stamp = TIMED_CREDIT_STAMP[kind];
+  const stampKey = kind === "signup" ? "signupCreditsExpireAt" : "promoCreditsExpireAt";
+  const boundKey = kind === "signup" ? "signupBalance" : "promoBalance";
+  const ledgerReferenceId = normalizeCreditReferenceId(timedCreditsExpiryLedgerRef(kind, userId, expireAt));
+
+  try {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const row = await getUserCredits(userId);
+      if (!row) return { outcome: "failed", error: "User credits not found" };
+      const stamped = row[stampKey];
+      if (!(stamped instanceof Date) || stamped.getTime() !== expireAt.getTime()) {
+        return { outcome: "already-expired" };
+      }
+      if ((kind === "signup" && row.planTier === "free") || expireAt.getTime() > now.getTime()) {
+        return { outcome: "not-due" };
+      }
+
+      const balanceReadFrom = row.balance;
+      const removed = creditBuckets(row)[kind];
+      const newBalance = balanceReadFrom - removed;
+
+      const written = await withTransaction(async (tx) => {
+        const updateResult = await tx
+          .update(credits)
+          .set({
+            balance: newBalance,
+            ...settledCreditBounds(row),
+            [boundKey]: 0,
+            [stampKey]: null,
+          })
+          .where(
+            and(
+              eq(credits.userId, userId),
+              eq(credits.balance, balanceReadFrom),
+              eq(stamp, expireAt),
+              ...(kind === "signup" ? [ne(credits.planTier, "free")] : []),
+            ),
+          );
+        const affected = (updateResult as any)[0]?.affectedRows ?? 0;
+        if (affected === 0) return null;
+
+        if (removed > 0) {
+          await tx.insert(creditTransactions).values({
+            userId,
+            amount: -removed,
+            type: TIMED_EXPIRY_LINE[kind].type,
+            description: TIMED_EXPIRY_LINE[kind].description,
+            referenceId: ledgerReferenceId,
+            balanceAfter: newBalance,
+          });
+        }
+        return removed > 0
+          ? { outcome: "expired" as const, creditsRemoved: removed, newBalance }
+          : { outcome: "nothing-to-expire" as const };
+      });
+      if (written) return written;
+    }
+    return { outcome: "failed", error: "Balance changed during expiry — retry next sweep" };
+  } catch (error) {
+    if (isDuplicateCreditReferenceError(error)) {
+      try {
+        await db
+          .update(credits)
+          .set({ [stampKey]: null })
+          .where(and(eq(credits.userId, userId), eq(stamp, expireAt)));
+      } catch (clearError) {
+        log.warn({ err: clearError, userId, kind }, "[Database] could not clear an already-expired timed stamp");
+      }
+      return { outcome: "already-expired" };
+    }
+    log.error({ err: error, userId, kind }, "[Database] timed-credit expiry failed");
+    return { outcome: "failed", error: "Timed-credit expiry failed" };
   }
 }
 

@@ -10464,6 +10464,61 @@
       "file": "server/castingV2/castViewPackage.ts"
     },
     {
+      "id": "cost:server/db/credits.ts:CREDIT_BUCKET_COLUMN.kept",
+      "name": "CREDIT_BUCKET_COLUMN.kept",
+      "constant": "CREDIT_BUCKET_COLUMN",
+      "member": "kept",
+      "credits": null,
+      "expression": "\"keptBalance\"",
+      "derivedFrom": "\"keptBalance\"",
+      "file": "server/db/credits.ts"
+    },
+    {
+      "id": "cost:server/db/credits.ts:CREDIT_BUCKET_COLUMN.promo",
+      "name": "CREDIT_BUCKET_COLUMN.promo",
+      "constant": "CREDIT_BUCKET_COLUMN",
+      "member": "promo",
+      "credits": null,
+      "expression": "\"promoBalance\"",
+      "derivedFrom": "\"promoBalance\"",
+      "file": "server/db/credits.ts"
+    },
+    {
+      "id": "cost:server/db/credits.ts:CREDIT_BUCKET_COLUMN.purchased",
+      "name": "CREDIT_BUCKET_COLUMN.purchased",
+      "constant": "CREDIT_BUCKET_COLUMN",
+      "member": "purchased",
+      "credits": null,
+      "expression": "\"purchasedBalance\"",
+      "derivedFrom": "\"purchasedBalance\"",
+      "file": "server/db/credits.ts"
+    },
+    {
+      "id": "cost:server/db/credits.ts:CREDIT_BUCKET_COLUMN.signup",
+      "name": "CREDIT_BUCKET_COLUMN.signup",
+      "constant": "CREDIT_BUCKET_COLUMN",
+      "member": "signup",
+      "credits": null,
+      "expression": "\"signupBalance\"",
+      "derivedFrom": "\"signupBalance\"",
+      "file": "server/db/credits.ts"
+    },
+    {
+      "id": "cost:server/db/credits.ts:CREDIT_SPEND_ORDER",
+      "name": "CREDIT_SPEND_ORDER",
+      "constant": "CREDIT_SPEND_ORDER",
+      "credits": null,
+      "derivedFrom": "[\"plan\", \"promo\", \"signup\", \"kept\", \"purchased\"]",
+      "file": "server/db/credits.ts"
+    },
+    {
+      "id": "cost:server/db/credits.ts:TIMED_CREDIT_LIFE_DAYS",
+      "name": "TIMED_CREDIT_LIFE_DAYS",
+      "constant": "TIMED_CREDIT_LIFE_DAYS",
+      "credits": 90,
+      "file": "server/db/credits.ts"
+    },
+    {
       "id": "cost:server/db/discrepancyQueries.ts:OPERATION_COST_SQL",
       "name": "OPERATION_COST_SQL",
       "constant": "OPERATION_COST_SQL",
@@ -13571,6 +13626,10 @@
       "path": "server/creditDisplayGuard.test.ts"
     },
     {
+      "id": "test:server/creditExpiryRules.test.ts",
+      "path": "server/creditExpiryRules.test.ts"
+    },
+    {
       "id": "test:server/creditPriceScale.test.ts",
       "path": "server/creditPriceScale.test.ts"
     },
@@ -13825,6 +13884,10 @@
     {
       "id": "test:server/db/referralClaimRace.test.ts",
       "path": "server/db/referralClaimRace.test.ts"
+    },
+    {
+      "id": "test:server/db/referralCreditsNeverExpire.test.ts",
+      "path": "server/db/referralCreditsNeverExpire.test.ts"
     },
     {
       "id": "test:server/db/storageCleanupHold.test.ts",
