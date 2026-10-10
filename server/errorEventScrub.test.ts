@@ -123,6 +123,16 @@ describe("the refusing list has a floor, so it cannot be emptied quietly", () =>
       expect(REFUSING_KEYS).toContain(key);
     }
   });
+
+  /* "Say it your way" (#2197 / #2205): the customer's own sentence behind each
+     line — the two columns, and the input field both procedures carry it in.
+     Named by hand for the same reason as the arm above: only a sentence like
+     this can refuse a quiet removal. */
+  it("carries the customer's own sentence behind each line — both columns and the input field", () => {
+    for (const key of ["personalityOwnWords", "voiceOwnWords", "ownWords"]) {
+      expect(REFUSING_KEYS).toContain(key);
+    }
+  });
 });
 
 describe("the refusal — a forbidden key drops the whole event", () => {

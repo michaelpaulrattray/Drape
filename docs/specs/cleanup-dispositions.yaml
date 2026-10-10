@@ -836,6 +836,12 @@
   why: server/testing/ is test infrastructure by directory; it is the one place the loopback URL of an ephemeral listener is spelled, across five suites
   argued: 13a
 
+- symbol: failedWrite
+  file: server/testing/failedWrite.ts
+  verdict: KEEP
+  why: server/testing/ is test infrastructure by directory; it is the one real DrizzleQueryError carrying a customer's words that the query-value suites (#2218, #2222) share, so no suite builds a second copy of the fixture
+  argued: 13a
+
 - symbol: clearAllUserSessions
   file: server/wardrobe/vtoSession.ts
   verdict: FILED
@@ -1569,3 +1575,15 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the one frame five conformance suites hand the view judge, and it exists because of a measured defect rather than for tidiness: until #1903 gave the `intact` axis a deterministic reader, every one of those suites drove the judge with `Buffer.from(\"anchor\")` — thirteen bytes no decoder will open — and one drove it with a 1x1 PNG, which is a valid image and a perfectly blank one. Nothing noticed for as long as the files existed, because the only thing that ever opened those bytes was a vision model behind a stub; the first reader that actually decoded them turned 30 arms red in one run. Deleting it returns five suites to five copies of one fixture (working law 4) and re-opens the road where a suite proving the checker works is itself judging something that is not a photograph. It carries the blank-threshold margin as an arm in judgeFrame.test.ts, so a fixture that drifted flat is caught as a fixture rather than read as the gate breaking"
   argued: "#1903 (the repair owed on PR #1915)"
+
+- symbol: makeThrowawayRepo
+  file: server/testing/throwawayRepo.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (the readListedSource precedent, 13a), so a production-importer reading of it is zero by construction and says nothing. It is the one-file repository three suites (scriptGuards, typecheckOnCommit, riteWorktree) drive the rite's worktree recipe against, and it exists because of a measured refusal: those arms checked out a worktree of the WHOLE repository — 2.5 s idle, 29.6 s into %TEMP% on 2026-10-10 — and the deploy rite refused a correct tree five runs in a row when they crossed the 30 s floor. Deleting it returns them to the real root, which scriptGuards.test.ts now refuses"
+  argued: "#2212"
+
+- symbol: realRootRecipeCalls
+  file: server/testing/throwawayRepo.ts
+  verdict: KEEP
+  why: "server/testing/ is test infrastructure by directory (13a). It is the reader behind scriptGuards.test.ts's derived guard that no tracked server suite hands this repository's own root to inWorktreeOf / runScriptGuardsOnCommit / runTypecheckOnCommit (#2212); its negative control drives each spelling it claims, and deleting it leaves the class with nothing to stop the next arm written beside the converted ones from bringing the stopwatch back"
+  argued: "#2212"

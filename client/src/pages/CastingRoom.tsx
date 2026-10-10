@@ -35,7 +35,13 @@ import {
   CastPersonalityCard,
   CastVoiceBadge,
   CastVoiceLine,
+  PersonaChangeButton,
+  PERSONA_OWN_WORDS_SHUT,
+  personaOwnWordsAfter,
   type CastPersonaFieldName,
+  type CastReadOption,
+  type PersonaOwnWordsDoor,
+  type PersonaOwnWordsState,
 } from "@/features/castingV2/components/CastPersonaCards";
 
 /**
@@ -148,6 +154,22 @@ export default function CastingRoom() {
   const config = trpc.castingV2.config.useQuery({});
   const rename = trpc.castingV2.renameCast.useMutation();
   const editPersona = trpc.castingV2.editCastPersonaField.useMutation();
+  /*
+    ⚠ A MUTATION AND NOT A QUERY, and the reason is money rather than REST.
+
+    Opening door 1 costs the house a measured $0.0154 and takes ~13.8 s. A
+    `useQuery` would be refetched on window focus and on reconnect, so a
+    customer who tabbed away and back would pay again — and the six they were
+    reading would be replaced by six different ones under their cursor.
+  */
+  const draftReads = trpc.castingV2.draftCastReads.useMutation();
+  /*
+    DOOR 2 — "SAY IT YOUR WAY" (#2197 / #2205). A MUTATION for door 1's
+    reason: each press is a house-paid call (~$0.003, 2.5–5 s, measured on PR
+    #2217), and a query would be refetched on focus and pay again. It writes
+    nothing; Keep this is `editCastPersonaField` carrying `ownWords`.
+  */
+  const translateOwnWords = trpc.castingV2.translateOwnWords.useMutation();
   const utils = trpc.useUtils();
   /** Inline rename on the title. Null when not editing. */
   const [draftName, setDraftName] = useState<string | null>(null);
@@ -161,6 +183,17 @@ export default function CastingRoom() {
   */
   const [savingPersonaField, setSavingPersonaField] = useState<CastPersonaFieldName | null>(null);
   /*
+    DOOR 1 — SIX WAYS THIS CAST COULD CARRY THEMSELVES (#2196).
+
+    Held HERE for the same two reasons the voice line's open state is: the room
+    owns every tRPC call in this surface, and a `useState` must sit above the
+    early returns further down this file (React #310).
+
+    `shut` is the door offered but unopened, so nothing has been paid for.
+  */
+  const [readsState, setReadsState] = useState<"shut" | "drafting" | "open" | "failed">("shut");
+  const [reads, setReads] = useState<readonly CastReadOption[]>([]);
+  /*
     WHETHER THE VOICE LINE'S BOX IS OPEN — #2139, and it is held HERE rather
     than inside the line for one reason: the voice card's *Change* button sits
     in the card's HEAD, which this file draws, and a line keeping its own open
@@ -170,6 +203,14 @@ export default function CastingRoom() {
     Above every early return, for the same React #310 reason as the line above.
   */
   const [voiceEditing, setVoiceEditing] = useState(false);
+  /*
+    DOOR 2 ON EACH CARD — #2197 (Personality) and #2205 (Voice), one state
+    shape keyed by line, because the two doors are one door on two cards.
+    Above every early return (React #310).
+  */
+  const [ownWordsDoors, setOwnWordsDoors] = useState<Record<CastPersonaFieldName, PersonaOwnWordsState>>(
+    { personality: PERSONA_OWN_WORDS_SHUT, voice: PERSONA_OWN_WORDS_SHUT },
+  );
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -377,14 +418,26 @@ export default function CastingRoom() {
    * card she is looking at. A sentence telling her the thing she just typed was
    * saved is the kind of noise his #2089 ruling took off these tiles.
    */
-  const savePersonaField = (line: CastPersonaFieldName, text: string) => {
+  const savePersonaField = (
+    line: CastPersonaFieldName,
+    text: string,
+    /*
+      DOOR 2's KEEP THIS (#2197 / #2205): the customer's own sentence rides
+      the same owner-scoped write as the line, so the two can never disagree
+      about which keep they belong to. Absent on every other road, and the
+      server CLEARS that line's stored sentence when it is absent — so the
+      cache below writes `null` then, the same fact the server just stored.
+    */
+    kept?: { ownWords: string; onSaved: () => void },
+  ) => {
     if (!data) return;
     setSavingPersonaField(line);
     editPersona.mutate(
-      { castId: data.castId, line, text },
+      { castId: data.castId, line, text, ...(kept ? { ownWords: kept.ownWords } : {}) },
       {
         onSuccess: (saved) => {
           setSavingPersonaField(null);
+          kept?.onSaved();
           /*
             THE CUSTOMER'S OWN WORDS GO STRAIGHT INTO THE CACHE — the relay's
             non-blocking note on PR #2114, and the reason the procedure returns
@@ -404,7 +457,7 @@ export default function CastingRoom() {
           */
           utils.castingV2.getCast.setData({ castId: data.castId }, (previous) => {
             if (!previous) return previous;
-            const line = { text: saved.text, drafted: saved.drafted };
+            const line = { text: saved.text, drafted: saved.drafted, ownWords: kept?.ownWords ?? null };
             return {
               ...previous,
               persona: {
@@ -428,6 +481,106 @@ export default function CastingRoom() {
         },
       },
     );
+  };
+
+  /**
+   * DOOR 1 — THE SIX ARE ASKED FOR WHEN THE DOOR IS OPENED (#2196).
+   *
+   * ⚠ **ON OPEN AND NOT AT SIGN, decided on the measurement the card required
+   * before anything was drawn.** $0.0154 and ~13.8 s either way — but at Sign
+   * every customer pays it whether or not they ever open this, the six would
+   * need a store this card does not have, and a set drafted at Sign is stale
+   * the moment the line underneath it is edited, which is the very thing this
+   * door exists to help with.
+   */
+  const openReadsDoor = () => {
+    if (!data) return;
+    setReadsState("drafting");
+    setReads([]);
+    draftReads.mutate(
+      { castId: data.castId },
+      {
+        onSuccess: (drafted) => {
+          setReads(drafted.reads);
+          setReadsState("open");
+        },
+        onError: (error) => {
+          /*
+            THE REFUSAL IS DRAWN ON THE CARD, NOT THROWN AT A TOAST, because
+            the card is where the customer is looking and the picker has
+            replaced its body — a toast over an empty panel would leave them
+            with a blank card and a message that scrolls away.
+          */
+          setReadsState("failed");
+          logRawFailure('castingV2.draftCastReads', error);
+        },
+      },
+    );
+  };
+
+  /**
+   * KEEPING A READ IS THE EDIT THE PRODUCT ALREADY HAS (#2196).
+   *
+   * No new write path, no new column: a read's two sentences ARE a personality
+   * line, so this is `savePersonaField` with the read's words. The door shuts
+   * on the way so the customer lands back on the card showing what they chose,
+   * which is the receipt — the same "the badge going is the receipt" rule door
+   * 0 ships under.
+   */
+  /**
+   * DOOR 2 — THE CUSTOMER'S SENTENCE, TURNED INTO THE LINE (#2197 / #2205).
+   *
+   * Free to the customer and bounded by the house (sixty presses an hour per
+   * account). The two ways it can fail are said in plain words ON THE CARD,
+   * for door 1's reason — the panel has replaced the card body, so a toast
+   * would scroll away and leave a box with no answer under it:
+   *
+   *  - the hour's bound (`TOO_MANY_REQUESTS`) says so without a number;
+   *  - anything else, including the server's own `nothing` (the call failed,
+   *    came back cut off, or could not be fitted to the line's cap), says
+   *    the sentence could not be read and to try again.
+   *
+   * The sentence stays in the box either way, so trying again is one press.
+   */
+  const setOwnWords = (line: CastPersonaFieldName, next: PersonaOwnWordsState) =>
+    setOwnWordsDoors((doors) => ({ ...doors, [line]: next }));
+  const askOwnWords = (line: CastPersonaFieldName, ownWords: string) => {
+    if (!data) return;
+    setOwnWords(line, { stage: "reading", result: null, failure: null });
+    translateOwnWords.mutate(
+      { castId: data.castId, line, ownWords },
+      {
+        onSuccess: (answer) => setOwnWords(line, personaOwnWordsAfter(answer)),
+        onError: (error) => {
+          logRawFailure('castingV2.translateOwnWords', error);
+          setOwnWords(line, personaOwnWordsAfter({ kind: "error", code: error.data?.code ?? null }));
+        },
+      },
+    );
+  };
+  /** The door handed to one card. Keep this is the edit the product already has. */
+  const ownWordsDoor = (line: CastPersonaFieldName): PersonaOwnWordsDoor => ({
+    ...ownWordsDoors[line],
+    onOpen: () => setOwnWords(line, { stage: "writing", result: null, failure: null }),
+    onTranslate: (ownWords) => askOwnWords(line, ownWords),
+    onReword: () => setOwnWords(line, { stage: "writing", result: null, failure: null }),
+    onKeep: (ownWords, text, kept) => savePersonaField(line, text, {
+      ownWords,
+      /* The door shuts and the box closes only once both are stored, so the
+         customer lands on the card showing the line they kept — the receipt —
+         and a failed keep leaves the translation on screen to keep again. */
+      onSaved: () => {
+        setOwnWords(line, PERSONA_OWN_WORDS_SHUT);
+        kept();
+      },
+    }),
+    onBack: () => setOwnWords(line, PERSONA_OWN_WORDS_SHUT),
+  });
+
+  const keepRead = (read: CastReadOption) => {
+    savePersonaField("personality", read.personality);
+    setReadsState("shut");
+    setReads([]);
   };
 
   /*
@@ -1090,6 +1243,21 @@ export default function CastingRoom() {
                      and Pigman's look." The card handles a blank name with the
                      room's own "their look" fallback. */
                   name={data.name ?? null}
+                  /* Door 1 (#2196). The room holds the state and owns the
+                     call; the card draws the row, the wait, the six and the
+                     refusal, and decides none of them. */
+                  readsDoor={{
+                    state: readsState,
+                    reads,
+                    onOpen: openReadsDoor,
+                    onBack: () => {
+                      setReadsState("shut");
+                      setReads([]);
+                    },
+                    onKeep: keepRead,
+                  }}
+                  /* Door 2 (#2197): the same ownership split as door 1. */
+                  ownWordsDoor={ownWordsDoor("personality")}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
@@ -1119,16 +1287,14 @@ export default function CastingRoom() {
                       voice line the card draws no text either, so a *Change*
                       there would open an empty box.
                     */}
-                    {data.persona?.voice && !voiceEditing ? (
-                      <button
-                        type="button"
-                        className="dpc-rcard__quiet"
-                        onClick={() => setVoiceEditing(true)}
-                        disabled={savingPersonaField === "voice"}
-                      >
-                        Change
-                      </button>
-                    ) : null}
+                    {/* One button for both persona cards since #2214; the
+                        shown/absent rule above lives inside it, once. */}
+                    <PersonaChangeButton
+                      present={Boolean(data.persona?.voice)}
+                      editing={voiceEditing}
+                      saving={savingPersonaField === "voice"}
+                      onOpen={() => setVoiceEditing(true)}
+                    />
                   </div>
                   {/*
                     HOW THEY SOUND - N2b (#1242), inside the EXISTING stub
@@ -1155,7 +1321,16 @@ export default function CastingRoom() {
                     name={data.name ?? null}
                     editing={voiceEditing}
                     onEditingChange={setVoiceEditing}
+                    /* Door 2 on the Voice card (#2205). */
+                    ownWordsDoor={ownWordsDoor("voice")}
                   />
+                  {/*
+                    THE PLAYER AND ITS FOOT STEP ASIDE WHILE DOOR 2 IS OPEN —
+                    his `05-your-way-dark.png` draws the panel alone in the
+                    card, the way door 1 replaces the Personality card's body.
+                  */}
+                  {ownWordsDoors.voice.stage === "shut" ? (
+                  <>
                   <div className="dpc-voice__player">
                     <span className="dpc-voice__play">
                       <Play size={13} strokeWidth={2} aria-hidden="true" />
@@ -1172,6 +1347,8 @@ export default function CastingRoom() {
                       A designed voice and an audition clip arrive with voice.
                     </span>
                   </div>
+                  </>
+                  ) : null}
                 </section>
 
                 {/* IN CAMPAIGNS — flush card; its rows own their padding. */}

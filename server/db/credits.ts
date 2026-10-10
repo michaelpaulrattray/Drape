@@ -121,61 +121,160 @@ export function isPurchasedCreditGrant(type: CreditTransactionType | string): bo
  * the limit needs the charge's purchased share written on its own ledger row,
  * which is a schema change and its own card.
  *
+ * The same holds for every bound since #2185's second half: between two
+ * grants none of them moves, so a refund of a charge made since the last grant
+ * comes back to the buckets that charge used, whichever they were.
+ *
  * Bonuses, signup credits and staff goodwill are NOT reversals and keep the
- * settle: how they should expire is the founder's decision on #2185, not this
- * predicate's.
+ * settle; which bucket each lands in is {@link grantBucket}'s answer.
  */
 export function isSpendReversal(type: CreditTransactionType | string): boolean {
   return type === "refund";
 }
 
 /**
- * HOW MANY OF A BALANCE'S CREDITS THE CUSTOMER PAID FOR — the only reader of
- * `points.purchasedBalance`, and the whole of #1604's arithmetic.
+ * WHICH CREDITS ON A BALANCE ARE WHICH — the only reader of the three bound
+ * columns (`purchasedBalance`, `keptBalance`, `promoBalance`), and the whole of
+ * #1604's arithmetic, widened by #2185.
  *
- * The product's rule, chosen here rather than inherited: **purchased credits
- * are the LAST to go.** A plan's monthly allowance spends first. That rule is
- * what makes one number enough where Phase 2 wants lots — the purchased
- * credits remaining are the LESSER of the column and the live balance, exactly,
- * with nothing written on the spend path.
+ * His rulings on #2185, 2026-10-10, verbatim: *"Referral credits (proposed)
+ * Never expire, same as top-ups."*, *"promo and signup bonuses after 90 days?
+ * Expire after 90 days."*, and then, superseding the second for the starting
+ * credits: *"starting credits are just a default every account starts with
+ * lets make them never expire to simplify things."* So:
  *
- * Worked, because the card's done-when is a row: a Starter account holding
- * 25,000 bought credits and 10,000 of its allowance has `balance` 35,000 and
- * `purchasedBalance` 25,000 — so 25,000 is protected and 10,000 is the plan's
- * part, which is what the rollover percentage is applied to. Spend 30,000 of
- * it and the balance is 5,000: the allowance went first, 20,000 of the bought
- * credits went after it, and `min(25,000, 5,000)` says 5,000 remain. Right
- * both times, from one number.
+ *   purchased  top-ups                              never expire
+ *   kept       starting credits, referral rewards,  never expire
+ *              staff goodwill
+ *   promo      promo bonuses                        90 days after the grant
+ *   plan       everything else                      the plan's rules (rollover,
+ *                                                   downgrade trim, 30 days
+ *                                                   after a cancel)
  *
- * ⚠ IT IS DEFENSIVE ABOUT ITS INPUTS AND SAYS SO. Both columns are
- * `NOT NULL DEFAULT 0`, so neither can be absent on a live row; a caller
- * holding a partial projection or a test double is the real case, and
- * answering 0 there is the only direction that cannot invent protection for
- * credits nobody bought.
+ * **The spend order is {@link BUCKET_SPEND_ORDER}: the plan's credits go
+ * first, then the ones that expire, then the ones that never do, and top-ups
+ * last of all.** That order is what makes one number per bucket enough: each
+ * bucket remaining is the LESSER of its bound and what the buckets spent after
+ * it leave over, exactly, with nothing written on the spend path. A grant
+ * settles every bound to its reading first (`addCreditsIn`), so a bucket the
+ * customer has spent cannot be resurrected by a later grant.
+ *
+ * Worked, #1604's own row: 25,000 bought and 10,000 of a plan's allowance is
+ * `balance` 35,000, `purchasedBalance` 25,000 — 25,000 purchased, 10,000 plan.
+ * Spend 30,000: balance 5,000, and `min(25,000, 5,000)` = 5,000 purchased,
+ * 0 plan. Add a 2,000 referral reward on top of that and the settle leaves the
+ * purchased bound at 5,000 and the kept bound at 2,000: balance 7,000, every
+ * credit accounted for.
+ *
+ * ⚠ IT IS DEFENSIVE ABOUT ITS INPUTS AND SAYS SO. The columns are `NOT NULL
+ * DEFAULT 0`, so none can be absent on a live row; a caller holding a partial
+ * projection or a test double is the real case, and answering 0 there reads
+ * those credits as the PLAN's — the direction that cannot invent protection
+ * for credits nobody was given.
  */
-export function purchasedCreditsRemaining(row: {
+export type CreditBucket = "plan" | "promo" | "kept" | "purchased";
+
+/** First spent to last spent. Every reader derives from this list. */
+export const BUCKET_SPEND_ORDER: readonly CreditBucket[] = ["plan", "promo", "kept", "purchased"];
+
+/** The column holding each non-plan bucket's upper bound. */
+export const BUCKET_BOUND_COLUMN = {
+  promo: "promoBalance",
+  kept: "keptBalance",
+  purchased: "purchasedBalance",
+} as const satisfies Record<Exclude<CreditBucket, "plan">, string>;
+
+export type CreditBucketBounds = {
+  [K in (typeof BUCKET_BOUND_COLUMN)[keyof typeof BUCKET_BOUND_COLUMN]]: number;
+};
+
+export type CreditBucketRow = {
   balance: number;
   purchasedBalance?: number | null;
-}): number {
-  const balance = Number.isFinite(row.balance) ? Math.max(0, Math.floor(row.balance)) : 0;
-  const purchased =
-    typeof row.purchasedBalance === "number" && Number.isFinite(row.purchasedBalance)
-      ? Math.max(0, Math.floor(row.purchasedBalance))
-      : 0;
-  return Math.min(purchased, balance);
+  keptBalance?: number | null;
+  promoBalance?: number | null;
+};
+
+/** How long a promo lasts from its grant. */
+export const TIMED_BONUS_LIFE_DAYS = 90;
+
+function wholeNonNegative(value: number | null | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+export function creditBuckets(row: CreditBucketRow): Record<CreditBucket, number> {
+  let left = wholeNonNegative(row.balance);
+  const out = { plan: 0, promo: 0, kept: 0, purchased: 0 } as Record<CreditBucket, number>;
+  // Last spent is read first: it keeps the most of what is left.
+  for (const bucket of [...BUCKET_SPEND_ORDER].reverse()) {
+    if (bucket === "plan") {
+      out.plan = left;
+      continue;
+    }
+    const take = Math.min(wholeNonNegative(row[BUCKET_BOUND_COLUMN[bucket]]), left);
+    out[bucket] = take;
+    left -= take;
+  }
+  return out;
+}
+
+/** Every bound settled to what its bucket actually holds — what a grant writes first. */
+export function settledCreditBounds(row: CreditBucketRow): CreditBucketBounds {
+  const buckets = creditBuckets(row);
+  return {
+    purchasedBalance: buckets.purchased,
+    keptBalance: buckets.kept,
+    promoBalance: buckets.promo,
+  };
 }
 
 /**
- * The part of a balance the plan's own rules govern — everything that is not
- * the customer's purchased credits. This is what a rollover percentage is
- * applied to and what a plan-change unwind may claw back.
+ * The part of a balance the plan's own rules govern — everything that is not a
+ * top-up, a referral reward, staff goodwill, starting credits or a promo. This
+ * is what a rollover percentage is applied to, what a plan-change unwind may
+ * claw back, and what a cancelled plan's expiry takes.
  */
-export function planAllowanceRemaining(row: {
-  balance: number;
-  purchasedBalance?: number | null;
-}): number {
-  const balance = Number.isFinite(row.balance) ? Math.max(0, Math.floor(row.balance)) : 0;
-  return balance - purchasedCreditsRemaining(row);
+export function planAllowanceRemaining(row: CreditBucketRow): number {
+  return creditBuckets(row).plan;
+}
+
+/**
+ * The credits the plan's rules never touch — the balance minus the plan's
+ * part. A renewal and a cancelled plan's expiry carry these across whole; a
+ * promo leaves only by its own 90-day expiry.
+ */
+export function creditsOutsidePlanRules(row: CreditBucketRow): number {
+  return wholeNonNegative(row.balance) - planAllowanceRemaining(row);
+}
+
+/**
+ * Where a `bonus` came from, stated by its caller (#2185). The ledger's `type`
+ * column is one `bonus` for all of them, and it stays that way — the type is
+ * a MySQL enum that the moderator filters and exports also list, so a new
+ * value would be a column change and a wider diff than the rule needs.
+ *
+ * ⚠ OMITTED MEANS THE PLAN'S. The two remaining `bonus` writers are a plan
+ * change's prorated credits (`server/stripe/planChangeSettlement.ts` and the
+ * legacy road in `server/routes/billing.ts`), and those ARE plan credits.
+ */
+export type BonusSource = "referral" | "goodwill" | "promo";
+
+/** Which bucket a grant lands in, or `reversal` for a refund (see {@link isSpendReversal}). */
+export function grantBucket(
+  type: CreditTransactionType | "admin_add" | string,
+  bonusSource?: BonusSource,
+): CreditBucket | "reversal" {
+  if (isSpendReversal(type)) return "reversal";
+  if (isPurchasedCreditGrant(type)) return "purchased";
+  if (type === "admin_add") return "kept";
+  // Starting credits are a default every account starts with, and never
+  // expire (his ruling on #2185, 2026-10-10).
+  if (type === "signup") return "kept";
+  if (type === "bonus") {
+    if (bonusSource === "referral" || bonusSource === "goodwill") return "kept";
+    if (bonusSource === "promo") return "promo";
+  }
+  return "plan";
 }
 
 /**
@@ -361,6 +460,9 @@ export async function initializeUserCredits(userId: number): Promise<void> {
         // `migration-before-code`): a new account has bought nothing, and the
         // row says so instead of inheriting it.
         purchasedBalance: 0,
+        // The starting credits never expire, on any plan (his ruling on #2185,
+        // 2026-10-10): they land in the kept bucket beside referral rewards.
+        keptBalance: INITIAL_CREDITS,
         rolloverCredits: 0,
       });
 
@@ -563,12 +665,21 @@ export async function deductCredits(
   }
 }
 
+/** What a grant states beyond its type (#2185). */
+export interface CreditGrantOptions {
+  /** Where a `bonus` came from; omitted, it is the plan's. See {@link BonusSource}. */
+  bonusSource?: BonusSource;
+  /** The clock a promo's 90 days run from. Tests pass one; the product does not. */
+  now?: Date;
+}
+
 export async function addCredits(
   userId: number,
   amount: number,
   type: CreditTransactionType,
   description: string,
-  referenceId?: string
+  referenceId?: string,
+  options: CreditGrantOptions = {},
 ): Promise<CreditWriteResult> {
   const db = await getDb();
   if (!db) {
@@ -580,7 +691,7 @@ export async function addCredits(
 
   try {
     return await withTransaction((tx) =>
-      addCreditsIn(tx, userId, amount, type, description, ledgerReferenceId));
+      addCreditsIn(tx, userId, amount, type, description, ledgerReferenceId, options));
   } catch (error) {
     if (ledgerReferenceId && isDuplicateCreditReferenceError(error)) {
       return resolveDuplicateCreditReference(
@@ -596,17 +707,40 @@ export async function addCredits(
   }
 }
 
+/** A deadline `TIMED_BONUS_LIFE_DAYS` after `from`, in whole seconds (the column has no fraction). */
+function timedCreditDeadline(from: Date): Date {
+  return new Date(Math.floor((from.getTime() + TIMED_BONUS_LIFE_DAYS * 86_400_000) / 1000) * 1000);
+}
+
+/** When a promo granted at `now` expires, given the one already on the row (#2185). */
+export function promoExpiryAfterGrant(
+  existing: Date | null | undefined,
+  promoStillHeld: number,
+  now: Date,
+): Date {
+  const fresh = timedCreditDeadline(now);
+  /* ⚠ ONE PROMO BUCKET, ONE DATE — A STATED LIMIT. Two promos held at once
+     share the LATER of their two dates, so the earlier one lasts longer than
+     its own 90 days rather than the later one being cut short. No promo grant
+     exists yet (the ruling: "this is built with the first promo"); a product
+     that runs overlapping promos needs one row per promo, and that is the
+     first promo's card to decide. */
+  if (promoStillHeld > 0 && existing instanceof Date && existing.getTime() > fresh.getTime()) {
+    return existing;
+  }
+  return fresh;
+}
+
 /**
  * THE GRANT ITSELF, INSIDE A TRANSACTION THE CALLER ALREADY HOLDS (#2127).
  *
  * `addCredits` is this plus its own transaction and the duplicate-reference
- * classification, and it is unchanged in behaviour — its body moved here
- * verbatim. The reason to expose it is a refund that must be decided under a
- * lock the caller holds: a Sign view lost to a refused sheet refunds its share
- * in the SAME transaction that holds the Sign's operation row `FOR UPDATE`,
- * so the recovery sweep (which moves that row out of `running` before it
- * refunds) and the live refund are serialized by the database rather than
- * by timing.
+ * classification. The reason to expose it is a refund that must be decided
+ * under a lock the caller holds: a Sign view lost to a refused sheet refunds
+ * its share in the SAME transaction that holds the Sign's operation row
+ * `FOR UPDATE`, so the recovery sweep (which moves that row out of `running`
+ * before it refunds) and the live refund are serialized by the database rather
+ * than by timing.
  *
  * ⚠ **A duplicate reference THROWS here and rolls the caller's transaction
  * back** — there is no classification inside a transaction that has already
@@ -620,6 +754,7 @@ export async function addCreditsIn(
   type: CreditTransactionType,
   description: string,
   ledgerReferenceId: string | undefined,
+  options: CreditGrantOptions = {},
 ): Promise<CreditWriteResult> {
   // ATOMIC ADDITION: Use SQL balance + amount to prevent race conditions.
   // The unique ledger index, not a prior SELECT, arbitrates concurrent
@@ -627,63 +762,79 @@ export async function addCreditsIn(
   // catch below classifies the already-committed row.
   const isPurchase =
     type === "purchase" || type === "topup" || type === "subscription";
+  const bucket = grantBucket(type, options.bonusSource);
 
   /*
-    ⚠ THE PURCHASED UPPER BOUND IS SETTLED AGAINST THE BALANCE *BEFORE*
-    THIS GRANT LANDS (#1604), AND IT IS ITS OWN STATEMENT ON PURPOSE.
+    ⚠ EVERY BOUND IS SETTLED AGAINST THE BALANCE *BEFORE* THIS GRANT LANDS
+    (#1604, widened to all three bounds by #2185).
 
-    `purchasedBalance` is an upper bound that `purchasedCreditsRemaining`
-    reads as `min(column, balance)` — exact, because purchased credits
-    spend last. The one thing that can make the bound meaningless is a
-    grant: an account that bought 25,000 credits and spent every one of
-    them still carries 25,000 in the column, so the next bonus or admin
-    adjustment would arrive and be read as purchased credits the customer
-    never has. Settling the bound to the pre-grant balance is what closes
-    that, and it runs for every grant kind but one (below).
+    Each bound is an upper bound that `creditBuckets` reads as the lesser of
+    it and what the later-spent buckets leave over — exact, because the spend
+    order is fixed. The one thing that can make a bound meaningless is a
+    grant: an account that bought 25,000 credits and spent every one of them
+    still carries 25,000 in the column, so the next bonus would arrive and be
+    read as purchased credits the customer never has. Settling every bound to
+    its reading first closes that, for every grant kind but one (below).
 
-    It is a separate UPDATE rather than a clause because the clamp must
-    read the OLD balance. MySQL evaluates `SET` assignments left to right,
-    so a clamp folded into the statement below would be correct only while
-    it sat ABOVE the `balance` assignment — a silent, order-dependent
-    correctness nobody reading the SQL would suspect. Two statements inside
-    one transaction cost a grant one round trip, grants are not the hot
-    path (the deduct is, and this card does not touch it), and the second
-    statement below is still the one whose `affectedRows` decides whether
-    the account exists.
+    The row is read `FOR UPDATE` and the settled bounds are computed from it,
+    so no spend can land between the read and the write. That replaces
+    #1604's single `LEAST(purchasedBalance, balance)` statement, which could
+    not be widened to four layered bounds without depending on MySQL's
+    left-to-right `SET` evaluation.
 
     ⚠ EXCEPT A REFUND (#2185). A refund gives back a spend, and the settle
-    would forget which credits that spend used — so a refunded top-up came
-    back as plan credits and expired with the plan. See `isSpendReversal`.
+    would forget which credits that spend used. See `isSpendReversal`.
   */
-  if (!isSpendReversal(type)) {
-    await tx.execute(
-      sql`UPDATE ${credits}
-          SET ${credits.purchasedBalance} = LEAST(${credits.purchasedBalance}, ${credits.balance})
-          WHERE ${credits.userId} = ${userId}`
-    );
+  if (bucket !== "reversal") {
+    const [held] = await tx
+      .select({
+        balance: credits.balance,
+        purchasedBalance: credits.purchasedBalance,
+        keptBalance: credits.keptBalance,
+        promoBalance: credits.promoBalance,
+        promoCreditsExpireAt: credits.promoCreditsExpireAt,
+      })
+      .from(credits)
+      .where(eq(credits.userId, userId))
+      .limit(1)
+      .for("update");
+    if (!held) {
+      return { success: false, error: "User credits not found" };
+    }
+    const settled = settledCreditBounds(held);
+    await tx
+      .update(credits)
+      .set({
+        ...settled,
+        ...(bucket === "promo"
+          ? {
+              promoCreditsExpireAt: promoExpiryAfterGrant(
+                held.promoCreditsExpireAt,
+                settled.promoBalance,
+                options.now ?? new Date(),
+              ),
+            }
+          : {}),
+      })
+      .where(eq(credits.userId, userId));
   }
 
   /*
-    Three statements, and the two predicates are deliberately NOT one.
-    `isPurchase` decides the lifetime analytics counter and keeps its own
-    three types including `subscription`; `isPurchasedCreditGrant` decides
-    what a renewal must protect and excludes it. See the predicate's own
-    docblock — folding them would make a plan's allowance immune to its
-    plan's rollover rule.
+    The grant: the balance always, and the bucket's own bound when it has
+    one. `isPurchase` decides the lifetime analytics counter and keeps its own
+    three types including `subscription`; the bucket decides what a renewal,
+    a downgrade and an expiry must leave alone, and `subscription` is the
+    plan's. Folding them would make a plan's allowance immune to its plan's
+    rollover rule.
   */
-  const grantStatement = isPurchasedCreditGrant(type)
-    ? sql`UPDATE ${credits}
-            SET ${credits.balance} = ${credits.balance} + ${amount},
-                ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount},
-                ${credits.purchasedBalance} = ${credits.purchasedBalance} + ${amount}
-            WHERE ${credits.userId} = ${userId}`
-    : isPurchase
-      ? sql`UPDATE ${credits}
-            SET ${credits.balance} = ${credits.balance} + ${amount},
-                ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}
-            WHERE ${credits.userId} = ${userId}`
-      : sql`UPDATE ${credits}
-            SET ${credits.balance} = ${credits.balance} + ${amount}
+  const boundColumn =
+    bucket === "reversal" || bucket === "plan" ? null : credits[BUCKET_BOUND_COLUMN[bucket]];
+  const analytics = isPurchase
+    ? sql`, ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}`
+    : sql``;
+  const bound = boundColumn ? sql`, ${boundColumn} = ${boundColumn} + ${amount}` : sql``;
+  const grantStatement = sql`UPDATE ${credits}
+            SET ${credits.balance} = ${credits.balance} + ${amount}${analytics}${bound}
             WHERE ${credits.userId} = ${userId}`;
 
   const updateResult = await tx.execute(grantStatement);

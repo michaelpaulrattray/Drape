@@ -47,6 +47,7 @@
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync, spawnSync } from "node:child_process";
+import { readFailedArms } from "./riteFailureMemory.mts";
 import { inWorktreeOf } from "./riteWorktree.mts";
 
 /** The suite #152 was filed on; a derivation that loses it is not a derivation. */
@@ -154,6 +155,19 @@ export type ScriptGuardVerdict = {
   /** The last few lines the runner printed — enough to name the file at fault. */
   printed: string;
   /**
+   * EVERY FAILING ARM'S IDENTITY, read from the FULL output (#2212 item 4).
+   *
+   * ⚠ `printed` is the last twelve lines and the `FAIL` lines are not reliably
+   * among them, so this cannot be recovered downstream — it is read here, where
+   * the whole output exists, and nowhere else. It is what lets the rite compare
+   * one refusal of a commit with another and say whether the set MOVED, which
+   * is the only mechanical way to tell the two roads of its refusal apart.
+   *
+   * Empty means nothing was read, NOT that nothing failed; `riteFailureMemory`
+   * carries why that distinction is load-bearing.
+   */
+  failedArms: string[];
+  /**
    * SET WHEN THE RUN COULD NOT BE ATTEMPTED AT ALL (#967) — the worktree could
    * not be made, so no suite was ever handed a tree.
    *
@@ -200,6 +214,7 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
         ok: result.status === 0,
         suites,
         printed: result.output.trim().split(/\r?\n/).filter((line) => line.trim() !== "").slice(-12).join("\n"),
+        failedArms: result.status === 0 ? [] : armsOrNone(result.output),
       };
     });
   } catch (error: unknown) {
@@ -210,7 +225,33 @@ export const runScriptGuardsOnCommit = (root: string, commit: string, options: {
     if (ran) throw error;
     const stderr = String((error as { stderr?: unknown })?.stderr ?? "").trim();
     const message = (stderr !== "" ? stderr : String((error as Error)?.message ?? error)).trim();
-    return { ok: false, suites, printed: message, couldNotRun: message.split(/\r?\n/).slice(0, 4).join("\n") };
+    /* No run happened, so there is no arm to read — and an empty list here is
+       exactly the "unreadable" state `riteFailureMemory` refuses to compare,
+       which is the right answer about a tree that never existed. */
+    return { ok: false, suites, printed: message, failedArms: [], couldNotRun: message.split(/\r?\n/).slice(0, 4).join("\n") };
+  }
+};
+
+/**
+ * A DIAGNOSTIC MUST NOT BE ABLE TO KILL THE PUSH PATH (#2212).
+ *
+ * `readFailedArms` is pure string work and has no throwing construct in it, so
+ * this catch is not expected to fire. It is here because of WHERE it sits: on
+ * the one road to `main`, inside a refusal that a shift is already reading, in
+ * a file whose own card is about a gate whose refusals made the next refusal
+ * likelier. A reader that could turn a diagnosable refusal into an uncaught
+ * stack trace would be that shape again, one layer up — and #967 is this
+ * repository's record of the rite dying exactly that way.
+ *
+ * Empty is the honest fallback and not a convenient one: it is precisely the
+ * "unreadable" state `riteFailureMemory` refuses to draw a conclusion from, so
+ * a reader that broke accuses nobody.
+ */
+const armsOrNone = (output: string): string[] => {
+  try {
+    return readFailedArms(output);
+  } catch {
+    return [];
   }
 };
 

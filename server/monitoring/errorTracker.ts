@@ -52,6 +52,7 @@ import {
   type IncomingEvent,
   type ScrubbedBreadcrumb,
 } from "../../shared/errorEventScrub";
+import { redactQueryValuesInText, withoutQueryValues } from "./queryErrorRedaction";
 
 const log = createModuleLogger("errorTracker");
 
@@ -108,6 +109,35 @@ function imageOrigin(): string | undefined {
 }
 
 /**
+ * EVERY EXCEPTION VALUE, WITH A FAILED QUERY'S VALUES WITHHELD (#2218).
+ *
+ * `captureServerError` already hands the SDK a reduced error, but it is not the
+ * only road in: the SDK's own uncaught-exception and rejection integrations
+ * capture the raw throw, and its linked-errors integration turns every `cause`
+ * into an exception value of its own — mysql2's message among them, which can
+ * quote a value back (`Duplicate entry '…'`). The scrub matches key NAMES and
+ * cannot see prose, so the values are withheld here, on the event itself,
+ * before the scrub projects it. A copy is made; the SDK's event is not mutated.
+ */
+function withQueryValuesWithheld(event: IncomingEvent): IncomingEvent {
+  const exception = (event as { exception?: unknown }).exception;
+  if (exception === null || typeof exception !== "object") return event;
+  const values = (exception as { values?: unknown }).values;
+  if (!Array.isArray(values)) return event;
+  return {
+    ...event,
+    exception: {
+      ...(exception as Record<string, unknown>),
+      values: values.map((value) =>
+        value !== null && typeof value === "object" && typeof (value as { value?: unknown }).value === "string"
+          ? { ...value, value: redactQueryValuesInText((value as { value: string }).value) }
+          : value,
+      ),
+    },
+  } as IncomingEvent;
+}
+
+/**
  * The scrub, wired as the SDK's last gate. Returning `null` here means the event
  * never leaves the process — Sentry's own contract for a dropped event.
  *
@@ -118,7 +148,7 @@ function imageOrigin(): string | undefined {
  * missing.
  */
 function gate(event: IncomingEvent): IncomingEvent | null {
-  const verdict = scrubErrorEvent(event, imageOrigin());
+  const verdict = scrubErrorEvent(withQueryValuesWithheld(event), imageOrigin());
   if (verdict.verdict === "refuse") {
     state.refused += 1;
     log.error(
@@ -398,7 +428,12 @@ export async function captureServerError(error: unknown, context: ErrorContext =
       /* A non-Error reason (an unhandled rejection of a string, which this
          product's `unhandledRejection` handler does receive) is wrapped rather
          than stringified into a message, so it still carries a stack. */
-      eventId = sentry?.captureException(error instanceof Error ? error : new Error(String(error)));
+      /* A failed query's bound values are withheld from the object the SDK
+         is handed (#2218) — the gate withholds them again on the event. */
+      const reported = withoutQueryValues(error);
+      eventId = sentry?.captureException(
+        reported instanceof Error ? reported : new Error(redactQueryValuesInText(String(reported))),
+      );
     });
   } catch (reportingError) {
     log.warn({ err: reportingError }, "the error tracker threw while reporting an error");

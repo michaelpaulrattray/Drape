@@ -68,7 +68,15 @@ describe("the read stage's purpose vocabulary", () => {
     that filed it under `interpret` would price the interpreter for work it
     never did.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author` and `persona`", () => {
+  /*
+    FIFTEEN since #2196 and #2197, and the three words past the twelve are
+    three different questions about one feature's cost: `persona` prices a
+    line per SIGN, `reads` prices the six-alternative door per OPEN, and
+    `persona.translate` prices a reword per PRESS. Lumped together none of the
+    three could be answered, and the disappearing-technology law's third
+    clause obliges all of them to be.
+  */
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads` and `persona.translate`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -83,6 +91,8 @@ describe("the read stage's purpose vocabulary", () => {
       "gate",
       "author",
       "persona",
+      "reads",
+      "persona.translate",
     ]);
   });
 

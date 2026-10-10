@@ -24,7 +24,7 @@ import { sheetPreviewTiles } from "../castingV2/sheetPreview";
 import { castPronouns } from "../castingV2/castPronouns";
 import { runFinalCastDeletionCeremony } from "../casting/finalCastDeletionCeremony";
 import { assertFinalModelDeleteEnabled } from "./models";
-import { storagePublicUrl } from "../storage";
+import { storagePublicUrl, storageReadBytes } from "../storage";
 import { assertClientRequestId } from "../../shared/clientRequestId";
 import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
   CASTING_V2_FOLLOW_PRICE_CREDITS,
@@ -141,6 +141,7 @@ import {
   listSessionSignedCastNames,
   listSignedCasts,
   editCastPersonaField,
+  getCastReadsSources,
 } from "../db/castingV2Sign";
 import { listRunningViewRetryAngles } from "../db/castingV2ViewRetry";
 import { discard, setKept, undo } from "../castingV2/candidateService";
@@ -168,10 +169,14 @@ import {
 } from "../db/castingV2";
 import {
   CAST_NAME_MAX_LENGTH,
+  CAST_PERSONA_OWN_WORDS_MAX_LENGTH,
   CAST_PERSONALITY_MAX_LENGTH,
   CAST_VOICE_MAX_LENGTH,
 } from "../../shared/inputLimits";
 import { CAST_PERSONA_FIELDS } from "../db/castPersonaField";
+import { castingCastReadsReader } from "../castingV2/castReads";
+import { translateCastPersonaOwnWords } from "../castingV2/castPersonaTranslate";
+import { castingCastPersonaTranslator } from "../castingV2/signEngine";
 
 /** Opaque public ids. Bounded so a hostile value never reaches a query. */
 const publicId = z.string().uuid();
@@ -2065,12 +2070,101 @@ export const castingV2Router = router({
    * against a card that looks broken applies to a line she emptied exactly as
    * it applies to one we failed to draft. Clearing a line is not a feature
    * anybody asked for; if it becomes one it is a door of its own.
+   *
+   * ⚠ **`ownWords` IS "SAY IT YOUR WAY"'s KEEP THIS (#2197 / #2205).** The
+   * translation (`translateOwnWords` below) writes nothing; Keep this is
+   * this same edit carrying the customer's own sentence beside the line, so
+   * the line and the sentence it came from land in ONE owner-scoped statement
+   * and can never disagree about which keep they belong to. Optional: an
+   * in-place edit (no sentence) CLEARS that line's stored sentence, so a kept
+   * sentence always describes the line beside it and the customer can remove
+   * their own words by editing (the relay's finding 1 on PR #2217).
    */
+  /**
+   * SIX WAYS THIS CAST COULD CARRY THEMSELVES — door 1 of #2137 (#2196).
+   *
+   * His design: under the open Personality card, *"Pick a different read"*
+   * opens six alternatives, each a short label plus the exact two sentences it
+   * would store. The customer picks the one they recognise and presses Keep.
+   *
+   * ⚠ **IT WRITES NOTHING.** Keeping a read is the edit the product already
+   * has — `editCastPersonaField` with `line: "personality"` — so this door
+   * needs no column, no migration and no second write path. The mutation verb
+   * below is about SPEND, not about storage: it costs the house a measured
+   * $0.0154 and takes ~13.8 s, and a `query` would be retried by TanStack
+   * Query on focus and on reconnect, paying again each time.
+   *
+   * ⚠ **DRAFTED ON OPEN AND NOT AT SIGN, decided on the measurement the card
+   * asked for rather than on a preference.** Same price either way, but at
+   * Sign every customer pays it whether or not they ever open the door, the
+   * six would need somewhere to live (a store this card does not have, and
+   * which #2197/#2205 are already designing for a different fact), and a set
+   * drafted at Sign goes stale the moment the line underneath it is edited —
+   * which is precisely what this door exists to help with.
+   */
+  draftCastReads: protectedProcedure
+    .input(z.object({ castId: z.string().min(1).max(32) }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReadsDraft);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+
+      const reader = castingCastReadsReader();
+      if (!reader) {
+        /* No transport on this deployment. The door says it could not do it
+           rather than drawing an empty list that looks like six of nothing. */
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      const sources = await getCastReadsSources({ userId: ctx.user.id, modelId: model.id });
+      if (!sources?.anchorStorageKey) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "This cast has no signed picture to read from.",
+        });
+      }
+
+      let anchor;
+      try {
+        anchor = await storageReadBytes(sources.anchorStorageKey);
+      } catch {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      const reads = await reader.read({
+        anchor,
+        brief: sources.briefText,
+        editSentences: sources.editSentences,
+        /* The line on the card right now, so the six are alternatives to it
+           rather than six guesses that might include it. */
+        current: model.personality ?? null,
+        pronouns: castPronouns(model.technicalSchema),
+      });
+      if (!reads) {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "We could not write the other reads just now. Try again in a moment.",
+        });
+      }
+
+      /* An explicit projection (invariant 8): two fields per read and nothing
+         of the Cast's own row, which carries the recipe field group. */
+      return { castId: input.castId, reads: reads.map((read) => ({ label: read.label, personality: read.personality })) };
+    }),
+
   editCastPersonaField: protectedProcedure
     .input(z.object({
       castId: z.string().min(1).max(32),
       line: z.enum(CAST_PERSONA_FIELDS),
       text: z.string().trim().min(1).max(CAST_PERSONALITY_MAX_LENGTH),
+      ownWords: z.string().trim().min(1).max(CAST_PERSONA_OWN_WORDS_MAX_LENGTH).optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
@@ -2114,6 +2208,7 @@ export const castingV2Router = router({
         modelId: model.id,
         line: input.line,
         text: input.text,
+        ...(input.ownWords === undefined ? {} : { ownWords: input.ownWords }),
       });
       if (!written) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
@@ -2126,6 +2221,60 @@ export const castingV2Router = router({
         text: input.text,
         drafted: false as const,
       };
+    }),
+
+  /**
+   * "SAY IT YOUR WAY" — THE CUSTOMER'S SENTENCE, TURNED INTO ONE LINE (#2197,
+   * the Personality card; #2205, the Voice card).
+   *
+   * The customer types one sentence about their cast the way they would say it
+   * to a friend; this answers with the line the card would store. It WRITES
+   * NOTHING — Keep this is `editCastPersonaField` carrying `ownWords`, so a
+   * press the customer walks away from leaves no trace on their cast.
+   *
+   * ⚠ **FREE, AND THE COST IS OURS TO BOUND** — both cards' reword question,
+   * answered once for both. One house-paid text call per press, never a
+   * credit, never an operation row, no price on the control. Its own rate
+   * bucket (`castPersonaTranslate`, sixty an hour per account) is the bound,
+   * set where rewording a sentence never meets it and a loop does. The price
+   * and the latency per press are measured and stated on the pull request.
+   *
+   * The Cast is resolved owner-scoped BEFORE the call (invariant 1's free
+   * refusal): another account's Cast answers `NOT_FOUND` and spends nothing.
+   * The pronouns come from the Cast's own record (`castPronouns`), the same
+   * three words its Sign draft was written with; the record itself never
+   * leaves this function.
+   *
+   * `nothing` is an honest state, not an error — the call failed, came back
+   * cut off, or could not be fitted to the line's cap. The card says one quiet
+   * sentence for all of them, because the customer's next act is the same.
+   * An explicit projection (invariant 8): the line kind and the text, and no
+   * model, no latency, no provider prose.
+   */
+  translateOwnWords: protectedProcedure
+    .input(z.object({
+      castId: z.string().min(1).max(32),
+      line: z.enum(CAST_PERSONA_FIELDS),
+      ownWords: z.string().trim().min(1).max(CAST_PERSONA_OWN_WORDS_MAX_LENGTH),
+    }).strict())
+    .mutation(async ({ ctx, input }): Promise<
+      | { kind: "line"; line: (typeof CAST_PERSONA_FIELDS)[number]; text: string }
+      | { kind: "nothing"; line: (typeof CAST_PERSONA_FIELDS)[number] }
+    > => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castPersonaTranslate);
+      const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      const engine = castingCastPersonaTranslator();
+      if (!engine) return { kind: "nothing", line: input.line };
+      const outcome = await translateCastPersonaOwnWords({
+        engine,
+        line: input.line,
+        ownWords: input.ownWords,
+        pronouns: castPronouns(model.technicalSchema),
+      });
+      if (outcome.kind === "line") return { kind: "line", line: input.line, text: outcome.text };
+      return { kind: "nothing", line: input.line };
     }),
 
   /**

@@ -67,5 +67,18 @@
  *
  * `server/childProcessTestTimeouts.test.ts` derives the population that must
  * carry it, so the list cannot drift as suites are added.
+ *
+ * ⚠ **ONE CHILD THIS FLOOR WAS NEVER SIZED FOR, AND IT IS NOT RAISED FOR IT
+ * (#2212).** The 9 s worst case above is a `tsx` child. A `git worktree add` of
+ * THIS repository is a different child: 2.5 s on a quiet afternoon, 29.6 s into
+ * `%TEMP%` on 2026-10-10, when the arms making one reached 55–83 s and the
+ * deploy rite refused a correct tree five runs in a row on them — a different
+ * set each run, this file's own tell. Its cost is set by the repository's size
+ * and by whatever is scanning `%TEMP%` that minute, so no number here would stay
+ * sized. None of those arms asked anything about the repository's files, so
+ * they check out a one-file repository instead (`testing/throwawayRepo.ts`) —
+ * ~0.3 s at worst under the rite's own parallel load — and
+ * `server/scriptGuards.test.ts` refuses a suite that hands the real root to the
+ * recipe again.
  */
 export const CHILD_PROCESS_TEST_TIMEOUT_MS = 30_000;

@@ -28,6 +28,7 @@ import { redeemInviteCode } from "../db/inviteCodes";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
+import { redactQueryValuesInText, withoutQueryValues } from "../monitoring/queryErrorRedaction";
 import { getUserByEmail } from "../db/users";
 import {
   FREE_GRANT_REFUSAL_ERROR_CODE,
@@ -453,13 +454,13 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
       res.redirect("/app");
     }
   } catch (error) {
-    console.error("[GoogleAuth] Callback failed:", error);
+    console.error("[GoogleAuth] Callback failed:", withoutQueryValues(error));
     await logAuditEvent({
       action: AUDIT_ACTIONS.LOGIN_FAILED,
       resourceType: "auth",
       metadata: {
         reason: "Google OAuth callback error",
-        error: error instanceof Error ? error.message : "Unknown",
+        error: error instanceof Error ? redactQueryValuesInText(error.message) : "Unknown",
       },
       severity: "warning",
       ipAddress: clientIp,

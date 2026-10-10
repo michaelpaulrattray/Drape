@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 195
+      "moduleCount": 197
     },
     {
       "id": "domain:castingV2",
@@ -92,7 +92,7 @@
     {
       "id": "domain:platform",
       "name": "platform",
-      "moduleCount": 19
+      "moduleCount": 21
     },
     {
       "id": "domain:profile",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 59
+      "moduleCount": 62
     },
     {
       "id": "domain:wardrobe",
@@ -3805,6 +3805,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/castPersonaTranslate.ts",
+      "path": "server/castingV2/castPersonaTranslate.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/castProjection.ts",
       "path": "server/castingV2/castProjection.ts",
       "domain": "casting-v2",
@@ -3813,6 +3819,12 @@
     {
       "id": "module:server/castingV2/castPronouns.ts",
       "path": "server/castingV2/castPronouns.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castReads.ts",
+      "path": "server/castingV2/castReads.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -5401,8 +5413,20 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/monitoring/queryErrorRedaction.ts",
+      "path": "server/monitoring/queryErrorRedaction.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/monitoring/trackerVerdict.ts",
       "path": "server/monitoring/trackerVerdict.ts",
+      "domain": "platform",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/monitoring/trpcErrorReport.ts",
+      "path": "server/monitoring/trpcErrorReport.ts",
       "domain": "platform",
       "lifecycle": "active"
     },
@@ -5965,6 +5989,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/testing/failedWrite.ts",
+      "path": "server/testing/failedWrite.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/testing/fetchablePort.ts",
       "path": "server/testing/fetchablePort.ts",
       "domain": "unassigned",
@@ -5985,6 +6015,12 @@
     {
       "id": "module:server/testing/migrationColumns.ts",
       "path": "server/testing/migrationColumns.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/once.ts",
+      "path": "server/testing/once.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -6021,6 +6057,12 @@
     {
       "id": "module:server/testing/suitePointers.ts",
       "path": "server/testing/suitePointers.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/throwawayRepo.ts",
+      "path": "server/testing/throwawayRepo.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -7773,6 +7815,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.draftCastReads",
+      "namespace": "castingV2",
+      "name": "draftCastReads",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.editCastPersonaField",
       "namespace": "castingV2",
       "name": "editCastPersonaField",
@@ -7966,6 +8018,16 @@
       "id": "route:castingV2.sign",
       "namespace": "castingV2",
       "name": "sign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.translateOwnWords",
+      "namespace": "castingV2",
+      "name": "translateOwnWords",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -11237,8 +11299,20 @@
       "path": "client/src/features/castingV2/panelBridge.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/personaChange2214.test.ts",
+      "path": "client/src/features/castingV2/personaChange2214.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/personaDoor0.test.ts",
       "path": "client/src/features/castingV2/personaDoor0.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/personaOwnWords2197.test.ts",
+      "path": "client/src/features/castingV2/personaOwnWords2197.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/personaReads2196.test.ts",
+      "path": "client/src/features/castingV2/personaReads2196.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/pronounGrammar.test.ts",
@@ -11593,6 +11667,10 @@
       "path": "client/src/staffPagesLazy.test.ts"
     },
     {
+      "id": "test:server/_core/internalErrorWire.test.ts",
+      "path": "server/_core/internalErrorWire.test.ts"
+    },
+    {
       "id": "test:server/_core/invalidInputWire.test.ts",
       "path": "server/_core/invalidInputWire.test.ts"
     },
@@ -11623,6 +11701,10 @@
     {
       "id": "test:server/accountDeletionCoverage.test.ts",
       "path": "server/accountDeletionCoverage.test.ts"
+    },
+    {
+      "id": "test:server/accountDeletionErrorValues.test.ts",
+      "path": "server/accountDeletionErrorValues.test.ts"
     },
     {
       "id": "test:server/accountDeletionOrphanOwnerScope.test.ts",
@@ -11827,6 +11909,10 @@
     {
       "id": "test:server/billing/planCreditsExpiry.test.ts",
       "path": "server/billing/planCreditsExpiry.test.ts"
+    },
+    {
+      "id": "test:server/billing/promoCreditsSweepWiring.test.ts",
+      "path": "server/billing/promoCreditsSweepWiring.test.ts"
     },
     {
       "id": "test:server/billing/renewalReminder.test.ts",
@@ -12465,6 +12551,10 @@
       "path": "server/castingV2/castPersona.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaCraft.test.ts",
+      "path": "server/castingV2/castPersonaCraft.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castPersonaEditEntrance.test.ts",
       "path": "server/castingV2/castPersonaEditEntrance.test.ts"
     },
@@ -12473,12 +12563,24 @@
       "path": "server/castingV2/castPersonaProjection.test.ts"
     },
     {
+      "id": "test:server/castingV2/castPersonaTranslate.test.ts",
+      "path": "server/castingV2/castPersonaTranslate.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castPersonaTranslateEntrance.test.ts",
+      "path": "server/castingV2/castPersonaTranslateEntrance.test.ts"
+    },
+    {
       "id": "test:server/castingV2/castProjection.test.ts",
       "path": "server/castingV2/castProjection.test.ts"
     },
     {
       "id": "test:server/castingV2/castPronouns.test.ts",
       "path": "server/castingV2/castPronouns.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/castReads.test.ts",
+      "path": "server/castingV2/castReads.test.ts"
     },
     {
       "id": "test:server/castingV2/castViewPackage.test.ts",
@@ -13585,6 +13687,10 @@
       "path": "server/creditDisplayGuard.test.ts"
     },
     {
+      "id": "test:server/creditExpiryRules.test.ts",
+      "path": "server/creditExpiryRules.test.ts"
+    },
+    {
       "id": "test:server/creditPriceScale.test.ts",
       "path": "server/creditPriceScale.test.ts"
     },
@@ -13833,12 +13939,20 @@
       "path": "server/db/migrationLag.test.ts"
     },
     {
+      "id": "test:server/db/promoCreditsCandidates.test.ts",
+      "path": "server/db/promoCreditsCandidates.test.ts"
+    },
+    {
       "id": "test:server/db/referenceReadDemand.test.ts",
       "path": "server/db/referenceReadDemand.test.ts"
     },
     {
       "id": "test:server/db/referralClaimRace.test.ts",
       "path": "server/db/referralClaimRace.test.ts"
+    },
+    {
+      "id": "test:server/db/referralCreditsNeverExpire.test.ts",
+      "path": "server/db/referralCreditsNeverExpire.test.ts"
     },
     {
       "id": "test:server/db/storageCleanupHold.test.ts",
@@ -14031,6 +14145,10 @@
     {
       "id": "test:server/gdprExportBounded.test.ts",
       "path": "server/gdprExportBounded.test.ts"
+    },
+    {
+      "id": "test:server/gdprExportPersona.test.ts",
+      "path": "server/gdprExportPersona.test.ts"
     },
     {
       "id": "test:server/ghQueueTransport.test.ts",
@@ -14399,6 +14517,10 @@
     {
       "id": "test:server/pushedDocSuites.test.ts",
       "path": "server/pushedDocSuites.test.ts"
+    },
+    {
+      "id": "test:server/queryErrorRedaction.test.ts",
+      "path": "server/queryErrorRedaction.test.ts"
     },
     {
       "id": "test:server/queryStringReads.test.ts",
@@ -14775,6 +14897,10 @@
     {
       "id": "test:server/reviewerCharter.test.ts",
       "path": "server/reviewerCharter.test.ts"
+    },
+    {
+      "id": "test:server/riteFailureMemory.test.ts",
+      "path": "server/riteFailureMemory.test.ts"
     },
     {
       "id": "test:server/riteLock.test.ts",
@@ -22386,6 +22512,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/criticalAlert.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/env.ts",
       "to": "module:server/casting/evidence/evidenceComposerScope.ts",
       "kind": "imports"
@@ -22557,6 +22688,16 @@
     },
     {
       "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/monitoring/trpcErrorReport.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
       "to": "module:server/routers.ts",
       "kind": "imports"
     },
@@ -22678,6 +22819,11 @@
     {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/trpc.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -26401,6 +26547,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/db/castPersonaField.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castPersonaTranslate.ts",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -26438,6 +26614,46 @@
     {
       "from": "module:server/castingV2/castProjection.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/castPersona.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/providers/openrouterText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/castReads.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -31356,6 +31572,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/admin.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -33336,6 +33557,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/logging/logger.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/requestContextMiddleware.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -33358,6 +33584,11 @@
     {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/errorTracker.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -33408,6 +33639,16 @@
     {
       "from": "module:server/monitoring/trackerVerdict.ts",
       "to": "module:shared/monitoringProjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/errorTracker.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/monitoring/trpcErrorReport.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -34397,12 +34638,22 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castPersonaTranslate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castProjection.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/castPronouns.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/castReads.ts",
       "kind": "imports"
     },
     {
@@ -34518,6 +34769,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/sheetPreview.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/signEngine.ts",
       "kind": "imports"
     },
     {
@@ -34828,6 +35084,11 @@
     {
       "from": "module:server/routes/emailAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -35578,6 +35839,11 @@
     {
       "from": "module:server/routes/googleAuth.ts",
       "to": "module:server/db/validateInviteCode.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/googleAuth.ts",
+      "to": "module:server/monitoring/queryErrorRedaction.ts",
       "kind": "imports"
     },
     {
@@ -36682,6 +36948,11 @@
     },
     {
       "from": "module:server/testing/storageKeyExpressions.ts",
+      "to": "module:server/testing/withoutComments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/throwawayRepo.ts",
       "to": "module:server/testing/withoutComments.ts",
       "kind": "imports"
     },

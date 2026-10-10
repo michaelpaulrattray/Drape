@@ -89,6 +89,7 @@ import path from "node:path";
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import { dirtyEntriesFrom, judgeDirtyTree } from "./lib/dirtyTreeGuard.mts";
 import { inWorktreeOf } from "./lib/riteWorktree.mts";
+import { sweepStaleRiteWorktrees } from "./lib/staleRiteWorktrees.mts";
 import { closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
@@ -140,6 +141,12 @@ import {
   releaseRiteLock,
   type RiteLockFs,
 } from "./lib/riteLock.mts";
+import {
+  RITE_FAILURE_MEMORY_PATH,
+  notePass,
+  noteRefusal,
+  type FailureMemoryFs,
+} from "./lib/riteFailureMemory.mts";
 import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
@@ -360,6 +367,27 @@ const lockFs: RiteLockFs = { mkdirSync, writeFileSync, readFileSync, unlinkSync 
        swallowed, because it is the one reading that says the exclusion failed. */
     if (outcome === "not-ours") console.log(`[deploy-rite] the rite lock is no longer ours — ${RITE_LOCK_PATH}`);
   });
+}
+
+/*
+  THE TREES A KILLED RUN LEFT LOCKED GO BEFORE THIS RUN MAKES ITS OWN (#2212).
+
+  `git worktree add` locks a registration while it checks out, and prune
+  honours the lock — so a rite killed mid-checkout leaves a registration and a
+  partial checkout that nothing will ever collect. Three stood on 2026-10-10,
+  two of them another seat's, and clearing them took the failure set from six
+  arms to one: each refused run made the next refusal likelier. Here, under the
+  rite lock and before the first checkout below, so no other rite is mid-add;
+  the sweep's own age rule covers a seat's suite that might be. It never
+  refuses — a tree it could not take is printed and left, and the run goes on.
+*/
+try {
+  for (const swept of sweepStaleRiteWorktrees(path.resolve(import.meta.dirname, ".."))) {
+    if (swept.verdict === "kept-young") continue;
+    say(`  stale rite worktree: ${swept.verdict} — ${swept.tree}`);
+  }
+} catch (error) {
+  say(`  stale rite worktree sweep could not run — ${String((error as Error)?.message ?? error).split("\n")[0]}`);
 }
 
 /*
@@ -1158,7 +1186,37 @@ function productionUrl(): string | undefined {
   in the commit is implicated and the rite now says so instead of dying on an
   uncaught stack trace with no receipt line at all.
 */
+/*
+  ⚠ AND SINCE #2212 IT REMEMBERS, SO THE SECOND REFUSAL IS NOT A SECOND GUESS.
+
+  The block above says the rite "cannot tell these apart", and that is true of
+  ONE run and false of two. `childProcessTimeout.ts` already writes the tell
+  down — *"a DIFFERENT set of arms each run, which is the tell that this is
+  starvation and not a broken assertion"* — and the rite had five such readings
+  on 2026-10-10 and threw every one away at exit, asking the shift to be the
+  memory instead. It was a commit that changes one JSON file; failing arms went
+  1 → 7 → 6 → 1 → 3, nothing reached his Desk, and edition 669 sat unshipped.
+
+  So the failing arms are read from the FULL output (`verdict.failedArms`) and
+  kept per commit under `output/`. A set that MOVED between two runs of one
+  commit is the machine and clears the commit; a set that repeats identically is
+  the commit. `lib/riteFailureMemory.mts` carries both readings and the two
+  things it refuses to conclude.
+
+  ⚠ **IT KEYS ON ARM IDENTITY, NEVER ON THE WORD "TIMEOUT", and the relay's
+  sixth refused run that day is why.** That red was an ordinary ASSERTION —
+  `server/atlasCommitHook.test.ts:367`, `expect(result.status).toBe(0)` got `1`
+  because a real `git commit` driven inside its temporary repository had the
+  hook give up under the same contention, and that suite passes standalone. A
+  reader keyed on timeout wording would have sent a shift hunting a broken hook.
+
+  ⚠ **THE REFUSAL IS UNCHANGED EITHER WAY.** This narrows the DIAGNOSIS and
+  never the gate: a guard that could not pass still does not push (invariant 7).
+*/
 {
+  /* Three calls, injected the same way the lock injects its four, so the
+     memory's decisions can be driven without a disk. */
+  const memoryFs: FailureMemoryFs = { mkdirSync, writeFileSync, readFileSync };
   const verdict = runScriptGuardsOnCommit(path.resolve(import.meta.dirname, ".."), sha);
   if (verdict.couldNotRun !== undefined) {
     die(`the script guards could not be RUN on ${shortSha} — the rite is blind, so the push does not fire.\n`
@@ -1167,15 +1225,27 @@ function productionUrl(): string | undefined {
       + "\n  repair: re-run the rite unchanged. A refusal that repeats on the same commit is a real fault in the machine, not a stumble.");
   }
   if (!verdict.ok) {
+    const memory = noteRefusal({
+      sha,
+      arms: verdict.failedArms,
+      at: new Date(),
+      path: RITE_FAILURE_MEMORY_PATH,
+      directory: path.dirname(RITE_FAILURE_MEMORY_PATH),
+      fs: memoryFs,
+    });
     die(`the script guards did not PASS on ${shortSha}, the tree being pushed — the push does not fire.\n`
       + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
-      + "\n  ⚠ this is ONE OF TWO THINGS and the rite cannot tell them apart — the lines above can:"
+      + "\n  ⚠ this is ONE OF TWO THINGS and ONE run cannot tell them apart — the lines above can:"
       + "\n    · a script in the commit breached a contract — fix the named script"
       + " (the shape is scripts/SKELETON-disposable.mts), commit, re-run;"
       + "\n    · a guard suite failed on the machine rather than on the commit — a timeout under load,"
-      + " a worktree it could not make. Nothing in the commit is wrong. Re-run the rite unchanged;"
-      + " a refusal that repeats on the same commit is the first kind.");
+      + " a worktree it could not make. Nothing in the commit is wrong."
+      + `\n  WHAT THE REMEMBERED RUNS OF ${shortSha} SAY (#2212):`
+      + `\n    ${memory.sentence}`);
   }
+  /* A commit that passed has had its question answered, so its remembered
+     refusals go rather than waiting to be read about finished work. */
+  notePass({ sha, at: new Date(), path: RITE_FAILURE_MEMORY_PATH, directory: path.dirname(RITE_FAILURE_MEMORY_PATH), fs: memoryFs });
   say(`  script guards: ok (${verdict.suites.length} suites on ${shortSha})`);
 }
 

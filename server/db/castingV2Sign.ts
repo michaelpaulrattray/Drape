@@ -1308,6 +1308,10 @@ export async function editCastPersonaField(input: {
   modelId: number;
   line: CastPersonaField;
   text: string;
+  /** The customer's own sentence the line was kept from ("say it your way",
+   *  #2197 / #2205). Absent on a plain in-place edit, which then CLEARS this
+   *  line's stored sentence (`castPersonaEditPatch`). */
+  ownWords?: string;
   now?: Date;
 }): Promise<boolean> {
   assertPositiveId(input.userId, "userId");
@@ -1317,7 +1321,7 @@ export async function editCastPersonaField(input: {
 
   const written = await db
     .update(models)
-    .set(castPersonaEditPatch(input.line, input.text, now))
+    .set(castPersonaEditPatch(input.line, input.text, now, input.ownWords))
     .where(castPersonaEditWhere({ userId: input.userId, modelId: input.modelId }));
 
   return affectedRows(written) > 0;
@@ -1714,4 +1718,72 @@ export async function getCastSessionId(
     .limit(1);
   if (!row) return null;
   return { id: row.sessionId, live: row.status === "open" };
+}
+
+/**
+ * THE THREE SOURCES DOOR 1 READS FROM — #2196, and they are the Sign's own three.
+ *
+ * `castReads.ts` offers six alternative personality reads, and it reads the
+ * same material the drafted line was written from: the frame the customer
+ * signed, their typed brief, and their correction sentences. Sign already has
+ * all three in hand when it mints; the room does not, so it asks here.
+ *
+ * ⚠ **THE OWNER IS IN THE STATEMENT, not in a check before it** (invariant 1).
+ * The Cast is reached by its internal id — the procedure has already resolved
+ * that from the public `KI-…` through `getOwnedCastByPublicId` — and the owner
+ * is joined again here anyway, because a second statement keyed on an id alone
+ * is exactly the check-then-read this invariant exists to refuse.
+ *
+ * ⚠ **AN EXPLICIT PROJECTION, never the row** (invariant 8). What comes back is
+ * three fields and a storage key. `models` carries `masterPrompt`,
+ * `technicalSchema` and `preferences` — the field group CLAUDE.md says to treat
+ * like a password — and a bare `select()` here would put them one spread away
+ * from a tRPC return.
+ */
+export type CastReadsSources = {
+  /** The signed frame's storage key — the variant's, falling back to the candidate's. */
+  anchorStorageKey: string | null;
+  /** The customer's own typed brief for the roll that produced this Cast. */
+  briefText: string | null;
+  /** Their correction sentences while refining this face, oldest first. */
+  editSentences: string[];
+};
+
+export async function getCastReadsSources(input: {
+  userId: number;
+  modelId: number;
+}): Promise<CastReadsSources | null> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      variantImageKey: castingCandidateVariants.imageKey,
+      candidateImageKey: castingCandidates.imageKey,
+      briefText: castingRolls.briefText,
+      instructions: castingCandidateVariants.instructions,
+    })
+    .from(models)
+    .leftJoin(castingRolls, eq(castingRolls.id, models.sourceRollId))
+    .leftJoin(castingCandidates, eq(castingCandidates.id, models.sourceCandidateId))
+    .leftJoin(
+      castingCandidateVariants,
+      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
+    )
+    .where(and(
+      eq(models.id, input.modelId),
+      eq(models.userId, input.userId),
+      isNull(models.deletedAt),
+    ))
+    .limit(1);
+  if (!row) return null;
+  /* The variant's frame is the one they signed; the candidate's is the fallback
+     for a Cast signed before variants existed. The same `coalesce` the Sign
+     road makes, said once here rather than at the caller. */
+  const anchorStorageKey = row.variantImageKey ?? row.candidateImageKey ?? null;
+  const instructions = row.instructions;
+  const editSentences = Array.isArray(instructions)
+    ? instructions.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  return { anchorStorageKey, briefText: row.briefText ?? null, editSentences };
 }

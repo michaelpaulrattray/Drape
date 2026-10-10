@@ -45,12 +45,20 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
+  CAST_PERSONA_OWN_WORDS_MAX_LENGTH,
   CAST_PERSONALITY_MAX_LENGTH,
   CAST_VOICE_MAX_LENGTH,
 } from "@shared/inputLimits";
 
-/** One of the two lines, exactly as the room is handed it. */
-export type PersonaField = { text: string; drafted: boolean };
+/**
+ * One of the two lines, exactly as the room is handed it.
+ *
+ * `ownWords` is the customer's own sentence the line was kept from ("say it
+ * your way", #2197 / #2205), or null when it was not. Optional because a test
+ * or a surface that only reads need not invent one; the room's projection
+ * always carries it.
+ */
+export type PersonaField = { text: string; drafted: boolean; ownWords?: string | null };
 
 export type CastPersonaFieldName = "personality" | "voice";
 
@@ -370,6 +378,530 @@ export function voiceEditHelper(name?: string | null): string {
   return `Written from your brief and ${look}. Describe the sound, then ${uses}.`;
 }
 
+/* ========================================================================== *
+ * DOOR 1 — SIX WAYS THIS CAST COULD CARRY THEMSELVES (#2196)
+ * ========================================================================== */
+
+/** One alternative, exactly as the entrance hands it over. */
+export type CastReadOption = { label: string; personality: string };
+
+/**
+ * WHERE THE DOOR IS, held by the room because the room owns the call.
+ *
+ * `shut` is the row under the open box; `drafting` is the ~14-second wait;
+ * `open` is his six-row list; `failed` is the honest refusal. This file draws
+ * all four and decides none of them — the mutation, its price and its error
+ * live one level up with every other tRPC call in this room, which is how
+ * every other control here is already built.
+ */
+export type PersonaReadsDoor = {
+  state: "shut" | "drafting" | "open" | "failed";
+  reads: readonly CastReadOption[];
+  onOpen: () => void;
+  onBack: () => void;
+  onKeep: (read: CastReadOption) => void;
+};
+
+/** His row title, and the list's, in one place. */
+export const PERSONA_READS_TITLE = "Pick a different read";
+
+/** The room's own fallback for a nameless cast, as door 0 uses it. */
+function castName(name?: string | null): string {
+  return name?.trim() ?? "";
+}
+
+/** The row under the open box: what the door is, before it is opened. */
+export function personaReadsRowSubtitle(name?: string | null): string {
+  const named = castName(name);
+  return named
+    ? `Six ways ${named} could carry themselves, in plain words`
+    : "Six ways they could carry themselves, in plain words";
+}
+
+/** The line above the six, once they are there. */
+export function personaReadsListSubtitle(name?: string | null): string {
+  const named = castName(name);
+  return named
+    ? `Six ways ${named} could carry themselves. Pick the one you recognise.`
+    : "Six ways they could carry themselves. Pick the one you recognise.";
+}
+
+/**
+ * HIS REASSURANCE, WITH ITS LAST CLAUSE DROPPED — the third time this rung has
+ * made the same check and the third time it has come out the same way.
+ *
+ * His design reads *"{name}'s face and look stay exactly as they are. Only the
+ * acting changes, and only for new takes."* **The card itself asks for the
+ * check** — *"the last five words need the same honesty check door 0 made and
+ * failed"* — and re-taken at the code for THIS card it is still untrue twice
+ * over:
+ *
+ *  - **There are no takes.** The room's refine card draws its input, its button
+ *    and its chips all `disabled`, under its own line *"Refining arrives soon."*
+ *  - **Nothing reads this line.** `server/castingV2/castPersona.ts` says so in
+ *    its own header, and no prompt builder anywhere reads `personality`.
+ *
+ * The first half is the half this door needs and it is TRUE: keeping a read
+ * writes the personality line and touches nothing else — not the face, not the
+ * views, not the voice. So the sentence keeps its promise and drops its
+ * forecast, and the forecast returns in his words in the commit that makes it
+ * true.
+ */
+export function personaReadsReassurance(name?: string | null): string {
+  return personaReassurance("personality", name);
+}
+
+/**
+ * THE SAME REASSURANCE, FOR EITHER LINE — one sentence shape, the changed
+ * thing named per card.
+ *
+ * #2205 carries his voice-card wording verbatim — *"{name}'s face and look
+ * stay exactly as they are. Only the voice changes, and only for new takes."*
+ * — and asks for the same honesty check on the last five words. Re-taken at
+ * the code for this card it fails on the same two facts the reads door's arm
+ * holds (no takes exist; nothing reads the line), so the forecast is dropped
+ * here too and the promise is kept: keeping a voice description writes the
+ * voice line and touches nothing else.
+ */
+export function personaReassurance(line: CastPersonaFieldName, name?: string | null): string {
+  const named = castName(name);
+  const whose = named ? `${named}'s` : "Their";
+  const changes = line === "voice" ? "the voice" : "the acting";
+  return `${whose} face and look stay exactly as they are. Only ${changes} changes.`;
+}
+
+/**
+ * THE WAIT, NAMED IN THE CUSTOMER'S WORDS — #55's honest loader, measured.
+ *
+ * The open takes 13.0–15.4 s (mean 13.8 s, measured through the real entrance
+ * on his own casts). That is far too long for nothing to be said, and what is
+ * said names what is happening to THEIR cast and never what is doing it: no
+ * engine, no percentage, no countdown nobody can act on.
+ */
+export const PERSONA_READS_WORKING = "Working out other ways to play them…";
+
+/** What a refusal says, and what to do about it. */
+export const PERSONA_READS_FAILED = "We could not write the other reads just now. Try again in a moment.";
+
+/** One way in, as a row under the open box. */
+export type PersonaDoorRowSpec = { title: string; subtitle: string; onOpen: () => void };
+
+/**
+ * THE DOOR ROWS under the open box — his *"or"* divider and the ways in.
+ *
+ * ONE component for both cards (working law 4): the Personality card draws
+ * *Pick a different read* and *Say it your way*, in that order, out of his
+ * `01-door0-dark.png`; the Voice card draws *Say it your way* alone, out of
+ * his `04-edit-in-place-dark.png`. The *or* is drawn once, above the first
+ * row, and never when there is no row to offer — a divider over nothing reads
+ * as a feature that failed to load.
+ */
+export function PersonaDoorRows({
+  doors,
+  disabled,
+}: {
+  doors: readonly PersonaDoorRowSpec[];
+  disabled: boolean;
+}) {
+  if (doors.length === 0) return null;
+  return (
+    <div className="dpc-persona__doors">
+      <span className="dpc-persona__or">or</span>
+      {doors.map((door) => (
+        <button
+          type="button"
+          key={door.title}
+          className="dpc-persona__door"
+          onClick={door.onOpen}
+          disabled={disabled}
+        >
+          <span className="dpc-persona__doorText">
+            <span className="dpc-persona__doorTitle">{door.title}</span>
+            <span className="dpc-persona__doorSub">{door.subtitle}</span>
+          </span>
+          <span className="dpc-persona__doorChevron" aria-hidden="true">›</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ========================================================================== *
+ * DOOR 2 — SAY IT YOUR WAY (#2197 on the Personality card, #2205 on Voice)
+ * ========================================================================== */
+
+/**
+ * WHERE THE DOOR IS, held by the room because the room owns the call.
+ *
+ * `shut` — not open (the row is offered under the open box);
+ * `writing` — the box, waiting for a sentence;
+ * `reading` — the 2.5–5 s wait for the translation (measured on PR #2217);
+ * `read` — the line it would store, with Keep this / Reword it;
+ * `failed` — the translation did not come back, or the hour's bound was met.
+ *
+ * ⚠ **THE SENTENCE ITSELF IS NOT HERE.** The panel holds what is being typed;
+ * the room is handed it on the press (`onTranslate`) and on the keep
+ * (`onKeep`), so a keystroke never re-renders the room.
+ */
+export type PersonaOwnWordsDoor = {
+  stage: "shut" | "writing" | "reading" | "read" | "failed";
+  /** The line the translation came back with, at `read`. */
+  result: string | null;
+  /** The plain sentence a refusal says, at `failed`. */
+  failure: string | null;
+  onOpen: () => void;
+  onTranslate: (ownWords: string) => void;
+  onReword: () => void;
+  /** `kept` is called once the line and the sentence are stored, so the card can shut its box. */
+  onKeep: (ownWords: string, text: string, kept: () => void) => void;
+  onBack: () => void;
+};
+
+/** The part of the door the room holds as state; the rest is its callbacks. */
+export type PersonaOwnWordsState = Pick<PersonaOwnWordsDoor, "stage" | "result" | "failure">;
+
+/** A door that is not open. */
+export const PERSONA_OWN_WORDS_SHUT: PersonaOwnWordsState = { stage: "shut", result: null, failure: null };
+
+/** His row title and the panel's, in one place. */
+export const PERSONA_OWN_WORDS_TITLE = "Say it your way";
+
+/**
+ * THE WAIT, NAMED IN THE CUSTOMER'S WORDS (#55). It says what is happening to
+ * their sentence and never what is doing it.
+ */
+export const PERSONA_OWN_WORDS_WORKING = "Reading your sentence…";
+
+/** A translation that did not come back: what was refused, and what to do. */
+export const PERSONA_OWN_WORDS_FAILED =
+  "We could not read that sentence just now. Your words are still here, so try again in a moment.";
+
+/**
+ * THE HOUR'S BOUND, MET — the answer both cards gave the reword question
+ * (free, and the house bounds it at sixty presses an hour per account,
+ * `RATE_LIMITS.castPersonaTranslate`). Nobody rewording a sentence meets it;
+ * the one who does is told plainly, with their sentence still in the box.
+ * No number: a count of presses is not something they can act on.
+ */
+export const PERSONA_OWN_WORDS_BUSY =
+  "That is a lot of rewording for one hour. Your words are still here, so try again a little later.";
+
+/**
+ * WHAT A PRESS LEAVES ON THE CARD — the room's three outcomes, decided here so
+ * the rule is one function a test can drive rather than a branch inside a
+ * mutation callback.
+ *
+ *  - a line came back: it is shown, with Keep this / Reword it;
+ *  - the server's own `nothing` (the call failed, came back cut off, or could
+ *    not be fitted to the line's cap) or any refusal: the plain failure;
+ *  - the hour's bound (`TOO_MANY_REQUESTS`): the plain busy sentence, which is
+ *    the one refusal whose next act differs ("later", not "in a moment").
+ */
+export function personaOwnWordsAfter(
+  outcome: { kind: "line"; text: string } | { kind: "nothing" } | { kind: "error"; code?: string | null },
+): PersonaOwnWordsState {
+  if (outcome.kind === "line") return { stage: "read", result: outcome.text, failure: null };
+  const busy = outcome.kind === "error" && outcome.code === "TOO_MANY_REQUESTS";
+  return { stage: "failed", result: null, failure: busy ? PERSONA_OWN_WORDS_BUSY : PERSONA_OWN_WORDS_FAILED };
+}
+
+/**
+ * THE ROWS UNDER ONE CARD'S OPEN BOX, in his frames' order — door 1 first,
+ * door 2 second — and each only when the room handed its door over, so no row
+ * is ever drawn that opens onto nothing. Both cards read this one function.
+ */
+export function personaDoorRowSpecs(
+  line: CastPersonaFieldName,
+  name: string | null | undefined,
+  readsDoor: PersonaReadsDoor | null,
+  ownWordsDoor: PersonaOwnWordsDoor | null,
+): PersonaDoorRowSpec[] {
+  const doors: PersonaDoorRowSpec[] = [];
+  /* Door 1 is the Personality card's alone — six ways to carry themselves. */
+  if (readsDoor && line === "personality") {
+    doors.push({ title: PERSONA_READS_TITLE, subtitle: personaReadsRowSubtitle(name), onOpen: readsDoor.onOpen });
+  }
+  if (ownWordsDoor) {
+    doors.push({
+      title: PERSONA_OWN_WORDS_TITLE,
+      subtitle: personaOwnWordsRowSubtitle(line, name),
+      onOpen: ownWordsDoor.onOpen,
+    });
+  }
+  return doors;
+}
+
+/** The row under the open box: what the door is, before it is opened. */
+export function personaOwnWordsRowSubtitle(line: CastPersonaFieldName, name?: string | null): string {
+  const named = castName(name);
+  if (line === "voice") {
+    return named
+      ? `Describe how ${named} sounds in a sentence. We turn it into a voice description`
+      : "Describe how they sound in a sentence. We turn it into a voice description";
+  }
+  return named
+    ? `Describe ${named} in a sentence. We turn it into what the camera sees`
+    : "Describe them in a sentence. We turn it into what the camera sees";
+}
+
+/** The ask above the box, in his words. */
+export function personaOwnWordsPrompt(line: CastPersonaFieldName, name?: string | null): string {
+  const named = castName(name);
+  if (line === "voice") {
+    return named
+      ? `Describe how ${named} sounds, however you would to a friend.`
+      : "Describe how they sound, however you would to a friend.";
+  }
+  return named
+    ? `Describe ${named} however you would to a friend.`
+    : "Describe them however you would to a friend.";
+}
+
+/** The note over the translated line. */
+export function personaOwnWordsResultHeading(line: CastPersonaFieldName, name?: string | null): string {
+  if (line === "personality") return "What the camera will see, read from your sentence";
+  const named = castName(name);
+  return named
+    ? `What ${named} will sound like, read from your sentence`
+    : "What they will sound like, read from your sentence";
+}
+
+/**
+ * THE PRESS THAT ASKS FOR THE TRANSLATION. His frames draw only the state
+ * after it (the line already under the box), so the button is ours: it says
+ * what the customer will get, in the row's own words, and carries no price
+ * because there is none.
+ */
+export function personaOwnWordsGoLabel(line: CastPersonaFieldName): string {
+  return line === "voice" ? "See the voice description" : "See what the camera sees";
+}
+
+/**
+ * THE OPEN DOOR — it replaces the card's body, as door 1 does.
+ *
+ * ⚠ **THE BOX IS READ-ONLY WHILE A TRANSLATION IS ON SCREEN, and *Reword it*
+ * is what opens it again.** Keep this stores the sentence beside the line, so
+ * the sentence in the box must be the one the line was read from; an editable
+ * box under a finished translation would let the two drift apart and store a
+ * sentence the line was never written from.
+ *
+ * The box opens on the sentence this line was last kept from, when there is
+ * one — the customer is rewording their own words, not starting again.
+ */
+export function PersonaOwnWordsPanel({
+  line,
+  door,
+  name,
+  saving,
+  initialWords,
+  onKept,
+  onPickRead,
+}: {
+  line: CastPersonaFieldName;
+  door: PersonaOwnWordsDoor;
+  name?: string | null;
+  saving: boolean;
+  initialWords?: string | null;
+  /** Shut the card's box once the keep has landed. */
+  onKept: () => void;
+  /** The Personality card's link across to door 1; absent on Voice. */
+  onPickRead?: (() => void) | null;
+}) {
+  const [words, setWords] = useState(initialWords ?? "");
+  const field = useRef<HTMLTextAreaElement | null>(null);
+  const settled = door.stage === "reading" || door.stage === "read";
+
+  /* Focus on open and on Reword it — the two moments the box asks for words. */
+  useEffect(() => {
+    if (door.stage === "writing") field.current?.focus();
+  }, [door.stage]);
+
+  const sentence = words.trim();
+  const ask = () => {
+    if (!sentence || settled) return;
+    door.onTranslate(sentence);
+  };
+
+  return (
+    <div className="dpc-persona__picker">
+      <p className="dpc-persona__pickerTitle">{PERSONA_OWN_WORDS_TITLE}</p>
+      <p className="dpc-persona__ownPrompt">{personaOwnWordsPrompt(line, name)}</p>
+      <textarea
+        ref={field}
+        className="dpc-persona__field dpc-persona__ownField"
+        value={words}
+        maxLength={CAST_PERSONA_OWN_WORDS_MAX_LENGTH}
+        rows={2}
+        readOnly={settled}
+        aria-label={personaOwnWordsPrompt(line, name)}
+        onChange={(event) => setWords(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            ask();
+          }
+        }}
+      />
+
+      {door.stage === "reading" ? (
+        <p className="dpc-persona__working">{PERSONA_OWN_WORDS_WORKING}</p>
+      ) : null}
+      {door.stage === "failed" && door.failure ? (
+        <p className="dpc-persona__working">{door.failure}</p>
+      ) : null}
+      {door.stage === "read" && door.result ? (
+        <div className="dpc-persona__result">
+          <p className="dpc-persona__resultHead">{personaOwnWordsResultHeading(line, name)}</p>
+          <p className="dpc-persona__resultBody">{door.result}</p>
+        </div>
+      ) : null}
+
+      <div className="dpc-persona__acts">
+        {door.stage === "read" && door.result ? (
+          <>
+            <button
+              type="button"
+              className="dpc-persona__keep"
+              onClick={() => door.onKeep(sentence, door.result as string, onKept)}
+              disabled={saving}
+            >
+              Keep this
+            </button>
+            <button
+              type="button"
+              className="dpc-persona__cancel"
+              onClick={door.onReword}
+              disabled={saving}
+            >
+              Reword it
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="dpc-persona__keep"
+            onClick={ask}
+            disabled={!sentence || door.stage === "reading"}
+          >
+            {personaOwnWordsGoLabel(line)}
+          </button>
+        )}
+      </div>
+
+      <p className="dpc-persona__helper dpc-persona__assure">{personaReassurance(line, name)}</p>
+      <div className="dpc-persona__links">
+        {onPickRead ? (
+          <button type="button" className="dpc-persona__back" onClick={onPickRead}>
+            {`${PERSONA_READS_TITLE} ›`}
+          </button>
+        ) : null}
+        <button type="button" className="dpc-persona__back dpc-persona__backEnd" onClick={door.onBack}>
+          Back to the draft
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * THE SIX, AND THE ONE THE CUSTOMER RECOGNISES.
+ *
+ * ⚠ **NOTHING IS PICKED WHEN THE LIST OPENS, AND THAT IS READ OFF HIS FRAME
+ * RATHER THAN CHOSEN.** `02-door1-dark.png` shows one row ringed, a *Picked*
+ * tag beside its label, and the button reading `Keep "The patient hulk"` — a
+ * button that cannot be drawn before a label exists to put in it. So the frame
+ * is the state AFTER a press, and the caption under it says the act plainly:
+ * *"Pick a read by recognising it."* Opening with one already chosen would be
+ * the product making the choice and then asking them to confirm it, which is
+ * the decision-without-a-basis his candidate-count ruling refused.
+ */
+export function CastReadsPicker({
+  door,
+  name,
+  saving,
+  onSayItYourWay = null,
+}: {
+  door: PersonaReadsDoor;
+  name?: string | null;
+  saving: boolean;
+  /** Across to door 2, when the room has one. */
+  onSayItYourWay?: (() => void) | null;
+}) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const chosen = door.reads.find((read) => read.label === picked) ?? null;
+  return (
+    <div className="dpc-persona__picker">
+      <p className="dpc-persona__pickerTitle">{PERSONA_READS_TITLE}</p>
+      <p className="dpc-persona__pickerSub">{personaReadsListSubtitle(name)}</p>
+
+      {door.state === "drafting" ? (
+        <p className="dpc-persona__working">{PERSONA_READS_WORKING}</p>
+      ) : null}
+      {door.state === "failed" ? (
+        <p className="dpc-persona__working">{PERSONA_READS_FAILED}</p>
+      ) : null}
+
+      {door.state === "open"
+        ? door.reads.map((read) => {
+            const isPicked = read.label === picked;
+            return (
+              <button
+                type="button"
+                key={read.label}
+                className={`dpc-persona__option${isPicked ? " is-picked" : ""}`}
+                aria-pressed={isPicked}
+                onClick={() => setPicked(read.label)}
+              >
+                <span className="dpc-persona__optionHead">
+                  <span className="dpc-persona__optionName">{read.label}</span>
+                  {isPicked ? <span className="dpc-persona__picked">Picked</span> : null}
+                </span>
+                <span className="dpc-persona__optionBody">{read.personality}</span>
+              </button>
+            );
+          })
+        : null}
+
+      {/*
+        THE KEEP BUTTON NAMES WHAT IT WILL KEEP, which is why it is absent
+        until something is picked rather than present and disabled: `Keep ""`
+        has nothing to say, and a disabled button with an empty name reads as a
+        feature that failed to load.
+      */}
+      {chosen ? (
+        <div className="dpc-persona__acts">
+          <button
+            type="button"
+            className="dpc-persona__keep"
+            onClick={() => door.onKeep(chosen)}
+            disabled={saving}
+          >
+            {`Keep “${chosen.label}”`}
+          </button>
+        </div>
+      ) : null}
+
+      <p className="dpc-persona__helper">{personaReadsReassurance(name)}</p>
+      {/*
+        HIS FOOTER, BOTH LINKS — `02-door1-dark.png` reads *None of these? Say
+        it your way ›* on the left and *Back to the draft* on the right. The
+        first link waited for door 2's client half (#2197) and arrives with it;
+        absent when the room has no door 2 to open.
+      */}
+      <div className="dpc-persona__links">
+        {onSayItYourWay ? (
+          <button type="button" className="dpc-persona__back" onClick={onSayItYourWay}>
+            {`None of these? ${PERSONA_OWN_WORDS_TITLE} ›`}
+          </button>
+        ) : null}
+        <button type="button" className="dpc-persona__back dpc-persona__backEnd" onClick={door.onBack}>
+          Back to the draft
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * THE PERSONALITY CARD — new, and drawn only when there is a line to draw.
  *
@@ -383,7 +915,20 @@ export function CastPersonalityCard({
   onSave,
   savingLine,
   name,
-}: Omit<CastPersonaCardsProps, "voice">) {
+  readsDoor = null,
+  ownWordsDoor = null,
+}: Omit<CastPersonaCardsProps, "voice"> & {
+  /**
+   * DOOR 1, OR NOTHING AT ALL (#2196).
+   *
+   * Optional, and `null` draws exactly the card door 0 shipped — so a caller
+   * that has no entrance to call (a test, or a surface that only reads) is not
+   * forced to invent one, and the door cannot half-exist.
+   */
+  readsDoor?: PersonaReadsDoor | null;
+  /** DOOR 2, OR NOTHING AT ALL (#2197) — the same optional shape as door 1. */
+  ownWordsDoor?: PersonaOwnWordsDoor | null;
+}) {
   /*
     ⚠ ABOVE THE EARLY RETURN, AND THAT IS NOT STYLE. A hook declared under a
     conditional `return null` runs on some renders and not others, which React
@@ -392,10 +937,24 @@ export function CastPersonalityCard({
 
     The voice line's open state is NOT held here: it lives in the room, because
     the voice card's *Change* button sits in a head this file does not own.
-    Personality has no such button, so its state has no reason to leave.
+    This card's *Change* (#2214) sits in a head this card DOES own, so its
+    state has no reason to leave — the same controlled pair, held one level up
+    from the line in both cases.
   */
   const [editing, setEditing] = useState(false);
+  /* Door 1 has the card whenever the room says it is past `shut` — the room
+     owns that state because the room owns the call that moves it. */
+  const inPicker = readsDoor ? readsDoor.state !== "shut" : false;
+  const inOwnWords = ownWordsDoor ? ownWordsDoor.stage !== "shut" : false;
   if (!personality) return null;
+  const doors = personaDoorRowSpecs("personality", name, readsDoor, ownWordsDoor);
+  /* The two footers cross to each other's door, as his two frames draw. */
+  const toOwnWords = readsDoor && ownWordsDoor
+    ? () => { readsDoor.onBack(); ownWordsDoor.onOpen(); }
+    : null;
+  const toReads = readsDoor && ownWordsDoor
+    ? () => { ownWordsDoor.onBack(); readsDoor.onOpen(); }
+    : null;
   return (
     <section className="dpc-rcard" style={{ gap: 11 }}>
       <div className="dpc-rcard__head">
@@ -413,17 +972,101 @@ export function CastPersonalityCard({
             <span className="dpc-persona__badge">{PERSONA_DRAFT_BADGE}</span>
           ) : null}
         </span>
+        <PersonaChangeButton
+          present
+          /* While door 1 has the card, *Change* has nothing to open — the box
+             is already what *Back to the draft* returns to. Treated as open
+             for the same reason the box's own press is. */
+          editing={editing || inPicker || inOwnWords}
+          saving={savingLine === "personality"}
+          onOpen={() => setEditing(true)}
+        />
       </div>
-      <EditableLine
-        line="personality"
-        value={personality}
-        onSave={onSave}
-        saving={savingLine === "personality"}
-        helper={personaEditHelper(name)}
-        editing={editing}
-        onEditingChange={setEditing}
-      />
+      {/*
+        DOOR 1 REPLACES THE CARD'S BODY, it does not sit under it — his
+        `02-door1-dark.png` shows the words and the edit box gone and the six
+        in their place. Drawing both would put two things to read and two
+        things to press on one card, which is the busyness his design removes.
+      */}
+      {inPicker && readsDoor ? (
+        <CastReadsPicker
+          door={readsDoor}
+          name={name}
+          saving={savingLine === "personality"}
+          onSayItYourWay={toOwnWords}
+        />
+      ) : inOwnWords && ownWordsDoor ? (
+        <PersonaOwnWordsPanel
+          line="personality"
+          door={ownWordsDoor}
+          name={name}
+          saving={savingLine === "personality"}
+          initialWords={personality.ownWords ?? null}
+          onKept={() => setEditing(false)}
+          onPickRead={toReads}
+        />
+      ) : (
+        <>
+          <EditableLine
+            line="personality"
+            value={personality}
+            onSave={onSave}
+            saving={savingLine === "personality"}
+            helper={personaEditHelper(name)}
+            editing={editing}
+            onEditingChange={setEditing}
+          />
+          {/*
+            THE DOOR IS OFFERED ONLY FROM THE OPEN BOX, which is where his
+            frame puts it: `01-door0-dark.png` draws the *or* divider and the
+            door rows UNDER the open editor, never on the card at rest. A shut
+            card stays one line of words and a quiet *Change* — adding a second
+            control to it would make the common case busier to serve the rarer
+            one.
+          */}
+          {editing ? (
+            <PersonaDoorRows doors={doors} disabled={savingLine === "personality"} />
+          ) : null}
+        </>
+      )}
     </section>
+  );
+}
+
+/**
+ * THE QUIET *Change* ON A PERSONA CARD'S HEAD — ONE BUTTON FOR BOTH CARDS (#2214).
+ *
+ * #2139 drew it on the voice card alone, and the personality card beside it had
+ * none although clicking its words already opened the same editor. His word on
+ * the two cards side by side, 2026-10-10: *"yes go ahead"* — to the relay's
+ * recommendation that *Change* be a SECOND way in on both cards and never a
+ * required step. So clicking the words keeps working, and this is the other
+ * door.
+ *
+ * ⚠ **THE SHOWN/ABSENT RULE LIVES HERE, ONCE.** Drawn only when there is a
+ * line to open and its box is shut: with no line the card draws no text, so a
+ * *Change* would open an empty box, and once the box is open the button has
+ * nothing left to do (his #2139 frames show it gone). Two cards each spelling
+ * that condition for themselves is the drift working law 4 forbids.
+ */
+export function PersonaChangeButton({
+  present,
+  editing,
+  saving,
+  onOpen,
+}: {
+  /** Whether the card has a line at all. */
+  present: boolean;
+  editing: boolean;
+  /** That line's save is in flight — the same refusal the read view has. */
+  saving: boolean;
+  onOpen: () => void;
+}) {
+  if (!present || editing) return null;
+  return (
+    <button type="button" className="dpc-rcard__quiet" onClick={onOpen} disabled={saving}>
+      Change
+    </button>
   );
 }
 
@@ -455,11 +1098,34 @@ export function CastVoiceLine({
   name,
   editing,
   onEditingChange,
+  ownWordsDoor = null,
 }: Omit<CastPersonaCardsProps, "personality"> & {
   editing: boolean;
   onEditingChange: (open: boolean) => void;
+  /**
+   * DOOR 2 ON THE VOICE CARD (#2205) — the same panel the Personality card
+   * draws, with the voice's own words. Optional, and `null` draws exactly the
+   * line #2139 shipped.
+   */
+  ownWordsDoor?: PersonaOwnWordsDoor | null;
 }) {
   if (!voice) return null;
+  /* His `05-your-way-dark.png`: the door replaces the line, as door 1 does on
+     the Personality card. */
+  if (ownWordsDoor && ownWordsDoor.stage !== "shut") {
+    return (
+      <div className="dpc-persona__voice">
+        <PersonaOwnWordsPanel
+          line="voice"
+          door={ownWordsDoor}
+          name={name}
+          saving={savingLine === "voice"}
+          initialWords={voice.ownWords ?? null}
+          onKept={() => onEditingChange(false)}
+        />
+      </div>
+    );
+  }
   return (
     <div className="dpc-persona__voice">
       <EditableLine
@@ -471,6 +1137,13 @@ export function CastVoiceLine({
         editing={editing}
         onEditingChange={onEditingChange}
       />
+      {/* His `04-edit-in-place-dark.png`: one row, under the open box only. */}
+      {editing && ownWordsDoor ? (
+        <PersonaDoorRows
+          doors={personaDoorRowSpecs("voice", name, null, ownWordsDoor)}
+          disabled={savingLine === "voice"}
+        />
+      ) : null}
     </div>
   );
 }

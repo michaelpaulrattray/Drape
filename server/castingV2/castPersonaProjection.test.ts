@@ -26,6 +26,8 @@ const row = (over: Partial<Parameters<typeof projectCastPersona>[0]> = {}) => ({
   personaDraftedAt: null,
   personalityEditedAt: null,
   voiceEditedAt: null,
+  personalityOwnWords: null,
+  voiceOwnWords: null,
   ...over,
 });
 
@@ -56,8 +58,8 @@ describe("the badge is drafted AND not since edited", () => {
       voice: "Low and level.",
       personaDraftedAt: DRAFTED,
     }));
-    expect(read?.personality).toEqual({ text: "Unhurried, hands still.", drafted: true });
-    expect(read?.voice).toEqual({ text: "Low and level.", drafted: true });
+    expect(read?.personality).toEqual({ text: "Unhurried, hands still.", drafted: true, ownWords: null });
+    expect(read?.voice).toEqual({ text: "Low and level.", drafted: true, ownWords: null });
   });
 
   /*
@@ -121,5 +123,44 @@ describe("the stored text is handed over trimmed", () => {
     }));
     expect(read?.personality?.text).toBe("Unhurried, hands still.");
     expect(read?.voice?.text).toBe("Low.");
+  });
+});
+
+/* ------------------------------------- the customer's own sentence (#2197) */
+
+/*
+  "SAY IT YOUR WAY" — the sentence a line was kept from travels WITH that line,
+  to its owner. Positive and negative controls in one place: each sentence
+  lands on its own card and never on the other, a line kept from no sentence
+  reads null, and a sentence with no line draws nothing.
+*/
+describe("the customer's own sentence rides beside the line it produced", () => {
+  it("hands each card its own sentence and never the other card's", () => {
+    const read = projectCastPersona(row({
+      personality: "Shoulders squared at the door.",
+      voice: "Gravel, slow.",
+      personalityEditedAt: EDITED,
+      voiceEditedAt: EDITED,
+      personalityOwnWords: "Basically a tired old bouncer.",
+      voiceOwnWords: "Sounds like a tired blues singer.",
+    }));
+    expect(read?.personality?.ownWords).toBe("Basically a tired old bouncer.");
+    expect(read?.voice?.ownWords).toBe("Sounds like a tired blues singer.");
+  });
+
+  it("reads null on a line that was not kept from a sentence", () => {
+    const read = projectCastPersona(row({
+      personality: "Shoulders squared at the door.",
+      voice: "Gravel, slow.",
+      personalityOwnWords: "Basically a tired old bouncer.",
+    }));
+    expect(read?.personality?.ownWords).toBe("Basically a tired old bouncer.");
+    expect(read?.voice?.ownWords).toBeNull();
+  });
+
+  it("treats a blank sentence as absent, and a sentence with no line draws no card", () => {
+    expect(projectCastPersona(row({ personality: "Still.", personalityOwnWords: "   " }))?.personality?.ownWords)
+      .toBeNull();
+    expect(projectCastPersona(row({ personalityOwnWords: "Orphaned words." }))).toBeNull();
   });
 });

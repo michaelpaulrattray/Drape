@@ -227,6 +227,8 @@ describe("cr_addCredits", () => {
       "bonus",
       expect.stringContaining("change request #7"),
       `cr-${CR_ID}`,
+      // Staff goodwill never expires (#2185) — the bucket is stated at the call.
+      { bonusSource: "goodwill" },
     );
     expectSettled();
   });

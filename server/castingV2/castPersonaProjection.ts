@@ -26,6 +26,12 @@ export type CastPersonaFieldProjection = {
   text: string;
   /** Ours until she touches it. The room badges a draft and nothing else. */
   drafted: boolean;
+  /**
+   * The customer's own sentence this line was kept from ("say it your way",
+   * #2197 / #2205), or null when it was not — drafted at Sign, or typed in
+   * place. Owner-only, like the line itself.
+   */
+  ownWords: string | null;
 };
 
 export type CastPersonaProjection = {
@@ -33,13 +39,15 @@ export type CastPersonaProjection = {
   voice: CastPersonaFieldProjection | null;
 };
 
-/** The five columns, by the names the row carries them under. */
+/** The seven columns, by the names the row carries them under. */
 export type CastPersonaRow = {
   personality: string | null;
   voice: string | null;
   personaDraftedAt: Date | null;
   personalityEditedAt: Date | null;
   voiceEditedAt: Date | null;
+  personalityOwnWords: string | null;
+  voiceOwnWords: string | null;
 };
 
 /**
@@ -51,8 +59,8 @@ export type CastPersonaRow = {
  * strictly more honest than hiding both because one is missing.
  */
 export function projectCastPersona(row: CastPersonaRow): CastPersonaProjection | null {
-  const personality = line(row.personality, row.personaDraftedAt, row.personalityEditedAt);
-  const voice = line(row.voice, row.personaDraftedAt, row.voiceEditedAt);
+  const personality = line(row.personality, row.personaDraftedAt, row.personalityEditedAt, row.personalityOwnWords);
+  const voice = line(row.voice, row.personaDraftedAt, row.voiceEditedAt, row.voiceOwnWords);
   if (!personality && !voice) return null;
   return { personality, voice };
 }
@@ -61,6 +69,7 @@ function line(
   text: string | null,
   draftedAt: Date | null,
   editedAt: Date | null,
+  ownWords: string | null,
 ): CastPersonaFieldProjection | null {
   const trimmed = text?.trim();
   if (!trimmed) return null;
@@ -73,5 +82,14 @@ function line(
       though the draft stamp is still on the row — the stamp is WHEN we drafted,
       not WHOSE the words are now.
   */
-  return { text: trimmed, drafted: Boolean(draftedAt) && !editedAt };
+  /*
+    The sentence travels only WITH its line: a line that is absent draws no
+    card, so a sentence with no line has nowhere honest to sit. A blank one is
+    null, the same rule as the line's own.
+  */
+  return {
+    text: trimmed,
+    drafted: Boolean(draftedAt) && !editedAt,
+    ownWords: ownWords?.trim() || null,
+  };
 }

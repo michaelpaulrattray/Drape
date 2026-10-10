@@ -1,0 +1,43 @@
+-- THE CUSTOMER'S OWN SENTENCE BEHIND EACH LINE — "say it your way",
+-- cards #2197 (Personality) and #2205 (Voice). Two additive columns.
+--
+-- ============================================================================
+-- WHAT A CUSTOMER GETS
+-- ============================================================================
+--
+-- Under the Personality or Voice card the customer types one sentence the way
+-- they would say it to a friend ("Sounds like a tired blues singer who smokes
+-- too much."). The product turns it into the line the card stores, and Keep
+-- this saves the line AND the sentence that produced it, so the customer's
+-- own words are kept alongside ours.
+--
+-- ============================================================================
+-- ONE STORE FOR BOTH DOORS, KEYED BY LINE
+-- ============================================================================
+--
+-- #2197's own note: "two columns designed one card at a time is a migration
+-- done twice and a second schema to scrub". So both doors land here in one
+-- migration, one column per line, beside `personality` / `voice` (0075).
+-- NULL means that line was never kept from a sentence — drafted at Sign, or
+-- typed in place — and that is the truthful value for every existing row.
+-- Nothing is backfilled: there is no sentence to backfill from.
+--
+-- ⚠ The INSERT side (`migration-before-code`): `models` is inserted in the
+-- same three places 0075 listed — the Sign mint and the evidence fork name
+-- their columns and name neither of these; the legacy create spreads a typed
+-- `InsertModel`, where both are optional. No INSERT changes.
+--
+-- ============================================================================
+-- WHOSE WORDS THESE ARE
+-- ============================================================================
+--
+-- The customer's own prose about their cast, the same family as
+-- `masterPrompt` and the two lines (founder ruling 2026-07-25): owner-only,
+-- on `shared/errorEventScrub.ts`'s REFUSING_KEYS, on no staff projection, and
+-- nulled by the permanent-deletion tombstone.
+--
+-- PURELY ADDITIVE. Two nullable columns, one table, no default, no index, no
+-- existing column changes.
+ALTER TABLE `models` ADD COLUMN `personalityOwnWords` text;
+--> statement-breakpoint
+ALTER TABLE `models` ADD COLUMN `voiceOwnWords` text;
