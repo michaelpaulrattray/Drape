@@ -68,7 +68,7 @@ describe("the read stage's purpose vocabulary", () => {
     that filed it under `interpret` would price the interpreter for work it
     never did.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author` and `persona`", () => {
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona` and `reads`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -83,6 +83,7 @@ describe("the read stage's purpose vocabulary", () => {
       "gate",
       "author",
       "persona",
+    "reads",
     ]);
   });
 

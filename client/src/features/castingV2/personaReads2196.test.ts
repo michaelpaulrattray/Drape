@@ -191,7 +191,9 @@ describe("where the door is offered, which is read off his frame", () => {
     expect(html).not.toContain("dpc-persona__field");
   });
 
-  it("⚠ *Say it your way* is NOT drawn, because #2197 is not built", () => {
+  /* The unbuilt sibling is card #2197 — named in a comment, because the token
+     guard reads a `#2197` in code as a hex literal and is right to. */
+  it("⚠ *Say it your way* is NOT drawn, because its own card is not built", () => {
     /*
       His design has two rows here. A row that opens nothing is the lesser path
       shipped silently — the same call #2205 recorded for the voice card.
