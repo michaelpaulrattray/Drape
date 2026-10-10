@@ -235,3 +235,33 @@ export function invoiceSubscriptionMetadata(invoice: unknown): Record<string, un
   if (parented && typeof parented === "object") return parented as Record<string, unknown>;
   return null;
 }
+
+/**
+ * Every subscription line that CHARGES something (amount above zero), with the
+ * price and quantity it charges for — proration lines included (#2190).
+ *
+ * A plan change's invoice is mostly proration: measured in test mode on the
+ * pinned clover, a same-interval upgrade bills *"Unused time on Klieg
+ * Starter"* (negative) and *"Remaining time on Klieg Pro"* (positive, the
+ * TARGET price at quantity 1), and a dial move bills the add-on's price at the
+ * NEW quantity. So the positive lines name what the change was buying, which
+ * is what tells a change Stripe applied (those lines match the subscription's
+ * items) from one it held (they do not). Like every reader here it speaks
+ * dialects and nothing else: a line whose price cannot be read is left out,
+ * and an empty answer means "cannot say".
+ */
+export function chargedSubscriptionLines(
+  invoice: unknown,
+): Array<{ priceId: string; quantity: number | null; amount: number }> {
+  const lines: unknown[] = (invoice as AnyRecord)?.lines?.data ?? [];
+  const out: Array<{ priceId: string; quantity: number | null; amount: number }> = [];
+  for (const line of lines) {
+    if (!isSubscriptionLine(line)) continue;
+    const l = line as AnyRecord;
+    const amount = typeof l?.amount === "number" ? l.amount : null;
+    const priceId = priceIdOf(l);
+    if (amount === null || amount <= 0 || !priceId) continue;
+    out.push({ priceId, quantity: typeof l?.quantity === "number" ? l.quantity : null, amount });
+  }
+  return out;
+}

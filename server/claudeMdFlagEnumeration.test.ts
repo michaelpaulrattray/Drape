@@ -48,9 +48,10 @@
  * `REFINE_EDIT_CONCURRENCY`, `FAL_CONCURRENCY` — as
  * `env:` fields on a table rather than as exported constants. All four ARE in
  * `CLAUDE.md` today, verified by hand 2026-08-23 along with their arithmetic
- * (then 8+3+3+5+1 = 20 over five paths; **8+3+3+5 = 19 of 20 since #1158 slice
- * 4d, 2026-09-24**, when the plate mint's row retired and its slot was
- * deliberately not handed back), and
+ * (then 8+3+3+5+1 = 20 over five paths; 8+3+3+5 = 19 of 20 from #1158 slice
+ * 4d, 2026-09-24, when the plate mint's row retired and its slot was
+ * deliberately not handed back; **8+3+3+6 = 20 of 20 since #2206, 2026-10-10**,
+ * when his word gave it back to region reads), and
  * that family has its own boot check (`assertFalBudget`) which refuses an
  * undeclared caller. So it is guarded, differently — but a FIFTH declaration
  * shape would be guarded by nothing, and this paragraph is here so the next
@@ -295,8 +296,9 @@ ${row}`,
  * per-path default BY NAME and the total, precisely so that a further path
  * quietly taking its slot from `roll images` reddens rather than booting.
  * Between that arm and `assertFalBudget`, the code cannot drift alone.
- * (Five paths and a total of 20 when this was written; **four and 19 of 20
- * since #1158 slice 4d, 2026-09-24** — the line number and the two figures are
+ * (Five paths and a total of 20 when this was written; four and 19 of 20 from
+ * #1158 slice 4d, 2026-09-24; **four and 20 of 20 since #2206, 2026-10-10** —
+ * the line number and the two figures are
  * dropped from this sentence rather than re-typed, because both had already
  * moved once by the time anyone read it again.)
  *

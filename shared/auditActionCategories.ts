@@ -61,6 +61,9 @@ export const ACTION_CATEGORIES: Record<AuditCategory, AuditAction[]> = {
     AUDIT_ACTIONS.STRIPE_REFUND_ISSUED,
     AUDIT_ACTIONS.STRIPE_REFUND_FAILED,
     AUDIT_ACTIONS.INVOICE_PAID_AFTER_PLAN_ENDED,
+    /* #2190 — a renewal about to bill a plan the app does not hold. Without
+       this line the billing filter would drop the one row that says so. */
+    AUDIT_ACTIONS.BILLING_RENEWAL_PLAN_MISMATCH,
     /*
       #939. The panel already draws a "Billing" chip on this row — its
       `getActionCategory` sends every `credits.*` to billing — so the row

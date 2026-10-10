@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 16
+      "moduleCount": 17
     },
     {
       "id": "domain:boards",
@@ -651,6 +651,12 @@
     {
       "id": "module:client/src/features/billing/index.ts",
       "path": "client/src/features/billing/index.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/planChangeToast.ts",
+      "path": "client/src/features/billing/planChangeToast.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -11075,6 +11081,10 @@
       "path": "client/src/features/billing/planChangeRefusal1987-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/planChangeToast.test.ts",
+      "path": "client/src/features/billing/planChangeToast.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/plansRedesign1832-guard.test.ts",
       "path": "client/src/features/billing/plansRedesign1832-guard.test.ts"
     },
@@ -15047,6 +15057,14 @@
       "path": "server/stripe/environmentTag.test.ts"
     },
     {
+      "id": "test:server/stripe/heldPlanChange2190.test.ts",
+      "path": "server/stripe/heldPlanChange2190.test.ts"
+    },
+    {
+      "id": "test:server/stripe/heldPlanChangeRoute2190.test.ts",
+      "path": "server/stripe/heldPlanChangeRoute2190.test.ts"
+    },
+    {
       "id": "test:server/stripe/invoiceBilledPlanGrant.test.ts",
       "path": "server/stripe/invoiceBilledPlanGrant.test.ts"
     },
@@ -15109,6 +15127,10 @@
     {
       "id": "test:server/stripe/voidInvoiceStatus.test.ts",
       "path": "server/stripe/voidInvoiceStatus.test.ts"
+    },
+    {
+      "id": "test:server/stripe/voidInvoicesHidden2190.test.ts",
+      "path": "server/stripe/voidInvoicesHidden2190.test.ts"
     },
     {
       "id": "test:server/stripe/webhookIdempotency.test.ts",
@@ -16564,6 +16586,11 @@
     },
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:client/src/features/billing/planChangeToast.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:client/src/features/billing/useCycleSpend.ts",
       "kind": "imports"
     },
@@ -16615,6 +16642,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/planChangeToast.ts",
       "kind": "imports"
     },
     {
@@ -36475,6 +36507,11 @@
     {
       "from": "module:server/stripe/stripeService.ts",
       "to": "module:shared/creditTopups.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
+      "to": "module:shared/customerDate.ts",
       "kind": "imports"
     },
     {

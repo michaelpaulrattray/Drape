@@ -161,7 +161,7 @@ describe("the studio's service chain is retired", () => {
     expect(scope).toContain("CASTING_INK_CUT_SCOPE");
   });
 
-  it("the plate mint's fal allowance is gone, and the courtesy pool did not take its slot back", () => {
+  it("the plate mint's fal allowance is gone, and its slot went back to region reads only on its own card (#2206)", () => {
     /*
       ⚠ THIS ARM USED TO ASSERT THE OPPOSITE (#1158 slice 4d, 2026-09-24). It
       read *"the slot stays declared until slice 4 because the variable is set
@@ -179,9 +179,12 @@ describe("the studio's service chain is retired", () => {
     expect(budget).not.toContain('env: "INK_PLATE_CONCURRENCY"');
     const spenders = ["server/castingV2/inkPlateEngine.ts", ...PLATE_ROAD].filter(has);
     expect(spenders).toEqual([]);
-    /* The courtesy pool is NOT widened by the retirement — handing the freed 1
-       back to region reads would be a capability change wearing a cleanup's
-       clothes, which is his own rule from the switch sitting. */
-    expect(budget).toContain('env: "FAL_CONCURRENCY", fallback: 5');
+    /* The courtesy pool was NOT widened by the retirement — handing the freed 1
+       back to region reads would have been a capability change wearing a
+       cleanup's clothes, which is his own rule from the switch sitting. It went
+       back to 6 later on its OWN card, by his word (#2206, 2026-10-10), so the
+       pin reads 6 now; the retirement's half of the rule is that the slot was
+       not handed back HERE, and `falBudget.test.ts` owns the number. */
+    expect(budget).toContain('env: "FAL_CONCURRENCY", fallback: 6');
   });
 });

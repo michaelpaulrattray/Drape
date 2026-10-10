@@ -59,14 +59,15 @@ describe("how many at once", () => {
     process.env.FAL_CONCURRENCY = "11";
     expect(falConcurrencyLimit()).toBe(11);
     process.env.FAL_CONCURRENCY = "nonsense";
-    /* FIVE since 2026-08-18, when the plate mint became the fifth declared path
-       and its slot came out of this — the courtesy — pool rather than a paid
-       one. That cut was judged free at a counted 20 calls a scan; real faces
-       ask 21–27 (`FACE_SCAN_FAL_CALLS`, #2183), where it costs about one wave
-       — `falBudget.ts` carries the correction and why it is not re-cut. The number
-       lives in `FAL_ALLOWANCES` and is read from there, so this arm moves when
-       the budget does rather than describing an older one. */
-    expect(falConcurrencyLimit()).toBe(5);
+    /* SIX again since #2206 (his word, 2026-10-10: "yes to turn the sp[eed
+       up."). It was five from 2026-08-18, when the plate mint became the fifth
+       declared path and its slot came out of this — the courtesy — pool rather
+       than a paid one. That cut was judged free at a counted 20 calls a scan;
+       real faces ask 21–27 (`FACE_SCAN_FAL_CALLS`, #2183), where it cost about
+       one wave and a measured median ~6 s (#2189), and #2206 gave the slot
+       back. The number lives in `FAL_ALLOWANCES` and is read from there, so
+       this arm moves when the budget does rather than describing an older one. */
+    expect(falConcurrencyLimit()).toBe(6);
     delete process.env.FAL_CONCURRENCY;
     /* Below the account's twenty on purpose: the roll engine's own dispatch
        spends from the same allowance. */

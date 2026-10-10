@@ -202,6 +202,18 @@ beforeEach(() => {
     })),
   }));
   schedulesRelease.mockResolvedValue({ id: "sub_sched_1", status: "released" });
+  /* ⚠ #2190 — `updateSubscriptionPlan` now READS what a schedule holds before
+     it releases it, so a held change can put it back. A bare `vi.fn()` here
+     answered `undefined`, which no Stripe read returns, and the plan change
+     then refused for that reason rather than for the one an arm is about. The
+     default is a live schedule with nothing after the phase in progress; an
+     arm about a pending change says so. */
+  schedulesRetrieve.mockResolvedValue({
+    id: "sub_sched_old",
+    status: "active",
+    current_phase: { start_date: NOW_SEC - 10 * DAY, end_date: NOW_SEC + 20 * DAY },
+    phases: [{ start_date: NOW_SEC - 10 * DAY, items: [], metadata: {} }],
+  });
 });
 
 describe("1 · the direction — what is deferred and, above all, what is NOT", () => {

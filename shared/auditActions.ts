@@ -35,6 +35,9 @@ export const AUDIT_ACTIONS = {
   BILLING_PAYMENT_FINAL_FAILURE: "billing.payment_final_failure",
   BILLING_CHARGEBACK_FILED: "billing.chargeback_filed",
   BILLING_CHARGEBACK_RESOLVED: "billing.chargeback_resolved",
+  // #2190 — a renewal about to charge a price for a plan the app does not
+  // hold, found in the renewal invoice's draft hour. Flagged, never fixed.
+  BILLING_RENEWAL_PLAN_MISMATCH: "billing.renewal_plan_mismatch",
   
   // Model events
   MODEL_CREATED: "model.created",
