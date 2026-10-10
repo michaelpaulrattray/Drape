@@ -20,6 +20,10 @@ import {
   readSubscriptionBillingState,
   quotePlanChange,
   updateSubscriptionPlan,
+  PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+  PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+  planChangeNotChargedSentence,
+  cancelHeldChange,
   getInvoiceStatus,
   getCustomerInvoices,
   getAllCustomerInvoices,
@@ -1368,6 +1372,7 @@ export const billingRouter = router({
           changeKind: quote.kind,
           deferred: true as const,
           effectiveAt: scheduled.effectiveAt,
+          confirmPaymentUrl: null as string | null,
         };
       }
 
@@ -1399,7 +1404,68 @@ export const billingRouter = router({
         });
       });
 
-      if (!result.success) {
+      /* ⚠ **A CHARGE THAT DID NOT GO THROUGH CHANGED NOTHING, AND IS SAID SO
+         (#2190).** Stripe held the change instead of applying it and
+         `updateSubscriptionPlan` cancelled the hold, so the plan, the price and
+         the record are all where they were. Nothing below this line may run:
+         no settlement is queued (there is no money for it to wait on), and the
+         record is NOT written to the new plan — which is what used to make a
+         declined upgrade read as an upgrade. The sentence is spoken, so the
+         customer reads it instead of the client's "we lost contact" fallback,
+         which would send them to check a plan that certainly did not change. */
+      /* ⚠ **AND A HOLD WHOSE INVOICE COULD NOT BE READ IS NOT A DECLINE** (the
+         relay's finding 1 on head 1759052fc). The service leaves that hold
+         alone — it may be a payment the customer's bank is about to confirm —
+         so this is a RETRYABLE error, not the declined refusal: a 500 the
+         client may offer to retry, carrying the service's own sentence so the
+         customer is not told to check a card that is probably fine. */
+      if (result.outcomeUnknown) {
+        log.error(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+          },
+          "[Billing] plan change was held and its invoice could not be read — refusing retryably, with the hold left to lapse",
+        );
+        throw spokenError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result.error || "We could not confirm whether this payment went through. Try again in a moment.",
+        });
+      }
+
+      if (result.paymentDeclined) {
+        log.warn(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+            heldChangeCancelled: result.heldChangeCancelled ?? null,
+            scheduledChangeRestored: result.scheduledChangeRestored ?? null,
+          },
+          "[Billing] plan change refused — the charge did not go through and the change was not applied",
+        );
+        throw spokenError({
+          code: "BAD_REQUEST",
+          /* The service composes the sentence, because only it knows whether a
+             scheduled change had to be put back and whether that worked. */
+          message: result.error || PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE,
+        });
+      }
+
+      /* ⚠ **THE BANK WANTS A CONFIRMATION: THE CHANGE IS HELD, NOT REFUSED (#2190,
+         the relay's finding 3).** Stripe keeps it until its invoice is paid on
+         the confirmation page, and then applies it by itself — so from here the
+         road is the one a slow payment already takes: the credits are queued
+         against that invoice and move when its payment event lands, and the
+         plan is recorded by the `subscription.updated` that the application
+         fires. What this request must NOT do is write the new plan or log a
+         plan change, because neither has happened yet. */
+      const awaitingConfirmation = result.confirmationRequired === true;
+
+      if (!result.success && !awaitingConfirmation) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: result.error || "Failed to change plan.",
@@ -1563,6 +1629,44 @@ export const billingRouter = router({
             previousPeriodEnd: new Date(billingState.periodEndSec * 1000),
           });
           if (!recorded.success) {
+            /* ⚠ **ON THE CONFIRM ROAD A LOST SETTLEMENT IS CANCELLED, NOT
+               ACCEPTED** (the relay's finding 2 on head 1759052fc). Here the
+               plan has NOT changed: Stripe is holding it, waiting for the
+               customer's bank. Letting this pass left an invoice that is still
+               payable from the customer's own invoice list — paying it applies
+               the plan with no settlement row, so the prorated credits are
+               never granted — and the grant branch below would have told them
+               *"The plan changed, but…"*, which is untrue on this road. So the
+               hold is voided and the honest sentence is spoken. It says
+               nothing about their card, because the card is not the problem. */
+            if (awaitingConfirmation) {
+              const cancelled = result.invoiceId ? await cancelHeldChange(result.invoiceId) : "failed";
+              log.error(
+                { userId: ctx.user.id, invoiceId: result.invoiceId, direction, cancelled },
+                "[Billing] a held plan change's credit settlement could not be recorded — cancelling the hold so nothing can be paid for a change that would never settle",
+              );
+              /* ⚠ **AND WHAT THE CANCEL ANSWERED DECIDES WHAT IS SAID** — the
+                 same lesson as the relay's finding 5, one road along.
+                 `cancelHeldChange` reads before it voids, so "paid" means the
+                 charge landed in that instant and the change APPLIED: saying
+                 "your card was not charged" there would be the lie this whole
+                 card exists to remove. "failed" means the hold is still live
+                 and still payable, so the outcome is not ours to state. Only
+                 a hold that is actually gone earns the not-charged sentence. */
+              if (cancelled === "paid") {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: "The plan changed, but the credit adjustment could not be recorded. Contact support before retrying.",
+                });
+              }
+              throw spokenError({
+                code: cancelled === "failed" ? "INTERNAL_SERVER_ERROR" : "BAD_REQUEST",
+                message: planChangeNotChargedSentence({
+                  reason: cancelled === "failed" ? "unconfirmed" : "not-recorded",
+                  scheduleLostOn: null,
+                }),
+              });
+            }
             if (direction === "grant") {
               // The customer's money is (or will be) taken and nothing now
               // owes them the credits — that must not pass as success.
@@ -1628,6 +1732,33 @@ export const billingRouter = router({
       // lands. Until then the account reads its old tier — minutes, normally.
       // The audit row says which road the record took, so support can tell a
       // deferred write from a written one.
+      if (awaitingConfirmation) {
+        log.info(
+          {
+            userId: ctx.user.id,
+            plan: input.newPlan,
+            interval: quote.targetInterval,
+            invoiceId: result.invoiceId ?? null,
+            creditSettlement,
+          },
+          "[Billing] plan change held for the customer's bank to confirm — credits queued against its invoice, plan not yet recorded",
+        );
+        return {
+          success: true,
+          message: result.error || PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+          proratedAmount: quote.proratedAmount,
+          creditAdjustment,
+          creditSettlement,
+          targetInterval: quote.targetInterval,
+          changeKind: quote.kind,
+          deferred: false as const,
+          effectiveAt: null,
+          /* The page that confirms the payment — Stripe's own, for this invoice.
+             The client puts it behind a "Confirm payment" button. */
+          confirmPaymentUrl: (result.confirmUrl ?? null) as string | null,
+        };
+      }
+
       const localRecord = await updateUserSubscription(ctx.user.id, {
         planTier: input.newPlan,
         billingInterval: stripeIntervalOf(quote.targetInterval),
@@ -1765,6 +1896,8 @@ export const billingRouter = router({
            (the client's `onSuccess` is one handler for both). */
         deferred: false as const,
         effectiveAt: null,
+        /* Only a change held for a bank confirmation carries a page (#2190). */
+        confirmPaymentUrl: null as string | null,
       };
     }),
 });

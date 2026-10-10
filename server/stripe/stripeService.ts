@@ -17,6 +17,7 @@ import {
 import { wholeDisplayLedger } from "@shared/creditDisplay";
 import {
   isPlanCreditsLookupKey,
+  priceLookupKey,
   resolvePlanCreditsPriceId,
   resolvePriceId,
   resolveTopupPriceId,
@@ -35,8 +36,10 @@ import {
   readPendingPlanChange,
   releaseScheduleBeforeWrite,
   releaseScheduleOn,
+  scheduleSubscriptionChange,
   type PendingPlanChange,
 } from "./subscriptionSchedule";
+import { formatCustomerShortDate } from "@shared/customerDate";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("stripe/stripeService");
@@ -665,6 +668,88 @@ export function subscriptionItemsOf(subscription: unknown): {
   return { base, addon };
 }
 
+/**
+ * WHICH PLAN A PLAN PRICE IS, READ OFF THE PRICE STRIPE BILLS (#2190).
+ *
+ * The answer comes from the price's own `lookup_key`, inverted through the ONE
+ * composer of those keys (`priceLookupKey`) over every plan this product sells
+ * at both intervals — so a key's shape is stated once, and a rung added to
+ * `SUBSCRIPTION_PRODUCTS` is readable here without a second edit (working law
+ * 4). `null` for a price with no key, or a key this catalogue does not
+ * compose — a hand-made price, an arranged-directly rung, a legacy minted one.
+ * A null is "cannot say", never "agrees".
+ */
+export function planOfPlanPrice(
+  price: { lookup_key?: string | null } | null | undefined,
+): { plan: SubscriptionPlan; interval: BillingIntervalChoice } | null {
+  const key = price?.lookup_key;
+  if (!key) return null;
+  for (const plan of Object.keys(SUBSCRIPTION_PRODUCTS) as SubscriptionPlan[]) {
+    for (const interval of ["monthly", "annual"] as const) {
+      if (priceLookupKey(plan, interval) === key) return { plan, interval };
+    }
+  }
+  return null;
+}
+
+/**
+ * The plan a subscription's schedule put in place for the phase IN PROGRESS,
+ * off that phase's own metadata — the field Stripe copies onto the
+ * subscription when the phase begins (#2190, the renewal check). A scheduled
+ * decrease reaches its renewal with our row still on the old plan, because
+ * the row is written by the very event that is being checked; this is what
+ * lets that renewal read as expected rather than as a mismatch. Null when
+ * there is no schedule, the read fails, or the phase names no plan.
+ */
+export async function readCurrentPhasePlan(subscription: unknown): Promise<string | null> {
+  const schedule = (subscription as { schedule?: unknown } | null)?.schedule;
+  const scheduleId =
+    typeof schedule === "string"
+      ? schedule
+      : typeof (schedule as { id?: unknown } | null)?.id === "string"
+        ? (schedule as { id: string }).id
+        : null;
+  if (!scheduleId) return null;
+  try {
+    const read = await stripe.subscriptionSchedules.retrieve(scheduleId);
+    const start = read.current_phase?.start_date ?? null;
+    if (start === null) return null;
+    const phase = (read.phases ?? []).find((p) => p.start_date === start);
+    const plan = phase?.metadata?.plan;
+    return typeof plan === "string" && plan ? plan : null;
+  } catch (error) {
+    log.warn({ err: error, scheduleId }, "[Stripe] Could not read the schedule's phase in progress");
+    return null;
+  }
+}
+
+/**
+ * The few facts the renewal check needs about one invoice (#2190): whether it
+ * is still a DRAFT renewal, what it will charge and when. Null when the read
+ * fails — the caller treats that as "cannot say".
+ */
+export async function readInvoiceForRenewalCheck(invoiceId: string): Promise<{
+  status: string | null;
+  billingReason: string | null;
+  amountDueCents: number | null;
+  currency: string | null;
+  nextPaymentAttemptSec: number | null;
+} | null> {
+  try {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    return {
+      status: invoice.status ?? null,
+      billingReason: invoice.billing_reason ?? null,
+      amountDueCents: typeof invoice.amount_due === "number" ? invoice.amount_due : null,
+      currency: invoice.currency ?? null,
+      nextPaymentAttemptSec: invoice.next_payment_attempt ?? null,
+    };
+  } catch (error) {
+    log.warn({ err: error }, `[Stripe] Could not read invoice ${invoiceId} for the renewal check`);
+    return null;
+  }
+}
+
 export async function readSubscriptionBillingState(
   subscriptionId: string,
 ): Promise<SubscriptionBillingState | null> {
@@ -1182,6 +1267,149 @@ export function quotePlanChange(
 }
 
 /**
+ * WHAT A CUSTOMER IS TOLD WHEN THE CHARGE FOR A PLAN CHANGE IS DECLINED
+ * (#2190). Every part of it is true by construction of the road that says it:
+ * Stripe held the change instead of applying it, the hold is cancelled, and no
+ * invoice was paid. It names the one control that fixes it by the label the
+ * customer sees (`Update card`, Settings → Billing) and says nothing about how
+ * billing works underneath.
+ */
+export const PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE =
+  "Your card was not charged, so your plan has not changed. Check your card with Update card in Settings, under Billing, then try again.";
+
+/**
+ * WHAT A CUSTOMER IS TOLD WHEN THEIR BANK WANTS TO CONFIRM THE PAYMENT (#2190,
+ * the relay's finding 3 on head dd580ce2). The change is HELD, not refused:
+ * the confirmation page is Stripe's own invoice page, paying there applies the
+ * change, and its credits follow the payment. The client puts the page behind
+ * a "Confirm payment" button beside this sentence.
+ */
+export const PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE =
+  "Your bank wants you to confirm this payment. Confirm it on the page that opens, and your new plan starts as soon as it goes through. Until then nothing has changed.";
+
+/**
+ * The refusal when a charge did not go through, including what happened to a
+ * change the customer had SCHEDULED (the relay's finding 2). An instant change
+ * has to clear a scheduled one before it writes; when the instant change then
+ * fails, the scheduled one is put back — and if it could not be, the customer
+ * is told so, with the date, rather than finding out at the renewal.
+ *
+ * ⚠ **THE INSTRUCTIONS ARE IN THE ORDER THEY CAN BE FOLLOWED** (the relay's
+ * third note on head 1759052fc). `confirm-blocked-by-schedule` used to say
+ * *set the scheduled change again, then try again and confirm with your bank*
+ * — and setting it again recreates the very block that refused the
+ * confirmation. The retry comes first in every variant now, and the scheduled
+ * change is named as something to put back afterwards.
+ */
+export function planChangeNotChargedSentence(input: {
+  reason: "declined" | "confirm-blocked-by-schedule" | "unconfirmed" | "not-recorded";
+  scheduleLostOn: Date | null;
+}): string {
+  const lost = input.scheduleLostOn
+    ? ` The change you had scheduled for ${formatCustomerShortDate(input.scheduleLostOn)} was cleared, so set it again in Settings, under Billing, once your plan is where you want it.`
+    : "";
+  if (input.reason === "confirm-blocked-by-schedule") {
+    return input.scheduleLostOn
+      ? `Your bank wants you to confirm this payment, so nothing was charged and your plan has not changed. Try the change again and confirm with your bank.${lost}`
+      : "Your bank wants you to confirm this payment, which cannot be done while a plan change is scheduled. Nothing was charged and your plan has not changed. Choose Keep my plan in Settings, under Billing, then try again.";
+  }
+  /* ⚠ **WE COULD NOT SEE WHAT HAPPENED, WHICH IS NOT THE SAME AS A DECLINE**
+     (the relay's finding 1 on head 1759052fc). Telling someone to check their
+     card is wrong advice when the card may be perfectly fine; and the hold is
+     deliberately left alone, so the only honest instruction is to look at
+     Billing in a moment. A scheduled change the attempt cleared is REPORTED
+     rather than silently rebuilt: the hold may still be paid, and a schedule
+     put back beside a live hold would undo a just-paid change at the renewal. */
+  if (input.reason === "unconfirmed") {
+    return `We could not confirm whether this payment went through, so your plan has not been changed yet. Open Settings, under Billing, in a few minutes to see where things stand before you try again.${lost}`;
+  }
+  /* The charge was held and has been cancelled, but the reason was ours, not
+     the card's — so it says nothing about the card. */
+  if (input.reason === "not-recorded") {
+    return `Your card was not charged, so your plan has not changed.${lost} Try again in a moment.`;
+  }
+  return input.scheduleLostOn
+    ? `Your card was not charged, so your plan has not changed. Check your card with Update card, then try again.${lost}`
+    : PLAN_CHANGE_PAYMENT_DECLINED_SENTENCE;
+}
+
+/** What a held change's invoice says about its payment (#2190). */
+export type HeldInvoiceRead = {
+  status: string | null;
+  /** The payment attempt's state — `requires_action` is a bank asking for a
+   *  confirmation; anything else that is not paid is a decline. */
+  paymentIntentStatus: string | null;
+  hostedUrl: string | null;
+};
+
+/**
+ * Read a held change's invoice, with its payment attempt. ⚠ At the pinned
+ * clover the invoice has no `payment_intent` field; the attempt is on
+ * `payments.data[].payment.payment_intent`, which is expanded here — measured
+ * in test mode: `requires_action` for the authentication card, and
+ * `requires_payment_method` for 4000 0000 0000 0341. Null when the read fails.
+ */
+export async function readHeldInvoice(invoiceId: string): Promise<HeldInvoiceRead | null> {
+  try {
+    const invoice: any = await stripe.invoices.retrieve(invoiceId, {
+      expand: ["payments.data.payment.payment_intent"],
+    });
+    const attempts: any[] = invoice?.payments?.data ?? [];
+    const intent = attempts
+      .map((p) => p?.payment?.payment_intent)
+      .find((pi) => pi && typeof pi === "object");
+    return {
+      status: invoice?.status ?? null,
+      paymentIntentStatus: intent?.status ?? null,
+      hostedUrl: invoice?.hosted_invoice_url ?? null,
+    };
+  } catch (error) {
+    log.warn({ err: error }, `[Stripe] Could not read held invoice ${invoiceId}`);
+    return null;
+  }
+}
+
+/**
+ * CANCEL A HELD CHANGE by voiding its invoice — Stripe's documented way — and
+ * say what actually happened (#2190, the relay's finding 5).
+ *
+ * ⚠ **"PAID" IS AN ANSWER, NOT A FAILURE.** If the invoice was paid in the gap
+ * the change APPLIED, and every caller must treat it as a change that went
+ * through (credits queued, plan recorded). This deliberately does not reuse
+ * {@link voidInvoice}: that one files a CRITICAL "paid after the plan ended"
+ * audit row on a paid invoice, which is the wrong alarm here.
+ */
+export async function cancelHeldChange(
+  invoiceId: string,
+): Promise<"voided" | "paid" | "closed" | "failed"> {
+  const statusNow = async (): Promise<string | null> => {
+    try {
+      return (await stripe.invoices.retrieve(invoiceId)).status ?? null;
+    } catch {
+      return null;
+    }
+  };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const status = await statusNow();
+    if (status === "paid") return "paid";
+    if (status === "void") return "closed";
+    if (status !== null && status !== "open" && status !== "uncollectible" && status !== "draft") {
+      return "closed";
+    }
+    try {
+      await stripe.invoices.voidInvoice(invoiceId);
+      return "voided";
+    } catch (error) {
+      log.warn({ err: error, invoiceId }, "[Stripe] Voiding a held change's invoice failed — re-reading");
+    }
+  }
+  const last = await statusNow();
+  if (last === "paid") return "paid";
+  if (last === "void") return "closed";
+  return "failed";
+}
+
+/**
  * Update the subscription to the new plan at the target interval.
  *
  * `always_invoice`, not `create_prorations` (#664 decision 2): the default
@@ -1231,6 +1459,39 @@ export async function updateSubscriptionPlan(
   /** The invoice's status AT THIS READ ("paid", "open", …) — a snapshot,
    *  not a promise; the settlement path re-reads before deferring. */
   invoiceStatus?: string | null;
+  /**
+   * The charge for the change did not go through (#2190). Stripe HELD the
+   * change instead of applying it, so the subscription is still on its old
+   * price, and the hold has been cancelled (`heldChangeCancelled`). `success`
+   * is false whenever this is true, and `error` is the customer's sentence.
+   */
+  paymentDeclined?: true;
+  /** Whether the hold was cancelled here. False means it is still held and
+   *  expires on its own within Stripe's 23-hour window. */
+  heldChangeCancelled?: boolean;
+  /**
+   * The customer's bank asked to confirm the payment (3D Secure). The change
+   * is still HELD — not cancelled — and `confirmUrl` is the page that
+   * confirms it; paying there applies the change. `success` is false so a
+   * caller that ignores this field cannot read a held change as an applied
+   * one; `changePlan` reads it first and queues the credits against
+   * `invoiceId`.
+   */
+  confirmationRequired?: true;
+  confirmUrl?: string | null;
+  /** A scheduled change had to be cleared for this one and was put back
+   *  (`true`), could not be put back (`false`), or there was none (absent). */
+  scheduledChangeRestored?: boolean;
+  /**
+   * Stripe held the change and its invoice COULD NOT BE READ, so why it was
+   * held is unknown (the relay's finding 1 on head 1759052fc). The hold is
+   * deliberately left alone — cancelling on a silence would void a payment
+   * the customer may be confirming with their bank — and it lapses by itself
+   * within Stripe's 23-hour window if nobody pays it. `success` is false and
+   * this is NOT `paymentDeclined`: the caller must raise a retryable error,
+   * never the declined sentence.
+   */
+  outcomeUnknown?: true;
   error?: string;
 }> {
   try {
@@ -1346,6 +1607,25 @@ export async function updateSubscriptionPlan(
       };
     }
 
+    /* ⚠ **WHAT IS SCHEDULED IS READ BEFORE IT IS RELEASED (#2190, the relay's
+       finding 2).** The release below clears a scheduled decrease so this
+       change can replace it — right when the change goes through, and a loss
+       when it does not: a declined change used to apply anyway, so the
+       release never mattered, but a HELD change leaves the old plan in place
+       with the scheduled decrease gone, and the renewal would bill the plan
+       the customer had already chosen to leave. So the scheduled target is
+       read first and put back if the change is held. A read that FAILS on a
+       subscription that has a schedule refuses here, while nothing has moved,
+       rather than releasing something it could not put back. */
+    const scheduledBefore = await readPendingPlanChange(stripe, subscription);
+    if (scheduledBefore.outcome === "failed") {
+      return {
+        success: false,
+        error:
+          "We could not read the change already scheduled on your plan, so nothing was changed. Please try again.",
+      };
+    }
+
     const released = await releaseScheduleOn(stripe, subscription);
     if (released.outcome === "failed") {
       return {
@@ -1441,11 +1721,33 @@ export async function updateSubscriptionPlan(
     );
     const intervalSwitch = currentInterval !== null && currentInterval !== targetInterval;
 
+    /* ⚠ **THE PRICE MOVES ONLY WHEN THE MONEY DOES (#2190, his word
+       2026-10-10: "only switch the price once the payment succeeds").** With
+       no `payment_behavior` Stripe's default is `allow_incomplete`: the new
+       price lands at once and a declined charge leaves it there, so the next
+       renewal bills a plan the customer never got. Driven in test mode with
+       the declining card 4000 0000 0000 0341 on the pinned 2026-01-28.clover,
+       Starter → Pro monthly: the old road left the subscription on
+       `klieg_pro_monthly_v2`, `past_due`, `metadata.plan` "pro".
+
+       `pending_if_incomplete` makes Stripe HOLD the change on the
+       subscription's `pending_update` until its invoice is paid. Measured the
+       same way, every part of this call is held together: the plan item, the
+       dial's item (added, re-priced or `deleted`), the anchor, the
+       spent-share line on the same invoice, and the `metadata` below — which
+       Stripe stored as `pending_update.metadata` and did not apply. ⚠ Stripe's
+       changelog lists metadata on a pending update as new in 2026-05-27.dahlia
+       and says it was an error before; at the pinned version it was ACCEPTED,
+       held on a decline and applied on a payment. A version where it errors
+       fails this call before anything is charged, which is the safe side.
+       A working card bills the same prorated amount as before, to the cent
+       (2,777 on Starter → Pro ten days in, both roads side by side). */
     const updated = await stripe.subscriptions.update(subscriptionId, {
       items: items as any,
       ...(spentShareLine ? { add_invoice_items: [spentShareLine as any] } : {}),
       ...(intervalSwitch ? { billing_cycle_anchor: "now" as const } : {}),
       proration_behavior: "always_invoice",
+      payment_behavior: "pending_if_incomplete",
       metadata: {
         userId: userId.toString(),
         plan: newPlan,
@@ -1467,6 +1769,160 @@ export async function updateSubscriptionPlan(
     const latestInvoice = (updated as any).latest_invoice;
     const invoiceId: string | null =
       (typeof latestInvoice === "string" ? latestInvoice : latestInvoice?.id) ?? null;
+
+    /* ⚠ **A HELD CHANGE (#2190).** A populated `pending_update` means the
+       charge did not go through and nothing moved yet. What happens next
+       depends on WHY, read off the invoice's payment attempt
+       ({@link readHeldInvoice}) — the relay's findings 3 and 5 on head
+       dd580ce2:
+
+        · **paid in the gap** — the change APPLIED. It falls through to the
+          ordinary road below, so the credits are queued and the plan recorded,
+          exactly as for a card that paid first time.
+        · **the bank wants a confirmation (`requires_action`)** — the hold is
+          KEPT: that is the window Stripe's pending updates exist for, and
+          paying the invoice's own page applies the change (measured: the held
+          Starter → Pro applied, `metadata.plan` "pro", on paying the invoice).
+          The caller queues the credits against the invoice, so the payment's
+          webhook settles them. Not when a scheduled change had to be cleared
+          for it, though: a confirmation that might come later cannot be left
+          racing a schedule this function must put back now, so that case is
+          cancelled and the customer is told plainly what to do.
+        · **a decline** — the hold is cancelled by voiding its invoice (Stripe's
+          documented way; measured, it left the old price and old
+          `metadata.plan`), and the customer can try again with another card.
+        · **the invoice could not be READ** — nothing is decided on a silence;
+          see the branch's own note below.
+
+       In every road that ends with the change NOT applied, a scheduled change
+       the release above cleared is put back; if that fails the customer is
+       told, with its date (finding 2). */
+    if ((updated as any).pending_update) {
+      const held = invoiceId ? await readHeldInvoice(invoiceId) : null;
+      const scheduled = scheduledBefore.outcome === "pending" ? scheduledBefore.change : null;
+      const clearedSchedule = released.outcome === "released" && scheduled !== null;
+
+      /* ⚠ **A READ THAT COULD NOT BE MADE IS NOT A DECLINE** (the relay's
+         finding 1 on head 1759052fc). {@link readHeldInvoice} answers `null`
+         for any Stripe error, and the first shape then fell through to
+         {@link cancelHeldChange} — which would void a payment the customer's
+         bank may be about to confirm, and hand them the declined sentence
+         telling them to check a card that is probably fine.
+
+         So the hold is LEFT: it lapses by itself inside Stripe's 23-hour
+         window if nobody pays it, and the caller raises a RETRYABLE error.
+         ⚠ A scheduled change this attempt cleared is REPORTED with its date
+         rather than silently rebuilt — putting one back beside a hold that may
+         still be paid would undo the just-paid change at the renewal, and a
+         hold whose state cannot be read is exactly the case where that cannot
+         be ruled out. The customer is told, which is the same remedy finding 2
+         settled on for a restore that fails.
+
+         ⚠ **STATED LIMIT, because leaving the hold has a price of its own.**
+         No settlement is queued against that invoice IN EITHER DIRECTION (the
+         caller refuses before it gets there), so if the customer finds the
+         hold and pays it from a provider email rather than retrying here, the
+         plan lands by `customer.subscription.updated` and the prorated move
+         is missed: on a grant the customer misses the proration (their plan's
+         own allowance still refreshes), on an unwind the house misses the
+         clawback. Both are bounded by one period's proration and both are on
+         the `error` line above, which is the alert.
+
+         The rejected alternative is queueing the settlement here: it would
+         cover both, and it would also leave a pending row against an invoice
+         whose payability after the hold lapses is not measured — so a retry
+         that succeeds could move the same proration twice, which on the
+         unwind side is the customer's own credits taken twice. A missed
+         proration in a provider blip is the smaller of the two, and it is
+         the direction that cannot take anything from anybody. */
+      if (invoiceId && held === null) {
+        log.error(
+          { subscriptionId, invoiceId, newPlan, targetInterval, clearedSchedule },
+          "[Stripe] A plan change was HELD and its invoice could not be read — the hold is left to lapse on its own and the caller must retry; nothing was voided",
+        );
+        return {
+          success: false,
+          outcomeUnknown: true,
+          invoiceId,
+          invoiceStatus: null,
+          invoicedAmount: null,
+          error: planChangeNotChargedSentence({
+            reason: "unconfirmed",
+            scheduleLostOn: clearedSchedule ? scheduled!.effectiveAt : null,
+          }),
+        };
+      }
+
+      /* A held invoice already PAID needs no branch of its own: {@link
+         cancelHeldChange} reads it before voiding and answers "paid", and the
+         change then takes the ordinary road below. */
+      const wantsConfirmation =
+        held?.paymentIntentStatus === "requires_action" && !!held.hostedUrl;
+
+      if (wantsConfirmation && !clearedSchedule) {
+        log.info(
+          `[Stripe] Plan change on ${subscriptionId} to ${newPlan} (${targetInterval}) is held for the customer's bank to confirm — invoice ${invoiceId}`,
+        );
+        return {
+          success: false,
+          confirmationRequired: true,
+          confirmUrl: held!.hostedUrl,
+          invoiceId,
+          invoiceStatus: held?.status ?? null,
+          invoicedAmount: null,
+          error: PLAN_CHANGE_CONFIRM_PAYMENT_SENTENCE,
+        };
+      }
+
+      const cancelled = invoiceId ? await cancelHeldChange(invoiceId) : "failed";
+      if (cancelled !== "paid") {
+        const heldChangeCancelled = cancelled === "voided" || cancelled === "closed";
+        let scheduledChangeRestored: boolean | undefined;
+        if (clearedSchedule) {
+          const restored = await scheduleSubscriptionChange(stripe, subscriptionId, userId, {
+            plan: scheduled!.plan,
+            interval: scheduled!.interval,
+            creditUnits: scheduled!.creditUnits,
+          }).catch((error: unknown) => {
+            log.error({ err: error, subscriptionId }, "[Stripe] Putting the scheduled change back threw");
+            return { success: false as const, error: String(error) };
+          });
+          scheduledChangeRestored = restored.success;
+          if (!restored.success) {
+            log.error(
+              { subscriptionId, scheduled },
+              "[Stripe] A held plan change was cancelled but the scheduled change it cleared could NOT be put back — the customer is told, with its date",
+            );
+          }
+        }
+        if (heldChangeCancelled) {
+          log.info(
+            `[Stripe] Plan change on ${subscriptionId} to ${newPlan} (${targetInterval}) was not paid — Stripe held it and it is cancelled; the subscription stays on its current price`,
+          );
+        } else {
+          log.error(
+            { subscriptionId, invoiceId, cancelled },
+            "[Stripe] Plan change was not paid and its held change could NOT be cancelled — it stays held at Stripe until it expires (23 hours at most) and would apply if that invoice were paid by hand",
+          );
+        }
+        return {
+          success: false,
+          paymentDeclined: true,
+          heldChangeCancelled,
+          ...(scheduledChangeRestored === undefined ? {} : { scheduledChangeRestored }),
+          invoiceId,
+          invoiceStatus: null,
+          error: planChangeNotChargedSentence({
+            reason: wantsConfirmation ? "confirm-blocked-by-schedule" : "declined",
+            scheduleLostOn: scheduledChangeRestored === false ? scheduled!.effectiveAt : null,
+          }),
+        };
+      }
+      log.info(
+        `[Stripe] Plan change on ${subscriptionId}: the held invoice ${invoiceId} was paid in the gap — the change applied, taking the ordinary road`,
+      );
+    }
+
     if (invoiceId) {
       try {
         const invoice = await stripe.invoices.retrieve(invoiceId);
@@ -1706,6 +2162,11 @@ export function calculateCreditAdjustment(
 }
 
 
+/** An invoice the customer's history shows: anything but a void one (#2190). */
+function isShownInvoice(invoice: { status?: string | null }): boolean {
+  return invoice.status !== "void";
+}
+
 /**
  * Get invoices for a customer
  */
@@ -1725,13 +2186,20 @@ export async function getCustomerInvoices(
   hasMore: boolean;
 }> {
   try {
+    /* ⚠ A VOIDED INVOICE CHARGED NOTHING AND IS NOT SHOWN (#2190, the relay's
+       note on head dd580ce2). Every declined plan change now leaves one — its
+       hold is cancelled by voiding it — so without this the customer's
+       history would grow a line per declined attempt for money never taken.
+       Stripe cannot list "everything but void", so a wider page is read and
+       filtered; `hasMore` is judged after the filter. */
     const invoices = await stripe.invoices.list({
       customer: customerId,
-      limit: limit + 1, // Fetch one extra to check if there are more
+      limit: Math.min(100, limit * 3 + 1),
     });
 
-    const hasMore = invoices.data.length > limit;
-    const invoiceData = invoices.data.slice(0, limit).map((invoice) => ({
+    const shown = invoices.data.filter(isShownInvoice);
+    const hasMore = shown.length > limit || invoices.has_more;
+    const invoiceData = shown.slice(0, limit).map((invoice) => ({
       id: invoice.id,
       date: new Date((invoice.created || 0) * 1000),
       amount: invoice.amount_paid || 0,
@@ -1785,7 +2253,9 @@ export async function getAllCustomerInvoices(
 
     const invoices = await stripe.invoices.list(params);
 
-    const invoiceData = invoices.data.map((invoice) => ({
+    /* Void invoices are left out here too (see `getCustomerInvoices`); the
+       cursor stays on the last RAW invoice so paging never skips one. */
+    const invoiceData = invoices.data.filter(isShownInvoice).map((invoice) => ({
       id: invoice.id,
       date: new Date((invoice.created || 0) * 1000),
       amount: invoice.amount_paid || 0,
