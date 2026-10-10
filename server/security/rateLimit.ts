@@ -312,7 +312,10 @@ export const RATE_LIMITS = {
     rewording a sentence meets it and a loop does: sixty presses an hour across
     both cards. An hour rather than a minute because the thing bounded is the
     house's SPEND per account, and an hourly window bounds it to sixty
-    translations' price however the presses are spaced.
+    translations' price however the presses are spaced — measured 2026-10-10
+    at $0.0025–$0.0032 a press, so at most about twenty cents an hour for an
+    account that hits the cap, and a fraction of a cent for one that rewords
+    three times.
   */
   castPersonaTranslate: {
     windowMs: 60 * 60 * 1000, // 1 hour

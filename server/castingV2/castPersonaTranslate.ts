@@ -71,11 +71,13 @@ const log = createModuleLogger("castingV2/castPersonaTranslate");
  * THE DEADLINE, PER ATTEMPT — a customer is waiting at the card.
  *
  * The persona reader's 75 s is sized for a full frame; this call posts a few
- * hundred characters and no picture. Measured on the dev key against the
- * served model before this was set (the PR for #2197 carries the table): the
- * slowest of the measured translations is well inside it, so 30 s is a bound on
- * a stuck call rather than a cut on a slow one. With the one retry, the worst a
- * customer can wait before the card says nothing came back is a minute.
+ * hundred characters and no picture. MEASURED 2026-10-10 on the dev key, six
+ * real presses (three personality, three voice, one per pronoun set) on
+ * `anthropic/claude-sonnet-5`: 2.50–5.09 s wall-clock, ~850–1,010 tokens in and
+ * 77–118 out, $0.0025–$0.0032 a press at OpenRouter's list price. So 30 s is a
+ * bound on a stuck call, six times the slowest measured, rather than a cut on a
+ * slow one. With the one retry, the worst a customer can wait before the card
+ * says nothing came back is a minute.
  */
 export const PERSONA_TRANSLATE_TIMEOUT_MS = 30_000;
 
