@@ -1,7 +1,7 @@
 {
-  "edition": 671,
-  "updatedAt": "2026-10-10T15:00:44Z",
-  "shift": "Foreman — foreman-20261011-0022",
+  "edition": 672,
+  "updatedAt": "2026-10-10T19:55:00Z",
+  "shift": "Foreman — foreman-20261011-0524",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -10087,9 +10087,9 @@
     {
       "id": "park-reason-wrong-2198",
       "severity": "warning",
-      "state": "open",
-      "title": "The nights stopped last night and told you the wrong reason (#2198)",
-      "detail": "At 4am the team stopped itself and left you a note saying two shifts had failed and that \"the log names no cap\". The log says, in its first seven words: \"You've hit your weekly limit, resets Oct 14, 4pm\". Nothing was wrong with the team — your Claude allowance had run out for the moment, and it has since come back; two shifts are running now.\n\nThe cause is one word. The alarm looks for the phrase \"hit your limit\" and the real message says \"hit your weekly limit\", so it did not recognise it. Driven at the real log with controls: remove the word \"weekly\" and the same alarm fires correctly.\n\nTwo costs. It wasted a session, because a known allowance problem stops the team at once while an unknown failure gets a second try. And the dangerous one it did not hit this time: if a shift had succeeded in between, the team would have kept starting shifts into an allowance that could not serve them, with nothing ever saying why."
+      "state": "resolved",
+      "title": "Fixed - the nights stopped and told you the wrong reason, and it had happened 750 times (#2198)",
+      "detail": "Fixed and in place. The alarm that stops the team when your Claude allowance runs out now recognises the real message, and the note it leaves you says when the allowance comes back - \"resets Oct 14, 4pm\" - instead of only that something went wrong.\n\nIt was far bigger than one night. Going back through every shift log we have kept - 3,972 of them - there are 750 shifts that never started because your allowance was spent, and the alarm recognised none of them. Most are one long run on 17 August, where the team kept starting shifts for seven hours into an allowance that could not serve any of them. Seven are recent: two on 8 October and five on 9 October, across three separate attempts on two different nights. Only one of those three left you a note at all, and that was the one with the wrong reason on it.\n\nThere were two real messages to recognise, not one, and we read them out of the logs rather than guessing: one about a weekly allowance and one about a shorter session allowance. The 8 October night was the session one, which nobody had noticed.\n\nIt was also wrong the other way round. The only two logs the alarm did call an allowance problem were not allowance problems at all - both were shifts writing a report about this very subject. Both now read correctly, and so does a shift reporting the fix, which was the trap worth avoiding: the obvious one-line repair would have made any shift that mentions the message stop the whole team. Proven by deliberately breaking it eight different ways and checking each break was caught."
     }
   ],
   "acknowledgedReplyIds": [
