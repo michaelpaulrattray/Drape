@@ -2413,3 +2413,100 @@ read as *the guard does not catch this*.
 **The after is NOT read on this card's own PR** (its diff is the change). It is
 read on the next ordinary PR's `gate.yml` run, at job grain, against the **299 s
 measured** above — run 8's §H is where it belongs.
+
+## §L's AFTER — the third shard, read on ordinary PRs (#2164, `seat1-20261010-162527`, 2026-10-10)
+
+⚠ **NOT A PATROL RUN, and deliberately not a `## Run` heading** — `scripts/patrol-clocks.mts`
+reads the newest `## Run N — YYYY-MM-DD` to decide whether this seat is due, so
+an after-reading appended under that spelling would silently reset the
+Machinist's clock. This is §F's AFTER's shape, for §F's AFTER's reason: §L
+closes by saying its own after belongs on the next ordinary PR, and the
+before deserves its after beside it. Run 8 still owes the next full reading.
+
+**Read at job grain** (`gh run view <id> --json jobs`, each unit shard's
+`completedAt − startedAt`), on **ordinary PRs' own `gate.yml` runs** — never on
+this box, which runs the suite at ~8.9× parallelism against the gate's 2.5× and
+is how #1799's local bench read a 42% rise as flat.
+
+### The instrument's control, taken BEFORE its verdict was believed (working law 2)
+
+The same reader was pointed at **nine green pre-shard runs** (2026-10-09, before
+`2175` merged at 15:51Z) and reproduced the figure §L measured by a different
+route:
+
+| | this reader, n=9 | §L / #2164 |
+|---|---|---|
+| median gate WALL | **299 s** | **299 s** measured / 304 s (card's median of 10) |
+| `unit-tests-1` median | 256 s | — |
+| `unit-tests-2` median | 299 s | — |
+
+**Exact on the wall.** §L scraped vitest's own reporter lines and modelled the
+job; this reads the job clock. Two readers, no shared resolver, same answer — so
+the after below is a reading rather than a hope.
+
+### The after
+
+**Ten green `gate.yml` runs on ordinary PRs, 2026-10-09T21:57Z → 2026-10-10T07:17Z**
+(`team/relay-2152`, `-2153`, `-2181`, `-2185` ×2, `-2187`, `-2190`,
+`team/face-scan-cap-number-2170`, `team/persona-door0-2137`):
+
+| | two shards (before) | three shards (after) | change |
+|---|---|---|---|
+| **gate WALL** (slowest unit job) | **299 s** | **197 s** | **−34%** |
+| `unit-tests-1` median | 256 s | 167 s | −35% |
+| `unit-tests-2` median | 299 s | 158 s | −47% |
+| `unit-tests-3` median | — | 174 s | new |
+| wall spread (min–max) | 267–320 s | 133–207 s | — |
+
+⚠ **§L predicted 210 s and the gate delivered 197 s — the model was 6.6%
+CONSERVATIVE, which is the direction a prediction should miss in.** Its
+companion prediction for two shards (307 s modelled against 299 s measured,
++2.6%) was the same sign, so the model reads slightly slow at both widths rather
+than having got lucky at one.
+
+⚠ **AND THE WIN HELD WHILE THE SUITE KEPT GROWING, which is the half #2164 was
+actually about.** The card's finding was a 71% rise in test-seconds over seven
+days with nothing damping it; the after window sits a day further along that
+curve and the wall is still 197 s. The shard did not stop the growth — nothing
+here claims it did — it bought back more than the growth had taken.
+
+### ⚠ What is NOT in that −34%, stated because the obvious attribution is wrong
+
+**#2179 merged inside the window** (2026-10-09T17:30Z — `capabilityAtlas.test.ts`
+31 builds → 4, measured −85.5% on that file locally), so every one of the ten
+runs above carries it as well as the third shard. Isolated at the two green runs
+that fall between the two merges — three shards, no atlas fix:
+
+| | n | median wall |
+|---|---|---|
+| three shards, **before** #2179 | 2 | **199 s** |
+| three shards, **with** #2179 | 10 | **197 s** |
+
+**So the third shard did essentially all of it, and an 85% cut to the single
+heaviest file moved the gate wall by about 2 s — inside the noise of a 133–207 s
+spread.** The n of 2 makes this indicative rather than settled, and shard
+membership reshuffles as files land (`BaseSequencer.shard` slices a sha1-sorted
+list by equal file COUNT), so the atlas file is not pinned to one shard between
+runs.
+
+⚠ **The lesson is #2172's, not this card's, and it is worth carrying there:
+making one file cheap only moves the WALL if that file is on the slowest shard.**
+The wall is `max()` of three jobs; a file cut from 129 s to 19 s on a shard that
+was not the longest buys runner-seconds and no wall at all. #2172's remaining
+three Class A files should be judged against the wall, not against their own
+`tests` figure.
+
+### Where the floor is now
+
+`gate-checks` ran a median of **138 s** across the same ten runs (97–159 s). §L
+named it *"the next floor under the gate wall"* when arguing the fourth shard
+down; at 197 s the unit shards are still **59 s above it**, so that floor has not
+bound yet and the fourth shard's case is unchanged.
+
+### #2164's done-when, against the card's own words
+
+| the card asked for | answer |
+|---|---|
+| a measured decision on **growth** (the isolation port) | **REFUSED with its number** on PR #2175: `import` is 43% of worker-seconds and the port would take the three-shard wall 210 → 151 s, against the risk of a non-isolated suite passing for the *wrong* reason. Re-sized, not dismissed. |
+| a measured decision on **imbalance** (cost-weighted sharding) | **REFUSED on the prize**: perfect cost-weighting that no implementation can beat buys 28 s (9%) at two shards and 16 s at three, against the third shard's 89 s. |
+| the before/after **at job grain on an ordinary PR** | **this section** — 299 s → 197 s, n=9 and n=10, with the instrument's control taken first. |
