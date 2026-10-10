@@ -160,6 +160,16 @@ export default function CastingRoom() {
     load of this page (memory `hooks-below-early-return`).
   */
   const [savingPersonaField, setSavingPersonaField] = useState<CastPersonaFieldName | null>(null);
+  /*
+    WHETHER THE VOICE LINE'S BOX IS OPEN — #2139, and it is held HERE rather
+    than inside the line for one reason: the voice card's *Change* button sits
+    in the card's HEAD, which this file draws, and a line keeping its own open
+    state could never be opened from it. That is why *Change* shipped
+    `disabled` on the one card whose whole subject is editing.
+
+    Above every early return, for the same React #310 reason as the line above.
+  */
+  const [voiceEditing, setVoiceEditing] = useState(false);
   /** A package or hero image opened in the viewer. */
   const [viewingImage, setViewingImage] = useState<{ url: string; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1090,18 +1100,44 @@ export default function CastingRoom() {
                           card's does — one placement for one idea. */}
                       <CastVoiceBadge voice={data.persona?.voice ?? null} />
                     </span>
-                    <button type="button" className="dpc-rcard__quiet" disabled>
-                      Change
-                    </button>
+                    {/*
+                      CHANGE OPENS THE VOICE LINE — #2139, and until this card
+                      it was `disabled` and did nothing.
+
+                      ⚠ **A dead button labelled *Change*, on the card this
+                      rung makes editable, is the defect rather than a
+                      placeholder.** The refine card's dead controls are honest
+                      because a sentence under them says *"Refining arrives
+                      soon"*; this one had no such line, so a customer who
+                      wanted to change the voice pressed the one control named
+                      for it and nothing happened.
+
+                      It is DRAWN only when there is a line to open and the box
+                      is shut — both halves out of his frames: the #2137 design
+                      shows *Change* on the closed voice card, and all three
+                      #2139 frames show it gone once the card is open. With no
+                      voice line the card draws no text either, so a *Change*
+                      there would open an empty box.
+                    */}
+                    {data.persona?.voice && !voiceEditing ? (
+                      <button
+                        type="button"
+                        className="dpc-rcard__quiet"
+                        onClick={() => setVoiceEditing(true)}
+                        disabled={savingPersonaField === "voice"}
+                      >
+                        Change
+                      </button>
+                    ) : null}
                   </div>
                   {/*
-                    HOW SHE SOUNDS - N2b (#1242), inside the EXISTING stub
+                    HOW THEY SOUND - N2b (#1242), inside the EXISTING stub
                     rather than replacing it. His brief: *"the existing Voice
                     card stub gains this text half."*
 
                     ⚠ **ABOVE THE PLAYER, AND THE RENDERED FRAME IS WHY.** It
                     was below, next to the foot, and the card then read: a
-                    sentence describing how she sounds, and underneath it the
+                    sentence describing how they sound, and underneath it the
                     words "No voice yet". Two true statements about two
                     different things — the text line exists, the AUDIO does not
                     — stacked into what a customer reads as a contradiction.
@@ -1113,6 +1149,12 @@ export default function CastingRoom() {
                     voice={data.persona?.voice ?? null}
                     onSave={savePersonaField}
                     savingLine={savingPersonaField}
+                    /* #2139's helper names the cast twice — "and Pigman's
+                       look", "how Pigman uses it" — and falls back to "their
+                       look" / "how they use it" when there is no name. */
+                    name={data.name ?? null}
+                    editing={voiceEditing}
+                    onEditingChange={setVoiceEditing}
                   />
                   <div className="dpc-voice__player">
                     <span className="dpc-voice__play">

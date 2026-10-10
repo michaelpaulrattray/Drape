@@ -2482,7 +2482,16 @@
 .dpc-rcard__label { font: 500 10.5px var(--font-mono); letter-spacing: 0.09em; color: var(--meta); }
 .dpc-rcard__hint { font: 400 11px var(--font-sans); color: var(--meta); }
 .dpc-rcard__body { font: 400 11.5px/1.5 var(--font-sans); color: var(--metaStrong); margin: 0; }
-.dpc-rcard__quiet { font: 400 11.5px var(--font-sans); color: var(--meta); background: none; border: none; padding: 0; cursor: not-allowed; }
+/* A card head's own quiet action. ⚠ It carried `cursor: not-allowed` until
+   #2139, because its one consumer — the voice card's *Change* — was `disabled`
+   and the rule had been written for that single dead button rather than for
+   the idea. Change opens the voice line now, so the cursor is a pointer and
+   the refusal moves to `:disabled`, where it belongs and where it matches the
+   read view's own disabled dressing one block down. */
+.dpc-rcard__quiet { font: 400 11.5px var(--font-sans); color: var(--meta); background: none; border: none; padding: 0; cursor: pointer; }
+.dpc-rcard__quiet:hover { color: var(--ink); }
+.dpc-rcard__quiet:disabled { cursor: default; opacity: 0.55; }
+.dpc-rcard__quiet:disabled:hover { color: var(--meta); }
 
 /* ---- the ROOM's refine card: input shell + button + chips ----
 
