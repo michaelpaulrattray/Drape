@@ -902,7 +902,7 @@
       "castingV2.roster",
       "castingV2.selectVariant",
       "castingV2.sign",
-      "castingV2.translatePersonaLine",
+      "castingV2.translateOwnWords",
       "castingV2.undo",
       "castingV2.variants"
     ],
@@ -1797,7 +1797,7 @@
           "server/castingV2/castPersonaTranslate.ts"
         ],
         "procedures": [
-          "castingV2.translatePersonaLine"
+          "castingV2.translateOwnWords"
         ],
         "summary": "#2197 (the Personality card) and #2205 (the Voice card), one road for both: the customer types one sentence about their cast the way they would say it to a friend, and one press returns the line the card would store — his craft note, 'the translation from feeling-words to camera-words is the engine's job, never the customer's'. ONE house-paid text call per press under its own census word `persona.translate`, text only, on the persona reader's model (`castPersonaModel`), with the Sign's own craft blocks (`castPersonaCraftRules`) rather than a second copy. It WRITES NOTHING: Keep this is `castingV2.editCastPersonaField` carrying `ownWords`, which stores the line and the sentence in one owner-scoped statement (`personalityOwnWords` / `voiceOwnWords`, migration 0079). Free to the customer; rewording is bounded by `RATE_LIMITS.castPersonaTranslate`, sixty presses an hour per account.",
         "doors": [],

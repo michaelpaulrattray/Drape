@@ -89,7 +89,7 @@ export type CastPersonaTranslation =
   | { kind: "nothing" };
 
 /** The cap the stored line is held to — the customer's own edit cap. */
-export function castPersonaLineCap(line: CastPersonaField): number {
+export function castPersonaCapFor(line: CastPersonaField): number {
   return line === "voice" ? CAST_VOICE_MAX_LENGTH : CAST_PERSONALITY_MAX_LENGTH;
 }
 
@@ -209,7 +209,7 @@ export function parseCastPersonaTranslation(raw: string, line: CastPersonaField)
     log.warn({ line }, "[castPersonaTranslate] the reply did not carry a line — nothing returned");
     return null;
   }
-  const fitted = fitToCap(read.data.line.trim(), castPersonaLineCap(line));
+  const fitted = fitToCap(read.data.line.trim(), castPersonaCapFor(line));
   return fitted ? fitted : null;
 }
 

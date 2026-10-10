@@ -7991,9 +7991,9 @@
       "file": "server/routes/castingV2.ts"
     },
     {
-      "id": "route:castingV2.translatePersonaLine",
+      "id": "route:castingV2.translateOwnWords",
       "namespace": "castingV2",
-      "name": "translatePersonaLine",
+      "name": "translateOwnWords",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",

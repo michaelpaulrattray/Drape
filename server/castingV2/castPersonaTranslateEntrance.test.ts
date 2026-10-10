@@ -1,5 +1,5 @@
 /**
- * "SAY IT YOUR WAY" AT THE ENTRANCE — `castingV2.translatePersonaLine` and
+ * "SAY IT YOUR WAY" AT THE ENTRANCE — `castingV2.translateOwnWords` and
  * Keep this (`editCastPersonaField` carrying `ownWords`), driven through the
  * REAL router (#2197 / #2205).
  *
@@ -135,7 +135,7 @@ afterEach(() => {
 describe("a customer says it their way", () => {
   it("gets one line back, from one call, and nothing is written", async () => {
     const { userId, trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "personality", ownWords: `  ${BOUNCER}\n`,
     })).resolves.toEqual({
       kind: "line",
@@ -158,7 +158,7 @@ describe("a customer says it their way", () => {
   it("says nothing — never an error — when the call comes back with no usable line", async () => {
     reply.text = "not json at all";
     const { trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "voice", ownWords: "Sounds like a tired blues singer.",
     })).resolves.toEqual({ kind: "nothing", line: "voice" });
   });
@@ -166,7 +166,7 @@ describe("a customer says it their way", () => {
   it("says nothing, and asks nothing, on a deployment with no text credential", async () => {
     translator.engine = null;
     const { trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "voice", ownWords: "Sounds like a tired blues singer.",
     })).resolves.toEqual({ kind: "nothing", line: "voice" });
     expect(requests).toHaveLength(0);
@@ -179,7 +179,7 @@ describe("a Cast that is not theirs spends nothing", () => {
   it("answers NOT_FOUND before the engine is asked", async () => {
     resolved.model = null;
     const { trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "personality", ownWords: BOUNCER,
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(requests).toHaveLength(0);
@@ -196,13 +196,13 @@ describe("the input is refused before a call is paid for", () => {
     ["a line that is not one of the two", { castId: CAST_ID, line: "mood", ownWords: "Low." }],
   ])("%s", async (_label, input) => {
     const { trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine(input as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(trpc.castingV2.translateOwnWords(input as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(requests).toHaveLength(0);
   });
 
   it(`accepts a sentence of exactly ${CAST_PERSONA_OWN_WORDS_MAX_LENGTH}, so the cap is the cap`, async () => {
     const { trpc } = caller();
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "voice", ownWords: "x".repeat(CAST_PERSONA_OWN_WORDS_MAX_LENGTH),
     })).resolves.toMatchObject({ kind: "line" });
   });
@@ -216,13 +216,13 @@ describe("rewording is free, and the house's spend is bounded per account", () =
     const allowed = RATE_LIMITS.castPersonaTranslate.maxRequests;
     expect(RATE_LIMITS.castPersonaTranslate.windowMs).toBe(60 * 60 * 1000);
     for (let press = 0; press < allowed; press += 1) {
-      await trpc.castingV2.translatePersonaLine({
+      await trpc.castingV2.translateOwnWords({
         castId: CAST_ID, line: press % 2 ? "voice" : "personality", ownWords: `Reword number ${press}.`,
       });
     }
     /* POSITIVE CONTROL: every one of them was really paid for. */
     expect(requests).toHaveLength(allowed);
-    await expect(trpc.castingV2.translatePersonaLine({
+    await expect(trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "voice", ownWords: "One more.",
     })).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(requests).toHaveLength(allowed);
@@ -231,10 +231,10 @@ describe("rewording is free, and the house's spend is bounded per account", () =
   it("another account's presses do not spend this one's allowance", async () => {
     const first = caller();
     for (let press = 0; press < RATE_LIMITS.castPersonaTranslate.maxRequests; press += 1) {
-      await first.trpc.castingV2.translatePersonaLine({ castId: CAST_ID, line: "voice", ownWords: "Low." });
+      await first.trpc.castingV2.translateOwnWords({ castId: CAST_ID, line: "voice", ownWords: "Low." });
     }
     const second = caller();
-    await expect(second.trpc.castingV2.translatePersonaLine({
+    await expect(second.trpc.castingV2.translateOwnWords({
       castId: CAST_ID, line: "voice", ownWords: "Low.",
     })).resolves.toMatchObject({ kind: "line" });
   });

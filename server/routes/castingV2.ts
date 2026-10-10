@@ -2070,7 +2070,7 @@ export const castingV2Router = router({
    * anybody asked for; if it becomes one it is a door of its own.
    *
    * ⚠ **`ownWords` IS "SAY IT YOUR WAY"'s KEEP THIS (#2197 / #2205).** The
-   * translation (`translatePersonaLine` below) writes nothing; Keep this is
+   * translation (`translateOwnWords` below) writes nothing; Keep this is
    * this same edit carrying the customer's own sentence beside the line, so
    * the line and the sentence it came from land in ONE owner-scoped statement
    * and can never disagree about which keep they belong to. Optional, so the
@@ -2168,7 +2168,7 @@ export const castingV2Router = router({
    * An explicit projection (invariant 8): the line kind and the text, and no
    * model, no latency, no provider prose.
    */
-  translatePersonaLine: protectedProcedure
+  translateOwnWords: protectedProcedure
     .input(z.object({
       castId: z.string().min(1).max(32),
       line: z.enum(CAST_PERSONA_FIELDS),

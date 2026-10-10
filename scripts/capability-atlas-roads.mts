@@ -348,7 +348,7 @@ export const ROADS: readonly Road[] = [
     id: "persona-say-it-your-way",
     title: "Say it your way — the customer's own sentence, turned into a cast's personality or voice line",
     entrances: ["server/routes/castingV2.ts", "server/castingV2/castPersonaTranslate.ts"],
-    procedures: ["castingV2.translatePersonaLine"],
+    procedures: ["castingV2.translateOwnWords"],
     summary:
       "#2197 (the Personality card) and #2205 (the Voice card), one road for both: the customer types one sentence "
       + "about their cast the way they would say it to a friend, and one press returns the line the card would store "

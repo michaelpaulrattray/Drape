@@ -136,7 +136,7 @@ export const CAST_VOICE_MAX_LENGTH = 320;
    a bound against a paste, never a style rule, so a customer who says two
    sentences instead of one is not refused for it. It bounds the house-paid
    call's input as well -- this is the only customer text that rides the
-   translation. Read by `castingV2.translatePersonaLine` and
+   translation. Read by `castingV2.translateOwnWords` and
    `castingV2.editCastPersonaField`'s `ownWords`. */
 export const CAST_PERSONA_OWN_WORDS_MAX_LENGTH = 400;
 

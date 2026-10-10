@@ -200,7 +200,7 @@ _Called as:_ `castingV2.reimagine`
 
 _Entrances:_ `server/routes/castingV2.ts` · `server/castingV2/castPersonaTranslate.ts`  ·  _Flags:_ `CASTING_V2_SCOPE`
 
-_Called as:_ `castingV2.translatePersonaLine`
+_Called as:_ `castingV2.translateOwnWords`
 
 > THIS ROAD DECLARES NO DOOR, on re-imagine's own argument. Outside casting it is `requireCastingV2`'s refusal; another account's Cast is `NOT_FOUND` before the engine is asked; the ceiling is `RATE_LIMITS.castPersonaTranslate` (`server/security/rateLimit.ts`); and every other outcome is the free answer `{ kind: "nothing" }` — no text engine configured, the call failed or came back cut off, or the line could not be fitted to its cap at a sentence end (`translateCastPersonaOwnWords`, `server/castingV2/castPersonaTranslate.ts`). No corpus row can reach it: the corpus drives `refineCandidate` only.
 
@@ -265,7 +265,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.roster` | life-of-a-cast |
 | `castingV2.selectVariant` | life-of-a-cast |
 | `castingV2.sign` | sign-views |
-| `castingV2.translatePersonaLine` | persona-say-it-your-way |
+| `castingV2.translateOwnWords` | persona-say-it-your-way |
 | `castingV2.undo` | life-of-a-cast |
 | `castingV2.variants` | life-of-a-cast |
 
