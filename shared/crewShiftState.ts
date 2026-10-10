@@ -15,6 +15,8 @@
  * anybody writing anything.
  */
 
+import { crewPipelineRowIsDone } from "./crewPipelineStatus";
+
 /**
  * The states a run can be in, all derived from two timestamps.
  *
@@ -1243,6 +1245,76 @@ export type PipelineRowPlan<T extends PlannablePipelineRow = PlannablePipelineRo
   /** `gh` could not answer; never read as "still fine" (working law 2). */
   unreadable: T[];
 };
+
+/**
+ * ⚠ **A LIVE PIPELINE ROW WITH NO PULL REQUEST, WHOSE CARD HAS CLOSED (#2165).**
+ *
+ * `planPipelineRowStates` opens with `if (typeof row.prNumber !== "number")
+ * continue;` — so **a row that names no PR is invisible to all four of its
+ * verdicts by construction.** It cannot be promoted, cannot be called stuck,
+ * cannot be called closed-unmerged, and cannot even be called unreadable. It
+ * says whatever it was written saying, for ever.
+ *
+ * **The specimen is live as this is written**: `dead-engine-record-1785` has
+ * said `in-review` since its card closed on 2026-10-03 (his word on #1785:
+ * *"1758) seal."*), with `prNumber: null`, and five shifts' worth of sweeps
+ * have had no rule that could see it. #2165 was filed about a DIFFERENT row —
+ * `sign-flat-price-1968`, which had a PR number, was repaired by the reader
+ * above, and cleared itself at edition 668 — so this is the half of that card's
+ * class that genuinely cannot self-heal.
+ *
+ * ⚠ **IT REPORTS AND NEVER REPAIRS, which is this reader's whole posture for a
+ * judgement.** A card closes for reasons other than its work shipping —
+ * refused, superseded, folded into another — so "the card is closed" does not
+ * mechanically mean "write `merged`". What the row should say is a judgement
+ * about work, and a status nobody meant is worse than a stale one because the
+ * next reader believes it.
+ */
+export type PipelineRowWithoutPullRequest<T extends PlannablePipelineRow = PlannablePipelineRow> = T & {
+  /** The cards its title names — every one of them closed, or this is not a finding. */
+  readonly cards: readonly number[];
+};
+
+/**
+ * Every live pipeline row that names no pull request and whose cards have all
+ * closed.
+ *
+ * ⚠ **`isOpen` ANSWERS THREE STATES AND THE THIRD ONE IS THE GUARD.** The
+ * caller knows which cards are open from a `gh issue list` it already made, and
+ * that list is capped — so a card missing from it is *either* closed *or* past
+ * the cap, and those are opposite answers. `null` means "cannot tell", and a
+ * row holding any card it cannot tell about is left alone. Without it, a queue
+ * that grew past the limit would start reporting live cards as closed, which is
+ * the finding-shaped lie this repository has paid for before.
+ *
+ * ⚠ **A ROW WHOSE TITLE NAMES NO CARD IS NOT A FINDING EITHER.** There is then
+ * nothing to judge it against, and inventing one from its `id` — which happens
+ * to end in a number — would read a slug as evidence.
+ */
+export function planPipelineRowsWithoutPullRequests<T extends PlannablePipelineRow & { title?: string }>(
+  rows: readonly T[],
+  cardsIn: (title: string) => number[],
+  isOpen: (card: number) => boolean | null,
+): ReadonlyArray<PipelineRowWithoutPullRequest<T>> {
+  const found: PipelineRowWithoutPullRequest<T>[] = [];
+  for (const row of rows) {
+    /* The done test is the ONE declaration of it (law 4). This module held no
+       imports before #2165 and its neighbour above inlines the literal; a
+       second spelling of *done* is exactly the drift that would outlive
+       anyone noticing, so the import is worth the first edge. */
+    if (crewPipelineRowIsDone(row.status)) continue;
+    /* The population this reader exists for: exactly the rows its neighbour
+       skips on its first statement. */
+    if (typeof row.prNumber === "number") continue;
+    const cards = cardsIn(typeof row.title === "string" ? row.title : "");
+    if (cards.length === 0) continue;
+    /* EVERY card closed, not any: a row naming a closed card and a live one is
+       still describing live work. */
+    if (cards.some((card) => isOpen(card) !== false)) continue;
+    found.push({ ...row, cards });
+  }
+  return found;
+}
 
 /**
  * Sort every live pipeline row by what its pull request actually is.

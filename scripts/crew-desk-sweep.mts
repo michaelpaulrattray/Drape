@@ -124,7 +124,9 @@ import {
   type PlannablePipelineRow,
   PR_CONFLICT_NOTE,
   planPipelineRowStates,
+  planPipelineRowsWithoutPullRequests,
 } from "../shared/crewShiftState.js";
+import { cardNumbersIn } from "../shared/crewQueuePossiblyDone.js";
 
 const BRIEFING = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -641,6 +643,45 @@ for (const item of pipelinePlan.unreadable) {
   skipped.push(`pipeline ${item.id}: PR ${item.prNumber} could not be read — left ${item.status}.`);
 }
 
+/*
+  ⚠ **AND THE ROWS THAT READER SKIPS ON ITS FIRST STATEMENT (#2165).**
+
+  `planPipelineRowStates` opens with `if (typeof row.prNumber !== "number")
+  continue;`, so a live row naming no pull request is invisible to all four of
+  its verdicts — it cannot be promoted, called stuck, called closed-unmerged, or
+  even called unreadable. It says whatever it was written saying, for ever.
+
+  ⚠ **IT COSTS NO NEW `gh` CALL.** Whether a card is open is already in
+  `allOpen`, read once at the top for the whole run. What that list cannot say
+  is whether a MISSING card is closed or merely past `OPEN_QUEUE_LIMIT`, so the
+  reader is handed a three-state answer and a row it cannot judge is left alone
+  — the same guard the ladder pass makes one block up, for the same reason.
+*/
+const openCardNumbers = allOpen === null
+  ? null
+  : new Set(allOpen.map((row) => Number(row?.number)));
+const queueIsAFloor = allOpen !== null && allOpen.length >= OPEN_QUEUE_LIMIT;
+const pipelineNoPr = planPipelineRowsWithoutPullRequests(
+  (briefing.pipeline ?? []) as (Json & PlannablePipelineRow & { title?: string })[],
+  (title) => cardNumbersIn(title),
+  (card) => {
+    /* ⚠ `null` IS THE WHOLE GUARD. A missing card is closed only if the list it
+       is missing from was a LIST; at the cap it is a floor, and reporting a
+       live card as closed is the finding-shaped lie this sweep exists to
+       prevent. */
+    if (openCardNumbers === null || queueIsAFloor) return null;
+    return openCardNumbers.has(card);
+  },
+);
+if (allOpen === null) {
+  skipped.push("PIPELINE: the open queue could not be read, so no PR-less row was judged against its card.");
+} else if (queueIsAFloor) {
+  skipped.push(
+    `PIPELINE: ${OPEN_QUEUE_LIMIT} rows came back, which is the limit — a PR-less row's card `
+    + "cannot be called closed off a floor.",
+  );
+}
+
 /* ─── 3. a finished card is done, from the issue's own state ─── */
 
 const resolution = planCardResolutions(briefing as ResolvableBriefing, issueState);
@@ -967,6 +1008,41 @@ if (pipelinePlan.closedUnmerged.length > 0) {
   for (const item of pipelinePlan.closedUnmerged) {
     const closed = item.closedAt === null ? "close date unread" : `closed ${item.closedAt}`;
     console.log(`  ! ${item.id} — PR #${item.prNumber} ${closed}, row still says \`${item.status}\``);
+  }
+}
+
+if (pipelineNoPr.length > 0) {
+  /*
+    ⚠ **THE ROWS THE READER ABOVE CANNOT SEE AT ALL (#2165).**
+
+    Its first statement is `if (typeof row.prNumber !== "number") continue;`, so
+    a live row naming no pull request is outside every one of its four verdicts
+    — not promoted, not stuck, not closed-unmerged, not even unreadable. Until
+    this block there was no rule anywhere that could notice one, and the
+    specimen had been saying `in-review` since its card closed a week earlier.
+
+    ⚠ **REPORTED, NEVER REWRITTEN, on this pass's own standing posture.** A card
+    closes for reasons other than its work shipping — refused, superseded,
+    folded into another card — so *the card is closed* does not mechanically
+    mean *write `merged`*. What the row should say is a judgement about work,
+    and a status nobody meant is worse than a stale one because the next reader
+    believes it.
+
+    ⚠ **AND THE REPAIR IS ONE A SHIFT CAN ACTUALLY MAKE, which the other blocks
+    here cannot always say.** It is an edit to an edition a shift is writing
+    anyway, so it costs nothing extra and it does not ask for a deploy of its
+    own — which is the loop #2165 was filed about.
+  */
+  console.log("");
+  console.log(`⚠ ${pipelineNoPr.length} pipeline row(s) name NO pull request and every card they name has CLOSED.`);
+  console.log("  The reader above skips these by construction — a row with no PR number is outside");
+  console.log("  all four of its verdicts, so one can sit saying `in-review` for ever (#2165).");
+  console.log("  Nothing is rewritten here: a card closes for reasons other than its work shipping,");
+  console.log("  so what the row should say is a judgement. Fix it in the next edition you write.");
+  for (const item of pipelineNoPr) {
+    console.log(
+      `  ! ${item.id} — says \`${item.status}\`, names #${item.cards.join(", #")} (closed), no PR`,
+    );
   }
 }
 
