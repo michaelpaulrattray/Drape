@@ -17,15 +17,27 @@
  * roll images    ROLL_IMAGE_CONCURRENCY    8   paid      a sheet's eight faces
  * sign views     SIGN_VIEW_CONCURRENCY     3   paid      a package's five views
  * refine edits   REFINE_EDIT_CONCURRENCY   3   paid      one paid edit at a time-ish
- * region reads   FAL_CONCURRENCY           5   courtesy  scans, harvests, guards
+ * region reads   FAL_CONCURRENCY           6   courtesy  scans, harvests, guards
  * ```
+ *
+ * ⚠ **20 OF 20 AGAIN SINCE #2206 (2026-10-10) — THE UNOWNED SLOT IS CLOSED BY
+ * HIS WORD.** Region reads go back from 5 to 6. His answer, verbatim (terminal,
+ * 2026-10-10): *"yes to turn the sp[eed up."* — to the question whether the
+ * slot the plate mint's retirement left unowned should go back to face scans.
+ * The measurement it rests on is #2189 (PR #2204): the real scan code driven
+ * against a fake network, nothing spent — for 21–27-read scans the pool at 5
+ * added a median **5.9 s** with a warm cutout and **6.7 s** with a cold one
+ * (range −1 to +14 s), and the peak in-flight count read exactly 5 and 6, so the
+ * setting really reached the queue. That is the "its own card with its own
+ * measurement" the paragraphs below asked for, and they are kept as the record
+ * of why the slot stood empty for sixteen days.
  *
  * ⚠ **THE PLATE MINT'S ROW IS GONE — #1158 slice 4d, 2026-09-24.** His ruling
  * on card `switch-10-ink-studio` — *"It retires with N2"* — retired the ink
  * studio, and `inkPlateEngine.ts`, the only caller of
  * `falAllowanceOf("INK_PLATE_CONCURRENCY")`, went with it in slice 2. The row
- * outlived its caller by two slices on purpose and is now removed: the sum is
- * **19 of 20**.
+ * outlived its caller by two slices on purpose and is now removed: the sum
+ * WAS **19 of 20** (until #2206 handed the slot back — see the table above).
  *
  * ⚠ **AND THE REASON IT WAITED WAS WRONG — READ THIS BEFORE REPEATING IT.**
  * Slice 2's docblock, this file's own paragraph, the census § 8 and the card
@@ -43,14 +55,15 @@
  * under it was not. **A number in a log agrees with "set to 1" and with "unset,
  * defaulting to 1" equally, and only one of those two was ever checked.**
  *
- * ⚠ **THE FREED SLOT IS NOT GIVEN BACK TO THE COURTESY POOL.** Region reads
+ * ⚠ **THE FREED SLOT WAS NOT GIVEN BACK TO THE COURTESY POOL — UNTIL HIS WORD
+ * ON #2206, which is the separate card this paragraph asked for.** Region reads
  * went 6 → 5 to pay for the plate mint (see the re-cut below); handing the 1
  * back would raise a live path's concurrency, which is a capability change
  * wearing a cleanup's clothes — his own rule from the switch sitting: *"Folding
  * a new capability into a retirement is how a half-built feature ships under a
  * cleanup's name."* If the pool should grow, that is its own card. **So the
- * account keeps one slot no path may spend, deliberately** — see the invariant
- * below, where that used to be the thing this table refused.
+ * account kept one slot no path could spend, deliberately, from 2026-09-24 to
+ * 2026-10-10** — see the invariant below.
  *
  * `signEngine` already reasoned about it in prose — *"one account-level fal
  * concurrency ceiling that the sheet is also drawing on"* — and nothing
@@ -81,8 +94,10 @@
  * The sum may EQUAL the ceiling. The provider's limit is inclusive — the
  * twenty-first request is the one refused — so twenty in flight is legal.
  *
- * ⚠ **AND THE DEFAULTS NO LONGER SPEND THE WHOLE ALLOWANCE — 19 of 20 since
- * #1158 slice 4d, and that is a RULING rather than an oversight.** This
+ * ⚠ **THE DEFAULTS SPEND THE WHOLE ALLOWANCE AGAIN — 20 of 20 since #2206
+ * (2026-10-10), by his word.** The history, kept because the gap was a ruling
+ * and so was its closing: from #1158 slice 4d the defaults stood at **19 of
+ * 20**, and that was a RULING rather than an oversight. This
  * sentence used to end *"the defaults deliberately spend the whole allowance
  * rather than leaving an unowned remainder that no path may use"*, which was
  * true of every reading until the plate mint retired. The remainder now exists
@@ -91,7 +106,8 @@
  * the gap and "fixes" it by bumping `FAL_CONCURRENCY` back to 6 is making a
  * capability change, not tidying arithmetic** — `falBudget.test.ts` pins the
  * 5 by name so that edit cannot land quietly, and growing the pool is its own
- * card with its own measurement.
+ * card with its own measurement. **#2206 is that card**: `falBudget.test.ts` now
+ * pins the 6 by name, and still refuses a sum over the ceiling.
  */
 
 /*
@@ -100,7 +116,8 @@
  * ⚠ **KEPT AS ORIGIN — THE FIFTH PATH RETIRED 2026-09-24 (#1158 slice 4d) AND
  * ITS ROW IS NO LONGER IN THE TABLE BELOW.** This section is why region reads
  * stand at 5 rather than 6, which is the one fact about it that still governs
- * live behaviour; everything else here is the history of a road that is gone.
+ * live behaviour — or was, until #2206 put region reads back to 6; everything
+ * else here is the history of a road that is gone.
  *
  * The plate mint is a fal call — one per uploaded design, on the ruled engine
  * (`INK_PLATE_ENGINE`, Nano Banana Pro). The four paths above spent 20 of 20
@@ -128,7 +145,9 @@
  *    the case the sentence above said to re-cut at. It is NOT re-cut here: the
  *    slot this paid for is the unowned one above, and handing it back to region
  *    reads is growing a live pool — a capability change with its own card and
- *    its own measurement, never a comment fix.
+ *    its own measurement, never a comment fix. **That card is #2206
+ *    (2026-10-10)**: the pool is 6 again by his word, so most real scans get
+ *    their wave back.
  *
  * ONE slot rather than two, deliberately: a mint is never on a paid render's
  * critical path, so two simultaneous uploads queueing behind each other is the
@@ -180,10 +199,15 @@ export const FAL_ALLOWANCES: readonly FalAllowance[] = [
   { name: "roll images", env: "ROLL_IMAGE_CONCURRENCY", fallback: 8, kind: "paid" },
   { name: "sign views", env: "SIGN_VIEW_CONCURRENCY", fallback: 3, kind: "paid" },
   { name: "refine edits", env: "REFINE_EDIT_CONCURRENCY", fallback: 3, kind: "paid" },
-  /* ⚠ The 5 is load-bearing and is NOT a spare: it was 6 until the plate mint
-     took one, and the plate mint's retirement (#1158 slice 4d) deliberately did
-     not hand it back. Raising it is a capability change with its own card. */
-  { name: "region reads", env: "FAL_CONCURRENCY", fallback: 5, kind: "courtesy" },
+  /* ⚠ The 6 is his word, not tidying (#2206, 2026-10-10: "yes to turn the
+     sp[eed up."). It was 6, then 5 while the plate mint held one slot, stayed 5
+     after the mint retired (#1158 slice 4d deliberately did not hand it back),
+     and went back to 6 on its own card with its own measurement (#2189: ~6 s
+     off a typical face scan). With it the four paths sum to 20 of 20 — the
+     ceiling exactly, which the provider's inclusive limit allows. Any further
+     growth here needs a slot taken from somewhere else, and the boot check
+     refuses one that is not. */
+  { name: "region reads", env: "FAL_CONCURRENCY", fallback: 6, kind: "courtesy" },
 ];
 
 /** One path's allowance, read the same way by the boot check and by the queue. */

@@ -60,7 +60,9 @@ describe("the arithmetic", () => {
       defaults and assert 20, which proved the inclusive limit only for as long
       as the declared paths happened to add up to exactly the ceiling. The plate
       mint's retirement took the sum to 19 and the arm would have gone red
-      having lost its SUBJECT rather than found a defect. So the equality is
+      having lost its SUBJECT rather than found a defect. (Since #2206 the
+      defaults sum to 20 again and the headroom below is 0 — the arm still
+      configures rather than inherits, so the next re-cut cannot strand it.) So the equality is
       now CONFIGURED — one path raised until the sum meets the ceiling — and the
       property survives any future re-cut of who owns which slot.
     */
@@ -75,40 +77,60 @@ describe("the arithmetic", () => {
     expect(() => assertFalBudget()).not.toThrow();
   });
 
-  it("leaves ONE slot unowned since the plate mint retired, and the courtesy pool did not take it back", () => {
+  it("spends the whole twenty again since #2206 — region reads are back at 6 by his word", () => {
     /*
-      THE RE-CUT, PINNED (2026-08-18) AND THEN HALF-UNDONE (2026-09-24, #1158
-      slice 4d). The fifth path could not be declared out of thin air — the four
-      before it spent 20 of 20 — so the courtesy pool went 6 to 5 and not one
-      paid path moved. When the plate mint retired, the 1 it had been given was
-      NOT handed back: that would raise a live path's concurrency, which is his
-      own rule's "capability change wearing a cleanup's clothes".
+      THE RE-CUT, PINNED (2026-08-18), HALF-UNDONE (2026-09-24, #1158 slice 4d)
+      AND CLOSED (2026-10-10, #2206). The fifth path could not be declared out of
+      thin air — the four before it spent 20 of 20 — so the courtesy pool went 6
+      to 5 and not one paid path moved. When the plate mint retired, the 1 it had
+      been given was NOT handed back inside the retirement, because that would
+      raise a live path's concurrency: his own rule's "capability change wearing
+      a cleanup's clothes". So the account ran at 19 of 20 on purpose until the
+      separate card the rule asked for.
 
-      ⚠ So the account now runs at 19 of 20 ON PURPOSE, and the two assertions
-      that matter are the LOW one (region reads are still 5 — the edit this arm
-      exists to catch is a later reader "closing the gap" by putting it back to
-      6) and the ABSENCE one below (the row is really gone, not merely zeroed).
-
-      A future path that quietly takes its slot from `roll images` would still
-      satisfy the sum check above and would still boot. These are the assertions
-      that would redden instead.
+      #2206 is that card. His word, verbatim (terminal, 2026-10-10): "yes to
+      turn the sp[eed up." — resting on #2189's measurement that the pool at 5
+      added a median ~6 s to a real 21–27-read face scan. So the defaults sum to
+      20 of 20 again, and every per-path default is pinned BY NAME: a future
+      path that quietly takes its slot from `roll images` or `region reads` would
+      still satisfy the sum check and still boot, and these are the assertions
+      that redden instead.
     */
     const budget = assertFalBudget();
-    expect(budget.total).toBe(19);
+    expect(budget.total).toBe(20);
     expect(budget.ceiling).toBe(20);
+    expect(budget.line).toBe("roll images 8 + sign views 3 + refine edits 3 + region reads 6 = 20 of 20");
     expect(falAllowanceOf("ROLL_IMAGE_CONCURRENCY")).toBe(8);
     expect(falAllowanceOf("SIGN_VIEW_CONCURRENCY")).toBe(3);
     expect(falAllowanceOf("REFINE_EDIT_CONCURRENCY")).toBe(3);
     expect(
       falAllowanceOf("FAL_CONCURRENCY"),
-      "region reads went back up — that is a capability change and wants its own card, not a cleanup",
-    ).toBe(5);
+      "region reads moved off 6 — his word on #2206 set it; any change is a capability change with its own card",
+    ).toBe(6);
 
     /* ⚠ The positive control on the removal itself: an undeclared allowance
        THROWS, so this cannot pass because the name merely reads as absent from
        a list nobody consults. */
     expect(FAL_ALLOWANCES.map((one) => one.env)).not.toContain("INK_PLATE_CONCURRENCY");
     expect(() => falAllowanceOf("INK_PLATE_CONCURRENCY")).toThrow(/not a declared fal allowance/);
+  });
+
+  it("⚠ with no headroom left, ONE more slot on ANY path is refused at boot", () => {
+    /*
+      The guard that still refuses a sum over twenty, driven from the new
+      defaults rather than from a number chosen to be far over. At 20 of 20
+      there is no spare: a single extra slot on any one of the four paths is the
+      twenty-first request, and the boot check must refuse it — each path tried
+      in turn, so the refusal cannot be an accident of which variable was
+      bumped. The negative control is the defaults themselves, which boot.
+    */
+    expect(() => assertFalBudget()).not.toThrow();
+    for (const allowance of FAL_ALLOWANCES) {
+      process.env[allowance.env] = String(allowance.fallback + 1);
+      expect(() => assertFalBudget(), `${allowance.env} + 1 should be over the ceiling`)
+        .toThrow(/= 21 of 20 — over the account's ceiling/);
+      delete process.env[allowance.env];
+    }
   });
 
   it("reads every allowance from the table, and refuses one that is not in it", () => {

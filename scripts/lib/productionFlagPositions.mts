@@ -635,9 +635,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: UNSET,
     why:
       "the segmenter's courtesy share, read by assertFalBudget() at boot. Unset on the "
-      + "service (read 2026-09-26) — the declared 5, which is load-bearing rather than "
-      + "spare: it was 6 until the plate mint took one and #1158 slice 4d deliberately "
-      + "did not hand it back",
+      + "service (read 2026-09-26) — the declared 6 since #2206 (his word 2026-10-10: "
+      + "\"yes to turn the sp[eed up.\"); it was 6, then 5 while the plate mint held a "
+      + "slot, stayed 5 after #1158 slice 4d, and went back to 6 on its own card",
   },
   FAL_ACCOUNT_CEILING: {
     position: UNSET,
