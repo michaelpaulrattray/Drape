@@ -3744,6 +3744,27 @@
   .dpc-face__working { animation: none; opacity: 0.8; }
 }
 
+/*
+  THE DAY'S READINGS ARE SPENT, AND THE PANEL SAYS SO (#2170, his ruling: *"Yes,
+  show the quiet line when someone hits the cap, instead of failing silently."*).
+
+  It sits exactly where the working line sits and reads at the same weight — the
+  two answer one question ("is anything more coming?") with opposite answers, so
+  a difference in size or colour between them would be the panel raising its
+  voice about the quieter of the two. It does NOT breathe: the working line
+  animates because something is happening, and animating a settled fact is the
+  surface pretending to be busy.
+
+  It draws from --onScrim rather than a fixed ink, so the line reads in both
+  themes the same way every other word in this panel does.
+*/
+.dpc-face__capped {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--onScrim) 48%, transparent);
+}
+
 .dpc-face__group { display: flex; flex-direction: column; gap: 2px; }
 
 /*

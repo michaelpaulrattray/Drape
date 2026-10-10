@@ -2390,7 +2390,17 @@ export const castingV2Router = router({
         /* `done` on the dark answer too, so the client's "is it still reading"
            question has one shape whatever the flags say — a field that exists
            on only one branch is read as `undefined` and polls forever. */
-        return { enabled: false as const, scanning: false, done: true, possessive: "their", groups: [] };
+        return {
+          enabled: false as const,
+          scanning: false,
+          done: true,
+          /* `capped` on the dark answer for the same reason `done` is: a field
+             that exists on only one branch is read as `undefined`, and the
+             panel's quiet line would then depend on which branch answered. */
+          capped: false,
+          possessive: "their",
+          groups: [],
+        };
       }
 
       const face = await readOwnedFaceForPanel(ctx.user.id, input);
@@ -2432,13 +2442,31 @@ export const castingV2Router = router({
         holds (in flight or settled) skips the cap and spends nothing. The
         in-hand test reads the same entry `scannedFace` answers from, so the two
         cannot disagree about what was already bought.
+
+        ⚠ AND THE CAP'S ANSWER IS THREE-STATE, BECAUSE THE PANEL SAYS SOMETHING
+        ABOUT ONE OF THEM (#2170, his ruling: *"Yes, show the quiet line when
+        someone hits the cap, instead of failing silently."*). `capped` travels
+        to the client ONLY for a real refusal — never for a database that could
+        not answer, and never for a face with no picture to read. Both of those
+        also buy no scan, and telling the customer they have looked at a lot of
+        faces today would be a sentence they cannot act on about something that
+        is not their doing.
       */
       const key = {
         userId: ctx.user.id,
         candidateId: face.candidateId,
         variantId: face.anchor?.id ?? null,
       };
-      if (imageKey !== null && (scanIsInHand(key) || await mayBuyFaceScan(ctx.user.id))) {
+      /*
+        Asked once and held, so the response can say WHY no reading is coming.
+        `null` means the cap was never consulted — no frame, or a reading
+        already in hand — which is neither allowed nor capped.
+      */
+      const inHand = imageKey !== null && scanIsInHand(key);
+      const verdict = imageKey !== null && !inHand
+        ? await mayBuyFaceScan(ctx.user.id)
+        : null;
+      if (imageKey !== null && (inHand || verdict === "allowed")) {
         /*
           A FAILED SCAN IS TODAY'S PANEL, not an error. The user asked to look
           at a face, not to buy a reading, so a segmenter that is down or a
@@ -2478,6 +2506,11 @@ export const castingV2Router = router({
         enabled: true as const,
         scanning: true,
         done,
+        /* THE ONE FACT THE QUIET LINE NEEDS, and nothing more: no number, no
+           ceiling, no rung. The panel turns this into one sentence; the
+           customer never learns which of two numbers it was or how close they
+           were to it (the disappearing-technology law, clause 6). */
+        capped: verdict === "capped",
         ...panelFor(
           face,
           scan,

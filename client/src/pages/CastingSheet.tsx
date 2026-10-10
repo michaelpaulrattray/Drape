@@ -3554,6 +3554,19 @@ export default function CastingSheet() {
               possessive={facePanelData?.possessive ?? "their"}
               working={faceScanWorking}
               /*
+                THE DAY'S READINGS ARE SPENT (#2170, his ruling).
+
+                Read off the scan's OWN answer rather than inferred from
+                `done` and empty rows: a failed scan and an unreachable
+                database both look identical from here, and neither is
+                something to say to a customer. `enabled` is checked first
+                because the dark answer carries the field too — it is false
+                there, and reading it without the narrowing would be a type
+                error rather than a wrong sentence, which is the cheaper
+                direction.
+              */
+              capped={Boolean(scannedFaceData?.capped)}
+              /*
                 EVERY ROW HERE IS ANOTHER VERSION'S ANSWER (fable-520 §1).
 
                 The bridge holds the previous version's panel while this one is

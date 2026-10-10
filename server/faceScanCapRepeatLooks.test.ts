@@ -31,11 +31,23 @@
  *                     panel asks it, spends ONE count — and at a cap the old
  *                     counting would have tripped, it is never refused.
  *   POSITIVE CONTROL  the 41st distinct face of a day is still refused at the
- *                     shipped default of 40, with no scan bought and its audit
- *                     row written.
+ *                     shipped free default of 40, with no scan bought and its
+ *                     audit row written.
  *
  * Without the positive arm the negative one passes against a resolver that
  * never asks the cap at all.
+ *
+ * # AND SINCE HIS RULING OF 2026-10-10 THERE ARE TWO CEILINGS, SO THERE ARE TWO
+ * BOUNDARIES
+ *
+ * Verbatim: *"Free accounts: keep the cap at 40 a day. Paid accounts: raise it
+ * to 100 a day, not 250."* The block at the foot of this file drives **both** —
+ * the 41st face of a free account and the 101st of a paid one — plus the two
+ * things a single-number suite could never see: that a paid account is NOT
+ * refused at 41, and that a plan bought or cancelled mid-day takes effect on
+ * the next look against the scans already counted. The plan read is faked at
+ * `getSubscriptionByUserId`, the same reader `billing.getStatus` uses, so what
+ * runs for real is the cap's own choice between the two numbers.
  */
 import sharp from "sharp";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -44,8 +56,9 @@ import { AUDIT_ACTIONS } from "../shared/auditActions";
 import { NUMERIC_ENV_VARS } from "./_core/env";
 import { utcDayOf } from "./castingV2/faceScanDailyCap";
 
-/** The shipped number, read from its declaration — never typed twice (law 4). */
-const SHIPPED_CAP = NUMERIC_ENV_VARS.FREE_SCAN_DAILY_CAP;
+/** The shipped pair, read from its declaration — never typed twice (law 4). */
+const FREE_CAP = NUMERIC_ENV_VARS.FREE_SCAN_DAILY_CAP;
+const PAID_CAP = NUMERIC_ENV_VARS.PAID_SCAN_DAILY_CAP;
 
 /* ---- ownership: one owned candidate per public id ---- */
 const candidateIdByPublicId = new Map<string, number>();
@@ -119,6 +132,31 @@ vi.mock("./castingV2/faceScan", async () => {
   return { ...real, scanFace: (...args: unknown[]) => scanFace(...args) };
 });
 
+/**
+ * THE ACCOUNT'S RUNG — faked at the reader the cap actually calls, which is the
+ * one `billing.getStatus` calls too (#2170).
+ *
+ * ⚠ **IT IS FAKED AT THE READER AND NOT AT THE CAP.** Mocking
+ * `scanCapForPlanTier` or `mayBuyFaceScan` would prove only that a number
+ * somebody handed the resolver is honoured; what needs driving is the cap's own
+ * choice between two numbers given a rung, and its own decision about when to
+ * ask for that rung at all. So `PLAN_TIERS`, the `price > 0` test and the
+ * `Math.min` short-circuit all run for real.
+ *
+ * `undefined` is the default on purpose: an account nobody set a plan for reads
+ * as `null` from this reader, which is exactly what production answers for an
+ * account with no credits row, and the cap must take it as free.
+ */
+const planTierByUser = new Map<number, string>();
+const getSubscriptionByUserId = vi.fn(async (userId: number) => {
+  const planTier = planTierByUser.get(userId);
+  return planTier === undefined ? null : { planTier, balance: 0 };
+});
+vi.mock("./db/billing", async () => {
+  const real = await vi.importActual<typeof import("./db/billing")>("./db/billing");
+  return { ...real, getSubscriptionByUserId: (userId: number) => getSubscriptionByUserId(userId) };
+});
+
 const logAuditEvent = vi.fn(async (..._args: unknown[]) => undefined);
 vi.mock("./auditLog", async () => {
   const real = await vi.importActual<typeof import("./auditLog")>("./auditLog");
@@ -174,7 +212,9 @@ beforeEach(() => {
   resetFaceScanCache();
   tally.clear();
   candidateIdByPublicId.clear();
+  planTierByUser.clear();
   delete process.env.FREE_SCAN_DAILY_CAP;
+  delete process.env.PAID_SCAN_DAILY_CAP;
   /* The kept table stays dark, so nothing here reads or writes a database. */
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
   /* A placeholder so the real `defaultRegionReader` builds a reader at all — the
@@ -231,51 +271,221 @@ describe("the daily face-scan cap counts distinct faces, not requests (#2170)", 
     still the real ones; what is faked is only how the day got full, which is
     the same edge this file already fakes everywhere else.
   */
-  it("⚠ POSITIVE CONTROL — at the shipped default, one face past the cap is refused", async () => {
+  it("⚠ POSITIVE CONTROL — at the shipped FREE default, the 41st face of a day is refused", async () => {
     const userId = (nextUser += 1);
     openTo(userId);
-    /* No FREE_SCAN_DAILY_CAP: the number under test is the shipped default,
-       DERIVED from its declaration rather than typed here (law 4). */
+    /* No FREE_SCAN_DAILY_CAP and no plan: the number under test is the shipped
+       free default, DERIVED from its declaration rather than typed (law 4). */
     scanFace.mockResolvedValue(CLEAN_SCAN);
-    tally.set(`${userId}:${utcDayOf(new Date())}`, SHIPPED_CAP - 1);
+    tally.set(`${userId}:${utcDayOf(new Date())}`, FREE_CAP - 1);
 
     /* The cap-th face of the day: counted to exactly the cap, and allowed. */
     const allowed = await caller(userId).faceScan({ candidateId: own(1_001), variantId: null });
     expect(scanFace, "the cap-th distinct face was refused").toHaveBeenCalledTimes(1);
-    expect(allowed).toMatchObject({ enabled: true });
+    expect(allowed).toMatchObject({ enabled: true, capped: false });
     expect(cappedRows(), "the cap-th face wrote a refusal row").toHaveLength(0);
 
     /* One past it. */
     const refused = await caller(userId).faceScan({ candidateId: own(1_002), variantId: null });
 
     expect(scanFace, "one face past the cap bought a scan").toHaveBeenCalledTimes(1);
-    /* Today's panel, exactly as before #2170 — no copy, no error. */
-    expect(refused).toMatchObject({ enabled: true, done: true });
+    /* Today's panel and no error — and now it SAYS so, which is his ruling of
+       2026-10-10: *"show the quiet line when someone hits the cap, instead of
+       failing silently."* */
+    expect(refused).toMatchObject({ enabled: true, done: true, capped: true });
     expect(cappedRows(), "the refusal wrote no audit row").toHaveLength(1);
     expect(cappedRows()[0]![0]).toMatchObject({
       userId,
-      metadata: expect.objectContaining({ cap: SHIPPED_CAP, scansToday: SHIPPED_CAP + 1 }),
+      metadata: expect.objectContaining({
+        cap: FREE_CAP,
+        scansToday: FREE_CAP + 1,
+        onFreeCeiling: true,
+      }),
     });
   }, 30_000);
 
   /*
-    ⚠ THE ARM THAT STOPS THE NUMBER DRIFTING BACK UNDER REAL USE (#2170).
+    ⚠ THE ARM THAT HOLDS THE SHIPPED NUMBERS TO **HIS** NUMBERS (#2170), AND IT
+    REPLACES ONE THAT ASSERTED THE OPPOSITE — which is worth keeping, because
+    the one it replaces was not a bad arm, it was a shift's judgement standing
+    in for his.
 
-    Every behavioural arm in this file passes at ANY cap — they set a small one
-    and count to it — so none of them could see the shipped number being too
-    low. That is exactly what happened: 40 shipped, three of the only ten days
-    of real scanning exceeded it, and the first real day of use was refused 15
-    times with this suite green.
+    It read `expect(SHIPPED_CAP).toBeGreaterThan(189)` — the measured busiest
+    real day — on the reasoning that every behavioural arm in this file passes
+    at ANY cap, so none of them could see the shipped number being too low. The
+    reasoning is right and the conclusion was not his: shown the same
+    measurement he answered *"Paid accounts: raise it to 100 a day, not 250.
+    That still covers almost all of your real busy days."*
 
-    The floor is the measured busiest day, read at every row of
+    ⚠ **SO 100 DELIBERATELY DOES NOT COVER THE 189 OF 22 SEPTEMBER, AND THIS ARM
+    SAYS SO RATHER THAN HIDING IT.** The days, read at every row of
     `casting_face_scans` on 2026-10-10 (371 rows, one account, ten days):
-    189 · 56 · 43 · 39 · 20 · 13 · 8 · 1 · 1 · 1. A cap at or below 189 would
-    have refused a real session. (The 20 is 8 October and is CENSORED — the cap
-    refused that day 15 times, so its true demand was higher.)
+    189 · 56 · 43 · 39 · 20 · 13 · 8 · 1 · 1 · 1 — so the paid ceiling clears
+    nine of the ten and the free one clears seven. (The 20 is 8 October and is
+    CENSORED: the cap refused that day 15 times, so its true demand was higher.)
+    A session past 100 distinct faces in a UTC day meets the quiet line, by his
+    decision.
+
+    What the arm protects is therefore the opposite of what its predecessor
+    protected: not a floor a shift may raise, but the exact pair he chose, so a
+    later shift cannot quietly move either number to make a measured day fit.
   */
-  it("⚠ the shipped cap sits above the busiest day any account has ever had", () => {
-    const BUSIEST_REAL_DAY = 189;
-    expect(SHIPPED_CAP).toBeGreaterThan(BUSIEST_REAL_DAY);
+  it("⚠ the shipped pair is HIS pair, and the trade against the busiest day is stated", () => {
+    expect(FREE_CAP).toBe(40);
+    expect(PAID_CAP).toBe(100);
+
+    /* The ten real days, so the arm carries the measurement it is a decision
+       about rather than a number with no provenance. */
+    const REAL_DAYS = [189, 56, 43, 39, 20, 13, 8, 1, 1, 1];
+    const BUSIEST_REAL_DAY = Math.max(...REAL_DAYS);
+    expect(BUSIEST_REAL_DAY).toBe(189);
+
+    /* His own words about his own number: *"almost all"*, not *"all"*. */
+    expect(PAID_CAP, "the paid ceiling was raised past the busiest measured day").toBeLessThan(
+      BUSIEST_REAL_DAY,
+    );
+    expect(REAL_DAYS.filter((day) => day <= PAID_CAP)).toHaveLength(9);
+    expect(REAL_DAYS.filter((day) => day <= FREE_CAP)).toHaveLength(7);
+  });
+
+  /*
+    ⚠ THE PAID CEILING, DRIVEN (#2170, his ruling) — four arms, because a single
+    "101st face refused" arm cannot tell a working raise from a cap that reads
+    the plan and then ignores it.
+  */
+  describe("the paid ceiling is a second number, chosen off the plan table", () => {
+    it("⚠ the 101st face of a PAID account's day is refused, and the panel says so", async () => {
+      const userId = (nextUser += 1);
+      openTo(userId);
+      /* A plan that costs money. The rung's name is incidental — what decides
+         is `PLAN_TIERS[rung].price > 0`, which runs for real here. */
+      planTierByUser.set(userId, "pro");
+      scanFace.mockResolvedValue(CLEAN_SCAN);
+      tally.set(`${userId}:${utcDayOf(new Date())}`, PAID_CAP - 1);
+
+      const allowed = await caller(userId).faceScan({ candidateId: own(2_001), variantId: null });
+      expect(allowed).toMatchObject({ enabled: true, capped: false });
+      expect(scanFace, "the cap-th face of a paid day was refused").toHaveBeenCalledTimes(1);
+
+      const refused = await caller(userId).faceScan({ candidateId: own(2_002), variantId: null });
+
+      expect(scanFace, "one face past the paid cap bought a scan").toHaveBeenCalledTimes(1);
+      expect(refused).toMatchObject({ enabled: true, done: true, capped: true });
+      expect(cappedRows()).toHaveLength(1);
+      expect(cappedRows()[0]![0]).toMatchObject({
+        userId,
+        /* The row names which of the two numbers decided — `cap` alone cannot,
+           because a deployment may set either variable. */
+        metadata: expect.objectContaining({
+          cap: PAID_CAP,
+          scansToday: PAID_CAP + 1,
+          onFreeCeiling: false,
+        }),
+      });
+    }, 30_000);
+
+    it("⚠ THE RAISE ACTUALLY RAISES — a paid account's 41st face is NOT refused", async () => {
+      /*
+        The arm that makes the one above mean something. Without it, a cap that
+        read the plan and then used the free number everywhere would pass the
+        101st-face arm too (101 is past 40 as well), and the whole of his ruling
+        would be inert with a green suite — which is the exact shape #2170 was
+        filed about one number ago.
+      */
+      const userId = (nextUser += 1);
+      openTo(userId);
+      planTierByUser.set(userId, "starter");
+      scanFace.mockResolvedValue(CLEAN_SCAN);
+      tally.set(`${userId}:${utcDayOf(new Date())}`, FREE_CAP);
+
+      const look = await caller(userId).faceScan({ candidateId: own(2_101), variantId: null });
+
+      expect(look, "a paid account was capped at the FREE ceiling").toMatchObject({
+        enabled: true,
+        capped: false,
+      });
+      expect(scanFace, "the paid account's 41st face bought no scan").toHaveBeenCalledTimes(1);
+      expect(cappedRows()).toHaveLength(0);
+    }, 30_000);
+
+    it("⚠ a plan bought or cancelled takes effect the SAME day, against the scans already counted", async () => {
+      /*
+        One counter per account, never one per tier (the module header's own
+        reasoning): two tallies would let an account buy a plan, spend the paid
+        allowance, and get the free one back by cancelling.
+
+        Both directions, in one day, on one account:
+          · free at 41 → refused
+          · a plan arrives → the next look is allowed, with 41 already spent
+          · the plan is cancelled → the next look is refused again
+      */
+      const userId = (nextUser += 1);
+      openTo(userId);
+      scanFace.mockResolvedValue(CLEAN_SCAN);
+      tally.set(`${userId}:${utcDayOf(new Date())}`, FREE_CAP);
+
+      const onFree = await caller(userId).faceScan({ candidateId: own(2_201), variantId: null });
+      expect(onFree, "a free account past 40 was not capped").toMatchObject({ capped: true });
+
+      /* The plan lands mid-day. Nothing resets, nothing is re-counted. */
+      planTierByUser.set(userId, "pro");
+      const onPaid = await caller(userId).faceScan({ candidateId: own(2_202), variantId: null });
+      expect(onPaid, "the new plan did not open the day").toMatchObject({ capped: false });
+      expect(scanFace, "the paid look bought no scan").toHaveBeenCalledTimes(1);
+
+      /* And back: `handleSubscriptionDeleted` writes `planTier: "free"`, so a
+         cancellation IS this change and not a separate field. */
+      planTierByUser.set(userId, "free");
+      const afterCancel = await caller(userId).faceScan({ candidateId: own(2_203), variantId: null });
+      expect(afterCancel, "a cancelled plan kept the paid ceiling").toMatchObject({ capped: true });
+      expect(scanFace, "a cancelled account bought another scan").toHaveBeenCalledTimes(1);
+    }, 30_000);
+
+    it("⚠ a plan that cannot be READ holds the account to the free ceiling (fails closed)", async () => {
+      /*
+        invariant 7's direction, pointed at the half of this control that is new.
+        A thrown plan read must not hand out the looser number: the cost of
+        being wrong this way is a busy paying account held at 40 while the
+        database is unreachable, and the cost of the other way is the paid
+        ceiling handed to whoever asks during an outage.
+      */
+      const userId = (nextUser += 1);
+      openTo(userId);
+      planTierByUser.set(userId, "pro");
+      getSubscriptionByUserId.mockRejectedValueOnce(new Error("Got timeout reading communication packets"));
+      scanFace.mockResolvedValue(CLEAN_SCAN);
+      tally.set(`${userId}:${utcDayOf(new Date())}`, FREE_CAP);
+
+      const look = await caller(userId).faceScan({ candidateId: own(2_301), variantId: null });
+
+      expect(look, "an unreadable plan bought the paid ceiling").toMatchObject({ capped: true });
+      expect(scanFace).not.toHaveBeenCalled();
+      expect(cappedRows()[0]![0]).toMatchObject({
+        metadata: expect.objectContaining({ cap: FREE_CAP, onFreeCeiling: true }),
+      });
+    }, 30_000);
+
+    it("⚠ an honest session never touches the money table at all", async () => {
+      /*
+        The module's own claim, driven: the plan is read only once the day's
+        count has passed the LOWER of the two caps. A cap that asked the plan on
+        every look would put a billing read on the panel's hot path, which is
+        the dependency the single-cap docblock was right to worry about.
+      */
+      const userId = (nextUser += 1);
+      openTo(userId);
+      planTierByUser.set(userId, "pro");
+      scanFace.mockResolvedValue(CLEAN_SCAN);
+
+      await caller(userId).faceScan({ candidateId: own(2_401), variantId: null });
+      await caller(userId).faceScan({ candidateId: own(2_402), variantId: null });
+
+      expect(scanFace, "the two looks under the free ceiling bought no scans").toHaveBeenCalledTimes(2);
+      expect(
+        getSubscriptionByUserId,
+        "a look under the free ceiling read the plan table",
+      ).not.toHaveBeenCalled();
+    }, 30_000);
   });
 
   it("a face already bought today is still served after the day is shut", async () => {
