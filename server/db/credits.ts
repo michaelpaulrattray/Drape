@@ -149,7 +149,7 @@ export function isSpendReversal(type: CreditTransactionType | string): boolean {
  *   plan       everything else         the plan's rules (rollover, downgrade
  *                                      trim, 30 days after a cancel)
  *
- * **The spend order is {@link CREDIT_SPEND_ORDER}: the plan's credits go
+ * **The spend order is {@link BUCKET_SPEND_ORDER}: the plan's credits go
  * first, then the ones that expire, then the ones that never do, and top-ups
  * last of all.** That order is what makes one number per bucket enough: each
  * bucket remaining is the LESSER of its bound and what the buckets spent after
@@ -173,10 +173,10 @@ export function isSpendReversal(type: CreditTransactionType | string): boolean {
 export type CreditBucket = "plan" | "promo" | "signup" | "kept" | "purchased";
 
 /** First spent to last spent. Every reader derives from this list. */
-export const CREDIT_SPEND_ORDER: readonly CreditBucket[] = ["plan", "promo", "signup", "kept", "purchased"];
+export const BUCKET_SPEND_ORDER: readonly CreditBucket[] = ["plan", "promo", "signup", "kept", "purchased"];
 
 /** The column holding each non-plan bucket's upper bound. */
-export const CREDIT_BUCKET_COLUMN = {
+export const BUCKET_BOUND_COLUMN = {
   promo: "promoBalance",
   signup: "signupBalance",
   kept: "keptBalance",
@@ -184,7 +184,7 @@ export const CREDIT_BUCKET_COLUMN = {
 } as const satisfies Record<Exclude<CreditBucket, "plan">, string>;
 
 export type CreditBucketBounds = {
-  [K in (typeof CREDIT_BUCKET_COLUMN)[keyof typeof CREDIT_BUCKET_COLUMN]]: number;
+  [K in (typeof BUCKET_BOUND_COLUMN)[keyof typeof BUCKET_BOUND_COLUMN]]: number;
 };
 
 export type CreditBucketRow = {
@@ -196,7 +196,7 @@ export type CreditBucketRow = {
 };
 
 /** How long a timed bonus lasts: a promo from its grant, starting credits from an upgrade. */
-export const TIMED_CREDIT_LIFE_DAYS = 90;
+export const TIMED_BONUS_LIFE_DAYS = 90;
 
 function wholeNonNegative(value: number | null | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
@@ -206,12 +206,12 @@ export function creditBuckets(row: CreditBucketRow): Record<CreditBucket, number
   let left = wholeNonNegative(row.balance);
   const out = { plan: 0, promo: 0, signup: 0, kept: 0, purchased: 0 } as Record<CreditBucket, number>;
   // Last spent is read first: it keeps the most of what is left.
-  for (const bucket of [...CREDIT_SPEND_ORDER].reverse()) {
+  for (const bucket of [...BUCKET_SPEND_ORDER].reverse()) {
     if (bucket === "plan") {
       out.plan = left;
       continue;
     }
-    const take = Math.min(wholeNonNegative(row[CREDIT_BUCKET_COLUMN[bucket]]), left);
+    const take = Math.min(wholeNonNegative(row[BUCKET_BOUND_COLUMN[bucket]]), left);
     out[bucket] = take;
     left -= take;
   }
@@ -706,9 +706,9 @@ export async function addCredits(
   }
 }
 
-/** A deadline `TIMED_CREDIT_LIFE_DAYS` after `from`, in whole seconds (the column has no fraction). */
+/** A deadline `TIMED_BONUS_LIFE_DAYS` after `from`, in whole seconds (the column has no fraction). */
 export function timedCreditDeadline(from: Date): Date {
-  return new Date(Math.floor((from.getTime() + TIMED_CREDIT_LIFE_DAYS * 86_400_000) / 1000) * 1000);
+  return new Date(Math.floor((from.getTime() + TIMED_BONUS_LIFE_DAYS * 86_400_000) / 1000) * 1000);
 }
 
 /** When a promo granted at `now` expires, given the one already on the row (#2185). */
@@ -828,7 +828,7 @@ export async function addCreditsIn(
     rollover rule.
   */
   const boundColumn =
-    bucket === "reversal" || bucket === "plan" ? null : credits[CREDIT_BUCKET_COLUMN[bucket]];
+    bucket === "reversal" || bucket === "plan" ? null : credits[BUCKET_BOUND_COLUMN[bucket]];
   const analytics = isPurchase
     ? sql`, ${credits.creditsPurchased} = COALESCE(${credits.creditsPurchased}, 0) + ${amount}`
     : sql``;
