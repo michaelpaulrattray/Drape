@@ -1,10 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Plus } from "lucide-react";
 
 import { trpc } from "@/lib/trpc";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";
+
+import {
+  PostSignCampaignOffer,
+  isPostSignOfferSilenced,
+  peekJustSigned,
+  postSignOfferState,
+  silencePostSignOffer,
+  takeJustSigned,
+  type PostSignOfferState,
+} from "./PostSignCampaignOffer";
 
 /**
  * IN CAMPAIGNS — the cast page's panel, made real (rung N2c, card #2252).
@@ -50,6 +60,20 @@ export type CastCampaignsPanelProps = {
   onCreate: (name: string) => Promise<string | null>;
   /** Tests only: render with the add control already open. */
   defaultOpen?: boolean;
+  /**
+   * The post-Sign offer (#2253), present only while it is showing. It takes the
+   * place of the empty line and the add row — one question, the customer's
+   * campaigns, and two ways out — and files through this panel's own `onAdd`.
+   */
+  offer?: PostSignOfferProps | null;
+};
+
+export type PostSignOfferProps = {
+  castName: string;
+  refusal: string | null;
+  onFile: (campaignId: string) => void;
+  onNotNow: () => void;
+  onNever: () => void;
 };
 
 export function CastCampaignsPanel({
@@ -59,6 +83,7 @@ export function CastCampaignsPanel({
   onAdd,
   onCreate,
   defaultOpen = false,
+  offer = null,
 }: CastCampaignsPanelProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [draft, setDraft] = useState("");
@@ -84,6 +109,8 @@ export function CastCampaignsPanel({
      in a new campaign" — the second only when there is no other campaign to
      offer, so the label never promises a choice the control does not have. */
   const addLabel = available.length > 0 ? "Use in a campaign" : "Use in a new campaign";
+  /* The offer draws only over a real choice: loaded, and at least one campaign to offer. */
+  const offering = offer !== null && loaded && !open && available.length > 0;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -101,7 +128,7 @@ export function CastCampaignsPanel({
         {loaded ? <span className="dpc-camp__count">{memberships.length}</span> : null}
       </div>
 
-      {loaded && memberships.length === 0 ? (
+      {loaded && memberships.length === 0 && !offering ? (
         <p className="dpc-camp__empty">Not in any campaign yet.</p>
       ) : null}
 
@@ -126,7 +153,17 @@ export function CastCampaignsPanel({
         </ul>
       ) : null}
 
-      {open ? (
+      {offering ? (
+        <PostSignCampaignOffer
+          castName={offer.castName}
+          campaigns={available}
+          busy={busy}
+          refusal={offer.refusal}
+          onFile={offer.onFile}
+          onNotNow={offer.onNotNow}
+          onNever={offer.onNever}
+        />
+      ) : open ? (
         <div className="dpc-camp__picker">
           {available.length > 0 ? (
             <ul className="dpc-camp__list" aria-label="Your campaigns">
@@ -195,13 +232,30 @@ export function CastCampaignsPanel({
   );
 }
 
-/** The panel, wired to the store. */
-export function CastCampaignsCard({ castId }: { castId: string }) {
+/** The panel, wired to the store. `castName` is what the post-Sign offer calls the cast. */
+export function CastCampaignsCard({ castId, castName }: { castId: string; castName: string }) {
   const utils = trpc.useUtils();
   const memberships = trpc.castingV2.listCastCampaigns.useQuery({ castId }, { enabled: Boolean(castId) });
   const campaigns = trpc.castingV2.listCampaigns.useQuery({});
   const add = trpc.castingV2.addCastsToCampaign.useMutation();
   const create = trpc.castingV2.createCampaign.useMutation();
+
+  /*
+    THE POST-SIGN OFFER (#2253). Decided once, at mount: this cast was signed
+    in this tab a moment ago and the customer has not said "don't ask again".
+    The marker is only PEEKED here and taken in the effect, so a render that
+    runs twice cannot spend it on the throwaway pass.
+  */
+  const [offerState, setOfferState] = useState<PostSignOfferState>(() =>
+    peekJustSigned(castId) && !isPostSignOfferSilenced() ? "pending" : "gone",
+  );
+  const [offerRefusal, setOfferRefusal] = useState<string | null>(null);
+  useEffect(() => {
+    takeJustSigned(castId);
+  }, [castId]);
+  useEffect(() => {
+    setOfferState((state) => postSignOfferState(state, campaigns.data));
+  }, [campaigns.data]);
 
   /* Every write moves three readings: this panel, the counts, and the library. */
   const refresh = () => {
@@ -233,6 +287,25 @@ export function CastCampaignsCard({ castId }: { castId: string }) {
     return file(campaignId);
   };
 
+  const offer: PostSignOfferProps | null =
+    offerState === "showing"
+      ? {
+          castName,
+          refusal: offerRefusal,
+          onFile: (campaignId) => {
+            void file(campaignId).then((why) => {
+              if (why === null) setOfferState("gone");
+              else setOfferRefusal(why);
+            });
+          },
+          onNotNow: () => setOfferState("gone"),
+          onNever: () => {
+            silencePostSignOffer();
+            setOfferState("gone");
+          },
+        }
+      : null;
+
   return (
     <CastCampaignsPanel
       memberships={memberships.data}
@@ -240,6 +313,7 @@ export function CastCampaignsCard({ castId }: { castId: string }) {
       busy={add.isPending || create.isPending}
       onAdd={file}
       onCreate={onCreate}
+      offer={offer}
     />
   );
 }

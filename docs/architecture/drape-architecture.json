@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 56
+      "moduleCount": 57
     },
     {
       "id": "domain:client-shared",
@@ -1407,6 +1407,12 @@
     {
       "id": "module:client/src/features/castingV2/components/KeptTray.tsx",
       "path": "client/src/features/castingV2/components/KeptTray.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
+      "path": "client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11319,6 +11325,10 @@
       "path": "client/src/features/castingV2/components/CastCampaignsCard.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/components/PostSignCampaignOffer.test.ts",
+      "path": "client/src/features/castingV2/components/PostSignCampaignOffer.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/components/SignConfirm.test.ts",
       "path": "client/src/features/castingV2/components/SignConfirm.test.ts"
     },
@@ -18720,6 +18730,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "to": "module:client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
@@ -22106,6 +22121,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/KeptTray.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
       "kind": "imports"
     },
     {

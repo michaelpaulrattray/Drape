@@ -69,6 +69,7 @@ import {
 import { RefinePanel } from "@/features/castingV2/components/RefinePanel";
 import { FacePanel } from "@/features/castingV2/components/FacePanel";
 import { VersionRail } from "@/features/castingV2/components/VersionRail";
+import { markJustSigned } from "@/features/castingV2/components/PostSignCampaignOffer";
 import {
   claimFor,
   frameUrlFor,
@@ -3790,6 +3791,10 @@ export default function CastingSheet() {
               {
                 onSuccess: (result) => {
                   setSigning(null);
+                  /* Memory only, then the same navigation as ever: the cast page
+                     may offer once to file the new cast (#2253), and nothing
+                     waits on it. */
+                  markJustSigned(result.castPublicId);
                   navigate(`/app/casting/cast/${result.castPublicId}`);
                 },
                 onError: (error) => {
