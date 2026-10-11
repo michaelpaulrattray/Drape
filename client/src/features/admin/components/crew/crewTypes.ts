@@ -8,6 +8,7 @@
  */
 import type { inferRouterOutputs } from "@trpc/server";
 
+import { cardsNamedInText } from "../../../../../../shared/crewBriefingCardToken";
 import { crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { indexCardBuilds, type CrewCardBuildView } from "../../../../../../shared/crewCardBuildState";
 import { resolveHold, type CrewHold } from "../../../../../../shared/crewNextUpHold";
@@ -79,17 +80,19 @@ export function milestoneProgress(
  *  sentence stays as short as the truth allows. */
 /**
  * Every card (`#N`) a sentence names, in the order it names them. One reader
- * for the three surfaces that ask it — a milestone step, a problem row, and
- * the guard that holds them to one spelling — because the token was written
- * out twice already and a third copy is the drift working law 4 names.
+ * for the surfaces that ask it — a milestone step, a problem row, and the
+ * guards that hold them to one spelling — because the token was written out
+ * twice already and a third copy is the drift working law 4 names.
+ *
+ * ⚠ **IT LIVES IN `shared/` SINCE #2247 AND IS RE-EXPORTED HERE, not copied.**
+ * The fourth consumer is the desk sweep's problems reader, and a script cannot
+ * import this page — so the choice was a copy in `scripts/` or the move, and a
+ * copy is precisely what the sentence above forbids. The page's retirement and
+ * the sweep's staleness are the SAME question read from the two ends, so two
+ * spellings would make the sweep report rows this page hides. Its own docblock
+ * carries the edges and why it is not `cardNumbersIn`.
  */
-export function cardsNamedIn(text: string): number[] {
-  const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
-  const found: number[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = token.exec(text)) !== null) found.push(Number(match[1]));
-  return found;
-}
+export { cardsNamedInText };
 
 /**
  * A step that names a card (`#N`) GitHub has since closed reads as DONE,
@@ -112,7 +115,7 @@ export function stepsWithLiveState<T extends { readonly title: string; readonly 
 ): T[] {
   return steps.map((step) => {
     if (step.state === "done") return step;
-    return cardsNamedIn(step.title).some(isClosed)
+    return cardsNamedInText(step.title).some(isClosed)
       ? { ...step, state: "done" as const }
       : step;
   });
@@ -512,7 +515,7 @@ export function problemsFor(live: CrewLiveView, problems: readonly CrewProblem[]
   const closed = cardIsClosed(live);
   return problems.filter((problem) =>
     problem.severity !== "info"
-    && !cardsNamedIn(`${problem.title} ${problem.detail}`).some(closed));
+    && !cardsNamedInText(`${problem.title} ${problem.detail}`).some(closed));
 }
 
 export function nextUpFor(live: CrewLiveView, briefing: CrewBriefingView): CrewNextUpSource {

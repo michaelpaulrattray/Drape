@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 86
+      "moduleCount": 87
     },
     {
       "id": "domain:staff",
@@ -6351,6 +6351,12 @@
     {
       "id": "module:shared/creditTopups.ts",
       "path": "shared/creditTopups.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewBriefingCardToken.ts",
+      "path": "shared/crewBriefingCardToken.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -13823,6 +13829,10 @@
       "path": "server/crewPipelineRowStates.test.ts"
     },
     {
+      "id": "test:server/crewProblemRowStates.test.ts",
+      "path": "server/crewProblemRowStates.test.ts"
+    },
+    {
       "id": "test:server/crewQueueCountEmptyRead.test.ts",
       "path": "server/crewQueueCountEmptyRead.test.ts"
     },
@@ -16388,6 +16398,11 @@
     {
       "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
       "to": "module:server/routers.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/admin/components/crew/crewTypes.ts",
+      "to": "module:shared/crewBriefingCardToken.ts",
       "kind": "imports"
     },
     {
@@ -31463,6 +31478,11 @@
     {
       "from": "module:server/crew/liveDesk.ts",
       "to": "module:server/db/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/crew/liveDesk.ts",
+      "to": "module:shared/crewBriefingCardToken.ts",
       "kind": "imports"
     },
     {

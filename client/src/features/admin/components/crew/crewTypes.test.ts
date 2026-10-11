@@ -14,9 +14,10 @@ import { describe, expect, it } from "vitest";
 
 import { CREW_CARD_STATES, crewCardNeedsHim } from "../../../../../../shared/crewCardState";
 import { CREW_HOLD_WORD } from "../../../../../../shared/crewNextUpHold";
+import { planProblemRows } from "../../../../../../shared/crewProblemState";
 import {
   cardIsClosed,
-  cardsNamedIn,
+  cardsNamedInText,
   stepsWithLiveState,
   eyeItemsFor,
   needsYouFor,
@@ -26,6 +27,7 @@ import {
   heldCount,
   nextUpRows,
   pipelineNotDone,
+  problemsFor,
 } from "./crewTypes";
 
 /** A live view carrying only what `cardIsClosed` reads. */
@@ -48,6 +50,82 @@ const liveWith = (desk: {
 
 const closedBy = (desk: Parameters<typeof liveWith>[0]) => cardIsClosed(liveWith(desk));
 
+
+/**
+ * ⚠ **THE PAGE'S PROBLEM FILTER AND THE DESK SWEEP'S PROBLEM READER ANSWER THE
+ * SAME QUESTION FROM THE TWO ENDS, AND NEITHER HAD AN ARM (#2247).**
+ *
+ * `problemsFor` decides whether a stale row is DRAWN; `planProblemRows`
+ * (`shared/crewProblemState.ts`, run by `scripts/crew-desk-sweep.mts`) decides
+ * whether it is NAMED for repair. They already share the `#N` reader by import
+ * — that is what moving it to `shared/` bought — but nothing held the two
+ * JUDGEMENTS together, and they can drift in two ways that both fail silently:
+ * narrow the page's read to the title, or move it from `.some` to `.every`, and
+ * the sweep goes on reporting rows his page now keeps, or stays quiet about
+ * rows it now hides.
+ *
+ * **The disagreement is only visible on the night GitHub will not answer**, when
+ * the page's live filter cannot fire and every row the sweep should have had
+ * repaired is drawn. That is #1399, four nights running, and it is the night he
+ * complained about.
+ */
+describe("the page's filter and the sweep's reader agree, row for row (#2247)", () => {
+  /* One corpus, carrying every shape either reader has a rule about. */
+  const corpus = [
+    { id: "card-closed", title: "A fault (#1989)", detail: "", severity: "warning" as const, state: "open" as const },
+    { id: "card-open", title: "A fault (#999)", detail: "", severity: "warning" as const, state: "open" as const },
+    { id: "in-the-detail", title: "A fault", detail: "card #1990 covers it", severity: "warning" as const, state: "open" as const },
+    { id: "one-of-two", title: "A fault (#1989)", detail: "and (#999)", severity: "warning" as const, state: "open" as const },
+    { id: "names-nothing-1399", title: "No card in the words", detail: "none here either", severity: "warning" as const, state: "open" as const },
+  ];
+  const closedCards = [1989, 1990];
+  /*
+    ⚠ **ONE RECORD, READ ONCE, SO A DISAGREEMENT IS THE READERS' AND NEVER THE
+    FIXTURE'S.** The sweep's three-state `isOpen` is derived here from the
+    page's own `cardIsClosed` rather than from a second hand-kept table — the
+    first shape of this arm kept two and went red on its own fixture, because
+    `cardIsClosed` reads a card absent from a COMPLETE open list as closed and
+    the table beside it did not. That is the memory *deriving from a copy is not
+    deriving*, met while writing the guard against it.
+  */
+  const live = liveWith({ closedCards, openCards: [999], highestCard: 3000 });
+  const isOpen = (card: number) => !cardIsClosed(live)(card);
+
+  it("every row the page hides is a row the sweep names, and no other", () => {
+    const drawn = problemsFor(live, corpus).map((one) => one.id);
+    const hidden = corpus.map((one) => one.id).filter((id) => !drawn.includes(id));
+
+    const plan = planProblemRows(corpus, cardsNamedInText, isOpen);
+
+    expect(plan.stale.map((one) => one.row.id)).toEqual(hidden);
+    /* And the populations are not both empty, which would satisfy the line
+       above with two readers that do nothing. */
+    expect(hidden.length, "the corpus must contain a row the page hides").toBeGreaterThan(0);
+    expect(drawn.length, "and one it draws").toBeGreaterThan(0);
+  });
+
+  it("⚠ a row the page draws for ever is the one the sweep reports separately", () => {
+    /* Named by neither reader's closed-card rule, because it names no card: the
+       page can never retire it and, until #2247, nothing named it either. */
+    const plan = planProblemRows(corpus, cardsNamedInText, isOpen);
+    expect(plan.noCard.map((one) => one.row.id)).toEqual(["names-nothing-1399"]);
+    expect(
+      problemsFor(live, corpus).map((one) => one.id),
+      "and his page is still drawing it",
+    ).toContain("names-nothing-1399");
+  });
+
+  it("⚠ an `info` row is drawn by neither and still judged by the sweep", () => {
+    /* #1201 took info rows off the page; it did not make a stale one a correct
+       record. The two readers disagree here ON PURPOSE, and the sweep's report
+       says `[info — his page does not draw it today]` on the line. */
+    const note = [{
+      id: "note", title: "A note (#1989)", detail: "", severity: "info" as const, state: "open" as const,
+    }];
+    expect(problemsFor(live, note)).toEqual([]);
+    expect(planProblemRows(note, cardsNamedInText, isOpen).stale).toHaveLength(1);
+  });
+});
 
 describe("a milestone step that names a closed card reads as done (#1201)", () => {
   const steps = [
@@ -136,24 +214,24 @@ describe("cardIsClosed — the one reading four surfaces ask (#1586)", () => {
   });
 });
 
-describe("cardsNamedIn — one reader for the `#N` token", () => {
+describe("cardsNamedInText — one reader for the `#N` token", () => {
   it("reads every card a sentence names, and nothing that only looks like one", () => {
-    expect(cardsNamedIn("closes #1278 and #0409 after #12")).toEqual([1278, 409, 12]);
-    expect(cardsNamedIn("no cards here"), "no tokens").toEqual([]);
+    expect(cardsNamedInText("closes #1278 and #0409 after #12")).toEqual([1278, 409, 12]);
+    expect(cardsNamedInText("no cards here"), "no tokens").toEqual([]);
     /* The shipped token's own two edges, pinned rather than reinvented: what
        PRECEDES a `#` must not be a letter or digit, and what FOLLOWS the
        number may be anything but a digit. So `abc#99` is not a card and
        `#1278a` is #1278 — moving either is a change to how every problem row
        and milestone step is read, not a tidy-up. */
-    expect(cardsNamedIn("abc#99"), "a letter before the # is not a card").toEqual([]);
-    expect(cardsNamedIn("#1278a"), "a letter after the number still names it").toEqual([1278]);
-    expect(cardsNamedIn("#12345"), "a digit after the number is part of it").toEqual([12345]);
-    expect(cardsNamedIn("#0"), "zero is not a card").toEqual([]);
+    expect(cardsNamedInText("abc#99"), "a letter before the # is not a card").toEqual([]);
+    expect(cardsNamedInText("#1278a"), "a letter after the number still names it").toEqual([1278]);
+    expect(cardsNamedInText("#12345"), "a digit after the number is part of it").toEqual([12345]);
+    expect(cardsNamedInText("#0"), "zero is not a card").toEqual([]);
   });
 
   it("is re-entrant — a shared regex with lastIndex would drop the second call", () => {
-    expect(cardsNamedIn("#1278")).toEqual([1278]);
-    expect(cardsNamedIn("#1278")).toEqual([1278]);
+    expect(cardsNamedInText("#1278")).toEqual([1278]);
+    expect(cardsNamedInText("#1278")).toEqual([1278]);
   });
 });
 

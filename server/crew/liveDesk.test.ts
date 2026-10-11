@@ -171,6 +171,20 @@ describe("cardsNamedIn", () => {
     expect(cardsNamedIn("#01126 leading zero", known)).toEqual([1126]);
     expect(cardsNamedIn("#11260 is a different number", known)).toEqual([]);
   });
+
+  /*
+    ⚠ **TWO PROPERTIES THIS READER HAS ALWAYS HAD AND NOTHING HELD (#2247).**
+    Found by sabotage while it was rebuilt on `cardsNamedInText`: dropping the
+    numeric sort and dropping the dedupe both left this suite GREEN, so the
+    rebuild would have rested on behaviour no arm could see. The page draws
+    these as card links, so a repeat would draw the same link twice and a
+    title's own order would decide the row's — neither is what it does.
+  */
+  it("sorts numerically and never repeats a card, however the title names them", () => {
+    const known = new Set([1126, 1160]);
+    expect(cardsNamedIn("#1160 then #1126", known), "the title's order is not the row's").toEqual([1126, 1160]);
+    expect(cardsNamedIn("#1126 and again #1126", known), "one link, not two").toEqual([1126]);
+  });
 });
 
 describe("since you last looked", () => {

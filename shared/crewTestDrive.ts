@@ -156,7 +156,7 @@ function readableStep(raw: string): string {
 /**
  * Every card a step names, in the order it names them, without repeats.
  *
- * ⚠ **AN `exec` LOOP RATHER THAN `matchAll`, FOR `cardsNamedIn`'S REASON ONE
+ * ⚠ **AN `exec` LOOP RATHER THAN `matchAll`, FOR `cardsNamedInText`'S REASON ONE
  * FILE OVER**: one tsconfig that compiles this module targets es5 and cannot
  * iterate a match iterator. A `for…of` here typechecks in the editor and
  * reddens `pnpm check`.
