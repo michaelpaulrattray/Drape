@@ -226,7 +226,7 @@ _Called as:_ `castingV2.translateOwnWords`
 - SERVER HALF FIRST, declared: the procedure, the store and Keep this's `ownWords` ship before the client door, on the relay's instruction; the door's box, its stage word and its frames follow in the client PR.
 - The customer's own sentence is the `masterPrompt` family: on `REFUSING_KEYS` (both columns and the `ownWords` input field), on no staff projection, nulled by the permanent-deletion tombstone, and never written into a log line by this road.
 
-### Campaigns — a customer's named collections of signed casts (N2c, built dark)
+### Campaigns — a customer's named collections of signed casts (N2c)
 
 His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, `castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and none an operation (seven with the cast page's read): list (each campaign with a DERIVED count of the casts the roster would draw), create, rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing), remove casts, and list the campaigns ONE cast is in (the cast page's IN CAMPAIGNS panel, #2252 — one statement owner-scoped on all three tables, so another account's cast answers an empty list). 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.
 
@@ -236,7 +236,7 @@ _Called as:_ `castingV2.listCampaigns` · `castingV2.createCampaign` · `casting
 
 > THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this customer's is `NOT_FOUND`, never somebody else's campaign; a cast that is not this customer's signed, live cast makes the whole add `NOT_FOUND` and files nothing; a second campaign with a name the customer already uses is CONFLICT. Reads ride the castingRead bucket and writes the castingSheet bucket. No corpus row can reach it: the corpus drives `refineCandidate` only.
 
-- Built dark by card #2249; the library's chip row (card #2250) is the first client caller — it lists campaigns as chips and creates one from the + chip. Filing casts (multi-select), the cast page's campaigns panel and the post-Sign offer are the rung's next cards.
+- Built dark by card #2249 and live through four client callers: the library's chip row (card #2250) lists campaigns as chips and creates one from the + chip, and its ⋯ renames or deletes one (card #2273); the pick-several bar files several casts into a campaign or takes them out in one go (card #2251); the cast page's IN CAMPAIGNS panel lists the campaigns one cast is in, files it and creates one (card #2252); and straight after a Sign that panel carries one dismissible offer to file the new cast (card #2253).
 - The roster reads campaigns too (card #2250): `castingV2.roster` takes an optional scope (all, unfiled, a campaign), a name search and a cursor, and `castingV2.rosterCounts` counts the chips. Unfiled is a NOT EXISTS over this customer's member rows; a campaign scope is an EXISTS owner-checked on both sides of the member join; a campaign or cursor that is not this customer's is NOT_FOUND.
 - Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned.
 

@@ -2138,8 +2138,12 @@ export const castingV2Router = router({
     }),
 
   /*
-    CAMPAIGNS — rung N2c, card #2249. Built dark: nothing in the client calls
-    these yet, so their merge changes nothing a customer sees.
+    CAMPAIGNS — rung N2c, card #2249 built these doors; #2250–#2253 put them in
+    front of the customer. The library page (`client/src/pages/CastingV2.tsx`)
+    lists, creates, renames, deletes and files through them — the chip row and
+    the pick-several bar — and the cast page's IN CAMPAIGNS panel
+    (`CastCampaignsCard`, which also carries the one post-Sign offer) lists the
+    campaigns one cast is in, files it, and creates one.
 
     His word, 2026-09-29: "in n2c instead of calling them shoots call it
     Campaign". A campaign is a customer's named collection of signed casts; a
