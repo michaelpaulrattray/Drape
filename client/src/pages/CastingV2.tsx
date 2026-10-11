@@ -40,6 +40,17 @@ import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/si
 import { ConfirmDialog } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { NewCampaignDialog } from "@/features/castingV2/components/NewCampaignDialog";
+import { CastPickBox } from "@/features/castingV2/components/CastPickBox";
+import { CastSelectionBar, type BarCampaign } from "@/features/castingV2/components/CastSelectionBar";
+import {
+  castIdBatches,
+  filedSentence,
+  pickedInView,
+  selectionViewKey,
+  togglePick,
+  unfiledSentence,
+} from "@/features/castingV2/castSelection";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import {
   ROSTER_PAGE_SIZE,
   ROSTER_SEARCH_DEBOUNCE_MS,
@@ -86,6 +97,9 @@ import "@/features/castingV2/castingV2.css";
  */
 
 const ROLL_PRICE_FALLBACK = 0;
+
+/** No cast ticked. One shared empty set, so an unchanged selection is the same value. */
+const EMPTY_PICKS: ReadonlySet<string> = new Set();
 
 /** One signed cast as the roster draws it. */
 type RosterCast = inferRouterOutputs<AppRouter>["castingV2"]["roster"][number];
@@ -228,6 +242,13 @@ export default function CastingV2() {
   */
   const [chip, setChip] = useState<RosterChip>(() => chipFromLocation(window.location.search));
   const [creatingCampaign, setCreatingCampaign] = useState(false);
+  /*
+    WHETHER THE NEW CAMPAIGN IS FOR THE SELECTION (card #2251). The same
+    "Name the campaign" box opens from the chip row's + and from the selection
+    bar's "New campaign…"; from the bar, the ticked casts are filed into it as
+    soon as it exists.
+  */
+  const [newCampaignFiles, setNewCampaignFiles] = useState(false);
   const [campaignError, setCampaignError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   /** Closes synchronously on click; see `startCasting` and `singleFlight.ts`. */
@@ -523,6 +544,8 @@ export default function CastingV2() {
           : false,
     },
   );
+  /* Every cast the grid has loaded, across its pages. */
+  const shownCastsForPicks = roster.data?.pages.flat() ?? [];
   const campaigns = trpc.castingV2.listCampaigns.useQuery({}, {
     enabled: config.data?.enabled === true,
   });
@@ -535,6 +558,29 @@ export default function CastingV2() {
     placeholderData: keepPreviousData,
   });
   const createCampaign = trpc.castingV2.createCampaign.useMutation();
+  const addCastsToCampaign = trpc.castingV2.addCastsToCampaign.useMutation();
+  const removeCastsFromCampaign = trpc.castingV2.removeCastsFromCampaign.useMutation();
+  /*
+    THE TICKED CASTS (card #2251). Held with the view they were ticked in — the
+    chip and the search text — and dropped the moment either changes: his
+    card's rule, "the selection clears when the chip or the search text
+    changes", because a hidden selection acting on casts nobody can see any
+    more is a surprise this product does not ship. Keyed on the BOX's text
+    rather than the debounced read, so it clears on the keystroke, before the
+    grid has even changed under it.
+  */
+  const viewKey = selectionViewKey(chip, search);
+  const [picks, setPicks] = useState<{ view: string; ids: ReadonlySet<string> }>(
+    () => ({ view: viewKey, ids: new Set() }),
+  );
+  const pickedIds = picks.view === viewKey ? picks.ids : EMPTY_PICKS;
+  const togglePicked = (castId: string) =>
+    setPicks({ view: viewKey, ids: togglePick(pickedIds, castId) });
+  const clearPicks = () => setPicks({ view: viewKey, ids: EMPTY_PICKS });
+  /* A view left is a selection let go — coming back to it starts empty too. */
+  useEffect(() => {
+    setPicks((current) => (current.view === viewKey ? current : { view: viewKey, ids: EMPTY_PICKS }));
+  }, [viewKey]);
   /*
     A CHIP THAT NO LONGER EXISTS FALLS BACK TO ALL. A campaign deleted in
     another tab, a link to a campaign that is not this customer's, or Unfiled
@@ -579,14 +625,57 @@ export default function CastingV2() {
   };
   const submitNewCampaign = async (name: string) => {
     setCampaignError(null);
+    let created: BarCampaign;
     try {
-      const created = await createCampaign.mutateAsync({ name });
-      await invalidateLibrary();
-      setCreatingCampaign(false);
-      chooseChip({ kind: "campaign", campaignId: created.campaignId });
+      created = await createCampaign.mutateAsync({ name });
     } catch (error) {
       setCampaignError(error instanceof Error ? error.message : "That campaign could not be made.");
+      return;
     }
+    if (newCampaignFiles) {
+      /* From the selection bar: the ticked casts go straight into it, and the
+         customer stays on the view they were working in. */
+      setCreatingCampaign(false);
+      await fileSelection("add", created);
+      return;
+    }
+    await invalidateLibrary();
+    setCreatingCampaign(false);
+    chooseChip({ kind: "campaign", campaignId: created.campaignId });
+  };
+  /*
+    FILE OR UNFILE THE TICKED CASTS (card #2251) through the campaign doors the
+    cast page already uses — no new server road, no price, no credit. A
+    selection can be longer than one call takes once the grid has paged, so it
+    goes in the doors' own slices, and the sentence after is the server's count
+    rather than the number ticked. "Remove from…" takes casts out of a
+    campaign; it never deletes one.
+  */
+  const fileSelection = async (action: "add" | "remove", campaign: BarCampaign) => {
+    const castIds = pickedInView(pickedIds, shownCastsForPicks);
+    if (castIds.length === 0) return;
+    let moved = 0;
+    try {
+      for (const batch of castIdBatches(castIds)) {
+        if (action === "add") {
+          moved += (await addCastsToCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).added;
+        } else {
+          moved += (await removeCastsFromCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).removed;
+        }
+      }
+    } catch (error) {
+      logRawFailure(action === "add" ? "castingV2.addCastsToCampaign" : "castingV2.removeCastsFromCampaign", error);
+      toast(readableFailure(error, action === "add"
+        ? `Those casts couldn't be added to “${campaign.name}”.`
+        : `Those casts couldn't be taken out of “${campaign.name}”.`));
+      await invalidateLibrary();
+      return;
+    }
+    await invalidateLibrary();
+    clearPicks();
+    toast(action === "add"
+      ? filedSentence(moved, castIds.length, campaign.name)
+      : unfiledSentence(moved, castIds.length, campaign.name));
   };
 
   if (config.isLoading) {
@@ -785,7 +874,9 @@ export default function CastingV2() {
     draw an empty grid, and is gone (card #2250). The numbers are the server's
     counts now, never the length of what has loaded.
   */
-  const shownCasts = roster.data?.pages.flat() ?? [];
+  const shownCasts = shownCastsForPicks;
+  const pickedInGrid = pickedInView(pickedIds, shownCasts);
+  const selecting = pickedInGrid.length > 0;
   const counts = rosterCounts.data;
   const campaignRows = campaigns.data ?? [];
   /* The header's number: how many casts this chip holds that match the search. */
@@ -1590,6 +1681,7 @@ export default function CastingV2() {
               title="New campaign"
               onClick={() => {
                 setCampaignError(null);
+                setNewCampaignFiles(false);
                 setCreatingCampaign(true);
               }}
             >
@@ -1603,25 +1695,54 @@ export default function CastingV2() {
           zero it says zero, which is the whole difference between this and
           "184 performers already cleared for paid ads".
         */}
-        <div className="dpc-rosterhead">
-          <span className="dp-label" style={{ fontSize: 13.5 }}>
-            {chipHeading(chip, campaignRows)}
-          </span>
-          {shownCount !== null ? (
-            <span className="dp-small">
-              {shownCount} {shownCount === 1 ? "cast member" : "cast members"}
-            </span>
-          ) : null}
+        {/*
+          While anything is ticked, the selection bar takes the heading's place
+          (card #2251) and the row holds its height either way, so ticking the
+          first box never moves the grid under the pointer. It stays in view
+          under the top bar while a long grid scrolls.
+        */}
+        <div className={selecting ? "dpc-rosterhead dpc-rosterhead--picking" : "dpc-rosterhead"}>
+          {selecting ? (
+            <CastSelectionBar
+              count={pickedInGrid.length}
+              campaigns={campaignRows}
+              busy={addCastsToCampaign.isPending || removeCastsFromCampaign.isPending || createCampaign.isPending}
+              onAdd={(campaign) => void fileSelection("add", campaign)}
+              onRemove={(campaign) => void fileSelection("remove", campaign)}
+              onNewCampaign={() => {
+                setCampaignError(null);
+                setNewCampaignFiles(true);
+                setCreatingCampaign(true);
+              }}
+              onClear={clearPicks}
+            />
+          ) : (
+            <>
+              <span className="dp-label" style={{ fontSize: 13.5 }}>
+                {chipHeading(chip, campaignRows)}
+              </span>
+              {shownCount !== null ? (
+                <span className="dp-small">
+                  {shownCount} {shownCount === 1 ? "cast member" : "cast members"}
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
 
         {/* 178px 4:5 tiles, dashed create tile first (10-shared-patterns). */}
-        <div className="dpc-roster">
+        <div className={selecting ? "dpc-roster dpc-roster--picking" : "dpc-roster"}>
           <DropZone className="dpc-roster__new" onClick={focusBrief}>
             <Plus size={17} strokeWidth={1.7} aria-hidden="true" />
             <span className="dp-secondary">New cast member</span>
           </DropZone>
           {shownCasts.map((cast) => (
-            <div className="dpc-castcard__wrap dpc-menuhost" key={cast.castId}>
+            <div
+              className={pickedIds.has(cast.castId)
+                ? "dpc-castcard__wrap dpc-menuhost dpc-castcard__wrap--picked"
+                : "dpc-castcard__wrap dpc-menuhost"}
+              key={cast.castId}
+            >
             <button
               type="button"
               className="dpc-castcard"
@@ -1654,6 +1775,15 @@ export default function CastingV2() {
               <span className="dpc-castcard__name">{cast.name ?? "Unnamed"}</span>
               <span className="dp-metadata">{cast.castId}</span>
             </button>
+            {/*
+              The tick is the tile's SIBLING, never inside it — a click on it
+              must not open the cast (card #2251; `CastPickBox`).
+            */}
+            <CastPickBox
+              name={cast.name ?? "Unnamed"}
+              checked={pickedIds.has(cast.castId)}
+              onToggle={() => togglePicked(cast.castId)}
+            />
             {/*
               Delete needs BOTH the server's door open AND her package
               finished. The second is the founder's ruling: the deletion

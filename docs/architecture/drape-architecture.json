@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 59
+      "moduleCount": 62
     },
     {
       "id": "domain:client-shared",
@@ -1309,6 +1309,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/castSelection.ts",
+      "path": "client/src/features/castingV2/castSelection.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "path": "client/src/features/castingV2/castSettingsCopy.ts",
       "domain": "castingV2",
@@ -1365,6 +1371,18 @@
     {
       "id": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
       "path": "client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CastPickBox.tsx",
+      "path": "client/src/features/castingV2/components/CastPickBox.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CastSelectionBar.tsx",
+      "path": "client/src/features/castingV2/components/CastSelectionBar.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11323,6 +11341,10 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/castSelection.test.ts",
+      "path": "client/src/features/castingV2/castSelection.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/castingNotSheet.test.ts",
       "path": "client/src/features/castingV2/castingNotSheet.test.ts"
     },
@@ -18701,6 +18723,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/castSelection.ts",
+      "to": "module:client/src/features/castingV2/rosterChips.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "to": "module:shared/castStyles.ts",
       "kind": "imports"
@@ -18798,6 +18825,21 @@
     {
       "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSelectionBar.tsx",
+      "to": "module:client/src/features/castingV2/castSelection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSelectionBar.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastSelectionBar.tsx",
+      "to": "module:client/src/foundation/Popover.tsx",
       "kind": "imports"
     },
     {
@@ -22337,7 +22379,22 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/castSelection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/CastPickBox.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/CastSelectionBar.tsx",
       "kind": "imports"
     },
     {
@@ -22403,6 +22460,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
