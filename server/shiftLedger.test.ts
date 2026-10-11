@@ -22,6 +22,7 @@ import {
   renderLedgerBlock,
   summarise,
 } from "../scripts/lib/shiftLedger.mts";
+import { SEARCH_RESULT_CEILING } from "../scripts/lib/crewNamingWindow.mts";
 import { type GhRunner, readMergedPrs } from "../scripts/lib/mergedPrGateTime.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
@@ -235,7 +236,63 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
     const result = readMergedPrs("2026-09-01T00:00:00Z", { limit: 3, gh: fakeGh({ prList: listOf(3) }) });
     expect(result.ok).toBe(false);
     expect(!result.ok && result.why).toMatch(/truncated count is not a count/);
-    expect(!result.ok && result.why).toMatch(/--pr-limit/);
+    /* ⚠ **THIS ARM USED TO ASSERT `--pr-limit` AND THAT WAS THE DEFECT (#2291).**
+       With headroom under the ceiling a bigger bound IS a real remedy, so it is
+       still offered — but it is now offered with the ceiling named, and the
+       narrower window is offered first, because on a `--search` read raising the
+       bound stops working at exactly the point it starts being needed. */
+    expect(!result.ok && result.why).toMatch(/--days/);
+    expect(!result.ok && result.why).toContain(String(SEARCH_RESULT_CEILING));
+  });
+
+  /*
+    ⚠ **THE REMEDY A REFUSAL NAMES HAS TO BE ONE THE ROAD CAN HONOUR (#2291).**
+    This reader is a `--search` read, and GitHub's Search API returns at most
+    `SEARCH_RESULT_CEILING` results whatever `--limit` says. So above that
+    ceiling `listed.length >= limit` can never fire, the reading becomes a
+    silent floor, and the old message's *"raise the bound"* advice was the thing
+    that took you there. These three arms are that correction, driven.
+  */
+  it("⚠ REFUSES a bound above the search ceiling, where truncation stops being detectable", () => {
+    let called = 0;
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: SEARCH_RESULT_CEILING + 1,
+      gh: (args) => {
+        called += 1;
+        return fakeGh({ prList: listOf(3) })(args);
+      },
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/search ceiling/);
+    /* It names the remedy that works on this road, and not the one that does not. */
+    expect(!result.ok && result.why).toMatch(/--days/);
+    expect(!result.ok && result.why).not.toMatch(/--pr-limit/);
+    /* ⚠ And it decides BEFORE spending a call: the answer needs nothing from
+       GitHub, so asking would be a request nobody can act on. */
+    expect(called).toBe(0);
+  });
+
+  it("does NOT refuse a bound at exactly the ceiling", () => {
+    /* A refusal one row early would make the largest honest window unreadable,
+       which is the opposite failure and just as quiet from the report. */
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: SEARCH_RESULT_CEILING,
+      gh: fakeGh({ prList: listOf(3) }),
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("at the ceiling, a truncated read stops recommending a bigger bound", () => {
+    /* The one case where the old sentence was actively wrong: the bound is
+       already as high as the road allows, so raising it buys nothing. */
+    const result = readMergedPrs("2026-09-01T00:00:00Z", {
+      limit: SEARCH_RESULT_CEILING,
+      gh: fakeGh({ prList: listOf(SEARCH_RESULT_CEILING) }),
+    });
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.why).toMatch(/raising it buys nothing/);
+    expect(!result.ok && result.why).toMatch(/--days/);
+    expect(!result.ok && result.why).not.toMatch(/--pr-limit/);
   });
 
   it("does NOT refuse below the bound", () => {
@@ -689,5 +746,42 @@ describe("a merged PR is attributed by the run's own PR number, then its branch,
     const mapping = source.slice(from, source.indexOf("}));", from));
     expect(mapping).toMatch(/prNumber:/);
     expect(mapping).toMatch(/branch:/);
+  });
+
+  it("⚠ the ledger's DERIVED bound is clamped to the search ceiling (#2291)", async () => {
+    /*
+      This is where the ceiling is reachable TODAY, and it is why the reader's
+      refusal alone would have been a regression rather than a fix. The
+      derivation is `50/day`, so it crosses GitHub's 1000-result ceiling at
+      `--days 21` — and measured 2026-10-11 a 30-day window is only 757 merges,
+      comfortably inside the ceiling. So an unclamped `--days 30` had its
+      truncation check silently disabled while reading a complete population,
+      and refusing it outright would have broken a window that works.
+
+      Clamping keeps the check LIVE: the bound stays at the ceiling, a 757-merge
+      window still reads complete, and a window whose real population passes
+      1000 refuses out loud. Sliced to the `pr-limit` derivation so another
+      `Math.min` cannot satisfy it.
+    */
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync("scripts/machinist-ledger-read.mts", "utf8");
+    const at = source.indexOf("const prLimit =");
+    expect(at).toBeGreaterThan(0);
+    const derivation = source.slice(at, source.indexOf(";", source.indexOf(")", at)));
+    expect(derivation).toContain("SEARCH_RESULT_CEILING");
+    expect(derivation).toContain("Math.min");
+    /* The days-scaled figure is still what is clamped, so the #559 reason the
+       bound is derived at all is not quietly replaced by a constant. */
+    expect(derivation).toContain("days * 50");
+  });
+
+  it("the derivation it clamps really does cross the ceiling, so the clamp is not decorative", () => {
+    /* A clamp over a figure that never reaches the ceiling is a no-op wearing a
+       comment. 50/day crosses 1000 at --days 21, which is inside the range a
+       person actually types. */
+    const derived = (days: number) => Math.max(100, Math.ceil(days * 50));
+    expect(derived(20)).toBeLessThanOrEqual(SEARCH_RESULT_CEILING);
+    expect(derived(21)).toBeGreaterThan(SEARCH_RESULT_CEILING);
+    expect(Math.min(SEARCH_RESULT_CEILING, derived(60))).toBe(SEARCH_RESULT_CEILING);
   });
 });
