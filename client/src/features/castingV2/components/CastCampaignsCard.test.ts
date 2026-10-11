@@ -123,7 +123,7 @@ describe("the cast page header", () => {
   });
 
   it("draws the real panel and not the stub", () => {
-    expect(room).toMatch(/<CastCampaignsCard castId=\{data\.castId\} \/>/);
+    expect(room).toMatch(/<CastCampaignsCard key=\{data\.castId\} castId=\{data\.castId\} castName=\{[^}]+\} \/>/);
     expect(room).not.toMatch(/Campaigns aren.t built yet/);
     expect(room).not.toContain("Use in a new campaign");
   });

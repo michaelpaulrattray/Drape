@@ -58,11 +58,28 @@
  *  - The `<style>` block is gone; the hover is `.dp-menuitem` in
  *    `foundation.css`, shared with the account menu.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { BookOpen, Keyboard, MessageSquare } from 'lucide-react';
 import { Eyebrow, Icon as HouseIcon, IconButton, P, useAnchoredPanel } from '@/foundation';
 
-import { FeedbackForm } from './FeedbackForm';
+import { FeedbackForm, type FeedbackMode } from './FeedbackForm';
+
+/**
+ * #2263 — WHERE THE TWO HELP ENTRANCES LIVE, BY WIDTH, STATED ONCE.
+ *
+ * The bug icon and this help menu sit in the topbar from 768px up and are gone
+ * below it: on a phone the bar has no room for them (#2260 measured it). Before
+ * this card that meant a phone customer who hit a problem had no way to tell
+ * us at all. So below 768px the same two entrances appear inside the account
+ * menu instead (`HelpInAccountMenu`, below).
+ *
+ * The two class strings are the two halves of ONE breakpoint, so they live
+ * side by side: if one moved and the other did not, there would be a band of
+ * widths with both entrances (a doubled menu) or neither (the bug this card
+ * fixes). `helpPlacement2263-guard.test.ts` holds them to being complements.
+ */
+export const TOPBAR_HELP_VISIBILITY = 'hidden md:block';
+export const ACCOUNT_MENU_HELP_VISIBILITY = 'md:hidden';
 
 /**
  * One width (00b §1). 264px holds the longest live label and the longest inert
@@ -100,7 +117,7 @@ export function LobbyUtilityMenu() {
   }, [open]);
 
   return (
-    <div className="hidden md:block">
+    <div className={TOPBAR_HELP_VISIBILITY}>
       <IconButton
         ref={triggerRef}
         onClick={() => (open ? close() : toggle())}
@@ -139,6 +156,61 @@ export function LobbyUtilityMenu() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * #2263 — Report a bug and Help, inside the account menu, at phone width only.
+ *
+ * Wraps the account menu's own contents (`UserCard`) and adds one group under
+ * it, `HELP`: Report a bug and Send feedback, which open the very same
+ * `FeedbackForm` the topbar's two entrances open, and Documentation as the
+ * same inert stub the help menu draws. Keyboard shortcuts is left out here on
+ * purpose: this group only exists on a phone, which has no keyboard to
+ * shortcut.
+ *
+ * Pressing a row turns the whole menu into the form, the way the help menu
+ * already does on desktop, so the form is never squeezed beneath five other
+ * rows. Closing the form (its X, or a sent report) returns to the menu.
+ * Closing the account menu itself unmounts all of this, so a half-typed
+ * report never comes back on the next open (the reset the two topbar panels
+ * hang off `open` happens here by construction).
+ *
+ * Above 768px the group is not drawn and the menu is exactly what it was.
+ */
+export function HelpInAccountMenu({ children }: { children: ReactNode }) {
+  const [form, setForm] = useState<FeedbackMode | null>(null);
+
+  if (form) {
+    return (
+      <div style={{ padding: 'var(--s-6)' }}>
+        <FeedbackForm mode={form} onDone={() => setForm(null)} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {children}
+      {/*
+        ⚠ The breakpoint and `dp-menu` sit on TWO elements, never one. `.dp-menu`
+        sets `display: flex` in foundation.css, which is unlayered, and an
+        unlayered rule beats every Tailwind utility (they live in a cascade
+        layer) — so `dp-menu md:hidden` on one element is never hidden, and the
+        group drew twice on desktop. Found in the frames; the guard reads for it.
+      */}
+      <div className={ACCOUNT_MENU_HELP_VISIBILITY}>
+        <div className="dp-menu">
+          <Eyebrow label="HELP" className="dp-menu__group" />
+          <button type="button" onClick={() => setForm('bug')} className="dp-menuitem">
+            <HouseIcon d={P.bug} size={13} />
+            <span className="dp-menuitem__label">Report a bug</span>
+          </button>
+          <MenuItem icon={MessageSquare} label="Send feedback" onClick={() => setForm('feedback')} />
+          <StubItem icon={BookOpen} label="Documentation" />
+        </div>
+      </div>
+    </>
   );
 }
 
