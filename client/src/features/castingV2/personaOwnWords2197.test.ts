@@ -232,9 +232,15 @@ describe("the panel, stage by stage", () => {
     }
   });
 
+  it("the buttons say what they do, in his words (2026-10-11)", () => {
+    expect(personaOwnWordsGoLabel("personality")).toBe("Write the personality");
+    expect(personaOwnWordsGoLabel("voice")).toBe("Write the voice description");
+    expect(panel("voice", { stage: "writing" })).toContain(">Write the voice description</button>");
+  });
+
   it("an empty box cannot be sent", () => {
     const html = panel("personality", { stage: "writing" }, { initialWords: "" });
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>See what the camera sees</);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Write the personality</);
   });
 
   it("reading: the honest stage word, and the box held still", () => {

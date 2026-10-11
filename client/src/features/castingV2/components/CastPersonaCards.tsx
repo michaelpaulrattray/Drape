@@ -929,7 +929,8 @@ export function personaOwnWordsResultHeading(line: CastPersonaFieldName, name?: 
  * because there is none.
  */
 export function personaOwnWordsGoLabel(line: CastPersonaFieldName): string {
-  return line === "voice" ? "See the voice description" : "See what the camera sees";
+  /* His words, 2026-10-11: "write the personality / write the voice description". */
+  return line === "voice" ? "Write the voice description" : "Write the personality";
 }
 
 /**
