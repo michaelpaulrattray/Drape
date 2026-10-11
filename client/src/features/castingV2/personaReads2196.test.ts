@@ -8,7 +8,7 @@
  *    *"or"*. A shut card shows none of them.
  *  - `02-door1-dark.png` — opening it REPLACES the card body with six rows,
  *    one ringed and tagged *Picked*, and a button reading `Keep "<label>"`.
- *    The reassurance and *Back to the draft* sit beneath.
+ *    The reassurance and *Back* sit beneath.
  *
  * ⚠ What this cannot see: `pnpm test` has no DOM, so a real press and the
  * ~14-second wait are driven in the running app and recorded on the PR with
@@ -102,7 +102,8 @@ describe("the six, as his frame draws them", () => {
 
   it("the way back is drawn, and it is the quiet control rather than the loud one", () => {
     const html = drawPicker();
-    expect(html).toContain("Back to the draft");
+    expect(html).toContain(">Back</button>");
+    expect(html).not.toContain("Back to the draft");
     expect(html).toContain("dpc-persona__back");
   });
 });

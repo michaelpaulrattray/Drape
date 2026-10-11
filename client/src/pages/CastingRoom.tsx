@@ -214,7 +214,7 @@ export default function CastingRoom() {
     { personality: PERSONA_OWN_WORDS_SHUT, voice: PERSONA_OWN_WORDS_SHUT },
   );
   /*
-    A DOOR CLOSED MID-WAIT STAYS CLOSED (#2238). Escape or *Back to the draft*
+    A DOOR CLOSED MID-WAIT STAYS CLOSED (#2238). Escape or *Back*
     during the ~14 s reads wait (or the few seconds of a translation) shut the
     door, and the answer arriving afterwards used to throw it open again under
     the customer. Each ask takes a ticket; closing the door moves the ticket on,
