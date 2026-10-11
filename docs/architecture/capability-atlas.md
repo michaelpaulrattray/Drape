@@ -226,6 +226,19 @@ _Called as:_ `castingV2.translateOwnWords`
 - SERVER HALF FIRST, declared: the procedure, the store and Keep this's `ownWords` ship before the client door, on the relay's instruction; the door's box, its stage word and its frames follow in the client PR.
 - The customer's own sentence is the `masterPrompt` family: on `REFUSING_KEYS` (both columns and the `ownWords` input field), on no staff projection, nulled by the permanent-deletion tombstone, and never written into a log line by this road.
 
+### Campaigns — a customer's named collections of signed casts (N2c, built dark)
+
+His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, `castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and none an operation: list (each campaign with a DERIVED count of the casts the roster would draw), create, rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing) and remove casts. 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.
+
+_Entrances:_ `server/routes/castingV2.ts` · `server/db/castCampaigns.ts`  ·  _Flags:_ `CASTING_V2_SCOPE`
+
+_Called as:_ `castingV2.listCampaigns` · `castingV2.createCampaign` · `castingV2.renameCampaign` · `castingV2.deleteCampaign` · `castingV2.addCastsToCampaign` · `castingV2.removeCastsFromCampaign`
+
+> THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this customer's is `NOT_FOUND`, never somebody else's campaign; a cast that is not this customer's signed, live cast makes the whole add `NOT_FOUND` and files nothing; a second campaign with a name the customer already uses is CONFLICT. Reads ride the castingRead bucket and writes the castingSheet bucket. No corpus row can reach it: the corpus drives `refineCandidate` only.
+
+- BUILT DARK, declared (card #2249): no client code calls these doors yet, so the merge changes nothing a customer sees. The chip row, multi-select, the cast page's campaigns panel and the post-Sign offer are the next cards of the rung.
+- Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned.
+
 ### Upload a concept — a picture in, a description of the person out
 
 A picture of a person is read ONCE, inline, and dropped; what comes back is WORDS, which land in her own brief box where she reads and edits them before she spends anything. There is no row, no table, no storage write and no purge path — which is what makes this road smaller than the attach door beside it rather than a variant of it, and why no stranger's photograph ends up at a permanently public URL. Reached from the start page, before any cast exists.
@@ -250,18 +263,21 @@ _Called as:_ `castingV2.concept.describe`
 - EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 
-## Every way in — the 32 procedures the casting entrance exposes
+## Every way in — the 38 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
 | called as | on which road |
 |---|---|
 | `castingV2.abandonSession` | life-of-a-cast |
+| `castingV2.addCastsToCampaign` | campaigns |
 | `castingV2.cancel` | life-of-a-cast |
 | `castingV2.concept.describe` | concept-upload |
 | `castingV2.config` | life-of-a-cast |
+| `castingV2.createCampaign` | campaigns |
 | `castingV2.createRoll` | life-of-a-cast |
 | `castingV2.createSession` | life-of-a-cast |
+| `castingV2.deleteCampaign` | campaigns |
 | `castingV2.deleteCast` | life-of-a-cast |
 | `castingV2.discard` | life-of-a-cast |
 | `castingV2.draftCastReads` | persona-reads |
@@ -274,11 +290,14 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.getSession` | life-of-a-cast |
 | `castingV2.ink.remove` | ink-studio |
 | `castingV2.keep` | life-of-a-cast |
+| `castingV2.listCampaigns` | campaigns |
 | `castingV2.openSessions` | life-of-a-cast |
 | `castingV2.redoPackage` | sign-views |
 | `castingV2.reference.attach` | references |
 | `castingV2.refine` | refine-money, refine-reading, refine-ink |
 | `castingV2.reimagine` | reimagine |
+| `castingV2.removeCastsFromCampaign` | campaigns |
+| `castingV2.renameCampaign` | campaigns |
 | `castingV2.renameCast` | life-of-a-cast |
 | `castingV2.retry` | life-of-a-cast |
 | `castingV2.retryView` | sign-views |

@@ -131,6 +131,16 @@ import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CASTING_V2_ROLL_TYPICAL_SECONDS } from "../castingV2/rollDuration";
 import { projectSignedCast } from "../castingV2/castProjection";
 import {
+  addCastsToCampaign,
+  CAMPAIGN_CASTS_PER_CALL_MAX,
+  CAMPAIGN_NAME_MAX_LENGTH,
+  createCampaign,
+  deleteCampaign,
+  listCampaigns,
+  removeCastsFromCampaign,
+  renameCampaign,
+} from "../db/castCampaigns";
+import {
   getCastLineage,
   getCastSessionId,
   getOwnedCastByPublicId,
@@ -235,6 +245,19 @@ function enforceRateLimit(userId: number, config: (typeof RATE_LIMITS)[keyof typ
     // cannot tell apart from a validation failure (invariant 6).
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(check.resetIn) });
   }
+}
+
+/* The campaign doors' shared input pieces (card #2249). */
+const campaignIdInput = z.string().min(1).max(32);
+const campaignNameInput = z.string().trim().min(1).max(CAMPAIGN_NAME_MAX_LENGTH);
+const campaignCastIdsInput = z.array(z.string().min(1).max(32)).min(1).max(CAMPAIGN_CASTS_PER_CALL_MAX);
+
+function campaignNotFound(): TRPCError {
+  return new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+}
+
+function campaignNameTaken(name: string): TRPCError {
+  return new TRPCError({ code: "CONFLICT", message: `You already have a campaign called “${name}”.` });
 }
 
 /**
@@ -2040,6 +2063,85 @@ export const castingV2Router = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }
       return { castId: input.castId, name: input.name };
+    }),
+
+  /*
+    CAMPAIGNS — rung N2c, card #2249. Built dark: nothing in the client calls
+    these yet, so their merge changes nothing a customer sees.
+
+    His word, 2026-09-29: "in n2c instead of calling them shoots call it
+    Campaign". A campaign is a customer's named collection of signed casts; a
+    cast may be in several. Every statement is owner-scoped in
+    `server/db/castCampaigns.ts`; the owner always comes from the session, never
+    from input (invariant 3), and only public ids cross the wire.
+  */
+
+  /** This customer's campaigns, oldest first, each with its signed-cast count. */
+  listCampaigns: protectedProcedure
+    .input(z.object({}).strict())
+    .query(async ({ ctx }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
+      return listCampaigns(ctx.user.id);
+    }),
+
+  /** A new, empty campaign. Two campaigns of one customer never share a name. */
+  createCampaign: protectedProcedure
+    .input(z.object({ name: campaignNameInput }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const created = await createCampaign(ctx.user.id, input.name);
+      if (created.kind === "name_taken") throw campaignNameTaken(input.name);
+      return created.campaign;
+    }),
+
+  renameCampaign: protectedProcedure
+    .input(z.object({ campaignId: campaignIdInput, name: campaignNameInput }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const renamed = await renameCampaign(ctx.user.id, input.campaignId, input.name);
+      if (renamed.kind === "not_found") throw campaignNotFound();
+      if (renamed.kind === "name_taken") throw campaignNameTaken(input.name);
+      return { campaignId: input.campaignId, name: input.name };
+    }),
+
+  /** The campaign goes; every cast that was in it stays exactly as it was. */
+  deleteCampaign: protectedProcedure
+    .input(z.object({ campaignId: campaignIdInput }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const deleted = await deleteCampaign(ctx.user.id, input.campaignId);
+      if (deleted.kind === "not_found") throw campaignNotFound();
+      return { campaignId: input.campaignId };
+    }),
+
+  /**
+   * File casts into a campaign. Idempotent; all-or-nothing on refusal — a cast
+   * that is not this customer's signed, live cast files nothing.
+   */
+  addCastsToCampaign: protectedProcedure
+    .input(z.object({ campaignId: campaignIdInput, castIds: campaignCastIdsInput }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const filed = await addCastsToCampaign(ctx.user.id, input.campaignId, input.castIds);
+      if (filed.kind === "campaign_not_found") throw campaignNotFound();
+      if (filed.kind === "cast_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      return { campaignId: input.campaignId, added: filed.added };
+    }),
+
+  /** Take casts out of a campaign. The casts themselves are untouched. */
+  removeCastsFromCampaign: protectedProcedure
+    .input(z.object({ campaignId: campaignIdInput, castIds: campaignCastIdsInput }).strict())
+    .mutation(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
+      const removed = await removeCastsFromCampaign(ctx.user.id, input.campaignId, input.castIds);
+      if (removed.kind === "campaign_not_found") throw campaignNotFound();
+      return { campaignId: input.campaignId, removed: removed.removed };
     }),
 
   /**

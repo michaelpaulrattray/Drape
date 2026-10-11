@@ -407,6 +407,38 @@ export const ROADS: readonly Road[] = [
     ],
   },
   {
+    id: "campaigns",
+    title: "Campaigns — a customer's named collections of signed casts (N2c, built dark)",
+    entrances: ["server/routes/castingV2.ts", "server/db/castCampaigns.ts"],
+    procedures: [
+      "castingV2.listCampaigns",
+      "castingV2.createCampaign",
+      "castingV2.renameCampaign",
+      "castingV2.deleteCampaign",
+      "castingV2.addCastsToCampaign",
+      "castingV2.removeCastsFromCampaign",
+    ],
+    summary:
+      "His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, "
+      + "many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, "
+      + "`castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and "
+      + "none an operation: list (each campaign with a DERIVED count of the casts the roster would draw), create, "
+      + "rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing) and remove "
+      + "casts. 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.",
+    doors: [],
+    doorsNote:
+      "THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this "
+      + "customer's is `NOT_FOUND`, never somebody else's campaign; a cast that is not this customer's signed, live "
+      + "cast makes the whole add `NOT_FOUND` and files nothing; a second campaign with a name the customer already "
+      + "uses is CONFLICT. Reads ride the castingRead bucket and writes the castingSheet bucket. No corpus row can "
+      + "reach it: the corpus drives `refineCandidate` only.",
+    flags: ["CASTING_V2_SCOPE"],
+    notes: [
+      "BUILT DARK, declared (card #2249): no client code calls these doors yet, so the merge changes nothing a customer sees. The chip row, multi-select, the cast page's campaigns panel and the post-Sign offer are the next cards of the rung.",
+      "Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned.",
+    ],
+  },
+  {
     id: "concept-upload",
     title: "Upload a concept — a picture in, a description of the person out",
     entrances: ["server/routes/castingV2.ts", "server/castingV2/conceptDescribe.ts"],
