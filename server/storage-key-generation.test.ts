@@ -11,6 +11,11 @@ import {
   usesMathRandom,
   withoutComments,
 } from "./testing/storageKeyExpressions";
+/* ⚠ The OTHER door, imported straight from its own module and used by ONE arm
+   (#2297): the arm that shows what pointing `keyExpressionsIn` at it would
+   cost. It is deliberately not re-exported through the module above, so nothing
+   in the product can reach for it by that road. */
+import { codeOnly } from "./testing/withoutComments";
 
 /**
  * EVERY STORAGE KEY IS MINTED FROM CRYPTOGRAPHIC RANDOMNESS (#1401).
@@ -362,4 +367,40 @@ describe("⚠ the reader itself, driven both ways", () => {
     expect(usesMathRandom("/* `randomUUID`, never `Math.random` — the name is the only thing. */")).toBe(false);
     expect(usesMathRandom("// randomUUID, never Math.random")).toBe(false);
   });
+  it("⚠ #2297 — a `Math.random` inside a STRING or a REGEX literal is data, not a reach", () => {
+    /* The literal half of the hole. `withoutComments` keeps literal CONTENTS,
+       so each of these read as an offence under the door this guard used until
+       2026-10-12 — a storage-key writer that merely MATCHES on the name, or
+       quotes it in a message, would have been named as a file that reached for
+       it. */
+    expect(usesMathRandom('const why = "randomUUID, never Math.random";')).toBe(false);
+    expect(usesMathRandom("const BANNED = /Math\.random/;")).toBe(false);
+    expect(usesMathRandom("if (/Math\.random\(\)/.test(source)) refuse();")).toBe(false);
+    expect(usesMathRandom("throw new Error(`a key may not use Math.random`);")).toBe(false);
+  });
+
+  it("⚠ #2297 — and the new door has not gone blind: a real call still reads as one", () => {
+    /* The positive half, and the arm above is worthless without it. The third
+       case is the one that matters most: a real call on the SAME LINE as a
+       literal mentioning the name. */
+    expect(usesMathRandom("const k = Math.random();")).toBe(true);
+    expect(usesMathRandom("const k = `a/${Math.random()}.png`;")).toBe(true);
+    expect(usesMathRandom('const why = "never Math.random"; const k = Math.random();')).toBe(true);
+    expect(usesMathRandom("const BANNED = /Math\.random/; const k = Math.random();")).toBe(true);
+  });
+
+  it("⚠ #2297 — `keyExpressionsIn` is NOT moved to the same door, and this is why", () => {
+    /* The card named this the trap and it is driven rather than promised: a key
+       expression IS a template literal, so the reader that finds them needs
+       literal CONTENTS kept. Pointing it at `codeOnly` would empty its whole
+       population, and the guard would then pass by having nothing to check. */
+    const minting = "const fileKey = `casting/${castId}/${randomUUID()}.png`;";
+    const found = keyExpressionsIn("x.ts", minting);
+    expect(found.map((hit) => hit.text)).toEqual(["`casting/${castId}/${randomUUID()}.png`"]);
+    /* The same source through the OTHER door, to show what the swap would cost:
+       the literal's text is gone, so there is no key left to read. */
+    expect(codeOnly(minting)).not.toContain("casting/");
+    expect(keyExpressionsIn("x.ts", codeOnly(minting))).toEqual([]);
+  });
+
 });
