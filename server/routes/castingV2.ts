@@ -149,7 +149,11 @@ import {
   listCastPublicIdsForCandidates,
   listCastSiblings,
   listSessionSignedCastNames,
-  listSignedCasts,
+  countRoster,
+  type RosterScope,
+  listRosterPage,
+  ROSTER_PAGE_MAX,
+  ROSTER_SEARCH_MAX_LENGTH,
   editCastPersonaField,
   getCastReadsSources,
 } from "../db/castingV2Sign";
@@ -251,6 +255,50 @@ function enforceRateLimit(userId: number, config: (typeof RATE_LIMITS)[keyof typ
 const campaignIdInput = z.string().min(1).max(32);
 const campaignNameInput = z.string().trim().min(1).max(CAMPAIGN_NAME_MAX_LENGTH);
 const campaignCastIdsInput = z.array(z.string().min(1).max(32)).min(1).max(CAMPAIGN_CASTS_PER_CALL_MAX);
+
+/*
+  THE ROSTER'S SCOPE AND SEARCH (card #2250). Every field is optional, so the
+  input stays what an older bundle sends — `{}` is still "every signed cast,
+  newest first, one page" — and the response is still a bare array of casts.
+  An open tab from before this deploy therefore keeps working unchanged; only
+  the new chip row asks for a scope. `campaign` without a `campaignId` is
+  refused rather than read as `all`.
+*/
+const rosterFilterFields = {
+  scope: z.enum(["all", "unfiled", "campaign"]).optional(),
+  campaignId: campaignIdInput.optional(),
+  search: z.string().trim().max(ROSTER_SEARCH_MAX_LENGTH).optional(),
+};
+
+function requireCampaignWhenScoped(
+  value: { scope?: "all" | "unfiled" | "campaign"; campaignId?: string },
+  context: z.RefinementCtx,
+): void {
+  if (value.scope === "campaign" && !value.campaignId) {
+    context.addIssue({ code: "custom", path: ["campaignId"], message: "A campaign scope names its campaign" });
+  }
+}
+
+const rosterInput = z.object({
+  ...rosterFilterFields,
+  /** The public id of the last cast on the page before; absent for the first page. */
+  cursor: z.string().min(1).max(32).nullish(),
+  limit: z.number().int().min(1).max(ROSTER_PAGE_MAX).optional(),
+  /*
+    tRPC's infinite query adds `direction` to every page's input by itself
+    (`@trpc/react-query`, `useInfiniteQuery`). Declared so `.strict()` does not
+    refuse the client's own pages; the roster only ever pages forward.
+  */
+  direction: z.enum(["forward", "backward"]).optional(),
+}).strict().superRefine(requireCampaignWhenScoped);
+
+const rosterCountsInput = z.object(rosterFilterFields).strict().superRefine(requireCampaignWhenScoped);
+
+function rosterScopeOf(input: { scope?: "all" | "unfiled" | "campaign"; campaignId?: string }): RosterScope {
+  if (input.scope === "unfiled") return { kind: "unfiled" };
+  if (input.scope === "campaign" && input.campaignId) return { kind: "campaign", campaignId: input.campaignId };
+  return { kind: "all" };
+}
 
 function campaignNotFound(): TRPCError {
   return new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
@@ -2013,12 +2061,19 @@ export const castingV2Router = router({
    * Counts and faces only; the room owns the detail.
    */
   roster: protectedProcedure
-    .input(z.object({}).strict())
-    .query(async ({ ctx }) => {
+    .input(rosterInput)
+    .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
-      const casts = await listSignedCasts(ctx.user.id);
-      return casts.map(({ model, anchorUrl, frameCount, brief }) => ({
+      const page = await listRosterPage(ctx.user.id, {
+        scope: rosterScopeOf(input),
+        search: input.search,
+        afterCastId: input.cursor ?? null,
+        limit: input.limit,
+      });
+      if (page.kind === "campaign_not_found") throw campaignNotFound();
+      if (page.kind === "cursor_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      return page.casts.map(({ model, anchorUrl, frameCount, brief }) => ({
         castId: model.agencyId ?? "",
         name: model.name,
         imageUrl: anchorUrl,
@@ -2040,6 +2095,22 @@ export const castingV2Router = router({
         status: model.status === "provisioning" ? ("building" as const) : ("ready" as const),
         signedAt: model.mintedAt ? model.mintedAt.toISOString() : null,
       }));
+    }),
+
+  /**
+   * The roster's numbers (card #2250): every signed cast, the unfiled ones,
+   * and how many in the asked scope match the asked search. The roster is
+   * paged, so the length of what has loaded is not a count of anything; these
+   * are counted over the rows by the roster's own predicates.
+   */
+  rosterCounts: protectedProcedure
+    .input(rosterCountsInput)
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
+      const counted = await countRoster(ctx.user.id, { scope: rosterScopeOf(input), search: input.search });
+      if (counted.kind === "campaign_not_found") throw campaignNotFound();
+      return counted.counts;
     }),
 
   /**

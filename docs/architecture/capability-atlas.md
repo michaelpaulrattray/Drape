@@ -15,7 +15,7 @@ A BRIEF is compiled and a ROLL renders eight candidates onto a SHEET (each an in
 
 _Entrances:_ `server/routes/castingV2.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE`
 
-_Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openSessions` · `castingV2.getSession` · `castingV2.abandonSession` · `castingV2.createRoll` · `castingV2.getRoll` · `castingV2.follow` · `castingV2.retry` · `castingV2.cancel` · `castingV2.keep` · `castingV2.discard` · `castingV2.undo` · `castingV2.selectVariant` · `castingV2.variants` · `castingV2.roster` · `castingV2.getCast` · `castingV2.renameCast` · `castingV2.deleteCast`
+_Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openSessions` · `castingV2.getSession` · `castingV2.abandonSession` · `castingV2.createRoll` · `castingV2.getRoll` · `castingV2.follow` · `castingV2.retry` · `castingV2.cancel` · `castingV2.keep` · `castingV2.discard` · `castingV2.undo` · `castingV2.selectVariant` · `castingV2.variants` · `castingV2.roster` · `castingV2.rosterCounts` · `castingV2.getCast` · `castingV2.renameCast` · `castingV2.deleteCast`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
@@ -236,7 +236,8 @@ _Called as:_ `castingV2.listCampaigns` · `castingV2.createCampaign` · `casting
 
 > THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this customer's is `NOT_FOUND`, never somebody else's campaign; a cast that is not this customer's signed, live cast makes the whole add `NOT_FOUND` and files nothing; a second campaign with a name the customer already uses is CONFLICT. Reads ride the castingRead bucket and writes the castingSheet bucket. No corpus row can reach it: the corpus drives `refineCandidate` only.
 
-- BUILT DARK, declared (card #2249): no client code calls these doors yet, so the merge changes nothing a customer sees. The chip row, multi-select, the cast page's campaigns panel and the post-Sign offer are the next cards of the rung.
+- Built dark by card #2249; the library's chip row (card #2250) is the first client caller — it lists campaigns as chips and creates one from the + chip. Filing casts (multi-select), the cast page's campaigns panel and the post-Sign offer are the rung's next cards.
+- The roster reads campaigns too (card #2250): `castingV2.roster` takes an optional scope (all, unfiled, a campaign), a name search and a cursor, and `castingV2.rosterCounts` counts the chips. Unfiled is a NOT EXISTS over this customer's member rows; a campaign scope is an EXISTS owner-checked on both sides of the member join; a campaign or cursor that is not this customer's is NOT_FOUND.
 - Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned.
 
 ### Upload a concept — a picture in, a description of the person out
@@ -263,7 +264,7 @@ _Called as:_ `castingV2.concept.describe`
 - EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 
-## Every way in — the 38 procedures the casting entrance exposes
+## Every way in — the 39 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
@@ -302,6 +303,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.retry` | life-of-a-cast |
 | `castingV2.retryView` | sign-views |
 | `castingV2.roster` | life-of-a-cast |
+| `castingV2.rosterCounts` | life-of-a-cast |
 | `castingV2.selectVariant` | life-of-a-cast |
 | `castingV2.sign` | sign-views |
 | `castingV2.translateOwnWords` | persona-say-it-your-way |

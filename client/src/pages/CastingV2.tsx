@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../server/routers";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowRight, Plus, Search } from "lucide-react";
@@ -36,6 +39,17 @@ import { useSheetState } from "@/features/castingV2/sheetState";
 import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/singleFlight";
 import { ConfirmDialog } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
+import { NewCampaignDialog } from "@/features/castingV2/components/NewCampaignDialog";
+import {
+  ROSTER_PAGE_SIZE,
+  ROSTER_SEARCH_DEBOUNCE_MS,
+  chipFromLocation,
+  chipHeading,
+  isChip,
+  rosterEmptyLine,
+  rosterFilterInput,
+  type RosterChip,
+} from "@/features/castingV2/rosterChips";
 import { CardMenu } from "@/foundation";
 import { DestructiveConfirm } from "@/foundation";
 import { RenameDialog } from "@/foundation";
@@ -73,6 +87,9 @@ import "@/features/castingV2/castingV2.css";
 
 const ROLL_PRICE_FALLBACK = 0;
 
+/** One signed cast as the roster draws it. */
+type RosterCast = inferRouterOutputs<AppRouter>["castingV2"]["roster"][number];
+
 /**
  * The receipt legend's id, so the figures can point a screen reader at the
  * sentence that explains them (`aria-describedby`). One receipt on this page,
@@ -102,14 +119,13 @@ const RECEIPT_LEGEND_ID = "dpc-hero-receiptsay";
  * law 4, and the deck is the one with the evidence attached.
  */
 
-/**
- * F3: UNSIGNED is the vocabulary everywhere; DRAFT is retired. But the *casing*
- * is a separate question from the word — these are filter labels in a sentence
- * -case row, so they read as filters. Uppercase UNSIGNED is reserved for the
- * mono status pill on a cast card, where shouting is the point.
- */
-const ROSTER_SCOPES = ["All", "Signed", "Unsigned"] as const;
-type RosterScope = (typeof ROSTER_SCOPES)[number];
+/*
+  THE ROSTER'S CHIPS ARE CAMPAIGNS NOW (card #2250, rung N2c — his Desk reply
+  #273: "N2c — Campaigns"). `All · Signed · Unsigned` is gone: the grid has
+  always been signed-only, so Signed was every row and Unsigned drew an empty
+  grid on purpose — two chips meaning "everything" and "nothing". The row reads
+  All · Unfiled · <their campaigns> · + and its rules live in `rosterChips.ts`.
+*/
 
 /**
  * What deleting a sheet actually does, said plainly.
@@ -197,7 +213,22 @@ export default function CastingV2() {
   */
   const [style, setStyle] = useState<CastStyle>(DEFAULT_CAST_STYLE);
   const [search, setSearch] = useState("");
-  const [scope, setScope] = useState<RosterScope>("All");
+  /*
+    The search the roster is ASKED for trails the box by a quarter second, so a
+    name typed at speed is one read and not one per letter.
+  */
+  const [askedSearch, setAskedSearch] = useState("");
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAskedSearch(search.trim()), ROSTER_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+  /*
+    The chosen chip. A link may name a campaign (`?campaign=<id>`), so a
+    campaign can be opened straight onto its own chip.
+  */
+  const [chip, setChip] = useState<RosterChip>(() => chipFromLocation(window.location.search));
+  const [creatingCampaign, setCreatingCampaign] = useState(false);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   /** Closes synchronously on click; see `startCasting` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
@@ -408,7 +439,7 @@ export default function CastingV2() {
     could only ever refuse; and the door itself is a server flag. A menu item
     that always refuses is a dead control (D-107).
   */
-  const castMenuItems = (cast: NonNullable<typeof roster.data>[number]) => [
+  const castMenuItems = (cast: RosterCast) => [
     {
       label: "Rename",
       onSelect: () => {
@@ -439,9 +470,7 @@ export default function CastingV2() {
   const [renaming, setRenaming] = useState<
     { castId: string; name: string; imageUrl: string | null } | null
   >(null);
-  const [deletingCast, setDeletingCast] = useState<
-    NonNullable<typeof roster.data>[number] | null
-  >(null);
+  const [deletingCast, setDeletingCast] = useState<RosterCast | null>(null);
 
   /*
     THE DOOR THE SERVER OWNS. Permanent deletion sits behind
@@ -468,16 +497,97 @@ export default function CastingV2() {
     as a white error screen for a minute. Every hook lives up here with the
     others.
   */
-  const roster = trpc.castingV2.roster.useQuery(
-    {},
+  const rosterFilter = rosterFilterInput(chip, askedSearch);
+  /*
+    PAGED, NOT CAPPED (card #2250). The roster used to be the newest sixty and
+    nothing more — a customer's sixty-first signed cast was reachable from
+    nowhere on this page. Each page asks for the casts after the last one it
+    has, and the grid asks for the next page when its end scrolls into view.
+    The response is still a bare array per page; a full page means there may
+    be more, a short one means the list has ended.
+  */
+  const roster = trpc.castingV2.roster.useInfiniteQuery(
+    { ...rosterFilter, limit: ROSTER_PAGE_SIZE },
     {
       enabled: config.data?.enabled === true,
+      getNextPageParam: (lastPage) =>
+        lastPage.length === ROSTER_PAGE_SIZE ? lastPage[lastPage.length - 1]?.castId : undefined,
+      // The previous chip's casts stay on screen while the next chip's load,
+      // rather than the grid blinking empty between two lists.
+      placeholderData: keepPreviousData,
       // A Cast still building its package resolves within a couple of minutes.
       // Poll only while one is.
       refetchInterval: (query) =>
-        query.state.data?.some((cast) => cast.status === "building") ? 5_000 : false,
+        query.state.data?.pages.some((page) => page.some((cast) => cast.status === "building"))
+          ? 5_000
+          : false,
     },
   );
+  const campaigns = trpc.castingV2.listCampaigns.useQuery({}, {
+    enabled: config.data?.enabled === true,
+  });
+  /*
+    The chips' numbers and the header's — counted by the server, because the
+    length of what has loaded is not a count of anything once the list pages.
+  */
+  const rosterCounts = trpc.castingV2.rosterCounts.useQuery(rosterFilter, {
+    enabled: config.data?.enabled === true,
+    placeholderData: keepPreviousData,
+  });
+  const createCampaign = trpc.castingV2.createCampaign.useMutation();
+  /*
+    A CHIP THAT NO LONGER EXISTS FALLS BACK TO ALL. A campaign deleted in
+    another tab, a link to a campaign that is not this customer's, or Unfiled
+    once the last campaign is gone (Unfiled is hidden then — his ruling on
+    #1469) would otherwise leave the grid filtered by a chip nobody can see.
+  */
+  const campaignList = campaigns.data;
+  useEffect(() => {
+    if (!campaignList || isChip(chip, campaignList)) return;
+    setChip({ kind: "all" });
+  }, [campaignList, chip]);
+  /*
+    THE END OF THE GRID ASKS FOR MORE. A sentinel under the last tile; when it
+    scrolls into view and there is another page, the next page is fetched. No
+    page numbers and no "load more" press — the list simply continues.
+  */
+  const [rosterEnd, setRosterEnd] = useState<HTMLElement | null>(null);
+  const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = roster;
+  useEffect(() => {
+    if (!rosterEnd || !hasNextPage || isFetchingNextPage || isFetchNextPageError) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) void fetchNextPage();
+    }, { rootMargin: "400px 0px" });
+    observer.observe(rosterEnd);
+    return () => observer.disconnect();
+  }, [rosterEnd, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+  /* Everything the library draws from, refreshed together after any change to it. */
+  const invalidateLibrary = async () => {
+    await Promise.all([
+      utils.castingV2.roster.invalidate(),
+      utils.castingV2.rosterCounts.invalidate(),
+      utils.castingV2.listCampaigns.invalidate(),
+    ]);
+  };
+  const chooseChip = (next: RosterChip) => {
+    setChip(next);
+    /* The address follows the chip, so a reload or a shared link lands on it. */
+    const url = new URL(window.location.href);
+    if (next.kind === "campaign") url.searchParams.set("campaign", next.campaignId);
+    else url.searchParams.delete("campaign");
+    window.history.replaceState(window.history.state, "", url.toString());
+  };
+  const submitNewCampaign = async (name: string) => {
+    setCampaignError(null);
+    try {
+      const created = await createCampaign.mutateAsync({ name });
+      await invalidateLibrary();
+      setCreatingCampaign(false);
+      chooseChip({ kind: "campaign", campaignId: created.campaignId });
+    } catch (error) {
+      setCampaignError(error instanceof Error ? error.message : "That campaign could not be made.");
+    }
+  };
 
   if (config.isLoading) {
     return (
@@ -669,17 +779,20 @@ export default function CastingV2() {
     appeared nowhere on this page. A count is not a placeholder — it is a claim
     about someone's property.
 
-    Unsigned stays zero and says so. There is no such thing as an unsigned cast
-    member in V2: an unsigned face is a candidate, and candidates live on their
-    sheet, which is what the Unsigned sheets row above is for.
+    There is no such thing as an unsigned cast member in V2: an unsigned face is
+    a candidate, and candidates live on their sheet, which is what the Unsigned
+    sheets row above is for — which is why the old Unsigned chip could only ever
+    draw an empty grid, and is gone (card #2250). The numbers are the server's
+    counts now, never the length of what has loaded.
   */
-  const casts = roster.data ?? [];
-  const scopeCounts: Record<RosterScope, number> = {
-    All: casts.length,
-    Signed: casts.length,
-    Unsigned: 0,
-  };
-  const shownCasts = scope === "Unsigned" ? [] : casts;
+  const shownCasts = roster.data?.pages.flat() ?? [];
+  const counts = rosterCounts.data;
+  const campaignRows = campaigns.data ?? [];
+  /* The header's number: how many casts this chip holds that match the search. */
+  const shownCount = counts?.matching ?? null;
+  const emptyLine = roster.isSuccess && !roster.isPlaceholderData && shownCasts.length === 0
+    ? rosterEmptyLine(chip, askedSearch, counts?.all ?? 0)
+    : null;
 
   return (
     <AppChrome breadcrumb="Casting" current="casting" width="working" gutter="tight">
@@ -1347,6 +1460,15 @@ export default function CastingV2() {
         />
       ) : null}
 
+      {creatingCampaign ? (
+        <NewCampaignDialog
+          busy={createCampaign.isPending}
+          error={campaignError}
+          onCancel={() => setCreatingCampaign(false)}
+          onCreate={(name) => void submitNewCampaign(name)}
+        />
+      ) : null}
+
       {/*
         THE DIALOG THAT HAD NO FIELD. It said "Rename this cast?" and offered
         Save name with nothing to type into — the one control it existed for was
@@ -1361,7 +1483,7 @@ export default function CastingV2() {
           onSave={async (name) => {
             try {
               await renameCast.mutateAsync({ castId: renaming.castId, name });
-              await utils.castingV2.roster.invalidate();
+              await invalidateLibrary();
               setRenaming(null);
               /*
                 KEPT, conservatively. This one waits on `roster` rather than
@@ -1390,7 +1512,7 @@ export default function CastingV2() {
                 clientRequestId: createClientRequestId(),
                 castId: deletingCast.castId,
               });
-              await utils.castingV2.roster.invalidate();
+              await invalidateLibrary();
               await utils.castingV2.openSessions.invalidate();
               /*
                 KEPT for the same measured reason as the sheet delete above:
@@ -1428,15 +1550,52 @@ export default function CastingV2() {
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search cast by name or look"
-              aria-label="Search cast"
+              placeholder="Search cast by name"
+              aria-label="Search cast by name"
             />
           </Field>
-          {ROSTER_SCOPES.map((option) => (
-            <ScopePill key={option} active={scope === option} onClick={() => setScope(option)}>
-              {option}
+          {/*
+            ALL · UNFILED · <CAMPAIGNS> · + (card #2250). The placeholder says
+            "by name" because the name is all that is searched — his ruling on
+            #1469: never "name or look" over a name-only search.
+
+            Unfiled is HIDDEN until there is at least one campaign — his
+            ruling: with none, All and Unfiled are one list, and two chips
+            meaning one thing is machinery showing.
+          */}
+          <div className="dpc-chips" role="group" aria-label="Show">
+            <ScopePill active={chip.kind === "all"} onClick={() => chooseChip({ kind: "all" })}>
+              All
+              {counts ? <span className="dpc-chip__count">{counts.all}</span> : null}
             </ScopePill>
-          ))}
+            {isChip({ kind: "unfiled" }, campaignRows) ? (
+              <ScopePill active={chip.kind === "unfiled"} onClick={() => chooseChip({ kind: "unfiled" })}>
+                Unfiled
+                {counts ? <span className="dpc-chip__count">{counts.unfiled}</span> : null}
+              </ScopePill>
+            ) : null}
+            {campaignRows.map((campaign) => (
+              <ScopePill
+                key={campaign.campaignId}
+                active={chip.kind === "campaign" && chip.campaignId === campaign.campaignId}
+                onClick={() => chooseChip({ kind: "campaign", campaignId: campaign.campaignId })}
+              >
+                {campaign.name}
+                <span className="dpc-chip__count">{campaign.castCount}</span>
+              </ScopePill>
+            ))}
+            <ScopePill
+              className="dpc-chip--new"
+              aria-label="New campaign"
+              title="New campaign"
+              onClick={() => {
+                setCampaignError(null);
+                setCreatingCampaign(true);
+              }}
+            >
+              <Plus size={13} strokeWidth={1.8} aria-hidden="true" />
+            </ScopePill>
+          </div>
         </div>
 
         {/*
@@ -1446,11 +1605,13 @@ export default function CastingV2() {
         */}
         <div className="dpc-rosterhead">
           <span className="dp-label" style={{ fontSize: 13.5 }}>
-            {scope === "All" ? "All cast" : scope === "Signed" ? "Signed" : "Unsigned"}
+            {chipHeading(chip, campaignRows)}
           </span>
-          <span className="dp-small">
-            {scopeCounts[scope]} {scopeCounts[scope] === 1 ? "cast member" : "cast members"}
-          </span>
+          {shownCount !== null ? (
+            <span className="dp-small">
+              {shownCount} {shownCount === 1 ? "cast member" : "cast members"}
+            </span>
+          ) : null}
         </div>
 
         {/* 178px 4:5 tiles, dashed create tile first (10-shared-patterns). */}
@@ -1514,13 +1675,28 @@ export default function CastingV2() {
           ))}
         </div>
 
-        {/* A sentence, so Archivo — mono is for machine facts only. */}
-        {casts.length === 0 ? (
-          <span className="dp-secondary">
-            No one signed yet — roll a casting, then sign the candidate you want to keep working
-            with.
-          </span>
+        {/*
+          The end of the grid. While there is another page this is what asks
+          for it (see the observer above); if asking fails it says so and
+          offers to try again rather than quietly ending the list early.
+        */}
+        {hasNextPage ? (
+          <div ref={setRosterEnd} className="dpc-roster__more">
+            {isFetchNextPageError ? (
+              <span className="dp-secondary">
+                The rest of the list did not load.{" "}
+                <button type="button" className="dpc-roster__retry" onClick={() => void fetchNextPage()}>
+                  Try again
+                </button>
+              </span>
+            ) : (
+              <span className="dp-metadata">{isFetchingNextPage ? "Loading…" : ""}</span>
+            )}
+          </div>
         ) : null}
+
+        {/* A sentence, so Archivo — mono is for machine facts only. */}
+        {emptyLine ? <span className="dp-secondary">{emptyLine}</span> : null}
       </section>
     </AppChrome>
   );

@@ -162,6 +162,8 @@ describe("which bucket each casting procedure was handed", () => {
       selectVariant: "castingSheet",
       variants: "castingRead",
       roster: "castingRead",
+      /* The library's chip and header numbers (#2250) — a read beside the roster. */
+      rosterCounts: "castingRead",
       renameCast: "castingSheet",
       /* CAMPAIGNS (N2c, #2249) — free, no credit, no operation: the list is a
          read a person asks for, the five writes are things a person does. */

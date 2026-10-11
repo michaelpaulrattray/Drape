@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 55
+      "moduleCount": 57
     },
     {
       "id": "domain:client-shared",
@@ -1405,6 +1405,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "path": "client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/RefineDust.tsx",
       "path": "client/src/features/castingV2/components/RefineDust.tsx",
       "domain": "castingV2",
@@ -1563,6 +1569,12 @@
     {
       "id": "module:client/src/features/castingV2/roomBusy.ts",
       "path": "client/src/features/castingV2/roomBusy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/rosterChips.ts",
+      "path": "client/src/features/castingV2/rosterChips.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8089,6 +8101,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.rosterCounts",
+      "namespace": "castingV2",
+      "name": "rosterCounts",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.selectVariant",
       "namespace": "castingV2",
       "name": "selectVariant",
@@ -11475,6 +11497,10 @@
       "path": "client/src/features/castingV2/roomCastId.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/rosterChips.test.ts",
+      "path": "client/src/features/castingV2/rosterChips.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/section10-guard.test.ts",
       "path": "client/src/features/castingV2/section10-guard.test.ts"
     },
@@ -12481,6 +12507,14 @@
     {
       "id": "test:server/castingRateLimitIntent.test.ts",
       "path": "server/castingRateLimitIntent.test.ts"
+    },
+    {
+      "id": "test:server/castingRoster-db.test.ts",
+      "path": "server/castingRoster-db.test.ts"
+    },
+    {
+      "id": "test:server/castingRosterRoute.test.ts",
+      "path": "server/castingRosterRoute.test.ts"
     },
     {
       "id": "test:server/castingStudio.test.ts",
@@ -18815,6 +18849,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "to": "module:client/src/features/castingV2/rosterChips.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "to": "module:client/src/foundation/CastingModal.tsx",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
       "to": "module:client/src/features/castingV2/refineDust.ts",
       "kind": "imports"
@@ -22236,6 +22280,11 @@
     },
     {
       "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/Reimagine.tsx",
       "kind": "imports"
     },
@@ -22252,6 +22301,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/retentionCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/rosterChips.ts",
       "kind": "imports"
     },
     {
@@ -22277,6 +22331,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:server/routers.ts",
       "kind": "imports"
     },
     {
