@@ -78,18 +78,20 @@ describe("R7-1B deterministic retryable credit writers", () => {
     const files = sourcesUnder(CLIENT_SRC, { tests: "exclude" });
     expect(files.length, "the sweep found almost nothing — check the path").toBeGreaterThan(300);
 
-    const callers = files
-      .filter((file) => /trpc\.billing\.changePlan\.useMutation/.test(file.source))
-      .map((file) => file.absolute);
+    const callers = files.filter((file) =>
+      /trpc\.billing\.changePlan\.useMutation/.test(file.source),
+    );
     /* The control: a ban asked of an empty population proves nothing. */
     expect(callers.length, "no client calls changePlan at all — the ban is inert")
       .toBeGreaterThan(0);
 
     const unkeyed = callers.filter(
-      (file) => !readFileSync(file, "utf8").includes("clientRequestId: crypto.randomUUID()"),
+      (file) => !file.source.includes("clientRequestId: crypto.randomUUID()"),
     );
     expect(
-      unkeyed.map((file) => file.slice(root.length)),
+      /* The offender is named relative to the walk root, as it was: the shared
+         walk hands that back rather than having it sliced off by length. */
+      unkeyed.map((file) => file.relative),
       "a client changes a plan without a stable request id — a retry double-charges",
     ).toEqual([]);
   });
