@@ -21,9 +21,10 @@ import { Plus } from "lucide-react";
  *   only its press files, through the panel's own `addCastsToCampaign` road.
  * - ONCE. The marker lives in memory and is taken on first read, so a reload, a
  *   second visit or another cast's page never sees it again.
- * - "DON'T ASK AGAIN" IS KEPT in this browser under a versioned key. Storage
- *   that throws (a private window, blocked site data) reads as "not silenced"
- *   and the write is a no-op — the offer then simply asks again next Sign.
+ * - "DON'T ASK AGAIN" IS KEPT in this browser, PER ACCOUNT (#2274), under a
+ *   versioned key. Storage that throws (a private window, blocked site data)
+ *   reads as "not silenced" and the write is a no-op — the offer then simply
+ *   asks again next Sign.
  */
 
 /* ---------------------------------------------------------------- the marker */
@@ -47,25 +48,81 @@ export function takeJustSigned(castId: string): boolean {
 
 /* ------------------------------------------------------- "don't ask again" */
 
+/*
+  ONE ACCOUNT'S CHOICE IS THAT ACCOUNT'S — #2274. Until then the choice sat
+  under one fixed key, so a second account signing in on the same browser never
+  saw the offer and was never told why.
+
+  WHY THE KEY CARRIES THE EMAIL'S FINGERPRINT, NOT THE ACCOUNT ID. The card
+  asked for the id, and the client does not have one: `auth.me` is a positive
+  projection that deliberately leaves `id` out (`server/routes/auth.ts`, pinned
+  by `server/auth.me.test.ts`), and widening that boundary for a UI preference
+  is a decision of its own. The email IS in that projection, is one per
+  account, and nothing in the product changes it. It is kept only as a short
+  one-way fingerprint, so a shared machine holds no address in its site data
+  after the person signs out. This is not a secret from anyone — the same page
+  can read the email from `auth.me` — it is simply not left lying about.
+*/
+
+/** The pre-#2274 key. Read once, by the first account to ask, and then removed. */
 export const POST_SIGN_OFFER_SILENCED_KEY = "drape_postsign_campaign_offer_v1";
 
-export function isPostSignOfferSilenced(storage: Pick<Storage, "getItem"> | undefined = safeStorage()): boolean {
+type OfferStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/** FNV-1a over the lower-cased address: stable, synchronous, and not the address. */
+export function accountFingerprint(email: string): string {
+  let hash = 0x811c9dc5;
+  for (const char of email.trim().toLowerCase()) {
+    hash ^= char.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+/** The key one account's choice is kept under. */
+export function postSignOfferSilencedKey(email: string): string {
+  return `${POST_SIGN_OFFER_SILENCED_KEY}:${accountFingerprint(email)}`;
+}
+
+/**
+ * Whether THIS account said "don't ask again". The old unscoped key is honoured
+ * once: the first account to read it takes it over and it is removed, so it can
+ * never silence a second account. Storage that throws reads as not silenced.
+ */
+export function isPostSignOfferSilenced(
+  email: string,
+  storage: Partial<OfferStorage> | undefined = safeStorage(),
+): boolean {
+  if (!email) return false;
   try {
-    return storage?.getItem(POST_SIGN_OFFER_SILENCED_KEY) === "never";
+    if (storage?.getItem?.(postSignOfferSilencedKey(email)) === "never") return true;
+    if (storage?.getItem?.(POST_SIGN_OFFER_SILENCED_KEY) !== "never") return false;
   } catch {
     return false;
   }
+  /* The legacy choice: kept for this account, then retired. */
+  silencePostSignOffer(email, storage);
+  try {
+    storage?.removeItem?.(POST_SIGN_OFFER_SILENCED_KEY);
+  } catch {
+    /* Could not remove it; it is read again next time, which is no worse than before. */
+  }
+  return true;
 }
 
-export function silencePostSignOffer(storage: Pick<Storage, "setItem"> | undefined = safeStorage()): void {
+export function silencePostSignOffer(
+  email: string,
+  storage: Partial<OfferStorage> | undefined = safeStorage(),
+): void {
+  if (!email) return;
   try {
-    storage?.setItem(POST_SIGN_OFFER_SILENCED_KEY, "never");
+    storage?.setItem?.(postSignOfferSilencedKey(email), "never");
   } catch {
     /* Nowhere to keep it: the offer asks again after the next Sign, which is the honest fallback. */
   }
 }
 
-function safeStorage(): Storage | undefined {
+function safeStorage(): OfferStorage | undefined {
   try {
     return typeof window === "undefined" ? undefined : window.localStorage;
   } catch {
@@ -75,19 +132,23 @@ function safeStorage(): Storage | undefined {
 
 /* -------------------------------------------------------------- the decision */
 
-/** "pending": waiting on the campaign list. "showing": drawn. "gone": never again this visit. */
+/** "pending": waiting on the campaign list or the account. "showing": drawn. "gone": never again this visit. */
 export type PostSignOfferState = "pending" | "showing" | "gone";
 
 /**
  * The offer's next state. Pure, so every refusal above is driven directly.
- * `campaigns` is the customer's whole list (`undefined` while it loads).
+ * `campaigns` is the customer's whole list (`undefined` while it loads);
+ * `silenced` is this account's "don't ask again" (`undefined` until the
+ * signed-in account is known, so no account is ever read as another's).
  */
 export function postSignOfferState(
   current: PostSignOfferState,
   campaigns: readonly unknown[] | undefined,
+  silenced: boolean | undefined,
 ): PostSignOfferState {
   if (current !== "pending") return current;
-  if (campaigns === undefined) return "pending";
+  if (silenced === true) return "gone";
+  if (campaigns === undefined || silenced === undefined) return "pending";
   return campaigns.length > 0 ? "showing" : "gone";
 }
 
