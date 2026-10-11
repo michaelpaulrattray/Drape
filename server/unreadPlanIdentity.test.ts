@@ -1,10 +1,10 @@
-import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { CLIENT_SRC as CLIENT_SRC_ROOT, sourcePathsUnder } from "./testing/sourceTree";
 import { withoutComments } from "./testing/withoutComments";
 
 /* It walks the whole client tree in process, and under the parallel run that
@@ -102,7 +102,8 @@ vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
  * captioned a subscriber's own plan "Free" cannot come back unannounced.
  */
 
-const CLIENT_SRC = path.resolve(__dirname, "..", "client", "src");
+/* The walk root is `testing/sourceTree.ts`'s single derivation (#2289). */
+const CLIENT_SRC = CLIENT_SRC_ROOT;
 
 /**
  * A plan identity defaulted to a string that NAMES something.
@@ -390,27 +391,19 @@ const DECLARED: ReadonlyArray<{
   },
 ];
 
-function tsSourcesUnder(dir: string): string[] {
-  /* ⚠ A listing can name a file that is gone by the time it is stat-ed, not
-     only by the time it is read (#223's list-side twin): this tree is shared by
-     several sessions. `throwIfNoEntry: false` and the `null` skip are the two
-     halves, and `readListedSource` is the other one. */
-  const entries = readdirSync(dir, { withFileTypes: true });
-  const found: string[] = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    const stat = statSync(full, { throwIfNoEntry: false });
-    if (stat === undefined) continue;
-    if (stat.isDirectory()) {
-      found.push(...tsSourcesUnder(full));
-      continue;
-    }
-    if (!/\.(ts|tsx)$/.test(entry.name)) continue;
-    if (/\.test\.(ts|tsx)$/.test(entry.name)) continue;
-    found.push(full);
-  }
-  return found;
-}
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289).** THIS function was
+  in THREE files byte for byte — `creditBalanceLoadingState`,
+  `unreadMoneyFigure` and `unreadPlanIdentity` — which is the clearest
+  specimen among the twenty private copies the AST reader found. The race
+  tolerance its comment described is a property of that module now rather than
+  a thing each copy remembers: the list-then-stat race is dissolved by
+  `withFileTypes` (one syscall answers both questions) and the read goes
+  through `readListedSource`. `tests: "exclude"` is this suite's own
+  population, kept exactly.
+*/
+const tsSourcesUnder = (dir: string): string[] =>
+  sourcePathsUnder(dir, { tests: "exclude" });
 
 type Offence = {
   readonly file: string;

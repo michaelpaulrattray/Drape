@@ -164,14 +164,51 @@ export function sweepsTheTree(source: string, fromFile: string, repoRoot: string
  */
 export function declaresTheFloor(source: string): boolean {
   const code = codeOnly(source);
-  return /vi\s*\.\s*setConfig\s*\(\s*\{[^}]*testTimeout\s*:\s*(?:CONTENDED_TEST_TIMEOUT_MS|CHILD_PROCESS_TEST_TIMEOUT_MS)/.test(
-    code,
+  if (
+    /vi\s*\.\s*setConfig\s*\(\s*\{[^}]*testTimeout\s*:\s*(?:CONTENDED_TEST_TIMEOUT_MS|CHILD_PROCESS_TEST_TIMEOUT_MS)/.test(
+      code,
+    )
+  ) {
+    return true;
+  }
+  /*
+    ⚠ **AND THE TWO `suiteClocks` HELPERS COUNT TOO — #2289, and this was a
+    LATENT HOLE that a conversion walked straight into.** `allowTreeSweeps()`
+    sets 60 s and `allowColdImports()` 30 s, both at file level, both through
+    `vi.setConfig`, and both for families whose subject is exactly this kind of
+    work — `allowTreeSweeps`'s own docblock says *"for a file whose tests read
+    the source tree off disk"*. A file declaring through them read as
+    UNDECLARED here, which is the "either class constant satisfies it" clause
+    above failing to notice a third sanctioned spelling of the same act.
+    Found by moving a walk onto the promoted reader:
+    `r7-snapshot-selection-contract.test.ts` calls that helper and would have
+    been indicted for not declaring a floor it already sets.
+
+    The CALL is read, not the import, for this function's own stated reason.
+
+    ⚠ **THE TWO NAMES ARE STRING DATA AND THE FIRST SHAPE OF THIS PUT THEM IN A
+    REGEX LITERAL, WHICH BROKE ANOTHER INSTRUMENT'S POSITIVE CONTROL.**
+    `scripts/lib/productionMention.mts` classifies a symbol by whether any
+    PRODUCTION file mentions it, skipping a name that survives only inside
+    quotes — *"data is not a call"* — and its positive control is
+    `allowColdImports`, chosen precisely because it lives in `server/testing/`
+    where production calling it *"would itself be the bug"*. A regex literal is
+    not a quoted string to `withoutStrings`, so naming the helpers there made
+    this module read as a production consumer and the uncalled-exports sweep
+    REFUSED, which is that instrument behaving correctly. As strings they are
+    data, as they should be: nothing here calls either one.
+  */
+  const CLOCK_SETTERS = ["allowTreeSweeps", "allowColdImports"];
+  return CLOCK_SETTERS.some((setter) =>
+    new RegExp(`\\b${setter}\\s*\\(\\s*\\)`).test(code),
   );
 }
 
 export type SweepReading = {
   /** Repo-relative, forward-slashed. */
   file: string;
+  /** How the tree is read — in this file, or through one module it imports. */
+  via: "directly" | { module: string };
   /** Whether the file declares one of the two class floors. */
   declares: boolean;
 };
@@ -189,6 +226,22 @@ export type SweepReading = {
  * in this population for free. **Until then a clean reading here is a FLOOR and
  * not coverage**, and the arms that measured red carry the declaration whether
  * this reader can see them or not.
+ *
+ * ⚠ **AND THAT PARAGRAPH IS THE CARD #2289 WAS BUILT FROM, SO ONE HOP IS
+ * RESOLVED NOW — the same hop `childProcessSuites` has always had, with the
+ * same stated bound.** Measured at the tree the day it landed: the hop adds
+ * **3** suites and **0** of them are undeclared, so the widening indicts
+ * nobody; what it is really for is that a walk promoted to
+ * `testing/sourceTree.ts` would otherwise take every one of its consumers OUT
+ * of this population — the guard going green because it is watching nobody,
+ * which is `directory-population-loses-promoted-subject` arriving by the front
+ * door. The three it adds today reach the reader through
+ * `testing/creditDisplaySites.ts`, `testing/errorMessageInterpolations.ts` and
+ * `testing/shellLessPathLaunches.ts`, which have called it all along.
+ *
+ * ITS BOUND, STATED RATHER THAN DISCOVERED, AND IT IS THE SIBLING'S WORD FOR
+ * WORD: **exactly one hop, through a RELATIVE specifier.** A suite reaching the
+ * reader two modules deep, or through a package, is invisible here.
  */
 export function sourceSweepSuites(repoRoot: string): SweepReading[] {
   const tracked = execFileSync("git", ["ls-files", "*.test.ts", "*.test.tsx"], {
@@ -209,14 +262,39 @@ export function sourceSweepSuites(repoRoot: string): SweepReading[] {
   }
 
   const readings: SweepReading[] = [];
+  /* Keyed on the resolved target, because fifty suites reach for the same
+     handful of modules and the answer is a file read either way. */
+  const sweeperCache = new Map<string, boolean>();
+
   for (const file of tracked) {
     const absolute = join(repoRoot, file);
     /* A tracked file can be absent from a worktree mid-operation, and this
        reader must not throw where `readListedSource` would tolerate. */
     if (!existsSync(absolute)) continue;
     const source = readFileSync(absolute, "utf8");
-    if (!sweepsTheTree(source, file, repoRoot)) continue;
-    readings.push({ file, declares: declaresTheFloor(source) });
+
+    let via: SweepReading["via"] | null = null;
+    if (sweepsTheTree(source, file, repoRoot)) {
+      via = "directly";
+    } else {
+      for (const specifier of relativeSpecifiers(source)) {
+        const target = resolveRelative(file, specifier, repoRoot);
+        if (!target) continue;
+        let sweeps = sweeperCache.get(target);
+        if (sweeps === undefined) {
+          const relative = target.replaceAll("\\", "/").replace(`${repoRoot.replaceAll("\\", "/")}/`, "");
+          sweeps = sweepsTheTree(readFileSync(target, "utf8"), relative, repoRoot);
+          sweeperCache.set(target, sweeps);
+        }
+        if (sweeps) {
+          via = { module: target.replaceAll("\\", "/").replace(`${repoRoot.replaceAll("\\", "/")}/`, "") };
+          break;
+        }
+      }
+    }
+
+    if (!via) continue;
+    readings.push({ file, via, declares: declaresTheFloor(source) });
   }
 
   return readings;

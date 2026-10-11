@@ -18,8 +18,17 @@
 import { describe, it, expect } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CLIENT_SRC, sourcesUnder } from "./testing/sourceTree";
+
+/* This suite reads every source under `client/src/features` off the real tree,
+   which puts it in #741's population - through `testing/sourceTree.ts` since
+   #2289, one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 import { CANONICAL_VIEW_ANGLES } from "../shared/boardTypes";
 import { RefinePanel } from "../client/src/features/casting/components/ImageViewer/RefinePanel";
 import { useCastingUIStore } from "../client/src/features/casting/stores/useCastingUIStore";
@@ -85,15 +94,15 @@ describe("source guards — the obsolete allowlist and binary framing cannot ret
   });
 
   it("no client feature code can arm the surgical or eraser tool (Batch 0 closure)", () => {
-    const featuresRoot = join(__dirname, "..", "client", "src", "features");
-    const files = readdirSync(featuresRoot, { recursive: true })
-      .map(String)
-      .filter((f) => /\.(ts|tsx)$/.test(f));
+    /* The walk is `testing/sourceTree.ts`'s since #2289. `tests: "include"`
+       is this suite's own population, unchanged: the closure is that NO file
+       under the feature tree arms the tool, and a suite arming it would arm
+       it. */
+    const files = sourcesUnder(join(CLIENT_SRC, "features"), { tests: "include" });
     expect(files.length).toBeGreaterThan(50); // the walk actually walked
     const armPattern = /setActiveTool\(\s*['"](surgical|eraser)['"]/;
-    for (const f of files) {
-      const src = readFileSync(join(featuresRoot, f), "utf-8");
-      expect(src, `${f} must not arm a masked tool`).not.toMatch(armPattern);
+    for (const file of files) {
+      expect(file.source, `${file.relative} must not arm a masked tool`).not.toMatch(armPattern);
     }
   });
 });

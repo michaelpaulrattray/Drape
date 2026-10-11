@@ -1,10 +1,10 @@
-import { readdirSync } from "node:fs";
 import path from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
+import { repoPath, sourcePathsUnder } from "./testing/sourceTree";
 
 
 import { allowTreeSweeps } from "./testing/suiteClocks";
@@ -148,10 +148,24 @@ export const exitContract = (raw: string, fileName = "probe.mts"): { ok: boolean
   return { ok: false, reason: "terminal chain has no nonzero exit on the failure arm" };
 };
 
-const walk = (dir: string): string[] => readdirSync(path.join(ROOT, dir), { withFileTypes: true })
-  .flatMap((entry) => (entry.isDirectory()
-    ? walk(path.posix.join(dir, entry.name))
-    : (/\.(m?ts|tsx|m?js)$/.test(entry.name) ? [path.posix.join(dir, entry.name)] : [])));
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — one of twenty
+  private copies, and this suite is the one `suiteClocks.ts` names as the
+  specimen of the class: it and `scriptConnectionDiscipline` are siblings that
+  sweep the same directory and were written together, and only one of them
+  carried the clock, *"nothing was wrong with either shift; the asymmetry
+  simply had nowhere to show up."* A shared walk is where it shows up.
+
+  What is NOT changed is the CONTRACT its readers rest on: a POSIX
+  repo-relative path, which `sourceOf` is keyed on. `tests: "include"` is
+  this walk's own population, unchanged — a disposable test file under
+  `scripts/` must end by exiting as much as any other script does.
+*/
+const walk = (dir: string): string[] =>
+  sourcePathsUnder(repoPath(dir), {
+    tests: "include",
+    extensions: [".ts", ".mts", ".tsx", ".js", ".mjs"],
+  }).map((absolute) => path.relative(ROOT, absolute).split(path.sep).join("/"));
 
 /*
   THE READ AND THE POPULATION ARE THE SAME STEP, on purpose (#223).

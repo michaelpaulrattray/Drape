@@ -44,13 +44,15 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
-import { readListedSource } from "../testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+import { CLIENT_SRC, sourcesUnder } from "../testing/sourceTree";
 import { withoutComments } from "../testing/withoutComments";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
-const CLIENT_SRC = path.join(process.cwd(), "client", "src");
+/* The walk root is `testing/sourceTree.ts`'s single derivation (#2289); this
+   file derived it from `process.cwd()`, which was the fourth of five
+   spellings in the tree and the only one that depended on where vitest ran. */
 
 /**
  * The one reading this file does, named so that its own control goes through it
@@ -65,10 +67,14 @@ type Source = { relative: string; code: string };
 /**
  * Every TypeScript source under `client/src`.
  *
- * `statSync` takes `throwIfNoEntry: false` and the read goes through
- * `readListedSource` because this working tree is shared: a listed entry can be
- * gone before it is classified or opened, and skipping it is the correct answer
- * rather than a tolerated failure (`server/testing/listedSource.ts`).
+ * ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — it was one of
+ * TWENTY private copies of it, and the race tolerance this docblock used to
+ * describe is now a property of that module rather than a thing each copy
+ * remembers: the list-then-stat race is dissolved by `withFileTypes` (one
+ * syscall answers both questions, so there is no second look to lose) and the
+ * read goes through `readListedSource`. `tests: "include"` is this suite's
+ * own population, unchanged — see the next paragraph, which is about test
+ * files specifically.
  *
  * Prose quotes the retired field by name on purpose — `withoutComments` strips
  * it before the arms ask. Measured on this walk's own 531 inputs (#1636): the
@@ -80,27 +86,8 @@ type Source = { relative: string; code: string };
  * an ABSENCE assertion, where reading less is exactly how it goes green wrongly.
  */
 function clientSources(): Source[] {
-  const found: Source[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of fs.readdirSync(dir)) {
-      const full = path.join(dir, entry);
-      const stat = fs.statSync(full, { throwIfNoEntry: false });
-      if (!stat) continue;
-      if (stat.isDirectory()) {
-        walk(full);
-        continue;
-      }
-      if (!/\.tsx?$/.test(entry)) continue;
-      const source = readListedSource(full);
-      if (source === null) continue;
-      found.push({
-        relative: path.relative(CLIENT_SRC, full).replace(/\\/g, "/"),
-        code: withoutProse(source),
-      });
-    }
-  };
-  walk(CLIENT_SRC);
-  return found;
+  return sourcesUnder(CLIENT_SRC, { tests: "include" })
+    .map((file) => ({ relative: file.relative, code: withoutProse(file.source) }));
 }
 
 describe("the account-level author-road flag has left the client", () => {

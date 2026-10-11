@@ -23,26 +23,31 @@
  * a person and never read back by the product, so it is `PRODUCT_NAME`'s
  * business, not an identifier's.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PRODUCT_NAME, productFilename } from "@shared/brand";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "../../../server/testing/contendedTestTimeout";
+import { sourcesUnder, type TreeSource } from "../../../server/testing/sourceTree";
+
+/* This suite reads every app source under `client/src`, `shared/` and
+   `server/` off the real tree, which puts it in #741's population — reached
+   through `testing/sourceTree.ts` since #2289, one hop, which that deriver
+   resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const ROOT = join(__dirname, "..", "..", "..");
 const OLD_NAME = /drape/i;
 
-function walk(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules") continue;
-      walk(full, out);
-    } else if (/\.(ts|tsx)$/.test(entry) && !/\.(test|spec)\.tsx?$/.test(entry)) {
-      out.push(full);
-    }
-  }
-  return out;
-}
+/*
+  ⚠ **THE WALK IS `server/testing/sourceTree.ts`'S NOW (#2289).** It was one of
+  TWENTY private copies of this walk in the tree, and one of the TEN that read
+  each listed file with a bare `readFileSync` — #223's race, on a working tree
+  several sessions share. `tests: "exclude"` is this suite's own population
+  said out loud rather than defaulted: a download filename is decided in app
+  code, and a suite that MENTIONS the old name is not a site.
+*/
+const walk = (dir: string): TreeSource[] => sourcesUnder(dir, { tests: "exclude" });
 
 function rel(file: string): string {
   return relative(ROOT, file).split(sep).join("/");
@@ -101,7 +106,7 @@ const ENROLLED: Record<string, string> = {
 };
 
 const clientFiles = [...walk(join(ROOT, "client", "src")), ...walk(join(ROOT, "shared"))];
-const sources = new Map(clientFiles.map((f) => [rel(f), readFileSync(f, "utf8")]));
+const sources = new Map(clientFiles.map((f) => [rel(f.absolute), f.source]));
 
 const assignments = [...sources].flatMap(([file, src]) => findDownloadAssignments(file, src));
 const forwarders = new Set<string>();
@@ -183,10 +188,9 @@ describe("download filenames carry the product's name", () => {
     const hits: string[] = [];
     let seen = 0;
     for (const file of walk(join(ROOT, "server"))) {
-      const src = readFileSync(file, "utf8");
-      for (const m of src.matchAll(/Content-Disposition["'`]\s*,\s*([^)\n]+)/g)) {
+      for (const m of file.source.matchAll(/Content-Disposition["'`]\s*,\s*([^)\n]+)/g)) {
         seen++;
-        if (OLD_NAME.test(m[1])) hits.push(`${rel(file)}: ${m[1]}`);
+        if (OLD_NAME.test(m[1])) hits.push(`${rel(file.absolute)}: ${m[1]}`);
       }
     }
     expect(seen).toBeGreaterThan(0);

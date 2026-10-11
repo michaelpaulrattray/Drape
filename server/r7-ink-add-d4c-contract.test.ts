@@ -1,21 +1,20 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-async function runtimeFiles(root: string): Promise<string[]> {
-  const output: string[] = [];
-  async function walk(directory: string) {
-    for (const entry of await readdir(directory, { withFileTypes: true })) {
-      const full = path.join(directory, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\./.test(entry.name)) {
-        output.push(full);
-      }
-    }
-  }
-  await walk(root);
-  return output;
-}
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { repoPath, sourcesUnder } from "./testing/sourceTree";
+
+/* This suite reads every app source under `client/src` off the real tree,
+   which puts it in #741's population — through `testing/sourceTree.ts` since
+   #2289, one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
+/* The walk is `testing/sourceTree.ts`'s since #2289 — one of twenty private
+   copies, and one of the ten that read each listed file bare.
+   `tests: "exclude"` is this walk's own filter, kept. */
+const runtimeFiles = (root: string) =>
+  sourcesUnder(repoPath(root), { tests: "exclude" });
 
 describe("R7-7D D4C atomic Ink acceptance contract", () => {
   it("keeps the Accept wire owner-derived, strict, free, and compile-closed", async () => {
@@ -130,14 +129,16 @@ describe("R7-7D D4C atomic Ink acceptance contract", () => {
 
   it("limits D5 acceptance reachability to the explicit loaded-preview callback", async () => {
     const hits: string[] = [];
-    for (const file of await runtimeFiles("client/src")) {
-      const source = await readFile(file, "utf8");
+    /* The subject is the repo-relative path, as it always was: the assertion
+       below names one. `relative` is to the walk root, so the root is put
+       back in front of it rather than re-derived. */
+    for (const file of runtimeFiles("client/src")) {
       if (
-        source.includes("acceptInkAddCandidate")
-        || source.includes("evidence.accept")
-        || source.includes("ink.add.front_upper_torso.v1")
+        file.source.includes("acceptInkAddCandidate")
+        || file.source.includes("evidence.accept")
+        || file.source.includes("ink.add.front_upper_torso.v1")
       ) {
-        hits.push(file.replaceAll("\\", "/"));
+        hits.push(`client/src/${file.relative}`);
       }
     }
     expect(hits).toEqual([

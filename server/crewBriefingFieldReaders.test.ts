@@ -27,21 +27,40 @@
  * `updatedAt` had no mention of any kind. The arm's job is to make the NEXT
  * zero loud, not to audit rendering.
  */
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { crewBriefingSchema } from "./crew/crewBriefing";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { repoPath, sourcesUnder } from "./testing/sourceTree";
 
-/** Every file that draws his Crew page. */
+/* This suite lists the Crew page's own sources off the real tree, which puts it
+   in #741's population - through `testing/sourceTree.ts` since #2289, one hop,
+   which that deriver resolves. The carve-out for a cheap sweep is declined for
+   that deriver's own stated reason: an exception keyed on a FILENAME is what
+   stops a guard watching. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+
+/**
+ * Every file that draws his Crew page.
+ *
+ * ⚠ **THE LISTING IS `testing/sourceTree.ts`'S NOW AND IT IS RECURSIVE, WHICH
+ * IS A WIDENING AND THE RIGHT ONE (#2289).** The private listing here was one
+ * directory deep; that directory has no subdirectory TODAY, so the population
+ * is identical at this commit, and a subdirectory added tomorrow would draw his
+ * page as much as its neighbours do — a reader that stopped at the top level
+ * would have reported a clean "every field has a reader" over half the surface.
+ * The named page beside it is appended as before. `tests: "exclude"` is this
+ * suite's own population: a suite that MENTIONS a field is not a reader of it,
+ * which is this file's whole subject.
+ */
 function pageSources(): { path: string; text: string }[] {
-  const dir = join(__dirname, "..", "client", "src", "features", "admin", "components", "crew");
-  const files = readdirSync(dir)
-    .filter((name) => (name.endsWith(".tsx") || name.endsWith(".ts")) && !name.includes(".test."))
-    .map((name) => join(dir, name));
-  files.push(join(__dirname, "..", "client", "src", "pages", "AdminCrew.tsx"));
-  return files.map((path) => ({ path, text: readFileSync(path, "utf8") }));
+  const dir = repoPath("client", "src", "features", "admin", "components", "crew");
+  const drawn = sourcesUnder(dir, { tests: "exclude" })
+    .map((file) => ({ path: file.absolute, text: file.source }));
+  const page = repoPath("client", "src", "pages", "AdminCrew.tsx");
+  return [...drawn, { path: page, text: readFileSync(page, "utf8") }];
 }
 
 function referencesTo(field: string, sources: { text: string }[]): number {
@@ -88,7 +107,7 @@ describe("every field the briefing schema declares is read by the page", () => {
 });
 
 describe("the stamp says when, and says it differently from the bar", () => {
-  const stamp = readFileSync(join(__dirname, "..", "client", "src", "pages", "AdminCrew.tsx"), "utf8");
+  const stamp = readFileSync(repoPath("client", "src", "pages", "AdminCrew.tsx"), "utf8");
 
   it("draws updatedAt through the page's own formatter, not a fourth copy", () => {
     /* Three hand-rolled formatters is how one 24-hour fix reached one of them

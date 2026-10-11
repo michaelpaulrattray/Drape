@@ -120,8 +120,6 @@ const NOT_THE_CLASS: Record<string, string> = {
   "server/atlasMergeDriver.test.ts":
     "lists an mkdtemp fixture, not the tree; its one scripts/ read is the fixed"
     + " name `scripts/deploy-rite.mts`, which SHOULD throw if it is missing",
-  "server/r7-b4-live-consumers.test.ts":
-    "lists client/; its three scripts/ reads are fixed names, which should throw",
   "server/ceremonyAutoApply.test.ts":
     "lists `drizzle/`, never scripts; its two reads are a migration file from that"
     + " listing and the fixed name `scripts/deploy-rite.mts`, and BOTH should throw"
@@ -497,18 +495,21 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
      nulls, which is the half this rule exists to enforce. Both bare reads left
      are the SAME fixed path, and a row per read is this file's own bar (#594).
   */
-  "server/architectureClientCallers.test.ts": [
-    "the committed architecture Atlas by fixed path, read once at module level —"
-    + " it is the artifact under test, carrying the procedure population and the"
-    + " `clientCallers` field every arm compares against, and it must keep"
-    + " THROWING: a suite that shrugged at an absent Atlas would sweep the client"
-    + " tree, find no artifact to disagree with it, and report every procedure's"
-    + " callers as correct while measuring nothing",
-    "the same fixed path again, for the hand-edit POSITIVE control — it doctors"
-    + " one field on an otherwise real Atlas to prove the schema refuses an"
-    + " undeclared one, so an absent file does not weaken the arm, it DELETES it:"
-    + " a control that cannot be built is a refusal nobody is driving (law 2)",
-  ],
+  /*
+    ✅ **`server/architectureClientCallers.test.ts`'s TWO ROWS ARE DELETED —
+    #2289, and the arm that asked for it is the one that matters here.** It was
+    in this class because it WALKED `client/src` and also read a fixed artifact;
+    the walk moved to `testing/sourceTree.ts`, so the file is no longer in the
+    class at all and the guard said so by name: *"is no longer in the class —
+    delete its BARE_READS_ALLOWED row"*. Its fixed-path reads of the committed
+    Atlas are unchanged and still THROW, which was always the right behaviour
+    and never needed this list's permission — what this list governs is a bare
+    read of a LISTED entry, and there is none left in that file.
+
+    The reasoning the two rows carried is kept in git rather than here, because
+    a carve-out that no longer applies is exactly what this file's own
+    "keeps every carve-out honest" arm exists to remove.
+  */
 };
 
 /*

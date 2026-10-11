@@ -1609,12 +1609,12 @@ describe("the declared set reads CODE, and the real map is clean (#1821)", () =>
   });
 });
 
-describe("a road that says whether a door is drawn is held to the client (#2285)", () => {
+describe("a road's reachability clause CITES the Atlas and states nothing (#2285, derived by #2286)", () => {
   /*
-    ⚠ **A SENTENCE SAYING A SURFACE IS NOT REACHED IS A MEASUREMENT NOTHING
-    RE-TAKES, AND TWO OF THEM WERE STALE ON THIS MAP** — found by #2285's class
-    sweep, 2026-10-11, after #2277 had repaired three of exactly the same shape
-    in the router, this file's map and the writer inventory:
+    ⚠ **A SENTENCE SAYING WHETHER A SURFACE IS REACHED IS A MEASUREMENT NOTHING
+    RE-TAKES, AND THIS MAP HAS NOW CARRIED FIVE OF THEM.** #2277 found three
+    (the router's campaigns comment, this map's campaigns road, the writer
+    inventory); #2285's class sweep found two more here:
 
       `persona-reads`             *"His design also draws a second row here,
                                   'Say it your way'; it is NOT drawn, because
@@ -1623,70 +1623,250 @@ describe("a road that says whether a door is drawn is held to the client (#2285)
       `persona-say-it-your-way`   *"the door's box, its stage word and its
                                   frames follow in the client PR"*
 
-    Both were true the hour they were written — #2197's server half landed on
-    main while #2196 was being built — and both were false once #2197 and #2205
-    shipped that half. A reader of this map learns from such a sentence how
-    carefully to treat the next change to the road, so it rots in the expensive
-    direction.
+    ⚠ **AND THE REPAIR #2285 SHIPPED WAS A GUARDED MIRROR, WHICH IS STILL A
+    MIRROR — #2289.** It rewrote both notes to name the calling file and then
+    held that file's CODE to the road's procedure. Everything about it was
+    true and it could not answer the question the class is about: a road that
+    kept naming the file and said the door was dark anyway passed, and its own
+    docblock said so (*"THE LIMIT, STATED RATHER THAN IMPLIED: this cannot read
+    a claim"*). It also meant two bespoke file reads here and three more
+    elsewhere — five private sweeps of `client/src` for one fact.
 
-    **What is derived here, and it is one thing rather than a reading of the
-    English:** door 2's own road DECLARES its procedure, and the two notes name
-    the client file. So the file the prose names is held to the CODE of that
-    file, prose stripped — if the call moves, both notes have to be re-read
-    before this goes green again.
+    **SO THE FACT IS DERIVED ONCE AND CITED EVERYWHERE: `clientCallers`, per
+    procedure, in `docs/architecture/drape-architecture.json`**, extracted at
+    the AST by `collectClientCallers` and held fresh by
+    `pnpm architecture:check` (#2286). What is left for this suite is the
+    POINTER, which is all it can honestly own, and all three ends are derived:
 
-    ⚠ **THE LIMIT, STATED RATHER THAN IMPLIED: this cannot read a claim.** A
-    road that kept naming the file and said it was dark anyway would pass here.
-    What closes that is the fact being DERIVED instead of restated — the atlas
-    carrying each procedure's client callers, so a road cites them and no prose
-    anywhere states them twice — and that is #2286, sized while #2285 was being
-    built rather than smuggled in beside it. The campaigns block took the other road
-    available today: a one-line-per-door list in the comment, held equal to the
-    tree at both ends by `server/castCampaignsRoute.test.ts`.
+      the population   every road note carrying the strike marker, so a fourth
+                       clause joins these arms by being written in the house
+                       style rather than by being listed here.
+      the subject      the procedures that clause is about — the road's own
+                       declared ones, plus any procedure id the clause names,
+                       which is how `persona-reads` (whose own procedure is
+                       `draftCastReads`) is held to door 2's.
+      the fact         the committed Atlas's rows for those procedures.
 
-    It is two named-file reads and deliberately not a sweep: this file was
-    17.9% of the gate's unit total before #2172, and a tree walk here would
-    spend that again for a fact two files hold.
+    ⚠ **THE LIVE CLAUSE IS READ, NOT THE NOTE, AND THAT IS LOAD-BEARING RATHER
+    THAN TIDY.** The house style keeps a corrected sentence's struck original,
+    so every one of these notes still SAYS `client/src/pages/CastingRoom.tsx`
+    in its record — and an arm reading the whole note would therefore redden on
+    the record and be "fixed" by deleting the history. The band ends at the
+    marker and THROWS when the marker moves, rather than widening to the whole
+    note and turning every arm below it green. The struck half is then the
+    control: it must still name what it used to say.
   */
-  const CLIENT_ROOM = join(import.meta.dirname, "..", "client", "src", "pages", "CastingRoom.tsx");
+  const ATLAS = join(import.meta.dirname, "..", "docs", "architecture", "drape-architecture.json");
 
-  it("door 2's own road declares a procedure the client really calls, from the file both notes name", () => {
-    const road = ROADS.find((entry) => entry.id === "persona-say-it-your-way");
-    expect(road, "the say-it-your-way road is gone from the map — repoint this arm at where it went").toBeDefined();
-    expect(road!.procedures.length, "the road declares no procedure, so there is nothing to hold").toBeGreaterThan(0);
+  /** The marker every repaired clause carries, and the band's closing anchor. */
+  const STRIKE = "THE CLAUSE ABOVE NAMED ITS CALLERS UNTIL 2026-10-12 (#2289)";
 
-    const code = withoutComments(readFileSync(CLIENT_ROOM, "utf8"));
-    /* The instrument before its finding: the file was read, and the stripper
-       left the code behind rather than everything. */
-    expect(code.length, "CastingRoom.tsx read short — the path moved").toBeGreaterThan(10_000);
-    expect(code).toContain("trpc.castingV2.");
+  type Route = { namespace: string; name: string; clientCallers: string[] };
+  const routes: Route[] = (
+    JSON.parse(readFileSync(ATLAS, "utf8")) as { routes: Route[] }
+  ).routes;
 
-    for (const procedure of road!.procedures) {
-      expect(
-        code,
-        `${procedure}: the road's own procedure is not called from the file its prose names. `
-          + "Either the caller moved — in which case both notes naming it are now wrong — or the "
-          + "client half has gone, in which case say so in the prose rather than leaving it.",
-      ).toContain(`trpc.${procedure}`);
+  /** Every note on every road that makes a repaired reachability claim. */
+  const claims = ROADS.flatMap((road) =>
+    [road.summary, road.doorsNote ?? "", ...road.notes]
+      .filter((prose) => prose.includes(STRIKE))
+      .map((prose) => ({ road, prose })),
+  );
+
+  /**
+   * The clause as it reads TODAY — up to the marker. Throws when the marker has
+   * moved, which is `sourceBand`'s discipline: an empty band would turn the
+   * arms below it green.
+   */
+  const live = (prose: string, id: string): string => {
+    const marker = prose.indexOf(STRIKE);
+    if (marker < 0) throw new Error(`${id}: the strike marker is gone from the clause`);
+    return prose.slice(0, marker);
+  };
+
+  /** And the record — the half the house style keeps. */
+  const struck = (prose: string, id: string): string => {
+    const marker = prose.indexOf(STRIKE);
+    if (marker < 0) throw new Error(`${id}: the strike marker is gone from the clause`);
+    return prose.slice(marker);
+  };
+
+  /**
+   * The procedures a clause is about: the road's own, plus any the clause
+   * names. `persona-reads` declares `draftCastReads` and talks about door 2,
+   * so without the second half it would be held to the wrong procedure.
+   */
+  const subjectsOf = (road: Road, clause: string): string[] => {
+    const callable = new Set(routes.map((route) => `${route.namespace}.${route.name}`));
+    const named = [...clause.matchAll(/`([a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)+)`/g)]
+      .map((hit) => hit[1])
+      .filter((id) => callable.has(id));
+    return [...new Set([...(road.procedures ?? []), ...named])].sort();
+  };
+
+  const callersOf = (procedure: string): string[] => {
+    const [namespace, ...rest] = procedure.split(".");
+    const route = routes.find(
+      (row) => row.namespace === namespace && row.name === rest.join("."),
+    );
+    return route?.clientCallers ?? [];
+  };
+
+  it("the instrument before its finding: there are claims, and the Atlas was really read", () => {
+    /* A band reader over no claims answers every question with "clean", and
+       that is the reading this whole class keeps arriving at. */
+    expect(claims.length, "no road carries a repaired reachability clause — this block is inert")
+      .toBeGreaterThanOrEqual(3);
+    expect(routes.length, "the committed Atlas read short").toBeGreaterThan(200);
+    expect(
+      routes.filter((route) => Array.isArray(route.clientCallers)).length,
+      "no route carries clientCallers — run `pnpm architecture:generate`",
+    ).toBe(routes.length);
+    for (const { road, prose } of claims) {
+      expect(live(prose, road.id).length, `${road.id}: the live clause is empty`).toBeGreaterThan(80);
+      expect(subjectsOf(road, live(prose, road.id)).length, `${road.id}: no subject procedure`)
+        .toBeGreaterThan(0);
     }
-    /* And a procedure nothing calls is not found by this reading. */
-    expect(code).not.toContain("trpc.castingV2.translateOwnWordsAgain");
   });
 
-  it("both notes that mention door 2 name the file that calls it", () => {
-    const naming = ROADS.filter((road) => road.id === "persona-reads" || road.id === "persona-say-it-your-way");
-    expect(naming.length, "one of the two roads has gone — repoint this arm").toBe(2);
-    for (const road of naming) {
-      /* The title counts: door 2's own road names the feature there and nowhere
-         else in its prose, which this arm learnt by reddening on it. */
-      const prose = [road.title, road.summary, road.doorsNote ?? "", ...road.notes].join("\n");
-      expect(prose, `${road.id}: no longer mentions 'Say it your way' — this arm has lost its subject`)
-        .toContain("Say it your way");
+  it("every clause cites the field and the artifact that carries it", () => {
+    /*
+      A citation of a field nothing emits is worse than the stale sentence it
+      replaces: the stale one was at least an answer. So the pointer is read at
+      the prose, and the field is read at the artifact, in the arm below.
+    */
+    for (const { road, prose } of claims) {
+      const clause = live(prose, road.id);
+      expect(clause, `${road.id}: the clause no longer names the Atlas field it points at`)
+        .toContain("clientCallers");
+      expect(clause, `${road.id}: the clause no longer names the artifact that carries it`)
+        .toContain("docs/architecture/drape-architecture.json");
+    }
+  });
+
+  it("the Atlas records a client caller for every procedure a clause says is reached", () => {
+    /*
+      ⚠ **THIS IS THE ARM THE NAMED-FILE VERSION COULD NOT WRITE, AND IT IS
+      STRICTLY STRONGER.** Each of these clauses makes a POSITIVE claim — the
+      door is drawn, the surface is live — so the honest derived check is that
+      the Atlas carries at least one caller for it. Remove the client half and
+      `clientCallers` goes empty, this reddens, and the prose has to be
+      re-read. The old arm asked only whether the file the prose happened to
+      name still called the procedure, which a caller MOVING satisfies.
+    */
+    const empty: string[] = [];
+    for (const { road, prose } of claims) {
+      for (const procedure of subjectsOf(road, live(prose, road.id))) {
+        if (callersOf(procedure).length === 0) empty.push(`${road.id} -> ${procedure}`);
+      }
+    }
+    expect(
+      empty,
+      "A road says this door is reached from the client and the Atlas records no caller for it. "
+        + "Either the client half has gone — in which case the clause is now wrong and must say so "
+        + "— or the Atlas is stale (`pnpm architecture:generate`).",
+    ).toEqual([]);
+  });
+
+  it("and no clause names a caller itself, which is the whole point of #2286", () => {
+    /*
+      ⚠ **THE POPULATION IS THE ATLAS'S OWN CALLER BASENAMES, NOT A REGEX FOR
+      "A FILENAME"** — `castCampaignsRoute.test.ts` learnt that the hard way:
+      `\b\w+\.tsx?\b` matches inside a dotted suite name, so a comment
+      legitimately citing its own guard read as an offender. Derived instead: if
+      a file the Atlas records as a caller is written back into the clause, THAT
+      is the finding, and the population moves with the product.
+    */
+    const basenames = new Set(
+      claims
+        .flatMap(({ road, prose }) => subjectsOf(road, live(prose, road.id)))
+        .flatMap((procedure) => callersOf(procedure))
+        .map((file) => file.split("/").pop() as string),
+    );
+    expect(basenames.size, "no claimed procedure has a caller — this arm is inert")
+      .toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const { road, prose } of claims) {
+      const clause = live(prose, road.id);
+      for (const name of basenames) if (clause.includes(name)) offenders.push(`${road.id}: ${name}`);
+      /* A `.tsx` is never a legitimate citation in a live clause here: nothing
+         this map points at for reachability is a component. */
+      for (const hit of clause.matchAll(/[A-Za-z0-9]+\.tsx\b/g)) {
+        offenders.push(`${road.id}: ${hit[0]}`);
+      }
+    }
+    expect(
+      offenders.sort(),
+      "A clause names a caller. That is a measurement nothing re-takes — the thing that went stale "
+        + "five times on this map. Cite `clientCallers` instead.",
+    ).toEqual([]);
+  });
+
+  it("CONTROL — the struck record still quotes what it used to say, so the band is really a band", () => {
+    /*
+      Without this arm the one above is satisfied by DELETING the history, which
+      the house style forbids and which would leave the next reader thinking
+      this clause had always been derived.
+
+      TWO properties, because one of them cannot honestly be asked of every
+      clause. Every record must QUOTE its superseded sentence — the house
+      style's single quotes, which is what makes a correction readable rather
+      than a claim that one happened. And at least ONE record must contain a
+      token the live-clause arms forbid, because that is this arm's own proof
+      that reading the band instead of the note is load-bearing: a whole-note
+      reading would redden on the record, and the cheap "fix" for that is
+      deleting the history.
+
+      ⚠ **IT IS NOT ASKED OF ALL THREE, AND THE CAMPAIGNS CLAUSE IS WHY — this
+      arm reddened on it before it was written this way.** That note never
+      named a file: what it got wrong was a COUNT ("live through four client
+      callers", where the Atlas records two client files across the seven
+      doors), so its record quotes a number rather than a filename. A control
+      demanding a filename of every record would have been a control asserting
+      something false about its own tree.
+    */
+    const quoteless = claims
+      .filter(({ road, prose }) => !/'[^']{30,}'/.test(struck(prose, road.id)))
+      .map(({ road }) => road.id);
+    expect(
+      quoteless,
+      "The struck half of this clause does not quote the sentence it replaced. The record is the "
+        + "house style (⚠ this read … until …), and it is also what tells the next reader whether "
+        + "this document has been wrong here before.",
+    ).toEqual([]);
+
+    const basenames = new Set(
+      claims
+        .flatMap(({ road, prose }) => subjectsOf(road, live(prose, road.id)))
+        .flatMap((procedure) => callersOf(procedure))
+        .map((file) => file.split("/").pop() as string),
+    );
+    const recordsNamingACaller = claims
+      .filter(({ road, prose }) => {
+        const record = struck(prose, road.id);
+        return [...basenames].some((name) => record.includes(name));
+      })
+      .map(({ road }) => road.id);
+    expect(
+      recordsNamingACaller.length,
+      "No record names a caller any more, so the arms above would pass on a whole-note reading too "
+        + "and the band has stopped being load-bearing. Read this block before relaxing it.",
+    ).toBeGreaterThan(0);
+  });
+
+  it("CONTROL — no clause calls a built door dark or unbuilt in its live half", () => {
+    /* The original rot, in the words it actually used. Both phrases survive in
+       the struck records above, which is why this reads the live half only. */
+    for (const { road, prose } of claims) {
+      const clause = live(prose, road.id);
+      expect(/\bbuilt dark\b/i.test(clause) && !/\bSURFACES\b/.test(clause), `${road.id}`).toBe(false);
+      expect(/\bis NOT drawn\b/.test(clause), `${road.id}: the live clause calls a drawn door undrawn`)
+        .toBe(false);
       expect(
-        prose,
-        `${road.id}: it talks about door 2 without naming the client file that draws it, so nothing `
-          + "holds what it says about that door to the tree",
-      ).toContain("client/src/pages/CastingRoom.tsx");
+        /\bfollow in the client PR\b/.test(clause),
+        `${road.id}: the live clause still says the client half is coming`,
+      ).toBe(false);
     }
   });
 });

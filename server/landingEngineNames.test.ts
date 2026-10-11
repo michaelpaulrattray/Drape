@@ -70,6 +70,7 @@ import { ENGINE_AND_VENDOR_NAMES } from "@shared/engineVocabulary";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { sourcePathsUnder } from "./testing/sourceTree";
 import { withoutComments } from "./testing/withoutComments";
 
 /* Its arms read the real tree, and under the parallel run that cost multiplies
@@ -163,15 +164,21 @@ const HOME_FEATURE_DIR = path.join(REPO, "client", "src", "features", "home");
  */
 const code = withoutComments;
 
-/** Every `.tsx`/`.ts` file the landing page is made of, off the real tree. */
+/**
+ * Every `.tsx`/`.ts` file the landing page is made of, off the real tree.
+ *
+ * ⚠ **THE LISTING IS `testing/sourceTree.ts`'S NOW AND IT IS RECURSIVE, WHICH
+ * IS A WIDENING AND THE RIGHT ONE (#2289).** The private listing here stopped
+ * at the top level of the feature directory; that directory has no
+ * subdirectory TODAY, so the population is identical at this commit, and a
+ * subdirectory added tomorrow would be part of the landing page as much as its
+ * neighbours are — a reader that stopped at the top would have reported a
+ * clean "no engine name on the landing page" over half of it.
+ * `tests: "exclude"` is this suite's own population, kept: a suite naming an
+ * engine is not the landing page naming one.
+ */
 function landingFiles(): string[] {
-  const out: string[] = [HOME];
-  for (const entry of fs.readdirSync(HOME_FEATURE_DIR, { withFileTypes: true })) {
-    if (!entry.isFile() || !/\.tsx?$/.test(entry.name)) continue;
-    if (/\.test\.tsx?$/.test(entry.name)) continue;
-    out.push(path.join(HOME_FEATURE_DIR, entry.name));
-  }
-  return out;
+  return [HOME, ...sourcePathsUnder(HOME_FEATURE_DIR, { tests: "exclude" })];
 }
 
 /** The specifiers `Home.tsx` imports — raw source, because a specifier is a string. */
