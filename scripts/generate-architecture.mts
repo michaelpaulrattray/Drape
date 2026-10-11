@@ -572,6 +572,240 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
 /** Routers found in source that nothing mounts — surfaced as findings. */
 const UNREACHABLE_ROUTERS: string[] = [];
 
+/* ----------------------------------------------- who in the client calls it */
+
+/**
+ * WHICH CLIENT FILES REACH EACH PROCEDURE — the fact five documents were
+ * restating by hand (#2286, 2026-10-11).
+ *
+ * ⚠ **A SENTENCE SAYING WHETHER A SURFACE IS REACHABLE IS A MEASUREMENT, AND
+ * UNTIL THIS COLLECTOR EXISTED NOTHING RE-TOOK IT.** Five went stale in twelve
+ * days, each TRUE the day it was written and each saying the opposite of the
+ * truth by the time somebody read it: `server/routes/castingV2.ts`'s campaigns
+ * comment (*"Built dark: nothing in the client calls these yet"*), the campaign
+ * row in `docs/specs/CASTING_MODEL_ID_WRITER_INVENTORY.md`, and three roads in
+ * `scripts/capability-atlas-roads.mts` — the campaigns road, `persona-reads`
+ * (*"its CLIENT half is not built"*) and `persona-say-it-your-way` (*"the
+ * door's box … follow in the client PR"*). #2277 repaired three and #2285 the
+ * other two, each with a guard holding that ONE sentence to the tree; **this is
+ * the class fix, which is to stop the fact being restated at all.**
+ *
+ * It also answers the question the edge graph beside it cannot. Those edges say
+ * *"does anything import this module"*; a procedure sits inside a module the
+ * router imports whatever the client does, so a dead procedure in a live file
+ * has always read as reached. This says *"does the customer's bundle name this
+ * procedure"*, and a procedure losing its last caller is now a diff in a
+ * generated file, which is a thing a reviewer sees.
+ *
+ * ⚠ **TWO REACH SHAPES, AND READING ONLY THE FIRST WAS MEASURED AS A HOLE
+ * BEFORE THIS WAS WRITTEN — IN THE SILENCE DIRECTION.** The obvious shape is
+ * the hook, `trpc.castingV2.listCampaigns.useQuery()`; the other is the query
+ * cache, `const utils = trpc.useUtils()` and then
+ * `utils.wardrobe.sessions.getRecent.invalidate()`. Measured on this tree the
+ * hour the collector landed: 224 procedures have a hook caller, 47 are reached
+ * through the cache, and **FOUR are reached ONLY through the cache** —
+ * `models.list`, `moderator.getUserDetails`, `wardrobe.sessions.getRecent` and
+ * `wardrobe.sessions.list`. A hook-only reader would have printed an empty
+ * caller list for all four, **which is exactly the reading that says safe to
+ * remove**: the 2026-08-23 edge-graph hole arriving through a new door. Those
+ * four are the positive control in `server/architectureClientCallers.test.ts`.
+ *
+ * A cache reach is not a fresh call and this does not pretend otherwise:
+ * `invalidate` marks a query stale, `setData` writes the cache, `fetch` does
+ * call. Every one of them NAMES the procedure, so every one of them breaks when
+ * it is removed — and that is the question this field is asked.
+ *
+ * ⚠ **IT READS THE AST, NOT A REGEX, AND THE REASON IS THIS GENERATOR'S OWN
+ * HISTORY.** Four of its collectors were found reading at a SHAPE where the code
+ * already stated the thing (`CLAUDE.md`: *"a regex standing in for something the
+ * code already states is working law 4 inverted, and it reports a complete list
+ * either way"*) — the procedure walker holding 7 procedures where there were 14,
+ * the operation-kind reader 16 of 29, the price reader 10 of 32. Here the
+ * compiler already knows three things a regex would have to guess: which
+ * identifier is bound to the client (resolved through the IMPORT, so moving the
+ * module moves this with it), what local name each file gave its cache handle,
+ * and where a property chain ends. Prose is excluded as a consequence rather
+ * than as a step — the AST never sees a comment, and
+ * `client/src/features/castingV2/rosterChips.ts`'s docblock names
+ * `castingV2.renameCampaign` without calling it.
+ *
+ * ⚠ **AND THE PATHS IT MATCHES ARE THE PROCEDURES THIS SAME RUN COLLECTED, NOT
+ * A SEGMENT COUNT.** A namespace nests (`wardrobe.garments.list`) and a name can
+ * too (`boardOps.runGeneration.execute`), so "two segments after the root" mints
+ * ids no client could call — the mistake {@link resolveNamespaces} exists to
+ * avoid at the other end. A chain is matched against the real callable paths,
+ * longest prefix first.
+ *
+ * One over-read it can make and does not hide: a file that binds the cache to
+ * `utils` and also shadows that name would have the shadow read as a cache
+ * reach. It costs nothing unless the shadow's own property chain happens to
+ * equal a real procedure path, and it would be an error toward NOISE, which
+ * somebody notices. The three refusals below guard the other direction, where
+ * every failure mode lands on *nothing calls this*: no `createTRPCReact`
+ * declaration under the client, no client file importing it, or no procedure
+ * reached at all.
+ */
+export function collectClientCallers(
+  project: Project,
+  /* The callable ids, not `Procedure[]`: this reader needs nothing a procedure
+     declares, and taking the paths is what lets {@link clientCallersFrom} drive
+     it over a fixture without synthesizing procedures nobody wrote. */
+  callablePaths: Iterable<string>,
+): Map<string, string[]> {
+  const relativeOf = (file: SourceFile) =>
+    path.relative(repoRoot, file.getFilePath()).replaceAll("\\", "/");
+
+  /** The client's own tRPC hook object, found by its declaration, never by path. */
+  let trpcModule: SourceFile | undefined;
+  let trpcExport: string | undefined;
+  for (const sourceFile of project.getSourceFiles()) {
+    if (!relativeOf(sourceFile).startsWith("client/src/")) continue;
+    for (const declaration of sourceFile.getVariableDeclarations()) {
+      const call = declaration.getInitializer()?.asKind(SyntaxKind.CallExpression);
+      if (!call) continue;
+      if (!/^createTRPCReact\b/.test(call.getExpression().getText())) continue;
+      trpcModule = sourceFile;
+      trpcExport = declaration.getName();
+    }
+  }
+  if (!trpcModule || !trpcExport) {
+    throw new Error(
+      "[atlas] REFUSING: no `createTRPCReact(...)` declaration found under client/src.\n"
+      + "That is how the client's tRPC object is located, so without it every procedure\n"
+      + "reads as having no client caller, which is the reading that says safe to remove.\n"
+      + "If the client moved to another tRPC binding, teach collectClientCallers that one.",
+    );
+  }
+
+  /* The callable paths, so a chain is never resolved by counting segments. */
+  const callable = new Set(callablePaths);
+  const maxDepth = Math.max(0, ...[...callable].map((id) => id.split(".").length));
+
+  /** The names a file has bound to the client, or to one of its cache handles. */
+  const rootsIn = (sourceFile: SourceFile): Set<string> => {
+    const roots = new Set<string>();
+    for (const declaration of sourceFile.getImportDeclarations()) {
+      if (declaration.getModuleSpecifierSourceFile() !== trpcModule) continue;
+      for (const named of declaration.getNamedImports()) {
+        if (named.getName() !== trpcExport) continue;
+        roots.add(named.getAliasNode()?.getText() ?? named.getName());
+      }
+    }
+    if (roots.size === 0) return roots;
+    /* `const utils = trpc.useUtils()` — the cache handle, under whatever local
+       name the file chose (`utils` and `trpcUtils` are both in use today).
+       ⚠ DESCENDANTS, NOT `getVariableDeclarations()`, WHICH IS TOP-LEVEL ONLY —
+       and the difference is the whole cache half of this collector, because a
+       handle is always declared INSIDE a component or a hook. Caught the hour
+       this landed by the second reader in
+       `server/architectureClientCallers.test.ts` disagreeing with it: that one
+       read 4 cache-only procedures where this read 0, which is the silence
+       direction and would have shipped as *"nothing calls these"*. The
+       neighbouring {@link routerDeclarations} uses the top-level form
+       correctly, because a mounted router IS top level; copying it here was
+       the mistake. */
+    for (const declaration of sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration)) {
+      const call = declaration.getInitializer()?.asKind(SyntaxKind.CallExpression);
+      const callee = call?.getExpression().asKind(SyntaxKind.PropertyAccessExpression);
+      if (!callee) continue;
+      const name = callee.getName();
+      if (name !== "useUtils" && name !== "useContext") continue;
+      if (!roots.has(callee.getExpression().getText())) continue;
+      const bound = declaration.getNameNode().asKind(SyntaxKind.Identifier);
+      if (bound) roots.add(bound.getText());
+    }
+    return roots;
+  };
+
+  /** The property names hanging off this identifier, outward. */
+  const chainFrom = (root: Node): string[] => {
+    const segments: string[] = [];
+    let current: Node = root;
+    while (segments.length < maxDepth) {
+      const access = current.getParent()?.asKind(SyntaxKind.PropertyAccessExpression);
+      if (!access || access.getExpression() !== current) break;
+      segments.push(access.getName());
+      current = access;
+    }
+    return segments;
+  };
+
+  const callers = new Map<string, Set<string>>();
+  let importers = 0;
+  for (const sourceFile of project.getSourceFiles()) {
+    const relative = relativeOf(sourceFile);
+    if (!relative.startsWith("client/src/")) continue;
+    /* A suite naming a procedure is not the customer's bundle reaching it. */
+    if (/\.test\.tsx?$/.test(relative) || relative.endsWith(".d.ts")) continue;
+
+    const roots = rootsIn(sourceFile);
+    if (roots.size === 0) continue;
+    importers += 1;
+
+    for (const identifier of sourceFile.getDescendantsOfKind(SyntaxKind.Identifier)) {
+      if (!roots.has(identifier.getText())) continue;
+      const segments = chainFrom(identifier);
+      for (let take = segments.length; take >= 1; take -= 1) {
+        const candidate = segments.slice(0, take).join(".");
+        if (!callable.has(candidate)) continue;
+        const files = callers.get(candidate) ?? new Set<string>();
+        files.add(relative);
+        callers.set(candidate, files);
+        break;
+      }
+    }
+  }
+
+  if (importers === 0) {
+    throw new Error(
+      `[atlas] REFUSING: no file under client/src imports \`${trpcExport}\` from `
+      + `${relativeOf(trpcModule)}.\nEvery procedure would read as having no client caller, `
+      + "which is the reading that says safe to remove.",
+    );
+  }
+  if (callers.size === 0) {
+    throw new Error(
+      `[atlas] REFUSING: ${importers} client files import the tRPC client and not one of them `
+      + `names any of the ${callable.size} procedures this run collected.\nThe chain reader or `
+      + "the callable-path set is broken, and a short list here reads as a dead product.",
+    );
+  }
+
+  return new Map([...callers].map(([id, files]) => [id, [...files].sort()]));
+}
+
+/**
+ * The id a client actually writes, for each procedure — in ONE place, because
+ * `buildAtlas` and {@link collectClientCallers} both need it and a second copy
+ * of this join is how the two would come to disagree about a nested namespace.
+ */
+export function callablePathsOf(procedures: Procedure[]): string[] {
+  return procedures.map((procedure) => `${procedure.namespace}.${procedure.name}`);
+}
+
+/**
+ * {@link collectClientCallers} over a FIXTURE — the same reason
+ * {@link proceduresFrom} and {@link expressSurfacesFrom} exist: a reader driven
+ * only over the tree it already runs on cannot show its own blind spots, and
+ * the three refusals in it have no instance on this tree at all, so a fixture
+ * is the only thing that can prove they fire.
+ *
+ * Keys are repo-relative paths and are placed inside an in-memory file system
+ * at those paths, because the collector filters on `client/src/` — a fixture
+ * written anywhere else reads as empty, which is indistinguishable from a
+ * passing arm.
+ */
+export function clientCallersFrom(
+  files: Record<string, string>,
+  callablePaths: string[],
+): Map<string, string[]> {
+  const project = new Project({ useInMemoryFileSystem: true });
+  for (const [relative, source] of Object.entries(files)) {
+    project.createSourceFile(path.join(repoRoot, relative).replaceAll("\\", "/"), source);
+  }
+  return collectClientCallers(project, callablePaths);
+}
+
 /* -------------------------------------------------------- express surfaces */
 
 function collectExpressRoutes(): Entity[] {
@@ -1776,6 +2010,11 @@ export function buildAtlas(options: { freshProject?: boolean } = {}) {
   refuseUnparseableSources(project);
 
   const procedures = collectProcedures(project, resolveNamespaces(project));
+  /* Kept OFF {@link Procedure} on purpose: that type is what a procedure's own
+     declaration says, and `proceduresFrom` reads ONE router source with no
+     client in the project at all. A client fact folded into it would make that
+     fixture answer `[]` for every row and call it a measurement. */
+  const clientCallers = collectClientCallers(project, callablePathsOf(procedures));
 
   const modules: Entity[] = sourceFiles.map((file) => ({
     id: `module:${file}`,
@@ -1810,7 +2049,10 @@ export function buildAtlas(options: { freshProject?: boolean } = {}) {
     },
     domains,
     modules,
-    routes: procedures.map((procedure) => ({ ...procedure })),
+    routes: procedures.map((procedure) => ({
+      ...procedure,
+      clientCallers: clientCallers.get(`${procedure.namespace}.${procedure.name}`) ?? [],
+    })),
     surfaces: collectExpressRoutes(),
     envVars: collectEnvVars(),
     flags: collectFlags(),
@@ -1857,7 +2099,13 @@ input{width:100%;box-sizing:border-box;padding:10px 16px;background:transparent;
 const ATLAS = ${payload};
 const views = [
   {title:'Findings', rows:()=>ATLAS.findings.map(f=>[f.severity,f.kind,f.subject,f.message]), head:['severity','kind','subject','message'], cls:r=>'sev-'+r[0]},
-  {title:'Routes & access control', rows:()=>ATLAS.routes.map(r=>[r.namespace+'.'+r.name,r.type,r.auth,r.input==='strict'?'strict':(r.input==='open'?'open':'—'),r.rateLimited?'limited':'—',r.file]), head:['procedure','type','auth','input','rate limit','file']},
+  // The "client callers" column is here for the reason the credit-cost view
+  // below exists: a field collected into the JSON and rendered nowhere is how
+  // ten rows stood in for thirty-two for six months. It prints the literal
+  // words "no client caller" rather than a blank, so the retirement question
+  // this field was added for — which procedures does the customer's bundle not
+  // reach — is one filter away instead of a hand count (#2286).
+  {title:'Routes & access control', rows:()=>ATLAS.routes.map(r=>[r.namespace+'.'+r.name,r.type,r.auth,r.input==='strict'?'strict':(r.input==='open'?'open':'—'),r.rateLimited?'limited':'—',r.clientCallers.length?r.clientCallers.map(f=>f.split('/').pop()).join(' · '):'no client caller',r.file]), head:['procedure','type','auth','input','rate limit','client callers','file']},
   {title:'Express surfaces', rows:()=>ATLAS.surfaces.map(s=>[s.method,s.path,s.file]), head:['method','path','file']},
   {title:'Domains', rows:()=>ATLAS.domains.map(d=>[d.name,String(d.moduleCount)]), head:['domain','modules']},
   {title:'Legacy retirement', rows:()=>ATLAS.modules.filter(m=>m.lifecycle!=='active').map(m=>[m.lifecycle,m.domain,m.path]), head:['status','domain','module']},
@@ -1920,11 +2168,27 @@ export const SCHEMA = {
       type: "array",
       items: {
         type: "object",
-        required: ["id", "namespace", "name", "type", "auth", "input", "rateLimited", "file"],
+        required: [
+          "id", "namespace", "name", "type", "auth", "input", "rateLimited", "file", "clientCallers",
+        ],
+        /* ⚠ CLOSED, SO A HAND EDIT IS A SCHEMA ERROR RATHER THAN A FACT (#2286).
+           `clientCallers` is the one field here somebody would be tempted to
+           correct by typing into the artifact — it is the answer to *"is this
+           reachable"*, which is precisely the question five hand-written
+           sentences got wrong. A row is what the generator read or it is a
+           refusal; there is no third state, and every other property of a
+           route is named above, so nothing legitimate is shut out. */
+        additionalProperties: false,
         properties: {
           auth: { enum: ["public", "onboarding", "protected", "admin", "moderator", "unclassified"] },
           type: { enum: ["query", "mutation", "subscription"] },
           input: { enum: ["strict", "open", "none"] },
+          id: { type: "string" },
+          namespace: { type: "string" },
+          name: { type: "string" },
+          rateLimited: { type: "boolean" },
+          file: { type: "string" },
+          clientCallers: { type: "array", items: { type: "string" } },
         },
       },
     },

@@ -62,8 +62,10 @@
           "auth",
           "input",
           "rateLimited",
-          "file"
+          "file",
+          "clientCallers"
         ],
+        "additionalProperties": false,
         "properties": {
           "auth": {
             "enum": [
@@ -88,6 +90,27 @@
               "open",
               "none"
             ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rateLimited": {
+            "type": "boolean"
+          },
+          "file": {
+            "type": "string"
+          },
+          "clientCallers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

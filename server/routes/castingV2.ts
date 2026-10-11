@@ -2146,23 +2146,33 @@ export const castingV2Router = router({
     cannot happen a second time). It read *“Built dark: nothing in the client
     calls these yet, so their merge changes nothing a customer sees”* — true the
     morning #2249 merged, false by that afternoon, when the rung's other four
-    cards shipped. Whether a surface is reachable decides how carefully the next
-    change to it is treated, so it is written below as a fact a guard holds
-    rather than a sentence that ages: `server/castCampaignsRoute.test.ts` reads
-    the doors off this router's own procedures and the callers off a
-    prose-stripped sweep of `client/src`, and reddens on a line here that
-    disagrees with either end.
+    cards shipped. Whether a surface is reachable decides how carefully the
+    next change to it is treated, so it was rewritten as a fact a guard held
+    rather than a sentence that ages — a line per door naming its own caller,
+    with the word `dark` where nothing called it, held equal to the tree at
+    both ends.
 
-    EVERY DOOR AND WHAT CALLS IT — one line each, naming the caller's own file,
-    and the word `dark` instead where nothing in the client calls it:
+    ⚠ **AND THAT LIST IS GONE FROM HERE, BECAUSE A GUARDED MIRROR IS STILL A
+    MIRROR (#2286).** #2285's own body asked whoever took its remainder to size
+    a sweep of the other block comments saying this kind of thing, and the sweep
+    found five — this paragraph, the campaign row in
+    `docs/specs/CASTING_MODEL_ID_WRITER_INVENTORY.md`, and three roads on the
+    capability map. Guarding one sentence at a time is working law 7's INSTANCE;
+    the class fix is that nothing here restates the fact at all.
 
-      listCampaigns            CastingV2.tsx (the chip row) · CastCampaignsCard.tsx (the cast page's panel)
-      createCampaign           CastingV2.tsx (the + chip's dialog) · CastCampaignsCard.tsx (its add row)
-      renameCampaign           CastingV2.tsx (the ⋯ beside a chip, #2273)
-      deleteCampaign           CastingV2.tsx (the ⋯ beside a chip, #2273)
-      addCastsToCampaign       CastingV2.tsx (the pick-several bar, #2251) · CastCampaignsCard.tsx (#2252/#2253)
-      removeCastsFromCampaign  CastingV2.tsx (the pick-several bar, #2251)
-      listCastCampaigns        CastCampaignsCard.tsx (the IN CAMPAIGNS panel, #2252)
+    **WHO CALLS THESE DOORS: `clientCallers`, per procedure, in
+    `docs/architecture/drape-architecture.json`** — mechanically extracted from
+    `client/src` by `collectClientCallers`, and held fresh by
+    `pnpm architecture:check` on every commit that touches either tree. It reads
+    both reach shapes, the hook and the query cache, because four procedures on
+    this tree are reached only through the second one. The Atlas explorer draws
+    it beside each route and prints *"no client caller"* where there is none, so
+    the question this paragraph used to answer is a filter rather than a
+    sentence — for all 284 procedures, not these seven.
+
+    `server/castCampaignsRoute.test.ts` reads that artifact now and no longer
+    sweeps the client itself; `server/architectureClientCallers.test.ts` is what
+    holds the artifact to a reader that does not share the collector's resolver.
 
     His word, 2026-09-29: "in n2c instead of calling them shoots call it
     Campaign". A campaign is a customer's named collection of signed casts; a

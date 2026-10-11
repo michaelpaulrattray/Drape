@@ -13,21 +13,26 @@
  *  - each store outcome becomes the refusal it should (`NOT_FOUND`,
  *    `CONFLICT`), and a store that says "not found" never leaks a result;
  *  - the doors are shut outside casting, before the store is asked anything.
- *  - and, since #2285, that the COMMENT above them in the router still says
- *    what the tree says: who calls each door, derived at every end.
+ *  - and, since #2285, that the COMMENT above them in the router still agrees
+ *    with the tree about who reaches each door — ⚠ which since #2286 it does by
+ *    CITING the Atlas's `clientCallers` rather than by naming callers itself,
+ *    so what is held here is the pointer and not a mirror. The comparison
+ *    itself, and the sweep of `client/src` it needs, moved to
+ *    `server/architectureClientCallers.test.ts`, which is the artifact's
+ *    second reader.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
-import { readListedSource } from "./testing/listedSource";
 import { sourceBand } from "./testing/sourceBand";
-import { withoutComments } from "./testing/withoutComments";
 
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* ⚠ NO `CONTENDED_TEST_TIMEOUT_MS` HERE ANY MORE, AND THAT IS DERIVED RATHER
+   THAN A CHOICE: `sourceSweepSuites` puts a suite in the 30 s-clock population
+   from its OWN import and call of `readListedSource`, and #2286 took the
+   directory sweep out of this file. The clock came out in the same act. Make
+   this suite read the tree again and that guard will ask for it back. */
 
 const calls = vi.hoisted(() => [] as Array<{ fn: string; args: unknown[] }>);
 const outcome = vi.hoisted(() => ({ next: null as unknown }));
@@ -185,78 +190,63 @@ describe("each store outcome becomes its refusal", () => {
   });
 });
 
-/* ---- #2285 — the comment above these doors is held equal to the tree ---- */
+/* ---- #2285/#2286 — the comment above these doors cites a derived fact ---- */
 
-describe("the campaigns comment cannot outlive the tree (#2285)", () => {
+describe("the campaigns comment cannot outlive the tree (#2285, derived by #2286)", () => {
   /*
     ⚠ **WHY THIS EXISTS: THE COMMENT ABOVE THESE DOORS CALLED THEM DARK FOR
     TWELVE DAYS AFTER THEY WENT LIVE.** It read *"Built dark: nothing in the
     client calls these yet"* — written the morning #2249 merged, true for that
     one morning, and still there when the relay's milestone-close review of N2c
-    found it by hand (#2277). Two other documents said the same thing. #2277
-    repaired all three sentences; this is the half that stops a fourth —
-    working law 7, fix the class and not the instance.
+    found it by hand (#2277). Two other documents said the same thing.
 
-    Every end is DERIVED, so no side of it is a list anyone maintains:
+    #2285 repaired it by holding a hand-written line-per-door list equal to the
+    tree at both ends — the doors off this router's own procedures, the callers
+    off a prose-stripped sweep of `client/src`. ⚠ **THAT IS THE SHAPE #2286
+    REPLACED, AND ITS OWN BODY SAID WHY: A GUARDED MIRROR IS STILL A MIRROR.**
+    Five block comments on this tree were restating whether a surface is
+    reachable; guarding each sentence is working law 7's INSTANCE, and five
+    bespoke guards is five private sweeps of `client/src`. The class fix is that
+    the fact is DERIVED once — `clientCallers`, per procedure, in
+    `docs/architecture/drape-architecture.json`, extracted by
+    `collectClientCallers` and held fresh by `pnpm architecture:check`.
+
+    **SO WHAT IS LEFT HERE IS THE CITATION, WHICH IS ALL THIS SUITE CAN HONESTLY
+    OWN.** The comment no longer names a caller, so there is no list to compare;
+    what can still rot is the POINTER — a comment citing a field the artifact
+    does not carry, or citing it for doors that are not these doors. Both ends
+    are still derived, and nothing here is a list anyone maintains:
 
       the doors    this router's own procedure ids, filtered on the name, so a
                    door added or renamed joins the population by itself. The
                    suite's own `DOORS` is held equal to that, so the hand list
                    every other arm in this file drives cannot drift either.
-      the callers  a prose-stripped read of every `.ts`/`.tsx` under
-                   `client/src`, test files excluded — 437 of them, measured.
-      the claim    the comment's own one-line-per-door list, read between two
-                   anchors by `sourceBand`, which THROWS when an anchor moves
-                   rather than answering with an empty band that would turn
-                   every arm below it green.
+      the fact     the Atlas's own rows for those doors.
+      the claim    the comment's own text, read between two anchors by
+                   `sourceBand`, which THROWS when an anchor moves rather than
+                   answering with an empty band that would turn every arm below
+                   it green.
 
-    ⚠ **THE STRIPPER IS LOAD-BEARING AND NOT TIDINESS.** `rosterChips.ts`'s own
-    docblock names `castingV2.renameCampaign` in prose, so an unstripped read
-    calls that door live on the strength of a comment ABOUT it — this card's
-    own mistake, one layer down. It is the house `withoutComments` rather than
-    a private regex: #1623 found four copies of that idea which disagreed about
-    string literals, and the real population was 35.
-
-    ⚠ **AND THE CONTROL OVER IT WATCHES THE SWEEP'S USE OF IT, NOT THE
-    FUNCTION.** Two arms driving `withoutComments` directly stay green when the
-    sweep stops calling it — measured on PR #2284, where exactly that happened.
-    What catches it is the backticked form, which only ever occurs in prose,
-    being absent from the swept text.
-
-    The directory walk is local rather than promoted, and that costs something
-    this says out loud: four private copies of it already exist, in
-    `server/clientInputCaps.test.ts`, `server/queryStringReads.test.ts`,
-    `server/castingRosterRoute.test.ts` and
-    `server/castingV2/authorRoadFlagRetired.test.ts`, and this is a fifth.
-    `server/testing/sourceSweepSuites.ts` derives which suites must declare the
-    30 s clock from a test file's OWN import and call of `readListedSource`, so
-    a walk moved behind a helper would leave this suite invisible to that guard
-    — promoting it needs that population widened in the same act (memory
-    `directory-population-loses-promoted-subject`), which is a pass of its own
-    and is filed as #2286 rather than smuggled in here.
+    ⚠ **WHAT MOVED OUT OF HERE AND WHERE IT WENT.** The prose-stripper control
+    (`rosterChips.ts`'s docblock names `castingV2.renameCampaign` without
+    calling it) and the directory sweep are now
+    `server/architectureClientCallers.test.ts`'s, which is the artifact's second
+    reader and needs them for its own comparison. They are not duplicated here:
+    this suite no longer reads `client/src` at all, which also takes it back out
+    of `sourceSweepSuites`'s derived population — so if a later change makes it
+    sweep the tree again, that guard will ask it for the 30 s clock.
   */
-  const CLIENT_SRC = fileURLToPath(new URL("../client/src/", import.meta.url));
   const ROUTER = fileURLToPath(new URL("./routes/castingV2.ts", import.meta.url));
-  const posix = (path: string) => path.split(String.fromCharCode(92)).join("/");
+  const ATLAS = fileURLToPath(
+    new URL("../docs/architecture/drape-architecture.json", import.meta.url),
+  );
 
-  type ClientSource = { file: string; source: string; code: string };
-  let swept: ClientSource[] | null = null;
+  type Route = { namespace: string; name: string; clientCallers: string[] };
 
-  /** Every client source, read once a run: the bytes as written, and the code. */
-  function clientSources(): ClientSource[] {
-    if (swept) return swept;
-    const found: ClientSource[] = [];
-    for (const entry of readdirSync(CLIENT_SRC, { recursive: true, encoding: "utf8" })) {
-      if (!/\.tsx?$/.test(entry) || /\.test\.tsx?$/.test(entry)) continue;
-      const source = readListedSource(join(CLIENT_SRC, entry));
-      if (source === null) continue;
-      found.push({ file: posix(entry), source, code: withoutComments(source) });
-    }
-    swept = found;
-    return found;
+  /** The committed Atlas — the artifact the comment now points at. */
+  function routes(): Route[] {
+    return (JSON.parse(readFileSync(ATLAS, "utf8")) as { routes: Route[] }).routes;
   }
-
-  const sweptCode = () => clientSources().map(({ code }) => code).join("\n");
 
   /** The doors, read off the real router rather than listed here. */
   function campaignDoors(): string[] {
@@ -266,88 +256,88 @@ describe("the campaigns comment cannot outlive the tree (#2285)", () => {
     return Object.keys(procedures).filter((id) => /[Cc]ampaign/.test(id)).sort();
   }
 
-  /** The files whose CODE calls a door, by basename. */
-  function callersOf(door: string): string[] {
-    return clientSources()
-      .filter(({ code }) => code.includes(`trpc.castingV2.${door}`))
-      .map(({ file }) => file.split("/").pop() as string)
-      .sort();
-  }
-
-  /** The comment's list: each door to the text of its own line. */
-  function commentLines(): Map<string, string> {
-    const band = sourceBand(
+  /** The paragraph that makes the claim, read between two anchors. */
+  function claim(): string {
+    return sourceBand(
       readFileSync(ROUTER, "utf8"),
-      "EVERY DOOR AND WHAT CALLS IT",
+      "WHO CALLS THESE DOORS",
       "His word, 2026-09-29",
-      "the campaigns door list",
+      "the campaigns citation",
     );
-    const lines = new Map<string, string>();
-    for (const line of band.split("\n")) {
-      const row = /^ {6}(\w+) {2,}(\S.*)$/.exec(line);
-      if (row) lines.set(row[1]!, row[2]!);
-    }
-    return lines;
   }
 
-  it("the instrument before its finding: the sweep read the client, and both other ends are populated", () => {
-    expect(clientSources().length, "the sweep found almost nothing — check the path").toBeGreaterThan(300);
-    expect(sweptCode()).toContain("trpc.castingV2.");
+  it("the instrument before its finding: all three ends are populated", () => {
     expect(campaignDoors().length).toBeGreaterThan(0);
-    expect(commentLines().size).toBeGreaterThan(0);
+    expect(routes().length).toBeGreaterThan(200);
+    expect(claim().length).toBeGreaterThan(50);
   });
 
   it("the suite's own door list is the router's", () => {
     expect(campaignDoors()).toEqual([...DOORS].sort());
   });
 
-  it("a door that does not exist has no caller — the negative control", () => {
-    expect(callersOf("archiveCampaign")).toEqual([]);
-  });
-
-  it("a door named only in PROSE is not a caller — the control the stripper needs", () => {
-    const specimen = clientSources().find(({ file }) => file.endsWith("features/castingV2/rosterChips.ts"));
-    expect(specimen, "rosterChips.ts was not read — the specimen moved").toBeDefined();
-    expect(specimen!.source).toContain("`castingV2.renameCampaign`");
-    expect(specimen!.code).not.toContain("castingV2.renameCampaign");
+  it("the comment cites the field, and the Atlas carries it for every door here", () => {
     /*
-      AND THE SWEEP ITSELF APPLIED IT, which the two lines above do NOT show:
-      they read one file's stripped text, so dropping the stripper from the
-      sweep would leave them green. The backticked form only ever occurs in
-      prose, so its absence from the swept code is the proof.
+      A citation of a field nothing emits is worse than the stale sentence it
+      replaced: the stale one was at least an answer. So the pointer is read at
+      the comment, and the field is read at the artifact, for THESE doors.
     */
-    expect(sweptCode()).not.toContain("`castingV2.renameCampaign`");
-    expect(callersOf("renameCampaign")).not.toContain("rosterChips.ts");
-  });
+    expect(claim(), "the comment no longer names the Atlas field it points at")
+      .toContain("clientCallers");
+    expect(claim(), "the comment no longer names the artifact that carries it")
+      .toContain("docs/architecture/drape-architecture.json");
 
-  it("the comment names exactly the doors the router declares", () => {
-    expect([...commentLines().keys()].sort()).toEqual(campaignDoors());
-  });
-
-  it("every line names the files that call its door, and says dark only where nothing does", () => {
-    /*
-      Basenames, so the comment stays readable — and they are proven unique
-      across the callers first, because an ambiguous comparison is a green one.
-    */
-    const paths = clientSources()
-      .filter(({ code }) => campaignDoors().some((door) => code.includes(`trpc.castingV2.${door}`)))
-      .map(({ file }) => file);
-    const names = paths.map((file) => file.split("/").pop() as string);
-    expect(new Set(names).size, `two campaign callers share a basename: ${paths.join(", ")}`).toBe(names.length);
-
-    for (const [door, line] of commentLines()) {
-      const named = [...line.matchAll(/\b[A-Za-z0-9]+\.tsx?\b/g)].map((hit) => hit[0]).sort();
-      const measured = callersOf(door);
+    const atlas = routes();
+    for (const door of campaignDoors()) {
+      const route = atlas.find((row) => row.namespace === "castingV2" && row.name === door);
+      expect(route, `the Atlas has no row for castingV2.${door} — regenerate it`).toBeDefined();
       expect(
-        named,
-        `${door}: the comment names ${named.join(", ") || "no file"} and the client calls it from `
-          + `${measured.join(", ") || "nowhere"}. Name the file, or write the word dark when there is none.`,
-      ).toEqual(measured);
-      expect(
-        /\bdark\b/i.test(line),
-        `${door}: the comment calls it dark while something calls it, or names a caller while nothing does`,
-      ).toBe(measured.length === 0);
+        Array.isArray(route!.clientCallers),
+        `castingV2.${door} carries no clientCallers, so the citation above these doors `
+        + "points at nothing. Run `pnpm architecture:generate`.",
+      ).toBe(true);
     }
+  });
+
+  it("and it names no caller itself, which is the whole point of #2286", () => {
+    /*
+      The failure this replaces is a CALLER NAMED IN THIS COMMENT: the moment one
+      appears it is a measurement again, and nothing re-takes it.
+
+      ⚠ **THE POPULATION IS THE ATLAS'S OWN CALLER BASENAMES, NOT A REGEX FOR
+      "A FILENAME".** The first shape of this arm matched `\b\w+\.tsx?\b` and
+      reddened on `castCampaignsRoute.test.ts` and
+      `architectureClientCallers.test.ts` — the two suite pointers this comment
+      legitimately carries — because the word boundary lands inside a dotted
+      name and both matched as `test.ts`. An exception list keyed on those two
+      names would then have been a list to maintain, and would have let the real
+      offender through under any third name. Derived instead: if a caller the
+      Atlas records for these doors is written back into the comment, THAT is
+      the finding, and the population moves with the product.
+    */
+    const atlas = routes();
+    const basenames = new Set(
+      campaignDoors()
+        .flatMap((door) =>
+          atlas.find((row) => row.namespace === "castingV2" && row.name === door)?.clientCallers
+            ?? []
+        )
+        .map((file) => file.split("/").pop() as string),
+    );
+    expect(basenames.size, "no campaign door has a caller — this arm is inert").toBeGreaterThan(0);
+    const named = [...basenames].filter((name) => claim().includes(name)).sort();
+    expect(
+      named,
+      `the comment names ${named.join(", ")}. A caller named here is a fact nothing re-takes `
+      + "— that is what went stale five times. Point at the Atlas instead.",
+    ).toEqual([]);
+    /* A `.tsx` is never a legitimate citation in this band: no suite, module or
+       artifact this comment points at is a component. */
+    expect([...claim().matchAll(/[A-Za-z0-9]+\.tsx\b/g)].map((hit) => hit[0])).toEqual([]);
+    expect(
+      /\bdark\b/i.test(claim()),
+      "the comment calls a door dark. Whether a door is reached is the Atlas's answer now.",
+    ).toBe(false);
   });
 });
 

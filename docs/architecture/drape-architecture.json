@@ -6790,7 +6790,8 @@
       "auth": "onboarding",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/access.ts"
+      "file": "server/routes/access.ts",
+      "clientCallers": []
     },
     {
       "id": "route:access.status",
@@ -6800,7 +6801,8 @@
       "auth": "onboarding",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/access.ts"
+      "file": "server/routes/access.ts",
+      "clientCallers": []
     },
     {
       "id": "route:access.validate",
@@ -6810,7 +6812,10 @@
       "auth": "public",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/access.ts"
+      "file": "server/routes/access.ts",
+      "clientCallers": [
+        "client/src/pages/Login.tsx"
+      ]
     },
     {
       "id": "route:account.exportData",
@@ -6820,7 +6825,8 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": true,
-      "file": "server/routes/account.ts"
+      "file": "server/routes/account.ts",
+      "clientCallers": []
     },
     {
       "id": "route:admin.adjustCredits",
@@ -6830,7 +6836,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.blockIP",
@@ -6840,7 +6849,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/ipBlocking.ts"
+      "file": "server/routes/admin/ipBlocking.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.changeUserRole",
@@ -6850,7 +6862,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/roles.ts"
+      "file": "server/routes/admin/roles.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.createBanner",
@@ -6860,7 +6875,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/announcements.ts"
+      "file": "server/routes/admin/announcements.ts",
+      "clientCallers": [
+        "client/src/features/admin/overview/BannerManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.createInviteCode",
@@ -6870,7 +6888,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/inviteCodes.ts"
+      "file": "server/routes/admin/inviteCodes.ts",
+      "clientCallers": [
+        "client/src/pages/AdminInviteCodes.tsx"
+      ]
     },
     {
       "id": "route:admin.deactivateInviteCode",
@@ -6880,7 +6901,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/inviteCodes.ts"
+      "file": "server/routes/admin/inviteCodes.ts",
+      "clientCallers": [
+        "client/src/pages/AdminInviteCodes.tsx"
+      ]
     },
     {
       "id": "route:admin.deleteBanner",
@@ -6890,7 +6914,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/announcements.ts"
+      "file": "server/routes/admin/announcements.ts",
+      "clientCallers": [
+        "client/src/features/admin/overview/BannerManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.exportAuditLogs",
@@ -6900,7 +6927,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/auditLogs.ts"
+      "file": "server/routes/admin/auditLogs.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.freezeUser",
@@ -6910,7 +6940,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.getAbuseAlerts",
@@ -6920,7 +6953,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/auditLogs.ts"
+      "file": "server/routes/admin/auditLogs.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.getAuditLogById",
@@ -6930,7 +6966,8 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/auditLogs.ts"
+      "file": "server/routes/admin/auditLogs.ts",
+      "clientCallers": []
     },
     {
       "id": "route:admin.getAuditLogs",
@@ -6940,7 +6977,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/auditLogs.ts"
+      "file": "server/routes/admin/auditLogs.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.getAuditStats",
@@ -6950,7 +6990,10 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/auditLogs.ts"
+      "file": "server/routes/admin/auditLogs.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.getChangeRequest",
@@ -6960,7 +7003,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/changeRequests.ts"
+      "file": "server/routes/admin/changeRequests.ts",
+      "clientCallers": [
+        "client/src/pages/AdminChangeRequests.tsx"
+      ]
     },
     {
       "id": "route:admin.getOverview",
@@ -6970,7 +7016,12 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/overview.ts"
+      "file": "server/routes/admin/overview.ts",
+      "clientCallers": [
+        "client/src/features/staff/useStaffCounts.ts",
+        "client/src/pages/AdminChangeRequests.tsx",
+        "client/src/pages/AdminOverview.tsx"
+      ]
     },
     {
       "id": "route:admin.getTimeSeries",
@@ -6980,7 +7031,10 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/overview.ts"
+      "file": "server/routes/admin/overview.ts",
+      "clientCallers": [
+        "client/src/pages/AdminOverview.tsx"
+      ]
     },
     {
       "id": "route:admin.getUserActivity",
@@ -6990,7 +7044,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.getUserDetails",
@@ -7000,7 +7057,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.getUserFullDetails",
@@ -7010,7 +7070,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.getUserStats",
@@ -7020,7 +7083,10 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.listBanners",
@@ -7030,7 +7096,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/announcements.ts"
+      "file": "server/routes/admin/announcements.ts",
+      "clientCallers": [
+        "client/src/features/admin/overview/BannerManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.listBlockedIPs",
@@ -7040,7 +7109,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/ipBlocking.ts"
+      "file": "server/routes/admin/ipBlocking.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.listChangeRequests",
@@ -7050,7 +7122,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/changeRequests.ts"
+      "file": "server/routes/admin/changeRequests.ts",
+      "clientCallers": [
+        "client/src/pages/AdminChangeRequests.tsx"
+      ]
     },
     {
       "id": "route:admin.listInviteCodes",
@@ -7060,7 +7135,10 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/inviteCodes.ts"
+      "file": "server/routes/admin/inviteCodes.ts",
+      "clientCallers": [
+        "client/src/pages/AdminInviteCodes.tsx"
+      ]
     },
     {
       "id": "route:admin.listUsers",
@@ -7070,7 +7148,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.reviewChangeRequest",
@@ -7080,7 +7161,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/changeRequests.ts"
+      "file": "server/routes/admin/changeRequests.ts",
+      "clientCallers": [
+        "client/src/pages/AdminChangeRequests.tsx"
+      ]
     },
     {
       "id": "route:admin.suspendUser",
@@ -7090,7 +7174,11 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx",
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.toggleBanner",
@@ -7100,7 +7188,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/announcements.ts"
+      "file": "server/routes/admin/announcements.ts",
+      "clientCallers": [
+        "client/src/features/admin/overview/BannerManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.unblockIP",
@@ -7110,7 +7201,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/ipBlocking.ts"
+      "file": "server/routes/admin/ipBlocking.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx"
+      ]
     },
     {
       "id": "route:admin.unfreezeUser",
@@ -7120,7 +7214,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.unsuspendUser",
@@ -7130,7 +7227,11 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/users.ts"
+      "file": "server/routes/admin/users.ts",
+      "clientCallers": [
+        "client/src/pages/AdminAuditLogs.tsx",
+        "client/src/pages/AdminUserManagement.tsx"
+      ]
     },
     {
       "id": "route:admin.updateBanner",
@@ -7140,7 +7241,8 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/admin/announcements.ts"
+      "file": "server/routes/admin/announcements.ts",
+      "clientCallers": []
     },
     {
       "id": "route:announcements.getActive",
@@ -7150,7 +7252,11 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/announcements.ts"
+      "file": "server/routes/announcements.ts",
+      "clientCallers": [
+        "client/src/components/AnnouncementBanner.tsx",
+        "client/src/features/admin/overview/BannerManagement.tsx"
+      ]
     },
     {
       "id": "route:auth.deleteAccount",
@@ -7160,7 +7266,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/auth.ts"
+      "file": "server/routes/auth.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/SecuritySection.tsx"
+      ]
     },
     {
       "id": "route:auth.logout",
@@ -7170,7 +7279,10 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/auth.ts"
+      "file": "server/routes/auth.ts",
+      "clientCallers": [
+        "client/src/_core/hooks/useAuth.ts"
+      ]
     },
     {
       "id": "route:auth.me",
@@ -7180,7 +7292,11 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/auth.ts"
+      "file": "server/routes/auth.ts",
+      "clientCallers": [
+        "client/src/_core/hooks/useAuth.ts",
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:billing.cancelScheduledChange",
@@ -7190,7 +7306,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/BillingSection.tsx"
+      ]
     },
     {
       "id": "route:billing.cancelSubscription",
@@ -7200,7 +7319,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/ChangePlanModal.tsx"
+      ]
     },
     {
       "id": "route:billing.changePlan",
@@ -7210,7 +7332,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx"
+      ]
     },
     {
       "id": "route:billing.createPortalSession",
@@ -7220,7 +7346,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/BillingSection.tsx"
+      ]
     },
     {
       "id": "route:billing.createSubscriptionCheckout",
@@ -7230,7 +7359,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx"
+      ]
     },
     {
       "id": "route:billing.createTopupCheckout",
@@ -7240,7 +7373,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx"
+      ]
     },
     {
       "id": "route:billing.getAllInvoices",
@@ -7250,7 +7386,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": []
     },
     {
       "id": "route:billing.getInvoices",
@@ -7260,7 +7397,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/BillingSection.tsx"
+      ]
     },
     {
       "id": "route:billing.getPlanCreditUnits",
@@ -7270,7 +7410,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/ChangePlanModal.tsx"
+      ]
     },
     {
       "id": "route:billing.getPlans",
@@ -7280,7 +7423,12 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/AccountSurfaces.tsx"
+      ]
     },
     {
       "id": "route:billing.getStatus",
@@ -7290,7 +7438,13 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/AccountSurfaces.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
+      ]
     },
     {
       "id": "route:billing.getSubscriptionDetails",
@@ -7300,7 +7454,11 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
+      ]
     },
     {
       "id": "route:billing.previewPlanChange",
@@ -7310,7 +7468,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx"
+      ]
     },
     {
       "id": "route:billing.reactivateSubscription",
@@ -7320,7 +7482,8 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/billing.ts"
+      "file": "server/routes/billing.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.addEdge",
@@ -7330,7 +7493,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.applyModelEdit.execute",
@@ -7340,7 +7504,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.applyModelEdit.plan",
@@ -7350,7 +7517,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/canvas/ForkRecastPopover.tsx",
+        "client/src/features/studio/takeover/IdentityChangeDialog.tsx"
+      ]
     },
     {
       "id": "route:boardOps.collapseView",
@@ -7360,7 +7531,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.createNode.execute",
@@ -7370,7 +7544,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.createNode.plan",
@@ -7380,7 +7557,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.deleteNode.execute",
@@ -7390,7 +7568,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.deleteNode.plan",
@@ -7400,7 +7579,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.deleteNodes.execute",
@@ -7410,7 +7590,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.deleteNodes.plan",
@@ -7420,7 +7603,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.fillFromLibrary",
@@ -7430,7 +7614,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/useCastActions.ts"
+      ]
     },
     {
       "id": "route:boardOps.getSnapshot",
@@ -7440,7 +7628,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.listCastableModels",
@@ -7450,7 +7639,18 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/CastPickerModal.tsx",
+        "client/src/features/boards/canvas/nodes/CastNode.tsx",
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/hooks/useCastGate.ts",
+        "client/src/features/studio/takeover/CastingTakeover.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:boardOps.listEdges",
@@ -7460,7 +7660,12 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:boardOps.markNodeStatus",
@@ -7470,7 +7675,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.moveNodes",
@@ -7480,7 +7686,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.popOutView.execute",
@@ -7490,7 +7699,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.popOutView.plan",
@@ -7500,7 +7712,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.removeEdge",
@@ -7510,7 +7723,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.runGeneration.execute",
@@ -7520,7 +7734,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/canvas/useCastActions.ts"
+      ]
     },
     {
       "id": "route:boardOps.runGeneration.plan",
@@ -7530,7 +7747,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.runVariations.execute",
@@ -7540,7 +7758,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.runVariations.plan",
@@ -7550,7 +7771,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/canvas/VariationsPopover.tsx"
+      ]
     },
     {
       "id": "route:boardOps.setNodePinned",
@@ -7560,7 +7784,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boardOps.undoDelete",
@@ -7570,7 +7795,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.updateNodeMetadata",
@@ -7580,7 +7808,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boardOps.ts"
+      "file": "server/routes/boardOps.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.addItem",
@@ -7590,7 +7819,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boards.addItems",
@@ -7600,7 +7832,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.addItemVersion",
@@ -7610,7 +7843,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.archive",
@@ -7620,7 +7854,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.batchUpdatePositions",
@@ -7630,7 +7865,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.create",
@@ -7640,7 +7876,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/hooks/useBoardMutations.ts"
+      ]
     },
     {
       "id": "route:boards.delete",
@@ -7650,7 +7889,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/hooks/useBoardMutations.ts"
+      ]
     },
     {
       "id": "route:boards.deleteItem",
@@ -7660,7 +7902,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.deleteItems",
@@ -7670,7 +7913,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": []
     },
     {
       "id": "route:boards.get",
@@ -7680,7 +7924,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boards.getItemModelInfo",
@@ -7690,7 +7937,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/components/NodeInfoPanel.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:boards.getItems",
@@ -7700,7 +7951,18 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/boards/canvas/useCastActions.ts",
+        "client/src/features/boards/components/VersionHistoryModal.tsx",
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/takeover/CastingTakeover.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:boards.getItemVersionCount",
@@ -7710,7 +7972,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/components/VersionHistoryBadge.tsx"
+      ]
     },
     {
       "id": "route:boards.getItemVersions",
@@ -7720,7 +7985,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/components/VersionHistoryModal.tsx"
+      ]
     },
     {
       "id": "route:boards.list",
@@ -7730,7 +7998,14 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/hooks/useBoardMutations.ts",
+        "client/src/features/lobby/BoardsView.tsx",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:boards.revertItemVersion",
@@ -7740,7 +8015,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/components/VersionHistoryModal.tsx"
+      ]
     },
     {
       "id": "route:boards.saveViewport",
@@ -7750,7 +8028,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boards.update",
@@ -7760,7 +8041,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/hooks/useBoardMutations.ts"
+      ]
     },
     {
       "id": "route:boards.updateItem",
@@ -7770,7 +8055,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/boards.ts"
+      "file": "server/routes/boards.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:bugReports.getBugReportCounts",
@@ -7780,7 +8068,8 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts"
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:bugReports.getBugReports",
@@ -7790,7 +8079,8 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts"
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:bugReports.submit",
@@ -7800,7 +8090,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/bugReports.ts"
+      "file": "server/routes/bugReports.ts",
+      "clientCallers": [
+        "client/src/features/lobby/FeedbackForm.tsx"
+      ]
     },
     {
       "id": "route:bugReports.updateBugReportStatus",
@@ -7810,7 +8103,8 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts"
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:castingV2.abandonSession",
@@ -7820,7 +8114,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.addCastsToCampaign",
@@ -7830,7 +8127,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.cancel",
@@ -7840,7 +8141,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.concept.describe",
@@ -7850,7 +8154,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.config",
@@ -7860,7 +8167,12 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
+        "client/src/pages/CastingSheet.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.createCampaign",
@@ -7870,7 +8182,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.createRoll",
@@ -7880,7 +8196,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.createSession",
@@ -7890,7 +8210,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.deleteCampaign",
@@ -7900,7 +8223,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.deleteCast",
@@ -7910,7 +8236,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.discard",
@@ -7920,7 +8250,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.draftCastReads",
@@ -7930,7 +8263,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx"
+      ]
     },
     {
       "id": "route:castingV2.editCastPersonaField",
@@ -7940,7 +8276,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx"
+      ]
     },
     {
       "id": "route:castingV2.facePanel",
@@ -7950,7 +8289,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.faceScan",
@@ -7960,7 +8302,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.follow",
@@ -7970,7 +8315,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.getCast",
@@ -7980,7 +8328,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx"
+      ]
     },
     {
       "id": "route:castingV2.getRoll",
@@ -7990,7 +8341,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.getSession",
@@ -8000,7 +8354,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.ink.remove",
@@ -8010,7 +8367,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": []
     },
     {
       "id": "route:castingV2.keep",
@@ -8020,7 +8378,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.listCampaigns",
@@ -8030,7 +8391,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.listCastCampaigns",
@@ -8040,7 +8405,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/CastCampaignsCard.tsx"
+      ]
     },
     {
       "id": "route:castingV2.openSessions",
@@ -8050,7 +8418,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.redoPackage",
@@ -8060,7 +8431,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx"
+      ]
     },
     {
       "id": "route:castingV2.reference.attach",
@@ -8070,7 +8444,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.refine",
@@ -8080,7 +8457,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.reimagine",
@@ -8090,7 +8470,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/Reimagine.tsx"
+      ]
     },
     {
       "id": "route:castingV2.removeCastsFromCampaign",
@@ -8100,7 +8483,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.renameCampaign",
@@ -8110,7 +8496,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.renameCast",
@@ -8120,7 +8509,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.retry",
@@ -8130,7 +8523,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.retryView",
@@ -8140,7 +8536,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": []
     },
     {
       "id": "route:castingV2.roster",
@@ -8150,7 +8547,12 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingRoom.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.rosterCounts",
@@ -8160,7 +8562,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:castingV2.selectVariant",
@@ -8170,7 +8575,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.sign",
@@ -8180,7 +8588,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.translateOwnWords",
@@ -8190,7 +8601,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingRoom.tsx"
+      ]
     },
     {
       "id": "route:castingV2.undo",
@@ -8200,7 +8614,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.variants",
@@ -8210,7 +8627,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/castingV2.ts"
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:credits.checkBalance",
@@ -8220,7 +8640,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/credits.ts"
+      "file": "server/routes/credits.ts",
+      "clientCallers": []
     },
     {
       "id": "route:credits.getBalance",
@@ -8230,7 +8651,23 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/credits.ts"
+      "file": "server/routes/credits.ts",
+      "clientCallers": [
+        "client/src/components/AppChrome.tsx",
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/boards/canvas/useCastActions.ts",
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/casting/hooks/useCastingGeneration.ts",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx",
+        "client/src/features/studio/takeover/CastingTakeover.tsx",
+        "client/src/pages/CastingSheet.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:credits.getCosts",
@@ -8240,7 +8677,12 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/credits.ts"
+      "file": "server/routes/credits.ts",
+      "clientCallers": [
+        "client/src/features/casting/ControlPanel.tsx",
+        "client/src/features/casting/ImageViewerPanel.tsx",
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:credits.getTransactions",
@@ -8250,7 +8692,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/credits.ts"
+      "file": "server/routes/credits.ts",
+      "clientCallers": []
     },
     {
       "id": "route:crew.getState",
@@ -8260,7 +8703,11 @@
       "auth": "admin",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/crew.ts"
+      "file": "server/routes/crew.ts",
+      "clientCallers": [
+        "client/src/features/admin/components/crew/useCrewState.ts",
+        "client/src/pages/AdminCrew.tsx"
+      ]
     },
     {
       "id": "route:crew.reply",
@@ -8270,7 +8717,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/crew.ts"
+      "file": "server/routes/crew.ts",
+      "clientCallers": [
+        "client/src/pages/AdminCrew.tsx"
+      ]
     },
     {
       "id": "route:crew.setCardIntent",
@@ -8280,7 +8730,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/crew.ts"
+      "file": "server/routes/crew.ts",
+      "clientCallers": [
+        "client/src/pages/AdminCrew.tsx"
+      ]
     },
     {
       "id": "route:crew.setWorkSwitch",
@@ -8290,7 +8743,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/crew.ts"
+      "file": "server/routes/crew.ts",
+      "clientCallers": [
+        "client/src/pages/AdminCrew.tsx"
+      ]
     },
     {
       "id": "route:evidence.acceptInkAddCandidate",
@@ -8300,7 +8756,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.attachInkIntentReference",
@@ -8310,7 +8769,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.beginInkAddIntent",
@@ -8320,7 +8782,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.cancelInkAddIntent",
@@ -8330,7 +8795,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.cancelInkProjectionCandidate",
@@ -8340,7 +8808,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.capability",
@@ -8350,7 +8821,8 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": []
     },
     {
       "id": "route:evidence.discardReferencePlate",
@@ -8360,7 +8832,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": []
     },
     {
       "id": "route:evidence.generateInkAddCandidate",
@@ -8370,7 +8843,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.generateInkProjectionCandidate",
@@ -8380,7 +8856,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.inkCapability",
@@ -8390,7 +8869,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:evidence.inkProjectionCandidate",
@@ -8400,7 +8883,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:evidence.retryInkAddCandidate",
@@ -8410,7 +8897,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.retryInkProjectionCandidate",
@@ -8420,7 +8910,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": [
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts"
+      ]
     },
     {
       "id": "route:evidence.stageReferencePlate",
@@ -8430,7 +8923,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/evidence.ts"
+      "file": "server/routes/evidence.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.acknowledgeOperation",
@@ -8440,7 +8934,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": [
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:generation.activeOperations",
@@ -8450,7 +8947,16 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:generation.analyzeReference",
@@ -8460,7 +8966,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/casting/MasterPromptPanel.tsx",
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:generation.castingImage",
@@ -8470,7 +8980,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/generation/castingImaging.ts"
+      "file": "server/routes/generation/castingImaging.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:generation.castStateHistory",
@@ -8480,7 +8993,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/CastStateHistory.tsx"
+      ]
     },
     {
       "id": "route:generation.clearSession",
@@ -8490,7 +9006,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:generation.compactPrompt",
@@ -8500,7 +9019,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.costs",
@@ -8510,7 +9030,8 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.dismissOperationResult",
@@ -8520,7 +9041,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:generation.enhance",
@@ -8530,7 +9054,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:generation.exportPlan",
@@ -8540,7 +9067,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:generation.generatePdf",
@@ -8550,7 +9081,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts"
+      ]
     },
     {
       "id": "route:generation.getStatus",
@@ -8560,7 +9094,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/generation/queueStatus.ts"
+      "file": "server/routes/generation/queueStatus.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/QueueStatusBar.tsx"
+      ]
     },
     {
       "id": "route:generation.history",
@@ -8570,7 +9107,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.iterate",
@@ -8580,7 +9118,10 @@
       "auth": "admin",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:generation.landOperationResult",
@@ -8590,7 +9131,11 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:generation.mintPackage",
@@ -8600,7 +9145,10 @@
       "auth": "admin",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/studio/hooks/useCastGate.ts"
+      ]
     },
     {
       "id": "route:generation.mintPackagePlan",
@@ -8610,7 +9158,18 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+        "client/src/features/casting/components/PackageHealthDialog.tsx",
+        "client/src/features/casting/components/SlotVersionHistory.tsx",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx",
+        "client/src/features/studio/hooks/useCastGate.ts"
+      ]
     },
     {
       "id": "route:generation.operationState",
@@ -8620,7 +9179,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.packageState",
@@ -8630,7 +9190,27 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/canvas/SpawnMenu.tsx",
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/casting/ImageViewerPanel.tsx",
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+        "client/src/features/casting/components/PackageHealthDialog.tsx",
+        "client/src/features/casting/components/SlotVersionHistory.tsx",
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/casting/hooks/useCastingGeneration.ts",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/export/ExportPackDialog.tsx",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/ModelCardChooser.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx",
+        "client/src/features/studio/hooks/useCastGate.ts"
+      ]
     },
     {
       "id": "route:generation.parsePrompt",
@@ -8640,7 +9220,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingParse.ts"
+      "file": "server/routes/generation/castingParse.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/FromPromptField.tsx"
+      ]
     },
     {
       "id": "route:generation.proxyImage",
@@ -8650,7 +9233,12 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts",
+        "client/src/features/studio/components/ImageActionBar.tsx",
+        "client/src/features/wardrobe/WardrobeWorkspaceSection.tsx"
+      ]
     },
     {
       "id": "route:generation.recentOperation",
@@ -8660,7 +9248,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/generationOperations.ts"
+      "file": "server/routes/generation/generationOperations.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.reconcile",
@@ -8670,7 +9259,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": []
     },
     {
       "id": "route:generation.refreshSlots",
@@ -8680,7 +9270,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts"
+      ]
     },
     {
       "id": "route:generation.refreshSlotsPlan",
@@ -8690,7 +9284,19 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/boards/canvas/nodes/useSheetController.ts",
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/components/ImageViewer/ViewTabs.tsx",
+        "client/src/features/casting/components/PackageHealthDialog.tsx",
+        "client/src/features/casting/components/SlotVersionHistory.tsx",
+        "client/src/features/casting/evidence/useInkAddWorkflow.ts",
+        "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx",
+        "client/src/features/studio/hooks/useCastGate.ts"
+      ]
     },
     {
       "id": "route:generation.restoreCastState",
@@ -8700,7 +9306,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/CastStateHistory.tsx"
+      ]
     },
     {
       "id": "route:generation.restoreSlotVersion",
@@ -8710,7 +9319,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/SlotVersionHistory.tsx"
+      ]
     },
     {
       "id": "route:generation.slotVersions",
@@ -8720,7 +9332,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/generation/castingExport.ts"
+      "file": "server/routes/generation/castingExport.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/components/SlotVersionHistory.tsx"
+      ]
     },
     {
       "id": "route:generation.suggestions",
@@ -8730,7 +9346,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/generation/castingRefinement.ts"
+      "file": "server/routes/generation/castingRefinement.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:lobby.recentWork",
@@ -8740,7 +9359,15 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/lobby.ts"
+      "file": "server/routes/lobby.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/boards/hooks/useBoardMutations.ts",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/HomeView.tsx",
+        "client/src/features/lobby/RecentWorkSection.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:models.create",
@@ -8750,7 +9377,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/casting/hooks/useCastingGeneration.ts"
+      ]
     },
     {
       "id": "route:models.delete",
@@ -8760,7 +9390,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx"
+      ]
     },
     {
       "id": "route:models.deleteAvailability",
@@ -8770,7 +9403,13 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/lobby/LibraryView.tsx",
+        "client/src/features/lobby/RecentWorkSection.tsx",
+        "client/src/pages/CastingRoom.tsx",
+        "client/src/pages/CastingV2.tsx"
+      ]
     },
     {
       "id": "route:models.deletePlan",
@@ -8780,7 +9419,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx"
+      ]
     },
     {
       "id": "route:models.get",
@@ -8790,7 +9432,24 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/casting/MasterPromptPanel.tsx",
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/casting/components/CastStateHistory.tsx",
+        "client/src/features/casting/hooks/useCastingGeneration.ts",
+        "client/src/features/export/useExportPack.ts",
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx",
+        "client/src/features/studio/hooks/useCastGate.ts",
+        "client/src/features/studio/hooks/useLoadWardrobeModel.ts",
+        "client/src/features/studio/hooks/useResumeDraft.ts",
+        "client/src/features/studio/hooks/useSessionPersistence.ts",
+        "client/src/features/studio/takeover/CastingTakeover.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:models.list",
@@ -8800,7 +9459,12 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/CastingWorkspace.tsx"
+      ]
     },
     {
       "id": "route:models.update",
@@ -8810,7 +9474,12 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/models.ts"
+      "file": "server/routes/models.ts",
+      "clientCallers": [
+        "client/src/features/casting/components/CastProfilePanel.tsx",
+        "client/src/features/studio/takeover/CastingTakeover.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:moderator.createChangeRequest",
@@ -8820,7 +9489,10 @@
       "auth": "moderator",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getAbuseAlerts",
@@ -8830,7 +9502,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getAuditLogById",
@@ -8840,7 +9515,8 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": []
     },
     {
       "id": "route:moderator.getAuditLogs",
@@ -8850,7 +9526,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getAuditStats",
@@ -8860,7 +9539,10 @@
       "auth": "moderator",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getFlaggedReferrals",
@@ -8870,7 +9552,11 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/features/staff/useModeratorFlagCounts.ts",
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getMyChangeRequests",
@@ -8880,7 +9566,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserActivity",
@@ -8890,7 +9579,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserCreditHistory",
@@ -8900,7 +9592,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserDetails",
@@ -8910,7 +9605,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/features/moderator/UserInvestigationWidgets.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserFullDetails",
@@ -8920,7 +9618,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserGenerationHistory",
@@ -8930,7 +9631,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.getUserStats",
@@ -8940,7 +9644,8 @@
       "auth": "moderator",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": []
     },
     {
       "id": "route:moderator.listBlockedIPs",
@@ -8950,7 +9655,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderator.listUsers",
@@ -8960,7 +9668,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderator.ts"
+      "file": "server/routes/moderator.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderatorAttachments.getAttachments",
@@ -8970,7 +9681,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorAttachments.ts"
+      "file": "server/routes/moderatorAttachments.ts",
+      "clientCallers": [
+        "client/src/features/admin/ChangeRequestAttachments.tsx"
+      ]
     },
     {
       "id": "route:moderatorAttachments.linkAttachments",
@@ -8980,7 +9694,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorAttachments.ts"
+      "file": "server/routes/moderatorAttachments.ts",
+      "clientCallers": [
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderatorAttachments.uploadAttachment",
@@ -8990,7 +9707,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorAttachments.ts"
+      "file": "server/routes/moderatorAttachments.ts",
+      "clientCallers": [
+        "client/src/features/moderator/ChangeRequestModal.tsx"
+      ]
     },
     {
       "id": "route:moderatorExports.exportAuditLogsCsv",
@@ -9000,7 +9720,8 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorExports.ts"
+      "file": "server/routes/moderatorExports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:moderatorExports.exportUserCreditHistoryCsv",
@@ -9010,7 +9731,8 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorExports.ts"
+      "file": "server/routes/moderatorExports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:moderatorExports.exportUserGenerationHistoryCsv",
@@ -9020,7 +9742,8 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorExports.ts"
+      "file": "server/routes/moderatorExports.ts",
+      "clientCallers": []
     },
     {
       "id": "route:moderatorReconciliation.freezeAccount",
@@ -9030,7 +9753,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorReconciliation.ts"
+      "file": "server/routes/moderatorReconciliation.ts",
+      "clientCallers": [
+        "client/src/features/moderator/UserInvestigationWidgets.tsx"
+      ]
     },
     {
       "id": "route:moderatorReconciliation.getFlaggedUsers",
@@ -9040,7 +9766,13 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorReconciliation.ts"
+      "file": "server/routes/moderatorReconciliation.ts",
+      "clientCallers": [
+        "client/src/features/moderator/FlaggedDiscrepanciesCard.tsx",
+        "client/src/features/moderator/UserInvestigationWidgets.tsx",
+        "client/src/features/staff/useModeratorFlagCounts.ts",
+        "client/src/pages/ModeratorDashboard.tsx"
+      ]
     },
     {
       "id": "route:moderatorReconciliation.getUserReconciliation",
@@ -9050,7 +9782,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorReconciliation.ts"
+      "file": "server/routes/moderatorReconciliation.ts",
+      "clientCallers": [
+        "client/src/features/moderator/ReconciliationSubTab.tsx"
+      ]
     },
     {
       "id": "route:moderatorReconciliation.unfreezeAccount",
@@ -9060,7 +9795,10 @@
       "auth": "moderator",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/moderatorReconciliation.ts"
+      "file": "server/routes/moderatorReconciliation.ts",
+      "clientCallers": [
+        "client/src/features/moderator/UserInvestigationWidgets.tsx"
+      ]
     },
     {
       "id": "route:newsletter.subscribe",
@@ -9070,7 +9808,8 @@
       "auth": "public",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/newsletter.ts"
+      "file": "server/routes/newsletter.ts",
+      "clientCallers": []
     },
     {
       "id": "route:newsletter.testConnection",
@@ -9080,7 +9819,8 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/newsletter.ts"
+      "file": "server/routes/newsletter.ts",
+      "clientCallers": []
     },
     {
       "id": "route:profile.get",
@@ -9090,7 +9830,13 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/components/AppChrome.tsx",
+        "client/src/features/boards/BoardPage.tsx",
+        "client/src/features/settings/sections/ProfileSection.tsx",
+        "client/src/pages/DrapeStudio.tsx"
+      ]
     },
     {
       "id": "route:profile.markCanvasIntroSeen",
@@ -9100,7 +9846,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:profile.markFollowHintSeen",
@@ -9110,7 +9859,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:profile.removeAvatar",
@@ -9120,7 +9872,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/ProfileSection.tsx"
+      ]
     },
     {
       "id": "route:profile.storageInfo",
@@ -9130,7 +9885,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/UsageSection.tsx"
+      ]
     },
     {
       "id": "route:profile.update",
@@ -9140,7 +9898,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/ProfileSection.tsx"
+      ]
     },
     {
       "id": "route:profile.uploadAvatar",
@@ -9150,7 +9911,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": [
+        "client/src/features/settings/sections/ProfileSection.tsx"
+      ]
     },
     {
       "id": "route:profile.uploadBanner",
@@ -9160,7 +9924,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/profile.ts"
+      "file": "server/routes/profile.ts",
+      "clientCallers": []
     },
     {
       "id": "route:referral.claim",
@@ -9170,7 +9935,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/referral/useReferralClaim.ts"
+      ]
     },
     {
       "id": "route:referral.getHistory",
@@ -9180,7 +9948,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/settings/ReferralBlock.tsx"
+      ]
     },
     {
       "id": "route:referral.getMyCode",
@@ -9190,7 +9961,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/settings/ReferralBlock.tsx"
+      ]
     },
     {
       "id": "route:referral.getStats",
@@ -9200,7 +9974,11 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/referral/RedeemCodeModal.tsx",
+        "client/src/features/settings/ReferralBlock.tsx"
+      ]
     },
     {
       "id": "route:referral.redeem",
@@ -9210,7 +9988,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/referral/RedeemCodeModal.tsx",
+        "client/src/features/settings/ReferralBlock.tsx"
+      ]
     },
     {
       "id": "route:referral.sendInvite",
@@ -9220,7 +10002,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": true,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": [
+        "client/src/features/settings/ReferralBlock.tsx"
+      ]
     },
     {
       "id": "route:referral.validate",
@@ -9230,7 +10015,8 @@
       "auth": "public",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/referral.ts"
+      "file": "server/routes/referral.ts",
+      "clientCallers": []
     },
     {
       "id": "route:system.health",
@@ -9240,7 +10026,8 @@
       "auth": "public",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/_core/systemRouter.ts"
+      "file": "server/_core/systemRouter.ts",
+      "clientCallers": []
     },
     {
       "id": "route:usage.getCycleSpend",
@@ -9250,7 +10037,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/usage.ts"
+      "file": "server/routes/usage.ts",
+      "clientCallers": [
+        "client/src/features/billing/useCycleSpend.ts"
+      ]
     },
     {
       "id": "route:waitlist.getStats",
@@ -9260,7 +10050,8 @@
       "auth": "public",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/waitlist.ts"
+      "file": "server/routes/waitlist.ts",
+      "clientCallers": []
     },
     {
       "id": "route:waitlist.join",
@@ -9270,7 +10061,12 @@
       "auth": "public",
       "input": "strict",
       "rateLimited": true,
-      "file": "server/routes/waitlist.ts"
+      "file": "server/routes/waitlist.ts",
+      "clientCallers": [
+        "client/src/features/home/HeroContent.tsx",
+        "client/src/features/home/WaitlistModal.tsx",
+        "client/src/pages/Login.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.decompose.analyze",
@@ -9280,7 +10076,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.decompose.import",
@@ -9290,7 +10089,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.garments.delete",
@@ -9300,7 +10102,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
+      ]
     },
     {
       "id": "route:wardrobe.garments.get",
@@ -9310,7 +10115,8 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": []
     },
     {
       "id": "route:wardrobe.garments.list",
@@ -9320,7 +10126,15 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/LibraryView.tsx",
+        "client/src/features/wardrobe/WardrobeWorkspaceSection.tsx",
+        "client/src/features/wardrobe/components/DecompositionDrawer.tsx",
+        "client/src/features/wardrobe/components/LayersPanel.tsx",
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts",
+        "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
+      ]
     },
     {
       "id": "route:wardrobe.garments.quickDetect",
@@ -9330,7 +10144,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
+      ]
     },
     {
       "id": "route:wardrobe.garments.upload",
@@ -9340,7 +10157,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
+      ]
     },
     {
       "id": "route:wardrobe.looks.delete",
@@ -9350,7 +10170,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts"
+      ]
     },
     {
       "id": "route:wardrobe.looks.list",
@@ -9360,7 +10183,11 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts",
+        "client/src/features/wardrobe/WardrobeWorkspaceSection.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.looks.listAll",
@@ -9370,7 +10197,12 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/LibraryView.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.looks.rename",
@@ -9380,7 +10212,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/export/useExportPack.ts"
+      ]
     },
     {
       "id": "route:wardrobe.looks.save",
@@ -9390,7 +10225,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/WardrobeWorkspaceSection.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.model.analyzeTattoos",
@@ -9400,7 +10238,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useModelSetup.ts"
+      ]
     },
     {
       "id": "route:wardrobe.model.checkQuality",
@@ -9410,7 +10251,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useModelSetup.ts"
+      ]
     },
     {
       "id": "route:wardrobe.model.listDrafts",
@@ -9420,7 +10264,12 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/LibraryView.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.model.listMinted",
@@ -9430,7 +10279,13 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/LibraryView.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/components/WardrobeStart.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.model.upload",
@@ -9440,7 +10295,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/studio/components/ModelUploadZone.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.outfits.delete",
@@ -9450,7 +10308,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/components/RackPanel.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.outfits.list",
@@ -9460,7 +10321,11 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/components/LayersPanel.tsx",
+        "client/src/features/wardrobe/components/RackPanel.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.outfits.save",
@@ -9470,7 +10335,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/components/LayersPanel.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.clearChat",
@@ -9480,7 +10348,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.create",
@@ -9490,7 +10361,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.delete",
@@ -9500,7 +10374,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/RecentWorkSection.tsx"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.get",
@@ -9510,7 +10387,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": []
     },
     {
       "id": "route:wardrobe.sessions.getLatest",
@@ -9520,7 +10398,8 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": []
     },
     {
       "id": "route:wardrobe.sessions.getRecent",
@@ -9530,7 +10409,14 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/lobby/DeleteCastDialog.tsx",
+        "client/src/features/lobby/RecentWorkSection.tsx",
+        "client/src/features/operations/GenerationOperationBridge.tsx",
+        "client/src/features/studio/hooks/useStudioEntry.ts",
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.list",
@@ -9540,7 +10426,10 @@
       "auth": "protected",
       "input": "none",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.seedChat",
@@ -9550,7 +10439,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.sessions.update",
@@ -9560,7 +10452,8 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": []
     },
     {
       "id": "route:wardrobe.vto.checkIdentity",
@@ -9570,7 +10463,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.vto.classifyEdit",
@@ -9580,7 +10476,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.vto.detectResultGarments",
@@ -9590,7 +10489,10 @@
       "auth": "protected",
       "input": "open",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.vto.generate",
@@ -9600,7 +10502,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.vto.incremental",
@@ -9610,7 +10515,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     },
     {
       "id": "route:wardrobe.vto.refine",
@@ -9620,7 +10528,10 @@
       "auth": "protected",
       "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/wardrobe.ts"
+      "file": "server/routes/wardrobe.ts",
+      "clientCallers": [
+        "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
+      ]
     }
   ],
   "surfaces": [
@@ -11975,6 +12886,10 @@
     {
       "id": "test:server/architectureAtlas.test.ts",
       "path": "server/architectureAtlas.test.ts"
+    },
+    {
+      "id": "test:server/architectureClientCallers.test.ts",
+      "path": "server/architectureClientCallers.test.ts"
     },
     {
       "id": "test:server/architectureCreditCosts.test.ts",
