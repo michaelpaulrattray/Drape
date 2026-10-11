@@ -163,6 +163,14 @@ describe("which bucket each casting procedure was handed", () => {
       variants: "castingRead",
       roster: "castingRead",
       renameCast: "castingSheet",
+      /* CAMPAIGNS (N2c, #2249) — free, no credit, no operation: the list is a
+         read a person asks for, the five writes are things a person does. */
+      listCampaigns: "castingRead",
+      createCampaign: "castingSheet",
+      renameCampaign: "castingSheet",
+      deleteCampaign: "castingSheet",
+      addCastsToCampaign: "castingSheet",
+      removeCastsFromCampaign: "castingSheet",
       /* HER EDIT OF A DRAFTED PERSONALITY OR VOICE LINE (N2b, #1242) — the
          RENAME's own bucket, deliberately, because it IS that act: a customer
          correcting a piece of text on her own Cast, free, with no credit, no

@@ -133,6 +133,13 @@ the candidate graph.
 |---|---|---|---|
 | `createBugReport` | `bugReports.submit` | Optional `modelId` is client supplied. Auth/rate limiting exist, but no ownership or lifecycle check exists. | **FENCE REQUIRED:** when present, validate same-user alive model at the durable insert, or store `null` if the referenced subject is unavailable. R7-5C scrubs existing pointers while preserving the independent support report text. |
 
+## `cast_campaign_members.modelId` *(migration 0080, card #2249 — N2c campaigns)*
+
+| Durable writer | Production entry points | Current authority | Disposition |
+|---|---|---|---|
+| `addCastsToCampaign` | `castingV2.addCastsToCampaign` (no client caller yet — built dark) | The insert is one `INSERT … SELECT` that joins the owned campaign (public id + `userId`) to the owner's signed, live casts through the roster's own predicate (`signedCastWhere`: owner, signed status, `deletedAt IS NULL`, a source candidate). The model id is server-derived from the public `castId`, never client supplied. | Safe: the same-user alive-model fence this inventory asks for is inside the durable statement itself. A cast deleted after it was filed leaves an inert member row — never counted, never listed (every read joins through `signedCastWhere`), still removable — and account deletion erases it. Final Cast deletion does not yet remove it; nothing reads it, and that is recorded here rather than assumed. |
+| `removeCastsFromCampaign` / `deleteCampaign` | `castingV2.removeCastsFromCampaign`, `castingV2.deleteCampaign` | Deletes only, owner-scoped in the statement | Not a `modelId` writer. |
+
 ## Semantic model references in `audit_logs`
 
 `audit_logs` has no dedicated integer `modelId` column, but `resourceType = "model"` plus `resourceId = String(modelId)` is a durable model reference and must be inventoried with the typed columns.

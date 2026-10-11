@@ -4071,6 +4071,75 @@ export type CastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferSel
 export type InsertCastingInkDeliveryCropRow = typeof castingInkDeliveryCrops.$inferInsert;
 
 /**
+ * CAMPAIGNS — a customer's named collections of signed casts (migration 0080;
+ * rung N2c, card #2249).
+ *
+ * His word, 2026-09-29: *"in n2c instead of calling them shoots call it
+ * Campaign"* — and a campaign is the production unit the cinema studio will
+ * open, a script and its cast. So the noun is the same in the tables as in the
+ * copy, and a later `script` column lands on this row rather than on a third
+ * grouping.
+ *
+ * MANY-TO-MANY ON PURPOSE (Approach A, locked): a cast may sit in several
+ * campaigns at once, and a cast in none is "Unfiled". A single campaign column
+ * on `models` would be exclusive folders, which the design refuses.
+ *
+ * ⚠ **NO `deletedAt`, AND THAT IS A DECLARED DEPARTURE FROM THE BRIEF.** The
+ * brief asked for both a soft-delete column and a unique (`userId`, `name`).
+ * Together they mean a deleted campaign's name could never be used again by
+ * the same customer — the dead row would hold it forever. Deleting a campaign
+ * therefore removes the row and its member rows outright (the casts stay,
+ * which is the only promise the brief makes about deletion).
+ *
+ * No foreign-key constraints, as everywhere else in this schema: `userId` is
+ * denormalised onto both tables so every read and write can carry the owner in
+ * its own WHERE (enforcement invariants 1 and 2).
+ */
+export const castCampaigns = mysqlTable("cast_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The only id that leaves the server. 32 hex characters, a UUID without dashes. */
+  publicId: varchar("publicId", { length: 32 }).notNull(),
+  userId: int("userId").notNull(),
+  /** Trimmed and non-empty, enforced at the door; unique per customer below. */
+  name: varchar("name", { length: 64 }).notNull(),
+  /** Display order. Every campaign is born 0 and listed oldest first; reordering is not built. */
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_cast_campaigns_publicId").on(table.publicId),
+  /* One customer cannot hold two campaigns with one name; it also serves
+     every "this customer's campaigns" read, userId being its left column. */
+  uniqueIndex("uq_cast_campaigns_user_name").on(table.userId, table.name),
+]));
+
+export type CastCampaignRow = typeof castCampaigns.$inferSelect;
+export type InsertCastCampaignRow = typeof castCampaigns.$inferInsert;
+
+/**
+ * ONE CAST IN ONE CAMPAIGN (migration 0080; card #2249).
+ *
+ * `modelId` is the signed cast's `models.id`; `campaignId` is
+ * `cast_campaigns.id`. Both are internal and never leave the server.
+ */
+export const castCampaignMembers = mysqlTable("cast_campaign_members", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(), // →cast_campaigns
+  modelId: int("modelId").notNull(), // →models
+  userId: int("userId").notNull(), // denormalised owner — single-statement ownership
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  /* Adding the same cast twice is one row — the add is idempotent by the index. */
+  uniqueIndex("uq_cast_campaign_members_campaign_model").on(table.campaignId, table.modelId),
+  /* "Which campaigns is this cast in" and "is this cast unfiled". */
+  index("ix_cast_campaign_members_user_model").on(table.userId, table.modelId),
+  index("ix_cast_campaign_members_campaign").on(table.campaignId),
+]));
+
+export type CastCampaignMemberRow = typeof castCampaignMembers.$inferSelect;
+export type InsertCastCampaignMemberRow = typeof castCampaignMembers.$inferInsert;
+
+/**
  * THE FOUNDER'S REPLIES — the steering half of the Crew tab (migration 0054;
  * issue #41, design `docs/specs/CREW_TAB_DESIGN.md` §3).
  *

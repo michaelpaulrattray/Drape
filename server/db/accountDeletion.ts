@@ -16,6 +16,7 @@
  *      generationOperations (userId)
  *  9c. bugReports (userId), faceScanDailyUsage (userId),
  *      subscriptionRenewalReminders (userId)
+ *  9d. castCampaignMembers (userId), then castCampaigns (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -60,6 +61,8 @@ import {
   bugReports,
   faceScanDailyUsage,
   subscriptionRenewalReminders,
+  castCampaigns,
+  castCampaignMembers,
   auditLogs,
   changeRequests,
   changeRequestAttachments,
@@ -201,6 +204,15 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     account to exist.
   */
   "subscriptionRenewalReminders.userId": "deleted",
+
+  /* ---- the customer's campaigns (#2249) ---- */
+  /*
+    Named collections of the customer's own signed casts: the names are their
+    words and the memberships point only at casts this same transaction
+    deletes. Nothing else reads them, so they go with the account.
+  */
+  "castCampaigns.userId": "deleted",
+  "castCampaignMembers.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -375,6 +387,8 @@ function zeroDeletionCounts() {
     bugReports: 0,
     faceScanDailyUsage: 0,
     subscriptionRenewalReminders: 0,
+    castCampaignMembers: 0,
+    castCampaigns: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -1300,6 +1314,19 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(subscriptionRenewalReminders)
         .where(eq(subscriptionRenewalReminders.userId, userId));
       counts.subscriptionRenewalReminders = (renewalReminderResult as any)[0]?.affectedRows ?? 0;
+
+      /*
+        Step 9d: the customer's campaigns (#2249) — memberships first, so no
+        member row is ever left pointing at a campaign that is already gone.
+      */
+      const campaignMemberResult = await tx
+        .delete(castCampaignMembers)
+        .where(eq(castCampaignMembers.userId, userId));
+      counts.castCampaignMembers = (campaignMemberResult as any)[0]?.affectedRows ?? 0;
+      const campaignResult = await tx
+        .delete(castCampaigns)
+        .where(eq(castCampaigns.userId, userId));
+      counts.castCampaigns = (campaignResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx

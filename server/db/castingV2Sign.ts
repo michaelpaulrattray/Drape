@@ -1536,6 +1536,26 @@ export async function listCastPublicIdsForCandidates(
  * it — never a compiled prompt, which stays internal (`compiledBrief` is not
  * selected here and must not be).
  */
+/**
+ * WHICH `models` ROWS ARE THIS ACCOUNT'S SIGNED, LIVE CASTS — the roster's own
+ * predicate, owner included.
+ *
+ * Exported so the campaign store (card #2249) can decide "may this cast be
+ * filed" and "does this member still count" with the SAME rule the roster
+ * draws by, rather than a second copy of it that drifts the day one of these
+ * conditions changes (working law 4).
+ */
+export function signedCastWhere(userId: number) {
+  assertPositiveId(userId, "userId");
+  return and(
+    eq(models.userId, userId),
+    inArray(models.status, ["provisioning", "active", "locked"]),
+    isNull(models.deletedAt),
+    // V2 Casts only: a Cast made by Sign carries the candidate it came from.
+    isNotNull(models.sourceCandidateId),
+  );
+}
+
 export async function listSignedCasts(
   userId: number,
   limit = 60,
@@ -1550,13 +1570,7 @@ export async function listSignedCasts(
   const rows = await db
     .select()
     .from(models)
-    .where(and(
-      eq(models.userId, userId),
-      inArray(models.status, ["provisioning", "active", "locked"]),
-      isNull(models.deletedAt),
-      // V2 Casts only: a Cast made by Sign carries the candidate it came from.
-      isNotNull(models.sourceCandidateId),
-    ))
+    .where(signedCastWhere(userId))
     .orderBy(desc(models.id))
     .limit(limit);
   if (rows.length === 0) return [];

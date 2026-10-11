@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 69
+      "moduleCount": 70
     },
     {
       "id": "domain:evidence",
@@ -4945,6 +4945,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castCampaigns.ts",
+      "path": "server/db/castCampaigns.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castPersonaField.ts",
       "path": "server/db/castPersonaField.ts",
       "domain": "data",
@@ -7763,6 +7769,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.addCastsToCampaign",
+      "namespace": "castingV2",
+      "name": "addCastsToCampaign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.cancel",
       "namespace": "castingV2",
       "name": "cancel",
@@ -7793,6 +7809,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.createCampaign",
+      "namespace": "castingV2",
+      "name": "createCampaign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.createRoll",
       "namespace": "castingV2",
       "name": "createRoll",
@@ -7806,6 +7832,16 @@
       "id": "route:castingV2.createSession",
       "namespace": "castingV2",
       "name": "createSession",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.deleteCampaign",
+      "namespace": "castingV2",
+      "name": "deleteCampaign",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -7933,6 +7969,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.listCampaigns",
+      "namespace": "castingV2",
+      "name": "listCampaigns",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.openSessions",
       "namespace": "castingV2",
       "name": "openSessions",
@@ -7976,6 +8022,26 @@
       "id": "route:castingV2.reimagine",
       "namespace": "castingV2",
       "name": "reimagine",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.removeCastsFromCampaign",
+      "namespace": "castingV2",
+      "name": "removeCastsFromCampaign",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
+      "id": "route:castingV2.renameCampaign",
+      "namespace": "castingV2",
+      "name": "renameCampaign",
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
@@ -12019,6 +12085,14 @@
     {
       "id": "test:server/cardWaitsOnHisEye.test.ts",
       "path": "server/cardWaitsOnHisEye.test.ts"
+    },
+    {
+      "id": "test:server/castCampaigns-db.test.ts",
+      "path": "server/castCampaigns-db.test.ts"
+    },
+    {
+      "id": "test:server/castCampaignsRoute.test.ts",
+      "path": "server/castCampaignsRoute.test.ts"
     },
     {
       "id": "test:server/castModelModal.test.ts",
@@ -31761,6 +31835,26 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/castCampaigns.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCampaigns.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCampaigns.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCampaigns.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castingV2.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -34838,6 +34932,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/viewRetryService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/db/castCampaigns.ts",
       "kind": "imports"
     },
     {
