@@ -87,6 +87,28 @@ function gitWith(config: string[], cwd: string, ...args: string[]): Result {
 }
 
 const git = (cwd: string, ...args: string[]) => gitWith([], cwd, ...args);
+/**
+ * ⚠ **A GIT CHILD'S OWN WORDS, AS THE ASSERTION MESSAGE — #2298.**
+ *
+ * Fourteen assertions in this suite read a git child's STATUS with no message —
+ * thirteen `toBe(0)` and one `not.toBe(0)` — and a failing one prints exactly
+ * `AssertionError: expected 1 to be +0`: **no file, no push, no hook sentence.**
+ * That is what #2298 was filed with, and it is why its own body had to GUESS
+ * which assertion fired: driven
+ * here rather than reasoned, vitest prints a supplied message and nothing else
+ * does (`AssertionError: <message>: expected 1 to be +0`), so a paste without
+ * one proves the failing assertion was NOT the warn-and-allow verdict at the
+ * end of the arm — that one passes `result.stderr` — but one of the messageless
+ * children before it.
+ *
+ * The stderr was in hand at every one of those sites and thrown away. A third
+ * instance of this suite's load-sensitivity is now diagnosable from one run.
+ */
+function expectOk(run: Result, what: string): void {
+  const said = ["--- stderr ---", run.stderr, "--- stdout ---", run.stdout].join("\n");
+  const message = `${what} exited ${run.status} where 0 was expected.\n${said}`;
+  expect(run.status, message).toBe(0);
+}
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -111,7 +133,7 @@ function repoWithRemote(): Repo {
   writeFileSync(join(work, "server", "a.ts"), "export const a = 1;\n");
   writeFileSync(join(work, MAP), "a.ts\n");
   git(work, "add", "-A");
-  expect(git(work, "commit", "-q", "-m", "seed").status).toBe(0);
+  expectOk(git(work, "commit", "-q", "-m", "seed"), "the seed commit");
   writeFileSync(join(work, ".git", "info", "exclude"), ".expected\n");
   git(work, "remote", "add", "origin", remote.replace(/\\/g, "/"));
   return { work, remote };
@@ -121,7 +143,7 @@ function repoWithRemote(): Repo {
 function commitSource(work: string, name: string): string {
   writeFileSync(join(work, "server", name), `export const x = "${name}";\n`);
   git(work, "add", `server/${name}`);
-  expect(git(work, "commit", "-q", "-m", `add ${name}`).status).toBe(0);
+  expectOk(git(work, "commit", "-q", "-m", `add ${name}`), `the commit adding server/${name}`);
   return git(work, "rev-parse", "HEAD").stdout.trim();
 }
 
@@ -171,14 +193,14 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
 
   it("REFUSES a stale map on a clean tree, and the remote does NOT move", () => {
     const { work, remote } = repoWithRemote();
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
     const before = remoteHead(remote);
 
     /* --no-verify is the only way to get a stale map into a commit here, which
        is itself the point: every ordinary road already regenerates. */
     writeFileSync(join(work, "server", "b.ts"), "export const b = 1;\n");
     git(work, "add", "server/b.ts");
-    expect(git(work, "commit", "-q", "--no-verify", "-m", "stale").status).toBe(0);
+    expectOk(git(work, "commit", "-q", "--no-verify", "-m", "stale"), "the --no-verify commit");
 
     const result = push(work);
     expect(result.status, "a stale map must not push").not.toBe(0);
@@ -186,6 +208,55 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     expect(result.stderr).toContain("pnpm architecture:generate");
     expect(remoteHead(remote)).toBe(before);
   });
+
+  /*
+    ⚠ #2298 — THE DIRTY READ IS THE OTHER HALF OF THE #2167 TRIO ABOVE, AND IT
+    HAD THE SAME DEFECT. Until 2026-10-12 the three reads sent stderr to
+    `/dev/null` and no status was read, so an empty list meant BOTH *there is no
+    uncommitted work* and *the read produced no answer* — and the second fell
+    through to the REFUSED branch, whose sentence is "the working tree is
+    clean". That is the review-finding-5 sentence being false again, by a second
+    road.
+
+    The driver is a real state and not a seam: a corrupt `.git/index` makes all
+    three reads exit 128 (`fatal: .git/index: index file smaller than
+    expected`), while `git push` itself works and still moves the remote —
+    driven both ways before this arm was written. So the hook can genuinely be
+    asked to judge dirtiness with no way to read it.
+
+    ⚠ IT IS THE PAIR WITH THE ARM ABOVE THAT MEANS SOMETHING. That one must
+    still REFUSE on a clean tree with a stale map; this one must WARN when the
+    same question cannot be answered. Either alone is satisfiable by a blanket.
+  */
+  it("⚠ WARNS and allows when the DIRTY READ itself cannot run (#2298)", () => {
+    const { work, remote } = repoWithRemote();
+    expectOk(push(work), "the first push (clean tree, fresh map)");
+    const before = remoteHead(remote);
+
+    /* Stale on disk, and committed fresh — so the check fails and the hook goes
+       to the dirty read to decide whose staleness it is. */
+    writeFileSync(join(work, "server", "wip.ts"), "export const wip = 1;\n");
+    commitSource(work, "b.ts");
+    writeFileSync(join(work, "server", "wip2.ts"), "export const wip2 = 1;\n");
+
+    /* And now the dirty read cannot answer. */
+    writeFileSync(join(work, ".git", "index"), "GARBAGE-NOT-AN-INDEX");
+    expect(git(work, "diff", "--name-only").status, "the corruption must really break the read")
+      .not.toBe(0);
+
+    const result = push(work);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stderr).toContain("COULD NOT JUDGE");
+    /* It names the reads and their codes, which is the half of #2167 that made
+       a could-not-judge actionable rather than mysterious. */
+    expect(result.stderr).toContain("git ls-files --others --exclude-standard");
+    expect(result.stderr).not.toContain("REFUSED");
+    /* ⚠ AND IT MUST NOT CLAIM THE TREE IS CLEAN — that sentence is the defect. */
+    expect(result.stderr).not.toContain("the working tree is clean");
+    expect(remoteHead(remote)).not.toBe(before);
+    expect(remoteHead(remote)).toBe(git(work, "rev-parse", "HEAD").stdout.trim());
+  });
+
 
   /*
     ⚠ THE #2167 TRIO — "the map is stale" and "the checker could not run" were
@@ -266,7 +337,7 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     const { work, remote } = repoWithRemote();
     const prose = ["-c", "drape.atlasCheck=" + PROSE_STALE_CHECK];
     /* Seeded with the real check, so the remote holds a known commit to compare. */
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
     const landed = remoteHead(remote);
 
     commitSource(work, "b.ts");
@@ -283,7 +354,7 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     const { work, remote } = repoWithRemote();
     const b = commitSource(work, "b.ts");
     commitSource(work, "c.ts");
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
     const before = remoteHead(remote);
 
     /* The map moved in `add c.ts`, so reverting `add b.ts` restores a map that
@@ -310,7 +381,7 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
   it("⚠ THE #519 ROAD: a replayed rebase commit is caught the same way", () => {
     const { work, remote } = repoWithRemote();
     commitSource(work, "b.ts");
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
     const before = remoteHead(remote);
 
     /* A branch off the seed that moves the map, replayed onto a main that also
@@ -334,7 +405,7 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
 
   it("WARNS and allows when the staleness is uncommitted work, not the commit", () => {
     const { work, remote } = repoWithRemote();
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
 
     commitSource(work, "b.ts");
     /* Unstaged, uncommitted — the commit's map is right, the disk's is not. */
@@ -358,7 +429,7 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
   */
   it("WARNS and allows when the staleness is STAGED work — the third dirty state", () => {
     const { work, remote } = repoWithRemote();
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
 
     commitSource(work, "b.ts");
     /* Committed and fresh; then the next task's file is staged, not committed. */
@@ -376,10 +447,10 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
 
   it("does NOT pay twice on the rite's own push — the rite runs both checks itself", () => {
     const { work, remote } = repoWithRemote();
-    expect(push(work).status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
     writeFileSync(join(work, "server", "b.ts"), "export const b = 1;\n");
     git(work, "add", "server/b.ts");
-    expect(git(work, "commit", "-q", "--no-verify", "-m", "stale").status).toBe(0);
+    expectOk(git(work, "commit", "-q", "--no-verify", "-m", "stale"), "the --no-verify commit");
 
     /* Same commit the arm above refuses — allowed here only by the marker. */
     const run = runHook("git", [
@@ -398,8 +469,8 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
 
   it("does not fire on a branch DELETION — there is no tree to judge", () => {
     const { work, remote } = repoWithRemote();
-    expect(push(work).status).toBe(0);
-    expect(git(work, "push", "origin", "trunk:doomed").status).toBe(0);
+    expectOk(push(work), "the first push (clean tree, fresh map)");
+    expectOk(git(work, "push", "origin", "trunk:doomed"), "the push creating trunk:doomed");
 
     /* Make the map stale, so a firing arm would refuse the delete. */
     writeFileSync(join(work, "server", "b.ts"), "export const b = 1;\n");
@@ -409,7 +480,9 @@ describe("the pre-push atlas arm (#606, #519)", { timeout: 120_000 }, () => {
     const result = git(work, "push", "origin", ":doomed");
     expect(result.status, result.stderr).toBe(0);
     expect(result.stderr).not.toContain("REFUSED");
-    expect(git(remote, "rev-parse", "--verify", "-q", "doomed").status).not.toBe(0);
+    const doomed = git(remote, "rev-parse", "--verify", "-q", "doomed");
+    expect(doomed.status, `the deleted branch is still on the remote at ${doomed.stdout.trim()}`)
+      .not.toBe(0);
   });
 
   it("REFUSES when it cannot read the shared path filters — a control with a missing dependency refuses", () => {
