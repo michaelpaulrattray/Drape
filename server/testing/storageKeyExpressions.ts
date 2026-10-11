@@ -75,7 +75,7 @@
  * population size for exactly that reason: a reader that went blind and a tree
  * with nothing to find look identical (working law 2).
  */
-import { withoutComments } from "./withoutComments";
+import { codeOnly, withoutComments } from "./withoutComments";
 
 /** One place a storage key is built, with which reader found it. */
 export type KeyExpression = {
@@ -153,9 +153,45 @@ const EVERY_TEMPLATE = new RegExp(TEMPLATE_SOURCE, "g");
  */
 export { withoutComments };
 
-/** Does this file reach for `Math.random` in CODE, as opposed to in prose? */
+/**
+ * Does this file reach for `Math.random` in CODE, as opposed to in prose?
+ *
+ * ⚠ **`codeOnly`, NOT `withoutComments` — THE LITERAL HALF OF THIS HOLE, CLOSED
+ * 2026-10-12 (#2297). The comment half was closed by #1625 and the paragraph
+ * above records it; the question *is it in code or in data* was only ever asked
+ * of comments.** `withoutComments` keeps string and regex literal CONTENTS, so
+ * `Math.random` inside a string literal — or inside a pattern matching for it —
+ * read as a reach for it. `codeOnly` drops both, and it is the door #2293
+ * pointed the production-mention classifier at the same week for the same
+ * reason: a name inside a literal is DATA.
+ *
+ * ⚠ **IT WAS LATENT AND IT FAILED TOWARD NOISE, which is why it had cost
+ * nothing.** Driven over the tracked `server/` tree, both doors on the same
+ * bytes, 2026-10-12: **1,531** files, **1,520** strip to different bytes, and
+ * **4** `usesMathRandom` answers move — every one of them `true` → `false`
+ * (`casting/castPublicId.test.ts`, `castingV2/referenceAttachService.test.ts`,
+ * `storage-key-generation.test.ts`, and this file). Three are `.test.ts` and
+ * the guard's population is `runtimeSources()`, which excludes them; the fourth
+ * is this module, which mints no storage key. So **no verdict on the record
+ * moves**, and the thing repaired is the day a key writer carries `Math.random`
+ * inside a string or a pattern and this guard names a file that never reached
+ * for it. (The card measured 1,529 / 1,518 / the same 4 three days earlier; the
+ * population grew by two files and the four did not change.)
+ *
+ * ⚠ **A `${…}` SUBSTITUTION IS STILL CODE UNDER THIS DOOR, which is the half
+ * that must not be lost**: `codeOnly` emits the braces and walks their contents
+ * as code, so `` `a/${Math.random()}.png` `` still reads `true`. Dropping the
+ * literal's TEXT is not dropping the expressions inside it.
+ *
+ * ⚠ **AND `keyExpressionsIn` BELOW IS DELIBERATELY NOT MOVED WITH IT, THOUGH
+ * THE TWO LOOK ALIKE.** That reader needs literals KEPT absolutely — a key
+ * expression IS a template literal, so pointing it at `codeOnly` would empty
+ * the population it exists to read, and the guard would pass by having nothing
+ * to check. `server/storage-key-generation.test.ts` drives that difference in
+ * both directions so a later consistency sweep reddens rather than lands.
+ */
 export function usesMathRandom(source: string): boolean {
-  return withoutComments(source).includes("Math.random");
+  return codeOnly(source).includes("Math.random");
 }
 
 /**
