@@ -32,6 +32,7 @@ import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
 
 
 import { allowTreeSweeps } from "./testing/suiteClocks";
+import { withoutComments } from "./testing/withoutComments";
 
 /**
  * ONE BUILD, SHARED BY EVERY ARM THAT ONLY READS IT — #2172, 2026-10-10.
@@ -1605,5 +1606,87 @@ describe("the declared set reads CODE, and the real map is clean (#1821)", () =>
       .filter(([, entry]) => entry.why.trim().length < 40)
       .map(([name]) => name);
     expect(reasonless).toEqual([]);
+  });
+});
+
+describe("a road that says whether a door is drawn is held to the client (#2285)", () => {
+  /*
+    ⚠ **A SENTENCE SAYING A SURFACE IS NOT REACHED IS A MEASUREMENT NOTHING
+    RE-TAKES, AND TWO OF THEM WERE STALE ON THIS MAP** — found by #2285's class
+    sweep, 2026-10-11, after #2277 had repaired three of exactly the same shape
+    in the router, this file's map and the writer inventory:
+
+      `persona-reads`             *"His design also draws a second row here,
+                                  'Say it your way'; it is NOT drawn, because
+                                  its CLIENT half is not built … and nothing in
+                                  the client calls it"*
+      `persona-say-it-your-way`   *"the door's box, its stage word and its
+                                  frames follow in the client PR"*
+
+    Both were true the hour they were written — #2197's server half landed on
+    main while #2196 was being built — and both were false once #2197 and #2205
+    shipped that half. A reader of this map learns from such a sentence how
+    carefully to treat the next change to the road, so it rots in the expensive
+    direction.
+
+    **What is derived here, and it is one thing rather than a reading of the
+    English:** door 2's own road DECLARES its procedure, and the two notes name
+    the client file. So the file the prose names is held to the CODE of that
+    file, prose stripped — if the call moves, both notes have to be re-read
+    before this goes green again.
+
+    ⚠ **THE LIMIT, STATED RATHER THAN IMPLIED: this cannot read a claim.** A
+    road that kept naming the file and said it was dark anyway would pass here.
+    What closes that is the fact being DERIVED instead of restated — the atlas
+    carrying each procedure's client callers, so a road cites them and no prose
+    anywhere states them twice — and that is #2286, sized while #2285 was being
+    built rather than smuggled in beside it. The campaigns block took the other road
+    available today: a one-line-per-door list in the comment, held equal to the
+    tree at both ends by `server/castCampaignsRoute.test.ts`.
+
+    It is two named-file reads and deliberately not a sweep: this file was
+    17.9% of the gate's unit total before #2172, and a tree walk here would
+    spend that again for a fact two files hold.
+  */
+  const CLIENT_ROOM = join(import.meta.dirname, "..", "client", "src", "pages", "CastingRoom.tsx");
+
+  it("door 2's own road declares a procedure the client really calls, from the file both notes name", () => {
+    const road = ROADS.find((entry) => entry.id === "persona-say-it-your-way");
+    expect(road, "the say-it-your-way road is gone from the map — repoint this arm at where it went").toBeDefined();
+    expect(road!.procedures.length, "the road declares no procedure, so there is nothing to hold").toBeGreaterThan(0);
+
+    const code = withoutComments(readFileSync(CLIENT_ROOM, "utf8"));
+    /* The instrument before its finding: the file was read, and the stripper
+       left the code behind rather than everything. */
+    expect(code.length, "CastingRoom.tsx read short — the path moved").toBeGreaterThan(10_000);
+    expect(code).toContain("trpc.castingV2.");
+
+    for (const procedure of road!.procedures) {
+      expect(
+        code,
+        `${procedure}: the road's own procedure is not called from the file its prose names. `
+          + "Either the caller moved — in which case both notes naming it are now wrong — or the "
+          + "client half has gone, in which case say so in the prose rather than leaving it.",
+      ).toContain(`trpc.${procedure}`);
+    }
+    /* And a procedure nothing calls is not found by this reading. */
+    expect(code).not.toContain("trpc.castingV2.translateOwnWordsAgain");
+  });
+
+  it("both notes that mention door 2 name the file that calls it", () => {
+    const naming = ROADS.filter((road) => road.id === "persona-reads" || road.id === "persona-say-it-your-way");
+    expect(naming.length, "one of the two roads has gone — repoint this arm").toBe(2);
+    for (const road of naming) {
+      /* The title counts: door 2's own road names the feature there and nowhere
+         else in its prose, which this arm learnt by reddening on it. */
+      const prose = [road.title, road.summary, road.doorsNote ?? "", ...road.notes].join("\n");
+      expect(prose, `${road.id}: no longer mentions 'Say it your way' — this arm has lost its subject`)
+        .toContain("Say it your way");
+      expect(
+        prose,
+        `${road.id}: it talks about door 2 without naming the client file that draws it, so nothing `
+          + "holds what it says about that door to the tree",
+      ).toContain("client/src/pages/CastingRoom.tsx");
+    }
   });
 });
