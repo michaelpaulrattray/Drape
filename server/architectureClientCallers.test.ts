@@ -51,15 +51,22 @@ import {
   renderExplorer,
   type buildAtlas,
 } from "../scripts/generate-architecture.mts";
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { sourceBand } from "./testing/sourceBand";
 import { withoutComments } from "./testing/withoutComments";
 
-/* This suite sweeps 437 client sources and builds a real atlas, so it is in
-   `sourceSweepSuites`'s derived population and declares the 30 s contended
-   clock at file level. */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* ⚠ THIS SUITE IS IN BOTH DERIVED TIMEOUT POPULATIONS, AND IT WAS THE SECOND
+   GUARD THAT SAID SO. It sweeps 437 client sources, which puts it in
+   `sourceSweepSuites` (#741) through its own call of `readListedSource`; and it
+   builds a real atlas through `scripts/check-architecture.mts`, which spawns
+   `git`, which puts it in `childProcessSuites` (#548) — the deriver names that
+   hop itself (`via: scripts/check-architecture.mts`). The first guard caught
+   the sweep the moment the file became tracked and the second caught the spawn
+   on the next preflight. **Either constant lifts a file off the 5 s default and
+   both guards accept either**, which `contendedTestTimeouts.test.ts` does for
+   the same reason, so one declaration answers both. Both are 30 s. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CLIENT_SRC = path.join(repoRoot, "client", "src");
@@ -403,7 +410,7 @@ describe("the field cannot be hand-edited into the artifact, and is rendered", (
       checkArchitecture({ build: () => real }).problems
         .filter((problem) => problem.startsWith("schema:")),
     ).toEqual([]);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("the explorer draws it, so it is not collected and rendered nowhere", () => {
     /*
