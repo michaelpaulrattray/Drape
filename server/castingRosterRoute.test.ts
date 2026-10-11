@@ -18,7 +18,13 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { readListedSource } from "./testing/listedSource";
+import { withoutComments } from "./testing/withoutComments";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
@@ -62,6 +68,7 @@ const { castingV2Router } = await import("./routes/castingV2");
 const { ROSTER_PAGE_MAX, ROSTER_SEARCH_MAX_LENGTH } = await import("./db/castingV2Sign");
 const { CAMPAIGN_NAME_MAX_LENGTH } = await import("./db/castCampaigns");
 const clientChips = await import("../client/src/features/castingV2/rosterChips");
+const sharedLimits = await import("../shared/inputLimits");
 
 let nextUser = 7_320_000;
 const customer = (id: number) => ({ id, role: "user", approved: true, suspendedAt: null, lockedUntil: null });
@@ -178,10 +185,83 @@ describe("the doors are shut outside casting", () => {
   });
 });
 
+/*
+  ONE NAME CAP, NOT TWO (card #2277). The library kept its own
+  `CAMPAIGN_NAME_MAX_LENGTH = 64` in `rosterChips.ts` while `shared/inputLimits.ts`
+  held the shared one, and this file's arm compared the two — a mirror kept
+  honest by a test, which is still a mirror (working law 4).
+  `clientInputCaps.test.ts` could not see it: it sweeps `maxLength={64}`, and the
+  copy wore a constant's name. The class is a client module DECLARING a number
+  `shared/inputLimits.ts` owns, so the names are read off that module's exports
+  and every client source is swept for a declaration of any of them.
+*/
+const CLIENT_SRC = fileURLToPath(new URL("../client/src/", import.meta.url));
+
+function clientSources(): Array<{ file: string; source: string }> {
+  const found: Array<{ file: string; source: string }> = [];
+  for (const entry of readdirSync(CLIENT_SRC, { recursive: true, encoding: "utf8" })) {
+    if (!/\.tsx?$/.test(entry) || /\.test\.tsx?$/.test(entry)) continue;
+    const source = readListedSource(join(CLIENT_SRC, entry));
+    if (source !== null) found.push({ file: entry.replace(/\\/g, "/"), source });
+  }
+  return found;
+}
+
+/** The shared names this source declares its own binding for. Prose does not count. */
+function ownCopiesOf(names: readonly string[], source: string): string[] {
+  const code = withoutComments(source);
+  return names.filter((name) => new RegExp(`\\b(?:const|let|var)\\s+${name}\\b`).test(code));
+}
+
+/** The shared names this source uses without importing them from `shared/inputLimits`. */
+function usedWithoutTheSharedImport(names: readonly string[], source: string): string[] {
+  const code = withoutComments(source);
+  const imported = new Set<string>();
+  for (const hit of code.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["'][^"']*shared\/inputLimits["']/g)) {
+    for (const part of hit[1].split(",")) imported.add(part.trim().split(/\s+as\s+/)[0]);
+  }
+  return names.filter((name) => new RegExp(`\\b${name}\\b`).test(code) && !imported.has(name));
+}
+
+describe("one campaign-name cap, imported everywhere from shared/inputLimits (card #2277)", () => {
+  it("the shared cap is the server's, and it is still 64", () => {
+    expect(sharedLimits.CAMPAIGN_NAME_MAX_LENGTH).toBe(CAMPAIGN_NAME_MAX_LENGTH);
+    expect(CAMPAIGN_NAME_MAX_LENGTH).toBe(64);
+    expect("CAMPAIGN_NAME_MAX_LENGTH" in clientChips).toBe(false);
+  });
+
+  it("the reader can fail: a declared copy is caught, an import or a comment is not", () => {
+    const names = ["CAMPAIGN_NAME_MAX_LENGTH"];
+    expect(ownCopiesOf(names, "export const CAMPAIGN_NAME_MAX_LENGTH = 64;")).toEqual(names);
+    expect(ownCopiesOf(names, "const CAMPAIGN_NAME_MAX_LENGTH=64")).toEqual(names);
+    expect(ownCopiesOf(names, 'import { CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";')).toEqual([]);
+    expect(ownCopiesOf(names, "/* was: export const CAMPAIGN_NAME_MAX_LENGTH = 64; */")).toEqual([]);
+    expect(usedWithoutTheSharedImport(names, 'import { CAMPAIGN_NAME_MAX_LENGTH } from "@/features/castingV2/rosterChips";\nx(CAMPAIGN_NAME_MAX_LENGTH);'))
+      .toEqual(names);
+    expect(usedWithoutTheSharedImport(names, 'import { A, CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";\nx(CAMPAIGN_NAME_MAX_LENGTH);'))
+      .toEqual([]);
+  });
+
+  it("no client source declares its own copy of a number shared/inputLimits owns, and every user imports it from there", () => {
+    const names = Object.keys(sharedLimits);
+    expect(names).toContain("CAMPAIGN_NAME_MAX_LENGTH");
+    const sources = clientSources();
+    /* The population is real: both campaign-name fields are in it. */
+    const users = sources.filter(({ source }) => /\bCAMPAIGN_NAME_MAX_LENGTH\b/.test(withoutComments(source))).map(({ file }) => file);
+    expect(users).toEqual(expect.arrayContaining([
+      "features/castingV2/components/NewCampaignDialog.tsx",
+      "features/castingV2/components/CastCampaignsCard.tsx",
+    ]));
+    const copies = sources.flatMap(({ file, source }) => ownCopiesOf(names, source).map((name) => `${file} declares ${name}`));
+    const strays = sources.flatMap(({ file, source }) => usedWithoutTheSharedImport(names, source).map((name) => `${file} uses ${name}`));
+    expect(copies).toEqual([]);
+    expect(strays).toEqual([]);
+  });
+});
+
 describe("the client's copies of the server's numbers agree with the server", () => {
-  it("page size and campaign-name width", () => {
+  it("page size", () => {
     expect(clientChips.ROSTER_PAGE_SIZE).toBeLessThanOrEqual(ROSTER_PAGE_MAX);
-    expect(clientChips.CAMPAIGN_NAME_MAX_LENGTH).toBe(CAMPAIGN_NAME_MAX_LENGTH);
   });
 
   it("the client's filter for each chip is an input the roster accepts", async () => {

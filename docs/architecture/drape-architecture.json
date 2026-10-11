@@ -18993,6 +18993,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/NewCampaignDialog.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
       "to": "module:client/src/features/castingV2/refineDust.ts",
       "kind": "imports"

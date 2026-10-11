@@ -67,7 +67,11 @@ export const CAST_NAME_MAX_LENGTH = 60;
 /* ── Casting V2: a campaign's name ────────────────────────────────────────
    N2c (#2249, #2252). `castingV2.createCampaign`/`renameCampaign` on the
    server (via `server/db/castCampaigns.ts`, which is also the column's width),
-   and the cast page's new-campaign field. */
+   and on the client the library's new-campaign dialog (`NewCampaignDialog`,
+   which also renames) and the cast page's new-campaign field
+   (`CastCampaignsCard`). The library kept its own 64 in `rosterChips.ts` until
+   #2277; `server/castingRosterRoute.test.ts` now reddens if any client file
+   declares a constant this file owns. */
 export const CAMPAIGN_NAME_MAX_LENGTH = 64;
 
 /* -- Casting V2: who a cast is on camera, and how they sound --------------
