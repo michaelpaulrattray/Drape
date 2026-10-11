@@ -360,9 +360,11 @@ if (allOpen === null) {
 
   ⚠ **TWO READS OF ITS OWN, AND IT CANNOT BORROW THE ONE BELOW.** `prs` at the
   NEXT UP block is scoped inside that branch, so reusing it would re-inherit
-  the population bug this card is about. Both calls ask for three fields rather
-  than the thirteen `OPEN_PR_LIST_ARGS` spends, because the branch limb is
-  deliberately not read here (the planner's header carries the measurement).
+  the population bug this card is about. Both calls ask for **number and title
+  only** — not the thirteen fields `OPEN_PR_LIST_ARGS` spends, and deliberately
+  not `body` (#2270): the planner reads the TITLE limb alone, so asking for 300
+  pull-request bodies would be kilobytes of dependabot changelog that nothing
+  here reads. The planner's header carries both measurements.
 
   ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
   rule as the two blocks above, and the same reason: the honest answer on a
@@ -370,16 +372,15 @@ if (allOpen === null) {
 */
 const mergedPrs = gh([
   "pr", "list", "--state", "merged", "--limit", "200",
-  "--json", "number,title,body",
+  "--json", "number,title",
 ]) as Json[] | null;
 const openPrsForShipped = gh([
   "pr", "list", "--state", "open", "--limit", "100",
-  "--json", "number,title,body",
+  "--json", "number,title",
 ]) as Json[] | null;
 const asPullRequest = (row: Json): ShippedNotClosedPullRequest => ({
   number: Number((row as { number?: unknown })?.number),
   title: String((row as { title?: unknown })?.title ?? ""),
-  body: String((row as { body?: unknown })?.body ?? ""),
 });
 const shippedNotClosed: readonly ShippedNotClosedFinding[] =
   allOpen === null || mergedPrs === null || openPrsForShipped === null
