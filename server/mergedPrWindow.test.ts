@@ -220,9 +220,34 @@ describe("#2291 · the sweep reads through this module and keeps no copy of the 
   });
 
   it("feeds the planner only a reading that is whole", () => {
-    /* A floor must not reach the rule — that is the difference between *clean*
-       and *unread*, and it is the whole card. */
-    expect(block).toContain('mergedRead.kind !== "complete"');
+    /*
+      A floor must not reach the rule — that is the difference between *clean*
+      and *unread*, and it is the whole card.
+
+      ⚠ **THIS ARM WAS INERT IN ITS FIRST SHAPE AND THE SABOTAGE CAUGHT IT.**
+      It asserted the guard over the whole block, and the same expression
+      appears TWICE there — once feeding the planner and once deciding what to
+      report. So deleting the planner's limb left the arm GREEN, answered by its
+      neighbour four lines down: the guard read its own sibling as coverage.
+      The feed expression is sliced out, and both limbs are then held
+      separately, because they are two decisions and only one of them keeps a
+      floor out of the rule.
+    */
+    const feed = block.slice(
+      block.indexOf("const shippedNotClosed"),
+      block.indexOf("if (allOpen === null"),
+    );
+    expect(feed).toContain("planShippedNotClosed({");
+    expect(feed.length).toBeGreaterThan(100);
+    expect(feed).toContain('mergedRead.kind !== "complete"');
+  });
+
+  it("and reports the floor separately from feeding the planner", () => {
+    /* The second limb: the reporting branch has to agree, or a floor is kept
+       out of the rule and then never mentioned — silence with extra steps. */
+    const report = block.slice(block.indexOf("if (allOpen === null"));
+    expect(report.length).toBeGreaterThan(100);
+    expect(report).toContain('mergedRead.kind !== "complete"');
   });
 
   it("a short read is reported with its reason rather than as a clean board", () => {
