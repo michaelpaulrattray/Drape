@@ -137,6 +137,7 @@ import {
   createCampaign,
   deleteCampaign,
   listCampaigns,
+  listCastCampaigns,
   removeCastsFromCampaign,
   renameCampaign,
 } from "../db/castCampaigns";
@@ -2213,6 +2214,20 @@ export const castingV2Router = router({
       const removed = await removeCastsFromCampaign(ctx.user.id, input.campaignId, input.castIds);
       if (removed.kind === "campaign_not_found") throw campaignNotFound();
       return { campaignId: input.campaignId, removed: removed.removed };
+    }),
+
+  /**
+   * The campaigns one cast is in — the cast page's IN CAMPAIGNS panel (card
+   * #2252). A cast that is not this customer's signed, live cast answers an
+   * empty list: the statement is owner-scoped on all three tables, so there is
+   * nothing of anyone else's to find.
+   */
+  listCastCampaigns: protectedProcedure
+    .input(z.object({ castId: z.string().min(1).max(32) }).strict())
+    .query(async ({ ctx, input }) => {
+      requireCastingV2(ctx.user.id);
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
+      return listCastCampaigns(ctx.user.id, input.castId);
     }),
 
   /**

@@ -228,11 +228,11 @@ _Called as:_ `castingV2.translateOwnWords`
 
 ### Campaigns — a customer's named collections of signed casts (N2c, built dark)
 
-His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, `castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and none an operation: list (each campaign with a DERIVED count of the casts the roster would draw), create, rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing) and remove casts. 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.
+His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, `castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and none an operation (seven with the cast page's read): list (each campaign with a DERIVED count of the casts the roster would draw), create, rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing), remove casts, and list the campaigns ONE cast is in (the cast page's IN CAMPAIGNS panel, #2252 — one statement owner-scoped on all three tables, so another account's cast answers an empty list). 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.
 
 _Entrances:_ `server/routes/castingV2.ts` · `server/db/castCampaigns.ts`  ·  _Flags:_ `CASTING_V2_SCOPE`
 
-_Called as:_ `castingV2.listCampaigns` · `castingV2.createCampaign` · `castingV2.renameCampaign` · `castingV2.deleteCampaign` · `castingV2.addCastsToCampaign` · `castingV2.removeCastsFromCampaign`
+_Called as:_ `castingV2.listCampaigns` · `castingV2.createCampaign` · `castingV2.renameCampaign` · `castingV2.deleteCampaign` · `castingV2.addCastsToCampaign` · `castingV2.removeCastsFromCampaign` · `castingV2.listCastCampaigns`
 
 > THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this customer's is `NOT_FOUND`, never somebody else's campaign; a cast that is not this customer's signed, live cast makes the whole add `NOT_FOUND` and files nothing; a second campaign with a name the customer already uses is CONFLICT. Reads ride the castingRead bucket and writes the castingSheet bucket. No corpus row can reach it: the corpus drives `refineCandidate` only.
 
@@ -264,7 +264,7 @@ _Called as:_ `castingV2.concept.describe`
 - EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 
-## Every way in — the 39 procedures the casting entrance exposes
+## Every way in — the 40 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
@@ -292,6 +292,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.ink.remove` | ink-studio |
 | `castingV2.keep` | life-of-a-cast |
 | `castingV2.listCampaigns` | campaigns |
+| `castingV2.listCastCampaigns` | campaigns |
 | `castingV2.openSessions` | life-of-a-cast |
 | `castingV2.redoPackage` | sign-views |
 | `castingV2.reference.attach` | references |

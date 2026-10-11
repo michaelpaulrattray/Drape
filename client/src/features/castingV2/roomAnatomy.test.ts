@@ -28,11 +28,18 @@ const TABLE = new URL(
   import.meta.url,
 );
 
-/** Every module the drawing has, and the class that proves it was built. */
-const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
+const PANEL = new URL("./components/CastCampaignsCard.tsx", import.meta.url);
+
+/**
+ * Every module the drawing has, the class that proves it was built, and — for
+ * a module that moved into its own component — the file it now lives in.
+ */
+const DRAWN_ELEMENTS: Array<{ element: string; marker: string; file?: URL }> = [
   { element: "header with name and kind pill", marker: "dpc-room__kind" },
   { element: "the one-line read", marker: "dpc-room__read" },
-  { element: "two header actions, outline then filled", marker: "dpc-room__cta--primary" },
+  /* The drawing has two header actions; his "yes." of 2026-09-29 (#2252) took
+     the campaign one away once the IN CAMPAIGNS panel became its home. */
+  { element: "the header action", marker: "dpc-room__cta" },
   { element: "two-column frame", marker: "dpc-room__columns" },
   { element: "master block", marker: "dpc-master__media" },
   { element: "master pane", marker: "dpc-master__main" },
@@ -47,7 +54,8 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
   { element: "takes section", marker: "dpc-takes__grid" },
   { element: "takes add tile", marker: "dpc-takes__tile--add" },
   { element: "voice player skeleton", marker: "dpc-voice__wave" },
-  { element: "campaigns add row", marker: "dpc-camp__add" },
+  { element: "campaigns add row", marker: "dpc-camp__add", file: PANEL },
+  { element: "campaign rows", marker: "dpc-camp__row", file: PANEL },
   { element: "sibling tiles", marker: "dpc-sib__tile" },
   { element: "the package strip", marker: "dpc-strip__frame" },
 ];
@@ -55,7 +63,9 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string }> = [
 describe("the casting room is built to the drawing", () => {
   it("renders every drawn module", async () => {
     const source = await readFile(ROOM, "utf8");
-    const missing = DRAWN_ELEMENTS.filter(({ marker }) => !source.includes(marker));
+    const panel = await readFile(PANEL, "utf8");
+    expect(source, "the room draws the campaigns panel").toContain("<CastCampaignsCard ");
+    const missing = DRAWN_ELEMENTS.filter(({ marker, file }) => !(file === PANEL ? panel : source).includes(marker));
     expect(
       missing.map((entry) => entry.element),
       "drawn modules missing from the room",
@@ -91,7 +101,8 @@ describe("the casting room is built to the drawing", () => {
     const source = await readFile(ROOM, "utf8");
     // Every drawn action that has no capability behind it is disabled. The
     // drawing's weights survive; the promise does not.
-    for (const inert of ["dpc-room__cta", "dpc-rrefine__go", "dpc-rrefine__input", "dpc-camp__add"]) {
+    /* The campaigns add row left this list with #2252: campaigns exist, so it is live. */
+    for (const inert of ["dpc-room__cta", "dpc-rrefine__go", "dpc-rrefine__input"]) {
       const index = source.indexOf(inert);
       expect(index, `${inert} must exist`).toBeGreaterThan(-1);
       expect(

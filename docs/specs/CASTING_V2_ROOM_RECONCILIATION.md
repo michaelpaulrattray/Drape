@@ -31,7 +31,7 @@ citation does not get built.
 | Back link | "‹ Casting", 12.5px/400 | match |
 | Name + kind | name row h30 gap 10; kind pill 9.5–10.5px/500 uppercase | match |
 | One-line read | 13px/400, one sentence | match — copy is persona + provenance |
-| Actions | gap 8; **"Open in canvas" 128×34 r8 pad 9/13 12px/400 OUTLINE**; **"Cast in a campaign" 149×32 r8 pad 9/14 12px/500 FILLED** | geometry and weights match. **DEVIATION: both render disabled with "· soon"** — §I honest-capability law: neither capability exists, and a control that refuses is worse than a label that explains. Weights are preserved because the drawing's hierarchy is the point |
+| Actions | gap 8; **"Open in canvas" 128×34 r8 pad 9/13 12px/400 OUTLINE**; **"Cast in a campaign" 149×32 r8 pad 9/14 12px/500 FILLED** | geometry and weights match. **DEVIATION: both render disabled with "· soon"** — §I honest-capability law: neither capability exists, and a control that refuses is worse than a label that explains. Weights are preserved because the drawing's hierarchy is the point. ⚠ **Since #2252 (his "yes.", 2026-09-29) the FILLED campaign action is gone**: campaigns exist, and the IN CAMPAIGNS card is that act's one home — two controls for one act on one page is machinery showing. "Open in canvas · soon" stays, disabled, alone |
 
 ## Master block — one card, media + attached footer
 
@@ -82,9 +82,9 @@ citation does not get built.
 | Drawn | Measured | Build |
 |---|---|---|
 | Card | 418×207, r14, **pad 0** (rows own their padding) | match — **was a paragraph** |
-| Header | 416×41 pad 13/16; "IN CAMPAIGNS" 10.5px/500 + count right | match, count **0** |
-| Rows | 416×65 pad 11/16 gap 11; thumb 34×42 r6; name 12px/500; meta 10.5px/400; chevron 12×12 | none exist — the drawn empty case |
-| Add row | 416×34 pad 11/16 gap 7, 11.5px/400, "+ Cast into a new campaign" | match, inert |
+| Header | 416×41 pad 13/16; "IN CAMPAIGNS" 10.5px/500 + count right | match; the count is the cast's real memberships (#2252) |
+| Rows | 416×65 pad 11/16 gap 11; thumb 34×42 r6; name 12px/500; meta 10.5px/400; chevron 12×12 | built (#2252): pad, gap, name, meta and chevron match; each row links to that campaign in the library. **DEVIATION: no thumbnail** — a campaign has no picture of its own, so none is invented; the row is ~50px tall without it. Meta is the campaign's real cast count, not the drawing's "12 frames · live" |
+| Add row | 416×34 pad 11/16 gap 7, 11.5px/400, "+ Cast into a new campaign" | match, **live** (#2252) — "Use in a campaign" / "Use in a new campaign", his approved wording (Desk, 2026-10-09); opens the add-to / new-campaign control in place |
 
 ## Siblings card
 
@@ -111,11 +111,11 @@ citation does not get built.
 | 3 | Refine inert | Founder ruling + F5 Upload-card precedent |
 | 4 | Takes count copy, no duration pills | No-invented-numbers |
 | 5 | Voice copy honest, skeleton player | §I honest-capability |
-| 6 | Campaigns count 0, no rows | Honest empty state |
+| 6 | Campaigns: real rows and count since #2252; no thumbnail; "Not in any campaign yet." when empty | Honest empty state; no invented images |
 | 7 | Sibling tiles unlabelled | No-invented-numbers |
 | 8 | Package strip added | Founder ruling 2026-08-02 |
 
-**Geometry deviations: none.** Every deviation above is copy or state.
+**Geometry deviations: none.** Every deviation above is copy or state — the one height change, the campaign row's, follows from not drawing a thumbnail nothing supplies (row 6).
 
 
 ---

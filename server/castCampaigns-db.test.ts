@@ -225,4 +225,91 @@ describeWithDatabase("campaigns (disposable DB)", () => {
     expect(await memberRows(campaign.campaignId)).toBe(1);
     expect(await liveModelRows([keep, drop])).toBe(2);
   });
+  it("the cast page's read (#2252) lists the campaigns ONE cast is in, oldest first, and nothing else", async () => {
+    const tag = randomUUID().slice(0, 8);
+    const first = await callerFor(owner).createCampaign({ name: `Page A ${tag}` });
+    const second = await callerFor(owner).createCampaign({ name: `Page B ${tag}` });
+    const notThisOne = await callerFor(owner).createCampaign({ name: `Page C ${tag}` });
+    const cast = await newCast(owner);
+    const neighbour = await newCast(owner);
+    await callerFor(owner).addCastsToCampaign({ campaignId: second.campaignId, castIds: [cast] });
+    await callerFor(owner).addCastsToCampaign({ campaignId: first.campaignId, castIds: [cast, neighbour] });
+    await callerFor(owner).addCastsToCampaign({ campaignId: notThisOne.campaignId, castIds: [neighbour] });
+
+    const listed = await callerFor(owner).listCastCampaigns({ castId: cast });
+    expect(listed).toEqual([
+      { campaignId: first.campaignId, name: first.name },
+      { campaignId: second.campaignId, name: second.name },
+    ]);
+    /* And it follows a removal at once — the panel and the library are one store. */
+    await callerFor(owner).removeCastsFromCampaign({ campaignId: second.campaignId, castIds: [cast] });
+    expect((await callerFor(owner).listCastCampaigns({ castId: cast })).map((row) => row.campaignId))
+      .toEqual([first.campaignId]);
+    /* A cast filed nowhere reads an empty list. */
+    expect(await callerFor(owner).listCastCampaigns({ castId: await newCast(owner) })).toEqual([]);
+  });
+
+  it("⚠ OWNER ISOLATION on the cast page's read — another account's cast id answers an empty list", async () => {
+    const tag = randomUUID().slice(0, 8);
+    const ownersCampaign = await callerFor(owner).createCampaign({ name: `Iso ${tag}` });
+    const ownersCast = await newCast(owner);
+    await callerFor(owner).addCastsToCampaign({ campaignId: ownersCampaign.campaignId, castIds: [ownersCast] });
+
+    /* POSITIVE CONTROL: the stranger's own filed cast is listed for the stranger. */
+    const strangersCampaign = await callerFor(stranger).createCampaign({ name: `Iso own ${tag}` });
+    const strangersCast = await newCast(stranger);
+    await callerFor(stranger).addCastsToCampaign({ campaignId: strangersCampaign.campaignId, castIds: [strangersCast] });
+    expect(await callerFor(stranger).listCastCampaigns({ castId: strangersCast }))
+      .toEqual([{ campaignId: strangersCampaign.campaignId, name: strangersCampaign.name }]);
+
+    expect(await callerFor(stranger).listCastCampaigns({ castId: ownersCast })).toEqual([]);
+
+    /*
+      A member row no door can write — the stranger's campaign holding the
+      OWNER's cast, planted by hand — is still invisible from both sides: the
+      stranger fails the cast's owner clause, and the owner fails the
+      campaign's and the member's.
+    */
+    await connection.execute(
+      "INSERT INTO cast_campaign_members (campaignId, modelId, userId)"
+        + " SELECT c.id, m.id, ? FROM cast_campaigns c JOIN models m ON m.agencyId = ? WHERE c.publicId = ?",
+      [stranger, ownersCast, strangersCampaign.campaignId],
+    );
+    expect(await callerFor(stranger).listCastCampaigns({ castId: ownersCast })).toEqual([]);
+    expect(await callerFor(owner).listCastCampaigns({ castId: ownersCast }))
+      .toEqual([{ campaignId: ownersCampaign.campaignId, name: ownersCampaign.name }]);
+
+    /*
+      Two more hand-planted rows, one per remaining owner clause, so each of
+      the three is the ONLY thing standing between a row and the answer:
+      - a row stamped with the OWNER's id inside the STRANGER's campaign — only
+        the campaign's owner clause keeps the stranger's campaign name out;
+      - a row stamped with the STRANGER's id inside another of the OWNER's
+        campaigns — only the member's owner clause keeps a row the owner never
+        wrote out of the owner's answer.
+    */
+    const strangersOther = await callerFor(stranger).createCampaign({ name: `Iso other ${tag}` });
+    const ownersOther = await callerFor(owner).createCampaign({ name: `Iso planted ${tag}` });
+    await connection.execute(
+      "INSERT INTO cast_campaign_members (campaignId, modelId, userId)"
+        + " SELECT c.id, m.id, ? FROM cast_campaigns c JOIN models m ON m.agencyId = ? WHERE c.publicId = ?",
+      [owner, ownersCast, strangersOther.campaignId],
+    );
+    await connection.execute(
+      "INSERT INTO cast_campaign_members (campaignId, modelId, userId)"
+        + " SELECT c.id, m.id, ? FROM cast_campaigns c JOIN models m ON m.agencyId = ? WHERE c.publicId = ?",
+      [stranger, ownersCast, ownersOther.campaignId],
+    );
+    expect(await callerFor(owner).listCastCampaigns({ castId: ownersCast }))
+      .toEqual([{ campaignId: ownersCampaign.campaignId, name: ownersCampaign.name }]);
+  });
+
+  it("a deleted cast is in no campaign as far as the page is concerned", async () => {
+    const campaign = await callerFor(owner).createCampaign({ name: `Del ${randomUUID().slice(0, 8)}` });
+    const cast = await newCast(owner);
+    await callerFor(owner).addCastsToCampaign({ campaignId: campaign.campaignId, castIds: [cast] });
+    expect(await callerFor(owner).listCastCampaigns({ castId: cast })).toHaveLength(1);
+    await connection.execute("UPDATE models SET deletedAt = NOW() WHERE agencyId = ?", [cast]);
+    expect(await callerFor(owner).listCastCampaigns({ castId: cast })).toEqual([]);
+  });
 });

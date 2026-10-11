@@ -6,8 +6,10 @@
  * are excluded from the export to prevent information leakage.
  */
 
-import { eq, desc, inArray } from "drizzle-orm";
+import { asc, eq, desc, inArray } from "drizzle-orm";
 import {
+  castCampaignMembers,
+  castCampaigns,
   users,
   credits,
   creditTransactions,
@@ -85,6 +87,16 @@ export interface GdprExportData {
       storageUrl: string;
       createdAt: string;
     }>;
+  }>;
+  /**
+   * The customer's campaigns (#2257) — the names are their own words. Each
+   * lists the public ids of the casts filed in it, which are the `agencyId`s
+   * of the `models` above; internal row ids never leave.
+   */
+  campaigns: Array<{
+    name: string;
+    createdAt: string;
+    castIds: string[];
   }>;
   evidence: {
     referencePlates: Array<{
@@ -264,6 +276,52 @@ export async function exportUserData(
     })),
   }));
 
+  /*
+    Campaigns (#2257). Both reads carry the owner in their own WHERE
+    (invariant 1), and each member row is re-anchored IN MEMORY to the two
+    owner-scoped sets already read — this customer's campaigns and this
+    customer's casts (`userModels` above) — so a member row pointing at
+    anyone else's campaign or cast cannot reach the export even if its
+    denormalised `userId` were wrong (invariant 2). No `IN (…)` list is built,
+    so the statement count stays fixed at any size (#1989). A cast's public id
+    is its `agencyId`, the same id `models` above carries; internal ids
+    (`cast_campaigns.id`, `models.id`) stay on the server.
+  */
+  const ownedCampaigns = await db
+    .select({
+      id: castCampaigns.id,
+      name: castCampaigns.name,
+      createdAt: castCampaigns.createdAt,
+    })
+    .from(castCampaigns)
+    .where(eq(castCampaigns.userId, userId))
+    .orderBy(asc(castCampaigns.sortOrder), asc(castCampaigns.id));
+  const ownedMembers = await db
+    .select({
+      campaignId: castCampaignMembers.campaignId,
+      modelId: castCampaignMembers.modelId,
+    })
+    .from(castCampaignMembers)
+    .where(eq(castCampaignMembers.userId, userId))
+    .orderBy(asc(castCampaignMembers.id));
+  const castPublicIdByModel = new Map<number, string>();
+  for (const model of userModels) {
+    if (model.agencyId) castPublicIdByModel.set(model.id, model.agencyId);
+  }
+  const castIdsByCampaign = new Map<number, string[]>(
+    ownedCampaigns.map((campaign) => [campaign.id, []]),
+  );
+  for (const member of ownedMembers) {
+    const list = castIdsByCampaign.get(member.campaignId);
+    const castId = castPublicIdByModel.get(member.modelId);
+    if (list && castId) list.push(castId);
+  }
+  const exportedCampaigns = ownedCampaigns.map((campaign) => ({
+    name: campaign.name,
+    createdAt: campaign.createdAt.toISOString(),
+    castIds: castIdsByCampaign.get(campaign.id) ?? [],
+  }));
+
   // Evidence contains customer-uploaded likeness data. It is exported only
   // through the owner-delivery adapter; raw object keys, ingestion receipts,
   // cleanup leases, and operation internals never enter the DTO.
@@ -414,6 +472,7 @@ export async function exportUserData(
       createdAt: t.createdAt.toISOString(),
     })),
     models: modelsWithAssets,
+    campaigns: exportedCampaigns,
     evidence: {
       referencePlates: exportedReferencePlates,
       crops: exportedEvidenceCrops,

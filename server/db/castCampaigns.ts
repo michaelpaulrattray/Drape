@@ -35,8 +35,9 @@ import { getDb, withTransaction } from "./connection";
 import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
 import { signedCastWhere } from "./castingV2Sign";
 
-/** The longest campaign name, in characters — the column's own width. */
-export const CAMPAIGN_NAME_MAX_LENGTH = 64;
+/** The longest campaign name, in characters — the column's own width. One
+    number for the server and the client field (`shared/inputLimits.ts`). */
+export { CAMPAIGN_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 
 /**
  * How many casts one add or remove may name. The roster's own page size, so a
@@ -300,4 +301,38 @@ export async function removeCastsFromCampaign(
       ),
     ));
   return { kind: "removed", removed: affectedRows(result) };
+}
+
+export type CastCampaignMembership = { campaignId: string; name: string };
+
+/**
+ * The campaigns ONE cast is in — the cast page's IN CAMPAIGNS panel (card
+ * #2252). Oldest first, the library's own order.
+ *
+ * One statement, and the owner is in all three of its tables: the campaign is
+ * the caller's, the member row is the caller's, and the cast is reached by its
+ * public id AND the roster's signed-and-live predicate for the caller
+ * (`signedCastWhere`). So another account's cast id — or this customer's
+ * deleted cast — answers an empty list, which says nothing about whether the
+ * id exists anywhere; the page that asks has already proved the cast is theirs
+ * through `getCast`.
+ */
+export async function listCastCampaigns(userId: number, castId: string): Promise<CastCampaignMembership[]> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const rows = await db
+    .select({ campaignId: castCampaigns.publicId, name: castCampaigns.name })
+    .from(castCampaigns)
+    .innerJoin(castCampaignMembers, and(
+      eq(castCampaignMembers.campaignId, castCampaigns.id),
+      eq(castCampaignMembers.userId, userId),
+    ))
+    .innerJoin(models, and(
+      eq(models.id, castCampaignMembers.modelId),
+      eq(models.agencyId, castId),
+      signedCastWhere(userId),
+    ))
+    .where(eq(castCampaigns.userId, userId))
+    .orderBy(asc(castCampaigns.sortOrder), asc(castCampaigns.id));
+  return rows.map((row) => ({ campaignId: row.campaignId, name: row.name }));
 }
