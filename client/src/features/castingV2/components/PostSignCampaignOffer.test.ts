@@ -151,7 +151,8 @@ describe("the offer, drawn inside IN CAMPAIGNS", () => {
     expect(words).not.toContain("Use in a campaign");
   });
 
-  it("NEGATIVE CONTROL: without an offer the panel is exactly the #2252 panel", () => {
+  /* "The panel it was before" is the IN CAMPAIGNS panel of #2252. */
+  it("NEGATIVE CONTROL: without an offer the panel is exactly the panel it was before", () => {
     const words = text(render());
     expect(words).not.toContain("to a campaign?");
     expect(words).not.toContain("Don’t ask again");
