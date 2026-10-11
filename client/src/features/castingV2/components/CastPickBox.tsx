@@ -12,7 +12,9 @@ import { Check } from "lucide-react";
  *
  * A real `<input type="checkbox">`, so Space toggles it, a screen reader
  * announces it as a checkbox with its state, and the browser owns the
- * semantics. It is drawn by the stylesheet; the glyph is decoration.
+ * semantics. It is drawn by the stylesheet; the glyph is decoration. A span
+ * holds it rather than a `<label>`: the box itself is the whole hit area and
+ * carries its own name, so there is no text for a label to tie to it.
  *
  * Hidden at rest on a pointer device until the card is hovered or focused, like
  * the card's menu — and always shown once anything is ticked, or on a touch
@@ -28,7 +30,7 @@ export function CastPickBox({
   onToggle: () => void;
 }) {
   return (
-    <label className="dpc-castpick">
+    <span className="dpc-castpick">
       <input
         type="checkbox"
         className="dpc-castpick__input"
@@ -41,6 +43,6 @@ export function CastPickBox({
         }}
       />
       <Check className="dpc-castpick__tick" size={13} strokeWidth={2.4} aria-hidden="true" />
-    </label>
+    </span>
   );
 }
