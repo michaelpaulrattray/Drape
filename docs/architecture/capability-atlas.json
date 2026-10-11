@@ -908,6 +908,7 @@
       "castingV2.retry",
       "castingV2.retryView",
       "castingV2.roster",
+      "castingV2.rosterCounts",
       "castingV2.selectVariant",
       "castingV2.sign",
       "castingV2.translateOwnWords",
@@ -1521,6 +1522,7 @@
           "castingV2.selectVariant",
           "castingV2.variants",
           "castingV2.roster",
+          "castingV2.rosterCounts",
           "castingV2.getCast",
           "castingV2.renameCast",
           "castingV2.deleteCast"
@@ -1867,7 +1869,8 @@
           "CASTING_V2_SCOPE"
         ],
         "notes": [
-          "BUILT DARK, declared (card #2249): no client code calls these doors yet, so the merge changes nothing a customer sees. The chip row, multi-select, the cast page's campaigns panel and the post-Sign offer are the next cards of the rung.",
+          "Built dark by card #2249; the library's chip row (card #2250) is the first client caller — it lists campaigns as chips and creates one from the + chip. Filing casts (multi-select), the cast page's campaigns panel and the post-Sign offer are the rung's next cards.",
+          "The roster reads campaigns too (card #2250): `castingV2.roster` takes an optional scope (all, unfiled, a campaign), a name search and a cursor, and `castingV2.rosterCounts` counts the chips. Unfiled is a NOT EXISTS over this customer's member rows; a campaign scope is an EXISTS owner-checked on both sides of the member join; a campaign or cursor that is not this customer's is NOT_FOUND.",
           "Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned."
         ]
       },

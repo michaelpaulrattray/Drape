@@ -693,6 +693,48 @@ button.dp-invite:focus-visible .dp-memberstack__add {
 button.dp-credits { cursor: pointer; }
 button.dp-credits:hover { border-color: var(--ink); color: var(--ink); }
 
+/*
+  THE TOPBAR AT PHONE WIDTH (#2260).
+
+  At 360-420px wide the bar asked for ~540px: the project switcher, the
+  breadcrumb, the search, the credits, three icons, the theme toggle and the
+  account chip all kept their desktop widths, so the bar ran off the right edge,
+  the credits read "1,018 c…" under the icons and the whole page scrolled
+  sideways (measured: document 539px wide at 360, 390 and 420).
+
+  The phone bar keeps every control that DOES something and lets go only of
+  things that do nothing yet or say what the page already says:
+
+  - the project switcher, What's new and the search are inert stubs ("not built
+    yet" — ChromeStubs.tsx). On a phone they are width with nothing behind it.
+  - the breadcrumb repeats the page's own heading, a few pixels below it.
+
+  So nothing a customer can do is removed by this rule; the credits number
+  stays whole and readable. (Report a bug and the help menu were already gone
+  below 768px before this rule existed — their own `hidden md:block` wrappers in
+  `features/lobby/` — and this rule does not touch them.) Below 640px the
+  context and centre zones go, the cluster sits at the right edge, and the
+  gutters tighten to the 4px grid. Above 640px the bar is untouched.
+  `topbarPhone2260-guard.test.ts` holds the hidden list to inert chrome.
+*/
+@media (max-width: 640px) {
+  .dp-topbar {
+    gap: var(--s-1);
+    padding: 0 var(--s-5);
+  }
+  .dp-topbar__context,
+  .dp-topbar__centre,
+  .dp-topbar__divider--gutter,
+  .dp-topbar__right .dp-iconbtn--stub {
+    display: none;
+  }
+  .dp-topbar__right {
+    gap: var(--s-1);
+    margin-left: auto;
+  }
+  .dp-topbar .dp-credits { padding: 6px 9px; }
+}
+
 /* ============================================================
    BUTTONS (README §5) — one primary per view
    ============================================================ */

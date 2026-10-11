@@ -667,6 +667,65 @@
   min-width: 210px;
 }
 
+/*
+  THE CHIP ROW — All · Unfiled · <campaigns> · + (card #2250). Its own wrapping
+  group, so a customer with many campaigns gets a second line of chips rather
+  than a search box squeezed to nothing.
+*/
+.dpc-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* A campaign name is the customer's own words, so it is never clipped: a long
+   one wraps inside its chip rather than losing its end. */
+.dpc-chips .dp-scopepill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* The count beside a chip's name: quieter than the name, never a badge. */
+.dpc-chip__count {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+/* The + chip is square-ish: an icon, not a word. */
+.dpc-chips .dpc-chip--new {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+
+/*
+  The end of the grid, where the next page is asked for. It holds a line of
+  height so the observer has something to see, and says nothing unless a page
+  is loading or failed.
+*/
+.dpc-roster__more {
+  min-height: 18px;
+}
+
+.dpc-roster__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dpc-newcampaign__error {
+  color: var(--accentInk);
+}
+
 .dpc-rosterhead {
   display: flex;
   align-items: baseline;
