@@ -34,7 +34,7 @@
 import { readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { withoutComments } from "../../server/testing/withoutComments";
+import { codeOnly, withoutComments } from "../../server/testing/withoutComments";
 import { readIfPresent, statIfPresent } from "./listedEntry.mts";
 import { containedIn } from "./trackedFiles.mts";
 
@@ -91,34 +91,59 @@ export const CONSUMER_ROOTS = ["server", "client", "shared", "scripts", "drizzle
 export { withoutComments };
 
 /**
- * The line with its string literals blanked.
+ * THE WORD-BOUNDARY MATCHER FOR A SYMBOL — declared once because it is now
+ * asked for in two places, and a regex spelled twice is working law 4's own
+ * example. The substring bias it replaces is recorded at the top of this file:
+ * it matched `REFUSAL_REASONS` inside `GUARD_REFUSAL_REASONS`, and a recon read
+ * that one by hand.
+ */
+function wordRegExp(symbol: string): RegExp {
+  return new RegExp(`(?<![\\w$])${escapeForRegExp(symbol)}(?![\\w$])`);
+}
+
+/**
+ * WHETHER THIS LINE USES THE NAME AS CODE, rather than merely containing it.
  *
- * A NAME INSIDE QUOTES IS DATA, NOT A CALL — the comment rule's sibling, found
- * the hard way. The milestone's own disposition seeder holds a table of symbol
- * names as quoted strings, and the moment it was committed the reading list
- * fell from 124 to 96: twenty-eight symbols were "mentioned in production" by
- * the very file recording that nobody calls them.
+ * A NAME INSIDE QUOTES IS DATA, NOT A CALL — found the hard way. The
+ * milestone's own disposition seeder holds a table of symbol names as quoted
+ * strings, and the moment it was committed the reading list fell from 124 to
+ * 96: twenty-eight symbols were "mentioned in production" by the very file
+ * recording that nobody calls them.
  *
  * That is the THIRD time this apparatus has counted itself. The first two were
  * repaired by naming the offending files — which does not hold, because the
  * next instrument has a new name. A rule about what a mention IS does hold.
+ *
+ * ⚠ **AND A REGEX LITERAL IS DATA ON EXACTLY THE SAME GROUND — #2293, and it
+ * was the hand-rolled stripper that used to live here which could not see it.**
+ * That stripper blanked a double quote, a single quote and a backtick and
+ * nothing else, so a pattern naming `allowColdImports` between slashes read as
+ * a CALL: a file that MATCHES ON a name was counted as a file that USES it. It
+ * fails toward noise in the loud direction — a false consumer, which somebody
+ * notices — and toward SILENCE in the direction that matters, because a symbol
+ * whose only production mention sits inside a regex literal reads as HAVING a
+ * consumer, so it never reaches a list whose whole purpose is to say *nothing
+ * calls this, consider deleting it*.
+ *
+ * **The repair is a reuse, not a second reader.** `codeOnly` already drops a
+ * regex literal's contents, for this exact reason stated in its own body — a
+ * pattern a file matches on is never a call it makes, so keeping it would
+ * manufacture a member — and its regex-vs-division reading was proven against
+ * the TypeScript parser over all 1,712 tracked `.ts` files (#1635, #1638).
+ * Teaching this file regex literals by hand would have been the hard half of
+ * that walk, copied, which is working law 4 and is the trade `codeOnly`'s own
+ * docblock records declining.
+ *
+ * ⚠ **IT IS CALLED PER LINE, AND THAT BOUND IS DELIBERATE.** `codeOnly` is
+ * stateful across a whole source, so a continuation line of a MULTI-LINE
+ * template still reads as code here, exactly as it did before this change —
+ * no regression, and no new invariant either. Reading whole files would be
+ * strictly more correct and would oblige a line-alignment guard between two
+ * strippers; that is declined here as its own change rather than smuggled in
+ * under a regex fix, and this sentence is the declaration.
  */
-function withoutStrings(line: string): string {
-  const quotes = new Set(['"', "'", "`"]);
-  let out = "";
-  let index = 0;
-  while (index < line.length) {
-    const character = line[index]!;
-    if (!quotes.has(character)) { out += character; index += 1; continue; }
-    const quote = character;
-    index += 1;
-    while (index < line.length && line[index] !== quote) {
-      index += line[index] === String.fromCharCode(92) ? 2 : 1;
-    }
-    index += 1;
-    out += "QQ";
-  }
-  return out;
+export function lineUsesNameAsCode(line: string, symbol: string): boolean {
+  return wordRegExp(symbol).test(codeOnly(line));
 }
 
 export type MentionKind = "barrel" | "dynamic" | "door" | "other" | "none";
@@ -198,7 +223,7 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
   const untracked = new Set(files.filter((file) => !contains(file)));
 
   return function classify(symbol: string): Mention {
-    const word = new RegExp(`(?<![\\w$])${escapeForRegExp(symbol)}(?![\\w$])`);
+    const word = wordRegExp(symbol);
     const mentions: Array<{ file: string; line: string; door: boolean }> = [];
     for (const [file, text] of source) {
       if (/\.test\.tsx?$/.test(file)) continue;
@@ -207,9 +232,10 @@ export function buildClassifier(repoRoot: string): (symbol: string) => Mention {
       if (!word.test(text)) continue;
       for (const line of text.split(/\r?\n/)) {
         if (!word.test(line)) continue;
-        /* Data is not a call: a name that survives only inside quotes is a
-           table entry, a test title or a config key. */
-        if (!word.test(withoutStrings(line))) continue;
+        /* Data is not a call: a name that survives only inside quotes, or
+           inside a REGEX LITERAL, is a table entry, a test title, a config key
+           or a pattern this file matches on (#2293). */
+        if (!lineUsesNameAsCode(line, symbol)) continue;
         /* Its own declaration is not a caller. */
         if (/^\s*export\s+(async\s+)?(function|const|class|type|interface)\s/.test(line)) continue;
         /* Nor is SOMEBODY ELSE'S declaration of the same name — a local in a
@@ -298,9 +324,20 @@ export function runMentionControls(
     survives only inside quotes is DATA. Both directions, same line, so a
     stripper that blanked everything would fail the second arm.
   */
-  const dataLine = withoutStrings('  { symbol: "zzzInATable", verdict: zzzInCode },');
-  const blankedString = !dataLine.includes("zzzInATable");
-  const keptIdentifier = dataLine.includes("zzzInCode");
+  const dataLine = '  { symbol: "zzzInATable", verdict: zzzInCode },';
+  const blankedString = !lineUsesNameAsCode(dataLine, "zzzInATable");
+  const keptIdentifier = lineUsesNameAsCode(dataLine, "zzzInCode");
+  /*
+    THE SAME RULE FOR A REGEX LITERAL, BOTH DIRECTIONS ON ONE LINE (#2293). A
+    name a file MATCHES ON is not a name it CALLS, and the second arm is what
+    stops the repair being a stripper that simply drops the whole line: the
+    real call sits outside the pattern on the same line and must survive. The
+    fixture carries no backslash on purpose, so that what it proves is the
+    regex-literal reading rather than an escape.
+  */
+  const patternLine = '    if (/(?:zzzInAPattern)/.test(code)) zzzBesideIt();';
+  const blankedPattern = !lineUsesNameAsCode(patternLine, "zzzInAPattern");
+  const keptBesidePattern = lineUsesNameAsCode(patternLine, "zzzBesideIt");
   log("  positive  allowColdImports            → " + positive.kind
     + "  " + (positive.kind === "none" ? "PASS" : "FAIL"));
   log("  negative  isAccountLocked             → " + negative.kind
@@ -313,8 +350,13 @@ export function runMentionControls(
     + (blankedString ? "PASS" : "FAIL"));
   log("  synthetic an identifier beside it survives         "
     + (keptIdentifier ? "PASS" : "FAIL"));
+  log("  synthetic a name inside a REGEX LITERAL is data     "
+    + (blankedPattern ? "PASS" : "FAIL"));
+  log("  synthetic a call beside that pattern survives       "
+    + (keptBesidePattern ? "PASS" : "FAIL"));
   return positive.kind === "none" && negative.kind !== "none"
-    && strippedComment && keptCall && blankedString && keptIdentifier;
+    && strippedComment && keptCall && blankedString && keptIdentifier
+    && blankedPattern && keptBesidePattern;
 }
 
 /**
