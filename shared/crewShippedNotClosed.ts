@@ -43,11 +43,34 @@
  * read, in the sweep's standing posture (#1439, #2165). A reader that closed
  * cards would retire a card of his on a regex.
  *
- * # ⚠ THE BRANCH LIMB IS WITHHELD, AND IT IS WITHHELD STRUCTURALLY
+ * # ⚠ ONLY THE TITLE IS READ, AND THE OTHER TWO LIMBS ARE WITHHELD STRUCTURALLY
  *
  * `pullRequestBuildsCard` reads three limbs: the title, `card #N` in the body,
- * and the head branch's digit RUNS. That third limb is sound for an open pull
- * request on a `team/<slug>-<card>` branch and is **measured noise here**: a
+ * and the head branch's digit RUNS. **This reader is handed the title alone**,
+ * and {@link ShippedNotClosedPullRequest} carries no body and no branch field,
+ * so a caller cannot supply either and a later edit cannot forget to strip
+ * them. Both exclusions were measured over the real window, not reasoned.
+ *
+ * **THE BODY LIMB (#2270).** It is sound where it came from — an OPEN pull
+ * request, where a seat writes *"for card #N"* as its own claim — and it is
+ * wrong over a MERGED window read for *did this card already ship*, because
+ * **prose that MENTIONS a card is not a claim on it**. The instance is this
+ * reader's own first live run: it named **card #18** off **PR #2268**, the pull
+ * request that BUILT this file, whose body contains the sentence *"it read as
+ * building card #18"* — the words describing the dependabot false positive
+ * below. The reader's own explanation of a false positive became one.
+ *
+ * Measured over the real 200 merged pull requests against all 49 open cards:
+ * title+body reported **1** card and it was that false positive; title alone
+ * reported **0**. **Across the entire window the body limb contributes exactly
+ * ONE match, and it is the wrong one** — so dropping it costs no detection.
+ * `crewCardBuildState`'s own header already makes this argument against the
+ * bare `#N` limb (*"every seat's body cites the laws and the precedents it
+ * worked from"*); `card #N` is narrower and is not immune, in a repository
+ * whose house style is long explanatory bodies.
+ *
+ * **THE BRANCH LIMB.** That third limb is sound for an open pull request on a
+ * `team/<slug>-<card>` branch and is **measured noise here**: a
  * merged-pull-request window is full of dependabot branches carrying semver.
  *
  * Driven over the real 200 merged pull requests (back to 2026-10-03) the hour
@@ -59,17 +82,20 @@
  * put a design card nobody has touched since August on his board as finished
  * work.
  *
- * **It is withheld by the TYPE rather than by a filter**:
- * {@link ShippedNotClosedPullRequest} has no branch field, so a caller cannot
- * supply the limb and a later edit cannot forget to strip it. The Desk's own
- * reading of the same function is narrow in exactly this way and for a related
- * reason — GitHub's search API returns no head ref — so this is the
- * repository's existing width, not a new one.
+ * The Desk's own reading of the same function is narrow in exactly this way and
+ * for a related reason — GitHub's search API returns no head ref — so this is
+ * the repository's existing width, not a new one.
  *
- * **What that costs is stated rather than hidden:** a pull request that names
- * its card ONLY in its branch is not read here. The convention makes that
- * cheap — **191 of those same 200 merged titles carry `(Card: #N)`**, which is
- * the squash title every merge of this repository is given.
+ * **What the two exclusions cost is stated rather than hidden:** a pull request
+ * that names its card ONLY in its branch or ONLY in its body is not read here.
+ * The convention makes that cheap — **191 of those same 200 merged titles carry
+ * `(Card: #N)`**, which is the squash title every merge of this repository is
+ * given, and both instances this reader exists for match on the title alone.
+ *
+ * ⚠ **AND NOT ASKING FOR THE BODY IS ALSO WHAT THE READ COSTS**: the sweep no
+ * longer requests `body` on 200 merged pull requests and 100 open ones, which
+ * is a large payload (dependabot bodies alone run to kilobytes of changelog)
+ * that nothing here reads.
  *
  * # ⚠ A CARD THAT SAYS IT IS UNFINISHED IS NOT A CANDIDATE
  *
@@ -120,14 +146,14 @@ export type ShippedNotClosedCard = {
 };
 
 /**
- * One pull request. ⚠ **NO BRANCH FIELD, ON PURPOSE** — see the header: the
- * digit-run limb fires on dependabot semver, and withholding it in the type is
- * what stops a later caller re-supplying it.
+ * One pull request. ⚠ **NUMBER AND TITLE ONLY, ON PURPOSE (#2270)** — see the
+ * header: the body limb matches prose that merely mentions a card and the
+ * branch limb fires on dependabot semver. Withholding both in the TYPE is what
+ * stops a later caller re-supplying either.
  */
 export type ShippedNotClosedPullRequest = {
   readonly number: number;
   readonly title: string;
-  readonly body: string;
 };
 
 /** A card that looks finished and is still open. */
@@ -137,12 +163,9 @@ export type ShippedNotClosedFinding = {
   readonly mergedPullRequests: readonly number[];
 };
 
-/** Does this pull request say it builds this card, on the two limbs read here? */
+/** Does this pull request's TITLE say it builds this card? The one limb read here. */
 function buildsCard(pr: ShippedNotClosedPullRequest, card: number): boolean {
-  return pullRequestBuildsCard(
-    { number: pr.number, title: pr.title, body: pr.body },
-    card,
-  ).length > 0;
+  return pullRequestBuildsCard({ number: pr.number, title: pr.title }, card).length > 0;
 }
 
 /**

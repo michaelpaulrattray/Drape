@@ -16,12 +16,19 @@
  *  - the NEGATIVE controls are the three cards that were ALSO open with merged
  *    pull requests that same hour and are each correctly open — `#1882`,
  *    `#1952`, `#2155`;
- *  - the REGRESSION control is the one false positive the planner had before
- *    the branch limb came off: `dependabot/npm_and_yarn/dotenv-18.0.5` read as
- *    building card `#18`, because `18.0.5` contains the digit run `18`.
+ *  - the REGRESSION controls are the planner's TWO measured false positives,
+ *    and both named card `#18`. Before the BRANCH limb came off,
+ *    `dependabot/npm_and_yarn/dotenv-18.0.5` read as building it because
+ *    `18.0.5` contains the digit run `18`; and before the BODY limb came off
+ *    (#2270), **PR #2268 — the pull request that built this reader** — read as
+ *    building it, because its body carries the sentence *describing* the first
+ *    false positive. Measured over the real 200 merged pull requests: title and
+ *    body together reported that one card and nothing true; the title alone
+ *    reported nothing.
  */
 import { describe, expect, it } from "vitest";
 
+import { pullRequestBuildsCard } from "../shared/crewCardBuildState.js";
 import { CREW_HOLD_LABELS } from "../shared/crewNextUpHold.js";
 import {
   SHIPPED_NOT_CLOSED_HOLD_LABELS,
@@ -35,8 +42,8 @@ function card(issueNumber: number, labels: readonly string[] = []): ShippedNotCl
   return { issueNumber, labels };
 }
 
-function pr(number: number, title: string, body = ""): ShippedNotClosedPullRequest {
-  return { number, title, body };
+function pr(number: number, title: string): ShippedNotClosedPullRequest {
+  return { number, title };
 }
 
 /* The real squash titles, copied from the merged pull requests. */
@@ -105,12 +112,10 @@ describe("#2265 · planShippedNotClosed — the negative controls are the live b
     })).toEqual([]);
   });
 
-  it("a body that merely CITES the card is not a claim on it", () => {
-    /* `pullRequestBuildsCard`'s narrow rule — every seat body cites the laws and
-       precedents it worked from, and a bare `#N` is one of those. */
+  it("a title that names ANOTHER card is not a claim on this one", () => {
     expect(run({
       open: [card(2247, ["seat:retro"])],
-      merged: [pr(2300, "fix(crew): unrelated (Card: #999)", "Builds on the reasoning in #2247.")],
+      merged: [pr(2300, "fix(crew): unrelated (Card: #999)")],
     })).toEqual([]);
   });
 });
@@ -149,28 +154,56 @@ describe("#2265 · planShippedNotClosed — each suppressor, driven on its own",
 
 describe("#2265 · the branch limb is withheld — the dependabot regression", () => {
   /* The real pull request and the real card it falsely matched. */
-  const DOTENV = pr(
-    1891,
-    "chore(deps): Bump dotenv from 17.2.3 to 18.0.5",
-    "Bumps [dotenv](https://github.com/motdotla/dotenv) from 17.2.3 to 18.0.5.",
-  );
+  const DOTENV = pr(1891, "chore(deps): Bump dotenv from 17.2.3 to 18.0.5");
 
   it("does NOT read `dotenv-18.0.5` as building card #18", () => {
     expect(run({ open: [card(18, ["design-unbuilt", "rung:N4"])], merged: [DOTENV] })).toEqual([]);
   });
 
-  it("the semver in the TITLE is not a card token either", () => {
-    /* `18.0.5` has no `#`, so the title limb cannot see it; this pins that the
-       pass above is not an accident of the body. */
-    expect(run({ open: [card(18)], merged: [pr(1891, "Bump dotenv from 17.2.3 to 18.0.5")] }))
-      .toEqual([]);
+  it("the semver in the title is not a card token — `18.0.5` has no `#`", () => {
+    expect(run({ open: [card(18)], merged: [DOTENV] })).toEqual([]);
   });
 
-  it("the pull-request type carries no branch field, so the limb cannot be re-supplied", () => {
+  it("the type carries number and title ONLY, so neither limb can be re-supplied", () => {
     /* A compile-time fact asserted at runtime: the object the planner is handed
-       has exactly these three keys, so a later caller cannot widen the read by
-       passing a head ref it would then match on. */
-    expect(Object.keys(DOTENV).sort()).toEqual(["body", "number", "title"]);
+       has exactly these two keys, so a later caller cannot widen the read by
+       passing a head ref or a body it would then match on. */
+    expect(Object.keys(DOTENV).sort()).toEqual(["number", "title"]);
+  });
+});
+
+describe("#2270 · the body limb is withheld — prose that mentions a card is not a claim", () => {
+  /*
+    The instrument's own first live run named card #18 off PR #2268 — the pull
+    request that BUILT this reader — because its body carries the sentence
+    describing the dependabot false positive above. Measured over the real 200
+    merged pull requests: title+body reported that one card and nothing true;
+    title alone reported nothing. These arms are that measurement, pinned.
+  */
+  const REAL_SENTENCE = "it read as building card #18, because 18.0.5 contains the digit run 18";
+
+  it("a pull request whose BODY says `card #18` does not read as building card #18", () => {
+    /* The body cannot even be supplied now — the arm is that the real sentence
+       is absent from everything the planner sees, so the card is not named. */
+    const built = pr(2268, "fix(crew): the desk sweep asks whether an open card already shipped (Card: #2265)");
+    expect(Object.values(built).join(" ")).not.toContain("card #18");
+    expect(run({ open: [card(18, ["design-unbuilt", "rung:N4"])], merged: [built] })).toEqual([]);
+  });
+
+  it("the same pull request DOES still name the card its title claims", () => {
+    /* The negative arm above must not pass by the reader having gone blind. */
+    const built = pr(2268, "fix(crew): the desk sweep asks whether an open card already shipped (Card: #2265)");
+    expect(run({ open: [card(2265, ["seat:retro"])], merged: [built] })).toEqual([2265]);
+  });
+
+  it("the sentence that caused it would have matched the body limb, which is why it is gone", () => {
+    /* Drives the OLD rule directly, so this arm fails if somebody restores the
+       body limb believing it harmless. */
+    expect(pullRequestBuildsCard(
+      { number: 2268, title: "fix(crew): unrelated", body: REAL_SENTENCE },
+      18,
+    )).toContain("body");
+    expect(pullRequestBuildsCard({ number: 2268, title: "fix(crew): unrelated" }, 18)).toEqual([]);
   });
 });
 
