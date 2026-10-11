@@ -22,9 +22,11 @@ vi.mock("@/lib/trpc", () => ({ trpc: {} }));
 const offerModule = await import("./PostSignCampaignOffer");
 const {
   POST_SIGN_OFFER_SILENCED_KEY,
+  accountFingerprint,
   isPostSignOfferSilenced,
   markJustSigned,
   peekJustSigned,
+  postSignOfferSilencedKey,
   postSignOfferState,
   silencePostSignOffer,
   takeJustSigned,
@@ -36,21 +38,27 @@ const AUTUMN = { campaignId: "b".repeat(32), name: "Autumn launch", castCount: 1
 
 describe("the offer is decided by whether the customer keeps campaigns", () => {
   it("waits while the list is loading", () => {
-    expect(postSignOfferState("pending", undefined)).toBe("pending");
+    expect(postSignOfferState("pending", undefined, false)).toBe("pending");
   });
 
   it("shows for an account with campaigns", () => {
-    expect(postSignOfferState("pending", [SUMMER])).toBe("showing");
+    expect(postSignOfferState("pending", [SUMMER], false)).toBe("showing");
   });
 
   it("NEVER shows for an account with no campaigns — and that answer is final", () => {
-    expect(postSignOfferState("pending", [])).toBe("gone");
+    expect(postSignOfferState("pending", [], false)).toBe("gone");
     /* A campaign made afterwards on this page does not bring the offer up. */
-    expect(postSignOfferState("gone", [SUMMER])).toBe("gone");
+    expect(postSignOfferState("gone", [SUMMER], false)).toBe("gone");
   });
 
   it("once showing, a refreshed list does not take it away under the customer", () => {
-    expect(postSignOfferState("showing", [SUMMER, AUTUMN])).toBe("showing");
+    expect(postSignOfferState("showing", [SUMMER, AUTUMN], false)).toBe("showing");
+  });
+
+  it("waits until the signed-in account is known, and never shows to an account that said never", () => {
+    expect(postSignOfferState("pending", [SUMMER], undefined)).toBe("pending");
+    expect(postSignOfferState("pending", [SUMMER], true)).toBe("gone");
+    expect(postSignOfferState("pending", undefined, true)).toBe("gone");
   });
 });
 
@@ -79,20 +87,68 @@ describe("don't ask again is kept, and storage that fails never breaks the page"
     return {
       getItem: (key: string) => map.get(key) ?? null,
       setItem: (key: string, value: string) => void map.set(key, value),
+      removeItem: (key: string) => void map.delete(key),
       map,
     };
   }
 
-  it("not silenced until asked; silenced after, under the versioned key", () => {
+  const ANA = "ana@example.com";
+  const BEN = "ben@example.com";
+
+  it("not silenced until asked; silenced after, under the versioned per-account key", () => {
     const storage = memoryStorage();
-    expect(isPostSignOfferSilenced(storage)).toBe(false);
-    silencePostSignOffer(storage);
-    expect(storage.map.get(POST_SIGN_OFFER_SILENCED_KEY)).toBe("never");
-    expect(isPostSignOfferSilenced(storage)).toBe(true);
+    expect(isPostSignOfferSilenced(ANA, storage)).toBe(false);
+    silencePostSignOffer(ANA, storage);
+    expect(storage.map.get(postSignOfferSilencedKey(ANA))).toBe("never");
+    expect(isPostSignOfferSilenced(ANA, storage)).toBe(true);
+    expect(postSignOfferSilencedKey(ANA).startsWith(`${POST_SIGN_OFFER_SILENCED_KEY}:`)).toBe(true);
     expect(POST_SIGN_OFFER_SILENCED_KEY).toMatch(/_v1$/);
   });
 
-  it("a throwing store reads as not silenced, and a write to it does not throw", () => {
+  /* #2274 — the card's own "done when": two accounts in one browser each keep their own choice. */
+  it("TWO ACCOUNTS, ONE BROWSER: one account's 'don't ask again' never silences the other", () => {
+    const browser = memoryStorage();
+    silencePostSignOffer(ANA, browser);
+    expect(isPostSignOfferSilenced(ANA, browser)).toBe(true);
+    expect(isPostSignOfferSilenced(BEN, browser)).toBe(false);
+    /* And the decision the card makes from it: the second account is still asked. */
+    expect(postSignOfferState("pending", [SUMMER], isPostSignOfferSilenced(BEN, browser))).toBe("showing");
+    expect(postSignOfferState("pending", [SUMMER], isPostSignOfferSilenced(ANA, browser))).toBe("gone");
+    /* The second account's own choice is then its own, and the first's is untouched. */
+    silencePostSignOffer(BEN, browser);
+    expect(isPostSignOfferSilenced(BEN, browser)).toBe(true);
+    expect(isPostSignOfferSilenced(ANA, browser)).toBe(true);
+    expect(browser.map.size).toBe(2);
+  });
+
+  it("the key is the account's, case-blind, and never holds the address itself", () => {
+    expect(postSignOfferSilencedKey("Ana@Example.com ")).toBe(postSignOfferSilencedKey(ANA));
+    expect(postSignOfferSilencedKey(ANA)).not.toBe(postSignOfferSilencedKey(BEN));
+    expect(postSignOfferSilencedKey(ANA)).not.toContain("ana");
+    expect(postSignOfferSilencedKey(ANA)).not.toContain("@");
+    expect(accountFingerprint(ANA)).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it("the old unscoped choice is honoured ONCE, for the first account to ask, then retired", () => {
+    const browser = memoryStorage();
+    browser.setItem(POST_SIGN_OFFER_SILENCED_KEY, "never");
+    expect(isPostSignOfferSilenced(ANA, browser)).toBe(true);
+    expect(browser.map.has(POST_SIGN_OFFER_SILENCED_KEY)).toBe(false);
+    expect(browser.map.get(postSignOfferSilencedKey(ANA))).toBe("never");
+    /* The next account in the same browser is not silenced by it. */
+    expect(isPostSignOfferSilenced(BEN, browser)).toBe(false);
+    expect(isPostSignOfferSilenced(ANA, browser)).toBe(true);
+  });
+
+  it("no address means no choice to read or keep", () => {
+    const browser = memoryStorage();
+    browser.setItem(POST_SIGN_OFFER_SILENCED_KEY, "never");
+    expect(isPostSignOfferSilenced("", browser)).toBe(false);
+    silencePostSignOffer("", browser);
+    expect([...browser.map.keys()]).toEqual([POST_SIGN_OFFER_SILENCED_KEY]);
+  });
+
+  it("a throwing store reads as not silenced, and neither a write nor a retirement throws", () => {
     const broken = {
       getItem: () => {
         throw new Error("blocked");
@@ -100,10 +156,21 @@ describe("don't ask again is kept, and storage that fails never breaks the page"
       setItem: () => {
         throw new Error("blocked");
       },
+      removeItem: () => {
+        throw new Error("blocked");
+      },
     };
-    expect(isPostSignOfferSilenced(broken)).toBe(false);
-    expect(() => silencePostSignOffer(broken)).not.toThrow();
-    expect(isPostSignOfferSilenced(undefined)).toBe(false);
+    expect(isPostSignOfferSilenced(ANA, broken)).toBe(false);
+    expect(() => silencePostSignOffer(ANA, broken)).not.toThrow();
+    expect(isPostSignOfferSilenced(ANA, undefined)).toBe(false);
+    /* Reads work, writes are blocked: the legacy choice still answers, and nothing throws. */
+    const readOnly = {
+      getItem: (key: string) => (key === POST_SIGN_OFFER_SILENCED_KEY ? "never" : null),
+      setItem: broken.setItem,
+      removeItem: broken.removeItem,
+    };
+    expect(() => isPostSignOfferSilenced(ANA, readOnly)).not.toThrow();
+    expect(isPostSignOfferSilenced(ANA, readOnly)).toBe(true);
   });
 });
 
@@ -225,6 +292,17 @@ describe("the Sign is unchanged except for one line written into memory", () => 
       "markJustSigned(result.castPublicId);",
       "navigate(`/app/casting/cast/${result.castPublicId}`);",
     ]);
+  });
+
+  it("the card reads and keeps 'don't ask again' for the signed-in account, never a shared one (#2274)", () => {
+    const card = readFileSync(new URL("./CastCampaignsCard.tsx", import.meta.url), "utf8");
+    const body = slice(card, "export function CastCampaignsCard(", "<CastCampaignsPanel\n      memberships");
+    expect(body).toContain("const { user } = useAuth();");
+    expect(body).toContain("const accountEmail = user?.email ?? null;");
+    expect(body).toContain("isPostSignOfferSilenced(accountEmail)");
+    expect(body).toContain("if (accountEmail) silencePostSignOffer(accountEmail);");
+    /* No call that falls back to a browser-wide key. */
+    expect(body).not.toMatch(/isPostSignOfferSilenced\(\)|silencePostSignOffer\(\)/);
   });
 
   it("the room hands the panel the cast's name and a fresh panel per cast", () => {

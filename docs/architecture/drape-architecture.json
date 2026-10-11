@@ -18809,6 +18809,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
       "to": "module:client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
       "kind": "imports"
     },

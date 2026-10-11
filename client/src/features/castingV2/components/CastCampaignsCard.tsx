@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { ChevronRight, Plus } from "lucide-react";
 
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";
@@ -241,21 +242,29 @@ export function CastCampaignsCard({ castId, castName }: { castId: string; castNa
   const create = trpc.castingV2.createCampaign.useMutation();
 
   /*
-    THE POST-SIGN OFFER (#2253). Decided once, at mount: this cast was signed
-    in this tab a moment ago and the customer has not said "don't ask again".
-    The marker is only PEEKED here and taken in the effect, so a render that
-    runs twice cannot spend it on the throwaway pass.
+    THE POST-SIGN OFFER (#2253). Pending at mount only if this cast was signed
+    in this tab a moment ago. The marker is only PEEKED here and taken in the
+    effect, so a render that runs twice cannot spend it on the throwaway pass.
+    "Don't ask again" is read for the SIGNED-IN ACCOUNT (#2274), so the offer
+    waits until that account is known rather than reading anyone else's choice.
   */
+  const { user } = useAuth();
+  const signedIn = Boolean(user);
+  const accountEmail = user?.email ?? null;
   const [offerState, setOfferState] = useState<PostSignOfferState>(() =>
-    peekJustSigned(castId) && !isPostSignOfferSilenced() ? "pending" : "gone",
+    peekJustSigned(castId) ? "pending" : "gone",
   );
   const [offerRefusal, setOfferRefusal] = useState<string | null>(null);
   useEffect(() => {
     takeJustSigned(castId);
   }, [castId]);
   useEffect(() => {
-    setOfferState((state) => postSignOfferState(state, campaigns.data));
-  }, [campaigns.data]);
+    if (offerState !== "pending") return;
+    /* No account yet: wait. An account with no address on file can still be
+       asked; its "don't ask again" has nowhere to live, so it asks again. */
+    const silenced = !signedIn ? undefined : accountEmail ? isPostSignOfferSilenced(accountEmail) : false;
+    setOfferState(postSignOfferState(offerState, campaigns.data, silenced));
+  }, [offerState, campaigns.data, signedIn, accountEmail]);
 
   /* Every write moves three readings: this panel, the counts, and the library. */
   const refresh = () => {
@@ -300,7 +309,7 @@ export function CastCampaignsCard({ castId, castName }: { castId: string; castNa
           },
           onNotNow: () => setOfferState("gone"),
           onNever: () => {
-            silencePostSignOffer();
+            if (accountEmail) silencePostSignOffer(accountEmail);
             setOfferState("gone");
           },
         }
