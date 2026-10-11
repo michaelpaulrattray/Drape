@@ -1117,8 +1117,22 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        line, the briefing's ladder and this pin moved in ONE commit, which is
        what #1840 cost the program when they did not. **This pin moves only on
        his word. The next flip is N2b → N2c, on N2b's completion card and his
-       word — never on N2b merely finishing.** */
-    expect(focusRungFromLadder(ladder)).toBe("N2b");
+       word — never on N2b merely finishing.**
+
+       ⚠ **MOVED N2b → N2c ON 2026-10-11, AND THE PRESCRIBED ROAD HELD A THIRD
+       TIME.** His Desk reply #273 on the N2b completion card (#1242) was
+       `"N2c — Campaigns"`, doubled in his terminal at 02:10Z (*"go ahead for
+       n2c"*), given on the card that carried his six-item test drive. The
+       rulebook's `CURRENT FOCUS` line, this briefing's ladder, this pin and
+       `seatFocusTwoTruths.test.ts`'s own pin and sabotage anchor all moved in
+       ONE commit. ⚠ **One half of that card's question he did NOT answer —
+       whether the six alternative reads are too long — and the rung still
+       opened, because the gate asks him to NAME THE NEXT RUNG and he named it;
+       the unanswered half is recorded on the card and in the rulebook rather
+       than re-asked.** **This pin moves only on his word. The next flip is N2c
+       → whatever he names, on N2c's completion card and his word — never on
+       N2c merely finishing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N2c");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {
