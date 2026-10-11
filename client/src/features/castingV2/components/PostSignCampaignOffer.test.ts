@@ -294,7 +294,8 @@ describe("the Sign is unchanged except for one line written into memory", () => 
     ]);
   });
 
-  it("the card reads and keeps 'don't ask again' for the signed-in account, never a shared one (#2274)", () => {
+  /* Card 2274. */
+  it("the card reads and keeps 'don't ask again' for the signed-in account, never a shared one", () => {
     const card = readFileSync(new URL("./CastCampaignsCard.tsx", import.meta.url), "utf8");
     const body = slice(card, "export function CastCampaignsCard(", "<CastCampaignsPanel\n      memberships");
     expect(body).toContain("const { user } = useAuth();");
