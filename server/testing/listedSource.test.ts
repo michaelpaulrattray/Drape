@@ -488,6 +488,27 @@ const BARE_READS_ALLOWED: Record<string, string[]> = {
   "server/patrolClocks.test.ts": [
     "REAL_LOGS — the four patrol logs by fixed name; one going missing is the defect and must throw",
   ],
+  /*
+     JOINED THE CLASS ON 2026-10-11 (#2286), and the row is the reason rather
+     than a quieting. That suite holds the Atlas's new `clientCallers` field
+     equal to a second reading of `client/src`, so it both WALKS a tree and
+     reads a fixed artifact — and the walk is already correct: every listed
+     entry under `client/src` goes through `readListedSource` and skips the
+     nulls, which is the half this rule exists to enforce. Both bare reads left
+     are the SAME fixed path, and a row per read is this file's own bar (#594).
+  */
+  "server/architectureClientCallers.test.ts": [
+    "the committed architecture Atlas by fixed path, read once at module level —"
+    + " it is the artifact under test, carrying the procedure population and the"
+    + " `clientCallers` field every arm compares against, and it must keep"
+    + " THROWING: a suite that shrugged at an absent Atlas would sweep the client"
+    + " tree, find no artifact to disagree with it, and report every procedure's"
+    + " callers as correct while measuring nothing",
+    "the same fixed path again, for the hand-edit POSITIVE control — it doctors"
+    + " one field on an otherwise real Atlas to prove the schema refuses an"
+    + " undeclared one, so an absent file does not weaken the arm, it DELETES it:"
+    + " a control that cannot be built is a refusal nobody is driving (law 2)",
+  ],
 };
 
 /*
