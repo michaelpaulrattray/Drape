@@ -248,10 +248,12 @@ export const judgeAgainstMemory = (input: {
     arms: current.arms,
     runs,
     sentence:
-      `⚠ THE SAME ${current.arms.length} ARM(S) HAVE FAILED ON EVERY ONE OF ${runs} REFUSALS OF THIS COMMIT —`
-      + ` so this is the FIRST road above: a contract breached in the commit, not the machine.`
+      `the same ${current.arms.length} arm(s) have failed on every one of ${runs} refusals of this commit.`
+      + ` ⚠ THAT IS NOT YET EVIDENCE ABOUT THE COMMIT (#2248) — it says only that the interference, if`
+      + ` there is any, is PERSISTENT rather than transient, and from here a repeat and a breach look`
+      + ` identical.`
       + `\n    ${current.arms.join("\n    ")}`
-      + `\n    repair: fix those arms' subject in the commit (the shape is scripts/SKELETON-disposable.mts), commit, re-run.`,
+      + `\n    THE CONTROL THAT SETTLES IT IS BELOW: those arms re-run ALONE, outside the concurrent run.`,
   };
 };
 
@@ -414,4 +416,217 @@ export const notePass = (input: {
      commits, so a key count that did not move means nothing changed. */
   if (Object.keys(next.commits).length === Object.keys(recalled.commits).length) return;
   persistMemory(path, directory, next, input.fs);
+};
+
+/* ───────────────────────────────────────────────────────────────────────────
+   A REPEATING SET IS NOT EVIDENCE UNTIL THE ARMS ARE RUN ALONE (#2248)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * ⚠ **THE READING ABOVE FIXED THE MOVING-SET CASE AND CREATED THE
+ * STANDING-SET CASE.**
+ *
+ * `judgeAgainstMemory` reads *a set that moved is the machine; a set that
+ * repeats is the commit*. The first half holds. The second half holds only
+ * while the machine's interference is TRANSIENT — starvation landing on
+ * different arms each run, which is `server/testing/childProcessTimeout.ts`'s
+ * own observed tell. **It does not hold when the interference is PERSISTENT**,
+ * because then the same arms fail every single time and a repeat proves
+ * nothing at all.
+ *
+ * **Measured 2026-10-11 on commit `9e3217c2`, which changes ONE JSON file**
+ * (`server/crew/crew-briefing.json`, the Desk edition):
+ *
+ *   | run | verdict | failing arms |
+ *   |-----|---------|--------------|
+ *   | 1 · 03:04Z | REFUSED | two arms of `server/moneySurfaceClassifier.test.ts` |
+ *   | 2 · 03:19Z | REFUSED | **the same two, identically** |
+ *   | 3 · 03:35Z | **OK**, deployed | none |
+ *
+ * On run 2 the memory said, in capitals, *"THE SAME 2 ARM(S) HAVE FAILED ON
+ * EVERY ONE OF 2 REFUSALS OF THIS COMMIT — so this is the FIRST road above: a
+ * contract breached in the commit"*, and *"repair: fix those arms' subject in
+ * the commit"*. **There was nothing to fix**: between runs 2 and 3 nothing was
+ * committed and nothing was edited, and the same sha shipped. Both failures
+ * were `Test timed out in 30000ms` on the two arms that `await
+ * import("drizzle-orm/mysql-core")` inside the test body, so a cold dependency
+ * transform is charged to the arm's own clock — which makes them the FIRST two
+ * arms to fall under load, every time. Driven alone at that exact commit:
+ * **141 of 141 passing in 50.2 s, 45.3 s of it transform.**
+ *
+ * # What it must not conclude, and the second one is the trap
+ *
+ * ⚠ **NOT "stop refusing".** The gate is right and is UNCHANGED either way
+ * (invariant 7: a guard that could not pass still does not push). Only the
+ * DIAGNOSIS was wrong, which is the narrowing #967 already made once.
+ *
+ * ⚠ **NOT "key on the word timeout".** #2212's own header forbids it with a
+ * worked example: an ordinary assertion (`expect(result.status).toBe(0)`) failed
+ * under the same contention because a real `git commit` driven inside a
+ * temporary repository had the atlas hook give up. A reader keyed on timeout
+ * wording would have sent a shift hunting a broken hook.
+ *
+ * # What actually tells them apart
+ *
+ * **A repeating set is evidence about the commit only if those arms are
+ * incapable of passing on this machine right now.** That is a question the rite
+ * can ask cheaply and did not: re-run the failing arms ALONE, outside the
+ * concurrent run, after the second refusal. Alone-pass is the machine;
+ * alone-fail is the commit. One suite, about 50 s here, and it is the control a
+ * shift ends up running by hand anyway.
+ */
+
+/** A suite file reading taken off a set of arm identities. */
+export type SuiteFileReading = {
+  /** The suite files to re-run, sorted and deduped. */
+  files: string[];
+  /** Arm identities whose file could not be read — never silently dropped. */
+  unparsed: string[];
+};
+
+/** The marker `readFailedArms` puts on a suite that would not load. */
+const WOULD_NOT_LOAD = " <suite would not load>";
+
+/**
+ * WHICH SUITE FILES A SET OF ARM IDENTITIES NAMES.
+ *
+ * `readFailedArms` produces two shapes and this reads both: `server/x.test.ts >
+ * describe > the arm`, and `server/x.test.ts <suite would not load>`. The file
+ * is everything before the first ` > ` or before that marker.
+ *
+ * ⚠ **AN IDENTITY IT CANNOT READ GOES IN `unparsed` RATHER THAN BEING
+ * DROPPED.** Dropping one would hand the caller a SUBSET to re-run, and a
+ * subset that passes says nothing about the arm left out of it — it would read
+ * as "alone-pass, so the machine" on evidence that never covered the whole
+ * refusal. The caller refuses to run at all rather than run a subset, which is
+ * law 2's direction: the instrument that cannot see the whole question says so.
+ */
+export const suiteFilesOf = (arms: readonly string[]): SuiteFileReading => {
+  const files = new Set<string>();
+  const unparsed: string[] = [];
+  for (const arm of arms) {
+    const marker = arm.indexOf(WOULD_NOT_LOAD);
+    const separator = arm.indexOf(" > ");
+    const head = marker >= 0
+      ? arm.slice(0, marker)
+      : separator >= 0 ? arm.slice(0, separator) : arm;
+    const file = head.trim();
+    /* A guard suite is a `.test.ts`; anything else is not something this can
+       hand to a runner, and guessing would be the subset problem above. */
+    if (/\.test\.tsx?$/.test(file) && !file.includes(" ")) files.add(file);
+    else unparsed.push(arm);
+  }
+  return { files: [...files].sort(), unparsed };
+};
+
+/**
+ * WHAT A SOLO RE-RUN OF THE FAILING ARMS PRODUCED.
+ *
+ * ⚠ **`passed` IS THE RUNNER'S EXIT STATUS AND NOT AN ARM READING**, because a
+ * PASSING run prints no `FAIL` line at all — so "no arms could be read" and
+ * "nothing failed" are the same string and opposite facts. The exit code is the
+ * only thing that tells them apart, which is the same mistake `readFailedArms`'
+ * empty-set rule exists to prevent, one layer up.
+ */
+export type AloneRerun =
+  /** It could not be attempted, or could not be attempted HONESTLY. */
+  | { ran: false; why: string }
+  | {
+      ran: true;
+      /** The runner exited 0 on those suites alone. */
+      passed: boolean;
+      /** The arms that failed alone — empty when it passed, or unreadable. */
+      arms: string[];
+      /** The suite files it ran. */
+      files: string[];
+    };
+
+export type RepeatVerdict =
+  /** They pass alone, so they are capable of passing here — the MACHINE. */
+  | { kind: "alone-passes"; sentence: string; files: string[] }
+  /** They fail alone too, with no contention to blame — the COMMIT. */
+  | { kind: "alone-fails"; sentence: string; stillFailing: string[]; alsoFailing: string[] }
+  /** The control could not be taken. Both roads stand exactly as written. */
+  | { kind: "alone-unresolved"; sentence: string };
+
+/**
+ * JUDGE A REPEATING SET BY WHETHER ITS ARMS CAN PASS ALONE.
+ *
+ * ⚠ **IT NEVER CONCLUDES FROM A FAILURE IT COULD NOT READ.** A solo run that
+ * exits non-zero while printing nothing readable is `alone-unresolved` and not
+ * `alone-fails`: that is the runner having died, not an arm having failed, and
+ * accusing the commit off it would be exactly the confident wrong answer this
+ * card is about.
+ *
+ * ⚠ **A SOLO FAILURE ON DIFFERENT ARMS STILL POINTS AT THE COMMIT, and it is
+ * named rather than folded in.** Something in this tree fails with nothing
+ * competing for the box, which is the finding; that it is not the same arm is
+ * worth a shift knowing before it starts fixing, so both lists travel with the
+ * verdict.
+ */
+export const judgeRepeatAlone = (input: {
+  /** The arms that repeated, from the `same-set` verdict. */
+  arms: readonly string[];
+  /** How many refusals of this commit are on record. */
+  runs: number;
+  alone: AloneRerun;
+}): RepeatVerdict => {
+  const { alone } = input;
+  const byHand = suiteFilesOf(input.arms).files.join(" ");
+  if (!alone.ran) {
+    return {
+      kind: "alone-unresolved",
+      sentence:
+        `THE CONTROL COULD NOT BE TAKEN, so the repeat settles nothing and BOTH roads above stand`
+        + ` exactly as written — ${alone.why}`
+        + `\n    by hand, which is the whole of it: npx vitest run ${byHand === "" ? "<the suite named above>" : byHand}`
+        + `\n    passing alone means the machine and nothing in the commit; failing alone means the commit.`,
+    };
+  }
+  if (alone.passed) {
+    return {
+      kind: "alone-passes",
+      files: alone.files,
+      sentence:
+        `THOSE ARMS PASS WHEN RUN ALONE — so they are CAPABLE of passing on this machine right now,`
+        + ` and the repeat was never evidence about the commit. NOTHING IN THE COMMIT IS IMPLICATED.`
+        + `\n    re-run alone and green: ${alone.files.join(", ")}`
+        + `\n    A set that repeats identically is what PERSISTENT contention looks like — the same arms are`
+        + ` simply the first to fall under load every time, which a moving set never shows (#2248).`
+        + `\n    repair: nothing in the commit. Hold vitest to fewer workers for this run —`
+        + ` VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1 npx tsx scripts/deploy-rite.mts — the lever measured on`
+        + ` 2026-10-10; or re-run the rite unchanged, which is what shipped 9e3217c2 on its third run.`,
+    };
+  }
+  if (alone.arms.length === 0) {
+    return {
+      kind: "alone-unresolved",
+      sentence:
+        `THE SOLO RE-RUN FAILED AND ITS OUTPUT COULD NOT BE READ, so nothing is concluded from it —`
+        + ` a runner that died is not an arm that failed, and both roads above stand as written.`
+        + `\n    by hand: npx vitest run ${alone.files.join(" ")}`,
+    };
+  }
+  const repeated = new Set(input.arms);
+  const stillFailing = alone.arms.filter((arm) => repeated.has(arm));
+  const alsoFailing = alone.arms.filter((arm) => !repeated.has(arm));
+  return {
+    kind: "alone-fails",
+    stillFailing,
+    alsoFailing,
+    sentence:
+      `THOSE ARMS FAIL ALONE TOO, with nothing competing for the box — so this IS the first road above:`
+      + ` a contract breached in the commit, not the machine.`
+      + (stillFailing.length > 0 ? `\n    failing alone as well:\n    ${stillFailing.join("\n    ")}` : "")
+      + (stillFailing.length === 0
+        ? `\n    NONE of the repeated arms is among them — the tree fails either way, but not where the`
+          + ` refusals said. Read the solo run before fixing anything.`
+        : "")
+      + (alsoFailing.length > 0
+        ? `\n    and failing alone on arm(s) the refusals did NOT name, which is still the commit:`
+          + `\n    ${alsoFailing.join("\n    ")}`
+        : "")
+      + `\n    repair: fix those arms' subject in the commit (the shape is scripts/SKELETON-disposable.mts),`
+      + ` commit, re-run.`,
+  };
 };

@@ -47,7 +47,11 @@
  * This is a MODULE (imported by the rite and by its suite) and it never exits.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFailedArms } from "./riteFailureMemory.mts";
+import {
+  type AloneRerun,
+  readFailedArms,
+  suiteFilesOf,
+} from "./riteFailureMemory.mts";
 import { inWorktreeOf } from "./riteWorktree.mts";
 
 /** The suite #152 was filed on; a derivation that loses it is not a derivation. */
@@ -258,4 +262,81 @@ const armsOrNone = (output: string): string[] => {
 const defaultVitest = (cwd: string, suites: string[]) => {
   const result = spawnSync("npx", ["vitest", "run", ...suites], { cwd, encoding: "utf8", shell: true, maxBuffer: 32 * 1024 * 1024 });
   return { status: result.status, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+};
+
+/**
+ * RE-RUN A SET OF FAILING ARMS' SUITES ALONE, AT THE SAME COMMIT (#2248).
+ *
+ * The control that tells the rite's two roads apart when the failure set
+ * REPEATS rather than moving: `judgeAgainstMemory`'s *a set that repeats is the
+ * commit* holds only while the machine's interference is transient, and a
+ * persistent contention fails the same arms every single time. So the question
+ * is not *did it repeat* but *are those arms capable of passing on this machine
+ * right now* — and that is answered by running them with nothing else in
+ * flight. `lib/riteFailureMemory.mts` carries the measurement and the two
+ * things the reading must not conclude.
+ *
+ * ⚠ **IT RUNS ONLY THE SUITES THE REFUSAL NAMED, AND REFUSES TO RUN A
+ * SUBSET.** If any arm identity cannot be resolved to a file, nothing is run:
+ * a subset that passes would read as *alone-pass, so the machine* on evidence
+ * that never covered the whole refusal.
+ *
+ * ⚠ **IT IS A FRESH WORKTREE OF THE SAME COMMIT, not the shift's directory.**
+ * Same argument as `runScriptGuardsOnCommit` and `riteWorktree.mts`' own
+ * header: the main tree carries hundreds of untracked disposables, and a
+ * control run there would answer about a tree nobody is pushing. The cost is
+ * paid ONLY on a second refusal of one commit, which is where the card's own
+ * ~50 s estimate comes from.
+ *
+ * ⚠ **A THROW FROM THE WORKTREE MACHINERY BECOMES `ran: false`, NEVER AN
+ * EXCEPTION.** This sits inside a refusal a shift is already reading, on the
+ * one road to `main` — #967 is this repository's record of the rite dying on a
+ * raw stack trace with no receipt line, and a diagnostic that can do that is
+ * the shape #2212 named: *a refusal that makes the next refusal more likely.*
+ * A control that could not be taken settles nothing and says so.
+ */
+export const rerunArmsAlone = (root: string, commit: string, arms: readonly string[], options: {
+  vitest?: (cwd: string, suites: string[]) => { status: number | null; output: string };
+} = {}): AloneRerun => {
+  const reading = suiteFilesOf(arms);
+  if (reading.unparsed.length > 0) {
+    return {
+      ran: false,
+      why: `${reading.unparsed.length} of ${arms.length} failing arm identities named no suite file`
+        + ` (${reading.unparsed.slice(0, 3).join("; ")}), and a PARTIAL re-run would answer a different`
+        + " question from the refusal's.",
+    };
+  }
+  if (reading.files.length === 0) {
+    return { ran: false, why: "the refusal named no failing arms at all, so there is nothing to re-run alone." };
+  }
+  const vitest = options.vitest ?? defaultVitest;
+  let ran = false;
+  try {
+    return inWorktreeOf(root, commit, (tree) => {
+      ran = true;
+      const result = vitest(tree, reading.files);
+      return {
+        ran: true as const,
+        passed: result.status === 0,
+        /* Read for the REPORT only — `passed` is the exit status, because a
+           green run prints no `FAIL` line and an unreadable one prints none
+           either. */
+        arms: result.status === 0 ? [] : armsOrNone(result.output),
+        files: reading.files,
+      };
+    });
+  } catch (error: unknown) {
+    const stderr = String((error as { stderr?: unknown })?.stderr ?? "").trim();
+    const message = (stderr !== "" ? stderr : String((error as Error)?.message ?? error)).trim();
+    /* `ran` tells the two apart exactly as it does one function up: once the
+       body was entered the tree existed, so a throw from there is the runner's
+       and not a tree that could not be made. Either way the control was not
+       TAKEN, so both are `ran: false` — but the sentence says which. */
+    return {
+      ran: false,
+      why: (ran ? "the solo re-run itself threw: " : "a worktree of the commit could not be made: ")
+        + message.split(/\r?\n/).slice(0, 2).join(" "),
+    };
+  }
 };
