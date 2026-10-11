@@ -105,6 +105,12 @@ import {
   type ShellDamageFinding,
   planShellDamage,
 } from "../shared/crewShellDamage.js";
+import {
+  planShippedNotClosed,
+  shippedNotClosedLines,
+  type ShippedNotClosedFinding,
+  type ShippedNotClosedPullRequest,
+} from "../shared/crewShippedNotClosed.js";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./lib/ghQueueTransport.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
@@ -338,6 +344,65 @@ if (allOpen === null) {
   skipped.push(
     "SHELL DAMAGE: the open queue could not be read, so no card title or body was checked for a"
     + " price eaten by a shell. That is unread, NOT clean.",
+  );
+}
+
+/*
+  ⚠ **A FINISHED CARD THAT READS AS OPEN WORK (#2265).** `planShippedNotClosed`
+  owns the rule, the measurement and the stated floor; this is its I/O.
+
+  ⚠ **IT SITS HERE, ABOVE THE NEXT UP BLOCK, ON PURPOSE.** The reader it needs
+  to not be is the stale-row pass below, which lives inside the `ordered`
+  branch and therefore sees the **founder-ordered band only** — and that is
+  exactly why both measured instances (#2247, #2248, neither founder-ordered)
+  were invisible. So this block hangs off `allOpen` and nothing else: its
+  population is EVERY open card, and a failed band read cannot narrow it.
+
+  ⚠ **TWO READS OF ITS OWN, AND IT CANNOT BORROW THE ONE BELOW.** `prs` at the
+  NEXT UP block is scoped inside that branch, so reusing it would re-inherit
+  the population bug this card is about. Both calls ask for three fields rather
+  than the thirteen `OPEN_PR_LIST_ARGS` spends, because the branch limb is
+  deliberately not read here (the planner's header carries the measurement).
+
+  ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
+  rule as the two blocks above, and the same reason: the honest answer on a
+  healthy board is zero, and an unread board also answers zero.
+*/
+const mergedPrs = gh([
+  "pr", "list", "--state", "merged", "--limit", "200",
+  "--json", "number,title,body",
+]) as Json[] | null;
+const openPrsForShipped = gh([
+  "pr", "list", "--state", "open", "--limit", "100",
+  "--json", "number,title,body",
+]) as Json[] | null;
+const asPullRequest = (row: Json): ShippedNotClosedPullRequest => ({
+  number: Number((row as { number?: unknown })?.number),
+  title: String((row as { title?: unknown })?.title ?? ""),
+  body: String((row as { body?: unknown })?.body ?? ""),
+});
+const shippedNotClosed: readonly ShippedNotClosedFinding[] =
+  allOpen === null || mergedPrs === null || openPrsForShipped === null
+    ? []
+    : planShippedNotClosed({
+      open: allOpen.map((row) => ({
+        issueNumber: Number(row?.number),
+        labels: Array.isArray(row?.labels)
+          ? (row.labels as Json[]).map((label: Json) => String((label as { name?: unknown })?.name ?? ""))
+          : [],
+      })),
+      merged: mergedPrs.map(asPullRequest),
+      openPullRequests: openPrsForShipped.map(asPullRequest),
+    });
+if (allOpen === null || mergedPrs === null || openPrsForShipped === null) {
+  const unread = [
+    allOpen === null ? "the open queue" : null,
+    mergedPrs === null ? "the merged pull requests" : null,
+    openPrsForShipped === null ? "the open pull requests" : null,
+  ].filter((part): part is string => part !== null).join(" and ");
+  skipped.push(
+    `SHIPPED BUT STILL OPEN: ${unread} could not be read, so no card was checked for a merged`
+    + " pull request it never closed on. That is unread, NOT clean.",
   );
 }
 
@@ -1009,6 +1074,21 @@ if (shellDamage.length > 0) {
   console.log("  title through `execFileSync` with no shell. That is the half that actually");
   console.log("  stops it — `$1` through `$9` vanish without a trace, and `$12` becomes `2`,");
   console.log("  so no reader here or anywhere can find the silent half of this fault.");
+}
+
+if (shippedNotClosed.length > 0) {
+  /*
+    ⚠ **REPORTED, NEVER CLOSED (#2265).** *Finished* and *partly shipped* look
+    identical from here — a merged pull request is one slice of a card as often
+    as it is the whole of it — and only a read at the body tells them apart. The
+    three live fixtures the planner's header names are each correctly open, and
+    each is skipped by its own label rather than by this reader's judgement.
+
+    Exit code 0, on the rule at the foot of this file: a briefing carrying this
+    is schema-VALID, and the card it names may legitimately stay open.
+  */
+  console.log("");
+  for (const line of shippedNotClosedLines(shippedNotClosed)) console.log(line);
 }
 
 if (pipelinePlan.stuck.length > 0) {

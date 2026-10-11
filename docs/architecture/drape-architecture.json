@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 87
+      "moduleCount": 88
     },
     {
       "id": "domain:staff",
@@ -6507,6 +6507,12 @@
     {
       "id": "module:shared/crewShiftState.ts",
       "path": "shared/crewShiftState.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/crewShippedNotClosed.ts",
+      "path": "shared/crewShippedNotClosed.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14071,6 +14077,10 @@
     {
       "id": "test:server/crewShiftWriterBoundary.test.ts",
       "path": "server/crewShiftWriterBoundary.test.ts"
+    },
+    {
+      "id": "test:server/crewShippedNotClosed.test.ts",
+      "path": "server/crewShippedNotClosed.test.ts"
     },
     {
       "id": "test:server/crewTestDrive.test.ts",
@@ -37695,6 +37705,21 @@
     {
       "from": "module:shared/crewShiftState.ts",
       "to": "module:shared/crewPipelineStatus.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewShippedNotClosed.ts",
+      "to": "module:shared/crewCardBuildState.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewShippedNotClosed.ts",
+      "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewShippedNotClosed.ts",
+      "to": "module:shared/crewQueueExclusions.ts",
       "kind": "imports"
     },
     {
