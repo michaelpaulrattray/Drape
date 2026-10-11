@@ -1,40 +1,36 @@
 {
-  "edition": 675,
-  "updatedAt": "2026-10-11T03:05:00.000Z",
-  "shift": "Foreman — foreman-20261011-1222",
+  "edition": 676,
+  "updatedAt": "2026-10-11T04:50:00.000Z",
+  "shift": "Foreman — foreman-20261011-0424",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "No focus is set — N2b is built and live, and the next rung is yours to name. Its completion card and a short test drive are below (#1242). Until you name the next one, the crew works maintenance only: your background switches, the patrols on their clocks, and a bug a customer can actually hit.",
-      "quote": "n2b",
-      "quotedAt": "2026-10-08T12:02:19+11:00"
+      "state": "confirmed",
+      "title": "Campaigns — you name a group of casts and file them into it. Your library's row of chips stops saying All / Signed / Unsigned and starts saying All / Unfiled / your campaigns / +. You said “N2c — Campaigns”, so that is what the crew is building; a campaign is the thing the cinema studio will open later, a script and its cast.",
+      "quote": "N2c — Campaigns",
+      "quotedAt": "2026-10-11T04:03:00.000Z"
     },
     "milestone": {
-      "title": "N2b — a cast is born with a personality and a voice at Sign, written as text you can edit. Not a menu, not a fixed list: words that come with the cast and that you can change.",
+      "title": "N2c — campaigns: you make a named group, file casts into it, and your library can show you one group at a time. A cast can sit in several campaigns at once, nothing is filed without you saying so, and a customer who never makes one sees the library exactly as it is today.",
       "steps": [
         {
-          "title": "The persona-word clean-up it writes into — already done and migrated (#1241)",
-          "state": "done"
+          "title": "The store behind it, built dark — nothing on screen changes (#2249)",
+          "state": "waiting"
         },
         {
-          "title": "A cast is born with a personality and a voice at Sign (#1242)",
-          "state": "done"
+          "title": "Your library's chips become All / Unfiled / your campaigns / + — and the search box above the grid finally works (#2250)",
+          "state": "waiting"
         },
         {
-          "title": "Both are editable text on the cast's page, never a picker",
-          "state": "done"
+          "title": "Tick several casts and file them all in one go (#2251)",
+          "state": "waiting"
         },
         {
-          "title": "Three ways to fix the words it wrote you — open them in place, pick a different read, or say it your way (#2137)",
-          "state": "done"
+          "title": "A cast's own page lists the campaigns it is in, and the dead “Use in a campaign · soon” button goes (#2252)",
+          "state": "waiting"
         },
         {
-          "title": "The Voice card the same way, and the Change button that never worked now opens the words (#2139)",
-          "state": "done"
-        },
-        {
-          "title": "Your eye on a real Sign's words — the last thing the rung is waiting for (#1242)",
+          "title": "After a Sign, one offer to file the new cast — only if you already keep campaigns, and never in the way of the Sign (#2253)",
           "state": "waiting"
         }
       ]
@@ -63,12 +59,12 @@
       {
         "key": "N2b",
         "title": "Personality and voice — born at Sign, as editable text",
-        "state": "current"
+        "state": "done"
       },
       {
         "key": "N2c",
         "title": "Campaigns — the cast library's named collections",
-        "state": "queued"
+        "state": "current"
       },
       {
         "key": "N3",
@@ -134,32 +130,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-10T11:03:40.001Z",
+      "readAt": "2026-10-11T04:39:26.742Z",
       "items": [
-        {
-          "issueNumber": 1242,
-          "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, free to edit (founder-ordered 2026-09-25)",
-          "kind": "rung",
-          "rung": "N2b"
-        },
-        {
-          "issueNumber": 2196,
-          "title": "N2b: \"Pick a different read\" — six ways this cast could carry themselves, picked by recognising one (door 1 of #2137)",
-          "kind": "rung",
-          "rung": "N2b"
-        },
-        {
-          "issueNumber": 2197,
-          "title": "N2b: \"Say it your way\" — the customer describes the cast in a sentence and the product turns it into what the camera sees (door 2 of #2137)",
-          "kind": "rung",
-          "rung": "N2b"
-        },
-        {
-          "issueNumber": 2205,
-          "title": "N2b: \"Say it your way\" on the Voice card — the customer says how the cast sounds and the product writes the voice description (slice 2 of #2139)",
-          "kind": "rung",
-          "rung": "N2b"
-        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -3709,8 +3681,8 @@
     },
     {
       "id": "n2b-complete-1242",
-      "title": "Personality and voice are built and live — drive them, then name the next rung",
-      "productImpact": "A cast used to be a face and nothing else. Sign one now and its page carries two short lines it wrote for you: who this person is on camera, and how they sound. Both are yours to change — they are plain text, not a menu.\n\nOne button opens them, and it is the small pen on a card's head. Press it and the line becomes a box with Keep and Cancel — and underneath that box, two more ways in appear. Pick a different read gives six other ways the cast could carry themselves, each with a short name you either recognise or do not. Say it your way lets you describe the person as you would to a friend, and we turn your sentence into the line; your own sentence is kept beside the line it made.\n\nNothing new sits in front of the Sign button, and none of it costs you a credit. We pay for the writing: about one and a half cents and thirteen to sixteen seconds for a set of six reads, about a third of a cent and two to five seconds for Say it your way.\n\n⚠ This list has now been corrected twice, and the feature is not what changed either time. First it asked for a badge and a click-the-words edit you had already removed. Then it sent you to press two buttons while the card was shut, when they only appear once the pen is pressed. I have now driven all six steps in the running app, in both themes, on a real signed cast — what the list says below is what the app does.",
+      "title": "Done — you said “N2c — Campaigns”, so campaigns is what the crew is building now",
+      "productImpact": "Your word, 2026-10-11: “N2c — Campaigns”. That opens the rung and the crew has started on it — five pieces of work are cut and the first one is being built: the store behind campaigns, which shows nothing on screen when it lands. The chips in your library come next, in one go with the server behind them, so you never see a half-changed library.\n\nPersonality and voice are finished and live, and they stay exactly as they are.\n\n⚠ One thing you did not answer, and I am not going to guess it: step 3 of the drive asked whether the six alternative reads are too long — two sentences and about fifty words each, and six of them fill the whole right-hand column. There is a real picture of that on this page. You moved to the next rung instead of answering, so the lines stay as they are. If they ever read long to you, say so and it is a small change.",
       "workedExample": "Six things worth a few minutes. Open a signed cast, then its page in the casting room.\n\n1. Sign a new cast. Do the Personality and Voice cards each carry a short line — one for how the cast carries themselves, one for how they sound?\n\n2. Press the small pen on the Personality card's head. That is the only way in: clicking the words does nothing and the Change button is gone, both on your word. The box opens with Keep and Cancel, and two more ways in appear below it. Type something, then press Cancel — does the line come back exactly as it was?\n\n3. Press the pen again, then Pick a different read. After about fifteen seconds six named reads appear. ⚠ This is the one I want your eye on: each is two sentences, and I measured twelve of them on a real cast at forty-three to sixty-three words. Six of those fill the whole right-hand column and push the Voice card below it. There is a picture of exactly that further down this page. Too long?\n\n4. Press the pen on either card, then Say it your way, and describe the cast in your own words. Does what comes back sound like the person you described?\n\n5. Do both cards look and behave the same, in light and in dark?\n\n6. Settings, then Security, then Export under Your data — the file it hands you now carries each cast's lines and your own sentences.\n\nTwo more things #2238 added that this list never mentioned: a ? beside PERSONALITY and VOICE that says what the line is for, and an ask before you leave the page with an edit you have not kept.\n\nOne difference worth knowing before you look: Pick a different read is on the Personality card only. The Voice card has the pen and Say it your way.",
       "options": [
         {
@@ -3729,15 +3701,15 @@
           "consequence": "The voice line is text today. This makes it audible, which is the half the rung deliberately left out."
         }
       ],
-      "recommendation": "N2c — Campaigns. It is the rung you named yourself, its design is approved on the card, and it is the piece the cinema studio needs to exist before it can open anything.",
-      "state": "waiting",
+      "recommendation": "Nothing needed from you. Campaigns is open and the first card is in build.",
+      "state": "done",
       "filedAt": "2026-10-10T15:00:44Z",
       "issueNumber": 1242
     },
     {
       "id": "logo-missing-1921",
-      "title": "Your first email to a new customer has no logo on it",
-      "productImpact": "Every new customer gets a verification email. The whole email already says Klieg — the sender, the subject, the words, the sign-off. The one picture on it is the old drape wordmark, and because that picture is WHITE and the email sits on a white card, it does not show at all. There is a faint grey smudge where a logo should be. The picture on your Desk is that email, rendered from the real template tonight.\n\nThe same block is in the yearly renewal notice, which no one has received yet because nobody is on a paid plan. The verify-your-email page has the same problem, a white mark on a near-white page.\n\nNone of this can be fixed by us: there is no Klieg picture in the storage bucket at all. I checked today with a control — the old drape one is really there, every Klieg name is a 404.",
+      "title": "Answered — “Leave it until the sign-in and landing redesign”, so it waits there",
+      "productImpact": "Your word, 2026-10-11: “Leave it until the sign-in and landing redesign”.\n\nSo nothing is being built here now, and the card waits with the redesign rather than sitting on your desk. What is still true meanwhile, so the redesign inherits it rather than rediscovering it: the first email every new customer gets carries one picture of the old drape mark, the picture is white on a white card, so it shows no logo at all — and the browser tab is still a black square with a white “d”. Five places draw that one file. The one thing nobody can do without you is the mark itself: our own brand reference says in its own rules that it is drawn in a stand-in typeface, so shipping it as the real asset would put a stand-in in front of customers.",
       "workedExample": "A new customer signs up, opens the email, and sees a blank space, then \"Verify your email\", then at the bottom \"Klieg — Your next campaign, cast in minutes.\"",
       "options": [
         {
@@ -3751,8 +3723,8 @@
           "consequence": "You said those two pages are being redesigned, so their logos ride that. But the two emails are not part of that redesign, so new customers keep getting a logo-less email until it happens."
         }
       ],
-      "recommendation": "The dark-ink lockup, and tell me the tab letter. One thing I will not do without you: the locked brand reference says in its own rules that it is drawn in a stand-in typeface and the real mark needs a licensed one, so if I made the picture myself I would be putting a rough draft of your brand into every customer email. That is yours or your designer's hand. Meanwhile the verify-your-email page can draw the Klieg mark the rest of the app already draws, which needs nothing from you — I have left that free for a seat to pick up.",
-      "state": "waiting",
+      "recommendation": "Nothing needed from you now — it is decided and waiting for the redesign.",
+      "state": "answered",
       "filedAt": "2026-10-11T03:05:00.000Z",
       "issueNumber": 1921
     }
@@ -6947,9 +6919,9 @@
     },
     {
       "id": "n2b-six-reads-1242",
-      "title": "Six reads on a real cast — are they too long?",
-      "question": "WHAT YOU ARE LOOKING AT — one picture of the real thing, taken tonight on a signed cast, not a mock-up.\n\nThis is what Pick a different read gives you. Six ways the cast could carry themselves, each with a short name. The cast is a weathered north-Atlantic fisherman, and the six names it came back with were the harbor storyteller, the quiet dockhand, the gruff dispatcher, the weary elder, the restless skipper and the patient mender. None of them invented anything the cast does not have, which was the thing most likely to go wrong.\n\nThe question is only the LENGTH. Each read is two sentences, forty-three to sixty-three words, measured over twelve of them. Six at that size fill the entire right-hand column and push the Voice card down past the bottom of the picture. Your own sketch had them much shorter.\n\nI have no recommendation here and I do not think I should have one — whether six paragraphs is a menu you can scan or a wall you have to read is your eye, not a measurement. If they should be shorter, say roughly how short and it is one instruction to change.",
-      "state": "waiting",
+      "title": "Six reads on a real cast — you moved on instead of answering, so they stay as they are",
+      "question": "⚠ YOU DID NOT ANSWER THIS ONE, and I am recording that rather than pretending either way. The question was only the LENGTH of the six reads, and while this picture sat on your page you named the next rung instead. So nothing changes: the reads stay two sentences long.\n\nNothing is waiting on you here. If they ever read long to you, say roughly how short and it is one instruction to change — it does not need a card.\n\nWHAT THE PICTURE SHOWS — the real thing, on a signed cast, not a mock-up. Six ways the cast could carry themselves, each with a short name; the cast is a weathered north-Atlantic fisherman and the names came back as the harbor storyteller, the quiet dockhand, the gruff dispatcher, the weary elder, the restless skipper and the patient mender. None of them invented anything the cast does not have, which was the thing most likely to go wrong. Each read is two sentences, forty-three to sixty-three words, measured over twelve of them; six at that size fill the entire right-hand column and push the Voice card below the bottom of the picture.",
+      "state": "done",
       "filedAt": "2026-10-11T01:15:33.000Z",
       "issueNumber": 1242,
       "cardId": "n2b-complete-1242",
@@ -6963,9 +6935,9 @@
     },
     {
       "id": "logo-missing-1921-email",
-      "title": "The verification email, as it is sent today",
-      "question": "WHAT YOU ARE LOOKING AT — the real verification email, built tonight by the same function production calls, with its picture pointed at the live bucket. Not a mock-up.\n\nLook at the top-left of the white card. That faint smudge is the logo. It is the old drape wordmark in WHITE, printed on a white card, so there is effectively nothing there. Measured: the darkest pixel anywhere in the mark is 38 steps away from the paper, out of 255.\n\nEverything else on the email is already Klieg — the subject line, the sender, the footer.\n\nNo judgement is needed on the picture itself. The question on the card beside it is the only one: a dark-ink Klieg lockup for the bucket, and whether the tab icon becomes a k.",
-      "state": "waiting",
+      "title": "Answered — your first email's logo waits for the sign-in and landing redesign",
+      "question": "✅ YOUR WORD, 2026-10-11: “Leave it until the sign-in and landing redesign”. Nothing is waiting on you here — the picture below is kept so the redesign starts from what a customer actually receives today rather than re-measuring it.\n\nWHAT YOU ARE LOOKING AT — the real verification email, built tonight by the same function production calls, with its picture pointed at the live bucket. Not a mock-up.\n\nLook at the top-left of the white card. That faint smudge is the logo. It is the old drape wordmark in WHITE, printed on a white card, so there is effectively nothing there. Measured: the darkest pixel anywhere in the mark is 38 steps away from the paper, out of 255.\n\nEverything else on the email is already Klieg — the subject line, the sender, the footer.\n\nNo judgement is needed on the picture itself. The question on the card beside it is the only one: a dark-ink Klieg lockup for the bucket, and whether the tab icon becomes a k.",
+      "state": "answered",
       "filedAt": "2026-10-11T03:05:00.000Z",
       "issueNumber": 1921,
       "cardId": "logo-missing-1921",
@@ -10417,10 +10389,12 @@
     268,
     269,
     270,
-    271
+    271,
+    272,
+    273
   ],
   "nextUp": {
-    "readAt": "2026-10-10T11:03:40.001Z",
+    "readAt": "2026-10-11T04:39:26.742Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -10488,16 +10462,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 2137,
-        "title": "N2b: the Personality card edits in place with three ways in — edit the lines, pick a different read, or say it your way (his Desk design, 2026-10-09)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2139,
-        "title": "N2b: the Voice card edits in place, or the customer says it their way (his Desk design, 2026-10-09)",
-        "urgent": false
-      },
-      {
         "issueNumber": 2140,
         "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
         "urgent": false
@@ -10505,6 +10469,31 @@
       {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2249,
+        "title": "N2c-1 — The campaign tables and the campaign API, built dark (nothing a customer sees)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2250,
+        "title": "N2c-2 — The library's chips become campaigns: All / Unfiled / campaigns / + (API and UI in one PR)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2251,
+        "title": "N2c-3 — Pick several casts and file them in one go",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2252,
+        "title": "N2c-4 — The cast's own page: IN CAMPAIGNS becomes real, and the dead button goes",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2253,
+        "title": "N2c-5 — After a Sign, one dismissible offer to file the new cast",
         "urgent": false
       }
     ]
