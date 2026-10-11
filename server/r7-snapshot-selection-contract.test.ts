@@ -1,8 +1,9 @@
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { allowColdImports } from "./testing/suiteClocks";
+import { REPO_ROOT, repoPath, sourcePathsUnder } from "./testing/sourceTree";
 
 /* This file's tests are dominated by cold module loading, not by logic —
    see `suiteClocks.ts` for the flake this ends and why the raise is
@@ -18,17 +19,29 @@ import {
 /* 60s because this suite WALKS THE TREE and vitest's default is 5s (#216's class,
    measured 2026-08-29 under a full `pnpm test`: this suite's slowest arm 6557ms, already OVER the default). */
 describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () => {
-  async function runtimeSources(root: string): Promise<string[]> {
-    const entries = await readdir(root, { withFileTypes: true });
-    const nested = await Promise.all(entries.map(async (entry) => {
-      const path = join(root, entry.name);
-      if (entry.isDirectory()) return runtimeSources(path);
-      if (!/\.(?:ts|tsx)$/.test(entry.name) || /\.(?:test|integration\.test)\.(?:ts|tsx)$/.test(entry.name)) {
-        return [];
-      }
-      return [path];
-    }));
-    return nested.flat();
+  /*
+    ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — one of twenty
+    private copies of it in this tree. What is NOT changed is the CONTRACT this
+    file's fourteen call sites rest on: a REPO-RELATIVE path in the platform's
+    own spelling, which every one of them normalises and several compare
+    against a literal. So the shared walk is wrapped rather than inlined, and
+    the paths are relativised back against the one derivation of the root.
+
+    ⚠ **AND THE READS HERE STAY `readFile`, DECLARED RATHER THAN QUIETLY
+    LEFT.** `sourcesUnder` hands back the text through `readListedSource`,
+    which is the half that ends #223's race on the READ; taking it would mean
+    rewriting fourteen arms that read a path they were given. What this change
+    does close is the LIST-then-STAT race — `withFileTypes` answers both
+    questions in one syscall — and the walk's duplication. The read half is
+    named on the card as the remainder rather than reported as done.
+
+    `tests: "exclude"` is this walk's own filter, kept exactly: it excluded
+    `.test.ts` and `.integration.test.ts`, and the shared predicate excludes
+    both (an `.integration.test.ts` ends in `.test.ts`).
+  */
+  function runtimeSources(root: string): string[] {
+    return sourcePathsUnder(repoPath(root), { tests: "exclude" })
+      .map((absolute) => path.relative(REPO_ROOT, absolute));
   }
 
   it("keeps the closed vocabularies explicit and code-reviewable", () => {

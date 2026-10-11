@@ -1,6 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CLIENT_SRC, SERVER_SRC, sourcesUnder } from "./testing/sourceTree";
+
+/* This suite reads every source under `client/src` AND under `server/` off the
+   real tree, which puts it in #741's population — through
+   `testing/sourceTree.ts` since #2289, one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * ⚠ **#392 — WHERE A LOCKED-OUT CUSTOMER'S ONLY MESSAGE GOES.**
@@ -34,14 +42,22 @@ import { describe, expect, it } from "vitest";
  * `Login.tsx`.
  */
 
-const CLIENT_SRC = path.resolve(__dirname, "..", "client", "src");
+/* The walk roots are `testing/sourceTree.ts`'s single derivation (#2289) —
+   this file had its own, which is one more copy of a path than the tree needs. */
 const RETIRED_MAIL_DOMAIN = "drape.ai";
 
-const sourceFiles = (dir: string): string[] =>
-  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) return sourceFiles(full);
-    return /\.(tsx?|css|html)$/.test(entry.name) ? [full] : [];
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289).** `tests: "include"`
+  is this suite's own population stated out loud: the arm that catches a
+  regression is the NEGATIVE one — *no* `mailto:` anywhere under `client/src`
+  points at the old domain — and a test file pointing at it would be as wrong
+  as app code doing so. The three extra extensions are this suite's too: a
+  stylesheet or a static page can carry an address.
+*/
+const clientSourceFiles = () =>
+  sourcesUnder(CLIENT_SRC, {
+    tests: "include",
+    extensions: [".ts", ".tsx", ".css", ".html"],
   });
 
 /**
@@ -70,9 +86,7 @@ const mailtoTargetsIn = (text: string, file: string): { file: string; address: s
   }));
 
 const clientMailtoTargets = (): { file: string; address: string }[] =>
-  sourceFiles(CLIENT_SRC).flatMap((full) =>
-    mailtoTargetsIn(fs.readFileSync(full, "utf8"), path.relative(CLIENT_SRC, full)),
-  );
+  clientSourceFiles().flatMap((file) => mailtoTargetsIn(file.source, file.relative));
 
 /**
  * ⚠ **A SUBDOMAIN IS THE SAME DOMAIN FOR THIS PURPOSE.** The product's own
@@ -216,7 +230,7 @@ describe("#392 — the client's contact addresses", () => {
  *   half to `server/productionBaseUrl.test.ts`, which owns the domain sweep.
  */
 
-const SERVER_SRC = path.resolve(__dirname);
+
 const APP_TSX = path.resolve(__dirname, "..", "client", "src", "App.tsx");
 
 /**
@@ -247,16 +261,12 @@ const supportPointersIn = (
     /* Only destinations. A `supportEmail: "…"` with no scheme is not a link. */
     .filter(({ url }) => /^(https?:|mailto:)/i.test(url));
 
-const serverSourceFiles = (dir: string): string[] =>
-  fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) return serverSourceFiles(full);
-    return /\.ts$/.test(entry.name) && !/\.test\.ts$/.test(entry.name) ? [full] : [];
-  });
-
+/* The server half of the same walk, `testing/sourceTree.ts`'s since #2289.
+   `tests: "exclude"` and `.ts` only is what this walk has always asked for: a
+   support pointer in a suite is a fixture, not a destination. */
 const serverSupportPointers = (): { file: string; name: string; url: string }[] =>
-  serverSourceFiles(SERVER_SRC).flatMap((full) =>
-    supportPointersIn(fs.readFileSync(full, "utf8"), path.relative(SERVER_SRC, full)),
+  sourcesUnder(SERVER_SRC, { tests: "exclude", extensions: [".ts"] }).flatMap((file) =>
+    supportPointersIn(file.source, file.relative),
   );
 
 /** Every path the client actually routes, read from `App.tsx`'s own declarations. */

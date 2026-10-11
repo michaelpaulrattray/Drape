@@ -1,8 +1,10 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { readListedSource } from "./testing/listedSource";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { declaresTheFloor, sourceSweepSuites, sweepsTheTree } from "./testing/sourceSweepSuites";
 
@@ -195,6 +197,126 @@ describe("the reading can be wrong in both directions, and is checked in both (#
     /* And the same file at depth 1, where that spelling resolves to nothing —
        the resolver is answering about the FILE SYSTEM, not about the string. */
     expect(sweepsTheTree(deep, "server/x.test.ts", ROOT)).toBe(false);
+  });
+});
+
+describe("the hop, and the population it was widened for (#2289)", () => {
+  /*
+    ⚠ **A WALK PROMOTED OUT OF TWENTY TEST FILES WOULD HAVE TAKEN ALL TWENTY
+    OUT OF THIS POPULATION — the guard going green because it is watching
+    nobody, which is `directory-population-loses-promoted-subject` arriving by
+    the front door.** `sweepsTheTree` reads a suite's OWN import and call of
+    `readListedSource`; move the walk behind `testing/sourceTree.ts` and the
+    call is in that module instead. So the deriver resolves ONE HOP now, which
+    is the shape `childProcessSuites` has always had and whose resolver it
+    already shared.
+
+    Measured before it was built, which is why it could be landed without
+    indicting anybody: the hop adds **3** suites that have reached the reader
+    through `testing/creditDisplaySites.ts`,
+    `testing/errorMessageInterpolations.ts` and
+    `testing/shellLessPathLaunches.ts` all along, and **0** of them were
+    undeclared.
+
+    Its bound is the sibling's, word for word: **exactly one hop, through a
+    relative specifier.** The second arm below drives that bound rather than
+    stating it, because a reader that silently resolved further would make the
+    "every one of them declares it" arm above indict files nobody asked.
+  */
+  const population = sourceSweepSuites(ROOT);
+
+  it("every suite that reaches the promoted walk is IN the population", () => {
+    /*
+      ⚠ **THE ARM THE CARD'S OWN COMMENT ASKED FOR, AND IT IS THE ONE THAT
+      CANNOT BE SATISFIED BY A HALF-DONE PROMOTION.** The subject is not "does
+      the hop work on a fixture" — it is whether the deriver's population still
+      CONTAINS the suites that read the tree. The importers are derived from
+      the tree (every tracked test file whose source names the module), so a
+      suite converted next month joins this arm by being written.
+    */
+    const tracked = execFileSync("git", ["ls-files", "*.test.ts", "*.test.tsx"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+    })
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const importers = tracked.filter((file) => {
+      const source = readListedSource(join(ROOT, file));
+      if (source === null) return false;
+      /* The import, not a mention: a docblock naming the module is not a walk,
+         and this file's own prose names it twice. */
+      return /from\s+["'][^"']*\/sourceTree["']/.test(source);
+    });
+
+    /* The instrument before its finding: the conversion really happened. */
+    expect(importers.length, "nothing imports the promoted walk — either the conversion was "
+      + "reverted or this reader's specifier pattern has stopped matching").toBeGreaterThan(15);
+
+    const members = new Set(population.map((row) => row.file));
+    const missing = importers.filter((file) => !members.has(file));
+    expect(
+      missing,
+      "These suites reach the shared tree walk and the deriver cannot see them, so none of them "
+        + "is held to the class floor. That is the promotion silently emptying the population.",
+    ).toEqual([]);
+  });
+
+  it("the hop is reported as a hop, and the promoted walk is really one of them", () => {
+    const hops = population.filter((row) => row.via !== "directly");
+    expect(hops.length, "no member is reached through a hop — the widening is inert")
+      .toBeGreaterThan(3);
+    const modules = new Set(hops.map((row) => (row.via as { module: string }).module));
+    expect(modules).toContain("server/testing/sourceTree.ts");
+    /* And the three that predate #2289, which is the measurement that said the
+       widening indicts nobody. */
+    expect(modules).toContain("server/testing/creditDisplaySites.ts");
+    expect(modules).toContain("server/testing/errorMessageInterpolations.ts");
+    expect(modules).toContain("server/testing/shellLessPathLaunches.ts");
+  });
+
+  it("ONE hop, and the second is the stated bound rather than a hope", () => {
+    /* Driven on the real tree's own shapes: a suite importing the reader
+       itself is direct; a suite importing a module that imports it is a hop;
+       anything further is invisible, and that is written down rather than
+       discovered. `sweepsTheTree` is the per-file half, so the hop is read off
+       the population's own `via`. */
+    const direct = population.filter((row) => row.via === "directly");
+    expect(direct.length, "no member reads the tree itself — the direct half has gone")
+      .toBeGreaterThan(50);
+    for (const row of population) {
+      if (row.via === "directly") continue;
+      const module = (row.via as { module: string }).module;
+      const source = readListedSource(join(ROOT, module));
+      expect(source, `${module} could not be read`).not.toBeNull();
+      expect(
+        sweepsTheTree(source!, module, ROOT),
+        `${module} is recorded as the hop for ${row.file} and does not itself read the tree`,
+      ).toBe(true);
+    }
+  });
+
+  it("the two `suiteClocks` helpers are declarations too — the hole a conversion found", () => {
+    /*
+      ⚠ **LATENT, AND A CONVERSION WALKED STRAIGHT INTO IT.**
+      `allowTreeSweeps()` sets 60 s and `allowColdImports()` 30 s, both at file
+      level, both through `vi.setConfig`, and `allowTreeSweeps`'s own docblock
+      says it is *"for a file whose tests read the source tree off disk"* —
+      exactly this population. `declaresTheFloor` did not read them, so
+      `r7-snapshot-selection-contract.test.ts` would have been indicted for not
+      declaring a floor it already sets. The property this function asserts is
+      "off the 5 s default", and these are a third sanctioned spelling of it.
+    */
+    expect(declaresTheFloor("allowTreeSweeps();")).toBe(true);
+    expect(declaresTheFloor("allowColdImports();")).toBe(true);
+    /* And an IMPORT is still not a call site, in this spelling as in the other. */
+    expect(
+      declaresTheFloor('import { allowTreeSweeps } from "./testing/suiteClocks";'),
+    ).toBe(false);
+    /* A lookalike that sets nothing does not count. */
+    expect(declaresTheFloor("allowTreeSweepsSoon();")).toBe(false);
   });
 });
 

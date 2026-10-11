@@ -36,20 +36,20 @@
  * of two files is a list that goes stale the moment a third page is written,
  * and the whole defect is one nobody noticed for as long as it existed.
  */
-import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { CLIENT_SRC as CLIENT_SRC_ROOT, sourcePathsUnder } from "./testing/sourceTree";
 
 /* This suite walks `client/src` off the real tree, which puts it in #741's
    derived population: green alone, red under load on somebody else's machine.
    Declared at file level because that is where the guard reads it. */
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
-const CLIENT_SRC = join(__dirname, "..", "client", "src");
+const CLIENT_SRC = CLIENT_SRC_ROOT;
 
 /**
  * Comments out, so the guard reads CODE and never prose.
@@ -70,18 +70,17 @@ function withoutComments(source: string): string {
     .join("\n");
 }
 
-/** Every `.ts`/`.tsx` under `client/src`, tests included. */
-function clientSources(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    const stat = statSync(path, { throwIfNoEntry: false });
-    if (!stat) continue;
-    if (stat.isDirectory()) { found.push(...clientSources(path)); continue; }
-    if (/\.tsx?$/.test(entry)) found.push(path);
-  }
-  return found;
-}
+/**
+ * Every `.ts`/`.tsx` under `client/src`, tests included.
+ *
+ * ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — it was one of
+ * twenty private copies. `tests: "include"` is this suite's own population,
+ * unchanged and said out loud: the class it holds is that NO file under
+ * `client/src` reads a query string out of `useLocation`, and a suite doing
+ * so would be as wrong as a page.
+ */
+const clientSources = (dir: string): string[] =>
+  sourcePathsUnder(dir, { tests: "include" });
 
 describe("no page reads its query string out of a hook that does not carry one", () => {
   const files = clientSources(CLIENT_SRC);

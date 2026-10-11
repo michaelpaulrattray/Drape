@@ -1,6 +1,14 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import { CONTENDED_TEST_TIMEOUT_MS } from './testing/contendedTestTimeout';
+import { CLIENT_SRC, sourcesUnder } from './testing/sourceTree';
+
+/* This suite reads every source under `client/src` off the real tree, which
+   puts it in #741's population — through `testing/sourceTree.ts` since #2289,
+   one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 import { buildSheetTiles, type SheetSlotState } from '../client/src/features/boards/canvas/nodes/useSheetController';
 
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
@@ -91,11 +99,17 @@ describe('R7-7B4 live selected-package consumer closure', () => {
   });
 
   it('keeps the cross-tab publisher and subscriber caller set closed', () => {
-    const clientRoot = resolve(process.cwd(), 'client/src');
-    const callers = readdirSync(clientRoot, { recursive: true })
-      .map((path) => String(path).replaceAll('\\', '/'))
-      .filter((path) => /\.[jt]sx?$/.test(path))
-      .filter((path) => source(`client/src/${path}`).includes('castProjectionSync'))
+    /* The walk is `testing/sourceTree.ts`'s since #2289: one derivation of the
+       root, the list-then-stat race closed by `withFileTypes`, and the read
+       through the sanctioned reader. `tests: 'include'` is this suite's own
+       population — what it pins is the CLOSED SET of files naming the
+       publisher, and a suite naming it is as much a consumer as a component. */
+    const callers = sourcesUnder(CLIENT_SRC, {
+      tests: 'include',
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    })
+      .filter((file) => file.source.includes('castProjectionSync'))
+      .map((file) => file.relative)
       .sort();
 
     expect(callers).toEqual([

@@ -39,7 +39,7 @@
  * freshness fails; change it AND regenerate, and these fail. Neither is
  * sufficient and neither is redundant.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -52,8 +52,8 @@ import {
   type buildAtlas,
 } from "../scripts/generate-architecture.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
-import { readListedSource } from "./testing/listedSource";
 import { sourceBand } from "./testing/sourceBand";
+import { clientSources as clientTreeSources } from "./testing/sourceTree";
 import { withoutComments } from "./testing/withoutComments";
 
 /* ⚠ THIS SUITE IS IN BOTH DERIVED TIMEOUT POPULATIONS, AND IT WAS THE SECOND
@@ -90,22 +90,26 @@ type ClientSource = { file: string; source: string; code: string };
 
 let swept: ClientSource[] | null = null;
 
-/** Every client source, read once a run: the bytes as written, and the code. */
+/**
+ * Every client source, read once a run: the bytes as written, and the code.
+ *
+ * ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — it was one of
+ * twenty private copies, and this file's was the fifth path derivation.
+ * `tests: "exclude"` is this reader's own population and the `.d.ts` filter
+ * stays at the call site rather than moving into the shared walk: a
+ * declaration file is not a caller, and this is the only one of the twenty
+ * that had to say so.
+ */
 function clientSources(): ClientSource[] {
   if (swept) return swept;
-  const found: ClientSource[] = [];
-  for (const entry of readdirSync(CLIENT_SRC, { recursive: true, encoding: "utf8" })) {
-    if (!/\.tsx?$/.test(entry) || /\.test\.tsx?$/.test(entry) || entry.endsWith(".d.ts")) continue;
-    const source = readListedSource(path.join(CLIENT_SRC, entry));
-    if (source === null) continue;
-    found.push({
-      file: `client/src/${entry.split(path.sep).join("/")}`,
-      source,
-      code: withoutComments(source),
-    });
-  }
-  swept = found;
-  return found;
+  swept = clientTreeSources({ tests: "exclude" })
+    .filter((file) => !file.relative.endsWith(".d.ts"))
+    .map((file) => ({
+      file: `client/src/${file.relative}`,
+      source: file.source,
+      code: withoutComments(file.source),
+    }));
+  return swept;
 }
 
 const sweptCode = () => clientSources().map(({ code }) => code).join("\n");

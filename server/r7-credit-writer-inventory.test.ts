@@ -1,6 +1,13 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CLIENT_SRC, sourcesUnder } from "./testing/sourceTree";
+
+/* This suite reads every app source under `client/src` off the real tree,
+   which puts it in #741's population — through `testing/sourceTree.ts` since
+   #2289, one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const source = (relative: string) => readFileSync(new URL(relative, import.meta.url), "utf8");
 
@@ -64,24 +71,16 @@ describe("R7-1B deterministic retryable credit writers", () => {
       "a second declaration of the ref would be the drift this re-export exists to stop",
     ).not.toContain("function settlementLedgerRef");
 
-    const root = new URL("../client/src/", import.meta.url).pathname.replace(
-      /^\/([A-Za-z]:)/,
-      "$1",
-    );
-    const walk = (dir: string, out: string[] = []): string[] => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) walk(full, out);
-        else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) out.push(full);
-      }
-      return out;
-    };
-    const files = walk(root);
+    /* The walk is `testing/sourceTree.ts`'s since #2289 — this file carried
+       the fifth distinct derivation of the client root in the tree.
+       `tests: "exclude"` is this suite's own population: a suite calling the
+       mutation is a fixture, not a writer. */
+    const files = sourcesUnder(CLIENT_SRC, { tests: "exclude" });
     expect(files.length, "the sweep found almost nothing — check the path").toBeGreaterThan(300);
 
-    const callers = files.filter((file) =>
-      /trpc\.billing\.changePlan\.useMutation/.test(readFileSync(file, "utf8")),
-    );
+    const callers = files
+      .filter((file) => /trpc\.billing\.changePlan\.useMutation/.test(file.source))
+      .map((file) => file.absolute);
     /* The control: a ban asked of an empty population proves nothing. */
     expect(callers.length, "no client calls changePlan at all — the ban is inert")
       .toBeGreaterThan(0);

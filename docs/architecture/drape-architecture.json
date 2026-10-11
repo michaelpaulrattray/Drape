@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 64
+      "moduleCount": 65
     },
     {
       "id": "domain:wardrobe",
@@ -6099,6 +6099,12 @@
     {
       "id": "module:server/testing/sourceSweepSuites.ts",
       "path": "server/testing/sourceSweepSuites.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/testing/sourceTree.ts",
+      "path": "server/testing/sourceTree.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -16442,6 +16448,10 @@
     {
       "id": "test:server/testing/sourceBand.test.ts",
       "path": "server/testing/sourceBand.test.ts"
+    },
+    {
+      "id": "test:server/testing/sourceTree.test.ts",
+      "path": "server/testing/sourceTree.test.ts"
     },
     {
       "id": "test:server/testing/withoutComments.test.ts",
@@ -38255,6 +38265,11 @@
     {
       "from": "module:server/testing/sourceSweepSuites.ts",
       "to": "module:server/testing/withoutComments.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/testing/sourceTree.ts",
+      "to": "module:server/testing/listedSource.ts",
       "kind": "imports"
     },
     {

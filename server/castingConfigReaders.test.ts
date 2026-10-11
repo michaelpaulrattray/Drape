@@ -1,7 +1,15 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { clientSources } from "./testing/sourceTree";
+
+/* This suite reads every app source under `client/src` off the real tree,
+   which puts it in #741's population — through `testing/sourceTree.ts` since
+   #2289, one hop, which that deriver resolves. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * EVERY FIELD `castingV2.config` SENDS IS READ BY THE CLIENT IT IS SENT TO.
@@ -56,7 +64,6 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROUTE = join(import.meta.dirname, "routes", "castingV2.ts");
-const CLIENT = join(import.meta.dirname, "..", "client", "src");
 
 /** The `config` query's own object literal, read out of the route. */
 function configProjectionSource(): string {
@@ -78,16 +85,16 @@ function configKeys(): string[] {
   return keys;
 }
 
-function clientFiles(dir: string, found: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) clientFiles(path, found);
-    /* App code only — see the docblock: a suite that MENTIONS a dead field
-       makes it read as alive, and that is exactly what happened here. */
-    else if (/\.(ts|tsx)$/.test(entry) && !/\.test\.tsx?$/.test(entry)) found.push(path);
-  }
-  return found;
-}
+/*
+  App code only — see the docblock: a suite that MENTIONS a dead field makes it
+  read as alive, and that is exactly what happened here. ⚠ **THAT IS WHY
+  `tests` IS REQUIRED BY THE PROMOTED WALK RATHER THAN DEFAULTED (#2289)**: the
+  twenty private copies of this walk disagreed about it, each of them was right
+  about its own question, and a default would have made every conversion a
+  silent behaviour change in one direction or the other.
+*/
+const clientFiles = (): string[] =>
+  clientSources({ tests: "exclude" }).map((file) => file.source);
 
 describe("castingV2.config sends nothing the client has stopped reading", () => {
   const keys = configKeys();
@@ -109,7 +116,7 @@ describe("castingV2.config sends nothing the client has stopped reading", () => 
   });
 
   it("⚠ every field has at least one reader under client/src", () => {
-    const sources = clientFiles(CLIENT).map((path) => readFileSync(path, "utf8"));
+    const sources = clientFiles();
     const unread = keys.filter((key) => {
       const identifier = new RegExp(`\\b${key}\\b`);
       return !sources.some((text) => identifier.test(text));

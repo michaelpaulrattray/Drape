@@ -36,36 +36,45 @@
  * stripper was already written.
  */
 import { describe, it, expect } from "vitest";
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join, sep } from "node:path";
 
 
 import { allowTreeSweeps } from "./testing/suiteClocks";
+import { CLIENT_SRC as CLIENT_SRC_ROOT, sourcePathsUnder } from "./testing/sourceTree";
 
 /* This file reads EVERY `.ts`/`.tsx` under `client/src` off disk, several times over.
    It is the measured casualty of #233's scheduling half: `Test timed out in 5000ms`
    at 5,016ms under load on 2026-08-30, against 785ms on the same suite run quiet —
    a 6.4x blow-up, the worst in the suite. See `suiteClocks.ts` family 2. */
 allowTreeSweeps();
-const CLIENT_SRC = new URL("../client/src/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+/* ⚠ THE TRAILING SEPARATOR IS LOAD-BEARING AND IS KEPT: three arms report an
+   offender as `file.slice(CLIENT_SRC.length)`, so a root without it would put a
+   stray separator at the front of every offender line. The derivation itself is
+   the shared one now (#2289) — this file had the fifth distinct spelling of it. */
+const CLIENT_SRC = `${CLIENT_SRC_ROOT}${sep}`;
 
 /** The code with its prose removed — a comment about a rule is not a breach of it. */
 const withoutProse = (source: string): string => source
   .replace(/\/\*[\s\S]*?\*\//g, " ")
   .replace(/^\s*\/\/.*$/gm, " ");
 
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289).** This file was one of
+  the five #2286's remainder named and one of TWENTY the AST reader found; its
+  own derivation of the root — `new URL(…).pathname.replace(/^\/([A-Za-z]:)/)`
+  — was the fifth distinct spelling in the tree and the one that broke a text
+  reader's control. `tests: "exclude"` is this suite's own population stated
+  rather than defaulted: a cap re-typed inside a suite is a fixture.
+
+  It is also why this file is now IN #741's derived population rather than
+  merely declaring a clock by hand: the deriver resolves one hop, and the walk
+  it reaches reads through `readListedSource`. `allowTreeSweeps()` above is the
+  declaration, and `declaresTheFloor` learnt to read it in the same commit —
+  it did not, which is a hole a conversion walked straight into.
+*/
 async function everyClientSource(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const found: string[] = [];
-  for (const entry of entries) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...(await everyClientSource(path)));
-    } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
-      found.push(path);
-    }
-  }
-  return found;
+  return sourcePathsUnder(dir, { tests: "exclude" });
 }
 
 /**

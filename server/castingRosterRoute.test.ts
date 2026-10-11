@@ -18,12 +18,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
-import { readListedSource } from "./testing/listedSource";
+import { clientSources as clientTreeSources } from "./testing/sourceTree";
 import { withoutComments } from "./testing/withoutComments";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
@@ -195,16 +191,15 @@ describe("the doors are shut outside casting", () => {
   `shared/inputLimits.ts` owns, so the names are read off that module's exports
   and every client source is swept for a declaration of any of them.
 */
-const CLIENT_SRC = fileURLToPath(new URL("../client/src/", import.meta.url));
-
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — it was one of
+  twenty private copies, each with its own path derivation. `tests: "exclude"`
+  is this suite's own population: a suite DECLARING one of the shared names is
+  a fixture, not a second copy of a cap.
+*/
 function clientSources(): Array<{ file: string; source: string }> {
-  const found: Array<{ file: string; source: string }> = [];
-  for (const entry of readdirSync(CLIENT_SRC, { recursive: true, encoding: "utf8" })) {
-    if (!/\.tsx?$/.test(entry) || /\.test\.tsx?$/.test(entry)) continue;
-    const source = readListedSource(join(CLIENT_SRC, entry));
-    if (source !== null) found.push({ file: entry.replace(/\\/g, "/"), source });
-  }
-  return found;
+  return clientTreeSources({ tests: "exclude" })
+    .map((file) => ({ file: file.relative, source: file.source }));
 }
 
 /** The shared names this source declares its own binding for. Prose does not count. */

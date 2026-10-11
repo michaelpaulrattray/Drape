@@ -1,10 +1,10 @@
-import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+import { CLIENT_SRC as CLIENT_SRC_ROOT, REPO_ROOT, sourcePathsUnder, sourcesUnder } from "./testing/sourceTree";
 
 /**
  * A SWITCHED-OFF BUTTON READS AS SWITCHED OFF (#1237).
@@ -53,8 +53,8 @@ import { readListedSource } from "./testing/listedSource";
    in #741's population and declares the class's timeout at file level. */
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
-const ROOT = path.resolve(import.meta.dirname, "..");
-const CLIENT_SRC = path.join(ROOT, "client", "src");
+/* The walk root is `testing/sourceTree.ts`'s single derivation (#2289). */
+const CLIENT_SRC = CLIENT_SRC_ROOT;
 
 /**
  * The one exemption that is a name rather than a shape, with its reason beside
@@ -71,22 +71,17 @@ type Rule = { selectors: string[]; body: string; file: string };
 
 const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-function clientStylesheets(): string[] {
-  const found: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir)) {
-      const full = path.join(dir, entry);
-      /* `throwIfNoEntry: false` for the same reason the reader below is the
-         listed-source one: a file may leave between the listing and the stat. */
-      const stats = statSync(full, { throwIfNoEntry: false });
-      if (!stats) continue;
-      if (stats.isDirectory()) walk(full);
-      else if (entry.endsWith(".css")) found.push(full);
-    }
-  };
-  walk(CLIENT_SRC);
-  return found.sort();
-}
+/*
+  ⚠ **THE WALK IS `testing/sourceTree.ts`'S NOW (#2289)** — one of twenty
+  private copies, and the only one whose extension is a stylesheet's, which is
+  why the shared walk takes `extensions` rather than hard-coding `.ts`/`.tsx`.
+  The race reasoning this body carried is that module's property now. The sort
+  is kept because the shared walk is already deterministic and a caller that
+  sorted is unaffected. `tests: "exclude"` is a no-op on `.css` and is stated
+  rather than guessed at.
+*/
+const clientStylesheets = (): string[] =>
+  sourcePathsUnder(CLIENT_SRC, { tests: "exclude", extensions: [".css"] }).sort();
 
 /** Every top-level rule in a stylesheet, flattened. See the limit below. */
 export function rulesIn(css: string, file: string): Rule[] {
@@ -132,7 +127,7 @@ const declaration = (body: string, property: string): string | null => {
 };
 
 const ALL_RULES = clientStylesheets().flatMap((file) =>
-  rulesIn(readListedSource(file) ?? "", path.relative(ROOT, file)),
+  rulesIn(readListedSource(file) ?? "", path.relative(REPO_ROOT, file)),
 );
 
 /** Every class named by a switched-off selector anywhere in the client. */
@@ -325,27 +320,23 @@ describe("no control promises a press it cannot keep (#1237 — the original def
     ),
   );
 
-  /** Every opening tag in the client that carries a switched-off attribute. */
+  /**
+   * Every opening tag in the client that carries a switched-off attribute.
+   *
+   * ⚠ This file carried TWO copies of the walk — the stylesheet one above and
+   * this one — which is the twenty-copy class inside a single file. Both are
+   * `testing/sourceTree.ts`'s now (#2289). `tests: "include"` is this walk's
+   * own population, unchanged: a switched-off tag in a suite is a tag.
+   */
   const switchedOffTags = (): { file: string; tag: string }[] => {
     const out: { file: string; tag: string }[] = [];
-    const walk = (dir: string): void => {
-      for (const entry of readdirSync(dir)) {
-        const full = path.join(dir, entry);
-        const stats = statSync(full, { throwIfNoEntry: false });
-        if (!stats) continue;
-        if (stats.isDirectory()) walk(full);
-        else if (/\.tsx$/.test(entry)) {
-          const src = readListedSource(full);
-          if (!src) continue;
-          for (const match of src.matchAll(/<[A-Za-z][^>]*?>/gs)) {
-            if (/\bdisabled[=}\s/>]|\baria-disabled/.test(match[0])) {
-              out.push({ file: path.relative(ROOT, full), tag: match[0] });
-            }
-          }
+    for (const file of sourcesUnder(CLIENT_SRC, { tests: "include", extensions: [".tsx"] })) {
+      for (const match of file.source.matchAll(/<[A-Za-z][^>]*?>/gs)) {
+        if (/\bdisabled[=}\s/>]|\baria-disabled/.test(match[0])) {
+          out.push({ file: path.relative(REPO_ROOT, file.absolute), tag: match[0] });
         }
       }
-    };
-    walk(CLIENT_SRC);
+    }
     return out;
   };
 
