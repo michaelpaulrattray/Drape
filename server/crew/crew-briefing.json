@@ -1,7 +1,7 @@
 {
-  "edition": 672,
-  "updatedAt": "2026-10-10T19:55:00Z",
-  "shift": "Foreman — foreman-20261011-0524",
+  "edition": 673,
+  "updatedAt": "2026-10-11T00:15:00Z",
+  "shift": "Foreman — foreman-20261011-1004",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -138,7 +138,7 @@
       "items": [
         {
           "issueNumber": 1242,
-          "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, badged Drafted for you, free to edit (founder-ordered 2026-09-25)",
+          "title": "N2b — Personality and voice are born at Sign, as editable text: two drafted lines on the cast's page, free to edit (founder-ordered 2026-09-25)",
           "kind": "rung",
           "rung": "N2b"
         },
@@ -3710,8 +3710,8 @@
     {
       "id": "n2b-complete-1242",
       "title": "Personality and voice are built and live — drive them, then name the next rung",
-      "productImpact": "A cast used to be a face and nothing else. Sign one now and its page carries two short lines it wrote for you: who this person is on camera, and how they sound. Both are badged Drafted for you, and both are yours to change — they are plain text, not a menu.\n\nThere are three ways in when a line is not right. Open the words and edit them. Press Pick a different read and six other ways the cast could carry themselves appear, each with a short name — pick the one you recognise. Or press Say it your way, describe the person as you would to a friend, and we turn your sentence into the line. Your own sentence is kept beside the line it made.\n\nNothing new sits in front of the Sign button, and none of it costs you a credit. We pay for the writing: about one and a half cents and thirteen to sixteen seconds for a set of six reads, about a third of a cent and two to five seconds for Say it your way. Both measured through the real door, not read off a price list.\n\nI read every one of those back off production this morning rather than off the merge notes.",
-      "workedExample": "Six things worth a few minutes. Open a signed cast, then its page in the casting room.\n\n1. Sign a new cast. Do the Personality and Voice cards carry two drafted lines, each badged Drafted for you?\n2. Click the words, or press Change. The box opens with Keep and Cancel. Does Cancel put the line back exactly as it was, and does clicking away leave it alone?\n3. Press Pick a different read on Personality. After about fifteen seconds six named reads appear. ⚠ This is the one I want your eye on: each read is about two sentences and fifty to seventy-five words, so six of them fill the panel. Your sketch had them much shorter. Too long?\n4. Press Say it your way on either card and describe the cast in your own words. Does what comes back sound like the person you described?\n5. Do both cards look and behave the same, in light and in dark?\n6. Settings, then your data download — it now carries each cast's lines and your own sentences.",
+      "productImpact": "A cast used to be a face and nothing else. Sign one now and its page carries two short lines it wrote for you: who this person is on camera, and how they sound. Both are yours to change — they are plain text, not a menu.\n\nThere are three ways in when a line is not right. Press the small pen on the card's head and edit the words. Press Pick a different read and six other ways the cast could carry themselves appear, each with a short name — pick the one you recognise. Or press Say it your way, describe the person as you would to a friend, and we turn your sentence into the line. Your own sentence is kept beside the line it made.\n\nNothing new sits in front of the Sign button, and none of it costs you a credit. We pay for the writing: about one and a half cents and thirteen to sixteen seconds for a set of six reads, about a third of a cent and two to five seconds for Say it your way.\n\n⚠ This card's list changed after you first saw it, and the feature is not what changed. Two of the things it told you to look for — the badge, and clicking the words to edit — you had removed in #2238, which went live after this card was written. The list is corrected against the running build; nothing about the feature was altered to make it fit.",
+      "workedExample": "Six things worth a few minutes. Open a signed cast, then its page in the casting room.\n\n1. Sign a new cast. Do the Personality and Voice cards each carry a short line — one for how the cast carries themselves, one for how they sound?\n2. Press the small pen on a card's head. That is the only way in now: the words do nothing when you click them and the Change button is gone, both on your word. The box opens with Keep and Cancel. Does Cancel put the line back exactly as it was?\n3. Press Pick a different read on Personality. After about fifteen seconds six named reads appear. ⚠ This is the one I want your eye on: each read is about two sentences and fifty to seventy-five words, so six of them fill the panel. Your sketch had them much shorter. Too long?\n4. Press Say it your way on either card and describe the cast in your own words. Does what comes back sound like the person you described?\n5. Do both cards look and behave the same, in light and in dark?\n6. Settings, then your data download — it now carries each cast's lines and your own sentences.\n\nTwo more things #2238 added that this list never mentioned: a ? beside PERSONALITY and VOICE that says what the line is for, and an ask before you leave the page with an edit you have not kept.",
       "options": [
         {
           "key": "n2c",
