@@ -732,6 +732,8 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  /* The selection bar's height (card #2251), held in both states. */
+  min-height: 32px;
 }
 
 /*
@@ -749,6 +751,121 @@
 .dpc-roster__new {
   aspect-ratio: 4 / 5;
   border-radius: 11px;
+}
+
+/*
+  PICK SEVERAL AND FILE THEM (card #2251). The roster heading row holds one
+  height in both states, so the selection bar replacing it never moves the grid
+  under the pointer; while anything is ticked it sticks under the top bar, on
+  the page's own surface, so a long grid scrolls beneath it.
+*/
+.dpc-rosterhead--picking {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 3;
+  /* Ten pixels wider than the grid on each side, so a ticked tile's ring
+     scrolling beneath it is covered rather than peeking past its ends. */
+  padding: 6px 10px;
+  margin: -6px -10px;
+  /* The row's own 32px plus the padding the margin takes back, so the bar
+     occupies exactly the space the heading did. */
+  min-height: calc(32px + 12px);
+  background: var(--surface);
+}
+
+.dpc-pickbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.dpc-pickbar__count {
+  font: 500 13.5px var(--font-sans);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The two choosers are underlined phrases — the foundation picker's own look
+   (`Popover`), the way every in-line choice on this surface reads. */
+.dpc-pickbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+  font: 400 13px var(--font-sans);
+  color: var(--ink);
+}
+
+/* A campaign name is the customer's own words: in the picker it wraps inside
+   its row rather than being clipped. */
+.dpc-pickbar .dp-pop__option { overflow-wrap: anywhere; }
+
+/*
+  The tick on a tile, top-left (the menu has top-right). A sibling of the tile
+  button, never inside it, so a tick never opens the cast. Hidden at rest where
+  a pointer can hover, like the card's menu; shown on hover or keyboard focus,
+  always once anything is ticked, and always on a touch screen.
+*/
+.dpc-castpick {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: block;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.dpc-castpick__input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 1px solid var(--borderCard);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+
+.dpc-castpick__input:checked {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.dpc-castpick__input:focus-visible {
+  outline: 2px solid var(--accentSolid);
+  outline-offset: 1px;
+}
+
+.dpc-castpick__tick {
+  position: absolute;
+  top: 4.5px;
+  left: 4.5px;
+  color: var(--surface);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dpc-castpick__input:checked + .dpc-castpick__tick { opacity: 1; }
+
+@media (hover: hover) {
+  .dpc-castpick__input:not(:checked):not(:focus-visible) { opacity: 0; }
+  .dpc-menuhost:hover .dpc-castpick__input,
+  .dpc-menuhost:focus-within .dpc-castpick__input,
+  .dpc-roster--picking .dpc-castpick__input { opacity: 1; }
+}
+
+.dpc-castcard__wrap--picked .dpc-castcard__frame,
+.dpc-castcard__wrap--picked:hover .dpc-castcard__frame {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
 }
 
 /* ============================================================
