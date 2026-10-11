@@ -2627,7 +2627,7 @@
   border: 0;
   cursor: pointer;
 }
-.dpc-camp__row:hover { background: var(--well); }
+.dpc-camp__row:hover:not(:disabled) { background: var(--well); }
 .dpc-camp__row:disabled { cursor: default; opacity: 0.6; }
 .dpc-camp__text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .dpc-camp__name {
