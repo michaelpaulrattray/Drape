@@ -34,9 +34,11 @@
  */
 import type { CastingPath } from "../../shared/castingPaths";
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, like, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, like, lt, ne, sql, type SQL } from "drizzle-orm";
 
 import {
+  castCampaignMembers,
+  castCampaigns,
   castingCandidates,
   castingCandidateVariants,
   castingRolls,
@@ -1556,23 +1558,227 @@ export function signedCastWhere(userId: number) {
   );
 }
 
-export async function listSignedCasts(
+/**
+ * THE ROSTER'S PAGE SIZE, AND THE MOST ONE PAGE MAY ASK FOR (card #2250).
+ *
+ * It was a silent cap: `listSignedCasts(userId, limit = 60)` returned the
+ * newest sixty and nothing told anyone there were more, so a customer's
+ * sixty-first signed cast was paid for and reachable from nowhere on this page.
+ * It is a page size now — the next page starts after the last cast of this
+ * one — and never a ceiling on what a customer can reach.
+ */
+export const ROSTER_PAGE_MAX = 60;
+
+/** The longest search the roster takes, in characters, after trimming. */
+export const ROSTER_SEARCH_MAX_LENGTH = 64;
+
+/**
+ * Which casts the roster draws (card #2250, rung N2c — his word, Desk reply
+ * #273: *"N2c — Campaigns"*). Every scope is a subset of the signed, live casts
+ * `signedCastWhere` names; none of them widens it.
+ *
+ *  - `all` — every signed cast, which is today's roster.
+ *  - `unfiled` — the ones in no campaign of this customer's.
+ *  - `campaign` — the ones filed in this customer's campaign `campaignId`.
+ */
+export type RosterScope =
+  | { kind: "all" }
+  | { kind: "unfiled" }
+  | { kind: "campaign"; campaignId: string };
+
+export type RosterFilter = {
+  scope?: RosterScope;
+  /** A name match, case-insensitive, inside the scope. Trimmed by the door. */
+  search?: string;
+};
+
+/**
+ * `NOT EXISTS` over this customer's member rows for the outer cast.
+ *
+ * ⚠ **Raw SQL with BOTH sides qualified, on purpose.** Drizzle renders a
+ * single-table select's columns UNQUALIFIED, so a correlated subquery written
+ * from column refs (`eq(castCampaignMembers.modelId, models.id)`) renders
+ * `modelId = id` — and inside the subquery `id` binds to the MEMBER row's own
+ * id, so the correlation is silently never the cast (#119's measured defect).
+ * The inner table is aliased and the outer one is named by table, so neither
+ * reading is available. `server/castingRoster-db.test.ts` proves the rows on a
+ * real database, where a mis-bound correlation reads as every cast filed or none.
+ */
+function unfiledWhere(userId: number): SQL {
+  return sql`NOT EXISTS (SELECT 1 FROM ${castCampaignMembers} AS roster_member WHERE roster_member.modelId = ${models}.id AND roster_member.userId = ${userId})`;
+}
+
+/**
+ * `EXISTS` a member row joining the outer cast to the campaign `campaignId` —
+ * owner-checked on BOTH sides of the join (the member's `userId` and the
+ * campaign's), so a foreign campaign id, or a member row pointing across
+ * accounts, matches nothing.
+ */
+function inCampaignWhere(userId: number, campaignId: string): SQL {
+  return sql`EXISTS (SELECT 1 FROM ${castCampaignMembers} AS roster_member INNER JOIN ${castCampaigns} AS roster_campaign ON roster_campaign.id = roster_member.campaignId AND roster_campaign.userId = ${userId} WHERE roster_member.modelId = ${models}.id AND roster_member.userId = ${userId} AND roster_campaign.publicId = ${campaignId})`;
+}
+
+/**
+ * A case-insensitive NAME match. LIKE's own wildcards in what the customer
+ * typed are escaped, so "50%" looks for "50%" rather than "50 and anything".
+ * Names only — the placeholder says *"Search cast by name"* because that is
+ * what is searched (his ruling on #1469: never "name or look" over a name-only
+ * search).
+ */
+function nameMatchWhere(search: string): SQL {
+  const escaped = search.toLowerCase().replace(/[\\%_]/g, (char) => `\\${char}`);
+  return sql`LOWER(${models}.name) LIKE ${`%${escaped}%`}`;
+}
+
+/** The scope's own condition, or `undefined` for `all`. */
+function scopeWhere(userId: number, scope: RosterScope): SQL | undefined {
+  if (scope.kind === "unfiled") return unfiledWhere(userId);
+  if (scope.kind === "campaign") return inCampaignWhere(userId, scope.campaignId);
+  return undefined;
+}
+
+function rosterWhere(userId: number, filter: RosterFilter): SQL | undefined {
+  const search = filter.search?.trim() ?? "";
+  return and(
+    signedCastWhere(userId),
+    scopeWhere(userId, filter.scope ?? { kind: "all" }),
+    search.length > 0 ? nameMatchWhere(search) : undefined,
+  );
+}
+
+/**
+ * Whether `campaignId` is one of this customer's campaigns — asked before a
+ * campaign-scoped read only to choose the right REFUSAL (a deleted or foreign
+ * campaign is `NOT_FOUND`, not an empty list that reads as "nobody filed yet").
+ * The list itself re-proves the owner in its own statement.
+ */
+async function ownsCampaign(userId: number, campaignId: string): Promise<boolean> {
+  const db = await requireDb();
+  const rows = await db
+    .select({ id: castCampaigns.id })
+    .from(castCampaigns)
+    .where(and(eq(castCampaigns.publicId, campaignId), eq(castCampaigns.userId, userId)))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export type RosterCounts = {
+  /** Every signed cast. */
+  all: number;
+  /** Signed casts in no campaign. */
+  unfiled: number;
+  /** Signed casts in the asked scope that match the asked search. */
+  matching: number;
+};
+
+/**
+ * THE CHIPS' NUMBERS AND THE HEADER'S, IN ONE STATEMENT (card #2250).
+ *
+ * The roster is paged, so the length of what has loaded is not a count of
+ * anything — a customer with ninety casts would read "60 cast members". These
+ * are counted over the rows, owner in the WHERE, by the same predicates the
+ * list draws by (one rule, not a copy).
+ */
+export async function countRoster(
   userId: number,
-  limit = 60,
-): Promise<Array<{
+  filter: RosterFilter,
+): Promise<{ kind: "counted"; counts: RosterCounts } | { kind: "campaign_not_found" }> {
+  assertPositiveId(userId, "userId");
+  const scope = filter.scope ?? { kind: "all" };
+  if (scope.kind === "campaign" && !(await ownsCampaign(userId, scope.campaignId))) {
+    return { kind: "campaign_not_found" };
+  }
+  const db = await requireDb();
+  const search = filter.search?.trim() ?? "";
+  const matching = and(
+    scopeWhere(userId, scope),
+    search.length > 0 ? nameMatchWhere(search) : undefined,
+  );
+  const [row] = await db
+    .select({
+      all: sql<number>`COUNT(*)`,
+      unfiled: sql<number>`COALESCE(SUM(CASE WHEN ${unfiledWhere(userId)} THEN 1 ELSE 0 END), 0)`,
+      matching: matching
+        ? sql<number>`COALESCE(SUM(CASE WHEN ${matching} THEN 1 ELSE 0 END), 0)`
+        : sql<number>`COUNT(*)`,
+    })
+    .from(models)
+    .where(signedCastWhere(userId));
+  return {
+    kind: "counted",
+    counts: {
+      all: Number(row?.all ?? 0),
+      unfiled: Number(row?.unfiled ?? 0),
+      matching: Number(row?.matching ?? 0),
+    },
+  };
+}
+
+export type RosterPageResult =
+  | { kind: "page"; casts: SignedCastRow[] }
+  | { kind: "campaign_not_found" }
+  | { kind: "cursor_not_found" };
+
+type SignedCastRow = {
   model: Model;
   anchorUrl: string | null;
   frameCount: number;
   brief: string | null;
-}>> {
+};
+
+/**
+ * One page of the roster: newest first, inside the scope, matching the search,
+ * starting after the cast `afterCastId` (its public `KI-…` id — the internal id
+ * never leaves the server, so it cannot be the cursor).
+ *
+ * The cursor is resolved to its row OWNER-SCOPED and regardless of whether that
+ * cast has since been deleted, so a page boundary that is deleted while the
+ * customer scrolls still marks a place in the order. An id that is not this
+ * customer's at all is `cursor_not_found`, never somebody else's place.
+ */
+export async function listRosterPage(
+  userId: number,
+  options: RosterFilter & { afterCastId?: string | null; limit?: number },
+): Promise<RosterPageResult> {
   assertPositiveId(userId, "userId");
+  const limit = Math.min(Math.max(Math.trunc(options.limit ?? ROSTER_PAGE_MAX), 1), ROSTER_PAGE_MAX);
+  const scope = options.scope ?? { kind: "all" };
+  if (scope.kind === "campaign" && !(await ownsCampaign(userId, scope.campaignId))) {
+    return { kind: "campaign_not_found" };
+  }
   const db = await requireDb();
+  let before: number | undefined;
+  if (options.afterCastId) {
+    const [cursor] = await db
+      .select({ id: models.id })
+      .from(models)
+      .where(and(eq(models.agencyId, options.afterCastId), eq(models.userId, userId)))
+      .limit(1);
+    if (!cursor) return { kind: "cursor_not_found" };
+    before = cursor.id;
+  }
   const rows = await db
     .select()
     .from(models)
-    .where(signedCastWhere(userId))
+    .where(and(
+      rosterWhere(userId, { ...options, scope }),
+      before === undefined ? undefined : lt(models.id, before),
+    ))
     .orderBy(desc(models.id))
     .limit(limit);
+  return { kind: "page", casts: await decorateSignedCasts(db, userId, rows) };
+}
+
+/**
+ * The faces, frame counts and briefs for one page of signed casts — the reads
+ * that used to sit inside `listSignedCasts`, unchanged, now handed the page's
+ * rows rather than reading the first sixty itself.
+ */
+async function decorateSignedCasts(
+  db: Awaited<ReturnType<typeof requireDb>>,
+  userId: number,
+  rows: Model[],
+): Promise<SignedCastRow[]> {
   if (rows.length === 0) return [];
 
   const assets = await db
