@@ -1,7 +1,7 @@
 {
-  "edition": 677,
-  "updatedAt": "2026-10-11T08:40:00.000Z",
-  "shift": "Foreman — foreman-20261011-1756",
+  "edition": 678,
+  "updatedAt": "2026-10-11T17:20:00.000Z",
+  "shift": "Foreman — foreman-20261012-0230",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -9994,6 +9994,20 @@
       "status": "merged",
       "prNumber": 2213,
       "note": "Its two red gate arms repaired and merged; the no-git arm was the second instance of a measured class."
+    },
+    {
+      "id": "possibly-fixed-blind-2290",
+      "title": "The crew could no longer tell whether a job had already been done — fixed and live (#2290)",
+      "status": "merged",
+      "prNumber": 2294,
+      "note": "Live. The check that stops us redoing finished work had gone blind on every run; it reads the whole history now and is judging jobs again."
+    },
+    {
+      "id": "regex-literal-mention-2293",
+      "title": "A tool that suggests dead code for deletion could be fooled into keeping it — fixed and live (#2293)",
+      "status": "merged",
+      "prNumber": 2299,
+      "note": "Live. Nothing was wrongly kept today — measured either side, the list is identical — so this closed the hole before it cost anything."
     }
   ],
   "problems": [
@@ -10143,6 +10157,13 @@
       "state": "resolved",
       "title": "Fixed - the nights stopped and told you the wrong reason, and it had happened 750 times (#2198)",
       "detail": "Fixed and in place. The alarm that stops the team when your Claude allowance runs out now recognises the real message, and the note it leaves you says when the allowance comes back - \"resets Oct 14, 4pm\" - instead of only that something went wrong.\n\nIt was far bigger than one night. Going back through every shift log we have kept - 3,972 of them - there are 750 shifts that never started because your allowance was spent, and the alarm recognised none of them. Most are one long run on 17 August, where the team kept starting shifts for seven hours into an allowance that could not serve any of them. Seven are recent: two on 8 October and five on 9 October, across three separate attempts on two different nights. Only one of those three left you a note at all, and that was the one with the wrong reason on it.\n\nThere were two real messages to recognise, not one, and we read them out of the logs rather than guessing: one about a weekly allowance and one about a shorter session allowance. The 8 October night was the session one, which nobody had noticed.\n\nIt was also wrong the other way round. The only two logs the alarm did call an allowance problem were not allowance problems at all - both were shifts writing a report about this very subject. Both now read correctly, and so does a shift reporting the fix, which was the trap worth avoiding: the obvious one-line repair would have made any shift that mentions the message stop the whole team. Proven by deliberately breaking it eight different ways and checking each break was caught."
+    },
+    {
+      "id": "pushgate-refuses-under-load-2298",
+      "severity": "warning",
+      "state": "open",
+      "title": "One of the crew's own checks fails for no reason about a third of the time, and it can block a finished job from being sent (#2298)",
+      "detail": "Met twice tonight. Before the crew sends work up, it runs a check over everything; one part of that check failed on two runs out of three and then passed on its own when run by itself — nothing in the work being sent could have caused it. The risk is not the wasted minutes: a check that cries wolf teaches whoever reads it to stop believing it, and this same part can also refuse to send work that is perfectly fine. Two earlier versions of this same fault were found and closed before (in the same check), so this is the third time the shape has come back — which is why it is filed to be looked at properly rather than patched again. Nothing a customer can see is affected."
     }
   ],
   "acknowledgedReplyIds": [
