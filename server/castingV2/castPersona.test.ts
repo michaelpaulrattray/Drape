@@ -90,6 +90,10 @@ describe("the persona reader — the positive control first", () => {
     });
     const lines = await reader.read(request());
 
+    /* A ONE-WORD LINE IS KEPT, and the fixture is back to its original on the
+       relay's finding on PR #2278: #2276's first shape gave this road the
+       reads' fragment rule, which reads `"Low."` as a fragment and emptied it,
+       and the both-or-neither arm then dropped the whole card. */
     expect(lines).toEqual({ personality: "Still and square.", voice: "Low." });
   });
 
@@ -635,10 +639,132 @@ describe("a drafted line is fitted to the cap the customer is held to", () => {
       added and left unfitted.
     */
     const long = `A real first sentence. ${"and then it keeps going without stopping ".repeat(20)}`;
+    /* The one-word toy lines are back to their originals (the relay's finding
+       on PR #2278): the OTHER line of the pair has to survive for this arm to
+       reach its assertion at all, so a cleaning rule that emptied `"Low."`
+       would have passed this arm by returning null — which it did not, because
+       the arm asserts `not.toBeNull()` first. It is the cheapest standing
+       witness that the Sign keeps a short line. */
     const draft = parseCastPersonaDraft(
       line === "voice" ? reply("Watchful.", long) : reply(long, "Low."),
     );
     expect(draft).not.toBeNull();
     expect(draft![line].length).toBeLessThanOrEqual(cap);
+  });
+});
+
+/* ---------------------------------------- #2276 · transport markers on the Sign */
+
+describe("the Sign's drafted lines never carry a transport marker onto the card (#2276)", () => {
+  /*
+    The six reads came back ending in `</s>` on five of six reads on his own
+    Pigman, from the same model this road calls. Until #2276 this road ran
+    `fitToCap` alone, so a marker the model left after its last full stop was
+    stored on the cast's card. Driven through the READER, the road the Sign
+    takes, so the arm proves the mint stores what the customer should read.
+  */
+  const personality =
+    "Sits back with the shoulders dropped and the gaze parked on the door. Answers late and all at once.";
+  const voice = "Low and dry, pitched under the room. Says little and answers a question with a pause.";
+
+  it("strips `</s>` from both lines through the real reader", async () => {
+    const reader = createCastPersonaReader({
+      engine: engineReturning(JSON.stringify({ personality: `${personality}</s>`, voice: `${voice} </s>` })),
+    });
+    const lines = await reader.read(request());
+    expect(lines).toEqual({ personality, voice });
+  });
+
+  it("strips a marker nobody has named, by the same positive rule", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality: `${personality}»,`, voice: `${voice}<|eot_id|>` })))
+      .toEqual({ personality, voice });
+  });
+
+  it("cuts a stray trailing fragment, as the reads do", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality: `${personality} able.`, voice })))
+      .toEqual({ personality, voice });
+  });
+
+  it("leaves clean lines exactly as they came (negative control)", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice }))).toEqual({ personality, voice });
+  });
+
+  it("keeps a closing quote that closes an open one, and only that", () => {
+    const quoted = 'Low and dry, pitched under the room. Answers every question with "Maybe."';
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice: quoted }))?.voice).toBe(quoted);
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice: `${quoted}</s>` }))?.voice).toBe(quoted);
+  });
+});
+
+/* ------------------- #2278 · the cleaning may cut a line and may never empty it */
+
+describe("the Sign's cleaning never costs a cast its card (the relay's finding on PR #2278)", () => {
+  /*
+    ⚠ **THIS IS THE ARM THAT WOULD HAVE CAUGHT #2276's FIRST SHAPE, AND IT
+    REDDENS UNDER IT.** That shape gave this road the READS' rule — *a read
+    ends on a whole sentence or is dropped* — and the both-lines-or-neither arm
+    turns one emptied line into no personality AND no voice card at all. So a
+    voice line with no final full stop, or ending on a one-word sentence, would
+    have left a freshly signed cast with nothing on the card: the symptom is
+    `null` here, which reads on the surface as a failed draft rather than as a
+    cleaning rule firing.
+
+    Driven at `parseCastPersonaDraft`, the parse the mint runs, and both lines
+    of each pair are asserted, because the rule that drops them is the pair's.
+  */
+  const clean = "Sits back with the shoulders dropped and the gaze parked on the door. Answers late and all at once.";
+
+  it.each([
+    ["no final full stop", "Low and gravelly, unhurried"],
+    ["one word and no full stop", "Watchful"],
+    ["a one-word sentence", "Low."],
+    ["a comma, mid-thought", "Low, and a little late,"],
+  ])("keeps a voice line that is %s", (_shape, voice) => {
+    const draft = parseCastPersonaDraft(JSON.stringify({ personality: clean, voice }));
+    expect(draft).not.toBeNull();
+    expect(draft!.voice).toBe(voice);
+    /* The pair survives, which is the half that actually matters: the rule
+       being guarded drops BOTH lines, not the one it read. */
+    expect(draft!.personality).toBe(clean);
+  });
+
+  it("keeps a personality line with no final full stop, the other side of the same pair", () => {
+    const draft = parseCastPersonaDraft(
+      JSON.stringify({ personality: "Still and square, and slow to answer", voice: clean }),
+    );
+    expect(draft).toEqual({ personality: "Still and square, and slow to answer", voice: clean });
+  });
+
+  it("still strips the marker off a line it is now allowed to keep", () => {
+    /* ⚠ The positive control for the whole repair: the card asked to strip end
+       markers, and keeping short lines must not have given that up. `</s>` goes
+       and `"Watchful."` stays, on the ONE line that would have been emptied. */
+    const draft = parseCastPersonaDraft(JSON.stringify({ personality: clean, voice: "Watchful.</s>" }));
+    expect(draft?.voice).toBe("Watchful.");
+  });
+
+  it("cuts a fragment off a line that has a whole sentence to fall back to", () => {
+    /*
+      ⚠ The negative control for `keepWhenEmptied`: the fallback fires only
+      when the cut would EMPTY the line. Where a whole sentence survives the
+      cut, the fragment still goes — so the option cannot be read as "the
+      fragment rule is off on this road".
+
+      ⚠ BOTH LINES ARE CLEAN AND SHORT-SHAPED ON PURPOSE. Pairing this with a
+      `"Watchful"` voice made the arm redden under sabotage for the OTHER
+      line's reason — the both-or-neither rule — and an arm that can go red
+      without its own subject moving is not a control over its subject.
+    */
+    const draft = parseCastPersonaDraft(JSON.stringify({ personality: `${clean} able.`, voice: clean }));
+    expect(draft?.personality).toBe(clean);
+  });
+
+  it("is still a FAILED read when no sentence end fits inside the cap", () => {
+    /* ⚠ `fitToCap`'s `""` is NOT softened, and this arm pins that: it predates
+       #2276 and there is nothing in an unfittable line the customer could
+       edit. The repair narrowed the cleaning, not the fit. */
+    expect(
+      parseCastPersonaDraft(JSON.stringify({ personality: clean, voice: "x".repeat(CAST_VOICE_MAX_LENGTH + 40) })),
+    ).toBeNull();
   });
 });

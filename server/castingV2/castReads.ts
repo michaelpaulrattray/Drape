@@ -60,7 +60,12 @@ import { z } from "zod";
 import { CAST_PERSONALITY_MAX_LENGTH } from "../../shared/inputLimits";
 import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
-import { castPersonaCraftRules, castPersonaEditBlock, fitToCap } from "./castPersona";
+import {
+  castPersonaCraftRules,
+  castPersonaEditBlock,
+  fitProseToCap,
+  trimTrailingJunk,
+} from "./castPersona";
 import type { CastPronouns } from "./castPronouns";
 import { interpreterTextQueue } from "./interpreter";
 import { boundForJudge } from "./judgeFrame";
@@ -387,16 +392,12 @@ export function parseCastReads(raw: string): CastRead[] | null {
   const kept: CastRead[] = [];
   for (const entry of read.data.reads) {
     const label = trimTrailingJunk(entry.label.trim(), { sentence: false });
-    /* The drafted line's own fitter, so a read is held to the cap the customer
-       is held to — and cut at a sentence end or not at all. A stray fragment is
-       cut off before and after the fit (#2238), so a read ends on a whole
-       sentence or is dropped. */
-    const personality = dropTrailingFragments(
-      fitToCap(
-        dropTrailingFragments(trimTrailingJunk(entry.personality.trim(), { sentence: true })),
-        CAST_PERSONALITY_MAX_LENGTH,
-      ),
-    );
+    /* The drafted line's own cleaner and fitter — one composition shared by
+       every road that stores model prose on a persona card (#2276) — so a read
+       is held to the cap the customer is held to, cut at a sentence end or not
+       at all, with transport litter and a stray fragment cut off (#2238), so a
+       read ends on a whole sentence or is dropped. */
+    const personality = fitProseToCap(entry.personality, CAST_PERSONALITY_MAX_LENGTH);
     if (!label || label.length > CAST_READ_LABEL_MAX_LENGTH || !personality) continue;
     kept.push({ label, personality });
   }
@@ -433,104 +434,13 @@ export function parseCastReads(raw: string): CastRead[] | null {
   return kept;
 }
 
-/**
- * CUT ANYTHING THE MODEL LEFT AFTER THE LAST FULL STOP — measured, not feared.
- *
- * ⚠ **THE SIX READS CAME BACK CARRYING RAW TRANSPORT MARKERS, AND A CUSTOMER
- * WOULD HAVE READ THEM.** The court's third run produced six good reads for
- * his own Pigman and every one of them ended in litter: five closed
- * `…outran the decision.</s>` and one `…behind the other.»,`. `</s>` is an
- * end-of-sequence token; it parsed as part of the string, so nothing threw,
- * and it would have been stored on the Cast and drawn on the card.
- *
- * ⚠ **IT IS A POSITIVE RULE AND DELIBERATELY NOT A DENYLIST OF `</s>` AND `»`.**
- * A denylist only ever removes the junk somebody has already seen, and the next
- * model, or the next release of this one, emits different junk — which would
- * ship to a customer exactly the way this did. Keeping everything up to the
- * last sentence end instead throws away whatever is there, named or not, and
- * it is the same cut `fitToCap` already makes for a different reason.
- *
- * A LABEL has no sentence end to find, so it is cut at the last letter, digit
- * or closing bracket instead.
- *
- * ⚠ **THE SIBLING IS NAMED RATHER THAN SWEPT (law 7).** The drafted line
- * (`castPersona.ts`) stores model prose on the same card and would show the
- * same litter the day it arrived there. It is NOT changed here: that
- * instruction and its parser are the ones he courted at #2136, and this run
- * saw no litter on that road because it does not ask for a schema. Filed
- * rather than fixed blind — the class is "transport markers in prose a
- * customer reads", and its other instance is one function away.
- */
-export function trimTrailingJunk(value: string, options: { sentence: boolean }): string {
-  if (!value) return value;
-  if (options.sentence) {
-    const end = Math.max(value.lastIndexOf("."), value.lastIndexOf("!"), value.lastIndexOf("?"));
-    /* `< 1` for the same reason `fitToCap` uses it: punctuation at index 0 is
-       not a sentence, and cutting there would store a single full stop. */
-    if (end < 1) return value;
-    return value.slice(0, end + 1);
-  }
-  /*
-    A LABEL IS CUT AT THE FIRST CHARACTER IT MAY NOT CONTAIN, which is the
-    opposite question from the one asked of a sentence and has to be.
-
-    ⚠ **THE FIRST SHAPE OF THIS BRANCH WALKED BACK TO THE LAST LETTER, AND THE
-    SUITE CAUGHT IT: `"The quiet one</s>"` came back as `"The quiet one</s"`,
-    because the `s` inside the marker is a letter.** Trailing litter is not
-    reliably punctuation, so "where does it end" cannot be answered from the
-    end. What a label may HOLD is answerable: two or three plain words, so
-    letters, digits, spaces, and the hyphen and apostrophe that live inside
-    ordinary words. Everything from the first character outside that set is
-    dropped.
-
-    The letter test is `toLowerCase() !== toUpperCase()` rather than a unicode
-    property escape, because this build's target predates the `u` flag and a
-    plain `[A-Za-z]` would cut a label at its first accented letter.
-  */
-  let end = 0;
-  while (end < value.length) {
-    const ch = value[end]!;
-    const isLetter = ch.toLowerCase() !== ch.toUpperCase();
-    if (!isLetter && !/[0-9 \-‐-―'’]/.test(ch)) break;
-    end += 1;
-  }
-  return value.slice(0, end).trim();
-}
-
-/**
- * A READ ENDS ON A WHOLE SENTENCE OR IS DROPPED — #2238, his word: *"One also
- * has a stray "able." on the end."*
- *
- * ⚠ **WHY `trimTrailingJunk` LET IT THROUGH.** That cut keeps everything up to
- * the LAST full stop, and a fragment that ends in a full stop — `…holding the
- * new ground. able.` — has one. So the litter survived the very rule written
- * against litter, because the rule asked "where does the prose end" and the
- * fragment answered for it.
- *
- * The question asked here is the other one: is the LAST sentence a sentence? A
- * real one in a read starts on a capital (the craft asks for two sentences, each
- * opening a job) and is more than one word. A tail that fails either is
- * cut back to the sentence before it; if nothing whole is left, the read is
- * `""` and the six-or-nothing rule drops the list rather than drawing it.
- */
-export function dropTrailingFragments(value: string): string {
-  let text = value.trim();
-  for (;;) {
-    if (!text) return "";
-    const ends = /[.!?]$/.test(text);
-    const body = ends ? text.slice(0, -1) : text;
-    const before = Math.max(body.lastIndexOf("."), body.lastIndexOf("!"), body.lastIndexOf("?"));
-    const tail = text.slice(before + 1).trim();
-    const firstLetter = tail.split("").find((ch) => ch.toLowerCase() !== ch.toUpperCase()) ?? "";
-    const whole = ends
-      && firstLetter !== ""
-      && firstLetter === firstLetter.toUpperCase()
-      && tail.split(/\s+/).filter(Boolean).length > 1;
-    if (whole) return text;
-    if (before < 1) return "";
-    text = text.slice(0, before + 1).trim();
-  }
-}
+/*
+  The two cleaners moved to `castPersona.ts` with #2276, because the Sign's
+  drafted lines and "Say it your way" now run them too and `castPersona.ts`
+  cannot import from this file without a cycle (this file imports it). Re-
+  exported so the reads' own suite and any caller keep one import.
+*/
+export { dropTrailingFragments, trimTrailingJunk } from "./castPersona";
 
 /** Some models fence JSON despite being asked for an object. */
 function stripFence(raw: string): string {

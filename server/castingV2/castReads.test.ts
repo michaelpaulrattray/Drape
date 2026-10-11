@@ -159,6 +159,14 @@ describe("⚠ MEASURED — transport markers never reach a customer's card", () 
     expect(trimTrailingJunk("Stands still. Moves late.»,", { sentence: true })).toBe("Stands still. Moves late.");
   });
 
+  it("keeps a closing quote only when it closes an open one (#2276)", () => {
+    expect(trimTrailingJunk('Stands still. Says "Maybe."»,', { sentence: true })).toBe('Stands still. Says "Maybe."');
+    expect(trimTrailingJunk("Stands still. Says “Maybe.”</s>", { sentence: true }))
+      .toBe("Stands still. Says “Maybe.”");
+    expect(trimTrailingJunk('Stands still. Moves late.",', { sentence: true })).toBe("Stands still. Moves late.");
+    expect(dropTrailingFragments('Stands still. Answers with "Maybe."')).toBe('Stands still. Answers with "Maybe."');
+  });
+
   it("keeps a clean line exactly as it is", () => {
     expect(trimTrailingJunk("Stands still. Moves late.", { sentence: true })).toBe("Stands still. Moves late.");
   });

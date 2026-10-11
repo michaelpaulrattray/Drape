@@ -60,7 +60,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import {
   castPersonaCraftRules,
-  fitToCap,
+  fitProseToCap,
   PERSONA_MAX_OUTPUT_TOKENS,
 } from "./castPersona";
 import type { CastPronouns } from "./castPronouns";
@@ -214,9 +214,18 @@ export async function translateCastPersonaOwnWords(input: {
 }
 
 /**
- * The reply, read strictly and fitted to the line's cap at a sentence end —
- * the Sign's own `fitToCap`, so a translated line is always one the customer
- * can then edit (the relay's finding 3 on PR #2114, the same hole).
+ * The reply, read strictly, cleaned and fitted to the line's cap at a sentence
+ * end — the Sign's own `fitProseToCap`, so a translated line is always one the
+ * customer can then edit (the relay's finding 3 on PR #2114, the same hole) and
+ * never carries a transport marker like `</s>` onto the card (#2276).
+ *
+ * ⚠ **`keepWhenEmptied`, the same as the Sign and for a reason of its own (the
+ * relay's finding on PR #2278).** This press runs on a sentence the CUSTOMER
+ * typed, and `null` here is the press refusing their words back at them. A
+ * cleaning rule meant for transport litter must not be what decides that — so
+ * it may cut the line and may never empty it, and `null` stays what it was
+ * before #2276: an unreadable reply, or a line with no sentence end inside the
+ * cap.
  */
 export function parseCastPersonaTranslation(raw: string, line: CastPersonaField): string | null {
   let parsed: unknown;
@@ -231,8 +240,12 @@ export function parseCastPersonaTranslation(raw: string, line: CastPersonaField)
     log.warn({ line }, "[castPersonaTranslate] the reply did not carry a line — nothing returned");
     return null;
   }
-  const fitted = fitToCap(read.data.line.trim(), castPersonaCapFor(line));
-  return fitted ? fitted : null;
+  const fitted = fitProseToCap(read.data.line, castPersonaCapFor(line), { keepWhenEmptied: true });
+  if (!fitted) {
+    log.warn({ line }, "[castPersonaTranslate] the line had no sentence end inside the cap — nothing returned");
+    return null;
+  }
+  return fitted;
 }
 
 /** Some models fence JSON despite being asked for an object. */
