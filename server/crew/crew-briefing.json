@@ -1,7 +1,7 @@
 {
-  "edition": 674,
-  "updatedAt": "2026-10-11T01:15:33.000Z",
-  "shift": "Foreman — foreman-20261011-1058",
+  "edition": 675,
+  "updatedAt": "2026-10-11T03:05:00.000Z",
+  "shift": "Foreman — foreman-20261011-1222",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3733,6 +3733,28 @@
       "state": "waiting",
       "filedAt": "2026-10-10T15:00:44Z",
       "issueNumber": 1242
+    },
+    {
+      "id": "logo-missing-1921",
+      "title": "Your first email to a new customer has no logo on it",
+      "productImpact": "Every new customer gets a verification email. The whole email already says Klieg — the sender, the subject, the words, the sign-off. The one picture on it is the old drape wordmark, and because that picture is WHITE and the email sits on a white card, it does not show at all. There is a faint grey smudge where a logo should be. The picture on your Desk is that email, rendered from the real template tonight.\n\nThe same block is in the yearly renewal notice, which no one has received yet because nobody is on a paid plan. The verify-your-email page has the same problem, a white mark on a near-white page.\n\nNone of this can be fixed by us: there is no Klieg picture in the storage bucket at all. I checked today with a control — the old drape one is really there, every Klieg name is a 404.",
+      "workedExample": "A new customer signs up, opens the email, and sees a blank space, then \"Verify your email\", then at the bottom \"Klieg — Your next campaign, cast in minutes.\"",
+      "options": [
+        {
+          "key": "dark-cut",
+          "label": "You give us a dark-ink Klieg lockup for the bucket, and the tab letter",
+          "consequence": "A PNG of the mark in dark ink — dark, not white, because both emails are white cards and that is what made the one we have invisible. The emails and the verify page then show it. Separately: the browser tab icon is still a black square with a white \"d\". One letter from you and it is a \"k\"."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it until the sign-in and landing redesign",
+          "consequence": "You said those two pages are being redesigned, so their logos ride that. But the two emails are not part of that redesign, so new customers keep getting a logo-less email until it happens."
+        }
+      ],
+      "recommendation": "The dark-ink lockup, and tell me the tab letter. One thing I will not do without you: the locked brand reference says in its own rules that it is drawn in a stand-in typeface and the real mark needs a licensed one, so if I made the picture myself I would be putting a rough draft of your brand into every customer email. That is yours or your designer's hand. Meanwhile the verify-your-email page can draw the Klieg mark the rest of the app already draws, which needs nothing from you — I have left that free for a seat to pick up.",
+      "state": "waiting",
+      "filedAt": "2026-10-11T03:05:00.000Z",
+      "issueNumber": 1921
     }
   ],
   "eyeItems": [
@@ -6938,6 +6960,22 @@
           "caption": "The real panel, light theme, on a signed cast. Six named reads, two sentences each, filling the right-hand column from the top of PERSONALITY down past the bottom of the screen. The Voice card is below the last read."
         }
       ]
+    },
+    {
+      "id": "logo-missing-1921-email",
+      "title": "The verification email, as it is sent today",
+      "question": "WHAT YOU ARE LOOKING AT — the real verification email, built tonight by the same function production calls, with its picture pointed at the live bucket. Not a mock-up.\n\nLook at the top-left of the white card. That faint smudge is the logo. It is the old drape wordmark in WHITE, printed on a white card, so there is effectively nothing there. Measured: the darkest pixel anywhere in the mark is 38 steps away from the paper, out of 255.\n\nEverything else on the email is already Klieg — the subject line, the sender, the footer.\n\nNo judgement is needed on the picture itself. The question on the card beside it is the only one: a dark-ink Klieg lockup for the bucket, and whether the tab icon becomes a k.",
+      "state": "waiting",
+      "filedAt": "2026-10-11T03:05:00.000Z",
+      "issueNumber": 1921,
+      "cardId": "logo-missing-1921",
+      "frames": [
+        {
+          "key": "crew-eye/ff6ae232-96f2-4fa7-b9ad-bb311f13601b.png",
+          "arm": null,
+          "caption": "The verification email a new customer receives, full page. Top-left of the white card: the white drape wordmark, invisible on white. Subject \"Verify your email — Klieg\"; footer \"Klieg — Your next campaign, cast in minutes.\""
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -10082,23 +10120,23 @@
     {
       "id": "data-export-breaks-for-big-accounts-1989",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Asking for a copy of your own data fails if you have more than about seventy casts (#1989)",
-      "detail": "Settings, Security, Export your data. On an account with a lot of casts nothing comes back and the person is told the export could not be made — and then they cannot try again for five minutes, because the failed attempt used up their one go. Measured on a test account with 77 casts: it fails every time. Under seventy or so it works.\n\nThis matters more than most bugs because a copy of your own data is something a customer has a legal right to ask for, and the people most likely to ask are the ones with the most work on the account. Nobody has hit it in the real product that we know of. The cause is known and written on the card; it is a day's work at most, not a redesign."
+      "detail": "Settings, Security, Export your data. On an account with a lot of casts nothing comes back and the person is told the export could not be made — and then they cannot try again for five minutes, because the failed attempt used up their one go. Measured on a test account with 77 casts: it fails every time. Under seventy or so it works.\n\nThis matters more than most bugs because a copy of your own data is something a customer has a legal right to ask for, and the people most likely to ask are the ones with the most work on the account. Nobody has hit it in the real product that we know of. The cause is known and written on the card; it is a day's work at most, not a redesign.\n\n✅ RESOLVED — card #1989 is closed and the repair is live at `3d25f560`, both read at GitHub this shift. The export reads its pictures in bounded chunks and came back with 77 casts and 211 pictures on the fixture that used to fail, and a failed export gives the five-minute slot back instead of spending it. Driven again last night end to end on a real account: the file downloaded. The wider fan-out siblings were #2000, also closed."
     },
     {
       "id": "db-hiccup-signs-you-out-1990",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A slow moment on the database can sign a customer out mid-session (#1990)",
-      "detail": "If the database is briefly too busy to answer, the next thing the person clicks is treated as though they were never signed in — and the app then sends them to the sign-in page, in the middle of whatever they were doing. Seen twice while testing something else, both times straight after the export above overloaded the database.\n\nThe product cannot currently tell 'this person is not signed in' apart from 'we could not check whether they are signed in'. The second should be an error we own up to, not a silent sign-out. Known cause, written on the card."
+      "detail": "If the database is briefly too busy to answer, the next thing the person clicks is treated as though they were never signed in — and the app then sends them to the sign-in page, in the middle of whatever they were doing. Seen twice while testing something else, both times straight after the export above overloaded the database.\n\nThe product cannot currently tell 'this person is not signed in' apart from 'we could not check whether they are signed in'. The second should be an error we own up to, not a silent sign-out. Known cause, written on the card.\n\n✅ RESOLVED — card #1990 is closed and the repair is live at `27101cbd`, both read at GitHub this shift. A session lookup that fails now answers 503 and is logged, instead of being read as \"you are not signed in\" and bouncing the customer to the sign-in page. Somebody genuinely signed out is still refused as before. The six authenticated Express routes were the sibling, #1997, also closed."
     },
     {
       "id": "face-scan-cap-counts-requests-2170",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The face panel still stops filling in after forty faces in a day, and still says nothing — the part that stopped you three times too soon is fixed and live (#2170)",
-      "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it.\n\nWhat was wrong, and is now fixed: it counted requests instead of faces. The panel asks again every second while a reading comes in, so one face spent about three of your allowance. On 8 October your own account hit the limit after about fifteen faces and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. That fix shipped today — looking at the same face again now costs nothing, and the limit counts forty faces as it was always meant to.\n\nWhat is still wrong, and why this row is still here. Forty is too low. On your biggest day you looked at 189 faces, and three of your last ten days were over forty — so you can still be stopped on a normal working day, just later than before. And when you are stopped the panel still says nothing: a blocked reading was deliberately built to look exactly like a quiet one, so there is no way to tell the difference.\n\nNothing is ever charged for a refused reading and nothing is lost but the reading itself. The number is on the card and needs no decision from you. Whether a blocked reading should say something to you is yours to decide, and it is not folded in."
+      "detail": "When you open a cast face, the panel reads the picture and fills its rows in. There is a daily limit on how many of those readings we buy, because each one costs us money and a free account arrives with no card behind it.\n\nWhat was wrong, and is now fixed: it counted requests instead of faces. The panel asks again every second while a reading comes in, so one face spent about three of your allowance. On 8 October your own account hit the limit after about fifteen faces and was refused fifteen times in four minutes, while you still had hundreds of casts you could have opened. That fix shipped today — looking at the same face again now costs nothing, and the limit counts forty faces as it was always meant to.\n\nWhat is still wrong, and why this row is still here. Forty is too low. On your biggest day you looked at 189 faces, and three of your last ten days were over forty — so you can still be stopped on a normal working day, just later than before. And when you are stopped the panel still says nothing: a blocked reading was deliberately built to look exactly like a quiet one, so there is no way to tell the difference.\n\nNothing is ever charged for a refused reading and nothing is lost but the reading itself. The number is on the card and needs no decision from you. Whether a blocked reading should say something to you is yours to decide, and it is not folded in.\n\n✅ RESOLVED — card #2170 is closed and PR #2178 is live, read at the code this shift. BOTH of the things this row says are still wrong were fixed by that same change, which is why the row should have gone with it: the daily number is no longer a flat forty — it is set from what accounts actually do and what a scan costs us, forty on a free account and a hundred on a paid one, and a plan change takes effect the same day; and a blocked reading no longer says nothing — the panel shows a plain line on a real cap, and never on one of our own outages. What is left of this subject is cost, which is #2191 on your Next up, and it is a rung card rather than a fault."
     },
     {
       "id": "park-reason-wrong-2198",
