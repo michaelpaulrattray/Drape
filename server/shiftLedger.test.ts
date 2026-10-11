@@ -779,7 +779,7 @@ describe("a merged PR is attributed by the run's own PR number, then its branch,
     /* A clamp over a figure that never reaches the ceiling is a no-op wearing a
        comment. 50/day crosses 1000 at --days 21, which is inside the range a
        person actually types. */
-    const derived = (days) => Math.max(100, Math.ceil(days * 50));
+    const derived = (days: number) => Math.max(100, Math.ceil(days * 50));
     expect(derived(20)).toBeLessThanOrEqual(SEARCH_RESULT_CEILING);
     expect(derived(21)).toBeGreaterThan(SEARCH_RESULT_CEILING);
     expect(Math.min(SEARCH_RESULT_CEILING, derived(60))).toBe(SEARCH_RESULT_CEILING);
