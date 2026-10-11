@@ -18,7 +18,7 @@ import {
 const CAMPAIGN = "0123456789abcdef0123456789abcdef";
 const SUMMER = { campaignId: CAMPAIGN, name: "Summer" };
 
-describe("⚠ Unfiled is hidden until there is at least one campaign (his ruling, #1469)", () => {
+describe("⚠ Unfiled is hidden until there is at least one campaign (his ruling on the rung's design)", () => {
   it("no campaigns — Unfiled is not a chip; one campaign — it is", () => {
     expect(isChip({ kind: "unfiled" }, [])).toBe(false);
     expect(isChip({ kind: "unfiled" }, [SUMMER])).toBe(true);
@@ -36,7 +36,7 @@ describe("⚠ Unfiled is hidden until there is at least one campaign (his ruling
   });
 });
 
-describe("⚠ the search copy is honest about what is searched (his ruling, #1469)", () => {
+describe("⚠ the search copy is honest about what is searched (his ruling on the rung's design)", () => {
   it("the box says 'by name', and never 'name or look'", async () => {
     const page = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
     const code = withoutComments(page);
