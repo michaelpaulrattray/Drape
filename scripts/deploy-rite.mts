@@ -143,11 +143,12 @@ import {
 } from "./lib/riteLock.mts";
 import {
   RITE_FAILURE_MEMORY_PATH,
+  judgeRepeatAlone,
   notePass,
   noteRefusal,
   type FailureMemoryFs,
 } from "./lib/riteFailureMemory.mts";
-import { runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
+import { rerunArmsAlone, runScriptGuardsOnCommit } from "./lib/scriptGuards.mts";
 import { runTypecheckOnCommit } from "./lib/typecheckOnCommit.mts";
 import { BRIEFING_PATH, generatedFilesFrom, judgeQuietEdition, QUIET_REFUSAL, type QuietVerdict } from "./lib/quietEdition.mts";
 import { briefingReadingSuites, judgeBriefingConformance } from "./lib/briefingConformance.mts";
@@ -1225,15 +1226,46 @@ ${eyeFrameRefusalRepair(frames, `re-upload the frame(s) against the PRODUCTION R
       directory: path.dirname(RITE_FAILURE_MEMORY_PATH),
       fs: memoryFs,
     });
+    /*
+      ⚠ **AND A REPEAT IS NOT BELIEVED UNTIL THE ARMS HAVE RUN ALONE (#2248).**
+
+      The memory's `same-set` reading used to assert *"a contract breached in
+      the commit"* on the strength of a repeat, and on 2026-10-11 it said so
+      twice, in capitals, about a commit changing ONE JSON file — which then
+      shipped unchanged on its third run. A repeating set is what PERSISTENT
+      contention looks like: the slowest arms are the first to fall every time,
+      so they repeat exactly where a transient starvation would move.
+
+      So the control runs here and only here: a second readable refusal of one
+      commit re-runs its failing arms ALONE, outside the concurrent run.
+      Alone-pass is the machine, alone-fail is the commit, and a control that
+      could not be taken says so and settles nothing.
+
+      ⚠ **THE REFUSAL IS UNCHANGED EITHER WAY** — invariant 7, exactly as #2212
+      left it. This buys the DIAGNOSIS and never the gate, and it is paid for
+      only on a repeat (about a minute for one suite, measured), never on a
+      first refusal and never on a green run.
+    */
+    let repeat: string | null = null;
+    if (memory.kind === "same-set") {
+      say(`  script guards: the same ${memory.arms.length} arm(s) failed again — re-running them ALONE to`
+        + " tell a breach from the machine (#2248; about a minute)");
+      repeat = judgeRepeatAlone({
+        arms: memory.arms,
+        runs: memory.runs,
+        alone: rerunArmsAlone(path.resolve(import.meta.dirname, ".."), sha, memory.arms),
+      }).sentence;
+    }
     die(`the script guards did not PASS on ${shortSha}, the tree being pushed — the push does not fire.\n`
       + verdict.printed.split("\n").map((line) => `    ${line}`).join("\n")
-      + "\n  ⚠ this is ONE OF TWO THINGS and ONE run cannot tell them apart — the lines above can:"
+      + "\n  ⚠ this is ONE OF TWO THINGS and ONE run cannot tell them apart — the lines below can:"
       + "\n    · a script in the commit breached a contract — fix the named script"
       + " (the shape is scripts/SKELETON-disposable.mts), commit, re-run;"
       + "\n    · a guard suite failed on the machine rather than on the commit — a timeout under load,"
       + " a worktree it could not make. Nothing in the commit is wrong."
       + `\n  WHAT THE REMEMBERED RUNS OF ${shortSha} SAY (#2212):`
-      + `\n    ${memory.sentence}`);
+      + `\n    ${memory.sentence}`
+      + (repeat === null ? "" : `\n  AND WHAT THOSE ARMS DID ON THEIR OWN (#2248):\n    ${repeat}`));
   }
   /* A commit that passed has had its question answered, so its remembered
      refusals go rather than waiting to be read about finished work. */

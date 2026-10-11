@@ -46,12 +46,14 @@ import {
   REMEMBERED_RUNS_PER_COMMIT,
   RITE_FAILURE_MEMORY_PATH,
   judgeAgainstMemory,
+  judgeRepeatAlone,
   notePass,
   noteRefusal,
   pruneMemory,
   readFailedArms,
   recallMemory,
   runFromArms,
+  suiteFilesOf,
   withRun,
   withoutCommit,
   type FailureMemoryFs,
@@ -217,15 +219,27 @@ describe("#2212 · what two runs of one commit settle", () => {
     expect(verdict.cleared).toHaveLength(0);
   });
 
-  it("a set that REPEATS identically accuses the commit, and names the arms", () => {
+  it("a set that REPEATS names the arms and, since #2248, ACCUSES NOBODY", () => {
     const same = armsOf(2, "scriptExitDiscipline");
     const verdict = judgeAgainstMemory({
       current: run(same, 10),
       previous: [run(same, 0), run(same, 5)],
     });
     expect(verdict.kind).toBe("same-set");
-    expect(verdict.sentence).toContain("3 REFUSALS");
+    expect(verdict.sentence).toContain("3 refusals");
     expect(verdict.sentence).toContain(same[0]!);
+    /*
+      ⚠ **THIS ARM READ *"accuses the commit"* UNTIL #2248 AND THAT WAS THE
+      DEFECT.** A repeating set is what PERSISTENT contention looks like — the
+      slowest arms fall first every single time — so the repeat alone cannot
+      tell a breach from the machine. Measured: it said exactly that, in
+      capitals, about commit `9e3217c2` on two refusals, and the same sha then
+      shipped UNCHANGED on its third run. The sentence now names the control
+      instead of a culprit, and the pin is the half that matters.
+    */
+    expect(verdict.sentence, "no accusation from a repeat alone").not.toContain("breached in the commit");
+    expect(verdict.sentence).toContain("NOT YET EVIDENCE ABOUT THE COMMIT");
+    expect(verdict.sentence, "and it names the control that does settle it").toContain("re-run ALONE");
   });
 
   it("it compares against EVERY remembered run, not only the most recent", () => {
@@ -510,7 +524,19 @@ describe("#2212 · the rite writes to the memory and prints its verdict (invaria
     const reads = (text: string) => /failedArms: result\.status === 0 \? \[\] : armsOrNone\(result\.output\)/.test(text);
 
     expect(reads(source)).toBe(true);
-    expect(reads(sabotage(source, "armsOrNone(result.output)", "scriptGuards.mts"))).toBe(false);
+    /*
+      ⚠ **THE ANCHOR IS THE WHOLE ASSIGNMENT SINCE #2248, and the helper above
+      is why it had to be.** `rerunArmsAlone` reads its own solo run the same
+      way, so the bare `armsOrNone(result.output)` became the second occurrence
+      of its own anchor — and `sabotage` THREW rather than passing green with
+      nothing sabotaged, which is exactly the shape its docblock was written
+      about. The fix is a unique anchor, never a looser assertion.
+    */
+    expect(reads(sabotage(
+      source,
+      "failedArms: result.status === 0 ? [] : armsOrNone(result.output)",
+      "scriptGuards.mts",
+    ))).toBe(false);
   });
 
   it("a broken reader cannot kill the push path — the arms read is wrapped", () => {
@@ -542,5 +568,280 @@ describe("#2212 · the memory file can never become a stageable byte", () => {
   it("is not tracked by git — the one reading that settles it", () => {
     const tracked = readFileSync(path.join(ROOT, ".gitignore"), "utf8");
     expect(tracked).not.toContain(`!${RITE_FAILURE_MEMORY_PATH}`);
+  });
+});
+
+/* ─────────── #2248 · a repeat is not evidence until the arms run alone ─────────── */
+
+/**
+ * THE CONTROL THAT TELLS A PERSISTENT MACHINE FROM A BREACHED CONTRACT.
+ *
+ * #2212's reader fixed the moving-set case and created the standing-set case:
+ * *a set that repeats is the commit* holds only while the interference is
+ * TRANSIENT. Measured on commit `9e3217c2`, which changes one JSON file — two
+ * refusals, the same two arms both times, the memory asserting *"a contract
+ * breached in the commit"* and *"repair: fix those arms' subject"*, and then
+ * the same sha shipping UNCHANGED on run three. Both arms `await
+ * import("drizzle-orm/mysql-core")` inside the test body, so they are simply
+ * the first to fall under load, every time. Alone at that commit: 141 of 141
+ * passing in 50.2 s.
+ *
+ * The card's two refusals are pinned as hard as its requirement: not *stop
+ * refusing* (the gate is right — invariant 7), and not *key on the word
+ * timeout* (#2212's own header forbids it, with an ordinary assertion as the
+ * worked example).
+ */
+describe("#2248 · suiteFilesOf — which files a set of arms names", () => {
+  it("reads the file out of both shapes `readFailedArms` produces", () => {
+    expect(suiteFilesOf([
+      "server/moneySurfaceClassifier.test.ts > castProjection.ts really decides the price > arm",
+      "server/moneySurfaceClassifier.test.ts > another describe > arm",
+      "server/scriptGuards.test.ts <suite would not load>",
+    ])).toEqual({
+      files: ["server/moneySurfaceClassifier.test.ts", "server/scriptGuards.test.ts"],
+      unparsed: [],
+    });
+  });
+
+  it("⚠ an identity it cannot read goes to `unparsed` and is never DROPPED", () => {
+    /*
+      Dropping one would hand the caller a SUBSET, and a subset that passes
+      would read as "alone-pass, so the machine" on evidence that never covered
+      the whole refusal. That is the silent direction, so the reading keeps it.
+    */
+    const reading = suiteFilesOf(["server/x.test.ts > d > a", "Unhandled error in some worker"]);
+    expect(reading.files).toEqual(["server/x.test.ts"]);
+    expect(reading.unparsed).toEqual(["Unhandled error in some worker"]);
+  });
+
+  it("an arm with no describe separator is still its own file", () => {
+    expect(suiteFilesOf(["server/x.test.ts"]).files).toEqual(["server/x.test.ts"]);
+    expect(suiteFilesOf([]).files).toEqual([]);
+  });
+});
+
+describe("#2248 · judgeRepeatAlone — the two readings, driven both ways", () => {
+  const repeated = [
+    "server/moneySurfaceClassifier.test.ts > d > castProjection.ts really decides the price",
+    "server/moneySurfaceClassifier.test.ts > d > castingV2ViewRetry.ts really decides whether a replacement is still in flight",
+  ];
+
+  it("⚠ ALONE-PASS is the MACHINE, and the commit is explicitly cleared — the 9e3217c2 reading", () => {
+    const verdict = judgeRepeatAlone({
+      arms: repeated,
+      runs: 2,
+      alone: { ran: true, passed: true, arms: [], files: ["server/moneySurfaceClassifier.test.ts"] },
+    });
+
+    expect(verdict.kind).toBe("alone-passes");
+    expect(verdict.sentence).toContain("NOTHING IN THE COMMIT IS IMPLICATED");
+    expect(verdict.sentence, "and it names the lever that actually helps").toContain("VITEST_MAX_THREADS=2");
+    expect(verdict.sentence, "never a script to go and fix").not.toContain("fix those arms' subject");
+  });
+
+  it("⚠ ALONE-FAIL is the COMMIT — the control must still convict, or it is no control", () => {
+    /*
+      Without this arm the reader could answer `alone-passes` for everything and
+      the arm above would pass. A genuinely breaching script fails with nothing
+      competing for the box, and the rite must still send the shift to fix it.
+    */
+    const verdict = judgeRepeatAlone({
+      arms: repeated,
+      runs: 2,
+      alone: { ran: true, passed: false, arms: repeated, files: ["server/moneySurfaceClassifier.test.ts"] },
+    });
+
+    expect(verdict.kind).toBe("alone-fails");
+    expect(verdict.sentence).toContain("a contract breached in the commit");
+    expect(verdict.sentence).toContain("fix those arms' subject in the commit");
+    expect(verdict.kind === "alone-fails" && verdict.stillFailing).toEqual(repeated);
+    expect(verdict.kind === "alone-fails" && verdict.alsoFailing).toEqual([]);
+  });
+
+  it("a solo failure on DIFFERENT arms is still the commit, and says it is not the same arm", () => {
+    const other = ["server/scriptGuards.test.ts > d > a worktree it could not make"];
+    const verdict = judgeRepeatAlone({
+      arms: repeated,
+      runs: 3,
+      alone: { ran: true, passed: false, arms: other, files: ["server/moneySurfaceClassifier.test.ts"] },
+    });
+
+    expect(verdict.kind).toBe("alone-fails");
+    expect(verdict.kind === "alone-fails" && verdict.stillFailing).toEqual([]);
+    expect(verdict.kind === "alone-fails" && verdict.alsoFailing).toEqual(other);
+    expect(verdict.sentence, "the shift is told to read the solo run first").toContain("NONE of the repeated arms");
+  });
+
+  it("⚠ a solo run that FAILED UNREADABLY concludes nothing — a dead runner is not a failed arm", () => {
+    const verdict = judgeRepeatAlone({
+      arms: repeated,
+      runs: 2,
+      alone: { ran: true, passed: false, arms: [], files: ["server/moneySurfaceClassifier.test.ts"] },
+    });
+
+    expect(verdict.kind).toBe("alone-unresolved");
+    expect(verdict.sentence).toContain("COULD NOT BE READ");
+    expect(verdict.sentence, "and it accuses nobody").not.toContain("breached in the commit");
+  });
+
+  it("⚠ a control that could not be TAKEN settles nothing, and hands over the command", () => {
+    const verdict = judgeRepeatAlone({
+      arms: repeated,
+      runs: 2,
+      alone: { ran: false, why: "a worktree of the commit could not be made: fatal: not a git repository" },
+    });
+
+    expect(verdict.kind).toBe("alone-unresolved");
+    expect(verdict.sentence).toContain("BOTH roads above stand");
+    /* The by-hand command is derived from the arms, so a shift is never left to
+       work out which suite the refusal was about. */
+    expect(verdict.sentence).toContain("npx vitest run server/moneySurfaceClassifier.test.ts");
+    expect(verdict.sentence).not.toContain("breached in the commit");
+  });
+
+  it("⚠ NOT keyed on the word timeout — #2212's own refusal, pinned here too", () => {
+    /*
+      The trap the card names second. An ordinary assertion that only fails
+      under contention must read exactly as a timeout does, or a shift goes
+      hunting a broken hook — which is the measured 2026-10-10 case
+      (`server/atlasCommitHook.test.ts:367`, a real `git commit` giving up).
+      The reading is the SOLO RUN's exit status and the error text never enters
+      it, so the two cases are indistinguishable to this judge by construction.
+    */
+    const assertionArm = ["server/atlasCommitHook.test.ts > d > the hook stages the map"];
+    const asMachine = judgeRepeatAlone({
+      arms: assertionArm,
+      runs: 2,
+      alone: { ran: true, passed: true, arms: [], files: ["server/atlasCommitHook.test.ts"] },
+    });
+    const asCommit = judgeRepeatAlone({
+      arms: assertionArm,
+      runs: 2,
+      alone: { ran: true, passed: false, arms: assertionArm, files: ["server/atlasCommitHook.test.ts"] },
+    });
+
+    expect(asMachine.kind).toBe("alone-passes");
+    expect(asCommit.kind).toBe("alone-fails");
+    /*
+      ⚠ **TWO NARROWINGS, BOTH FOUND BY THIS ARM FIRING ON THINGS IT SHOULD NOT
+      HAVE.**
+
+      **The comments are stripped**: these modules QUOTE `Test timed out in
+      30000ms` at length, because that is the measurement they record, and a
+      reader keyed on the wording is a thing in the CODE — the only place it can
+      do harm. Testing the prose made the arm red the moment the defect was
+      written up, which is a guard punishing the write-up rather than the
+      behaviour.
+
+      **And the population is the two READER modules, not `deploy-rite.mts`.**
+      The rite legitimately holds the word three ways: `setTimeout`,
+      `fetchWithClearedTimeout` for the health probe, and — the one that
+      matters — the refusal's own English, *"a guard suite failed on the machine
+      rather than on the commit — a timeout under load"*. That sentence is the
+      road being EXPLAINED to a person, which is the opposite of a classifier
+      keying on it. Holding the printer to this rule would forbid the rite from
+      describing the very thing it is diagnosing.
+    */
+    const codeOnly = (text: string) => text
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .replace(/^\s*\/\/.*$/gm, " ");
+    /*
+      ⚠ **AND IT FORBIDS A COMPARISON, NOT THE WORD — the third narrowing, and
+      the arm found this one too.** `judgeAgainstMemory`'s own `changed-set`
+      sentence ends *"It does NOT have to arrive as a timeout"*, which is the
+      reading being EXPLAINED to a person in the one place that explanation
+      belongs. Forbidding the word outright would delete the sentence that tells
+      a shift this is not a timeout rule. What must never exist is a branch
+      taken on the wording: a `.includes`, an `.indexOf`, or a regex test.
+    */
+    const keysOnWording = (code: string) =>
+      /(?:includes|indexOf|startsWith|endsWith)\(\s*["'`][^"'`]*tim(?:ed |e)?out/i.test(code)
+      || /\/[^/\n]*tim(?:ed |e)?out[^/\n]*\/[a-z]*\s*\.\s*test\s*\(/i.test(code)
+      || /\.\s*match\s*\(\s*\/[^/\n]*tim(?:ed |e)?out/i.test(code);
+    /* The instrument gets its positive control before its verdict counts
+       (working law 2) — all three shapes, and one that must NOT fire. */
+    expect(keysOnWording('if (output.includes("Test timed out")) return "machine";')).toBe(true);
+    expect(keysOnWording('if (/timed out/i.test(output)) return "machine";')).toBe(true);
+    expect(keysOnWording('const hit = output.match(/timeout/);')).toBe(true);
+    expect(keysOnWording('sentence: `it does NOT have to arrive as a timeout`')).toBe(false);
+
+    for (const file of [
+      path.join(ROOT, "scripts", "lib", "riteFailureMemory.mts"),
+      path.join(ROOT, "scripts", "lib", "scriptGuards.mts"),
+    ]) {
+      expect(
+        keysOnWording(codeOnly(readFileSync(file, "utf8"))),
+        `no reader in ${path.basename(file)} branches on the wording of a timeout`,
+      ).toBe(false);
+    }
+  });
+});
+
+describe("#2248 · the rite TAKES the control, and only on a repeat (invariant 7)", () => {
+  it("the refusal road re-runs the arms alone when the memory says `same-set`", () => {
+    const source = riteSource();
+    const reads = (text: string) =>
+      /if \(memory\.kind === "same-set"\)/.test(text)
+      && /judgeRepeatAlone\(\{/.test(text)
+      && /alone: rerunArmsAlone\(/.test(text);
+
+    expect(reads(source)).toBe(true);
+    expect(reads(sabotage(source, 'if (memory.kind === "same-set") {', "deploy-rite.mts"))).toBe(false);
+    expect(reads(sabotage(source, "alone: rerunArmsAlone(", "deploy-rite.mts"))).toBe(false);
+  });
+
+  it("⚠ its sentence reaches the message a shift reads, or the control is spent for nothing", () => {
+    const source = riteSource();
+    const reads = (text: string) => /AND WHAT THOSE ARMS DID ON THEIR OWN \(#2248\)/.test(text)
+      && /\$\{repeat\}/.test(text);
+
+    expect(reads(source)).toBe(true);
+    expect(reads(sabotage(source, "${repeat}", "deploy-rite.mts"))).toBe(false);
+  });
+
+  it("⚠ the gate is UNCHANGED — the refusal still fires on both roads", () => {
+    /*
+      The card's first refusal: not "stop refusing". The control buys the
+      DIAGNOSIS and never the push, so `die` is reached whatever the solo run
+      said — there is no road out of the refusal, and no branch on `repeat`
+      except whether its sentence is printed.
+    */
+    const source = riteSource();
+    /* ⚠ `if (!verdict.ok) {` appears THREE times in this file — the atlas, the
+       capability and the guard steps each have one — so slicing on it spanned
+       nine `die(` calls and the arm failed for the wrong reason. The anchor is
+       the guard step's own call, which is unique and asserted so. */
+    const opens = "const verdict = runScriptGuardsOnCommit(";
+    const closes = "notePass({ sha, at: new Date()";
+    expect(source.split(opens), "the opening anchor must be unique").toHaveLength(2);
+    expect(source.split(closes), "the closing anchor must be unique").toHaveLength(2);
+    const guardStep = source.slice(source.indexOf(opens), source.indexOf(closes));
+    expect(guardStep, "the step was sliced").not.toBe("");
+    expect(guardStep, "and the slice is the right step").toContain("judgeRepeatAlone({");
+    /* ⚠ The STEP holds two refusals — the blind road (`couldNotRun`) and this
+       one — so the subject is the `!verdict.ok` branch alone. Sliced once more
+       rather than counted loosely: the arm is about there being no road out of
+       THIS refusal, and two `die(` calls in one slice would satisfy a sloppier
+       count either way. */
+    const refusal = guardStep.slice(guardStep.indexOf("if (!verdict.ok) {"));
+    expect(refusal.split("die(")).toHaveLength(2);
+    expect(refusal, "no early return past the refusal").not.toContain("return;");
+    expect(refusal).not.toContain("process.exit(0)");
+  });
+
+  it("the solo re-run is a worktree of the COMMIT, never the shift's own directory", () => {
+    /* `riteWorktree.mts`' own reason: the shared tree carries untracked
+       disposables, so a control run there answers about a tree nobody pushes. */
+    const guards = guardsSource();
+    const alone = guards.slice(guards.indexOf("export const rerunArmsAlone ="));
+    expect(alone, "the function was sliced").not.toBe("");
+    expect(alone).toContain("inWorktreeOf(root, commit,");
+  });
+
+  it("⚠ it refuses a PARTIAL re-run rather than answering a narrower question", () => {
+    const guards = guardsSource();
+    const alone = guards.slice(guards.indexOf("export const rerunArmsAlone ="));
+    expect(alone).toContain("reading.unparsed.length > 0");
+    expect(alone).toContain("ran: false");
   });
 });
