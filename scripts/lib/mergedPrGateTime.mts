@@ -54,6 +54,7 @@
  */
 import { execFileSync } from "node:child_process";
 
+import { SEARCH_RESULT_CEILING } from "./crewNamingWindow.mts";
 import type { MergedPrReading } from "./shiftLedger.mts";
 
 const GATE_WORKFLOW_PATH = ".github/workflows/gate.yml";
@@ -73,6 +74,12 @@ export type ReadMergedPrsOptions = {
    * A bound on the `gh` page, not on the answer. Hitting it is a REFUSAL, so
    * the caller must size it above the window's real population; the Machinist
    * ledger derives it from `--days`.
+   *
+   * ⚠ **AND IT MAY NOT EXCEED `SEARCH_RESULT_CEILING` (#2291).** This is a
+   * `--search` read, so above GitHub's 1000-result ceiling the page can never
+   * REACH the bound, `listed.length >= limit` can never fire, and the reading
+   * becomes exactly the silent floor that refusal exists to prevent. The remedy
+   * on this road is a NARROWER WINDOW, never a bigger bound.
    */
   limit?: number;
   gh?: GhRunner;
@@ -109,6 +116,30 @@ const syncSleep = (ms: number) => {
 export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = {}): MergedPrsResult {
   const limit = options.limit ?? 100;
   const gh = options.gh ?? realGh;
+
+  /*
+    ⚠ **A BOUND ABOVE THE SEARCH CEILING IS REFUSED BEFORE ANY CALL IS MADE
+    (#2291).** Below this line the reading is a `--search` read whose only
+    truncation check is `listed.length >= limit`. GitHub's Search API returns at
+    most `SEARCH_RESULT_CEILING` results whatever `--limit` says, so a bound
+    above it can never be reached, the compare can never fire, and a short read
+    is written as a complete one — the silent floor, arriving through the very
+    option a caller reaches for to avoid it.
+
+    It is checked FIRST because it needs nothing from GitHub to decide, and
+    `mergedPullRequestArgs` next door already refuses the same shape on the same
+    ground. The remedy is a NARROWER WINDOW, which is why the sentence names
+    `--days` and not `--pr-limit`.
+  */
+  if (limit > SEARCH_RESULT_CEILING) {
+    return {
+      ok: false,
+      why:
+        `a page bound of ${limit} is above GitHub's ${SEARCH_RESULT_CEILING}-result search ceiling, ` +
+        `so truncation could never be detected and the reading would be a silent floor. Narrow the ` +
+        `window (the ledger's --days) instead of raising the bound.`,
+    };
+  }
   const attempts = Math.max(1, Math.floor(options.attempts ?? DEFAULT_ATTEMPTS));
   const sleep = options.sleep ?? syncSleep;
   const oneLine = (error: unknown) => String((error as Error).message ?? error).split("\n")[0];
@@ -167,11 +198,26 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
   }
 
   if (listed.length >= limit) {
+    /*
+      ⚠ **THE REMEDY NAMED HERE USED TO BE ONE THIS ROAD CANNOT HONOUR (#2291).**
+      It read *"Raise the bound (the ledger's --pr-limit) and re-run"*, and on a
+      `--search` read that advice stops working at exactly the point it starts
+      being needed: past `SEARCH_RESULT_CEILING` a bigger bound buys no extra
+      rows and silently disables this compare, so following the instruction
+      turned a loud refusal into a quiet floor. The bound is refused up there
+      now, and the sentence names the remedy that works on this road.
+    */
+    const headroom = SEARCH_RESULT_CEILING - limit;
     return {
       ok: false,
       why:
         `the ${limit}-PR page bound was reached, so this reading may be missing merges and a ` +
-        `truncated count is not a count. Raise the bound (the ledger's --pr-limit) and re-run.`,
+        `truncated count is not a count. ` +
+        (headroom > 0
+          ? `Narrow the window (the ledger's --days), or raise the bound to at most ` +
+            `${SEARCH_RESULT_CEILING} (the search ceiling) and re-run.`
+          : `The bound is already at GitHub's ${SEARCH_RESULT_CEILING}-result search ceiling, so ` +
+            `raising it buys nothing — narrow the window (the ledger's --days) and re-run.`),
     };
   }
 

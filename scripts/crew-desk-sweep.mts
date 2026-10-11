@@ -113,6 +113,12 @@ import {
 } from "../shared/crewShippedNotClosed.js";
 import { buildBoard, readCardComments, readNotBuiltCards } from "./lib/cardBuildState.mts";
 import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./lib/ghQueueTransport.mts";
+import {
+  mergedPrListArgs,
+  mergedPrPopulationArgs,
+  mergedPrPopulationFrom,
+  mergedPrReadVerdict,
+} from "./lib/mergedPrWindow.mts";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   type OrderedIssue,
@@ -358,22 +364,37 @@ if (allOpen === null) {
   were invisible. So this block hangs off `allOpen` and nothing else: its
   population is EVERY open card, and a failed band read cannot narrow it.
 
-  ⚠ **TWO READS OF ITS OWN, AND IT CANNOT BORROW THE ONE BELOW.** `prs` at the
-  NEXT UP block is scoped inside that branch, so reusing it would re-inherit
-  the population bug this card is about. Both calls ask for **number and title
+  ⚠ **THREE READS OF ITS OWN, AND IT CANNOT BORROW THE ONE BELOW.** `prs` at
+  the NEXT UP block is scoped inside that branch, so reusing it would re-inherit
+  the population bug this card is about. Every call asks for **number and title
   only** — not the thirteen fields `OPEN_PR_LIST_ARGS` spends, and deliberately
-  not `body` (#2270): the planner reads the TITLE limb alone, so asking for 300
-  pull-request bodies would be kilobytes of dependabot changelog that nothing
-  here reads. The planner's header carries both measurements.
+  not `body` (#2270): the planner reads the TITLE limb alone, so asking for
+  1,089 pull-request bodies would be megabytes of dependabot changelog that
+  nothing here reads. The planner's header carries both measurements.
+
+  ⚠ **AND THE MERGED READ IS SIZED FROM A COUNT RATHER THAN FROM A NUMBER
+  SOMEBODY CHOSE (#2291).** It was `--limit 200` with no truncation check at
+  all, against **1089 merged pull requests** — so it saw the most recent fifth
+  of the history and reported the rest as clean, which is the one direction the
+  sentence below forbids. `mergedPrWindow.mts` owns the repair, its measurements
+  and why the two obvious alternatives were both rejected: the count comes off
+  the search API (the only road that reports a total), the rows come off
+  `--state merged` (the only road the 1000-result search ceiling does not bind),
+  and the reading is held against the count the way his live page already holds
+  its own.
 
   ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
   rule as the two blocks above, and the same reason: the honest answer on a
   healthy board is zero, and an unread board also answers zero.
 */
-const mergedPrs = gh([
-  "pr", "list", "--state", "merged", "--limit", "200",
-  "--json", "number,title",
-]) as Json[] | null;
+const mergedPopulation = mergedPrPopulationFrom(gh(mergedPrPopulationArgs()));
+const mergedPrs = mergedPopulation === null
+  ? null
+  : gh(mergedPrListArgs(mergedPopulation)) as Json[] | null;
+const mergedRead = mergedPrReadVerdict({
+  population: mergedPopulation,
+  rows: mergedPrs === null ? null : mergedPrs.length,
+});
 const openPrsForShipped = gh([
   "pr", "list", "--state", "open", "--limit", "100",
   "--json", "number,title",
@@ -384,6 +405,7 @@ const asPullRequest = (row: Json): ShippedNotClosedPullRequest => ({
 });
 const shippedNotClosed: readonly ShippedNotClosedFinding[] =
   allOpen === null || mergedPrs === null || openPrsForShipped === null
+    || mergedRead.kind !== "complete"
     ? []
     : planShippedNotClosed({
       open: allOpen.map((row) => ({
@@ -395,14 +417,17 @@ const shippedNotClosed: readonly ShippedNotClosedFinding[] =
       merged: mergedPrs.map(asPullRequest),
       openPullRequests: openPrsForShipped.map(asPullRequest),
     });
-if (allOpen === null || mergedPrs === null || openPrsForShipped === null) {
+if (allOpen === null || openPrsForShipped === null || mergedRead.kind !== "complete") {
+  /* ⚠ The merged read's own verdict carries its reason, so a FLOOR says how
+     many rows it was short rather than joining the others under the word
+     "could not be read" — they are different faults with different repairs. */
   const unread = [
     allOpen === null ? "the open queue" : null,
-    mergedPrs === null ? "the merged pull requests" : null,
+    mergedRead.kind === "complete" ? null : `the merged pull requests (${mergedRead.why})`,
     openPrsForShipped === null ? "the open pull requests" : null,
-  ].filter((part): part is string => part !== null).join(" and ");
+  ].filter((part): part is string => part !== null).join("; and ");
   skipped.push(
-    `SHIPPED BUT STILL OPEN: ${unread} could not be read, so no card was checked for a merged`
+    `SHIPPED BUT STILL OPEN: ${unread} — so no card was checked for a merged`
     + " pull request it never closed on. That is unread, NOT clean.",
   );
 }

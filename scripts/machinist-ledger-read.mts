@@ -77,6 +77,7 @@ import { SLICE_REFUND_DESCRIPTIONS } from "../server/castingV2/sliceRefundLedger
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { faceScanSpendWords, priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
 import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
+import { SEARCH_RESULT_CEILING } from "./lib/crewNamingWindow.mts";
 import { readMergedPrs } from "./lib/mergedPrGateTime.mts";
 import {
   type ShiftRunReading,
@@ -110,7 +111,20 @@ if (!Number.isFinite(days) || days <= 0) {
 // fixed 100 would have made the DEFAULT `--days 14` run refuse every time and
 // then name a flag that did not exist (#559 review, finding 2). 50/day is ~4x
 // headroom on the fastest week on record, and the flag is real.
-const prLimit = Number(arg("pr-limit") ?? Math.max(100, Math.ceil(days * 50)));
+//
+// ⚠ **AND IT IS CLAMPED TO THE SEARCH CEILING (#2291).** `50/day` crosses
+// GitHub's 1000-result ceiling at `--days 21`, and the reader below is a
+// `--search` read whose truncation check is `listed.length >= limit` — so an
+// unclamped derivation silently disabled that check on every window past three
+// weeks. Clamping keeps the check LIVE rather than refusing a window that
+// works: measured 2026-10-11, `--days 30` is 757 merges, comfortably inside the
+// ceiling, so it still reads complete; a window whose real population passes
+// 1000 now refuses out loud and says to narrow `--days`. An explicit
+// `--pr-limit` above the ceiling is NOT clamped — the reader refuses it, because
+// a figure a person typed is answered rather than quietly changed.
+const prLimit = Number(
+  arg("pr-limit") ?? Math.min(SEARCH_RESULT_CEILING, Math.max(100, Math.ceil(days * 50))),
+);
 if (!Number.isFinite(prLimit) || prLimit <= 0) {
   console.error(`--pr-limit is not a positive number: ${arg("pr-limit")}`);
   process.exit(1);
