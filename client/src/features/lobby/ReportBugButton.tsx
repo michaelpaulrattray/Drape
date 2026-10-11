@@ -19,13 +19,15 @@
 import { Icon, IconButton, P, useAnchoredPanel } from '@/foundation';
 
 import { FEEDBACK_PANEL_STYLE, FeedbackForm } from './FeedbackForm';
+import { TOPBAR_HELP_VISIBILITY } from './LobbyUtilityMenu';
 
 export function ReportBugButton() {
   const popover = useAnchoredPanel({ align: 'fromTheRight' });
   const { close, open, panelRef, panelStyle, surfaceProps, toggle, triggerRef } = popover;
 
   return (
-    <div className="hidden md:block">
+    /* Below 768px this entrance lives in the account menu instead (#2263). */
+    <div className={TOPBAR_HELP_VISIBILITY}>
       <IconButton
         ref={triggerRef}
         onClick={() => (open ? close() : toggle())}

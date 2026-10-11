@@ -11595,6 +11595,10 @@
       "path": "client/src/features/castingV2/wardrobeEditCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/lobby/helpPlacement2263-guard.test.ts",
+      "path": "client/src/features/lobby/helpPlacement2263-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/lobby/lobbyStub.test.ts",
       "path": "client/src/features/lobby/lobbyStub.test.ts"
     },
@@ -19354,6 +19358,11 @@
     {
       "from": "module:client/src/features/lobby/ReportBugButton.tsx",
       "to": "module:client/src/features/lobby/FeedbackForm.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/lobby/ReportBugButton.tsx",
+      "to": "module:client/src/features/lobby/LobbyUtilityMenu.tsx",
       "kind": "imports"
     },
     {

@@ -50,7 +50,7 @@ import {
   type RailDestinationId,
 } from "@/foundation";
 import { UserCard } from "@/components/UserCard";
-import { LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
+import { HelpInAccountMenu, LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
 import { ReportBugButton } from "@/features/lobby/ReportBugButton";
 import { AccountSurfaces, useAccountSurfaces } from "@/features/settings";
 /* #1042 — the hook's own module, not the `@/features/staff` barrel. The barrel
@@ -231,18 +231,23 @@ export function AppChrome({
                  its one live consumer. The avatar above is the chip you click;
                  the menu no longer repeats it, so no image props come down
                  here any more. */
+              /* #2263 — below 768px the bug icon and the help menu leave the
+                 topbar, so the account menu carries them instead; above it
+                 the wrapper adds nothing. */
               menu: (
-                <UserCard
-                  userName={user.name ?? "Account"}
-                  creditsBalance={creditsData?.balance ?? null}
-                  role={user.role}
-                  adminCount={adminCount}
-                  moderationCount={moderationCount}
-                  onOpenSettings={() => account.openSettings("profile")}
-                  onOpenMembers={() => account.openSettings("members")}
-                  onOpenBilling={() => account.openSettings("billing")}
-                  onLogout={logout}
-                />
+                <HelpInAccountMenu>
+                  <UserCard
+                    userName={user.name ?? "Account"}
+                    creditsBalance={creditsData?.balance ?? null}
+                    role={user.role}
+                    adminCount={adminCount}
+                    moderationCount={moderationCount}
+                    onOpenSettings={() => account.openSettings("profile")}
+                    onOpenMembers={() => account.openSettings("members")}
+                    onOpenBilling={() => account.openSettings("billing")}
+                    onLogout={logout}
+                  />
+                </HelpInAccountMenu>
               ),
             }
           : undefined
