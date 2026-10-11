@@ -192,7 +192,8 @@ describe("the personality card: the panel replaces the body, and the footers cro
     expect(html).toContain(SENTENCE.replace("'", "&#x27;"));
     /* His footer: across to door 1, and back to the draft. */
     expect(html).toContain(`${PERSONA_READS_TITLE} ›`);
-    expect(html).toContain("Back to the draft");
+    expect(html).toContain(">Back</button>");
+    expect(html).not.toContain("Back to the draft");
   });
 
   it("a shut card offers neither door", () => {
@@ -275,7 +276,8 @@ describe("the panel, stage by stage", () => {
 
   it("the voice footer has the way back and no link to door 1", () => {
     const html = panel("voice", { stage: "writing" });
-    expect(html).toContain("Back to the draft");
+    expect(html).toContain(">Back</button>");
+    expect(html).not.toContain("Back to the draft");
     expect(html).not.toContain(PERSONA_READS_TITLE);
   });
 });
