@@ -60,7 +60,7 @@ import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import {
   castPersonaCraftRules,
-  fitToCap,
+  fitProseToCap,
   PERSONA_MAX_OUTPUT_TOKENS,
 } from "./castPersona";
 import type { CastPronouns } from "./castPronouns";
@@ -214,9 +214,10 @@ export async function translateCastPersonaOwnWords(input: {
 }
 
 /**
- * The reply, read strictly and fitted to the line's cap at a sentence end —
- * the Sign's own `fitToCap`, so a translated line is always one the customer
- * can then edit (the relay's finding 3 on PR #2114, the same hole).
+ * The reply, read strictly, cleaned and fitted to the line's cap at a sentence
+ * end — the Sign's own `fitProseToCap`, so a translated line is always one the
+ * customer can then edit (the relay's finding 3 on PR #2114, the same hole) and
+ * never carries a transport marker like `</s>` onto the card (#2276).
  */
 export function parseCastPersonaTranslation(raw: string, line: CastPersonaField): string | null {
   let parsed: unknown;
@@ -231,8 +232,12 @@ export function parseCastPersonaTranslation(raw: string, line: CastPersonaField)
     log.warn({ line }, "[castPersonaTranslate] the reply did not carry a line — nothing returned");
     return null;
   }
-  const fitted = fitToCap(read.data.line.trim(), castPersonaCapFor(line));
-  return fitted ? fitted : null;
+  const fitted = fitProseToCap(read.data.line, castPersonaCapFor(line));
+  if (!fitted) {
+    log.warn({ line }, "[castPersonaTranslate] the line did not end on a whole sentence that fits — nothing returned");
+    return null;
+  }
+  return fitted;
 }
 
 /** Some models fence JSON despite being asked for an object. */

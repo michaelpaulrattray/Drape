@@ -431,8 +431,12 @@ export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
     good line: the "both lines or neither" rule below means one long voice line
     would take a perfectly fine personality down with it.
   */
-  const personality = fitToCap(read.data.personality.trim(), CAST_PERSONALITY_MAX_LENGTH);
-  const voice = fitToCap(read.data.voice.trim(), CAST_VOICE_MAX_LENGTH);
+  /* Cleaned as well as fitted (#2276): litter the model left after the last
+     sentence — `</s>` on five of six reads on the sibling road — and a stray
+     trailing fragment are cut before the fit, so a marker is never saved on
+     the card. */
+  const personality = fitProseToCap(read.data.personality, CAST_PERSONALITY_MAX_LENGTH);
+  const voice = fitProseToCap(read.data.voice, CAST_VOICE_MAX_LENGTH);
   /*
     BOTH LINES OR NEITHER, and that is a product rule rather than strictness.
 
@@ -502,6 +506,148 @@ export function fitToCap(line: string, cap: number): string {
     "[castPersona] a drafted line was over the cap and was cut at a sentence end",
   );
   return cut;
+}
+
+/**
+ * CUT ANYTHING THE MODEL LEFT AFTER THE LAST FULL STOP — measured, not feared.
+ *
+ * ⚠ **THE SIX READS CAME BACK CARRYING RAW TRANSPORT MARKERS, AND A CUSTOMER
+ * WOULD HAVE READ THEM.** The court's third run produced six good reads for
+ * his own Pigman and every one of them ended in litter: five closed
+ * `…outran the decision.</s>` and one `…behind the other.»,`. `</s>` is an
+ * end-of-sequence token; it parsed as part of the string, so nothing threw,
+ * and it would have been stored on the Cast and drawn on the card.
+ *
+ * ⚠ **IT IS A POSITIVE RULE AND DELIBERATELY NOT A DENYLIST OF `</s>` AND `»`.**
+ * A denylist only ever removes the junk somebody has already seen, and the next
+ * model, or the next release of this one, emits different junk — which would
+ * ship to a customer exactly the way this did. Keeping everything up to the
+ * last sentence end instead throws away whatever is there, named or not, and
+ * it is the same cut `fitToCap` already makes for a different reason.
+ *
+ * A LABEL has no sentence end to find, so it is cut at the last letter, digit
+ * or closing bracket instead.
+ *
+ * ⚠ **THE SIBLINGS ARE SWEPT NOW — #2276 — AND THIS PARAGRAPH SAID "FILED"
+ * WHEN NOTHING WAS.** Until 2026-10-11 it read *"Filed rather than fixed
+ * blind"* of the drafted line, and no card existed until the relay's N2b
+ * milestone-close review went looking for one and filed #2276. The class is
+ * "transport markers in prose a customer reads", and it had two more
+ * instances on the same model and the same card: the Sign's drafted lines
+ * (`parseCastPersonaDraft`) and "Say it your way"
+ * (`parseCastPersonaTranslation`). All three roads now run one composition,
+ * `fitProseToCap` below, so none of them can be fixed without the others.
+ * Only the post-processing moved — the Sign's instruction is untouched and its
+ * golden stays byte-identical.
+ *
+ * ⚠ **A CLOSING QUOTE THAT CLOSES AN OPEN QUOTE IS KEPT (#2276).** A persona
+ * line can end on a quoted word — *answers with "Maybe."* — and cutting at the
+ * full stop alone would store an unbalanced `"Maybe.` on the card, which is
+ * litter of our own making. The quote is kept only when the kept text has one
+ * left open, so `…late.»,` (nothing opened) still loses its tail.
+ */
+export function trimTrailingJunk(value: string, options: { sentence: boolean }): string {
+  if (!value) return value;
+  if (options.sentence) {
+    const end = Math.max(value.lastIndexOf("."), value.lastIndexOf("!"), value.lastIndexOf("?"));
+    /* `< 1` for the same reason `fitToCap` uses it: punctuation at index 0 is
+       not a sentence, and cutting there would store a single full stop. */
+    if (end < 1) return value;
+    const cut = value.slice(0, end + 1);
+    const next = value[end + 1];
+    if (next === '"' && countOf(cut, '"') % 2 === 1) return cut + next;
+    if (next === "”" && countOf(cut, "“") > countOf(cut, "”")) return cut + next;
+    return cut;
+  }
+  /*
+    A LABEL IS CUT AT THE FIRST CHARACTER IT MAY NOT CONTAIN, which is the
+    opposite question from the one asked of a sentence and has to be.
+
+    ⚠ **THE FIRST SHAPE OF THIS BRANCH WALKED BACK TO THE LAST LETTER, AND THE
+    SUITE CAUGHT IT: `"The quiet one</s>"` came back as `"The quiet one</s"`,
+    because the `s` inside the marker is a letter.** Trailing litter is not
+    reliably punctuation, so "where does it end" cannot be answered from the
+    end. What a label may HOLD is answerable: two or three plain words, so
+    letters, digits, spaces, and the hyphen and apostrophe that live inside
+    ordinary words. Everything from the first character outside that set is
+    dropped.
+
+    The letter test is `toLowerCase() !== toUpperCase()` rather than a unicode
+    property escape, because this build's target predates the `u` flag and a
+    plain `[A-Za-z]` would cut a label at its first accented letter.
+  */
+  let end = 0;
+  while (end < value.length) {
+    const ch = value[end]!;
+    const isLetter = ch.toLowerCase() !== ch.toUpperCase();
+    if (!isLetter && !/[0-9 \-‐-―'’]/.test(ch)) break;
+    end += 1;
+  }
+  return value.slice(0, end).trim();
+}
+
+/**
+ * A READ ENDS ON A WHOLE SENTENCE OR IS DROPPED — #2238, his word: *"One also
+ * has a stray "able." on the end."*
+ *
+ * ⚠ **WHY `trimTrailingJunk` LET IT THROUGH.** That cut keeps everything up to
+ * the LAST full stop, and a fragment that ends in a full stop — `…holding the
+ * new ground. able.` — has one. So the litter survived the very rule written
+ * against litter, because the rule asked "where does the prose end" and the
+ * fragment answered for it.
+ *
+ * The question asked here is the other one: is the LAST sentence a sentence? A
+ * real one in a read starts on a capital (the craft asks for two sentences, each
+ * opening a job) and is more than one word. A tail that fails either is
+ * cut back to the sentence before it; if nothing whole is left, the read is
+ * `""` and the six-or-nothing rule drops the list rather than drawing it.
+ */
+export function dropTrailingFragments(value: string): string {
+  let text = value.trim();
+  for (;;) {
+    if (!text) return "";
+    /* A sentence may close on a quote — `…with "Maybe."` — which
+       `trimTrailingJunk` keeps when it closes an open one. */
+    const core = /[.!?]["”]$/.test(text) ? text.slice(0, -1) : text;
+    const ends = /[.!?]$/.test(core);
+    const body = ends ? core.slice(0, -1) : core;
+    const before = Math.max(body.lastIndexOf("."), body.lastIndexOf("!"), body.lastIndexOf("?"));
+    const tail = text.slice(before + 1).trim();
+    const firstLetter = tail.split("").find((ch) => ch.toLowerCase() !== ch.toUpperCase()) ?? "";
+    const whole = ends
+      && firstLetter !== ""
+      && firstLetter === firstLetter.toUpperCase()
+      && tail.split(/\s+/).filter(Boolean).length > 1;
+    if (whole) return text;
+    if (before < 1) return "";
+    text = text.slice(0, before + 1).trim();
+  }
+}
+
+function countOf(text: string, ch: string): number {
+  return text.split(ch).length - 1;
+}
+
+/**
+ * CLEAN A LINE OF MODEL PROSE AND FIT IT TO ITS CAP — the one composition every
+ * road that stores model prose on a persona card runs (#2276): the six reads,
+ * the Sign's drafted lines, and "Say it your way".
+ *
+ * Litter after the last sentence end is cut, a trailing fragment is cut, the
+ * line is fitted to the customer's ceiling at a sentence end, and a fragment
+ * the fit exposed is cut again. What comes back ends on a whole sentence, or is
+ * `""` — which each road already treats as a failed read rather than a line.
+ *
+ * ⚠ **ONE FUNCTION AND NOT THREE CALL CHAINS, because the three were already
+ * one fix that had been made on one road.** The reads got the trim and the
+ * fragment cut after five of six reads on his Pigman ended in `</s>`; the two
+ * other roads on the same model kept `fitToCap` alone, so the marker would have
+ * been saved on a cast's card the day it reached them.
+ */
+export function fitProseToCap(line: string, cap: number): string {
+  return dropTrailingFragments(
+    fitToCap(dropTrailingFragments(trimTrailingJunk(line.trim(), { sentence: true })), cap),
+  );
 }
 
 /** Some models fence JSON despite being asked for an object. */

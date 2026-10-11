@@ -256,3 +256,31 @@ describe("the customer's sentence reaches the prompt inside its tags, flattened"
     }
   });
 });
+
+/* ----------------------------------- #2276 · transport markers on "Say it your way" */
+
+describe("a translated line never carries a transport marker onto the card (#2276)", () => {
+  /*
+    Same model as the six reads, which ended in `</s>` on five of six; until
+    #2276 this road ran `fitToCap` alone. Driven through the press itself.
+  */
+  const line = "Stands at the door with the arms folded and the weight back. Moves only when someone pushes first.";
+
+  it("strips `</s>` from the line the press returns", async () => {
+    const { engine } = recordingEngine(async () => ({ text: JSON.stringify({ line: `${line}</s>` }) }));
+    const outcome = await translateCastPersonaOwnWords({ engine, line: "personality", ownWords: BOUNCER, pronouns: SHE });
+    expect(outcome).toEqual({ kind: "line", text: line });
+  });
+
+  it("strips a marker nobody has named, and a stray fragment, on the voice line too", () => {
+    const voice = "A gravel voice that drops at the end of every sentence. Answers a question with a shrug and a pause.";
+    expect(parseCastPersonaTranslation(JSON.stringify({ line: `${voice}»,` }), "voice")).toBe(voice);
+    expect(parseCastPersonaTranslation(JSON.stringify({ line: `${voice} able.` }), "voice")).toBe(voice);
+  });
+
+  it("leaves a clean line exactly as it came (negative control)", async () => {
+    const { engine } = recordingEngine(async () => ({ text: JSON.stringify({ line }) }));
+    const outcome = await translateCastPersonaOwnWords({ engine, line: "personality", ownWords: BOUNCER, pronouns: SHE });
+    expect(outcome).toEqual({ kind: "line", text: line });
+  });
+});

@@ -86,11 +86,13 @@ describe("the persona reader — the positive control first", () => {
 
   it("trims whitespace the model leaves on either line", async () => {
     const reader = createCastPersonaReader({
-      engine: engineReturning(JSON.stringify({ personality: "  Still and square.  ", voice: "\n Low. \n" })),
+      engine: engineReturning(JSON.stringify({ personality: "  Still and square.  ", voice: "\n Low and dry. \n" })),
     });
     const lines = await reader.read(request());
 
-    expect(lines).toEqual({ personality: "Still and square.", voice: "Low." });
+    /* Two-word lines, not one: since #2276 a line runs the reads' fragment cut,
+       and a one-word "sentence" is the fragment shape it removes. */
+    expect(lines).toEqual({ personality: "Still and square.", voice: "Low and dry." });
   });
 
   it("reads a reply the model fenced as a code block", async () => {
@@ -636,9 +638,52 @@ describe("a drafted line is fitted to the cap the customer is held to", () => {
     */
     const long = `A real first sentence. ${"and then it keeps going without stopping ".repeat(20)}`;
     const draft = parseCastPersonaDraft(
-      line === "voice" ? reply("Watchful.", long) : reply(long, "Low."),
+      line === "voice" ? reply("Watchful, hands still.", long) : reply(long, "Low and dry."),
     );
     expect(draft).not.toBeNull();
     expect(draft![line].length).toBeLessThanOrEqual(cap);
+  });
+});
+
+/* ---------------------------------------- #2276 · transport markers on the Sign */
+
+describe("the Sign's drafted lines never carry a transport marker onto the card (#2276)", () => {
+  /*
+    The six reads came back ending in `</s>` on five of six reads on his own
+    Pigman, from the same model this road calls. Until #2276 this road ran
+    `fitToCap` alone, so a marker the model left after its last full stop was
+    stored on the cast's card. Driven through the READER, the road the Sign
+    takes, so the arm proves the mint stores what the customer should read.
+  */
+  const personality =
+    "Sits back with the shoulders dropped and the gaze parked on the door. Answers late and all at once.";
+  const voice = "Low and dry, pitched under the room. Says little and answers a question with a pause.";
+
+  it("strips `</s>` from both lines through the real reader", async () => {
+    const reader = createCastPersonaReader({
+      engine: engineReturning(JSON.stringify({ personality: `${personality}</s>`, voice: `${voice} </s>` })),
+    });
+    const lines = await reader.read(request());
+    expect(lines).toEqual({ personality, voice });
+  });
+
+  it("strips a marker nobody has named, by the same positive rule", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality: `${personality}»,`, voice: `${voice}<|eot_id|>` })))
+      .toEqual({ personality, voice });
+  });
+
+  it("cuts a stray trailing fragment, as the reads do", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality: `${personality} able.`, voice })))
+      .toEqual({ personality, voice });
+  });
+
+  it("leaves clean lines exactly as they came (negative control)", () => {
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice }))).toEqual({ personality, voice });
+  });
+
+  it("keeps a closing quote that closes an open one, and only that", () => {
+    const quoted = 'Low and dry, pitched under the room. Answers every question with "Maybe."';
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice: quoted }))?.voice).toBe(quoted);
+    expect(parseCastPersonaDraft(JSON.stringify({ personality, voice: `${quoted}</s>` }))?.voice).toBe(quoted);
   });
 });
