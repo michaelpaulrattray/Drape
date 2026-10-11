@@ -447,12 +447,29 @@ export function crewCardRefusalLine(seat?: string | null, at = "<UTC time>"): st
  * `crewCardCommentFact` by `server/crewCardBuildState.test.ts` rather than
  * compared to a second copy of itself (working law 4, invariant 5). The three
  * lines are the artifact; this prose is the reason.
+ *
+ * ⚠ **AND ITS OPENING SENTENCE WAS FALSE UNTIL #2272 (2026-10-11), WHICH IS THE
+ * ONE THING AN INSTRUCTION MUST NOT BE.** It read *"the board reads the FIRST
+ * WORD of your comment, and nothing else on the card is read as a refusal or a
+ * release"*. {@link crewCardCommentFact} reads EVERY block-opening line
+ * (`blockOpeningLines`, `shared/crewMarkdownLead.ts`) and checks refusal BEFORE
+ * release — so a correct `RELEASED` line at the top is overruled by ordinary
+ * prose further down that opens a paragraph with *"Not built"*. **It happened on
+ * #1469**: the release was filed as a refusal, and the board called a free card
+ * not-built until the comment was edited.
+ *
+ * **The reader is NOT changed here, deliberately.** Refusal-winning is the safe
+ * direction for a genuine refusal, and requiring the dash would make a real
+ * refusal typed slightly differently invisible — which is the silence #1701 was
+ * filed about. What was wrong is what the seat was TOLD. The arm in
+ * `server/crewCardBuildState.test.ts` drives that exact body, so this prose
+ * cannot drift from the precedence it describes.
  */
 export function crewCardHandbackInstruction(seat?: string | null): string {
   const other = CREW_CARD_REFUSAL_WORDS.slice(1);
   return [
-    "HANDING A CARD BACK — the board reads the FIRST WORD of your comment, and",
-    "nothing else on the card is read as a refusal or a release (#1701):",
+    "HANDING A CARD BACK — the board reads these words at the START OF ANY",
+    "PARAGRAPH in your comment, not only the first line (#1701, #2272):",
     "",
     `  refuse it    ${crewCardRefusalLine(seat)}`,
     "               then the file:line that disagrees with the card, and why —",
@@ -464,6 +481,11 @@ export function crewCardHandbackInstruction(seat?: string | null): string {
     "               deliberately a warning and not a handback, because it may be",
     "               a half-finished slice — so a card you partly shipped reads",
     "               CLAIMED for twelve hours until you write the word.",
+    "               ⚠ AND A REFUSAL OUTRANKS A RELEASE, wherever each one sits —",
+    `               so do not open a later paragraph with ${CREW_CARD_REFUSAL_WORDS[0]}`,
+    "               when you mean to hand the card back: the whole comment is",
+    "               filed as a refusal, and the card reads refused while it is",
+    "               free. Keep the words mid-sentence, or reword them.",
     "",
     `  take it      ${crewCardClaimLine(seat)}`,
     "",
