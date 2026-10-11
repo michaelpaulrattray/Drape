@@ -44,12 +44,13 @@ import { CampaignMenu } from "@/features/castingV2/components/CampaignMenu";
 import { CastPickBox } from "@/features/castingV2/components/CastPickBox";
 import { CastSelectionBar, type BarCampaign } from "@/features/castingV2/components/CastSelectionBar";
 import {
-  castIdBatches,
   filedSentence,
   pickedInView,
+  runInBatches,
   selectionViewKey,
   togglePick,
   unfiledSentence,
+  unreachedSentence,
 } from "@/features/castingV2/castSelection";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import {
@@ -708,28 +709,42 @@ export default function CastingV2() {
   const fileSelection = async (action: "add" | "remove", campaign: BarCampaign) => {
     const castIds = pickedInView(pickedIds, shownCastsForPicks);
     if (castIds.length === 0) return;
-    let moved = 0;
-    try {
-      for (const batch of castIdBatches(castIds)) {
-        if (action === "add") {
-          moved += (await addCastsToCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).added;
-        } else {
-          moved += (await removeCastsFromCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).removed;
-        }
+    const run = await runInBatches(castIds, async (batch) => (action === "add"
+      ? (await addCastsToCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).added
+      : (await removeCastsFromCampaign.mutateAsync({ campaignId: campaign.campaignId, castIds: batch })).removed));
+    await invalidateLibrary();
+    /*
+      A STOPPED RUN REPORTS WHAT IT DID AND KEEPS THE REST TICKED (card #2275).
+
+      ⚠ The sentence used to come from the `catch` alone, so a 63-cast selection
+      whose second call was refused said *"Those casts couldn't be added"* with
+      60 of them already filed, and left all 63 ticked — the counts had become a
+      partial fact the moment the slices went in and nothing read them. Now the
+      `moved` half is said first out of what the server actually ANSWERED for
+      (60 of 63, never 60 of 60), and only the remainder stays selected, so a
+      second press retries it rather than re-sending work that landed.
+    */
+    if (run.error !== undefined) {
+      logRawFailure(action === "add" ? "castingV2.addCastsToCampaign" : "castingV2.removeCastsFromCampaign", run.error);
+      /* Only the unfiled stay ticked — on the first call's refusal that is the
+         whole selection, which is what this surface already did. */
+      setPicks({ view: viewKey, ids: new Set(run.unreached) });
+      if (run.answered === 0) {
+        toast(readableFailure(run.error, action === "add"
+          ? `Those casts couldn't be added to “${campaign.name}”.`
+          : `Those casts couldn't be taken out of “${campaign.name}”.`));
+        return;
       }
-    } catch (error) {
-      logRawFailure(action === "add" ? "castingV2.addCastsToCampaign" : "castingV2.removeCastsFromCampaign", error);
-      toast(readableFailure(error, action === "add"
-        ? `Those casts couldn't be added to “${campaign.name}”.`
-        : `Those casts couldn't be taken out of “${campaign.name}”.`));
-      await invalidateLibrary();
+      const landed = action === "add"
+        ? filedSentence(run.moved, run.answered, campaign.name)
+        : unfiledSentence(run.moved, run.answered, campaign.name);
+      toast(`${landed} ${unreachedSentence(run.unreached.length, action)}`);
       return;
     }
-    await invalidateLibrary();
     clearPicks();
     toast(action === "add"
-      ? filedSentence(moved, castIds.length, campaign.name)
-      : unfiledSentence(moved, castIds.length, campaign.name));
+      ? filedSentence(run.moved, castIds.length, campaign.name)
+      : unfiledSentence(run.moved, castIds.length, campaign.name));
   };
 
   if (config.isLoading) {

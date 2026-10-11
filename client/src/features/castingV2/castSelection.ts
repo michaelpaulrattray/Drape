@@ -17,6 +17,11 @@
  *  - **A batch the server would refuse is never sent.** The campaign doors take
  *    at most `CAMPAIGN_CASTS_PER_CALL` ids, and a selection can be longer once
  *    the grid has paged, so it goes in slices.
+ *  - **A run that stops half way says what it did, not what it meant to do**
+ *    (card #2275). The slices made the counts a partial fact, and the first
+ *    shape threw that fact away: one refused slice toasted *"Those casts
+ *    couldn't be added"* over casts that were already filed, and left every
+ *    one of them ticked. `runInBatches` keeps the two halves apart.
  */
 
 import type { RosterChip } from "./rosterChips";
@@ -61,6 +66,61 @@ export function castIdBatches(ids: readonly string[], size = CAMPAIGN_CASTS_PER_
   return batches;
 }
 
+/**
+ * WHAT A RUN OF SLICES ACTUALLY DID — card #2275, found by the relay's
+ * milestone-close review of N2c.
+ *
+ * ⚠ **THE DEFECT THIS REPLACES IS A SENTENCE THAT CONTRADICTED THE DATABASE.**
+ * The page ran the slices in a bare `try` and reported from the `catch`, so a
+ * selection of 63 whose SECOND call was refused — a cast deleted in another tab
+ * is enough, the door is all-or-nothing at its refusal
+ * (`server/db/castCampaigns.ts`) — told the customer *"Those casts couldn't be
+ * added"* while 60 of them sat filed, and left all 63 ticked. Pressing Add
+ * again then read *"All 63 are already in it"*, which is the only way they
+ * would ever have found out.
+ *
+ * So the two halves are kept apart and both are returned:
+ *
+ *  - `moved` — what the server says it newly filed or took out, summed over the
+ *    calls that completed. The server's count, never the number ticked.
+ *  - `answered` — how many ids those calls covered, which is what `moved` is a
+ *    count *out of*: 60 of 63, not 60 of 60.
+ *  - `unreached` — the ids no completed call covered: the refused slice (which
+ *    filed nothing) and everything after it. The page re-ticks exactly these,
+ *    so a second press retries the remainder instead of re-sending work that
+ *    already landed.
+ *  - `error` — the refusal that stopped the run, or `undefined`. Returned
+ *    rather than rethrown, because the caller has to say the `moved` half
+ *    before it says this one.
+ *
+ * It takes the call as a function so this is drivable without React, a server
+ * or a network — which is how card #2275's own arm reaches the second slice.
+ */
+export type BatchRunOutcome = {
+  moved: number;
+  answered: number;
+  unreached: string[];
+  error?: unknown;
+};
+
+export async function runInBatches(
+  castIds: readonly string[],
+  call: (batch: string[]) => Promise<number>,
+): Promise<BatchRunOutcome> {
+  let moved = 0;
+  let answered = 0;
+  for (const batch of castIdBatches(castIds)) {
+    try {
+      moved += await call(batch);
+    } catch (error) {
+      /* The refused slice filed nothing, so it belongs with the untried rest. */
+      return { moved, answered, unreached: castIds.slice(answered), error };
+    }
+    answered += batch.length;
+  }
+  return { moved, answered, unreached: [] };
+}
+
 function castMembers(count: number): string {
   return count === 1 ? "1 cast member" : `${count} cast members`;
 }
@@ -99,4 +159,19 @@ export function unfiledSentence(removed: number, asked: number, campaignName: st
   return absent > 0
     ? `${castMembers(removed)} taken out of ${where}. ${absent} ${absent === 1 ? "wasn't" : "weren't"} in it.`
     : `${castMembers(removed)} taken out of ${where}.`;
+}
+
+/**
+ * THE OTHER HALF OF A STOPPED RUN — the casts no call reached (card #2275).
+ *
+ * It says the count and what happens to them, and that is the whole sentence:
+ * the refusal's own words go to the console (`logRawFailure`) rather than into
+ * a third clause here. A customer who has just filed 60 casts needs to know
+ * which ones did not land and that a second press will try them — *"Cast not
+ * found"* in front of that is the pipeline talking.
+ */
+export function unreachedSentence(left: number, action: "add" | "remove"): string {
+  const verb = action === "add" ? "be added" : "be taken out";
+  const them = left === 1 ? "It's" : "They're";
+  return `${left} couldn't ${verb}. ${them} still selected, so you can try again.`;
 }

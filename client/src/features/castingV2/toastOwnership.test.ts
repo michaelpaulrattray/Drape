@@ -132,14 +132,19 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   },
   // ---- CastingV2.tsx (filing several casts at once — #2251)
   {
-    match: "filedSentence(moved, castIds.length, campaign.name)",
+    match: "filedSentence(run.moved, castIds.length, campaign.name)",
     because:
       "Filing or unfiling a selection (card 2251). Where the casts went is a chip the customer is usually NOT looking at — the grid they are on does not change when casts are added to another campaign, and the only in-place trace is a number moving on a chip at the far end of the row. And the server's count is not the number ticked: a cast already in the campaign is not filed twice, a cast not in it is not taken out, and only this sentence says so ('5 added … 3 were already in it'). It never says 'deleted', because nothing here deletes a cast.",
   },
   {
+    match: "unreachedSentence(run.unreached.length, action)",
+    because:
+      "A filing that STOPPED HALF WAY (card 2275). Over 60 ticked casts go in slices, so a refusal in a later call leaves the earlier ones genuinely filed — and until this sentence existed the customer was told the opposite ('Those casts couldn't be added') with 60 of them already in the campaign, every one still ticked. Nothing on the grid distinguishes 60-of-63 from 0-of-63. So the landed half is said out of what the server answered for, this half names the remainder, and the remainder is what stays selected, which makes a second press the retry rather than a re-send.",
+  },
+  {
     match: "Those casts couldn't be added to",
     because:
-      "A refused bulk filing or unfiling. The selection stays ticked and the grid is unchanged, which looks exactly like the press not having happened; a refusal has no surface of its own. The server's own sentence passes through readableFailure (a cast that stopped being this customer's, a campaign deleted in another tab); this is only the fallback when it has none.",
+      "A bulk filing or unfiling where the FIRST call was refused, so nothing landed. The whole selection stays ticked and the grid is unchanged, which looks exactly like the press not having happened; a refusal has no surface of its own. The server's own sentence passes through readableFailure (a cast that stopped being this customer's, a campaign deleted in another tab); this is only the fallback when it has none. A refusal after something landed takes the pair of sentences above instead, because this one would be false.",
   },
   // ---- CastingV2.tsx (the lobby's one roll flow, 196 / gate review of PR 199)
   {
