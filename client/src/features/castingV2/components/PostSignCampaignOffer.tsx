@@ -1,0 +1,156 @@
+import { Plus } from "lucide-react";
+
+/**
+ * AFTER A SIGN, ONE OFFER TO FILE THE NEW CAST — rung N2c, slice S7, card #2253.
+ *
+ * His rulings, from the rung's parent card: *"never shown to an account with no
+ * shoots — with none, its only offer is 'create a shoot', a setup step wearing a
+ * question"* (the noun is Campaign since 2026-09-29), and the brief's refusals:
+ * *"dismissible, don't-ask-again, never blocks Sign, never silent auto-filing."*
+ *
+ * HOW EACH OF THOSE IS HELD, so a reader can check it rather than trust it:
+ *
+ * - NEVER BLOCKS THE SIGN. The sheet's Sign success only writes a marker into
+ *   memory before it navigates exactly as it always did (`markJustSigned`); the
+ *   offer is drawn later, on the cast page, inside the IN CAMPAIGNS panel. A
+ *   customer who ignores it loses nothing and waits on nothing.
+ * - NEVER FOR AN ACCOUNT WITH NO CAMPAIGNS. `postSignOfferState` answers "gone"
+ *   the moment the campaign list arrives empty, and that answer is final for
+ *   this visit — making a campaign afterwards does not make the offer appear.
+ * - NEVER FILES BY ITSELF. Nothing here calls the store; a row is a button, and
+ *   only its press files, through the panel's own `addCastsToCampaign` road.
+ * - ONCE. The marker lives in memory and is taken on first read, so a reload, a
+ *   second visit or another cast's page never sees it again.
+ * - "DON'T ASK AGAIN" IS KEPT in this browser under a versioned key. Storage
+ *   that throws (a private window, blocked site data) reads as "not silenced"
+ *   and the write is a no-op — the offer then simply asks again next Sign.
+ */
+
+/* ---------------------------------------------------------------- the marker */
+
+const justSigned = new Set<string>();
+
+/** Called by the Sign's success, before it navigates. Memory only; cannot fail. */
+export function markJustSigned(castId: string): void {
+  if (castId) justSigned.add(castId);
+}
+
+/** Whether this cast was just signed in this tab, without using the marker up. */
+export function peekJustSigned(castId: string): boolean {
+  return justSigned.has(castId);
+}
+
+/** True once per Sign: the marker is removed as it is read. */
+export function takeJustSigned(castId: string): boolean {
+  return justSigned.delete(castId);
+}
+
+/* ------------------------------------------------------- "don't ask again" */
+
+export const POST_SIGN_OFFER_SILENCED_KEY = "drape_postsign_campaign_offer_v1";
+
+export function isPostSignOfferSilenced(storage: Pick<Storage, "getItem"> | undefined = safeStorage()): boolean {
+  try {
+    return storage?.getItem(POST_SIGN_OFFER_SILENCED_KEY) === "never";
+  } catch {
+    return false;
+  }
+}
+
+export function silencePostSignOffer(storage: Pick<Storage, "setItem"> | undefined = safeStorage()): void {
+  try {
+    storage?.setItem(POST_SIGN_OFFER_SILENCED_KEY, "never");
+  } catch {
+    /* Nowhere to keep it: the offer asks again after the next Sign, which is the honest fallback. */
+  }
+}
+
+function safeStorage(): Storage | undefined {
+  try {
+    return typeof window === "undefined" ? undefined : window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+/* -------------------------------------------------------------- the decision */
+
+/** "pending": waiting on the campaign list. "showing": drawn. "gone": never again this visit. */
+export type PostSignOfferState = "pending" | "showing" | "gone";
+
+/**
+ * The offer's next state. Pure, so every refusal above is driven directly.
+ * `campaigns` is the customer's whole list (`undefined` while it loads).
+ */
+export function postSignOfferState(
+  current: PostSignOfferState,
+  campaigns: readonly unknown[] | undefined,
+): PostSignOfferState {
+  if (current !== "pending") return current;
+  if (campaigns === undefined) return "pending";
+  return campaigns.length > 0 ? "showing" : "gone";
+}
+
+/* -------------------------------------------------------------- the drawing */
+
+export type PostSignCampaignOfferProps = {
+  castName: string;
+  /** The campaigns the cast could go into — never one it is already in. */
+  campaigns: { campaignId: string; name: string; castCount: number }[];
+  busy: boolean;
+  refusal: string | null;
+  onFile: (campaignId: string) => void;
+  onNotNow: () => void;
+  onNever: () => void;
+};
+
+function castCountLine(count: number): string {
+  return count === 1 ? "1 cast" : `${count} casts`;
+}
+
+export function PostSignCampaignOffer({
+  castName,
+  campaigns,
+  busy,
+  refusal,
+  onFile,
+  onNotNow,
+  onNever,
+}: PostSignCampaignOfferProps) {
+  return (
+    <div className="dpc-camp__offer" role="group" aria-label="Add to a campaign">
+      <p className="dpc-camp__offer-q">
+        Add <span className="dpc-camp__offer-name" title={castName}>{castName}</span> to a campaign?
+      </p>
+      <ul className="dpc-camp__list" aria-label="Your campaigns">
+        {campaigns.map((row) => (
+          <li key={row.campaignId}>
+            <button
+              type="button"
+              className="dpc-camp__row dpc-camp__row--pick"
+              disabled={busy}
+              onClick={() => onFile(row.campaignId)}
+            >
+              <span className="dpc-camp__text">
+                <span className="dpc-camp__name" title={row.name}>{row.name}</span>
+                <span className="dpc-camp__meta">{castCountLine(row.castCount)}</span>
+              </span>
+              <Plus size={12} strokeWidth={2} aria-hidden="true" className="dpc-camp__chev" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      {refusal ? (
+        <p className="dpc-camp__refusal dpc-camp__offer-refusal" role="alert">{refusal}</p>
+      ) : null}
+      <div className="dpc-camp__offer-foot">
+        <button type="button" className="dpc-camp__offer-no" onClick={onNotNow}>
+          Not now
+        </button>
+        <button type="button" className="dpc-camp__offer-no" onClick={onNever}>
+          Don&rsquo;t ask again
+        </button>
+      </div>
+    </div>
+  );
+}

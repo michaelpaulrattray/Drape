@@ -1409,8 +1409,9 @@ export default function CastingRoom() {
                   ) : null}
                 </section>
 
-                {/* IN CAMPAIGNS — the campaigns this cast is in, and one add row (#2252). */}
-                <CastCampaignsCard castId={data.castId} />
+                {/* IN CAMPAIGNS — the campaigns this cast is in, and one add row (#2252);
+                    straight after a Sign it carries the one offer to file the cast (#2253). */}
+                <CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this cast"} />
 
                 {/* SIBLINGS — both sentences name the cast (#2141); tiles unlabelled. */}
                 <section className="dpc-rcard">

@@ -5304,3 +5304,33 @@
   .dpc-persona__doorSub,
   .dpc-persona__read { overflow-wrap: anywhere; }
 }
+
+/*
+  THE POST-SIGN OFFER (#2253) — inside IN CAMPAIGNS, in place of the empty line
+  and the add row, straight after a Sign. One question in the panel's own body
+  voice, the customer's campaigns as the panel's own pick rows, and two quiet
+  ways out. It reads as part of the card, never as a step on top of the page.
+*/
+.dpc-camp__offer-q {
+  margin: 0;
+  padding: 0 16px 11px;
+  font: 400 12px/1.5 var(--font-sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.dpc-camp__offer-name { font-weight: 500; }
+.dpc-camp__offer-refusal { padding-top: 10px; }
+.dpc-camp__offer-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.dpc-camp__offer-no {
+  font: 400 11.5px var(--font-sans);
+  color: var(--meta);
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.dpc-camp__offer-no:hover { color: var(--ink); }
