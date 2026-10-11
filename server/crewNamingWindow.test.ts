@@ -28,7 +28,14 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "../scripts/lib/crewNamingWindow.mts";
+import {
+  judgementIsBlind,
+  mergedPullRequestArgs,
+  SEARCH_RESULT_CEILING,
+  shouldRetryOnWholeHistory,
+  WHOLE_HISTORY_PAGE_BOUND,
+} from "../scripts/lib/crewNamingWindow.mts";
+
 
 const PAGE_BOUND = 1000;
 /**
@@ -137,10 +144,27 @@ describe("the queue counting reads through this module", () => {
   const source = readFileSync(COUNTER, "utf8");
 
   it("imports both, and builds no arguments of its own", () => {
-    expect(source).toContain("mergedPullRequestArgs(since, MERGED_PR_PAGE_BOUND)");
+    /* ⚠ THIS LITERAL MOVED WITH #2290 AND THE ARM WENT RED, WHICH IS IT
+       WORKING. The call used to read `mergedPullRequestArgs(since,
+       MERGED_PR_PAGE_BOUND)` inline; both roads now go through one
+       `fetchMergedRows`, so the arguments are built in exactly one place and
+       the fallback cannot grow a second copy of the parse or the truncation
+       compare. The arm was repointed, never relaxed. */
+    expect(source).toContain("mergedPullRequestArgs(since, pageBound)");
     expect(source).toContain("judgementIsBlind(namings.truncated)");
     /* The old hand-built form. Its absence is asserted rather than assumed. */
     expect(source).not.toContain('"--state", "merged", "--limit"');
+  });
+
+  it("takes BOTH roads through the one fetch, and the retry through the predicate", () => {
+    /* The first read is the derived window at the search ceiling; the second is
+       the whole history at its own bound. Asserted as call sites so a future
+       edit that inlines either one reddens here. */
+    expect(source).toContain("fetchMergedRows(since, MERGED_PR_PAGE_BOUND, gh)");
+    expect(source).toContain("fetchMergedRows(null, WHOLE_HISTORY_PAGE_BOUND, gh)");
+    /* And the decision is the module's, not a condition retyped here — the
+       no-loop guarantee lives in that predicate and nowhere else. */
+    expect(source).toContain("shouldRetryOnWholeHistory(since, truncated)");
   });
 
   it("no longer names a fixed window, and the page bound is not a refusal", () => {
@@ -161,5 +185,61 @@ describe("the queue counting reads through this module", () => {
     /* An absence check over the wrong file is green for the wrong reason. */
     expect(source).toContain("crew_queue_counts");
     expect(source.length).toBeGreaterThan(10_000);
+  });
+});
+
+/**
+ * THE WINDOW OUTGREW THE API UNDER IT — the predicate half (issue #2290).
+ *
+ * The three arms at the top of this file say the window is a DATE derived from
+ * the oldest open card, so it tracks the queue and **cannot expire**. That is
+ * still true, and it is not what broke.
+ *
+ * ⚠ **WHAT EXPIRED IS THE CEILING UNDERNEATH IT.** Measured on production's own
+ * queue, 2026-10-11: the oldest open card is **#14, filed 2026-08-25**, and
+ * **1089 of the 1089 merged pull requests in this repository postdate it** — so
+ * the derived window IS the whole history, the whole history has crossed
+ * GitHub's 1000-result search ceiling, and narrowing buys nothing at all. Every
+ * run came back at exactly 1000, `judgementIsBlind` answered true, and **every
+ * offered card in every category was reported OUT OF REACH**. The flag his
+ * 2026-09-04 worry asked for — *"i dont want it trying to fix an irrelevant bug
+ * or somthing already ordered"* — was inert, on every shift, for weeks.
+ *
+ * The repair takes the one road left: the whole-history read, which the search
+ * ceiling does not bind, and which the arm above — *"does not refuse it on the
+ * whole-history path, which is not a search"* — has pinned since PR #588.
+ *
+ * The RUN half of this, driven through the real reading with a fake `gh`, is
+ * `server/crewNamingWindowFallback.test.ts`.
+ */
+describe("a window that outgrew the search ceiling has a second road", () => {
+  it("⚠ the fallback bound is ABOVE the search ceiling, or the fallback buys nothing", () => {
+    /* At or below the ceiling the second read would truncate at exactly the
+       same place as the first, and the repair would be a no-op wearing a log
+       line. The RELATIONSHIP is the requirement here, never the number. */
+    expect(WHOLE_HISTORY_PAGE_BOUND).toBeGreaterThan(SEARCH_RESULT_CEILING);
+  });
+
+  it("asks the whole-history road at that bound, at the wire", () => {
+    const args = mergedPullRequestArgs(null, WHOLE_HISTORY_PAGE_BOUND);
+    expect(args).toContain("--state");
+    expect(args).toContain("merged");
+    expect(args).toContain(String(WHOLE_HISTORY_PAGE_BOUND));
+    /* ⚠ AND IS NOT A SEARCH. A `--search` here would put the retry back under
+       the very ceiling it exists to escape — and every driven arm in the
+       sibling file would still pass, because a fake `gh` answers whatever it
+       is asked. This is the one assertion those arms cannot make for me. */
+    expect(args).not.toContain("--search");
+  });
+
+  it("retries only when a derived WINDOW truncated — never on the whole-history road itself", () => {
+    expect(shouldRetryOnWholeHistory({ date: "2026-08-25" }, true)).toBe(true);
+    /* An untruncated window has nothing to escape: no second call, no cost. */
+    expect(shouldRetryOnWholeHistory({ date: "2026-08-25" }, false)).toBe(false);
+    /* ⚠ THE NO-LOOP ARM. A truncated whole-history read has nowhere further to
+       go; answering true here would ask the same road the same question for
+       ever. */
+    expect(shouldRetryOnWholeHistory(null, true)).toBe(false);
+    expect(shouldRetryOnWholeHistory(null, false)).toBe(false);
   });
 });

@@ -52,6 +52,50 @@
  */
 export const SEARCH_RESULT_CEILING = 1000;
 
+/**
+ * THE WHOLE-HISTORY ROAD'S PAGE BOUND — and why a constant is allowed HERE
+ * when #507 is a card about a constant exactly like it (#2290).
+ *
+ * The derived window above cannot expire, and it did not: what expired is the
+ * API underneath it. Measured 2026-10-11 — the oldest open card is **#14,
+ * filed 2026-08-25**, and **1089 of the 1089 merges in this repository
+ * postdate it**, so the derived window IS the whole history, the whole history
+ * has crossed the 1000-result search ceiling, and narrowing buys nothing. Every
+ * run went blind and named every offered card OUT OF REACH.
+ *
+ * ⚠ **THE ASYMMETRY IS THE WHOLE JUSTIFICATION, AND IT IS THE OPPOSITE OF
+ * #507's.** That bound sat on a road where exceeding it wrote every category
+ * UNFLAGGED — the sentence *"nothing is ever stale"*, a silent wrong answer.
+ * This one sits on a road the search ceiling does not bind, so `rows.length >=
+ * bound` genuinely fires, and exceeding it returns the reader to the HONEST
+ * blindness it already has today (every card named out of reach) rather than to
+ * silence. A constant that can only ever cost a louder "I could not judge this"
+ * is a different object from one that can cost a quiet "nothing is wrong".
+ *
+ * It must stay ABOVE the search ceiling or the fallback buys nothing at all,
+ * and an arm holds that rather than leaving it to a future editor.
+ */
+export const WHOLE_HISTORY_PAGE_BOUND = SEARCH_RESULT_CEILING * 10;
+
+/**
+ * WHETHER A TRUNCATED READ HAS A SECOND ROAD LEFT TO TRY.
+ *
+ * Only one case qualifies: the SEARCH road was taken (a window was derived) and
+ * it came back full. The whole-history road is not subject to the search
+ * ceiling — `mergedPullRequestArgs(null, …)` deliberately refuses no bound, and
+ * this module's suite has pinned that since PR #588 — so a window that outgrew
+ * the ceiling can still be read in one call.
+ *
+ * ⚠ A truncated WHOLE-HISTORY read has nowhere further to go and must answer
+ * false, or the caller loops. That is the arm worth keeping.
+ */
+export function shouldRetryOnWholeHistory(
+  since: { readonly date: string } | null,
+  truncated: boolean,
+): boolean {
+  return truncated && since !== null;
+}
+
 /** The `gh pr list` arguments for the merged-pull-request read. */
 export function mergedPullRequestArgs(
   since: { readonly date: string } | null,
