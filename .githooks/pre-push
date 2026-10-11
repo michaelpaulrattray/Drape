@@ -116,6 +116,20 @@
 #    failing direction is not hidden: the refusal prints the check's own tail,
 #    so an unrecognised sentence is on screen for the next reader.
 #
+#    ⚠ ONE SHAPE IT IS KNOWN NOT TO COVER, NAMED RATHER THAN GUESSED AT (#2298).
+#    Every sentence above is a binary that is ABSENT. A binary that is PRESENT
+#    and could not START — the shell's own `fork: retry: Resource temporarily
+#    unavailable`, an out-of-memory, an EAGAIN under heavy parallel load — is
+#    also "no verdict was produced", and none of those sentences matches it, so
+#    it falls through to the REFUSED branch. That is the load-sensitive shape
+#    #2298 is about, and the patterns are deliberately NOT widened for it here:
+#    no instance has been measured, and inventing a pattern for a sentence
+#    nobody has seen is the coverage-that-is-not-coverage this hook's own header
+#    argues against. What was done instead is to make the next instance
+#    READABLE — `server/atlasPushGate.test.ts` now prints every git child's own
+#    words on a failed assertion, so the sentence arrives with the red rather
+#    than being discarded by it.
+#
 # `drape.atlasCheck` overrides the check command; its only intended use is the
 # guard's own test, which drives real temporary repositories with no generator.
 # Driven by `server/atlasPushGate.test.ts`, against real repositories and a real
@@ -234,11 +248,75 @@ atlas_push_gate() {
   # `atlas-stage` reads only two of these ON PURPOSE and is not a sibling: there
   # the staged files ARE the commit, so unstaged and untracked is exactly the
   # population that can differ from it.
-  dirty=$( { git diff --name-only 2>/dev/null; \
-             git diff --cached --name-only 2>/dev/null; \
-             git ls-files --others --exclude-standard 2>/dev/null; } \
-    | grep -E "$WARN_MATCHES" | sort -u)
-  if [ -n "$dirty" ]; then
+  #
+  # ⚠ AND THE DIRTY READ CARRIED #2167'S OWN DEFECT ONE PATH OVER — #2298,
+  # 2026-10-12. Until now the three reads sent stderr to `/dev/null` and NO
+  # status was read, so an empty list answered two different questions: *there
+  # is no uncommitted work* and *the read produced no answer*. The second then
+  # fell through to the REFUSED branch below, whose sentence — "the working tree
+  # is clean" — is the same false sentence finding 5 was about, arriving by a
+  # second road. Driven rather than reasoned: with a corrupt `.git/index` all
+  # three exit 128 (`fatal: .git/index: index file smaller than expected`) and
+  # `git push` itself still works and still moves the remote, so this is a state
+  # a real push can be in rather than a hypothetical.
+  #
+  # So the statuses are read and a failed read is a THIRD answer, in the same
+  # direction #2167 settled: say nothing is known and ALLOW, because the gate
+  # rebuilds both maps from the committed tree and is the backstop.
+  #
+  # ⚠ `2>&1` RATHER THAN `2>/dev/null` IS SAFE *BECAUSE* OF THE ANCHORED FILTER,
+  # and that is the reason rather than a convenience. A line of git's own prose
+  # ("warning: in the working copy of 'server/a.ts', LF will be replaced…")
+  # cannot enter the list: `WARN_MATCHES` is anchored `^…$` on a path, so it
+  # matches the whole line or nothing. Keeping the words is what lets the
+  # could-not-judge branch print them, which is the half of #2167 that made its
+  # refusal actionable.
+  unstaged=$(git diff --name-only 2>&1); unstaged_status=$?
+  staged=$(git diff --cached --name-only 2>&1); staged_status=$?
+  untracked=$(git ls-files --others --exclude-standard 2>&1); untracked_status=$?
+
+  if [ "$unstaged_status" -ne 0 ] || [ "$staged_status" -ne 0 ] || [ "$untracked_status" -ne 0 ]; then
+    echo "" >&2
+    echo "atlas: ⚠ COULD NOT JUDGE — the maps read STALE, but the read of what is" >&2
+    echo "uncommitted did not run, so nothing is known about whether that staleness is" >&2
+    echo "your working tree or the commits being pushed. The push is allowed." >&2
+    echo "" >&2
+    echo "  git diff --name-only                      exit $unstaged_status" >&2
+    echo "  git diff --cached --name-only              exit $staged_status" >&2
+    echo "  git ls-files --others --exclude-standard   exit $untracked_status" >&2
+    echo "" >&2
+    printf '%s\n%s\n%s\n' "$unstaged" "$staged" "$untracked" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
+    echo "" >&2
+    echo "The gate rebuilds both maps from the committed tree and is the backstop for" >&2
+    echo "this one. (cards #2167, #2298 — never --no-verify.)" >&2
+    echo "" >&2
+    return 0
+  fi
+
+  # ⚠ TWO STEPS, SO grep's OWN STATUS IS READABLE. In one pipeline `$?` is
+  # `sort`'s, and grep is the tool whose three answers matter: 0 matched, 1
+  # matched nothing, 2 or more FAILED. Collapsing the last two is the same
+  # defect as the one above, one tool further along.
+  listed=$(printf '%s\n%s\n%s\n' "$unstaged" "$staged" "$untracked" | sort -u)
+  listed_status=$?
+  dirty=$(printf '%s\n' "$listed" | grep -E "$WARN_MATCHES")
+  dirty_status=$?
+
+  if [ "$listed_status" -ne 0 ] || [ "$dirty_status" -gt 1 ]; then
+    echo "" >&2
+    echo "atlas: ⚠ COULD NOT JUDGE — the maps read STALE, and the filter over what is" >&2
+    echo "uncommitted failed, so nothing is known about whose staleness it is. The push" >&2
+    echo "is allowed." >&2
+    echo "" >&2
+    echo "  sort -u    exit $listed_status" >&2
+    echo "  grep -E    exit $dirty_status   (0 matched, 1 matched nothing, 2+ failed)" >&2
+    echo "" >&2
+    echo "The gate is the backstop for this one. (cards #2167, #2298 — never --no-verify.)" >&2
+    echo "" >&2
+    return 0
+  fi
+
+  if [ "$dirty_status" -eq 0 ]; then
     echo "" >&2
     echo "atlas: ⚠ the generated maps read STALE, but these sources are uncommitted:" >&2
     echo "" >&2
