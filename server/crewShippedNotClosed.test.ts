@@ -16,6 +16,13 @@
  *  - the NEGATIVE controls are the three cards that were ALSO open with merged
  *    pull requests that same hour and are each correctly open — `#1882`,
  *    `#1952`, `#2155`;
+ *  - the #2296 pair is the two cards the WIDENED window named, and they are
+ *    the two halves of that card's answer: `#1210` (`roadmap`, deferred on his
+ *    own word) is suppressed by its label, and `#64` (an umbrella over five
+ *    items, two landed) is NOT — it has no mechanical tell and is the
+ *    finding's stated standing floor. Its negative half drives the same card
+ *    WITHOUT the label, so the suppression arm cannot pass by the reader going
+ *    blind to PR `#1230`.
  *  - the REGRESSION controls are the planner's TWO measured false positives,
  *    and both named card `#18`. Before the BRANCH limb came off,
  *    `dependabot/npm_and_yarn/dotenv-18.0.5` read as building it because
@@ -30,6 +37,7 @@ import { describe, expect, it } from "vitest";
 
 import { pullRequestBuildsCard } from "../shared/crewCardBuildState.js";
 import { CREW_HOLD_LABELS } from "../shared/crewNextUpHold.js";
+import { CREW_PIPELINE_GROUPS } from "../shared/crewPipelineGroups.js";
 import {
   SHIPPED_NOT_CLOSED_HOLD_LABELS,
   type ShippedNotClosedCard,
@@ -207,10 +215,81 @@ describe("#2270 · the body limb is withheld — prose that mentions a card is n
   });
 });
 
+describe("#2296 · `roadmap` is a hold, and the umbrella is the standing floor", () => {
+  /* The two real findings, with their real titles, copied from the merged
+     pull requests. Both cards are CORRECTLY open, which is the whole subject:
+     one of them now has a label that says so and the other never will. */
+  const PR_1230 = pr(
+    1230,
+    "docs(casting): keep the mood board mockups in the repo (#1210, deferred)",
+  );
+  const PR_836 = pr(
+    836,
+    "fix(casting): a paid render that files nothing in the library says so, and"
+    + " stopline --prove prints its total (#64 items 1+2)",
+  );
+  const PR_985 = pr(
+    985,
+    "fix(casting): the cutter computed what the ask refused and threw it away —"
+    + " it says so now (#64 item 3)",
+  );
+
+  it("suppresses #1210, whose only label is `roadmap` — deferred on his own word", () => {
+    expect(run({ open: [card(1210, ["roadmap"])], merged: [PR_1230] })).toEqual([]);
+  });
+
+  it("does NOT suppress the same card without the label — the label is what did it", () => {
+    /* The negative half of the pair. Without this arm the one above passes
+       equally well on a reader that has gone blind to PR #1230 entirely. */
+    expect(run({ open: [card(1210, [])], merged: [PR_1230] })).toEqual([1210]);
+  });
+
+  it("still names #64 — an umbrella has no mechanical tell and is the stated floor", () => {
+    const found = planShippedNotClosed({
+      open: [card(64, ["lost-and-found", "rung:N3"])],
+      merged: [PR_836, PR_985],
+      openPullRequests: [],
+    });
+    expect(found.map((f) => f.issueNumber)).toEqual([64]);
+    expect(found[0]?.mergedPullRequests).toEqual([836, 985]);
+  });
+
+  it("the whole real board reads as exactly the floor — both findings together", () => {
+    /* Driven as the sweep sees it: #1210 falls to its label, #64 stands. */
+    expect(run({
+      open: [card(64, ["lost-and-found", "rung:N3"]), card(1210, ["roadmap"])],
+      merged: [PR_836, PR_985, PR_1230],
+    })).toEqual([64]);
+  });
+
+  it("the spelling comes off the pipeline groups' own `roadmap` row, not a retyped string", () => {
+    const row = CREW_PIPELINE_GROUPS.find((group) => group.key === "roadmap");
+    expect(row?.queueLabel).toBe("roadmap");
+    expect(SHIPPED_NOT_CLOSED_HOLD_LABELS).toContain(row?.queueLabel);
+  });
+
+  it("is the ROW and not the `backgroundWork: false` SET — the set would silence the floor", () => {
+    /* The tempting derivation, driven rather than argued. Every one of these
+       carries `backgroundWork: false` on its own row and NONE of them may hold
+       this reader: `founder-ordered` is the focus lane (the arm above),
+       `lost-and-found` is #64 itself, and the rest are populations a seat
+       genuinely ships from. */
+    const wouldHaveBeenSwept = CREW_PIPELINE_GROUPS
+      .filter((group) => !group.backgroundWork)
+      .map((group) => group.queueLabel)
+      .filter((label): label is string => typeof label === "string");
+    expect(wouldHaveBeenSwept).toContain("founder-ordered");
+    expect(wouldHaveBeenSwept).toContain("lost-and-found");
+    for (const label of ["founder-ordered", "lost-and-found", "design-unbuilt", "research", "scope-change", "patrol"]) {
+      expect(SHIPPED_NOT_CLOSED_HOLD_LABELS).not.toContain(label);
+    }
+  });
+});
+
 describe("#2265 · the hold set is derived, not retyped", () => {
-  it("is the three hold labels plus parked, and nothing else", () => {
+  it("is the three hold labels plus parked and roadmap, and nothing else", () => {
     expect([...SHIPPED_NOT_CLOSED_HOLD_LABELS].sort())
-      .toEqual(["awaiting-fable", "blocked", "needs-sitting", "parked"]);
+      .toEqual(["awaiting-fable", "blocked", "needs-sitting", "parked", "roadmap"]);
   });
 
   it("contains every CREW_HOLD_LABELS value, so a fourth hold joins with no edit here", () => {
