@@ -11731,6 +11731,10 @@
       "path": "client/src/foundation/token-guard.test.ts"
     },
     {
+      "id": "test:client/src/foundation/topbarPhone2260-guard.test.ts",
+      "path": "client/src/foundation/topbarPhone2260-guard.test.ts"
+    },
+    {
       "id": "test:client/src/lib/staffPage.test.ts",
       "path": "client/src/lib/staffPage.test.ts"
     },
