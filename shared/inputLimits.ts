@@ -64,6 +64,12 @@ export const BOARD_NAME_MAX_LENGTH = 128;
    why the arm sweeps for the shape instead of pairing sites to schemas. */
 export const CAST_NAME_MAX_LENGTH = 60;
 
+/* ── Casting V2: a campaign's name ────────────────────────────────────────
+   N2c (#2249, #2252). `castingV2.createCampaign`/`renameCampaign` on the
+   server (via `server/db/castCampaigns.ts`, which is also the column's width),
+   and the cast page's new-campaign field. */
+export const CAMPAIGN_NAME_MAX_LENGTH = 64;
+
 /* -- Casting V2: who a cast is on camera, and how they sound --------------
    N2b (#1242). ONE idea, THREE places: `castingV2.editCastPersonaField` on the
    server, and the two inline fields on `CastingRoom`.

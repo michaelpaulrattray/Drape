@@ -30,6 +30,7 @@ import {
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { masterLookLine } from "@/features/castingV2/masterLookLine";
+import { CastCampaignsCard } from "@/features/castingV2/components/CastCampaignsCard";
 import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
@@ -831,11 +832,16 @@ export default function CastingRoom() {
                 <p className="dpc-room__read">{data.provenance}</p>
               </div>
               <div className="dpc-room__actions">
+                {/*
+                  ⚠ NO CAMPAIGN BUTTON HERE (#2252, his "yes." of 2026-09-29).
+                  It was a disabled campaign button marked soon while campaigns did not
+                  exist; now they do, and the IN CAMPAIGNS panel below is the
+                  one home of that act — two controls for one act on one page
+                  is machinery showing. The canvas promise is still unkept, so
+                  it keeps its honest "· soon".
+                */}
                 <button type="button" className="dpc-room__cta" disabled>
                   Open in canvas · soon
-                </button>
-                <button type="button" className="dpc-room__cta dpc-room__cta--primary" disabled>
-                  Use in a campaign · soon
                 </button>
               </div>
             </header>
@@ -1403,22 +1409,8 @@ export default function CastingRoom() {
                   ) : null}
                 </section>
 
-                {/* IN CAMPAIGNS — flush card; its rows own their padding. */}
-                <section className="dpc-rcard dpc-rcard--flush">
-                  <div className="dpc-camp__head">
-                    <span className="dpc-rcard__label">IN CAMPAIGNS</span>
-                    <span className="dpc-camp__count">0</span>
-                  </div>
-                  <p className="dpc-camp__empty">
-                    Campaigns aren't built yet. When they are, the ones{" "}
-                    {data.pronouns.subject} appear{data.pronouns.plural ? "" : "s"} in are
-                    listed here.
-                  </p>
-                  <button type="button" className="dpc-camp__add" disabled>
-                    <Plus size={12} strokeWidth={1.9} aria-hidden="true" />
-                    Use in a new campaign
-                  </button>
-                </section>
+                {/* IN CAMPAIGNS — the campaigns this cast is in, and one add row (#2252). */}
+                <CastCampaignsCard castId={data.castId} />
 
                 {/* SIBLINGS — both sentences name the cast (#2141); tiles unlabelled. */}
                 <section className="dpc-rcard">

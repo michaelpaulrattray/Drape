@@ -2316,10 +2316,10 @@
 }
 
 /*
-  The drawn weights are kept exactly: one outline, one filled. Neither
-  capability exists yet, so the honest-capability law changes the STATE — both
-  are disabled and say "soon" — never the hierarchy, which is what the drawing
-  is actually asserting.
+  The drawing has two header actions, one outline and one filled. The filled
+  one was the campaign action, and it is gone (#2252): campaigns exist, and the
+  IN CAMPAIGNS panel is that act's one home. The outline one (the canvas) has
+  no capability yet, so it stays disabled and says "soon".
 */
 .dpc-room__cta {
   display: inline-flex;
@@ -2332,14 +2332,6 @@
   color: var(--secondary);
   font: 400 12px var(--font-sans);
   cursor: not-allowed;
-}
-
-.dpc-room__cta--primary {
-  padding: 9px 14px;
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--surface);
-  font-weight: 500;
 }
 
 .dpc-room__cta:disabled { opacity: 0.55; }
@@ -2614,6 +2606,75 @@
   width: 100%;
   cursor: not-allowed;
 }
+
+/*
+  IN CAMPAIGNS, made real (#2252). The rules above are the stub's and stay as
+  they were; these add the rows, the live add row and the add control. Rows own
+  their padding, the card is flush, and a rule separates each row the way the
+  prototype draws it. A row's thumbnail is NOT drawn: a campaign has no
+  picture of its own.
+*/
+.dpc-camp__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.dpc-camp__list > li + li { border-top: 1px solid var(--border); }
+.dpc-camp__row {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%;
+  padding: 11px 16px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+.dpc-camp__row:hover { background: var(--well); }
+.dpc-camp__row:disabled { cursor: default; opacity: 0.6; }
+.dpc-camp__text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.dpc-camp__name {
+  font: 500 12px var(--font-sans);
+  color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dpc-camp__meta { font: 400 10.5px var(--font-sans); color: var(--metaStrong); }
+.dpc-camp__chev { flex: none; color: var(--meta); }
+/* The add row is live now: the stub's not-allowed cursor stays only while disabled. */
+.dpc-camp__add:enabled { cursor: pointer; }
+.dpc-camp__add:enabled:hover { background: var(--well); color: var(--ink); }
+.dpc-camp__picker { border-top: 1px solid var(--border); }
+.dpc-camp__picker > .dpc-camp__list { border-top: none; }
+.dpc-camp__new {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.dpc-camp__picker > .dpc-camp__new:first-child { border-top: none; }
+.dpc-camp__input {
+  flex: 1; min-width: 0;
+  font: 400 12px var(--font-sans);
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--lineStrong);
+  padding: 4px 0;
+}
+/* Focus like the rename field: the caret and the rule, never the accent outline. */
+.dp-root .dpc-camp__input:focus,
+.dp-root .dpc-camp__input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+.dpc-camp__create {
+  flex: none;
+  font: 500 11.5px var(--font-sans);
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--borderInput);
+  border-radius: 7px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.dpc-camp__create:disabled { color: var(--faint); cursor: default; }
+.dpc-camp__refusal { margin: 0; padding: 0 16px 10px; font: 400 11.5px/1.5 var(--font-sans); color: var(--errorInk); }
 
 /* ---- siblings ---- */
 

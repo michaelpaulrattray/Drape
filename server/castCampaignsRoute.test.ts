@@ -1,5 +1,5 @@
 /**
- * THE SIX CAMPAIGN DOORS, DRIVEN THROUGH THE REAL ROUTER (card #2249).
+ * THE SEVEN CAMPAIGN DOORS, DRIVEN THROUGH THE REAL ROUTER (card #2249).
  *
  * The store is doubled here so these arms run on every `pnpm test`, without a
  * database; what the STATEMENTS do with ownership is proven against a real one
@@ -7,7 +7,7 @@
  *
  *  - the owner handed to the store is the SESSION's, never anything in the
  *    input (invariant 3) — an input naming a `userId` is refused outright;
- *  - every one of the six inputs is `.strict()` (invariant 4), proven by
+ *  - every one of the seven inputs is `.strict()` (invariant 4), proven by
  *    PARSING an undeclared key through the router, with a positive control
  *    beside each so a rejection cannot be a broken caller;
  *  - each store outcome becomes the refusal it should (`NOT_FOUND`,
@@ -39,6 +39,7 @@ vi.mock("./db/castCampaigns", async (importOriginal) => {
     deleteCampaign: record("deleteCampaign", { kind: "deleted", membersRemoved: 3 }),
     addCastsToCampaign: record("addCastsToCampaign", { kind: "added", added: 2 }),
     removeCastsFromCampaign: record("removeCastsFromCampaign", { kind: "removed", removed: 1 }),
+    listCastCampaigns: record("listCastCampaigns", [{ campaignId: "c".repeat(32), name: "Summer" }]),
   };
 });
 
@@ -66,6 +67,7 @@ const VALID = {
   deleteCampaign: { campaignId: CAMPAIGN },
   addCastsToCampaign: { campaignId: CAMPAIGN, castIds: [CAST] },
   removeCastsFromCampaign: { campaignId: CAMPAIGN, castIds: [CAST] },
+  listCastCampaigns: { castId: CAST },
 };
 type Door = keyof typeof VALID;
 const DOORS = Object.keys(VALID) as Door[];
@@ -161,6 +163,16 @@ describe("each store outcome becomes its refusal", () => {
     expect(await call.deleteCampaign(VALID.deleteCampaign)).toEqual({ campaignId: CAMPAIGN });
     expect(await call.addCastsToCampaign(VALID.addCastsToCampaign)).toEqual({ campaignId: CAMPAIGN, added: 2 });
     expect(await call.removeCastsFromCampaign(VALID.removeCastsFromCampaign)).toEqual({ campaignId: CAMPAIGN, removed: 1 });
+    expect(await call.listCastCampaigns(VALID.listCastCampaigns)).toEqual([{ campaignId: "c".repeat(32), name: "Summer" }]);
+  });
+
+  it("the cast page's read hands the store the cast it named, and refuses a missing or over-long id", async () => {
+    const { call } = caller();
+    await call.listCastCampaigns({ castId: CAST });
+    expect(calls[0].args[1]).toBe(CAST);
+    await expect(call.listCastCampaigns({ castId: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(call.listCastCampaigns({ castId: "K".repeat(33) })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(call.listCastCampaigns({} as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });
 

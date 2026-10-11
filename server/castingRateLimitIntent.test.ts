@@ -171,6 +171,8 @@ describe("which bucket each casting procedure was handed", () => {
       deleteCampaign: "castingSheet",
       addCastsToCampaign: "castingSheet",
       removeCastsFromCampaign: "castingSheet",
+      /* The cast page's IN CAMPAIGNS panel (#2252) — a read a person asks for. */
+      listCastCampaigns: "castingRead",
       /* HER EDIT OF A DRAFTED PERSONALITY OR VOICE LINE (N2b, #1242) — the
          RENAME's own bucket, deliberately, because it IS that act: a customer
          correcting a piece of text on her own Cast, free, with no credit, no
