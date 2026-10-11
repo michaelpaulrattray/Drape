@@ -182,3 +182,101 @@ describe("the selection bar", () => {
     expect(html).not.toContain('aria-haspopup="menu"');
   });
 });
+
+/* ------------------- #2275 · a run that stops half way says what it did */
+
+describe("a stopped run of slices reports what landed, not what was meant to land (card 2275)", () => {
+  /*
+    ⚠ THE DEFECT: the page ran the slices in a bare `try` and reported from the
+    `catch`, so a selection over 60 whose SECOND call was refused told the
+    customer "Those casts couldn't be added" while the first 60 sat filed, and
+    left all of them ticked. The door is all-or-nothing at its refusal
+    (`server/db/castCampaigns.ts`), so the refused slice filed nothing and
+    belongs with the untried rest.
+
+    Driven through `runInBatches` with the call as a function — no React, no
+    server, no network — which is the only way an arm reaches the second slice.
+  */
+  const sixtyThree = Array.from({ length: 63 }, (_, index) => `KI-${index}`);
+
+  function refuseAfter(callsToAllow: number, added: (batch: string[]) => number) {
+    const seen: string[][] = [];
+    const call = async (batch: string[]) => {
+      seen.push(batch);
+      if (seen.length > callsToAllow) throw Object.assign(new Error("Cast not found"), { data: { code: "NOT_FOUND" } });
+      return added(batch);
+    };
+    return { call, seen };
+  }
+
+  it("the second call refused: 60 answered for, 3 unreached, and the error handed back", async () => {
+    const { call, seen } = refuseAfter(1, (batch) => batch.length);
+    const run = await selection.runInBatches(sixtyThree, call);
+    expect(seen.map((batch) => batch.length)).toEqual([60, 3]);
+    expect(run.moved).toBe(60);
+    /* ⚠ 60 out of 60, never out of 63 — `answered` is what `moved` is a count
+       OF, and getting that wrong is how the sentence overstates. */
+    expect(run.answered).toBe(60);
+    expect(run.unreached).toEqual(sixtyThree.slice(60));
+    expect(run.error).toBeDefined();
+  });
+
+  it("the FIRST call refused keeps the whole selection and nothing is claimed", async () => {
+    const { call } = refuseAfter(0, (batch) => batch.length);
+    const run = await selection.runInBatches(sixtyThree, call);
+    expect(run.moved).toBe(0);
+    expect(run.answered).toBe(0);
+    expect(run.unreached).toEqual(sixtyThree);
+  });
+
+  it("nothing refused is an unreached list of none (the negative control)", async () => {
+    const { call, seen } = refuseAfter(99, (batch) => batch.length);
+    const run = await selection.runInBatches(sixtyThree, call);
+    expect(seen).toHaveLength(2);
+    expect(run).toEqual({ moved: 63, answered: 63, unreached: [] });
+  });
+
+  it("the server's count is summed, not the number ticked", async () => {
+    /* Half of each slice was already in the campaign, so `moved` is 31 and the
+       sentence must not say 63. */
+    const { call } = refuseAfter(99, (batch) => Math.floor(batch.length / 2));
+    const run = await selection.runInBatches(sixtyThree, call);
+    expect(run.moved).toBe(31);
+    expect(run.answered).toBe(63);
+  });
+
+  it("the honest sentence names both halves, and the remainder's fate", () => {
+    const landed = selection.filedSentence(60, 60, "Summer drop");
+    expect(`${landed} ${selection.unreachedSentence(3, "add")}`).toBe(
+      "60 cast members added to “Summer drop”. 3 couldn't be added. They're still selected, so you can try again.",
+    );
+    expect(selection.unreachedSentence(1, "add")).toBe(
+      "1 couldn't be added. It's still selected, so you can try again.",
+    );
+    /* Taking casts out never says "removed" on its own — the module's own rule. */
+    expect(selection.unreachedSentence(2, "remove")).toBe(
+      "2 couldn't be taken out. They're still selected, so you can try again.",
+    );
+    expect(selection.unreachedSentence(2, "remove")).not.toContain("deleted");
+  });
+
+  it("the page says the landed half out of what was ANSWERED FOR, and re-ticks the unreached", () => {
+    /*
+      ⚠ The two facts no pure arm above can reach, read off the page's own
+      source: which count the sentence is built from, and that the selection is
+      replaced by `run.unreached` rather than cleared. Reading the wrong one
+      would pass every arm above and still lie to the customer.
+    */
+    const stopped = PAGE.slice(PAGE.indexOf("if (run.error !== undefined) {"), PAGE.indexOf("clearPicks();\n    toast("));
+    expect(stopped).toContain("setPicks({ view: viewKey, ids: new Set(run.unreached) });");
+    expect(stopped).toContain("filedSentence(run.moved, run.answered, campaign.name)");
+    expect(stopped).toContain("unfiledSentence(run.moved, run.answered, campaign.name)");
+    expect(stopped).toContain("unreachedSentence(run.unreached.length, action)");
+    /* And it never reports the stopped run out of the number ticked. */
+    expect(stopped).not.toContain("castIds.length");
+    /* The counts are refreshed before either sentence, on both roads. */
+    const whole = PAGE.slice(PAGE.indexOf("const fileSelection ="), PAGE.indexOf("if (config.isLoading)"));
+    expect(whole.indexOf("await invalidateLibrary();")).toBeLessThan(whole.indexOf("if (run.error !== undefined)"));
+    expect(whole.match(/await invalidateLibrary\(\);/g) ?? []).toHaveLength(1);
+  });
+});
