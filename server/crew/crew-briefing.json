@@ -1,12 +1,12 @@
 {
-  "edition": 676,
-  "updatedAt": "2026-10-11T04:50:00.000Z",
-  "shift": "Foreman — foreman-20261011-0424",
+  "edition": 677,
+  "updatedAt": "2026-10-11T08:40:00.000Z",
+  "shift": "Foreman — foreman-20261011-1756",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "Campaigns — you name a group of casts and file them into it. Your library's row of chips stops saying All / Signed / Unsigned and starts saying All / Unfiled / your campaigns / +. You said “N2c — Campaigns”, so that is what the crew is building; a campaign is the thing the cinema studio will open later, a script and its cast.",
+      "state": "none",
+      "title": "Campaigns is built and live, and the focus is cleared until you name the next rung. Your library now has named groups: the chips read All / Unfiled / your campaigns / +, you can tick several casts and file them in one go, a cast page lists the campaigns it is in, and after a Sign you get one offer to file the new cast. Card #2269 has your six-step test drive and the three options for what comes next.",
       "quote": "N2c — Campaigns",
       "quotedAt": "2026-10-11T04:03:00.000Z"
     },
@@ -15,23 +15,23 @@
       "steps": [
         {
           "title": "The store behind it, built dark — nothing on screen changes (#2249)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Your library's chips become All / Unfiled / your campaigns / + — and the search box above the grid finally works (#2250)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Tick several casts and file them all in one go (#2251)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "A cast's own page lists the campaigns it is in, and the dead “Use in a campaign · soon” button goes (#2252)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "After a Sign, one offer to file the new cast — only if you already keep campaigns, and never in the way of the Sign (#2253)",
-          "state": "waiting"
+          "state": "done"
         }
       ]
     },
@@ -3727,6 +3727,33 @@
       "state": "answered",
       "filedAt": "2026-10-11T03:05:00.000Z",
       "issueNumber": 1921
+    },
+    {
+      "id": "n2c-complete-2269",
+      "title": "Campaigns is built and live — your test drive, and one word on what comes next",
+      "productImpact": "You can now put your casts into named groups and look at one group at a time.\n\nYour library's chips used to read All / Signed / Unsigned. They now read All / Unfiled / your campaigns / +, and the + is how you make a new one. You can tick several casts and file them all at once, or take them back out. A cast's own page lists the campaigns it is in and lets you add it to another, and the old \"Use in a campaign · soon\" button that did nothing is gone. After you sign a cast you get one offer to file it — only if you already keep campaigns, never in front of the Sign, and nothing files unless you press it.\n\nSomebody who never makes a campaign sees the library exactly as it looks today. Two old annoyances went with this rung: the search box above your library actually searches by name now, and the library no longer stops at 60 casts. Your campaign names also travel in your data export.\n\nNothing here costs a credit. All five pieces opened and closed today, and every one of them is in the build your site is serving right now.",
+      "workedExample": "Open your library — the chips should read All / Unfiled / your campaigns / +. Press + and make a campaign with a name you would really use. Tick two or three casts and file them in one go, then take one back out. Press the campaign's chip and you should see only those casts. Open one cast's page, find IN CAMPAIGNS, and add it to a second campaign from there. Then sign a cast: you should get one offer to file it afterwards — dismiss it and check nothing was filed. Card #2269 has the same six steps written out.",
+      "options": [
+        {
+          "key": "n2d",
+          "label": "N2d — your Klieg ID becomes a record of creation",
+          "consequence": "Signed, timestamped, with a certificate you can download. Your own order from 9 October, and it finishes the N2 family."
+        },
+        {
+          "key": "n4b",
+          "label": "N4b — \"Listen and pick\"",
+          "consequence": "Real voices made from the voice text, chosen by ear. Also your own order, and you called voice very important."
+        },
+        {
+          "key": "bughunt",
+          "label": "The product-wide bug hunt",
+          "consequence": "Your rule is that it runs after all of N2 closes and before N3 — so it becomes due the moment N2d is done."
+        }
+      ],
+      "recommendation": "N2d — your Klieg ID. It is the next rung on your own ladder, it is your own order from 9 October, and finishing it is what makes the bug hunt due. Until you name one, the crew does maintenance only and never picks the next feature itself.",
+      "state": "open",
+      "filedAt": "2026-10-11T08:40:00.000Z",
+      "issueNumber": 2269
     }
   ],
   "eyeItems": [
