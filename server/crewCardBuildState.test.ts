@@ -676,4 +676,74 @@ describe("the handback vocabulary a seat is told", () => {
         .toMatch(/^[A-Z]+(?: [A-Z]+)*$/);
     }
   });
+
+  /*
+    ⚠ THE PRECEDENCE ARM — #2272, and it is the one thing the instruction itself
+    used to get wrong. A release that DISCUSSES a refusal is filed as a refusal:
+    `crewCardCommentFact` reads every block-opening line and checks refusal
+    BEFORE release, so a correct `RELEASED` at the top loses to ordinary prose
+    further down. It happened on #1469 — the board called a free card not-built
+    until the comment was edited.
+
+    The reader is RIGHT and is not the subject here. The subject is that what a
+    seat is TOLD must keep matching it, which is why the third arm holds the
+    rendered prose to this behaviour rather than to a second copy of itself.
+  */
+  it("a release whose later paragraph opens with a refusal word is filed as a refusal", () => {
+    for (const word of CREW_CARD_REFUSAL_WORDS) {
+      const body = [
+        crewCardReleaseLine(SEAT, AT),
+        "",
+        `${word}, and it never will be directly — this card is the rung's design of record.`,
+      ].join("\n");
+      expect(
+        crewCardCommentFact({ card: 2272, body, createdAt: AT }),
+        `a seat told the board reads only the first word writes this and means \`${CREW_CARD_RELEASE_WORD}\``,
+      ).toMatchObject({ kind: "refusal" });
+    }
+  });
+
+  /*
+    THE NEGATIVE CONTROL, and the arm above is worthless without it: a reader
+    that called every release a refusal would pass it. The same handback with
+    that one phrase reworded is still a release — which is the whole of the
+    repair #1469's comment needed.
+  */
+  it("the same release without the refusal words is still a release", () => {
+    const body = [
+      crewCardReleaseLine(SEAT, AT),
+      "",
+      "It is never built directly — this card is the rung's design of record.",
+    ].join("\n");
+    expect(crewCardCommentFact({ card: 2272, body, createdAt: AT })).toMatchObject({ kind: "release" });
+  });
+
+  /*
+    AND THE INSTRUCTION IS HELD TO THAT PRECEDENCE. Both phrases are pinned for
+    a reason rather than for their wording: the first is the correction of the
+    false claim, the second is the fact that makes the body above a refusal.
+    *"nothing else"* is pinned ABSENT because that was the sentence which made
+    the trap look safe — it is the thing that must not come back.
+  */
+  it("the instruction says where the words are read, and which one outranks the other", () => {
+    const lower = crewCardHandbackInstruction(SEAT).toLowerCase();
+    expect(lower, "a seat is not told the words are read past the first line")
+      .toContain("not only the first line");
+    expect(lower, "a seat is not told a refusal beats a release wherever it sits")
+      .toContain("outranks a release");
+    expect(lower, "the FIRST-WORD claim is back, and it is false of crewCardCommentFact (#2272)")
+      .not.toContain("nothing else");
+  });
+
+  /*
+    ⚠ AND THE HELP TEXT MUST NOT ITSELF PARSE AS A HANDBACK. It renders all three
+    ceremonial lines, so a reader anchored anywhere but a block opener would read
+    the instruction as a refusal of whatever card it was printed under. This is
+    the arm that would fail if the precedence above were ever "fixed" by reading
+    every line instead.
+  */
+  it("the instruction text is not itself read as a fact", () => {
+    expect(crewCardCommentFact({ card: 2272, body: crewCardHandbackInstruction(SEAT), createdAt: AT }))
+      .toBeNull();
+  });
 });
