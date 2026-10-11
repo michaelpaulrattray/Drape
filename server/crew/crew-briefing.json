@@ -1,7 +1,7 @@
 {
-  "edition": 678,
-  "updatedAt": "2026-10-11T17:20:00.000Z",
-  "shift": "Foreman — foreman-20261012-0230",
+  "edition": 679,
+  "updatedAt": "2026-10-11T20:30:00.000Z",
+  "shift": "Foreman — foreman-20261012-0603",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -130,8 +130,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-11T04:39:26.742Z",
+      "readAt": "2026-10-11T20:18:54.823Z",
       "items": [
+        {
+          "issueNumber": 2269,
+          "title": "Campaigns is built and live — N2c's completion card and your test-drive list (your library gets named groups, and one word needed on what comes next)",
+          "kind": "rung",
+          "rung": "N2c"
+        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -10008,6 +10014,41 @@
       "status": "merged",
       "prNumber": 2299,
       "note": "Live. Nothing was wrongly kept today — measured either side, the list is identical — so this closed the hole before it cost anything."
+    },
+    {
+      "id": "reachability-prose-client-walk-2289",
+      "title": "Four clauses that restated whether a screen is reached now cite the map instead (#2289)",
+      "status": "merged",
+      "prNumber": 2292,
+      "note": "Live. Our own tooling: one source-tree walk replaces twenty private copies, ten of which read files in a way that could misread a shared working folder."
+    },
+    {
+      "id": "merged-pr-read-class-2291",
+      "title": "A crew check was reading the most recent fifth of our history and calling the rest clean (#2291)",
+      "status": "merged",
+      "prNumber": 2295,
+      "note": "Live. Our own tooling: the read is now sized from a live count, and one of the two repairs the card proposed was measured and found dead before it was built."
+    },
+    {
+      "id": "shipped-open-roadmap-hold-2296",
+      "title": "A crew finding that reported two correctly-open jobs on every run, forever (#2296)",
+      "status": "merged",
+      "prNumber": 2300,
+      "note": "Live. Our own tooling: a finding nobody can ever clear becomes wallpaper, so the two are held and the one real remainder is named as the floor."
+    },
+    {
+      "id": "math-random-literal-door-2297",
+      "title": "A guard that keeps picture addresses unguessable could be fooled by its own name in quotes (#2297)",
+      "status": "merged",
+      "prNumber": 2301,
+      "note": "Live. Our own tooling: it was wrong toward false alarms, not toward missing anything — measured either side, no verdict on the record moves."
+    },
+    {
+      "id": "pushgate-load-refusal-2298",
+      "title": "The check that cried wolf a third of the time, and threw away what it had been told (#2298)",
+      "status": "merged",
+      "prNumber": 2302,
+      "note": "Live. Our own tooling: fourteen assertions now carry the tool’s own words, and the check can say “I could not run” instead of “wrong”."
     }
   ],
   "problems": [
@@ -10161,9 +10202,9 @@
     {
       "id": "pushgate-refuses-under-load-2298",
       "severity": "warning",
-      "state": "open",
-      "title": "One of the crew's own checks fails for no reason about a third of the time, and it can block a finished job from being sent (#2298)",
-      "detail": "Met twice tonight. Before the crew sends work up, it runs a check over everything; one part of that check failed on two runs out of three and then passed on its own when run by itself — nothing in the work being sent could have caused it. The risk is not the wasted minutes: a check that cries wolf teaches whoever reads it to stop believing it, and this same part can also refuse to send work that is perfectly fine. Two earlier versions of this same fault were found and closed before (in the same check), so this is the third time the shape has come back — which is why it is filed to be looked at properly rather than patched again. Nothing a customer can see is affected."
+      "state": "resolved",
+      "title": "Fixed — one of the crew’s own checks was failing for no reason about a third of the time (#2298)",
+      "detail": "Met twice tonight. Before the crew sends work up, it runs a check over everything; one part of that check failed on two runs out of three and then passed on its own when run by itself — nothing in the work being sent could have caused it. The risk is not the wasted minutes: a check that cries wolf teaches whoever reads it to stop believing it, and this same part can also refuse to send work that is perfectly fine. Two earlier versions of this same fault were found and closed before (in the same check), so this is the third time the shape has come back — which is why it is filed to be looked at properly rather than patched again. Nothing a customer can see is affected.\n\n✅ RESOLVED — the repair is merged and live, and the build serving it is the one this row ships with (pull request #2302, `cbb97b0f`, read at the running service rather than at the merge). Reading it turned up that the card’s own account of the fault did not follow from its own evidence, so the first thing done was a correction rather than a fix: the failure that was photographed came from one of fourteen places in that check that threw away what the tool had actually said. Those fourteen now carry it, so the next time it fires we will be told which one. The real fault underneath is fixed too — the check can now tell “I could not run” apart from “the answer is wrong”, which is the distinction it was missing."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10442,12 +10483,16 @@
     273
   ],
   "nextUp": {
-    "readAt": "2026-10-11T04:39:26.742Z",
+    "readAt": "2026-10-11T20:18:54.823Z",
     "items": [
       {
         "issueNumber": 1469,
         "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the rung is BUILT — this card is only N2c's design of record and is never built directly. The test drive and the deep review live on #2269."
+        }
       },
       {
         "issueNumber": 1598,
@@ -10501,7 +10546,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "N2 finishing — N2b (#1242) and the N2 milestone after it. This card's own body sets that condition in his words; it is not waiting on you, and nothing here nee…"
+          "because": "N2d (#2134) — the one N2 rung still open. N2b and N2c both closed today; this is not waiting on you and nothing here needs an answer."
         }
       },
       {
@@ -10517,31 +10562,6 @@
       {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2249,
-        "title": "N2c-1 — The campaign tables and the campaign API, built dark (nothing a customer sees)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2250,
-        "title": "N2c-2 — The library's chips become campaigns: All / Unfiled / campaigns / + (API and UI in one PR)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2251,
-        "title": "N2c-3 — Pick several casts and file them in one go",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2252,
-        "title": "N2c-4 — The cast's own page: IN CAMPAIGNS becomes real, and the dead button goes",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2253,
-        "title": "N2c-5 — After a Sign, one dismissible offer to file the new cast",
         "urgent": false
       }
     ]
