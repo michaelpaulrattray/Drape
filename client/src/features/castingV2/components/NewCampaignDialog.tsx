@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ModalScrim } from "@/foundation/CastingModal";
-import { CAMPAIGN_NAME_MAX_LENGTH } from "@/features/castingV2/rosterChips";
+import { CAMPAIGN_NAME_MAX_LENGTH, campaignNameReady } from "@/features/castingV2/rosterChips";
 
 /**
  * NAME A NEW CAMPAIGN (card #2250, rung N2c — his Desk reply #273: *"N2c —
@@ -18,27 +18,37 @@ import { CAMPAIGN_NAME_MAX_LENGTH } from "@/features/castingV2/rosterChips";
  *
  * Kept free of the library page so the cast room's "Cast into a new campaign"
  * row (#2252) can open the same control — one control, two doors.
+ *
+ * **Given `currentName`, it renames instead (card #2273)** — the same box, the
+ * name already in it and selected, and Save inert until the name has actually
+ * changed. One naming control for a campaign, not a second copy of it.
  */
 export function NewCampaignDialog({
   busy,
   error,
   onCancel,
   onCreate,
+  currentName,
 }: {
   busy: boolean;
   /** The last refusal, in words the customer can act on, or null. */
   error: string | null;
   onCancel: () => void;
   onCreate: (name: string) => void;
+  /** Present = rename this campaign rather than make a new one (card #2273). */
+  currentName?: string;
 }) {
-  const [name, setName] = useState("");
+  const renaming = currentName !== undefined;
+  const [name, setName] = useState(currentName ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
   const trimmed = name.trim();
-  const ready = trimmed.length > 0;
+  const ready = campaignNameReady(name, currentName);
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+    // Selected, so typing replaces the old name rather than appending to it.
+    if (renaming) inputRef.current?.select();
+  }, [renaming]);
 
   const create = () => {
     if (!ready || busy) return;
@@ -46,10 +56,15 @@ export function NewCampaignDialog({
   };
 
   return (
-    <ModalScrim label="New campaign" cardClassName="dpc-renamem" busy={busy} onDismiss={onCancel}>
+    <ModalScrim
+      label={renaming ? "Rename campaign" : "New campaign"}
+      cardClassName="dpc-renamem"
+      busy={busy}
+      onDismiss={onCancel}
+    >
       <div>
-        <span className="dpc-modal__eyebrow">New campaign</span>
-        <h2 className="dpc-renamem__title">Name the campaign</h2>
+        <span className="dpc-modal__eyebrow">{renaming ? "Campaign" : "New campaign"}</span>
+        <h2 className="dpc-renamem__title">{renaming ? "Rename the campaign" : "Name the campaign"}</h2>
       </div>
 
       <div>
@@ -58,7 +73,7 @@ export function NewCampaignDialog({
             ref={inputRef}
             value={name}
             maxLength={CAMPAIGN_NAME_MAX_LENGTH}
-            placeholder="Campaign name"
+            placeholder={currentName || "Campaign name"}
             disabled={busy}
             autoComplete="off"
             aria-label="Campaign name"
@@ -73,7 +88,9 @@ export function NewCampaignDialog({
           <p className="dpc-renamem__helper dpc-newcampaign__error" role="alert">{error}</p>
         ) : (
           <p className="dpc-renamem__helper">
-            A cast member can be in more than one campaign.
+            {renaming
+              ? "Only the name changes. The cast members in it stay as they are."
+              : "A cast member can be in more than one campaign."}
           </p>
         )}
       </div>
@@ -88,7 +105,7 @@ export function NewCampaignDialog({
           disabled={busy || !ready}
           onClick={create}
         >
-          {busy ? "Creating…" : "Create campaign"}
+          {renaming ? (busy ? "Saving…" : "Save name") : (busy ? "Creating…" : "Create campaign")}
         </button>
       </div>
     </ModalScrim>

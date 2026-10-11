@@ -40,6 +40,7 @@ import { createDispatchLatch, type DispatchLatch } from "@/features/castingV2/si
 import { ConfirmDialog } from "@/foundation";
 import { HeroDeck } from "@/features/castingV2/components/HeroDeck";
 import { NewCampaignDialog } from "@/features/castingV2/components/NewCampaignDialog";
+import { CampaignMenu } from "@/features/castingV2/components/CampaignMenu";
 import { CastPickBox } from "@/features/castingV2/components/CastPickBox";
 import { CastSelectionBar, type BarCampaign } from "@/features/castingV2/components/CastSelectionBar";
 import {
@@ -54,6 +55,8 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import {
   ROSTER_PAGE_SIZE,
   ROSTER_SEARCH_DEBOUNCE_MS,
+  campaignDeleteBody,
+  chipAfterCampaignGone,
   chipFromLocation,
   chipHeading,
   isChip,
@@ -149,6 +152,9 @@ const RECEIPT_LEGEND_ID = "dpc-hero-receiptsay";
  * is made of. Names rather than a count — this is a promise about their own
  * people, and a bare number is not something they can check.
  */
+/** A campaign the rename or delete dialog is open on (card #2273). */
+type CampaignAct = { campaignId: string; name: string; castCount: number };
+
 function sheetDeleteCopy(sheet: {
   briefText: string | null;
   signedCastNames: string[];
@@ -250,6 +256,13 @@ export default function CastingV2() {
   */
   const [newCampaignFiles, setNewCampaignFiles] = useState(false);
   const [campaignError, setCampaignError] = useState<string | null>(null);
+  /*
+    RENAME AND DELETE A CAMPAIGN (card #2273) — the campaign the ⋯ beside its
+    name was opened on, while its dialog is up.
+  */
+  const [renamingCampaign, setRenamingCampaign] = useState<CampaignAct | null>(null);
+  const [renameCampaignError, setRenameCampaignError] = useState<string | null>(null);
+  const [deletingCampaign, setDeletingCampaign] = useState<CampaignAct | null>(null);
   const [starting, setStarting] = useState(false);
   /** Closes synchronously on click; see `startCasting` and `singleFlight.ts`. */
   const latchRef = useRef<DispatchLatch | null>(null);
@@ -560,6 +573,8 @@ export default function CastingV2() {
   const createCampaign = trpc.castingV2.createCampaign.useMutation();
   const addCastsToCampaign = trpc.castingV2.addCastsToCampaign.useMutation();
   const removeCastsFromCampaign = trpc.castingV2.removeCastsFromCampaign.useMutation();
+  const renameCampaign = trpc.castingV2.renameCampaign.useMutation();
+  const deleteCampaign = trpc.castingV2.deleteCampaign.useMutation();
   /*
     THE TICKED CASTS (card #2251). Held with the view they were ticked in — the
     chip and the search text — and dropped the moment either changes: his
@@ -642,6 +657,45 @@ export default function CastingV2() {
     await invalidateLibrary();
     setCreatingCampaign(false);
     chooseChip({ kind: "campaign", campaignId: created.campaignId });
+  };
+  /*
+    A NEW NAME FOR A CAMPAIGN (card #2273). A refusal — a name this customer
+    already uses — stays in the dialog in the server's own words, as it does
+    when a campaign is made.
+  */
+  const submitCampaignRename = async (campaign: CampaignAct, name: string) => {
+    setRenameCampaignError(null);
+    try {
+      await renameCampaign.mutateAsync({ campaignId: campaign.campaignId, name });
+    } catch (error) {
+      setRenameCampaignError(error instanceof Error ? error.message : "That name could not be saved.");
+      return;
+    }
+    await invalidateLibrary();
+    setRenamingCampaign(null);
+  };
+  /*
+    THE CAMPAIGN GOES, ITS CASTS STAY (card #2273). If it is the campaign on
+    screen the library returns to All BEFORE the lists are re-read, so the grid
+    never asks for a campaign that no longer exists.
+  */
+  const confirmCampaignDelete = async (campaign: CampaignAct) => {
+    try {
+      await deleteCampaign.mutateAsync({ campaignId: campaign.campaignId });
+    } catch (error) {
+      logRawFailure("castingV2.deleteCampaign", error);
+      toast(readableFailure(error, `“${campaign.name}” couldn't be deleted.`));
+      setDeletingCampaign(null);
+      await invalidateLibrary();
+      return;
+    }
+    const remaining = campaignList?.filter((row) => row.campaignId !== campaign.campaignId) ?? [];
+    const next = chipAfterCampaignGone(chip, remaining);
+    if (next !== chip) chooseChip(next);
+    setDeletingCampaign(null);
+    /* No toast on success: the chip leaving the row is the notice, and the
+       dialog already said the casts stay (D-110). */
+    await invalidateLibrary();
   };
   /*
     FILE OR UNFILE THE TICKED CASTS (card #2251) through the campaign doors the
@@ -879,6 +933,9 @@ export default function CastingV2() {
   const selecting = pickedInGrid.length > 0;
   const counts = rosterCounts.data;
   const campaignRows = campaigns.data ?? [];
+  const onScreenCampaign = chip.kind === "campaign"
+    ? campaignRows.find((row) => row.campaignId === chip.campaignId) ?? null
+    : null;
   /* The header's number: how many casts this chip holds that match the search. */
   const shownCount = counts?.matching ?? null;
   const emptyLine = roster.isSuccess && !roster.isPlaceholderData && shownCasts.length === 0
@@ -1560,6 +1617,28 @@ export default function CastingV2() {
         />
       ) : null}
 
+      {renamingCampaign ? (
+        <NewCampaignDialog
+          currentName={renamingCampaign.name}
+          busy={renameCampaign.isPending}
+          error={renameCampaignError}
+          onCancel={() => setRenamingCampaign(null)}
+          onCreate={(name) => void submitCampaignRename(renamingCampaign, name)}
+        />
+      ) : null}
+
+      {deletingCampaign ? (
+        <ConfirmDialog
+          title="Delete this campaign?"
+          body={campaignDeleteBody(deletingCampaign.name, deletingCampaign.castCount)}
+          confirmLabel="Delete campaign"
+          busyLabel="Deleting…"
+          busy={deleteCampaign.isPending}
+          onConfirm={() => void confirmCampaignDelete(deletingCampaign)}
+          onCancel={() => setDeletingCampaign(null)}
+        />
+      ) : null}
+
       {/*
         THE DIALOG THAT HAD NO FIELD. It said "Rename this cast?" and offered
         Save name with nothing to type into — the one control it existed for was
@@ -1718,8 +1797,22 @@ export default function CastingV2() {
             />
           ) : (
             <>
-              <span className="dp-label" style={{ fontSize: 13.5 }}>
-                {chipHeading(chip, campaignRows)}
+              <span className="dpc-rosterhead__name">
+                <span className="dp-label" style={{ fontSize: 13.5 }}>
+                  {chipHeading(chip, campaignRows)}
+                </span>
+                {/* The campaign's own ⋯ — rename, delete (card #2273). Only
+                    while that campaign is on screen, beside its name. */}
+                {onScreenCampaign ? (
+                  <CampaignMenu
+                    name={onScreenCampaign.name}
+                    onRename={() => {
+                      setRenameCampaignError(null);
+                      setRenamingCampaign(onScreenCampaign);
+                    }}
+                    onDelete={() => setDeletingCampaign(onScreenCampaign)}
+                  />
+                ) : null}
               </span>
               {shownCount !== null ? (
                 <span className="dp-small">

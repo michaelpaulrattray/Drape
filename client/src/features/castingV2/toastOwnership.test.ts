@@ -49,6 +49,12 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     because:
       "A retry (issue 122, shape 1) that was REFUSED or failed a second time. The tile shows the chip and the line again — the same face it wore before the tap — so nothing on the surface says the tap was refused, why (the filter's kind, a cancelled roll, not enough credits), or that the second attempt's credits came back. The server's own sentence passes through readableGatedFailure; the page's fallback, when it has none, claims no refund (card 2033).",
   },
+  // ---- CastingV2.tsx (delete a campaign — #2273)
+  {
+    match: "couldn't be deleted.`",
+    because:
+      "A REFUSED campaign delete (card 2273). The dialog closes and the chip is still in the row, which looks exactly like the customer having pressed Keep it — nothing on the surface says the delete was asked for and refused, or why. The success has NO toast on purpose: the chip leaving the row is the notice.",
+  },
   // ---- CastingRoom.tsx (Try again on one view — #1208 slice 2) — RETIRED by
   // #2089 (his "regenerate is the only option", 2026-10-08) with the press that
   // raised both of its toasts; their rows go with them.

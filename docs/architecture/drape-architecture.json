@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 62
+      "moduleCount": 63
     },
     {
       "id": "domain:client-shared",
@@ -1347,6 +1347,12 @@
     {
       "id": "module:client/src/features/castingV2/components/BriefField.tsx",
       "path": "client/src/features/castingV2/components/BriefField.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CampaignMenu.tsx",
+      "path": "client/src/features/castingV2/components/CampaignMenu.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -11339,6 +11345,10 @@
       "path": "client/src/features/castingV2/briefEcho.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/campaignEdit2273.test.ts",
+      "path": "client/src/features/castingV2/campaignEdit2273.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/candidateFailureWords.test.ts",
       "path": "client/src/features/castingV2/candidateFailureWords.test.ts"
     },
@@ -18763,6 +18773,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CampaignMenu.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CandidateTile.tsx",
       "to": "module:client/src/features/castingV2/retryFace.ts",
       "kind": "imports"
@@ -22395,6 +22410,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/features/castingV2/components/BriefField.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/components/CampaignMenu.tsx",
       "kind": "imports"
     },
     {

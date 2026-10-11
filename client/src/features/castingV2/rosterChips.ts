@@ -89,3 +89,38 @@ export function rosterEmptyLine(chip: RosterChip, search: string, signedCount: n
   if (chip.kind === "campaign") return "No cast in this campaign yet";
   return "No one signed yet — roll a casting, then sign the candidate you want to keep working with.";
 }
+
+/*
+  RENAME AND DELETE A CAMPAIGN (card #2273). The server doors
+  (`castingV2.renameCampaign` / `deleteCampaign`, owner-scoped) shipped with
+  #2249; nothing in the app called them, so a campaign made by mistake stayed
+  a chip forever and its name stayed taken.
+*/
+
+/**
+ * The chip to show once a campaign has gone, given the campaigns that remain.
+ * Deleting the campaign on screen returns the library to All; so does deleting
+ * the LAST campaign while Unfiled is chosen, because Unfiled is hidden with no
+ * campaigns (his ruling on #1469). Any other chip stays where it is.
+ */
+export function chipAfterCampaignGone(chip: RosterChip, remaining: readonly CampaignRow[]): RosterChip {
+  return isChip(chip, remaining) ? chip : { kind: "all" };
+}
+
+/**
+ * Whether a typed campaign name can be saved: something other than spaces, and,
+ * when renaming, different from the name it already has — saving a no-op is
+ * the commonest accident a rename box invites.
+ */
+export function campaignNameReady(typed: string, currentName?: string): boolean {
+  const trimmed = typed.trim();
+  if (trimmed.length === 0) return false;
+  return currentName === undefined || trimmed !== currentName.trim();
+}
+
+/** What the delete question says. It asks once, and it says the casts stay. */
+export function campaignDeleteBody(name: string, castCount: number): string {
+  if (castCount === 0) return `“${name}” is empty, so only the campaign goes.`;
+  const who = castCount === 1 ? "The 1 cast member in it stays" : `The ${castCount} cast members in it stay`;
+  return `Deleting “${name}” keeps its cast. ${who} in your library, exactly as before. Only the campaign goes.`;
+}

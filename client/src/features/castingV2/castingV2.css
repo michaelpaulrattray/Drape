@@ -703,6 +703,15 @@
   padding-right: 9px;
 }
 
+/* A campaign's name over the grid, with its own ⋯ beside it (card #2273):
+   rename and delete live there rather than as more chips in the row. */
+.dpc-rosterhead__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
 /*
   The end of the grid, where the next page is asked for. It holds a line of
   height so the observer has something to see, and says nothing unless a page
