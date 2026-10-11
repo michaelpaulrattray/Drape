@@ -114,8 +114,12 @@ describe("card 2129 — the candidates page is a casting, and only the delivered
     expect(read("client/src/features/castingV2/packageRedoRow.ts"))
       .toContain('CHARACTER_SHEET_DELETE_LABEL = "Delete";');
     expect(room).toContain("characterSheetMenuItems({");
-    expect(room).toContain("Use in a campaign · soon");
-    expect(room).toContain("Use in a new campaign");
+    /* Card 2252 (his "yes." of 2026-09-29) took the header's campaign button
+       away once campaigns existed, and moved "Use in a new campaign" into the
+       real IN CAMPAIGNS panel — his approved words, read where they now live. */
+    expect(room).not.toContain("Use in a campaign · soon");
+    expect(read("client/src/features/castingV2/components/CastCampaignsCard.tsx"))
+      .toContain('"Use in a campaign" : "Use in a new campaign"');
     expect(room).toContain("`Refine ${data.name.trim()}'s look` : \"Refine their look\"");
     expect(room).toContain("Refining arrives soon. Until then, a new direction means making a new character.");
     for (const retired of [
@@ -126,6 +130,7 @@ describe("card 2129 — the candidates page is a casting, and only the delivered
       "Refining a signed Cast arrives",
     ]) {
       expect(room).not.toContain(retired);
+      expect(read("client/src/features/castingV2/components/CastCampaignsCard.tsx")).not.toContain(retired);
     }
   });
 

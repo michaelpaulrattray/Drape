@@ -78,6 +78,8 @@ describe("no casting surface hardcodes a pronoun", () => {
     expect(room).toContain("data.pronouns.subject");
     expect(room).toContain("data.pronouns.possessive");
     // And agreement travels with them, so no call site has to remember it.
-    expect(room).toContain("data.pronouns.plural");
+    // (#2252 retired the campaigns stub sentence that was its plain-`data.`
+    // reader; the sibling-delete sentence reads it through `data?.`.)
+    expect(room).toMatch(/data\??\.pronouns\.plural/);
   });
 });

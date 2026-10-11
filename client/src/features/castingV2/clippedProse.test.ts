@@ -36,7 +36,8 @@ const COMPONENTS = new URL("./components/", import.meta.url);
  * Note what makes a class belong here: the text is the CUSTOMER'S, typed by
  * her, and nothing else on the page shows it in full at that moment.
  */
-const PROSE = new Set([".dpc-refine__madeText", ".dpc-viewer__waitSaid"]);
+/* `.dpc-camp__name` (#2252): a campaign's name is one the customer typed. */
+const PROSE = new Set([".dpc-refine__madeText", ".dpc-viewer__waitSaid", ".dpc-camp__name"]);
 
 /**
  * OUR VOCABULARY, and exempt on purpose.

@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 55
+      "moduleCount": 56
     },
     {
       "id": "domain:client-shared",
@@ -1353,6 +1353,12 @@
     {
       "id": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "path": "client/src/features/castingV2/components/CandidateViewer.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "path": "client/src/features/castingV2/components/CastCampaignsCard.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -7979,6 +7985,16 @@
       "file": "server/routes/castingV2.ts"
     },
     {
+      "id": "route:castingV2.listCastCampaigns",
+      "namespace": "castingV2",
+      "name": "listCastCampaigns",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": true,
+      "file": "server/routes/castingV2.ts"
+    },
+    {
       "id": "route:castingV2.openSessions",
       "namespace": "castingV2",
       "name": "openSessions",
@@ -11297,6 +11313,10 @@
     {
       "id": "test:client/src/features/castingV2/clippedProse.test.ts",
       "path": "client/src/features/castingV2/clippedProse.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/components/CastCampaignsCard.test.ts",
+      "path": "client/src/features/castingV2/components/CastCampaignsCard.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/components/SignConfirm.test.ts",
@@ -18699,6 +18719,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
       "to": "module:client/src/components/ui/tooltip.tsx",
       "kind": "imports"
@@ -21931,6 +21966,11 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/components/CastCampaignsCard.tsx",
       "kind": "imports"
     },
     {
@@ -31856,6 +31896,11 @@
     {
       "from": "module:server/db/castCampaigns.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCampaigns.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

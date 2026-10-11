@@ -417,14 +417,16 @@ export const ROADS: readonly Road[] = [
       "castingV2.deleteCampaign",
       "castingV2.addCastsToCampaign",
       "castingV2.removeCastsFromCampaign",
+      "castingV2.listCastCampaigns",
     ],
     summary:
       "His word, 2026-09-29: 'in n2c instead of calling them shoots call it Campaign'. A campaign is a named, "
       + "many-to-many collection of one customer's signed casts (migration 0080: `castCampaigns`, "
       + "`castCampaignMembers`); a cast may be in several, and a cast in none is Unfiled. Six doors, all free and "
-      + "none an operation: list (each campaign with a DERIVED count of the casts the roster would draw), create, "
-      + "rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing) and remove "
-      + "casts. 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.",
+      + "none an operation (seven with the cast page's read): list (each campaign with a DERIVED count of the casts the roster would draw), create, "
+      + "rename, delete (the member rows go, the casts stay), add casts (idempotent, all-or-nothing), remove "
+      + "casts, and list the campaigns ONE cast is in (the cast page's IN CAMPAIGNS panel, #2252 — one statement "
+      + "owner-scoped on all three tables, so another account's cast answers an empty list). 'Signed and live' is the roster's own predicate, `signedCastWhere`, never a copy of it.",
     doors: [],
     doorsNote:
       "THIS ROAD DECLARES NO DOOR. Outside casting it is `requireCastingV2`'s refusal; a campaign that is not this "
