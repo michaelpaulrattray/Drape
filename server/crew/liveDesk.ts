@@ -33,6 +33,7 @@ import {
   type CrewCardBuildView,
   type CrewCardCommentFact,
 } from "../../shared/crewCardBuildState";
+import { cardsNamedInText } from "../../shared/crewBriefingCardToken.js";
 import type { HandVerdictFreshness } from "../../shared/handVerdict";
 import {
   CREW_HOLD_LABELS,
@@ -313,17 +314,18 @@ const openPulls = (reading: LiveQueueReading) =>
  * inside the window. A number the reading does not hold is not a card here:
  * the page draws these as links to cards it can also show, and a PR titled
  * for "#1160 slice 3" should point at #1160, not at nothing.
+ *
+ * ⚠ **THE TOKEN IS `cardsNamedInText`'S AND THIS IS ONLY THE `known` GATE ON
+ * TOP (#2247).** This function carried a THIRD copy of that regex, character
+ * for character, while the page's own docblock said *"one reader for the
+ * surfaces that ask it … a third copy is the drift working law 4 names"* — it
+ * simply did not know this copy existed. Nothing about the answer moves: the
+ * shared reader returns every match in order, and the gate below filters,
+ * dedupes and sorts exactly as the loop did. `server/crew/liveDesk.test.ts`
+ * holds all four of its edges, leading zero and `#11260` included.
  */
 export function cardsNamedIn(title: string, known: ReadonlySet<number>): number[] {
-  const found = new Set<number>();
-  /* An exec loop rather than matchAll: one tsconfig that reads this file
-     targets es5 and cannot iterate a match iterator. */
-  const token = /(?:^|[^0-9A-Za-z])#0*([1-9][0-9]*)(?![0-9])/g;
-  let match: RegExpExecArray | null;
-  while ((match = token.exec(title)) !== null) {
-    const number = Number(match[1]);
-    if (known.has(number)) found.add(number);
-  }
+  const found = new Set<number>(cardsNamedInText(title).filter((card) => known.has(card)));
   return Array.from(found).sort((a, b) => a - b);
 }
 

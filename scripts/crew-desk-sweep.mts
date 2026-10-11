@@ -87,6 +87,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { crewCardNeedsHim } from "../shared/crewCardState.js";
+import { cardsNamedInText } from "../shared/crewBriefingCardToken.js";
 import {
   type ResolvableBriefing,
   planCardResolutions,
@@ -126,6 +127,10 @@ import {
   planPipelineRowStates,
   planPipelineRowsWithoutPullRequests,
 } from "../shared/crewShiftState.js";
+import {
+  type CrewProblemRowPlan,
+  planProblemRows,
+} from "../shared/crewProblemState.js";
 import { cardNumbersIn } from "../shared/crewQueuePossiblyDone.js";
 
 const BRIEFING = path.join(
@@ -661,17 +666,26 @@ const openCardNumbers = allOpen === null
   ? null
   : new Set(allOpen.map((row) => Number(row?.number)));
 const queueIsAFloor = allOpen !== null && allOpen.length >= OPEN_QUEUE_LIMIT;
+/*
+  ⚠ `null` IS THE WHOLE GUARD. A missing card is closed only if the list it is
+  missing from was a LIST; at the cap it is a floor, and reporting a live card
+  as closed is the finding-shaped lie this sweep exists to prevent.
+
+  ⚠ **ONE DECLARATION, BECAUSE TWO PASSES NOW ASK IT (#2247).** The problems
+  reader below judges its rows against the same `gh issue list` this one does,
+  at the same instant and under the same cap — so a second copy of this
+  three-state rule would be two readers of one question, and the day one of
+  them learned about the cap and the other did not, only the capped one would
+  start calling live cards closed.
+*/
+const isCardOpen = (card: number): boolean | null => {
+  if (openCardNumbers === null || queueIsAFloor) return null;
+  return openCardNumbers.has(card);
+};
 const pipelineNoPr = planPipelineRowsWithoutPullRequests(
   (briefing.pipeline ?? []) as (Json & PlannablePipelineRow & { title?: string })[],
   (title) => cardNumbersIn(title),
-  (card) => {
-    /* ⚠ `null` IS THE WHOLE GUARD. A missing card is closed only if the list it
-       is missing from was a LIST; at the cap it is a floor, and reporting a
-       live card as closed is the finding-shaped lie this sweep exists to
-       prevent. */
-    if (openCardNumbers === null || queueIsAFloor) return null;
-    return openCardNumbers.has(card);
-  },
+  isCardOpen,
 );
 if (allOpen === null) {
   skipped.push("PIPELINE: the open queue could not be read, so no PR-less row was judged against its card.");
@@ -679,6 +693,52 @@ if (allOpen === null) {
   skipped.push(
     `PIPELINE: ${OPEN_QUEUE_LIMIT} rows came back, which is the limit — a PR-less row's card `
     + "cannot be called closed off a floor.",
+  );
+}
+
+/**
+ * What this pass reads off a `problems` row: the three fields `planProblemRows`
+ * judges, plus the two the report prints. `problemSchema` has already refused a
+ * row missing any of them by the time an edition is in the tree.
+ */
+type PlannableProblemRow = Json & {
+  id: string;
+  title: string;
+  detail: string;
+  severity: string;
+  state: string;
+};
+
+/*
+  ⚠ **4b. HIS PROBLEMS SECTION — THE SECTION HE COMPLAINED ABOUT BY NAME, AND
+  THE ONLY ONE OF HIS LISTS NOTHING HAS EVER RE-READ (#2247).**
+
+  `planProblemRows` owns the rule, the measurement and the two things it
+  deliberately does not judge; this is its I/O. His words, 2026-09-25: *"problems
+  never seems to update and it doesnt feel useful either"*.
+
+  ⚠ **IT COSTS NO NEW `gh` CALL** — `allOpen` was read once at the top of the
+  run for everything, and `isCardOpen` above is the same three-state predicate
+  the pipeline pass uses, so the two sections cannot describe different moments.
+
+  ⚠ **AND THE READER HANDED IN IS HIS PAGE'S OWN** (`cardsNamedInText`, moved to
+  `shared/` by this card for exactly this reason). `problemsFor` retires a row
+  live when a card it names has closed; this names the same rows for repair. One
+  spelling, or the sweep would go quiet about rows his page draws.
+
+  ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
+  rule as the holds and the shell damage above. An unread queue makes every
+  judgeable row `unjudged` rather than fine.
+*/
+const problemRows: CrewProblemRowPlan<PlannableProblemRow> = planProblemRows(
+  (briefing.problems ?? []) as PlannableProblemRow[],
+  cardsNamedInText,
+  isCardOpen,
+);
+if (allOpen === null) {
+  skipped.push(
+    "PROBLEMS: the open queue could not be read, so no problem row was judged against the cards"
+    + " it names. That is unread, NOT clean.",
   );
 }
 
@@ -1043,6 +1103,59 @@ if (pipelineNoPr.length > 0) {
     console.log(
       `  ! ${item.id} — says \`${item.status}\`, names #${item.cards.join(", #")} (closed), no PR`,
     );
+  }
+}
+
+/*
+  ⚠ **THE PROBLEMS SECTION, READ BACK AGAINST THE RECORD (#2247).**
+
+  Why it is printed rather than applied is `planProblemRows`' own docblock and
+  is this pass's standing posture: *resolved* and *still half-true* are
+  different answers, and a row's repair is an edit to an edition a shift is
+  writing anyway.
+
+  Exit code 0, read off the rule at the foot of this file rather than chosen
+  afresh: a briefing carrying any of these is schema-VALID, so a shift can ship
+  past it, and exit 2 is spent only on what it cannot.
+*/
+if (problemRows.stale.length > 0) {
+  console.log("");
+  console.log(`⚠ ${problemRows.stale.length} problem row(s) say \`open\` and a card they name has CLOSED.`);
+  console.log("  Three of twenty-one did at edition 674, and you would not have seen one: his page");
+  console.log("  retires a row live when its card closes, so these are invisible on a good night —");
+  console.log("  and ALL of them are drawn the night GitHub will not answer the crew's reads");
+  console.log("  (#1399, four nights running). That night is the one he complained about.");
+  console.log("  Nothing is rewritten here: `resolved` and `still half-true` are different answers,");
+  console.log("  and the repair is an edit to the next edition you write anyway.");
+  for (const finding of problemRows.stale) {
+    console.log(
+      `  ! ${finding.row.id} — names #${finding.closed.join(", #")} (closed)`
+      + (finding.row.severity === "info" ? " [info — his page does not draw it today]" : ""),
+    );
+    console.log(`      ${String(finding.row.title).slice(0, 90)}`);
+  }
+}
+
+if (problemRows.noCard.length > 0) {
+  console.log("");
+  console.log(`· ${problemRows.noCard.length} problem row(s) name NO card, so nothing can ever retire them.`);
+  console.log("  `problemsFor` reads the title AND the detail, and neither of these names a `#N` —");
+  console.log("  a card number living only in the row's `id` slug is read by nothing (#2247, the");
+  console.log("  #2165 shape one section over). This had never happened when the reader was built.");
+  console.log("  Either write the `#N` into the row's own words, or resolve it in your edition —");
+  console.log("  a row that cannot retire by any road will outlive its fault by months.");
+  for (const finding of problemRows.noCard) {
+    console.log(`  · ${finding.row.id} — ${String(finding.row.title).slice(0, 90)}`);
+  }
+}
+
+if (problemRows.unjudged.length > 0) {
+  console.log("");
+  console.log(`! ${problemRows.unjudged.length} problem row(s) could not be judged — their cards were not readable.`);
+  console.log("  Unread is NOT clean and it is not stale either: a card missing from a capped or");
+  console.log("  failed queue read is either closed or past the cap, and those are opposite facts.");
+  for (const finding of problemRows.unjudged) {
+    console.log(`  ! ${finding.row.id} — names #${finding.cards.join(", #")}, unread`);
   }
 }
 
