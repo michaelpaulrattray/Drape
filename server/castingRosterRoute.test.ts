@@ -179,9 +179,52 @@ describe("the doors are shut outside casting", () => {
 });
 
 describe("the client's copies of the server's numbers agree with the server", () => {
-  it("page size and campaign-name width", () => {
+  it("page size", () => {
     expect(clientChips.ROSTER_PAGE_SIZE).toBeLessThanOrEqual(ROSTER_PAGE_MAX);
-    expect(clientChips.CAMPAIGN_NAME_MAX_LENGTH).toBe(CAMPAIGN_NAME_MAX_LENGTH);
+  });
+
+  it("the campaign-name cap is written down ONCE, so there is nothing to compare", async () => {
+    /*
+      ⚠ **THIS ARM USED TO COMPARE TWO NUMBERS AND NOW PROVES THERE IS ONE
+      (#2277).** `rosterChips.ts` hand-typed `64` beside a docblock saying the
+      server had its own, and this arm asserted the two were equal — working
+      law 4 with an alarm bolted on, which tells you WHEN they disagree where
+      one declaration tells you they cannot. The client now RE-EXPORTS
+      `shared/inputLimits.ts`, which `server/db/castCampaigns.ts` re-exports
+      too, so the old equality arm had become the shared constant compared to
+      itself down two paths: green whatever happens, which is worse than absent.
+
+      What is asserted instead is the single declaration, read at the bytes:
+      the literal lives in `shared/inputLimits.ts` and nowhere else that this
+      cap is spoken of. `server/clientInputCaps.test.ts` already holds the
+      other half — that every export there keeps an importer on both sides.
+    */
+    const { readFile } = await import("node:fs/promises");
+    const [shared, chips, store] = await Promise.all([
+      readFile(new URL("../shared/inputLimits.ts", import.meta.url), "utf8"),
+      readFile(new URL("../client/src/features/castingV2/rosterChips.ts", import.meta.url), "utf8"),
+      readFile(new URL("./db/castCampaigns.ts", import.meta.url), "utf8"),
+    ]);
+    const declaresLiteral = (source: string) =>
+      /export const CAMPAIGN_NAME_MAX_LENGTH\s*=\s*\d+/.test(source);
+    /* The positive control: the one place it IS declared. */
+    expect(declaresLiteral(shared), "the cap left shared/inputLimits.ts — point this arm at its new home").toBe(true);
+    expect(declaresLiteral(chips), "rosterChips.ts has typed the cap again — re-export it instead").toBe(false);
+    expect(declaresLiteral(store), "castCampaigns.ts has typed the cap again — re-export it instead").toBe(false);
+    /*
+      And `rosterChips.ts` does not mention the cap in CODE at all any more:
+      both fields import the shared constant, so even a re-export here would be
+      an export nothing in the product reads.
+
+      ⚠ Prose is stripped, and that is not a convenience: this file's docblock
+      names the constant on purpose, as the record of what went wrong. An
+      unstripped read reddens on its own repair — the same trap
+      `server/clientInputCaps.test.ts` was already written around.
+    */
+    const code = chips.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+    expect(chips, "the record of the repair left rosterChips.ts").toContain("CAMPAIGN_NAME_MAX_LENGTH");
+    expect(code).not.toContain("CAMPAIGN_NAME_MAX_LENGTH");
+    expect(CAMPAIGN_NAME_MAX_LENGTH).toBe(64);
   });
 
   it("the client's filter for each chip is an input the roster accepts", async () => {

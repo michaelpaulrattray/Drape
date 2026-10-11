@@ -193,3 +193,134 @@ describe("outside casting the doors are shut", () => {
     await expect(call.listCampaigns({})).resolves.toBeDefined();
   });
 });
+
+/* ------------------------- #2277 · the doors are LIVE, and the comment says so */
+
+describe("every campaign door is on a customer path, and the router's own comment agrees", () => {
+  /*
+    ⚠ **WHY THIS EXISTS: THE COMMENT ABOVE THESE DOORS SAID THEY HAD NO CLIENT
+    CALLER FOR TWELVE DAYS AFTER THEY GOT ONE** (#2277, found by the relay's
+    milestone-close review of N2c). It was written the morning #2249 merged,
+    when it was true, and the rung's other four cards shipped the same
+    afternoon. Two more documents said the same thing. A sentence about whether
+    a surface is dark governs how carefully the next change to it is reviewed,
+    so it rotting is not cosmetic.
+
+    So the fact is DERIVED at both ends rather than written down twice:
+
+      the doors    the real router's own procedure ids, filtered on the name —
+                   a door added or renamed joins this population by itself.
+      the callers  a prose-stripped read of every `.ts`/`.tsx` under
+                   `client/src`, test files excluded.
+
+    ⚠ **THE STRIPPER IS LOAD-BEARING AND NOT A TIDINESS.** `rosterChips.ts`'s
+    own docblock names `castingV2.renameCampaign` in prose, so an unstripped
+    read would have called that door live on the strength of a comment ABOUT
+    it — which is precisely the mistake this arm is about, one layer down.
+
+    It runs on this suite's existing 30 s clock rather than asking for the tree
+    sweep's 60 s: it reads each file once (`clientInputCaps.test.ts`, the
+    measured casualty, reads them several times over), and that whole sweep ran
+    785 ms quiet and 5,016 ms at its worst under load.
+  */
+  const CLIENT_SRC = new URL("../client/src/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+
+  /** A comment about a call is not a call. */
+  const withoutProse = (source: string): string => source
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/^\s*\/\/.*$/gm, " ");
+
+  async function everyClientSource(dir: string): Promise<string[]> {
+    const { readdir } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const entries = await readdir(dir, { withFileTypes: true });
+    const found: string[] = [];
+    for (const entry of entries) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) found.push(...(await everyClientSource(path)));
+      else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) found.push(path);
+    }
+    return found;
+  }
+
+  let code = "";
+  let fileCount = 0;
+  let rosterChips = "";
+
+  beforeEach(async () => {
+    if (code) return;
+    const { readFile } = await import("node:fs/promises");
+    const files = await everyClientSource(CLIENT_SRC);
+    fileCount = files.length;
+    const sources = await Promise.all(files.map((file) => readFile(file, "utf8")));
+    code = sources.map(withoutProse).join("\n");
+    rosterChips = sources[files.findIndex((file) => file.endsWith("rosterChips.ts"))] ?? "";
+  });
+
+  /** The doors, read off the real router rather than listed here. */
+  function campaignDoors(): string[] {
+    const procedures = (castingV2Router as unknown as { _def: { procedures: Record<string, unknown> } })._def.procedures;
+    return Object.keys(procedures).filter((id) => /[Cc]ampaign/.test(id));
+  }
+
+  it("the instrument before its finding: the sweep reads the client, and the router has doors", async () => {
+    /* A sweep that reads nothing passes every assertion below it. */
+    expect(fileCount, "the sweep found almost nothing — check the path").toBeGreaterThan(300);
+    expect(code).toContain("trpc.castingV2.");
+    /* And the door population is not empty either, which is the other way this
+       could pass while proving nothing. */
+    expect(campaignDoors()).toHaveLength(DOORS.length);
+    expect(campaignDoors().sort()).toEqual([...DOORS].sort());
+  });
+
+  it("NOT ONE of them is dark", async () => {
+    const dark = campaignDoors().filter((door) => !code.includes(`trpc.castingV2.${door}`));
+    expect(
+      dark,
+      "a campaign door has no client caller. If that is deliberate, say so in the "
+        + "router's comment and here — do NOT leave the comment claiming the opposite:\n  "
+        + dark.join("\n  "),
+    ).toEqual([]);
+  });
+
+  it("a door that does not exist has no caller — the negative control", async () => {
+    expect(code).not.toContain("trpc.castingV2.archiveCampaign");
+  });
+
+  it("a door named only in PROSE is not a caller — the control the stripper needs", async () => {
+    /*
+      The real specimen, not a fixture: `rosterChips.ts` names
+      `castingV2.renameCampaign` in a docblock. Unstripped it reads as a call;
+      stripped it does not. If this ever stops holding because that docblock
+      was reworded, point it at whichever file then carries the shape — the
+      stripper is what must stay proven, never this sentence.
+    */
+    expect(rosterChips, "rosterChips.ts was not read — the fixture moved").toContain("renameCampaign");
+    expect(rosterChips).toContain("`castingV2.renameCampaign`");
+    expect(withoutProse(rosterChips)).not.toContain("castingV2.renameCampaign");
+    /*
+      ⚠ AND THE READER ABOVE ACTUALLY APPLIES IT, which the two lines before
+      this do NOT show: they drive `withoutProse` directly, so dropping it from
+      the sweep left every arm here green — measured by sabotage, not supposed.
+      The backticked form only ever occurs in prose, so its absence from the
+      swept text is the proof that the sweep was stripped.
+    */
+    expect(code).not.toContain("`castingV2.renameCampaign`");
+  });
+
+  it("the router's comment names exactly the doors that exist", async () => {
+    /*
+      The comment carries a table of door → surface. A door missing from it, or
+      a name in it that is no longer a door, is the rot this card repaired —
+      caught here instead of by the next reader.
+    */
+    const { readFile } = await import("node:fs/promises");
+    const router = await readFile(new URL("./routes/castingV2.ts", import.meta.url), "utf8");
+    const start = router.indexOf("CAMPAIGNS — rung N2c");
+    expect(start, "the campaigns comment moved or was reworded").toBeGreaterThan(-1);
+    const table = router.slice(start, router.indexOf("His word, 2026-09-29", start));
+    for (const door of campaignDoors()) expect(table).toContain(door);
+    /* And it no longer claims the opposite of what the arms above measured. */
+    expect(table).toContain("ALL SEVEN DOORS ARE ON A CUSTOMER PATH");
+  });
+});

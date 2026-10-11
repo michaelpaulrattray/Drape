@@ -20,13 +20,17 @@
  */
 export const ROSTER_PAGE_SIZE = 60;
 
-/**
- * The longest campaign name, in characters — the server's
- * `CAMPAIGN_NAME_MAX_LENGTH` (`server/db/castCampaigns.ts`) and the column's
- * width. A copy the browser can import; `server/castingRosterRoute.test.ts`
- * reddens if the two ever disagree.
- */
-export const CAMPAIGN_NAME_MAX_LENGTH = 64;
+/*
+  ⚠ **THE CAMPAIGN-NAME CAP IS NOT HERE, AND ITS ABSENCE IS THE REPAIR (#2277).**
+  This file declared `CAMPAIGN_NAME_MAX_LENGTH = 64` with a docblock saying the
+  server had its own copy, guarded by an arm comparing the two numbers — working
+  law 4 with an alarm bolted on, which tells you WHEN two numbers disagree where
+  one declaration tells you they cannot. Both fields that drew on it now import
+  `shared/inputLimits.ts` directly, which `server/db/castCampaigns.ts`
+  re-exports too, so the number is written down once. A re-export was tried here
+  first and dropped: nothing in the product would have imported it, and an
+  export kept alive by a test is the next sweep's puzzle.
+*/
 
 /** The box is read a quarter second after the last keystroke (the brief's ~250 ms). */
 export const ROSTER_SEARCH_DEBOUNCE_MS = 250;

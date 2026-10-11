@@ -1848,7 +1848,7 @@
       },
       {
         "id": "campaigns",
-        "title": "Campaigns — a customer's named collections of signed casts (N2c, built dark)",
+        "title": "Campaigns — a customer's named collections of signed casts (N2c, live)",
         "entrances": [
           "server/routes/castingV2.ts",
           "server/db/castCampaigns.ts"
@@ -1869,7 +1869,7 @@
           "CASTING_V2_SCOPE"
         ],
         "notes": [
-          "Built dark by card #2249; the library's chip row (card #2250) is the first client caller — it lists campaigns as chips and creates one from the + chip. Filing casts (multi-select), the cast page's campaigns panel and the post-Sign offer are the rung's next cards.",
+          "ALL SEVEN DOORS ARE ON A CUSTOMER PATH, and the rung is closed: the library's chip row and + chip (#2250), the ⋯ beside a chip for rename and delete (#2273), the selection bar's Add to… / Remove from… (#2251), the cast page's IN CAMPAIGNS panel and its add row (#2252), and one dismissible post-Sign offer (#2253). ⚠ This note said 'Built dark by card #2249 … the rung's next cards' until 2026-10-11 (#2277) — true of the morning #2249 merged and false by that afternoon, because the whole rung opened and closed inside one day. The callers are read off `client/src` and held equal to the tree by `server/castCampaignsRoute.test.ts`, so a door that loses its last one reddens rather than letting this sentence rot again.",
           "The roster reads campaigns too (card #2250): `castingV2.roster` takes an optional scope (all, unfiled, a campaign), a name search and a cursor, and `castingV2.rosterCounts` counts the chips. Unfiled is a NOT EXISTS over this customer's member rows; a campaign scope is an EXISTS owner-checked on both sides of the member join; a campaign or cursor that is not this customer's is NOT_FOUND.",
           "Every statement carries the owner in its own WHERE, and the membership write is one INSERT … SELECT that re-anchors the casts and the campaign to the owner itself, rather than trusting ids an earlier read returned."
         ]

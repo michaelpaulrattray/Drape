@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ModalScrim } from "@/foundation/CastingModal";
-import { CAMPAIGN_NAME_MAX_LENGTH, campaignNameReady } from "@/features/castingV2/rosterChips";
+import { campaignNameReady } from "@/features/castingV2/rosterChips";
+import { CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 /**
  * NAME A NEW CAMPAIGN (card #2250, rung N2c — his Desk reply #273: *"N2c —

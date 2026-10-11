@@ -2138,8 +2138,26 @@ export const castingV2Router = router({
     }),
 
   /*
-    CAMPAIGNS — rung N2c, card #2249. Built dark: nothing in the client calls
-    these yet, so their merge changes nothing a customer sees.
+    CAMPAIGNS — rung N2c, card #2249, and ⚠ **ALL SEVEN DOORS ARE ON A CUSTOMER PATH
+    NOW, so a change here is a change a customer meets.** This paragraph
+    said *"Built dark: nothing in the client calls these yet, so their merge
+    changes nothing a customer sees"* until 2026-10-11 (#2277), which was true
+    of the morning #2249 merged and false by that afternoon: the rung's other
+    four cards shipped in the same day. Read at the client rather than
+    asserted — `grep -rn "trpc.castingV2.<door>"` under `client/src`, test
+    files excluded:
+
+      listCampaigns            the library's chip row + the cast page's panel
+      createCampaign           the + chip's dialog + the cast page's add row
+      renameCampaign           the ⋯ beside a chip (#2273)
+      deleteCampaign           the ⋯ beside a chip (#2273)
+      addCastsToCampaign       the selection bar (#2251) + the cast page (#2252)
+      removeCastsFromCampaign  the selection bar (#2251)
+      listCastCampaigns        the cast page's IN CAMPAIGNS panel (#2252)
+
+    `server/castCampaignsRoute.test.ts` holds that table equal to the tree, so a
+    door that loses its last client caller — or a new door built dark — reddens
+    rather than leaving this comment to rot a second time.
 
     His word, 2026-09-29: "in n2c instead of calling them shoots call it
     Campaign". A campaign is a customer's named collection of signed casts; a
