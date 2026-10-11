@@ -118,9 +118,64 @@
  * instance of this fault on the focus lane while looking like a derivation. A
  * set that answers a neighbouring question is not a source of truth for this
  * one.
+ *
+ * # ⚠ `roadmap` IS IN THE SET, AND THE UMBRELLA IS RULED OUT — #2296
+ *
+ * **The question was asked by this reader's own first widened run.** #2291
+ * widened the merged window from 200 rows to the whole merge history, and the
+ * first run named two cards that are **both correctly open** — so nothing
+ * could ever retire them, and a finding that can never clear becomes
+ * wallpaper. Re-driven over the real board on 2026-10-12 (53 open cards,
+ * 1,091 merged pull requests, 3 open ones): the same two and nothing else —
+ * `#64` via `#836` and `#985`, `#1210` via `#1230`.
+ *
+ * **`roadmap` JOINS THE HOLD SET.** It is his own ruling that a card is NOT
+ * current work: `CREW_PIPELINE_GROUPS`' own row says *"Sequenced work — it
+ * waits for its rung"*, and that is the same kind of fact `parked` carries —
+ * `parked` is already here on exactly that reasoning. `#1210` is the worked
+ * example: deferred on his word, 2026-09-25 (*"lets defer this for now we can
+ * build it later"*), and the pull request naming it says so in its own title
+ * — `docs(casting): keep the mood board mockups in the repo (#1210,
+ * deferred)`.
+ *
+ * ⚠ **AND IT CANNOT HIDE THE FAULT THIS READER EXISTS FOR, WHICH IS THE TEST
+ * A HOLD LABEL HAS TO PASS HERE.** The fault is *a seat shipped a card and
+ * never wrote the handback word*. A `roadmap` card is one **no seat can
+ * take** — it waits for its rung, by the same row — so it cannot be a card a
+ * seat shipped and forgot. That is the `founder-ordered` argument above read
+ * the other way round: a label holding work OFF a seat is safe here, where a
+ * label merely sequencing a seat's own work is not. **13 other `roadmap`
+ * cards were open the day this landed and not one had a merged pull request
+ * naming it**, so this suppresses exactly one row today and stands ready for
+ * the rest.
+ *
+ * ⚠ **IT IS THE ROW AND NOT THE SET IT SITS IN, AND THAT IS MEASURED RATHER
+ * THAN STYLISTIC.** The tempting derivation is *every pipeline group carrying
+ * `backgroundWork: false`*, and it is `workHoldExclusionFor`'s mistake wearing
+ * a different file name. Read at the table rather than reasoned, the labelled
+ * half of that set is **`founder-ordered`**, `research`, `parked`,
+ * `design-unbuilt`, `roadmap`, `blocked`, **`lost-and-found`**, `scope-change`
+ * and `patrol`. So it would suppress every founder-ordered card — the arm
+ * below forbids exactly that, because the focus lane is where the next
+ * instance will sit — and it would suppress `lost-and-found`, **which is
+ * `#64`, this reader's own standing floor.** A derivation that silences the
+ * finding you are standing in front of is not a derivation.
+ *
+ * ⚠ **THE UMBRELLA IS RULED OUT ON THE RECORD, AND `#64` IS THE STANDING
+ * FLOOR — DO NOT RE-OPEN THE QUESTION.** `#64` is an umbrella over five
+ * items; two of them landed in `#836` and `#985` and three did not, so it is
+ * correctly open and carries nothing that says so. **There is no mechanical
+ * tell for *this card is an umbrella*, and inventing one is a decision about
+ * how cards are filed rather than a patch to a reader** — so this reader does
+ * not guess at one. Both roads that look available fail at the code: a label
+ * would have to be invented and then applied by hand to every umbrella ever
+ * filed, and a BODY limb is withheld from this reader by its own TYPE for
+ * #2270's measured reason. **The finding's honest floor is therefore ONE row,
+ * `#64`, and a reader meeting it has met the floor rather than a defect.**
  */
 import { pullRequestBuildsCard } from "./crewCardBuildState";
 import { CREW_HOLD_LABELS } from "./crewNextUpHold";
+import { CREW_PIPELINE_GROUPS } from "./crewPipelineGroups";
 import { QUEUE_EXCLUSION_REASONS } from "./crewQueueExclusions";
 
 /**
@@ -133,10 +188,26 @@ const PARKED_ROW = QUEUE_EXCLUSION_REASONS.find((reason) => reason.key === "park
 const PARKED_LABEL: readonly string[] =
   typeof PARKED_ROW?.queueLabel === "string" ? [PARKED_ROW.queueLabel] : [];
 
+/**
+ * The `roadmap` label, read off the pipeline groups’ own `roadmap` row
+ * (#2296) — **one NAMED row**, for the same reason `parked` is taken from the
+ * exclusions table: so this reader cannot spell it differently. The header
+ * above carries why it is a hold, and why the row rather than the set it sits
+ * in.
+ *
+ * A missing row contributes nothing, and `server/crewShippedNotClosed.test.ts`
+ * pins the whole set, so that absence reddens there rather than quietly
+ * narrowing the hold.
+ */
+const ROADMAP_ROW = CREW_PIPELINE_GROUPS.find((group) => group.key === "roadmap");
+const ROADMAP_LABEL: readonly string[] =
+  typeof ROADMAP_ROW?.queueLabel === "string" ? [ROADMAP_ROW.queueLabel] : [];
+
 /** A label that says the card itself is not finished. */
 export const SHIPPED_NOT_CLOSED_HOLD_LABELS: readonly string[] = [
   ...Object.values(CREW_HOLD_LABELS),
   ...PARKED_LABEL,
+  ...ROADMAP_LABEL,
 ];
 
 /** One open card, as the sweep's whole-queue read already has it. */
