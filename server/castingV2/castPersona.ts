@@ -431,12 +431,24 @@ export function parseCastPersonaDraft(raw: string): CastPersonaDraft | null {
     good line: the "both lines or neither" rule below means one long voice line
     would take a perfectly fine personality down with it.
   */
-  /* Cleaned as well as fitted (#2276): litter the model left after the last
-     sentence — `</s>` on five of six reads on the sibling road — and a stray
-     trailing fragment are cut before the fit, so a marker is never saved on
-     the card. */
-  const personality = fitProseToCap(read.data.personality, CAST_PERSONALITY_MAX_LENGTH);
-  const voice = fitProseToCap(read.data.voice, CAST_VOICE_MAX_LENGTH);
+  /*
+    Cleaned as well as fitted (#2276): litter the model left after the last
+    sentence — `</s>` on five of six reads on the sibling road — and a stray
+    trailing fragment are cut before the fit, so a marker is never saved on
+    the card.
+
+    ⚠ **`keepWhenEmptied` AND THE REASON IS THE BOTH-OR-NEITHER ARM TEN LINES
+    BELOW (the relay's finding on PR #2278).** The cleaning may cut this line;
+    it may not empty it. On the reads an emptied line costs one read of six;
+    here it costs the customer their whole personality and voice card on a cast
+    they have just paid to sign, and the shapes that would empty it — a line
+    with no final full stop, or ending on a one-word sentence — are ordinary
+    model replies rather than litter.
+  */
+  const personality = fitProseToCap(read.data.personality, CAST_PERSONALITY_MAX_LENGTH, {
+    keepWhenEmptied: true,
+  });
+  const voice = fitProseToCap(read.data.voice, CAST_VOICE_MAX_LENGTH, { keepWhenEmptied: true });
   /*
     BOTH LINES OR NEITHER, and that is a product rule rather than strictness.
 
@@ -643,11 +655,48 @@ function countOf(text: string, ch: string): number {
  * fragment cut after five of six reads on his Pigman ended in `</s>`; the two
  * other roads on the same model kept `fitToCap` alone, so the marker would have
  * been saved on a cast's card the day it reached them.
+ *
+ * ⚠ **`keepWhenEmptied` IS WHY THE THREE ROADS SHARE THE FUNCTION WITHOUT
+ * SHARING ITS STRICTNESS — the relay's finding on PR #2278, and the correction
+ * is worth more than the flag.** The first shape of this composition gave all
+ * three roads the READS' rule, and the reads' rule is *a read ends on a whole
+ * sentence or is dropped*: a line with no final full stop, or ending on a
+ * one-word sentence with nothing whole before it, came back `""`. On the reads
+ * that is right — a dropped read is one of six and the list is retried. On the
+ * SIGN it is not: `parseCastPersonaDraft`'s both-lines-or-neither arm turns one
+ * emptied line into NO personality and NO voice card at all, so a voice line
+ * like *"Low and gravelly, unhurried"* — a plausible reply on that road, and
+ * nothing has measured how often it comes back — would have cost a freshly
+ * signed cast its whole card. **The card asked to strip end markers, not to
+ * tighten what counts as a line.** So with this option the cleaning may still
+ * CUT, and may never EMPTY: when the fragment cut would return `""`, the
+ * marker-stripped text is fitted and kept instead.
+ *
+ * ⚠ **IT DOES NOT SOFTEN `fitToCap`, DELIBERATELY.** An over-long line with no
+ * sentence end inside the cap still comes back `""` on every road, because that
+ * `""` is the Sign's own documented failed-read road (its docblock above) and
+ * predates #2276 — there is nothing to keep that the customer could then edit.
+ *
+ * ⚠ **AND THE LIMIT IT LEAVES IS NAMED RATHER THAN PAPERED OVER: a reply that
+ * is NOTHING BUT a marker — `"</s>"`, no sentence end anywhere — is kept under
+ * this option**, because the positive rule cannot tell it from a short line
+ * that simply has no full stop, which is the shape the option exists to keep.
+ * That is the behaviour this road had before #2276 and is not a new hole. The
+ * tempting repair is a denylist of the markers somebody has already seen, and
+ * `trimTrailingJunk`'s own docblock rules it out for the reason that matters:
+ * the next model emits different junk.
  */
-export function fitProseToCap(line: string, cap: number): string {
-  return dropTrailingFragments(
-    fitToCap(dropTrailingFragments(trimTrailingJunk(line.trim(), { sentence: true })), cap),
-  );
+export function fitProseToCap(
+  line: string,
+  cap: number,
+  options: { keepWhenEmptied?: boolean } = {},
+): string {
+  const keep = options.keepWhenEmptied === true;
+  const stripped = trimTrailingJunk(line.trim(), { sentence: true });
+  const trimmed = dropTrailingFragments(stripped);
+  const fitted = fitToCap(trimmed || (keep ? stripped : trimmed), cap);
+  const cleaned = dropTrailingFragments(fitted);
+  return cleaned || (keep ? fitted : cleaned);
 }
 
 /** Some models fence JSON despite being asked for an object. */

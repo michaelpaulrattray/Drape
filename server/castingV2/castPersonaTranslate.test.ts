@@ -284,3 +284,46 @@ describe("a translated line never carries a transport marker onto the card (#227
     expect(outcome).toEqual({ kind: "line", text: line });
   });
 });
+
+/* ----------------- #2278 · the cleaning may cut the customer's line, never empty it */
+
+describe("'Say it your way' never refuses a line because the cleaning emptied it (PR #2278)", () => {
+  /*
+    ⚠ This press runs on a sentence the CUSTOMER typed, so `null` here is the
+    product handing their own words back as a failure. #2276's first shape gave
+    this road the READS' rule — a line ending on no full stop, or on a one-word
+    sentence, came back `""` and therefore `null`. Driven at the parse, which
+    is where the rule lives, and at the press for the shape he would meet.
+  */
+  it.each([
+    ["no final full stop", "Low and gravelly, unhurried"],
+    ["one word and no full stop", "Watchful"],
+    ["a one-word sentence", "Low."],
+  ])("keeps a translated voice line that is %s", (_shape, text) => {
+    expect(parseCastPersonaTranslation(JSON.stringify({ line: text }), "voice")).toBe(text);
+  });
+
+  it("keeps a short line through the press itself", async () => {
+    const { engine } = recordingEngine(async () => ({ text: JSON.stringify({ line: "Watchful" }) }));
+    const outcome = await translateCastPersonaOwnWords({
+      engine,
+      line: "personality",
+      ownWords: BOUNCER,
+      pronouns: SHE,
+    });
+    expect(outcome).toEqual({ kind: "line", text: "Watchful" });
+  });
+
+  it("still strips the marker off a line it is now allowed to keep", () => {
+    /* The positive control: keeping short lines did not give up the card's own
+       job, which was to strip the end marker. */
+    expect(parseCastPersonaTranslation(JSON.stringify({ line: "Watchful.</s>" }), "voice")).toBe("Watchful.");
+  });
+
+  it("still cuts a fragment when a whole sentence survives the cut", () => {
+    /* The negative control for `keepWhenEmptied`: the fallback fires only where
+       the cut would empty the line. */
+    const voice = "A gravel voice that drops at the end of every sentence. Answers a question with a shrug.";
+    expect(parseCastPersonaTranslation(JSON.stringify({ line: `${voice} able.` }), "voice")).toBe(voice);
+  });
+});
