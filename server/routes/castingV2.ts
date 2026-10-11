@@ -2139,11 +2139,30 @@ export const castingV2Router = router({
 
   /*
     CAMPAIGNS — rung N2c, card #2249 built these doors; #2250–#2253 put them in
-    front of the customer. The library page (`client/src/pages/CastingV2.tsx`)
-    lists, creates, renames, deletes and files through them — the chip row and
-    the pick-several bar — and the cast page's IN CAMPAIGNS panel
-    (`CastCampaignsCard`, which also carries the one post-Sign offer) lists the
-    campaigns one cast is in, files it, and creates one.
+    front of the customer.
+
+    ⚠ **THIS PARAGRAPH CALLED THEM DARK FOR TWELVE DAYS AFTER THEY WENT LIVE**
+    (#2277, found by the relay's milestone-close review of N2c; #2285 is why it
+    cannot happen a second time). It read *“Built dark: nothing in the client
+    calls these yet, so their merge changes nothing a customer sees”* — true the
+    morning #2249 merged, false by that afternoon, when the rung's other four
+    cards shipped. Whether a surface is reachable decides how carefully the next
+    change to it is treated, so it is written below as a fact a guard holds
+    rather than a sentence that ages: `server/castCampaignsRoute.test.ts` reads
+    the doors off this router's own procedures and the callers off a
+    prose-stripped sweep of `client/src`, and reddens on a line here that
+    disagrees with either end.
+
+    EVERY DOOR AND WHAT CALLS IT — one line each, naming the caller's own file,
+    and the word `dark` instead where nothing in the client calls it:
+
+      listCampaigns            CastingV2.tsx (the chip row) · CastCampaignsCard.tsx (the cast page's panel)
+      createCampaign           CastingV2.tsx (the + chip's dialog) · CastCampaignsCard.tsx (its add row)
+      renameCampaign           CastingV2.tsx (the ⋯ beside a chip, #2273)
+      deleteCampaign           CastingV2.tsx (the ⋯ beside a chip, #2273)
+      addCastsToCampaign       CastingV2.tsx (the pick-several bar, #2251) · CastCampaignsCard.tsx (#2252/#2253)
+      removeCastsFromCampaign  CastingV2.tsx (the pick-several bar, #2251)
+      listCastCampaigns        CastCampaignsCard.tsx (the IN CAMPAIGNS panel, #2252)
 
     His word, 2026-09-29: "in n2c instead of calling them shoots call it
     Campaign". A campaign is a customer's named collection of signed casts; a
