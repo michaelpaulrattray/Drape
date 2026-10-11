@@ -79,7 +79,13 @@ import {
   readOpenPullRequestsWith,
   type CardBuildBoard,
 } from "./cardBuildState.mts";
-import { judgementIsBlind, mergedPullRequestArgs, SEARCH_RESULT_CEILING } from "./crewNamingWindow.mts";
+import {
+  judgementIsBlind,
+  mergedPullRequestArgs,
+  SEARCH_RESULT_CEILING,
+  shouldRetryOnWholeHistory,
+  WHOLE_HISTORY_PAGE_BOUND,
+} from "./crewNamingWindow.mts";
 import { type GhExec, ghReadMaxBuffer, makeGhTransport } from "./ghQueueTransport.mts";
 
 /**
@@ -319,24 +325,88 @@ type CardNamingIndex = {
   readonly truncated: boolean;
 };
 
+/**
+ * ONE ROAD'S WORTH OF MERGED PULL REQUESTS, and whether it came back full.
+ *
+ * Extracted so the whole-history fallback runs the SAME parse and the SAME
+ * truncation comparison as the first read rather than a second copy of them
+ * (working law 4 — this module has already been bitten by a second copy of a
+ * comparison one line from its source, PR #498 finding 1).
+ *
+ * `null` means the road could not be read at all; the caller decides what that
+ * costs, and for the fallback it costs nothing but the blindness it already had.
+ */
+function fetchMergedRows(
+  since: { readonly date: string } | null,
+  pageBound: number,
+  gh: QueueGhReader,
+): { rows: unknown[]; truncated: boolean } | null {
+  const out = gh(
+    /* Built in `scripts/lib/crewNamingWindow.mts` so the wire this reading
+       depends on has arms of its own. */
+    mergedPullRequestArgs(since, pageBound),
+    /* Bodies are large and the default 1MB pipe buffer truncates them into a
+       JSON parse error — which would read here as "no pull request names any
+       card", the silent-zero failure. Raised, and the parse below throws
+       rather than degrading if it is ever exceeded again. */
+    { maxBuffer: 64 * 1024 * 1024 },
+  );
+  const rows = JSON.parse(out);
+  if (!Array.isArray(rows)) return null;
+  return { rows, truncated: rows.length >= pageBound };
+}
+
 function readCardNamings(
   since: { number: number; date: string } | null,
   gh: QueueGhReader,
   warn: (line: string) => void,
 ): CardNamingIndex | null {
   try {
-    const out = gh(
-      /* Built in `scripts/lib/crewNamingWindow.mts` so the wire this reading
-         depends on has arms of its own. */
-      mergedPullRequestArgs(since, MERGED_PR_PAGE_BOUND),
-      /* Bodies are large and the default 1MB pipe buffer truncates them into a
-         JSON parse error — which would read here as "no pull request names any
-         card", the silent-zero failure. Raised, and the parse below throws
-         rather than degrading if it is ever exceeded again. */
-      { maxBuffer: 64 * 1024 * 1024 },
-    );
-    const rows = JSON.parse(out);
-    if (!Array.isArray(rows)) return null;
+    const first = fetchMergedRows(since, MERGED_PR_PAGE_BOUND, gh);
+    if (first === null) return null;
+    let rows = first.rows;
+    let truncated = first.truncated;
+    /* ⚠ A WINDOW THAT OUTGREW THE SEARCH CEILING HAS ONE ROAD LEFT, AND IT IS
+       TAKEN RATHER THAN REPORTED (#2290). Measured the day this landed: the
+       oldest open card is #14 (2026-08-25) and all 1089 merges postdate it, so
+       the derived window is the whole history, the search read came back at
+       exactly 1000, and EVERY offered card was named out of reach on EVERY run
+       — the flag was inert. The whole-history road is not bound by the search
+       ceiling, so one more call restores the reading.
+
+       ⚠ AND THIS RETRY MAY NEVER MANUFACTURE A `null`. The caller writes every
+       category UNFLAGGED on null — the silent direction — so a fallback that
+       threw or parsed short would trade honest blindness for *"nothing is ever
+       stale"*, which is the one outcome #507 exists to prevent. It therefore
+       keeps the FIRST read's verdict on any doubt. */
+    if (shouldRetryOnWholeHistory(since, truncated)) {
+      warn(
+        `⚠ the possibly-fixed reading's derived window came back full at GitHub's ${SEARCH_RESULT_CEILING}-result`
+        + " search ceiling — re-reading on the whole-history road, which that ceiling does not bind (#2290).",
+      );
+      /* ⚠ ITS OWN `try`, AND THIS IS THE LOAD-BEARING LINE OF THE WHOLE
+         REPAIR. The outer `catch` returns `null`, and the caller writes every
+         category UNFLAGGED on a `null` — so a throw from the retry, left to
+         propagate, would turn today's honest *"OUT OF REACH"* into *"nothing
+         is ever stale"*. The fallback is allowed to fail; it is not allowed to
+         cost the reading its voice. Driven both ways in
+         `server/crewNamingWindow.test.ts`. */
+      let wider: { rows: unknown[]; truncated: boolean } | null = null;
+      try {
+        wider = fetchMergedRows(null, WHOLE_HISTORY_PAGE_BOUND, gh);
+      } catch (cause) {
+        warn(`[warn] the whole-history re-read failed: ${(cause as Error).message}`);
+      }
+      if (wider === null) {
+        warn(
+          "[warn] the whole-history re-read could not be used, so the reading stays blind and every offered"
+          + " card is reported OUT OF REACH — which is this run's honest answer, not a silent one.",
+        );
+      } else {
+        rows = wider.rows;
+        truncated = wider.truncated;
+      }
+    }
     /* ⚠ THE PAGE BOUND IS NOT A REFUSAL (#507) AND NOT A PARTIAL READING
        EITHER (PR #588's review). The old code returned null here, which wrote
        every category UNFLAGGED — the sentence *"nothing is ever stale"*, which
@@ -345,12 +415,11 @@ function readCardNamings(
        the page was the newest-by-merge slice and neither `gh` road promises
        that. So the index is built and simply not consulted: every offered card is
        named as unjudged, and the reason is printed. */
-    const truncated = rows.length >= MERGED_PR_PAGE_BOUND;
     if (truncated) {
       warn(
-        `⚠ the possibly-fixed reading hit its page bound: ${MERGED_PR_PAGE_BOUND} merged pull requests came back`
-        + " — the reader cannot tell which merges it is missing, so every offered card is reported OUT OF REACH"
-        + " rather than unflagged. Narrow the window by closing old cards, or page the read by date.",
+        "⚠ the possibly-fixed reading hit its page bound on BOTH roads — the reader cannot tell which merges"
+        + " it is missing, so every offered card is reported OUT OF REACH rather than unflagged."
+        + " Narrow the window by closing old cards, or page the read by date.",
       );
     }
     const index = new Map<number, CardNaming[]>();
