@@ -35,9 +35,12 @@ describe("R7-7A1 snapshot-selection schema contract", { timeout: 60_000 }, () =>
     questions in one syscall — and the walk's duplication. The read half is
     named on the card as the remainder rather than reported as done.
 
-    `tests: "exclude"` is this walk's own filter, kept exactly: it excluded
-    `.test.ts` and `.integration.test.ts`, and the shared predicate excludes
-    both (an `.integration.test.ts` ends in `.test.ts`).
+    `tests: "exclude"` is this walk's own filter, kept exactly: it excluded a
+    unit suite and an integration suite by suffix, and the shared predicate
+    excludes both, because an integration suite's name ends in the unit
+    suffix. (The two suffixes are deliberately not written out here: a
+    backticked name that looks like a suite is held to a file that exists, and
+    a suffix is not a file.)
   */
   function runtimeSources(root: string): string[] {
     return sourcePathsUnder(repoPath(root), { tests: "exclude" })

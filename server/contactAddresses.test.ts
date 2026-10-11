@@ -3,7 +3,13 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
-import { CLIENT_SRC, SERVER_SRC, sourcesUnder } from "./testing/sourceTree";
+import { CLIENT_SRC, repoPath, sourcesUnder } from "./testing/sourceTree";
+
+/* The server root is composed from the shared derivation at its one use rather
+   than exported beside it: an export with a single consumer is an uncalled
+   export to the sweep, and a disposition row for it would be debt bought to
+   save one call (#2289). */
+const SERVER_SRC = repoPath("server");
 
 /* This suite reads every source under `client/src` AND under `server/` off the
    real tree, which puts it in #741's population — through

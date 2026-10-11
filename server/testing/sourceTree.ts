@@ -85,9 +85,6 @@ export function repoPath(...segments: string[]): string {
 /** The client's source root — the walk root nineteen of the twenty wanted. */
 export const CLIENT_SRC = repoPath("client", "src");
 
-/** The server's source root, for the handful that sweep both. */
-export const SERVER_SRC = repoPath("server");
-
 export type TreeOptions = {
   /**
    * Whether `*.test.ts(x)` files are in the population. REQUIRED — see the

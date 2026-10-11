@@ -181,12 +181,27 @@ export function declaresTheFloor(source: string): boolean {
     UNDECLARED here, which is the "either class constant satisfies it" clause
     above failing to notice a third sanctioned spelling of the same act.
     Found by moving a walk onto the promoted reader:
-    `r7-snapshot-selection-contract.test.ts` calls `allowColdImports()` and
-    would have been indicted for not declaring a floor it already sets.
+    `r7-snapshot-selection-contract.test.ts` calls that helper and would have
+    been indicted for not declaring a floor it already sets.
 
     The CALL is read, not the import, for this function's own stated reason.
+
+    ⚠ **THE TWO NAMES ARE STRING DATA AND THE FIRST SHAPE OF THIS PUT THEM IN A
+    REGEX LITERAL, WHICH BROKE ANOTHER INSTRUMENT'S POSITIVE CONTROL.**
+    `scripts/lib/productionMention.mts` classifies a symbol by whether any
+    PRODUCTION file mentions it, skipping a name that survives only inside
+    quotes — *"data is not a call"* — and its positive control is
+    `allowColdImports`, chosen precisely because it lives in `server/testing/`
+    where production calling it *"would itself be the bug"*. A regex literal is
+    not a quoted string to `withoutStrings`, so naming the helpers there made
+    this module read as a production consumer and the uncalled-exports sweep
+    REFUSED, which is that instrument behaving correctly. As strings they are
+    data, as they should be: nothing here calls either one.
   */
-  return /\b(?:allowTreeSweeps|allowColdImports)\s*\(\s*\)/.test(code);
+  const CLOCK_SETTERS = ["allowTreeSweeps", "allowColdImports"];
+  return CLOCK_SETTERS.some((setter) =>
+    new RegExp(`\\b${setter}\\s*\\(\\s*\\)`).test(code),
+  );
 }
 
 export type SweepReading = {
