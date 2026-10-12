@@ -22,7 +22,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:casting",
@@ -945,6 +945,12 @@
     {
       "id": "module:client/src/features/boards/hooks/useBoardMutations.ts",
       "path": "client/src/features/boards/hooks/useBoardMutations.ts",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/boards/itemSaveFailure.ts",
+      "path": "client/src/features/boards/itemSaveFailure.ts",
       "domain": "boards",
       "lifecycle": "active"
     },
@@ -12472,6 +12478,10 @@
       "path": "client/src/features/boards/characterNoun2322.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/itemSaveFailure2405.test.ts",
+      "path": "client/src/features/boards/itemSaveFailure2405.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },
@@ -13298,6 +13308,10 @@
     {
       "id": "test:server/boardDeletionChildren.test.ts",
       "path": "server/boardDeletionChildren.test.ts"
+    },
+    {
+      "id": "test:server/boardItemLabelCap.test.ts",
+      "path": "server/boardItemLabelCap.test.ts"
     },
     {
       "id": "test:server/boardTypes.test.ts",
@@ -18611,6 +18625,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18921,6 +18940,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18952,6 +18976,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -19177,6 +19206,36 @@
     {
       "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "to": "module:client/src/features/boards/components/VersionHistoryBadge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -36522,6 +36581,11 @@
     {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boardOps.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

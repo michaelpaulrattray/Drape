@@ -8,6 +8,8 @@
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from '@shared/inputLimits';
+import { RENAME_NODE_EVENT, renameEventDraft } from '../itemSaveFailure';
 import {
   ScanFace,
   Shirt,
@@ -75,12 +77,12 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail?.itemId === data.itemId) {
-        setEditLabel(data.label ?? '');
+        setEditLabel(renameEventDraft(e) ?? data.label ?? '');
         setIsEditing(true);
       }
     }
-    window.addEventListener('board-rename-node', handleRenameEvent);
-    return () => window.removeEventListener('board-rename-node', handleRenameEvent);
+    window.addEventListener(RENAME_NODE_EVENT, handleRenameEvent);
+    return () => window.removeEventListener(RENAME_NODE_EVENT, handleRenameEvent);
   }, [data.itemId, data.label]);
 
   // Focus input when editing starts
@@ -269,6 +271,7 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
                 ref={inputRef}
                 autoFocus
                 value={editLabel}
+                maxLength={BOARD_ITEM_LABEL_MAX_LENGTH}
                 onChange={(e) => setEditLabel(e.target.value)}
                 onBlur={handleRename}
                 onKeyDown={(e) => {
