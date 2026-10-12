@@ -216,12 +216,12 @@ function GoogleIcon({ disabled }: { disabled?: boolean }) {
 function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
+  // One answer for every address (#2450): the server no longer says whether an
+  // email was already on the list, so the confirmation is the same for all.
   const joinWaitlist = trpc.waitlist.join.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       setSubmitted(true);
-      setAlreadyRegistered(data.alreadyRegistered ?? false);
     },
   });
 
@@ -238,9 +238,7 @@ function WaitlistForm() {
           <Check className="w-4 h-4 text-white" />
         </div>
         <p className="text-sm text-[#0A0A0A] font-medium">
-          {alreadyRegistered
-            ? "You're already on the list. We'll be in touch soon."
-            : "You're on the list. We'll notify you when your spot is ready."}
+          You're on the list. We'll notify you when your spot is ready.
         </p>
       </div>
     );

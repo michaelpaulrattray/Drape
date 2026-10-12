@@ -50,13 +50,10 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
   const [source, setSource] = useState<string | null>(null);
 
   const joinMutation = trpc.waitlist.join.useMutation({
-    onSuccess: (data) => {
-      if (data.alreadyRegistered) {
-        toast.info("You've already claimed a spot.");
-        setStep("done");
-      } else {
-        setStep(2);
-      }
+    // One answer for every address (#2450): the server no longer says whether
+    // an email was already on the list, so every sign-up goes on to step 2.
+    onSuccess: () => {
+      setStep(2);
     },
     onError: (err) => {
       logRawFailure('waitlist.join', err);
