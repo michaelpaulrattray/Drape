@@ -1006,7 +1006,7 @@ export default function CastingV2() {
               Restore the full line when Voice ships.
             */}
             <span className="dp-body dpc-hero__explainer">
-              A cast member is a face and a presence — signed once, reusable in every campaign.
+              A character is a face and a presence — made once, reusable in every campaign.
             </span>
             </div>
 
@@ -1362,7 +1362,7 @@ export default function CastingV2() {
             <span className="dp-stack" style={{ gap: 4, minWidth: 0 }}>
               <span className="dp-label">Browse the signed roster</span>
               <span className="dp-secondary">
-                A ready-made roster of signed cast members, cleared to use without casting —
+                A ready-made set of characters, cleared to use without casting —
                 coming.
               </span>
             </span>
@@ -1735,8 +1735,8 @@ export default function CastingV2() {
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search cast by name"
-              aria-label="Search cast by name"
+              placeholder="Search by name"
+              aria-label="Search by name"
             />
           </Field>
           {/*
@@ -1826,7 +1826,7 @@ export default function CastingV2() {
               </span>
               {shownCount !== null ? (
                 <span className="dp-small">
-                  {shownCount} {shownCount === 1 ? "cast member" : "cast members"}
+                  {shownCount} {shownCount === 1 ? "character" : "characters"}
                 </span>
               ) : null}
             </>
@@ -1837,7 +1837,7 @@ export default function CastingV2() {
         <div className={selecting ? "dpc-roster dpc-roster--picking" : "dpc-roster"}>
           <DropZone className="dpc-roster__new" onClick={focusBrief}>
             <Plus size={17} strokeWidth={1.7} aria-hidden="true" />
-            <span className="dp-secondary">New cast member</span>
+            <span className="dp-secondary">New character</span>
           </DropZone>
           {shownCasts.map((cast) => (
             <div

@@ -96,7 +96,7 @@ export function RenameDialog({
           {/* The eyebrow names WHO — the old title said "this cast" and left
               the user to remember which card they clicked. */}
           <span className="dpc-modal__eyebrow">
-            CAST MEMBER · {currentName.toUpperCase()}
+            CHARACTER · {currentName.toUpperCase()}
           </span>
           {/* Not "Rename this cast?" — a question mark implies a consequence
               this action does not carry. */}
