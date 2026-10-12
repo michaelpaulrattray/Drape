@@ -6,7 +6,7 @@
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
       "state": "confirmed",
-      "title": "The bug hunt is the focus, on your own word this morning. Agents read through every screen a customer touches, every real defect they find becomes a card, and all of those cards get fixed before N3 starts. It is already well along: 40 were found today and 39 of them are fixed, merged and live. Nothing new is being built while it runs, and nothing here needs an answer from you.",
+      "title": "The bug hunt is the focus, on your own word this morning. Agents read through every screen a customer touches, every real defect they find becomes a card, and all of those cards get fixed before N3 starts. It is already well along: 40 were found today and all 40 of them are fixed, merged and live. Nothing new is being built while it runs, and nothing here needs an answer from you.",
       "quote": "2314 just park it or defer it for now it could be ages before i get a reply. 2360 go with your reccomendation 2115 we can do the bug hunt now.",
       "quotedAt": "2026-10-12T09:09:05.000Z"
     },
@@ -18,19 +18,15 @@
           "state": "in-progress"
         },
         {
-          "title": "Fixing what they found — 40 cards filed today, 39 of them already fixed, merged and live",
-          "state": "in-progress"
+          "title": "Fixing what they found — 40 cards filed today, and as of tonight all 40 are fixed, merged and live",
+          "state": "done"
         },
         {
-          "title": "The last one still in flight: the sign-up form tells a stranger whether an email already has an account (#2443)",
-          "state": "in-progress"
-        },
-        {
-          "title": "Four we are deliberately not fixing now — three wait for the sign-in, landing and canvas redesigns you have already ordered, and one we decided against (#1921, #1922, #1707, #1736)",
+          "title": "Four older ones we are deliberately not fixing now — three wait for the sign-in, landing and canvas redesigns you have already ordered, and one we decided against (#1921, #1922, #1707, #1736)",
           "state": "waiting"
         },
         {
-          "title": "Your completion card, with what is worth your hands and eyes — filed the day the fix list is clear and the hunting is called done",
+          "title": "Your completion card, with what is worth your hands and eyes — filed once the hunting itself is called done, not just because the fix list is empty",
           "state": "waiting"
         }
       ]
