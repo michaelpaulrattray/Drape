@@ -13,6 +13,8 @@
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from '@shared/inputLimits';
+import { RENAME_NODE_EVENT, renameEventDraft } from '../itemSaveFailure';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -38,12 +40,13 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail?.itemId === data.itemId) {
-        setEditText(data.label ?? '');
+        // A failed save hands its words back as `draft` (#2405)
+        setEditText(renameEventDraft(e) ?? data.label ?? '');
         setIsEditing(true);
       }
     }
-    window.addEventListener('board-rename-node', handleRenameEvent);
-    return () => window.removeEventListener('board-rename-node', handleRenameEvent);
+    window.addEventListener(RENAME_NODE_EVENT, handleRenameEvent);
+    return () => window.removeEventListener(RENAME_NODE_EVENT, handleRenameEvent);
   }, [data.itemId, data.label]);
 
   // Focus textarea when editing starts
@@ -136,6 +139,9 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
             <textarea
               ref={textareaRef}
               value={editText}
+              // The server's own cap (#2405): a longer note used to be refused
+              // on click-away and snap back without a word
+              maxLength={BOARD_ITEM_LABEL_MAX_LENGTH}
               onChange={(e) => setEditText(e.target.value)}
               onBlur={handleSave}
               // Text-selection drags must never move the node
@@ -192,7 +198,9 @@ function NoteNodeInner({ data, selected }: NodeProps<NoteFlowNode>) {
             fontWeight: 500,
           }}
         >
-          Note
+          {isEditing && editText.length >= BOARD_ITEM_LABEL_MAX_LENGTH
+            ? `Note is full (${BOARD_ITEM_LABEL_MAX_LENGTH} characters)`
+            : 'Note'}
         </div>
       </div>
     </div>

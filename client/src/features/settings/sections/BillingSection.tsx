@@ -39,14 +39,76 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 import { Bar, SettingsCard, SettingsGroup, SettingsList } from "../parts";
 import { ReferralBlock } from "../ReferralBlock";
-import { formatDollars, formatShortDate } from "../planMath";
+import {
+  creditStepsPriceAMonth,
+  formatDollars,
+  formatShortDate,
+  formatWholeDollars,
+  priceAMonth,
+} from "../planMath";
+import { planCreditSliderLedgerCredits } from "@shared/planCreditSlider";
 import { cancelledPlanSegment } from "@shared/planCancelCopy";
 import { cancelStateOf, useResumePlan } from "@/features/billing/resumePlan";
+
+/**
+ * WHAT THIS CUSTOMER PAYS AND RECEIVES, said the way Change plan says it — #2392.
+ *
+ * The plan card used to print `planPriceInCents` and `allowance` as they
+ * arrived, and both are the rung's LIST facts (`ownPlanFacts` on the server
+ * reads `PLAN_TIERS[tier]` and nothing else). So a Pro customer billed yearly
+ * read **"$68.00/mo"** here while Change plan, one click away, priced the same
+ * plan at **"$56 / month, billed yearly"**; and a Pro Plus customer who had
+ * moved the credit slider read the bottom of the dial for both the price and
+ * the credits.
+ *
+ * ⚠ **NO ARITHMETIC OF ITS OWN (working law 4).** The price goes through the
+ * two `planMath` functions Change plan's own `priceOf` is built from —
+ * `priceAMonth` for the plan and `creditStepsPriceAMonth` for the dial — and is
+ * printed with the same `formatWholeDollars`, so the two surfaces cannot name
+ * different figures for one plan. The credits add the dial through
+ * `planCreditSliderLedgerCredits`, the one declaration the server's grant and
+ * Change plan's `creditsWithSlider` also read.
+ *
+ * ⚠ **AND AN UNREAD INPUT HOLDS THE FIGURE (#1727 / #1741 / #1763).**
+ * - `billingInterval` that is not `"month"` or `"year"` on a paid plan is
+ *   unknown, never monthly — #1763 is the same collapse on Change plan.
+ * - `sliderUnits === null` is the dial's position not read yet (or the server
+ *   saying it could not read the subscription), never the bottom of the dial;
+ *   both the price and the credits stand down, because the dial moves both.
+ * - `0` slider units is a real answer: a rung with no dial, or the dial at rest.
+ *
+ * `"No charge"` is decided by the plan's own price before anything else is
+ * asked: a rung with nothing to charge has no interval and no dial.
+ */
+export function ownPlanTerms(input: {
+  planPriceInCents: number | null;
+  allowance: number | null;
+  billingInterval: string | null | undefined;
+  sliderUnits: number | null;
+}): { price: string | null; allowance: number | null } {
+  const { planPriceInCents, allowance, billingInterval, sliderUnits } = input;
+  const withSlider =
+    allowance === null || sliderUnits === null
+      ? null
+      : allowance + planCreditSliderLedgerCredits(sliderUnits);
+  if (planPriceInCents === null) return { price: null, allowance: withSlider };
+  if (planPriceInCents <= 0) return { price: "No charge", allowance: withSlider };
+  if (sliderUnits === null) return { price: null, allowance: withSlider };
+  if (billingInterval !== "month" && billingInterval !== "year") {
+    return { price: null, allowance: withSlider };
+  }
+  const annual = billingInterval === "year";
+  const cents = priceAMonth(planPriceInCents, annual) + creditStepsPriceAMonth(sliderUnits, annual);
+  return {
+    price: `${formatWholeDollars(cents)}/mo${annual ? ", billed yearly" : ""}`,
+    allowance: withSlider,
+  };
+}
 
 export function BillingSection({
   planName,
   planPriceInCents,
-  allowance,
+  allowance: listAllowance,
   balance,
   renewsAt,
   onChangePlan,
@@ -97,6 +159,41 @@ export function BillingSection({
     SEEING them is the thing his word forbids.
   */
   const { data: status } = trpc.billing.getStatus.useQuery();
+  /*
+    #2392 — WHERE THE CREDIT DIAL SITS, read the way Change plan reads it: the
+    dial's rung and reach come off `getPlans` (served, never a rung named
+    here), and the position off `getPlanCreditUnits`, which is what bills.
+
+    ⚠ The position is asked only when this customer IS on the dial's rung —
+    every other rung's answer is 0 without a Stripe round trip. Until both
+    the status and the catalogue have answered, nobody knows which rung has
+    the dial, so the position is `null` (unread) rather than 0.
+  */
+  const { data: plans } = trpc.billing.getPlans.useQuery();
+  const sliderSpec = plans?.creditSlider ?? null;
+  const onDialRung =
+    status !== undefined &&
+    sliderSpec !== null &&
+    sliderSpec.maxUnits > 0 &&
+    status.planTier === sliderSpec.planId;
+  const { data: sliderPosition } = trpc.billing.getPlanCreditUnits.useQuery(undefined, {
+    enabled: onDialRung,
+  });
+  const sliderUnits: number | null =
+    status === undefined || plans === undefined
+      ? null
+      : !onDialRung
+        ? 0
+        : sliderPosition === undefined
+          ? null
+          : sliderPosition.units;
+  const terms = ownPlanTerms({
+    planPriceInCents,
+    allowance: listAllowance,
+    billingInterval: status === undefined ? undefined : status.billingInterval,
+    sliderUnits,
+  });
+  const allowance = terms.allowance;
   /*
     ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936) — AND WITHOUT THIS
     QUERY THE WHOLE DEFERRAL IS INVISIBLE.** Since his option 1, asking to drop
@@ -272,11 +369,9 @@ export function BillingSection({
           /* An em dash in the title's own slot — see the prop's docblock (#1741). */
           label={planName ?? "—"}
           note={[
-            planPriceInCents === null
-              ? null
-              : planPriceInCents > 0
-                ? `${formatDollars(planPriceInCents)}/mo`
-                : "No charge",
+            /* `planPriceInCents === null` holds it (#1727); the interval and
+               the dial are read in `ownPlanTerms` (#2392). */
+            planPriceInCents === null ? null : terms.price,
             renews && granted ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
             /*
               ⚠ **A PENDING CHANGE REPLACES THE RENEWAL SEGMENT RATHER THAN

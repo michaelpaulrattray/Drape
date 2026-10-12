@@ -22,7 +22,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:casting",
@@ -945,6 +945,12 @@
     {
       "id": "module:client/src/features/boards/hooks/useBoardMutations.ts",
       "path": "client/src/features/boards/hooks/useBoardMutations.ts",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/boards/itemSaveFailure.ts",
+      "path": "client/src/features/boards/itemSaveFailure.ts",
       "domain": "boards",
       "lifecycle": "active"
     },
@@ -7597,7 +7603,8 @@
       "rateLimited": false,
       "file": "server/routes/billing.ts",
       "clientCallers": [
-        "client/src/features/billing/ChangePlanModal.tsx"
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -7612,7 +7619,8 @@
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
-        "client/src/features/settings/AccountSurfaces.tsx"
+        "client/src/features/settings/AccountSurfaces.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -12475,6 +12483,10 @@
       "path": "client/src/features/boards/characterNoun2322.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/itemSaveFailure2405.test.ts",
+      "path": "client/src/features/boards/itemSaveFailure2405.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },
@@ -12843,6 +12855,10 @@
       "path": "client/src/features/settings/card1607-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/card2400-guard.test.ts",
+      "path": "client/src/features/settings/card2400-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
       "path": "client/src/features/settings/card385-guard.test.ts"
     },
@@ -12873,6 +12889,10 @@
     {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/billingSection2392.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2392.test.ts"
     },
     {
       "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
@@ -13033,6 +13053,10 @@
     {
       "id": "test:client/src/pages/characterNoun2382.test.ts",
       "path": "client/src/pages/characterNoun2382.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/notFoundPage.test.ts",
+      "path": "client/src/pages/notFoundPage.test.ts"
     },
     {
       "id": "test:client/src/staffPagesLazy.test.ts",
@@ -13305,6 +13329,10 @@
     {
       "id": "test:server/boardDeletionChildren.test.ts",
       "path": "server/boardDeletionChildren.test.ts"
+    },
+    {
+      "id": "test:server/boardItemLabelCap.test.ts",
+      "path": "server/boardItemLabelCap.test.ts"
     },
     {
       "id": "test:server/boardTypes.test.ts",
@@ -15403,6 +15431,10 @@
       "path": "server/db/dailyQuota.test.ts"
     },
     {
+      "id": "test:server/db/googleSubBinding.test.ts",
+      "path": "server/db/googleSubBinding.test.ts"
+    },
+    {
       "id": "test:server/db/inviteCodeRedeemRace.test.ts",
       "path": "server/db/inviteCodeRedeemRace.test.ts"
     },
@@ -15997,6 +16029,10 @@
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
       "path": "server/providers/withRetryBilled.test.ts"
+    },
+    {
+      "id": "test:server/publicEndpointLimiters.test.ts",
+      "path": "server/publicEndpointLimiters.test.ts"
     },
     {
       "id": "test:server/publicEndpointRateLimits.test.ts",
@@ -18614,6 +18650,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18924,6 +18965,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18955,6 +19001,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -19180,6 +19231,36 @@
     {
       "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "to": "module:client/src/features/boards/components/VersionHistoryBadge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -21570,6 +21651,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -24219,12 +24305,17 @@
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/card.tsx",
+      "to": "module:client/src/components/ErrorBoundary.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/NotFound.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
@@ -36525,6 +36616,11 @@
     {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boardOps.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

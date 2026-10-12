@@ -6,6 +6,8 @@
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from '@shared/inputLimits';
+import { RENAME_NODE_EVENT, renameEventDraft } from '../itemSaveFailure';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -31,12 +33,12 @@ function FrameNodeInner({ data, selected }: NodeProps<FrameFlowNode>) {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail?.itemId === data.itemId) {
-        setEditLabel(data.label ?? 'Frame');
+        setEditLabel(renameEventDraft(e) ?? data.label ?? 'Frame');
         setIsEditing(true);
       }
     }
-    window.addEventListener('board-rename-node', handleRenameEvent);
-    return () => window.removeEventListener('board-rename-node', handleRenameEvent);
+    window.addEventListener(RENAME_NODE_EVENT, handleRenameEvent);
+    return () => window.removeEventListener(RENAME_NODE_EVENT, handleRenameEvent);
   }, [data.itemId, data.label]);
 
   // Focus input when editing starts
@@ -119,6 +121,7 @@ function FrameNodeInner({ data, selected }: NodeProps<FrameFlowNode>) {
               ref={inputRef}
               autoFocus
               value={editLabel}
+              maxLength={BOARD_ITEM_LABEL_MAX_LENGTH}
               onChange={(e) => setEditLabel(e.target.value)}
               onBlur={handleRename}
               onKeyDown={(e) => {

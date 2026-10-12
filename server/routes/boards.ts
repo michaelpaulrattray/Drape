@@ -36,7 +36,7 @@ import { isModelAvailableStatus, isModelDraftStatus } from "../../shared/modelLi
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import { resolveEffectiveCastStateForRead } from "../casting/effectiveCastRead";
 import { projectEffectiveBoardModelInfo } from "../casting/modelReadProjections";
-import { BOARD_NAME_MAX_LENGTH } from "../../shared/inputLimits";
+import { BOARD_ITEM_LABEL_MAX_LENGTH, BOARD_NAME_MAX_LENGTH } from "../../shared/inputLimits";
 
 const log = createModuleLogger("routes/boards");
 
@@ -256,7 +256,7 @@ export const boardsRouter = router({
     .input(z.object({
       boardId: z.number().int().positive(),
       type: boardItemTypeSchema,
-      label: z.string().max(256).optional(),
+      label: z.string().max(BOARD_ITEM_LABEL_MAX_LENGTH).optional(),
       imageUrl: clientImageUrlSchema,
       imageKey: clientStorageKeySchema,
       positionX: z.number().int().default(0),
@@ -285,7 +285,7 @@ export const boardsRouter = router({
       boardId: z.number().int().positive(),
       items: z.array(z.object({
         type: boardItemTypeSchema,
-        label: z.string().max(256).optional(),
+        label: z.string().max(BOARD_ITEM_LABEL_MAX_LENGTH).optional(),
         imageUrl: clientImageUrlSchema,
         imageKey: clientStorageKeySchema,
         positionX: z.number().int().default(0),
@@ -342,7 +342,7 @@ export const boardsRouter = router({
   updateItem: protectedProcedure
     .input(z.object({
       itemId: z.number().int().positive(),
-      label: z.string().max(256).optional(),
+      label: z.string().max(BOARD_ITEM_LABEL_MAX_LENGTH).optional(),
       imageUrl: clientImageUrlSchema,
       imageKey: clientStorageKeySchema,
       positionX: z.number().int().optional(),
