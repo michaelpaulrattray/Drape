@@ -10,6 +10,7 @@ import { asc, eq, desc, inArray } from "drizzle-orm";
 import {
   castCampaignMembers,
   castCampaigns,
+  castCreationRecords,
   users,
   credits,
   creditTransactions,
@@ -97,6 +98,26 @@ export interface GdprExportData {
     name: string;
     createdAt: string;
     castIds: string[];
+  }>;
+  /**
+   * The signed, timestamped record behind each of the customer's Klieg IDs
+   * (N2d-1, #2311; added on the relay's finding 3 on PR #2317) — it holds
+   * their display name, account id and Klieg ID. Exported as the customer's
+   * own evidence: the signed document, its signature and the authority's
+   * token, everything needed to check it independently. Which authority
+   * answered is internal and stays out, as it does from every customer
+   * surface.
+   */
+  creationRecords: Array<{
+    castId: string;
+    recordVersion: string;
+    record: string;
+    recordSha256: string;
+    signature: string;
+    signingKeyId: string;
+    timestampToken: string | null;
+    stampedAt: string | null;
+    createdAt: string;
   }>;
   evidence: {
     referencePlates: Array<{
@@ -316,6 +337,44 @@ export async function exportUserData(
     const castId = castPublicIdByModel.get(member.modelId);
     if (list && castId) list.push(castId);
   }
+  /*
+    Creation records (N2d-1, #2311 — the relay's finding 3 on PR #2317). The
+    owner is in the statement's own WHERE (invariant 1) and every row is
+    re-anchored IN MEMORY to this customer's casts read above, so a record
+    whose cast is not theirs, or is gone, cannot reach the export
+    (invariant 2). Fixed statement count at any size (#1989).
+  */
+  const ownedCreationRecords = await db
+    .select({
+      modelId: castCreationRecords.modelId,
+      recordVersion: castCreationRecords.recordVersion,
+      recordJson: castCreationRecords.recordJson,
+      recordSha256: castCreationRecords.recordSha256,
+      signature: castCreationRecords.signature,
+      signingKeyId: castCreationRecords.signingKeyId,
+      timestampToken: castCreationRecords.timestampToken,
+      stampedAt: castCreationRecords.stampedAt,
+      createdAt: castCreationRecords.createdAt,
+    })
+    .from(castCreationRecords)
+    .where(eq(castCreationRecords.userId, userId))
+    .orderBy(asc(castCreationRecords.id));
+  const exportedCreationRecords = ownedCreationRecords.flatMap((record) => {
+    const castId = castPublicIdByModel.get(record.modelId);
+    if (!castId) return [];
+    return [{
+      castId,
+      recordVersion: record.recordVersion,
+      record: record.recordJson,
+      recordSha256: record.recordSha256,
+      signature: record.signature,
+      signingKeyId: record.signingKeyId,
+      timestampToken: record.timestampToken,
+      stampedAt: record.stampedAt?.toISOString() ?? null,
+      createdAt: record.createdAt.toISOString(),
+    }];
+  });
+
   const exportedCampaigns = ownedCampaigns.map((campaign) => ({
     name: campaign.name,
     createdAt: campaign.createdAt.toISOString(),
@@ -473,6 +532,7 @@ export async function exportUserData(
     })),
     models: modelsWithAssets,
     campaigns: exportedCampaigns,
+    creationRecords: exportedCreationRecords,
     evidence: {
       referencePlates: exportedReferencePlates,
       crops: exportedEvidenceCrops,

@@ -30,6 +30,7 @@ import {
   parseTimestampReply,
   stampDigest,
   TIMESTAMP_AUTHORITIES,
+  TIMESTAMP_REPLY_MAX_BYTES,
   type TimestampFetch,
 } from "./creationRecordTimestamp";
 
@@ -83,6 +84,14 @@ describe("the reply reader, on real authority bytes", () => {
     expect(() => parseTimestampReply(DIGICERT_REPLY.subarray(0, DIGICERT_REPLY.length - 40))).toThrow();
   });
 
+  it("REFUSES a genTime naming no real instant (month 13), rather than rolling it into next year", () => {
+    const at = DIGICERT_REPLY.indexOf(Buffer.from("20261012031142"));
+    expect(at).toBeGreaterThan(0);
+    const bad = Buffer.from(DIGICERT_REPLY);
+    bad.write("20261312031142", at, "latin1");
+    expect(() => parseTimestampReply(bad)).toThrow(/real instant/);
+  });
+
   it("REFUSES trailing bytes after the reply", () => {
     expect(() => parseTimestampReply(Buffer.concat([DIGICERT_REPLY, Buffer.from([0])]))).toThrow(/trailing/);
   });
@@ -132,6 +141,12 @@ describe("asking one authority — every outcome is a value", () => {
       fetch: replying(DIGICERT_REPLY),
     });
     expect(answer).toEqual({ reason: "wrong_nonce", authority: "digicert" });
+  });
+
+  it("refuses a reply larger than any timestamp reply before reading it", async () => {
+    expect(await askAuthority({
+      digest: FIXTURE_DIGEST, authority: DIGICERT, fetch: replying(Buffer.alloc(TIMESTAMP_REPLY_MAX_BYTES + 1)),
+    })).toEqual({ reason: "malformed", authority: "digicert", detail: "reply larger than any timestamp reply" });
   });
 
   it("names a refusal, an HTTP error, garbage and a dead transport each as itself", async () => {

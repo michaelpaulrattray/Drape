@@ -28,6 +28,8 @@ const MODEL_ID = 907;
 const sent: Array<{ sql: string; params: unknown[] }> = [];
 /** What the driver answers, statement by statement; past the end, an empty result. */
 let answers: unknown[][] = [];
+/** What a write answers — a gated INSERT … SELECT whose cast is gone moves 0 rows. */
+let writeAffected = 1;
 
 const recordingPool = {
   query(...args: unknown[]) {
@@ -36,7 +38,7 @@ const recordingPool = {
     const params = (args[1] as unknown[]) ?? (typeof config === "string" ? [] : config.values ?? []);
     const index = sent.length;
     sent.push({ sql, params });
-    const rows = /^\s*select/i.test(sql) ? (answers[index] ?? []) : { affectedRows: 1 };
+    const rows = /^\s*select/i.test(sql) ? (answers[index] ?? []) : { affectedRows: writeAffected };
     const callback = args.find((argument) => typeof argument === "function") as
       | ((error: unknown, rows: unknown, fields: unknown) => void)
       | undefined;
@@ -69,6 +71,7 @@ const {
 beforeEach(() => {
   sent.length = 0;
   answers = [];
+  writeAffected = 1;
 });
 
 /** Does this statement bind the owner — a `userId` column compared to USER_ID? */
@@ -80,7 +83,7 @@ function bindsOwner(statement: { sql: string; params: unknown[] }): boolean {
 const FULL_SOURCE_ANSWERS = [
   [[MODEL_ID, "KI-AAAA-BBBB-CCCC-DDDD", "2026-09-03 10:00:00", "2026-09-03 10:04:00", 300, 400]],
   [["casting-v2/casts/op/anchor/x.png"]],
-  [["Ada", "Ada Lovelace"]],
+  [["Ada"]],
   [[300, 12, "2026-09-03 09:40:00"]],
   [[3]],
   [["2026-09-03 09:45:00"]],
@@ -115,6 +118,15 @@ describe("reading a cast's facts", () => {
     }
     /* CONTROL — the reader can see a column when one is selected. */
     expect(everything).toContain("`agencyId`");
+  });
+
+  it("⚠ reads the maker's DISPLAY name and never `users`.`name` (finding 4 on PR #2317)", async () => {
+    answers = FULL_SOURCE_ANSWERS;
+    await readCreationRecordSource(USER_ID, MODEL_ID);
+    const maker = sent.find((statement) => /from `users`/.test(statement.sql))!;
+    /* A single-table select renders bare column names. */
+    expect(maker.sql).toMatch(/^select `displayName` from `users`/);
+    expect(maker.sql).not.toMatch(/`name`/);
   });
 
   it("reads the ORIGINAL anchor — the lowest-sequence identity snapshot — re-anchored to the owned cast", async () => {
@@ -179,5 +191,58 @@ describe("the record's own statements", () => {
       token: { tokenBase64: "dG9rZW4=", authority: "digicert", stampedAt: new Date("2026-10-12T03:11:42Z") },
     });
     expect(sent[0]!.sql).toMatch(/`timestampToken` is null/);
+  });
+});
+
+/* The live-cast predicate as the roster draws it: owner, signed status, not deleted. */
+function gatedOnLiveCast(sql: string): boolean {
+  return /`models`.`userId` = \?/.test(sql)
+    && /`models`.`deletedAt` is null/.test(sql)
+    && /`models`.`status` in \(/.test(sql);
+}
+
+describe("⚠ the record cannot outlive its cast (the relay's finding 1 on PR #2317)", () => {
+  it("the insert is an INSERT … SELECT out of the owner's LIVE, MINTED cast — never a plain VALUES", async () => {
+    await insertCastCreationRecord({
+      userId: USER_ID, modelId: MODEL_ID, recordVersion: "1", recordJson: "{}",
+      recordSha256: "a".repeat(64), signature: "h..s", signingKeyId: "kid",
+    });
+    const insert = sent[0]!;
+    expect(insert.sql).toMatch(/^insert into `cast_creation_records` \(.*\) select /);
+    expect(insert.sql).not.toMatch(/ values /);
+    expect(gatedOnLiveCast(insert.sql)).toBe(true);
+    expect(insert.sql).toMatch(/`models`.`mintedAt` is not null/);
+    expect(insert.params).toContain(USER_ID);
+    expect(insert.params).toContain(MODEL_ID);
+  });
+
+  it("a cast deleted between the read and the insert: the gated insert moves no row, and says so", async () => {
+    writeAffected = 0;
+    expect(await insertCastCreationRecord({
+      userId: USER_ID, modelId: MODEL_ID, recordVersion: "1", recordJson: "{}",
+      recordSha256: "a".repeat(64), signature: "h..s", signingKeyId: "kid",
+    })).toEqual({ stored: false });
+  });
+
+  it("CONTROL — a live cast's insert reports it stored", async () => {
+    expect(await insertCastCreationRecord({
+      userId: USER_ID, modelId: MODEL_ID, recordVersion: "1", recordJson: "{}",
+      recordSha256: "a".repeat(64), signature: "h..s", signingKeyId: "kid",
+    })).toEqual({ stored: true });
+  });
+
+  it("the reader serves a record only while its cast is live — the cast is JOINED", async () => {
+    await getCastCreationRecord(USER_ID, MODEL_ID);
+    expect(sent[0]!.sql).toMatch(/inner join `models` on/);
+    expect(gatedOnLiveCast(sent[0]!.sql)).toBe(true);
+  });
+
+  it("the re-stamp writes a token only onto a record whose cast is live", async () => {
+    await recordCastCreationStamp({
+      userId: USER_ID, recordId: 5,
+      token: { tokenBase64: "dG9rZW4=", authority: "digicert", stampedAt: new Date("2026-10-12T03:11:42Z") },
+    });
+    expect(sent[0]!.sql).toMatch(/`cast_creation_records`.`modelId` in \(select/);
+    expect(gatedOnLiveCast(sent[0]!.sql)).toBe(true);
   });
 });

@@ -13,7 +13,7 @@
  * the recipe at all. `castCreationRecords.test.ts` reads the SQL this module
  * really sends and asserts both halves.
  */
-import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import {
   castCreationRecords,
@@ -44,8 +44,8 @@ export type CreationRecordSource = {
   kliegId: string;
   createdAt: Date;
   mintedAt: Date;
+  /** `users.displayName` only — `users.name` is never read (finding 4 on PR #2317). */
   makerDisplayName: string | null;
-  makerName: string | null;
   /** The ORIGINAL anchor — the lowest-sequence identity snapshot's — never a later edit's. */
   anchorStorageKey: string;
   rolledAt: Date | null;
@@ -88,7 +88,7 @@ export async function readCreationRecordSource(
   if (!anchor) return { refused: "no_anchor" };
 
   const [maker] = await db
-    .select({ displayName: users.displayName, name: users.name })
+    .select({ displayName: users.displayName })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
@@ -151,7 +151,6 @@ export async function readCreationRecordSource(
     createdAt: cast.createdAt,
     mintedAt: cast.mintedAt,
     makerDisplayName: maker?.displayName ?? null,
-    makerName: maker?.name ?? null,
     anchorStorageKey: anchor,
     rolledAt,
     rollsInSession,
@@ -169,7 +168,16 @@ function toDate(value: unknown): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-/** The owner's record for one cast, or null. */
+/**
+ * The owner's record for one LIVE cast, or null.
+ *
+ * ⚠ **THE CAST IS JOINED, NOT TRUSTED TO STILL BE THERE** (the relay's finding
+ * 1 on PR #2317). A record row on its own proves only that a cast once
+ * existed; this reader answers only while that cast is this owner's live,
+ * signed cast (`signedCastWhere`, the roster's own predicate). So even a row
+ * that somehow outlived its cast is served to nobody — and the re-stamp road,
+ * which starts here, cannot reach it either.
+ */
 export async function getCastCreationRecord(
   userId: number,
   modelId: number,
@@ -178,17 +186,29 @@ export async function getCastCreationRecord(
   assertPositiveId(modelId, "modelId");
   const db = await requireDb();
   const [row] = await db
-    .select()
+    .select(getTableColumns(castCreationRecords))
     .from(castCreationRecords)
+    .innerJoin(models, and(eq(models.id, castCreationRecords.modelId), signedCastWhere(userId)))
     .where(and(eq(castCreationRecords.modelId, modelId), eq(castCreationRecords.userId, userId)))
     .limit(1);
   return row ?? null;
 }
 
 /**
- * Store a signed record. A second writer for the same cast loses on the
- * unique `modelId` and is told so (`stored: false`) rather than overwriting —
- * the first record of a cast is the record.
+ * Store a signed record — ONLY WHILE ITS CAST IS STILL THIS OWNER'S LIVE,
+ * MINTED CAST, decided in the insert itself.
+ *
+ * ⚠ **AN `INSERT … SELECT` OVER THE ROSTER'S OWN PREDICATE, NOT A PLAIN
+ * INSERT** (the relay's finding 1 on PR #2317). The road reads the cast, then
+ * reads the picture, signs, and only then stores — seconds later. A cast
+ * deleted in that window has already had its records deleted by
+ * `finalCastDeletion`, so a plain insert would leave an orphan holding the
+ * Klieg ID and the maker's name: exactly what the deletion promised to forget.
+ * Here the row is copied out of the live `models` row or not written at all,
+ * and InnoDB's locking read of that row serialises it against the deletion's
+ * own write to it. `stored: false` covers both a cast that is gone and a
+ * second writer that lost the unique `modelId`; the caller tells them apart
+ * by reading back through `getCastCreationRecord`, which joins the live cast.
  */
 export async function insertCastCreationRecord(input: {
   userId: number;
@@ -203,20 +223,38 @@ export async function insertCastCreationRecord(input: {
   assertPositiveId(input.modelId, "modelId");
   const db = await requireDb();
   try {
-    await db.insert(castCreationRecords).values({
-      modelId: input.modelId,
-      userId: input.userId,
-      recordVersion: input.recordVersion,
-      recordJson: input.recordJson,
-      recordSha256: input.recordSha256,
-      signature: input.signature,
-      signingKeyId: input.signingKeyId,
-    });
-    return { stored: true };
+    const result = await db.insert(castCreationRecords).select(
+      db
+        .select({
+          id: sql<number>`NULL`.as("id"),
+          modelId: models.id,
+          userId: models.userId,
+          recordVersion: sql<string>`${input.recordVersion}`.as("recordVersion"),
+          recordJson: sql<string>`${input.recordJson}`.as("recordJson"),
+          recordSha256: sql<string>`${input.recordSha256}`.as("recordSha256"),
+          signature: sql<string>`${input.signature}`.as("signature"),
+          signingKeyId: sql<string>`${input.signingKeyId}`.as("signingKeyId"),
+          timestampToken: sql<string | null>`NULL`.as("timestampToken"),
+          timestampAuthority: sql<string | null>`NULL`.as("timestampAuthority"),
+          stampedAt: sql<Date | null>`NULL`.as("stampedAt"),
+          stampAttempts: sql<number>`0`.as("stampAttempts"),
+          lastStampAttemptAt: sql<Date | null>`NULL`.as("lastStampAttemptAt"),
+          publicAt: sql<Date | null>`NULL`.as("publicAt"),
+          createdAt: sql<Date>`CURRENT_TIMESTAMP`.as("createdAt"),
+        })
+        .from(models)
+        .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId), isNotNull(models.mintedAt))),
+    );
+    return { stored: affectedRows(result) === 1 };
   } catch (error) {
     if (isDuplicateKey(error)) return { stored: false };
     throw error;
   }
+}
+
+function affectedRows(result: unknown): number {
+  const header = Array.isArray(result) ? result[0] : result;
+  return Number((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0);
 }
 
 /**
@@ -250,6 +288,12 @@ export async function recordCastCreationStamp(input: {
       eq(castCreationRecords.id, input.recordId),
       eq(castCreationRecords.userId, input.userId),
       isNull(castCreationRecords.timestampToken),
+      /* The re-stamp is gated on the live cast too (finding 1): a token is
+         never written onto a record whose cast is gone. */
+      inArray(
+        castCreationRecords.modelId,
+        db.select({ id: models.id }).from(models).where(signedCastWhere(input.userId)),
+      ),
     ));
 }
 

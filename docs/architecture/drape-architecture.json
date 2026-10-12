@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 201
+      "moduleCount": 202
     },
     {
       "id": "domain:castingV2",
@@ -3963,6 +3963,12 @@
     {
       "id": "module:server/castingV2/creationRecordTimestamp.ts",
       "path": "server/castingV2/creationRecordTimestamp.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "path": "server/castingV2/creationRecordTimestampTrust.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -13834,6 +13840,10 @@
       "path": "server/castingV2/creationRecordTimestamp.test.ts"
     },
     {
+      "id": "test:server/castingV2/creationRecordTimestampTrust.test.ts",
+      "path": "server/castingV2/creationRecordTimestampTrust.test.ts"
+    },
+    {
       "id": "test:server/castingV2/creativeRegisterScope.test.ts",
       "path": "server/castingV2/creativeRegisterScope.test.ts"
     },
@@ -15356,6 +15366,10 @@
     {
       "id": "test:server/gdprExportCampaigns.test.ts",
       "path": "server/gdprExportCampaigns.test.ts"
+    },
+    {
+      "id": "test:server/gdprExportCreationRecords.test.ts",
+      "path": "server/gdprExportCreationRecords.test.ts"
     },
     {
       "id": "test:server/gdprExportPersona.test.ts",
@@ -28216,6 +28230,16 @@
     {
       "from": "module:server/castingV2/creationRecordService.ts",
       "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordTimestamp.ts",
+      "to": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "to": "module:server/castingV2/creationRecordTimestamp.ts",
       "kind": "imports"
     },
     {

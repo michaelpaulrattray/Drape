@@ -154,10 +154,11 @@ describe("the canonical bytes", () => {
 });
 
 describe("the maker's name is never an email", () => {
-  it("prefers the display name, falls back to the name, drops anything with an @", () => {
-    expect(makerDisplayName("Ada", "Ada Lovelace")).toBe("Ada");
-    expect(makerDisplayName(null, "Ada Lovelace")).toBe("Ada Lovelace");
-    expect(makerDisplayName("ada@example.com", "Ada Lovelace")).toBe("Ada Lovelace");
-    expect(makerDisplayName("  ", "ada@example.com")).toBeNull();
+  it("signs the display name, and NO name when there is none — never another column", () => {
+    expect(makerDisplayName("Ada")).toBe("Ada");
+    expect(makerDisplayName("  Ada  ")).toBe("Ada");
+    expect(makerDisplayName(null)).toBeNull();
+    expect(makerDisplayName("   ")).toBeNull();
+    expect(makerDisplayName("ada@example.com")).toBeNull();
   });
 });

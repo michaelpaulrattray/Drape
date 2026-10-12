@@ -1400,6 +1400,13 @@ async function completeSignPackage(
       userId: input.userId,
       modelId: input.modelId,
       operationId: input.operationId,
+    }).catch((error: unknown) => {
+      /* The real road never throws; this keeps anything that does from being
+         logged below as a package that "could not be sealed" (it was sealed). */
+      log.error(
+        { operationId: input.operationId, modelId: input.modelId, err: error },
+        "[signService] the creation record road threw after a sealed Sign — the cast stands",
+      );
     });
   } catch (error) {
     /*

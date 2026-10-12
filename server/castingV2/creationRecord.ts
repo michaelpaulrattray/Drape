@@ -111,19 +111,21 @@ export type CreationRecord = {
 };
 
 /**
- * A display name that is never an email. `users.name` is whatever the sign-in
- * road wrote, and a name that looks like an address is dropped rather than
- * published — the design's "never the email" holds even when a person typed
- * their address into the name field.
+ * The name a record signs: the account's DISPLAY NAME and nothing else.
+ *
+ * ⚠ **NEVER `users.name`** (the relay's finding 4 on PR #2317). For a Google
+ * sign-in that column is the person's real full name; the design (§3) says
+ * *display name*; this value is SIGNED, so it can never be edited out of a
+ * record afterwards; and N2d-3 can make a record public. A person's legal name
+ * going public is a founder decision the design never asked for. So with no
+ * display name, the record signs NO name — `null` — rather than reaching for
+ * another column. A display name that looks like an address is dropped too:
+ * "never the email" holds even when somebody typed theirs into that field.
  */
-export function makerDisplayName(displayName: string | null, name: string | null): string | null {
-  for (const candidate of [displayName, name]) {
-    const trimmed = candidate?.trim();
-    if (!trimmed) continue;
-    if (trimmed.includes("@")) continue;
-    return trimmed.slice(0, 128);
-  }
-  return null;
+export function makerDisplayName(displayName: string | null): string | null {
+  const trimmed = displayName?.trim();
+  if (!trimmed || trimmed.includes("@")) return null;
+  return trimmed.slice(0, 128);
 }
 
 const iso = (at: Date): string => at.toISOString();

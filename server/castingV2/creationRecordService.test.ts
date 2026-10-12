@@ -49,8 +49,7 @@ const source: CreationRecordSource = {
   kliegId: "KI-AAAA-BBBB-CCCC-DDDD",
   createdAt: new Date("2026-09-03T10:00:00Z"),
   mintedAt: new Date("2026-09-03T10:04:00Z"),
-  makerDisplayName: null,
-  makerName: "Ada Maker",
+  makerDisplayName: "Ada Maker",
   anchorStorageKey: "casting-v2/casts/op/anchor/x.png",
   rolledAt: new Date("2026-09-03T09:40:00Z"),
   rollsInSession: 2,
@@ -134,7 +133,8 @@ describe("a new record — signed, stored, stamped", () => {
       briefText: `${SECRET} brief`,
       identityText: `${SECRET} identity`,
       instructions: [`${SECRET} refine`],
-      makerName: "ada@example.com",
+      makerDisplayName: "ada@example.com",
+      makerName: "Ada Lovelace REAL-NAME-2311",
     } as unknown as CreationRecordSource;
     await ensureCastCreationRecord(dependencies({ readSource: vi.fn(async () => leaky) }), {
       userId: USER_ID, modelId: MODEL_ID,
@@ -142,9 +142,50 @@ describe("a new record — signed, stored, stamped", () => {
     const stored = rows[0]!.recordJson;
     expect(stored).not.toContain(SECRET);
     expect(stored).not.toContain("example.com");
+    expect(stored).not.toContain("REAL-NAME-2311");
     for (const key of CREATION_RECORD_REFUSED_KEYS) expect(stored).not.toContain(`"${key}"`);
     /* CONTROL — the arm can see a value when one is there: the Klieg ID is. */
     expect(stored).toContain("KI-AAAA-BBBB-CCCC-DDDD");
+  });
+});
+
+describe("⚠ a cast deleted mid-flight leaves nothing behind (the relay's finding 1 on PR #2317)", () => {
+  it("deleted between the read and the insert: nothing stored, nothing stamped, refused", async () => {
+    /* The store behaves the way the gated SQL does (castCreationRecords.test.ts
+       holds the SQL): the insert copies out of the LIVE cast or writes nothing,
+       and the reader joins the live cast. The cast dies while the road is
+       reading its picture — after the facts were read, before the insert. */
+    let live = true;
+    const deps = dependencies({
+      readBytes: vi.fn(async () => {
+        live = false;
+        return { bytes: ANCHOR_BYTES, contentType: "image/png" };
+      }),
+      insertRecord: vi.fn(async (input) => {
+        if (!live) return { stored: false };
+        rows.push(row({ ...input, id: rows.length + 1 }));
+        return { stored: true };
+      }),
+      getRecord: vi.fn(async (userId: number, modelId: number) =>
+        (live ? rows.find((entry) => entry.userId === userId && entry.modelId === modelId) : undefined) ?? null),
+    });
+    const outcome = await ensureCastCreationRecord(deps, { userId: USER_ID, modelId: MODEL_ID });
+    expect(outcome).toEqual({ kind: "refused", reason: "not_a_signed_cast" });
+    expect(rows).toEqual([]);
+    expect(deps.stamp).not.toHaveBeenCalled();
+    expect(deps.recordStamp).not.toHaveBeenCalled();
+  });
+});
+
+describe("⚠ the maker's name is the DISPLAY name or none (the relay's finding 4 on PR #2317)", () => {
+  it("with no display name the record signs NO name — never the account's real name", async () => {
+    const noDisplay = { ...source, makerDisplayName: null, name: "Ada Lovelace REAL-NAME-2311" } as unknown as CreationRecordSource;
+    await ensureCastCreationRecord(dependencies({ readSource: vi.fn(async () => noDisplay) }), {
+      userId: USER_ID, modelId: MODEL_ID,
+    });
+    const record = JSON.parse(rows[0]!.recordJson);
+    expect(record.maker).toEqual({ accountId: USER_ID, displayName: null });
+    expect(rows[0]!.recordJson).not.toContain("REAL-NAME-2311");
   });
 });
 

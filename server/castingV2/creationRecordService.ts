@@ -114,7 +114,7 @@ export async function ensureCastCreationRecord(
   const record = buildCreationRecord({
     kliegId: source.kliegId,
     accountId: input.userId,
-    makerName: makerDisplayName(source.makerDisplayName, source.makerName),
+    makerName: makerDisplayName(source.makerDisplayName),
     createdAt: source.createdAt,
     mintedAt: source.mintedAt,
     masterSha256: createHash("sha256").update(bytes).digest("hex"),
@@ -147,7 +147,11 @@ export async function ensureCastCreationRecord(
     signingKeyId: key.kid,
   });
   const row = await getRecord(input.userId, input.modelId);
-  if (!row) throw new Error("the creation record was stored and could not be read back");
+  /* Nothing stored and nothing live to read back: the cast stopped being this
+     owner's live cast between the read above and the insert (deleted
+     mid-flight). The insert refused to write, so there is nothing to stamp
+     and nothing to forget — the relay's finding 1 on PR #2317. */
+  if (!row) return { kind: "refused", reason: "not_a_signed_cast" };
   if (row.timestampToken) return { kind: "recorded", recordId: row.id, stamped: true, created: stored.stored };
   const stamped = await stampRecord(dependencies, {
     userId: input.userId,

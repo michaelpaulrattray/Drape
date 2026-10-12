@@ -26,16 +26,13 @@
  *     a token for some other hash is refused, not stored;
  *   - the token carries the NONCE we sent — a replayed or cross-wired reply is
  *     refused;
- *   - the token's own time (`genTime`) parses, and that is the stamp time.
- *
- * ⚠ **NOT proven here: the authority's CMS signature over the token.** That
- * needs a CMS verifier and the authority's certificate chain, and it is what
- * anybody checking a certificate later does with standard tools (`openssl ts
- * -verify`); the token is stored whole, DER, with the authority's certificate
- * inside it (`certReq: true`), precisely so that check stays possible forever.
- * The PR that shipped this drove that verification by hand against a real
- * token. Named here so nobody reads "accepted" as "cryptographically verified
- * in-process".
+ *   - the token's own time (`genTime`) parses, and that is the stamp time;
+ *   - the token's CMS SIGNATURE verifies and chains to one of two PINNED roots
+ *     (`creationRecordTimestampTrust.ts`) — added on the relay's finding 2 on
+ *     PR #2317, which named the forgery the first version would have stored:
+ *     DigiCert answers only over plain HTTP (its HTTPS port refused, measured
+ *     2026-10-12), so the signature, not the transport, is what makes a token
+ *     ours to keep. A token that fails it is refused and the record retries.
  *
  * # Why a hand-written DER reader and not a library
  *
@@ -50,6 +47,8 @@
  */
 import { randomBytes } from "node:crypto";
 
+import { verifyTimestampSignature } from "./creationRecordTimestampTrust";
+
 /** An authority this road may ask. `id` is internal — never customer copy. */
 export type TimestampAuthority = { id: string; url: string };
 
@@ -62,6 +61,9 @@ export const TIMESTAMP_AUTHORITIES: readonly TimestampAuthority[] = [
   { id: "digicert", url: "http://timestamp.digicert.com" },
   { id: "freetsa", url: "https://freetsa.org/tsr" },
 ];
+
+/** Real replies measured 4.6–6.0 KB with certificates; anything this large is not one. */
+export const TIMESTAMP_REPLY_MAX_BYTES = 64 * 1024;
 
 /** Per-authority deadline. The measured worst case was 1.6 s cold. */
 export const TIMESTAMP_TIMEOUT_MS = 8_000;
@@ -81,7 +83,8 @@ export type TimestampRefusal =
   | { reason: "rejected"; authority: string; status: number }
   | { reason: "malformed"; authority: string; detail: string }
   | { reason: "wrong_imprint"; authority: string }
-  | { reason: "wrong_nonce"; authority: string };
+  | { reason: "wrong_nonce"; authority: string }
+  | { reason: "unverified"; authority: string; detail: string };
 
 /* ------------------------------------------------------------ DER, written */
 
@@ -222,12 +225,27 @@ function generalizedTime(text: string): Date {
   const at = new Date(Date.UTC(
     Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second), Math.floor(millis),
   ));
-  if (Number.isNaN(at.getTime())) throw new DerShapeError("genTime does not name a real instant");
+  if (
+    Number.isNaN(at.getTime())
+    || at.getUTCFullYear() !== Number(year) || at.getUTCMonth() !== Number(month) - 1
+    || at.getUTCDate() !== Number(day) || at.getUTCHours() !== Number(hour)
+    || at.getUTCMinutes() !== Number(minute) || at.getUTCSeconds() !== Number(second)
+  ) {
+    /* Date.UTC rolls month 13 into next year; a genTime that does not round-trip is refused. */
+    throw new DerShapeError("genTime does not name a real instant");
+  }
   return at;
 }
 
 export type ParsedTimestampReply =
-  | { kind: "granted"; tokenDer: Buffer; stampedAt: Date; imprint: Buffer; nonce: Buffer | null }
+  | {
+    kind: "granted";
+    tokenDer: Buffer;
+    stampedAt: Date;
+    imprint: Buffer;
+    nonce: Buffer | null;
+    signed: SignedParts;
+  }
   | { kind: "rejected"; status: number };
 
 /**
@@ -281,7 +299,65 @@ export function parseTimestampReply(reply: Buffer): ParsedTimestampReply {
     stampedAt,
     imprint,
     nonce,
+    signed: readSignedParts(reply, signedFields, Buffer.from(tstBytes)),
   };
+}
+
+/** The pieces of the SignedData a signature check needs (RFC 5652 §5). */
+export type SignedParts = {
+  /** The TSTInfo bytes — the content the signature's messageDigest covers. */
+  content: Buffer;
+  /** Every certificate the token carries, DER. */
+  certificates: Buffer[];
+  signers: Array<{
+    digestOid: string;
+    /** The signed attributes re-tagged as a SET — the exact bytes signed (§5.4). */
+    signedAttributes: Buffer;
+    contentTypeOid: string | null;
+    messageDigest: Buffer | null;
+    signatureOid: string;
+    signature: Buffer;
+  }>;
+};
+
+function readSignedParts(reply: Buffer, signedFields: Node[], content: Buffer): SignedParts {
+  const certificates: Buffer[] = [];
+  const certBag = signedFields.find((node) => node.tag === 0xa0);
+  if (certBag) {
+    for (const cert of childrenOf(reply, certBag)) {
+      if (cert.tag === 0x30) certificates.push(Buffer.from(reply.subarray(cert.start, cert.end)));
+    }
+  }
+  const signerSet = signedFields[signedFields.length - 1];
+  if (!signerSet || signerSet.tag !== 0x31) throw new DerShapeError("expected SignerInfos");
+  const signers = childrenOf(reply, signerSet).map((signerInfo) => {
+    const fields = childrenOf(reply, expectTag(signerInfo, 0x30, "SignerInfo"));
+    /* version, sid, digestAlgorithm, [0] signedAttrs, signatureAlgorithm, signature, [1]? */
+    const digestAlgorithm = childrenOf(reply, expectTag(fields[2], 0x30, "digestAlgorithm"));
+    const attrsNode = expectTag(fields[3], 0xa0, "[0] signedAttrs (a TSA token without them is refused)");
+    const signatureAlgorithm = childrenOf(reply, expectTag(fields[4], 0x30, "signatureAlgorithm"));
+    const signature = Buffer.from(contentOf(reply, expectTag(fields[5], 0x04, "signature")));
+    let contentTypeOid: string | null = null;
+    let messageDigest: Buffer | null = null;
+    for (const attribute of childrenOf(reply, attrsNode)) {
+      const [type, values] = childrenOf(reply, expectTag(attribute, 0x30, "Attribute"));
+      const oid = oidText(contentOf(reply, expectTag(type, 0x06, "attribute type")));
+      const first = childrenOf(reply, expectTag(values, 0x31, "attribute values"))[0];
+      if (oid === "1.2.840.113549.1.9.3") contentTypeOid = oidText(contentOf(reply, expectTag(first, 0x06, "contentType value")));
+      if (oid === "1.2.840.113549.1.9.4") messageDigest = Buffer.from(contentOf(reply, expectTag(first, 0x04, "messageDigest value")));
+    }
+    const signedAttributes = Buffer.from(reply.subarray(attrsNode.start, attrsNode.end));
+    signedAttributes[0] = 0x31;
+    return {
+      digestOid: oidText(contentOf(reply, expectTag(digestAlgorithm[0], 0x06, "digest OID"))),
+      signedAttributes,
+      contentTypeOid,
+      messageDigest,
+      signatureOid: oidText(contentOf(reply, expectTag(signatureAlgorithm[0], 0x06, "signature OID"))),
+      signature,
+    };
+  });
+  return { content, certificates, signers };
 }
 
 /* ------------------------------------------------------------- the asking */
@@ -300,6 +376,8 @@ export async function askAuthority(input: {
   fetch?: TimestampFetch;
   nonce?: Buffer;
   timeoutMs?: number;
+  /** The signature check — injected only by arms that drive a hand-made reply. */
+  verify?: typeof verifyTimestampSignature;
 }): Promise<TimestampToken | TimestampRefusal> {
   const nonce = input.nonce ?? randomBytes(8);
   const authority = input.authority.id;
@@ -314,6 +392,9 @@ export async function askAuthority(input: {
     });
     if (!response.ok) return { reason: "http_status", authority, status: response.status };
     body = Buffer.from(await response.arrayBuffer());
+    if (body.length > TIMESTAMP_REPLY_MAX_BYTES) {
+      return { reason: "malformed", authority, detail: "reply larger than any timestamp reply" };
+    }
   } catch {
     return { reason: "transport", authority };
   }
@@ -326,6 +407,11 @@ export async function askAuthority(input: {
   if (parsed.kind === "rejected") return { reason: "rejected", authority, status: parsed.status };
   if (!parsed.imprint.equals(input.digest)) return { reason: "wrong_imprint", authority };
   if (!parsed.nonce || !parsed.nonce.equals(unsignedValue(nonce))) return { reason: "wrong_nonce", authority };
+  /* The relay's finding 2 on PR #2317: a token is stored only once its CMS
+     signature verifies and chains to a pinned root — DigiCert is asked over
+     plain HTTP, and a stored token is never replaced. */
+  const verdict = (input.verify ?? verifyTimestampSignature)(parsed.signed, parsed.stampedAt);
+  if (!verdict.ok) return { reason: "unverified", authority, detail: verdict.reason };
   return { tokenDer: parsed.tokenDer, stampedAt: parsed.stampedAt, authority };
 }
 
@@ -345,6 +431,7 @@ export async function stampDigest(input: {
   timeoutMs?: number;
   /** Fixed only by tests replaying a captured reply; absent, each ask draws a fresh one. */
   nonce?: Buffer;
+  verify?: typeof verifyTimestampSignature;
 }): Promise<{ token: TimestampToken | null; refusals: TimestampRefusal[] }> {
   const refusals: TimestampRefusal[] = [];
   for (const authority of input.authorities ?? TIMESTAMP_AUTHORITIES) {
@@ -354,6 +441,7 @@ export async function stampDigest(input: {
       fetch: input.fetch,
       timeoutMs: input.timeoutMs,
       nonce: input.nonce,
+      verify: input.verify,
     });
     if (isTimestampToken(answer)) return { token: answer, refusals };
     refusals.push(answer);
