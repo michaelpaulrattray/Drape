@@ -225,6 +225,44 @@ export function BillingSection({
   const granted = allowance !== null && allowance > 0;
   const remainingShare = balance !== null && renews && granted ? balance / allowance : 0;
   const quotable = balance !== null && renews && granted;
+  /*
+    ⚠ **A SHARE OVER 100% IS NOT A SHARE OF THIS MONTH'S ALLOWANCE — #2393.**
+    The sweep above took *"491% of this month's allowance left"* off the free
+    plan, and the same sentence stayed reachable on a paying one: a renewal
+    writes `outside-plan + monthly grant + rollover`, so a Pro customer who
+    spent nothing last month renews at 175% and a Pro Plus one at 200%, and any
+    top-up lifts the balance past the grant too. `Bar` clamps; the sentence
+    did not.
+
+    It is DROPPED there rather than clamped. *"100% left"* on a balance that
+    also holds top-ups is a different wrong sentence, so where the balance is
+    more than a month's grant the figure above speaks for itself and the bar
+    reads full, which is true.
+
+    ⚠ **WHAT THIS DOES NOT REACH, stated rather than shipped quietly:** the
+    numerator is still the TOTAL balance, so a subscriber under the grant who
+    also holds top-up credits reads a share of the whole balance, not of the
+    plan's part. The plan's part is `planAllowanceRemaining`
+    (`server/db/credits.ts`), and `getStatus` does not serve it — that is a
+    server change, filed on the card rather than guessed at here.
+  */
+  const percentQuotable = quotable && remainingShare <= 1;
+  /*
+    ⚠ **WHO HAS A CARD TO UPDATE — #2397.** `createPortalSession` refuses an
+    account with no Stripe customer (*"No billing account found. Please
+    subscribe to a plan first."*), and a free account only gets one by starting
+    a checkout. So `Update card` on a free account was a button whose only
+    answer was an error, the same shape #1836 took `Add credits` off this pane
+    for. `Change plan` on the card above is the road.
+
+    It is read off `stripeCustomerId`, never `canManage`: that one is keyed on a
+    SUBSCRIPTION id, and would hide the card from a lapsed customer who still
+    has a card on file and may want to change it. Unread holds it back, the
+    direction #1836 chose for the credit controls: a subscriber waits a beat for
+    a control; a free account is never shown one that only errors.
+  */
+  const hasBillingAccount =
+    status !== undefined && "stripeCustomerId" in status && Boolean(status.stripeCustomerId);
   const invoices = invoicesData?.invoices ?? [];
 
   return (
@@ -366,7 +404,7 @@ export function BillingSection({
               figure makes the same claim the figure does. */}
           {quotable ? <Bar ratio={remainingShare} token="--ink" /> : null}
           <span className="dp-set__note">
-            {quotable
+            {percentQuotable
               ? `${Math.round(remainingShare * 100)}% of this month's allowance left · `
               : ""}
             {/*
@@ -383,28 +421,34 @@ export function BillingSection({
                 true. */}
             {topupEligibility(status?.planTier) === "may-buy" ? (
               <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
-                {renews && granted ? "more credits" : "Add more credits"}
+                {/* Keyed on the SENTENCE it continues (#2393), so wherever
+                    the percentage stands down — over the grant, or a balance
+                    not read yet — the link carries its own verb. */}
+                {percentQuotable ? "more credits" : "Add more credits"}
               </button>
             ) : null}
           </span>
         </div>
-        <div className="dp-set__minicard">
-          <span className="dp-set__minilabel">PAYMENT METHOD</span>
-          {/* No reader for brand or last four — see the docblock. */}
-          <span className="dp-set__note">
-            Your card is held by Stripe, and only Stripe can show it to you.
-          </span>
-          <span>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => portal.mutate()}
-              disabled={portal.isPending}
-            >
-              {portal.isPending ? "Opening…" : "Update card"}
-            </Button>
-          </span>
-        </div>
+        {/* #2397 — only an account with a card on file is offered to update it. */}
+        {hasBillingAccount ? (
+          <div className="dp-set__minicard">
+            <span className="dp-set__minilabel">PAYMENT METHOD</span>
+            {/* No reader for brand or last four — see the docblock. */}
+            <span className="dp-set__note">
+              Your card is held by Stripe, and only Stripe can show it to you.
+            </span>
+            <span>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => portal.mutate()}
+                disabled={portal.isPending}
+              >
+                {portal.isPending ? "Opening…" : "Update card"}
+              </Button>
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div style={{ marginTop: "var(--s-8)" }}>

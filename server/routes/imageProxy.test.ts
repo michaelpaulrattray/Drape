@@ -110,6 +110,50 @@ describe("image proxy request boundary", () => {
     });
   });
 
+  it("names the file what the app asked for, because this header beats the anchor's download attribute (#2407)", async () => {
+    process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
+    const dependencies = allowedDependencies();
+    const imageUrl = "https://pub-test.r2.dev/casting/3ece7528-d1ea-4525-b2da-ef48048640cf.png";
+
+    await withImageProxy(dependencies, async (baseUrl) => {
+      const asked = await fetch(
+        `${baseUrl}/api/image-proxy?download=1&filename=klieg-Hallvard-master.png&url=${encodeURIComponent(imageUrl)}`,
+      );
+      expect(asked.status).toBe(200);
+      expect(asked.headers.get("content-disposition"))
+        .toBe('attachment; filename="klieg-Hallvard-master.png"');
+
+      // Negative control: no name asked, the storage key stands as before.
+      const unasked = await fetch(
+        `${baseUrl}/api/image-proxy?download=1&url=${encodeURIComponent(imageUrl)}`,
+      );
+      expect(unasked.headers.get("content-disposition"))
+        .toBe('attachment; filename="3ece7528-d1ea-4525-b2da-ef48048640cf.png"');
+    });
+  });
+
+  it("makes a requested name safe: ASCII stem only, no path or header characters, the verified bytes' extension", async () => {
+    process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
+    const dependencies = allowedDependencies();
+    const imageUrl = "https://pub-test.r2.dev/casting/key.png";
+    const ask = async (baseUrl: string, filename: string) => (await fetch(
+      `${baseUrl}/api/image-proxy?download=1&filename=${encodeURIComponent(filename)}&url=${encodeURIComponent(imageUrl)}`,
+    )).headers.get("content-disposition");
+
+    await withImageProxy(dependencies, async (baseUrl) => {
+      // Path separators, quotes and CR/LF can neither escape the folder nor split the header.
+      expect(await ask(baseUrl, '../../etc/x"; y\r\nSet-Cookie: a=b.png'))
+        .toBe('attachment; filename="etc_x___y__Set-Cookie__a_b.png"');
+      // The caller cannot relabel the bytes: the extension is the one the PNG carries.
+      expect(await ask(baseUrl, "Hallvard.html")).toBe('attachment; filename="Hallvard.html.png"');
+      expect(await ask(baseUrl, "Hallvard.jpg")).toBe('attachment; filename="Hallvard.png"');
+      // Non-ASCII becomes `_`; a name with nothing usable left falls back to the storage key.
+      expect(await ask(baseUrl, "Zoë")).toBe('attachment; filename="Zo_.png"');
+      expect(await ask(baseUrl, "...")).toBe('attachment; filename="key.png"');
+      expect(await ask(baseUrl, "")).toBe('attachment; filename="key.png"');
+    });
+  });
+
   it("returns a real 429 before fetch when the authenticated user is limited", async () => {
     process.env.R2_PUBLIC_URL = "https://pub-test.r2.dev";
     const dependencies = allowedDependencies();

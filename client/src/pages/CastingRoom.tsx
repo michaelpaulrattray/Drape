@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
+import { sameOriginDownloadHref } from "@/lib/imageProxy";
+import { productFilename } from "@shared/brand";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import {
@@ -113,8 +115,9 @@ const COMPANION_LABELS = ["Three-quarter", "Side profile"];
  *
  * Deliberately not a zip: an archive means a server endpoint, a temp file and a
  * new way for someone else's Cast to be read out of the wrong scope. These are
- * the same public URLs the viewer already serves, saved under the same product
- * filenames, so the control adds an affordance and no attack surface.
+ * the same pictures the viewer already serves, fetched through the existing
+ * same-origin image proxy, so the control adds an affordance and no attack
+ * surface.
  *
  * Staggered because browsers throttle or silently drop a burst of simultaneous
  * downloads, which would look like the button half-working.
@@ -136,12 +139,19 @@ function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
   const files = [
     // JPEG: the sheet is bounded to the envelope external tools accept.
     { url: `/api/cast/${encodeURIComponent(castId)}/sheet`, name: "character-sheet.jpg" },
-    ...frames.map((frame) => ({ url: frame.url, name: `${frame.downloadName}.png` })),
+    ...frames.map((frame) => ({ url: frame.url, name: productFilename(`${frame.downloadName}.png`) })),
   ];
+  /*
+    EVERY FILE GOES OUT FROM THIS ORIGIN (#2369). The master and the views live
+    on the storage host, and a browser ignores `download` on a cross-origin link
+    — the first such click navigated this very tab to a bare picture, which also
+    cancelled the sheet still being composed, and nothing was saved. Through the
+    same-origin image proxy the attribute is honoured and the tab stays put.
+  */
   files.forEach((file, index) => {
     window.setTimeout(() => {
       const link = document.createElement("a");
-      link.href = file.url;
+      link.href = sameOriginDownloadHref(file.url, window.location.origin, file.name);
       link.download = file.name;
       link.rel = "noreferrer";
       document.body.appendChild(link);

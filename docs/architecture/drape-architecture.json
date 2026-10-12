@@ -22,7 +22,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:casting",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:wardrobe",
@@ -945,6 +945,12 @@
     {
       "id": "module:client/src/features/boards/hooks/useBoardMutations.ts",
       "path": "client/src/features/boards/hooks/useBoardMutations.ts",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/boards/itemSaveFailure.ts",
+      "path": "client/src/features/boards/itemSaveFailure.ts",
       "domain": "boards",
       "lifecycle": "active"
     },
@@ -2709,6 +2715,12 @@
     {
       "id": "module:client/src/lib/failureSentence.ts",
       "path": "client/src/lib/failureSentence.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/lib/imageProxy.ts",
+      "path": "client/src/lib/imageProxy.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -12466,6 +12478,10 @@
       "path": "client/src/features/boards/characterNoun2322.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/itemSaveFailure2405.test.ts",
+      "path": "client/src/features/boards/itemSaveFailure2405.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },
@@ -12834,6 +12850,10 @@
       "path": "client/src/features/settings/card1607-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/card2400-guard.test.ts",
+      "path": "client/src/features/settings/card2400-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
       "path": "client/src/features/settings/card385-guard.test.ts"
     },
@@ -12864,6 +12884,10 @@
     {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2393.test.ts"
     },
     {
       "id": "test:client/src/features/settings/settings387-guard.test.ts",
@@ -12990,6 +13014,10 @@
       "path": "client/src/foundation/topbarPhone2260-guard.test.ts"
     },
     {
+      "id": "test:client/src/lib/imageProxy.test.ts",
+      "path": "client/src/lib/imageProxy.test.ts"
+    },
+    {
       "id": "test:client/src/lib/staffPage.test.ts",
       "path": "client/src/lib/staffPage.test.ts"
     },
@@ -13004,6 +13032,10 @@
     {
       "id": "test:client/src/pages/CastingSheet.retryFailure.test.ts",
       "path": "client/src/pages/CastingSheet.retryFailure.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/CastingSheet.signFailure.test.ts",
+      "path": "client/src/pages/CastingSheet.signFailure.test.ts"
     },
     {
       "id": "test:client/src/pages/notFoundPage.test.ts",
@@ -13282,6 +13314,10 @@
       "path": "server/boardDeletionChildren.test.ts"
     },
     {
+      "id": "test:server/boardItemLabelCap.test.ts",
+      "path": "server/boardItemLabelCap.test.ts"
+    },
+    {
       "id": "test:server/boardTypes.test.ts",
       "path": "server/boardTypes.test.ts"
     },
@@ -13372,6 +13408,10 @@
     {
       "id": "test:server/castModelModal.test.ts",
       "path": "server/castModelModal.test.ts"
+    },
+    {
+      "id": "test:server/castPickerReach.test.ts",
+      "path": "server/castPickerReach.test.ts"
     },
     {
       "id": "test:server/castRefusalVocabulary.test.ts",
@@ -15968,6 +16008,10 @@
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
       "path": "server/providers/withRetryBilled.test.ts"
+    },
+    {
+      "id": "test:server/publicEndpointLimiters.test.ts",
+      "path": "server/publicEndpointLimiters.test.ts"
     },
     {
       "id": "test:server/publicEndpointRateLimits.test.ts",
@@ -18585,6 +18629,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18764,6 +18813,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/imageActions.ts",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/ImageFallback.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -18890,6 +18944,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18921,6 +18980,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -19146,6 +19210,36 @@
     {
       "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "to": "module:client/src/features/boards/components/VersionHistoryBadge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -20126,6 +20220,16 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/refineProgress.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -23530,7 +23634,17 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -36476,6 +36590,11 @@
     {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boardOps.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

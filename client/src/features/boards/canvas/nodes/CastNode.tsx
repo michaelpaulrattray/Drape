@@ -28,6 +28,8 @@ import { refundBadgeText } from "@shared/refundCopy";
    refusal a request meets cannot disagree (working law 4). */
 import { CANVAS_CAST_OPEN, CANVAS_CAST_CLOSED } from "@shared/canvasCastDoor";
 import { REBUILD_DOOR_CLOSED, REBUILD_DOOR_OPEN } from "@shared/rebuildDoor";
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from "@shared/inputLimits";
+import { RENAME_NODE_EVENT, renameEventDraft } from "../../itemSaveFailure";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
@@ -191,16 +193,21 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
   useEffect(() => {
     const onRenameEvent = (e: Event) => {
       if ((e as CustomEvent<{ itemId: number }>).detail?.itemId === data.itemId) {
-        setRenameText(baseLabel);
+        // A failed save hands its words back as `draft` (#2405) — kept, and
+        // not selected, so a stray keystroke cannot wipe them a second time
+        const draft = renameEventDraft(e);
+        setRenameText(draft ?? baseLabel);
         setRenaming(true);
         setTimeout(() => {
-          renameInputRef.current?.focus();
-          renameInputRef.current?.select();
+          const input = renameInputRef.current;
+          input?.focus();
+          if (draft === null) input?.select();
+          else input?.setSelectionRange(draft.length, draft.length);
         }, 30);
       }
     };
-    window.addEventListener("board-rename-node", onRenameEvent);
-    return () => window.removeEventListener("board-rename-node", onRenameEvent);
+    window.addEventListener(RENAME_NODE_EVENT, onRenameEvent);
+    return () => window.removeEventListener(RENAME_NODE_EVENT, onRenameEvent);
   }, [data.itemId, baseLabel]);
   const commitRename = () => {
     if (renaming && renameText.trim() && renameText.trim() !== baseLabel) {
@@ -538,6 +545,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           <input
             ref={renameInputRef}
             value={renameText}
+            maxLength={BOARD_ITEM_LABEL_MAX_LENGTH}
             onChange={(e) => setRenameText(e.target.value)}
             onMouseDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
