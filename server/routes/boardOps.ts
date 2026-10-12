@@ -459,10 +459,15 @@ export const boardOpsRouter = router({
 
   /** D-28 picker data: models with canonical headshots only. */
   listCastableModels: protectedProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(50).default(30) }).strict().optional())
+    .input(z.object({
+      /** Per group: up to `limit` signed characters AND up to `limit` drafts. */
+      limit: z.number().int().min(1).max(50).default(30),
+      /** #2406: matched against the name in the owner-scoped statement. */
+      search: z.string().max(80).optional(),
+    }).strict().optional())
     .query(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
-      return boardOps.listCastableModels(ctx.user.id, input?.limit ?? 30, readMode);
+      return boardOps.listCastableModels(ctx.user.id, input?.limit ?? 30, readMode, input?.search);
     }),
 
   /** D-28: fill an empty cast node in place from the Models library. */

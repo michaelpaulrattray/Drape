@@ -2,7 +2,7 @@
  * Models Domain — model CRUD, minting, and model asset management.
  */
 
-import { eq, desc, and, inArray, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, isNull, like, ne, sql } from "drizzle-orm";
 import {
   models,
   modelAssets,
@@ -69,7 +69,71 @@ export async function getUserModels(userId: number, limit: number = 50) {
     .limit(limit);
 }
 
-export type ModelPlacementTruth = { status: string; name: string | null };
+/**
+ * THE CANVAS PICKER'S READER (#2406) — one lifecycle group at a time, sorted
+ * and searched IN THE STATEMENT, so the limit applies after both.
+ *
+ * The picker used to read `getUserModels(userId, limit * 2)` — the newest rows
+ * with drafts and signed characters mixed — stop at `limit`, and only THEN put
+ * signed characters first. Drafts used up the places before the sort could
+ * promote anyone, and the browser's search filtered that same truncated page:
+ * measured on the dev fixture, 30 rows held 6 signed of at least 14, and an
+ * older signed character's name answered "No characters match".
+ *
+ * So each group (`signed` = the minted statuses, `draft`) is its own query
+ * with its own limit, and a search is a `LIKE` on `models.name` inside the same
+ * owner-scoped WHERE (invariant 1) — never a filter over a page already cut.
+ * `%`, `_` and `\` in the customer's words are escaped, so typing `%` matches
+ * a literal percent sign and not every character they own. When searching,
+ * the fake draft auto-name is excluded in the statement: the picker shows it
+ * as "Untitled" (D-42), so it must not answer a search for "draft".
+ */
+export type PickerModelGroup = "signed" | "draft";
+
+export function escapeLikeTerm(term: string): string {
+  return term.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
+
+export function pickerModelsWhere(
+  userId: number,
+  group: PickerModelGroup,
+  search: string | undefined,
+  /** The fake auto-name, passed in by the caller that owns it
+   *  (`DRAFT_AUTO_NAME`, server/lib/boardOps.ts) rather than copied here. */
+  draftAutoName: string,
+) {
+  const term = search?.trim() ?? "";
+  return and(
+    eq(models.userId, userId),
+    availableModelWhere(),
+    group === "signed"
+      ? inArray(models.status, [...MODEL_MINTED_STATUSES])
+      : eq(models.status, "draft"),
+    ...(term
+      ? [
+          like(models.name, `%${escapeLikeTerm(term)}%`),
+          ...(group === "draft" ? [ne(models.name, draftAutoName)] : []),
+        ]
+      : []),
+  )!;
+}
+
+export async function getUserPickerModels(
+  userId: number,
+  group: PickerModelGroup,
+  options: { limit: number; search?: string; draftAutoName: string },
+) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(models)
+    .where(pickerModelsWhere(userId, group, options.search, options.draftAutoName))
+    .orderBy(desc(models.createdAt), desc(models.id))
+    .limit(options.limit);
+}
+
+export type ModelPlacementTruth ={ status: string; name: string | null };
 
 /** One-query lifecycle + name truth for model-linked board placements. Deleted
  * subjects are deliberately absent; R7-5C removes their linked placements in
