@@ -103,6 +103,8 @@ const ENROLLED: Record<string, string> = {
     "server/routes/admin/auditLogs.ts — `audit-logs-<date>.csv`, staff only",
   "client/src/pages/CastingRoom.tsx:file.name":
     "the literal list a few lines above — character-sheet.jpg and the cast's own name",
+  "client/src/features/castingV2/components/CreationCertificateRow.tsx:name":
+    "the Content-Disposition server/routes/creationCertificate.ts sets — `<cast name>-certificate-of-creation.pdf` — else the literal fallback beside it",
 };
 
 const clientFiles = [...walk(join(ROOT, "client", "src")), ...walk(join(ROOT, "shared"))];

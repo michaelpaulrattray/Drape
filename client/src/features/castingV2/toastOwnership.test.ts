@@ -165,6 +165,11 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     match: "\"Couldn't copy the ID. Select it and copy it by hand.\"",
     because: "A refused clipboard write changes nothing on screen either, and without it a click that did nothing reads as a click that worked.",
   },
+  // ---- CreationCertificateRow.tsx (the Certificate of Creation, N2d-2 — #2312)
+  {
+    match: "toast.error(CERTIFICATE_FAILED)",
+    because: "A download that produced no file changes nothing on screen — the button returns to rest — so without it a press that failed reads as one that worked.",
+  },
   {
     match: '"That name could not be saved."',
     because: "The dialog stays open on the old name, which is not a reason.",

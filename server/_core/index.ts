@@ -19,6 +19,7 @@ import crewEyeFramesRouter from "../routes/crewEyeFrames";
 import { createCharacterSheetRouter } from "../routes/characterSheet";
 import { createInkDesignDeliveryRouter } from "../routes/inkDesignDelivery";
 import { createReferenceDeliveryRouter } from "../routes/referenceDelivery";
+import { createCreationCertificateRouter } from "../routes/creationCertificate";
 import { healthHandler } from "../health";
 import { validateEnv } from "./env";
 import { assertPrivateEvidenceCleanupSchema } from "../casting/evidence/privateEvidenceSchema";
@@ -329,6 +330,8 @@ async function startServer() {
      alone (fable-1423 §2). Same shape as the one above and on CLAUDE.md's
      enumerated list in the same commit that created it. */
   app.use(createReferenceDeliveryRouter());
+  /* The Certificate of Creation (N2d-2, #2312) — the owner's PDF, on CLAUDE.md's list in the same commit. */
+  app.use(createCreationCertificateRouter());
 
   // tRPC API with centralized error logging
   app.use(

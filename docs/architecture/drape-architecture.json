@@ -12,7 +12,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:billing",
@@ -32,12 +32,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 202
+      "moduleCount": 203
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 63
+      "moduleCount": 64
     },
     {
       "id": "domain:client-shared",
@@ -1407,6 +1407,12 @@
     {
       "id": "module:client/src/features/castingV2/components/ConceptUploadCard.tsx",
       "path": "client/src/features/castingV2/components/ConceptUploadCard.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/CreationCertificateRow.tsx",
+      "path": "client/src/features/castingV2/components/CreationCertificateRow.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -3943,6 +3949,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/creationCertificate.ts",
+      "path": "server/castingV2/creationCertificate.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/creationRecord.ts",
       "path": "server/castingV2/creationRecord.ts",
       "domain": "casting-v2",
@@ -5697,6 +5709,12 @@
     {
       "id": "module:server/routes/characterSheet.ts",
       "path": "server/routes/characterSheet.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/creationCertificate.ts",
+      "path": "server/routes/creationCertificate.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -10578,6 +10596,14 @@
   ],
   "surfaces": [
     {
+      "id": "express:GET /api/cast/:castId/certificate (createCreationCertificateRouter())",
+      "method": "GET",
+      "path": "/api/cast/:castId/certificate",
+      "handler": "createCreationCertificateRouter()",
+      "file": "server/routes/creationCertificate.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
       "id": "express:GET /api/cast/:castId/sheet (createCharacterSheetRouter())",
       "method": "GET",
       "path": "/api/cast/:castId/sheet",
@@ -12352,6 +12378,10 @@
       "path": "client/src/features/castingV2/components/CastCampaignsCard.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/components/CreationCertificateRow.test.ts",
+      "path": "client/src/features/castingV2/components/CreationCertificateRow.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/components/PostSignCampaignOffer.test.ts",
       "path": "client/src/features/castingV2/components/PostSignCampaignOffer.test.ts"
     },
@@ -13822,6 +13852,10 @@
     {
       "id": "test:server/castingV2/conceptUploadScope.test.ts",
       "path": "server/castingV2/conceptUploadScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationCertificate.test.ts",
+      "path": "server/castingV2/creationCertificate.test.ts"
     },
     {
       "id": "test:server/castingV2/creationRecord.test.ts",
@@ -16170,6 +16204,10 @@
     {
       "id": "test:server/routes/characterSheet.test.ts",
       "path": "server/routes/characterSheet.test.ts"
+    },
+    {
+      "id": "test:server/routes/creationCertificate.test.ts",
+      "path": "server/routes/creationCertificate.test.ts"
     },
     {
       "id": "test:server/routes/crewEyeFrames.test.ts",
@@ -19957,6 +19995,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/components/CreationCertificateRow.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/components/FacePanel.tsx",
       "to": "module:client/src/features/castingV2/components/faceSelection.ts",
       "kind": "imports"
@@ -23148,6 +23191,11 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/components/CreationCertificateRow.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/masterLookLine.ts",
       "kind": "imports"
     },
@@ -24084,6 +24132,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/routes/characterSheet.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/creationCertificate.ts",
       "kind": "imports"
     },
     {
@@ -28199,6 +28252,21 @@
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationCertificate.ts",
+      "to": "module:server/castingV2/creationRecord.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationCertificate.ts",
+      "to": "module:server/castingV2/creationRecordSigning.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationCertificate.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -36419,6 +36487,51 @@
     {
       "from": "module:server/routes/characterSheet.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/castingV2/creationCertificate.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/castingV2/creationRecordService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/castingV2/creationRecordSigning.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/db/castCreationRecords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCertificate.ts",
+      "to": "module:server/storage.ts",
       "kind": "imports"
     },
     {
