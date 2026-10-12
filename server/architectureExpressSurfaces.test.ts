@@ -185,7 +185,7 @@ describe("against the real bootstrap", () => {
     /* THE POPULATION FIRST — an empty or shrunken set would make every
        assertion below vacuously true (`absence-only-expect-passes-on-nothing`). */
     expect(userLimited).toEqual([
-      "characterSheet", "crewEyeFrames", "evidenceDelivery", "imageProxy",
+      "characterSheet", "creationCertificate", "crewEyeFrames", "evidenceDelivery", "imageProxy",
       "inkDesignDelivery", "referenceDelivery",
     ]);
 
