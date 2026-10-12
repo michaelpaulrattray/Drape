@@ -381,7 +381,7 @@ export async function loadLockedEvidencePackageAuthority(input: {
       .limit(1)
       .for("update");
     if (!model) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
     }
     const [operation] = await tx
       .select({

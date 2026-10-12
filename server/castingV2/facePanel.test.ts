@@ -1052,7 +1052,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
 
   it("draws a row for it, in her own word, in a section that claims no anatomy", () => {
     const built = panel([orb()]);
-    const section = built.groups.find((group) => group.heading === "Also on this cast");
+    const section = built.groups.find((group) => group.heading === "Also on this character");
     expect(section, "an uncatalogued kind has a section of its own").toBeDefined();
     expect(section!.rows.map((one) => one.name)).toEqual(["Orb"]);
     expect(section!.rows[0]!.spoken).toBe("her orb");
@@ -1071,7 +1071,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
     */
     const built = panel([orb(), row({ slot: "hair", noun: "hair", words: ["a copper shag"] })]);
     expect(built.groups.map((group) => group.heading))
-      .toEqual(["Hair", "Also on this cast"]);
+      .toEqual(["Hair", "Also on this character"]);
     expect(built.groups.find((group) => group.heading === "Body")).toBeUndefined();
   });
 
@@ -1084,7 +1084,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
       use.
     */
     const built = panel([row({ slot: "open:cat-ears", noun: "cat ears", words: ["soft grey fur"] })]);
-    const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+    const section = built.groups.find((group) => group.heading === "Also on this character")!;
     expect(section.rows[0]!.name).toBe("Cat ears");
     expect(section.rows[0]!.name, "the key's own spelling never reaches her").not.toBe("Cat-ears");
     expect(section.rows[0]!.spoken).toBe("her cat ears");
@@ -1092,7 +1092,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
 
   it("invents no plural — the row is her word and nothing composed from it", () => {
     const built = panel([row({ slot: "open:halo", noun: "halo", words: ["a thin gold ring"] })]);
-    const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+    const section = built.groups.find((group) => group.heading === "Also on this character")!;
     expect(section.rows[0]!.name).toBe("Halo");
     expect(section.rows[0]!.spoken).toBe("her halo");
   });
@@ -1117,7 +1117,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
     const built = panel([row({
       slot: "open:orb", noun: "orb", words: ["a glowing red orb"], geometry: null,
     })]);
-    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+    expect(built.groups.find((group) => group.heading === "Also on this character")).toBeUndefined();
   });
 
   it("is NOT kept open as a placeholder while a scan runs", () => {
@@ -1133,7 +1133,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
       maskUrl: (key) => key,
       scanning: true,
     });
-    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+    expect(built.groups.find((group) => group.heading === "Also on this character")).toBeUndefined();
   });
 
   it("draws its rectangle, and that rectangle SCOPES NOTHING", () => {
@@ -1159,7 +1159,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
     const built = panel([row({
       slot: "open:orb", noun: "orb", words: ["a glowing red orb"], retiredAt: new Date(),
     })]);
-    expect(built.groups.find((group) => group.heading === "Also on this cast")).toBeUndefined();
+    expect(built.groups.find((group) => group.heading === "Also on this character")).toBeUndefined();
   });
 
   it("has no section at all on a cast that has none", () => {
@@ -1187,7 +1187,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
 
     it("folds into ONE row that speaks her plural, with both rectangles", () => {
       const built = panel(wings({ left: ["black feathered"], right: ["black feathered"] }));
-      const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+      const section = built.groups.find((group) => group.heading === "Also on this character")!;
       expect(section.rows).toHaveLength(1);
       expect(section.rows[0]!.name).toBe("Wings");
       expect(section.rows[0]!.spoken).toBe("her wings");
@@ -1222,7 +1222,7 @@ describe("an open kind — a thing the catalogue has no word for", () => {
       const built = panel([row({
         slot: "open:wings@left", noun: "wings", words: ["black feathered"],
       })]);
-      const section = built.groups.find((group) => group.heading === "Also on this cast")!;
+      const section = built.groups.find((group) => group.heading === "Also on this character")!;
       expect(section.rows).toHaveLength(1);
       expect(section.rows[0]!.name).toBe("Wings");
       expect(section.rows[0]!.regions).toHaveLength(1);

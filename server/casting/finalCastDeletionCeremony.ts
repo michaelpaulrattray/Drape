@@ -82,7 +82,7 @@ export async function runFinalCastDeletionCeremony(input: {
   const lockedModel = await getModelById(input.modelId);
   if (!lockedModel || lockedModel.userId !== input.userId || lockedModel.status === "archived") {
     const error = !lockedModel || lockedModel.status === "archived"
-      ? new TRPCError({ code: "NOT_FOUND", message: "Cast not found" })
+      ? new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." })
       : new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
     return failClaimedDirectOperation({
       userId: input.userId,

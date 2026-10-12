@@ -297,7 +297,7 @@ function stateError(error: unknown): TRPCError {
   if (error instanceof TRPCError) return error;
   if (error instanceof InkAddIntentStateError) {
     if (error.code === "model_unavailable") {
-      return new TRPCError({ code: "NOT_FOUND", message: "Cast not found." });
+      return new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
     }
     if (
       error.code === "feature_already_selected"

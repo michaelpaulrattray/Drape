@@ -89,7 +89,7 @@ export function computeRefreshPlan(slots: PackageSlot[], requested?: CanonicalVi
 
 async function loadModelSlots(input: { userId: number; modelId: number }) {
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
