@@ -145,7 +145,7 @@ export const PANEL_GROUPS: readonly { group: PanelSection; heading: string }[] =
   { group: "hair", heading: "Hair" },
   { group: "body", heading: "Body" },
   { group: "accessories", heading: "Accessories" },
-  { group: "open", heading: "Also on this cast" },
+  { group: "open", heading: "Also on this character" },
 ];
 
 export type PanelBox = {

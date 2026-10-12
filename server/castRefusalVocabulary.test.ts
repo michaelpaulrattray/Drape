@@ -249,13 +249,73 @@ describe("the studio's refusals speak the customer's vocabulary (#1565)", () => 
       The two live exceptions are real and are named in this suite's header.
       Beside them, the predicate must REFUSE to excuse a sentence carried by a
       code that IS on the client's list — driven on the real tree, where
-      "Cast not found" is thrown forty times as NOT_FOUND.
+      "That character isn't here." is thrown as NOT_FOUND across the server.
     */
     expect(unreachableByCustomer("Failed to iterate model", ours)).toBe(true);
     expect(unreachableByCustomer("Failed to create the model.", ours)).toBe(true);
-    expect(unreachableByCustomer("Cast not found", ours)).toBe(false);
+    expect(unreachableByCustomer("That character isn't here.", ours)).toBe(false);
     /* A sentence the tree does not hold excuses nothing — the shape that would
        let an unreachable reader bless everything it cannot find. */
     expect(unreachableByCustomer("a sentence no module contains", ours)).toBe(false);
+  });
+});
+
+/**
+ * "CAST NOT FOUND" IS RETIRED FROM EVERY SERVER MODULE (#2439).
+ *
+ * The founder's ruling of 2026-10-12 (#2320, #2322, #2318): the customer reads
+ * "character", not "cast". #2432 changed the casting route's own refusals to
+ * "That character isn't here."; about twenty other modules still threw "Cast
+ * not found" as NOT_FOUND, which `readableFailure` hands to the screen word for
+ * word. This reads the whole server tree's CODE (comments stripped) for the old
+ * literal in ANY position — a `message:` property, a ternary, a `super(...)` in
+ * an Error subclass — because the message-shaped reader above cannot see the
+ * last of those, as its own header says.
+ */
+const RETIRED_NOT_FOUND = /"Cast not found\.?"/;
+
+function retiredNotFoundSites(): string[] {
+  const out: string[] = [];
+  for (const file of serverModules()) {
+    const source = readListedSource(path.join(REPO, file));
+    if (source === null) continue;
+    if (RETIRED_NOT_FOUND.test(code(source))) out.push(file);
+  }
+  return out;
+}
+
+describe("a missing character is 'That character isn't here.', never 'Cast not found' (#2439)", () => {
+  it("the reader catches the old sentence in every shape it was thrown in (negative control)", () => {
+    const old = [
+      'throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });',
+      'return new TRPCError({ code: "NOT_FOUND", message: "Cast not found." });',
+      'super(code === "model_not_found" ? "Cast not found" : TEMPORARILY_UNAVAILABLE);',
+    ];
+    for (const line of old) expect(RETIRED_NOT_FOUND.test(code(line)), line).toBe(true);
+    /* A docblock quoting the retired sentence is history, not copy. */
+    expect(RETIRED_NOT_FOUND.test(code('/* it used to say "Cast not found" */'))).toBe(false);
+  });
+
+  it("no server module throws it", () => {
+    expect(serverModules().length).toBeGreaterThan(300);
+    expect(retiredNotFoundSites()).toEqual([]);
+  });
+
+  it("the new sentence is what the modules throw instead (positive control)", () => {
+    const read = (file: string) => code(readListedSource(path.join(REPO, file)) ?? "");
+    /* The Error-subclass site the message-shaped reader cannot see, and one
+       ordinary throw from each directory the sweep reached. */
+    expect(read("server/casting/effectiveCastState.ts"))
+      .toContain(`super(code === "model_not_found" ? "That character isn't here." : TEMPORARILY_UNAVAILABLE)`);
+    for (const file of [
+      "server/casting/modelGuards.ts",
+      "server/castingV2/viewRetryService.ts",
+      "server/db/modelReferenceFence.ts",
+      "server/lib/boardOps.ts",
+      "server/routes/generation/castingExport.ts",
+      "server/routes/models.ts",
+    ]) {
+      expect(read(file), file).toContain(`message: "That character isn't here."`);
+    }
   });
 });

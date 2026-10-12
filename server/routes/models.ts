@@ -216,14 +216,14 @@ export const modelsRouter = router({
       }
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       // Batch 0 (FR-4): archived reads as deleted everywhere
       if (model.status === "archived") {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       const assets = await getModelAssets(input.modelId);
       return projectModelForClient(model, assets);
@@ -244,7 +244,7 @@ export const modelsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -252,7 +252,7 @@ export const modelsRouter = router({
       // FR-4: archived is deleted — no edits of any kind
       if (model.status === "archived") {
         log.warn({ modelId: input.modelId, userId: ctx.user.id }, "[models.update] refused — model is archived");
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
 
       const renamed = await updateModel(input.modelId, { name: input.name });
@@ -270,7 +270,7 @@ export const modelsRouter = router({
           spelling-not-meaning class this repository has paid for before.
         */
         if (renamed.error === "Model not found") {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+          throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
         }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
       }

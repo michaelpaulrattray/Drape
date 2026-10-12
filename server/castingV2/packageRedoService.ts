@@ -265,7 +265,7 @@ export async function redoCastPackage(
   /* ---- admission: every refusal here is free and before any claim ---- */
 
   const read = await (dependencies.readSlots ?? readCastSlots)(input.userId, input.castId);
-  if (!read) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!read) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
 
   /*
     THE OFFER IS RE-READ HERE, NOT TRUSTED FROM THE CLIENT.

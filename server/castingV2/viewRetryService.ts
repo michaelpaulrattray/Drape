@@ -474,7 +474,7 @@ export async function retryCastView(
   /* ---- admission: every refusal here is free and before the claim ---- */
 
   const read = await (dependencies.readSlots ?? readCastSlots)(input.userId, input.castId);
-  if (!read) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!read) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
 
   const slot = read.slots.find((candidate) => candidate.angle === input.angle);
   if (!slot) {

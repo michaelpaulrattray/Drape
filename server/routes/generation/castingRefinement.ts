@@ -137,7 +137,7 @@ export const castingRefinementRouter = router({
       // Validate model ownership first (cheap operation)
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -226,10 +226,10 @@ export const castingRefinementRouter = router({
         failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error }));
       if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status === "archived") {
         const error = !lockedModel
-          ? new TRPCError({ code: "NOT_FOUND", message: "Cast not found" })
+          ? new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." })
           : lockedModel.userId !== ctx.user.id
             ? new TRPCError({ code: "FORBIDDEN", message: "Access denied" })
-            : new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+            : new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
         return failClaimedDirectOperation({ userId: ctx.user.id, operationId: gate.operationId, error });
       }
       try {
@@ -908,7 +908,7 @@ export const castingRefinementRouter = router({
       assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const model = await getModelById(input.modelId);
       if (!model) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       if (model.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
@@ -937,7 +937,7 @@ export const castingRefinementRouter = router({
       const lockedModel = await getModelById(input.modelId);
       if (!lockedModel || lockedModel.userId !== ctx.user.id || lockedModel.status !== "draft") {
         const error = !lockedModel || lockedModel.status === "archived"
-          ? new TRPCError({ code: "NOT_FOUND", message: "Cast not found" })
+          ? new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." })
           : lockedModel.userId !== ctx.user.id
             ? new TRPCError({ code: "FORBIDDEN", message: "Access denied" })
             : new TRPCError({ code: "PRECONDITION_FAILED", message: "Prompt compaction applies to drafts — a minted identity document is sealed." });

@@ -639,7 +639,7 @@ export async function resolveCanvasPackageView(input: {
   }
 
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model);
   const assets = await getModelAssets(input.modelId);
@@ -871,7 +871,7 @@ export async function resolveModelBackedBoardOperation(input: {
     throw new TRPCError({ code: "BAD_REQUEST", message: "This node has no cast identity" });
   }
   const model = await getModelById(provenance.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model);
   return { item, model, provenance };

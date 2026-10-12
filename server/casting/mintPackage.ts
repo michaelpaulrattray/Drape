@@ -102,7 +102,7 @@ export async function planMintPackage(input: {
     );
   }
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
@@ -560,7 +560,7 @@ export async function executeMintPackage(input: MintPackageInput) {
     ? await resolveEffectiveCastStateForRead(input)
     : null;
   const model = effective?.model ?? await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (!effective) {
     if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
     assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
@@ -943,7 +943,7 @@ export async function getPackageState(input: {
     };
   }
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId);
@@ -982,7 +982,7 @@ export async function getSlotVersions(input: {
   }>;
 }> {
   const model = await getModelById(input.modelId);
-  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+  if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
   if (model.userId !== input.userId) throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
   assertNotArchived(model); // FR-4 (Batch 0): archived reads as deleted
   const assets = await getModelAssets(input.modelId); // newest-first

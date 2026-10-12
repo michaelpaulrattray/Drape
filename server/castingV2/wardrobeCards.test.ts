@@ -156,6 +156,6 @@ describe("no panel draws a wardrobe section, on any resolution", () => {
     /* PANEL_GROUPS is what a renderer reads; a heading left in it would draw an
        empty section the moment anything else filled it. */
     expect(PANEL_GROUPS.map((group) => group.group)).not.toContain("wardrobe");
-    expect(PANEL_GROUPS.at(-1)).toEqual({ group: "open", heading: "Also on this cast" });
+    expect(PANEL_GROUPS.at(-1)).toEqual({ group: "open", heading: "Also on this character" });
   });
 });
