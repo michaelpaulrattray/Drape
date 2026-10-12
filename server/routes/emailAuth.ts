@@ -218,7 +218,7 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
     }
 
     // Generate and store verification token
-    const verificationToken = generateVerificationToken();
+    const verificationToken = generateVerificationToken(newUser.openId);
     await storeVerificationToken(newUser.id, verificationToken);
 
     // Send verification email

@@ -27,6 +27,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 
+/* `ENV` freezes `process.env.JWT_SECRET` at import, and the link mac (#2401)
+   signs with it. A checkout with no `.env` (CI) would leave it empty, and the
+   route then issues unsigned links that can never be recognised as replaced —
+   so a stand-in is planted BEFORE the module graph loads, and only where the
+   real one is absent (the same shape as `googleAuth.test.ts`). */
+vi.hoisted(() => {
+  if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = "drape-test-link-secret-not-a-real-credential";
+  }
+});
+
 /**
  * `eq(column, value)` is replaced by a plain record the fake db can evaluate.
  * Everything else in drizzle is the real module.
@@ -94,14 +105,14 @@ import { COOKIE_NAME } from "@shared/const";
 
 import { readResendAnswer } from "../../client/src/pages/VerifyEmail";
 import { sendProductEmail } from "../mail";
-import { emailVerificationRouter } from "./emailVerification";
+import { emailVerificationRouter, generateVerificationToken, issuedLinkAccount } from "./emailVerification";
 
 const TOKEN = "a".repeat(96);
 
 function customer(overrides: Partial<Row> = {}): Row {
   return {
     id: 7,
-    openId: "email_customer",
+    openId: "email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43",
     name: "A Customer",
     email: "customer@example.com",
     emailVerified: false,
@@ -222,5 +233,106 @@ describe("pressing Resend for an address that is already verified (#2370)", () =
     expect(readResendAnswer(false, { error: "Too many attempts. Please try again later." }))
       .toEqual({ kind: "failed", error: "Too many attempts. Please try again later." });
     expect(readResendAnswer(false, {})).toEqual({ kind: "failed", error: "Failed to resend. Please try again." });
+  });
+});
+
+/**
+ * AN OLDER LINK AFTER ASKING FOR A NEW EMAIL — #2401.
+ *
+ * The customer registers (email one), presses Resend (email two, which REPLACES
+ * the token), then opens email one. Driven through the real resend route so the
+ * replacement is the route's own write, not a row the test edits by hand.
+ */
+describe("an older verification link after a resend (#2401)", () => {
+  const OLD = generateVerificationToken(customer().openId);
+
+  beforeEach(() => {
+    table = [customer({ emailVerificationToken: OLD })];
+  });
+
+  it("the resend really replaces the stored token — the premise, driven", async () => {
+    await resend("customer@example.com");
+    expect(table[0]!.emailVerificationToken).not.toBe(OLD);
+    expect(table[0]!.emailVerificationToken).not.toBeNull();
+  });
+
+  it("the older link lands on the replaced note, verifies nothing and mints no session", async () => {
+    await resend("customer@example.com");
+    const replacement = table[0]!.emailVerificationToken;
+    const driven = await click(OLD);
+    expect(
+      driven.location,
+      "an older link must tell the customer to use the newest email; `invalid_token` here is"
+      + " the generic \"Authentication Error\" banner the card was filed for",
+    ).toBe("/login?error=verification_link_replaced");
+    expect(driven.sessionMinted).toBe(false);
+    expect(table[0]!.emailVerified).toBe(false);
+    expect(table[0]!.emailVerificationToken, "the older link must not disturb the newest one").toBe(replacement);
+  });
+
+  it("the newest link still verifies and signs in — the positive control", async () => {
+    await resend("customer@example.com");
+    const driven = await click(table[0]!.emailVerificationToken!);
+    expect(driven.location).toBe("/app");
+    expect(driven.sessionMinted).toBe(true);
+    expect(table[0]!.emailVerified).toBe(true);
+  });
+
+  it("the older link opened AFTER the newest one verified says already verified, and mints nothing", async () => {
+    await resend("customer@example.com");
+    await click(table[0]!.emailVerificationToken!);
+    const driven = await click(OLD);
+    expect(driven.location).toBe("/login?error=already_verified");
+    expect(driven.sessionMinted).toBe(false);
+  });
+
+  it("a link with a forged signature is still the generic refusal — the negative control", async () => {
+    const [id, nonce] = OLD.split(".");
+    const forged = `${id}.${nonce}.${"0".repeat(32)}`;
+    await resend("customer@example.com");
+    const driven = await click(forged);
+    expect(driven.location).toBe("/login?error=invalid_token");
+    expect(driven.sessionMinted).toBe(false);
+  });
+
+  it("a signed link cannot be re-pointed at another account by editing its openId", async () => {
+    /* The second account exists and is unverified, so a re-pointed link that
+       were believed would be told "replaced" — the mac must refuse it first. */
+    const OTHER = "email_7c1d0e2a-4b3f-4a8e-9c6d-2e5f8a1b3c70";
+    table.push(customer({ id: 8, openId: OTHER, email: "other@example.com", emailVerificationToken: "c".repeat(96) }));
+    const [, nonce, mac] = OLD.split(".");
+    const driven = await click(`${OTHER}.${nonce}.${mac}`);
+    expect(driven.location).toBe("/login?error=invalid_token");
+    expect(driven.sessionMinted).toBe(false);
+    expect(table[1]!.emailVerified).toBe(false);
+  });
+
+  it("the link carries the openId and never the sequential account id", () => {
+    expect(OLD.startsWith(`${customer().openId}.`)).toBe(true);
+    expect(OLD.startsWith("7.")).toBe(false);
+  });
+
+  it("a genuinely signed link for an account that no longer exists is the generic refusal", async () => {
+    const driven = await click(generateVerificationToken("email_00000000-0000-4000-8000-000000000000"));
+    expect(driven.location).toBe("/login?error=invalid_token");
+    expect(driven.sessionMinted).toBe(false);
+  });
+
+  it("every link fits the 128-character column, and names the account it was issued for", () => {
+    /* An email account's openId: `email_` + a uuid, 42 characters — the real shape. */
+    const emailOpenId = customer().openId;
+    expect(emailOpenId).toHaveLength(42);
+    const token = generateVerificationToken(emailOpenId);
+    expect(token).toHaveLength(108);
+    expect(issuedLinkAccount(token)).toBe(emailOpenId);
+    /* The longest openId that is signed lands exactly on the column's limit. */
+    const longest = "x".repeat(62);
+    expect(generateVerificationToken(longest)).toHaveLength(128);
+    expect(issuedLinkAccount(generateVerificationToken(longest))).toBe(longest);
+    /* Longer than that (the column allows 64) gets a plain token, never a truncated one. */
+    const tooLong = generateVerificationToken("y".repeat(64));
+    expect(tooLong.length).toBeLessThanOrEqual(128);
+    expect(issuedLinkAccount(tooLong)).toBeNull();
+    expect(issuedLinkAccount("a".repeat(96))).toBeNull();
   });
 });

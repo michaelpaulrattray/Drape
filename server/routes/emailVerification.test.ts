@@ -4,7 +4,13 @@
  * Token generation only. The HTTP tests that require a running server live
  * in emailVerification.integration.test.ts (run with `pnpm test:integration`).
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+/* The link is signed with JWT_SECRET (#2401); plant a stand-in only where the
+   real one is absent (CI), before the module graph loads. */
+vi.hoisted(() => {
+  if (!process.env.JWT_SECRET) process.env.JWT_SECRET = "drape-test-link-secret-not-a-real-credential";
+});
 
 import { allowColdImports } from "../testing/suiteClocks";
 
@@ -14,16 +20,16 @@ import { allowColdImports } from "../testing/suiteClocks";
 allowColdImports();
 
 describe("generateVerificationToken", () => {
-  it("generates a 96-character hex string", async () => {
+  it("generates a signed link naming its account's openId, within the column's 128 characters (#2401)", async () => {
     const { generateVerificationToken } = await import("./emailVerification");
-    const token = generateVerificationToken();
-    expect(token).toHaveLength(96);
-    expect(/^[0-9a-f]+$/.test(token)).toBe(true);
+    const token = generateVerificationToken("email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43");
+    expect(token.length).toBeLessThanOrEqual(128);
+    expect(/^email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43\.[0-9a-f]{32}\.[0-9a-f]{32}$/.test(token)).toBe(true);
   });
 
   it("generates unique tokens", async () => {
     const { generateVerificationToken } = await import("./emailVerification");
-    const tokens = new Set(Array.from({ length: 10 }, () => generateVerificationToken()));
+    const tokens = new Set(Array.from({ length: 10 }, () => generateVerificationToken("email_x")));
     expect(tokens.size).toBe(10);
   });
 });
