@@ -46,6 +46,7 @@ import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import {
   TOPUP_MAX_UNITS,
   TOPUP_NEEDS_A_PLAN_SENTENCE,
+  TOPUP_PLAN_PAUSED_SENTENCE,
   topupEligibility,
   topupLedgerCredits,
   topupPriceInCents,
@@ -191,9 +192,19 @@ function planChangeRefusal(
  * Each sentence says what was refused and what to do, and none names a
  * status (the disappearing-technology law's refusal clause).
  */
-/** One sentence for both of Stripe's pause shapes, said once. */
-const TOPUP_PLAN_PAUSED_SENTENCE =
-  "Your plan is paused, so credit packs can't be bought right now. Nothing was charged — resume your plan under Billing, then you can add credits.";
+/**
+ * IS THIS LIVE PLAN PAUSED? — both of Stripe's pause shapes, decided once
+ * (#2456). `status: "paused"`, and an `active` plan with `pause_collection`
+ * set. The top-up gate below refuses on it and `getTopupStanding` answers the
+ * Add credits pane with it, so the pane cannot offer packs to a plan the gate
+ * would call paused: one predicate, two readers (working law 4).
+ */
+function livePlanIsPaused(live: { status: string; collectionPaused: boolean }): boolean {
+  return live.collectionPaused || live.status === "paused";
+}
+
+/* One sentence for both of Stripe's pause shapes — `TOPUP_PLAN_PAUSED_SENTENCE`,
+   declared in `shared/creditTopups.ts` beside the pane that says it too (#2456). */
 
 function topupPlanRefusal(
   live:
@@ -201,7 +212,7 @@ function topupPlanRefusal(
     | { outcome: "live"; status: string; collectionPaused: boolean },
 ): string | null {
   if (live.outcome === "none") return TOPUP_NEEDS_A_PLAN_SENTENCE;
-  if (live.collectionPaused) return TOPUP_PLAN_PAUSED_SENTENCE;
+  if (livePlanIsPaused(live)) return TOPUP_PLAN_PAUSED_SENTENCE;
   switch (live.status) {
     case "active":
     case "trialing":
@@ -209,8 +220,6 @@ function topupPlanRefusal(
     case "past_due":
     case "unpaid":
       return "Your last payment didn't go through, so credit packs can't be bought until it does. Nothing was charged — update your card under Billing, then try again.";
-    case "paused":
-      return TOPUP_PLAN_PAUSED_SENTENCE;
     case "incomplete":
       return "Your plan's first payment is still being confirmed, so credit packs can't be bought yet. Nothing was charged — check Billing again in a few minutes.";
     default:
@@ -961,6 +970,51 @@ export const billingRouter = router({
    * knows one, rather than putting the dial at the bottom and inviting a
    * customer to "confirm" a downgrade they never asked for.
    */
+  /**
+   * IS THIS ACCOUNT'S PLAN PAUSED? — what the Add credits pane asks before it
+   * draws the packs (#2456).
+   *
+   * ⚠ **THE CARD SAID `getStatus` REPORTS A PAUSED PLAN AS `canceled`; READ AT
+   * THE CODE, IT REPORTS IT AS `active`, WHICH IS WHY THE PANE COULD NOT TELL.**
+   * `mapStripeStatus` does fold Stripe's `paused` into `"canceled"`, but
+   * `handleSubscriptionUpdated` (`webhooks.ts`) never WRITES a status that maps
+   * to `canceled` — it leaves the row to the roads that own a dead
+   * subscription — so the stored status stays whatever it was, `active`. And
+   * the portal's pause (`pause_collection`) keeps Stripe's own status at
+   * `active`, so nothing about it reaches the row at all. The pause lives only
+   * at Stripe.
+   *
+   * ⚠ **SO IT IS ITS OWN PROCEDURE RATHER THAN A FIELD ON `getStatus`** — the
+   * same reasoning as `getPlanCreditUnits` below: the answer costs a Stripe
+   * round trip, and `getStatus` is fetched by every signed-in surface on load.
+   * This is fetched by one modal, for a plan holder, at the moment they ask to
+   * buy. Changing `mapStripeStatus` to answer `"paused"` was declined: it feeds
+   * a `mysqlEnum` column through the webhooks, which is a migration and a
+   * webhook-road change for a question one pane asks.
+   *
+   * It reads the SAME live answer the top-up gate reads
+   * (`findLiveSubscriptionOnCustomer`) through the SAME predicate
+   * (`livePlanIsPaused`), so the pane and the press cannot disagree.
+   *
+   * **`planPaused: null` means UNREAD, never "not paused"** (#1703's family
+   * rule) — the pane decides what to draw for it and says so where it stands.
+   */
+  getTopupStanding: protectedProcedure.query(async ({ ctx }) => {
+    const subscription = await getSubscriptionByUserId(ctx.user.id);
+    if (!subscription?.stripeCustomerId) {
+      /* No billing account at Stripe means nothing there can be paused — a
+         real answer, and it costs no request. */
+      return { planPaused: false as boolean | null };
+    }
+    const live = await findLiveSubscriptionOnCustomer(subscription.stripeCustomerId);
+    if (live.outcome === "failed") {
+      return { planPaused: null as boolean | null };
+    }
+    return {
+      planPaused: (live.outcome === "live" && livePlanIsPaused(live)) as boolean | null,
+    };
+  }),
+
   getPlanCreditUnits: protectedProcedure.query(async ({ ctx }) => {
     const subscription = await getSubscriptionByUserId(ctx.user.id);
     if (!subscription?.stripeSubscriptionId) {

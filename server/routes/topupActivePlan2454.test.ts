@@ -104,7 +104,8 @@ import { billingRouter } from "./billing";
 import { getSubscriptionByUserId, getUserById, updateUserSubscription } from "../db";
 import { logAuditEvent } from "../auditLog";
 import { SpokenError } from "../_core/spokenError";
-import { TOPUP_NEEDS_A_PLAN_SENTENCE } from "../../shared/creditTopups";
+import { TOPUP_NEEDS_A_PLAN_SENTENCE, TOPUP_PLAN_PAUSED_SENTENCE } from "../../shared/creditTopups";
+import { SUPPORT_EMAIL } from "../../shared/supportEmail";
 
 const USER = { id: 42, approved: true, suspendedAt: null, lockedUntil: null };
 const caller = () => billingRouter.createCaller({ user: USER, req: { headers: {} } } as never);
@@ -179,7 +180,6 @@ describe("#2454 — anything but an active plan is refused, and no session is mi
   it.each([
     ["past_due", /payment didn't go through[\s\S]*update your card/],
     ["unpaid", /payment didn't go through[\s\S]*update your card/],
-    ["paused", /paused[\s\S]*resume your plan/],
     ["incomplete", /first payment is still being confirmed/],
   ])("a %s plan is refused with a sentence that says what to do", async (status, sentence) => {
     harness.subscriptions = [sub(status)];
@@ -195,10 +195,25 @@ describe("#2454 — anything but an active plan is refused, and no session is mi
     expect(logAuditEvent).not.toHaveBeenCalled();
   });
 
+  /* #2456: a paused plan's sentence names the one road that works — support —
+     because nothing in the product resumes a pause. It is the pane's own
+     constant, so the two cannot drift. */
+  it("a paused plan is refused with the shared paused sentence, which names support", async () => {
+    harness.subscriptions = [sub("paused")];
+    const { error } = await attempt();
+    expect(error).toBeInstanceOf(SpokenError);
+    expect((error as SpokenError).code).toBe("FORBIDDEN");
+    expect((error as SpokenError).message).toBe(TOPUP_PLAN_PAUSED_SENTENCE);
+    expect(TOPUP_PLAN_PAUSED_SENTENCE).toContain(`Email ${SUPPORT_EMAIL}`);
+    expect(TOPUP_PLAN_PAUSED_SENTENCE).not.toMatch(/under Billing|billing page/i);
+    expect(sessionAsked()).toBe(false);
+    expect(logAuditEvent).not.toHaveBeenCalled();
+  });
+
   it("an ACTIVE plan with collection paused (the portal's pause) is refused as paused", async () => {
     harness.subscriptions = [sub("active", { pause_collection: { behavior: "void" } })];
     const { error } = await attempt();
-    expect((error as SpokenError).message).toMatch(/paused[\s\S]*resume your plan/);
+    expect((error as SpokenError).message).toBe(TOPUP_PLAN_PAUSED_SENTENCE);
     expect(sessionAsked()).toBe(false);
   });
 

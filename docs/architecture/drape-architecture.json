@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 90
+      "moduleCount": 91
     },
     {
       "id": "domain:staff",
@@ -6925,6 +6925,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:shared/supportEmail.ts",
+      "path": "shared/supportEmail.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:shared/vendorModelStatus.ts",
       "path": "shared/vendorModelStatus.ts",
       "domain": "shared",
@@ -7676,6 +7682,19 @@
         "client/src/features/billing/ChangePlanModal.tsx",
         "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/sections/BillingSection.tsx"
+      ]
+    },
+    {
+      "id": "route:billing.getTopupStanding",
+      "namespace": "billing",
+      "name": "getTopupStanding",
+      "type": "query",
+      "auth": "protected",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/billing.ts",
+      "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx"
       ]
     },
     {
@@ -12474,6 +12493,10 @@
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/packsPaused2456-guard.test.ts",
+      "path": "client/src/features/billing/packsPaused2456-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/packsPaymentFailed2454-guard.test.ts",
       "path": "client/src/features/billing/packsPaymentFailed2454-guard.test.ts"
     },
@@ -16630,6 +16653,10 @@
       "path": "server/routes/topupActivePlan2454.test.ts"
     },
     {
+      "id": "test:server/routes/topupStanding2456.test.ts",
+      "path": "server/routes/topupStanding2456.test.ts"
+    },
+    {
       "id": "test:server/schemaConformance.test.ts",
       "path": "server/schemaConformance.test.ts"
     },
@@ -18425,6 +18452,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:shared/supportEmail.ts",
       "kind": "imports"
     },
     {
@@ -35853,6 +35885,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/supportEmail.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -39770,6 +39807,11 @@
     {
       "from": "module:shared/creditTopups.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/creditTopups.ts",
+      "to": "module:shared/supportEmail.ts",
       "kind": "imports"
     },
     {
