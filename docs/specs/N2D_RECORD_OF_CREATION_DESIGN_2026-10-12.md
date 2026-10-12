@@ -85,7 +85,7 @@ additive migration):
 | field | source | note |
 |---|---|---|
 | the Klieg ID | `models.agencyId` | legacy `MOD-…` ids equally |
-| who | the owning account's display name + account id | never the email |
+| who | the owning account's display name ~~+ account id~~ — **display name only from record version "2"** (#2352, his *"5) ok"*, 2026-10-12): the account id is the database's sequential number and the appendix prints the record; v1 records keep theirs, signed | never the email, never `openId` |
 | when | `createdAt`, `mintedAt` | plus the record's own stamp time |
 | master fingerprint | sha256 of the anchor asset's bytes | computed at mint; backfilled on first request |
 | the steps | event dates and counts derived from the roll → candidate → refinement rows | **events only — never the brief, never a refine's words** |

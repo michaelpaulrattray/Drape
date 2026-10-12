@@ -24,6 +24,12 @@
  * (`assertCreationRecordBound`) because this is the door it leaves the
  * building by, and the input type carries no field that could hold the recipe.
  *
+ * ⚠ **The appendix prints the record VERBATIM, account number included if the
+ * record carries one** (#2352). A version "2" record carries none — the bound
+ * refuses `accountId` at any depth in it. A version "1" record keeps its
+ * `maker.accountId` in the appendix, because those are its signed bytes and a
+ * certificate that edited them would no longer verify.
+ *
  * # The words
  *
  * Every sentence says **evidence of creation** and none says ownership is
@@ -41,8 +47,8 @@ import sharp from "sharp";
 import { PRODUCT_NAME } from "@shared/brand";
 import {
   assertCreationRecordBound,
-  type CreationRecord,
   type CreationRecordStep,
+  type StoredCreationRecord,
 } from "./creationRecord";
 import type { CreationRecordPublicJwk } from "./creationRecordSigning";
 
@@ -97,7 +103,7 @@ export async function prepareCertificateMaster(bytes: Buffer): Promise<Certifica
 }
 
 /** Parse the stored record and check it is the shape this document knows how to read. */
-export function readSignedRecord(recordJson: string): CreationRecord {
+export function readSignedRecord(recordJson: string): StoredCreationRecord {
   let parsed: unknown;
   try {
     parsed = JSON.parse(recordJson);
@@ -106,7 +112,7 @@ export function readSignedRecord(recordJson: string): CreationRecord {
   }
   /* The bound first: a record carrying the recipe never reaches a renderer. */
   assertCreationRecordBound(parsed);
-  const record = parsed as CreationRecord;
+  const record = parsed as StoredCreationRecord;
   if (
     typeof record !== "object" || record === null
     || typeof record.kliegId !== "string"
