@@ -8,6 +8,13 @@ import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("waitlist");
 
+/** A count read per address: plenty for any page, useless for hammering the database (#2375). */
+export const WAITLIST_STATS_RATE = {
+  windowMs: 60 * 1000,
+  maxRequests: 30,
+  keyPrefix: "waitlist_stats",
+} as const;
+
 export const waitlistRouter = router({
   // Join the waitlist
   join: publicProcedure
@@ -63,13 +70,19 @@ export const waitlistRouter = router({
       };
     }),
 
-  // Get waitlist stats (public for social proof)
-  getStats: publicProcedure.query(async () => {
+  // The real number of signups, nothing added (#2375, on his word 2026-10-12:
+  // a padded `displayCount: count + 847` stood here "for early traction
+  // appearance" and is gone). Public, so rate-limited per address like every
+  // other public endpoint (invariant 5) — it is a database count on every call.
+  getStats: publicProcedure.query(async ({ ctx }) => {
+    const rateCheck = checkRateLimit(getClientIp(ctx.req), WAITLIST_STATS_RATE);
+    if (!rateCheck.allowed) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: rateLimitError(rateCheck.resetIn),
+      });
+    }
     const count = await getWaitlistCount();
-    return {
-      totalSignups: count,
-      // Add some base numbers for social proof
-      displayCount: count + 847, // Base number for early traction appearance
-    };
+    return { totalSignups: count };
   }),
 });
