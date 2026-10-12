@@ -254,14 +254,14 @@ describe("card #391 — the email door ships with the fold", () => {
   it("the plan modal's CODE carries the mailto, on the address the product already uses", () => {
     const modal = code(readFileSync(MODAL, "utf8"));
     /* ⚠ COMPOSED, SO IT IS READ IN TWO HALVES. The address is a constant now
-       (`SALES_EMAIL`) because the subject carries the account's own plan and
+       (`SUPPORT_EMAIL`, `SALES_EMAIL` until #2398) because the subject carries the account's own plan and
        balance, so the old contiguous literal cannot be looked for — and reading
        only the template would pass on an address typed into a different one. */
     expect(modal, "the sales address left the modal").toContain(
       '"support@klieglabs.com"',
     );
     expect(modal, "the door is no longer a mail — #391 asked for an email link").toContain(
-      "mailto:${SALES_EMAIL}",
+      "mailto:${SUPPORT_EMAIL}",
     );
     expect(modal, "the Enterprise band is gone, so there is no door at all").toContain(
       "dp-plan__ent",
