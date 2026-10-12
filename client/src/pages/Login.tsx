@@ -47,6 +47,19 @@ export const ERROR_MESSAGES = {
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
   },
+  /*
+    NOT A REFUSAL (#2370): a verification link opened a second time, or after a
+    mail scanner opened it first. Nothing went wrong, so it is not red and does
+    not say "error"; the page opens on the sign-in form beneath it.
+  */
+  already_verified: {
+    icon: Check,
+    title: "Your email is already verified",
+    message: "You can sign in below.",
+    iconColor: "text-emerald-500",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-200",
+  },
   suspended: {
     icon: ShieldOff,
     title: "Account Suspended",
