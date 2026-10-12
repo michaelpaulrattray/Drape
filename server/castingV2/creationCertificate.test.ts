@@ -13,7 +13,8 @@
  *    control, so the refusal is the bound's and not a broken renderer's);
  *  - §5's honesty rule: a backfilled record says both dates.
  */
-import { generateKeyPairSync } from "node:crypto";
+import { createHash, generateKeyPairSync } from "node:crypto";
+import { inflateSync } from "node:zlib";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
@@ -21,6 +22,7 @@ import {
   buildCreationRecord,
   canonicalCreationRecordJson,
   CreationRecordBoundError,
+  makerDisplayName,
 } from "./creationRecord";
 import {
   CERTIFICATE_DISCLAIMER,
@@ -30,8 +32,10 @@ import {
   fingerprintLines,
   prepareCertificateMaster,
   printable,
+  readableJsonLines,
   readSignedRecord,
   renderCreationCertificate,
+  wrapDataLines,
   type CreationCertificateInput,
 } from "./creationCertificate";
 import { loadCreationRecordKey, signCreationRecord, verifyCreationRecord } from "./creationRecordSigning";
@@ -315,5 +319,184 @@ describe("#2331 — the fuller disclaimer, and page one still fits", () => {
        clear 6 mm above the footer however long the page runs. */
     const lowest = Math.max(...body.map((r) => r.mm));
     expect(lowest).toBeLessThanOrEqual(footer[0].mm - 6);
+  });
+});
+
+/* ------------------------------------------------------------------ #2366 */
+
+/**
+ * A PLAIN extractor, the way any tool reads a PDF: open every content stream
+ * (inflating it if it is compressed), and take each `Tj` string as one line of
+ * text, in drawing order. It knows nothing about this renderer.
+ */
+function plainExtract(pdf: Buffer): string[] {
+  const raw = pdf.toString("latin1");
+  const lines: string[] = [];
+  const opener = /stream\r?\n/g;
+  let m: RegExpExecArray | null;
+  while ((m = opener.exec(raw))) {
+    const start = m.index + m[0].length;
+    const end = raw.indexOf("endstream", start);
+    if (end < 0) break;
+    const bytes = pdf.subarray(start, end);
+    opener.lastIndex = end + "endstream".length;
+    let text: string;
+    try {
+      text = inflateSync(bytes).toString("latin1");
+    } catch {
+      text = bytes.toString("latin1");
+    }
+    for (const run of text.matchAll(/\(((?:\\.|[^\\)])*)\)\s*Tj/g)) {
+      lines.push(run[1].replace(/\\([()\\])/g, "$1"));
+    }
+  }
+  return lines;
+}
+
+const BLOCK_LABELS = [
+  "RECORD",
+  "RECORD, EXACT SIGNED BYTES (BASE64)",
+  "SHA-256 OF THE RECORD (WHAT THE TIMESTAMP COVERS)",
+  "SIGNATURE",
+  "PUBLIC KEY",
+];
+
+/** Page furniture a page break drops into the middle of a block. */
+const isFurniture = (line: string, kliegId: string) =>
+  line === "KLIEG" || line === kliegId || line.startsWith("Certificate of Creation · ") || /^\d+ of \d+$/.test(line);
+
+/**
+ * One appendix block's lines as the extractor found them: everything after
+ * its label up to the next label, without the page furniture and without the
+ * block's one-line note.
+ */
+function blockLines(lines: string[], name: string, kliegId: string): string[] {
+  const start = lines.indexOf(name);
+  if (start < 0) throw new Error(`the appendix block "${name}" was not found`);
+  const out: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (BLOCK_LABELS.includes(line) || line.startsWith("TIMESTAMP TOKEN (BASE64)")) break;
+    if (isFurniture(line, kliegId)) continue;
+    if (/^(Formatted for reading|Line breaks here)/.test(line)) continue;
+    out.push(line);
+  }
+  return out;
+}
+
+/** A data block back together: the line breaks are not part of the data. */
+const joinData = (lines: string[]) => lines.join("").replace(/\s+/g, "");
+/** A JSON block back together: each line's indentation off, the lines joined. */
+const joinJson = (lines: string[]) => JSON.parse(lines.map((line) => line.replace(/^\s+/, "")).join(""));
+
+describe("#2366 — the appendix breaks lines only where breaking cannot change what is read", () => {
+  const LONG_NAME = "Alexandria Wilhelmina Featherstonehaugh-Montgomery of the Very Long Name and Further Still, Esquire, Junior, the Third, Etc";
+  const NON_LATIN = "美咲".repeat(40);
+
+  it.each([
+    ["an ordinary record", () => record()],
+    ["a 128-character name", () => record({ makerName: makerDisplayName(`${LONG_NAME} and more words beyond the cap`) })],
+    ["a name wholly in another script (every character escaped)", () => record({ makerName: NON_LATIN })],
+    ["a v1 record with its account number", () => ({ ...record(), recordVersion: "1", maker: { accountId: 823, displayName: "Mia Strom" } })],
+  ])("⚠ %s: a plain extractor gets back the signed bytes, a verifying signature and the same record", async (_name, make) => {
+    const json = canonicalCreationRecordJson(make());
+    const made = await input(json, { timestampTokenBase64: Buffer.from("t".repeat(3000)).toString("base64") });
+    const kliegId = printable(JSON.parse(json).kliegId, "-");
+    const lines = plainExtract(renderCreationCertificate(made));
+
+    /* The exact signed bytes, rebuilt from the page, ARE the stored bytes. */
+    const bytes = Buffer.from(joinData(blockLines(lines, "RECORD, EXACT SIGNED BYTES (BASE64)", kliegId)), "base64").toString("utf8");
+    expect(bytes).toBe(json);
+    /* The hash on the page is the hash of those bytes. */
+    expect(joinData(blockLines(lines, "SHA-256 OF THE RECORD (WHAT THE TIMESTAMP COVERS)", kliegId)))
+      .toBe(createHash("sha256").update(json, "utf8").digest("hex"));
+    /* The signature and the key, as printed, verify those bytes. */
+    const signature = joinData(blockLines(lines, "SIGNATURE", kliegId));
+    expect(signature).toBe(made.signature);
+    const jwk = joinJson(blockLines(lines, "PUBLIC KEY", kliegId));
+    expect(jwk).toEqual({ ...made.publicJwk, kid: made.signingKeyId });
+    expect(await verifyCreationRecord({ kty: jwk.kty, crv: jwk.crv, x: jwk.x }, bytes, signature)).toBe(true);
+    /* The readable record parses back to the very record that was signed. */
+    const readable = blockLines(lines, "RECORD", kliegId);
+    expect(readable.length).toBeGreaterThan(10);
+    expect(joinJson(readable)).toEqual(JSON.parse(json));
+    /* ...and no line of it stops inside an escape (a reader would see "\u7f" and "8e"). */
+    for (const line of readable) expect(line).not.toMatch(/\\(u[0-9a-fA-F]{0,3})?$/);
+    /* The timestamp token comes back whole too. */
+    const tokenAt = lines.findIndex((line) => line.startsWith("TIMESTAMP TOKEN (BASE64)"));
+    expect(tokenAt).toBeGreaterThan(0);
+    expect(joinData(lines.slice(tokenAt + 1).filter((line) => !isFurniture(line, kliegId)))).toBe(made.timestampTokenBase64);
+  });
+
+  it("⚠ the readable record is one key per line, and no line is cut inside a key, a date or the fingerprint", async () => {
+    const json = canonicalCreationRecordJson(record({ makerName: makerDisplayName(LONG_NAME) }));
+    const readable = blockLines(plainExtract(renderCreationCertificate(await input(json))), "RECORD", "KI-7Q2M-XR4D");
+    const flat = JSON.parse(json);
+    for (const key of ["recordVersion", "kliegId", "createdAt", "mintedAt", "recordedAt", "sha256", "displayName", "steps"]) {
+      expect(readable.some((line) => line.includes(`"${key}":`))).toBe(true);
+    }
+    expect(readable.some((line) => line.includes(`"${flat.master.sha256}"`))).toBe(true);
+    expect(readable.some((line) => line.includes(`"${flat.createdAt}"`))).toBe(true);
+    /* The long name runs on over more than one line, and every word of it is whole on one line. */
+    const nameAt = readable.findIndex((line) => line.includes('"displayName":'));
+    expect(readable[nameAt + 1]).toMatch(/^\s+"Alexandria/);
+    expect(readable[nameAt + 2]).not.toMatch(/^\s+"/);
+    const words = new Set(readable.flatMap((line) => line.trim().replace(/[",]/g, " ").split(/\s+/)));
+    for (const word of LONG_NAME.replace(/,/g, "").split(" ")) expect(words).toContain(word);
+    /* No continuation hands the next line a leading space that joining would lose. */
+    expect(joinJson(readable).maker.displayName).toBe(makerDisplayName(LONG_NAME));
+  });
+
+  it("⚠ a space falling exactly at the break stays on the line it ends, so joining keeps it", () => {
+    /* 6 indent + room 116: the opening quote and 115 letters fill the line, and the space is next. */
+    const name = `${"x".repeat(115)} ${"y".repeat(10)}`;
+    const json = canonicalCreationRecordJson(record({ makerName: name }));
+    const lines = readableJsonLines(json, 126);
+    const at = lines.findIndex((line) => line.includes('"displayName":'));
+    expect(lines[at + 1]).toMatch(/x $/);
+    expect(lines[at + 2]).toMatch(/^\s+y/);
+    expect(joinJson(lines).maker.displayName).toBe(name);
+  });
+
+  it("the data blocks are 64 characters wide, the PEM convention", async () => {
+    const json = canonicalCreationRecordJson(record());
+    const lines = blockLines(plainExtract(renderCreationCertificate(await input(json))), "RECORD, EXACT SIGNED BYTES (BASE64)", "KI-7Q2M-XR4D");
+    expect(lines.length).toBeGreaterThan(2);
+    for (const line of lines.slice(0, -1)) expect(line).toHaveLength(64);
+  });
+
+  it("says, beside the blocks, that the readable record is for reading and the line breaks are not data", () => {
+    const lines = plainExtract(renderCreationCertificate(SYNC_INPUT));
+    expect(lines).toContain("Formatted for reading, one key per line. The exact signed bytes are the block below.");
+    expect(lines).toContain("Line breaks here, in the signature and in the timestamp token are not part of the data.");
+  });
+
+  it("⚠ a JWS's two dots are never split across a line — and a plain 64-wide cut of the same string WOULD split them", () => {
+    const jws = `${"h".repeat(63)}..${"s".repeat(86)}`;
+    const lines = wrapDataLines(jws);
+    expect(lines.join("")).toBe(jws);
+    expect(lines.some((line) => line.includes(".."))).toBe(true);
+    /* CONTROL: without the rule, one dot lands on each side of the break. */
+    const plain = jws.match(/.{1,64}/g)!;
+    expect(plain[0].endsWith(".") && plain[1].startsWith(".")).toBe(true);
+  });
+
+  it("⚠ CONTROL — the old one-run wrap cut the name mid-word; the new layout parses back whole", () => {
+    const json = canonicalCreationRecordJson(record({ makerName: makerDisplayName(LONG_NAME) }));
+    /* What the appendix drew before #2366: the compact record cut every 126 characters. */
+    const old = json.match(/.{1,126}/g)!;
+    expect(old.some((line, i) => i > 0 && /^[A-Za-z0-9]/.test(line) && /[A-Za-z0-9]$/.test(old[i - 1]))).toBe(true);
+    const fresh = readableJsonLines(json, 126);
+    expect(fresh.every((line) => line.length <= 126)).toBe(true);
+    expect(joinJson(fresh)).toEqual(JSON.parse(json));
+  });
+
+  it("page one is untouched: the longest name still fits above the footer", async () => {
+    const runs = pageOneBaselines(renderCreationCertificate(await input(
+      canonicalCreationRecordJson(record({ makerName: makerDisplayName(LONG_NAME) })),
+    )));
+    const footer = runs.filter((r) => r.text.startsWith("Certificate of Creation · "));
+    expect(footer).toHaveLength(1);
+    const body = runs.filter((r) => r !== footer[0] && !/^\d+ of \d+$/.test(r.text));
+    expect(Math.max(...body.map((r) => r.mm))).toBeLessThanOrEqual(footer[0].mm - 6);
   });
 });
