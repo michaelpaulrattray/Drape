@@ -26,6 +26,7 @@ vi.mock("./db", async (importOriginal) => {
     getModelById: vi.fn(),
     getModelAssets: vi.fn().mockResolvedValue([]),
     getUserModels: vi.fn().mockResolvedValue([]),
+    getUserPickerModels: vi.fn().mockResolvedValue([]),
     getHeadshotsForModels: vi.fn().mockResolvedValue(new Map()),
     getUserById: vi.fn(),
     getBoardById: vi.fn(),
@@ -96,6 +97,7 @@ import {
   getModelById,
   getModelAssets,
   getUserModels,
+  getUserPickerModels,
   getHeadshotsForModels,
   getUserById,
   getBoardById,
@@ -220,6 +222,7 @@ beforeEach(() => {
   vi.mocked(getModelById).mockReset();
   vi.mocked(getModelAssets).mockReset().mockResolvedValue([]);
   vi.mocked(getUserModels).mockReset().mockResolvedValue([]);
+  vi.mocked(getUserPickerModels).mockReset().mockResolvedValue([]);
   vi.mocked(getHeadshotsForModels).mockReset().mockResolvedValue(new Map());
   vi.mocked(getBoardById).mockReset();
   vi.mocked(getBoardItemById).mockReset();
@@ -284,9 +287,16 @@ describe("mintPackage result.minted is status truth, never the requested action"
 
 // ─── Picker — draft flag is status truth; unavailable rows never surface ───
 
+/** The picker reads each lifecycle group with its own query (#2406). */
+function pickerReturns(signed: unknown[], drafts: unknown[]) {
+  vi.mocked(getUserPickerModels).mockImplementation(
+    (async (_userId: number, group: "signed" | "draft") => (group === "signed" ? signed : drafts)) as never,
+  );
+}
+
 describe("listCastableModels derives draft from status, never from 'not minted'", () => {
   it("snapshot mode uses the selected frontClose and never calls the R6 headshot query", async () => {
-    vi.mocked(getUserModels).mockResolvedValue([model()] as never);
+    pickerReturns([], [model()]);
     vi.mocked(resolveEffectiveCastStatesForRead).mockResolvedValue(
       new Map([[7, snapshotState() as never]]),
     );
@@ -303,12 +313,16 @@ describe("listCastableModels derives draft from status, never from 'not minted'"
   });
 
   it("draft flags per status; a stray agencyId draft is still a draft", async () => {
-    vi.mocked(getUserModels).mockResolvedValue([
-      model({ id: 1, status: "draft" }),
-      model({ id: 2, status: "draft", agencyId: "MOD-26-STRAY0" }),
-      model({ id: 3, status: "active", agencyId: "MOD-26-ABCDEF" }),
-      model({ id: 4, status: "locked", agencyId: "MOD-26-LEGACY" }),
-    ] as never);
+    pickerReturns(
+      [
+        model({ id: 3, status: "active", agencyId: "MOD-26-ABCDEF" }),
+        model({ id: 4, status: "locked", agencyId: "MOD-26-LEGACY" }),
+      ],
+      [
+        model({ id: 1, status: "draft" }),
+        model({ id: 2, status: "draft", agencyId: "MOD-26-STRAY0" }),
+      ],
+    );
     vi.mocked(getHeadshotsForModels).mockResolvedValue(
       new Map([[1, "u1"], [2, "u2"], [3, "u3"], [4, "u4"]]),
     );
@@ -323,11 +337,10 @@ describe("listCastableModels derives draft from status, never from 'not minted'"
   it("archived and unrecognized statuses never surface — not as drafts, not as minted", async () => {
     // Even if the getUserModels archived filter (Batch 0) ever regressed,
     // the read model refuses to present unavailable rows.
-    vi.mocked(getUserModels).mockResolvedValue([
-      model({ id: 1, status: "archived", agencyId: "MOD-26-GONE00" }),
-      model({ id: 2, status: "somefuturestatus" }),
-      model({ id: 3, status: "draft" }),
-    ] as never);
+    pickerReturns(
+      [model({ id: 1, status: "archived", agencyId: "MOD-26-GONE00" })],
+      [model({ id: 2, status: "somefuturestatus" }), model({ id: 3, status: "draft" })],
+    );
     vi.mocked(getHeadshotsForModels).mockResolvedValue(new Map([[1, "u1"], [2, "u2"], [3, "u3"]]));
     const out = await listCastableModels(1);
     expect(out.map((m) => m.id)).toEqual([3]);
