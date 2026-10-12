@@ -1,6 +1,6 @@
-# Joey's four-skill cinema pipeline — teardown
+# Joey's five-skill cinema pipeline — teardown
 
-**Filed 2026-10-12 on the founder's word.** Sources, all studied in full: the four skill files the founder supplied (`shotcaller-v1` 53KB — the Seedance video-prompt director; `castkit-v1` 40KB — character builder; `scenecraft-v1` 30KB — scene-plate builder; `motiondojo-v1` 36KB — Genjutsu motion transfer; all by "Joey" / @joeysnoisygroup, distributed free via his Higgsfield blog, which itself serves no readable body); his 18-minute breakdown video (`youtube.com/watch?v=5dWgZDka3Ww`, "Prompt Like a Director, Not a Prompt Engineer") — full transcript plus ~100 frames eye-read, including his actual Claude chats and generated prompts on screen. Skill text summarized in our words with short quotes; the originals are third-party documents and are not committed.
+**Filed 2026-10-12 on the founder's word.** Sources, all studied in full: the five skill packages the founder supplied (`shotcaller-v1` 53KB — the Seedance video-prompt director; `castkit-v1` 40KB — character builder; `scenecraft-v1` 30KB — scene-plate builder; `motiondojo-v1` 36KB — Genjutsu motion transfer; `story-bible-builder` 32KB across four files — the canon layer, §below; all by "Joey" / @joeysnoisygroup, distributed free via his Higgsfield blog, which itself serves no readable body); his 18-minute breakdown video (`youtube.com/watch?v=5dWgZDka3Ww`, "Prompt Like a Director, Not a Prompt Engineer") — full transcript plus ~100 frames eye-read, including his actual Claude chats and generated prompts on screen. Skill text summarized in our words with short quotes; the originals are third-party documents and are not committed.
 
 ## The headline: a second independent studio converged on our architecture
 
@@ -48,6 +48,24 @@ Genjutsu motion transfer with three forms (copy body+camera / copy camera only /
 - **Costs**: the laundromat project ran ~800 credits ≈ **$32** on Seedance 2.5 (his own overlay); Higgsfield is running an **unlimited-but-slow free queue tier** for 2.5 — a pricing shape (patience as the price) worth remembering when Pricing Phase 1 returns.
 - His Claude-native extend move: drag the clip into Claude, "analyze each frame, understand where everything is, build me the prompt to continue" — the assistant *watches a take and writes its continuation*. Our assistant should be able to do this against kept takes when cinema is built.
 
+## The fifth skill — story-bible-builder (the canon layer)
+
+Supplied the same day; it completes the architecture. The other four skills render; this one holds **what is true about the world** — and shotcaller names the split exactly: "a story bible supplies who and what world (voice, movement, palette, era); this skill supplies how it's shot." That is casting-feeds-cinema, said by the market: the bible pipes character voice into the audio block, movement/stillness into the subject lock, era aesthetics into the grade, production rules into every render — precisely how a signed cast's stored personality, voice and drift locks ride into our takes.
+
+What it is: an **interview** that turns a creator's loose story into one dense canon document (premise · thesis · timeline · aesthetic-per-era · factions · locations · world rules · characters · ensemble dynamics · structural engines · production rules), installed as a persistent skill so "future Claude sessions know their world." Creators hand-maintain canon files because no product holds canon. Klieg's Production/Campaign *is* this bible, derived from the script and ratified — nothing to install, nothing to maintain.
+
+What's genuinely new for our record:
+
+1. **The Speech / Movement / Stillness triple.** Every character carries three quoted prompt-ready descriptors, and **Stillness is its own axis** — "often more revealing than movement: what do they look like at rest? Hands, weight, expression, breath." Our N2b personality (posture+gaze line, timing line) and voice line converge with this independently; the movement-vs-stillness split is a sharper taxonomy worth holding beside ours. His quality bar is also ours: "if a descriptor can't be pasted verbatim into a prompt block, it's written wrong."
+2. **The interview method is our capture doors, validated.** One character at a time, never batched; **function before looks** ("not their job — their function: The Heart, The Watcher"); push on the vague ("'dark and moody' isn't an aesthetic lock — what colors specifically?"); read back and iterate until locked; **never invent — `[TBD]` over guessing** ("invented canon becomes locked canon becomes prompt drift"); keep the user's own phrasing verbatim — our words-never-rewritten law as interview discipline.
+3. **Locks exclude as much as they include.** Every lock ships with its never-clause ("warm fair skin — never pale porcelain, never tan"), captured by asking the user *what the wrong drift would be*. Our drift-lock capture should ask that question in those words.
+4. **Aesthetic-per-era blocks** — one palette/light/texture signature per timeline era, each line "copy-paste-ready as the environmental anchor for a scene prompt in that era." The time-jump look (Kaye's two sheets, zephyr's state axis) as first-class canon: a film's look is per-era, not singular.
+5. **Ensemble dynamics as canon** — "who fills silence, who leads, who watches; which pairings are calm, which are charged" ("Maren and Wren are the quietest room in the house"). Short, and his own note says it: disproportionately valuable for ensemble scenes. Our cinema design holds nothing about relationships between casts; this is the cheapest-to-add missing layer, and it feeds multi-character staging directly.
+6. **Structural engines** — the story's recurring chapter *shapes* (the council meeting, the tide night, the confession), stackable, "a menu of story shapes to pull from." A scene-proposal vocabulary for our script room's dramaturgy pass.
+7. **Present-tense psychology** — where the character is *right now*, with the internal contradiction named ("the thing they're doing versus the thing they're actually feeling — that gap is where the drama lives"). Story-state on the character, which our takes could read per scene.
+8. **The small-detail doctrine** — one formative, small, specific detail beats grand backstory ("she fixed the sink herself at 3am because the plumber would have asked questions").
+9. **The completeness test for canon**, worth adopting as the test for our Production data model: *"could a stranger who has never heard of this story write a scene in it, using only this bible, and get it right?"*
+
 ## Scorecard against the existing record
 
 | Finding | Status vs our record |
@@ -63,3 +81,7 @@ Genjutsu motion transfer with three forms (copy body+camera / copy camera only /
 | Coverage sets with physically rewritten light | **New** — the same-place-many-angles recipe |
 | Fiction framing (costume ≠ animal) | **New** class of compiler declaration |
 | Degrees-first lenses, repair tables, no-negative-block on 2.5 | **New** engine-convention detail for the compiler |
+| Bible feeds director skill (voice→audio, movement→locks, era→grade) | **Confirms** casting-feeds-cinema, from the market's side |
+| Speech/Movement/**Stillness** triple, quoted and prompt-ready | **Converges** with N2b; stillness as its own axis is new |
+| Never-clause capture ("what would the wrong drift be?") | **New** question for our drift-lock capture |
+| Ensemble dynamics + structural engines + per-era aesthetics as canon | **New** layers for the Production data model |
