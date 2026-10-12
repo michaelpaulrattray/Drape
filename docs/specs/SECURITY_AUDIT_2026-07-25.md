@@ -323,7 +323,42 @@ the one road that is a GET. Each was invisible to the fix before it.
 
 **Fix.** `sameSite: "lax"`. The app serves client and API from one origin and sets `frame-ancestors 'none'` in production, so `"none"` is a leftover from the dead Manus preview-iframe era. Lax still permits the Google OAuth top-level GET callback to set the cookie, so nothing breaks. Verify no intentional cross-site embed survives (per CLAUDE.md the Manus iframe is gone — this is a verification, not a decision). Add an `Origin` check on the plain Express auth routes as belt-and-braces.
 
-### M2 — Upload size cap and storage quota are set by the client · MEDIUM · Post-R7
+### M2 — Upload size cap and storage quota are set by the client · ✅ CLOSED 2026-10-12
+
+⚠ **AND IT WAS CLOSED IN TWO HALVES, THREE MONTHS APART, WITH THIS ENTRY
+DESCRIBING A LIVE DEFECT FOR THE SEVENTEEN DAYS IN BETWEEN.** The fix below
+prescribes four acts; **#2378 (PR #2391, 2026-09-25) did three of them** — the
+cap and the meter read `bytes.length` of the DECODED buffer, the magic bytes
+must say the declared type (`supportedImageMime`, the reader every evidence
+path already uses), and the delete path subtracts the old object's measured
+length instead of a flat estimate. **It could not do the fourth**, and said so
+in its own docblock: this object is `.strict()`, so dropping `fileSize` while a
+bundle in somebody's open tab still sent it would turn their upload into a
+`BAD_REQUEST`. CLAUDE.md invariant 4's removal contract is exactly that — *a
+field is removed only after clients have stopped sending it for one full
+deploy, never in the commit that stops sending it.*
+
+**So the field was ACCEPTED AND IGNORED on purpose, and is now gone** — #2400,
+in the two commits the contract asks for: the client stopped sending it (PR
+#2424, squash `1032c939`), and the schema dropped it once that was read at the
+artifacts rather than argued from the dates (#2424 an ancestor of the SERVING
+production build `ce094eca6` at `/api/health` on a 480-second uptime, **19
+first-parent deploys since**, and no sender left anywhere in `client/` or
+`shared/`).
+
+**What a reader of this entry should take from it is the gap, not the fix:**
+the entry was not re-pointed when its substance was fixed, so the audit — the
+authoritative document — went on describing a bypass the product no longer had,
+exactly as M1's own ⚠ records happening in the opposite direction. **Grep for
+the SENTENCE, never for the card number.**
+
+Guards: `server/routes/profileUpload.test.ts` drives both uploads through the
+real router (a declared size is refused at the door; the meter still reads the
+bytes — that control is #2378's finding and did not die with the field), and
+`client/src/features/settings/card2400-guard.test.ts` holds both halves at the
+source and at the real input parsers.
+
+**The original entry, kept verbatim as the record:**
 
 `profile.uploadAvatar` and `uploadBanner` (`server/routes/profile.ts:61, 122`) enforce the 5MB/10MB cap **and** all storage-quota accounting from `input.fileSize` — a client-supplied number never compared against the decoded `base64Data` buffer. Send `fileSize: 1` with a 14MB payload (under the 15MB body limit) and both the cap and the quota are bypassed. The delete path compounds the drift by subtracting a hardcoded ~100KB estimate (`:106`) rather than the real size.
 
