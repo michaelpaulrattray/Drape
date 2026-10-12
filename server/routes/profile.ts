@@ -6,7 +6,119 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createModuleLogger } from "../logging/logger";
 import { PROFILE_BIO_MAX_LENGTH, PROFILE_DISPLAY_NAME_MAX_LENGTH } from "../../shared/inputLimits";
+import { supportedImageMime } from "../security/trustedImageFetch";
 const log = createModuleLogger("routes/profile");
+
+/**
+ * THE PROFILE PICTURE AND BANNER ARE MEASURED FROM THE BYTES THE SERVER
+ * RECEIVES, NEVER FROM WHAT THE BROWSER SAYS ABOUT THEM (#2378, the audit's M2).
+ *
+ * Both uploads used to check their 5 MB / 10 MB cap AND the storage meter
+ * against a `fileSize` number the request carried, and trusted the declared
+ * type: `fileSize: 1` stored ~11 MB and moved the meter one byte, a negative
+ * figure LOWERED the meter, and any bytes at all could be parked in the public
+ * bucket under an image content type. Now:
+ *
+ * - the base64 STRING is capped at the length that can decode to the cap, so
+ *   an oversized body is refused before it is decoded;
+ * - the payload must be canonical base64 (a round trip reproduces it), so the
+ *   decoder cannot silently drop characters and store something else;
+ * - the cap and the meter both read `bytes.length` of the DECODED buffer;
+ * - the magic bytes must say the type the request declared — the same reader
+ *   (`supportedImageMime`) every evidence path already uses, not a second one.
+ *
+ * ⚠ `fileSize` is still ACCEPTED and IGNORED, deliberately — the removal
+ * contract (CLAUDE.md invariant 4): the shipped client still sends it, so it
+ * leaves the schema only after the client has stopped sending it for one full
+ * deploy, never in the commit that stops trusting it.
+ */
+const PROFILE_PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+type ProfilePictureType = (typeof PROFILE_PICTURE_TYPES)[number];
+
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+export const BANNER_MAX_BYTES = 10 * 1024 * 1024;
+
+const AVATAR_TOO_LARGE = "That picture is over 5 MB.";
+const BANNER_TOO_LARGE = "That banner is over 10 MB.";
+const NOT_A_PICTURE = "That file is not a JPG, PNG or WebP picture.";
+
+/** The longest base64 string that can decode to `maxBytes`. */
+function base64LengthFor(maxBytes: number): number {
+  return Math.ceil(maxBytes / 3) * 4;
+}
+
+function profilePictureInput(maxBytes: number, tooLarge: string) {
+  return z.object({
+    base64Data: z.string().max(base64LengthFor(maxBytes), tooLarge),
+    mimeType: z.enum(PROFILE_PICTURE_TYPES),
+    /** Accepted and ignored — see the block above. Never read. */
+    fileSize: z.number().optional(),
+  }).strict();
+}
+
+function refuse(message: string): never {
+  throw new TRPCError({ code: "BAD_REQUEST", message });
+}
+
+/**
+ * Decode, size and identify an uploaded profile picture. Returns the bytes
+ * that will be stored, so the size the meter is charged IS the size stored.
+ */
+export function decodeProfilePicture(input: {
+  base64Data: string;
+  declaredMime: ProfilePictureType;
+  maxBytes: number;
+  tooLarge: string;
+}): Buffer {
+  const payload = input.base64Data;
+  if (payload.length > base64LengthFor(input.maxBytes)) refuse(input.tooLarge);
+  if (
+    payload.length === 0
+    || payload.length % 4 !== 0
+    || !/^[A-Za-z0-9+/]+={0,2}$/.test(payload)
+  ) {
+    refuse(NOT_A_PICTURE);
+  }
+  const bytes = Buffer.from(payload, "base64");
+  if (bytes.length === 0 || bytes.toString("base64") !== payload) refuse(NOT_A_PICTURE);
+  if (bytes.length > input.maxBytes) refuse(input.tooLarge);
+  if (supportedImageMime(bytes) !== input.declaredMime) refuse(NOT_A_PICTURE);
+  return bytes;
+}
+
+/**
+ * Delete the picture a new upload replaced, and give back its REAL size.
+ *
+ * The replace paths used to subtract a flat 100 KB (avatar) / 500 KB (banner)
+ * guess, so the meter drifted on every honest replace. This is the same
+ * read-then-delete `removeAvatar` already does. A failed read costs the
+ * accounting (nothing is subtracted, the meter over-counts), never the upload.
+ */
+async function releaseReplacedPicture(
+  userId: number,
+  oldKey: string,
+  what: "avatar" | "banner",
+): Promise<void> {
+  let freed = 0;
+  try {
+    freed = (await storageReadBytes(oldKey)).bytes.length;
+  } catch (e) {
+    log.warn({ err: e }, `Could not size the old ${what} before deleting it`);
+  }
+  try {
+    const deleted = await storageDelete(oldKey);
+    if (deleted.success) {
+      if (freed > 0) await updateUserStorageUsed(userId, -freed);
+    } else {
+      log.warn(
+        { errorCode: deleted.errorCode, retryable: deleted.retryable },
+        `Failed to delete old ${what}`,
+      );
+    }
+  } catch (e) {
+    log.warn({ err: e }, `Failed to delete old ${what}:`);
+  }
+}
 
 export const profileRouter = router({
   // Get current user's full profile
@@ -75,15 +187,18 @@ export const profileRouter = router({
 
   // Upload avatar image
   uploadAvatar: protectedProcedure
-    .input(z.object({
-      base64Data: z.string(),
-      mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-      fileSize: z.number().max(5 * 1024 * 1024, "File size must be under 5MB"),
-    }))
+    .input(profilePictureInput(AVATAR_MAX_BYTES, AVATAR_TOO_LARGE))
     .mutation(async ({ ctx, input }) => {
-      // Check storage limit
+      const buffer = decodeProfilePicture({
+        base64Data: input.base64Data,
+        declaredMime: input.mimeType,
+        maxBytes: AVATAR_MAX_BYTES,
+        tooLarge: AVATAR_TOO_LARGE,
+      });
+
+      // Check storage limit against the bytes that will actually be stored
       const storageInfo = await getUserStorageInfo(ctx.user.id);
-      if (storageInfo && storageInfo.used + input.fileSize > storageInfo.limit) {
+      if (storageInfo && storageInfo.used + buffer.length > storageInfo.limit) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Storage limit exceeded. Please delete some files or upgrade your plan.",
@@ -97,39 +212,21 @@ export const profileRouter = router({
       // Generate unique key
       const ext = input.mimeType.split("/")[1];
       const key = `avatars/${ctx.user.id}/${Date.now()}-${randomUUID()}.${ext}`;
-      
-      // Convert base64 to buffer
-      const buffer = Buffer.from(input.base64Data, "base64");
-      
+
       // Upload to S3
       const { url } = await storagePut(key, buffer, input.mimeType);
-      
+
       // Update user profile with new avatar
       await updateUserProfile(ctx.user.id, {
         avatarUrl: url,
         avatarKey: key,
       });
 
-      // Update storage used
-      await updateUserStorageUsed(ctx.user.id, input.fileSize);
+      // Update storage used, from the decoded bytes
+      await updateUserStorageUsed(ctx.user.id, buffer.length);
 
-      // Delete old avatar from S3 if exists
-      if (oldAvatarKey) {
-        try {
-          const deleted = await storageDelete(oldAvatarKey);
-          if (deleted.success) {
-            // Subtract old file size (estimate ~100KB for avatars)
-            await updateUserStorageUsed(ctx.user.id, -100 * 1024);
-          } else {
-            log.warn(
-              { errorCode: deleted.errorCode, retryable: deleted.retryable },
-              "Failed to delete old avatar",
-            );
-          }
-        } catch (e) {
-          log.warn({ err: e }, "Failed to delete old avatar:");
-        }
-      }
+      // Delete the replaced avatar and give back its real size
+      if (oldAvatarKey) await releaseReplacedPicture(ctx.user.id, oldAvatarKey, "avatar");
 
       return { success: true, avatarUrl: url };
     }),
@@ -152,8 +249,9 @@ export const profileRouter = router({
    *   `updateUserProfile` scopes on `users.id = userId` and `userId` is
    *   `ctx.user.id`, never input (invariant 3).
    *
-   * ⚠ The storage figure is the object's REAL length, not the flat 100 KB
-   * estimate the replace path in `uploadAvatar` subtracts. An avatar is one
+   * ⚠ The storage figure is the object's REAL length — and since #2378 the
+   * replace paths in `uploadAvatar` / `uploadBanner` give back the real length
+   * too (`releaseReplacedPicture`), where they used to subtract a flat guess. An avatar is one
    * small client-compressed object, so reading it to learn its size is cheap
    * and true; a failed read costs the accounting, never the removal.
    */
@@ -208,15 +306,18 @@ export const profileRouter = router({
 
   // Upload banner image
   uploadBanner: protectedProcedure
-    .input(z.object({
-      base64Data: z.string(),
-      mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-      fileSize: z.number().max(10 * 1024 * 1024, "File size must be under 10MB"),
-    }))
+    .input(profilePictureInput(BANNER_MAX_BYTES, BANNER_TOO_LARGE))
     .mutation(async ({ ctx, input }) => {
-      // Check storage limit
+      const buffer = decodeProfilePicture({
+        base64Data: input.base64Data,
+        declaredMime: input.mimeType,
+        maxBytes: BANNER_MAX_BYTES,
+        tooLarge: BANNER_TOO_LARGE,
+      });
+
+      // Check storage limit against the bytes that will actually be stored
       const storageInfo = await getUserStorageInfo(ctx.user.id);
-      if (storageInfo && storageInfo.used + input.fileSize > storageInfo.limit) {
+      if (storageInfo && storageInfo.used + buffer.length > storageInfo.limit) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Storage limit exceeded. Please delete some files or upgrade your plan.",
@@ -230,39 +331,21 @@ export const profileRouter = router({
       // Generate unique key
       const ext = input.mimeType.split("/")[1];
       const key = `banners/${ctx.user.id}/${Date.now()}-${randomUUID()}.${ext}`;
-      
-      // Convert base64 to buffer
-      const buffer = Buffer.from(input.base64Data, "base64");
-      
+
       // Upload to S3
       const { url } = await storagePut(key, buffer, input.mimeType);
-      
+
       // Update user profile with new banner
       await updateUserProfile(ctx.user.id, {
         bannerUrl: url,
         bannerKey: key,
       });
 
-      // Update storage used
-      await updateUserStorageUsed(ctx.user.id, input.fileSize);
+      // Update storage used, from the decoded bytes
+      await updateUserStorageUsed(ctx.user.id, buffer.length);
 
-      // Delete old banner from S3 if exists
-      if (oldBannerKey) {
-        try {
-          const deleted = await storageDelete(oldBannerKey);
-          if (deleted.success) {
-            // Subtract old file size (estimate ~500KB for banners)
-            await updateUserStorageUsed(ctx.user.id, -500 * 1024);
-          } else {
-            log.warn(
-              { errorCode: deleted.errorCode, retryable: deleted.retryable },
-              "Failed to delete old banner",
-            );
-          }
-        } catch (e) {
-          log.warn({ err: e }, "Failed to delete old banner:");
-        }
-      }
+      // Delete the replaced banner and give back its real size
+      if (oldBannerKey) await releaseReplacedPicture(ctx.user.id, oldBannerKey, "banner");
 
       return { success: true, bannerUrl: url };
     }),
