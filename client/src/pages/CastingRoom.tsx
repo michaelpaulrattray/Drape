@@ -31,6 +31,7 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import { CastCampaignsCard } from "@/features/castingV2/components/CastCampaignsCard";
+import { CreationCertificateRow } from "@/features/castingV2/components/CreationCertificateRow";
 import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
@@ -1293,6 +1294,8 @@ export default function CastingRoom() {
                     })}
                   </div>
                 </section>
+                {/* CERTIFICATE OF CREATION (N2d-2, #2312) — offers itself only when the server has one. */}
+                <CreationCertificateRow castId={data.castId} settled={data.status !== "building"} />
               </div>
 
               <div className="dpc-room__right">
