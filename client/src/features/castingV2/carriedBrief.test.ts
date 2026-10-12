@@ -38,7 +38,7 @@ describe("the words travel in history state", () => {
     expect(readCarriedBrief("a string somebody else left here")).toBe("");
   });
 
-  it("a GONE sheet still carries nothing (#890 is not reversed), and the two carriers cannot read each other", () => {
+  it("a GONE sheet still carries nothing (the gone-sheet ruling is not reversed), and the two carriers cannot read each other", () => {
     expect(readCarriedBrief(sheetGoneState("That sheet expired and was cleared. Start a new one."))).toBe("");
     expect(readSheetGone(carriedBriefState(BRIEF))).toBe("");
   });
