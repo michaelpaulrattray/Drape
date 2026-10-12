@@ -140,7 +140,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search casts..."
+              placeholder="Search characters…"
               autoFocus
               className="flex-1 min-w-0 px-3 py-2 bg-canvas-surface-inset rounded-canvas-md text-canvas-sm text-canvas-ink placeholder:text-canvas-ink-faint focus:outline-none"
             />

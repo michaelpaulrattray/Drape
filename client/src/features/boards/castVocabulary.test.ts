@@ -74,7 +74,7 @@ const BOARD_PAGE = `${BOARDS}/BoardPage.tsx`;
  */
 const SWEPT: ReadonlyArray<{ file: string; now: string; gone: string }> = [
   { file: PICKER, now: ">Your casts<", gone: ">Your models<" },
-  { file: PICKER, now: 'placeholder="Search casts..."', gone: 'placeholder="Search models..."' },
+  { file: PICKER, now: 'placeholder="Search characters…"', gone: 'placeholder="Search models..."' },
   { file: PICKER, now: '"No casts match"', gone: '"No models match"' },
   { file: PICKER, now: '"No casts yet"', gone: '"No models yet"' },
   { file: PICKER, now: "Cast someone", gone: "Cast your first model" },

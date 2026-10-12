@@ -116,6 +116,6 @@ export function campaignNameReady(typed: string, currentName?: string): boolean 
 /** What the delete question says. It asks once, and it says the casts stay. */
 export function campaignDeleteBody(name: string, castCount: number): string {
   if (castCount === 0) return `“${name}” is empty, so only the campaign goes.`;
-  const who = castCount === 1 ? "The 1 cast member in it stays" : `The ${castCount} cast members in it stay`;
+  const who = castCount === 1 ? "The 1 character in it stays" : `The ${castCount} characters in it stay`;
   return `Deleting “${name}” keeps its cast. ${who} in your library, exactly as before. Only the campaign goes.`;
 }

@@ -50,7 +50,7 @@ describe("⚠ the search copy is honest about what is searched (his ruling on th
   it("the box says 'by name', and never 'name or look'", async () => {
     const page = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
     const code = withoutComments(page);
-    expect(code).toContain('placeholder="Search cast by name"');
+    expect(code).toContain('placeholder="Search by name"');
     expect(code).not.toMatch(/name or look/i);
   });
 
