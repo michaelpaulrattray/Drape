@@ -23,6 +23,7 @@ import {
   CreationRecordBoundError,
 } from "./creationRecord";
 import {
+  CERTIFICATE_DISCLAIMER,
   CERTIFICATE_HEADLINE,
   certificateDatesLine,
   certificateStepSentences,
@@ -196,5 +197,86 @@ describe("the steps as sentences", () => {
   it("folds a name to what the page can print, and never prints broken glyphs", () => {
     expect(printable("Zoë Šarić", "x")).toBe("Zoë Saric");
     expect(printable("美咲", "Untitled character")).toBe("Untitled character");
+  });
+});
+
+/* ------------------------------------------------------------------ #2331 */
+
+/** Page one's content stream — the first stream that draws the title. */
+function pageOneStream(pdf: Buffer): string {
+  const streams = pdf.toString("latin1").split(/\bstream\r?\n/).slice(1).map((s) => s.split(/\r?\nendstream/)[0]);
+  const page = streams.find((s) => s.includes("(Certificate of Creation) Tj"));
+  if (!page) throw new Error("page one's content stream was not found");
+  return page;
+}
+
+const PT_PER_MM = 72 / 25.4;
+
+/**
+ * Every text run on page one with the depth of its baseline from the TOP of
+ * the page, in mm — read from the drawing operators themselves (`Td` places
+ * a block, each `T*` steps down one `TL`), so it is where the PDF puts ink.
+ */
+function pageOneBaselines(pdf: Buffer): { text: string; mm: number }[] {
+  const out: { text: string; mm: number }[] = [];
+  for (const block of pageOneStream(pdf).match(/^BT$[\s\S]*?^ET$/gm) ?? []) {
+    const leading = Number(block.match(/([\d.]+) TL/)?.[1] ?? 0);
+    const td = block.match(/([\d.-]+) ([\d.-]+) Td/);
+    if (!td) continue;
+    let yPt = Number(td[2]);
+    for (const line of block.split("\n")) {
+      if (/^T\* /.test(line)) yPt -= leading;
+      const run = line.match(/\(((?:\\.|[^\\)])*)\) Tj/);
+      if (run) out.push({ text: run[1], mm: 297 - yPt / PT_PER_MM });
+    }
+  }
+  return out;
+}
+
+describe("#2331 — the fuller disclaimer, and page one still fits", () => {
+  it("is counsel's paragraph, verbatim, with the product's name", () => {
+    expect(CERTIFICATE_DISCLAIMER).toBe(
+      "This certificate records that a character with the stated ID and image fingerprint was created and signed in Klieg on the stated dates. "
+        + "It is evidence of creation and of the integrity of the recorded data. "
+        + "It is not a registration of ownership, does not create or transfer copyright or other intellectual property rights, "
+        + "and does not constitute proof that copyright subsists in the character or any associated images.",
+    );
+  });
+
+  it("is drawn on page one, directly beneath the headline, and the closing line is kept", async () => {
+    const runs = pageOneBaselines(renderCreationCertificate(SYNC_INPUT)).map((r) => r.text.replace(/\\([()\\])/g, "$1"));
+    const page = runs.join(" ").replace(/\s+/g, " ");
+    expect(page).toContain(`${CERTIFICATE_HEADLINE} ${CERTIFICATE_DISCLAIMER}`);
+    expect(page).toContain("This certificate is evidence of creation. It is not a registration of ownership.");
+  });
+
+  /* The longest page one a real record can draw: a tall master, a name and a
+     maker that wrap, both dates, every step there is. */
+  const WORST = async () => input(
+    canonicalCreationRecordJson(record({ makerName: "Alexandria Wilhelmina Featherstonehaugh-Montgomery" })),
+    {
+      castName: "The Very Long-Named Character Who Keeps Going Well Past One Line",
+      master: await prepareCertificateMaster(
+        await sharp({ create: { width: 200, height: 640, channels: 3, background: "#777777" } }).png().toBuffer(),
+      ),
+    },
+  );
+
+  it.each([
+    ["the ordinary page", async () => SYNC_INPUT],
+    ["the longest page a record can draw", WORST],
+  ])("⚠ %s: every line of the body sits above the footer, on ONE A4 page", async (_name, make) => {
+    const runs = pageOneBaselines(renderCreationCertificate(await make()));
+    const footer = runs.filter((r) => r.text.startsWith("Certificate of Creation · "));
+    /* Positive controls: the reader finds the footer where the renderer puts
+       it, and finds the closing paragraph at all. */
+    expect(footer).toHaveLength(1);
+    expect(footer[0].mm).toBeCloseTo(283, 1);
+    expect(runs.some((r) => r.text.includes("not a registration of ownership."))).toBe(true);
+    const body = runs.filter((r) => r !== footer[0] && !/^\d+ of \d+$/.test(r.text));
+    /* Page one has no second page to spill onto: its lowest line keeps a
+       clear 6 mm above the footer however long the page runs. */
+    const lowest = Math.max(...body.map((r) => r.mm));
+    expect(lowest).toBeLessThanOrEqual(footer[0].mm - 6);
   });
 });
