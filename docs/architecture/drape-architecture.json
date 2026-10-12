@@ -12493,6 +12493,10 @@
       "path": "client/src/features/boards/itemSaveFailure2405.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/nodes/renameCaret2427.test.ts",
+      "path": "client/src/features/boards/nodes/renameCaret2427.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },

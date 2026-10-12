@@ -64,6 +64,12 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label ?? '');
   const inputRef = useRef<HTMLInputElement>(null);
+  // The words a failed save handed back (#2405), or null for a plain rename —
+  // read by the focus effect below to decide where the caret goes (#2427).
+  // Every road that opens the box sets it, so it is never cleared there —
+  // a StrictMode double effect run would read a cleared ref and select
+  // the draft again.
+  const recoveredDraftRef = useRef<string | null>(null);
 
   const Icon = TYPE_ICONS[data.type];
   const typeLabel = TYPE_LABELS[data.type];
@@ -77,7 +83,9 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail?.itemId === data.itemId) {
-        setEditLabel(renameEventDraft(e) ?? data.label ?? '');
+        const draft = renameEventDraft(e);
+        recoveredDraftRef.current = draft;
+        setEditLabel(draft ?? data.label ?? '');
         setIsEditing(true);
       }
     }
@@ -88,9 +96,14 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
   // Focus input when editing starts
   useEffect(() => {
     if (isEditing) {
+      // A recovered draft is kept, and not selected, so a stray keystroke
+      // cannot wipe it a second time (#2427, as CastNode does)
+      const draft = recoveredDraftRef.current;
       const timer = setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        const input = inputRef.current;
+        input?.focus();
+        if (draft === null) input?.select();
+        else input?.setSelectionRange(draft.length, draft.length);
       }, 30);
       return () => clearTimeout(timer);
     }
@@ -298,6 +311,7 @@ function BoardItemNodeInner({ data, selected }: NodeProps<BoardItemFlowNode>) {
             ) : (
               <span
                 onDoubleClick={() => {
+                  recoveredDraftRef.current = null;
                   setEditLabel(data.label ?? '');
                   setIsEditing(true);
                 }}
