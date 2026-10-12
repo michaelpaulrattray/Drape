@@ -2019,7 +2019,7 @@ let seededItemId = 0;
       return {
         badge: [...el.querySelectorAll("span")].some((s) => s.textContent?.trim() === "Draft"),
         crumb: t.includes("· Draft"),
-        hint: t.includes("Keep exploring — add views or edit freely, mint when ready"),
+        hint: t.includes("Keep exploring — name it when ready"),
       };
     }, sdItem.itemId);
     check("SD2 draft wears the badge on the card face, not a label crumb", !!sdNode && sdNode.badge && !sdNode.crumb, JSON.stringify(sdNode));

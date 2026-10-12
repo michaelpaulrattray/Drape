@@ -197,7 +197,7 @@ function ClosedCastingTakeover({ editing, onClose }: { editing: boolean; onClose
         style={{ maxWidth: 400 }}
       >
         <p id="closed-takeover-title" className="text-canvas-lg font-medium text-canvas-ink mb-1.5">
-          {editing ? 'Editing a cast here is paused' : 'Casting from the canvas is paused'}
+          {editing ? 'Editing a character here is paused' : 'Casting from the canvas is paused'}
         </p>
         <p className="text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.55 }}>
           {REBUILD_DOOR_CLOSED}

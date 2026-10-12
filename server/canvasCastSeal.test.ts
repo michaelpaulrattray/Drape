@@ -255,6 +255,13 @@ describe("the canvas's paid casting roads", () => {
         .sort(),
     );
   });
+
+  it("#2329: the closed sentence says 'characters', never 'casts' — the customer's word (#2320, #2322)", () => {
+    /* Positive arm first, so a deleted sentence cannot pass the negative.
+       "while we rebuild it" stays: the canvas IS being redesigned. */
+    expect(CANVAS_CAST_CLOSED).toContain("Your boards, characters and pictures are safe and still here.");
+    expect(CANVAS_CAST_CLOSED).not.toMatch(/\bcasts?\b/i);
+  });
 });
 
 describe("⚠ POSITIVE CONTROLS — the gate is not a blanket, and it can let through", () => {

@@ -784,7 +784,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           >
                             <span>
                               {slot.failed && !slot.filled ? "Try again" : "Refresh"}
-                              {REBUILD_DOOR_OPEN ? null : " — unavailable while we rebuild it"}
+                              {REBUILD_DOOR_OPEN ? null : " — not available right now"}
                             </span>
                             {REBUILD_DOOR_OPEN ? <CostLabel credits={refreshCost} /> : null}
                           </button>
@@ -839,16 +839,13 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           style={{ transform: "translateY(100%)" }}
         >
           <p className="text-canvas-xs text-canvas-ink-faint text-center leading-snug px-2">
-            {/* #1916: "mint" is the pipeline's word, not hers. It is NOT
-                replaced by "Sign" here, and that is a measured refusal rather
-                than a preference: Sign is casting V2's ceremony, and the
-                canvas runs the LEGACY one — the dialog this hint leads to
-                (CastModelModal, reached through CastingTakeover) spells its
-                own door "Name & mint". So the hint names the act she actually
-                performs there, and the remaining ~20 "mint" strings on that
-                surface are one vocabulary decision, carded, not snuck in
-                one caption at a time. */}
-            Keep exploring — add views or edit freely, name it when ready
+            {/* #1916: "mint" is the pipeline's word, not the customer's, so
+                the hint names the act ("name it"), not the ceremony.
+                #2329: it no longer offers more views or free editing — editing
+                a cast from the canvas is paused behind the rebuild door
+                (`shared/rebuildDoor.ts`), and a caption must not promise
+                what the product refuses. */}
+            Keep exploring — name it when ready
           </p>
         </div>
       )}
