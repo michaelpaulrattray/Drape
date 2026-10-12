@@ -195,6 +195,119 @@ restored, and the rewritten driver restores in a `finally`.
 **Status: BUILT.** The row a fifth instance lands on is this one, and a fifth
 instance is now a number rather than a surprise.
 
+### R21 — a seat's own card is subtracted from its own seat's switch, and it is NOT an information failure
+
+**Filed 2026-10-12 by `seat1-20261012-141545` on card #2316, which
+`foreman-20261012-1327` filed and did not work. The card offered three
+mechanical shapes and asked this seat to choose one or to rule the class not
+worth mechanising with the reasoning written.**
+
+⚠ **VERDICT: NOT WORTH MECHANISING, and nothing was built. All three shapes
+were declined on measurements over the real queue, and the third was declined
+because the instruction it proposes ALREADY EXISTS in the one artifact the seat
+is required to read first.**
+
+#### The population, derived 2026-10-12 over `gh issue list --state open --limit 100`
+
+**FIVE open cards carry a `seat:*` label, not four — and the fifth is the
+counter-example the card created by existing.**
+
+| card | labels | its `**Waiting on:**` line names | its own seat could act? |
+|---|---|---|---|
+| **#1098** | `debt`, `seat:janitor`, **`blocked`** | *"the **Janitor patrol** — its decision, not a shift's"* | **YES** |
+| #1882 | `seat:janitor`, **`blocked`** | *"the relay — one sentence in the standing orders … Not his word"* | **no** — the orders are untracked, so no seat can edit them; its three measurable done-whens are already discharged (patrol #14) |
+| #2155 | `seat:janitor`, **`blocked`** | *"DECISIONS, not sweeping … Three calls, none a seat's"* | **no** — it says so itself |
+| #45 | `debt`, `seat:warden`, **`parked`** | *(no `**Waiting on:**` line at all)* | **no** — and see the correction below |
+| **#2316** | `seat:retro`, **no hold label** | — | **YES, and it was taken within four hours of being filed** |
+
+⚠ **A CORRECTION TO THE CARD, read at the vocabulary rather than at the label
+list: `parked` IS NOT A HOLD LABEL.** `CREW_HOLD_LABELS`
+(`shared/crewNextUpHold.ts:87`) is `blocked` · `awaiting-fable` ·
+`needs-sitting`; `parked` is a separate exclusion REASON
+(`shared/crewQueueExclusions.ts:191`). So the card's *"all four carry a hold
+label"* is **three**, and #45 is not hidden by accident — it is deferred on
+purpose by `PROGRAM.md`'s own *Explicitly parked* clause (*"everything labelled
+`parked` … that is not the current focus"*), on a launch-prep brief open since
+2026-08-25. **The panel is right to subtract it and a seat-identity reader would
+have nothing to read.**
+
+#### M1 · Shapes 1 and 2 have a population of ONE
+
+Shape 1 (*offer a seat's own card to that seat even when held*) and shape 2 (*a
+`seat-decides` hold state*) both turn on the hold naming its own seat. **Exactly
+one of the three held cards does.** The other two are held on the relay and on
+decisions their own bodies say are *"none a seat's"* — so the switch counter
+subtracting them is not a defect, it is the correct answer, and **a mechanism
+built for this class would move one card.**
+
+The card's headline — *two switches report zero work while holding every card
+their own seat owns* — is a true count whose inference does not follow. Three of
+those cards are genuinely nobody-but-the-relay's or nobody-but-a-decision's.
+
+#### M2 · It is not an information failure, which is what both mechanical shapes assume
+
+**#1098 is named in its own seat's TRACKED log at `docs/JANITOR_LOG.md:3134`,
+`:3344`, `:3493`, `:3514` and `:3745`** — in the closing next-run list of every
+recent run, with the skip count kept. Run 13's list carried it as item 5; run
+14's table answered that item with *"⚠ **STILL NOT TAKEN**, and now past
+seven"*. **The seat sees it, scores it, and writes it down every run.**
+
+⚠ **And run 14 (2026-10-11) already wrote the rule shape 3 proposes, verbatim:**
+
+> **4. #1098 still waits on this seat — now past SEVEN of its clock firings** and
+> still on no run's agenda. **Either take it or write down why it keeps being
+> skipped.**
+
+So the instruction exists, in the artifact the seat opens first, written by the
+seat itself, one run ago — and the skip happened anyway. **A fifth place saying
+*"#1098 exists"* is the shape R20 declined three hours earlier on this seat's own
+reasoning: *a checker whose finding is always the same and always unactionable
+teaches its reader to skim*.** Seven runs have read it; an eighth printer is
+read the same way.
+
+#### M3 · Shape 3 would be a second copy of an existing instruction, in the worse place
+
+Shape 3 puts the rule in the standing orders. **`.agents/foreman/prompt.md` is
+UNTRACKED**, so a rule written there cannot be tested, cannot be reviewed, and
+cannot be swept — which is #1882's entire standing remainder. The seat's own log
+IS tracked. **Writing the rule a second time, in the one location where no guard
+can reach it, is working law 4 with the copies ordered worst-first.**
+
+#### What the five rows actually prove, taken together
+
+**#2316 is the control.** It is a `seat:*` card with no hold label; it was
+offered, it was visible, and it was taken within hours. **The mechanism the card
+asks for already works — it is called not applying a hold** — and #2303's
+precedent of filing charter work unheld is the whole of it. Nothing needs
+building for a seat to be offered its own work; what #1098 has is a hold that is
+*correct* (its decision really is the patrol's) and a seat that keeps choosing
+something else.
+
+⚠ **Seven identical outcomes is a verdict being delivered implicitly.** Read at
+what each run did INSTEAD: run 14 swept 216 disposables of 914, measured 123
+`%TEMP%` trees, found 5 portless dev servers; run 13 the same families. **Every
+one of those is recurring, measurable and growing. #1098 is three dev fixture
+rows with no customer at the end of them.** A dev-only defect loses that
+comparison every time it is made, and it has now been made seven times with the
+card in full view.
+
+#### The one thing handed on, and it is not a decision
+
+**This seat does not decide #1098 — the card says so and the hold says so.**
+What it can do is answer run 14's own question, since the answer is a process
+observation and process is this seat's charter: **it keeps being skipped because
+it is dev-only debt competing with recurring sweeps, and the comparison has one
+outcome.** Recommended to run 15, as a recommendation and not a ruling: give it
+one §-section or `park` it with that reason written on the card — and either way
+**stop carrying it as a next-run item**, which is run 14's own item 6 rule
+(*"silently carrying forward is how a list stops being read"*) applied to run
+14's item 4.
+
+**Status: RULED, NOT BUILT.** The row a second instance lands on is this one. A
+second instance would be a `seat:*` card whose hold names its own seat and whose
+seat has no other claim on the run — and at that point shape 1's population is
+two, which is the number this verdict turns on.
+
 
 ---
 
