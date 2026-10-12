@@ -86,6 +86,118 @@ own measured answer to that question; the historical control still reports all
 
 ---
 
+## Recurrences filed BETWEEN runs
+
+⚠ **THIS SECTION EXISTS BECAUSE A `## Run N` HEADING IS MACHINERY, NOT A
+FORMAT.** `scripts/patrol-clocks.mts` reads `/^##\s+Run\s+\d+\s*[—–-]\s*(\d{4}-\d{2}-\d{2})/`
+and takes the newest one as this seat's LAST RUN — so a card worked under the
+`Process` switch that wrote itself up as `## Run 8` would tell every shift the
+Retro had patrolled, and the clock would go quiet for a week it had not earned.
+The seat's charter work is offerable between patrols (#2303's own body says so,
+and #1098 is the measured reason a `seat:*` card carries no hold); its findings
+therefore land here, and **the next run's §B folds them in by number.**
+
+### R20 — a hold's sentence rots and no reader asks whether it is still true
+
+**Filed 2026-10-12 by `seat1-20261012-102658` on card #2303, which
+`foreman-20261012-0917` filed and did not work.**
+
+| card | the sentence named | discharged | repaired | late by | by |
+|---|---|---|---|---|---|
+| **#1952** | `PR #1924 and card #1968` | PR merged and card closed 2026-10-08 | 2026-10-09 | **1 day** | `foreman-20261009-1740` |
+| **#1921** | **YOU** — a dark-ink Klieg lockup | his reply #272 deferred it, 2026-10-11 04:02Z | 2026-10-11 | **~8 h** | `foreman-20261012-0743` |
+| **#1882** | the Janitor's next run | patrol #14 discharged all three done-whens, 2026-10-11 | 2026-10-12 | **2 days** | `foreman-20261012-0917` |
+| **#1774** | Yuna's pass on the final wording | the pass landed 2026-10-09, shipped 2026-10-10 | 2026-10-12 | **3 days** | `foreman-20261012-0917` |
+
+**Class:** an instruction to a human standing in for a reader. `crew-desk-sweep.mts`
+printed `· #1952` and the words *"Worth a glance only, to check the sentence is
+still true"* — and the glance needs a browser tab, so four shifts that did
+everything else right skipped it four times running.
+
+**Four different KINDS of blocker — a numbered artifact, him, a seat, a
+teammate — and that is what decides what can be mechanised.**
+
+#### ⚠ The population was half the defect, and the card's own fourth option did not cover it
+
+Driven over the real queue 2026-10-12 (`gh issue list --state open`, 50 rows, a
+list and not a floor): **12 cards carry a live hold. SIX are in the band that
+carried the "worth a glance" instruction and six are outside it.** That band is
+`planDeskHoldLabels`' `stale`, whose population is the **`founder-ordered`**
+queue carrying `blocked` with a silent desk — so **#1882 (`seat:janitor`) and
+#1921 (`bug`) were never in it.** The card rated its own fourth option (print
+the sentence instead of the number) as covering all four shapes; at the band it
+proposed to make louder it covers **two**. Widening the population to every open
+card with a live hold is what makes it three.
+
+#### What was built, and what was refused
+
+✅ **BUILT — `planLiveHoldReRead` (`shared/crewNextUpHold.ts`), printed by
+`crew-desk-sweep.mts` on the path every shift already takes.** Every open card
+with a live hold label and a readable sentence comes back WITH its words, the
+same sentence and the same truncation his page shows, exit 0 and no verdict.
+Population DERIVED as the complement of `planUnreadableHolds` over one mapped
+list, both keyed on `holdOwnerFromReason`; the suite drives the PARTITION, so a
+filter that drifts in either reader shows up as a card in NEITHER half instead
+of quietly vanishing from both. **11 rows on today's queue, ~26 lines.**
+
+**Coverage of the four, stated rather than implied: 3 of 4 appear with their
+words** (#1952, #1882, #1774). **#1921 does not**, and that is #298's design
+rather than a gap — its `blocked` label came off at 2026-10-11 04:04:11Z, two
+minutes after his reply, and from that moment nothing rendered the sentence at
+all. The rot that remained was a body line a SHIFT reads under law 7c, and
+reporting rotted lines on UNHELD cards fights #298 head-on (*"a stale reason can
+never outlive its state, because the state is the thing that renders it"*).
+
+⚠ **All three mechanical shapes the card offered were DECLINED, each on a
+measurement over those 12 real holds, and the reasons live in
+`planLiveHoldReRead`'s own docblock as well as here:**
+
+1. **The closed-artifact reference** (report a hold naming a closed card or a
+   merged PR) — would have caught #1952, **and over the 12 real holds it fires
+   ONCE and that firing is WRONG**: #129's sentence is *"slice 1's rows — PR
+   #1007 merged (9d517932); slice 2's patrol needs refused AND passed prompts on
+   record first"*, which SAYS the PR merged and is held on something else. ⚠ **A
+   second false positive is already latent**: `cardNumbersIn` reads #1882's
+   *"patrol #14"* as **card #14**, because `NON_CARD_SEQUENCE_WORDS` is
+   `["reply", "run"]` and *patrol* is not in it — so the day card #14 closes, a
+   correct hold reads as discharged. **Precision today: 0 true, 1 false, 1
+   latent.**
+2. **The un-re-read hold** (report a sentence not edited in N days) — misses the
+   fastest-rotting kind outright (#1921, eight hours), and **would report two
+   correct holds for ever**: #1835 waits on the workspace #1788, which he has
+   never ordered, and #1609 is parked on his own word until launch day. **2 of
+   12 rows permanently wrong.**
+3. **A Jev read of the sentence** — the judge is not the hard half; assembling
+   the facts is, and ⚠ **the one fact the him-direction needs (his newest reply)
+   is a production database row, which this sweep deliberately cannot read** —
+   it is `gh`-only by its own header. A verdict of *"this hold is discharged"*
+   is also one step from un-holding a card, which `planDeskHoldLabels` refuses
+   to automate on #586's measured grounds.
+
+⚠ **So the class is PARTLY UNGUARDABLE and that is the finding rather than a
+failure to find a guard.** What is mechanisable is the population and the
+printing; the judgement stays a person's and this makes it cheap.
+
+**Controls (working law 2), and the instrument is proven able to fail.**
+`server/crewNextUpHold.test.ts` — 13 arms, one positive control on #1774's real
+sentence, three negative controls (no hold label; an unreadable sentence; an
+ordinary card not marked as his), and the partition driven over a ten-card
+fixture carrying every shape. **Five sabotage cases, all five reddening a NAMED
+arm**: the population scoped to `blocked` alone → *reads EVERY hold label*;
+the filter keyed on "has a sentence" instead of the owner reader → *the OTHER
+NEGATIVE CONTROL* + *THE PARTITION*; the hold-label guard dropped → *no hold
+label is no row* + *THE PARTITION*; his cards filtered instead of marked → *a
+card of HIS stays in the population*; the page's truncation bypassed by a second
+reader → *hands back the sentence HIS PAGE shows*. ⚠ The first draft of the
+sabotage driver left the file edited when it threw — caught at the bytes and
+restored, and the rewritten driver restores in a `finally`.
+
+**Status: BUILT.** The row a fifth instance lands on is this one, and a fifth
+instance is now a number rather than a surprise.
+
+
+---
+
 ## Run 1 — 2026-08-26 07:16–07:30 AEST (Retro, patrol #1, card #95)
 
 ### A. Audit ledger — five reports, every claim opened
