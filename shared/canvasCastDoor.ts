@@ -82,7 +82,7 @@ export const CANVAS_CAST_OPEN: boolean = false;
  * creates is not "why can't I press this", it is "where did my work go".
  */
 export const CANVAS_CAST_CLOSED =
-  "Making new pictures on the canvas is unavailable while we rebuild it. Your boards, casts and pictures are safe and still here.";
+  "Making new pictures on the canvas is unavailable while we rebuild it. Your boards, characters and pictures are safe and still here.";
 
 /**
  * The machine-readable half, carried in the refusal's `cause` so a client can

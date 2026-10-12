@@ -263,8 +263,14 @@ describe("the wardrobe try-on door is shut (#1537, his word: SWITCH IT OFF)", ()
   });
 
   it("says UNAVAILABLE rather than failed — his instruction, in the sentence", () => {
-    expect(WARDROBE_TRY_ON_CLOSED).toMatch(/unavailable/i);
+    expect(WARDROBE_TRY_ON_CLOSED).toMatch(/isn't available right now/i);
     expect(WARDROBE_TRY_ON_CLOSED).not.toMatch(/fail|error|wrong|sorry/i);
+  });
+
+  it("#2329: promises no rebuild — the wardrobe is being retired — and still says the work is safe", () => {
+    /* Positive arm first, so a deleted sentence cannot pass the negative. */
+    expect(WARDROBE_TRY_ON_CLOSED).toContain("Your garments and looks are safe and still here.");
+    expect(WARDROBE_TRY_ON_CLOSED).not.toMatch(/rebuil/i);
   });
 
   it("⚠ THE STRUCTURAL BACKSTOP, DRIVEN DIRECTLY — the mouth gate cannot rescue it", async () => {

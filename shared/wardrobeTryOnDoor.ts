@@ -59,7 +59,7 @@ export const WARDROBE_TRY_ON_OPEN: boolean = false;
  * the feature is not available rather than failing"*.
  */
 export const WARDROBE_TRY_ON_CLOSED =
-  "Virtual try-on is unavailable while we rebuild it. Your garments and looks are safe and still here.";
+  "Virtual try-on isn't available right now. Your garments and looks are safe and still here.";
 
 /**
  * The machine-readable half, carried in the refusal's `cause` so a client can
