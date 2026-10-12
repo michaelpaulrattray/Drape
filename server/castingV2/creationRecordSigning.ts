@@ -37,7 +37,7 @@
  * deploy rite prints VALUES for (`never-filter-a-secret-listing`). A private
  * key must never be on that list.
  */
-import { createHash, createPrivateKey, type KeyObject } from "node:crypto";
+import { createHash, createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
 import { FlattenedSign, flattenedVerify, importJWK } from "jose";
 
 /** The Railway variable that holds the private JWK. A secret, never a flag. */
@@ -70,7 +70,7 @@ function thumbprint(publicJwk: CreationRecordPublicJwk): string {
  * Read and validate the key — SYNCHRONOUSLY, so the boot check can call it.
  * Throws `CreationRecordKeyError` naming the variable — never its value — when
  * it is absent, unparseable, not an Ed25519 private key, or a `d` that is not
- * the private half of its own `x` (Node's import refuses that pair).
+ * the private half of its own `x` (checked here, not left to the runtime).
  */
 export function loadCreationRecordKey(raw: string | undefined): CreationRecordSigningKey {
   if (raw === undefined || raw.trim() === "") {
@@ -91,18 +91,31 @@ export function loadCreationRecordKey(raw: string | undefined): CreationRecordSi
   }
   /*
     A key whose `d` and `x` are not one pair would sign records nobody could
-    verify against the published half. Node's own JWK import REFUSES that pair
-    (ERR_CRYPTO_INVALID_JWK, measured 2026-10-12) — so the import below is the
-    check, and a hand-written comparison after it was deleted the day sabotage
-    showed it could never fire. The mismatched-pair arm in the suite holds it.
+    verify against the published half, so the pair is proven here, at load,
+    by deriving the public half from `d` and comparing it with `x`.
+
+    ⚠ **THIS COMPARISON WAS DELETED ONCE AS REDUNDANT, AND THAT WAS WRONG ON
+    THE NODE PRODUCTION AND CI RUN.** Node 26 refuses a mismatched JWK at
+    import (ERR_CRYPTO_INVALID_JWK), so a sabotage of this line stayed green on
+    the laptop it was first written on; Node 24.21 IMPORTS the same pair and
+    derives a different `x` (measured 2026-10-12), and the gate's
+    `unit-tests-2` shard went red on exactly that case. What a runtime happens
+    to validate is not this function's contract — so it states its own check,
+    and every failure, on every road, is a `CreationRecordKeyError` naming
+    the variable and never its value.
   */
   let privateKey: KeyObject;
+  let derivedX: unknown;
   try {
     privateKey = createPrivateKey({ key: { kty: "OKP", crv: "Ed25519", d: jwk.d, x: jwk.x }, format: "jwk" });
+    derivedX = createPublicKey(privateKey).export({ format: "jwk" }).x;
   } catch {
     throw new CreationRecordKeyError(
       "could not be imported as an Ed25519 private key (or its d and x are not one pair)",
     );
+  }
+  if (derivedX !== jwk.x) {
+    throw new CreationRecordKeyError("has a private half that does not match its public half (d and x are not one pair)");
   }
   const publicJwk: CreationRecordPublicJwk = { kty: "OKP", crv: "Ed25519", x: jwk.x };
   return { kid: thumbprint(publicJwk), publicJwk, privateKey };
