@@ -63,7 +63,8 @@ function panel(props: Partial<Parameters<typeof PublicCheckPanel>[0]> = {}): str
   );
 }
 
-describe("the toggle states the whole consequence, in #2331's words", () => {
+/* The sentence is the card's (#2331), from counsel's review. */
+describe("the toggle states the whole consequence, in the card's words", () => {
   it("carries the sentence verbatim — display name included — off, previewing and on", () => {
     const sentence =
       "Anyone with this ID can see that it is real, when this character was made, and your display name. They never see the picture, your brief, or your account. You can turn this off at any time.";
