@@ -115,7 +115,7 @@ describe("a yearly subscriber is quoted the yearly rate, as Change plan quotes i
     expect(html).not.toContain("billed yearly");
   });
 
-  it("an interval nobody read is not monthly — the price stands down (#1763)", () => {
+  it("an interval nobody read is not monthly — the price stands down (card 1763)", () => {
     answers["billing.getStatus"] = status("pro", null);
     const html = render("pro");
     expect(html).not.toContain(changePlanFigure("pro", false));
