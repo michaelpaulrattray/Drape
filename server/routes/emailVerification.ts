@@ -56,28 +56,39 @@ emailVerificationRouter.use(refuseCrossSiteAuthRequest);
  * in" — for a customer who had done nothing wrong but open the wrong email.
  *
  * The older token is gone from the table, so the only way to know whose link it
- * was is for the link to say so: `<userId>.<nonce>.<mac>`, where the mac is an
- * HMAC over the id and nonce under the session secret (the Google road reuses
- * the same secret for its state, `googleAuth.ts`). The mac is what keeps this
- * from being an oracle: a hand-typed `<id>.<anything>` fails it and gets the
- * same `invalid_token` an unknown token always got, so only a link this product
- * actually emailed can learn that it was replaced.
+ * was is for the link to say so: `<openId>.<nonce>.<mac>`, where the mac is an
+ * HMAC over the openId and nonce under the session secret (the Google road
+ * reuses the same secret for its state, `googleAuth.ts`). The mac is what keeps
+ * this from being an oracle: a hand-typed `<openId>.<anything>` fails it and
+ * gets the same `invalid_token` an unknown token always got, so only a link this
+ * product actually emailed can learn that it was replaced.
+ *
+ * ⚠ THE openId, NEVER `users.id` (the relay's finding on PR #2415). Emails are
+ * forwarded, scanned and logged, and an auto-increment id in a link says how
+ * many accounts exist. Every email account's openId is `email_<uuid>`
+ * (`emailAuth.ts`), random and non-sequential, and only email accounts are sent
+ * these links. An openId outside `[A-Za-z0-9_-]` cannot contain the `.`
+ * separator, so the split is unambiguous; anything else gets a plain token.
  *
  * ⚠ It NEVER makes the older link work. The row lookup below is still equality
  * on the whole current token; a link that misses it can at most be told which
  * calm note to show — replaced, or already verified — and mints no session and
  * verifies nothing. Tokens issued before this shipped are plain hex, carry no
- * id, and keep the generic answer if they miss; they expire within 24 hours.
+ * account, and keep the generic answer if they miss; they expire within 24 hours.
  *
- * Length: id + 64 hex nonce + 32 hex mac + two dots stays under the column's 128.
+ * ⚠ LENGTH: `emailVerificationToken` is varchar(128). openId (42 for
+ * `email_<uuid>`, at most 62 here) + 32-hex nonce (16 bytes, 128 bits) + 32-hex
+ * mac + two dots is 108 for every email account and never more than 128. An
+ * openId longer than 62 is given a plain token rather than a truncated one.
  */
 const LINK_MAC_LABEL = "drape:email-verification-link:v1";
+const SIGNABLE_OPEN_ID = /^[A-Za-z0-9_-]{1,62}$/;
 
-function linkMac(userId: number, nonce: string): string | null {
+function linkMac(openId: string, nonce: string): string | null {
   /* An empty secret would make every mac forgeable; refuse to sign or read. */
   if (!ENV.cookieSecret) return null;
   return createHmac("sha256", ENV.cookieSecret)
-    .update(`${LINK_MAC_LABEL}:${userId}:${nonce}`)
+    .update(`${LINK_MAC_LABEL}:${openId}:${nonce}`)
     .digest("hex")
     .slice(0, 32);
 }
@@ -85,29 +96,29 @@ function linkMac(userId: number, nonce: string): string | null {
 /**
  * Generate a cryptographically secure verification token for one account.
  */
-export function generateVerificationToken(userId: number): string {
-  const nonce = randomBytes(32).toString("hex");
-  const mac = linkMac(userId, nonce);
-  /* Without a secret there is nothing to sign with; a plain token still
-     verifies, it just cannot be recognised later as replaced. */
+export function generateVerificationToken(openId: string): string {
+  const nonce = randomBytes(16).toString("hex");
+  const mac = SIGNABLE_OPEN_ID.test(openId) ? linkMac(openId, nonce) : null;
+  /* Without a secret, or for an openId that cannot be carried, there is nothing
+     to sign: a plain token still verifies, it just cannot be recognised later
+     as replaced. */
   if (mac === null) return randomBytes(48).toString("hex");
-  return `${userId}.${nonce}.${mac}`;
+  return `${openId}.${nonce}.${mac}`;
 }
 
 /**
- * The account a verification link was issued for, IF this product signed it.
- * `null` for anything else — a legacy hex token, a typo, a forgery.
+ * The account (its openId) a verification link was issued for, IF this product
+ * signed it. `null` for anything else — a legacy hex token, a typo, a forgery.
  */
-export function issuedLinkAccount(token: string): number | null {
-  const match = /^([1-9][0-9]{0,15})\.([0-9a-f]{64})\.([0-9a-f]{32})$/.exec(token);
+export function issuedLinkAccount(token: string): string | null {
+  const match = /^([A-Za-z0-9_-]{1,62})\.([0-9a-f]{32})\.([0-9a-f]{32})$/.exec(token);
   if (!match) return null;
-  const userId = Number(match[1]);
-  if (!Number.isSafeInteger(userId)) return null;
-  const expected = linkMac(userId, match[2]!);
+  const openId = match[1]!;
+  const expected = linkMac(openId, match[2]!);
   if (expected === null) return null;
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(match[3]!, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b) ? userId : null;
+  return a.length === b.length && timingSafeEqual(a, b) ? openId : null;
 }
 
 /**
@@ -332,7 +343,7 @@ emailVerificationRouter.post("/resend-verification", async (req: Request, res: R
     }
 
     // Generate new token — this REPLACES the one in any earlier email (#2401)
-    const token = generateVerificationToken(user.id);
+    const token = generateVerificationToken(user.openId);
     await storeVerificationToken(user.id, token);
 
     // Send email
@@ -402,7 +413,7 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
         const owner = await db
           .select()
           .from(users)
-          .where(eq(users.id, issuedFor))
+          .where(eq(users.openId, issuedFor))
           .limit(1);
         if (owner.length > 0) {
           const account = owner[0]!;

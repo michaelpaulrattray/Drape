@@ -20,16 +20,16 @@ import { allowColdImports } from "../testing/suiteClocks";
 allowColdImports();
 
 describe("generateVerificationToken", () => {
-  it("generates a signed link naming its account, within the column's 128 characters (#2401)", async () => {
+  it("generates a signed link naming its account's openId, within the column's 128 characters (#2401)", async () => {
     const { generateVerificationToken } = await import("./emailVerification");
-    const token = generateVerificationToken(42);
+    const token = generateVerificationToken("email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43");
     expect(token.length).toBeLessThanOrEqual(128);
-    expect(/^42\.[0-9a-f]{64}\.[0-9a-f]{32}$/.test(token)).toBe(true);
+    expect(/^email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43\.[0-9a-f]{32}\.[0-9a-f]{32}$/.test(token)).toBe(true);
   });
 
   it("generates unique tokens", async () => {
     const { generateVerificationToken } = await import("./emailVerification");
-    const tokens = new Set(Array.from({ length: 10 }, () => generateVerificationToken(42)));
+    const tokens = new Set(Array.from({ length: 10 }, () => generateVerificationToken("email_x")));
     expect(tokens.size).toBe(10);
   });
 });

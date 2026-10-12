@@ -713,7 +713,8 @@ describe("POST /api/auth/register — the doors, in the order the handler asks t
       email: REGISTRATION.email,
       needsVerification: true,
     });
-    expect(generateVerificationToken).toHaveBeenCalledWith(NEW_USER.id);
+    /* The link carries the new account's random openId, never its sequential id (#2401). */
+    expect(generateVerificationToken).toHaveBeenCalledWith(expect.stringMatching(/^email_[0-9a-f-]{36}$/));
     expect(storeVerificationToken).toHaveBeenCalledWith(NEW_USER.id, "verification-token-stand-in");
     expect(sendVerificationEmail).toHaveBeenCalledWith(
       expect.anything(), REGISTRATION.email, REGISTRATION.name, "verification-token-stand-in",

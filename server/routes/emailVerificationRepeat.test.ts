@@ -112,7 +112,7 @@ const TOKEN = "a".repeat(96);
 function customer(overrides: Partial<Row> = {}): Row {
   return {
     id: 7,
-    openId: "email_customer",
+    openId: "email_3f2b8c1e-9d4a-4c6b-8e2f-1a7d5c9b0e43",
     name: "A Customer",
     email: "customer@example.com",
     emailVerified: false,
@@ -244,7 +244,7 @@ describe("pressing Resend for an address that is already verified (#2370)", () =
  * replacement is the route's own write, not a row the test edits by hand.
  */
 describe("an older verification link after a resend (#2401)", () => {
-  const OLD = generateVerificationToken(7);
+  const OLD = generateVerificationToken(customer().openId);
 
   beforeEach(() => {
     table = [customer({ emailVerificationToken: OLD })];
@@ -295,26 +295,44 @@ describe("an older verification link after a resend (#2401)", () => {
     expect(driven.sessionMinted).toBe(false);
   });
 
-  it("a signed link naming another account cannot be re-pointed by editing its id", async () => {
-    /* Account 8 exists and is unverified, so a re-pointed link that were
-       believed would be told "replaced" — the mac must refuse it first. */
-    table.push(customer({ id: 8, openId: "email_other", email: "other@example.com", emailVerificationToken: "c".repeat(96) }));
+  it("a signed link cannot be re-pointed at another account by editing its openId", async () => {
+    /* The second account exists and is unverified, so a re-pointed link that
+       were believed would be told "replaced" — the mac must refuse it first. */
+    const OTHER = "email_7c1d0e2a-4b3f-4a8e-9c6d-2e5f8a1b3c70";
+    table.push(customer({ id: 8, openId: OTHER, email: "other@example.com", emailVerificationToken: "c".repeat(96) }));
     const [, nonce, mac] = OLD.split(".");
-    const driven = await click(`8.${nonce}.${mac}`);
+    const driven = await click(`${OTHER}.${nonce}.${mac}`);
     expect(driven.location).toBe("/login?error=invalid_token");
     expect(driven.sessionMinted).toBe(false);
+    expect(table[1]!.emailVerified).toBe(false);
+  });
+
+  it("the link carries the openId and never the sequential account id", () => {
+    expect(OLD.startsWith(`${customer().openId}.`)).toBe(true);
+    expect(OLD.startsWith("7.")).toBe(false);
   });
 
   it("a genuinely signed link for an account that no longer exists is the generic refusal", async () => {
-    const driven = await click(generateVerificationToken(999));
+    const driven = await click(generateVerificationToken("email_00000000-0000-4000-8000-000000000000"));
     expect(driven.location).toBe("/login?error=invalid_token");
     expect(driven.sessionMinted).toBe(false);
   });
 
-  it("a signed link fits the column and names the account it was issued for", () => {
-    const token = generateVerificationToken(2147483647);
-    expect(token.length).toBeLessThanOrEqual(128);
-    expect(issuedLinkAccount(token)).toBe(2147483647);
+  it("every link fits the 128-character column, and names the account it was issued for", () => {
+    /* An email account's openId: `email_` + a uuid, 42 characters — the real shape. */
+    const emailOpenId = customer().openId;
+    expect(emailOpenId).toHaveLength(42);
+    const token = generateVerificationToken(emailOpenId);
+    expect(token).toHaveLength(108);
+    expect(issuedLinkAccount(token)).toBe(emailOpenId);
+    /* The longest openId that is signed lands exactly on the column's limit. */
+    const longest = "x".repeat(62);
+    expect(generateVerificationToken(longest)).toHaveLength(128);
+    expect(issuedLinkAccount(generateVerificationToken(longest))).toBe(longest);
+    /* Longer than that (the column allows 64) gets a plain token, never a truncated one. */
+    const tooLong = generateVerificationToken("y".repeat(64));
+    expect(tooLong.length).toBeLessThanOrEqual(128);
+    expect(issuedLinkAccount(tooLong)).toBeNull();
     expect(issuedLinkAccount("a".repeat(96))).toBeNull();
   });
 });
