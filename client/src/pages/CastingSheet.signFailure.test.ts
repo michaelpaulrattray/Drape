@@ -19,7 +19,7 @@ import { TRPCError } from "@trpc/server";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { baseUrlOf, listenOnFetchablePort } from "../../../server/testing/fetchablePort";
@@ -30,6 +30,7 @@ const {
   signFailureOutcome,
   SIGN_UNCONFIRMED_SENTENCE,
   SIGN_RECHECK_ATTEMPTS,
+  SIGN_RECHECK_READ_TIMEOUT_MS,
 } = await import("./CastingSheet");
 
 /* signService.ts's own free refusal, word for word. */
@@ -38,7 +39,7 @@ const NOT_SIGNABLE =
 const NOT_ENOUGH = "Not enough credits. Signing a Cast costs 450 credits.";
 
 /** What the probe roll answers, per read — set by each arm. */
-let rollReads: Array<"signed" | "ready" | "throw"> = [];
+let rollReads: Array<"signed" | "ready" | "throw" | "hang"> = [];
 let rollReadCount = 0;
 
 const probeRouter = router({
@@ -55,6 +56,8 @@ const probeRouter = router({
     const shape = rollReads[Math.min(rollReadCount, rollReads.length - 1)] ?? "ready";
     rollReadCount += 1;
     if (shape === "throw") throw new Error("read failed");
+    /* A gateway that holds the connection open: the request never answers. */
+    if (shape === "hang") return new Promise<never>(() => {});
     return {
       candidates: [
         { candidateId: "cand_other", status: "signed", castId: "cast_not_this_one" },
@@ -92,6 +95,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const each of [server, gateway]) {
+    each.closeAllConnections();
     await new Promise<void>((resolve, reject) =>
       each.close((error) => (error ? reject(error) : resolve())),
     );
@@ -200,5 +204,90 @@ describe("a failed Sign (#2381)", () => {
     expect(await signFailureOutcome(poor, { candidateId: "cand_2381", readCandidates: reread, ...noWait }))
       .toEqual({ kind: "spoken", sentence: NOT_ENOUGH });
     expect(rollReadCount).toBe(0);
+  });
+});
+
+/**
+ * A RE-READ THAT NEVER ANSWERS STILL ENDS (#2426).
+ *
+ * The re-check awaited each `getRoll` with no limit, so a gateway that held the
+ * connection open kept the dialog on *Signing…* — no Cancel — for as long as the
+ * browser waited. Each read is now raced against `SIGN_RECHECK_READ_TIMEOUT_MS`.
+ */
+describe("a re-read that hangs (#2426)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("a getRoll held open over the wire on every read ends in the honest no", async () => {
+    const error = await lostReply();
+    rollReads = ["hang"];
+    rollReadCount = 0;
+    const started = Date.now();
+    const outcome = await signFailureOutcome(error, {
+      candidateId: "cand_2381",
+      readCandidates: reread,
+      readTimeoutMs: 60,
+      ...noWait,
+    });
+    expect(outcome).toEqual({ kind: "unconfirmed", sentence: SIGN_UNCONFIRMED_SENTENCE });
+    // Every attempt reached the server and was given up on, not skipped.
+    expect(rollReadCount).toBe(SIGN_RECHECK_ATTEMPTS);
+    expect(Date.now() - started).toBeLessThan(5_000);
+  });
+
+  it("a hung read followed by one that shows the cast still lands", async () => {
+    const error = await lostReply();
+    rollReads = ["hang", "signed"];
+    rollReadCount = 0;
+    const outcome = await signFailureOutcome(error, {
+      candidateId: "cand_2381",
+      readCandidates: reread,
+      readTimeoutMs: 60,
+      ...noWait,
+    });
+    expect(outcome).toEqual({ kind: "landed", castPublicId: "cast_2381" });
+    expect(rollReadCount).toBe(2);
+  });
+
+  it("with the default limit, a never-resolving read settles within the stated bound and not before one read's limit", async () => {
+    const error = await lostReply();
+    vi.useFakeTimers();
+    let reads = 0;
+    let settled: unknown = undefined;
+    const pending = signFailureOutcome(error, {
+      candidateId: "cand_2381",
+      readCandidates: () => {
+        reads += 1;
+        return new Promise<never>(() => {});
+      },
+      waitMs: 1_000,
+    }).then((outcome) => {
+      settled = outcome;
+    });
+    // Negative control: one read's limit has not yet passed, so nothing is decided.
+    await vi.advanceTimersByTimeAsync(SIGN_RECHECK_READ_TIMEOUT_MS - 1);
+    expect(settled).toBeUndefined();
+    expect(reads).toBe(1);
+    await vi.advanceTimersByTimeAsync(
+      1 + (SIGN_RECHECK_ATTEMPTS - 1) * (1_000 + SIGN_RECHECK_READ_TIMEOUT_MS),
+    );
+    await pending;
+    expect(settled).toEqual({ kind: "unconfirmed", sentence: SIGN_UNCONFIRMED_SENTENCE });
+    expect(reads).toBe(SIGN_RECHECK_ATTEMPTS);
+    // The limit is short enough to be a limit: the whole re-check is under half a minute.
+    expect(SIGN_RECHECK_ATTEMPTS * SIGN_RECHECK_READ_TIMEOUT_MS + (SIGN_RECHECK_ATTEMPTS - 1) * 2_500)
+      .toBeLessThanOrEqual(30_000);
+  });
+
+  it("a read that answers leaves no timer behind (positive control)", async () => {
+    vi.useFakeTimers();
+    const outcome = await signFailureOutcome(new TypeError("Failed to fetch"), {
+      candidateId: "cand_2381",
+      readCandidates: async () => [{ candidateId: "cand_2381", status: "signed", castId: "cast_2381" }],
+      ...noWait,
+    });
+    expect(outcome).toEqual({ kind: "landed", castPublicId: "cast_2381" });
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
