@@ -50,6 +50,19 @@ import type { CreationRecordPublicJwk } from "./creationRecordSigning";
 export const CERTIFICATE_HEADLINE =
   `This certifies that this character was created in ${PRODUCT_NAME}. It is evidence of creation, not a registration of ownership.`;
 
+/**
+ * The fuller disclaimer, set directly beneath the headline: counsel's wording,
+ * verbatim from card #2331 (the founder shared counsel's review 2026-10-12).
+ * It says what the document IS evidence of and, in so many words, what it is
+ * not: no registration of ownership, no copyright created or transferred, no
+ * proof that copyright subsists at all.
+ */
+export const CERTIFICATE_DISCLAIMER =
+  `This certificate records that a character with the stated ID and image fingerprint was created and signed in ${PRODUCT_NAME} on the stated dates. `
+  + "It is evidence of creation and of the integrity of the recorded data. "
+  + "It is not a registration of ownership, does not create or transfer copyright or other intellectual property rights, "
+  + "and does not constitute proof that copyright subsists in the character or any associated images.";
+
 export type CertificateMaster = { jpeg: Buffer; width: number; height: number };
 
 export type CreationCertificateInput = {
@@ -280,7 +293,18 @@ export function renderCreationCertificate(input: CreationCertificateInput): Buff
   doc.setTextColor(...SOFT);
   const headline = doc.splitTextToSize(CERTIFICATE_HEADLINE, CONTENT_W * 0.8) as string[];
   doc.text(headline, MARGIN, y, { lineHeightFactor: 1.35 });
-  y += headline.length * 5.6 + 8;
+  y += headline.length * 5.6 + 1.5;
+
+  /* Counsel's fuller disclaimer, directly beneath the headline (#2331). The
+     space it takes comes out of the gaps around it, so page one still ends
+     clear of the footer with the tallest picture and every step there is —
+     measured by the certificate's suite, not assumed. */
+  doc.setFont("times", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...SOFT);
+  const disclaimer = doc.splitTextToSize(CERTIFICATE_DISCLAIMER, CONTENT_W * 0.8) as string[];
+  doc.text(disclaimer, MARGIN, y, { lineHeightFactor: 1.4 });
+  y += (disclaimer.length - 1) * 4.45 + 7;
 
   /* The master, left; the facts, right. */
   const pictureW = 74;

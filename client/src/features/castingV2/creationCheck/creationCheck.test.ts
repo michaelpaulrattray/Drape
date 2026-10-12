@@ -14,8 +14,8 @@ import { describe, expect, it, vi } from "vitest";
   `server/db/castCreationCheck.test.ts`.
 
   What only this file holds:
-   1. the toggle's sentence is the design's §2 Q2 sentence, VERBATIM, and it is
-      on the card in both states;
+   1. the toggle's sentence is card #2331's sentence, VERBATIM — it names the
+      display name the page shows — and it is on the card in both states;
    2. the page CANNOT be turned on from the card without the preview showing:
       the only "Turn on" control is drawn inside the previewing state, under the
       record, and is disabled until the record has arrived;
@@ -24,7 +24,9 @@ import { describe, expect, it, vi } from "vitest";
       background image, no address;
    4. every customer string says "evidence of creation" and never claims
       ownership or names the machinery (design §2 Q3), with a positive control
-      proving the reader catches a bad string.
+      proving the reader catches a bad string. The one way the word may
+      appear is the footer's DENIAL, "not a registration of ownership" (#2331),
+      and the reader still catches the same words without the "not".
 */
 vi.mock("@/lib/trpc", () => ({ trpc: {} }));
 
@@ -61,13 +63,20 @@ function panel(props: Partial<Parameters<typeof PublicCheckPanel>[0]> = {}): str
   );
 }
 
-describe("the toggle states the whole consequence, in the design's words", () => {
-  it("carries §2 Q2's sentence verbatim, off and on", () => {
+describe("the toggle states the whole consequence, in #2331's words", () => {
+  it("carries the sentence verbatim — display name included — off, previewing and on", () => {
     const sentence =
-      "Anyone with this ID can confirm it is real and when this character was made. They never see the picture, your brief, or your account.";
+      "Anyone with this ID can see that it is real, when this character was made, and your display name. They never see the picture, your brief, or your account. You can turn this off at any time.";
     expect(copy.PUBLIC_CHECK_CONSEQUENCE).toBe(sentence);
     expect(text(panel())).toContain(sentence);
+    expect(text(panel({ stage: "previewing", preview: RECORD }))).toContain(sentence);
     expect(text(panel({ isPublic: true }))).toContain(sentence);
+  });
+
+  it("⚠ names what the page shows: the sentence mentions the display name, and the page draws it", () => {
+    expect(copy.PUBLIC_CHECK_CONSEQUENCE).toContain("your display name");
+    const page = text(renderToStaticMarkup(createElement(CreationCheckRecordView, { record: RECORD })));
+    expect(page).toContain(RECORD.makerName);
   });
 
   it("is OFF by default and is a real switch saying so", () => {
@@ -161,19 +170,37 @@ describe("every customer string: evidence of creation, no ownership claim, no ma
     expect(strings).toContain(copy.PUBLIC_CHECK_FOOTNOTE);
   });
 
+  /* The footer's denial (#2331) is the one way "ownership" may appear: it is
+     taken out WHOLE, "not" and all, before the reader looks. */
+  const DENIAL = /\bis not a registration of ownership\b/gi;
+  const claims = (value: string) => value.replace(DENIAL, "");
+
   it("no string claims ownership or names the machinery", () => {
-    for (const value of strings) expect(value, value).not.toMatch(FORBIDDEN);
+    for (const value of strings) expect(claims(value), value).not.toMatch(FORBIDDEN);
   });
 
   it("POSITIVE CONTROL — the reader catches the strings it exists to catch", () => {
-    for (const bad of ["Verified owner", "Proof of ownership", "SHA-256 hash", "Timestamped by DigiCert", "Signed with Ed25519"]) {
-      expect(bad).toMatch(FORBIDDEN);
+    for (const bad of [
+      "Verified owner",
+      "Proof of ownership",
+      "SHA-256 hash",
+      "Timestamped by DigiCert",
+      "Signed with Ed25519",
+      /* The denial's words without the denial are still a claim. */
+      "This page is a registration of ownership.",
+      "It is a registration of ownership, not merely evidence.",
+    ]) {
+      expect(claims(bad)).toMatch(FORBIDDEN);
     }
   });
 
-  it("the page names itself as evidence of creation", () => {
+  it("the page names itself as evidence of creation, and says it is not a registration of ownership", () => {
     expect(copy.PUBLIC_CHECK_HEADING).toBe("Evidence of creation");
-    expect(copy.PUBLIC_CHECK_FOOTNOTE).toContain("evidence of creation");
+    expect(copy.PUBLIC_CHECK_FOOTNOTE).toBe("This page is evidence of creation. It is not a registration of ownership.");
+    /* "Nothing else" was false once the page showed the name and the fingerprint. */
+    expect(copy.PUBLIC_CHECK_FOOTNOTE).not.toMatch(/nothing else/i);
+    const page = text(renderToStaticMarkup(createElement(CreationCheckRecordView, { record: RECORD })));
+    expect(page).toContain(copy.PUBLIC_CHECK_FOOTNOTE);
   });
 
   it("no component writes a customer sentence the copy module does not hold", () => {

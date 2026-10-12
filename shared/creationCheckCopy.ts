@@ -11,12 +11,17 @@
  *    copyright, so promising ownership would promise what cannot be delivered);
  *  - customer vocabulary only (§2 Q3): *independently timestamped*, *fingerprint
  *    of the master picture* — no vendor, no algorithm, no token;
- *  - the toggle's one sentence is the design's §2 Q2 sentence, VERBATIM.
+ *  - the toggle's sentence says the WHOLE consequence, the maker's display name
+ *    included, because the page shows it (card #2331, from counsel's review the
+ *    founder shared 2026-10-12; it replaces the design's §2 Q2 sentence, which
+ *    left the name out);
+ *  - the page's own footer denies ownership in so many words and never says
+ *    "nothing else" — the page also shows the name and the fingerprint (#2331).
  */
 
-/** Design §2 Q2, verbatim — the whole consequence of turning the page on. */
+/** The whole consequence of turning the page on — card #2331's words, verbatim. */
 export const PUBLIC_CHECK_CONSEQUENCE =
-  "Anyone with this ID can confirm it is real and when this character was made. They never see the picture, your brief, or your account.";
+  "Anyone with this ID can see that it is real, when this character was made, and your display name. They never see the picture, your brief, or your account. You can turn this off at any time.";
 
 /** The one answer for an ID with no public page — literally true of every such ID. */
 export const NO_PUBLIC_RECORD_TEXT = "No public record for this ID";
@@ -26,8 +31,9 @@ export const NO_PUBLIC_RECORD_BODY =
 
 export const PUBLIC_CHECK_HEADING = "Evidence of creation";
 export const PUBLIC_CHECK_REAL_LINE = "This ID is real. This character was made in Klieg.";
+/** Card #2331's words, verbatim: it says what the page is, and what it is not. */
 export const PUBLIC_CHECK_FOOTNOTE =
-  "This page is evidence of creation. It shows when this character was made, and nothing else.";
+  "This page is evidence of creation. It is not a registration of ownership.";
 
 export const PUBLIC_CHECK_LABELS = {
   madeBy: "Made by",
