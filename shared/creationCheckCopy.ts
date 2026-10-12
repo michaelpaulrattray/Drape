@@ -72,9 +72,28 @@ export function publicCheckPath(kliegId: string): string {
   return `/check/${encodeURIComponent(kliegId)}`;
 }
 
+/**
+ * THE ONE CALENDAR DATE A CAST'S DATES ARE SAID IN — always UTC (#2360).
+ *
+ * The room's header (`server/castingV2/castProjection.ts`, *"Created on 3
+ * October"*) and this page's preview (*"Created 3 October 2026"*) sit on one
+ * screen. The header used to format with no `timeZone`, so it said whatever day
+ * the SERVER's clock was on while this page said the UTC day: on a UTC+10 bench
+ * the same cast read "4 October" above "3 October". Both now read this one
+ * function, so the zone is pinned in exactly one place and the two cannot drift
+ * again (working law 4). The forms differ only in whether the year is said.
+ */
+export function castCalendarDate(at: Date, form: "day-month" | "day-month-year"): string {
+  if (Number.isNaN(at.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    ...(form === "day-month-year" ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  }).format(at);
+}
+
 /** "3 September 2026" — the long British form the design's own example uses, in UTC so every reader sees one date. */
 export function publicCheckDate(iso: string): string {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return "";
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(at);
+  return castCalendarDate(new Date(iso), "day-month-year");
 }
