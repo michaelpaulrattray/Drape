@@ -16447,6 +16447,10 @@
       "path": "server/routes/planChangeSpentShareAndStates.test.ts"
     },
     {
+      "id": "test:server/routes/profileUpload.test.ts",
+      "path": "server/routes/profileUpload.test.ts"
+    },
+    {
       "id": "test:server/routes/referenceDelivery.test.ts",
       "path": "server/routes/referenceDelivery.test.ts"
     },
@@ -38216,6 +38220,11 @@
     {
       "from": "module:server/routes/profile.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/profile.ts",
+      "to": "module:server/security/trustedImageFetch.ts",
       "kind": "imports"
     },
     {
