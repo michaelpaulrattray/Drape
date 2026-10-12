@@ -135,7 +135,7 @@ describeWithDatabase("campaigns (disposable DB)", () => {
     const ownersCast = await newCast(owner);
     const own = await callerFor(stranger).createCampaign({ name: `Mine ${randomUUID().slice(0, 8)}` });
     await expect(callerFor(stranger).addCastsToCampaign({ campaignId: own.campaignId, castIds: [ownersCast] }))
-      .rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+      .rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
     expect(await memberRows(own.campaignId)).toBe(0);
 
     /* The statement itself, below the refusal: the INSERT … SELECT anchors the
@@ -161,7 +161,7 @@ describeWithDatabase("campaigns (disposable DB)", () => {
     const good = await newCast(owner);
     for (const bad of [await newCast(owner, "unsigned"), await newCast(owner, "deleted"), "KI-NEVER-ANYTHING"]) {
       await expect(callerFor(owner).addCastsToCampaign({ campaignId: campaign.campaignId, castIds: [good, bad] }))
-        .rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+        .rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
     }
     /* The good cast was not filed alongside the refused one. */
     expect(await memberRows(campaign.campaignId)).toBe(0);

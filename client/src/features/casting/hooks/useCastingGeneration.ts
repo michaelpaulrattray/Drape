@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import { CASTING_BRANDS } from "@shared/castingOptions";
 import {
@@ -335,7 +336,10 @@ export function useCastingGeneration({
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Generation failed";
+      // Our server's refusal word for word; a gateway page or a dropped
+      // connection gets our sentence instead (#2432).
+      logRawFailure("casting.generate", error);
+      const message = readableFailure(error, "The casting didn't finish. Try again.");
       castingOperation.fail({ message, background: !session.isCurrent() });
       if (!session.isCurrent()) {
         return;
@@ -496,14 +500,18 @@ export function useCastingGeneration({
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
       return "completed";
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Iteration failed";
+      // `raw` only decides which branch below runs — both tests read our own
+      // server's sentences. What the customer is SHOWN is `message` (#2432).
+      const raw = error instanceof Error ? error.message : "";
+      logRawFailure("casting.iterate", error);
+      const message = readableFailure(error, "That edit didn't finish. Try again.");
       castingOperation.fail({ message, background: !session.isCurrent() });
       if (!session.isCurrent()) return "failed";
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
       // (D-40), with a working Fork door. No failed-action retry: retrying
       // the same edit would be refused again by design.
-      if (message.includes("identity is minted")) {
+      if (raw.includes("identity is minted")) {
         setGenState({
           isGenerating: false,
           currentStep: "",
@@ -512,7 +520,7 @@ export function useCastingGeneration({
         });
         return "failed";
       }
-      if (/insufficient credits/i.test(message)) {
+      if (/insufficient credits/i.test(raw)) {
         setIsTopupOpen(true);
       }
       setGenState({ isGenerating: false, currentStep: "", error: message });

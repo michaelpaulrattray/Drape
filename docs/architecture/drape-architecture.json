@@ -12973,6 +12973,10 @@
       "path": "client/src/foundation/cardMenuRender.test.ts"
     },
     {
+      "id": "test:client/src/foundation/destructiveConfirm2432.test.ts",
+      "path": "client/src/foundation/destructiveConfirm2432.test.ts"
+    },
+    {
       "id": "test:client/src/foundation/downloadFilenameBrand.test.ts",
       "path": "client/src/foundation/downloadFilenameBrand.test.ts"
     },
@@ -13039,6 +13043,10 @@
     {
       "id": "test:client/src/lib/imageProxy.test.ts",
       "path": "client/src/lib/imageProxy.test.ts"
+    },
+    {
+      "id": "test:client/src/lib/rawFailureLeftovers2432.test.ts",
+      "path": "client/src/lib/rawFailureLeftovers2432.test.ts"
     },
     {
       "id": "test:client/src/lib/staffPage.test.ts",
@@ -19329,6 +19337,11 @@
     },
     {
       "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/components/CastProfilePanel.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -19925,6 +19938,11 @@
     {
       "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
       "to": "module:client/src/features/casting/pendingCastRegistry.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/casting/hooks/useCastingGeneration.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -22250,6 +22268,11 @@
     {
       "from": "module:client/src/features/studio/hooks/useCastGate.ts",
       "to": "module:client/src/features/studio/stores/useStudioStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/hooks/useCastGate.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {

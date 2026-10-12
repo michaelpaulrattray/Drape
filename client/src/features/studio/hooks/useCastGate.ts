@@ -10,6 +10,7 @@
 import { useState, useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 import { slotFailureMessage } from '@shared/refundCopy';
 import { useCastingGenerationStore } from '@/features/casting/stores/useCastingGenerationStore';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
@@ -203,8 +204,10 @@ export function useCastGate({
           refetchCreditsWithWarning();
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Casting failed';
+        // Our server's refusal word for word; a gateway page or a dropped
+        // connection gets our sentence instead (#2432).
+        logRawFailure('useCastGate.cast', error);
+        const message = readableFailure(error, "The casting didn't finish. Try again.");
         backgroundOperation?.fail({
           message,
           background: !session.isCurrent(),

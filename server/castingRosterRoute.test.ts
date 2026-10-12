@@ -162,7 +162,7 @@ describe("roster — scope, search and pages reach the store as asked", () => {
       .rejects.toMatchObject({ code: "NOT_FOUND", message: "Campaign not found" });
     outcome.page = { kind: "cursor_not_found" };
     await expect(call.roster({ cursor: "KI-NOT-THEIRS" }))
-      .rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+      .rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
     outcome.counts = { kind: "campaign_not_found" };
     await expect(call.rosterCounts({ scope: "campaign", campaignId: CAMPAIGN }))
       .rejects.toMatchObject({ code: "NOT_FOUND", message: "Campaign not found" });

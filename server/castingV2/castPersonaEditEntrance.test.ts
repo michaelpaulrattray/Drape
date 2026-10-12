@@ -243,7 +243,7 @@ describe("a Cast that is not theirs", () => {
     const { caller: trpc } = caller();
     await expect(trpc.castingV2.editCastPersonaField({
       castId: CAST_ID, line: "voice", text: "Low and dry.",
-    })).rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+    })).rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
     expect(writes).toHaveLength(0);
   });
 
@@ -259,7 +259,7 @@ describe("a Cast that is not theirs", () => {
     const { caller: trpc } = caller();
     await expect(trpc.castingV2.editCastPersonaField({
       castId: CAST_ID, line: "voice", text: "Low and dry.",
-    })).rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+    })).rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
     expect(writes).toHaveLength(1);
   });
 });

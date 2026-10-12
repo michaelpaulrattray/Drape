@@ -158,7 +158,7 @@ describe("each store outcome becomes its refusal", () => {
   it("a cast that is not the caller's signed cast is NOT_FOUND and files nothing", async () => {
     const { call } = caller();
     outcome.next = { kind: "cast_not_found" };
-    await expect(call.addCastsToCampaign(VALID.addCastsToCampaign)).rejects.toMatchObject({ code: "NOT_FOUND", message: "Cast not found" });
+    await expect(call.addCastsToCampaign(VALID.addCastsToCampaign)).rejects.toMatchObject({ code: "NOT_FOUND", message: "That character isn't here." });
   });
 
   it("a name the customer already uses is CONFLICT, on create and on rename", async () => {

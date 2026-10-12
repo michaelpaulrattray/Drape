@@ -885,7 +885,7 @@ const referenceRouter = router({
       } catch (error) {
         /* Somebody else's Cast is answered the way a missing one is. */
         if (error instanceof ReferenceAttachmentOwnershipError) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+          throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
         }
         /* A real TOO_MANY_REQUESTS at the cap, never a 200 carrying an error
            field the client cannot tell from a validation failure (6). */
@@ -2074,7 +2074,7 @@ export const castingV2Router = router({
         limit: input.limit,
       });
       if (page.kind === "campaign_not_found") throw campaignNotFound();
-      if (page.kind === "cursor_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (page.kind === "cursor_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       return page.casts.map(({ model, anchorUrl, frameCount, brief }) => ({
         castId: model.agencyId ?? "",
         name: model.name,
@@ -2130,7 +2130,7 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       const renamed = await updateModel(model.id, { name: input.name });
       if (!renamed.success) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to save the name" });
@@ -2235,7 +2235,7 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
       const filed = await addCastsToCampaign(ctx.user.id, input.campaignId, input.castIds);
       if (filed.kind === "campaign_not_found") throw campaignNotFound();
-      if (filed.kind === "cast_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (filed.kind === "cast_not_found") throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       return { campaignId: input.campaignId, added: filed.added };
     }),
 
@@ -2330,7 +2330,7 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReadsDraft);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
 
       const reader = castingCastReadsReader();
       if (!reader) {
@@ -2346,7 +2346,7 @@ export const castingV2Router = router({
       if (!sources?.anchorStorageKey) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "This cast has no signed picture to read from.",
+          message: "This character has no signed picture to read from.",
         });
       }
 
@@ -2424,7 +2424,7 @@ export const castingV2Router = router({
         });
       }
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       const written = await editCastPersonaField({
         userId: ctx.user.id,
         modelId: model.id,
@@ -2433,7 +2433,7 @@ export const castingV2Router = router({
         ...(input.ownWords === undefined ? {} : { ownWords: input.ownWords }),
       });
       if (!written) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       }
       /* Her words, back to her, with the badge already gone - so the card she
          is looking at does not need a refetch to stop saying it is a draft. */
@@ -2486,7 +2486,7 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castPersonaTranslate);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       const engine = castingCastPersonaTranslator();
       if (!engine) return { kind: "nothing", line: input.line };
       const outcome = await translateCastPersonaOwnWords({
@@ -2521,7 +2521,7 @@ export const castingV2Router = router({
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingSheet);
       assertFinalModelDeleteEnabled();
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       /*
         A Cast still building refuses, and says why. The deletion authority
         excludes `provisioning` models by design — her package is mid-flight and
@@ -2532,7 +2532,7 @@ export const castingV2Router = router({
       if (model.status === "provisioning") {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "This Cast is still building — you can delete it once the package finishes.",
+          message: "This character is still being made — you can delete it once it's finished.",
         });
       }
       return runFinalCastDeletionCeremony({
@@ -2559,7 +2559,7 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
       const model = await getOwnedCastByPublicId(ctx.user.id, input.castId);
-      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
+      if (!model) throw new TRPCError({ code: "NOT_FOUND", message: "That character isn't here." });
       const [
         assets, lineage, promisedAngles, sessionId, retryingAngles,
       ] = await Promise.all([
