@@ -459,7 +459,8 @@ export default function CastingV2() {
       */
       toast("Casting deleted");
     } catch (error) {
-      toast(error instanceof Error ? error.message : "That casting could not be deleted.");
+      logRawFailure("castingV2.abandonSession", error);
+      toast.error(readableFailure(error, "That casting could not be deleted."));
     } finally {
       setAbandoning(null);
     }
@@ -645,7 +646,8 @@ export default function CastingV2() {
     try {
       created = await createCampaign.mutateAsync({ name });
     } catch (error) {
-      setCampaignError(error instanceof Error ? error.message : "That campaign could not be made.");
+      logRawFailure("castingV2.createCampaign", error);
+      setCampaignError(readableFailure(error, "That campaign could not be made."));
       return;
     }
     if (newCampaignFiles) {
@@ -669,7 +671,8 @@ export default function CastingV2() {
     try {
       await renameCampaign.mutateAsync({ campaignId: campaign.campaignId, name });
     } catch (error) {
-      setRenameCampaignError(error instanceof Error ? error.message : "That name could not be saved.");
+      logRawFailure("castingV2.renameCampaign", error);
+      setRenameCampaignError(readableFailure(error, "That name could not be saved."));
       return;
     }
     await invalidateLibrary();
@@ -925,7 +928,8 @@ export default function CastingV2() {
       // the user has already spent on.
       castLatch.release();
       setStarting(false);
-      toast(error instanceof Error ? error.message : "That roll could not start.");
+      logRawFailure("castingV2.createSession", error);
+      toast.error(readableFailure(error, "That roll could not start."));
     }
   };
 
@@ -1679,7 +1683,8 @@ export default function CastingV2() {
               */
               toast("Renamed");
             } catch (error) {
-              toast(error instanceof Error ? error.message : "That name could not be saved.");
+              logRawFailure("castingV2.renameCast", error);
+              toast.error(readableFailure(error, "That name could not be saved."));
             }
           }}
         />
@@ -1687,7 +1692,7 @@ export default function CastingV2() {
 
       {deletingCast ? (
         <DestructiveConfirm
-          name={deletingCast.name ?? "this cast"}
+          name={deletingCast.name ?? "this character"}
           imageUrl={deletingCast.imageUrl}
           busy={deleteCast.isPending}
           onCancel={() => setDeletingCast(null)}
@@ -1705,12 +1710,11 @@ export default function CastingV2() {
                 same seven-second refresh before anything visibly changes.
                 Removing it would have traded a duplicate for a silence.
               */
-              toast(`${deletingCast.name ?? "That cast"} was deleted.`);
+              toast(`${deletingCast.name ?? "That character"} was deleted.`);
               setDeletingCast(null);
             } catch (error) {
-              toast(error instanceof Error
-                ? error.message
-                : `${deletingCast.name ?? "That cast"} could not be deleted.`);
+              logRawFailure("castingV2.deleteCast", error);
+              toast.error(readableFailure(error, `${deletingCast.name ?? "That character"} could not be deleted.`));
             }
           }}
         />

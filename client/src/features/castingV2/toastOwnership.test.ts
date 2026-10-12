@@ -178,6 +178,12 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     match: "could not be deleted.",
     because: "She is still on the roster; that is not an explanation.",
   },
+  // ---- CastingRoom.tsx (deleting from the character's page — #2383)
+  {
+    match: "toast.error(roomDeleteFailureSentence(",
+    because:
+      "A refused or failed delete from the character's page. The confirm closes and the page is unchanged, which looks exactly like Keep. The sentence moved into `roomDeleteFailureSentence` (card 2383) so a transport failure shows our sentence rather than the error's; a server refusal still passes through.",
+  },
   /*
     ---- ConceptUploadCard.tsx (Upload a concept, #185 slice two)
 
