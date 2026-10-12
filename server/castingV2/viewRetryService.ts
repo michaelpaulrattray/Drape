@@ -98,6 +98,7 @@ import { carriedFeatureWords, carriedInkCrops } from "./signService";
 import { conformanceProvenance } from "./viewConformance";
 import { assertNotFrozen } from "./spendGuards";
 import { castWardrobeLine, castWardrobeSource } from "./wardrobeLine";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/viewRetryService");
 
@@ -656,10 +657,10 @@ export async function retryCastView(
       return completeDirectOperationFailure({
         userId: input.userId,
         operationId,
-        error: new TRPCError({
-          code: "BAD_REQUEST",
-          message: charge.error || `Not enough credits. Asking for this view again costs ${formatCredits(displayPrice(price))} credits.`,
-        }),
+        error: chargeRefusal(
+          charge,
+          `Not enough credits. Asking for this view again costs ${formatCredits(displayPrice(price))} credits.`,
+        ),
         chargedCredits: 0,
         refundedCredits: 0,
       });

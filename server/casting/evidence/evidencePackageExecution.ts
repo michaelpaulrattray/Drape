@@ -96,6 +96,7 @@ import {
   inkViewDirectiveV2,
 } from "./inkAnatomyRegistry";
 import { inkPackageDirective } from "./evidencePackageRegistry";
+import { chargeRefusal } from "../../lib/chargeRefusal";
 
 const log = createModuleLogger("casting/evidence/evidencePackageExecution");
 const PACKAGE_FAILURE = "The view could not be updated from its saved evidence.";
@@ -1093,12 +1094,7 @@ export async function executeEvidencePackageSync(
     { toolKind: "image", engineUsed: INK_ADD_IMAGE_ENGINE },
   );
   if (!charged.success) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message:
-        charged.error
-        || `Insufficient credits. Need ${formatCredits(displayPrice(authority.plan.totalCost))} credits.`,
-    });
+    throw chargeRefusal(charged, `Insufficient credits. Need ${formatCredits(displayPrice(authority.plan.totalCost))} credits.`);
   }
   input.onCharged?.(authority.plan.totalCost);
 

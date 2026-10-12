@@ -34,6 +34,7 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../../casting/directOperation";
+import { chargeRefusal } from "../../lib/chargeRefusal";
 const log = createModuleLogger("routes/generation");
 
 function snapshotHeadshotGenerationModel(
@@ -251,10 +252,7 @@ export const castingImagingRouter = router({
           operationId: gate.operationId,
           chargedCredits,
           refundedCredits,
-          error: new TRPCError({
-            code: "BAD_REQUEST",
-            message: deductResult.error || `Insufficient credits. Need ${formatCredits(displayPrice(CREDIT_COSTS.castingImage))} credits.`,
-          }),
+          error: chargeRefusal(deductResult, `Insufficient credits. Need ${formatCredits(displayPrice(CREDIT_COSTS.castingImage))} credits.`),
         });
       }
       chargedCredits = CREDIT_COSTS.castingImage;

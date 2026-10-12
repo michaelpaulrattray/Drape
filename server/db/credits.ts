@@ -317,6 +317,13 @@ export interface CreditWriteResult {
   duplicate?: boolean;
   /** The existing row disagrees with the requested type or signed amount. */
   collision?: boolean;
+  /**
+   * The ONE refusal that is about the customer's balance (#2387): the account
+   * holds fewer credits than the charge. Every other refusal is the system's.
+   * A caller picks its customer sentence on this flag, never on `error`, which
+   * is present on every refusal and so cannot tell the two apart.
+   */
+  insufficient?: true;
 }
 
 interface CreditReferenceSemantics {
@@ -624,7 +631,7 @@ export async function deductCredits(
         if (userCreditsResult.length === 0) {
           return { success: false, error: "User credits not found" };
         }
-        return { success: false, error: "Insufficient credits" };
+        return { success: false, error: "Insufficient credits", insufficient: true };
       }
 
       // Read new balance inside transaction for accurate balanceAfter

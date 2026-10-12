@@ -146,6 +146,7 @@ import type { ReferenceImage } from "../providers/types";
 import { castingCastPersonaReader } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 import { mintCreationRecordOnSign } from "./creationRecordService";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/signService");
 
@@ -454,10 +455,10 @@ export async function signCandidate(
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: chargeResult.error || `Not enough credits. Signing a character costs ${formatCredits(displayPrice(price))} credits.`,
-      }),
+      error: chargeRefusal(
+        chargeResult,
+        `Not enough credits. Signing a character costs ${formatCredits(displayPrice(price))} credits.`,
+      ),
       chargedCredits: 0,
       refundedCredits: 0,
     });

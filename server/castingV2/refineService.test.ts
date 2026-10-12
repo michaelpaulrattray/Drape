@@ -319,7 +319,7 @@ vi.mock("../db/credits", () => ({
     reference: string,
   ) => {
     journal.push("deduct");
-    if (!chargeSucceeds) return { success: false, error: "Not enough credits" };
+    if (!chargeSucceeds) return { success: false, error: "Insufficient credits", insufficient: true as const };
     ledger.charges.push({ amount, reference });
     return { success: true };
   }),
@@ -3605,7 +3605,12 @@ describe("the order, and the money", () => {
 
   it("never charges when the deduct is refused, and fails the variant row", async () => {
     chargeSucceeds = false;
-    await expect(refineCandidate(greenEyes, input)).rejects.toThrow(/Not enough credits/);
+    // #2387: the road's own sentence with its price, on the ACCOUNT code — not
+    // the ledger's bare "Insufficient credits" on the brief's BAD_REQUEST.
+    await expect(refineCandidate(greenEyes, input)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. A refinement costs [\d,.]+ credits\.$/),
+    });
     expect(ledger.charges).toHaveLength(0);
     expect(ledger.refunds).toHaveLength(0);
     /* The claimed row must not sit there queued forever. */

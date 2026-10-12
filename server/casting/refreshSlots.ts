@@ -45,6 +45,7 @@ import { assertNotArchived } from "./modelGuards";
 import { selectIdentityAnchor } from "./identity/anchorSelector";
 import { createModuleLogger } from "../logging/logger";
 import { commitRefreshedSlotsSnapshot } from "./snapshotTransitions";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("casting/refreshSlots");
 
@@ -268,7 +269,7 @@ export async function executeRefreshSlots(input: {
     { toolKind: "image" },
   );
   if (!deduct.success) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
+    throw chargeRefusal(deduct, `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.`);
   }
   input.onCharged?.(totalCost);
 

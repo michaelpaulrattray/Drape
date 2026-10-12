@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { displayRefund, formatCredits } from "../../shared/creditDisplay";
 import type { TextEngine } from "../providers/types";
+import { CHARGE_UNAVAILABLE_SENTENCE } from "../lib/chargeRefusal";
 
 /**
  * The roll service's money and its ordering (plan §F, §H).
@@ -456,7 +457,7 @@ function baseDependencies(fails: (position: number) => boolean = () => false) {
       journal.push("charge");
       return chargeSucceeds
         ? { success: true, newBalance: 100 }
-        : { success: false, error: "Insufficient credits" };
+        : { success: false, error: "Insufficient credits", insufficient: true as const };
     }),
     storeImage: vi.fn(async () => ({ key: "casting-v2/candidates/x.png" })),
   } as never;
@@ -856,7 +857,19 @@ describe("the sequence", () => {
 describe("insufficient credits", () => {
   it("dispatches nothing, refunds nothing, and drives the rows terminal", async () => {
     chargeSucceeds = false;
-    await expect(createRoll(baseDependencies(), INPUT)).rejects.toBeTruthy();
+    /*
+      #2387: the customer is told they are short of credits and what a roll
+      costs, on the code the sheet reads as an ACCOUNT problem. It used to be
+      the ledger's bare "Insufficient credits" on BAD_REQUEST, which the sheet
+      draws as "That brief can't be cast" with an "Edit the brief" button.
+    */
+    const refusal = await createRoll(baseDependencies(), INPUT).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. A roll costs [\d,.]+ credits\.$/),
+    });
+    expect(classifyDispatchFailure({ message: (refusal as Error).message, data: { code: (refusal as { code: string }).code } }))
+      .toMatchObject({ kind: "credits", message: (refusal as Error).message });
 
     expect(journal).not.toContain("dispatch");
     // Refunding here would return money that was never taken.
@@ -1215,7 +1228,12 @@ describe("a cancel that lands before the roll is charged (#995)", () => {
     const landed: { cancel?: Awaited<ReturnType<typeof cancelRoll>> } = {};
     const dependencies = { ...(baseDependencies() as object), deduct: deductAfterCancel(landed, false) } as never;
 
-    await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // A missing credits row is the SYSTEM, not the customer's balance (#2387):
+    // it must not tell them they are short of credits.
+    await expect(createRoll(dependencies, INPUT)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: CHARGE_UNAVAILABLE_SENTENCE,
+    });
 
     expect(landed.cancel).toMatchObject({ cancelled: 8, refundedCredits: 0, refundUnrecorded: false });
     // Nothing taken, nothing given back: no credits minted out of a roll nobody paid for.

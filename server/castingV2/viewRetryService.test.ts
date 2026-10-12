@@ -328,7 +328,7 @@ function dependencies(
     }) as ViewRetryServiceDependencies["markRunning"],
     deduct: (async (_userId: number, amount: number, _k: string, _d: string, reference: string) => {
       journal.push("deduct");
-      if (!chargeSucceeds) return { success: false, error: "Not enough credits" };
+      if (!chargeSucceeds) return { success: false, error: "Insufficient credits", insufficient: true as const };
       deducts.push({ amount, reference });
       return { success: true };
     }) as ViewRetryServiceDependencies["deduct"],
@@ -610,7 +610,10 @@ describe("try again on one view — what moves, and in what order", () => {
 
   it("not enough credits refuses with the price, and nothing is rendered", async () => {
     chargeSucceeds = false;
-    await expect(retryCastView(dependencies([slot()]), input)).rejects.toThrow(/Not enough credits/);
+    await expect(retryCastView(dependencies([slot()]), input)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. Asking for this view again costs [\d,.]+ credits\.$/),
+    });
     expect(journal).toEqual(["claim", "running", "deduct"]);
     expect(enginePrompts).toHaveLength(0);
     expect(refunds).toHaveLength(0);

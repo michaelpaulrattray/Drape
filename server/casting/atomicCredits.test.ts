@@ -33,7 +33,7 @@ vi.mock("../db", async (importOriginal) => {
     // Mirrors deductCredits: atomic conditional decrement + a transaction row
     // under the given referenceId (NO duplicate check on the deduct side).
     deductCredits: vi.fn(async (userId: number, amount: number, _t: string, _d: string, referenceId?: string, attribution?: { toolKind: string | null; engineUsed?: string }) => {
-      if (ledger.balance < amount) return { success: false, error: "Insufficient credits" };
+      if (ledger.balance < amount) return { success: false, error: "Insufficient credits", insufficient: true as const };
       ledger.balance -= amount;
       ledger.transactions.push({ userId, referenceId, amount: -amount, toolKind: attribution?.toolKind });
       return { success: true, newBalance: ledger.balance };
@@ -135,6 +135,23 @@ describe("withAtomicCredits refund contract (review finding 1)", () => {
       ),
     ).rejects.toMatchObject({ message: expect.stringContaining("No image generated") });
     expect(ledger.balance).toBe(1000); // refunded
+  });
+
+  it("a short balance is refused with the written sentence and its price, never the ledger's words (#2387)", async () => {
+    let ran = false;
+    const refusal = await withAtomicCredits(
+      { userId: 1, amount: 5000, description: "Model iteration", referenceId: "gen-2387", toolKind: "image" as const },
+      async () => {
+        ran = true;
+        return "never";
+      },
+    ).catch((error: unknown) => error);
+    expect(refusal).toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Insufficient credits\. Need [\d,.]+ credits\.$/),
+    });
+    expect(ran).toBe(false);
+    expect(ledger.balance).toBe(1000);
   });
 
   it("success keeps the deduction and never calls addCredits", async () => {

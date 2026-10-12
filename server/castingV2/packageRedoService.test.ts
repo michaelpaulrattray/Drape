@@ -391,7 +391,7 @@ function dependencies(
       reference: string,
     ) => {
       journal.push("deduct");
-      if (chargeFails) return { success: false, error: "Not enough credits" };
+      if (chargeFails) return { success: false, error: "Insufficient credits", insufficient: true as const };
       deducts.push({ amount, reference });
       ledger.push({ referenceId: reference, type: "generation", amount: -amount });
       return { success: true };
@@ -856,7 +856,10 @@ describe("a redo that partly fails", () => {
       "four of five" state left: either the press is bought or nothing happens.
     */
     chargeFails = true;
-    await expect(redoCastPackage(dependencies(), input)).rejects.toThrow(TRPCError);
+    await expect(redoCastPackage(dependencies(), input)).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. Asking for all the views again costs [\d,.]+ credits\.$/),
+    });
     expect(deducts).toEqual([]);
     expect(refunds).toEqual([]);
     expect(committed).toEqual([]);
