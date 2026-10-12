@@ -7,6 +7,8 @@ import type { RefineFigure } from "@shared/refineFigure";
 import type { RefineStep } from "@shared/refineSteps";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
+import { sameOriginDownloadHref } from "@/lib/imageProxy";
+import { productFilename } from "@shared/brand";
 
 /**
  * THE image viewer, and the only interaction grammar images have.
@@ -618,11 +620,15 @@ export function CandidateViewer({
           image because this is where someone has already decided they want a
           closer look at this particular picture.
         */}
+        {/*
+          Through the same-origin image proxy (#2369): on the storage host's own
+          URL a browser ignores `download` and opened the picture in a new tab
+          instead of saving it.
+        */}
         <a
           className="dp-btn--onmedia dpc-viewer__download"
-          href={frame.url}
-          download={`${frame.downloadName}.png`}
-          target="_blank"
+          href={sameOriginDownloadHref(frame.url, window.location.origin, productFilename(`${frame.downloadName}.png`))}
+          download={productFilename(`${frame.downloadName}.png`)}
           rel="noreferrer"
           aria-label={`Download ${frame.label}`}
           onClick={(event) => event.stopPropagation()}
