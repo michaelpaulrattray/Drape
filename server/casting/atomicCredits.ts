@@ -66,17 +66,6 @@ interface AtomicCreditResult<T> {
 }
 
 /**
- * Execute an operation with atomic credit deduction.
- * 
- * Credits are deducted BEFORE the operation starts.
- * If the operation fails, credits are automatically refunded.
- * 
- * @param options - Credit deduction options
- * @param operation - The async operation to execute
- * @returns The result of the operation
- * @throws TRPCError if insufficient credits or operation fails
- */
-/**
  * Deterministic refund reference for a charge reference. The charge writes a
  * `creditTransactions` row under its own referenceId. Charge and refund use
  * distinct deterministic ids so they remain different semantic transactions.
@@ -154,6 +143,17 @@ export function refundTruth(outcome: RefundOutcome): string {
     : `The automatic refund could not be recorded — quote reference ${outcome.reference} and support will restore the ${shown} credits.`;
 }
 
+/**
+ * Execute an operation with atomic credit deduction.
+ * 
+ * Credits are deducted BEFORE the operation starts.
+ * If the operation fails, credits are automatically refunded.
+ * 
+ * @param options - Credit deduction options
+ * @param operation - The async operation to execute
+ * @returns The result of the operation
+ * @throws TRPCError if insufficient credits or operation fails
+ */
 export async function withAtomicCredits<T>(
   options: AtomicCreditOptions,
   operation: () => Promise<T>
