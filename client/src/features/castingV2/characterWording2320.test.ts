@@ -48,7 +48,7 @@ const PAIRS: ReadonlyArray<{ file: string; now: string; gone: string }> = [
   { file: SELECTION, now: '"1 character"', gone: '"1 cast member"' },
 ];
 
-describe("#2320 — the library says 'character'", () => {
+describe("card 2320 — the library says 'character'", () => {
   it.each(PAIRS)("$file says $now", ({ file, now }) => {
     expect(code(file)).toContain(now);
   });
@@ -63,7 +63,7 @@ describe("#2320 — the library says 'character'", () => {
   });
 });
 
-describe("#2320 — the class: no 'cast member' left in the code of the five files", () => {
+describe("card 2320 — the class: no 'cast member' left in the code of the five files", () => {
   it.each([LIBRARY, RENAME, PICKER, SELECTION, CHIPS])("%s", (file) => {
     expect(code(file)).not.toMatch(/cast member/i);
   });
