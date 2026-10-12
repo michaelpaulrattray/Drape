@@ -708,7 +708,7 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
         *top up* before the door opens, and each sits on a page that does not
         read `billing.getStatus` today.
       */
-      label="Choose a plan"
+      label={paymentFailed ? "Update your card" : "Choose a plan"}
       scrimClassName="dp-topup__scrim"
       cardClassName="dp-topup__card"
       busy={working}
@@ -716,8 +716,28 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
     >
       <div className="dp-topup__pane">
         <p className="dp-topup__eyebrow">PLANS</p>
-        <h2 className="dp-topup__title">Choose a plan</h2>
+        {/*
+          ⚠ **A FAILED PAYMENT IS NOT SHOWN A PURCHASE SCREEN — #2441, the
+          relay's finding on PR #2440's frames.** #2394 gave this account the
+          card's button and a notice, and left both UNDER the whole plan offer:
+          *Choose a plan*, a price *due today* and three bullets about what
+          buying gives them — a page that reads as a sale and then will not sell.
+          Nothing here can be bought while the payment is owed, so the heading
+          says what there is to do, the notice leads, and everything below the
+          heading that prices a plan — the balance line, the interval switch,
+          the figure, the picker, the bullets, the renewal line — is not drawn.
+          The fragment it hides is deliberately not re-indented, so the diff is
+          the gate and not three hundred moved lines.
+        */}
+        <h2 className="dp-topup__title">{paymentFailed ? "Update your card" : "Choose a plan"}</h2>
 
+        {paymentFailed ? (
+          <p className="dp-topup__reason" role="status">
+            Your last payment didn&apos;t go through. Update your card to keep your plan — you can
+            change plans once the payment goes through.
+          </p>
+        ) : (
+        <>
         {/* §7.1 — the reason, from the same four constants as §6a, and all four
             off THIS account's own cycle (#1739): this sentence is about the
             balance they hold today, never about the plan they are looking at. */}
@@ -1087,17 +1107,10 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
               still gets the nudge. */}
           {planRead && annual === false ? ` Pay yearly instead and ${monthsFree()} of the twelve months are free.` : ""}
         </p>
+        </>
+        )}
+        {/* ↑ #2441: the end of what a failed payment is not shown. */}
       </div>
-
-      {/* #2394 — said before the button, so its word is not a surprise. */}
-      {paymentFailed ? (
-        <div className="dp-topup__pane">
-          <p className="dp-topup__reason" role="status">
-            Your last payment didn&apos;t go through. Update your card to keep your plan — you can
-            change plans once the payment goes through.
-          </p>
-        </div>
-      ) : null}
 
       <div className="dp-topup__foot">
         <span className="dp-set__spacer" />

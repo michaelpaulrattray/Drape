@@ -105,3 +105,57 @@ describe("#2394 sweep — Add credits' plan pane", () => {
     );
   });
 });
+
+/* #2441 — the relay's finding on PR #2440's frames: the pane above that button
+   still read as a sale. *Choose a plan*, a price *due today* and the purchase
+   bullets stood over the notice, so the page offered what it then would not
+   sell. Every arm reads the PlanStepUpPane slice, so a sibling in the packs
+   pane cannot satisfy it. */
+describe("#2441 — a failed payment is not shown a purchase screen", () => {
+  /* What prices a plan on this pane. Each is a class or a word only the
+     purchase body draws. */
+  const PURCHASE = [
+    'className="dp-topup__adjust"',
+    'className="dp-topup__pricerow"',
+    'className="dp-topup__due"',
+    "due today",
+    'className="dp-topup__select"',
+    'className="dp-topup__bullets"',
+    'className="dp-topup__renewal"',
+  ];
+  const NOTICE = "Your last payment didn&apos;t go through";
+
+  const gate = sourceBand(stepUp, "{paymentFailed ? (", "</>", "the #2441 gate");
+  const split = gate.indexOf(") : (");
+  const failedArm = gate.slice(0, split);
+  const purchaseArm = gate.slice(split);
+  const outside = stepUp.replace(gate, "");
+
+  it("the heading and the dialog's name say what there is to do", () => {
+    expect(stepUp).toContain('label={paymentFailed ? "Update your card" : "Choose a plan"}');
+    expect(stepUp).toContain('<h2 className="dp-topup__title">{paymentFailed ? "Update your card" : "Choose a plan"}</h2>');
+  });
+
+  it("⚠ the notice leads — it is the failed arm of the gate under the heading, and it is said once", () => {
+    expect(split).toBeGreaterThan(-1);
+    expect(failedArm).toContain(NOTICE);
+    expect(failedArm).toContain('role="status"');
+    expect(stepUp.indexOf('<h2 className="dp-topup__title">')).toBeLessThan(stepUp.indexOf(gate));
+    expect(stepUp.split(NOTICE).length - 1, "a second copy of the notice is back").toBe(1);
+  });
+
+  it("⚠ nothing that prices a plan is drawn on the failed arm, or outside the gate", () => {
+    for (const mark of PURCHASE) {
+      expect(failedArm, `the failed-payment arm draws ${mark}`).not.toContain(mark);
+      expect(outside, `${mark} sits outside the gate, so a failed payment sees it`).not.toContain(mark);
+    }
+  });
+
+  it("POSITIVE CONTROL — every purchase mark is really on the purchase arm", () => {
+    /* Without this, a mark misspelled above passes both negative arms by
+       matching nothing anywhere. */
+    for (const mark of PURCHASE) {
+      expect(purchaseArm, `the purchase arm lost ${mark}`).toContain(mark);
+    }
+  });
+});
