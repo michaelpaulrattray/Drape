@@ -15988,6 +15988,10 @@
       "path": "server/providers/withRetryBilled.test.ts"
     },
     {
+      "id": "test:server/publicEndpointLimiters.test.ts",
+      "path": "server/publicEndpointLimiters.test.ts"
+    },
+    {
       "id": "test:server/publicEndpointRateLimits.test.ts",
       "path": "server/publicEndpointRateLimits.test.ts"
     },
