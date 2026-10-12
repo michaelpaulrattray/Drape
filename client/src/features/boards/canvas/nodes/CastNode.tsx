@@ -366,7 +366,12 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
           ...(hasEdit
             ? [{
                 id: "edit" as const,
-                label: isDraft ? "Edit — name and mint this draft" : "Edit",
+                /* #2335: naming a draft happens through Edit, and while the
+                   rebuild door is shut Edit opens the paused card (which
+                   explains itself), so the label promises nothing more.
+                   "mint" is the pipeline's word (#1916) and stays gone
+                   when the door opens. */
+                label: isDraft && REBUILD_DOOR_OPEN ? "Edit — name this draft" : "Edit",
                 onClick: () => openEdit(),
               }]
             : []),
@@ -720,11 +725,20 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           // §7.4 (Batch C, M13): restore is promised only as
                           // reuse of versions from the CURRENT look — never
                           // unconditionally, never as identity rollback.
+                          // #2335: while the rebuild door is shut the draft's
+                          // exit (editing it) is paused, so the line names no
+                          // road; restoring an earlier version stays open.
                           <div className="text-canvas-xs text-canvas-ink-soft">
                             {sheet.minted
                               ? "Headshot out of sync — it never refreshes. Changing this identity forks a new cast"
-                              : "Headshot out of sync — it never refreshes. Edit it in the environment"}
-                            {slot.version > 1 ? ", or reuse a version from the current look in its history" : ""}.
+                              : REBUILD_DOOR_OPEN
+                                ? "Headshot out of sync — it never refreshes. Edit it in the environment"
+                                : "Headshot out of sync — it never refreshes"}
+                            {slot.version > 1
+                              ? sheet.minted || REBUILD_DOOR_OPEN
+                                ? ", or reuse a version from the current look in its history"
+                                : ". Reuse a version from the current look in its history"
+                              : ""}.
                           </div>
                         ) : (
                           <div className="text-canvas-xs text-canvas-ink-soft">Out of sync</div>
@@ -764,7 +778,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           <div className="px-2 py-1.5 text-canvas-xs text-canvas-ink-faint">
                             {sheet.minted
                               ? "The headshot is this identity — fork to change it"
-                              : "The headshot anchors every view — edit it in the environment"}
+                              : REBUILD_DOOR_OPEN
+                                ? "The headshot anchors every view — edit it in the environment"
+                                : "The headshot anchors every view" /* #2335: editing is paused */}
                           </div>
                         ) : (
                           /* #2315: refreshing a view renders on the road the
@@ -833,7 +849,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       {/* VC-R6 final fix 1(b): a fresh draft teaches its own next step —
           one quiet line, once per user, replaced by the pill (Edit +
           "Build comp card") the moment the node is first selected */}
-      {isDraft && data.imageUrl && !draftHintSeen && !selected && (
+      {/* #2335: the caption's next step is naming, which is paused while the
+          rebuild door is shut — so the caption is not shown at all. */}
+      {REBUILD_DOOR_OPEN && isDraft && data.imageUrl && !draftHintSeen && !selected && (
         <div
           className="absolute left-0 right-0 -bottom-2 pointer-events-none"
           style={{ transform: "translateY(100%)" }}

@@ -18950,6 +18950,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/SpawnMenu.tsx",
+      "to": "module:shared/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/useCastActions.ts",
       "to": "module:client/src/features/boards/canvas/placementAnnouncement.ts",
       "kind": "imports"
