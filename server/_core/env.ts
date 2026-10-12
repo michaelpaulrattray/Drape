@@ -16,6 +16,7 @@ import {
 } from "../casting/evidence/evidenceComposerScope";
 import { assertDiagnosticCaptureConfigured } from "../castingV2/diagnosticCapture";
 import { assertFalBudget } from "../castingV2/falBudget";
+import { CREATION_RECORD_PRIVATE_KEY_VARIABLE } from "../castingV2/creationRecordSigning";
 import {
   EVIDENCE_PACKAGE_SCOPE_ENV,
   validateEvidencePackageEnvironment,
@@ -51,6 +52,8 @@ import {
   validateCastingBriefFidelityEnvironment,
   CASTING_CONCEPT_UPLOAD_SCOPE_ENV,
   validateCastingConceptUploadEnvironment,
+  CASTING_CREATION_RECORD_SCOPE_ENV,
+  validateCastingCreationRecordEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -628,6 +631,17 @@ export function validateEnv(): void {
     refused, and a refused courtesy read shows up as a feature the customer is
     told she does not have.
   */
+  /*
+    THE CREATION RECORD BEHIND EACH KLIEG ID (N2d-1, #2311). On without its
+    signing key REFUSES BOOT and names the variable, never its value — a
+    signing road with no key must refuse, not skip (invariant 7).
+  */
+  validateCastingCreationRecordEnvironment({
+    scope: process.env[CASTING_CREATION_RECORD_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+    privateKey: process.env[CREATION_RECORD_PRIVATE_KEY_VARIABLE],
+  });
+
   const budget = assertFalBudget();
   console.info(`[Env] fal concurrency budget: ${budget.line}`);
 

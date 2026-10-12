@@ -17,6 +17,7 @@
  *  9c. bugReports (userId), faceScanDailyUsage (userId),
  *      subscriptionRenewalReminders (userId)
  *  9d. castCampaignMembers (userId), then castCampaigns (userId)
+ *  9e. castCreationRecords (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -62,6 +63,7 @@ import {
   faceScanDailyUsage,
   subscriptionRenewalReminders,
   castCampaigns,
+  castCreationRecords,
   castCampaignMembers,
   auditLogs,
   changeRequests,
@@ -213,6 +215,15 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
   */
   "castCampaigns.userId": "deleted",
   "castCampaignMembers.userId": "deleted",
+
+  /* ---- the record behind each Klieg ID (#2311) ---- */
+  /*
+    A signed record of who made each cast and when, with the maker's display
+    name in it. It is OF casts this same transaction deletes, it is the
+    customer's own evidence and nobody else's, and design §3 says it dies with
+    its cast — so it dies with the account too. Gone stays gone.
+  */
+  "castCreationRecords.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -389,6 +400,7 @@ function zeroDeletionCounts() {
     subscriptionRenewalReminders: 0,
     castCampaignMembers: 0,
     castCampaigns: 0,
+    castCreationRecords: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -1327,6 +1339,12 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         .delete(castCampaigns)
         .where(eq(castCampaigns.userId, userId));
       counts.castCampaigns = (campaignResult as any)[0]?.affectedRows ?? 0;
+
+      /* Step 9e: the creation records behind the account's Klieg IDs (#2311). */
+      const creationRecordResult = await tx
+        .delete(castCreationRecords)
+        .where(eq(castCreationRecords.userId, userId));
+      counts.castCreationRecords = (creationRecordResult as any)[0]?.affectedRows ?? 0;
 
       // Step 10: Delete credit transactions
       const txResult = await tx

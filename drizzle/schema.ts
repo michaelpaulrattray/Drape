@@ -4140,6 +4140,65 @@ export type CastCampaignMemberRow = typeof castCampaignMembers.$inferSelect;
 export type InsertCastCampaignMemberRow = typeof castCampaignMembers.$inferInsert;
 
 /**
+ * THE CREATION RECORD BEHIND A KLIEG ID (migration 0081; N2d-1, card #2311).
+ *
+ * One row per signed cast: a canonical JSON document of who made it, when, a
+ * SHA-256 of its master picture and the steps taken as EVENTS, signed by
+ * Klieg (Ed25519, detached JWS) and stamped by an independent RFC 3161
+ * authority. The design is `docs/specs/N2D_RECORD_OF_CREATION_DESIGN_2026-10-12.md`.
+ *
+ * ⚠ **THE BOUND (design §3): `recordJson` NEVER carries `masterPrompt`,
+ * `technicalSchema`, `preferences`, the brief, a refine's words, the identity
+ * text or any other creative content** — enforced in code by
+ * `server/castingV2/creationRecord.ts`, which refuses to sign a record holding
+ * any of them.
+ *
+ * `timestampAuthority` names which authority answered and is INTERNAL: no
+ * customer string ever names it (every surface says "independently
+ * timestamped"). The token is stored whole, DER as base64, with the
+ * authority's certificate inside it, so it stays verifiable offline forever.
+ *
+ * A row may exist with no token yet — an authority that refused or timed out
+ * never fails the Sign; the record retries on the next request and, until a
+ * token lands, later surfaces simply have nothing to offer.
+ *
+ * `publicAt` is the later check page's owner toggle (N2d-3); nothing on this
+ * card writes it. Deleted with its cast (`finalCastDeletion.ts`) and with the
+ * account (`accountDeletion.ts`) — gone stays gone.
+ */
+export const castCreationRecords = mysqlTable("cast_creation_records", {
+  id: int("id").autoincrement().primaryKey(),
+  modelId: int("modelId").notNull(), // →models — one record per cast
+  userId: int("userId").notNull(), // denormalised owner — single-statement ownership
+  recordVersion: varchar("recordVersion", { length: 16 }).notNull(),
+  /** The canonical record JSON — exactly the bytes hashed, signed and stamped. */
+  recordJson: text("recordJson").notNull(),
+  recordSha256: varchar("recordSha256", { length: 64 }).notNull(),
+  /** Detached JWS (`<protected>..<signature>`), EdDSA over Ed25519. */
+  signature: varchar("signature", { length: 512 }).notNull(),
+  /** RFC 7638 thumbprint of the signing key's public half. */
+  signingKeyId: varchar("signingKeyId", { length: 64 }).notNull(),
+  /** The RFC 3161 TimeStampToken, DER, base64. NULL until an authority grants one. */
+  timestampToken: text("timestampToken"),
+  /** INTERNAL — which authority answered. Never in customer copy. */
+  timestampAuthority: varchar("timestampAuthority", { length: 32 }),
+  /** The authority's own time for the stamp (the token's genTime). */
+  stampedAt: timestamp("stampedAt"),
+  stampAttempts: int("stampAttempts").notNull().default(0),
+  lastStampAttemptAt: timestamp("lastStampAttemptAt"),
+  /** The owner's public check-page toggle (N2d-3). NULL = off, the default. */
+  publicAt: timestamp("publicAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ([
+  /* One record per cast; a second mint of the same cast loses the insert. */
+  uniqueIndex("uq_cast_creation_records_model").on(table.modelId),
+  index("ix_cast_creation_records_user").on(table.userId),
+]));
+
+export type CastCreationRecordRow = typeof castCreationRecords.$inferSelect;
+export type InsertCastCreationRecordRow = typeof castCreationRecords.$inferInsert;
+
+/**
  * THE FOUNDER'S REPLIES — the steering half of the Crew tab (migration 0054;
  * issue #41, design `docs/specs/CREW_TAB_DESIGN.md` §3).
  *

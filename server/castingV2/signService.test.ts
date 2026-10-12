@@ -510,6 +510,41 @@ describe("the Sign ceremony's order", () => {
   });
 });
 
+describe("the creation record (N2d-1, #2311)", () => {
+  it("is the Sign's LAST act — after the seal and the delivered event — for this Sign's own cast", async () => {
+    const mintCreationRecord = vi.fn(async (_deps: unknown, call: { userId: number; modelId: number; operationId: string }) => {
+      journal.push("creation-record");
+      return { kind: "dark" as const, call };
+    });
+    await signCandidate(
+      { schedulePackage: awaitPackage, buildPackage: packageReturning({}), mintCreationRecord: mintCreationRecord as never },
+      input,
+    );
+    expect(journal.at(-1)).toBe("creation-record");
+    expect(journal.indexOf("creation-record")).toBeGreaterThan(journal.indexOf("seal:success"));
+    expect(journal.indexOf("creation-record")).toBeGreaterThan(journal.indexOf("event:delivered"));
+    expect(mintCreationRecord).toHaveBeenCalledTimes(1);
+    expect(mintCreationRecord.mock.calls[0]![1]).toEqual({
+      userId: input.userId,
+      modelId: casts[0]!.modelId,
+      operationId: expect.any(String),
+    });
+  });
+
+  it("CONTROL — a Sign whose refund did not record never reaches it (the record waits for its first request)", async () => {
+    const mintCreationRecord = vi.fn(async () => null);
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({ failed: 1, refundedCredits: VIEW_PRICE, refundUnrecorded: true }),
+        mintCreationRecord,
+      },
+      input,
+    );
+    expect(mintCreationRecord).not.toHaveBeenCalled();
+  });
+});
+
 describe("Sign's money", () => {
   it("takes the whole price once, and gives nothing back when everything lands", async () => {
     const result = await signCandidate(

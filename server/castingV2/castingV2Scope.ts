@@ -12,6 +12,8 @@
  * fail-closed dependency checks. The client never supplies or influences this
  * value — it observes only the resulting boolean capability.
  */
+import { loadCreationRecordKey } from "./creationRecordSigning";
+
 export const CASTING_V2_SCOPE_ENV = "CASTING_V2_SCOPE";
 
 export type CastingV2Scope =
@@ -2809,5 +2811,93 @@ export function validateCastingRetryEnvironment(input: {
       `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
+  return child;
+}
+
+/* --------------------------------------------- the creation-record sub-flag */
+
+/**
+ * THE CREATION RECORD BEHIND EACH KLIEG ID (N2d-1, #2311) —
+ * `CASTING_CREATION_RECORD_SCOPE`.
+ *
+ * Whether a cast this account signs gets a signed, independently timestamped
+ * record of who made it, when, a fingerprint of its master picture and the
+ * steps taken (`creationRecordService.ts`; the design is
+ * `docs/specs/N2D_RECORD_OF_CREATION_DESIGN_2026-10-12.md`). Off, and absent
+ * means off, the Sign never reaches the record road and no record is built on
+ * request either — not one statement runs. Nothing a customer sees reads a
+ * record on this card; the certificate (N2d-2) and the check page (N2d-3) are
+ * the later surfaces.
+ *
+ * Its parent is `CASTING_V2_SCOPE`: a record is OF a signed cast, and a user
+ * outside casting has none.
+ *
+ * ⚠ **ON WITHOUT THE KEY REFUSES BOOT AND NAMES THE VARIABLE** (the
+ * `R7_EVIDENCE_INGEST_SCOPE` shape; invariant 7). A signing feature with no
+ * key must refuse, not improvise — and it must not skip quietly either,
+ * because a record road that silently never signs is a control that reads as
+ * live and does nothing. The key's value is never in the message.
+ */
+export const CASTING_CREATION_RECORD_SCOPE_ENV = "CASTING_CREATION_RECORD_SCOPE";
+
+export class CastingCreationRecordScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_CREATION_RECORD_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingCreationRecordScopeConfigurationError";
+  }
+}
+
+export class CastingCreationRecordCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_CREATION_RECORD_SCOPE_ENV} ${detail}`);
+    this.name = "CastingCreationRecordCoverageError";
+  }
+}
+
+export function parseCastingCreationRecordScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingCreationRecordScopeConfigurationError();
+  });
+}
+
+/** Captured at the point of use, the chain ANDed — its siblings' rule. */
+export function captureCastingCreationRecordEnabled(userId: number): boolean {
+  const child = parseCastingCreationRecordScope(process.env[CASTING_CREATION_RECORD_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingCreationRecordEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+  /** The private key's raw value — validated, never echoed. */
+  privateKey: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingCreationRecordScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingCreationRecordCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a record is of a signed cast, and there is none`,
+    );
+  }
+  if (parent.kind === "users") {
+    if (child.kind === "all") {
+      throw new CastingCreationRecordCoverageError(
+        `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+      );
+    }
+    const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+    if (uncovered.length > 0) {
+      throw new CastingCreationRecordCoverageError(
+        `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+      );
+    }
+  }
+  /* Throws `CreationRecordKeyError`, naming the variable and never its value. */
+  loadCreationRecordKey(input.privateKey);
   return child;
 }
