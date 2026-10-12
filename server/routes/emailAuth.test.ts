@@ -625,15 +625,53 @@ describe("POST /api/auth/register — the doors, in the order the handler asks t
     expect(response.status).toBe(201);
   });
 
-  it("refuses a second account on an address already taken, with 409 and no write", async () => {
+  it("refuses a second account on an address already taken, with 409, no write and the code left unspent", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ email: REGISTRATION.email }) as never);
 
     const response = await post("/api/auth/register", REGISTRATION);
 
     expect(response.status).toBe(409);
     expect(response.json.error).toBe("An account with this email already exists");
-    expect(validateInviteCode).not.toHaveBeenCalled();
+    /* #2443: the code is checked FIRST, and only read — never redeemed. */
+    expect(validateInviteCode).toHaveBeenCalledWith(REGISTRATION.betaCode);
+    expect(redeemInviteCode).not.toHaveBeenCalled();
+    expect(countFreeGrantClaims).not.toHaveBeenCalled();
     expect(db.upsertUser).not.toHaveBeenCalled();
+  });
+
+  /*
+    #2443 — THE SIGN-UP FORM MUST NOT TELL A STRANGER WHETHER AN EMAIL HAS AN
+    ACCOUNT. Without a valid access code, a registered address and a new one
+    must get the SAME answer, byte for byte, and the account list must not even
+    be asked. The negative control is the pair itself: the two calls differ only
+    in whether the address is taken.
+  */
+  it("gives a taken address and a new one the same answer when the access code is not valid", async () => {
+    vi.mocked(validateInviteCode).mockResolvedValue({ valid: false, error: "Invalid access code." });
+
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ email: REGISTRATION.email }) as never);
+    const taken = await post("/api/auth/register", REGISTRATION);
+
+    vi.mocked(getUserByEmail).mockResolvedValue(null as never);
+    const fresh = await post("/api/auth/register", { ...REGISTRATION, email: "nobody@example.com" });
+
+    expect(taken.status).toBe(400);
+    expect(taken.json.error).toBe("Invalid access code.");
+    expect({ status: taken.status, json: taken.json }).toEqual({ status: fresh.status, json: fresh.json });
+    expect(getUserByEmail).not.toHaveBeenCalled();
+    expect(db.upsertUser).not.toHaveBeenCalled();
+  });
+
+  it("still tells someone holding a valid code that the address is taken (the founder's kept words)", async () => {
+    /* Positive control for the arm above: with a GOOD code the 409 is still
+       reachable, so the arm above cannot pass by the 409 having been deleted. */
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ email: REGISTRATION.email }) as never);
+
+    const response = await post("/api/auth/register", REGISTRATION);
+
+    expect(response.status).toBe(409);
+    expect(response.json.error).toBe("An account with this email already exists");
+    expect(getUserByEmail).toHaveBeenCalledWith(REGISTRATION.email);
   });
 
   it("refuses an invalid beta code in the code checker's own words, and creates nobody", async () => {

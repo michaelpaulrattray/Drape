@@ -128,17 +128,24 @@ emailAuthRouter.post("/register", async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if email already exists
-    const existingUser = await getUserByEmail(email);
-    if (existingUser) {
-      res.status(409).json({ error: "An account with this email already exists" });
-      return;
-    }
-
     // Validate beta code
     const codeResult = await validateInviteCode(betaCode);
     if (!codeResult.valid) {
       res.status(400).json({ error: codeResult.error || "Invalid access code" });
+      return;
+    }
+
+    /*
+      Check if email already exists — AFTER the access code (#2443). Asked first,
+      this answered 409 for a registered address and 400 for a new one whatever
+      code was typed, so anyone could test an email against the account list.
+      Now only someone holding a valid code reaches this answer. The words are
+      kept on the founder's ruling (2026-10-12). `validateInviteCode` only reads,
+      so the code stays unspent: nothing is redeemed until an account exists.
+    */
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      res.status(409).json({ error: "An account with this email already exists" });
       return;
     }
 
