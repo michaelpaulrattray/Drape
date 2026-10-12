@@ -346,7 +346,15 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         if (statePayload.betaCode) {
           const codeResult = await validateInviteCode(statePayload.betaCode);
           if (codeResult.valid) {
-            await redeemInviteCode(existingUser.id, statePayload.betaCode);
+            /* The redeem is what approves the account, and it can refuse after
+               the check above said yes — the code's last use taken by someone
+               else in between (#2373). A refused redeem leaves the account
+               unapproved, so no session is minted for it. */
+            const redeemResult = await redeemInviteCode(existingUser.id, statePayload.betaCode);
+            if (!redeemResult.success) {
+              res.redirect("/login?error=code_redeem_failed");
+              return;
+            }
           } else {
             res.redirect("/login?error=not_approved");
             return;
