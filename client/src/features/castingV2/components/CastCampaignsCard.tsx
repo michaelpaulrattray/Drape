@@ -48,7 +48,7 @@ export function campaignLibraryHref(campaignId: string): string {
 }
 
 function castCountLine(count: number): string {
-  return count === 1 ? "1 cast" : `${count} casts`;
+  return count === 1 ? "1 character" : `${count} characters`;
 }
 
 export type CastCampaignsPanelProps = {
@@ -283,7 +283,7 @@ export function CastCampaignsCard({ castId, castName }: { castId: string; castNa
       return null;
     } catch (error) {
       logRawFailure("castingV2.addCastsToCampaign", error);
-      return readableFailure(error, "This cast couldn't be added to that campaign.");
+      return readableFailure(error, "This character couldn't be added to that campaign.");
     } finally {
       refresh();
     }

@@ -90,8 +90,8 @@ export function NewCampaignDialog({
         ) : (
           <p className="dpc-renamem__helper">
             {renaming
-              ? "Only the name changes. The cast members in it stay as they are."
-              : "A cast member can be in more than one campaign."}
+              ? "Only the name changes. The characters in it stay as they are."
+              : "A character can be in more than one campaign."}
           </p>
         )}
       </div>
