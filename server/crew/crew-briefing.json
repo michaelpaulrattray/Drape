@@ -1,7 +1,7 @@
 {
-  "edition": 682,
-  "updatedAt": "2026-10-12T02:05:00.000Z",
-  "shift": "Foreman — foreman-20261012-1145",
+  "edition": 683,
+  "updatedAt": "2026-10-12T02:54:33.307Z",
+  "shift": "Foreman — foreman-20261012-1248 (escalated Fable, the N2d design pass)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,23 +14,23 @@
       "title": "N2d — the ID on your master picture stops being just a label. It becomes a record of when a cast was made and by whom, signed by us and timestamped by somebody independent, with a certificate you can download and an optional page anyone can check. Nothing here changes how a cast is made, and nothing about it costs a credit.",
       "steps": [
         {
-          "title": "The design first: what gets signed, what the certificate shows, and what it must never show (#2134)",
-          "state": "in-progress"
+          "title": "The design first: what gets signed, what the certificate shows, and what it must never show — done, the design is in the tree and the cards are cut (#2134 stays open behind them)",
+          "state": "done"
         },
         {
-          "title": "The signed, timestamped record behind every ID",
+          "title": "The signed, timestamped record behind every ID (#2311)",
           "state": "waiting"
         },
         {
-          "title": "Your downloadable Certificate of Creation",
+          "title": "Your downloadable Certificate of Creation (#2312)",
           "state": "waiting"
         },
         {
-          "title": "A page anyone can check — off unless you turn it on, for one cast at a time",
+          "title": "A page anyone can check — off unless you turn it on, for one cast at a time (#2313)",
           "state": "waiting"
         },
         {
-          "title": "The three wording changes to the terms — a lawyer reads them before a word of it is published",
+          "title": "The three wording changes to the terms — a lawyer reads them before a word of it is published (#2314)",
           "state": "waiting"
         }
       ]
@@ -135,7 +135,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T01:58:51.070Z",
+      "readAt": "2026-10-12T02:54:51.057Z",
       "items": [
         {
           "issueNumber": 14,
@@ -285,6 +285,17 @@
     }
   },
   "needsYou": [
+    {
+      "id": "n2d-provider-lawyer-2314",
+      "title": "N2d needs your hand twice, and your lawyer once — nothing waits on it to start building",
+      "productImpact": "Before the product can ever promise \"we don't train on your characters\", that sentence has to be true of every company we send pictures to. The crew read their terms this shift. Google's paid tier is clean, and fal's terms say customers own their uploads — but one fal clause lets them use anonymized data derived from uploads to develop their AI, and only a lawyer can say whether our wording survives that. OpenRouter is a router: it only refuses the providers that train if OUR account says so.\n\nThree things, none of them the crew's to do:\n\n1. On your OpenRouter account, turn on the setting that refuses providers that train on inputs, with the relay. Pictures of customers' casts pass through there for quality checks.\n2. Confirm our Google AI account is on the paid tier (paid doesn't train on your data; the free tier does). Wardrobe pictures go there.\n3. Send your lawyer the three terms changes with the pack the crew prepared — it is section 6 of the design document on card 2314, quotes and dates included.",
+      "workedExample": "A customer downloads their Certificate of Creation next month and asks: do you train on my character? Today the honest answer has footnotes. After these three acts it is a plain no, written into the terms by someone qualified to write it.",
+      "options": [],
+      "recommendation": "Do the two account checks with the relay this week; send the lawyer pack whenever suits. The build (#2311) starts now either way.",
+      "state": "open",
+      "filedAt": "2026-10-12T02:54:33.308Z",
+      "issueNumber": 2314
+    },
     {
       "id": "pro-plus-stripe-rename-1900",
       "title": "Done — the plan is called Pro Plus on both sides now, ours and Stripe's",
@@ -10489,7 +10500,7 @@
     280
   ],
   "nextUp": {
-    "readAt": "2026-10-12T01:58:51.069Z",
+    "readAt": "2026-10-12T02:54:51.055Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10549,7 +10560,11 @@
       {
         "issueNumber": 2134,
         "title": "N2d: the Klieg ID becomes a record of creation — signed, timestamped, with a downloadable certificate (his word 2026-10-09)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "its children #2311–#2314 — #2311 buildable now; #2312/#2313 after it; #2314 your hand. The design pass is done."
+        }
       },
       {
         "issueNumber": 2140,
@@ -10560,6 +10575,30 @@
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
         "urgent": false
+      },
+      {
+        "issueNumber": 2311,
+        "title": "N2d-1 — The creation record: signed and timestamped behind each Klieg ID, built dark (nothing a customer sees)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2312,
+        "title": "N2d-2 — The Certificate of Creation: one download button on a signed cast's page",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2313,
+        "title": "N2d-3 — The public check page, off by default, with the owner's one toggle",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2314,
+        "title": "N2d-4 — Provider no-training positions and the lawyer pack (hand acts; nothing published)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — two account reads/settings (OpenRouter, Gemini tier) are your or the"
+        }
       }
     ]
   }
