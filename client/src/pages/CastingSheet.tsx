@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute, useSearch } from "wouter";
+import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,7 +43,7 @@ import {
   type BriefDraft,
 } from "@/features/castingV2/briefDraft";
 import { BOX_EDITED_MARK, boxDiffersFromSheet } from "@/features/castingV2/chipEdit";
-import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
+import { classifyDispatchFailure, failureActionLabel, failureIsStale } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
 import { waitExceeds } from "@/features/castingV2/waitNotice";
@@ -51,6 +52,7 @@ import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { showingProvisionalRoll } from "@/features/castingV2/rollOnScreen";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
+import { carriedBriefState, readCarriedBrief, sheetBoxStart } from "@/features/castingV2/carriedBrief";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import {
@@ -616,10 +618,8 @@ export default function CastingSheet() {
     world that no longer exists. No predicate to keep in step, no latch to tear
     down: the banner reads what the sheet reads.
   */
-  const staleFailure =
-    dispatchFailure !== null
-    && activeRollId !== null
-    && activeRollId !== dispatchFailure.afterRollId;
+  // The rule, and its one exception (a short balance), live in `failureIsStale`.
+  const staleFailure = failureIsStale(dispatchFailure, activeRollId);
 
   /*
     A ROLL THE USER CANCELLED IS NOT A FAILURE TO REPORT BACK TO THEM.
@@ -770,7 +770,17 @@ export default function CastingSheet() {
    * share a sentence, and walking between them is still arriving somewhere new.
    */
   const shownBrief = roll.data?.briefText ?? "";
-  const brief = displayText(draft, shownBrief);
+  /*
+    WORDS THAT ARRIVED WITH THE SHEET AND WERE NEVER CAST (#2385). The casting
+    page moves here before its roll is read, so a refused brief made no roll
+    and `shownBrief` is empty — and the box used to be empty with it, throwing
+    away what the customer wrote. Until the sheet has a roll of its own, the box
+    starts from the words the casting page sent (`carriedBrief.ts`). They are
+    NOT `shownBrief`: the record above the grid says "The brief this casting
+    was cast from", and these were not cast.
+  */
+  const arrivedBrief = readCarriedBrief(useHistoryState());
+  const brief = displayText(draft, sheetBoxStart({ shownBrief, activeRollId, arrived: arrivedBrief }));
   /*
     THE BOX HAS BEEN EDITED AWAY FROM THE SHEET (#534, his §16) — the single
     condition under which the record says a word about a difference. It reads
@@ -3029,7 +3039,11 @@ export default function CastingSheet() {
                 size="small"
                 onClick={() => {
                   setDispatchFailure(null);
-                  navigate("/app/casting");
+                  /*
+                    The words go back with them (#2385): "Edit the brief" that
+                    opens an empty box asks for the brief again from memory.
+                  */
+                  navigate("/app/casting", { state: carriedBriefState(brief) });
                 }}
               >
                 {failureActionLabel(visibleFailure.kind)}
@@ -3250,7 +3264,14 @@ export default function CastingSheet() {
               onStyle={setStyleChoice}
             />
           ) : null}
-          <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
+          {/*
+            One line at every width but a phone's (#2388): at 390 the priced
+            button kept its whole label and squeezed the brief to ~70px, one
+            word-fragment per line. `.dpc-dockrow` (castingV2.css) wraps the
+            row under 460px, so the brief takes the full width and Roll again
+            sits under it.
+          */}
+          <div className="dp-row dpc-dockrow">
             <Field className="dp-split__main dpc-briefrow">
               {/*
                 RE-IMAGINE (#535) where the sparkle sat — a press, not a mark:

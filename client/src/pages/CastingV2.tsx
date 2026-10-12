@@ -71,6 +71,7 @@ import { RenameDialog } from "@/foundation";
 import { SmallCopyImage } from "@/foundation";
 import { classifyDispatchFailure } from "@/features/castingV2/dispatchFailure";
 import { readSheetGone } from "@/features/castingV2/sheetGone";
+import { carriedBriefState, readCarriedBrief } from "@/features/castingV2/carriedBrief";
 import { CASTING_SESSION_IDLE_PHRASE } from "@shared/castingRetention";
 import {
   RETENTION_EMPTY_STATE,
@@ -224,8 +225,18 @@ export default function CastingV2() {
     retired dock wearing a different coat. A plain visit carries nothing and
     the page is exactly what it has always been.
   */
-  const sheetGone = readSheetGone(useHistoryState());
-  const [brief, setBrief] = useState("");
+  const historyState = useHistoryState();
+  const sheetGone = readSheetGone(historyState);
+  /*
+    WORDS THAT WERE NEVER CAST COME BACK (#2385). "Edit the brief" on a sheet
+    whose roll was refused hands the customer's own words back through the
+    history state (`carriedBrief.ts`), so the box opens holding them instead of
+    asking for up to 4,000 characters again from memory. Read once, at mount,
+    as the box's starting value — never again, or it would fight their typing.
+    A gone sheet carries nothing (#890, above); a plain visit carries nothing.
+  */
+  const [carriedOnArrival] = useState(() => readCarriedBrief(historyState));
+  const [brief, setBrief] = useState(carriedOnArrival);
   /*
     THE SETTINGS (#142): the style, set in the modal the gear opens, his
     default (photoreal), drawn only on the author road. Page state and nothing
@@ -372,9 +383,9 @@ export default function CastingV2() {
   */
   const castingOpen = config.data?.enabled === true;
   useEffect(() => {
-    if (sheetGone && castingOpen) focusBrief();
+    if ((sheetGone || carriedOnArrival) && castingOpen) focusBrief();
     // `focusBrief` is a closure over a ref, not a dependency; the arrival is the trigger.
-  }, [sheetGone, castingOpen]);
+  }, [sheetGone, carriedOnArrival, castingOpen]);
   /*
     RE-IMAGINE on the hero's brief box (#535). The hook lives up here with the
     other unconditional hooks; it asks the same capture the server's door
@@ -918,7 +929,12 @@ export default function CastingV2() {
 
       // Navigating IS the confirmation, so no toast — the toast law fires on
       // actions that leave you where you were, never on ones that move you.
-      navigate(`/app/casting/s/${session.sessionId}`);
+      /*
+        The words ride along (#2385): this page is about to unmount, and if the
+        reader refuses them the sheet is where that is said — so the sheet must
+        be holding them, for its own box and for "Edit the brief" to hand back.
+      */
+      navigate(`/app/casting/s/${session.sessionId}`, { state: carriedBriefState(briefText) });
     } catch (error) {
       // Only a failure reopens the latch. On success we navigate away, and
       // this page unmounts — reopening it there would briefly re-arm a button

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyDispatchFailure } from "./dispatchFailure";
+import { classifyDispatchFailure, failureIsStale } from "./dispatchFailure";
 
 /**
  * A transport failure is not a refusal, and must not be reported as one.
@@ -60,5 +60,41 @@ describe("only say what we actually know", () => {
     expect(classifyDispatchFailure(trpcError("TOO_MANY_REQUESTS")).kind).toBe("busy");
     expect(classifyDispatchFailure(trpcError("PRECONDITION_FAILED")).kind).toBe("credits");
     expect(classifyDispatchFailure(trpcError("FORBIDDEN")).kind).toBe("credits");
+  });
+});
+
+/**
+ * #2387's SHEET HALF: a short balance's notice must outlive the unpaid roll it
+ * leaves behind, while every other failure still dismisses itself the moment a
+ * newer roll renders. Both directions are pinned — a predicate that never goes
+ * stale passes the credits arm and resurrects the "lost contact" banner over a
+ * roll that arrived; one that always goes stale is the defect.
+ */
+describe("which failures a newer roll dismisses", () => {
+  const failure = (kind: "refused" | "credits" | "busy" | "unavailable", afterRollId: string | null) => ({
+    kind,
+    message: "x",
+    afterRollId,
+  });
+
+  it("a newer roll dismisses a transport failure, a busy and a refusal (the original rule)", () => {
+    expect(failureIsStale(failure("unavailable", null), "roll-1")).toBe(true);
+    expect(failureIsStale(failure("busy", "roll-1"), "roll-2")).toBe(true);
+    expect(failureIsStale(failure("refused", "roll-1"), "roll-2")).toBe(true);
+  });
+
+  it("the roll it fired on top of does not dismiss it, and no roll at all does not either", () => {
+    expect(failureIsStale(failure("unavailable", "roll-1"), "roll-1")).toBe(false);
+    expect(failureIsStale(failure("unavailable", null), null)).toBe(false);
+  });
+
+  it("a short balance stands over the unpaid roll its own failed charge wrote", () => {
+    /* From the casting page (no roll before) and from the sheet (an older roll before). */
+    expect(failureIsStale(failure("credits", null), "unpaid-roll")).toBe(false);
+    expect(failureIsStale(failure("credits", "roll-1"), "unpaid-roll")).toBe(false);
+  });
+
+  it("no failure is never stale", () => {
+    expect(failureIsStale(null, "roll-1")).toBe(false);
   });
 });
