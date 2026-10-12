@@ -40,6 +40,10 @@ const SURFACES = [
   "../features/castingV2/components/CastSelectionBar.tsx",
   "../../../server/castingV2/signService.ts",
   "../../../server/castingV2/signRecovery.ts",
+  /* #2432: the library page and the route's own refusals, which the sweep
+     above did not reach. */
+  "./CastingV2.tsx",
+  "../../../server/routes/castingV2.ts",
 ];
 
 describe("the customer reads 'character' on the page, the bar and the Sign (#2382)", () => {
@@ -69,6 +73,21 @@ describe("the customer reads 'character' on the page, the bar and the Sign (#238
       expect(strings.filter((text) => OLD_NOUN.test(text))).toEqual([]);
     });
   }
+
+  it("the library's own sentences say character too (#2432)", () => {
+    /* Template sentences are not one of the reader's shapes, so these are read
+       by their own words: the old line must be gone and the new one present. */
+    const library = read("./CastingV2.tsx");
+    expect(library).not.toMatch(/\} casts came from this casting|`Those casts couldn't/);
+    expect(library).toContain("characters came from this casting");
+    expect(library).toContain("Those characters couldn't be added to");
+    expect(library).toContain("Those characters couldn't be taken out of");
+    expect(library).toContain('label={cast.name ?? "this character"}');
+    const route = read("../../../server/routes/castingV2.ts");
+    expect(route).not.toContain('"Cast not found"');
+    expect(route).toContain(`message: "That character isn't here."`);
+    expect(route).toContain("This character is still being made");
+  });
 
   it("the new sentences are the ones on the page (positive control)", () => {
     const room = read("./CastingRoom.tsx");

@@ -142,7 +142,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "A filing that STOPPED HALF WAY (card 2275). Over 60 ticked casts go in slices, so a refusal in a later call leaves the earlier ones genuinely filed — and until this sentence existed the customer was told the opposite ('Those casts couldn't be added') with 60 of them already in the campaign, every one still ticked. Nothing on the grid distinguishes 60-of-63 from 0-of-63. So the landed half is said out of what the server answered for, this half names the remainder, and the remainder is what stays selected, which makes a second press the retry rather than a re-send.",
   },
   {
-    match: "Those casts couldn't be added to",
+    match: "Those characters couldn't be added to",
     because:
       "A bulk filing or unfiling where the FIRST call was refused, so nothing landed. The whole selection stays ticked and the grid is unchanged, which looks exactly like the press not having happened; a refusal has no surface of its own. The server's own sentence passes through readableFailure (a cast that stopped being this customer's, a campaign deleted in another tab); this is only the fallback when it has none. A refusal after something landed takes the pair of sentences above instead, because this one would be false.",
   },

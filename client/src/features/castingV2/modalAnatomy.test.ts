@@ -106,16 +106,15 @@ describe("the delete dialog never borrows the commit treatment", () => {
     expect(del).toContain("signed?: boolean");
   });
 
-  it("matches on the first name, case-insensitively", async () => {
-    // Exact-case full names are friction without safety, and they carry
-    // trailing initials nobody will guess the punctuation of.
+  it("names the whole character and matches case-insensitively (card 2432)", async () => {
+    // The first word alone read "Delete Leave?" for "Leave Test". The whole
+    // name, or DELETE past a length, is driven in `destructiveConfirm2432.test.ts`.
     const del = await readFile(DELETE, "utf8");
-    expect(del).toContain("firstNameOf");
+    expect(del).not.toContain("firstNameOf");
     expect(del).toContain(".toLowerCase()");
-    // The same first name in title, field label and Keep button.
-    expect(del).toContain("Delete {first}?");
-    expect(del).toContain("TYPE {first.toUpperCase()}");
-    expect(del).toContain("Keep {first}");
+    expect(del).toContain("Delete {whole}?");
+    expect(del).toContain("TYPE {word.toUpperCase()}");
+    expect(del).toContain("{keepLabel(name)}");
   });
 });
 

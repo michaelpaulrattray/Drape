@@ -177,7 +177,7 @@ function sheetDeleteCopy(sheet: {
   */
   const who = sheet.signedCastNames.length === 1
     ? `${names} came from this casting and is safe`
-    : `${sheet.signedCastNames.length} casts came from this casting — ${names} are safe`;
+    : `${sheet.signedCastNames.length} characters came from this casting — ${names} are safe`;
   return `${who}. The casting and its unsigned candidates will be gone. This cannot be undone.`;
 }
 
@@ -745,8 +745,8 @@ export default function CastingV2() {
       setPicks({ view: viewKey, ids: new Set(run.unreached) });
       if (run.answered === 0) {
         toast(readableFailure(run.error, action === "add"
-          ? `Those casts couldn't be added to “${campaign.name}”.`
-          : `Those casts couldn't be taken out of “${campaign.name}”.`));
+          ? `Those characters couldn't be added to “${campaign.name}”.`
+          : `Those characters couldn't be taken out of “${campaign.name}”.`));
         return;
       }
       const landed = action === "add"
@@ -1917,7 +1917,7 @@ export default function CastingV2() {
             <span className="dpc-castmenu">
               <CardMenu
                 placement="overlay"
-                label={cast.name ?? "this cast"}
+                label={cast.name ?? "this character"}
                 open={castMenu === cast.castId}
                 onToggle={() => setCastMenu(castMenu === cast.castId ? null : cast.castId)}
                 onCancel={() => setCastMenu(null)}
