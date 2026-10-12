@@ -76,6 +76,7 @@ import { useSpendWindow } from "@/features/billing/useCycleSpend";
 
 import { spendWindowCopy } from "../usageWindow";
 import { Bar, SettingsGroup, StatCard } from "../parts";
+import { ownPlanTerms } from "./BillingSection";
 
 /** `1.2 GB` — bytes at the precision a storage line is read at. */
 function formatBytes(bytes: number): string {
@@ -86,7 +87,7 @@ function formatBytes(bytes: number): string {
 }
 
 export function UsageSection({
-  allowance,
+  allowance: listAllowance,
   balance,
 }: {
   /**
@@ -97,6 +98,58 @@ export function UsageSection({
   allowance: number | null;
   balance: number | null;
 }) {
+  /*
+    ⚠ THE ALLOWANCE THIS CUSTOMER IS GRANTED, NOT THE RUNG'S LIST GRANT — #2430,
+    the sibling #2392's seat named on PR #2429.
+
+    `allowance` arrives as `getStatus.planMonthlyCredits`, which is
+    `PLAN_TIERS[tier].monthlyCredits` and nothing else (`ownPlanFacts`). So a
+    customer on the dial's rung who had bought extra steps read
+    *"of {the bottom of the dial} this billing period"* under a spend that could
+    already be past it — a smaller allowance than the one they pay for, while
+    Settings → Billing one tab over (after #2392) quoted the right one.
+
+    ⚠ NO ARITHMETIC OF ITS OWN (working law 4): the figure is `ownPlanTerms`'s
+    `allowance` — the same function the Billing card prints, which adds the dial
+    through `planCreditSliderLedgerCredits`, the one declaration the renewal's
+    grant (`server/stripe/planCreditSlider.ts`) also reads. And its unread rule
+    comes with it: a dial position nobody has read is `null`, never 0, and a
+    `null` allowance gets no note in `spendWindowCopy` (#1741).
+
+    The position is read the way the Billing card reads it — the dial's rung off
+    `getPlans`, the position off `getPlanCreditUnits` — and both of the first
+    two are the cache entries `AccountSurfaces` already holds, so they cost no
+    request. The Stripe-backed position is asked only on the dial's rung.
+    ⚠ That three-line read is now written in two panes (here and
+    `BillingSection`); a shared hook is the follow-up, left out of this card
+    because the Billing pane was another seat's file at the time.
+  */
+  const { data: status } = trpc.billing.getStatus.useQuery();
+  const { data: plans } = trpc.billing.getPlans.useQuery();
+  const sliderSpec = plans?.creditSlider ?? null;
+  const onDialRung =
+    status !== undefined &&
+    sliderSpec !== null &&
+    sliderSpec.maxUnits > 0 &&
+    status.planTier === sliderSpec.planId;
+  const { data: sliderPosition } = trpc.billing.getPlanCreditUnits.useQuery(undefined, {
+    enabled: onDialRung,
+  });
+  const sliderUnits: number | null =
+    status === undefined || plans === undefined
+      ? null
+      : !onDialRung
+        ? 0
+        : sliderPosition === undefined
+          ? null
+          : sliderPosition.units;
+  const allowance = ownPlanTerms({
+    planPriceInCents: null,
+    allowance: listAllowance,
+    billingInterval: null,
+    sliderUnits,
+  }).allowance;
+
   /*
     ⚠ THE WINDOW AND ITS SUM ARE THE SERVER'S, AND ITS LABEL IS DERIVED FROM
     THE WINDOW IT ACTUALLY SUMMED (#624).

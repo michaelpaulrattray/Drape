@@ -76,6 +76,13 @@ export type SpendBasis = "period" | "rolling30";
  * with the two halves swapped. **Guarding the words and not the number they
  * quote is half a guard**, and a `null` balance now gets no note at all on the
  * same ground a `null` basis gets no window.
+ *
+ * ⚠ **AND THE ALLOWANCE IS THE CUSTOMER'S, NOT THE RUNG'S — #2430.** The note
+ * quotes whatever it is handed, and it was handed the plan's LIST grant, so a
+ * customer who had moved the Pro Plus credit dial read the bottom of the dial
+ * as their period's allowance. The caller (`UsageSection`) now passes the
+ * dial-inclusive figure from `ownPlanTerms` — the Billing card's own function —
+ * and an unread dial position arrives here as `null`, which quotes nothing.
  */
 export function spendWindowCopy(
   basis: SpendBasis | null,
