@@ -96,14 +96,14 @@ describe("access.validate (public endpoint)", () => {
     await expect(caller.access.validate({ code: "" })).rejects.toThrow();
   });
 
-  it("enforces rate limiting", async () => {
-    (checkRateLimit as any).mockReturnValue({ allowed: false, remaining: 0 });
+  it("enforces rate limiting with a real TOO_MANY_REQUESTS, never a 200 (#2371, invariant 6)", async () => {
+    (checkRateLimit as any).mockReturnValue({ allowed: false, remaining: 0, resetIn: 4 * 60_000 });
 
     const caller = appRouter.createCaller(makePublicCtx());
-    const result = await caller.access.validate({ code: "DRAPE-RATELIMIT" });
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toContain("Too many attempts");
+    await expect(caller.access.validate({ code: "DRAPE-RATELIMIT" })).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many attempts. Try again in 4 minutes.",
+    });
     expect(validateInviteCode).not.toHaveBeenCalled();
   });
 
