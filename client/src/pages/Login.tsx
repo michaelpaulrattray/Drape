@@ -2,6 +2,7 @@ import { Button as DSButton } from "@/components/design-system";
 import { ArrowRight, AlertCircle, Clock, ShieldOff, MailX, Check, Loader2, KeyRound, LogIn, Eye, EyeOff, Mail } from "lucide-react";
 import { useSearch, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { readableFailure } from "@/lib/failureSentence";
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
@@ -770,9 +771,14 @@ export default function Login() {
                   </button>
                 </form>
 
+                {/* Our server's own refusal is shown as it was written — since
+                    #2371 "too many attempts" arrives here as a real
+                    TOO_MANY_REQUESTS carrying when to try again, rather than as
+                    a 200 the line below read. Anything a transport said is
+                    replaced by the old fallback. */}
                 {validateMutation.isError && (
                   <p className="text-xs text-red-500 text-center mt-3">
-                    Something went wrong. Please try again.
+                    {readableFailure(validateMutation.error, "Something went wrong. Please try again.")}
                   </p>
                 )}
                 {validateMutation.data && !validateMutation.data.valid && (
