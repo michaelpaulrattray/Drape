@@ -14,6 +14,7 @@ import {
   holdReasonFromBody,
   planDeskHoldLabels,
   planFounderHeldDrift,
+  planLiveHoldReRead,
   planUnreadableHolds,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
@@ -621,5 +622,140 @@ describe("a founder-held exemption that no longer names an open card is reported
       expect(why, `card ${issueNumber} has no date`).toMatch(/\d{4}-\d{2}-\d{2}/);
       expect(why, `card ${issueNumber} does not quote him`).toMatch(/"/);
     }
+  });
+});
+
+/**
+ * THE OTHER HALF OF THAT PARTITION (#2303) — the hold sentence nothing re-reads.
+ *
+ * Four of these went stale in four days, each repaired by a different shift one
+ * to three days late. The arms that matter most are the two that pin the
+ * POPULATION, because the population is where the defect actually lived: the
+ * band that carried the *"worth a glance only"* instruction is the
+ * **founder-ordered** queue, and two of the four instances were never in it.
+ */
+describe("every live hold's sentence is handed back for a re-read", () => {
+  const held = (
+    issueNumber: number,
+    reason: string | null,
+    labels: readonly string[] = [CREW_HOLD_LABELS.blocked],
+  ) => ({
+    issueNumber,
+    labels,
+    body: reason === null
+      ? "A body with no marker line anywhere in it."
+      : ["Some prose first.", "", `${CREW_HOLD_MARKER} ${reason}`, "", "And more after it."].join("\n"),
+  });
+
+  it("THE POSITIVE CONTROL: a held card with a readable sentence comes back WITH its words", () => {
+    const found = planLiveHoldReRead({
+      open: [held(1774, "Yuna's pass on the final wording, when her team is back")],
+    });
+    expect(found).toEqual([{
+      issueNumber: 1774,
+      heldStates: ["blocked"],
+      reason: "Yuna's pass on the final wording, when her team is back",
+      owner: "other",
+      founderHeld: null,
+    }]);
+  });
+
+  it("⚠ THE DEFECT'S OWN SHAPE: the two instances the founder-ordered band could not see", () => {
+    /* #1882 was `seat:janitor` + `blocked` and #1921 was `bug` + `blocked`, so
+       neither was ever in `planDeskHoldLabels`' population — which is the
+       founder-ordered queue. Both are here, with their real sentences. */
+    const found = planLiveHoldReRead({
+      open: [
+        held(1882, "the Janitor's next run", ["seat:janitor", CREW_HOLD_LABELS.blocked]),
+        held(1921, "YOU — a DARK-ink Klieg lockup for the two emails, and the tab-icon letter.", ["bug", CREW_HOLD_LABELS.blocked]),
+      ],
+    });
+    expect(found.map((h) => h.issueNumber)).toEqual([1882, 1921]);
+    expect(found.map((h) => h.owner)).toEqual(["other", "you"]);
+  });
+
+  it("⚠ THE NEGATIVE CONTROL: no hold label is no row, however readable the line — #298", () => {
+    /* #298 leaves a rotted sentence in place once the label is gone, because
+       nothing renders it. Reporting those would fight that design head-on, and
+       it is why #1921 after 2026-10-11 04:04:11Z is deliberately out of scope. */
+    expect(planLiveHoldReRead({ open: [held(900, "the relay's verdict", [])] })).toEqual([]);
+    expect(planLiveHoldReRead({ open: [held(901, "the relay's verdict", ["bug", "parked", "rung:N2"])] })).toEqual([]);
+  });
+
+  it("⚠ THE OTHER NEGATIVE CONTROL: an UNREADABLE sentence is the other reader's row, never both", () => {
+    expect(planLiveHoldReRead({ open: [held(1468, null), held(910, "**** — ((")] })).toEqual([]);
+  });
+
+  it("⚠ THE PARTITION, DRIVEN: every held card lands in exactly ONE of the two readers", () => {
+    /* The arm that would have caught the scoping. Both readers key on
+       `holdOwnerFromReason` over the same held set, so a filter that drifts in
+       either one shows up here as a card in neither half — the silence
+       direction, and the only one of the two that nothing else would name. */
+    const queue = [
+      held(129, "slice 1's rows — PR #1007 merged (9d517932); slice 2's patrol needs prompts on record first"),
+      held(1098, "the **Janitor patrol** — its decision, not a shift's."),
+      held(1468, null),
+      held(1774, "Yuna's pass on the final wording, when her team is back"),
+      held(1882, "the Janitor's next run", ["seat:janitor", CREW_HOLD_LABELS.blocked]),
+      held(1921, "YOU — a DARK-ink Klieg lockup", ["bug", CREW_HOLD_LABELS.blocked]),
+      held(1995, "**** ((", ["blocked"]),
+      held(2269, "YOU — drive the six steps below, then name the next rung."),
+      /* Two cards with no hold at all, so the partition is over the HELD set
+         and not over the queue. */
+      held(3000, "the relay's verdict", []),
+      held(3001, null, ["bug"]),
+    ];
+    const everyHeld = queue
+      .filter((row) => heldStatesFromLabels(row.labels).length > 0)
+      .map((row) => row.issueNumber)
+      .sort((a, b) => a - b);
+    const reRead = planLiveHoldReRead({ open: queue }).map((h) => h.issueNumber);
+    const unreadable = planUnreadableHolds({ open: queue }).map((h) => h.issueNumber);
+    expect(everyHeld).toEqual([129, 1098, 1468, 1774, 1882, 1921, 1995, 2269]);
+    expect([...reRead, ...unreadable].sort((a, b) => a - b)).toEqual(everyHeld);
+    expect(reRead.filter((n) => unreadable.includes(n))).toEqual([]);
+  });
+
+  it("reads EVERY hold label, not `blocked` alone", () => {
+    for (const state of CREW_HELD_STATES) {
+      const found = planLiveHoldReRead({
+        open: [held(700, "the relay's verdict", [CREW_HOLD_LABELS[state]])],
+      });
+      expect(found.map((h) => h.issueNumber), `hold label ${CREW_HOLD_LABELS[state]}`).toEqual([700]);
+      expect(found[0].heldStates).toEqual([state]);
+    }
+  });
+
+  it("⚠ hands back the sentence HIS PAGE shows, truncated the same way and no further", () => {
+    /* The question asked of a shift is whether the thing HE reads is still
+       true, so a longer sentence here would be a second answer to that. */
+    const long = `x${"y".repeat(CREW_HOLD_REASON_MAX * 2)}`;
+    const found = planLiveHoldReRead({ open: [held(5, long)] });
+    expect(found[0].reason).toBe(holdReasonFromBody(`${CREW_HOLD_MARKER} ${long}`));
+    expect(found[0].reason?.length).toBe(CREW_HOLD_REASON_MAX);
+  });
+
+  it("⚠ a card of HIS stays in the population and carries his words — a FIELD, not a filter (#2117)", () => {
+    /* Same rule as its complement: dropping his cards would make the sweep
+       silent about a live hold, which is what both readers exist to end. */
+    const [his] = FOUNDER_HELD_CARDS.keys();
+    const found = planLiveHoldReRead({ open: [held(his, "his own next prototype round")] });
+    expect(found.map((h) => h.issueNumber)).toEqual([his]);
+    expect(found[0].founderHeld).toBe(FOUNDER_HELD_CARDS.get(his));
+  });
+
+  it("⚠ CONTROL — an ordinary held card is NOT marked as his, or the field excuses everything", () => {
+    const found = planLiveHoldReRead({ open: [held(4242, "the relay's verdict")] });
+    expect(found[0].founderHeld).toBeNull();
+  });
+
+  it("is sorted by card number and reports an empty queue as empty", () => {
+    expect(planLiveHoldReRead({
+      /* Real-shaped sentences: a bare `"a"` is an ARTICLE with nothing after
+         it, so `holdOwnerFromReason` answers `unknown` and the row belongs to
+         the other reader — which this fixture learned the hard way. */
+      open: [held(90, "the relay"), held(9, "YOU"), held(50, "#1788, the workspace")],
+    }).map((h) => h.issueNumber)).toEqual([9, 50, 90]);
+    expect(planLiveHoldReRead({ open: [] })).toEqual([]);
   });
 });

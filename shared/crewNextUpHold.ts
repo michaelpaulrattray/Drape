@@ -567,6 +567,157 @@ export function planUnreadableHolds(input: {
   return found.sort((a, b) => a.issueNumber - b.issueNumber);
 }
 
+/** One live hold whose sentence anybody can read — a re-read, never a finding. */
+export type LiveHoldReRead = {
+  readonly issueNumber: number;
+  /** Which hold labels are live, so the row names the state it is in. */
+  readonly heldStates: readonly CrewHeldState[];
+  /**
+   * The sentence his page shows of this card — the SAME truncation the page
+   * applies, because the question a shift is asked here is whether the thing
+   * HE reads is still true.
+   *
+   * ⚠ **IT IS NULLABLE AND TODAY IT IS NEVER NULL, WHICH IS THE POINT.** The
+   * filter below is `holdOwnerFromReason(reason) !== "unknown"`, and that reader
+   * answers `unknown` for an absent reason and nothing else — so every row here
+   * carries words. It is typed nullable anyway so that a future change to
+   * `holdOwnerFromReason` cannot make a held card fall out of BOTH this
+   * population and `planUnreadableHolds`' at once: a card already invisible to
+   * both readers can never be seen to become invisible, which is the silence
+   * `CLAUDE.md`'s un-wiring differ paid four months for.
+   */
+  readonly reason: string | null;
+  /** `you` or `other` — never `unknown`, which is the other reader's population. */
+  readonly owner: CrewHoldOwner;
+  /** Why this one is HIS, or `null` for an ordinary card (#2117). */
+  readonly founderHeld: string | null;
+};
+
+/**
+ * ⚠ **THE HOLD SENTENCE NOTHING RE-READS — #2303, four instances in four days.**
+ *
+ * `planUnreadableHolds` one type up finds a live hold whose sentence says
+ * nothing anybody can act on. **This is its complement, and it is the larger
+ * half**: a live hold whose sentence is perfectly readable, written once by one
+ * shift, rendered on his page ever since, and re-read by nothing.
+ *
+ * **The measured repeat (#2303, filed by `foreman-20261012-0917`):**
+ *
+ * | card | the sentence named | discharged | repaired | late by |
+ * |---|---|---|---|---|
+ * | #1952 | `PR #1924 and card #1968` | PR merged, card closed 2026-10-08 | 2026-10-09 | 1 day |
+ * | #1921 | **YOU** — a dark-ink Klieg lockup | his reply #272, 2026-10-11 04:02Z | 2026-10-11 | ~8 h |
+ * | #1882 | the Janitor's next run | patrol #14, 2026-10-11 | 2026-10-12 | 2 days |
+ * | #1774 | Yuna's pass on the final wording | the pass landed 2026-10-09 | 2026-10-12 | 3 days |
+ *
+ * **Four different KINDS of blocker — a numbered artifact, him, a seat, a
+ * teammate — and that is what decides what can be mechanised.** Each was
+ * repaired by a different shift, and every one of those shifts had done
+ * everything else right: the whole class sat behind one instruction to a human,
+ * `crew-desk-sweep.mts`' *"Worth a glance only, to check the sentence is still
+ * true"*, printed beside a card NUMBER and no words.
+ *
+ * # ⚠ WHAT THIS IS: THE SENTENCE, PRINTED. WHAT IT IS NOT: A VERDICT.
+ *
+ * It judges nothing. It puts the words in front of the shift so the glance is
+ * READING rather than opening GitHub, and it is honest that three of the four
+ * above could not have been caught by any machine in this repository.
+ *
+ * **The population is the other half of the fix, and it is the half the card
+ * under-rated.** The existing quiet band is `planDeskHoldLabels`' `stale`, whose
+ * population is the **`founder-ordered`** queue carrying `blocked` with a silent
+ * desk — so **#1882 and #1921 were never in it**, being `seat:janitor` and
+ * `bug` respectively. Measured on the real queue the day this landed: **50 open
+ * cards, 12 with a live hold, 6 of the 12 in that band and 6 outside it.** This
+ * reads the WHOLE open queue, exactly as `planUnreadableHolds` does and for the
+ * same stated reason.
+ *
+ * Driven coverage of the four, stated rather than implied: **#1952, #1882 and
+ * #1774 all appear here with their words.** **#1921 does not**, and the reason
+ * is #298's design rather than a gap — its `blocked` label came off at
+ * 2026-10-11 04:04:11Z, two minutes after his reply, so from that moment
+ * nothing rendered the sentence at all and the rot that remained was a body
+ * line a SHIFT reads under law 7c. Reporting rotted lines on UNHELD cards
+ * fights #298 head-on (*"a stale reason can never outlive its state, because
+ * the state is the thing that renders it"*), so it is deliberately out of scope.
+ *
+ * # ⚠ THE THREE MECHANICAL SHAPES WERE ALL DECLINED, EACH ON A MEASUREMENT
+ *
+ * The card offered three and this is the fourth. The reasons live here rather
+ * than only on the card, because the next reader to think *"surely a guard
+ * could just…"* should meet the numbers first.
+ *
+ * **1 · The closed-artifact reference** — report a hold naming a CLOSED card or
+ * a MERGED pull request. Cheap, no judgement, and it would have caught #1952.
+ * ⚠ **Driven over the 12 real held cards it fires ONCE and that firing is
+ * WRONG**: #129's sentence is *"slice 1's rows — PR #1007 merged (9d517932);
+ * slice 2's patrol needs refused AND passed prompts on record first"* — the
+ * sentence SAYS the pull request merged, and the hold is on something else
+ * entirely. ⚠ **And a second false-positive shape is already latent**:
+ * `cardNumbersIn` reads #1882's *"patrol #14"* as **card #14**, because
+ * `NON_CARD_SEQUENCE_WORDS` is `["reply", "run"]` and *patrol* is not in it — so
+ * the day card #14 closes, a correct hold is reported as discharged.
+ * **Precision today: 0 true positives, 1 false, 1 latent.** A block that cries
+ * wolf on a healthy board teaches its reader to skim the rows beside it that
+ * are real, which is #2117's own measured lesson one type up.
+ *
+ * **2 · The un-re-read hold** — report any sentence not edited in N days.
+ * It misses the fastest-rotting kind outright (#1921, stale in eight hours),
+ * and ⚠ **measured, it would report two correct holds for ever**: #1835 waits on
+ * the workspace #1788, which he has never ordered, and #1609 is parked on his
+ * own word until launch day. **2 of 12 rows permanently wrong.**
+ *
+ * **3 · A Jev read of the sentence against the facts.** The judge is not the
+ * hard half; assembling the facts is. ⚠ **And the one fact the him-direction
+ * needs — his newest reply — is a production database row, which
+ * `crew-desk-sweep.mts` deliberately cannot read**: it is `gh`-only, by its own
+ * header, so the cheapest shape of #1921's check is not available to it at any
+ * price in judgement. A verdict of *"this hold is discharged"* is also one step
+ * from un-holding a card, which `planDeskHoldLabels` refuses to automate on
+ * #586's measured grounds (*"removing a hold is the act that lets work start"*).
+ *
+ * ⚠ **So the class is PARTLY UNGUARDABLE, and that is the finding rather than a
+ * failure to find a guard.** What is mechanisable is the population and the
+ * printing; the judgement stays a person's, and this makes it a cheap one.
+ *
+ * ⚠ **AND IT IS DERIVED AS THE COMPLEMENT, NEVER AS A SECOND FILTER**
+ * (working law 4). Both readers walk the held set and both key on
+ * `holdOwnerFromReason`; this takes the rows that answer anything but
+ * `unknown`, and that one takes the rows that answer `unknown`. The suite
+ * drives the PARTITION — every held card lands in exactly one — so a filter
+ * that drifts in either reader reddens rather than quietly dropping a card
+ * from both.
+ */
+export function planLiveHoldReRead(input: {
+  /** Every OPEN card, with the labels and body `gh issue list` returns. */
+  readonly open: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly labels: readonly string[];
+    readonly body: string;
+  }>;
+}): readonly LiveHoldReRead[] {
+  const found: LiveHoldReRead[] = [];
+  for (const row of input.open) {
+    const heldStates = heldStatesFromLabels(row.labels);
+    /* No live hold label, no hold — and #298 leaves a rotted sentence in place
+       on purpose once the label is gone, because nothing renders it. */
+    if (heldStates.length === 0) continue;
+    const reason = holdReasonFromBody(row.body);
+    const owner = holdOwnerFromReason(reason);
+    /* The complement of `planUnreadableHolds`, keyed on the SAME reader so the
+       two can never both drop a card. */
+    if (owner === "unknown") continue;
+    found.push({
+      issueNumber: row.issueNumber,
+      heldStates,
+      reason,
+      owner,
+      founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
+    });
+  }
+  return found.sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
 /**
  * ⚠ **AN EXEMPTION THAT NO LONGER NAMES AN OPEN CARD (#2117).**
  *

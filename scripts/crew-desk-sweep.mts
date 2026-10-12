@@ -94,11 +94,13 @@ import {
   promotionLine,
 } from "../shared/crewCardResolution.js";
 import {
+  type LiveHoldReRead,
   type UnreadableHold,
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
   planDeskHoldLabels,
   planFounderHeldDrift,
+  planLiveHoldReRead,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
 import {
@@ -304,21 +306,39 @@ const allOpen = gh([
   "every held card says whose hold it is" — the shape the shift-close orders
   name as a receipt that cannot be trusted.
 */
-const unreadableHolds: readonly UnreadableHold[] = allOpen === null
+/* ONE mapped list for BOTH hold readers below, because they are a PARTITION of
+   the same population (#2303) — two copies of this projection is the shape
+   working law 4 is about, and a difference between them would put a held card
+   in neither half. */
+const openForHolds = allOpen === null
+  ? null
+  : allOpen.map((row) => ({
+    issueNumber: Number(row?.number),
+    labels: Array.isArray(row?.labels)
+      ? (row.labels as Json[]).map((label: Json) => String((label as { name?: unknown })?.name ?? ""))
+      : [],
+    body: String(row?.body ?? ""),
+  }));
+const unreadableHolds: readonly UnreadableHold[] = openForHolds === null
   ? []
-  : planUnreadableHolds({
-    open: allOpen.map((row) => ({
-      issueNumber: Number(row?.number),
-      labels: Array.isArray(row?.labels)
-        ? (row.labels as Json[]).map((label: Json) => String((label as { name?: unknown })?.name ?? ""))
-        : [],
-      body: String(row?.body ?? ""),
-    })),
-  });
+  : planUnreadableHolds({ open: openForHolds });
+/*
+  ⚠ **AND THE OTHER HALF OF THAT PARTITION — THE HOLD SENTENCE NOTHING RE-READS
+  (#2303).** `planLiveHoldReRead` owns the rule, the measured repeat and the
+  three mechanical shapes it declines; this is its I/O, and it rides the same
+  read and the same instant as its complement above.
+
+  ⚠ **A READ THAT FAILED IS NEVER REPORTED AS A CLEAN POPULATION** — the same
+  rule as its neighbour, and here it bites the other way: an unread queue
+  prints no sentences, which looks exactly like a board with no live holds.
+*/
+const liveHoldReReads: readonly LiveHoldReRead[] = openForHolds === null
+  ? []
+  : planLiveHoldReRead({ open: openForHolds });
 if (allOpen === null) {
   skipped.push(
     "HOLDS: the open queue could not be read, so no card was checked for a hold that does not say"
-    + " whose it is. That is unread, NOT clean.",
+    + " whose it is, and no hold sentence was printed for re-reading. That is unread, NOT clean.",
   );
 }
 
@@ -956,8 +976,10 @@ if (staleHolds.length > 0) {
     for (const hold of loud) console.log(`  ! #${hold.issueNumber}`);
   }
   if (quiet.length > 0) {
-    console.log("  A reason IS written — probably held on something real (a card, a rung). Worth");
-    console.log("  a glance only, to check the sentence is still true:");
+    console.log("  A reason IS written — probably held on something real (a card, a rung). Its");
+    console.log("  SENTENCE is printed under the live-hold re-read below (#2303), which is where");
+    console.log("  the glance happens — this list is only the narrower claim that his desk is");
+    console.log("  silent about these:");
     for (const hold of quiet) console.log(`  · #${hold.issueNumber}`);
   }
 }
@@ -1034,6 +1056,53 @@ if (unreadableHolds.length > 0) {
       }
     }
     console.log("  ⚠ A comment does not count — the body is what is read (the founder-ordered clause).");
+  }
+}
+
+/*
+  ⚠ **THE ONE SENTENCE HIS PAGE SHOWS OF EVERY HELD CARD, PRINTED (#2303).**
+
+  `planLiveHoldReRead` owns the rule, the measured repeat and the three
+  mechanical shapes it declines; this is its printing, and the printing IS the
+  repair. Four hold sentences went stale in four days (#1952, #1921, #1882,
+  #1774), each repaired by a different shift one to three days late, and the
+  whole class sat behind the block above saying *"worth a glance only"* beside a
+  card NUMBER with no words in it. A glance that needs a browser tab is a glance
+  that does not happen.
+
+  ⚠ **EXIT 0, AND DELIBERATELY SO.** A briefing carrying a stale hold sentence
+  is schema-VALID and a shift can ship past it, which is the rule the tail of
+  this file states for spending exit 2. This is a re-read list, not a finding
+  list — nothing here is asserted to be wrong.
+
+  ⚠ **HIS OWN CARDS ARE MARKED AND NOT ASKED FOR (#2117), as in the block
+  above**: re-pointing a sentence means editing the card, and #1995 is his.
+*/
+if (liveHoldReReads.length > 0) {
+  const titles = new Map<number, string>(
+    (allOpen ?? []).map((row) => [Number(row?.number), String(row?.title ?? "")]),
+  );
+  console.log("");
+  console.log(
+    `⚠ ${liveHoldReReads.length} live hold(s) — RE-READ THE SENTENCE, it is the one his page shows:`,
+  );
+  console.log("  Four of these went stale in four days and each cost a different shift a repair one");
+  console.log("  to three days late (#2303). Nothing below is a verdict: ask of each only whether it");
+  console.log("  is still true TODAY, and if it is not, re-point the sentence in the BODY (a comment");
+  console.log("  does not count) or drop the hold label.");
+  for (const hold of liveHoldReReads) {
+    /* ⚠ ONLY THE EXCEPTION GETS A WORD — this module's own rule for the chip
+       on his page, for the same reason: `other` on ten rows of eleven is noise
+       the eye learns to skip, and the `you` rows are the fastest-rotting kind
+       (#1921 went stale in eight hours). */
+    const whose = hold.owner === "you" ? " YOU" : "";
+    const mine = hold.founderHeld === null ? "" : " — HIS CARD, nothing to do";
+    const title = titles.get(hold.issueNumber) ?? "";
+    /* An ellipsis when it was cut, because a truncated title that reads whole
+       is how a shortening changes a fact. */
+    const shown = title.length > 58 ? `${title.slice(0, 57)}…` : title;
+    console.log(`  · #${hold.issueNumber} [${hold.heldStates.join(",")}]${whose}${mine} ${shown}`);
+    console.log(`      ${hold.reason ?? "(no sentence — see the unreadable-hold block above)"}`);
   }
 }
 
