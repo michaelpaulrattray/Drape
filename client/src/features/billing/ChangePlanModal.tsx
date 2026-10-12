@@ -304,7 +304,8 @@ const ENTERPRISE_BODY =
   "A pool of credits sized to your volume, invoiced and arranged with us directly. Tell us what you're making and we'll price it.";
 
 /**
- * WHERE *Let's talk* GOES — the address the product already has.
+ * WHERE *Let's talk* AND THE FOOTER'S *Having a problem?* BOTH GO — the address
+ * the product already has.
  *
  * ⚠ **THE DESIGN SAYS *"the sales address (or the contact road the brief
  * names)"* AND THERE IS NO SALES ADDRESS IN THE TREE** — `support@klieglabs.com`
@@ -313,6 +314,15 @@ const ENTERPRISE_BODY =
  * band keeps it rather than inventing a mailbox nobody reads, which is the
  * cheapest way to make a *Let's talk* button go nowhere.
  *
+ * ⚠ **IT WAS NAMED `SALES_EMAIL` AND SERVED ONE CALL SITE UNTIL #2398, WHICH
+ * IS THE CARD THAT PROVED THE NAME WRONG.** The pane's footer told a customer
+ * with a billing problem to *"Go to the help centre"* — a place this product
+ * does not have, in plain text they could not even click — so the footer now
+ * points at this same address, and the constant is named for what it is rather
+ * than for the first button that happened to use it. **One declaration, two
+ * call sites: a second literal of the same address on this surface is the
+ * drift (working law 4), and there are already four copies of it in the tree.**
+ *
  * The subject carries the account's plan and balance so the reply does not have
  * to start by asking. ⚠ **A mailto is composed, so both are
  * `encodeURIComponent`'d** — a plan name is a catalogue string today and the
@@ -320,7 +330,7 @@ const ENTERPRISE_BODY =
  * composition, and `&` in one of them would silently truncate the subject and
  * invent a parameter.
  */
-const SALES_EMAIL = "support@klieglabs.com";
+const SUPPORT_EMAIL = "support@klieglabs.com";
 
 /**
  * WHICH RUNG'S NAME AND LINE THE BAND WEARS.
@@ -980,7 +990,7 @@ export function ChangePlanModal({
       .filter(Boolean)
       .join(", ");
     const subject = parts ? `Enterprise plan — ${parts}` : "Enterprise plan";
-    window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent(subject)}`;
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;
   };
 
   /* A subscriber's OWN tier can still change its billing cycle — without
@@ -1798,7 +1808,29 @@ export function ChangePlanModal({
       </div>
 
       <footer className="dp-plan__foot">
-        <span className="dp-plan__help">Having a problem? Go to the help centre.</span>
+        {/*
+          #2398 — IT SAID *"Go to the help centre."* AND THERE IS NO HELP
+          CENTRE, and it was plain text, so the one instruction on the surface
+          a billing problem is most likely to be read from was a dead end that
+          could not even be clicked. It names the address the product actually
+          answers on (`SUPPORT_EMAIL`, the sign-in page's and the free-grant
+          refusal's own road) and it is a real `mailto:`.
+
+          ⚠ **THE ADDRESS IS THE LINK AND THE SENTENCE IS NOT**, which is a
+          decision rather than a default: `.dp-root a` is `--ink` with no
+          underline, so a whole-sentence anchor at 11.5px would read as a
+          heavier restatement of the meta text around it. The anchor keeps the
+          sentence's own colour and carries the underline instead, because a
+          link nobody can see is the defect this card is about wearing a
+          different coat.
+        */}
+        <span className="dp-plan__help">
+          Having a problem? Email{" "}
+          <a className="dp-plan__helplink" href={`mailto:${SUPPORT_EMAIL}`}>
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </span>
         <span className="dp-set__spacer" />
         {/* ⚠ #1749: `=== true` rather than truthy. The unread state declines
             either way — hiding a control is the safe direction — and it is
@@ -2170,13 +2202,22 @@ function CompareGrid({
     {
       /*
         ⚠ **IT CLAIMS NO SLA AND NO PRIORITY SUPPORT, WHICH IS #1607'S
-        AVOID-LIST.** The help centre is the same help centre on every plan —
-        the pane's own footer says so — and the second sentence is the band's
+        AVOID-LIST.** Support is the same support on every plan — the pane's own
+        footer carries the address — and the second sentence is the band's
         promise, not a tier of service.
+
+        ⚠ **IT PROMISED *"The help centre, on every plan"* UNTIL #2398, AND THE
+        BRIEF THIS TABLE WAS BUILT FROM CLOSES WITH *"No string in this brief
+        claims a capability that is not in the tree"*.** This row was the
+        exception: the only help this product has is the address below, so the
+        row says that instead. It is deliberately still a row rather than a
+        deletion — *the same for everyone* is a true and useful answer in a
+        comparison, and an absent Help section invites the reader to wonder
+        which plans have it.
       */
       title: "Help",
       rows: [],
-      note: "The help centre, on every plan. Enterprise is arranged with us directly.",
+      note: "Email support, on every plan. Enterprise is arranged with us directly.",
     },
     {
       title: "Price",

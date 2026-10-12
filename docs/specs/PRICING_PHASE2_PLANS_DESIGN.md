@@ -212,7 +212,7 @@ Four columns — **Free · Starter · Pro · Studio** — and five groups:
 | **What you make** | Finished characters a month | what a finished character is; the same five views on every plan |
 | **Credits** | Credits · Unspent credits · Buy extra credits | one pool; purchased credits never expire |
 | **Cinema** | — | `COMING` — the cinema studio and the generators |
-| **Help** | — | the help centre on every plan; Enterprise arranged directly |
+| **Help** | — | ~~the help centre on every plan~~ → email support on every plan (#2398); Enterprise arranged directly |
 | **Price** | Price a month | — |
 
 **Value before price**, unchanged from §6d — the gain is established before the
@@ -371,7 +371,7 @@ by reading the code, not by taste.
 | `For example, about N finished characters.` | `exampleSentence` |
 | the four rollover sentences | `rolloverSentence` |
 | `Just need more credits` / `Buy a one-off pack instead — your plan stays exactly as it is.` | `ChangePlanModal.tsx` |
-| `Having a problem? Go to the help centre.` | `ChangePlanModal.tsx` |
+| ~~`Having a problem? Go to the help centre.`~~ → **`Having a problem? Email support@klieglabs.com.`** (#2398 — and the address is a real `mailto:`) | `ChangePlanModal.tsx` |
 
 ⚠ **The per-card tick stays on every card, on his #425 word** — *"The tick
 reading 'Every model and every tool' bring it back because eventually i need to
@@ -399,13 +399,28 @@ ruling of his, so it was not done.
 | `A finished character is a roll to find her, a refine to correct her, and a sign that fixes her face.` | the exact composition of `CASTING_V2_ONE_CHARACTER_CREDITS` |
 | `Every signed cast comes with the same five views, on every plan.` | `CAST_PACKAGE_VIEWS.length` is 5 and no plan changes it |
 | `One pool. Every tool spends the same credits.` | one `points.balance`. ⚠ **THE SECOND CLAUSE WAS CUT (#1939) AND THIS ROW IS WHY IT SHIPPED.** It read *… and credits you have paid for never expire*, and the reason beside it — *#1660 made the never-expire half true* — is true of **purchased** credits only (`refreshMonthlyCredits` adds `purchasedCreditsRemaining(row)` back whole). On the plan compare table a customer paying for a plan has paid for their plan credits too, and `PLAN_TIERS.starter.rolloverPercent` is 50 and `pro` is 75 — so the note contradicted the *Unspent credits* row two lines up in the same table. **The derivation was checked and the SURFACE it was being derived for was not.** `plansRedesign1832-guard.test.ts` now holds the property rather than the string: while any drawn rung forfeits part of its allowance, no group note in this table may claim credits do not expire. |
-| `The help centre, on every plan. Enterprise is arranged with us directly.` | claims no SLA and no priority — #1607's avoid-list |
+| ~~`The help centre, on every plan. Enterprise is arranged with us directly.`~~ → **`Email support, on every plan. Enterprise is arranged with us directly.`** (#2398) | claims no SLA and no priority — #1607's avoid-list |
 | Team's three lines | they describe the workspace, which is why Team waits for it |
 
 ⚠ **No string in this brief claims a capability that is not in the tree, and
 each claim above was read at the code rather than assumed.** That is #1607's
 own rule — *"re-derive every string against present capability before
 shipping"* — and it is the rule most easily lost when copy gets "better".
+
+⚠ **ONE STRING IN THIS BRIEF DID CLAIM EXACTLY THAT, AND THE SENTENCE ABOVE
+STOOD OVER IT FOR NINE DAYS — #2398, 2026-10-12.** The help row promised *"The
+help centre, on every plan"* and the pane's footer told a customer with a
+billing problem to *"Go to the help centre."* — **in plain text, not a link,
+to a surface this product has never had** (`git grep -i "help cent"` over
+`client/src`: those two strings, one CSS comment, no route). Both now name the
+only help road the product actually answers on, the support address, and the
+footer's is a real `mailto:`. **The claim above was not careless — it was
+checked against the TREE'S CAPABILITIES and a help centre is not a capability
+any file declares, so there was nothing for the check to catch.** What catches
+it is a guard on the class rather than a re-reading of the brief:
+`client/src/features/billing/helpCentre2398-guard.test.ts` walks every
+customer-facing client source, outside its comments, and reddens on a promise
+of a help centre anywhere in it.
 
 ---
 

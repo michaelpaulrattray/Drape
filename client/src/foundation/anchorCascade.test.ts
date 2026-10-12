@@ -133,6 +133,24 @@ const PORTALLED = new Map<string, readonly string[]>([
   // The viewer is portalled to document.body; measured white in both themes.
   ["dp-btn--onmedia", ["features/castingV2/components/CandidateViewer.tsx"]],
   /*
+    #2398 — the Change plan footer's support address, and it is the SAME anchor
+    the deleted entry above described, on the same pane, wearing the same
+    values. The pane told a customer with a billing problem to *"Go to the help
+    centre"* in plain text; it now names `support@klieglabs.com` as a real
+    `mailto:`.
+
+    **Driven in the running app rather than reasoned** (`output/2398/`, both
+    themes, element frames read): `link.closest(".dp-root")` is **null** — the
+    modal mounts through `ModalScrim`, which is `createPortal(…, document.body)`
+    at `foundation/CastingModal.tsx:145` — and `getComputedStyle` on the anchor
+    reads `rgb(17,17,18)` light / `rgb(237,237,239)` dark with
+    `text-decoration-line: underline` and a 2px offset. Those are the two
+    numbers this file's header already records for `dp-plan__request-link`,
+    which is the point: the block is written as that predecessor was, because
+    ROOTING that one is what broke it.
+  */
+  ["dp-plan__helplink", ["features/billing/ChangePlanModal.tsx"]],
+  /*
     ⚠ **`dp-plan__request-link` WAS THE SECOND ENTRY AND IT IS GONE, BECAUSE ITS
     ANCHOR IS GONE — card 1833, 2026-10-03.** The plan surface's *"Need a higher
     limit? Write to support@…"* line is replaced by the Enterprise band, whose

@@ -291,8 +291,15 @@ describe("card 1833 — the Enterprise band", () => {
 
   it("its action is a mail and collects nothing", () => {
     const modal = code(MODAL);
+    /* ⚠ `SUPPORT_EMAIL`, and it was `SALES_EMAIL` until #2398. The constant did
+       not move and its value did not change — the pane's footer now sends a
+       billing problem to the same address (it used to name a help centre that
+       does not exist), so a name describing the first button that happened to
+       use it would have been wrong at the second call site. This arm's subject
+       is unchanged: the band's action is still a mail and still collects
+       nothing. */
     expect(modal, "the action stopped being a mail — #391 asked for an email link").toContain(
-      "mailto:${SALES_EMAIL}",
+      "mailto:${SUPPORT_EMAIL}",
     );
     /* His own condition on the card: never a form that collects card details.
        Nothing leaves the app until the customer sends the mail, so the band may
