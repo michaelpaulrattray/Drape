@@ -33,6 +33,7 @@ import { join, resolve } from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 import { readListedSource } from "./testing/listedSource";
+import { REBUILD_DOOR_CLOSED_CODE } from "@shared/rebuildDoor";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 
 /* The last block walks `server/` for test sources — #741's derived population.
@@ -150,25 +151,34 @@ describe("the legacy lane's paid procedures", () => {
 
     it(`⚠ POSITIVE CONTROL — ${id} lets an ADMIN past the gate`, async () => {
       /*
-        Past the gate it meets `getModelById`, mocked to find nothing, so the
-        handler's own NOT_FOUND is the proof of passage. FORBIDDEN here would
-        mean the seal refuses everybody, which an arm reading only the refusal
-        could never tell apart.
+        Past the gate it meets the handler. Until #2315 that was `getModelById`,
+        mocked to find nothing, so NOT_FOUND was the proof of passage. Since
+        #2315 step 1 the handler's FIRST statement is the rebuild door, so an
+        admin now meets THAT — a different code and a cause FORBIDDEN never
+        carries, which is still exactly the observable that says the admin
+        middleware let it through. FORBIDDEN here would mean the seal refuses
+        everybody, which an arm reading only the refusal could never tell apart.
       */
-      await expect(call("admin")).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(call("admin")).rejects.toMatchObject({
+        code: "PRECONDITION_FAILED",
+        cause: { message: REBUILD_DOOR_CLOSED_CODE },
+      });
+      expect(deductCredits).not.toHaveBeenCalled();
+      expect(withAtomicCredits).not.toHaveBeenCalled();
     });
   }
 });
 
-describe("what is deliberately NOT sealed", () => {
-  it("⚠ generation.refreshSlots still admits an ordinary account — the canvas reaches it", async () => {
+describe("what is deliberately NOT sealed to admins", () => {
+  it("⚠ generation.refreshSlots is NOT admin-sealed — it is CLOSED for everybody by the rebuild door (#2315)", async () => {
     /*
-      It is the fourth paid procedure and the only one a customer can reach
-      (`features/boards/canvas/nodes/useSheetController.ts:137`). Sealing it
-      removes a live feature, which is a product decision; #1654 carries the
-      options. This arm is here so the omission is a DECISION on the record
-      rather than something a later reader finds and assumes was missed — and
-      so that whoever answers the question has to come through this file.
+      It is the fourth paid procedure and the only one a customer could reach
+      (`features/boards/canvas/nodes/useSheetController.ts:137`). #1654 left it
+      open because sealing it removed a live feature, a product decision. That
+      decision was made on #2315 — his "yes" to switching off editing a cast on
+      the canvas now — and the answer is the rebuild door at the procedure's
+      mouth rather than this file's admin seal: an ordinary account meets the
+      door's own refusal, before any charge.
     */
     await expect(
       castingExportRouter.createCaller(ctxFor("user")).refreshSlots({
@@ -176,7 +186,12 @@ describe("what is deliberately NOT sealed", () => {
         modelId: 1,
         angles: ["frontFull"],
       } as never),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      cause: { message: REBUILD_DOOR_CLOSED_CODE },
+    });
+    expect(deductCredits).not.toHaveBeenCalled();
+    expect(withAtomicCredits).not.toHaveBeenCalled();
   });
 
   it("mintPackagePlan stays open — a price read that four live surfaces query and that spends nothing", async () => {

@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 204
+      "moduleCount": 205
     },
     {
       "id": "domain:castingV2",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 89
+      "moduleCount": 90
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:wardrobe",
@@ -4663,6 +4663,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/refusalLoopCorpus.ts",
+      "path": "server/castingV2/refusalLoopCorpus.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/refusalTag.ts",
       "path": "server/castingV2/refusalTag.ts",
       "domain": "casting-v2",
@@ -5505,6 +5511,12 @@
     {
       "id": "module:server/lib/publicError.ts",
       "path": "server/lib/publicError.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/lib/rebuildDoor.ts",
+      "path": "server/lib/rebuildDoor.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -6807,6 +6819,12 @@
     {
       "id": "module:shared/productEventCatalogue.ts",
       "path": "shared/productEventCatalogue.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/rebuildDoor.ts",
+      "path": "shared/rebuildDoor.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -14614,6 +14632,10 @@
       "path": "server/castingV2/refusalLoopCapture.test.ts"
     },
     {
+      "id": "test:server/castingV2/refusalLoopCorpus.test.ts",
+      "path": "server/castingV2/refusalLoopCorpus.test.ts"
+    },
+    {
       "id": "test:server/castingV2/refusalTag.test.ts",
       "path": "server/castingV2/refusalTag.test.ts"
     },
@@ -16224,6 +16246,10 @@
     {
       "id": "test:server/readerAskTrim.test.ts",
       "path": "server/readerAskTrim.test.ts"
+    },
+    {
+      "id": "test:server/rebuildDoor.test.ts",
+      "path": "server/rebuildDoor.test.ts"
     },
     {
       "id": "test:server/reconciliationCsv.test.ts",
@@ -18793,6 +18819,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -22328,6 +22359,11 @@
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -26203,6 +26239,11 @@
     {
       "from": "module:server/casting/geminiClient.ts",
       "to": "module:server/casting/geminiQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiClient.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -31766,6 +31807,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/refusalLoopCorpus.ts",
+      "to": "module:server/castingV2/refusalLoopCapture.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/reimagine.ts",
       "to": "module:server/castingV2/houseBlock.ts",
       "kind": "imports"
@@ -35306,6 +35352,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/rebuildDoor.ts",
+      "to": "module:shared/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/index.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -37297,6 +37348,11 @@
     },
     {
       "from": "module:server/routes/generation/castingExport.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingExport.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -37402,6 +37458,11 @@
     },
     {
       "from": "module:server/routes/generation/castingImaging.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingImaging.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -37428,6 +37489,11 @@
     {
       "from": "module:server/routes/generation/castingParse.ts",
       "to": "module:server/casting/promptParser.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingParse.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37568,6 +37634,11 @@
     {
       "from": "module:server/routes/generation/castingRefinement.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingRefinement.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37888,6 +37959,11 @@
     {
       "from": "module:server/routes/models.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/models.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -38228,6 +38304,11 @@
     {
       "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {

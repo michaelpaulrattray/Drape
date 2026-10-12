@@ -1,3 +1,4 @@
+import { assertRebuildDoorOpen } from "../../lib/rebuildDoor";
 import { adminProcedure, router } from "../../_core/trpc";
 import { displayPrice, formatCredits } from "../../../shared/creditDisplay";
 import {
@@ -93,6 +94,7 @@ export const castingImagingRouter = router({
       }
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const readMode = captureSnapshotReadMode(ctx.user.id);
       // Batch 0 (R6 execution plan, review fix 1): authorization BEFORE money.
       // The old order deducted credits first and threw NOT_FOUND/FORBIDDEN

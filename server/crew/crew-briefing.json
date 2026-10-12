@@ -1,7 +1,7 @@
 {
-  "edition": 684,
-  "updatedAt": "2026-10-12T03:51:03.197Z",
-  "shift": "Foreman — foreman-20261012-1327 (background: the live-hold re-read, its first run)",
+  "edition": 685,
+  "updatedAt": "2026-10-12T04:54:32.076Z",
+  "shift": "Foreman — foreman-20261012-1428 (focus: N2d-1 verified at the artifacts and closed)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -19,15 +19,15 @@
         },
         {
           "title": "The signed, timestamped record behind every ID (#2311)",
-          "state": "in-progress"
+          "state": "done"
         },
         {
           "title": "Your downloadable Certificate of Creation (#2312)",
-          "state": "waiting"
+          "state": "in-progress"
         },
         {
           "title": "A page anyone can check — off unless you turn it on, for one cast at a time (#2313)",
-          "state": "waiting"
+          "state": "in-progress"
         },
         {
           "title": "The three wording changes to the terms — a lawyer reads them before a word of it is published (#2314)",
@@ -135,8 +135,14 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T03:44:51.180Z",
+      "readAt": "2026-10-12T04:54:08.301Z",
       "items": [
+        {
+          "issueNumber": 2323,
+          "title": "N2d: the signed record carries no cast name, but the public check page (#2313) says it shows one",
+          "kind": "rung",
+          "rung": "N2d"
+        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -10500,7 +10506,7 @@
     280
   ],
   "nextUp": {
-    "readAt": "2026-10-12T03:44:51.180Z",
+    "readAt": "2026-10-12T04:54:08.300Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10563,7 +10569,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "its children #2311–#2314 — #2311 buildable now; #2312/#2313 after it; #2314 your hand. The design pass is done."
+          "because": "its children — #2311 closed and live; #2312 and #2313 being built now; #2314 your hand. One open question on #2323."
         }
       },
       {
@@ -10574,11 +10580,6 @@
       {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2311,
-        "title": "N2d-1 — The creation record: signed and timestamped behind each Klieg ID, built dark (nothing a customer sees)",
         "urgent": false
       },
       {
