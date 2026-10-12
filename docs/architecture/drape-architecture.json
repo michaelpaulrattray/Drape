@@ -8560,6 +8560,7 @@
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -8586,6 +8587,7 @@
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -8730,6 +8732,7 @@
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -13042,6 +13045,14 @@
     {
       "id": "test:client/src/pages/CastingSheet.signFailure.test.ts",
       "path": "client/src/pages/CastingSheet.signFailure.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/castingDeleteFailure2383.test.ts",
+      "path": "client/src/pages/castingDeleteFailure2383.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/characterNoun2382.test.ts",
+      "path": "client/src/pages/characterNoun2382.test.ts"
     },
     {
       "id": "test:client/src/pages/notFoundPage.test.ts",

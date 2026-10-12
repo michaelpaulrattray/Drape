@@ -161,6 +161,48 @@ function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
   });
 }
 
+/**
+ * DELETING FROM THE CHARACTER'S PAGE — what the customer is told, and what the
+ * library is told (#2383).
+ *
+ * The failure line showed the error's own message whenever it was an `Error`, and a
+ * tRPC client error is always an `Error`, so the written fallback could never
+ * be shown: a gateway 502 or a dropped connection put the transport's own text
+ * on screen. Our server's refusals still pass through word for word
+ * (`readableFailure`); anything else gets this sentence, and the raw text goes
+ * to `logRawFailure`.
+ */
+export function roomDeleteFailureSentence(error: unknown, name: string | null): string {
+  logRawFailure("castingV2.deleteCast", error);
+  return readableFailure(error, `${name ?? "That character"} could not be deleted.`);
+}
+
+/** The slice of `trpc.useUtils()` a delete has to tell. */
+type LibraryCaches = {
+  castingV2: {
+    roster: { invalidate: () => Promise<void> };
+    rosterCounts: { invalidate: () => Promise<void> };
+    listCampaigns: { invalidate: () => Promise<void> };
+    openSessions: { invalidate: () => Promise<void> };
+  };
+};
+
+/**
+ * The library this page lands on after a delete is told first (#2383). The
+ * library's own delete refreshes the grid, its counts, the campaign counts and
+ * the open castings (`CastingV2.tsx`); this one refreshed nothing, so a library
+ * visited earlier in the session drew the deleted character from its cache
+ * until a refetch happened to land.
+ */
+export async function refreshLibraryAfterDelete(utils: LibraryCaches): Promise<void> {
+  await Promise.all([
+    utils.castingV2.roster.invalidate(),
+    utils.castingV2.rosterCounts.invalidate(),
+    utils.castingV2.listCampaigns.invalidate(),
+    utils.castingV2.openSessions.invalidate(),
+  ]);
+}
+
 export default function CastingRoom() {
   const [, params] = useRoute("/app/casting/cast/:castId");
   const [, navigate] = useLocation();
@@ -717,7 +759,7 @@ export default function CastingRoom() {
     `castName` rather than the raw id in the filename: someone saving her own
     face should get "Nine-close-up.png", never a UUID.
   */
-  const castName = data?.name ?? data?.castId ?? "cast";
+  const castName = data?.name ?? data?.castId ?? "character";
   const packageFrames: ViewerFrame[] = [
     ...(data?.anchorUrl
       ? [{
@@ -752,7 +794,7 @@ export default function CastingRoom() {
       caption: sibling.destination === "viewer"
         ? `From a casting that has expired or was deleted — ${
           data?.pronouns.subject ?? "they"} remain${
-          data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this Cast"}.`
+          data?.pronouns.plural ? "" : "s"} as a sibling of ${data?.name ?? "this character"}.`
         : null,
       downloadName: `sibling-${sibling.indexLabel}`,
     }));
@@ -776,7 +818,7 @@ export default function CastingRoom() {
 
         {cast.isError ? (
           <EmptyState
-            title="That Cast isn't here"
+            title="That character isn't here"
             body="It may have been deleted, or the link may belong to another account."
           />
         ) : null}
@@ -815,7 +857,7 @@ export default function CastingRoom() {
                       type="button"
                       className="dpc-room__namebtn"
                       onClick={() => setDraftName(data.name ?? "")}
-                      aria-label="Rename this Cast"
+                      aria-label="Rename this character"
                     >
                       <h1 className="dpc-room__name">{data.name ?? "Unnamed"}</h1>
                     </button>
@@ -832,7 +874,7 @@ export default function CastingRoom() {
                         if (event.key === "Enter") saveName();
                         if (event.key === "Escape") setDraftName(null);
                       }}
-                      aria-label="Cast name"
+                      aria-label="Character name"
                       // Invalid, not merely empty-so-far: a blank name is the
                       // one thing `saveName` refuses, so it is the one state
                       // that earns the alarm colour.
@@ -1077,7 +1119,7 @@ export default function CastingRoom() {
                       className="dpc-rrefine__input"
                       placeholder="softer light, less styled hair, plain grey tee"
                       disabled
-                      aria-label="Refine this Cast (not available yet)"
+                      aria-label="Refine this character (not available yet)"
                     />
                     <button type="button" className="dpc-rrefine__go" disabled>
                       New takes
@@ -1425,7 +1467,7 @@ export default function CastingRoom() {
 
                 {/* IN CAMPAIGNS — the campaigns this cast is in, and one add row (#2252);
                     straight after a Sign it carries the one offer to file the cast (#2253). */}
-                <CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this cast"} />
+                <CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this character"} />
 
                 {/* PUBLIC CHECK PAGE — the owner's one toggle, off by default (#2313); draws nothing while dark. */}
                 <PublicCheckCard key={`check-${data.castId}`} castId={data.castId} />
@@ -1523,7 +1565,7 @@ export default function CastingRoom() {
 
         {deleting && data ? (
           <DestructiveConfirm
-            name={data.name ?? "this cast"}
+            name={data.name ?? "this character"}
             imageUrl={data.anchorUrl}
             busy={deleteCast.isPending}
             onCancel={() => setDeleting(false)}
@@ -1547,7 +1589,10 @@ export default function CastingRoom() {
                   So this is D-110's fallback case rather than an exception to
                   it: work whose own surface is gone.
                 */
-                toast(`${data.name ?? "That cast"} was deleted.`);
+                /* The library is told before we land on it (#2383). A refresh
+                   that fails is not the delete failing: the character is gone. */
+                await refreshLibraryAfterDelete(utils).catch(() => undefined);
+                toast(`${data.name ?? "That character"} was deleted.`);
                 // Her room is the page we are standing on, so leaving is part
                 // of the ceremony rather than something to do afterwards.
                 // An unsaved line on a deleted cast has nothing left to keep,
@@ -1555,9 +1600,7 @@ export default function CastingRoom() {
                 disarmLeave.current?.();
                 navigate("/app/casting");
               } catch (error) {
-                toast(error instanceof Error
-                  ? error.message
-                  : `${data.name ?? "That cast"} could not be deleted.`);
+                toast.error(roomDeleteFailureSentence(error, data.name ?? null));
               }
             }}
           />

@@ -324,7 +324,7 @@ describe("the Sign is unchanged except for one line written into memory", () => 
   it("the room hands the panel the cast's name and a fresh panel per cast", () => {
     const room = readFileSync(new URL("../../../pages/CastingRoom.tsx", import.meta.url), "utf8");
     expect(room).toContain(
-      '<CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this cast"} />',
+      '<CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this character"} />',
     );
   });
 });
