@@ -176,7 +176,8 @@ describe("card #1953 — the predicate can fail (the negative control comes firs
 });
 
 describe("card #1972 half 1 — billing.getPlans serves no feature lines at all", () => {
-  const caller = billingRouter.createCaller({} as never);
+  /* A request with an address: `getPlans` is per-address rate-limited since #2423. */
+  const caller = billingRouter.createCaller({ req: { ip: "203.0.113.9" } } as never);
 
   /**
    * THE FIELDS THE PUBLIC PROJECTION MAY CARRY, written out rather than read

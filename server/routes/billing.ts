@@ -1,4 +1,5 @@
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { enforcePublicRateLimit, RATE_LIMITS } from "../security/rateLimit";
 import {
   getUserById,
   getSubscriptionByUserId,
@@ -257,7 +258,8 @@ export const billingRouter = router({
   // PURCHASABLE_PLANS and OFFERED_PLAN_TIERS, never the whole product table
   // (invariant 8: an explicit projection, not a spread). The hidden rung's
   // door is the email line the plan modal draws under the ladder.
-  getPlans: publicProcedure.query(() => {
+  getPlans: publicProcedure.query(({ ctx }) => {
+    enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicBillingPlans);
     return {
       subscriptions: PURCHASABLE_PLANS.map((key) => {
         const plan = SUBSCRIPTION_PRODUCTS[key];

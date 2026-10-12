@@ -21,7 +21,7 @@ import { assertNotArchived } from "../../casting/modelGuards";
 import { CANONICAL_VIEW_ANGLES } from "../../../shared/boardTypes";
 import { resolveExportEligibility, MISSING_AGENCY_ID_COPY } from "../../../shared/exportEligibility";
 import { enforceDailyQuota } from "../../db/dailyQuota";
-import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
+import { checkRateLimit, enforcePublicRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import { generatePremiumIdentityPdf, PdfModelData } from "../../casting/pdfService";
 import { resolvePdfPreferences } from "../../casting/pdfPreferences";
 import { buildExportPlan } from "../../../shared/exportPlan";
@@ -96,7 +96,10 @@ export const castingExportRouter = router({
     }),
 
   // Get point costs for all generation types
-  costs: publicProcedure.query(() => CREDIT_COSTS),
+  costs: publicProcedure.query(({ ctx }) => {
+    enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicGenerationCosts);
+    return CREDIT_COSTS;
+  }),
 
   /** The server counts the current filled canonical package slots and returns
    * the fixed 1K, zero-credit customer export contract. */

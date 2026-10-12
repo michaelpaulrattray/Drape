@@ -7487,7 +7487,7 @@
       "type": "mutation",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/auth.ts",
       "clientCallers": [
         "client/src/_core/hooks/useAuth.ts"
@@ -7500,7 +7500,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/auth.ts",
       "clientCallers": [
         "client/src/_core/hooks/useAuth.ts",
@@ -7635,7 +7635,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/billing.ts",
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
@@ -8920,7 +8920,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/credits.ts",
       "clientCallers": [
         "client/src/features/casting/ControlPanel.tsx",
@@ -9273,7 +9273,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/generation/castingExport.ts",
       "clientCallers": []
     },
@@ -10265,7 +10265,7 @@
       "type": "query",
       "auth": "public",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/_core/systemRouter.ts",
       "clientCallers": []
     },
@@ -24826,6 +24826,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/systemRouter.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/trpc.ts",
       "to": "module:server/_core/context.ts",
       "kind": "imports"
@@ -36657,6 +36662,11 @@
     },
     {
       "from": "module:server/routes/billing.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/billing.ts",
       "to": "module:server/stripe/planChangeSettlement.ts",
       "kind": "imports"
     },
@@ -37313,6 +37323,11 @@
     {
       "from": "module:server/routes/credits.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/credits.ts",
+      "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
     {

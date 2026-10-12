@@ -5,6 +5,7 @@
  * Uses a sliding window algorithm with automatic cleanup.
  */
 
+import { TRPCError } from "@trpc/server";
 import { waitPhrase } from "@shared/waitPhrase";
 
 interface RateLimitEntry {
@@ -342,7 +343,73 @@ export const RATE_LIMITS = {
     maxRequests: 60,
     keyPrefix: 'cast_persona_translate',
   },
+  /*
+    THE SIX PUBLIC ENDPOINTS THAT HAD NO LIMITER (#2423, measured by #2409's
+    guard). None of them reads the database per call — the session lookup
+    behind `auth.me` happens in the request context, before any procedure — so
+    what these bound is LOAD from one address, never data. Each is per address,
+    each has its own bucket so no endpoint can spend another's, and each is set
+    far above the traffic measured for it on 2026-10-12:
+
+      auth.me           one call per cold page load, about one per two in-app
+                        navigations, no poll (a driven walk: 6 cold loads + 6
+                        navigations + 60 s idle = 8 calls). 600 a minute is
+                        ~75 heavy users behind one office address. A refusal
+                        is safe on the client: `isTransientSessionCheckFailure`
+                        retries a 429 with backoff and the page waits — it never
+                        reads as signed out.
+      auth.logout       one per sign-out.
+      billing.getPlans  a constant fold, once per billing surface mount.
+      credits.getCosts  a constant, fetched with `staleTime: Infinity`.
+      generation.costs  a constant with NO client caller in the tree.
+      system.health     NO caller anywhere: the deploy rite, `deploy-verify`
+                        (every 15 s) and Railway's healthcheck all probe the
+                        Express `/api/health`, which has its own limiter.
+  */
+  publicAuthMe: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 600,
+    keyPrefix: 'public_auth_me',
+  },
+  publicAuthLogout: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 60,
+    keyPrefix: 'public_auth_logout',
+  },
+  publicBillingPlans: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 120,
+    keyPrefix: 'public_billing_plans',
+  },
+  publicCreditCosts: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 120,
+    keyPrefix: 'public_credit_costs',
+  },
+  publicGenerationCosts: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 60,
+    keyPrefix: 'public_generation_costs',
+  },
+  publicSystemHealth: {
+    windowMs: 60 * 1000,      // 1 minute
+    maxRequests: 60,
+    keyPrefix: 'public_system_health',
+  },
 } as const;
+
+/**
+ * A public procedure's per-address limit, refused with a real
+ * `TOO_MANY_REQUESTS` (invariant 6) — the shape `announcements.getActive`
+ * writes inline, kept in one place for the endpoints that only need the gate.
+ * Call it FIRST in the resolver, before any work.
+ */
+export function enforcePublicRateLimit(req: { ip?: string }, config: RateLimitConfig): void {
+  const check = checkRateLimit(getClientIp(req), config);
+  if (!check.allowed) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(check.resetIn) });
+  }
+}
 
 /**
  * Create a rate limit error message
