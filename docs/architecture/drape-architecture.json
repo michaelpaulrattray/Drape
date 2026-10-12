@@ -12363,6 +12363,10 @@
       "path": "client/src/components/appChrome.test.ts"
     },
     {
+      "id": "test:client/src/components/errorBoundaryPage.test.ts",
+      "path": "client/src/components/errorBoundaryPage.test.ts"
+    },
+    {
       "id": "test:client/src/components/errorBoundaryReports.test.ts",
       "path": "client/src/components/errorBoundaryReports.test.ts"
     },
@@ -17171,7 +17175,7 @@
     },
     {
       "from": "module:client/src/components/ErrorBoundary.tsx",
-      "to": "module:client/src/lib/utils.ts",
+      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
