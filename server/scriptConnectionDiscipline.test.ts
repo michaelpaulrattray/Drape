@@ -206,8 +206,9 @@ describe("scripts open their database through one door", { timeout: 60_000 }, ()
     const offenders: string[] = [];
     for (const file of scriptFiles()) {
       if (path.resolve(file) === path.resolve(DOOR)) continue;
-      /* Listed a moment ago, and it can be gone now — a parallel suite plants
-         and unlinks in this directory (#223). The DOOR read above is a fixed
+      /* Listed a moment ago, and it can be gone now — an untracked one-shot
+         bench can leave mid-walk (#223; the world guard's plant that first
+         raced here lives in a scratch repository since #2361). The DOOR read above is a fixed
          name and deliberately still throws if it is missing. */
       const source = readListedSource(file);
       if (source === null) continue;
