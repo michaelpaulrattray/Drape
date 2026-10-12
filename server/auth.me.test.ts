@@ -56,6 +56,7 @@ function fullUserRow(): User {
     approvedAt: now,
     passwordHash: "server-only-password-hash",
     authProvider: "email",
+    googleSub: "server-only-google-sub",
     emailVerified: true,
     emailVerificationToken: "server-only-verification-token",
     emailVerificationExpiresAt: now,
