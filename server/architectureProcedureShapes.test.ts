@@ -395,3 +395,103 @@ export const appRouter = router({ boardOps: boardOpsRouter });
     ]);
   });
 });
+
+/*
+  #2356 — A ROUTER IS ITS DECLARATION, NOT ITS NAME.
+
+  Two routers in the tree are both called `bugReportsRouter`: the customer's
+  submit (`server/routes/bugReports.ts`, mounted at the root as `bugReports`)
+  and the admin inbox (`server/routes/admin/bugReports.ts`, spread into
+  `admin`). While the namespace map was keyed on the variable name, the root
+  mount claimed the name and the admin spread was skipped as already resolved,
+  so the admin inbox was minted as `bugReports.getBugReports` — an id no client
+  can call, with no client caller, which is the reading that says safe to
+  delete. These fixtures reduce that tree to its shape, across real files, so the
+  compiler's own binding of each import is what the extractor must follow.
+*/
+describe("two routers sharing a name are two routers (#2356)", () => {
+  const customer = `
+import { router, protectedProcedure } from "../_core/trpc";
+export const bugReportsRouter = router({
+  submit: protectedProcedure.mutation(async () => null),
+});
+`;
+  const inbox = `
+import { router, adminProcedure } from "../../_core/trpc";
+export const bugReportsRouter = router({
+  getBugReports: adminProcedure.query(async () => null),
+});
+`;
+  const adminIndex = (importLine: string, spread: string) => `
+import { router, adminProcedure } from "../../_core/trpc";
+${importLine}
+export const adminRouter = router({
+  ping: adminProcedure.query(async () => null),
+  ...${spread}._def.procedures,
+});
+`;
+  const root = (mounts: string) => `
+import { router } from "./_core/trpc";
+import { bugReportsRouter } from "./routes/bugReports";
+import { adminRouter } from "./routes/admin";
+export const appRouter = router({ ${mounts} });
+`;
+
+  const ids = (files: Record<string, string>) => proceduresFrom(files).map((p) => p.id);
+
+  it("the admin inbox is minted under admin, the customer submit under bugReports", () => {
+    expect(
+      ids({
+        "routers.ts": root("bugReports: bugReportsRouter, admin: adminRouter"),
+        "routes/bugReports.ts": customer,
+        "routes/admin/bugReports.ts": inbox,
+        "routes/admin/index.ts": adminIndex(`import { bugReportsRouter } from "./bugReports";`, "bugReportsRouter"),
+      }),
+      "the admin inbox took its namesake's namespace — router resolution is keyed on the name again",
+    ).toEqual(["route:admin.getBugReports", "route:admin.ping", "route:bugReports.submit"]);
+  });
+
+  it("the answer does not depend on which mount the walk meets first", () => {
+    /* The old map was first-come: swap the mount order and the CUSTOMER router
+       would have been minted under `admin`. */
+    expect(
+      ids({
+        "routers.ts": root("admin: adminRouter, bugReports: bugReportsRouter"),
+        "routes/bugReports.ts": customer,
+        "routes/admin/bugReports.ts": inbox,
+        "routes/admin/index.ts": adminIndex(`import { bugReportsRouter } from "./bugReports";`, "bugReportsRouter"),
+      }),
+    ).toEqual(["route:admin.getBugReports", "route:admin.ping", "route:bugReports.submit"]);
+  });
+
+  it("an aliased import is followed to the declaration it names", () => {
+    expect(
+      ids({
+        "routers.ts": root("bugReports: bugReportsRouter, admin: adminRouter"),
+        "routes/bugReports.ts": customer,
+        "routes/admin/bugReports.ts": inbox,
+        "routes/admin/index.ts": adminIndex(
+          `import { bugReportsRouter as inboxRouter } from "./bugReports";`,
+          "inboxRouter",
+        ),
+      }),
+    ).toEqual(["route:admin.getBugReports", "route:admin.ping", "route:bugReports.submit"]);
+  });
+
+  it("NEGATIVE CONTROL — an unmounted namesake borrows nobody's namespace", () => {
+    /* The admin index no longer spreads the inbox. Its procedures must vanish
+       (an unmounted router is a finding), never reappear under `bugReports`
+       because something else with the same name is mounted there. */
+    expect(
+      ids({
+        "routers.ts": root("bugReports: bugReportsRouter, admin: adminRouter"),
+        "routes/bugReports.ts": customer,
+        "routes/admin/bugReports.ts": inbox,
+        "routes/admin/index.ts": `
+import { router, adminProcedure } from "../../_core/trpc";
+export const adminRouter = router({ ping: adminProcedure.query(async () => null) });
+`,
+      }),
+    ).toEqual(["route:admin.ping", "route:bugReports.submit"]);
+  });
+});

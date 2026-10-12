@@ -38,7 +38,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { Project, SyntaxKind, ts, type SourceFile, type Node } from "ts-morph";
+import { Project, SyntaxKind, ts, type SourceFile, type Node, type Symbol as TsMorphSymbol } from "ts-morph";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = process.env.ATLAS_OUT_DIR
@@ -255,11 +255,35 @@ export type Procedure = {
   file: string;
 };
 
-/** Every `const x = router({...})` in the server tree, by variable name. */
+/**
+ * A router's identity: the file that declares it and the name it is declared
+ * under — `server/routes/admin/bugReports.ts:bugReportsRouter`.
+ *
+ * ⚠ **NEVER THE BARE VARIABLE NAME (#2356, 2026-10-12).** Until then the maps
+ * below were keyed on `declaration.getName()`, and two different routers are
+ * both called `bugReportsRouter`: the customer's *Report a bug* submit
+ * (`server/routes/bugReports.ts`, mounted at the root as `bugReports`) and the
+ * admin inbox (`server/routes/admin/bugReports.ts`, spread into `admin`). The
+ * root mount claimed the name first, the admin spread was skipped as already
+ * resolved, and BOTH files' procedures were minted under `bugReports.*` — so
+ * the three admin procedures carried ids no client could call and an empty
+ * `clientCallers` list, the reading that says safe to delete. It is the same
+ * shape the unwiring differ was re-keyed off on (file, symbol).
+ */
+function routerKey(file: string, name: string): string {
+  return `${file}:${name}`;
+}
+
+const relativeOf = (sourceFile: SourceFile): string =>
+  path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
+
+type RouterDeclaration = { literal: Node; name: string; file: string };
+
+/** Every `const x = router({...})` in the server tree, keyed by {@link routerKey}. */
 function routerDeclarations(project: Project) {
-  const declarations = new Map<string, Node>();
+  const declarations = new Map<string, RouterDeclaration>();
   for (const sourceFile of project.getSourceFiles()) {
-    const relative = path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
+    const relative = relativeOf(sourceFile);
     if (!relative.startsWith("server/")) continue;
     for (const declaration of sourceFile.getVariableDeclarations()) {
       const call = declaration.getInitializer()?.asKind(SyntaxKind.CallExpression);
@@ -267,14 +291,43 @@ function routerDeclarations(project: Project) {
       const callee = call.getExpression().getText();
       if (callee !== "router" && callee !== "t.router") continue;
       const literal = call.getArguments()[0]?.asKind(SyntaxKind.ObjectLiteralExpression);
-      if (literal) declarations.set(declaration.getName(), literal);
+      if (literal) {
+        declarations.set(routerKey(relative, declaration.getName()), {
+          literal,
+          name: declaration.getName(),
+          file: relative,
+        });
+      }
     }
   }
   return declarations;
 }
 
 /**
- * Router variable → the namespace its procedures are actually reachable under.
+ * The declaration a symbol REFERS TO, followed by the compiler through its
+ * import and any re-export chain — never matched by spelling. Undefined when it
+ * is not a variable; the caller then leaves that router unmounted, which is a
+ * loud `unmounted-router` finding rather than a namespace borrowed from a
+ * namesake.
+ */
+function routerKeyOfSymbol(symbol: TsMorphSymbol | undefined): string | undefined {
+  const target = symbol?.isAlias() ? symbol.getAliasedSymbol() : symbol;
+  for (const declaration of target?.getDeclarations() ?? []) {
+    const variable = declaration.asKind(SyntaxKind.VariableDeclaration);
+    if (variable) return routerKey(relativeOf(variable.getSourceFile()), variable.getName());
+  }
+  return undefined;
+}
+
+/** The router an expression names: a bare identifier, resolved by {@link routerKeyOfSymbol}. */
+function routerKeyOf(node: Node | undefined): string | undefined {
+  const identifier = node?.asKind(SyntaxKind.Identifier);
+  return identifier ? routerKeyOfSymbol(identifier.getSymbol()) : undefined;
+}
+
+/**
+ * Router declaration ({@link routerKey}) → the namespace its procedures are
+ * actually reachable under.
  *
  * Two composition styles are in use and they mean different things:
  *   `key: someRouter`                    nests    → `parent.key`
@@ -282,43 +335,61 @@ function routerDeclarations(project: Project) {
  *
  * Getting this wrong would mint ids that no client could ever call, and the ids
  * are the Atlas's primary keys — so it resolves to a fixed point rather than
- * assuming one level.
+ * assuming one level, and every child is reached through the compiler's own
+ * binding of the identifier, so two routers sharing a name cannot share a
+ * namespace.
  */
 function resolveNamespaces(project: Project): Map<string, string> {
   const declarations = routerDeclarations(project);
   const namespaceOf = new Map<string, string>();
 
-  const root = declarations.get("appRouter");
-  if (!root) throw new Error("appRouter not found — the root router is the Atlas's entry point");
+  const roots = [...declarations.values()].filter((declaration) => declaration.name === "appRouter");
+  if (roots.length === 0) {
+    throw new Error("appRouter not found — the root router is the Atlas's entry point");
+  }
+  if (roots.length > 1) {
+    throw new Error(
+      `appRouter is declared ${roots.length} times (${roots.map((root) => root.file).join(", ")}) — `
+      + "the Atlas cannot tell which one is the entry point",
+    );
+  }
 
-  for (const property of root.asKindOrThrow(SyntaxKind.ObjectLiteralExpression).getProperties()) {
+  for (const property of roots[0].literal.asKindOrThrow(SyntaxKind.ObjectLiteralExpression).getProperties()) {
     const assignment = property.asKind(SyntaxKind.PropertyAssignment);
     if (assignment) {
-      const target = assignment.getInitializer()?.getText() ?? "";
-      namespaceOf.set(target, assignment.getName().replace(/['"]/g, ""));
+      const target = routerKeyOf(assignment.getInitializer());
+      if (target) namespaceOf.set(target, assignment.getName().replace(/['"]/g, ""));
       continue;
     }
     const shorthand = property.asKind(SyntaxKind.ShorthandPropertyAssignment);
-    if (shorthand) namespaceOf.set(shorthand.getName(), shorthand.getName());
+    if (shorthand) {
+      // A shorthand's name resolves to the PROPERTY; its value symbol is the
+      // variable it reads.
+      const target = routerKeyOfSymbol(shorthand.getValueSymbol());
+      if (target) namespaceOf.set(target, shorthand.getName());
+    }
   }
 
   for (let pass = 0; pass < 10; pass += 1) {
     let changed = false;
-    for (const [variable, namespace] of [...namespaceOf]) {
-      const literal = declarations.get(variable);
-      if (!literal) continue;
-      for (const property of literal.asKindOrThrow(SyntaxKind.ObjectLiteralExpression).getProperties()) {
+    for (const [key, namespace] of [...namespaceOf]) {
+      const declaration = declarations.get(key);
+      if (!declaration) continue;
+      for (const property of declaration.literal.asKindOrThrow(SyntaxKind.ObjectLiteralExpression).getProperties()) {
         const spread = property.asKind(SyntaxKind.SpreadAssignment);
         if (spread) {
-          const child = spread.getExpression().getText().match(/^(\w+)\._def\.procedures$/)?.[1];
-          if (child && !namespaceOf.has(child)) {
+          // `x._def.procedures` — the identifier at the bottom of the chain.
+          const expression = spread.getExpression();
+          if (!/^\w+\._def\.procedures$/.test(expression.getText())) continue;
+          const child = routerKeyOf(expression.getFirstDescendantByKind(SyntaxKind.Identifier));
+          if (child && declarations.has(child) && !namespaceOf.has(child)) {
             namespaceOf.set(child, namespace);
             changed = true;
           }
           continue;
         }
         const assignment = property.asKind(SyntaxKind.PropertyAssignment);
-        const child = assignment?.getInitializer()?.getText();
+        const child = routerKeyOf(assignment?.getInitializer());
         if (assignment && child && declarations.has(child) && !namespaceOf.has(child)) {
           namespaceOf.set(child, `${namespace}.${assignment.getName().replace(/['"]/g, "")}`);
           changed = true;
@@ -469,13 +540,17 @@ function inputState(chain: Node, schemas: Map<string, boolean | "ambiguous">): P
  * system, because `collectProcedures` and {@link namedZodSchemas} both filter on
  * `server/` — a fixture written anywhere else would silently read as empty,
  * which is indistinguishable from a passing arm.
+ *
+ * A record of `server/`-relative path → source places several files, so a
+ * router reached through an IMPORT can be a fixture too — the only way to show
+ * two routers that share a name across files (#2356).
  */
-export function proceduresFrom(source: string): Procedure[] {
+export function proceduresFrom(source: string | Record<string, string>): Procedure[] {
   const project = new Project({ useInMemoryFileSystem: true });
-  project.createSourceFile(
-    path.join(repoRoot, "server", "__atlas_fixture__.ts").replaceAll("\\", "/"),
-    source,
-  );
+  const files = typeof source === "string" ? { "__atlas_fixture__.ts": source } : source;
+  for (const [relative, text] of Object.entries(files)) {
+    project.createSourceFile(path.join(repoRoot, "server", relative).replaceAll("\\", "/"), text);
+  }
   // `collectProcedures` appends to the module-level UNREACHABLE_ROUTERS, which
   // becomes `unmounted-router` findings. A fixture must not leave a row in the
   // real Atlas if both ever run in one process.
@@ -529,7 +604,7 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
 
       const variable = declaration.getName();
       if (variable === "appRouter") continue;
-      const namespace = namespaceOf.get(variable);
+      const namespace = namespaceOf.get(routerKey(relative, variable));
       if (!namespace) {
         // A router nobody mounts. That is a real finding — an unreachable
         // surface — not something to paper over with a made-up namespace.

@@ -360,26 +360,38 @@ describe("the vanilla client is read, and a fourth shape cannot go quiet (#2349)
 
   it("every chain off a client root resolves through a read shape — or is named here", () => {
     /*
-      The ONLY declared remainder is #2356: the admin bug-report inbox is
-      minted under `bugReports.*` (two routers share the variable name
-      `bugReportsRouter`), so the client's `trpc.admin.getBugReports` resolves
-      to no id the Atlas has. That is a route-minting defect, not a caller
-      shape, and it has its own card. When #2356 lands this arm reddens and
-      these lines are deleted with it.
+      No declared remainder. Until #2356 this held five chains from
+      `client/src/pages/AdminBugReports.tsx`: the admin bug-report inbox was
+      minted under `bugReports.*` because two routers share the variable name
+      `bugReportsRouter`, so `trpc.admin.getBugReports` resolved to no id the
+      Atlas had. Router resolution is keyed on the declaration now
+      (`server/architectureProcedureShapes.test.ts` holds the fixtures), and
+      the inbox's three procedures are credited below by name.
     */
-    const KNOWN_UNRESOLVED_2356 = [
-      "client/src/pages/AdminBugReports.tsx: trpc.admin.getBugReportCounts.useQuery",
-      "client/src/pages/AdminBugReports.tsx: trpc.admin.getBugReports.useQuery",
-      "client/src/pages/AdminBugReports.tsx: trpc.admin.updateBugReportStatus.useMutation",
-      "client/src/pages/AdminBugReports.tsx: utils.admin.getBugReportCounts.invalidate",
-      "client/src/pages/AdminBugReports.tsx: utils.admin.getBugReports.invalidate",
-    ];
     const { unresolved } = census(callable);
     expect(
       [...unresolved].sort(),
       "a client chain names no procedure through any shape this Atlas reads. Either a new "
       + "reach shape exists (teach collectClientCallers AND this census) or a route id is wrong.",
-    ).toEqual(KNOWN_UNRESOLVED_2356);
+    ).toEqual([]);
+  });
+
+  it("the admin bug-report inbox is minted under admin and carries its caller (#2356)", () => {
+    for (const procedure of [
+      "admin.getBugReportCounts",
+      "admin.getBugReports",
+      "admin.updateBugReportStatus",
+    ]) {
+      const route = committed.routes.find((candidate) => callablePath(candidate) === procedure);
+      expect(route, `${procedure} is not in the Atlas — the inbox is minted under another namespace`)
+        .toBeDefined();
+      expect(route!.clientCallers).toContain("client/src/pages/AdminBugReports.tsx");
+    }
+    expect(
+      committed.routes.filter((route) => route.file === "server/routes/admin/bugReports.ts"
+        && route.namespace !== "admin"),
+      "a procedure of the admin inbox minted outside `admin` — an id no client can call",
+    ).toEqual([]);
   });
 
   it("CAN FAIL — the census reports a fourth shape it was never taught", () => {

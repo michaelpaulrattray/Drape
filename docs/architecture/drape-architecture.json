@@ -7130,6 +7130,32 @@
       ]
     },
     {
+      "id": "route:admin.getBugReportCounts",
+      "namespace": "admin",
+      "name": "getBugReportCounts",
+      "type": "query",
+      "auth": "admin",
+      "input": "none",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": [
+        "client/src/pages/AdminBugReports.tsx"
+      ]
+    },
+    {
+      "id": "route:admin.getBugReports",
+      "namespace": "admin",
+      "name": "getBugReports",
+      "type": "query",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": [
+        "client/src/pages/AdminBugReports.tsx"
+      ]
+    },
+    {
       "id": "route:admin.getChangeRequest",
       "namespace": "admin",
       "name": "getChangeRequest",
@@ -7377,6 +7403,19 @@
       "rateLimited": false,
       "file": "server/routes/admin/announcements.ts",
       "clientCallers": []
+    },
+    {
+      "id": "route:admin.updateBugReportStatus",
+      "namespace": "admin",
+      "name": "updateBugReportStatus",
+      "type": "mutation",
+      "auth": "admin",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/admin/bugReports.ts",
+      "clientCallers": [
+        "client/src/pages/AdminBugReports.tsx"
+      ]
     },
     {
       "id": "route:announcements.getActive",
@@ -8197,28 +8236,6 @@
       ]
     },
     {
-      "id": "route:bugReports.getBugReportCounts",
-      "namespace": "bugReports",
-      "name": "getBugReportCounts",
-      "type": "query",
-      "auth": "admin",
-      "input": "none",
-      "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts",
-      "clientCallers": []
-    },
-    {
-      "id": "route:bugReports.getBugReports",
-      "namespace": "bugReports",
-      "name": "getBugReports",
-      "type": "query",
-      "auth": "admin",
-      "input": "strict",
-      "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts",
-      "clientCallers": []
-    },
-    {
       "id": "route:bugReports.submit",
       "namespace": "bugReports",
       "name": "submit",
@@ -8230,17 +8247,6 @@
       "clientCallers": [
         "client/src/features/lobby/FeedbackForm.tsx"
       ]
-    },
-    {
-      "id": "route:bugReports.updateBugReportStatus",
-      "namespace": "bugReports",
-      "name": "updateBugReportStatus",
-      "type": "mutation",
-      "auth": "admin",
-      "input": "strict",
-      "rateLimited": false,
-      "file": "server/routes/admin/bugReports.ts",
-      "clientCallers": []
     },
     {
       "id": "route:castingV2.abandonSession",
