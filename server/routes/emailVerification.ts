@@ -81,7 +81,7 @@ emailVerificationRouter.use(refuseCrossSiteAuthRequest);
  * mac + two dots is 108 for every email account and never more than 128. An
  * openId longer than 62 is given a plain token rather than a truncated one.
  */
-const LINK_MAC_LABEL = "drape:email-verification-link:v1";
+const LINK_MAC_LABEL = "klieg:email-verification-link:v1";
 const SIGNABLE_OPEN_ID = /^[A-Za-z0-9_-]{1,62}$/;
 
 function linkMac(openId: string, nonce: string): string | null {
