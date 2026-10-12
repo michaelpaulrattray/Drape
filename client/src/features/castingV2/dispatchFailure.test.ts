@@ -44,6 +44,17 @@ describe("only say what we actually know", () => {
     expect(refused.message).toBe("That brief can't be cast.");
   });
 
+  it("reads a reader outage as the studio's, never as the brief's (#2386)", () => {
+    const outage = classifyDispatchFailure(
+      trpcError("SERVICE_UNAVAILABLE", "The studio couldn't read your brief just now. Try again in a moment."),
+    );
+    expect(outage.kind).toBe("busy");
+    expect(outage.message).toBe("The studio couldn't read your brief just now. Try again in a moment.");
+    expect(classifyDispatchFailure(trpcError("SERVICE_UNAVAILABLE", "")).message).toMatch(/try again/i);
+    // Negative control: a refusal about the words is still the brief's.
+    expect(classifyDispatchFailure(trpcError("BAD_REQUEST", "Describe who you want.")).kind).toBe("refused");
+  });
+
   it("classifies the account and rate-limit cases apart from transport", () => {
     expect(classifyDispatchFailure(trpcError("TOO_MANY_REQUESTS")).kind).toBe("busy");
     expect(classifyDispatchFailure(trpcError("PRECONDITION_FAILED")).kind).toBe("credits");

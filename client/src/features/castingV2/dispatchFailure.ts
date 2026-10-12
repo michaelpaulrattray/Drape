@@ -27,13 +27,29 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
   const serverMessage = typeof err?.message === "string" ? err.message : "";
 
   /*
-    BAD_REQUEST is the brief compiler's refusal: it could not read the brief,
-    or the brief asks for a cohort no adapter is certified for. The server's
+    BAD_REQUEST is the brief compiler's refusal about the WORDS: too little to
+    cast from, a named person or character, or something that is not a being.
+    A reader that did not answer is not one of these (see below). The server's
     own sentence is already written for a person, so it is used verbatim
     rather than replaced by something vaguer.
   */
   if (code === "BAD_REQUEST") {
     return { kind: "refused", message: serverMessage || "That brief could not be cast." };
+  }
+
+  /*
+    SERVICE_UNAVAILABLE is the studio, not the brief (#2386). The brief reader
+    did not answer, so nothing was read, claimed or charged — the same words
+    will roll once it does. It used to arrive as BAD_REQUEST and the sheet
+    titled it "That brief can't be cast" with "Edit the brief" under a sentence
+    saying to try again. It is the busy kind's twin: the roll didn't start,
+    through no fault of the words, and the server's own sentence says so.
+  */
+  if (code === "SERVICE_UNAVAILABLE") {
+    return {
+      kind: "busy",
+      message: serverMessage || "The studio couldn't start that roll just now. Try again in a moment — you were not charged.",
+    };
   }
 
   if (code === "TOO_MANY_REQUESTS") {
