@@ -103,10 +103,10 @@ describe("only a cast still on screen counts", () => {
 
 describe("what the bar says afterwards is the server's count, not the number ticked", () => {
   it("filing", () => {
-    expect(selection.filedSentence(8, 8, "Summer drop")).toBe("8 cast members added to “Summer drop”.");
-    expect(selection.filedSentence(1, 1, "Summer drop")).toBe("1 cast member added to “Summer drop”.");
+    expect(selection.filedSentence(8, 8, "Summer drop")).toBe("8 characters added to “Summer drop”.");
+    expect(selection.filedSentence(1, 1, "Summer drop")).toBe("1 character added to “Summer drop”.");
     expect(selection.filedSentence(5, 8, "Summer drop")).toBe(
-      "5 cast members added to “Summer drop”. 3 were already in it.",
+      "5 characters added to “Summer drop”. 3 were already in it.",
     );
     expect(selection.filedSentence(0, 4, "Summer drop")).toBe("All 4 are already in “Summer drop”.");
     expect(selection.filedSentence(0, 1, "Summer drop")).toBe("Already in “Summer drop”.");
@@ -120,8 +120,8 @@ describe("what the bar says afterwards is the server's count, not the number tic
       selection.unfiledSentence(0, 1, "Summer drop"),
     ];
     expect(lines).toEqual([
-      "3 cast members taken out of “Summer drop”.",
-      "2 cast members taken out of “Summer drop”. 1 wasn't in it.",
+      "3 characters taken out of “Summer drop”.",
+      "2 characters taken out of “Summer drop”. 1 wasn't in it.",
       "None of them are in “Summer drop”.",
       "Not in “Summer drop”.",
     ]);
@@ -247,7 +247,7 @@ describe("a stopped run of slices reports what landed, not what was meant to lan
   it("the honest sentence names both halves, and the remainder's fate", () => {
     const landed = selection.filedSentence(60, 60, "Summer drop");
     expect(`${landed} ${selection.unreachedSentence(3, "add")}`).toBe(
-      "60 cast members added to “Summer drop”. 3 couldn't be added. They're still selected, so you can try again.",
+      "60 characters added to “Summer drop”. 3 couldn't be added. They're still selected, so you can try again.",
     );
     expect(selection.unreachedSentence(1, "add")).toBe(
       "1 couldn't be added. It's still selected, so you can try again.",

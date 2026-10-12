@@ -44,15 +44,15 @@ describe("deleting the campaign on screen returns the library to All", () => {
 });
 
 describe("delete asks once, and says the casts stay", () => {
-  it("names the campaign and says its cast members stay in the library", () => {
+  it("names the campaign and says its characters stay in the library", () => {
     const body = campaignDeleteBody("Summer", 3);
     expect(body).toContain("“Summer”");
-    expect(body).toContain("The 3 cast members in it stay in your library");
+    expect(body).toContain("The 3 characters in it stay in your library");
     expect(body).toContain("Only the campaign goes.");
   });
 
-  it("one cast member is singular; an empty campaign says only the campaign goes", () => {
-    expect(campaignDeleteBody("Summer", 1)).toContain("The 1 cast member in it stays in your library");
+  it("one character is singular; an empty campaign says only the campaign goes", () => {
+    expect(campaignDeleteBody("Summer", 1)).toContain("The 1 character in it stays in your library");
     expect(campaignDeleteBody("Summer", 0)).toBe("“Summer” is empty, so only the campaign goes.");
   });
 });
