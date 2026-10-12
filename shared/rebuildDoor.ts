@@ -29,8 +29,8 @@
  * # Why it says nothing about engines
  *
  * The disappearing-technology law's one narrow prohibition: no engine name on a
- * path somebody must walk. The customer is told the thing is unavailable while
- * it is rebuilt and that their work is safe — never which vendor, model or key
+ * path somebody must walk. The customer is told the thing is not available
+ * right now and that their work is safe — never which vendor, model or key
  * is involved.
  */
 
@@ -50,10 +50,17 @@ export const REBUILD_DOOR_OPEN: boolean = false;
 
 /**
  * What a customer is told. One sentence of state, one of reassurance, no
- * machinery; it says UNAVAILABLE rather than failed.
+ * machinery; it says NOT AVAILABLE rather than failed.
+ *
+ * #2329: it no longer says "while we rebuild it" — true only of the canvas,
+ * which is being redesigned, while the wardrobe and the old refine road behind
+ * this same door are being RETIRED — and it says "characters", the customer's
+ * word since #2320/#2322, never "casts". It no longer names garments in the
+ * sentence; that promise is not dropped, it is #2315 step 2's to keep: deleting
+ * the wardrobe code must never delete a customer's garments.
  */
 export const REBUILD_DOOR_CLOSED =
-  "This is unavailable while we rebuild it. Your casts, garments and pictures are safe and still here.";
+  "This isn't available right now. Your characters and pictures are safe and still here.";
 
 /** The machine-readable half, carried in the refusal's `cause`. */
 export const REBUILD_DOOR_CLOSED_CODE = "REBUILD_DOOR_CLOSED" as const;

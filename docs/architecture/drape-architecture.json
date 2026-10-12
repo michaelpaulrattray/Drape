@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 203
+      "moduleCount": 204
     },
     {
       "id": "domain:castingV2",
@@ -12334,6 +12334,10 @@
     {
       "id": "test:client/src/features/boards/characterNoun2322.test.ts",
       "path": "client/src/features/boards/characterNoun2322.test.ts"
+    },
+    {
+      "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
+      "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },
     {
       "id": "test:client/src/features/casting/castingPrices.test.ts",

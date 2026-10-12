@@ -274,8 +274,18 @@ describe("the rebuild door is shut (#2315 step 1)", () => {
     for (const forbidden of ["gemini", "google", "model", "engine", "api", "key", "provider", "deprecat"]) {
       expect(words).not.toContain(forbidden);
     }
-    expect(REBUILD_DOOR_CLOSED).toMatch(/unavailable/i);
+    expect(REBUILD_DOOR_CLOSED).toMatch(/isn't available right now/i);
     expect(REBUILD_DOOR_CLOSED).not.toMatch(/fail|error|wrong|sorry/i);
+  });
+
+  it("#2329: says 'characters', never 'casts', and promises no rebuild of what is being retired", () => {
+    /* The customer's word is "character" (#2320, #2322), and "while we rebuild
+       it" was true only of the canvas: the wardrobe and the old refine road
+       behind this same door are being retired. Positive arm first, so a
+       deleted sentence cannot pass the negatives. */
+    expect(REBUILD_DOOR_CLOSED).toContain("Your characters and pictures are safe and still here.");
+    expect(REBUILD_DOOR_CLOSED).not.toMatch(/\bcasts?\b/i);
+    expect(REBUILD_DOOR_CLOSED).not.toMatch(/rebuil/i);
   });
 });
 
