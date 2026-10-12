@@ -427,8 +427,8 @@ function BoardPageImpl() {
     // hand the customer's text back to the node it came from.
     onError: (err, variables) => {
       logRawFailure('boards.updateItem', err);
-      const failure = itemSaveFailure(err, variables);
-      toast.error(failure.message, { id: failure.toastId });
+      const failure = itemSaveFailure(variables);
+      toast.error(readableFailure(err, failure.fallback), { id: failure.toastId });
       if (failure.reopen) {
         window.dispatchEvent(new CustomEvent(RENAME_NODE_EVENT, { detail: failure.reopen }));
       }

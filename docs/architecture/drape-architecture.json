@@ -19130,11 +19130,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/boards/itemSaveFailure.ts",
-      "to": "module:client/src/lib/failureSentence.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "to": "module:client/src/features/boards/components/VersionHistoryBadge.tsx",
       "kind": "imports"

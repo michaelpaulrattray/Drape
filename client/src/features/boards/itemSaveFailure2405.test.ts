@@ -12,6 +12,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readableFailure } from "@/lib/failureSentence";
 import { itemSaveFailure, renameEventDraft, RENAME_NODE_EVENT } from "./itemSaveFailure";
 
 const LENGTH_REFUSAL = {
@@ -20,46 +21,52 @@ const LENGTH_REFUSAL = {
 };
 const NETWORK_FAILURE = new TypeError("Failed to fetch");
 
+/** What the toast shows, composed exactly as `BoardPage`'s `onError` composes it. */
+function say(error: unknown, variables: Parameters<typeof itemSaveFailure>[0]) {
+  const failure = itemSaveFailure(variables);
+  return { ...failure, message: readableFailure(error, failure.fallback) };
+}
+
 describe("#2405 — what a failed canvas save says", () => {
   it("a refused note hands back EXACTLY what was typed, with our server's own sentence", () => {
     const typed = "Shot list: ".padEnd(359, "a");
-    const failure = itemSaveFailure(LENGTH_REFUSAL, { itemId: 42, label: typed });
+    const failure = say(LENGTH_REFUSAL, { itemId: 42, label: typed });
     expect(failure.message).toBe(LENGTH_REFUSAL.message);
     expect(failure.reopen).toEqual({ itemId: 42, draft: typed });
   });
 
   it("a dropped text save says so in plain words, never the transport's text, and still hands it back", () => {
-    const failure = itemSaveFailure(NETWORK_FAILURE, { itemId: 7, label: "Character 1" });
+    const failure = say(NETWORK_FAILURE, { itemId: 7, label: "Character 1" });
     expect(failure.message).toBe("Your text didn't save. It's still there, so you can try again.");
     expect(failure.message).not.toContain("fetch");
     expect(failure.reopen).toEqual({ itemId: 7, draft: "Character 1" });
   });
 
   it("an empty string is still text the customer sent — it is handed back, not dropped", () => {
-    expect(itemSaveFailure(NETWORK_FAILURE, { itemId: 1, label: "" }).reopen).toEqual({ itemId: 1, draft: "" });
+    expect(say(NETWORK_FAILURE, { itemId: 1, label: "" }).reopen).toEqual({ itemId: 1, draft: "" });
   });
 
   it("a failed MOVE is told, and opens no editor (negative control)", () => {
-    const failure = itemSaveFailure(NETWORK_FAILURE, { itemId: 3, positionX: 10, positionY: 20 });
+    const failure = say(NETWORK_FAILURE, { itemId: 3, positionX: 10, positionY: 20 });
     expect(failure.message).toBe("That move didn't save. Try again in a moment.");
     expect(failure.reopen).toBeNull();
   });
 
   it("a failed RESIZE is told, and opens no editor", () => {
-    const failure = itemSaveFailure(NETWORK_FAILURE, { itemId: 3, width: 300, height: 200 });
+    const failure = say(NETWORK_FAILURE, { itemId: 3, width: 300, height: 200 });
     expect(failure.message).toBe("That resize didn't save. Try again in a moment.");
     expect(failure.reopen).toBeNull();
   });
 
   it("each kind of save has its own toast id, so a burst of one kind reads as one message", () => {
     const ids = new Set([
-      itemSaveFailure(NETWORK_FAILURE, { itemId: 1, label: "a" }).toastId,
-      itemSaveFailure(NETWORK_FAILURE, { itemId: 1, positionX: 1 }).toastId,
-      itemSaveFailure(NETWORK_FAILURE, { itemId: 1, width: 60 }).toastId,
+      say(NETWORK_FAILURE, { itemId: 1, label: "a" }).toastId,
+      say(NETWORK_FAILURE, { itemId: 1, positionX: 1 }).toastId,
+      say(NETWORK_FAILURE, { itemId: 1, width: 60 }).toastId,
     ]);
     expect(ids.size).toBe(3);
-    expect(itemSaveFailure(NETWORK_FAILURE, { itemId: 9, positionX: 1 }).toastId)
-      .toBe(itemSaveFailure(NETWORK_FAILURE, { itemId: 2, positionY: 5 }).toastId);
+    expect(say(NETWORK_FAILURE, { itemId: 9, positionX: 1 }).toastId)
+      .toBe(say(NETWORK_FAILURE, { itemId: 2, positionY: 5 }).toastId);
   });
 
   it("the node reads the draft off the event, and a plain rename event carries none", () => {
@@ -88,8 +95,8 @@ describe("#2405 — the wiring", () => {
     expect(page.indexOf("const updateItemMutation = trpc.boards.updateItem.useMutation(", start + 1)).toBe(-1);
     const block = page.slice(start, page.indexOf("\n  });", start));
     expect(block).toMatch(/onError:\s*\(err, variables\)/);
-    expect(block).toContain("itemSaveFailure(err, variables)");
-    expect(block).toContain("toast.error(failure.message, { id: failure.toastId })");
+    expect(block).toContain("const failure = itemSaveFailure(variables)");
+    expect(block).toContain("toast.error(readableFailure(err, failure.fallback), { id: failure.toastId })");
     expect(block).toContain("new CustomEvent(RENAME_NODE_EVENT, { detail: failure.reopen })");
   });
 

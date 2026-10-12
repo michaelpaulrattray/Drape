@@ -14,7 +14,8 @@
  *
  *  - WHAT TO SAY. Our server's own sentence when it wrote one (the length
  *    refusal already names the limit in plain words), otherwise a fallback
- *    naming what did not save — `readableFailure`, the house rule.
+ *    naming what did not save. The toast itself is
+ *    `readableFailure(err, failure.fallback)` at the call site, the house rule.
  *  - WHETHER TO HAND THE TEXT BACK. When the failed save carried text, the
  *    node's editor is reopened holding exactly what was typed, so nothing the
  *    customer wrote is lost to a failed request. The node listens on the same
@@ -22,7 +23,6 @@
  *
  * One toast per kind (`id`), so a burst of failed moves reads as one message.
  */
-import { readableFailure } from '@/lib/failureSentence';
 
 /** The event a canvas node listens on to open its own text editor. */
 export const RENAME_NODE_EVENT = 'board-rename-node';
@@ -39,36 +39,39 @@ export type ItemSaveVariables = {
 export type ItemSaveFailure = {
   /** Toast id — one per kind of save, so repeats replace rather than stack. */
   toastId: string;
-  message: string;
+  /** Our sentence for when the server wrote none. The call site hands it to
+   *  `readableFailure(err, failure.fallback)`, where the raw-error-toast sweep
+   *  (`client/src/foundation/rawErrorToast.test.ts`) reads the rule. */
+  fallback: string;
   /** Reopen this node's editor holding the text that did not save. */
   reopen: { itemId: number; draft: string } | null;
 };
 
-export function itemSaveFailure(error: unknown, variables: ItemSaveVariables): ItemSaveFailure {
+export function itemSaveFailure(variables: ItemSaveVariables): ItemSaveFailure {
   if (typeof variables.label === 'string') {
     return {
       toastId: 'board-item-save-text',
-      message: readableFailure(error, "Your text didn't save. It's still there, so you can try again."),
+      fallback: "Your text didn't save. It's still there, so you can try again.",
       reopen: { itemId: variables.itemId, draft: variables.label },
     };
   }
   if (variables.positionX !== undefined || variables.positionY !== undefined) {
     return {
       toastId: 'board-item-save-move',
-      message: readableFailure(error, "That move didn't save. Try again in a moment."),
+      fallback: "That move didn't save. Try again in a moment.",
       reopen: null,
     };
   }
   if (variables.width !== undefined || variables.height !== undefined) {
     return {
       toastId: 'board-item-save-size',
-      message: readableFailure(error, "That resize didn't save. Try again in a moment."),
+      fallback: "That resize didn't save. Try again in a moment.",
       reopen: null,
     };
   }
   return {
     toastId: 'board-item-save',
-    message: readableFailure(error, "That change didn't save. Try again in a moment."),
+    fallback: "That change didn't save. Try again in a moment.",
     reopen: null,
   };
 }
