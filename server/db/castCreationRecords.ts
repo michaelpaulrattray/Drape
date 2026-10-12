@@ -13,22 +13,20 @@
  * the recipe at all. `castCreationRecords.test.ts` reads the SQL this module
  * really sends and asserts both halves.
  */
-import { and, asc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 
 import {
   castCreationRecords,
   castingCandidateVariants,
   castingCandidates,
   castingRolls,
-  modelAssets,
-  modelIdentitySnapshots,
   models,
   users,
   type CastCreationRecordRow,
 } from "../../drizzle/schema";
 import { getDb, type TransactionHandle } from "./connection";
 import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
-import { signedCastWhere } from "./castingV2Sign";
+import { readCastOriginalAnchorKey, signedCastWhere } from "./castingV2Sign";
 
 async function requireDb() {
   const db = await getDb();
@@ -86,22 +84,8 @@ export async function readCreationRecordSource(
   if (!cast || !cast.agencyId) return { refused: "not_a_signed_cast" };
   if (!cast.mintedAt) return { refused: "not_minted" };
 
-  const [anchor] = await db
-    .select({ storageKey: modelAssets.storageKey })
-    .from(modelIdentitySnapshots)
-    .innerJoin(models, and(
-      eq(models.id, modelIdentitySnapshots.modelId),
-      eq(models.userId, userId),
-      isNull(models.deletedAt),
-    ))
-    .innerJoin(modelAssets, and(
-      eq(modelAssets.id, modelIdentitySnapshots.anchorAssetId),
-      eq(modelAssets.modelId, modelIdentitySnapshots.modelId),
-    ))
-    .where(eq(modelIdentitySnapshots.modelId, cast.id))
-    .orderBy(asc(modelIdentitySnapshots.sequence))
-    .limit(1);
-  if (!anchor?.storageKey) return { refused: "no_anchor" };
+  const anchor = await readCastOriginalAnchorKey(userId, cast.id);
+  if (!anchor) return { refused: "no_anchor" };
 
   const [maker] = await db
     .select({ displayName: users.displayName, name: users.name })
@@ -168,7 +152,7 @@ export async function readCreationRecordSource(
     mintedAt: cast.mintedAt,
     makerDisplayName: maker?.displayName ?? null,
     makerName: maker?.name ?? null,
-    anchorStorageKey: anchor.storageKey,
+    anchorStorageKey: anchor,
     rolledAt,
     rollsInSession,
     keptAt,
