@@ -1,6 +1,6 @@
 {
-  "edition": 680,
-  "updatedAt": "2026-10-12T01:05:00.000Z",
+  "edition": 681,
+  "updatedAt": "2026-10-12T01:12:00.000Z",
   "shift": "Foreman — foreman-20261012-1041",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
@@ -130,7 +130,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-11T20:18:54.823Z",
+      "readAt": "2026-10-12T01:08:34.400Z",
       "items": [
         {
           "issueNumber": 2269,
@@ -10483,7 +10483,7 @@
     273
   ],
   "nextUp": {
-    "readAt": "2026-10-11T20:18:54.823Z",
+    "readAt": "2026-10-12T01:08:34.400Z",
     "items": [
       {
         "issueNumber": 1469,
@@ -10519,7 +10519,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "Yuna's pass on the final wording, when her team is back. Every other box on this brief is ticked — your eye, the frames, the numbers, the build cards."
+          "because": "#1788, the shared workspace — Team is the one unbuilt card and #1835 owns it. Yuna's pass LANDED and shipped. Nothing here needs your word."
         }
       },
       {
@@ -10546,7 +10546,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "N2d (#2134) — the one N2 rung still open. N2b and N2c both closed today; this is not waiting on you and nothing here needs an answer."
+          "because": "N2d (#2134) — the one N2 rung still open. N2b and N2c both closed on 2026-10-11; this is not waiting on you and nothing here needs an answer."
         }
       },
       {
