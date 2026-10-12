@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 67
+      "moduleCount": 68
     },
     {
       "id": "domain:client-shared",
@@ -1317,6 +1317,12 @@
     {
       "id": "module:client/src/features/castingV2/cancelNotice.ts",
       "path": "client/src/features/castingV2/cancelNotice.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/carriedBrief.ts",
+      "path": "client/src/features/castingV2/carriedBrief.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -12523,6 +12529,10 @@
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/carriedBrief.test.ts",
+      "path": "client/src/features/castingV2/carriedBrief.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/castSelection.test.ts",
       "path": "client/src/features/castingV2/castSelection.test.ts"
     },
@@ -23710,6 +23720,11 @@
     },
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/carriedBrief.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/castSettingsCopy.ts",
       "kind": "imports"
     },
@@ -23921,6 +23936,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/carriedBrief.ts",
       "kind": "imports"
     },
     {

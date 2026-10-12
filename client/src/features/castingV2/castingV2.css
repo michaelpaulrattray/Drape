@@ -3099,6 +3099,24 @@
 }
 
 /*
+  THE SHEET DOCK'S BRIEF ROW (#2388). One line — the brief beside the priced
+  Roll again — at every width but a phone's. At 390 the button kept its whole
+  label and the box got what was left, about 70px: the brief broke mid-word one
+  fragment per line, beside a button about to spend credits on it. Under 460px
+  (the same breakpoint the persona card's buttons stack at) the row wraps, the
+  box takes the full width, and Roll again sits under it, full width for a thumb.
+*/
+.dp-row.dpc-dockrow {
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+@media (max-width: 460px) {
+  .dp-row.dpc-dockrow { flex-wrap: wrap; }
+  .dp-row.dpc-dockrow > .dp-field { flex: 1 1 100%; }
+  .dp-row.dpc-dockrow > .dp-btn { flex: 1 1 100%; }
+}
+
+/*
   ⚠ **THE HERO'S BRIEF BOX IS TALLER THAN THE SHEET'S, AND THE NUMBERS ARE
   MEASURED RATHER THAN CHOSEN (#375).**
 
