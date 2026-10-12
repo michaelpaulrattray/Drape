@@ -31,7 +31,7 @@ import { trpc } from "@/lib/trpc";
 import { Button, Field, Input, LabelledField } from "@/foundation";
 import { ProfileAvatar } from "@/features/profile/ProfileVisual";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
-import { compressImage, AVATAR_COMPRESSION } from "@/lib/imageUtils";
+import { compressImage, AVATAR_COMPRESSION, type CompressedImage } from "@/lib/imageUtils";
 import { WORKSPACE_NAME } from "@/foundation/brand";
 import { INK_DESIGN_FORMATS, inkDesignContentType } from "@shared/pictureFormats";
 import { PROFILE_DISPLAY_NAME_MAX_LENGTH } from "@shared/inputLimits";
@@ -49,6 +49,25 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
  */
 const AVATAR_TYPES = INK_DESIGN_FORMATS.map(inkDesignContentType);
 const AVATAR_ACCEPT = AVATAR_TYPES.join(",");
+
+/**
+ * What `profile.uploadAvatar` is sent, and nothing more (#2400).
+ *
+ * The server measures the picture from the bytes it receives and has ignored a
+ * client-declared size since #2378, so the size is no longer sent at all. The
+ * server still ACCEPTS the old field for one full deploy (CLAUDE.md invariant
+ * 4's removal contract), so an older open tab keeps working; dropping it from
+ * the server schema is the later card, once this has shipped.
+ */
+export function avatarUploadPayload(compressed: CompressedImage): {
+  base64Data: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+} {
+  return {
+    base64Data: compressed.base64,
+    mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
+  };
+}
 
 export function ProfileSection({
   user,
@@ -130,11 +149,7 @@ export function ProfileSection({
         AVATAR_COMPRESSION.maxHeight,
         AVATAR_COMPRESSION.quality,
       );
-      await uploadAvatar.mutateAsync({
-        base64Data: compressed.base64,
-        mimeType: compressed.mimeType as "image/jpeg" | "image/png" | "image/webp",
-        fileSize: compressed.size,
-      });
+      await uploadAvatar.mutateAsync(avatarUploadPayload(compressed));
     } catch {
       /* The mutation's own onError already spoke. */
     } finally {
