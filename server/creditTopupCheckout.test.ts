@@ -47,6 +47,10 @@ vi.mock("./db", async (importOriginal) => ({
 vi.mock("./stripe/stripeService", () => ({
   stripe: {},
   getOrCreateStripeCustomer: vi.fn(),
+  /* #2454: the pack is sold only on an ACTIVE plan, read live. Every arm here
+     is about the rung, so the plan is active; the live read's own arms are in
+     `routes/topupActivePlan2454.test.ts`, over the real stripeService. */
+  findLiveSubscriptionOnCustomer: vi.fn(),
   createSubscriptionCheckoutSession: vi.fn(),
   createTopupCheckoutSession: vi.fn(),
   createCustomerPortalSession: vi.fn(),
@@ -68,7 +72,11 @@ vi.mock("./auditLog", async (importOriginal) => ({
 
 import { billingRouter } from "./routes/billing";
 import { getSubscriptionByUserId, getUserById, updateUserSubscription } from "./db";
-import { createTopupCheckoutSession, getOrCreateStripeCustomer } from "./stripe/stripeService";
+import {
+  createTopupCheckoutSession,
+  findLiveSubscriptionOnCustomer,
+  getOrCreateStripeCustomer,
+} from "./stripe/stripeService";
 import { logAuditEvent } from "./auditLog";
 import { AUDIT_ACTIONS } from "../shared/auditActions";
 import {
@@ -109,6 +117,12 @@ beforeEach(() => {
     "https://checkout.stripe.com/c/pay/topup",
   );
   vi.mocked(updateUserSubscription).mockResolvedValue({ success: true });
+  vi.mocked(findLiveSubscriptionOnCustomer).mockResolvedValue({
+    outcome: "live",
+    subscriptionId: "sub_saved",
+    status: "active",
+    collectionPaused: false,
+  });
 });
 
 describe("createTopupCheckout — plan holders only, enforced at the wire", () => {
