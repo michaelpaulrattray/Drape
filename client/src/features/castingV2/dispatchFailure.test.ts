@@ -57,7 +57,7 @@ describe("only say what we actually know", () => {
   the roll's price sentence); `server/castingV2/rollService.test.ts` drives the
   real refusal through this classifier from the other end.
 */
-describe("a short balance is an account problem, never a brief one (#2387)", () => {
+describe("a short balance is an account problem, never a brief one", () => {
   it("the not-enough-credits refusal keeps its sentence and its price, and offers no brief edit", () => {
     const sentence = "Not enough credits. A roll costs 160 credits.";
     const failure = classifyDispatchFailure(trpcError("PRECONDITION_FAILED", sentence));
