@@ -268,6 +268,119 @@ function readableRecordText(recordJson: string): string {
   return recordJson.replace(/[^\u0000-\u00ff]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
 }
 
+/*
+ * # Where the appendix may break a line (#2366)
+ *
+ * A PDF reader rebuilds text from the lines it finds. When a line was cut in
+ * the middle of a word, a hex string or a key, some readers put a space there,
+ * some join it to the wrong neighbour, and the record comes back scrambled \u2014
+ * which is what a reader did to a real certificate on 2026-10-12, reporting a
+ * name and a fingerprint "mismatch" that were not there. So every break in the
+ * appendix falls at a point where breaking cannot change what is read back:
+ *
+ *  - the data blocks (base64, the signature, the hash) break every 64
+ *    characters, the PEM convention, and never between the JWS's two dots \u2014
+ *    remove the line breaks and the exact text returns;
+ *  - JSON (the readable record, the public key) is printed one key per line;
+ *    a line still too long breaks after its `:`. ⚠ DECLARED: a string value
+ *    longer than a whole line (a 128-character name; a name in another script,
+ *    six characters per letter once escaped) cannot fit any other way, so it
+ *    runs on — breaking just after a space, so every word stays whole, or,
+ *    with no space to use, between two escapes and never inside one. Strip
+ *    each line's indentation and join the lines, and the JSON parses to the
+ *    same value. The exact bytes are always the base64 block.
+ *
+ * None of this touches the signed bytes. They are what they were; only the way
+ * they are laid on the page changed.
+ */
+
+/** The data blocks' line width \u2014 the PEM convention. */
+export const APPENDIX_DATA_WIDTH = 64;
+
+/**
+ * Cut a run of data into lines of `width` characters, never between the two
+ * dots of a detached JWS (`header..signature`): a break there leaves a line
+ * ending in "." beside one starting with ".", which reads as one dot or three.
+ */
+export function wrapDataLines(data: string, width = APPENDIX_DATA_WIDTH): string[] {
+  const lines: string[] = [];
+  let at = 0;
+  while (at < data.length) {
+    let end = Math.min(at + width, data.length);
+    if (end < data.length && data[end - 1] === "." && data[end] === ".") end -= 1;
+    lines.push(data.slice(at, end));
+    at = end;
+  }
+  return lines.length > 0 ? lines : [""];
+}
+
+/** A JSON string literal's atoms: an escape (`\uXXXX`, `\"`, \u2026) is never split. */
+function stringAtoms(literal: string): string[] {
+  return literal.match(/\\u[0-9a-fA-F]{4}|\\.|[\s\S]/g) ?? [];
+}
+
+/**
+ * Lay a JSON document out for reading inside `width` characters. `json` must
+ * already be printable (see `readableRecordText`); pretty-printing it adds only
+ * whitespace between tokens, so the value is unchanged.
+ */
+export function readableJsonLines(json: string, width: number): string[] {
+  const pretty = readableRecordText(JSON.stringify(JSON.parse(json), null, 2));
+  const out: string[] = [];
+  for (const line of pretty.split("\n")) {
+    if (line.length <= width) {
+      out.push(line);
+      continue;
+    }
+    const indent = line.match(/^ */)![0].length;
+    /* A key's line breaks after its colon first: the value moves down a line. */
+    const colon = line.match(/^( *"(?:\\.|[^"\\])*": )(.*)$/);
+    let value = line;
+    let valueIndent = indent;
+    if (colon) {
+      out.push(colon[1].trimEnd());
+      valueIndent = indent + 2;
+      value = " ".repeat(valueIndent) + colon[2];
+      if (value.length <= width) {
+        out.push(value);
+        continue;
+      }
+    }
+    /* Still too long: only a string value can be (numbers and words are short),
+       and it is cut between its atoms, never beside a space. */
+    const body = value.slice(valueIndent);
+    const atoms = stringAtoms(body);
+    const room = Math.max(8, width - valueIndent - 4);
+    for (let i = 0; i < atoms.length; ) {
+      /* Take as many atoms as fit, then step back to a break beside no space. */
+      let j = i;
+      let len = 0;
+      while (j < atoms.length && len + atoms[j].length <= room) {
+        len += atoms[j].length;
+        j += 1;
+      }
+      if (j === i) j = i + 1;
+      if (j < atoms.length && !/^\s$/.test(atoms[j - 1])) {
+        /* Words stay whole: break just after the last space that fits, so the
+           space ends the line and the next word starts the next one. A run
+           with no space in it (an escaped name) breaks between two atoms. */
+        let k = j - 1;
+        while (k > i && !/^\s$/.test(atoms[k - 1])) k -= 1;
+        if (k > i) j = k;
+      }
+      /* A line never hands the next one a leading space: that space would read
+         as indentation and be lost when the lines are joined. (A run of many
+         spaces at a break may push a line past the edge — a name like that
+         still reads back exactly; it only looks long.) */
+      while (j < atoms.length && /^\s$/.test(atoms[j])) j += 1;
+      /* Continuations sit two deeper, so they read as the same value going on. */
+      out.push(" ".repeat(i === 0 ? valueIndent : valueIndent + 2) + atoms.slice(i, j).join(""));
+      i = j;
+    }
+  }
+  return out;
+}
+
 /** Render the certificate. Returns the PDF bytes. */
 export function renderCreationCertificate(input: CreationCertificateInput): Buffer {
   const record = readSignedRecord(input.recordJson);
@@ -407,24 +520,40 @@ export function renderCreationCertificate(input: CreationCertificateInput): Buff
   doc.text(intro, MARGIN, ay, { lineHeightFactor: 1.45 });
   ay += intro.length * 3.5 + 6;
 
-  const blocks: { name: string; body: string }[] = [
-    { name: "Record", body: readableRecordText(input.recordJson) },
-    { name: "Record, exact signed bytes (base64)", body: Buffer.from(input.recordJson, "utf8").toString("base64") },
-    { name: "SHA-256 of the record (what the timestamp covers)", body: createHash("sha256").update(input.recordJson, "utf8").digest("hex") },
-    { name: "Signature", body: input.signature },
+  const monoSize = 6.2;
+  const lineH = monoSize * 0.43;
+  /* How many monospace characters fit across the page (Courier is 0.6 em). */
+  const perLine = Math.floor(CONTENT_W / (monoSize * 0.6 * 0.3528));
+  const blocks: { name: string; note?: string; lines: string[] }[] = [
+    {
+      name: "Record",
+      note: "Formatted for reading, one key per line. The exact signed bytes are the block below.",
+      lines: readableJsonLines(input.recordJson, perLine),
+    },
+    {
+      name: "Record, exact signed bytes (base64)",
+      note: "Line breaks here, in the signature and in the timestamp token are not part of the data.",
+      lines: wrapDataLines(Buffer.from(input.recordJson, "utf8").toString("base64")),
+    },
+    {
+      name: "SHA-256 of the record (what the timestamp covers)",
+      lines: wrapDataLines(createHash("sha256").update(input.recordJson, "utf8").digest("hex")),
+    },
+    { name: "Signature", lines: wrapDataLines(input.signature) },
     {
       name: "Public key",
-      body: input.publicJwk
-        ? JSON.stringify({ kty: input.publicJwk.kty, crv: input.publicJwk.crv, x: input.publicJwk.x, kid: input.signingKeyId })
-        : `Key id ${input.signingKeyId}`,
+      lines: input.publicJwk
+        ? readableJsonLines(
+          JSON.stringify({ kty: input.publicJwk.kty, crv: input.publicJwk.crv, x: input.publicJwk.x, kid: input.signingKeyId }),
+          perLine,
+        )
+        : [`Key id ${input.signingKeyId}`],
     },
     {
       name: `Timestamp token (base64), stamped ${certificateDate(input.stampedAt)} ${TIME.format(input.stampedAt)} UTC`,
-      body: input.timestampTokenBase64,
+      lines: wrapDataLines(input.timestampTokenBase64),
     },
   ];
-  const monoSize = 6.2;
-  const lineH = monoSize * 0.43;
   for (const block of blocks) {
     if (ay + 12 > PAGE_H - 22) {
       doc.addPage();
@@ -433,14 +562,19 @@ export function renderCreationCertificate(input: CreationCertificateInput): Buff
     }
     label(doc, block.name, MARGIN, ay);
     ay += 4.5;
+    if (block.note) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...SOFT);
+      doc.text(block.note, MARGIN, ay);
+      ay += 3.6;
+    }
     doc.setFont("courier", "normal");
     doc.setFontSize(monoSize);
     doc.setTextColor(...INK);
-    /* Hard-wrapped by character count: the text is one unbroken run and must
-       be copied back out exactly, so no hyphen or space is ever added. */
-    const perLine = Math.floor(CONTENT_W / (monoSize * 0.6 * 0.3528));
-    const lines = block.body.match(new RegExp(`.{1,${perLine}}`, "gs")) ?? [""];
-    for (const line of lines) {
+    /* Every line was cut at a safe point above — see "Where the appendix may
+       break a line". No hyphen is ever added. */
+    for (const line of block.lines) {
       if (ay > PAGE_H - 22) {
         doc.addPage();
         header(doc, kliegId);
