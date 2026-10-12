@@ -278,6 +278,10 @@ export const TOPUP_CHECKOUT_KIND = "topup";
  * refused and what to do, in the customer's words — no tier id, no status, no
  * machinery (the disappearing-technology law's refusal clause).
  */
+export const TOPUP_NEEDS_A_PLAN_SENTENCE =
+  "Credit packs are for accounts on a plan. "
+  + "Pick a plan and you can add credits any time you need them.";
+
 /**
  * WHAT A PAUSED PLAN IS TOLD, ON THE PANE AND AT THE PRESS (#2456).
  *
@@ -291,10 +295,6 @@ export const TOPUP_CHECKOUT_KIND = "topup";
 export const TOPUP_PLAN_PAUSED_SENTENCE =
   "Your plan is paused, so credit packs can't be bought right now. "
   + `Email ${SUPPORT_EMAIL} and we'll resume it.`;
-
-export const TOPUP_NEEDS_A_PLAN_SENTENCE =
-  "Credit packs are for accounts on a plan. "
-  + "Pick a plan and you can add credits any time you need them.";
 
 /**
  * WHETHER AN ACCOUNT MAY BUY A CREDIT PACK — the card's rule, in one place.
