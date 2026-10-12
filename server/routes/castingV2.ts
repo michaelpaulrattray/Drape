@@ -263,16 +263,18 @@ const campaignCastIdsInput = z.array(z.string().min(1).max(32)).min(1).max(CAMPA
   newest first, one page" — and the response is still a bare array of casts.
   An open tab from before this deploy therefore keeps working unchanged; only
   the new chip row asks for a scope. `campaign` without a `campaignId` is
-  refused rather than read as `all`.
+  refused rather than read as `all`. `unfiled` is no longer a scope (card
+  #2306): the client stopped sending it in #2305 and the server kept it for one
+  full deploy, which has shipped, so a request naming it is now BAD_REQUEST.
 */
 const rosterFilterFields = {
-  scope: z.enum(["all", "unfiled", "campaign"]).optional(),
+  scope: z.enum(["all", "campaign"]).optional(),
   campaignId: campaignIdInput.optional(),
   search: z.string().trim().max(ROSTER_SEARCH_MAX_LENGTH).optional(),
 };
 
 function requireCampaignWhenScoped(
-  value: { scope?: "all" | "unfiled" | "campaign"; campaignId?: string },
+  value: { scope?: "all" | "campaign"; campaignId?: string },
   context: z.RefinementCtx,
 ): void {
   if (value.scope === "campaign" && !value.campaignId) {
@@ -295,8 +297,7 @@ const rosterInput = z.object({
 
 const rosterCountsInput = z.object(rosterFilterFields).strict().superRefine(requireCampaignWhenScoped);
 
-function rosterScopeOf(input: { scope?: "all" | "unfiled" | "campaign"; campaignId?: string }): RosterScope {
-  if (input.scope === "unfiled") return { kind: "unfiled" };
+function rosterScopeOf(input: { scope?: "all" | "campaign"; campaignId?: string }): RosterScope {
   if (input.scope === "campaign" && input.campaignId) return { kind: "campaign", campaignId: input.campaignId };
   return { kind: "all" };
 }
@@ -2099,8 +2100,8 @@ export const castingV2Router = router({
     }),
 
   /**
-   * The roster's numbers (card #2250): every signed cast, the unfiled ones,
-   * and how many in the asked scope match the asked search. The roster is
+   * The roster's numbers (card #2250): every signed cast, and how many in the
+   * asked scope match the asked search (the Unfiled count left with #2306). The roster is
    * paged, so the length of what has loaded is not a count of anything; these
    * are counted over the rows by the roster's own predicates.
    */

@@ -3,8 +3,8 @@
  * #2250, rung N2c).
  *
  * The store is doubled here so these arms run on every `pnpm test` without a
- * database; what the STATEMENTS return — owner isolation, Unfiled's
- * `NOT EXISTS`, a cast in two campaigns, the sixty-first cast — is proven on a
+ * database; what the STATEMENTS return — owner isolation, a campaign's
+ * correlated `EXISTS`, a cast in two campaigns, the sixty-first cast — is proven on a
  * real one in `server/castingRoster-db.test.ts`. What only this file can show:
  *
  *  - the owner handed to the store is the SESSION's (invariant 3), and an
@@ -14,6 +14,8 @@
  *  - ⚠ `{}` — what every bundle before this deploy sends — still gets a BARE
  *    ARRAY of casts, so an open tab keeps working through the deploy;
  *  - the infinite query's own `direction` key is accepted rather than refused;
+ *  - ⚠ the retired `unfiled` scope (card #2306) is refused before the store is
+ *    asked, beside `all` and a campaign, which pass;
  *  - each store refusal becomes `NOT_FOUND`.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -51,7 +53,7 @@ vi.mock("./db/castingV2Sign", async (importOriginal) => {
     },
     countRoster: async (...args: unknown[]) => {
       calls.push({ fn: "countRoster", args });
-      const value = outcome.counts ?? { kind: "counted", counts: { all: 3, unfiled: 2, matching: 1 } };
+      const value = outcome.counts ?? { kind: "counted", counts: { all: 3, matching: 1 } };
       outcome.counts = null;
       return value;
     },
@@ -98,9 +100,9 @@ describe("roster — what an older bundle sends still works", () => {
 });
 
 describe("roster — scope, search and pages reach the store as asked", () => {
-  it("unfiled, a campaign, a trimmed search, a cursor and a limit", async () => {
+  it("all, a campaign, a trimmed search, a cursor and a limit", async () => {
     const { id, call } = caller();
-    await call.roster({ scope: "unfiled" });
+    await call.roster({ scope: "all" });
     await call.roster({
       scope: "campaign",
       campaignId: CAMPAIGN,
@@ -110,9 +112,31 @@ describe("roster — scope, search and pages reach the store as asked", () => {
       direction: "forward",
     });
     expect(calls.map((entry) => entry.args)).toEqual([
-      [id, { scope: { kind: "unfiled" }, search: undefined, afterCastId: null, limit: undefined }],
+      [id, { scope: { kind: "all" }, search: undefined, afterCastId: null, limit: undefined }],
       [id, { scope: { kind: "campaign", campaignId: CAMPAIGN }, search: "ines", afterCastId: MODEL.agencyId, limit: 30 }],
     ]);
+  });
+
+  it("⚠ the retired `unfiled` scope is BAD_REQUEST on both doors, before the store is asked (card #2306)", async () => {
+    const { id, call } = caller();
+    const drive = (door: "roster" | "rosterCounts", input: unknown) =>
+      (call[door] as (input: unknown) => Promise<unknown>)(input);
+    for (const door of ["roster", "rosterCounts"] as const) {
+      await expect(drive(door, { scope: "unfiled" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(drive(door, { scope: "unfiled", search: "ines" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(calls).toEqual([]);
+    /* POSITIVE CONTROL: the scopes that remain pass on the same caller, so the
+       refusal is the retired word and not a broken door. */
+    for (const door of ["roster", "rosterCounts"] as const) {
+      await expect(drive(door, { scope: "all" })).resolves.toBeTruthy();
+      await expect(drive(door, { scope: "campaign", campaignId: CAMPAIGN })).resolves.toBeTruthy();
+    }
+    expect(calls.map((entry) => (entry.args[1] as { scope: unknown }).scope)).toEqual([
+      { kind: "all" }, { kind: "campaign", campaignId: CAMPAIGN },
+      { kind: "all" }, { kind: "campaign", campaignId: CAMPAIGN },
+    ]);
+    expect(calls.every((entry) => entry.args[0] === id)).toBe(true);
   });
 
   it("refuses a campaign scope that names no campaign, rather than reading it as all", async () => {
@@ -157,10 +181,10 @@ describe("⚠ invariants 3 and 4 — the owner is the session's, and both inputs
     });
   }
 
-  it("rosterCounts hands the store the session's id and returns the three numbers", async () => {
+  it("rosterCounts hands the store the session's id and returns the two numbers", async () => {
     const { id, call } = caller();
-    await expect(call.rosterCounts({ scope: "unfiled", search: " a " })).resolves.toEqual({ all: 3, unfiled: 2, matching: 1 });
-    expect(calls).toEqual([{ fn: "countRoster", args: [id, { scope: { kind: "unfiled" }, search: "a" }] }]);
+    await expect(call.rosterCounts({ scope: "campaign", campaignId: CAMPAIGN, search: " a " })).resolves.toEqual({ all: 3, matching: 1 });
+    expect(calls).toEqual([{ fn: "countRoster", args: [id, { scope: { kind: "campaign", campaignId: CAMPAIGN }, search: "a" }] }]);
   });
 });
 
