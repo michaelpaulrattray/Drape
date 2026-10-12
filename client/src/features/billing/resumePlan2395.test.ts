@@ -46,6 +46,9 @@ vi.mock("@/lib/trpc", () => ({
     billing: {
       getInvoices: { useQuery: () => query({ invoices: [] }) },
       getStatus: { useQuery: () => query({ planTier: "pro" }) },
+      /* #2392 — the plan card reads the credit dial's rung and position. */
+      getPlans: { useQuery: () => query({ creditSlider: { planId: "studio", maxUnits: 76 } }) },
+      getPlanCreditUnits: { useQuery: () => query({ units: 0 }) },
       getSubscriptionDetails: {
         useQuery: () =>
           wire.detailsSettled ? query(wire.details) : { data: undefined, isSuccess: false, isError: false },

@@ -78,7 +78,10 @@ const PRO_STATUS = { planTier: "pro", stripeCustomerId: "cus_fixture", hasSubscr
 const FREE_STATUS = { planTier: "free", hasSubscription: false };
 
 beforeEach(() => {
-  answers = {};
+  /* #2392 — the plan card reads the dial's rung off the catalogue, and holds
+     the allowance until it has, so every account here has one served. Pro has
+     no dial, so its position is 0 without a further read. */
+  answers = { "billing.getPlans": { creditSlider: { planId: "studio", maxUnits: 76 } } };
 });
 
 describe("the allowance sentence never claims more than the whole allowance", () => {
