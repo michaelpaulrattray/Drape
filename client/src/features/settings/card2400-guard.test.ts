@@ -31,7 +31,7 @@ function uploadAvatarInput() {
   return inputs[0]!;
 }
 
-describe("#2400 — the avatar upload sends only the picture and its type", () => {
+describe("card 2400 — the avatar upload sends only the picture and its type", () => {
   it("the payload carries the picture and its type, and no size", () => {
     expect(avatarUploadPayload(COMPRESSED)).toEqual({
       base64Data: "AAAA",
