@@ -1,37 +1,37 @@
 {
-  "edition": 681,
-  "updatedAt": "2026-10-12T01:12:00.000Z",
-  "shift": "Foreman — foreman-20261012-1041",
+  "edition": 682,
+  "updatedAt": "2026-10-12T02:05:00.000Z",
+  "shift": "Foreman — foreman-20261012-1145",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "Campaigns is built and live, and the focus is cleared until you name the next rung. Your library now has named groups: the chips read All / your campaigns / +, you can tick several casts and file them in one go, a cast page lists the campaigns it is in, and after a Sign you get one offer to file the new cast. Card #2269 has your six-step test drive and the three options for what comes next.",
-      "quote": "N2c — Campaigns",
-      "quotedAt": "2026-10-11T04:03:00.000Z"
+      "state": "confirmed",
+      "title": "Your Klieg ID becomes a record of creation. Every signed cast already carries an ID on its master picture, and the product already knows when that cast was made and by whom — this rung signs and timestamps that record, gives you a Certificate of Creation you can download, and lets you turn on a page anyone can check if you want one. It will say evidence of creation, never proof of ownership, because that is what the law will actually stand behind. The first step is the design itself: exactly what gets signed, what the certificate shows, and what it must never show. Card #2134.",
+      "quote": "N2d",
+      "quotedAt": "2026-10-12T01:40:37.000Z"
     },
     "milestone": {
-      "title": "N2c — campaigns: you make a named group, file casts into it, and your library can show you one group at a time. A cast can sit in several campaigns at once, nothing is filed without you saying so, and a customer who never makes one sees the library exactly as it is today.",
+      "title": "N2d — the ID on your master picture stops being just a label. It becomes a record of when a cast was made and by whom, signed by us and timestamped by somebody independent, with a certificate you can download and an optional page anyone can check. Nothing here changes how a cast is made, and nothing about it costs a credit.",
       "steps": [
         {
-          "title": "The store behind it, built dark — nothing on screen changes (#2249)",
-          "state": "done"
+          "title": "The design first: what gets signed, what the certificate shows, and what it must never show (#2134)",
+          "state": "in-progress"
         },
         {
-          "title": "Your library's chips become All / your campaigns / + — and the search box above the grid finally works (#2250; Unfiled removed on your word, #2304)",
-          "state": "done"
+          "title": "The signed, timestamped record behind every ID",
+          "state": "waiting"
         },
         {
-          "title": "Tick several casts and file them all in one go (#2251)",
-          "state": "done"
+          "title": "Your downloadable Certificate of Creation",
+          "state": "waiting"
         },
         {
-          "title": "A cast's own page lists the campaigns it is in, and the dead “Use in a campaign · soon” button goes (#2252)",
-          "state": "done"
+          "title": "A page anyone can check — off unless you turn it on, for one cast at a time",
+          "state": "waiting"
         },
         {
-          "title": "After a Sign, one offer to file the new cast — only if you already keep campaigns, and never in the way of the Sign (#2253)",
-          "state": "done"
+          "title": "The three wording changes to the terms — a lawyer reads them before a word of it is published",
+          "state": "waiting"
         }
       ]
     },
@@ -63,7 +63,12 @@
       },
       {
         "key": "N2c",
-        "title": "Campaigns — the cast library's named collections",
+        "title": "Campaigns — the cast library’s named collections: built, driven on all six steps, and live",
+        "state": "done"
+      },
+      {
+        "key": "N2d",
+        "title": "The Klieg ID becomes a record of creation — signed, timestamped, with a certificate you can download",
         "state": "current"
       },
       {
@@ -130,14 +135,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T01:08:34.400Z",
+      "readAt": "2026-10-12T01:58:51.070Z",
       "items": [
-        {
-          "issueNumber": 2269,
-          "title": "Campaigns is built and live — N2c's completion card and your test-drive list (your library gets named groups, and one word needed on what comes next)",
-          "kind": "rung",
-          "rung": "N2c"
-        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -3757,7 +3756,7 @@
         }
       ],
       "recommendation": "N2d — your Klieg ID. It is the next rung on your own ladder, it is your own order from 9 October, and finishing it is what makes the bug hunt due. Until you name one, the crew does maintenance only and never picks the next feature itself.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-11T08:40:00.000Z",
       "issueNumber": 2269
     }
@@ -10480,20 +10479,18 @@
     270,
     271,
     272,
-    273
+    273,
+    274,
+    275,
+    276,
+    277,
+    278,
+    279,
+    280
   ],
   "nextUp": {
-    "readAt": "2026-10-12T01:08:34.400Z",
+    "readAt": "2026-10-12T01:58:51.069Z",
     "items": [
-      {
-        "issueNumber": 1469,
-        "title": "N2c: Campaigns, the cast library's named collections (All · Unfiled · campaigns · +), Approach A, after N2b — his word 2026-09-29 (noun changed from shoots the same day)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "the rung is BUILT — this card is only N2c's design of record and is never built directly. The test drive and the deep review live on #2269."
-        }
-      },
       {
         "issueNumber": 1598,
         "title": "Pricing v2: final credit prices at ×10 display (Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350)",

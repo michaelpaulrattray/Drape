@@ -240,14 +240,23 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        arm above enforces. **N2b → N2c on 2026-10-11, Desk reply #273 on the
        N2b completion card (#1242), verbatim and entire: *"N2c — Campaigns"***,
        doubled in his terminal at 02:10Z. Both files, both pins and the
-       sabotage anchor below moved in ONE commit. The next flip is N2c →
-       whatever he names, on N2c's completion card and his word, never on N2c
-       merely finishing. */
+       sabotage anchor below moved in ONE commit.
+
+       ⚠ **N2c → N2d on 2026-10-12, Desk reply #280 on the N2c completion card
+       (#2269), verbatim and entire: *"N2d"*** — given after he drove all SIX of
+       N2c's test-drive steps and all six came back `matched` (#274–#279,
+       01:38–01:40Z), and doubled in his terminal the same minute (*"test drive
+       done and N2D answered on the card on my desk"*). Both files, both pins
+       and the sabotage anchor below moved in ONE commit. ⚠ **This flip also
+       had to INSERT the rung on the ladder** — it ran N2c → N3, so there was no
+       `N2d` key for this pin to agree with until the edition added one. **The
+       next flip is N2d → whatever he names, on N2d's completion card and his
+       word, never on N2d merely finishing.** */
     const declared = focusRungFromRulebook(read(RULEBOOK));
-    expect(declared).toMatchObject({ kind: "rung", rung: "N2c" });
+    expect(declared).toMatchObject({ kind: "rung", rung: "N2d" });
   });
 
-  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N2b", () => {
+  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N2d", () => {
     /*
       #1840's exact state, driven: the briefing left behind while his word has
       reached the rulebook. The card asks for this one by name.
@@ -262,20 +271,30 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        goes inert. The assertion below is what catches that, and it did.
 
        ⚠ **AND THE ANCHOR MUST NAME THE RUNG THAT IS CURRENT, which is why it
-       moved from `P2` to `N2b` on 2026-10-08 and from `N2b` to `N2c` on
-       2026-10-11.** Doctoring a rung that is
-       `done` leaves the ladder's one `current` rung untouched, the two
+       moved from `P2` to `N2b` on 2026-10-08, from `N2b` to `N2c` on
+       2026-10-11, and from `N2c` to `N2d` on 2026-10-12.** Doctoring a rung
+       that is `done` leaves the ladder's one `current` rung untouched, the two
        artifacts still AGREE, and this control passes while proving nothing —
        the inert-sabotage shape the comment above is already about, one rung
-       along. */
-    const stale = real.replace('"key": "N2c",', '"key": "N2cx",');
+       along.
+
+       ⚠ **AND THE 2026-10-12 FLIP IS THE WORKED EXAMPLE, BECAUSE THE OLD
+       ANCHOR SURVIVED IT.** A rung going `done` does NOT remove its key: the
+       briefing still holds `"key": "N2c",` with `"state": "done"` beside it, so
+       the old anchor still MATCHED, `stale` still differed from `real`, and the
+       `not.toBe` guard above could not see the inertness at all. **The only arm
+       that catches it is `verdict.ok` below** — the two artifacts would still
+       agree on `N2d`, so a false verdict never arrives and this test goes red
+       naming the repair. That is the assertion earning its place, and it is why
+       the anchor is checked at every flip rather than at every rename. */
+    const stale = real.replace('"key": "N2d",', '"key": "N2dx",');
     expect(stale, "the doctored copy must differ, or this control proves nothing").not.toBe(real);
-    /* N2b is `done` and N2c is now `N2cx`, so the ladder's one `current` rung
-       is `N2cx` — a rung the rulebook does not declare. */
+    /* N2c is `done` and N2d is now `N2dx`, so the ladder's one `current` rung
+       is `N2dx` — a rung the rulebook does not declare. */
     const verdict = agree(rulebook, stale);
     expect(verdict.ok, "a disagreeing pair MUST fail, or the arm above is decoration").toBe(false);
     expect(verdict.why).toContain("TWO SOURCES OF TRUTH");
-    expect(verdict.why).toContain("N2cx");
+    expect(verdict.why).toContain("N2dx");
   });
 
   it("⚠ PROVEN ABLE TO FAIL — a ladder with NO current rung, which is #1541's shape", () => {

@@ -1129,10 +1129,23 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        whether the six alternative reads are too long — and the rung still
        opened, because the gate asks him to NAME THE NEXT RUNG and he named it;
        the unanswered half is recorded on the card and in the rulebook rather
-       than re-asked.** **This pin moves only on his word. The next flip is N2c
-       → whatever he names, on N2c's completion card and his word — never on
-       N2c merely finishing.** */
-    expect(focusRungFromLadder(ladder)).toBe("N2c");
+       than re-asked.**
+
+       ⚠ **MOVED N2c → N2d ON 2026-10-12, AND THIS IS THE FIRST FLIP WHERE HE
+       ANSWERED EVERY STEP HE WAS ASKED.** His Desk reply #280 on the N2c
+       completion card (#2269) was `"N2d"`, given after all SIX of that card's
+       test-drive steps came back `matched` (#274–#279, 01:38–01:40Z) and
+       doubled in his terminal the same minute. The rulebook's `CURRENT FOCUS`
+       line, this briefing's ladder, this pin and
+       `seatFocusTwoTruths.test.ts`'s own pin and sabotage anchor all moved in
+       ONE commit. ⚠ **This flip ALSO had to insert the rung: the ladder ran
+       N2c → N3, so the rung he had just named had no key here at all** — and
+       `focusRungFromLadder` can only ever answer with a key the ladder holds,
+       so a flip that moved only the `state` would have left this pin reading
+       `N3`. **This pin moves only on his word. The next flip is N2d → whatever
+       he names, on N2d's completion card and his word — never on N2d merely
+       finishing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N2d");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {
@@ -1236,12 +1249,20 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
         which is the milestone gate failing open on a rung he has not opened.
         `rungsNamedBy` stays raw for exactly this reason.
 
-        ⚠ **THE LIVE INSTANCE TODAY IS `rung:N2c` ON #1469 — N2c is not in the
-        ladder at all — AND THIS ARM DELIBERATELY DOES NOT USE IT.** An arm keyed
-        on N2c's absence would go red the day a shift transcribes his word into
-        the ladder line, which is ordinary edition work and is owed. `N99` is the
-        same never-a-rung value `crewBriefing.test.ts` uses for its own
-        not-in-the-ladder arm, so the premise below cannot rot.
+        ⚠ **THIS ARM DELIBERATELY USES A VALUE THAT IS NEVER A RUNG, AND THE
+        REASON IS NO LONGER HYPOTHETICAL — THE PREDICTION CAME TRUE TWICE.** It
+        read *"the live instance today is `rung:N2c` on #1469 — N2c is not in
+        the ladder at all"*, and warned that an arm keyed on N2c's absence
+        *"would go red the day a shift transcribes his word into the ladder
+        line, which is ordinary edition work and is owed."* **Both halves have
+        since happened: N2c was written into the ladder on 2026-10-11, and
+        #1469 closed on 2026-10-12** — so an arm keyed on that card or that
+        rung would now be red for two independent reasons, neither of them a
+        defect. **The shape recurred the same day**: #2134 carried `rung:N2d`
+        while the ladder ran N2c → N3, and the N2d flip had to insert the key.
+        `N99` is the same never-a-rung value `crewBriefing.test.ts` uses for its
+        own not-in-the-ladder arm, so the premise below cannot rot the way this
+        comment did.
       */
       const ladder = JSON.parse(readFileSync("server/crew/crew-briefing.json", "utf8")) as {
         program: { ladder: readonly { readonly key: string }[] };
