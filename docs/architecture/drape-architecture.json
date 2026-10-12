@@ -12866,6 +12866,10 @@
       "path": "client/src/features/settings/section03-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2393.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/settings387-guard.test.ts",
       "path": "client/src/features/settings/settings387-guard.test.ts"
     },

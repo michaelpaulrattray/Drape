@@ -264,7 +264,13 @@ describe("card 387 item 2 — the law-7 sweep: no cycle claimed where none runs"
     expect(
       billing(),
       "the allowance percentage can print again without a renewing period — this is the 491% line",
-    ).toMatch(/\{quotable[\s\S]{0,120}allowance left/);
+    ).toMatch(/\{percentQuotable[\s\S]{0,120}allowance left/);
+    /* #2393 narrowed the sentence's gate to `percentQuotable` (a share over
+       100% stands down too) — it must still be BUILT on `quotable`, or the
+       renewing-period condition this arm is about falls out of it. */
+    expect(billing(), "the percentage gate no longer requires `quotable`").toMatch(
+      /const percentQuotable = quotable && remainingShare <= 1;/,
+    );
   });
 
   it("the bar is not drawn without a denominator", () => {
