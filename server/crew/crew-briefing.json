@@ -1,7 +1,7 @@
 {
-  "edition": 683,
-  "updatedAt": "2026-10-12T02:54:33.307Z",
-  "shift": "Foreman — foreman-20261012-1248 (escalated Fable, the N2d design pass)",
+  "edition": 684,
+  "updatedAt": "2026-10-12T03:51:03.197Z",
+  "shift": "Foreman — foreman-20261012-1327 (background: the live-hold re-read, its first run)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -19,7 +19,7 @@
         },
         {
           "title": "The signed, timestamped record behind every ID (#2311)",
-          "state": "waiting"
+          "state": "in-progress"
         },
         {
           "title": "Your downloadable Certificate of Creation (#2312)",
@@ -135,7 +135,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T02:54:51.057Z",
+      "readAt": "2026-10-12T03:44:51.180Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10500,7 +10500,7 @@
     280
   ],
   "nextUp": {
-    "readAt": "2026-10-12T02:54:51.055Z",
+    "readAt": "2026-10-12T03:44:51.180Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10599,6 +10599,11 @@
           "state": "blocked",
           "because": "YOU — two account reads/settings (OpenRouter, Gemini tier) are your or the"
         }
+      },
+      {
+        "issueNumber": 2315,
+        "title": "Retire every Gemini path and remove GEMINI_API_KEY — wardrobe, the legacy casting refine, and the canvas's old model-edit routing",
+        "urgent": false
       }
     ]
   }
