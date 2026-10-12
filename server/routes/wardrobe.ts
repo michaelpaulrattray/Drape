@@ -9,6 +9,7 @@
  *   outfits.list / save / delete
  *   model.listMinted / upload / analyzeTattoos / checkQuality
  */
+import { assertRebuildDoorOpen } from "../lib/rebuildDoor";
 import { protectedProcedure, router } from "../_core/trpc";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -247,6 +248,7 @@ const garmentRouter = router({
   quickDetect: protectedProcedure
     .input(wardrobeQuickDetectInput)
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
 
       // Upload to S3
@@ -587,6 +589,7 @@ const vtoRouter = router({
   detectResultGarments: protectedProcedure
     .input(z.object({ resultUrl: z.string().url() }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
       log.info(`Detecting garments in VTO result for user ${ctx.user.id}`);
       return detectGarmentsInImage(input.resultUrl);
@@ -596,6 +599,7 @@ const vtoRouter = router({
   classifyEdit: protectedProcedure
     .input(wardrobeClassifyEditInput)
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
       const editSize = await classifyEditSize(input.instruction);
       return { editSize };
@@ -609,6 +613,7 @@ const vtoRouter = router({
       sessionId: z.number().optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const readMode = captureSnapshotReadMode(ctx.user.id);
       throwIfRateLimited(ctx.user.id);
       const modelImageUrl = await resolveWardrobeSessionUseImage({
@@ -630,6 +635,7 @@ const decomposeRouter = router({
       imageBase64: z.string().max(10_000_000),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
 
       // Upload to S3 first
@@ -1006,6 +1012,7 @@ const modelRouter = router({
   analyzeTattoos: protectedProcedure
     .input(z.object({ imageUrl: z.string().url() }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
       log.info(`Tattoo analysis requested for user ${ctx.user.id}`);
       return analyzeTattoos(input.imageUrl);
@@ -1015,6 +1022,7 @@ const modelRouter = router({
   checkQuality: protectedProcedure
     .input(z.object({ imageUrl: z.string().url() }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       throwIfRateLimited(ctx.user.id);
       log.info(`Quality check requested for user ${ctx.user.id}`);
       return checkImageQuality(input.imageUrl);

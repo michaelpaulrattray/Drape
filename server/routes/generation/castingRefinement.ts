@@ -1,3 +1,4 @@
+import { assertRebuildDoorOpen } from "../../lib/rebuildDoor";
 import { adminProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getModelAssets,
@@ -125,6 +126,7 @@ export const castingRefinementRouter = router({
   iterate: adminProcedure
     .input(iterateInputSchema)
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const readMode = captureSnapshotReadMode(ctx.user.id);
       // MASKED EDITS CLOSED (Batch 0, R6 execution plan): the edit classifier
       // reads only the feedback text, and masked submissions carry fixed or
@@ -809,6 +811,7 @@ export const castingRefinementRouter = router({
       prompt: z.string().trim().min(1).max(2000), // `.trim()` before `.min(1)` (#816)
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       // Rate limit free Gemini calls to protect API quota
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
       if (!rateCheck.allowed) {
@@ -846,6 +849,7 @@ export const castingRefinementRouter = router({
       profileSummary: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       // Rate limit free Gemini calls to protect API quota
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
       if (!rateCheck.allowed) {
@@ -880,6 +884,7 @@ export const castingRefinementRouter = router({
       masterPrompt: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       // Rate limit free Gemini calls to protect API quota
       const rateCheck = checkRateLimit(`user:${ctx.user.id}`, RATE_LIMITS.geminiAssist);
       if (!rateCheck.allowed) {
@@ -932,6 +937,7 @@ export const castingRefinementRouter = router({
       modelId: z.number(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const model = await getModelById(input.modelId);
       if (!model) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });

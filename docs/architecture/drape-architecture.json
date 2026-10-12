@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 88
+      "moduleCount": 89
     },
     {
       "id": "domain:staff",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 65
+      "moduleCount": 66
     },
     {
       "id": "domain:wardrobe",
@@ -5461,6 +5461,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/lib/rebuildDoor.ts",
+      "path": "server/lib/rebuildDoor.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/logging/index.ts",
       "path": "server/logging/index.ts",
       "domain": "platform",
@@ -6741,6 +6747,12 @@
     {
       "id": "module:shared/productEventCatalogue.ts",
       "path": "shared/productEventCatalogue.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/rebuildDoor.ts",
+      "path": "shared/rebuildDoor.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -16072,6 +16084,10 @@
       "path": "server/readerAskTrim.test.ts"
     },
     {
+      "id": "test:server/rebuildDoor.test.ts",
+      "path": "server/rebuildDoor.test.ts"
+    },
+    {
       "id": "test:server/reconciliationCsv.test.ts",
       "path": "server/reconciliationCsv.test.ts"
     },
@@ -18630,6 +18646,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -22130,6 +22151,11 @@
     {
       "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/studio/takeover/CastingTakeover.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -25970,6 +25996,11 @@
     {
       "from": "module:server/casting/geminiClient.ts",
       "to": "module:server/casting/geminiQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/geminiClient.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -35033,6 +35064,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/lib/rebuildDoor.ts",
+      "to": "module:shared/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/logging/index.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
@@ -36929,6 +36965,11 @@
     },
     {
       "from": "module:server/routes/generation/castingExport.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingExport.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -37034,6 +37075,11 @@
     },
     {
       "from": "module:server/routes/generation/castingImaging.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingImaging.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -37060,6 +37106,11 @@
     {
       "from": "module:server/routes/generation/castingParse.ts",
       "to": "module:server/casting/promptParser.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingParse.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37200,6 +37251,11 @@
     {
       "from": "module:server/routes/generation/castingRefinement.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingRefinement.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37520,6 +37576,11 @@
     {
       "from": "module:server/routes/models.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/models.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37860,6 +37921,11 @@
     {
       "from": "module:server/routes/wardrobe.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/wardrobe.ts",
+      "to": "module:server/lib/rebuildDoor.ts",
       "kind": "imports"
     },
     {

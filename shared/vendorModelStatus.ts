@@ -216,7 +216,11 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
       "`server/legacySpendSeal.test.ts`'s 'what is deliberately NOT sealed' arm is its record. " +
       "⚠ And this file's own warning applies to the " +
       "reachability question exactly as it applies to the id: 'a shut-down id does not reliably " +
-      "fail loudly', so no complaint is not evidence of no traffic.",
+      "fail loudly', so no complaint is not evidence of no traffic. " +
+      "✅ AND `generation.refreshSlots` IS NOW CLOSED TOO — #2315 step 1, 2026-10-12, on his 'yes' " +
+      "to switching off editing a cast on the canvas: it refuses at the mouth behind the rebuild " +
+      "door (`shared/rebuildDoor.ts`), before any charge, and `getAiClient()` itself refuses as " +
+      "the backstop, so no road reaches this id. The id stays listed until step 2 deletes the code.",
   },
   {
     id: "gemini-3.1-flash-image-preview",

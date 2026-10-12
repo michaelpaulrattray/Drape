@@ -1,3 +1,4 @@
+import { assertRebuildDoorOpen } from "../lib/rebuildDoor";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
   createModel, getModelById, getUserModels, updateModel,
@@ -54,6 +55,7 @@ export const modelsRouter = router({
   create: protectedProcedure
     .input(modelCreateInputSchema)
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       // Never log raw creation preferences/user prose. The operation stores
       // only their canonical hash and logs only structural field names.
       log.info({ preferenceFields: Object.keys(input.preferences).sort() }, '[models.create] Received preferences');
