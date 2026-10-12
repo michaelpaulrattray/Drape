@@ -212,9 +212,12 @@ describe("the dialog's footer branches on that decision", () => {
   });
 
   it("the cancel state is read off getSubscriptionDetails, asked only for a subscriber", () => {
+    /* #2394: "a subscriber" is `holdsPlan` — an active plan, or one whose
+       payment failed (still a live subscription). Unread is still false. */
+    expect(modal).toMatch(/const holdsPlan = hasSubscription === true \|\| paymentFailed;/);
     expect(modal).toMatch(
-      /trpc\.billing\.getSubscriptionDetails\.useQuery\(undefined, \{\s*enabled: hasSubscription === true,\s*\}\)/,
+      /trpc\.billing\.getSubscriptionDetails\.useQuery\(undefined, \{\s*enabled: holdsPlan,\s*\}\)/,
     );
-    expect(modal).toMatch(/const footControl = planFootControl\(\s*hasSubscription,\s*cancelStateOf\(/);
+    expect(modal).toMatch(/const footControl = planFootControl\(\s*holdsPlan \? true : hasSubscription,\s*cancelStateOf\(/);
   });
 });

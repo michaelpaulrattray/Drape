@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:boards",
@@ -6139,6 +6139,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/stripe/subscriptionLiveness.ts",
+      "path": "server/stripe/subscriptionLiveness.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/stripe/subscriptionPeriods.ts",
       "path": "server/stripe/subscriptionPeriods.ts",
       "domain": "billing",
@@ -7551,6 +7557,8 @@
       "rateLimited": false,
       "file": "server/routes/billing.ts",
       "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
+        "client/src/features/billing/ChangePlanModal.tsx",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
@@ -12462,6 +12470,10 @@
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/paymentFailed2394-guard.test.ts",
+      "path": "client/src/features/billing/paymentFailed2394-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/planChangeRefusal1987-guard.test.ts",
       "path": "client/src/features/billing/planChangeRefusal1987-guard.test.ts"
     },
@@ -16522,6 +16534,10 @@
       "path": "server/routes/characterSheet.test.ts"
     },
     {
+      "id": "test:server/routes/checkoutCustomerFailClosed2394.test.ts",
+      "path": "server/routes/checkoutCustomerFailClosed2394.test.ts"
+    },
+    {
       "id": "test:server/routes/creationCertificate.test.ts",
       "path": "server/routes/creationCertificate.test.ts"
     },
@@ -16580,6 +16596,10 @@
     {
       "id": "test:server/routes/newsletter.test.ts",
       "path": "server/routes/newsletter.test.ts"
+    },
+    {
+      "id": "test:server/routes/oneSubscriptionGuard2394.test.ts",
+      "path": "server/routes/oneSubscriptionGuard2394.test.ts"
     },
     {
       "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
@@ -16800,6 +16820,10 @@
     {
       "id": "test:server/stripe/invoiceBilledPlanGrant.test.ts",
       "path": "server/stripe/invoiceBilledPlanGrant.test.ts"
+    },
+    {
+      "id": "test:server/stripe/liveSubscriptionOnCustomer2394.test.ts",
+      "path": "server/stripe/liveSubscriptionOnCustomer2394.test.ts"
     },
     {
       "id": "test:server/stripe/moneyEventStream.test.ts",
@@ -39163,6 +39187,11 @@
     },
     {
       "from": "module:server/stripe/stripeService.ts",
+      "to": "module:server/stripe/subscriptionLiveness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/stripeService.ts",
       "to": "module:server/stripe/subscriptionPeriods.ts",
       "kind": "imports"
     },
@@ -39309,6 +39338,11 @@
     {
       "from": "module:server/stripe/webhooks.ts",
       "to": "module:server/stripe/stripeService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/stripe/webhooks.ts",
+      "to": "module:server/stripe/subscriptionLiveness.ts",
       "kind": "imports"
     },
     {

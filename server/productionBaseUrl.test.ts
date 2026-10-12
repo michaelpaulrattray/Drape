@@ -222,6 +222,8 @@ vi.mock("./db", async (importOriginal) => ({
 vi.mock("./stripe/stripeService", () => ({
   stripe: {},
   getOrCreateStripeCustomer: vi.fn(),
+  // #2394: the one-subscription guard — an account holding no live plan.
+  findLiveSubscriptionOnCustomer: vi.fn().mockResolvedValue({ outcome: "none" }),
   createSubscriptionCheckoutSession: vi.fn(),
   createCustomerPortalSession: vi.fn(),
   getSubscriptionDetails: vi.fn(),

@@ -484,6 +484,19 @@ export function ChangePlanModal({
     },
   });
 
+  /* The Billing tab's own "Update card" road (#2394) — Stripe's portal, in a
+     new tab, with the same failure sentence. A customer whose payment failed
+     is sent here instead of to Checkout. */
+  const portal = trpc.billing.createPortalSession.useMutation({
+    onSuccess: (result) => {
+      if (result?.portalUrl) window.open(result.portalUrl, "_blank");
+    },
+    onError: (error) => {
+      logRawFailure("billing.createPortalSession", error);
+      toast.error(readableFailure(error, "The billing portal could not be opened."));
+    },
+  });
+
   const changePlan = trpc.billing.changePlan.useMutation({
     onSuccess: (data) => {
       /* One voice for both doors, including a change held for the bank to
@@ -663,6 +676,30 @@ export function ChangePlanModal({
   */
   const hasSubscription: boolean | null = status ? status.hasSubscription : null;
   /*
+    ⚠ **AND `false` HAD A THIRD MEANING: A SUBSCRIBER WHOSE PAYMENT FAILED
+    (#2394).** `getStatus` answers `hasSubscription` only for an `active`
+    plan, so a `past_due` / `unpaid` subscriber read as *no subscription* and
+    `act()` sent their Upgrade to Checkout — a SECOND live plan, while Stripe
+    kept retrying the first one's invoice — and the footer hid Cancel plan.
+
+    They are a subscriber with one thing to do, and it is the card. So the
+    plan buttons and the notice above them both open the Billing tab's own
+    Update card road, and Cancel plan stays in reach. The server refuses the
+    second subscription too (`createSubscriptionCheckout`'s one-subscription
+    guard); this is the surface not offering it in the first place.
+
+    Read off the stored status the server serves, which is Stripe's own word
+    for these two (`mapStripeStatus` passes both through unchanged). Unread is
+    `false` here, and that is safe: the ladder draws no buttons while the
+    status is unread (#1749).
+  */
+  const paymentFailed =
+    status?.subscriptionStatus === "past_due" || status?.subscriptionStatus === "unpaid";
+  /* #2394 beside #2395: a subscriber whose payment failed still holds a plan,
+     so the footer's plan control (Cancel, or Resume when it is set to end) is
+     theirs too. `true` only when known; otherwise the three states above. */
+  const holdsPlan = hasSubscription === true || paymentFailed;
+  /*
     ⚠ **A PLAN SET TO END IS STILL A SUBSCRIPTION — #2395.** `hasSubscription`
     stays true through a period-end cancel (the status stays `active`), so the
     footer offered Cancel plan a second time and no way back. The cancelled
@@ -672,10 +709,10 @@ export function ChangePlanModal({
     `cancelStateOf`, the same reader the Billing tab uses (`./resumePlan`).
   */
   const subscriptionDetailsQuery = trpc.billing.getSubscriptionDetails.useQuery(undefined, {
-    enabled: hasSubscription === true,
+    enabled: holdsPlan,
   });
   const footControl = planFootControl(
-    hasSubscription,
+    holdsPlan ? true : hasSubscription,
     cancelStateOf(
       subscriptionDetailsQuery.data,
       subscriptionDetailsQuery.isSuccess || subscriptionDetailsQuery.isError,
@@ -897,6 +934,12 @@ export function ChangePlanModal({
     if (sliderOffered && sliderSpec !== null && plan.id === sliderSpec.planId && sliderUnits === null) {
       return;
     }
+    /* ⚠ #2394: a subscriber whose payment failed is NOT a customer with no
+       plan. Checkout would sell them a second one; the card is what is owed. */
+    if (paymentFailed) {
+      portal.mutate();
+      return;
+    }
     if (!hasSubscription) {
       setPending(plan.id);
       checkout.mutate({
@@ -1036,7 +1079,9 @@ export function ChangePlanModal({
     currentIndex < 0
       ? null
       : recommended ?? ladder.find((plan, index) => index === currentIndex + 1) ?? null;
-  const primaryId = offered?.id ?? null;
+  /* #2394: while a payment has failed the one ink button is Update card
+     (§6c: exactly one per view), so no plan card carries it. */
+  const primaryId = paymentFailed ? null : offered?.id ?? null;
 
   return (
     <ModalScrim
@@ -1068,6 +1113,28 @@ export function ChangePlanModal({
       </header>
 
       <div className="dp-plan__pane">
+        {/* #2394 — a subscriber whose payment failed is told so FIRST, with
+            the one thing to do beside it. The plan buttons below lead to the
+            same place, so nothing on this surface sells them a second plan. */}
+        {paymentFailed ? (
+          <div className="dp-plan__cross dp-plan__cross--lead" role="status">
+            <span className="dp-set__rowtext">
+              <span className="dp-set__label">Your last payment didn&apos;t go through</span>
+              <span className="dp-set__note">
+                Update your card to keep your plan. You can change plans once the payment goes through.
+              </span>
+            </span>
+            <span className="dp-set__spacer" />
+            <Button
+              variant="primary"
+              size="small"
+              onClick={() => portal.mutate()}
+              disabled={portal.isPending}
+            >
+              {portal.isPending ? "Opening…" : "Update card"}
+            </Button>
+          </div>
+        ) : null}
         {/* §6a — the reason to act. Every figure derived; nothing written. */}
         {cycle && burn && burn.emptyOn && recommended ? (
           <div className="dp-plan__reason">
@@ -1739,7 +1806,9 @@ export function ChangePlanModal({
             two meanings of `false` this branch was written for. */}
         {/* #2395 — `planFootControl` keeps #1749's `=== true` (an unread
             subscription offers neither) and adds the cancelled state: a plan
-            set to end offers Resume plan, and never Cancel plan again. */}
+            set to end offers Resume plan, and never Cancel plan again.
+            #2394: `holdsPlan` feeds it, so a subscriber whose payment
+            failed keeps Cancel plan too. */}
         {footControl === "cancel" ? (
           <Button variant="quiet" size="small" onClick={() => setConfirmingDrop(true)}>
             Cancel plan
@@ -1761,7 +1830,7 @@ export function ChangePlanModal({
           §6e — in compare mode ONLY, the primary lives in the footer, because
           every column button in the table sits below the fold.
         */}
-        {compare && offered && offered.id !== currentId ? (
+        {compare && offered && offered.id !== currentId && !paymentFailed ? (
           <Button
             variant="primary"
             size="small"
