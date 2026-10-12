@@ -18,7 +18,7 @@ import {
 const CAMPAIGN = "0123456789abcdef0123456789abcdef";
 const SUMMER = { campaignId: CAMPAIGN, name: "Summer" };
 
-describe("⚠ the row is All · <campaigns> · + — there is no Unfiled chip (card #2304, his word: \"yes remove it\")", () => {
+describe("⚠ the row is All · <campaigns> · + — there is no Unfiled chip (card 2304, his word: \"yes remove it\")", () => {
   it("All is always a chip; a campaign only while it exists", () => {
     expect(isChip({ kind: "all" }, [])).toBe(true);
     expect(isChip({ kind: "campaign", campaignId: CAMPAIGN }, [SUMMER])).toBe(true);
@@ -68,7 +68,7 @@ describe("the chip a link names", () => {
     expect(chipFromLocation("?campaign=not-an-id")).toEqual({ kind: "all" });
   });
 
-  it("an old link naming Unfiled lands on All, never an empty grid (card #2304)", () => {
+  it("an old link naming Unfiled lands on All, never an empty grid (card 2304)", () => {
     expect(chipFromLocation("?campaign=unfiled")).toEqual({ kind: "all" });
     expect(chipFromLocation("?campaign=Unfiled")).toEqual({ kind: "all" });
     expect(chipFromLocation("?scope=unfiled")).toEqual({ kind: "all" });
