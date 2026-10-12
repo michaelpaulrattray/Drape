@@ -13044,6 +13044,10 @@
       "path": "client/src/pages/CastingSheet.signFailure.test.ts"
     },
     {
+      "id": "test:client/src/pages/notFoundPage.test.ts",
+      "path": "client/src/pages/notFoundPage.test.ts"
+    },
+    {
       "id": "test:client/src/staffPagesLazy.test.ts",
       "path": "client/src/staffPagesLazy.test.ts"
     },
@@ -24290,12 +24294,17 @@
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/card.tsx",
+      "to": "module:client/src/components/ErrorBoundary.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/NotFound.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
