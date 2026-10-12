@@ -173,7 +173,7 @@ export function SecuritySection({
         <SettingsCard
           tone="accent"
           label="Delete account"
-          note="Permanent. Your casts, boards and everything you made go with it."
+          note="Permanent. Your characters, boards and everything you made go with it."
         >
           <Button
             variant="secondary"
@@ -232,7 +232,7 @@ function DeleteAccountDialog({
         <p className="dp-topup__eyebrow">DELETE ACCOUNT</p>
         <h2 className="dp-topup__title">This cannot be undone</h2>
         <p className="dp-topup__reason">
-          Your casts, boards and everything you made are deleted with the account. Type
+          Your characters, boards and everything you made are deleted with the account. Type
           DELETE to confirm.
         </p>
         <div style={{ marginTop: "var(--s-7)" }}>

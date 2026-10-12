@@ -87,13 +87,13 @@ describe("what the roster is asked for", () => {
 
 describe("the heading and the empty line say what is true of THIS chip", () => {
   it("headings", () => {
-    expect(chipHeading({ kind: "all" }, [SUMMER])).toBe("All cast");
+    expect(chipHeading({ kind: "all" }, [SUMMER])).toBe("All characters");
     expect(chipHeading({ kind: "campaign", campaignId: CAMPAIGN }, [SUMMER])).toBe("Summer");
   });
 
   it("empty lines", () => {
     expect(rosterEmptyLine({ kind: "all" }, "", 0)).toMatch(/^No one signed yet/);
-    expect(rosterEmptyLine({ kind: "campaign", campaignId: CAMPAIGN }, "", 3)).toBe("No cast in this campaign yet");
+    expect(rosterEmptyLine({ kind: "campaign", campaignId: CAMPAIGN }, "", 3)).toBe("No characters in this campaign yet");
     expect(rosterEmptyLine({ kind: "all" }, " zed ", 3)).toBe("No names here match “zed”.");
   });
 });

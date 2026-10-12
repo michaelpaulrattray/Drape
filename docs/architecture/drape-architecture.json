@@ -12288,6 +12288,10 @@
       "path": "client/src/features/boards/castVocabulary.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/characterNoun2322.test.ts",
+      "path": "client/src/features/boards/characterNoun2322.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
