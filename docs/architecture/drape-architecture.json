@@ -7597,7 +7597,8 @@
       "rateLimited": false,
       "file": "server/routes/billing.ts",
       "clientCallers": [
-        "client/src/features/billing/ChangePlanModal.tsx"
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -7612,7 +7613,8 @@
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
-        "client/src/features/settings/AccountSurfaces.tsx"
+        "client/src/features/settings/AccountSurfaces.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -12870,6 +12872,10 @@
     {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/billingSection2392.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2392.test.ts"
     },
     {
       "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
@@ -21559,6 +21565,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
