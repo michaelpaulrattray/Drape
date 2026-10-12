@@ -27,10 +27,22 @@ const log = createModuleLogger("routes/profile");
  * - the magic bytes must say the type the request declared — the same reader
  *   (`supportedImageMime`) every evidence path already uses, not a second one.
  *
- * ⚠ `fileSize` is still ACCEPTED and IGNORED, deliberately — the removal
- * contract (CLAUDE.md invariant 4): the shipped client still sends it, so it
- * leaves the schema only after the client has stopped sending it for one full
- * deploy, never in the commit that stops trusting it.
+ * ⚠ **`fileSize` IS GONE FROM THE SCHEMA — #2400 step 2, 2026-10-12.** It was
+ * ACCEPTED and IGNORED for exactly as long as the removal contract (CLAUDE.md
+ * invariant 4) requires: *a strict input field is removed only after clients
+ * have stopped sending it for one full deploy, never in the commit that stops
+ * sending it.* The contract is not a waiting period for its own sake — this
+ * object is `.strict()`, so an unknown key is a `BAD_REQUEST` rather than a
+ * silent drop, and removing the field while a bundle in somebody's open tab
+ * still sent it would refuse their upload.
+ *
+ * **Read at the artifacts before this landed, not argued from the dates:** step
+ * 1 (#2424, squash `1032c939`) is an ancestor of the SERVING production build
+ * `ce094eca6` — read at `/api/health` on a 480-second uptime, so a new process
+ * and not the old one passing as new — with **19 first-parent commits, each of
+ * them a deploy, since it merged**; and `git grep fileSize` over `client/` and
+ * `shared/` on `main` returns the step-1 guard and nothing else, so **no code
+ * anywhere sends the field** to either upload.
  */
 const PROFILE_PICTURE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 type ProfilePictureType = (typeof PROFILE_PICTURE_TYPES)[number];
@@ -51,8 +63,6 @@ function profilePictureInput(maxBytes: number, tooLarge: string) {
   return z.object({
     base64Data: z.string().max(base64LengthFor(maxBytes), tooLarge),
     mimeType: z.enum(PROFILE_PICTURE_TYPES),
-    /** Accepted and ignored — see the block above. Never read. */
-    fileSize: z.number().optional(),
   }).strict();
 }
 

@@ -81,9 +81,9 @@ beforeEach(() => {
 });
 
 describe("uploadAvatar — the cap and the meter read the decoded bytes", () => {
-  it("POSITIVE: an honest JPEG is stored and the meter is charged its real length, whatever fileSize says", async () => {
+  it("POSITIVE: an honest JPEG is stored and the meter is charged its real length", async () => {
     const bytes = jpegBytes(40_000);
-    await caller().uploadAvatar({ base64Data: b64(bytes), mimeType: "image/jpeg", fileSize: 1 });
+    await caller().uploadAvatar({ base64Data: b64(bytes), mimeType: "image/jpeg" });
 
     expect(storage.storagePut).toHaveBeenCalledTimes(1);
     const stored = vi.mocked(storage.storagePut).mock.calls[0][1] as Buffer;
@@ -92,29 +92,49 @@ describe("uploadAvatar — the cap and the meter read the decoded bytes", () => 
     expect(db.updateUserStorageUsed).toHaveBeenCalledWith(USER_ID, 40_000);
   });
 
-  it("a NEGATIVE declared fileSize no longer lowers the meter", async () => {
-    await caller().uploadAvatar({
-      base64Data: b64(jpegBytes(3_000)),
-      mimeType: "image/jpeg",
-      fileSize: -100 * MB,
-    });
+  /*
+    ⚠ **THIS ARM READ *"a NEGATIVE declared fileSize no longer lowers the
+    meter"* UNTIL #2400 STEP 2, AND WHAT CHANGED IS THE DOOR, NOT THE METER.**
+    The field is out of the schema, so the lie cannot be told at all — and an
+    arm sending `fileSize: -100 * MB` would now pass by being rejected at the
+    PARSER, which is a different fact wearing the same green.
+
+    So it is written as the two halves it is: the declaration is REFUSED, and
+    the same picture without it still charges its own decoded length. The
+    second half is the control that must survive the field's removal — the
+    meter reading the bytes is #2378's finding, and it is bolted to nothing
+    that died here.
+  */
+  it("a declared size is refused outright, and the meter still reads the bytes", async () => {
+    await expect(
+      caller().uploadAvatar({
+        base64Data: b64(jpegBytes(3_000)),
+        mimeType: "image/jpeg",
+        fileSize: -100 * MB,
+      } as never),
+    ).rejects.toThrow();
+    expect(db.updateUserStorageUsed).not.toHaveBeenCalled();
+    expect(storage.storagePut).not.toHaveBeenCalled();
+
+    /* positive control: the same picture, as the client now sends it */
+    await caller().uploadAvatar({ base64Data: b64(jpegBytes(3_000)), mimeType: "image/jpeg" });
     expect(db.updateUserStorageUsed).toHaveBeenCalledTimes(1);
     expect(db.updateUserStorageUsed).toHaveBeenCalledWith(USER_ID, 3_000);
   });
 
-  it("still accepts a request with no fileSize at all (the field is ignored, not required)", async () => {
+  it("accepts the picture and its type, which is now the whole of the request", async () => {
     await caller().uploadAvatar({ base64Data: b64(jpegBytes(900)), mimeType: "image/jpeg" });
     expect(db.updateUserStorageUsed).toHaveBeenCalledWith(USER_ID, 900);
   });
 
-  it("refuses bytes over 5 MB that declare fileSize: 1, at the DECODED check", async () => {
+  it("refuses bytes over 5 MB at the DECODED check", async () => {
     /* 5 MB + 1 fits inside the base64 string cap (the cap is rounded up to a
        whole base64 quantum), so this arm reaches the decoded-length check
        rather than the string-length one. */
     const bytes = jpegBytes(AVATAR_MAX_BYTES + 1);
     expect(b64(bytes).length).toBeLessThanOrEqual(Math.ceil(AVATAR_MAX_BYTES / 3) * 4);
     await expect(
-      caller().uploadAvatar({ base64Data: b64(bytes), mimeType: "image/jpeg", fileSize: 1 }),
+      caller().uploadAvatar({ base64Data: b64(bytes), mimeType: "image/jpeg" }),
     ).rejects.toThrow("That picture is over 5 MB.");
     expect(storage.storagePut).not.toHaveBeenCalled();
     expect(db.updateUserStorageUsed).not.toHaveBeenCalled();
@@ -124,7 +144,6 @@ describe("uploadAvatar — the cap and the meter read the decoded bytes", () => 
     await caller().uploadAvatar({
       base64Data: b64(jpegBytes(AVATAR_MAX_BYTES)),
       mimeType: "image/jpeg",
-      fileSize: 1,
     });
     expect(db.updateUserStorageUsed).toHaveBeenCalledWith(USER_ID, AVATAR_MAX_BYTES);
   });
@@ -134,7 +153,6 @@ describe("uploadAvatar — the cap and the meter read the decoded bytes", () => 
       caller().uploadAvatar({
         base64Data: b64(jpegBytes(AVATAR_MAX_BYTES + 3 * 1024)),
         mimeType: "image/jpeg",
-        fileSize: 1,
       }),
     ).rejects.toThrow();
     expect(storage.storagePut).not.toHaveBeenCalled();
@@ -143,12 +161,12 @@ describe("uploadAvatar — the cap and the meter read the decoded bytes", () => 
   it("checks the storage limit against the real bytes, not the declared figure", async () => {
     vi.mocked(db.getUserStorageInfo).mockResolvedValue({ used: 500 * MB - 1_000, limit: 500 * MB } as never);
     await expect(
-      caller().uploadAvatar({ base64Data: b64(jpegBytes(2_000)), mimeType: "image/jpeg", fileSize: 1 }),
+      caller().uploadAvatar({ base64Data: b64(jpegBytes(2_000)), mimeType: "image/jpeg" }),
     ).rejects.toThrow(/Storage limit exceeded/);
     expect(storage.storagePut).not.toHaveBeenCalled();
 
     /* positive control: the same account, a picture that does fit */
-    await caller().uploadAvatar({ base64Data: b64(jpegBytes(900)), mimeType: "image/jpeg", fileSize: 1 });
+    await caller().uploadAvatar({ base64Data: b64(jpegBytes(900)), mimeType: "image/jpeg" });
     expect(storage.storagePut).toHaveBeenCalledTimes(1);
   });
 });
@@ -157,7 +175,7 @@ describe("uploadAvatar — the bytes must be the picture they claim to be", () =
   it("refuses bytes that are not an image at all", async () => {
     const html = Buffer.from("<html><script>alert(1)</script></html>!!");
     await expect(
-      caller().uploadAvatar({ base64Data: b64(html), mimeType: "image/png", fileSize: 1 }),
+      caller().uploadAvatar({ base64Data: b64(html), mimeType: "image/png" }),
     ).rejects.toThrow("That file is not a JPG, PNG or WebP picture.");
     expect(storage.storagePut).not.toHaveBeenCalled();
   });
@@ -190,16 +208,23 @@ describe("uploadAvatar — the bytes must be the picture they claim to be", () =
     expect(storage.storagePut).not.toHaveBeenCalled();
   });
 
-  it("refuses an undeclared field (strict input), while fileSize stays accepted", async () => {
-    await expect(
-      caller().uploadAvatar({
-        base64Data: b64(jpegBytes(300)),
-        mimeType: "image/jpeg",
-        fileSize: 300,
-        userId: 99,
-      } as never),
-    ).rejects.toThrow();
+  it("refuses an undeclared field (strict input), and `fileSize` is now one of them", async () => {
+    for (const extra of [{ userId: 99 }, { fileSize: 300 }, { fileSize: 300, userId: 99 }]) {
+      await expect(
+        caller().uploadAvatar({
+          base64Data: b64(jpegBytes(300)),
+          mimeType: "image/jpeg",
+          ...extra,
+        } as never),
+      ).rejects.toThrow();
+    }
     expect(storage.storagePut).not.toHaveBeenCalled();
+
+    /* positive control: without any of them, the same picture is stored —
+       so the three refusals above are about the KEYS and not about the
+       procedure refusing everything (this suite's own header rule). */
+    await caller().uploadAvatar({ base64Data: b64(jpegBytes(300)), mimeType: "image/jpeg" });
+    expect(storage.storagePut).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -208,7 +233,7 @@ describe("replacing a picture gives back the old one's REAL size", () => {
     vi.mocked(db.getUserById).mockResolvedValue({ id: USER_ID, avatarKey: "avatars/7/old.jpg" } as never);
     vi.mocked(storage.storageReadBytes).mockResolvedValue({ bytes: Buffer.alloc(12_345), contentType: "image/jpeg" });
 
-    await caller().uploadAvatar({ base64Data: b64(jpegBytes(4_000)), mimeType: "image/jpeg", fileSize: 1 });
+    await caller().uploadAvatar({ base64Data: b64(jpegBytes(4_000)), mimeType: "image/jpeg" });
 
     expect(storage.storageReadBytes).toHaveBeenCalledWith("avatars/7/old.jpg");
     expect(storage.storageDelete).toHaveBeenCalledWith("avatars/7/old.jpg");
@@ -232,7 +257,7 @@ describe("replacing a picture gives back the old one's REAL size", () => {
     vi.mocked(db.getUserById).mockResolvedValue({ id: USER_ID, bannerKey: "banners/7/old.webp" } as never);
     vi.mocked(storage.storageReadBytes).mockResolvedValue({ bytes: Buffer.alloc(77_777), contentType: "image/webp" });
 
-    await caller().uploadBanner({ base64Data: b64(jpegBytes(6_000)), mimeType: "image/jpeg", fileSize: 1 });
+    await caller().uploadBanner({ base64Data: b64(jpegBytes(6_000)), mimeType: "image/jpeg" });
 
     expect(storage.storageDelete).toHaveBeenCalledWith("banners/7/old.webp");
     expect(vi.mocked(db.updateUserStorageUsed).mock.calls).toEqual([
@@ -247,17 +272,15 @@ describe("uploadBanner — the same rules at 10 MB", () => {
     await caller().uploadBanner({
       base64Data: b64(jpegBytes(BANNER_MAX_BYTES)),
       mimeType: "image/jpeg",
-      fileSize: 1,
     });
     expect(db.updateUserStorageUsed).toHaveBeenCalledWith(USER_ID, BANNER_MAX_BYTES);
   });
 
-  it("refuses 10 MB + 1 that declares fileSize: 1", async () => {
+  it("refuses 10 MB + 1", async () => {
     await expect(
       caller().uploadBanner({
         base64Data: b64(jpegBytes(BANNER_MAX_BYTES + 1)),
         mimeType: "image/jpeg",
-        fileSize: 1,
       }),
     ).rejects.toThrow("That banner is over 10 MB.");
     expect(storage.storagePut).not.toHaveBeenCalled();
@@ -268,7 +291,6 @@ describe("uploadBanner — the same rules at 10 MB", () => {
       caller().uploadBanner({
         base64Data: b64(Buffer.from("just some text, not a picture")),
         mimeType: "image/webp",
-        fileSize: 1,
       }),
     ).rejects.toThrow("That file is not a JPG, PNG or WebP picture.");
     expect(storage.storagePut).not.toHaveBeenCalled();
@@ -277,7 +299,7 @@ describe("uploadBanner — the same rules at 10 MB", () => {
   it("checks the storage limit against the real bytes", async () => {
     vi.mocked(db.getUserStorageInfo).mockResolvedValue({ used: 500 * MB - 1_000, limit: 500 * MB } as never);
     await expect(
-      caller().uploadBanner({ base64Data: b64(jpegBytes(2_000)), mimeType: "image/jpeg", fileSize: 1 }),
+      caller().uploadBanner({ base64Data: b64(jpegBytes(2_000)), mimeType: "image/jpeg" }),
     ).rejects.toThrow(/Storage limit exceeded/);
     expect(storage.storagePut).not.toHaveBeenCalled();
   });
