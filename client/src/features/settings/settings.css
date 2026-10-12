@@ -1068,11 +1068,19 @@
     ⚠ THE FOOTER WRAPS, AND THIS IS A PRE-EXISTING DEFECT THE REBUILD PUT IN
     FRONT OF AN EYE RATHER THAN ONE IT CAUSED. At 390px the help sentence, two
     quiet buttons and (in compare mode) the ink primary share one flex row, so
-    `Having a problem? Go to the help centre.` wraps to FOUR lines in a column
-    the width of two words while the buttons squeeze beside it. It is the same
-    footer today; his brief is the first thing to ask what this surface looks
-    like on a phone, which is how it was seen at all. The sentence takes its own
-    line and the controls keep theirs.
+    the help sentence — `Having a problem? Go to the help centre.` when this was
+    measured, `Having a problem? Email support@klieglabs.com.` since #2398 —
+    wraps to FOUR lines in a column the width of two words while the buttons
+    squeeze beside it. It is the same footer today; his brief is the first thing
+    to ask what this surface looks like on a phone, which is how it was seen at
+    all. The sentence takes its own line and the controls keep theirs.
+
+    ⚠ **RE-MEASURED AT 390px AFTER #2398 AND THE RULE BELOW IS STILL WHAT MAKES
+    IT ONE LINE**: the new sentence renders at **288 × 14px, one line**, with
+    the address fitting inside it. The shorter string did not make this
+    declaration unnecessary — it is `flex: 1 1 100%` that gives the sentence a
+    row of its own, and without it the sentence would be back beside the
+    buttons in a two-word column, four characters shorter than before.
   */
   .dp-plan__foot { flex-wrap: wrap; row-gap: var(--s-4); }
   .dp-plan__help { flex: 1 1 100%; }
@@ -1151,6 +1159,34 @@
   flex: none;
 }
 .dp-plan__help { font: 400 11.5px/1.2 var(--font-sans); color: var(--metaStrong); }
+/*
+  #2398 — the support address inside that sentence, and it is the shape this
+  surface has already had an eye on rather than a new one.
+
+  ⚠ **THE BLOCK IS UNROOTED ON PURPOSE AND `anchorCascade.test.ts` IS TOLD WHY.**
+  A single-class rule normally loses `color` and `text-decoration` to
+  `.dp-root a` (0,1,1), and the repair would be `.dp-root a.dp-plan__helplink`.
+  **Here that repair is the defect**: the plan modal is `createPortal`'d to
+  `document.body`, so the rooted selector would match NOTHING and the anchor
+  would fall through to Tailwind preflight's `a { color: inherit }` with the
+  underline gone. That is measured history on this exact surface, not a
+  prediction — `dp-plan__request-link`, the pane's previous support link, was
+  rooted by #1531's "fix" and broke in precisely that way.
+
+  ⚠ **AND IT WEARS THAT PREDECESSOR'S VALUES, WHICH IS WHY IT IS `--ink` AND NOT
+  `inherit`.** `dp-plan__request-link` measured `rgb(17,17,18)` light /
+  `rgb(237,237,239)` dark with an underline and passed the relay's eye there. At
+  11.5px the one clickable thing in a footnote wants to be the darkest thing in
+  it; an address in the sentence's own `--metaStrong` with an underline is the
+  state that reading calls broken. Hover borrows `--linkHover`, which both
+  themes define.
+*/
+.dp-plan__helplink {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dp-plan__helplink:hover { color: var(--linkHover); }
 
 /* ============================================================
    3 · ADD CREDITS

@@ -12466,6 +12466,10 @@
       "path": "client/src/features/billing/freeAddCredits1836-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/billing/helpCentre2398-guard.test.ts",
+      "path": "client/src/features/billing/helpCentre2398-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/billing/monthlyDelta1761-guard.test.ts",
       "path": "client/src/features/billing/monthlyDelta1761-guard.test.ts"
     },
