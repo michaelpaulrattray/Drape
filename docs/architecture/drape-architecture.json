@@ -12,7 +12,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 46
+      "moduleCount": 47
     },
     {
       "id": "domain:billing",
@@ -5851,6 +5851,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/generation/imageDataUrl.ts",
+      "path": "server/routes/generation/imageDataUrl.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/generation/index.ts",
       "path": "server/routes/generation/index.ts",
       "domain": "api",
@@ -9409,9 +9415,9 @@
       "name": "proxyImage",
       "type": "mutation",
       "auth": "protected",
-      "input": "open",
+      "input": "strict",
       "rateLimited": false,
-      "file": "server/routes/generation/castingRefinement.ts",
+      "file": "server/routes/generation/imageDataUrl.ts",
       "clientCallers": [
         "client/src/features/export/useExportPack.ts",
         "client/src/features/studio/components/ImageActionBar.tsx",
@@ -16384,6 +16390,10 @@
       "path": "server/routes/evidenceDelivery.test.ts"
     },
     {
+      "id": "test:server/routes/generation/imageDataUrl.test.ts",
+      "path": "server/routes/generation/imageDataUrl.test.ts"
+    },
+    {
       "id": "test:server/routes/googleAuth.test.ts",
       "path": "server/routes/googleAuth.test.ts"
     },
@@ -18947,6 +18957,11 @@
     {
       "from": "module:client/src/features/boards/canvas/SpawnMenu.tsx",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/SpawnMenu.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
@@ -37671,11 +37686,6 @@
     },
     {
       "from": "module:server/routes/generation/castingRefinement.ts",
-      "to": "module:server/security/urlValidator.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/generation/castingRefinement.ts",
       "to": "module:server/storage.ts",
       "kind": "imports"
     },
@@ -37692,6 +37702,26 @@
     {
       "from": "module:server/routes/generation/generationOperations.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/imageDataUrl.ts",
+      "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/imageDataUrl.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/imageDataUrl.ts",
+      "to": "module:server/security/trustedImageFetch.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/imageDataUrl.ts",
+      "to": "module:server/security/urlValidator.ts",
       "kind": "imports"
     },
     {
@@ -37722,6 +37752,11 @@
     {
       "from": "module:server/routes/generation/index.ts",
       "to": "module:server/routes/generation/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/index.ts",
+      "to": "module:server/routes/generation/imageDataUrl.ts",
       "kind": "imports"
     },
     {
@@ -40649,13 +40684,6 @@
       "severity": "warn",
       "kind": "non-strict-input",
       "subject": "route:generation.parsePrompt",
-      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
-    },
-    {
-      "id": "finding:non-strict-input:route:generation.proxyImage",
-      "severity": "warn",
-      "kind": "non-strict-input",
-      "subject": "route:generation.proxyImage",
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {

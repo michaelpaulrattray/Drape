@@ -114,7 +114,6 @@ export async function ensureCastCreationRecord(
   const { bytes } = await (dependencies.readBytes ?? storageReadBytes)(source.anchorStorageKey);
   const record = buildCreationRecord({
     kliegId: source.kliegId,
-    accountId: input.userId,
     makerName: makerDisplayName(source.makerDisplayName),
     createdAt: source.createdAt,
     mintedAt: source.mintedAt,

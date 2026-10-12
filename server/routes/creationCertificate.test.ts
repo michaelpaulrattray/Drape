@@ -25,7 +25,6 @@ const MASTER_SHA = createHash("sha256").update(MASTER).digest("hex");
 const KEY = loadCreationRecordKey(JSON.stringify(generateKeyPairSync("ed25519").privateKey.export({ format: "jwk" })));
 const RECORD_JSON = canonicalCreationRecordJson(buildCreationRecord({
   kliegId: "KI-TEST",
-  accountId: 7,
   makerName: "Mia Strom",
   createdAt: new Date("2026-09-03T10:00:00Z"),
   mintedAt: new Date("2026-09-03T10:06:00Z"),
@@ -39,7 +38,7 @@ const RECORD_JSON = canonicalCreationRecordJson(buildCreationRecord({
 const SIGNATURE = await signCreationRecord(KEY, RECORD_JSON);
 
 const ROW = {
-  id: 1, modelId: 42, userId: 7, recordVersion: "1", recordJson: RECORD_JSON, recordSha256: "x",
+  id: 1, modelId: 42, userId: 7, recordVersion: "2", recordJson: RECORD_JSON, recordSha256: "x",
   signature: SIGNATURE, signingKeyId: KEY.kid, timestampToken: Buffer.from("token").toString("base64"),
   timestampAuthority: "internal", stampedAt: new Date("2026-10-14T04:31:00Z"), stampAttempts: 1,
   lastStampAttemptAt: null, publicAt: null, createdAt: new Date(),

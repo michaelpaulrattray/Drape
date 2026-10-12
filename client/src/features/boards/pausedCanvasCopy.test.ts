@@ -76,3 +76,72 @@ describe("#2329 — the canvas's paused copy", () => {
     }
   });
 });
+
+/**
+ * #2335 — the canvas no longer sends anyone to a paused road while the
+ * rebuild door is shut. Naming a draft and editing its headshot both go
+ * through Edit, which opens the paused card; so each line that PROMISED that
+ * road now reads `REBUILD_DOOR_OPEN` (the compiled fact #2328 reads) and says
+ * nothing about it while the door is shut.
+ *
+ * Each pair is pinned as one ternary, `REBUILD_DOOR_OPEN ? open : closed`, so
+ * the arm fails if the open copy is deleted (positive), if the closed copy
+ * still names the road (negative), or if the condition is dropped and the
+ * open copy shows unconditionally (the pairing itself).
+ */
+describe("#2335 — no paused road is promised while the door is shut", () => {
+  const ROAD = /environment|\bmint|\bname\b/i;
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ternary = (open: string, closed: string) =>
+    new RegExp(
+      "REBUILD_DOOR_OPEN\\s*\\?\\s*" + escape(JSON.stringify(open)) + "\\s*:\\s*" + escape(JSON.stringify(closed)),
+    );
+
+  const PAIRS: ReadonlyArray<{ where: string; file: string; open: string; closed: string }> = [
+    {
+      where: "the headshot popover's out-of-sync line (draft)",
+      file: CAST_NODE,
+      open: "Headshot out of sync — it never refreshes. Edit it in the environment",
+      closed: "Headshot out of sync — it never refreshes",
+    },
+    {
+      where: "the headshot popover's anchor line (draft)",
+      file: CAST_NODE,
+      open: "The headshot anchors every view — edit it in the environment",
+      closed: "The headshot anchors every view",
+    },
+  ];
+
+  it.each(PAIRS)("$where: open copy and closed copy sit on one REBUILD_DOOR_OPEN branch", ({ file, open, closed }) => {
+    expect(source(file)).toMatch(ternary(open, closed));
+    expect(open).toMatch(ROAD); // positive control: the reader sees a road when one is named
+    expect(closed).not.toMatch(ROAD);
+  });
+
+  it("the draft's Edit label promises naming only when the door is open, and never says 'mint'", () => {
+    const node = source(CAST_NODE);
+    expect(node).toContain('label: isDraft && REBUILD_DOOR_OPEN ? "Edit — name this draft" : "Edit",');
+    expect(node).not.toContain("name and mint");
+  });
+
+  it("the draft caption is rendered only behind the open door", () => {
+    const node = source(CAST_NODE);
+    const at = node.indexOf("Keep exploring — name it when ready");
+    expect(at, "the caption's copy still exists for when the door opens").toBeGreaterThan(-1);
+    const guard = node.lastIndexOf("{REBUILD_DOOR_OPEN && isDraft && data.imageUrl && !draftHintSeen && !selected && (", at);
+    expect(guard, "the caption's render condition reads the door").toBeGreaterThan(-1);
+    // and that condition is the caption's own: no other JSX block opens between them
+    expect(node.slice(guard, at)).not.toMatch(/\)\}\s*\{/);
+  });
+
+  it("the spawn menu points an unfilled view at the casting environment only when the door is open", () => {
+    const spawn = source("client/src/features/boards/canvas/SpawnMenu.tsx");
+    expect(spawn).toContain('import { REBUILD_DOOR_OPEN } from "@shared/rebuildDoor";');
+    expect(spawn).toMatch(/REBUILD_DOOR_OPEN\s*\?\s*"Add in the casting environment"\s*:\s*undefined/);
+    expect(spawn.match(/Add in the casting environment/g)).toHaveLength(1);
+  });
+
+  it("the door is shut today, so these are the lines a customer reads", () => {
+    expect(REBUILD_DOOR_OPEN).toBe(false);
+  });
+});

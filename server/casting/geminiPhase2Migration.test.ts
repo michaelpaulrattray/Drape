@@ -26,6 +26,8 @@
  *   - geminiPromptCompactor.ts  — export availability
  *   - aiService.ts              — re-exports for all Phase 2 functions
  *   - castingRefinement.ts      — new tRPC procedures exist on the router
+ *     (⚠ `proxyImage` left this router for `routes/generation/imageDataUrl.ts`
+ *      in #2315 — the arm below reads it off the `generation` namespace now)
  */
 
 import { describe, it, expect } from "vitest";
@@ -197,6 +199,14 @@ describe("castingRefinement router has Phase 2 procedures", () => {
     expect(procedures).toHaveProperty("iterate");
     expect(procedures).not.toHaveProperty("upscale");
     expect(procedures).toHaveProperty("enhance");
-    expect(procedures).toHaveProperty("proxyImage");
+    /* `proxyImage` MOVED OUT to `routes/generation/imageDataUrl.ts` (#2315 step
+       2 item 1) — it calls no Gemini anything, and this file is being retired.
+       This arm's concern was never which FILE declares it, it was that the
+       procedure is still callable, so that is what it now reads: gone from
+       here, still on the flat `generation` namespace the clients call. Its own
+       suite is `routes/generation/imageDataUrl.test.ts`. */
+    expect(procedures).not.toHaveProperty("proxyImage");
+    const { generationRouter } = await import("../routes/generation");
+    expect(generationRouter._def.procedures).toHaveProperty("proxyImage");
   });
 });

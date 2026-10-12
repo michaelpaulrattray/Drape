@@ -27,7 +27,13 @@ database. N2d makes it checkable:
   and the steps, headed with the honest sentence: *"This certifies that this character was
   created in Klieg. It is evidence of creation, not a registration of ownership."*
 - **An optional public check page, OFF by default** — the owner may turn on a page where anyone
-  with the ID can confirm it is real and when it was made, and see nothing else.
+  with the ID can confirm it is real, when it was made and who made it (the maker's display name),
+  with the master picture's fingerprint — never the picture, the brief or the account. Its footer
+  says what it is and what it is not: *"This page is evidence of creation. It is not a
+  registration of ownership."* (As shipped, `shared/creationCheckCopy.ts`; #2344.) ⚠ This line
+  read until 2026-10-12 ~~*"…can confirm it is real and when it was made, and see nothing
+  else."*~~ — false once the page showed the display name and the fingerprint; the shipped page
+  (#2325) also shows no cast name, which waits on #2323.
 
 None of the competitors on the card's reading offer a per-character certificate; this is a
 differentiator built almost entirely from facts the product already holds.
@@ -45,9 +51,13 @@ concept to understand.
 **Q2 — What decision does it put in front of them, and have they any basis for it?** Exactly
 one: whether the public check page is on. The default is OFF (his 2026-07-25 ruling: no one
 should be able to steal or copy their work). The toggle's copy states the whole consequence in
-one sentence — *"Anyone with this ID can confirm it is real and when this character was made.
-They never see the picture, your brief, or your account."* — and shows the page before it goes
-on. A yes/no whose consequence is stated and shown is a decision with a basis. Nothing else is
+one place — *"Anyone with this ID can see that it is real, when this character was made, and
+your display name. They never see the picture, your brief, or your account. You can turn this
+off at any time."* (as shipped, `PUBLIC_CHECK_CONSEQUENCE` in `shared/creationCheckCopy.ts`,
+#2344 on counsel's review) — and shows the page before it goes on. ⚠ This sentence read until
+2026-10-12 ~~*"Anyone with this ID can confirm it is real and when this character was made. They
+never see the picture, your brief, or your account."*~~ — it left out the display name the page
+shows, so it did not state the whole consequence it claimed to. A yes/no whose consequence is stated and shown is a decision with a basis. Nothing else is
 asked: no format choice, no "which service", no settings.
 
 **Q3 — Where does the technology show?** On no path a customer must walk. The main surfaces
@@ -75,7 +85,7 @@ additive migration):
 | field | source | note |
 |---|---|---|
 | the Klieg ID | `models.agencyId` | legacy `MOD-…` ids equally |
-| who | the owning account's display name + account id | never the email |
+| who | the owning account's display name ~~+ account id~~ — **display name only from record version "2"** (#2352, his *"5) ok"*, 2026-10-12): the account id is the database's sequential number and the appendix prints the record; v1 records keep theirs, signed | never the email, never `openId` |
 | when | `createdAt`, `mintedAt` | plus the record's own stamp time |
 | master fingerprint | sha256 of the anchor asset's bytes | computed at mint; backfilled on first request |
 | the steps | event dates and counts derived from the roll → candidate → refinement rows | **events only — never the brief, never a refine's words** |
@@ -179,8 +189,10 @@ receipts. That handoff is his, batched on the Desk.
    the consequence sentence and preview; the public route keyed on the ID — **a deliberate
    addition to the public-endpoint allowlist in the same commit**, rate-limited, strict input,
    and **no existence oracle**: an ID whose page is off and an ID that does not exist answer
-   identically. Shows: ID validity, the cast's name, the maker's display name, the dates.
-   Never the picture, never any creative content.
+   identically. Shows: ID validity, the maker's display name, the dates, the master picture's
+   fingerprint. Never the picture, never any creative content. ⚠ This line asked for *"the
+   cast's name"* until 2026-10-12; the signed record (§3) carries no name, the shipped page
+   (#2325) shows none, and whether it ever does is #2323's open question.
 4. **N2d-4 — provider positions and the lawyer pack** (independent; hand acts). Set the
    OpenRouter account's no-training position and read it back; confirm the Gemini account's
    paid tier; assemble §6 into the lawyer pack on his Desk. Blocked on him by nature and says

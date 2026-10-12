@@ -13,9 +13,10 @@
  * will see (derived, never mirrored — working law 4). It names six fields:
  * the ID, the maker's display name, the creation date, the
  * record date, the independent stamp date, and the fingerprint of the master
- * picture. It never spreads the record: the record also carries the account
- * id and the steps, and neither belongs to a stranger (the account id is "your
- * account" in the toggle's own sentence). **Never the picture, never an
+ * picture. It never spreads the record: the record also carries the steps,
+ * and a version "1" record the account id too (#2352 dropped it from v2), and
+ * neither belongs to a stranger (the account id is "your account" in the
+ * toggle's own sentence). **Never the picture, never an
  * address of one, never the email, never the brief or the recipe** — the
  * 2026-07-25 ruling's bound, restated in design §3.
  *

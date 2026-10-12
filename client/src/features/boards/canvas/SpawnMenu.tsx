@@ -14,6 +14,7 @@
 import { useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import type { CanonicalViewAngle } from "@shared/boardTypes";
+import { REBUILD_DOOR_OPEN } from "@shared/rebuildDoor";
 
 export interface SpawnMenuProps {
   itemId: number;
@@ -74,8 +75,13 @@ export function SpawnMenu({ itemId, modelId, x, y, flowX, flowY, poppedAngles, o
             type="button"
             disabled={!live}
             title={
+              /* #2335: the casting environment is paused while the rebuild
+                 door is shut, so an unfilled view points nowhere — its
+                 "not cast" tag already says why the row is greyed. */
               !slot.filled
-                ? "Add in the casting environment"
+                ? REBUILD_DOOR_OPEN
+                  ? "Add in the casting environment"
+                  : undefined
                 : popped
                   ? "Already on the board"
                   : undefined
