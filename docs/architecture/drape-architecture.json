@@ -12999,6 +12999,10 @@
       "path": "client/src/pages/CastingSheet.retryFailure.test.ts"
     },
     {
+      "id": "test:client/src/pages/CastingSheet.signFailure.test.ts",
+      "path": "client/src/pages/CastingSheet.signFailure.test.ts"
+    },
+    {
       "id": "test:client/src/staffPagesLazy.test.ts",
       "path": "client/src/staffPagesLazy.test.ts"
     },

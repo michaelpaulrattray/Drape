@@ -96,9 +96,9 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "'Restored' is duplicated by the card returning; 'not kept' is not. The only in-place evidence is a missing ring, which looks identical to a card that was never kept.",
   },
   {
-    match: '"Signing didn\'t go through. Nothing has changed — try again."',
+    match: "toast.error(outcome.sentence)",
     because:
-      "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. Ours rather than the error's since run-9; a PRECONDITION_FAILED from our own server still passes through verbatim, because that sentence names its wall.",
+      "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. A sentence our own server spoke still passes through verbatim, because that sentence names its wall. When the reply never arrived, the page re-reads the candidate first and goes to the cast if the Sign landed; otherwise it says only that it could not confirm the signing, and claims nothing about money (card 2381).",
   },
   {
     match: "readableFailure(error, 'That name could not be saved.')",
