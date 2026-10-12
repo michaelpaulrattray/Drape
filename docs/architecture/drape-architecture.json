@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:wardrobe",
@@ -2709,6 +2709,12 @@
     {
       "id": "module:client/src/lib/failureSentence.ts",
       "path": "client/src/lib/failureSentence.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/lib/imageProxy.ts",
+      "path": "client/src/lib/imageProxy.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -12994,6 +13000,10 @@
       "path": "client/src/foundation/topbarPhone2260-guard.test.ts"
     },
     {
+      "id": "test:client/src/lib/imageProxy.test.ts",
+      "path": "client/src/lib/imageProxy.test.ts"
+    },
+    {
       "id": "test:client/src/lib/staffPage.test.ts",
       "path": "client/src/lib/staffPage.test.ts"
     },
@@ -18768,6 +18778,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/imageActions.ts",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/ImageFallback.tsx",
       "to": "module:client/src/lib/utils.ts",
       "kind": "imports"
@@ -20130,6 +20145,16 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/refineProgress.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -23534,7 +23559,17 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
