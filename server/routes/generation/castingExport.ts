@@ -1,3 +1,4 @@
+import { assertRebuildDoorOpen } from "../../lib/rebuildDoor";
 import { adminProcedure, publicProcedure, protectedProcedure, router } from "../../_core/trpc";
 import {
   getModelById, getUserGenerations, getUserById, getModelAssets,
@@ -277,6 +278,7 @@ export const castingExportRouter = router({
       mint: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
       if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });
@@ -896,6 +898,7 @@ export const castingExportRouter = router({
         }),
     }))
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const readMode = captureSnapshotReadMode(ctx.user.id);
       const initialModel = await getModelById(input.modelId);
       if (!initialModel) throw new TRPCError({ code: "NOT_FOUND", message: "Cast not found" });

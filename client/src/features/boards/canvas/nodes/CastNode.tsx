@@ -27,6 +27,7 @@ import { refundBadgeText } from "@shared/refundCopy";
    (`server/lib/canvasCastDoor.ts`), so the button a customer sees and the
    refusal a request meets cannot disagree (working law 4). */
 import { CANVAS_CAST_OPEN, CANVAS_CAST_CLOSED } from "@shared/canvasCastDoor";
+import { REBUILD_DOOR_CLOSED, REBUILD_DOOR_OPEN } from "@shared/rebuildDoor";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { CanvasPopoverContent } from "../CanvasPopover";
 import { CanvasNodeShell } from "../CanvasNodeShell";
@@ -766,17 +767,26 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                               : "The headshot anchors every view — edit it in the environment"}
                           </div>
                         ) : (
+                          /* #2315: refreshing a view renders on the road the
+                             rebuild door shuts, so while it is shut the row stays
+                             VISIBLE and disabled with its reason (this toolbar's
+                             own rule, D-2/D-37) and quotes no price for a road
+                             nobody can walk. */
                           <button
                             type="button"
-                            disabled={!refreshable}
+                            disabled={!refreshable || !REBUILD_DOOR_OPEN}
+                            title={REBUILD_DOOR_OPEN ? undefined : REBUILD_DOOR_CLOSED}
                             className="w-full text-left px-2 py-1.5 rounded-canvas-sm text-canvas-sm text-canvas-ink hover:bg-canvas-surface-inset transition-colors disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-between gap-2"
                             onClick={() => {
                               sheet.refreshSlot(slot.angle);
                               close();
                             }}
                           >
-                            <span>{slot.failed && !slot.filled ? "Try again" : "Refresh"}</span>
-                            <CostLabel credits={refreshCost} />
+                            <span>
+                              {slot.failed && !slot.filled ? "Try again" : "Refresh"}
+                              {REBUILD_DOOR_OPEN ? null : " — unavailable while we rebuild it"}
+                            </span>
+                            {REBUILD_DOOR_OPEN ? <CostLabel credits={refreshCost} /> : null}
                           </button>
                         )}
                         <button
@@ -851,6 +861,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
       {sheet.bulkRefreshOpen &&
         createPortal(
           <BulkRefreshDialog
+            closedNote={REBUILD_DOOR_OPEN ? undefined : REBUILD_DOOR_CLOSED}
             slots={sheet.bulkStaleRows}
             totalCost={
               sheet.refreshPlan

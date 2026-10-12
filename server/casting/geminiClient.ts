@@ -15,6 +15,7 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { ENV } from "../_core/env";
 import { createModuleLogger } from "../logging/logger";
 import { supportedImageMime } from "../security/trustedImageFetch";
+import { assertRebuildDoorOpen } from "../lib/rebuildDoor";
 const log = createModuleLogger("casting/geminiClient");
 
 // Lazy import to avoid circular dependency (geminiQueue imports from geminiClient)
@@ -31,7 +32,15 @@ const getTextQueue = async () => {
 // CLIENT FACTORY
 // ============================================================================
 
+/**
+ * ⚠ THE BACKSTOP OF THE REBUILD DOOR (#2315 step 1). This is the only place the
+ * server reads the key and the only place the client is constructed, so the
+ * refusal stands FIRST: while the door is shut no road — listed at a procedure's
+ * mouth or not — can build a client, and nothing is sent. Step 2 deletes this
+ * module; until then the road behind the door stays compiled.
+ */
 export const getAiClient = () => {
+  assertRebuildDoorOpen();
   const apiKey = ENV.geminiApiKey;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured. Please add your Gemini API key in Settings > Secrets.");
