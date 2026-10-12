@@ -63,9 +63,12 @@ import type {
 
 /**
  * What went wrong, in the terms the copy needs. A refusal is about the brief
- * and is always free; the others are about the system.
+ * and is always free; the others are about the system. `declined` is any other
+ * sentence our own server wrote for a person (a `spoken` error, e.g. a charge
+ * the ledger could not take) — shown as written, and money-neutral: it claims
+ * nothing about a charge the server did not claim itself.
  */
-export type DispatchFailureKind = "refused" | "credits" | "busy" | "unavailable";
+export type DispatchFailureKind = "refused" | "credits" | "busy" | "declined" | "unavailable";
 
 /**
  * A failed dispatch, and the sheet it failed on top of.

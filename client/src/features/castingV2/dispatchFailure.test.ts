@@ -83,3 +83,38 @@ describe("a short balance is an account problem, never a brief one", () => {
     expect(failureActionLabel(failure.kind)).toBe("Edit the brief");
   });
 });
+
+describe("a sentence our server spoke is shown, never replaced by lost contact", () => {
+  const CHARGE_UNAVAILABLE = "We couldn't take payment for that just now. Try again in a moment.";
+
+  it("a spoken INTERNAL_SERVER_ERROR keeps its own words and makes no money claim", () => {
+    const failure = classifyDispatchFailure({
+      message: CHARGE_UNAVAILABLE,
+      data: { code: "INTERNAL_SERVER_ERROR", spoken: true },
+    });
+    expect(failure).toEqual({ kind: "declined", message: CHARGE_UNAVAILABLE });
+    expect(failure.message).not.toMatch(/lost contact/i);
+    expect(failureActionLabel(failure.kind)).toBe("Back to casting");
+  });
+
+  it("negative control: an UNMARKED INTERNAL_SERVER_ERROR is still the transport fallback", () => {
+    const failure = classifyDispatchFailure({
+      message: "upstream error",
+      data: { code: "INTERNAL_SERVER_ERROR" },
+    });
+    expect(failure.kind).toBe("unavailable");
+    expect(failure.message).toMatch(/lost contact/i);
+    expect(failure.message).not.toMatch(/upstream/i);
+  });
+
+  it("negative control: the flag's unmarked NOT_FOUND probe answer is never read aloud", () => {
+    const failure = classifyDispatchFailure({ message: "No such thing.", data: { code: "NOT_FOUND" } });
+    expect(failure.message).not.toBe("No such thing.");
+  });
+
+  it("negative control: a transport error with no code still gets the lost-contact copy", () => {
+    const failure = classifyDispatchFailure(new Error("Failed to fetch"));
+    expect(failure.kind).toBe("unavailable");
+    expect(failure.message).toMatch(/lost contact/i);
+  });
+});

@@ -20447,6 +20447,16 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/dispatchFailure.ts",
+      "to": "module:shared/spokenError.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/failureCopy.ts",
       "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"

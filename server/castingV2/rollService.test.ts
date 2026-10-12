@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { displayRefund, formatCredits } from "../../shared/creditDisplay";
 import type { TextEngine } from "../providers/types";
-import { classifyDispatchFailure } from "../../client/src/features/castingV2/dispatchFailure";
 import { CHARGE_UNAVAILABLE_SENTENCE } from "../lib/chargeRefusal";
 
 /**

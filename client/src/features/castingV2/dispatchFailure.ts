@@ -1,3 +1,6 @@
+import { errorIsSpoken } from "@shared/spokenError";
+import { failureIsOurs, readableFailure } from "@/lib/failureSentence";
+
 import type { DispatchFailureKind } from "./sheetState";
 
 /**
@@ -73,6 +76,27 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
   */
   if (code === "FORBIDDEN" || code === "PRECONDITION_FAILED") {
     return { kind: "credits", message: serverMessage || "This account cannot cast right now." };
+  }
+
+  /*
+    ANY OTHER SENTENCE OUR SERVER WROTE FOR A PERSON IS SHOWN AS WRITTEN (#2387).
+
+    A charge the ledger could not take is refused as a SPOKEN
+    INTERNAL_SERVER_ERROR ("We couldn't take payment for that just now…",
+    `server/lib/chargeRefusal.ts`). Without this branch it fell to the
+    transport fallback below and the customer read "We lost contact while your
+    roll was starting" — untrue: we heard the server, and it told us why.
+    `failureIsOurs` is the one rule for "the server spoke" (`spoken` marker or
+    an authored code), so this does not keep a second list. The kind is
+    money-neutral: the sentence carries whatever money truth the server
+    stated, and the copy adds none.
+
+    An UNMARKED NOT_FOUND is held back on purpose: outside a flag's scope the
+    server answers "No such thing.", a probe answer never written for a screen
+    (`readableGatedFailure`'s reason, `failureCopy.ts`).
+  */
+  if (failureIsOurs(error) && (code !== "NOT_FOUND" || errorIsSpoken(error))) {
+    return { kind: "declined", message: readableFailure(error, serverMessage) };
   }
 
   /*
