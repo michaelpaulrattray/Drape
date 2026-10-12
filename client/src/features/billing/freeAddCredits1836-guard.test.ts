@@ -220,12 +220,15 @@ describe("#1836 · the rule, and it is the one the door already reads", () => {
 
 describe("#1836 · the surface a free account opens says plan, not credits", () => {
   const pane = () => band(read(DOOR), "function PlanStepUpPane", "function CreditPacksPane");
+  const PLAN_LABEL = 'label={paymentFailed ? "Update your card" : "Choose a plan"}';
 
   it("it is headed, labelled and eyebrowed as a plan", () => {
     const code = withoutComments(pane());
-    expect(code).toContain('label="Choose a plan"');
+    /* #2441: the heading and label answer a failed payment with the card's
+       words; every other account — every free one among them — reads the plan. */
+    expect(code).toContain(PLAN_LABEL);
     expect(code).toContain(">PLANS<");
-    expect(code).toContain(">Choose a plan<");
+    expect(code).toContain(': "Choose a plan"}</h2>');
   });
 
   it("nothing a free account READS on it promises credits any more", () => {
@@ -280,9 +283,9 @@ describe("#1836 · the surface a free account opens says plan, not credits", () 
     expect(
       theFirstDraft(pane()),
       "the over-wide stripper no longer swallows the render, so this control proves nothing",
-    ).not.toContain('label="Choose a plan"');
+    ).not.toContain(PLAN_LABEL);
     expect(stripped, "the honest stripper must keep what the over-wide one lost")
-      .toContain('label="Choose a plan"');
+      .toContain(PLAN_LABEL);
     /* And the real pane must actually carry a paragraph quoting the old copy, or
        the stripper is being credited for work there was none of. */
     expect(pane()).toContain("*Add more credits*");

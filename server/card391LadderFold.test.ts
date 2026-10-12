@@ -128,7 +128,8 @@ describe("card #391 — the hidden rung is structurally unbuyable (invariant 5, 
 });
 
 describe("card #391 — getPlans serves the offered ladder and never the hidden price", () => {
-  const caller = billingRouter.createCaller({} as never);
+  /* A request with an address: `getPlans` is per-address rate-limited since #2423. */
+  const caller = billingRouter.createCaller({ req: { ip: "203.0.113.9" } } as never);
 
   it("planOrder is the offered seven and tiers carries no hidden key", async () => {
     const plans = await caller.getPlans();
