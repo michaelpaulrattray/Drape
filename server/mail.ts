@@ -32,12 +32,9 @@ import { PRODUCT_NAME } from "@shared/brand";
  */
 export const MAIL_SENDING_DOMAIN = "mail.klieglabs.com";
 
-/**
- * Where a customer's reply goes. The same address the login page already
- * gives a suspended account and the plan ladder gives an Enterprise enquiry —
- * it is the one human door this product has.
- */
-export const SUPPORT_EMAIL = "support@klieglabs.com";
+/** Where a customer's reply goes — declared once in `shared/` (#2456). */
+import { SUPPORT_EMAIL } from "@shared/supportEmail";
+export { SUPPORT_EMAIL };
 
 /**
  * Build a `from` header for a purpose: `verify`, `billing`, …

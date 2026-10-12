@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 90
+      "moduleCount": 91
     },
     {
       "id": "domain:staff",
@@ -6921,6 +6921,12 @@
     {
       "id": "module:shared/spokenError.ts",
       "path": "shared/spokenError.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/supportEmail.ts",
+      "path": "shared/supportEmail.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -18442,6 +18448,11 @@
     {
       "from": "module:client/src/features/billing/AddCreditsModal.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/AddCreditsModal.tsx",
+      "to": "module:shared/supportEmail.ts",
       "kind": "imports"
     },
     {
@@ -35870,6 +35881,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/supportEmail.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/monitoring/errorTracker.ts",
       "to": "module:server/_core/env.ts",
       "kind": "imports"
@@ -39787,6 +39803,11 @@
     {
       "from": "module:shared/creditTopups.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/creditTopups.ts",
+      "to": "module:shared/supportEmail.ts",
       "kind": "imports"
     },
     {

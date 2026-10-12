@@ -46,6 +46,7 @@ import { displayBalance, formatCredits } from "@shared/creditDisplay";
 import {
   TOPUP_MAX_UNITS,
   TOPUP_NEEDS_A_PLAN_SENTENCE,
+  TOPUP_PLAN_PAUSED_SENTENCE,
   topupEligibility,
   topupLedgerCredits,
   topupPriceInCents,
@@ -202,9 +203,8 @@ function livePlanIsPaused(live: { status: string; collectionPaused: boolean }): 
   return live.collectionPaused || live.status === "paused";
 }
 
-/** One sentence for both of Stripe's pause shapes, said once. */
-const TOPUP_PLAN_PAUSED_SENTENCE =
-  "Your plan is paused, so credit packs can't be bought right now. Nothing was charged — resume your plan under Billing, then you can add credits.";
+/* One sentence for both of Stripe's pause shapes — `TOPUP_PLAN_PAUSED_SENTENCE`,
+   declared in `shared/creditTopups.ts` beside the pane that says it too (#2456). */
 
 function topupPlanRefusal(
   live:

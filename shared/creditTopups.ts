@@ -44,6 +44,7 @@
  * are pinned against the three real ones in its suite.
  */
 import { LEDGER_PER_DISPLAY_CREDIT } from "./creditDisplay";
+import { SUPPORT_EMAIL } from "./supportEmail";
 
 /**
  * The unit a top-up is sold in, on the customer's scale.
@@ -277,6 +278,20 @@ export const TOPUP_CHECKOUT_KIND = "topup";
  * refused and what to do, in the customer's words — no tier id, no status, no
  * machinery (the disappearing-technology law's refusal clause).
  */
+/**
+ * WHAT A PAUSED PLAN IS TOLD, ON THE PANE AND AT THE PRESS (#2456).
+ *
+ * Nothing in the product resumes a PAUSED plan: `pause_collection` is set and
+ * cleared nowhere in the tree (only staff, in Stripe), and `useResumePlan`
+ * undoes a scheduled CANCELLATION, which is a different thing. So the one road
+ * that works is a person, and the sentence names it — the relay's finding on
+ * PR #2457, which caught the first wording promising a Billing control that
+ * does not exist. One constant, so the pane and the refusal cannot drift.
+ */
+export const TOPUP_PLAN_PAUSED_SENTENCE =
+  "Your plan is paused, so credit packs can't be bought right now. "
+  + `Email ${SUPPORT_EMAIL} and we'll resume it.`;
+
 export const TOPUP_NEEDS_A_PLAN_SENTENCE =
   "Credit packs are for accounts on a plan. "
   + "Pick a plan and you can add credits any time you need them.";

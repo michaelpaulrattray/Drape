@@ -71,12 +71,14 @@ import { displayBalance, displaySpent, formatCredits } from "@shared/creditDispl
 import {
   TOPUP_MAX_UNITS,
   TOPUP_PACKS,
+  TOPUP_PLAN_PAUSED_SENTENCE,
   bestValueTopupUnits,
   isSellableTopupUnits,
   topupEligibility,
   topupLedgerCredits,
   topupPriceInCents,
 } from "@shared/creditTopups";
+import { SUPPORT_EMAIL } from "@shared/supportEmail";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { announcePlanChange } from "./planChangeToast";
@@ -1271,37 +1273,28 @@ function PaymentFailedPacksPane({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * A PLAN HOLDER WHOSE PLAN IS PAUSED IS SHOWN HOW TO RESUME, NOT THE PACKS —
- * #2456.
+ * A PLAN HOLDER WHOSE PLAN IS PAUSED IS TOLD WHO RESUMES IT, NOT SHOWN THE
+ * PACKS — #2456.
  *
  * #2454 made the server refuse a pack on a paused plan (*"you need to be on an
  * active plan to buy credit packs."*), and the pane still drew the packs, so
  * the customer chose an amount and pressed Add credits only to be told the
  * plan was paused. This is the failed-payment view above, one state over: a
- * heading that says what to do, the notice, and one button. Nothing on it is
- * for sale, so nothing on it has a price.
+ * heading, the notice, and one button. Nothing on it is for sale, so nothing
+ * on it has a price.
  *
- * ⚠ **THE BUTTON SAYS WHERE IT GOES, NOT WHAT HAPPENS THERE.** It opens the
- * same billing page as Update card (`createPortalSession`), and whether that
- * page shows a resume control is the billing provider's own configuration,
- * which nothing in this tree reads. So it reads *Open billing*, which is true
- * whatever that page offers, rather than *Resume plan*, which would be a
- * promise about a page this product does not draw.
+ * ⚠ **THE ROAD IS A PERSON, BECAUSE NOTHING IN THE PRODUCT RESUMES A PAUSE**
+ * (the relay's finding on PR #2457). `pause_collection` is set and cleared
+ * nowhere in this tree, so a pause is only ever made by staff in Stripe, and
+ * `useResumePlan` undoes a scheduled cancellation, which is a different thing.
+ * The first wording sent the customer to a billing page with no such control.
+ * The notice is `TOPUP_PLAN_PAUSED_SENTENCE`, the same words the press refuses
+ * with, and the button writes to the one support address (`SUPPORT_EMAIL`).
  *
  * The disappearing-technology gate: nothing to learn, one thing to do, and no
  * status word, engine or figure on the page.
  */
 function PausedPlanPacksPane({ onClose }: { onClose: () => void }) {
-  const portal = trpc.billing.createPortalSession.useMutation({
-    onSuccess: (result) => {
-      if (result?.portalUrl) window.open(result.portalUrl, "_blank");
-    },
-    onError: (error) => {
-      logRawFailure("billing.createPortalSession", error);
-      toast.error(readableFailure(error, "The billing portal could not be opened."));
-    },
-  });
-
   return (
     <ModalScrim
       label="Resume your plan"
@@ -1314,8 +1307,7 @@ function PausedPlanPacksPane({ onClose }: { onClose: () => void }) {
         <p className="dp-topup__eyebrow">CREDITS</p>
         <h2 className="dp-topup__title">Resume your plan</h2>
         <p className="dp-topup__reason" role="status">
-          Your plan is paused, so credit packs can&apos;t be bought right now. Resume your plan
-          from your billing page, then you can add credits.
+          {TOPUP_PLAN_PAUSED_SENTENCE}
         </p>
       </div>
       <div className="dp-topup__foot">
@@ -1326,10 +1318,11 @@ function PausedPlanPacksPane({ onClose }: { onClose: () => void }) {
         <Button
           variant="primary"
           size="small"
-          onClick={() => portal.mutate()}
-          disabled={portal.isPending}
+          onClick={() => {
+            window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Resume my paused plan")}`;
+          }}
         >
-          {portal.isPending ? "Opening…" : "Open billing"}
+          Email support
         </Button>
       </div>
     </ModalScrim>

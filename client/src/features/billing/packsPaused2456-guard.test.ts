@@ -67,18 +67,23 @@ describe("#2456 — the shell asks whether the plan is paused", () => {
   });
 });
 
-describe("#2456 — the paused pane sells nothing", () => {
-  it("says what happened and what to do", () => {
+describe("#2456 — the paused pane sells nothing and names the road that works", () => {
+  it("says what happened, in the press's own words", () => {
     expect(pane).toContain('label="Resume your plan"');
     expect(pane).toContain('<h2 className="dp-topup__title">Resume your plan</h2>');
-    expect(pane).toContain("Your plan is paused");
+    expect(pane).toContain("{TOPUP_PLAN_PAUSED_SENTENCE}");
     expect(pane).toContain('role="status"');
   });
 
-  it("its one button opens the billing page, and says so rather than promising a resume", () => {
-    expect(pane).toMatch(/const portal = trpc\.billing\.createPortalSession\.useMutation\(/);
-    expect(pane).toMatch(/onClick=\{\(\) => portal\.mutate\(\)\}/);
-    expect(pane).toContain('"Open billing"');
+  it("⚠ its one button writes to support — nothing in the product resumes a pause (relay finding, PR #2457)", () => {
+    expect(pane).toMatch(/window\.location\.href = `mailto:\$\{SUPPORT_EMAIL\}/);
+    expect(pane).toContain("Email support");
+    expect(surface).toMatch(/import \{ SUPPORT_EMAIL \} from "@shared\/supportEmail";/);
+    /* The billing page has no resume control for a pause, so the pane must not send them there. */
+    expect(pane).not.toContain("createPortalSession");
+    expect(pane).not.toMatch(/Open billing|billing page/);
+    /* One literal: the address is the shared constant, never typed here. */
+    expect(pane).not.toContain("@klieglabs.com");
   });
 
   it("⚠ no purchase road and no price is reachable from it", () => {
@@ -93,5 +98,13 @@ describe("#2456 — the paused pane sells nothing", () => {
     ]) {
       expect(pane, `the paused pane reaches ${mark}`).not.toContain(mark);
     }
+  });
+});
+
+describe("#2456 — the address is declared once", () => {
+  it("server/mail.ts re-exports the shared constant rather than typing a second literal", () => {
+    const mail = readFileSync(join(process.cwd(), "server", "mail.ts"), "utf8");
+    expect(mail).toMatch(/import \{ SUPPORT_EMAIL \} from "@shared\/supportEmail";/);
+    expect(mail).not.toContain('"support@klieglabs.com"');
   });
 });
