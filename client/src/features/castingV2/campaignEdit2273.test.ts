@@ -31,15 +31,13 @@ describe("deleting the campaign on screen returns the library to All", () => {
     expect(chipAfterCampaignGone(chip, [AUTUMN])).toEqual({ kind: "all" });
   });
 
-  it("the LAST campaign goes while Unfiled is chosen — All, because Unfiled is hidden with none", () => {
-    expect(chipAfterCampaignGone({ kind: "unfiled" }, [])).toEqual({ kind: "all" });
+  it("the LAST campaign goes while it is on screen — All", () => {
+    expect(chipAfterCampaignGone({ kind: "campaign", campaignId: SUMMER.campaignId }, [])).toEqual({ kind: "all" });
   });
 
   it("negative control — another campaign is deleted, and the chip on screen does not move", () => {
     const chip: RosterChip = { kind: "campaign", campaignId: AUTUMN.campaignId };
     expect(chipAfterCampaignGone(chip, [AUTUMN])).toBe(chip);
-    const unfiled: RosterChip = { kind: "unfiled" };
-    expect(chipAfterCampaignGone(unfiled, [AUTUMN])).toBe(unfiled);
     const all: RosterChip = { kind: "all" };
     expect(chipAfterCampaignGone(all, [])).toBe(all);
   });

@@ -65,13 +65,12 @@ describe("a selection belongs to the view it was made in", () => {
   it("a different chip, a different campaign, or different search text is a different view", () => {
     const keys = new Set([
       selection.selectionViewKey(all, ""),
-      selection.selectionViewKey({ kind: "unfiled" }, ""),
       selection.selectionViewKey(summer, ""),
       selection.selectionViewKey(autumn, ""),
       selection.selectionViewKey(all, "a"),
       selection.selectionViewKey(all, "an"),
     ]);
-    expect(keys.size).toBe(6);
+    expect(keys.size).toBe(5);
   });
 
   it("the same chip and the same text is the same view (the positive control)", () => {

@@ -261,7 +261,7 @@ describe("the client's copies of the server's numbers agree with the server", ()
 
   it("the client's filter for each chip is an input the roster accepts", async () => {
     const { call } = caller();
-    for (const chip of [{ kind: "all" }, { kind: "unfiled" }, { kind: "campaign", campaignId: CAMPAIGN }] as const) {
+    for (const chip of [{ kind: "all" }, { kind: "campaign", campaignId: CAMPAIGN }] as const) {
       await expect(call.roster({ ...clientChips.rosterFilterInput(chip, " ines "), limit: clientChips.ROSTER_PAGE_SIZE })).resolves.toBeTruthy();
       await expect(call.rosterCounts(clientChips.rosterFilterInput(chip, ""))).resolves.toBeTruthy();
     }
