@@ -15410,6 +15410,10 @@
       "path": "server/db/dailyQuota.test.ts"
     },
     {
+      "id": "test:server/db/googleSubBinding.test.ts",
+      "path": "server/db/googleSubBinding.test.ts"
+    },
+    {
       "id": "test:server/db/inviteCodeRedeemRace.test.ts",
       "path": "server/db/inviteCodeRedeemRace.test.ts"
     },

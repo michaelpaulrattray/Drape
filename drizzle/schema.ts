@@ -67,6 +67,10 @@ export const users = mysqlTable("users", {
   // Auth provider tracking
   passwordHash: text("passwordHash"), // bcrypt hash for email/password users (null for Google/legacy users)
   authProvider: varchar("authProvider", { length: 32 }).default("manus_legacy"), // 'email', 'google', 'manus_legacy'
+  // Google's stable account id (`sub`) for an account that linked Google after
+  // signing up another way (#2389). An account Google created carries it in its
+  // openId (`google_<sub>`) instead, and this stays null. Migration 0082.
+  googleSub: varchar("googleSub", { length: 255 }).unique(),
   // Email verification (email/password signups only — Google users auto-verified)
   emailVerified: boolean("emailVerified").default(false).notNull(),
   emailVerificationToken: varchar("emailVerificationToken", { length: 128 }),
