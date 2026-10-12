@@ -84,7 +84,29 @@ const REQUIRED_VARS: Record<string, string> = {
   JWT_SECRET: "session cookies cannot be signed or verified",
   VITE_APP_ID:
     "session JWTs are issued with an empty appId and verifySession silently rejects every login",
-  GEMINI_API_KEY: "all image generation",
+  /*
+   * ⚠ `GEMINI_API_KEY` WAS HERE, AS "all image generation", AND IT IS ON
+   * NEITHER LIST NOW (#2315 step 3). **His word, 2026-10-12 (terminal):** *"id
+   * retire the paths and remove the key"*.
+   *
+   * It is off the REQUIRED list because the boot refusal is the one thing that
+   * would stop him deleting the variable: with this entry standing, the next
+   * boot after the deletion exits and the service crash-loops — the shape of
+   * 2026-07-31. Removing it first is safe with the key present or absent.
+   *
+   * It is not on OPTIONAL_VARS either, and that is the `POSTHOG_HOST` rule
+   * below applied rather than an omission: an entry there earns a boot WARNING,
+   * which is right for a key whose absence switches a capability off and wrong
+   * here, because **nothing is switched off by its absence — step 1 already
+   * switched it off.** `getAiClient()` calls `assertRebuildDoorOpen()` on the
+   * line ABOVE the only read of this key in the product
+   * (`server/casting/geminiClient.ts`), and `REBUILD_DOOR_OPEN` is a compiled
+   * `false`, so no road reaches the read. A warning would describe a degraded
+   * capability that is in fact a closed one.
+   *
+   * `ENV.geminiApiKey` stays mapped below so the code behind the door still
+   * compiles; step 2 of the card deletes that module and the mapping with it.
+   */
   STRIPE_SECRET_KEY: "billing",
   STRIPE_WEBHOOK_SECRET: "Stripe webhook signature verification",
   R2_ENDPOINT: "file storage (generated images, garments, avatars)",

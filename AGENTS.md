@@ -88,10 +88,22 @@ Two login paths, both ending in a JWT (jose, HS256, signed with `JWT_SECRET`) se
 - `DATABASE_URL` — Railway MySQL public connection URL (from the Railway dashboard)
 - `JWT_SECRET` — session-cookie signing secret (any long random string)
 - `VITE_APP_ID` — any non-empty string; embedded in the session JWT and required by `verifySession` (empty value = every login silently rejected)
-- `GEMINI_API_KEY` — Google AI Studio key (all image generation)
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — Stripe (test-mode keys fine locally)
 - `R2_ENDPOINT`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — Cloudflare R2 (S3 API) for all file storage (generated images, garments, avatars)
 - `R2_PUBLIC_URL` — the bucket's public URL (`https://pub-….r2.dev` or a custom domain); used to build served image URLs, the CSP `img-src`, and the image-proxy SSRF allowlist
+
+⚠ **`GEMINI_API_KEY` CAME OFF THIS LIST 2026-10-12 (#2315 step 3) AND IS ON
+NEITHER LIST.** His word, verbatim: *"id retire the paths and remove the key"*. It
+read *"Google AI Studio key (all image generation)"*, and that stopped being true
+at step 1: the rebuild door (`shared/rebuildDoor.ts`) refuses every road to the
+Gemini client, and `getAiClient()` asserts the door on the line ABOVE the only
+read of the key in the product — so nothing reads it, and its absence switches
+nothing off. It is out of the optional list for that same reason rather than by
+omission: an entry there earns a boot WARNING, which would describe a degraded
+capability where there is a closed one. ⚠ **The boot check had to go before the
+variable**: deleting it while that entry stood would have exited the next boot
+and crash-looped the service. `server/_core/geminiKeyNotRequired.test.ts` holds
+it off the list, with the reader's positive control beside it.
 
 ### Optional .env vars (feature-gated)
 
