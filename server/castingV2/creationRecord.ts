@@ -37,8 +37,20 @@
  * direction), with the creative content itself staying sealed in the account.
  */
 
-/** Bumped when the document's SHAPE changes; old records keep their version. */
-export const CREATION_RECORD_VERSION = "1";
+/**
+ * Bumped when the document's SHAPE changes; old records keep their version.
+ *
+ * - **"1"** (#2311): `maker` was `{ accountId, displayName }`.
+ * - **"2"** (#2352, his word 2026-10-12: *"5) ok"*): `maker` is `{ displayName }`
+ *   ONLY. `accountId` was `users.id` — the database's auto-increment number —
+ *   and the certificate's appendix prints the whole record, so a shared
+ *   certificate leaked a sequential count of accounts and a stable handle on a
+ *   customer. The record never needed it: the signature proves Klieg made the
+ *   record, and the `cast_creation_records` row already holds `userId` for
+ *   Klieg's own use. A v1 record is SIGNED and is never rewritten, so it keeps
+ *   its number and still verifies; every record made from now on has none.
+ */
+export const CREATION_RECORD_VERSION = "2";
 
 /**
  * Keys that may never appear anywhere in a record, at any depth. Matched
@@ -66,6 +78,19 @@ export const CREATION_RECORD_REFUSED_KEYS: readonly string[] = [
   "email",
 ];
 
+/**
+ * Account identifiers, refused at any depth in every record of version "2" or
+ * later (#2352). `accountId` is the one v1 carried; the others are its
+ * siblings — the same database number under another name, and `openId`, which
+ * for a Google sign-in is the Google subject id (a personal identifier, and the
+ * card's named "do not substitute"). The ONE exemption is a v1 record's own
+ * `maker.accountId`, because a signed record is never rewritten.
+ */
+export const CREATION_RECORD_ACCOUNT_KEYS: readonly string[] = ["accountId", "userId", "ownerId", "openId"];
+
+/** The only place a v1 record carried an account identifier. */
+const V1_ACCOUNT_ID_PATH = "maker.accountId";
+
 export class CreationRecordBoundError extends Error {
   constructor(path: string) {
     super(`a creation record may not carry "${path}" — it is creative content or a personal identifier`);
@@ -76,7 +101,6 @@ export class CreationRecordBoundError extends Error {
 /** The facts a record is built from — every one an event, an id or a hash. */
 export type CreationRecordFacts = {
   kliegId: string;
-  accountId: number;
   /** The owning account's display name; `null` when there is none to show. */
   makerName: string | null;
   createdAt: Date;
@@ -99,16 +123,25 @@ export type CreationRecordStep =
   | { event: "signed"; at: string }
   | { event: "minted"; at: string };
 
+/** The shape this code WRITES (version "2"): the maker is a display name only. */
 export type CreationRecord = {
   recordVersion: string;
   kliegId: string;
-  maker: { accountId: number; displayName: string | null };
+  maker: { displayName: string | null };
   createdAt: string;
   mintedAt: string;
   master: { sha256: string };
   steps: CreationRecordStep[];
   recordedAt: string;
 };
+
+/** A version "1" record, as already signed and stored — read, never written. */
+export type CreationRecordV1 = Omit<CreationRecord, "maker"> & {
+  maker: { accountId: number; displayName: string | null };
+};
+
+/** Any record a reader may meet in the store. */
+export type StoredCreationRecord = CreationRecord | CreationRecordV1;
 
 /**
  * The name a record signs: the account's DISPLAY NAME and nothing else.
@@ -153,7 +186,7 @@ export function buildCreationRecord(facts: CreationRecordFacts): CreationRecord 
   return {
     recordVersion: CREATION_RECORD_VERSION,
     kliegId: facts.kliegId,
-    maker: { accountId: facts.accountId, displayName: facts.makerName },
+    maker: { displayName: facts.makerName },
     createdAt: iso(facts.createdAt),
     mintedAt: iso(facts.mintedAt),
     master: { sha256: facts.masterSha256 },
@@ -162,9 +195,18 @@ export function buildCreationRecord(facts: CreationRecordFacts): CreationRecord 
   };
 }
 
-/** Throws `CreationRecordBoundError` if a refused key appears at any depth. */
+/**
+ * Throws `CreationRecordBoundError` if a refused key appears at any depth — the
+ * creative-content family in every version, and the account identifiers in
+ * every version except at a v1 record's own `maker.accountId` (#2352).
+ */
 export function assertCreationRecordBound(record: unknown): void {
   const refused = new Set(CREATION_RECORD_REFUSED_KEYS.map((key) => key.toLowerCase()));
+  const account = new Set(CREATION_RECORD_ACCOUNT_KEYS.map((key) => key.toLowerCase()));
+  /* Only a record that SAYS it is v1 gets v1's exemption; a missing or unknown
+     version is read as the newest rule, which is the refusing direction. */
+  const isV1 = typeof record === "object" && record !== null && !Array.isArray(record)
+    && (record as { recordVersion?: unknown }).recordVersion === "1";
   const walk = (value: unknown, path: string): void => {
     if (Array.isArray(value)) {
       value.forEach((item, index) => walk(item, `${path}[${index}]`));
@@ -174,6 +216,9 @@ export function assertCreationRecordBound(record: unknown): void {
     for (const [key, child] of Object.entries(value)) {
       const at = path ? `${path}.${key}` : key;
       if (refused.has(key.toLowerCase())) throw new CreationRecordBoundError(at);
+      if (account.has(key.toLowerCase()) && !(isV1 && at === V1_ACCOUNT_ID_PATH)) {
+        throw new CreationRecordBoundError(at);
+      }
       walk(child, at);
     }
   };

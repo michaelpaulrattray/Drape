@@ -30,17 +30,17 @@ import {
   fingerprintLines,
   prepareCertificateMaster,
   printable,
+  readSignedRecord,
   renderCreationCertificate,
   type CreationCertificateInput,
 } from "./creationCertificate";
-import { loadCreationRecordKey, signCreationRecord } from "./creationRecordSigning";
+import { loadCreationRecordKey, signCreationRecord, verifyCreationRecord } from "./creationRecordSigning";
 
 const SHA = "0123456789abcdef".repeat(4);
 
 function record(overrides: Partial<Parameters<typeof buildCreationRecord>[0]> = {}) {
   return buildCreationRecord({
     kliegId: "KI-7Q2M-XR4D",
-    accountId: 7,
     makerName: "Mia Strom",
     createdAt: new Date("2026-09-03T10:00:00Z"),
     mintedAt: new Date("2026-09-03T10:06:00Z"),
@@ -163,6 +163,43 @@ describe("⚠ the bound, at the last door", () => {
       expect(() => renderCreationCertificate({ ...SYNC_INPUT, recordJson: leaky })).toThrow(CreationRecordBoundError);
     },
   );
+});
+
+describe("⚠ #2352 — the appendix carries no account number", () => {
+  /** Every text run with jsPDF's wrap points removed, so a word split across lines reads whole. */
+  const appendixOf = (pdf: Buffer) => textOf(pdf).replace(/ /g, "");
+  /* A version "1" record exactly as #2311 signed it — maker.accountId and all. */
+  const v1Json = () => canonicalCreationRecordJson({ ...record(), recordVersion: "1", maker: { accountId: 823, displayName: "Mia Strom" } });
+
+  it("a v2 record's certificate holds no account identifier — not in the text, not in the file", async () => {
+    const json = canonicalCreationRecordJson(record());
+    expect(JSON.parse(json).recordVersion).toBe("2");
+    const pdf = renderCreationCertificate(await input(json));
+    const text = appendixOf(pdf);
+    /* CONTROL — the appendix is read: the record's own keys and display name are there. */
+    expect(text).toContain("MiaStrom");
+    expect(text).toContain("recordVersion");
+    expect(text).not.toMatch(/accountId|userId|openId/i);
+    expect(pdf.toString("latin1")).not.toMatch(/accountId/i);
+  });
+
+  it("POSITIVE CONTROL — the same reader DOES see accountId in a v1 record's appendix (so the arm above can fail)", async () => {
+    const text = appendixOf(renderCreationCertificate(await input(v1Json())));
+    expect(text).toContain("accountId");
+  });
+
+  it("a v1 record still renders and its signature still verifies — a signed record is never rewritten", async () => {
+    const json = v1Json();
+    const made = await input(json);
+    expect(() => renderCreationCertificate(made)).not.toThrow();
+    expect(await verifyCreationRecord(made.publicJwk!, json, made.signature)).toBe(true);
+    expect(readSignedRecord(json).maker.displayName).toBe("Mia Strom");
+  });
+
+  it("a record claiming v2 that carries an account number is refused at the last door — nothing is drawn", async () => {
+    const leaky = canonicalCreationRecordJson({ ...record(), maker: { accountId: 823, displayName: "Mia Strom" } });
+    expect(() => renderCreationCertificate({ ...SYNC_INPUT, recordJson: leaky })).toThrow(CreationRecordBoundError);
+  });
 });
 
 /* One input built once for the synchronous arms above. */

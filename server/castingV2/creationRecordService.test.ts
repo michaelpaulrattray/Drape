@@ -120,7 +120,12 @@ describe("a new record — signed, stored, stamped", () => {
     const record = JSON.parse(stored.recordJson);
     expect(record.master.sha256).toBe(createHash("sha256").update(ANCHOR_BYTES).digest("hex"));
     expect(record.kliegId).toBe("KI-AAAA-BBBB-CCCC-DDDD");
-    expect(record.maker).toEqual({ accountId: USER_ID, displayName: "Ada Maker" });
+    expect(record.maker).toEqual({ displayName: "Ada Maker" });
+    /* #2352: the record carries no account number; the ROW keeps userId for Klieg's own use. */
+    expect(stored.recordVersion).toBe("2");
+    expect(record.recordVersion).toBe("2");
+    expect(stored.recordJson).not.toMatch(/accountId|userId|openId/i);
+    expect(stored.recordJson).not.toContain(`:${USER_ID}`);
     expect(vi.mocked(deps.readBytes!)).toHaveBeenCalledWith(source.anchorStorageKey);
   });
 
@@ -184,7 +189,7 @@ describe("⚠ the maker's name is the DISPLAY name or none (the relay's finding 
       userId: USER_ID, modelId: MODEL_ID,
     });
     const record = JSON.parse(rows[0]!.recordJson);
-    expect(record.maker).toEqual({ accountId: USER_ID, displayName: null });
+    expect(record.maker).toEqual({ displayName: null });
     expect(rows[0]!.recordJson).not.toContain("REAL-NAME-2311");
   });
 });

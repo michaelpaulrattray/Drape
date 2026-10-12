@@ -19,6 +19,7 @@ import {
   CreationRecordBoundError,
   assertCreationRecordBound,
   buildCreationRecord,
+  CREATION_RECORD_ACCOUNT_KEYS,
   canonicalCreationRecordJson,
   makerDisplayName,
   type CreationRecordFacts,
@@ -28,7 +29,6 @@ const SECRET = "SECRET-RECIPE-MARKER-2311";
 
 const facts: CreationRecordFacts = {
   kliegId: "KI-AAAA-BBBB-CCCC-DDDD",
-  accountId: 41,
   makerName: "Ada Maker",
   createdAt: new Date("2026-09-03T10:00:00Z"),
   mintedAt: new Date("2026-09-03T10:04:00Z"),
@@ -60,9 +60,9 @@ describe("the record says who, when, the fingerprint and the steps — as events
   it("builds the §3 document", () => {
     const record = buildCreationRecord(facts);
     expect(record).toEqual({
-      recordVersion: "1",
+      recordVersion: "2",
       kliegId: "KI-AAAA-BBBB-CCCC-DDDD",
-      maker: { accountId: 41, displayName: "Ada Maker" },
+      maker: { displayName: "Ada Maker" },
       createdAt: "2026-09-03T10:00:00.000Z",
       mintedAt: "2026-09-03T10:04:00.000Z",
       master: { sha256: "a".repeat(64) },
@@ -160,5 +160,57 @@ describe("the maker's name is never an email", () => {
     expect(makerDisplayName(null)).toBeNull();
     expect(makerDisplayName("   ")).toBeNull();
     expect(makerDisplayName("ada@example.com")).toBeNull();
+  });
+});
+
+describe("⚠ #2352 — a record carries no account number (version 2)", () => {
+  const accountKeys = new Set(CREATION_RECORD_ACCOUNT_KEYS.map((key) => key.toLowerCase()));
+  /* A version "1" record exactly as #2311 signed it — the shape already in the store. */
+  const v1 = () => ({ ...buildCreationRecord(facts), recordVersion: "1", maker: { accountId: 823, displayName: "Ada Maker" } });
+
+  it("the builder emits no account identifier at any depth, even when the caller hands one over", () => {
+    const stuffed = { ...facts, accountId: 823, userId: 823, openId: "google-sub-2352" } as unknown as CreationRecordFacts;
+    const record = buildCreationRecord(stuffed);
+    expect(record.recordVersion).toBe("2");
+    expect(allKeys(record).filter((key) => accountKeys.has(key.toLowerCase()))).toEqual([]);
+    const canonical = canonicalCreationRecordJson(record);
+    expect(canonical).not.toContain("823");
+    expect(canonical).not.toContain("google-sub-2352");
+    /* CONTROL — the reader sees the maker when it is there: the display name is. */
+    expect(record.maker).toEqual({ displayName: "Ada Maker" });
+    expect(() => assertCreationRecordBound(record)).not.toThrow();
+  });
+
+  it("the backstop refuses maker.accountId in a v2 record", () => {
+    const record = { ...buildCreationRecord(facts), maker: { accountId: 823, displayName: "Ada Maker" } };
+    expect(() => assertCreationRecordBound(record)).toThrow(/maker\.accountId/);
+  });
+
+  it("the backstop refuses EVERY account key, at any depth and in any case, in a v2 record", () => {
+    for (const key of CREATION_RECORD_ACCOUNT_KEYS) {
+      const record = buildCreationRecord(facts) as unknown as { steps: Array<Record<string, unknown>> };
+      record.steps[1]![key.toUpperCase()] = 823;
+      expect(() => assertCreationRecordBound(record), key).toThrow(CreationRecordBoundError);
+    }
+    expect(CREATION_RECORD_ACCOUNT_KEYS).toEqual(expect.arrayContaining(["accountId", "openId"]));
+  });
+
+  it("a record with NO version, or an unknown one, gets the newest rule — never v1's exemption", () => {
+    const { recordVersion: _dropped, ...unversioned } = v1();
+    expect(() => assertCreationRecordBound(unversioned)).toThrow(CreationRecordBoundError);
+    expect(() => assertCreationRecordBound({ ...v1(), recordVersion: "3" })).toThrow(CreationRecordBoundError);
+    expect(() => assertCreationRecordBound({ ...v1(), recordVersion: 1 })).toThrow(CreationRecordBoundError);
+  });
+
+  it("NEGATIVE CONTROL — a v1 record keeps its own maker.accountId and passes (signed records are never rewritten)", () => {
+    expect(() => assertCreationRecordBound(v1())).not.toThrow();
+  });
+
+  it("…and v1's exemption is that ONE path: an account key anywhere else in a v1 record is refused", () => {
+    const elsewhere = v1() as unknown as { steps: Array<Record<string, unknown>> };
+    elsewhere.steps[0]!.accountId = 823;
+    expect(() => assertCreationRecordBound(elsewhere)).toThrow(/steps\[0\]\.accountId/);
+    expect(() => assertCreationRecordBound({ ...v1(), maker: { accountId: 823, openId: "x", displayName: null } }))
+      .toThrow(/maker\.openId/);
   });
 });
