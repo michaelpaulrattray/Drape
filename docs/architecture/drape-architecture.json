@@ -15896,6 +15896,10 @@
       "path": "server/providers/falSignSheetWire.test.ts"
     },
     {
+      "id": "test:server/providers/falStoreIoWire.test.ts",
+      "path": "server/providers/falStoreIoWire.test.ts"
+    },
+    {
       "id": "test:server/providers/providerContract.test.ts",
       "path": "server/providers/providerContract.test.ts"
     },
@@ -28903,6 +28907,11 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/providers/falTransport.ts",
       "kind": "imports"
     },
     {
