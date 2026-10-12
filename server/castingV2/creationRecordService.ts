@@ -12,10 +12,11 @@
  *   2. **BACKFILL ON FIRST REQUEST** — a cast signed before this shipped (or
  *      one whose Sign died between the seal and this call, or whose recovery
  *      the sweep finished) gets its record the first time something asks for
- *      it. ⚠ **NOTHING ASKS YET, and that is declared rather than hidden:** the
- *      certificate download (N2d-2) and the check page (N2d-3) are this
- *      entrance's first production callers. On this card it is driven by its
- *      suite and by the PR's read-only drive against real dev facts. Its
+ *      it. ⚠ This said *"NOTHING ASKS YET"* on #2311; ✅ it has two production
+ *      callers now: the certificate download (`server/routes/creationCertificate.ts`,
+ *      N2d-2, #2312) and the check page's owner toggle (N2d-3, #2313 —
+ *      `creationCheck.preview` and `creationCheck.setPublic` in
+ *      `server/routes/creationCheck.ts`). Its
  *      certificate later states both dates — *created* and *recorded and
  *      timestamped* — because the stamp proves when the RECORD existed, not
  *      when the cast was made (§5's honesty rule).

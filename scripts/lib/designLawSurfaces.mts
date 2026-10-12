@@ -119,6 +119,18 @@ export const SURFACES: SurfacePlan[] = [
       "error state and report it as the page. Minting a live verification token is a " +
       "write against the users table, which a read-only design drive does not do.",
   },
+  {
+    /* The public check page behind a Klieg ID (#2313). Driven at an ID no cast
+       can hold, so the drive measures the "No public record for this ID" state —
+       which is the page every unknown, private and deleted ID draws, and needs
+       no fixture and no write. A page that is ON needs a cast whose owner turned
+       it on, which a read-only drive does not do. */
+    path: "/check/:kliegId",
+    label: "public check page",
+    kind: "drive",
+    url: () => "/check/KI-2222-2222-2222-2222",
+    waitFor: "No public record for this ID",
+  },
 
   // Lobby. SEVEN addresses now — five pages behind one component and one rail,
   // plus TWO old addresses that forward: the library's since #1545 and the

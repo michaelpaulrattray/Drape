@@ -74,7 +74,7 @@ export default function AppLobby() {
     view: (
       <LobbyStub
         title="Library"
-        note="The old library is retired. Your casts live in Casting Studio, on the rail."
+        note="The old library is retired. Your characters live in Casting Studio, on the rail."
       />
     ),
     crumb: 'Library',

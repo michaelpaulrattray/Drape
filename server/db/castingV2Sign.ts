@@ -1583,8 +1583,17 @@ export async function listCastPublicIdsForCandidates(
  */
 export function signedCastWhere(userId: number) {
   assertPositiveId(userId, "userId");
+  return and(eq(models.userId, userId), signedCastLiveWhere());
+}
+
+/**
+ * The same predicate WITHOUT the owner — "is this a signed, live cast" alone.
+ * Exported for the one reader that has no session to scope by: the public
+ * check page (card #2313), which joins the owner from the record row itself.
+ * Every other caller wants `signedCastWhere`, owner included.
+ */
+export function signedCastLiveWhere() {
   return and(
-    eq(models.userId, userId),
     inArray(models.status, ["provisioning", "active", "locked"]),
     isNull(models.deletedAt),
     // V2 Casts only: a Cast made by Sign carries the candidate it came from.

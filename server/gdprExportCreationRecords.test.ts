@@ -112,7 +112,7 @@ function seed(): void {
   tables.cast_creation_records = [
     { id: 1, modelId: 70_001, userId: OWNER, recordVersion: "1", recordJson: '{"kliegId":"A"}', recordSha256: "1".repeat(64),
       signature: "h..s", signingKeyId: "kid", timestampToken: "dG9rZW4=", timestampAuthority: "digicert",
-      stampedAt: STAMP, createdAt: STAMP },
+      stampedAt: STAMP, publicAt: STAMP, createdAt: STAMP },
     /* The owner's own userId on a row pointing at the STRANGER's cast — re-anchoring must drop it. */
     { id: 2, modelId: 80_001, userId: OWNER, recordVersion: "1", recordJson: '{"kliegId":"MISSTAMPED"}', recordSha256: "2".repeat(64),
       signature: "h..s", signingKeyId: "kid", timestampToken: null, timestampAuthority: null, stampedAt: null, createdAt: STAMP },
@@ -152,9 +152,21 @@ describe("the export carries the customer's creation records", () => {
       signingKeyId: "kid",
       timestampToken: "dG9rZW4=",
       stampedAt: expect.any(String),
+      publicAt: expect.any(String),
       createdAt: expect.any(String),
     }]);
     expect(JSON.stringify(data.creationRecords)).not.toContain("digicert");
+  });
+
+  it("carries the public check-page switch when it is ON (#2313) — as its time", async () => {
+    const data = await callerFor(OWNER).exportData();
+    expect(data.creationRecords[0]?.publicAt).toMatch(/^2026-01-01T/);
+  });
+
+  it("carries the switch when it is OFF as an explicit null, not an absent key", async () => {
+    tables.cast_creation_records[0] = { ...tables.cast_creation_records[0], publicAt: null };
+    const data = await callerFor(OWNER).exportData();
+    expect(data.creationRecords[0]).toHaveProperty("publicAt", null);
   });
 
   it("⚠ NEGATIVE — another account's record never appears, and the statement is owner-scoped", async () => {

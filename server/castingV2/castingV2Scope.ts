@@ -2825,9 +2825,10 @@ export function validateCastingRetryEnvironment(input: {
  * steps taken (`creationRecordService.ts`; the design is
  * `docs/specs/N2D_RECORD_OF_CREATION_DESIGN_2026-10-12.md`). Off, and absent
  * means off, the Sign never reaches the record road and no record is built on
- * request either — not one statement runs. Nothing a customer sees reads a
- * record on this card; the certificate (N2d-2) and the check page (N2d-3) are
- * the later surfaces.
+ * request either — not one statement runs. The certificate download (N2d-2,
+ * #2312, `server/routes/creationCertificate.ts`) reads it behind this same
+ * scope — off, that route answers 404 and the room draws no button; the check
+ * page (N2d-3) is the later surface.
  *
  * Its parent is `CASTING_V2_SCOPE`: a record is OF a signed cast, and a user
  * outside casting has none.

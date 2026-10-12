@@ -25,7 +25,11 @@ export function BulkRefreshDialog({
   totalCost,
   onConfirm,
   onCancel,
+  closedNote,
 }: {
+  /** #2315: while the rebuild door is shut, the dialog says why instead of
+   *  quoting a price and offering a confirm that the server would refuse. */
+  closedNote?: string;
   /** The unpinned stale slots the plan says are refreshable. */
   slots: BulkRefreshSlotRow[];
   totalCost: number | null;
@@ -38,8 +42,12 @@ export function BulkRefreshDialog({
       <div className="relative w-[400px] bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md shadow-none p-5">
         <p className="text-canvas-md font-medium text-canvas-ink">Refresh out-of-sync views?</p>
         <p className="text-canvas-xs text-canvas-ink-soft mt-1.5 leading-relaxed">
-          Each view regenerates against the current headshot. Pinned views are kept as
-          finished work and stay untouched.
+          {closedNote ?? (
+            <>
+              Each view regenerates against the current headshot. Pinned views are kept as
+              finished work and stay untouched.
+            </>
+          )}
         </p>
         <div className="mt-3 border-t border-hairline border-canvas-border">
           {slots.map((slot) => (
@@ -48,13 +56,13 @@ export function BulkRefreshDialog({
               className="flex items-center justify-between py-1.5 border-b border-hairline border-canvas-border"
             >
               <span className="text-canvas-sm text-canvas-ink">{slot.label}</span>
-              <CostLabel credits={slot.cost} />
+              {closedNote ? null : <CostLabel credits={slot.cost} />}
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between mt-4">
           {/* Popover/dialog footers carry the total as the primary metric (DS §5.15) */}
-          {totalCost !== null ? (
+          {totalCost !== null && !closedNote ? (
             <span className="text-canvas-lg font-medium text-canvas-ink">
               ~{formatCredits(displayPrice(totalCost))} credits
             </span>
@@ -68,8 +76,9 @@ export function BulkRefreshDialog({
               onClick={onCancel}
               className="px-3.5 py-1.5 rounded-canvas-pill text-canvas-xs text-canvas-ink-soft hover:bg-canvas-surface-inset transition-colors"
             >
-              Cancel
+              {closedNote ? "Close" : "Cancel"}
             </button>
+            {closedNote ? null : (
             <button
               type="button"
               disabled={totalCost === null || slots.length === 0}
@@ -85,6 +94,7 @@ export function BulkRefreshDialog({
                   ? "Refresh 1 view"
                   : `Refresh ${slots.length} views`}
             </button>
+            )}
           </div>
         </div>
       </div>

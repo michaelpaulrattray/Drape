@@ -15,6 +15,7 @@ import AppLobby from "./pages/AppLobby";
 import CastingRoom from "./pages/CastingRoom";
 import CastingSheet from "./pages/CastingSheet";
 import CastingV2 from "./pages/CastingV2";
+import CreationCheck from "./pages/CreationCheck";
 import { BoardLoadingFrame } from "./features/boards/BoardLoadingFrame";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { GenerationOperationBridge } from "./features/operations/GenerationOperationBridge";
@@ -120,6 +121,8 @@ function Router() {
             <Route path="/" component={Home} />
             <Route path="/login" component={Login} />
             <Route path="/verify-email" component={VerifyEmail} />
+            {/* The public check page behind a Klieg ID (#2313) — off for every cast until its owner turns it on. */}
+            <Route path="/check/:kliegId" component={CreationCheck} />
 
             {/* Lobby (rail + views) */}
             <Route path="/app" component={AppLobby} />
