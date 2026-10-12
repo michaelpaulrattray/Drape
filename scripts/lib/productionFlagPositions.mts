@@ -453,12 +453,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "zero. Wider than users:1 on his eye and not before",
   },
   CASTING_CREATION_RECORD_SCOPE: {
-    position: UNSET,
+    position: "users:1",
     why:
       "BUILT DARK 2026-10-12 (N2d-1, card #2311; the rung opened on his Desk reply #280, "
       + "verbatim and entire: \"N2d\"). The signed, independently timestamped record behind "
-      + "each Klieg ID. Unset on the service: turning it on is his word plus the secret "
-      + "CREATION_RECORD_PRIVATE_KEY set FIRST — on without the key refuses boot by design",
+      + "each Klieg ID, its certificate (#2312) and its public check page (#2313). "
+      + "users:1 for his test drive on his word 2026-10-12 (terminal), answering the relay's "
+      + "'switch the certificate and check page on for your account only?' with \"1) yes\"; "
+      + "CREATION_RECORD_PRIVATE_KEY was set FIRST by his hand the same day (on without the key "
+      + "refuses boot by design). Wider than users:1 waits on his word after the drive and on "
+      + "counsel's terms (#2314)",
   },
   CASTING_CONCEPT_UPLOAD_SCOPE: {
     position: "all",
