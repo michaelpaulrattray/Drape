@@ -74,3 +74,34 @@ describe("#2394 — the failed-payment state is its own state", () => {
     expect(footer).toMatch(/\{footControl === "cancel" \? \(\s*<Button[^>]*onClick=\{\(\) => setConfirmingDrop\(true\)\}/);
   });
 });
+
+/* The relay's finding on PR #2440, item 2: Add credits' plan pane sent the
+   same customer to the same Checkout. Sliced to that pane, so an identical
+   line in the packs pane cannot satisfy these arms. */
+const addCredits = withoutComments(readFileSync(join(BILLING, "AddCreditsModal.tsx"), "utf8"));
+const stepUp = sourceBand(addCredits, "function PlanStepUpPane(", "\nfunction ", "PlanStepUpPane");
+const stepUpSubmit = sourceBand(stepUp, "const submit = () => {", "\n  };", "PlanStepUpPane submit");
+
+describe("#2394 sweep — Add credits' plan pane", () => {
+  it("derives the same failed-payment state", () => {
+    expect(stepUp).toMatch(
+      /const paymentFailed =\s*status\?\.subscriptionStatus === "past_due" \|\| status\?\.subscriptionStatus === "unpaid";/,
+    );
+  });
+
+  it("⚠ submit routes it to the card BEFORE either purchase road", () => {
+    const failedAt = stepUpSubmit.indexOf("if (paymentFailed) {");
+    const checkoutAt = stepUpSubmit.indexOf("checkout.mutate(");
+    expect(failedAt).toBeGreaterThan(-1);
+    expect(checkoutAt).toBeGreaterThan(-1);
+    expect(failedAt).toBeLessThan(checkoutAt);
+    expect(stepUpSubmit).toMatch(/if \(paymentFailed\) \{\s*portal\.mutate\(\);\s*return;\s*\}/);
+    expect(stepUp).toMatch(/const portal = trpc\.billing\.createPortalSession\.useMutation\(/);
+  });
+
+  it("the button says Update card, and is not held behind a quote it will never use", () => {
+    expect(stepUp).toMatch(
+      /\{paymentFailed \? \(\s*<Button[^>]*onClick=\{submit\}\s*disabled=\{portal\.isPending\}\s*>\s*\{portal\.isPending \? "Opening…" : "Update card"\}/,
+    );
+  });
+});

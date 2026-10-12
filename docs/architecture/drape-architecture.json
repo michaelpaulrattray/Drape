@@ -7551,6 +7551,7 @@
       "rateLimited": false,
       "file": "server/routes/billing.ts",
       "clientCallers": [
+        "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
@@ -16521,6 +16522,10 @@
     {
       "id": "test:server/routes/characterSheet.test.ts",
       "path": "server/routes/characterSheet.test.ts"
+    },
+    {
+      "id": "test:server/routes/checkoutCustomerFailClosed2394.test.ts",
+      "path": "server/routes/checkoutCustomerFailClosed2394.test.ts"
     },
     {
       "id": "test:server/routes/creationCertificate.test.ts",

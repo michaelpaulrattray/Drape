@@ -85,6 +85,23 @@ const log = createModuleLogger("routes/billing");
 import { TRPCError } from "@trpc/server";
 
 /**
+ * THE STRIPE CUSTOMER COULD NOT BE READ OR MADE — REFUSE, IN WORDS (#2394).
+ *
+ * `getOrCreateStripeCustomer` now rethrows anything that is not Stripe saying
+ * the saved customer is gone (a timeout, a 429, a 5xx), because minting a new
+ * customer on a blip is how a subscriber was sold a second plan. Both checkout
+ * roads refuse here, before any session exists, with a sentence the customer
+ * is shown rather than the lost-contact fallback.
+ */
+function refuseUnreadableCustomer(error: unknown): never {
+  throw spokenError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "We couldn't reach your billing account just now. Nothing was charged — please try again in a moment.",
+    cause: error,
+  });
+}
+
+/**
  * WHY A PLAN CHANGE CANNOT GO AHEAD, IN HER OWN WORDS — OR `null` (#1987).
  *
  * ⚠ **ONE FUNCTION, TWO READERS, AND THAT IS THE REPAIR FOR ITS SECOND
@@ -487,7 +504,7 @@ export const billingRouter = router({
         user.email || `user-${ctx.user.id}@${PRODUCTION_APP_HOSTNAME}`,
         user.displayName || user.name || undefined,
         subscription?.stripeCustomerId
-      );
+      ).catch(refuseUnreadableCustomer);
 
       // Save customer ID if new — or if it CHANGED (PR #797 review): the helper
       // mints a fresh customer when the saved one is deleted or unretrievable
@@ -558,7 +575,13 @@ export const billingRouter = router({
         throw spokenError({
           code: "CONFLICT",
           message:
-            planChangeRefusal(
+            /* `incomplete` is a plan whose FIRST payment is still being
+               confirmed — the change-plan sentence ("isn't active, so it
+               can't be changed") reads oddly on a purchase, so it has its own
+               (the relay's optional note on PR #2440). */
+            existing.status === "incomplete"
+              ? "Your plan's first payment is still being confirmed, so a second one can't be started. Nothing was charged — check Billing again in a few minutes."
+              : planChangeRefusal(
               { status: existing.status, collectionPaused: existing.collectionPaused, endsAtSec: null },
               { deferred: false },
             ) ??
@@ -684,7 +707,7 @@ export const billingRouter = router({
         user.email || `user-${ctx.user.id}@${PRODUCTION_APP_HOSTNAME}`,
         user.displayName || user.name || undefined,
         subscription?.stripeCustomerId
-      );
+      ).catch(refuseUnreadableCustomer);
 
       /* The subscription road's reasoning, unchanged and for a reason that is
          stronger here: this session's completion is found by its OWN metadata,

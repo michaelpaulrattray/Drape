@@ -146,6 +146,16 @@ describe("#2394 — one subscription per account, refused before a session is mi
     expect(createSubscriptionCheckoutSession).not.toHaveBeenCalled();
   });
 
+  it("an incomplete plan (first payment still confirming) is refused in a purchase's words", async () => {
+    live("incomplete");
+
+    const error = await refusal();
+    expect(error.code).toBe("CONFLICT");
+    expect(error.message).toContain("first payment is still being confirmed");
+    expect(error.message).toContain("Nothing was charged");
+    expect(createSubscriptionCheckoutSession).not.toHaveBeenCalled();
+  });
+
   it("a read that FAILED refuses rather than sells, in a sentence the customer is shown", async () => {
     vi.mocked(findLiveSubscriptionOnCustomer).mockResolvedValue({ outcome: "failed", error: "boom" });
 

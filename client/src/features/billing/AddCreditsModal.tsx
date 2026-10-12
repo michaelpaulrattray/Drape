@@ -223,6 +223,17 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
   const hasSubscription: boolean | null = status ? status.hasSubscription : null;
   const planRead = hasSubscription !== null;
   /*
+    ⚠ **A SUBSCRIBER WHOSE PAYMENT FAILED IS NOT "NO SUBSCRIPTION" — #2394's
+    sweep, the relay's finding on PR #2440.** `getStatus` answers
+    `hasSubscription` only for an `active` plan, so a `past_due` / `unpaid`
+    account read as having none and `submit` below sent it to Checkout for a
+    SECOND plan. The server now refuses that purchase whoever asks; this is the
+    surface not offering it. Change plan's own branch, said the same way: the
+    one thing to do is the card, on the Billing tab's own Update card road.
+  */
+  const paymentFailed =
+    status?.subscriptionStatus === "past_due" || status?.subscriptionStatus === "unpaid";
+  /*
     WHAT ONE FINISHED CHARACTER COSTS — the divisor behind the §7.3 bullet that
     says what the extra credits make, in LEDGER credits, off the same
     `getPlans` the options list is built from (#1758).
@@ -553,6 +564,17 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
     },
   });
 
+  /* The Billing tab's "Update card" road (#2394) — Stripe's portal. */
+  const portal = trpc.billing.createPortalSession.useMutation({
+    onSuccess: (result) => {
+      if (result?.portalUrl) window.open(result.portalUrl, "_blank");
+    },
+    onError: (error) => {
+      logRawFailure("billing.createPortalSession", error);
+      toast.error(readableFailure(error, "The billing portal could not be opened."));
+    },
+  });
+
   const changePlan = trpc.billing.changePlan.useMutation({
     onSuccess: (data) => {
       /* One voice for both doors, including a change held for the bank to
@@ -594,6 +616,12 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
   const quoteReady = dueToday !== null && (hasSubscription === false || (!!preview && !previewFailed));
 
   const submit = () => {
+    /* ⚠ #2394: a failed payment is routed to the card BEFORE either purchase
+       road below can be reached. */
+    if (paymentFailed) {
+      portal.mutate();
+      return;
+    }
     /* ⚠ #1749: `hasSubscription === null` is unreachable here while `quoteReady`
        is derived from a figure that is null without the rung — and it is stated
        anyway, because the two roads below are *buy a subscription* and *change
@@ -1061,81 +1089,105 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
         </p>
       </div>
 
+      {/* #2394 — said before the button, so its word is not a surprise. */}
+      {paymentFailed ? (
+        <div className="dp-topup__pane">
+          <p className="dp-topup__reason" role="status">
+            Your last payment didn&apos;t go through. Update your card to keep your plan — you can
+            change plans once the payment goes through.
+          </p>
+        </div>
+      ) : null}
+
       <div className="dp-topup__foot">
         <span className="dp-set__spacer" />
         <Button variant="quiet" size="small" onClick={onClose} disabled={working}>
           Cancel
         </Button>
-        <Button
-          variant="primary"
-          size="small"
-          onClick={submit}
-          disabled={!selected || working || !quoteReady}
-        >
-          {/*
-            `dueToday !== null` is true wherever `quoteReady` is — the gate is
-            derived from it above — and it is written out because that is how
-            the compiler narrows `number | null`. The alternative is a `?? 0`
-            inside the label, which is the defect this card closed.
-          */}
-          {/*
-            ⚠ **AND `Checking the charge…` IS NOW THE WAITING STATE ONLY —
-            #1734.** With nothing above this account's rung there is no charge
-            to check and there never will be, so that label was permanent. It
-            says what the picker above it says instead, from the same constant,
-            because the two disagreeing about whether a plan exists is a worse
-            sentence than either of them alone.
+        {/* #2394: a failed payment gets the card's button in place of the
+            purchase — `submit` routes it there too, so neither press can
+            reach Checkout. */}
+        {paymentFailed ? (
+          <Button
+            variant="primary"
+            size="small"
+            onClick={submit}
+            disabled={portal.isPending}
+          >
+            {portal.isPending ? "Opening…" : "Update card"}
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="small"
+            onClick={submit}
+            disabled={!selected || working || !quoteReady}
+          >
+            {/*
+              `dueToday !== null` is true wherever `quoteReady` is — the gate is
+              derived from it above — and it is written out because that is how
+              the compiler narrows `number | null`. The alternative is a `?? 0`
+              inside the label, which is the defect this card closed.
+            */}
+            {/*
+              ⚠ **AND `Checking the charge…` IS NOW THE WAITING STATE ONLY —
+              #1734.** With nothing above this account's rung there is no charge
+              to check and there never will be, so that label was permanent. It
+              says what the picker above it says instead, from the same constant,
+              because the two disagreeing about whether a plan exists is a worse
+              sentence than either of them alone.
 
-            The order matters: `nothingAbove` is asked BEFORE the quote, because
-            `quoteReady` is false in that state too and the first matching
-            branch would otherwise be the waiting one again.
-          */}
-          {/*
-            ⚠ **AND #1747 ADDS A FOURTH STATE AHEAD OF BOTH, FOUND BY LOOKING AT
-            THE SURFACE RATHER THAN BY READING IT (working law 6).** Making
-            `laddered` require the account's own rung — the repair above, so a
-            subscriber is no longer TOLD there is nothing above them — takes
-            `nothingAbove` false in that state, and the chain then fell through
-            to **"Checking the charge…" forever**: `selectedId` is null, the
-            preview never runs, `quoteReady` is false and no quote is ever
-            coming. That is precisely the permanent waiting label #1734 was
-            filed about, reached by a third road, and this card's own change is
-            what opened it.
+              The order matters: `nothingAbove` is asked BEFORE the quote, because
+              `quoteReady` is false in that state too and the first matching
+              branch would otherwise be the waiting one again.
+            */}
+            {/*
+              ⚠ **AND #1747 ADDS A FOURTH STATE AHEAD OF BOTH, FOUND BY LOOKING AT
+              THE SURFACE RATHER THAN BY READING IT (working law 6).** Making
+              `laddered` require the account's own rung — the repair above, so a
+              subscriber is no longer TOLD there is nothing above them — takes
+              `nothingAbove` false in that state, and the chain then fell through
+              to **"Checking the charge…" forever**: `selectedId` is null, the
+              preview never runs, `quoteReady` is false and no quote is ever
+              coming. That is precisely the permanent waiting label #1734 was
+              filed about, reached by a third road, and this card's own change is
+              what opened it.
 
-            So the held glyph, which is what the PICKER above says in the same
-            state — #1734's rule that the two must not disagree about this
-            account applies to not-knowing exactly as it applies to knowing.
-            Ahead of `nothingAbove` for the same reason `nothingAbove` is ahead
-            of the quote: the first matching branch would otherwise be a claim.
-          */}
-          {working
-            ? "Working…"
-            : currentId === null
-              ? "—"
-              : nothingAbove
-                ? NO_HIGHER_PLAN
-                : quoteReady && dueToday !== null
-                  /*
-                    ⚠ **THE BUTTON SAID `Add credits · $27.00` AND IT BUYS A
-                    PLAN — #1836.** This is the word he pressed, and it is the
-                    sharpest form of the lie above: a free account has no pack
-                    to buy here, so every dollar on this button is a
-                    subscription. The shape is `ChangePlanModal`'s own, which is
-                    his §6e example — *"Upgrade to Agency · $122.58"* — minus
-                    the `/ mo`, because `dueToday` is what is charged today
-                    rather than a monthly rate.
+              So the held glyph, which is what the PICKER above says in the same
+              state — #1734's rule that the two must not disagree about this
+              account applies to not-knowing exactly as it applies to knowing.
+              Ahead of `nothingAbove` for the same reason `nothingAbove` is ahead
+              of the quote: the first matching branch would otherwise be a claim.
+            */}
+            {working
+              ? "Working…"
+              : currentId === null
+                ? "—"
+                : nothingAbove
+                  ? NO_HIGHER_PLAN
+                  : quoteReady && dueToday !== null
+                    /*
+                      ⚠ **THE BUTTON SAID `Add credits · $27.00` AND IT BUYS A
+                      PLAN — #1836.** This is the word he pressed, and it is the
+                      sharpest form of the lie above: a free account has no pack
+                      to buy here, so every dollar on this button is a
+                      subscription. The shape is `ChangePlanModal`'s own, which is
+                      his §6e example — *"Upgrade to Agency · $122.58"* — minus
+                      the `/ mo`, because `dueToday` is what is charged today
+                      rather than a monthly rate.
 
-                    `selected` cannot be null on this branch (`nothingAbove` is
-                    false above it, so the ladder has a rung), but the compiler
-                    does not know that and a `!` would be a claim; the fallback
-                    keeps the money, which is the part a customer must be able
-                    to trust.
-                  */
-                  ? selected
-                    ? `Upgrade to ${selected.name} · ${formatDollars(dueToday)}`
-                    : `Upgrade · ${formatDollars(dueToday)}`
-                  : "Checking the charge…"}
-        </Button>
+                      `selected` cannot be null on this branch (`nothingAbove` is
+                      false above it, so the ladder has a rung), but the compiler
+                      does not know that and a `!` would be a claim; the fallback
+                      keeps the money, which is the part a customer must be able
+                      to trust.
+                    */
+                    ? selected
+                      ? `Upgrade to ${selected.name} · ${formatDollars(dueToday)}`
+                      : `Upgrade · ${formatDollars(dueToday)}`
+                    : "Checking the charge…"}
+          </Button>
+        )}
       </div>
     </ModalScrim>
   );

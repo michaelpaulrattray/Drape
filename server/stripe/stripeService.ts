@@ -83,6 +83,22 @@ export async function getOrCreateStripeCustomer(
         return existingCustomerId;
       }
     } catch (error) {
+      /* ⚠ ONLY "THIS CUSTOMER DOES NOT EXIST" MINTS A NEW ONE (#2394, the
+         relay's finding on PR #2440). This caught EVERY error — a timeout, a
+         429, a 5xx — and minted a fresh, empty customer. On a Stripe blip a
+         subscriber was handed a customer with no subscriptions on it, so the
+         one-subscription guard found nothing and sold a second plan, and the
+         caller then saved the new id over the old one, so the first plan's
+         webhooks could no longer find the account. Anything that is not
+         Stripe saying the customer is gone is RETHROWN, and the caller
+         refuses: a retry costs the customer nothing, a guess costs them twice. */
+      if ((error as { code?: string } | null)?.code !== "resource_missing") {
+        log.error(
+          { err: error },
+          `[Stripe] Customer ${existingCustomerId} could not be read — refusing rather than minting a new one`,
+        );
+        throw error;
+      }
       log.info(`[Stripe] Customer ${existingCustomerId} not found, creating new one`);
     }
   }
