@@ -114,6 +114,56 @@ describe("one add row, and it is live", () => {
   });
 });
 
+/*
+  THE CLAPPERBOARD MARK — #2308, his word 2026-10-12: "build D". Every campaign
+  row carries one mark in its tile (memberships and the picker alike), the add
+  row carries none, and the mark is hidden from assistive technology because
+  the name beside it carries the meaning.
+*/
+describe("every campaign row carries the clapperboard mark, and only campaign rows do", () => {
+  const ICON = '<span class="dpc-camp__icon" aria-hidden="true">';
+  const rowsOf = (html: string) => html.match(/<li>[\s\S]*?<\/li>/g) ?? [];
+
+  it("each membership row leads with one tile holding the clapperboard, before the name", () => {
+    const rows = rowsOf(render());
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.split(ICON).length - 1).toBe(1);
+      expect(row).toContain("lucide-clapperboard");
+      expect(row.indexOf(ICON)).toBeLessThan(row.indexOf("dpc-camp__name"));
+    }
+  });
+
+  it("the picker's rows carry it too, so the lists match", () => {
+    const html = render({ defaultOpen: true });
+    const picker = html.slice(html.indexOf("dpc-camp__picker"));
+    const rows = rowsOf(picker);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toContain(ICON);
+  });
+
+  it("NEGATIVE CONTROL: the add row and the empty state carry no mark", () => {
+    const empty = render({ memberships: [] });
+    expect(empty).not.toContain("dpc-camp__icon");
+    expect(empty).toContain("dpc-camp__add");
+    const add = render().slice(render().indexOf('class="dpc-camp__add"'));
+    expect(add).not.toContain("dpc-camp__icon");
+  });
+
+  it("the tile is 36px, rounded, and filled and inked from tokens only", () => {
+    const css = readFileSync(new URL("../castingV2.css", import.meta.url), "utf8");
+    const start = css.indexOf(".dpc-camp__icon {");
+    expect(start).toBeGreaterThan(-1);
+    expect(css.indexOf(".dpc-camp__icon {", start + 1)).toBe(-1);
+    const rule = css.slice(start, css.indexOf("}", start));
+    expect(rule).toMatch(/width: 36px; height: 36px;/);
+    expect(rule).toMatch(/border-radius: 8px;/);
+    expect(rule).toMatch(/background: var\(--fillStrong\);/);
+    expect(rule).toMatch(/color: var\(--secondary\);/);
+    expect(rule).not.toMatch(/#[0-9a-f]{3,8}\b|rgb|hsl/i);
+  });
+});
+
 describe("the cast page header", () => {
   const room = readFileSync(new URL("../../../pages/CastingRoom.tsx", import.meta.url), "utf8");
 

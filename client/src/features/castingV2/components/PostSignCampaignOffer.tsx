@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Clapperboard, Plus } from "lucide-react";
 
 /**
  * AFTER A SIGN, ONE OFFER TO FILE THE NEW CAST — rung N2c, slice S7, card #2253.
@@ -169,6 +169,24 @@ function castCountLine(count: number): string {
   return count === 1 ? "1 cast" : `${count} casts`;
 }
 
+/**
+ * A CAMPAIGN ROW'S MARK — card #2308, his word 2026-10-12: *"build D"*, the
+ * clapperboard option, chosen over face previews because faces on these rows
+ * would compete with the Siblings panel below them (*"doesnt a Conflict with
+ * siblings design though"*). A campaign has no picture of its own, so the row
+ * carries a mark rather than a thumbnail. It is decoration only — the name
+ * beside it carries the meaning — so it is hidden from assistive technology.
+ * One component for every campaign row (the panel's memberships, its picker,
+ * and this offer), so the lists cannot drift apart.
+ */
+export function CampaignRowIcon() {
+  return (
+    <span className="dpc-camp__icon" aria-hidden="true">
+      <Clapperboard size={18} strokeWidth={1.6} aria-hidden="true" />
+    </span>
+  );
+}
+
 export function PostSignCampaignOffer({
   castName,
   campaigns,
@@ -192,6 +210,7 @@ export function PostSignCampaignOffer({
               disabled={busy}
               onClick={() => onFile(row.campaignId)}
             >
+              <CampaignRowIcon />
               <span className="dpc-camp__text">
                 <span className="dpc-camp__name" title={row.name}>{row.name}</span>
                 <span className="dpc-camp__meta">{castCountLine(row.castCount)}</span>
