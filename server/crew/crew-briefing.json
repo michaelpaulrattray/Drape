@@ -1,7 +1,7 @@
 {
-  "edition": 691,
-  "updatedAt": "2026-10-12T19:32:06.000Z",
-  "shift": "Foreman — foreman-20261013-0526 (focus: #2115 — the focus card still said it was blocked on a rung that closed on 12 October; its body now reads true)",
+  "edition": 692,
+  "updatedAt": "2026-10-12T21:20:00.000Z",
+  "shift": "Foreman — foreman-20261013-0659 (background: the one untriaged risk on your Notion desk, verified at the code and carded as #2461 — a remade Google account locks a customer out with no way back)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3832,6 +3832,33 @@
       "state": "done",
       "filedAt": "2026-10-12T07:55:00.000Z",
       "issueNumber": 2359
+    },
+    {
+      "id": "google-lockout-2461",
+      "title": "A customer whose Google account is remade cannot get back into their own work",
+      "productImpact": "If someone signs in with Google and their Google account is ever replaced — deleted and remade at the same address, or rebuilt by their work's IT — Klieg will not let them in again.\n\nThey see \"Google Sign-In Failed. Please try again\", and trying again never works. Their email and password will not work either, because an account made with Google never had a password. Their credits and every character they signed are still sitting there, and they cannot reach any of it. Nothing on the page tells them what to do, and there is nothing in the product that can let them back in. Today the only way back is a change made directly in the database by hand.\n\nNobody has hit this. I read the accounts tonight: there are six, and three of them are exposed — every account made through Google, because not one of them has a password. The other three have passwords and are fine. The exposure grows with every Google sign-up, so this wants fixing before the doors open rather than after.\n\nThe change that caused it is a good change and should stay. On 12 October we started recognising people by Google's own permanent id instead of by their email address, and that closed a real way for one person to take over another person's account. What is missing is a way back for the person it shuts out.",
+      "workedExample": "I checked all four ways out in the code rather than assuming them.\n\nGoogle sign-in refuses, because the account is still tied to the old Google id. Email and password refuses, because there is no password to check. Password reset does not exist anywhere in Klieg at all — I searched the whole product and there is none — so \"send them a reset email\" is not something we can do today without building it first. And nothing in the admin panel can move an account onto a new Google id.\n\nAll four doors are shut, which is why this is a question rather than a fix already done: the repair adds something new that a customer uses, and which shape it takes is your call.\n\nThis came from Squall, who spotted it on the pull request two minutes before it merged, so it shipped without anyone reading him. Everything he said checked out, and one part was wider than he thought — the set-a-password way back does not exist to be used.",
+      "options": [
+        {
+          "key": "support-rebind",
+          "label": "Support can move an account onto a new Google account",
+          "consequence": "Smallest piece of work, and it uses the admin panel we already have. Someone emails us, we check who they are, one click and they are back in. Nothing about the 12 October sign-in change moves."
+        },
+        {
+          "key": "set-password",
+          "label": "Let people set a password instead",
+          "consequence": "They get themselves back in without waiting on us — but it means building password recovery, which Klieg has never had, and that is a bigger job touching sign-in and billing."
+        },
+        {
+          "key": "wording-only",
+          "label": "Only change the wording for now",
+          "consequence": "The message would at least say what to do instead of \"please try again\". But it is text on the sign-in page, which is waiting for that page's redesign, and on its own it still leaves people locked out."
+        }
+      ],
+      "recommendation": "The first one — let support move an account onto a new Google account. It is the smallest build, it uses the admin panel that already exists, and it changes nothing about the sign-in rules we just tightened. The second is the nicer product and is worth doing when you want password recovery for its own sake, but it is not a reason to wait for this. The third is needed whichever you pick and rides the sign-in page redesign, so it is not really a choice on its own.",
+      "state": "waiting",
+      "filedAt": "2026-10-12T21:20:00.000Z",
+      "issueNumber": 2461
     }
   ],
   "eyeItems": [
