@@ -197,9 +197,11 @@ describe("#1940 B24/B26 — the dialog and the Billing line", () => {
     expect(modal).toContain("utils.billing.getSubscriptionDetails.invalidate()");
 
     const billing = read("client/src/features/settings/sections/BillingSection.tsx");
-    expect(billing).toMatch(
-      /subscriptionDetails\?\.cancelAtPeriodEnd === true\s*\?\s*cancelledPlanSegment\(renewsAt\)/,
-    );
+    /* #2395 — the cancelled state is read once, through the reader the Change
+       plan dialog shares (`features/billing/resumePlan.ts`), and the plan line
+       and the Resume plan control both branch on that one reading. */
+    expect(billing).toMatch(/const cancelled =\s*cancelStateOf\(\s*subscriptionDetails,/);
+    expect(billing).toMatch(/cancelled\s*\?\s*cancelledPlanSegment\(renewsAt\)/);
   });
 });
 

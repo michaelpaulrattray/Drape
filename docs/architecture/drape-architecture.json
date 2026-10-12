@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:boards",
@@ -657,6 +657,12 @@
     {
       "id": "module:client/src/features/billing/planChangeToast.ts",
       "path": "client/src/features/billing/planChangeToast.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/resumePlan.ts",
+      "path": "client/src/features/billing/resumePlan.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -7430,7 +7436,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/announcements.ts",
       "clientCallers": [
         "client/src/components/AnnouncementBanner.tsx",
@@ -7621,6 +7627,7 @@
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/AccountSurfaces.tsx",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
@@ -7636,6 +7643,7 @@
       "file": "server/routes/billing.ts",
       "clientCallers": [
         "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
@@ -7662,7 +7670,9 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/billing/resumePlan.ts"
+      ]
     },
     {
       "id": "route:boardOps.addEdge",
@@ -10019,17 +10029,6 @@
       "clientCallers": []
     },
     {
-      "id": "route:newsletter.testConnection",
-      "namespace": "newsletter",
-      "name": "testConnection",
-      "type": "query",
-      "auth": "protected",
-      "input": "none",
-      "rateLimited": false,
-      "file": "server/routes/newsletter.ts",
-      "clientCallers": []
-    },
-    {
       "id": "route:profile.get",
       "namespace": "profile",
       "name": "get",
@@ -10221,7 +10220,7 @@
       "type": "query",
       "auth": "public",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/referral.ts",
       "clientCallers": []
     },
@@ -10256,7 +10255,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/waitlist.ts",
       "clientCallers": []
     },
@@ -12369,6 +12368,10 @@
       "path": "client/src/components/appChrome.test.ts"
     },
     {
+      "id": "test:client/src/components/errorBoundaryPage.test.ts",
+      "path": "client/src/components/errorBoundaryPage.test.ts"
+    },
+    {
       "id": "test:client/src/components/errorBoundaryReports.test.ts",
       "path": "client/src/components/errorBoundaryReports.test.ts"
     },
@@ -12447,6 +12450,10 @@
     {
       "id": "test:client/src/features/billing/pricingWords2153-guard.test.ts",
       "path": "client/src/features/billing/pricingWords2153-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/billing/resumePlan2395.test.ts",
+      "path": "client/src/features/billing/resumePlan2395.test.ts"
     },
     {
       "id": "test:client/src/features/billing/workDivisor1758-guard.test.ts",
@@ -13039,6 +13046,10 @@
     {
       "id": "test:server/access.test.ts",
       "path": "server/access.test.ts"
+    },
+    {
+      "id": "test:server/accessRateLimitRefusal.test.ts",
+      "path": "server/accessRateLimitRefusal.test.ts"
     },
     {
       "id": "test:server/accessValidate.test.ts",
@@ -15957,6 +15968,10 @@
       "path": "server/providers/withRetryBilled.test.ts"
     },
     {
+      "id": "test:server/publicEndpointRateLimits.test.ts",
+      "path": "server/publicEndpointRateLimits.test.ts"
+    },
+    {
       "id": "test:server/publicInputStrictness.test.ts",
       "path": "server/publicInputStrictness.test.ts"
     },
@@ -16421,6 +16436,10 @@
       "path": "server/routes/emailVerification.test.ts"
     },
     {
+      "id": "test:server/routes/emailVerificationRepeat.test.ts",
+      "path": "server/routes/emailVerificationRepeat.test.ts"
+    },
+    {
       "id": "test:server/routes/evidenceDelivery.test.ts",
       "path": "server/routes/evidenceDelivery.test.ts"
     },
@@ -16449,8 +16468,16 @@
       "path": "server/routes/moneyWording1940.test.ts"
     },
     {
+      "id": "test:server/routes/newsletter.test.ts",
+      "path": "server/routes/newsletter.test.ts"
+    },
+    {
       "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
       "path": "server/routes/planChangeSpentShareAndStates.test.ts"
+    },
+    {
+      "id": "test:server/routes/profileUpload.test.ts",
+      "path": "server/routes/profileUpload.test.ts"
     },
     {
       "id": "test:server/routes/referenceDelivery.test.ts",
@@ -17181,7 +17208,7 @@
     },
     {
       "from": "module:client/src/components/ErrorBoundary.tsx",
-      "to": "module:client/src/lib/utils.ts",
+      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
@@ -18261,6 +18288,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/resumePlan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/spentShareSentence.ts",
       "kind": "imports"
     },
@@ -18342,6 +18374,21 @@
     {
       "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -21431,6 +21478,11 @@
     },
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/features/billing/resumePlan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
       "kind": "imports"
     },
@@ -24042,6 +24094,11 @@
     {
       "from": "module:client/src/pages/Login.tsx",
       "to": "module:client/src/components/design-system/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/Login.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
       "kind": "imports"
     },
     {
@@ -35910,6 +35967,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/routes/access.ts",
+      "to": "module:shared/waitPhrase.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/routes/account.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -36252,6 +36314,11 @@
     {
       "from": "module:server/routes/announcements.ts",
       "to": "module:server/db/announcementQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/announcements.ts",
+      "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
     {
@@ -38292,6 +38359,11 @@
     {
       "from": "module:server/routes/profile.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/profile.ts",
+      "to": "module:server/security/trustedImageFetch.ts",
       "kind": "imports"
     },
     {
@@ -41399,24 +41471,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1486",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1511",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1486",
+      "subject": "server/castingV2/rollService.ts:1511",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:275",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:276",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:275",
+      "subject": "server/castingV2/rollService.ts:276",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:321",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:322",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:321",
+      "subject": "server/castingV2/rollService.ts:322",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

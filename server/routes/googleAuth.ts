@@ -263,6 +263,43 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
 
     const { email, name, sub: googleId } = payload;
 
+    /*
+      ⚠ GOOGLE MUST HAVE CONFIRMED THE ADDRESS BEFORE IT OPENS ANYTHING (#2377).
+
+      Everything below keys on `email` — the returning-user branch finds the
+      account with `getUserByEmail(email)` and mints a session for it, and the
+      new-user branch creates an account under it. A Google account can present
+      an address Google never confirmed, and the ID token says so in
+      `email_verified`. Without this gate, anyone who could make a Google account
+      show a customer's address could sign straight into that customer's
+      email-and-password account (the account-linking takeover; L3 in
+      `docs/specs/SECURITY_AUDIT_2026-07-25.md`), and a brand-new account could
+      skip the verification the email road requires.
+
+      It refuses on anything that is not literally `true` — absent, `false`, or
+      the string "true" — because this is a gate in front of two session mints
+      and invariant 7's rule is that a control refuses when its input is missing.
+      It sits BEFORE the account lookup, so a refused token never learns whether
+      an account exists, and before both mints, so invariant 9's count of five is
+      unchanged: the gate moves inside two existing sites rather than adding one.
+
+      It answers `invalid_token`, the same generic note an unusable token gets,
+      on purpose: a distinct note is copy on the sign-in page, which is out of
+      this card and awaiting that page's redesign.
+    */
+    if (payload.email_verified !== true) {
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        resourceType: "auth",
+        metadata: { reason: "Google email not verified", email },
+        severity: "warning",
+        ipAddress: clientIp,
+        userAgent,
+      });
+      res.redirect("/login?error=invalid_token");
+      return;
+    }
+
     // Block disposable emails
     if (isDisposableEmail(email)) {
       await logAuditEvent({

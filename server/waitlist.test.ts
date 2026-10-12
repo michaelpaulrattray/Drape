@@ -117,7 +117,7 @@ describe("waitlist.getStats", () => {
     vi.clearAllMocks();
   });
 
-  it("returns waitlist statistics with display count", async () => {
+  it("returns the real signup count and nothing padded (#2375)", async () => {
     mockGetWaitlistCount.mockResolvedValue(100);
 
     const ctx = createPublicContext();
@@ -125,10 +125,9 @@ describe("waitlist.getStats", () => {
 
     const result = await caller.waitlist.getStats();
 
-    expect(result).toEqual({
-      totalSignups: 100,
-      displayCount: 947, // 100 + 847 base
-    });
+    // Exactly the count: the `displayCount: count + 847` padding is gone, and
+    // `toEqual` refuses any extra key coming back beside it.
+    expect(result).toEqual({ totalSignups: 100 });
   });
 
   it("handles zero signups", async () => {
@@ -139,9 +138,6 @@ describe("waitlist.getStats", () => {
 
     const result = await caller.waitlist.getStats();
 
-    expect(result).toEqual({
-      totalSignups: 0,
-      displayCount: 847,
-    });
+    expect(result).toEqual({ totalSignups: 0 });
   });
 });

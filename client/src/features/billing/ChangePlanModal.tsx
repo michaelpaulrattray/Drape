@@ -128,6 +128,7 @@ import {
   cancelPlanBody,
 } from "@shared/planCancelCopy";
 import { logRawFailure, readableFailure } from "@/lib/failureSentence";
+import { cancelStateOf, planFootControl, useResumePlan } from "./resumePlan";
 import "@/features/settings/settings.css";
 import {
   creditStepsPriceAMonth,
@@ -661,6 +662,26 @@ export function ChangePlanModal({
     `(confirming?.id ?? "starter")` one file over.
   */
   const hasSubscription: boolean | null = status ? status.hasSubscription : null;
+  /*
+    ⚠ **A PLAN SET TO END IS STILL A SUBSCRIPTION — #2395.** `hasSubscription`
+    stays true through a period-end cancel (the status stays `active`), so the
+    footer offered Cancel plan a second time and no way back. The cancelled
+    state lives only on `getSubscriptionDetails` (a Stripe read, no column), so
+    it is asked here — and only for a subscriber, since a free account has
+    nothing to cancel or resume. The cancelled state is read through
+    `cancelStateOf`, the same reader the Billing tab uses (`./resumePlan`).
+  */
+  const subscriptionDetailsQuery = trpc.billing.getSubscriptionDetails.useQuery(undefined, {
+    enabled: hasSubscription === true,
+  });
+  const footControl = planFootControl(
+    hasSubscription,
+    cancelStateOf(
+      subscriptionDetailsQuery.data,
+      subscriptionDetailsQuery.isSuccess || subscriptionDetailsQuery.isError,
+    ),
+  );
+  const resumePlan = useResumePlan(status?.currentPeriodEnd ?? null);
   /*
     WHAT ONE FINISHED CHARACTER COSTS — the divisor behind line 4's example
     (#1607, P1-8), in LEDGER credits, off the same `getPlans` the ladder is
@@ -1716,9 +1737,21 @@ export function ChangePlanModal({
             either way — hiding a control is the safe direction — and it is
             spelled so the next reader does not have to work out which of the
             two meanings of `false` this branch was written for. */}
-        {hasSubscription === true ? (
+        {/* #2395 — `planFootControl` keeps #1749's `=== true` (an unread
+            subscription offers neither) and adds the cancelled state: a plan
+            set to end offers Resume plan, and never Cancel plan again. */}
+        {footControl === "cancel" ? (
           <Button variant="quiet" size="small" onClick={() => setConfirmingDrop(true)}>
             Cancel plan
+          </Button>
+        ) : footControl === "resume" ? (
+          <Button
+            variant="quiet"
+            size="small"
+            disabled={resumePlan.isPending}
+            onClick={() => resumePlan.mutate()}
+          >
+            {resumePlan.isPending ? "Resuming…" : "Resume plan"}
           </Button>
         ) : null}
         <Button variant="quiet" size="small" onClick={onClose}>
