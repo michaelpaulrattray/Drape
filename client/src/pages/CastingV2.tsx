@@ -142,7 +142,8 @@ const RECEIPT_LEGEND_ID = "dpc-hero-receiptsay";
   #273: "N2c — Campaigns"). `All · Signed · Unsigned` is gone: the grid has
   always been signed-only, so Signed was every row and Unsigned drew an empty
   grid on purpose — two chips meaning "everything" and "nothing". The row reads
-  All · Unfiled · <their campaigns> · + and its rules live in `rosterChips.ts`.
+  All · <their campaigns> · + and its rules live in `rosterChips.ts` (Unfiled
+  left the row with card #2304, his word: "yes remove it").
 */
 
 /**
@@ -599,9 +600,8 @@ export default function CastingV2() {
   }, [viewKey]);
   /*
     A CHIP THAT NO LONGER EXISTS FALLS BACK TO ALL. A campaign deleted in
-    another tab, a link to a campaign that is not this customer's, or Unfiled
-    once the last campaign is gone (Unfiled is hidden then — his ruling on
-    #1469) would otherwise leave the grid filtered by a chip nobody can see.
+    another tab, or a link to a campaign that is not this customer's, would
+    otherwise leave the grid filtered by a chip nobody can see.
   */
   const campaignList = campaigns.data;
   useEffect(() => {
@@ -1740,25 +1740,20 @@ export default function CastingV2() {
             />
           </Field>
           {/*
-            ALL · UNFILED · <CAMPAIGNS> · + (card #2250). The placeholder says
+            ALL · <CAMPAIGNS> · + (card #2250). The placeholder says
             "by name" because the name is all that is searched — his ruling on
             #1469: never "name or look" over a name-only search.
 
-            Unfiled is HIDDEN until there is at least one campaign — his
-            ruling: with none, All and Unfiled are one list, and two chips
-            meaning one thing is machinery showing.
+            There is no Unfiled chip (card #2304, his word 2026-10-12: "why do
+            we have unfiled? should it just be all + if theres any
+            campaigns?" … "yes remove it"). With no campaigns the row is All
+            and +.
           */}
           <div className="dpc-chips" role="group" aria-label="Show">
             <ScopePill active={chip.kind === "all"} onClick={() => chooseChip({ kind: "all" })}>
               All
               {counts ? <span className="dpc-chip__count">{counts.all}</span> : null}
             </ScopePill>
-            {isChip({ kind: "unfiled" }, campaignRows) ? (
-              <ScopePill active={chip.kind === "unfiled"} onClick={() => chooseChip({ kind: "unfiled" })}>
-                Unfiled
-                {counts ? <span className="dpc-chip__count">{counts.unfiled}</span> : null}
-              </ScopePill>
-            ) : null}
             {campaignRows.map((campaign) => (
               <ScopePill
                 key={campaign.campaignId}

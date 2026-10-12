@@ -1,13 +1,17 @@
 /**
- * THE LIBRARY'S CHIPS — All · Unfiled · <campaigns> · + (card #2250, rung N2c;
+ * THE LIBRARY'S CHIPS — All · <campaigns> · + (card #2250, rung N2c;
  * his Desk reply #273, verbatim and entire: *"N2c — Campaigns"*).
  *
  * The rules a chip row has to keep, in one place and free of React so they can
  * be driven directly:
  *
- *  - **Unfiled exists only while there is a campaign.** His ruling on the
- *    rung's design: with no campaigns, All and Unfiled are the same list, and
- *    two chips meaning one thing is machinery showing.
+ *  - **There is no Unfiled chip** (card #2304, his word 2026-10-12, verbatim:
+ *    *"why do we have unfiled? should it just be all + if theres any
+ *    campaigns?"* … *"yes remove it"*). It superseded the 2026-09-29 design's
+ *    Unfiled chip (#1469 note 1). The row is All, then the customer's
+ *    campaigns, then +; with no campaigns it is All and +. The chip kind is
+ *    gone from the type, so nothing can select it, and an old link naming it
+ *    (`?campaign=unfiled`) is not a campaign id and lands on All.
  *  - **A chip that no longer exists is not a chip.** A deleted campaign, a link
  *    naming somebody else's campaign — the page falls back to All.
  *  - **The empty line says what is true of THIS chip**, not a generic "nothing
@@ -29,7 +33,6 @@ export const ROSTER_SEARCH_DEBOUNCE_MS = 250;
 
 export type RosterChip =
   | { kind: "all" }
-  | { kind: "unfiled" }
   | { kind: "campaign"; campaignId: string };
 
 type CampaignRow = { campaignId: string; name: string };
@@ -46,7 +49,6 @@ export function chipFromLocation(search: string): RosterChip {
 /** Whether `chip` is one the row actually draws for these campaigns. */
 export function isChip(chip: RosterChip, campaigns: readonly CampaignRow[]): boolean {
   if (chip.kind === "all") return true;
-  if (chip.kind === "unfiled") return campaigns.length > 0;
   return campaigns.some((row) => row.campaignId === chip.campaignId);
 }
 
@@ -54,7 +56,7 @@ export function isChip(chip: RosterChip, campaigns: readonly CampaignRow[]): boo
 export function rosterFilterInput(
   chip: RosterChip,
   search: string,
-): { scope: "all" | "unfiled" | "campaign"; campaignId?: string; search?: string } {
+): { scope: "all" | "campaign"; campaignId?: string; search?: string } {
   const trimmed = search.trim();
   return {
     scope: chip.kind,
@@ -66,7 +68,6 @@ export function rosterFilterInput(
 /** The heading over the grid. */
 export function chipHeading(chip: RosterChip, campaigns: readonly CampaignRow[]): string {
   if (chip.kind === "all") return "All cast";
-  if (chip.kind === "unfiled") return "Unfiled";
   return campaigns.find((row) => row.campaignId === chip.campaignId)?.name ?? "Campaign";
 }
 
@@ -80,7 +81,6 @@ export function rosterEmptyLine(chip: RosterChip, search: string, signedCount: n
   if (signedCount === 0) {
     return "No one signed yet — roll a casting, then sign the candidate you want to keep working with.";
   }
-  if (chip.kind === "unfiled") return "Every cast member is in a campaign.";
   // The rung's design of record names this empty state (the noun ruling of 2026-09-29).
   if (chip.kind === "campaign") return "No cast in this campaign yet";
   return "No one signed yet — roll a casting, then sign the candidate you want to keep working with.";
@@ -95,9 +95,8 @@ export function rosterEmptyLine(chip: RosterChip, search: string, signedCount: n
 
 /**
  * The chip to show once a campaign has gone, given the campaigns that remain.
- * Deleting the campaign on screen returns the library to All; so does deleting
- * the LAST campaign while Unfiled is chosen, because Unfiled is hidden with no
- * campaigns (his ruling on #1469). Any other chip stays where it is.
+ * Deleting the campaign on screen returns the library to All. Any other chip
+ * stays where it is.
  */
 export function chipAfterCampaignGone(chip: RosterChip, remaining: readonly CampaignRow[]): RosterChip {
   return isChip(chip, remaining) ? chip : { kind: "all" };
