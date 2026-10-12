@@ -8,6 +8,7 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { CAMPAIGN_NAME_MAX_LENGTH } from "@shared/inputLimits";
 
 import {
+  CampaignRowIcon,
   PostSignCampaignOffer,
   isPostSignOfferSilenced,
   peekJustSigned,
@@ -34,7 +35,8 @@ import {
  * WHAT IS DELIBERATELY NOT DRAWN. The prototype's rows carry a hero thumbnail
  * and a "12 frames · live" line; neither exists (a campaign holds casts, not
  * frames, and has no picture of its own), so a row is the campaign's name and
- * how many casts are in it — both read from the store.
+ * how many casts are in it — both read from the store — beside a clapperboard
+ * mark (#2308, his "build D"), which is decoration and never a picture.
  */
 
 export type CastCampaignMembership = { campaignId: string; name: string };
@@ -140,6 +142,7 @@ export function CastCampaignsPanel({
             return (
               <li key={row.campaignId}>
                 <Link href={campaignLibraryHref(row.campaignId)} className="dpc-camp__row">
+                  <CampaignRowIcon />
                   <span className="dpc-camp__text">
                     <span className="dpc-camp__name" title={row.name}>{row.name}</span>
                     {count !== undefined ? (
@@ -180,6 +183,7 @@ export function CastCampaignsPanel({
                       else setRefusal(why);
                     }}
                   >
+                    <CampaignRowIcon />
                     <span className="dpc-camp__text">
                       <span className="dpc-camp__name" title={row.name}>{row.name}</span>
                       <span className="dpc-camp__meta">{castCountLine(row.castCount)}</span>

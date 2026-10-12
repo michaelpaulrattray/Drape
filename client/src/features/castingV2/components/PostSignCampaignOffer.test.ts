@@ -227,6 +227,20 @@ describe("the offer, drawn inside IN CAMPAIGNS", () => {
     expect(words).toContain("Use in a campaign");
   });
 
+  /* #2308: the offer's rows wear the same clapperboard mark as the panel's own. */
+  it("each campaign the offer lists carries the clapperboard mark; its two ways out do not", () => {
+    const html = render({ offer: offerProps() });
+    const offerHtml = html.slice(html.indexOf("dpc-camp__offer"));
+    const rows = offerHtml.match(/<li>[\s\S]*?<\/li>/g) ?? [];
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.split('<span class="dpc-camp__icon" aria-hidden="true">').length - 1).toBe(1);
+      expect(row).toContain("lucide-clapperboard");
+    }
+    const foot = offerHtml.slice(offerHtml.indexOf("dpc-camp__offer-foot"));
+    expect(foot).not.toContain("dpc-camp__icon");
+  });
+
   it("never offers a campaign the cast is already in", () => {
     const html = render({ offer: offerProps(), memberships: [{ campaignId: SUMMER.campaignId, name: SUMMER.name }] });
     const offerHtml = html.slice(html.indexOf("dpc-camp__offer"));

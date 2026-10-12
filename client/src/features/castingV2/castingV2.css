@@ -2824,6 +2824,21 @@
 }
 .dpc-camp__meta { font: 400 10.5px var(--font-sans); color: var(--metaStrong); }
 .dpc-camp__chev { flex: none; color: var(--meta); }
+/*
+  A campaign row's mark (#2308, his "build D"): a clapperboard in a 36px
+  rounded-square tile with a soft grey fill, on every campaign row — the
+  memberships, the picker and the post-Sign offer. No face, so nothing on these
+  rows competes with Siblings. The fill is one step deeper than the row's hover
+  (--well), so the tile still reads when the row is hovered.
+*/
+.dpc-camp__icon {
+  flex: none;
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--fillStrong);
+  color: var(--secondary);
+}
 /* The add row is live now: the stub's not-allowed cursor stays only while disabled. */
 .dpc-camp__add:enabled { cursor: pointer; }
 .dpc-camp__add:enabled:hover { background: var(--well); color: var(--ink); }
