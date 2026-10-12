@@ -1,8 +1,8 @@
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
-import { newsletterSignup, testConnection as testKlaviyoConnection } from "../klaviyo";
+import { newsletterSignup } from "../klaviyo";
 
 export const newsletterRouter = router({
   // Subscribe to newsletter (public - no auth required)
@@ -44,10 +44,13 @@ export const newsletterRouter = router({
       };
     }),
 
-  // Test Klaviyo connection (admin/debug only)
-  testConnection: protectedProcedure
-    .query(async () => {
-      const result = await testKlaviyoConnection();
-      return result;
-    }),
+  /* `testConnection` lived here until #2372, commented "admin/debug only" and
+     declared `protectedProcedure` — so any approved customer could make the
+     server call the email provider with the company's private key, as often as
+     they liked. It had no caller anywhere in the product, the admin panel
+     included, so it is DELETED rather than moved behind `adminProcedure`: a
+     staff control nobody uses is surface with no purpose. If a staff health
+     check for the email provider is ever wanted, it is a new admin procedure,
+     rate-limited, answering only "working / not working".
+     `server/routes/newsletter.test.ts` drives the refusal. */
 });

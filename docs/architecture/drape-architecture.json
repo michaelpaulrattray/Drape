@@ -10013,17 +10013,6 @@
       "clientCallers": []
     },
     {
-      "id": "route:newsletter.testConnection",
-      "namespace": "newsletter",
-      "name": "testConnection",
-      "type": "query",
-      "auth": "protected",
-      "input": "none",
-      "rateLimited": false,
-      "file": "server/routes/newsletter.ts",
-      "clientCallers": []
-    },
-    {
       "id": "route:profile.get",
       "namespace": "profile",
       "name": "get",
@@ -16441,6 +16430,10 @@
     {
       "id": "test:server/routes/moneyWording1940.test.ts",
       "path": "server/routes/moneyWording1940.test.ts"
+    },
+    {
+      "id": "test:server/routes/newsletter.test.ts",
+      "path": "server/routes/newsletter.test.ts"
     },
     {
       "id": "test:server/routes/planChangeSpentShareAndStates.test.ts",
