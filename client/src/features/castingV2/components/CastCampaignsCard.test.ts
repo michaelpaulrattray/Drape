@@ -192,7 +192,7 @@ describe("the cast page header", () => {
   'cast'. Customers call them characters." The counts are pinned above, in the
   panel's own render; these pin the other three sentences on the campaign path.
 */
-describe("the campaign path says character, not cast (#2318)", () => {
+describe("the campaign path says character, not cast", () => {
   const dialog = (currentName?: string) =>
     text(
       renderToStaticMarkup(
