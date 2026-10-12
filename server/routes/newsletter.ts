@@ -4,6 +4,11 @@ import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { newsletterSignup } from "../klaviyo";
 
+export const NEWSLETTER_SUBSCRIBED_ANSWER = {
+  success: true,
+  message: "You're on the list.",
+} as const;
+
 export const newsletterRouter = router({
   // Subscribe to newsletter (public - no auth required)
   subscribe: publicProcedure
@@ -35,13 +40,13 @@ export const newsletterRouter = router({
         });
       }
       
-      return {
-        success: true,
-        message: result.isNew 
-          ? "Welcome! You've been subscribed to our newsletter."
-          : "This email is already on the list.",
-        isNew: result.isNew,
-      };
+      /*
+        ONE ANSWER FOR EVERY ADDRESS — #2446. This used to say "This email is
+        already on the list." (and return `isNew`) for an address the provider
+        already knew, so anyone could test an email against the list. A new
+        address and a known one now get the same body, field for field.
+      */
+      return NEWSLETTER_SUBSCRIBED_ANSWER;
     }),
 
   /* `testConnection` lived here until #2372, commented "admin/debug only" and

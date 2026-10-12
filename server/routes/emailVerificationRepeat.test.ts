@@ -14,13 +14,13 @@
  *    link twice through the real route and read where the second one lands —
  *    and that it mints no session.
  * 2. **"Resend" for a verified address** showed "Verification email resent" and
- *    a countdown for an email that was never sent. The arms take the route's
- *    real JSON and feed it to the page's own reader (`readResendAnswer`), so the
- *    field the server writes and the field the page reads are proven to be the
- *    same field at the wire, not two spellings that happen to agree today.
+ *    a countdown for an email that was never sent. Since #2446 the route gives
+ *    every address one answer, so the page no longer claims anything was sent;
+ *    the arms feed the route's real JSON to the page's own reader
+ *    (`readResendAnswer`) and check what really went out.
  *
  * Controls on both sides: an unknown token is still refused, an expired one
- * still says expired, and an unverified address still gets a real "sent".
+ * still says expired, and an unverified address still really gets an email.
  */
 import express from "express";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -158,6 +158,16 @@ async function resend(email: string): Promise<{ ok: boolean; data: unknown }> {
   });
 }
 
+/** The send happens after the answer (#2446), so an arm that reads it waits for it. */
+async function delivered(): Promise<void> {
+  await vi.waitFor(() => expect(sendProductEmail).toHaveBeenCalled());
+}
+
+/** Long enough for any work behind the answer to have run, for arms asserting it did not. */
+async function afterTheAnswer(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 50));
+}
+
 beforeEach(() => {
   table = [customer()];
 });
@@ -214,18 +224,21 @@ describe("a repeat click on the verification link (#2370)", () => {
   });
 });
 
-describe("pressing Resend for an address that is already verified (#2370)", () => {
-  it("the page reads the real answer as already verified, not as sent", async () => {
+describe("pressing Resend for an address that is already verified (#2370, #2446)", () => {
+  it("sends nothing, keeps the token, and the page does not claim an email went", async () => {
     table = [customer({ emailVerified: true })];
     const answer = await resend("customer@example.com");
     expect(answer.ok).toBe(true);
-    expect(readResendAnswer(answer.ok, answer.data)).toEqual({ kind: "already_verified" });
+    expect(readResendAnswer(answer.ok, answer.data)).toEqual({ kind: "answered" });
+    await afterTheAnswer();
     expect(sendProductEmail).not.toHaveBeenCalled();
+    expect(table[0]!.emailVerificationToken).toBe(TOKEN);
   });
 
-  it("an unverified address still reads as sent, and an email really goes — the positive control", async () => {
+  it("an unverified address really gets an email — the positive control", async () => {
     const answer = await resend("customer@example.com");
-    expect(readResendAnswer(answer.ok, answer.data)).toEqual({ kind: "sent" });
+    expect(readResendAnswer(answer.ok, answer.data)).toEqual({ kind: "answered" });
+    await delivered();
     expect(sendProductEmail).toHaveBeenCalledTimes(1);
   });
 
@@ -233,6 +246,76 @@ describe("pressing Resend for an address that is already verified (#2370)", () =
     expect(readResendAnswer(false, { error: "Too many attempts. Please try again later." }))
       .toEqual({ kind: "failed", error: "Too many attempts. Please try again later." });
     expect(readResendAnswer(false, {})).toEqual({ kind: "failed", error: "Failed to resend. Please try again." });
+  });
+});
+
+/**
+ * ONE ANSWER, WHOEVER ASKS — #2446.
+ *
+ * The resend route used to answer an unknown address, a verified one and an
+ * unverified one three different ways, so anyone could test an email against
+ * the account list. The arms put all three through the real route and compare
+ * the status and the parsed body; then they prove the answer is written BEFORE
+ * any email is sent, by holding the send open and reading the answer anyway —
+ * the timing half of the same oracle.
+ */
+describe("the resend route tells a stranger nothing about the address (#2446)", () => {
+  beforeEach(() => {
+    table = [
+      customer(),
+      customer({
+        id: 8,
+        openId: "email_9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+        email: "verified@example.com",
+        emailVerified: true,
+        emailVerificationToken: "d".repeat(96),
+      }),
+    ];
+  });
+
+  it("an unknown, a verified and an unverified address get the same status and body", async () => {
+    const unknown = await resend("nobody@example.com");
+    const verified = await resend("verified@example.com");
+    const unverified = await resend("customer@example.com");
+    expect(unknown.ok).toBe(true);
+    expect(verified).toEqual(unknown);
+    expect(unverified).toEqual(unknown);
+    expect(unknown.data).toEqual({ success: true, message: "If that address needs verifying, we've sent a new link." });
+  });
+
+  it("only the unverified account is sent anything — and it really is sent", async () => {
+    await resend("nobody@example.com");
+    await resend("verified@example.com");
+    await afterTheAnswer();
+    expect(sendProductEmail).not.toHaveBeenCalled();
+    await resend("customer@example.com");
+    await delivered();
+    expect(sendProductEmail).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(vi.mocked(sendProductEmail).mock.calls[0]![0])).toContain("customer@example.com");
+  });
+
+  it("the answer arrives while the email is still being sent — no timing difference to read", async () => {
+    let release: (() => void) | undefined;
+    vi.mocked(sendProductEmail).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ success: true }); }),
+    );
+    const answer = await resend("customer@example.com");
+    expect(answer.data).toEqual({ success: true, message: "If that address needs verifying, we've sent a new link." });
+    await delivered();
+    release?.();
+  });
+
+  it("a failed send is still the same answer — the outcome is logged, never told", async () => {
+    vi.mocked(sendProductEmail).mockResolvedValueOnce({ success: false, error: "provider down" });
+    const failed = await resend("customer@example.com");
+    const unknown = await resend("nobody@example.com");
+    expect(failed).toEqual(unknown);
+  });
+
+  it("a malformed address is still refused — the negative control", async () => {
+    const bad = await resend("not-an-email");
+    expect(bad.ok).toBe(false);
+    expect(readResendAnswer(bad.ok, bad.data)).toEqual({ kind: "failed", error: "Invalid email address" });
   });
 });
 
@@ -252,12 +335,14 @@ describe("an older verification link after a resend (#2401)", () => {
 
   it("the resend really replaces the stored token — the premise, driven", async () => {
     await resend("customer@example.com");
+    await delivered();
     expect(table[0]!.emailVerificationToken).not.toBe(OLD);
     expect(table[0]!.emailVerificationToken).not.toBeNull();
   });
 
   it("the older link lands on the replaced note, verifies nothing and mints no session", async () => {
     await resend("customer@example.com");
+    await delivered();
     const replacement = table[0]!.emailVerificationToken;
     const driven = await click(OLD);
     expect(
@@ -272,6 +357,7 @@ describe("an older verification link after a resend (#2401)", () => {
 
   it("the newest link still verifies and signs in — the positive control", async () => {
     await resend("customer@example.com");
+    await delivered();
     const driven = await click(table[0]!.emailVerificationToken!);
     expect(driven.location).toBe("/app");
     expect(driven.sessionMinted).toBe(true);
@@ -280,6 +366,7 @@ describe("an older verification link after a resend (#2401)", () => {
 
   it("the older link opened AFTER the newest one verified says already verified, and mints nothing", async () => {
     await resend("customer@example.com");
+    await delivered();
     await click(table[0]!.emailVerificationToken!);
     const driven = await click(OLD);
     expect(driven.location).toBe("/login?error=already_verified");
@@ -290,6 +377,7 @@ describe("an older verification link after a resend (#2401)", () => {
     const [id, nonce] = OLD.split(".");
     const forged = `${id}.${nonce}.${"0".repeat(32)}`;
     await resend("customer@example.com");
+    await delivered();
     const driven = await click(forged);
     expect(driven.location).toBe("/login?error=invalid_token");
     expect(driven.sessionMinted).toBe(false);

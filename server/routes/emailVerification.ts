@@ -288,8 +288,73 @@ export async function storeVerificationToken(
 }
 
 /**
+ * THE ONE ANSWER THE RESEND ROUTE GIVES — #2446.
+ *
+ * Until this card the route answered three different ways: an unknown address
+ * got "If an account exists…", a verified one got `alreadyVerified: true` and
+ * "Email is already verified", and an unverified one got "Verification email
+ * sent." (or a 500 if the send failed). With no password and no session, that
+ * let a stranger test any email against the account list. Sign-in (#2376) and
+ * sign-up (#2443) closed the same class; this is the resend door.
+ *
+ * Now every well-formed address gets this one body, with the same status, and
+ * the answer is written BEFORE any token is made or email is sent — so the
+ * slow part (the token write and the call to the email provider) happens only
+ * for an account that needs it, and after the stranger already has their
+ * answer. That also takes away the timing difference, which is the half of the
+ * class that a uniform sentence alone leaves open.
+ *
+ * The cost, stated rather than shipped quietly: a failed send can no longer be
+ * reported to the person on the page, because reporting it would answer "this
+ * address has an unverified account". It is logged, and the page already tells
+ * the person to check spam or try again.
+ */
+export const RESEND_VERIFICATION_ANSWER = {
+  success: true,
+  message: "If that address needs verifying, we've sent a new link.",
+} as const;
+
+/**
+ * The work behind a resend, run after the answer has gone. Never throws: a
+ * failure here is logged and nothing else, because the response is already
+ * written and must not depend on it.
+ */
+async function deliverNewVerificationLink(
+  req: Request,
+  user: { id: number; openId: string; name: string | null },
+  email: string,
+  clientIp: string,
+  userAgent: string | null,
+): Promise<void> {
+  try {
+    // Generate new token — this REPLACES the one in any earlier email (#2401)
+    const token = generateVerificationToken(user.openId);
+    await storeVerificationToken(user.id, token);
+
+    const result = await sendVerificationEmail(req, email, user.name || "", token);
+    if (!result.success) {
+      log.error({ err: result.error }, "[EmailVerification] Resend failed");
+      return;
+    }
+
+    await logAuditEvent({
+      userId: user.id,
+      action: AUDIT_ACTIONS.EMAIL_VERIFICATION_RESENT,
+      resourceType: "auth",
+      resourceId: user.openId,
+      metadata: { email },
+      severity: "info",
+      ipAddress: clientIp,
+      userAgent,
+    });
+  } catch (error) {
+    log.error({ err: error }, "[EmailVerification] Resend verification failed");
+  }
+}
+
+/**
  * POST /api/auth/resend-verification
- * Rate limited: 3 per hour per email
+ * Rate limited: 3 per hour per IP
  */
 emailVerificationRouter.post("/resend-verification", async (req: Request, res: Response) => {
   const clientIp = getClientIp(req);
@@ -318,57 +383,25 @@ emailVerificationRouter.post("/resend-verification", async (req: Request, res: R
 
   const { email } = parsed.data;
 
+  let user: Awaited<ReturnType<typeof getUserByEmail>>;
   try {
-    const user = await getUserByEmail(email);
-    if (!user) {
-      // Don't reveal whether the email exists
-      res.json({ success: true, message: "If an account exists, a verification email has been sent." });
-      return;
-    }
-
-    /*
-      Already verified: nothing is sent, and the answer SAYS so in a field the
-      page reads (#2370). It used to carry only a `message`, which the verify page
-      never read — so it showed "Verification email resent" and started a
-      60-second countdown for an email that did not exist. The page keys on
-      `alreadyVerified`, never on the wording of `message`.
-
-      Not a new disclosure: this branch already answered a different sentence
-      from the unknown-address branch above, so the wire said the same thing
-      before the flag existed.
-    */
-    if (user.emailVerified) {
-      res.json({ success: true, alreadyVerified: true, message: "Email is already verified. You can sign in." });
-      return;
-    }
-
-    // Generate new token — this REPLACES the one in any earlier email (#2401)
-    const token = generateVerificationToken(user.openId);
-    await storeVerificationToken(user.id, token);
-
-    // Send email
-    const result = await sendVerificationEmail(req, email, user.name || "", token);
-    if (!result.success) {
-      log.error({ err: result.error }, "[EmailVerification] Resend failed");
-      res.status(500).json({ error: "Failed to send verification email. Please try again." });
-      return;
-    }
-
-    await logAuditEvent({
-      userId: user.id,
-      action: AUDIT_ACTIONS.EMAIL_VERIFICATION_RESENT,
-      resourceType: "auth",
-      resourceId: user.openId,
-      metadata: { email },
-      severity: "info",
-      ipAddress: clientIp,
-      userAgent,
-    });
-
-    res.json({ success: true, message: "Verification email sent." });
+    // Every address takes this lookup, so it costs the same whoever asks.
+    user = await getUserByEmail(email);
   } catch (error) {
     log.error({ err: error }, "[EmailVerification] Resend verification failed");
     res.status(500).json({ error: "Something went wrong. Please try again." });
+    return;
+  }
+
+  /*
+    The same answer for an unknown address, a verified one and an unverified
+    one (#2446). A verified account is sent nothing — its token is kept, so a
+    repeat click on its link still lands on "already verified" (#2370).
+  */
+  res.json(RESEND_VERIFICATION_ANSWER);
+
+  if (user && !user.emailVerified) {
+    await deliverNewVerificationLink(req, user, email, clientIp, userAgent);
   }
 });
 
@@ -488,8 +521,8 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
       lets a repeat click resolve to "already verified" rather than "invalid".
       It can reach nothing else now: the already-verified exit above is checked
       first and mints no session, before the expiry check is ever read. A
-      resend never replaces it for a verified account (that branch returns
-      before a new token is made), so it stays with the row.
+      resend never replaces it for a verified account (a new token is made only
+      for an unverified one, #2446), so it stays with the row.
     */
     await db
       .update(users)

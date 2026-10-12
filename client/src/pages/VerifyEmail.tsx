@@ -11,32 +11,31 @@ import { motion } from "framer-motion";
 import { ASSETS_BASE_URL } from "@shared/const";
 
 /**
- * WHAT THE RESEND ANSWER MEANS FOR THE PAGE — #2370.
+ * WHAT THE RESEND ANSWER MEANS FOR THE PAGE — #2370, then #2446.
  *
- * A 200 is not "we sent it": for an address that is already verified the
- * server sends nothing and says so with `alreadyVerified: true`. The page used
- * to read `res.ok` alone, so that customer was told "Verification email resent"
- * and given a 60-second countdown for an email that never existed. Keyed on the
- * flag, never on the wording of the server's `message`.
+ * The server gives every well-formed address the same answer, whether it has an
+ * account, is already verified, or needs verifying (#2446) — anything else told
+ * a stranger which addresses are registered. So the page cannot know whether an
+ * email went, and its note says exactly that: "If that address needs verifying,
+ * we've sent a new link." It never says "resent" as a fact (#2370's defect was
+ * telling an already-verified customer an email had gone that never existed).
  *
  * Exported so `server/routes/emailVerificationRepeat.test.ts` can feed it the
  * real route's real answers.
  */
 export type ResendOutcome =
-  | { kind: "sent" }
-  | { kind: "already_verified" }
+  | { kind: "answered" }
   | { kind: "failed"; error: string };
 
 export function readResendAnswer(ok: boolean, data: unknown): ResendOutcome {
-  const body = (data ?? {}) as { error?: unknown; alreadyVerified?: unknown };
+  const body = (data ?? {}) as { error?: unknown };
   if (!ok) {
     return {
       kind: "failed",
       error: typeof body.error === "string" && body.error ? body.error : "Failed to resend. Please try again.",
     };
   }
-  if (body.alreadyVerified === true) return { kind: "already_verified" };
-  return { kind: "sent" };
+  return { kind: "answered" };
 }
 
 export default function VerifyEmail() {
@@ -54,7 +53,6 @@ export default function VerifyEmail() {
   const [email, setEmail] = useState(emailParam);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
-  const [alreadyVerified, setAlreadyVerified] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
 
@@ -85,11 +83,6 @@ export default function VerifyEmail() {
       if (outcome.kind === "failed") {
         setError(outcome.error);
         setResending(false);
-        return;
-      }
-      if (outcome.kind === "already_verified") {
-        /* Nothing was sent, so no "resent" and no countdown. */
-        setAlreadyVerified(true);
         return;
       }
 
@@ -173,20 +166,7 @@ export default function VerifyEmail() {
               <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 mb-4">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-emerald-700 font-medium">
-                  Verification email resent. Check your inbox and spam folder.
-                </p>
-              </div>
-            )}
-
-            {/* Already verified — nothing was sent, and nothing needs to be (#2370) */}
-            {alreadyVerified && (
-              <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 mb-4">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-emerald-700 font-medium">
-                  Your email is already verified.{" "}
-                  <Link href="/login" className="underline underline-offset-2">
-                    Sign in
-                  </Link>
+                  If that address needs verifying, we've sent a new link. Check your inbox and spam folder.
                 </p>
               </div>
             )}
