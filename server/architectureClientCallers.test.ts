@@ -123,18 +123,87 @@ const sweptCode = () => clientSources().map(({ code }) => code).join("\n");
  * it is followed by a `.` or a `(`, so `trpc.castingV2.listCampaignsExtra`
  * cannot be read as a reach of `castingV2.listCampaigns`.
  */
+const cacheHandlesIn = (code: string): string[] =>
+  [...code.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*trpc\.use(?:Utils|Context)\s*\(\s*\)/g)]
+    .map((hit) => hit[1] as string);
+
 function textCallersOf(procedure: string): string[] {
   return clientSources()
     .filter(({ code }) => {
-      const handles = ["trpc", ...[...code.matchAll(
-        /(?:const|let|var)\s+(\w+)\s*=\s*trpc\.use(?:Utils|Context)\s*\(\s*\)/g,
-      )].map((hit) => hit[1] as string)];
-      return handles.some((handle) =>
-        code.includes(`${handle}.${procedure}.`) || code.includes(`${handle}.${procedure}(`)
+      /* The vanilla client hangs off a cache handle ONLY (#2349) — so the
+         `.client.` prefix is tried on the derived handles and never on `trpc`. */
+      const prefixes = [
+        "trpc.",
+        ...cacheHandlesIn(code).flatMap((handle) => [`${handle}.`, `${handle}.client.`]),
+      ];
+      return prefixes.some((prefix) =>
+        code.includes(`${prefix}${procedure}.`) || code.includes(`${prefix}${procedure}(`)
       );
     })
     .map(({ file }) => file)
     .sort();
+}
+
+/* ------------------------------------------------- the population (#2349) */
+
+type Shape = "hook" | "cache" | "vanilla";
+
+/**
+ * EVERY chain off a client root in `client/src`, classified — the arm that
+ * makes a FOURTH shape redden rather than go quiet.
+ *
+ * ⚠ **WHY THE COMPARISON ABOVE WAS NOT ENOUGH.** Until #2349 both readers were
+ * blind to `utils.client.<path>` — the AST because the chain began with
+ * `client` and matched nothing, this reader because it never asked — so they
+ * AGREED, on seven call sites neither of them read, and five procedures shipped
+ * as having no client caller. Two readers that do not share a resolver can
+ * still share a shape list. What closes that is a population that does not
+ * start from the shape list: every `<root>.<chain>` in the code, where a root
+ * is the `trpc` binding or a derived cache handle, must resolve to a callable
+ * procedure through a known shape, or be a named non-procedure member — and
+ * whatever is left is printed.
+ */
+const NON_PROCEDURE_MEMBERS = new Set(["useUtils", "useContext", "createClient", "Provider"]);
+
+function census(callable: Set<string>) {
+  const pairs: Record<Shape, Set<string>> = { hook: new Set(), cache: new Set(), vanilla: new Set() };
+  const unresolved = new Set<string>();
+  for (const { file, code } of clientSources()) {
+    for (const root of ["trpc", ...cacheHandlesIn(code)]) {
+      const chains = code.matchAll(new RegExp(`(?<![\\w.$])${root}((?:\\s*\\.\\s*\\w+)+)`, "g"));
+      for (const hit of chains) {
+        let segments = (hit[1] as string).replace(/\s/g, "").slice(1).split(".");
+        let shape: Shape = root === "trpc" ? "hook" : "cache";
+        if (root !== "trpc" && segments[0] === "client") {
+          segments = segments.slice(1);
+          shape = "vanilla";
+        }
+        let procedure: string | null = null;
+        for (let take = segments.length; take >= 1; take -= 1) {
+          const candidate = segments.slice(0, take).join(".");
+          if (callable.has(candidate)) {
+            procedure = candidate;
+            break;
+          }
+        }
+        if (procedure) {
+          pairs[shape].add(`${file} ${procedure}`);
+        } else if (!(root === "trpc" && NON_PROCEDURE_MEMBERS.has(segments[0] as string))) {
+          unresolved.add(`${file}: ${root}.${segments.join(".")}`);
+        }
+      }
+    }
+  }
+  return { pairs, unresolved };
+}
+
+/** How many (file, procedure) pairs of a shape the Atlas does NOT credit. */
+function absentFrom(routes: Route[], pairs: Set<string>): string[] {
+  const callersOf = new Map(routes.map((route) => [callablePath(route), route.clientCallers]));
+  return [...pairs].filter((pair) => {
+    const [file, procedure] = pair.split(" ") as [string, string];
+    return !(callersOf.get(procedure) ?? []).includes(file);
+  }).sort();
 }
 
 /* --------------------------------------------------------------- the arms */
@@ -250,6 +319,89 @@ describe("the cache reach is read — the positive control that found the defect
   });
 });
 
+describe("the vanilla client is read, and a fourth shape cannot go quiet (#2349)", () => {
+  const callable = new Set(committed.routes.map(callablePath));
+
+  it("the hook shape is fully credited — the positive control, so the census can see", () => {
+    const { pairs } = census(callable);
+    expect(pairs.hook.size, "the census found no hook call at all — it is blind, not clean")
+      .toBeGreaterThan(200);
+    expect(absentFrom(committed.routes, pairs.hook)).toEqual([]);
+    expect(absentFrom(committed.routes, pairs.cache)).toEqual([]);
+  });
+
+  it("every utils.client.<path> call site is credited in the Atlas", () => {
+    const { pairs } = census(callable);
+    /* Seven on the tree the day this landed, six of them absent from the map
+       before it. Not pinned as an exact count — a new download button is
+       ordinary work — but never zero, or this arm is watching nothing. */
+    expect(pairs.vanilla.size, "no vanilla-client call found — the shape is not being read")
+      .toBeGreaterThan(0);
+    expect(
+      absentFrom(committed.routes, pairs.vanilla),
+      "a utils.client.<path> call site the Atlas does not credit — the reading that says "
+      + "safe to delete. Regenerate; if it persists, the collector's `.client` hop is gone.",
+    ).toEqual([]);
+  });
+
+  it("the five procedures reached ONLY through the vanilla client all carry their callers", () => {
+    for (const procedure of [
+      "account.exportData",
+      "moderatorExports.exportAuditLogsCsv",
+      "moderatorExports.exportUserCreditHistoryCsv",
+      "moderatorExports.exportUserGenerationHistoryCsv",
+      "boardOps.addEdge",
+    ]) {
+      const route = committed.routes.find((candidate) => callablePath(candidate) === procedure);
+      expect(route, `${procedure} is no longer a procedure — re-measure the hole`).toBeDefined();
+      expect(route!.clientCallers, `${procedure} reads as having no client caller`).not.toEqual([]);
+    }
+  });
+
+  it("every chain off a client root resolves through a read shape — or is named here", () => {
+    /*
+      The ONLY declared remainder is #2356: the admin bug-report inbox is
+      minted under `bugReports.*` (two routers share the variable name
+      `bugReportsRouter`), so the client's `trpc.admin.getBugReports` resolves
+      to no id the Atlas has. That is a route-minting defect, not a caller
+      shape, and it has its own card. When #2356 lands this arm reddens and
+      these lines are deleted with it.
+    */
+    const KNOWN_UNRESOLVED_2356 = [
+      "client/src/pages/AdminBugReports.tsx: trpc.admin.getBugReportCounts.useQuery",
+      "client/src/pages/AdminBugReports.tsx: trpc.admin.getBugReports.useQuery",
+      "client/src/pages/AdminBugReports.tsx: trpc.admin.updateBugReportStatus.useMutation",
+      "client/src/pages/AdminBugReports.tsx: utils.admin.getBugReportCounts.invalidate",
+      "client/src/pages/AdminBugReports.tsx: utils.admin.getBugReports.invalidate",
+    ];
+    const { unresolved } = census(callable);
+    expect(
+      [...unresolved].sort(),
+      "a client chain names no procedure through any shape this Atlas reads. Either a new "
+      + "reach shape exists (teach collectClientCallers AND this census) or a route id is wrong.",
+    ).toEqual(KNOWN_UNRESOLVED_2356);
+  });
+
+  it("CAN FAIL — the census reports a fourth shape it was never taught", () => {
+    /* The census over a synthetic file, by swapping the swept set — the arm
+       above must not be green because the census cannot produce a row. */
+    const saved = swept;
+    try {
+      swept = [{
+        file: "client/src/pages/Fixture.tsx",
+        source: "",
+        code: "const utils = trpc.useUtils();\nconst v = utils.vanilla.alpha.beta.query();\n"
+          + "const w = utils.client.alpha.beta.query();\n",
+      }];
+      const { pairs, unresolved } = census(new Set(["alpha.beta"]));
+      expect([...unresolved]).toEqual(["client/src/pages/Fixture.tsx: utils.vanilla.alpha.beta.query"]);
+      expect([...pairs.vanilla]).toEqual(["client/src/pages/Fixture.tsx alpha.beta"]);
+    } finally {
+      swept = saved;
+    }
+  });
+});
+
 describe("prose is not a call (the control a text reader needs and an AST does not)", () => {
   /*
     `rosterChips.ts`'s docblock names `castingV2.renameCampaign` without calling
@@ -362,6 +514,39 @@ describe("the collector refuses rather than returning a short list", () => {
       "a cache handle declared inside a function is invisible — this is the "
       + "getVariableDeclarations() defect, which is top-level only",
     ).toEqual([CLIENT]);
+  });
+
+  it("the vanilla client off a cache handle is read — #2349, at the fixture", () => {
+    const callers = clientCallersFrom(
+      {
+        [TRPC_MODULE]: declaration,
+        [CLIENT]: 'import { trpc } from "../lib/trpc";\n'
+          + "export function Thing() {\n"
+          + "  const utils = trpc.useUtils();\n"
+          + "  return () => utils.client.wardrobe.garments.list.query();\n"
+          + "}\n",
+      },
+      ["wardrobe.garments.list", "wardrobe.garments"],
+    );
+    expect(
+      callers.get("wardrobe.garments.list"),
+      "utils.client.<path> is not read — the shape that hid five procedures",
+    ).toEqual([CLIENT]);
+    expect(callers.get("wardrobe.garments")).toBeUndefined();
+  });
+
+  it("the `.client` hop is taken off a cache handle only, never off the hook binding", () => {
+    const callers = clientCallersFrom(
+      {
+        [TRPC_MODULE]: declaration,
+        [CLIENT]: 'import { trpc } from "../lib/trpc";\n'
+          + "const real = trpc.gamma.delta.useQuery();\n"
+          + "const invented = trpc.client.alpha.beta.useQuery();\n",
+      },
+      ["alpha.beta", "gamma.delta"],
+    );
+    expect(callers.get("gamma.delta")).toEqual([CLIENT]);
+    expect(callers.get("alpha.beta")).toBeUndefined();
   });
 
   it("a procedure named only in a comment is not a caller", () => {
