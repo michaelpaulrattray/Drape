@@ -25,6 +25,12 @@ const log = createModuleLogger("routes/referral");
 /** Rate limit configs */
 const INVITE_RATE = { maxRequests: 10, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite" };
 const REDEEM_RATE = { maxRequests: 5, windowMs: 60 * 60 * 1000, keyPrefix: "ref-redeem" };
+/**
+ * `validate` is public and answers whether a code exists, so it is a guessing
+ * surface: per address, the same budget `access.validate` gives an invite code
+ * (10 in 5 minutes) — plenty for a person typing a code, useless for a sweep (#2375).
+ */
+export const VALIDATE_RATE = { maxRequests: 10, windowMs: 5 * 60 * 1000, keyPrefix: "ref-validate" };
 
 export const referralRouter = router({
   /**
@@ -221,11 +227,18 @@ export const referralRouter = router({
     // the wire, checked rather than assumed: this endpoint has no client caller
     // at all, so no shipped bundle can be sending a field it does not declare.
     .input(z.object({ code: z.string().min(1).max(20) }).strict())
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const rateCheck = checkRateLimit(getClientIp(ctx.req), VALIDATE_RATE);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many attempts. Try again ${waitPhrase(rateCheck.resetIn)}.`,
+        });
+      }
+      // Whether the code is real, and nothing about whose it is (#2375): this
+      // used to hand any stranger the referrer's first name. No client reads
+      // the answer, so no shipped screen loses anything.
       const user = await getUserByReferralCode(input.code);
-      return {
-        valid: !!user,
-        referrerName: user?.name ? user.name.split(" ")[0] : null,
-      };
+      return { valid: !!user };
     }),
 });

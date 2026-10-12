@@ -7424,7 +7424,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/announcements.ts",
       "clientCallers": [
         "client/src/components/AnnouncementBanner.tsx",
@@ -10215,7 +10215,7 @@
       "type": "query",
       "auth": "public",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/referral.ts",
       "clientCallers": []
     },
@@ -10250,7 +10250,7 @@
       "type": "query",
       "auth": "public",
       "input": "none",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/waitlist.ts",
       "clientCallers": []
     },
@@ -15945,6 +15945,10 @@
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
       "path": "server/providers/withRetryBilled.test.ts"
+    },
+    {
+      "id": "test:server/publicEndpointRateLimits.test.ts",
+      "path": "server/publicEndpointRateLimits.test.ts"
     },
     {
       "id": "test:server/publicInputStrictness.test.ts",
@@ -36177,6 +36181,11 @@
     {
       "from": "module:server/routes/announcements.ts",
       "to": "module:server/db/announcementQueries.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/announcements.ts",
+      "to": "module:server/security/rateLimit.ts",
       "kind": "imports"
     },
     {
