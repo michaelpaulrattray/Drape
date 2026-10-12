@@ -50,7 +50,7 @@ describe("⚠ the search copy is honest about what is searched (his ruling on th
   it("the box says 'by name', and never 'name or look'", async () => {
     const page = await readFile(new URL("../../pages/CastingV2.tsx", import.meta.url), "utf8");
     const code = withoutComments(page);
-    expect(code).toContain('placeholder="Search cast by name"');
+    expect(code).toContain('placeholder="Search by name"');
     expect(code).not.toMatch(/name or look/i);
   });
 
@@ -87,13 +87,13 @@ describe("what the roster is asked for", () => {
 
 describe("the heading and the empty line say what is true of THIS chip", () => {
   it("headings", () => {
-    expect(chipHeading({ kind: "all" }, [SUMMER])).toBe("All cast");
+    expect(chipHeading({ kind: "all" }, [SUMMER])).toBe("All characters");
     expect(chipHeading({ kind: "campaign", campaignId: CAMPAIGN }, [SUMMER])).toBe("Summer");
   });
 
   it("empty lines", () => {
     expect(rosterEmptyLine({ kind: "all" }, "", 0)).toMatch(/^No one signed yet/);
-    expect(rosterEmptyLine({ kind: "campaign", campaignId: CAMPAIGN }, "", 3)).toBe("No cast in this campaign yet");
+    expect(rosterEmptyLine({ kind: "campaign", campaignId: CAMPAIGN }, "", 3)).toBe("No characters in this campaign yet");
     expect(rosterEmptyLine({ kind: "all" }, " zed ", 3)).toBe("No names here match “zed”.");
   });
 });

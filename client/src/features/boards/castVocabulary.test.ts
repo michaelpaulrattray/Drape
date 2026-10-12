@@ -73,10 +73,10 @@ const BOARD_PAGE = `${BOARDS}/BoardPage.tsx`;
  * string** — which is why each row carries both.
  */
 const SWEPT: ReadonlyArray<{ file: string; now: string; gone: string }> = [
-  { file: PICKER, now: ">Your casts<", gone: ">Your models<" },
-  { file: PICKER, now: 'placeholder="Search casts..."', gone: 'placeholder="Search models..."' },
-  { file: PICKER, now: '"No casts match"', gone: '"No models match"' },
-  { file: PICKER, now: '"No casts yet"', gone: '"No models yet"' },
+  { file: PICKER, now: ">Your characters<", gone: ">Your models<" },
+  { file: PICKER, now: 'placeholder="Search characters…"', gone: 'placeholder="Search models..."' },
+  { file: PICKER, now: '"No characters match"', gone: '"No models match"' },
+  { file: PICKER, now: '"No characters yet"', gone: '"No models yet"' },
   { file: PICKER, now: "Cast someone", gone: "Cast your first model" },
   { file: ADD_MENU, now: "label: 'Cast someone'", gone: "label: 'Cast model'" },
   { file: INTRO, now: 'caption="Cast a person from a sentence"', gone: 'caption="Cast a model from a sentence"' },

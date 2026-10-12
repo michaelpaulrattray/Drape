@@ -7,9 +7,21 @@
  * VTO outputs, styled renders, or scene imagery) or take "Cast new" into the
  * casting takeover (D-35). Click-to-open is permanent (founder, 2026-07-11).
  *
- * Portaled to <body> with its own canvas-scope wrapper (D-22) so it renders
- * in the canvas light language regardless of host theme. Hosted by BoardPage
- * — node-local state wouldn't survive the optimistic temp→real id remount.
+ * Portaled to <body>. Hosted by BoardPage — node-local state wouldn't survive
+ * the optimistic temp→real id remount.
+ *
+ * FOLLOWS THE APP THEME (#2322, the founder's yes on 2026-10-12). It used to
+ * sit inside its own `canvas-scope` wrapper and draw from the canvas palette,
+ * which has no dark values (`styles/canvas-tokens.css`, #916) — so in dark
+ * mode it opened as a white sheet. Its colours now come from the foundation
+ * tokens (`foundation/tokens.css`), the same ones the app's own modals use
+ * (`.dpc-modal` in `foundation/modals.css`): `--viewerScrim`, `--surface`,
+ * `--borderCard`, `--fill`, `--well`, `--ink`, `--metaStrong`, `--meta`. The
+ * canvas type scale and radii stay — they are sizes, not colours.
+ *
+ * Stated limit: a picture that fails to load falls back to `SafeImage`'s own
+ * placeholder, which is shared with the board and still draws the light canvas
+ * palette. The board itself stays light until the canvas redesign (#916).
  */
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -53,16 +65,16 @@ function ModelCard({
       className="text-left group disabled:opacity-50"
     >
       {/* 3:4 — canonical cast geometry (D-31); the model image is sacred */}
-      <div className="relative aspect-[3/4] rounded-canvas-sm overflow-hidden border-hairline border-canvas-border group-hover:border-canvas-ink transition-colors bg-canvas-surface-inset">
+      <div className="relative aspect-[3/4] rounded-canvas-sm overflow-hidden border-hairline border-[var(--borderCard)] group-hover:border-[var(--ink)] transition-colors bg-[var(--fill)]">
         <SafeImage src={model.headshotUrl} alt="" fallbackIconOnly className="w-full h-full object-cover" />
         {model.draft && (
-          <span className="absolute top-1.5 left-1.5 px-1.5 py-[1px] rounded-canvas-sm bg-canvas-surface border-hairline border-canvas-border text-canvas-xs text-canvas-ink-soft">
+          <span className="absolute top-1.5 left-1.5 px-1.5 py-[1px] rounded-canvas-sm bg-[var(--surface)] border-hairline border-[var(--borderCard)] text-canvas-xs text-[var(--metaStrong)]">
             Draft
           </span>
         )}
       </div>
-      <div className="text-canvas-xs text-canvas-ink-soft truncate mt-1.5">
-        {model.name ?? (model.draft ? <span className="text-canvas-ink-faint">Untitled</span> : "Untitled")}
+      <div className="text-canvas-xs text-[var(--metaStrong)] truncate mt-1.5">
+        {model.name ?? (model.draft ? <span className="text-[var(--meta)]">Untitled</span> : "Untitled")}
       </div>
     </button>
   );
@@ -111,23 +123,23 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
   };
 
   return createPortal(
-    <div className="canvas-scope fixed inset-0 z-50 flex items-center justify-center">
-      {/* Scrim — click dismisses (choose-and-dismiss surface) */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center text-[var(--ink)]">
+      {/* Scrim — click dismisses (choose-and-dismiss surface). The app modal's
+          own scrim token, so it darkens correctly in both themes. */}
       <div
-        className="absolute inset-0"
-        style={{ background: "rgba(10,10,10,0.3)" }}
+        className="absolute inset-0 bg-[var(--viewerScrim)]"
         onClick={onClose}
       />
 
-      <div className="relative w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col bg-canvas-surface border-hairline border-canvas-border-strong rounded-canvas-md">
+      <div className="relative w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col bg-[var(--surface)] border-hairline border-[var(--borderCard)] rounded-canvas-md">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
-          <span className="text-canvas-md font-medium text-canvas-ink">Your casts</span>
+          <span className="text-canvas-md font-medium text-[var(--ink)]">Your characters</span>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="w-6 h-6 rounded-canvas-sm flex items-center justify-center text-canvas-ink-soft hover:text-canvas-ink hover:bg-canvas-surface-inset transition-colors"
+            className="w-6 h-6 rounded-canvas-sm flex items-center justify-center text-[var(--metaStrong)] hover:text-[var(--ink)] hover:bg-[var(--well)] transition-colors"
           >
             <X className="w-3.5 h-3.5" strokeWidth={1.6} />
           </button>
@@ -140,32 +152,32 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search casts..."
+              placeholder="Search characters…"
               autoFocus
-              className="flex-1 min-w-0 px-3 py-2 bg-canvas-surface-inset rounded-canvas-md text-canvas-sm text-canvas-ink placeholder:text-canvas-ink-faint focus:outline-none"
+              className="flex-1 min-w-0 px-3 py-2 bg-[var(--fill)] rounded-canvas-md text-canvas-sm text-[var(--ink)] placeholder:text-[var(--meta)] focus:outline-none"
             />
             <button
               type="button"
               onClick={onCastNew}
-              className="shrink-0 px-3.5 py-2 rounded-canvas-md text-canvas-xs font-medium bg-canvas-ink text-canvas-surface hover:opacity-90 transition-opacity"
+              className="shrink-0 px-3.5 py-2 rounded-canvas-md text-canvas-xs font-medium bg-[var(--ink)] text-[var(--surface)] hover:opacity-90 transition-opacity"
             >
-              + Cast new
+              + New character
             </button>
           </div>
 
           {isLoading ? (
-            <div className="py-14 text-center text-canvas-xs text-canvas-ink-faint">Loading…</div>
+            <div className="py-14 text-center text-canvas-xs text-[var(--meta)]">Loading…</div>
           ) : minted.length === 0 && drafts.length === 0 ? (
-            <div className="py-12 flex flex-col items-center text-canvas-ink-faint">
+            <div className="py-12 flex flex-col items-center text-[var(--meta)]">
               <User className="w-4 h-4 opacity-50" strokeWidth={1.2} />
               <span className="text-canvas-xs mt-1.5">
-                {search.trim() ? "No casts match" : "No casts yet"}
+                {search.trim() ? "No characters match" : "No characters yet"}
               </span>
               {!search.trim() && (
                 <button
                   type="button"
                   onClick={onCastNew}
-                  className="mt-2.5 text-canvas-xs text-canvas-ink-soft hover:text-canvas-ink transition-colors"
+                  className="mt-2.5 text-canvas-xs text-[var(--metaStrong)] hover:text-[var(--ink)] transition-colors"
                 >
                   Cast someone
                 </button>
@@ -184,8 +196,8 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               {drafts.length > 0 && (
                 <>
                   <div className={minted.length > 0 ? "mt-4 mb-2.5" : "mb-2.5"}>
-                    <span className="text-canvas-xs text-canvas-ink-faint">
-                      Drafts — exploring, not yet cast
+                    <span className="text-canvas-xs text-[var(--meta)]">
+                      Drafts — exploring, not yet signed
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-3 opacity-80">

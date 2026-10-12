@@ -248,32 +248,39 @@ export const ROADS: readonly Road[] = [
   {
     id: "creation-record",
     procedures: [],
-    title: "The creation record — a signed, independently timestamped record behind each Klieg ID (built dark)",
+    title: "The creation record — a signed, independently timestamped record behind each Klieg ID, and its certificate (built dark)",
     entrances: [
       "server/castingV2/signService.ts",
       "server/castingV2/creationRecordService.ts",
+      "server/routes/creationCertificate.ts",
       "server/routes/creationCheck.ts",
     ],
     summary:
       "N2d-1 (#2311; design docs/specs/N2D_RECORD_OF_CREATION_DESIGN_2026-10-12.md). The LAST act of a Sign's detached "
       + "continuation - after the views are sealed, the money settled and the receipt written, outside every transaction - "
       + "builds a canonical JSON record of who made the cast, when, a SHA-256 of its original master picture and the steps "
-      + "taken as EVENTS, signs it Ed25519, stores it, and stamps its hash with an independent RFC 3161 authority. The "
-      + "check page (N2d-3, #2313) reads it: the owner's one toggle and a public page keyed on the Klieg ID, off by default; "
-      + "the certificate (N2d-2) is the other surface.",
+      + "taken as EVENTS, signs it Ed25519, stores it, and stamps its hash with an independent RFC 3161 authority. Its "
+      + "owner downloads it as a Certificate of Creation (N2d-2, #2312) - a PDF from `/api/cast/:castId/certificate`, "
+      + "offered by one button in the cast's room only once a stamped record exists; and the check page (N2d-3, #2313) "
+      + "reads it: the owner's one toggle and a public page keyed on the Klieg ID, off by default.",
     doors: [],
     doorsNote:
-      "No castingV2 procedure: the road is entered from inside the Sign (signService.ts, after the persona write) and by "
-      + "`ensureCastCreationRecord`, the backfill-on-first-request entrance, whose first production caller is the check "
-      + "page's own namespace (`creationCheck.preview` and `creationCheck.setPublic`, server/routes/creationCheck.ts - "
-      + "outside the casting entrance this atlas maps, so named here rather than as procedures). "
-      + "Its refusals are internal outcomes (dark, not a signed cast, not minted, no anchor) and are pinned by "
-      + "creationRecordService.test.ts and castCreationRecords.test.ts rather than by census rows.",
+      "No castingV2 procedure: it is entered from inside the Sign (signService.ts, after the persona write) and by "
+      + "`ensureCastCreationRecord`, the backfill-on-first-request entrance whose first production caller is the "
+      + "certificate's authenticated Express route (N2d-2, #2312) and whose second is the check page's own namespace "
+      + "(`creationCheck.preview` and `creationCheck.setPublic`, server/routes/creationCheck.ts - outside the casting "
+      + "entrance this atlas maps, so named here rather than as procedures). The certificate route's "
+      + "answers are HTTP statuses, not procedure doors: the same 404 for a stranger's, a deleted, an unscoped or an "
+      + "uncertifiable cast; 409 while the stamp has not landed; and the room's HEAD on the same path draws the button "
+      + "on 200 only. The record road's own refusals are internal outcomes (dark, not a signed cast, not minted, no "
+      + "anchor) pinned by creationRecordService.test.ts and castCreationRecords.test.ts; the route's by "
+      + "server/routes/creationCertificate.test.ts.",
     flags: ["CASTING_V2_SCOPE", "CASTING_CREATION_RECORD_SCOPE"],
     notes: [
       "THE BOUND IS CODE (design §3, the rung's most important sentence): masterPrompt, technicalSchema, preferences, the brief, a refine's words, the identity text and the persona lines never enter a record. The builder constructs it field by field and never spreads an input, and `assertCreationRecordBound` refuses to sign a document carrying any refused key at any depth; the db read never SELECTS the recipe at all. Each half is driven with a caller that hands it the recipe on purpose.",
       "THE TIMESTAMP IS A MEASURED CAPABILITY CHOICE, DATED 2026-10-12: RFC 3161, DigiCert's public TSA first (0.43-0.46 s warm, 1.6 s cold) and FreeTSA second (~1.0 s), both $0, the token stored whole (DER, with the authority's certificate inside, so it verifies offline forever) and ONLY once its CMS signature verifies in-process against one of two pinned roots - DigiCert answers only over plain HTTP, so the signature, not the transport, is what makes a token ours to keep. Which authority answered is recorded internally and never named to a customer - every surface says 'independently timestamped'. An authority that refuses or times out NEVER fails the Sign: the record is signed and stored first and its stamp is retried on its next request. Like every engine choice it carries an expiry; a rung that touches this road re-asks it.",
       "ON WITHOUT THE KEY REFUSES BOOT. `CASTING_CREATION_RECORD_SCOPE` on with the secret it names (`CREATION_RECORD_PRIVATE_KEY_VARIABLE`) absent, malformed or a mismatched pair stops the process naming the variable and never its value (invariant 7) - a signing road must refuse rather than skip. The key is a secret and is deliberately not an `*_ENV` constant, so it can never land on the flag-position table whose values the deploy rite prints.",
+      "THE CERTIFICATE (N2d-2, #2312) IS DRAWN FROM THE SIGNED RECORD, NEVER BESIDE IT: every fact on its first page - the ID, the maker, the dates, the fingerprint, the steps - is parsed back out of the stored canonical JSON, which `assertCreationRecordBound` checks AGAIN at render (the last door), and the master picture printed beside the fingerprint is re-hashed and must match it or the route refuses. A backfilled record says both dates ('Created 3 September 2026 · recorded and timestamped 14 October 2026', design §5). Every string says 'evidence of creation' and none says ownership is proven; no vendor or algorithm on the first page, and the appendix carries the record (readable, and as exact base64 bytes), its SHA-256, the detached signature, the public key and the token, so anyone can check it without asking us.",
       "THE CHECK PAGE (N2d-3, #2313) IS OFF FOR EVERY CAST UNTIL ITS OWNER TURNS IT ON, and turning it on SHOWS the page first: the owner's preview and the public page are one projector (`server/castingV2/creationCheck.ts`) and one component. `creationCheck.lookup` is the thirteenth public tRPC endpoint (CLAUDE.md invariant 5, same commit): IP-rate-limited before anything is read, `.strict()`, ONE select with no session, and blind to absence - an unknown ID, a private one, a deleted cast's and a malformed one all answer `{ found: false }`, drawn as 'No public record for this ID'. It shows six facts, every one read from the signed record or its stamp (the ID, the maker's display name, the created, recorded and stamp dates, the master's fingerprint) and never the picture, the email, the account or any creative content. Turning the owner's scope off takes every page down without anyone being able to tell that is what happened.",
       "GONE STAYS GONE: a record is deleted inside the cast's own final-deletion transaction and with the account, because it carries the Klieg ID and the maker's display name; it is INSERTED only out of the owner's live cast (INSERT ... SELECT over signedCastWhere) and READ only through a join on it, so a cast deleted mid-flight leaves nothing behind. It signs the DISPLAY name or no name, never the account's real name, and the data export carries it.",
     ],

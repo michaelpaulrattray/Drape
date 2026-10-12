@@ -122,7 +122,7 @@ export async function runInBatches(
 }
 
 function castMembers(count: number): string {
-  return count === 1 ? "1 cast member" : `${count} cast members`;
+  return count === 1 ? "1 character" : `${count} characters`;
 }
 
 /** The bar's own count. */

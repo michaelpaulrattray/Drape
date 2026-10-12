@@ -71,9 +71,9 @@ const source = (path: string): string => readFileSync(resolve(process.cwd(), pat
 describe("the three lines a customer can actually read", () => {
   it("the account-deletion note names what she made, not a wardrobe", () => {
     const text = source(SECURITY);
-    expect(text).toContain("Permanent. Your casts, boards and everything you made go with it.");
+    expect(text).toContain("Permanent. Your characters, boards and everything you made go with it.");
     expect(text).toContain(
-      "Your casts, boards and everything you made are deleted with the account.",
+      "Your characters, boards and everything you made are deleted with the account.",
     );
   });
 
