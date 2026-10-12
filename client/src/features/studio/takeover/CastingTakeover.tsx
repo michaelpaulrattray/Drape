@@ -41,6 +41,8 @@ import { useCastingRefreshStore } from '@/features/casting/stores/useCastingRefr
 import { publishCastProjectionChanged } from '@/features/operations/castProjectionSync';
 import { editablePreferencesFromStored } from '@/features/casting/engineChoicePersistence';
 import type { MintTier } from '@shared/boardTypes';
+import { REBUILD_DOOR_CLOSED, REBUILD_DOOR_OPEN } from '@shared/rebuildDoor';
+import { useLocation } from 'wouter';
 
 export interface CastEditContext {
   boardId: number;
@@ -152,7 +154,85 @@ export function identityCommitFailureSentence(error: unknown): string {
   return readableFailure(error, IDENTITY_COMMIT_UNCONFIRMED_SENTENCE);
 }
 
-export function CastingTakeover({
+/**
+ * THE DOOR IN FRONT OF THE ENVIRONMENT (#2315 step 1 — his "yes" to switching
+ * off editing a cast on the canvas now, so no pictures go to Google).
+ *
+ * Every road this environment calls to describe, suggest, read a reference or
+ * start a cast is refused on the server by `shared/rebuildDoor.ts`, so opening
+ * it would hand the customer a room full of buttons that each fail. Instead the
+ * canvas's "Cast new" and a cast's Edit open one quiet card that says so, reads
+ * the SAME compiled fact and sentence the server refuses with (working law 4),
+ * and offers the one way back. The environment below stays compiled for step 2
+ * to delete. A wrapper rather than an early return inside it: the environment's
+ * hooks must never sit below a conditional return (React #310).
+ */
+export function CastingTakeover(props: CastingTakeoverProps) {
+  if (!REBUILD_DOOR_OPEN) {
+    return <ClosedCastingTakeover editing={!!props.editContext} onClose={props.onClose} />;
+  }
+  return <OpenCastingTakeover {...props} />;
+}
+
+function ClosedCastingTakeover({ editing, onClose }: { editing: boolean; onClose: () => void }) {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0" style={{ background: 'rgba(10,10,10,0.25)' }} onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="closed-takeover-title"
+        className="relative w-full rounded-canvas-lg p-5 bg-canvas-surface border-hairline border-canvas-border-strong"
+        style={{ maxWidth: 400 }}
+      >
+        <p id="closed-takeover-title" className="text-canvas-lg font-medium text-canvas-ink mb-1.5">
+          {editing ? 'Editing a cast here is paused' : 'Casting from the canvas is paused'}
+        </p>
+        <p className="text-canvas-md text-canvas-ink-soft" style={{ lineHeight: 1.55 }}>
+          {REBUILD_DOOR_CLOSED}
+        </p>
+        {!editing && (
+          <p className="text-canvas-md text-canvas-ink-soft mt-2" style={{ lineHeight: 1.55 }}>
+            You can still cast someone new in Casting.
+          </p>
+        )}
+        <div className="flex justify-end gap-2 mt-4">
+          {!editing && (
+            <button
+              type="button"
+              onClick={() => navigate('/app/casting')}
+              className="px-3.5 py-1.5 rounded-canvas-pill transition-colors text-canvas-md font-medium text-canvas-ink-soft border-hairline border-canvas-border-strong hover:bg-canvas-surface-inset"
+            >
+              Open Casting
+            </button>
+          )}
+          <button
+            type="button"
+            autoFocus
+            onClick={onClose}
+            className="px-3.5 py-1.5 rounded-canvas-pill transition-opacity hover:opacity-90 text-canvas-md font-medium bg-canvas-ink"
+            style={{ color: 'var(--color-canvas-surface)' }}
+          >
+            Back to canvas
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OpenCastingTakeover({
   user,
   isAuthenticated,
   editContext,

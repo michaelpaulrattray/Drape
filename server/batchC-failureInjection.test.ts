@@ -54,6 +54,16 @@ const llmScript = vi.hoisted(() => ({
 
   `server/canvasCastSeal.test.ts` proves the door itself, shut and open.
 */
+/* #2315 step 1: the rebuild door (`shared/rebuildDoor.ts`) now refuses these
+   procedures at the mouth. The arms here test the road BEHIND the door, which
+   stays compiled until step 2 deletes it, so the door is held open for them
+   exactly as the canvas door is held open for the batchC suites — the door
+   itself is driven shut in `server/rebuildDoor.test.ts`. */
+vi.mock("@shared/rebuildDoor", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  REBUILD_DOOR_OPEN: true,
+}));
+
 vi.mock("@shared/canvasCastDoor", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   CANVAS_CAST_OPEN: true,

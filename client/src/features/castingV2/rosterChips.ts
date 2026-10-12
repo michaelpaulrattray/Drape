@@ -67,7 +67,7 @@ export function rosterFilterInput(
 
 /** The heading over the grid. */
 export function chipHeading(chip: RosterChip, campaigns: readonly CampaignRow[]): string {
-  if (chip.kind === "all") return "All cast";
+  if (chip.kind === "all") return "All characters";
   return campaigns.find((row) => row.campaignId === chip.campaignId)?.name ?? "Campaign";
 }
 
@@ -82,7 +82,7 @@ export function rosterEmptyLine(chip: RosterChip, search: string, signedCount: n
     return "No one signed yet — roll a casting, then sign the candidate you want to keep working with.";
   }
   // The rung's design of record names this empty state (the noun ruling of 2026-09-29).
-  if (chip.kind === "campaign") return "No cast in this campaign yet";
+  if (chip.kind === "campaign") return "No characters in this campaign yet";
   return "No one signed yet — roll a casting, then sign the candidate you want to keep working with.";
 }
 
@@ -113,9 +113,9 @@ export function campaignNameReady(typed: string, currentName?: string): boolean 
   return currentName === undefined || trimmed !== currentName.trim();
 }
 
-/** What the delete question says. It asks once, and it says the casts stay. */
+/** What the delete question says. It asks once, and it says the characters stay. */
 export function campaignDeleteBody(name: string, castCount: number): string {
   if (castCount === 0) return `“${name}” is empty, so only the campaign goes.`;
   const who = castCount === 1 ? "The 1 character in it stays" : `The ${castCount} characters in it stay`;
-  return `Deleting “${name}” keeps its cast. ${who} in your library, exactly as before. Only the campaign goes.`;
+  return `Deleting “${name}” keeps its characters. ${who} in your library, exactly as before. Only the campaign goes.`;
 }

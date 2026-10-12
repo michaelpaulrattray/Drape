@@ -4,6 +4,7 @@
  * the environment's controls (prefill, not bypass — the user reviews and
  * generates from the form). Free (text-tier call), but rate-limited.
  */
+import { assertRebuildDoorOpen } from "../../lib/rebuildDoor";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../../_core/trpc";
@@ -23,6 +24,7 @@ export const castingParseRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      assertRebuildDoorOpen(); // #2315 — refused before any charge, row or provider call
       const rate = checkRateLimit(`user:${ctx.user.id}:parse`, RATE_LIMITS.generation);
       if (!rate.allowed) {
         throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(rate.resetIn) });

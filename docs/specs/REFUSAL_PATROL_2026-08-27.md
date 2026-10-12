@@ -176,3 +176,138 @@ leads (none moved a constant, so nothing needs unwinding). $3.81 house.
 
 **Next-run condition (unchanged from run #2, plus one):** new `content_policy`
 rows with id > 1800, or a court adding n — and any such court interleaves.
+
+---
+
+# Run #4 (2026-10-12, seat1-20261012-141545, issue #129 slice 2)
+
+**Status: RUN, and the first run with a corpus built for it. $0 house, 0
+credits, no rows written, nothing enters the rewrite list — and this time the
+reason is MEASURED rather than structural-by-argument.** The reader is tracked
+now (`server/castingV2/refusalLoopCorpus.ts`, driven by
+`server/castingV2/refusalLoopCorpus.test.ts`), so run #5 does not write a
+fourth one. Command:
+
+```
+railway.cmd run --service Drape -- npx tsx scripts/refusal-patrol-read.mts
+```
+
+## 1. The material condition, and what finally changed
+
+Runs #1–#3 read candidate ROWS, where a refused slice dies with its session and
+takes its words with it. Slice 1 (PR #1007, `9d517932`, merged 2026-09-16) keeps
+the sent words of every refused roll's slices — refused AND delivered — on the
+private evidence bucket for 30 days. **That corpus now exists and this is the
+first reading of it.** Read 2026-10-12 at `casting-v2/refusal-loop/`:
+
+```
+keys listed 120 · read 120 · rejected 0
+slices        120   (refused 53 · passed 67)
+operations     15
+owners          1   (userId 1, as every roll in this product's history is)
+DISTINCT TEXTS 12   (refused 12 · passed 12)
+one-text rolls 15 of 15
+COIN rolls     14 of 15
+```
+
+⚠ **120 OBJECTS AMOUNT TO 12 PIECES OF EVIDENCE, AND THAT RATIO IS THE FIRST
+FINDING.** Every one of the fifteen rolls sent ONE prompt for its whole sheet —
+run #1 §2's `distinctPrompts = 1`, now true of 15 of 15 rolls rather than 3 of
+3. A word in a roll where five slices refused is in five refused OBJECTS and in
+exactly one piece of evidence; counting the objects would clear the n ≥ 2 bar on
+a single roll. The reader therefore counts DISTINCT TEXTS everywhere and reports
+slice counts beside them only so the inflation stays visible. It is the sibling
+of this seat's own run #3 rule — *an arm-major refusal reading is a LEAD, never
+a finding* — and three arms of the suite redden if the counting is swapped back.
+
+## 2. THE HEADLINE: the coin is total, and it is no longer an inference
+
+**All 12 distinct texts carry BOTH outcomes. 120 of 120 slices sit on a text
+that was both refused and delivered.**
+
+| text | refused | delivered | rolls |
+|---|---|---|---|
+| `e5cdbcfad6ec…` | **24** | **8** | **4** |
+| `2567bc9f5f05…` | 7 | 1 | 1 |
+| `e99e63232bc3…` | 4 | 4 | 1 |
+| `c6e0aabb36b2…` | 3 | 5 | 1 |
+| `4d994dfbd111…` | 3 | 5 | 1 |
+| `dee3e68ebd94…` | 3 | 5 | 1 |
+| four texts | 2 | 6 | 1 each |
+| three texts | 1 | 7 | 1 each |
+
+The top row is the specimen: **one brief, rolled four times, 32 renders of
+byte-identical words — 24 refused and 8 delivered.** Run #1 read this shape on
+one roll (222: 5 refused, 3 delivered on one text) and called it *"a coin per
+render, not a function of the text."* **That sentence is now measured across 15
+rolls and 12 texts, and it does not merely hold — it is universal in this
+corpus.**
+
+## 3. Trigger candidates: ZERO, and the zero is a reading rather than a silence
+
+The left half of his bar (word refused in ≥ 2 distinct texts, delivered in none)
+admits **nothing**. Two controls were run on the real corpus before that was
+believed, because *"no candidates"* and *"read nothing"* print the same number:
+
+```
+--min-refused-texts 1   → 0 candidates   (so the BAR is not what excludes them)
+distinct words    536
+ever refused      536
+ALSO delivered    536   <- every refused word in the corpus was also allowed
+```
+
+**536 words read, 536 refused at least once, 536 delivered at least once.**
+There is not one word in this corpus that was refused and never allowed, so no
+word is attributable to a refusal — and the instrument demonstrably held words
+while saying so. `vocabularyReach` prints those three numbers on every run for
+exactly this reason.
+
+The gate was also driven on real data: `sternum → collarbones` (#125's pair) and
+`porcelain → weathered` were both REFUSED, each naming its own shortfall — both
+words are absent from this corpus, which is the honest answer rather than a pass
+by omission.
+
+## 4. What this settles, and what it does not
+
+- **Item (2) is BUILT** — the patrol has a tracked reader with 41 arms, three
+  sabotages each reddening a named arm, and its own positive control in every
+  run's output.
+- **Item (3) admits nothing, by measurement.** The bar is his and it is working:
+  a corpus where every refused word was also delivered can produce no pair.
+- **Item (4) stays DEFERRED, and this run is an argument about it rather than
+  only a deferral.** A rewrite list applied before the first send can only help
+  if the refusal is a function of the words; on this road, 12 times out of 12, it
+  is not. **Whether item (4) is ever worth building is now a question with
+  evidence against it**, and that is a founder-facing finding, not a shift's call.
+- **Item (5) has nothing to show** — it displays rewrites, and there are none.
+- ⚠ **The retry is the thing this run actually vindicates.** Identical words
+  delivered 8 times while refusing 24 on the same brief; across the corpus 67 of
+  120 slices passed on texts that also refused. A same-text Retry is not a
+  consolation prize on this road, it is the measured rescue — run #1 §5 said so
+  first, and `CASTING_RETRY_SCOPE` has been `all` since his switch sitting
+  (2026-09-24), so the product already does the right thing.
+- **Attribution still needs a controlled, INTERLEAVED swap court** (run #3's
+  standing rule). Nothing in a corpus of one-prompt rolls can replace it.
+
+## 5. Next-run condition
+
+Re-run when ANY of these is true, and not before — a patrol that finds nothing
+writes one line:
+
+1. **The corpus holds a text that refused and never passed** — i.e. the reading
+   above stops being universal. That is one command and it is free.
+2. **A roll road sends per-slice prompts again.** Every bar here is blind while
+   15 of 15 rolls send one text; the house road's persona-varied slices allowed a
+   within-roll diff, and the author road does not.
+3. **An interleaved swap court adds n**, in which case its arms are judged
+   through `measuredPairVerdict` rather than by eye.
+
+⚠ **AND ONE DATE MATTERS: the oldest objects reach their 30-day window about
+2026-10-22.** The corpus is born held and the worker collects object and row
+together when the hold lapses, so the 2026-09-22 rolls leave first. Nothing is
+lost that this record does not already carry — the census, the coin table and
+the three reach numbers are here precisely because the words themselves are not
+quoted anywhere and will be gone.
+
+**No customer prose appears in this record, by the same rule the reader follows:
+a composed prompt is the cast's recipe in sentences.**
