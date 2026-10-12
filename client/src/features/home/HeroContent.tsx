@@ -28,13 +28,11 @@ export function HeroContent({ onPlayDemo }: HeroContentProps) {
   const [submitted, setSubmitted] = useState(false);
 
   const joinMutation = trpc.waitlist.join.useMutation({
-    onSuccess: (data) => {
+    // One answer for every address (#2450): the server no longer says whether
+    // an email was already on the list, so neither does this.
+    onSuccess: () => {
       setSubmitted(true);
-      if (data.alreadyRegistered) {
-        toast.info("You're already on the waitlist.");
-      } else {
-        toast.success("You're on the list — we'll be in touch.");
-      }
+      toast.success("You're on the list — we'll be in touch.");
     },
     onError: () => {
       toast.error("Something went wrong. Please try again.");

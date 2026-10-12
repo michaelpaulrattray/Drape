@@ -15,6 +15,16 @@ export const WAITLIST_STATS_RATE = {
   keyPrefix: "waitlist_stats",
 } as const;
 
+/**
+ * The one answer `waitlist.join` gives, whoever is asking (#2450). It used to
+ * carry `alreadyRegistered` — and `position`, the row id, which is an old
+ * number for an address already on the list and the newest one for a fresh
+ * address — so anyone could test an email against the list one call at a time.
+ * The same class is closed on sign-in (#2376), sign-up (#2443),
+ * resend-verification and the newsletter (#2446). No client read `position`.
+ */
+export const WAITLIST_JOINED_ANSWER = { success: true } as const;
+
 export const waitlistRouter = router({
   // Join the waitlist
   join: publicProcedure
@@ -63,11 +73,10 @@ export const waitlistRouter = router({
         log.warn({ err: err?.message }, "[Waitlist] Klaviyo sync failed (non-blocking)");
       });
 
-      return {
-        success: true,
-        position: result.position,
-        alreadyRegistered: result.error === "already_registered",
-      };
+      // ONE ANSWER FOR EVERY ADDRESS — a new address and one already on the
+      // list get the same body, field for field (#2450). Joining twice is
+      // harmless: the second call adds nothing.
+      return WAITLIST_JOINED_ANSWER;
     }),
 
   // The real number of signups, nothing added (#2375, on his word 2026-10-12:
