@@ -1,7 +1,7 @@
 {
-  "edition": 689,
-  "updatedAt": "2026-10-12T13:10:00.000Z",
-  "shift": "Foreman — foreman-20261012-2240 (focus: #2115 — your word this morning opened the bug hunt, and it had reached neither the rulebook nor this page)",
+  "edition": 690,
+  "updatedAt": "2026-10-13T00:25:00.000Z",
+  "shift": "Foreman — foreman-20261012-2355 (focus: #2315 — the Gemini retirement's last step measured, and it turns out to need your word rather than a build)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -136,7 +136,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T12:54:50.774Z",
+      "readAt": "2026-10-12T14:05:41.336Z",
       "items": [
         {
           "issueNumber": 14,
@@ -298,6 +298,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "gemini-code-delete-2315",
+      "title": "The wardrobe is switched off — delete its code now, or keep it until the redesign?",
+      "productImpact": "Nothing a customer can see is waiting on this, and no pictures are going to Google any more. That part is finished and live, and so is removing the key.\n\nWhat is left is a tidy-up question. The old wardrobe and the old casting-refine screens are switched off. A customer cannot reach any of them: the wardrobe only ever opened inside the old studio, which is admin-only, and the lobby pages that used to show garments were unhooked weeks ago. I checked all forty-six places the code still calls those switched-off screens. Not one of them is something a customer can press.\n\nSo deleting the code now buys nothing a customer would feel. And in September you asked for the opposite, in your own words: that the wardrobe stays in the codebase so we can see how it works while the redesign is going on.\n\nYour later word on this card was to retire the paths and remove the key. Both are done. Whether that also meant delete the code you asked to keep is the one thing I cannot decide for you.",
+      "workedExample": "Nothing changes for a customer either way. The difference is what a developer finds in six weeks: either the old wardrobe is still there to read while the new one is designed, or it is gone and the only record is the history.",
+      "options": [
+        {
+          "key": "keep",
+          "label": "KEEP — leave the code where it is, switched off",
+          "consequence": "Nothing changes today. The old wardrobe stays readable while the redesign is on, and it goes later with the rest of the old studio, when the map says nothing still calls it."
+        },
+        {
+          "key": "delete",
+          "label": "DELETE — take the wardrobe and old refine code out now",
+          "consequence": "Several careful changes over a few nights, invisible to customers. The old wardrobe stops being there to read during the redesign, and the only record is the history."
+        }
+      ],
+      "recommendation": "Recommend KEEP, and close this card. The two things you asked for — no pictures to Google, and the key gone — are both done and live. Deleting the code is a separate job that already has a home later, and your September word asked for it to stay readable until the redesign is through.",
+      "state": "open",
+      "filedAt": "2026-10-13T00:25:00.000Z",
+      "issueNumber": 2315
+    },
     {
       "id": "n2d-provider-lawyer-2314",
       "title": "N2d needs your hand twice, and your lawyer once — nothing waits on it to start building",
@@ -10586,7 +10608,7 @@
     286
   ],
   "nextUp": {
-    "readAt": "2026-10-12T12:54:50.773Z",
+    "readAt": "2026-10-12T14:05:41.334Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10661,7 +10683,11 @@
       {
         "issueNumber": 2315,
         "title": "Retire every Gemini path and remove GEMINI_API_KEY — wardrobe, the legacy casting refine, and the canvas's old model-edit routing",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — DELETE the wardrobe and legacy refine code now, or KEEP it readable per your #364 word? Recommend KEEP and close this card."
+        }
       }
     ]
   }
