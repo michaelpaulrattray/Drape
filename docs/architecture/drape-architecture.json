@@ -7610,7 +7610,8 @@
       "file": "server/routes/billing.ts",
       "clientCallers": [
         "client/src/features/billing/ChangePlanModal.tsx",
-        "client/src/features/settings/sections/BillingSection.tsx"
+        "client/src/features/settings/sections/BillingSection.tsx",
+        "client/src/features/settings/sections/UsageSection.tsx"
       ]
     },
     {
@@ -7626,7 +7627,8 @@
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
         "client/src/features/settings/AccountSurfaces.tsx",
-        "client/src/features/settings/sections/BillingSection.tsx"
+        "client/src/features/settings/sections/BillingSection.tsx",
+        "client/src/features/settings/sections/UsageSection.tsx"
       ]
     },
     {
@@ -7643,7 +7645,8 @@
         "client/src/features/billing/ChangePlanModal.tsx",
         "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/AccountSurfaces.tsx",
-        "client/src/features/settings/sections/BillingSection.tsx"
+        "client/src/features/settings/sections/BillingSection.tsx",
+        "client/src/features/settings/sections/UsageSection.tsx"
       ]
     },
     {
@@ -12915,6 +12918,10 @@
     {
       "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
       "path": "client/src/features/settings/sections/billingSection2393.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/usageSection2430.test.ts",
+      "path": "client/src/features/settings/sections/usageSection2430.test.ts"
     },
     {
       "id": "test:client/src/features/settings/settings387-guard.test.ts",
@@ -21789,6 +21796,11 @@
     {
       "from": "module:client/src/features/settings/sections/UsageSection.tsx",
       "to": "module:client/src/features/settings/parts.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/UsageSection.tsx",
+      "to": "module:client/src/features/settings/sections/BillingSection.tsx",
       "kind": "imports"
     },
     {
