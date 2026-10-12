@@ -258,7 +258,10 @@ export type SignedCastProjection = {
    */
   notice: string | null;
   capabilities: Record<string, CastCapability>;
-  /** "Cast from a sheet on 2 August" — provenance in one line. */
+  /**
+   * "Created on 2 August" — the CAST's own moment (`models.createdAt`), the
+   * instant the creation record and the certificate also read (#2360).
+   */
   provenance: string | null;
   /**
    * Her sheet is still a place you can go.
@@ -912,9 +915,17 @@ export function projectSignedCast(input: {
           : null,
       indexLabel: String(sibling.position + 1).padStart(2, "0"),
     })),
-    provenance: input.lineage.castFromAt
-      ? `Created on ${formatCastDate(input.lineage.castFromAt)}`
-      : null,
+    /*
+      "Created" names the CAST's own moment — `models.createdAt`, the very
+      field the creation record and the certificate read
+      (`server/db/castCreationRecords.ts`), so the two sentences can never name
+      different days (#2360, his word 2026-10-12 accepting the relay's
+      recommendation). It read `lineage.castFromAt`, the ROLL's moment, until
+      then: a roll that crossed midnight before the keep put a whole day
+      between two lines both labelled "Created", in every timezone. The record
+      already calls the roll's moment `rolledAt`, a different word.
+    */
+    provenance: `Created on ${formatCastDate(input.model.createdAt)}`,
     sheetOpen: input.sheetLive ?? false,
     pronouns: castPronouns(input.model.technicalSchema),
     persona: projectCastPersona(input.model),
