@@ -500,32 +500,32 @@ export function useCastingGeneration({
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
       return "completed";
     } catch (error) {
-      // `raw` only decides which branch below runs — both tests read our own
-      // server's sentences. What the customer is SHOWN is `message` (#2432).
-      const raw = error instanceof Error ? error.message : "";
+      // `message` only decides which branch below runs — both tests read our
+      // own server's sentences. What the customer is SHOWN is `shown` (#2432).
+      const message = error instanceof Error ? error.message : "";
       logRawFailure("casting.iterate", error);
-      const message = readableFailure(error, "That edit didn't finish. Try again.");
-      castingOperation.fail({ message, background: !session.isCurrent() });
+      const shown = readableFailure(error, "That edit didn't finish. Try again.");
+      castingOperation.fail({ message: shown, background: !session.isCurrent() });
       if (!session.isCurrent()) return "failed";
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
       // (D-40), with a working Fork door. No failed-action retry: retrying
       // the same edit would be refused again by design.
-      if (raw.includes("identity is minted")) {
+      if (message.includes("identity is minted")) {
         setGenState({
           isGenerating: false,
           currentStep: "",
           error: null,
-          identityRefusal: { message, editText: prompt },
+          identityRefusal: { message: shown, editText: prompt },
         });
         return "failed";
       }
-      if (/insufficient credits/i.test(raw)) {
+      if (/insufficient credits/i.test(message)) {
         setIsTopupOpen(true);
       }
-      setGenState({ isGenerating: false, currentStep: "", error: message });
+      setGenState({ isGenerating: false, currentStep: "", error: shown });
       setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
-      toast.error(message);
+      toast.error(shown);
       return "failed";
     }
   }, [currentModelId, currentAssets, activeView, getSessionToken, setIsTopupOpen]);
