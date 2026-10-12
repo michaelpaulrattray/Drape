@@ -209,8 +209,9 @@ describe("the offer, drawn inside IN CAMPAIGNS", () => {
   it("asks in the customer's words, lists their campaigns, and has two ways out", () => {
     const words = text(render({ offer: offerProps() }));
     expect(words).toContain("Add Leave Test to a campaign?");
-    expect(words).toContain("Summer refill 3 casts");
-    expect(words).toContain("Autumn launch 1 cast");
+    expect(words).toContain("Summer refill 3 characters");
+    expect(words).toContain("Autumn launch 1 character");
+    expect(words).not.toMatch(/\b\d+ casts?\b/);
     expect(words).toContain("Not now");
     expect(words).toContain("Don’t ask again");
     /* It stands in for the empty line and the add row rather than stacking on them. */

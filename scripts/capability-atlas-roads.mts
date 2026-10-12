@@ -246,6 +246,35 @@ export const ROADS: readonly Road[] = [
     ],
   },
   {
+    id: "creation-record",
+    procedures: [],
+    title: "The creation record — a signed, independently timestamped record behind each Klieg ID (built dark)",
+    entrances: [
+      "server/castingV2/signService.ts",
+      "server/castingV2/creationRecordService.ts",
+    ],
+    summary:
+      "N2d-1 (#2311; design docs/specs/N2D_RECORD_OF_CREATION_DESIGN_2026-10-12.md). The LAST act of a Sign's detached "
+      + "continuation - after the views are sealed, the money settled and the receipt written, outside every transaction - "
+      + "builds a canonical JSON record of who made the cast, when, a SHA-256 of its original master picture and the steps "
+      + "taken as EVENTS, signs it Ed25519, stores it, and stamps its hash with an independent RFC 3161 authority. Nothing "
+      + "a customer sees reads it yet: the certificate (N2d-2) and the check page (N2d-3) are the later surfaces.",
+    doors: [],
+    doorsNote:
+      "No customer-facing door and no procedure: nothing a customer calls reaches this road on this card. It is entered "
+      + "from inside the Sign (signService.ts, after the persona write) and by `ensureCastCreationRecord`, the "
+      + "backfill-on-first-request entrance whose first production callers are N2d-2 and N2d-3 - declared, not hidden. "
+      + "Its refusals are internal outcomes (dark, not a signed cast, not minted, no anchor) and are pinned by "
+      + "creationRecordService.test.ts and castCreationRecords.test.ts rather than by census rows.",
+    flags: ["CASTING_V2_SCOPE", "CASTING_CREATION_RECORD_SCOPE"],
+    notes: [
+      "THE BOUND IS CODE (design §3, the rung's most important sentence): masterPrompt, technicalSchema, preferences, the brief, a refine's words, the identity text and the persona lines never enter a record. The builder constructs it field by field and never spreads an input, and `assertCreationRecordBound` refuses to sign a document carrying any refused key at any depth; the db read never SELECTS the recipe at all. Each half is driven with a caller that hands it the recipe on purpose.",
+      "THE TIMESTAMP IS A MEASURED CAPABILITY CHOICE, DATED 2026-10-12: RFC 3161, DigiCert's public TSA first (0.43-0.46 s warm, 1.6 s cold) and FreeTSA second (~1.0 s), both $0, the token stored whole (DER, with the authority's certificate inside, so it verifies offline forever) and ONLY once its CMS signature verifies in-process against one of two pinned roots - DigiCert answers only over plain HTTP, so the signature, not the transport, is what makes a token ours to keep. Which authority answered is recorded internally and never named to a customer - every surface says 'independently timestamped'. An authority that refuses or times out NEVER fails the Sign: the record is signed and stored first and its stamp is retried on its next request. Like every engine choice it carries an expiry; a rung that touches this road re-asks it.",
+      "ON WITHOUT THE KEY REFUSES BOOT. `CASTING_CREATION_RECORD_SCOPE` on with the secret it names (`CREATION_RECORD_PRIVATE_KEY_VARIABLE`) absent, malformed or a mismatched pair stops the process naming the variable and never its value (invariant 7) - a signing road must refuse rather than skip. The key is a secret and is deliberately not an `*_ENV` constant, so it can never land on the flag-position table whose values the deploy rite prints.",
+      "GONE STAYS GONE: a record is deleted inside the cast's own final-deletion transaction and with the account, because it carries the Klieg ID and the maker's display name; it is INSERTED only out of the owner's live cast (INSERT ... SELECT over signedCastWhere) and READ only through a join on it, so a cast deleted mid-flight leaves nothing behind. It signs the DISPLAY name or no name, never the account's real name, and the data export carries it.",
+    ],
+  },
+  {
     id: "persona-reads",
     procedures: [
       "castingV2.draftCastReads",

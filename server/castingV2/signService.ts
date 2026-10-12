@@ -145,6 +145,7 @@ import type { CastPersonaDraft, CastPersonaReader } from "./castPersona";
 import type { ReferenceImage } from "../providers/types";
 import { castingCastPersonaReader } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
+import { mintCreationRecordOnSign } from "./creationRecordService";
 
 const log = createModuleLogger("castingV2/signService");
 
@@ -180,6 +181,14 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
   personaReader?: () => CastPersonaReader | null;
   /** The write of those two lines. Injected so an arm can see it happen. */
   writePersona?: typeof writeCastPersonaDraft;
+  /**
+   * THE CREATION RECORD BEHIND THE KLIEG ID - N2d-1 (#2311).
+   *
+   * Injected so an arm can see it called, in its place, with this Sign's own
+   * cast. Absent, the real road runs, and it is DARK unless
+   * `CASTING_CREATION_RECORD_SCOPE` admits the owner.
+   */
+  mintCreationRecord?: typeof mintCreationRecordOnSign;
   /**
    * How the package work is scheduled after the Cast exists.
    *
@@ -1371,6 +1380,33 @@ async function completeSignPackage(
       modelId: input.modelId,
       operationId: input.operationId,
       read: personaRead,
+    });
+    /*
+      THE CREATION RECORD - N2d-1 (#2311), and it is the LAST act on purpose.
+
+      After the seal, after the money, after the receipt and outside every
+      transaction (the card: "after the mint commits, never inside the money
+      transaction"). It reads the cast as SEALED - `mintedAt` and the sealed
+      identity exist only once activation has run inside the package - so it
+      could not honestly come earlier.
+
+      ⚠ **IT CANNOT FAIL THE SIGN.** `mintCreationRecordOnSign` catches
+      everything and logs, and an authority that refuses to stamp leaves a
+      signed, unstamped record that retries on its first request. Dark unless
+      `CASTING_CREATION_RECORD_SCOPE` admits the owner, so production behaves
+      exactly as before until that flag moves.
+    */
+    await (dependencies.mintCreationRecord ?? mintCreationRecordOnSign)({}, {
+      userId: input.userId,
+      modelId: input.modelId,
+      operationId: input.operationId,
+    }).catch((error: unknown) => {
+      /* The real road never throws; this keeps anything that does from being
+         logged below as a package that "could not be sealed" (it was sealed). */
+      log.error(
+        { operationId: input.operationId, modelId: input.modelId, err: error },
+        "[signService] the creation record road threw after a sealed Sign — the cast stands",
+      );
     });
   } catch (error) {
     /*
