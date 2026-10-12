@@ -162,7 +162,6 @@ export const creationCheckRouter = router({
     const projected = record
       ? projectPublicCreationCheck({
         kliegId: cast.kliegId,
-        castName: cast.name,
         recordJson: record.recordJson,
         stampedAt: record.stampedAt,
       })

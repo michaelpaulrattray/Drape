@@ -10,8 +10,8 @@
  * `projectPublicCreationCheck` is the ONLY road from a stored record to a
  * public answer, and the owner's preview goes through the same function, so
  * what the owner is shown before turning the page on is exactly what a stranger
- * will see (derived, never mirrored — working law 4). It names seven fields:
- * the ID, the cast's name, the maker's display name, the creation date, the
+ * will see (derived, never mirrored — working law 4). It names six fields:
+ * the ID, the maker's display name, the creation date, the
  * record date, the independent stamp date, and the fingerprint of the master
  * picture. It never spreads the record: the record also carries the account
  * id and the steps, and neither belongs to a stranger (the account id is "your
@@ -58,10 +58,14 @@ export function normaliseCreationCheckId(raw: string): string | null {
   return null;
 }
 
-/** The seven fields a stranger may see. Nothing else crosses this boundary. */
+/**
+ * The six fields a stranger may see. Nothing else crosses this boundary.
+ * ⚠ The cast's NAME is deliberately not one of them (finding 1 on PR #2325):
+ * every field here is read from the signed record or its stamp, and the name is
+ * neither. It waits on #2323; `creationCheckRoute.test.ts` pins its absence.
+ */
 export type PublicCreationCheck = {
   kliegId: string;
-  castName: string | null;
   makerName: string | null;
   /** When the character was made (the Sign), ISO. */
   createdAt: string;
@@ -93,7 +97,6 @@ function isoOrNull(value: unknown): string | null {
  */
 export function projectPublicCreationCheck(input: {
   kliegId: string;
-  castName: string | null;
   recordJson: string;
   stampedAt: Date | null;
 }): PublicCreationCheck | null {
@@ -116,10 +119,8 @@ export function projectPublicCreationCheck(input: {
     : null;
   if (!createdAt || !recordedAt || !fingerprint) return null;
   const signedName = typeof doc.maker?.displayName === "string" ? doc.maker.displayName : null;
-  const castName = input.castName?.trim() ? input.castName.trim().slice(0, 128) : null;
   return {
     kliegId: input.kliegId,
-    castName,
     /* The name the record SIGNED, re-passed through the same rule that chose it
        (never an address, never `users.name`) — belt and braces on a public page. */
     makerName: makerDisplayName(signedName),

@@ -87,7 +87,7 @@ describe("the public read — one statement, and each oracle arm is a clause of 
   it("sends exactly ONE statement, whatever the answer", async () => {
     await readPublicCreationCheck(KI);
     expect(sent).toHaveLength(1);
-    answers = [[[KI, USER_ID, "Ada", "{}", null]]];
+    answers = [[[KI, USER_ID, "{}", null]]];
     sent.length = 0;
     await readPublicCreationCheck(KI);
     expect(sent).toHaveLength(1);
@@ -121,6 +121,8 @@ describe("the public read — one statement, and each oracle arm is a clause of 
     const selected = sent[0]!.sql.slice(0, sent[0]!.sql.toLowerCase().indexOf(" from "));
     expect(selected).not.toMatch(RECIPE);
     expect(selected).toMatch(/`recordJson`/);
+    /* ⚠ The cast's name is never read for a stranger (finding 1 on PR #2325). */
+    expect(selected).not.toMatch(/`models`\.`name`/);
     expect(selected).toMatch(/`stampedAt`/);
     /* POSITIVE CONTROL for the reader above: it does see a recipe column when one is there. */
     expect("select `masterPrompt` ").toMatch(RECIPE);
@@ -129,11 +131,10 @@ describe("the public read — one statement, and each oracle arm is a clause of 
   it("returns null for no row, and the row for one", async () => {
     expect(await readPublicCreationCheck(KI)).toBeNull();
     sent.length = 0;
-    answers = [[[KI, USER_ID, "Ada", "{\"a\":1}", null]]];
+    answers = [[[KI, USER_ID, "{\"a\":1}", null]]];
     expect(await readPublicCreationCheck(KI)).toEqual({
       kliegId: KI,
       ownerId: USER_ID,
-      castName: "Ada",
       recordJson: "{\"a\":1}",
       stampedAt: null,
     });
@@ -142,8 +143,8 @@ describe("the public read — one statement, and each oracle arm is a clause of 
 
 describe("the owner's statements carry the owner (invariants 1 and 2)", () => {
   it("resolving the cast binds the owner and the live, signed predicate", async () => {
-    answers = [[[MODEL_ID, "Ada"]]];
-    expect(await resolveOwnedSignedCast(USER_ID, KI)).toEqual({ modelId: MODEL_ID, name: "Ada" });
+    answers = [[[MODEL_ID]]];
+    expect(await resolveOwnedSignedCast(USER_ID, KI)).toEqual({ modelId: MODEL_ID });
     expect(sent).toHaveLength(1);
     expect(bindsOwner(sent[0]!)).toBe(true);
     expect(sent[0]!.sql).toMatch(/`deletedAt` is null/);

@@ -11,7 +11,7 @@
  *      an ID whose OWNER's scope is off and a record that cannot be read, all
  *      come back DEEP-EQUAL and BYTE-EQUAL — with a positive control (a page
  *      that is on) that is different, so "identical" cannot be a broken caller.
- *   2. The public answer carries EXACTLY seven fields — never the account id,
+ *   2. The public answer carries EXACTLY six fields — never the account id,
  *      the steps, a picture, an address or an email (the 2026-07-25 bound).
  *   3. The rate limit fires per IP before anything is read, as a real
  *      `TOO_MANY_REQUESTS` (invariant 6), and identically for every ID.
@@ -86,7 +86,6 @@ const RECORD_JSON = JSON.stringify({
 const ON_ROW = {
   kliegId: KI,
   ownerId: OWNER,
-  castName: "Pigman",
   recordJson: RECORD_JSON,
   stampedAt: new Date("2026-10-12T05:00:01.000Z"),
 };
@@ -104,7 +103,7 @@ function owner(id = OWNER) {
 beforeEach(() => {
   calls.length = 0;
   store.publicRow = null;
-  store.owned = { modelId: 907, name: "Pigman" };
+  store.owned = { modelId: 907 };
   store.switchRow = null;
   store.setResult = { updated: true };
   store.record = null;
@@ -165,17 +164,16 @@ describe("⚠ no existence oracle — every ID with no public page answers ident
   });
 });
 
-describe("what a stranger sees — seven fields and nothing else", () => {
-  it("projects exactly the seven, never the account, the steps, a picture or an email", async () => {
+describe("what a stranger sees — six fields and nothing else", () => {
+  it("projects exactly the six, never the account, the steps, a picture or an email", async () => {
     store.publicRow = ON_ROW;
     const answer = await stranger().call.lookup({ kliegId: KI });
     expect(Object.keys(answer).sort()).toEqual(
-      ["castName", "createdAt", "fingerprint", "found", "kliegId", "makerName", "recordedAt", "stampedAt"].sort(),
+      ["createdAt", "fingerprint", "found", "kliegId", "makerName", "recordedAt", "stampedAt"].sort(),
     );
     expect(answer).toEqual({
       found: true,
       kliegId: KI,
-      castName: "Pigman",
       makerName: "Ada Studio",
       createdAt: "2026-09-03T10:00:00.000Z",
       recordedAt: "2026-10-12T05:00:00.000Z",
@@ -184,6 +182,29 @@ describe("what a stranger sees — seven fields and nothing else", () => {
     });
     const wire = JSON.stringify(answer);
     expect(wire).not.toMatch(/accountId|steps|"41"|:41[,}]|http|\.png|\.jpg|@/);
+  });
+
+  it("⚠ NEVER THE CAST'S NAME — even when the row and the record both carry one (finding 1 on PR #2325)", async () => {
+    /* A store that (wrongly) hands the name back, and a record that (wrongly)
+       names the cast: neither may reach a stranger. The name is unsigned and
+       customer-written, and it waits on #2323. */
+    const leaky = {
+      ...ON_ROW,
+      castName: "Pigman",
+      name: "Pigman",
+      recordJson: RECORD_JSON.replace('"recordVersion"', '"castName":"Pigman","name":"Pigman","recordVersion"'),
+    };
+    store.publicRow = leaky;
+    const answer = await stranger().call.lookup({ kliegId: KI });
+    expect(answer).toMatchObject({ found: true });
+    expect(answer).not.toHaveProperty("castName");
+    expect(answer).not.toHaveProperty("name");
+    expect(JSON.stringify(answer)).not.toContain("Pigman");
+    /* And the preview, through the same projector. */
+    store.record = { recordJson: leaky.recordJson, stampedAt: null };
+    const preview = await owner().preview({ castId: KI });
+    expect(preview).not.toHaveProperty("castName");
+    expect(JSON.stringify(preview)).not.toContain("Pigman");
   });
 
   it("a display name that is an address is dropped, even though the record signed it", () => {

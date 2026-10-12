@@ -30,7 +30,6 @@ export const PUBLIC_CHECK_FOOTNOTE =
   "This page is evidence of creation. It shows when this character was made, and nothing else.";
 
 export const PUBLIC_CHECK_LABELS = {
-  id: "Klieg ID",
   madeBy: "Made by",
   created: "Created",
   recorded: "Recorded",

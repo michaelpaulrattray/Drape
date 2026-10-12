@@ -19,7 +19,8 @@ import { describe, expect, it, vi } from "vitest";
    2. the page CANNOT be turned on from the card without the preview showing:
       the only "Turn on" control is drawn inside the previewing state, under the
       record, and is disabled until the record has arrived;
-   3. the record view draws seven facts and NO picture — no <img>, no
+   3. the record view draws six facts, the Klieg ID as its heading, NO cast
+      name and NO picture — no <img>, no
       background image, no address;
    4. every customer string says "evidence of creation" and never claims
       ownership or names the machinery (design §2 Q3), with a positive control
@@ -33,7 +34,6 @@ const copy = await import("@shared/creationCheckCopy");
 
 const RECORD = {
   kliegId: "KI-AAAA-BBBB-CCCC-DDDD",
-  castName: "Pigman",
   makerName: "Ada Studio",
   createdAt: "2026-09-03T10:00:00.000Z",
   recordedAt: "2026-10-12T05:00:00.000Z",
@@ -105,12 +105,12 @@ describe("the page is SHOWN before it goes on", () => {
   });
 });
 
-describe("the record view: seven facts and no picture", () => {
+describe("the record view: six facts and no picture", () => {
   const html = renderToStaticMarkup(createElement(CreationCheckRecordView, { record: RECORD }));
 
-  it("draws the name, the ID, the maker, both dates and the fingerprint", () => {
+  it("draws the ID as the heading, the maker, both dates and the fingerprint", () => {
     const words = text(html);
-    expect(words).toContain("Pigman");
+    expect(html).toMatch(/<h1[^>]*>KI-AAAA-BBBB-CCCC-DDDD<\/h1>/);
     expect(words).toContain(RECORD.kliegId);
     expect(words).toContain("Ada Studio");
     expect(words).toContain("3 September 2026");

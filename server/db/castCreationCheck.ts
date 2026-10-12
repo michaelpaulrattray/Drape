@@ -26,7 +26,7 @@
  * ⚠ **EXPLICIT PROJECTIONS ONLY (invariant 8).** Nothing here selects
  * `masterPrompt`, `technicalSchema`, `preferences`, a storage key or any
  * address of a picture; the public read selects the record's signed JSON (whose
- * shape the §3 bound already holds), the stamp time, the cast's name and the
+ * shape the §3 bound already holds), the stamp time and the
  * ID — and the projector in `server/castingV2/creationCheck.ts` narrows that to
  * what a stranger may see. `castCreationCheck.test.ts` reads the SQL this
  * module really sends.
@@ -47,15 +47,15 @@ function assertPositiveId(value: number, name: string): void {
   if (!Number.isInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer`);
 }
 
-/** The owner's signed, live cast behind a public Klieg ID — its internal id and its name. */
+/** The owner's signed, live cast behind a public Klieg ID — its internal id only. */
 export async function resolveOwnedSignedCast(
   userId: number,
   kliegId: string,
-): Promise<{ modelId: number; name: string | null } | null> {
+): Promise<{ modelId: number } | null> {
   assertPositiveId(userId, "userId");
   const db = await requireDb();
   const [cast] = await db
-    .select({ modelId: models.id, name: models.name })
+    .select({ modelId: models.id })
     .from(models)
     .where(and(eq(models.agencyId, kliegId), signedCastWhere(userId)))
     .limit(1);
@@ -126,11 +126,16 @@ function affectedRows(result: unknown): number {
   return Number((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0);
 }
 
-/** What the public read hands the projector — never a picture, never the recipe. */
+/**
+ * What the public read hands the projector — never a picture, never the recipe,
+ * and ⚠ NEVER THE CAST'S NAME (the relay's finding 1 on PR #2325): the name is
+ * unsigned, customer-written and editable, on a page whose promise is that
+ * what it shows is signed, and #2313's banner holds it for #2323's answer.
+ * Showing it would be its own change. `models.name` is not selected.
+ */
 export type PublicCreationCheckRow = {
   kliegId: string;
   ownerId: number;
-  castName: string | null;
   recordJson: string;
   stampedAt: Date | null;
 };
@@ -146,7 +151,6 @@ export async function readPublicCreationCheck(kliegId: string): Promise<PublicCr
     .select({
       kliegId: models.agencyId,
       ownerId: castCreationRecords.userId,
-      castName: models.name,
       recordJson: castCreationRecords.recordJson,
       stampedAt: castCreationRecords.stampedAt,
     })

@@ -117,6 +117,8 @@ export interface GdprExportData {
     signingKeyId: string;
     timestampToken: string | null;
     stampedAt: string | null;
+    /** When the owner turned the public check page on; null while it is off (#2313). */
+    publicAt: string | null;
     createdAt: string;
   }>;
   evidence: {
@@ -354,6 +356,9 @@ export async function exportUserData(
       signingKeyId: castCreationRecords.signingKeyId,
       timestampToken: castCreationRecords.timestampToken,
       stampedAt: castCreationRecords.stampedAt,
+      /* The owner's public check-page switch (N2d-3, #2313): a publication
+         choice they made, so it is theirs to see in the export. */
+      publicAt: castCreationRecords.publicAt,
       createdAt: castCreationRecords.createdAt,
     })
     .from(castCreationRecords)
@@ -371,6 +376,7 @@ export async function exportUserData(
       signingKeyId: record.signingKeyId,
       timestampToken: record.timestampToken,
       stampedAt: record.stampedAt?.toISOString() ?? null,
+      publicAt: record.publicAt?.toISOString() ?? null,
       createdAt: record.createdAt.toISOString(),
     }];
   });

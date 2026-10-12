@@ -40,7 +40,7 @@ export default function CreationCheck() {
   const found = lookup.data?.found === true ? lookup.data : null;
   useEffect(() => {
     document.title = found
-      ? `${found.castName ?? found.kliegId} · ${PUBLIC_CHECK_HEADING} · Klieg`
+      ? `${found.kliegId} · ${PUBLIC_CHECK_HEADING} · Klieg`
       : `${PUBLIC_CHECK_HEADING} · Klieg`;
   }, [found]);
 

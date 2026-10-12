@@ -21,13 +21,12 @@ import "./creationCheck.css";
  * Q2: "shows the page before it goes on") — a second rendering for the preview
  * would be a copy free to drift from the page it promises.
  *
- * Seven facts and no picture. The fingerprint is drawn the way a passport
+ * Six facts and no picture, the Klieg ID as the heading. The fingerprint is drawn the way a passport
  * number is (design §2 Q1): a fact to quote, in the mono face, and nothing
  * explaining what a hash is.
  */
 export type CreationCheckRecordData = {
   kliegId: string;
-  castName: string | null;
   makerName: string | null;
   createdAt: string;
   recordedAt: string;
@@ -52,14 +51,13 @@ export function CreationCheckRecordView({
     <article className="dpx-check" aria-label={PUBLIC_CHECK_HEADING}>
       <header className="dpx-check__head">
         <span className="dpx-check__eyebrow">{PUBLIC_CHECK_HEADING}</span>
-        <Title className="dpx-check__title">{record.castName ?? record.kliegId}</Title>
+        {/* THE KLIEG ID IS THE HEADING. The cast's name is not on this page (the
+            relay's finding 1 on PR #2325): it is unsigned and customer-written,
+            and it waits on #2323. The ID is the one thing a visitor came with. */}
+        <Title className="dpx-check__title dpx-check__title--id">{record.kliegId}</Title>
         <p className="dpx-check__real">{PUBLIC_CHECK_REAL_LINE}</p>
       </header>
       <dl className="dpx-check__facts">
-        <div className="dpx-check__row">
-          <dt>{PUBLIC_CHECK_LABELS.id}</dt>
-          <dd className="dpx-check__mono">{record.kliegId}</dd>
-        </div>
         {record.makerName ? (
           <div className="dpx-check__row">
             <dt>{PUBLIC_CHECK_LABELS.madeBy}</dt>
