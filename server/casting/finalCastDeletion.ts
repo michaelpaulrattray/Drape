@@ -43,6 +43,7 @@ import { createModuleLogger } from "../logging/logger";
 import { assertOwnedEvidenceStorageKey } from "./evidence/evidenceLifecycle";
 import { parseEvidenceStorageKey } from "./evidence/evidenceDelivery";
 import { purgeCastLineageIn } from "./castLineagePurge";
+import { deleteCastCreationRecordsIn } from "../db/castCreationRecords";
 import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/finalCastDeletion");
@@ -1142,6 +1143,16 @@ export async function executeFinalCastDeletion(input: {
       modelId: input.modelId,
       sourceCandidateId: lineageSource?.sourceCandidateId ?? null,
     });
+
+    /*
+      THE CREATION RECORD GOES WITH THE CAST — N2d-1 (#2311), design §3:
+      "a deleted cast's record dies with it". It holds the Klieg ID and the
+      maker's display name, so a record surviving the tombstone would keep
+      exactly the facts this deletion promises to forget. Owner and cast in
+      the one WHERE, inside this transaction, so it cannot outlive a deletion
+      that rolled back nor survive one that committed.
+    */
+    await deleteCastCreationRecordsIn(tx, { userId: input.userId, modelId: input.modelId });
 
     const now = new Date();
     failAt("before_tombstone", input.failurePoint);

@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 197
+      "moduleCount": 202
     },
     {
       "id": "domain:castingV2",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 70
+      "moduleCount": 71
     },
     {
       "id": "domain:evidence",
@@ -3943,6 +3943,36 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/creationRecord.ts",
+      "path": "server/castingV2/creationRecord.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creationRecordService.ts",
+      "path": "server/castingV2/creationRecordService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creationRecordSigning.ts",
+      "path": "server/castingV2/creationRecordSigning.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creationRecordTimestamp.ts",
+      "path": "server/castingV2/creationRecordTimestamp.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "path": "server/castingV2/creationRecordTimestampTrust.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/declarativeState.ts",
       "path": "server/castingV2/declarativeState.ts",
       "domain": "casting-v2",
@@ -4995,6 +5025,12 @@
     {
       "id": "module:server/db/castCampaigns.ts",
       "path": "server/db/castCampaigns.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castCreationRecords.ts",
+      "path": "server/db/castCreationRecords.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -10670,6 +10706,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_CREATION_RECORD_SCOPE",
+      "name": "CASTING_CREATION_RECORD_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "name": "CASTING_DIAGNOSTIC_CAPTURE_SCOPE",
       "valueRecorded": false
@@ -11064,6 +11105,11 @@
     {
       "id": "flag:CASTING_CONCEPT_UPLOAD_SCOPE",
       "name": "CASTING_CONCEPT_UPLOAD_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_CREATION_RECORD_SCOPE",
+      "name": "CASTING_CREATION_RECORD_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -13774,6 +13820,30 @@
       "path": "server/castingV2/conceptUploadScope.test.ts"
     },
     {
+      "id": "test:server/castingV2/creationRecord.test.ts",
+      "path": "server/castingV2/creationRecord.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationRecordScope.test.ts",
+      "path": "server/castingV2/creationRecordScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationRecordService.test.ts",
+      "path": "server/castingV2/creationRecordService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationRecordSigning.test.ts",
+      "path": "server/castingV2/creationRecordSigning.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationRecordTimestamp.test.ts",
+      "path": "server/castingV2/creationRecordTimestamp.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/creationRecordTimestampTrust.test.ts",
+      "path": "server/castingV2/creationRecordTimestampTrust.test.ts"
+    },
+    {
       "id": "test:server/castingV2/creativeRegisterScope.test.ts",
       "path": "server/castingV2/creativeRegisterScope.test.ts"
     },
@@ -15038,6 +15108,10 @@
       "path": "server/cycleSpend.test.ts"
     },
     {
+      "id": "test:server/db/castCreationRecords.test.ts",
+      "path": "server/db/castCreationRecords.test.ts"
+    },
+    {
       "id": "test:server/db/castPersonaWrite.test.ts",
       "path": "server/db/castPersonaWrite.test.ts"
     },
@@ -15292,6 +15366,10 @@
     {
       "id": "test:server/gdprExportCampaigns.test.ts",
       "path": "server/gdprExportCampaigns.test.ts"
+    },
+    {
+      "id": "test:server/gdprExportCreationRecords.test.ts",
+      "path": "server/gdprExportCreationRecords.test.ts"
     },
     {
       "id": "test:server/gdprExportPersona.test.ts",
@@ -23846,6 +23924,11 @@
     },
     {
       "from": "module:server/_core/env.ts",
+      "to": "module:server/castingV2/creationRecordSigning.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/env.ts",
       "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
@@ -25836,6 +25919,11 @@
     },
     {
       "from": "module:server/casting/finalCastDeletion.ts",
+      "to": "module:server/db/castCreationRecords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -27815,6 +27903,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castingV2Scope.ts",
+      "to": "module:server/castingV2/creationRecordSigning.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castPersona.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
@@ -28102,6 +28195,51 @@
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/castingV2/creationRecord.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/castingV2/creationRecordSigning.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/castingV2/creationRecordTimestamp.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/db/castCreationRecords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordTimestamp.ts",
+      "to": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationRecordTimestampTrust.ts",
+      "to": "module:server/castingV2/creationRecordTimestamp.ts",
       "kind": "imports"
     },
     {
@@ -32136,6 +32274,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/creationRecordService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/inkApplied.ts",
       "kind": "imports"
     },
@@ -33032,6 +33175,26 @@
     {
       "from": "module:server/db/castCampaigns.ts",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationRecords.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationRecords.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationRecords.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationRecords.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {

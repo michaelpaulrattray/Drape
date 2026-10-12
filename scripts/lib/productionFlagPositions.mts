@@ -452,6 +452,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "button — so its live population on his account is every refused tile he has, not "
       + "zero. Wider than users:1 on his eye and not before",
   },
+  CASTING_CREATION_RECORD_SCOPE: {
+    position: UNSET,
+    why:
+      "BUILT DARK 2026-10-12 (N2d-1, card #2311; the rung opened on his Desk reply #280, "
+      + "verbatim and entire: \"N2d\"). The signed, independently timestamped record behind "
+      + "each Klieg ID. Unset on the service: turning it on is his word plus the secret "
+      + "CREATION_RECORD_PRIVATE_KEY set FIRST — on without the key refuses boot by design",
+  },
   CASTING_CONCEPT_UPLOAD_SCOPE: {
     position: "all",
     why:

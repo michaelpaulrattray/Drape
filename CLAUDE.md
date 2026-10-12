@@ -612,7 +612,7 @@ Most of these followed the same path: helper or rule written, docs written, todo
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 
-⚠ **THE THIRTY-FOUR SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
+⚠ **THE THIRTY-FIVE SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
 [`docs/architecture/FEATURE_FLAGS.md`](docs/architecture/FEATURE_FLAGS.md).**
 Their entries — 122,893 bytes, two thirds of this file as it stood — moved
 there on 2026-08-31 under the founder's own card (#330: *"why are simple code changes
@@ -655,6 +655,7 @@ the live service on every push.
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
+| `CASTING_CREATION_RECORD_SCOPE` | the signed, independently timestamped record behind each Klieg ID (N2d-1) — needs `CREATION_RECORD_PRIVATE_KEY` |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
 | `R7_SNAPSHOT_RESTORE_SCOPE` | the restore half of it |
@@ -670,6 +671,7 @@ the live service on every push.
 - `FAL_ACCOUNT_CEILING` (default 20) — the provider account's own concurrent-request ceiling, quoted from its 429. Four paths spend it and `assertFalBudget()` REFUSES TO BOOT if their sum exceeds it, or if any of them is set to zero: `ROLL_IMAGE_CONCURRENCY` 8 + `SIGN_VIEW_CONCURRENCY` 3 + `REFINE_EDIT_CONCURRENCY` 3 + `FAL_CONCURRENCY` 6 = 20. ⚠ **THE SLOT LEFT UNOWNED BY #1158 SLICE 4d IS CLOSED BY HIS WORD (#2206, 2026-10-10: *"yes to turn the sp[eed up."*)** — a fifth path, `INK_PLATE_CONCURRENCY` 1, was paid for out of the **courtesy** pool (region reads 6 → 5, 2026-08-18) and retired with the ink studio, and his rule forbade handing the freed 1 back inside a retirement, so the sum stood at 19 of 20 from 2026-09-24. ⚠ **This line said that cost the panel nothing because a scan was 20 segmenter calls and both pools made four waves; that was false by 2026-10-10** — real scans make 21–27 reads (#2183), and pool 5 measured a median ~6 s slower per scan than 6 (#2189, PR #2204). The sum may equal the ceiling; the twenty-first request is the one refused. ⚠ **None of these five variables has ever been set on the production service** — read twice with controls the day the row came out; they all run on the defaults quoted here, so a boot line reading `ink plates 1` was the fallback rather than a configured value
 - `FAL_CONCURRENCY` (default 6 — was 6, then 5 from 2026-08-18 while the plate mint was wired, back to 6 by his word on #2206) — how many fal calls the segmenter may have in flight at once. The account's ceiling is **20 concurrent requests**, and one panel scan asks eleven questions with every bilateral one becoming two more, so an ungated reader spends the whole allowance on one face: measured 2026-08-14, eight panels opened at once returned no rows at all on five of them, with the provider answering `429 concurrent_requests_limit`. Below 20 on purpose — roll dispatch spends from the same allowance
 - `ROLL_IMAGE_CONCURRENCY` (default 8), `ROLL_IMAGE_MAX_QUEUE_DEPTH` (default 64) — casting provider budget; roll creation refuses with a real `TOO_MANY_REQUESTS` when a whole roll would not fit
+- `CREATION_RECORD_PRIVATE_KEY` — a SECRET: the private Ed25519 JWK, one line of JSON, that signs the record behind each Klieg ID. Required only when `CASTING_CREATION_RECORD_SCOPE` is on, and then its absence REFUSES BOOT naming the variable. Set by his or the relay's hand; never committed, never logged. See the catalogue entry
 - `RESEND_API_KEY` — verification emails (signup breaks without it unless dev-mode skip applies)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth login
 - `VITE_STRIPE_PUBLISHABLE_KEY` — client-side Stripe

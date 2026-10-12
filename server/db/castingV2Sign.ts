@@ -1398,6 +1398,40 @@ export async function findCastBySignOperation(
   };
 }
 
+/**
+ * THE STORAGE KEY OF A CAST'S ORIGINAL ANCHOR — the master picture it was
+ * signed with, for the creation record's fingerprint (N2d-1, #2311).
+ *
+ * The LOWEST-sequence identity snapshot's anchor, never a later identity
+ * edit's: the record is of CREATION. It lives here rather than beside the
+ * record's other reads because identity snapshots are bounded authority
+ * (`r7-snapshot-selection-contract.test.ts`), and this file is already the
+ * Sign's bounded writer of them. A read, re-anchored in the one statement: the
+ * snapshot joins the owner's live cast, and the asset must belong to that
+ * same cast.
+ */
+export async function readCastOriginalAnchorKey(userId: number, modelId: number): Promise<string | null> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(modelId, "modelId");
+  const db = await requireDb();
+  const [anchor] = await db
+    .select({ storageKey: modelAssets.storageKey })
+    .from(modelIdentitySnapshots)
+    .innerJoin(models, and(
+      eq(models.id, modelIdentitySnapshots.modelId),
+      eq(models.userId, userId),
+      isNull(models.deletedAt),
+    ))
+    .innerJoin(modelAssets, and(
+      eq(modelAssets.id, modelIdentitySnapshots.anchorAssetId),
+      eq(modelAssets.modelId, modelIdentitySnapshots.modelId),
+    ))
+    .where(eq(modelIdentitySnapshots.modelId, modelId))
+    .orderBy(asc(modelIdentitySnapshots.sequence))
+    .limit(1);
+  return anchor?.storageKey ?? null;
+}
+
 /** One owned Cast by its KI public id, in any status including `provisioning`. */
 export async function getOwnedCastByPublicId(
   userId: number,
