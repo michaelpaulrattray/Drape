@@ -37146,6 +37146,11 @@
     },
     {
       "from": "module:server/routes/emailVerification.ts",
+      "to": "module:server/_core/env.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/emailVerification.ts",
       "to": "module:server/_core/sdk.ts",
       "kind": "imports"
     },

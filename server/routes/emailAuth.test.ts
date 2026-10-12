@@ -713,6 +713,7 @@ describe("POST /api/auth/register — the doors, in the order the handler asks t
       email: REGISTRATION.email,
       needsVerification: true,
     });
+    expect(generateVerificationToken).toHaveBeenCalledWith(NEW_USER.id);
     expect(storeVerificationToken).toHaveBeenCalledWith(NEW_USER.id, "verification-token-stand-in");
     expect(sendVerificationEmail).toHaveBeenCalledWith(
       expect.anything(), REGISTRATION.email, REGISTRATION.name, "verification-token-stand-in",

@@ -61,6 +61,20 @@ export const ERROR_MESSAGES = {
     bgColor: "bg-emerald-50",
     borderColor: "border-emerald-200",
   },
+  /*
+    AN OLDER VERIFICATION LINK (#2401): the customer asked for a new email and
+    opened the previous one. Nothing was verified and no one was signed in. Not
+    red — nothing is wrong with the account; signing in reaches the page that
+    offers to send another.
+  */
+  verification_link_replaced: {
+    icon: Mail,
+    title: "This link has been replaced",
+    message: "A newer verification email was sent. Use the link in the most recent one, or sign in to ask for another.",
+    iconColor: "text-amber-500",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
+  },
   suspended: {
     icon: ShieldOff,
     title: "Account Suspended",

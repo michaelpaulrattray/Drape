@@ -8,12 +8,13 @@
  */
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { eq } from "drizzle-orm";
 import { ASSETS_BASE_URL, COOKIE_NAME, SESSION_MAX_AGE_MS } from "@shared/const";
 import { PRODUCT_NAME } from "@shared/brand";
 import { escapeEmailHtml, sendProductEmail, type ProductEmail } from "../mail";
 import { getSessionCookieOptions } from "../_core/cookies";
+import { ENV } from "../_core/env";
 import { sdk } from "../_core/sdk";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
@@ -47,10 +48,66 @@ export const emailVerificationRouter = Router();
 emailVerificationRouter.use(refuseCrossSiteAuthRequest);
 
 /**
- * Generate a cryptographically secure verification token
+ * WHY A LINK NAMES ITS OWN ACCOUNT, SIGNED — #2401.
+ *
+ * Asking for a new verification email REPLACES the stored token, so the link in
+ * the older email finds no row. Until this card that miss took the shared
+ * `invalid_token` exit — "Authentication Error / An error occurred during sign
+ * in" — for a customer who had done nothing wrong but open the wrong email.
+ *
+ * The older token is gone from the table, so the only way to know whose link it
+ * was is for the link to say so: `<userId>.<nonce>.<mac>`, where the mac is an
+ * HMAC over the id and nonce under the session secret (the Google road reuses
+ * the same secret for its state, `googleAuth.ts`). The mac is what keeps this
+ * from being an oracle: a hand-typed `<id>.<anything>` fails it and gets the
+ * same `invalid_token` an unknown token always got, so only a link this product
+ * actually emailed can learn that it was replaced.
+ *
+ * ⚠ It NEVER makes the older link work. The row lookup below is still equality
+ * on the whole current token; a link that misses it can at most be told which
+ * calm note to show — replaced, or already verified — and mints no session and
+ * verifies nothing. Tokens issued before this shipped are plain hex, carry no
+ * id, and keep the generic answer if they miss; they expire within 24 hours.
+ *
+ * Length: id + 64 hex nonce + 32 hex mac + two dots stays under the column's 128.
  */
-export function generateVerificationToken(): string {
-  return randomBytes(48).toString("hex"); // 96-char hex string
+const LINK_MAC_LABEL = "drape:email-verification-link:v1";
+
+function linkMac(userId: number, nonce: string): string | null {
+  /* An empty secret would make every mac forgeable; refuse to sign or read. */
+  if (!ENV.cookieSecret) return null;
+  return createHmac("sha256", ENV.cookieSecret)
+    .update(`${LINK_MAC_LABEL}:${userId}:${nonce}`)
+    .digest("hex")
+    .slice(0, 32);
+}
+
+/**
+ * Generate a cryptographically secure verification token for one account.
+ */
+export function generateVerificationToken(userId: number): string {
+  const nonce = randomBytes(32).toString("hex");
+  const mac = linkMac(userId, nonce);
+  /* Without a secret there is nothing to sign with; a plain token still
+     verifies, it just cannot be recognised later as replaced. */
+  if (mac === null) return randomBytes(48).toString("hex");
+  return `${userId}.${nonce}.${mac}`;
+}
+
+/**
+ * The account a verification link was issued for, IF this product signed it.
+ * `null` for anything else — a legacy hex token, a typo, a forgery.
+ */
+export function issuedLinkAccount(token: string): number | null {
+  const match = /^([1-9][0-9]{0,15})\.([0-9a-f]{64})\.([0-9a-f]{32})$/.exec(token);
+  if (!match) return null;
+  const userId = Number(match[1]);
+  if (!Number.isSafeInteger(userId)) return null;
+  const expected = linkMac(userId, match[2]!);
+  if (expected === null) return null;
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(match[3]!, "utf8");
+  return a.length === b.length && timingSafeEqual(a, b) ? userId : null;
 }
 
 /**
@@ -274,8 +331,8 @@ emailVerificationRouter.post("/resend-verification", async (req: Request, res: R
       return;
     }
 
-    // Generate new token
-    const token = generateVerificationToken();
+    // Generate new token — this REPLACES the one in any earlier email (#2401)
+    const token = generateVerificationToken(user.id);
     await storeVerificationToken(user.id, token);
 
     // Send email
@@ -334,6 +391,38 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
       .limit(1);
 
     if (result.length === 0) {
+      /*
+        AN OLDER LINK (#2401). The customer asked for a new email and opened the
+        previous one. The signed id says whose link it was; the row says what to
+        tell them. Neither branch mints a session or writes to the row — a
+        replaced link is told which email to use, and nothing else.
+      */
+      const issuedFor = issuedLinkAccount(token);
+      if (issuedFor !== null) {
+        const owner = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, issuedFor))
+          .limit(1);
+        if (owner.length > 0) {
+          const account = owner[0]!;
+          await logAuditEvent({
+            userId: account.id,
+            action: AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
+            resourceType: "auth",
+            resourceId: account.openId,
+            metadata: { reason: account.emailVerified ? "Replaced token, already verified" : "Replaced token" },
+            severity: "info",
+            ipAddress: clientIp,
+            userAgent,
+          });
+          res.redirect(
+            account.emailVerified ? "/login?error=already_verified" : "/login?error=verification_link_replaced",
+          );
+          return;
+        }
+      }
+
       await logAuditEvent({
         action: AUDIT_ACTIONS.EMAIL_VERIFICATION_FAILED,
         resourceType: "auth",
