@@ -100,6 +100,7 @@ import { SignJWT } from "jose";
 import mysql from "mysql2/promise";
 import puppeteer from "puppeteer-core";
 import { openDatabase } from "./lib/dbConnection.mts";
+import { REBUILD_DOOR_OPEN } from "../shared/rebuildDoor";
 
 const BASE = process.env.VERIFY_BASE_URL ?? "http://localhost:3000";
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
@@ -478,7 +479,7 @@ const openEditOnFilledNode = async () => {
   await page.mouse.click(n.x, n.y);
   await sleep(500);
   // R6 consolidation: Edit is the pen ICON on the node pill (aria-label
-  // "Edit" / "Edit — name and mint this draft"), not a text segment
+  // "Edit", or "Edit — name this draft" while the rebuild door is open), not a text segment
   return page.evaluate(() => {
     const b = [...document.querySelectorAll("button")].find((x) =>
       (x.getAttribute("aria-label") ?? "").startsWith("Edit"),
@@ -2023,7 +2024,13 @@ let seededItemId = 0;
       };
     }, sdItem.itemId);
     check("SD2 draft wears the badge on the card face, not a label crumb", !!sdNode && sdNode.badge && !sdNode.crumb, JSON.stringify(sdNode));
-    check("SD3 fresh draft teaches its next step (one-time hint)", !!sdNode?.hint);
+    // #2335: the hint names a paused road while the rebuild door is shut, so it is hidden then
+    check(
+      REBUILD_DOOR_OPEN
+        ? "SD3 fresh draft teaches its next step (one-time hint)"
+        : "SD3 fresh draft shows no hint while the rebuild door is shut",
+      REBUILD_DOOR_OPEN ? !!sdNode?.hint : !sdNode?.hint,
+    );
 
     // Optional nickname: names the draft WITHOUT minting (naming ≠ minting)
     const sdNick = await page.evaluate(async (mId: number) => {
