@@ -33,6 +33,7 @@ import { lobbyRouter } from "./routes/lobby";
 import { evidenceRouter } from "./routes/evidence";
 import { castingV2Router } from "./routes/castingV2";
 import { crewRouter } from "./routes/crew";
+import { creationCheckRouter } from "./routes/creationCheck";
 
 export const appRouter = router({
   system: systemRouter,
@@ -68,6 +69,8 @@ export const appRouter = router({
   // Both procedures are adminProcedure and both answer NOT_FOUND outside
   // CREW_TAB_SCOPE.
   crew: crewRouter,
+  // The public check page behind a Klieg ID, and its owner's toggle (#2313).
+  creationCheck: creationCheckRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -32,6 +32,7 @@ import { CAST_NAME_MAX_LENGTH } from "@shared/inputLimits";
 import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import { CastCampaignsCard } from "@/features/castingV2/components/CastCampaignsCard";
 import { CreationCertificateRow } from "@/features/castingV2/components/CreationCertificateRow";
+import { PublicCheckCard } from "@/features/castingV2/creationCheck/PublicCheckCard";
 import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
@@ -1415,6 +1416,9 @@ export default function CastingRoom() {
                 {/* IN CAMPAIGNS — the campaigns this cast is in, and one add row (#2252);
                     straight after a Sign it carries the one offer to file the cast (#2253). */}
                 <CastCampaignsCard key={data.castId} castId={data.castId} castName={data.name ?? "this cast"} />
+
+                {/* PUBLIC CHECK PAGE — the owner's one toggle, off by default (#2313); draws nothing while dark. */}
+                <PublicCheckCard key={`check-${data.castId}`} castId={data.castId} />
 
                 {/* SIBLINGS — both sentences name the cast (#2141); tiles unlabelled. */}
                 <section className="dpc-rcard">
