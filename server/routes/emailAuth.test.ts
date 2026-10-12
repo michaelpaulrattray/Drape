@@ -118,7 +118,7 @@ import { countFreeGrantClaims, recordFreeGrantClaim } from "../db/quietLimits";
 import { FREE_GRANT_REFUSAL_SENTENCE } from "@shared/freeGrantRefusal";
 import { DEVICE_COOKIE_NAME } from "../security/deviceKey";
 import { NUMERIC_ENV_VARS } from "../_core/env";
-import { emailAuthRouter } from "./emailAuth";
+import { emailAuthRouter, GENERIC_LOGIN_REFUSAL, TIMING_EQUALISER_HASH } from "./emailAuth";
 
 
 /*
@@ -856,14 +856,90 @@ describe("POST /api/auth/login — the doors, in the order the handler asks them
     expect(unknown.json).toEqual({ error: "Invalid email or password" });
   });
 
-  it("refuses a SUSPENDED account with 403 suspended, audited, and no session", async () => {
-    vi.mocked(db.isAccountLocked).mockResolvedValue({ locked: true, lockedUntil: null, reason: "Abuse" } as never);
+  /*
+    #2376 — ONE ANSWER UNTIL THE PASSWORD IS PROVEN. Each of these exits used
+    to answer before any password was compared (`suspended`, `locked` with its
+    minutes, "uses Google sign-in"), so a stranger with any password learned
+    whether an address had an account and how it signed in. Every arm below
+    sends a WRONG password unless it says otherwise.
+  */
+  const SUSPENDED = { locked: true, lockedUntil: null, reason: "Abuse" };
+  const lockedFor = (minutes: number) => ({
+    locked: true, lockedUntil: new Date(Date.now() + minutes * 60_000), reason: "Too many failed login attempts",
+  });
+  const WRONG = { ...CREDENTIALS, password: "WrongPass1" } as const;
+
+  it("answers every exit a stranger can reach without the password IDENTICALLY — status and body", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(null as never);
+    const unknown = await post("/api/auth/login", WRONG);
+
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+    const wrongPassword = await post("/api/auth/login", WRONG);
+
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ passwordHash: null, authProvider: "google" }) as never);
+    const googleOnly = await post("/api/auth/login", WRONG);
+
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+    vi.mocked(db.isAccountLocked).mockResolvedValue(lockedFor(7.2) as never);
+    const locked = await post("/api/auth/login", WRONG);
+
+    vi.mocked(db.isAccountLocked).mockResolvedValue(SUSPENDED as never);
+    const suspended = await post("/api/auth/login", WRONG);
+
+    for (const answer of [unknown, wrongPassword, googleOnly, locked, suspended]) {
+      expect(answer.status).toBe(401);
+      expect(answer.json).toEqual({ error: GENERIC_LOGIN_REFUSAL });
+      expect(sessionCookie(answer)).toBeUndefined();
+    }
+    expect(GENERIC_LOGIN_REFUSAL).toBe("Invalid email or password");
+  });
+
+  it("spends one comparison at the product's own cost on every exit with no password to check", async () => {
+    const compare = vi.spyOn(bcrypt, "compare");
+    try {
+      const hashesCompared = async (): Promise<string[]> => {
+        compare.mockClear();
+        await post("/api/auth/login", WRONG);
+        return compare.mock.calls.map((call) => call[1] as string);
+      };
+
+      vi.mocked(getUserByEmail).mockResolvedValue(null as never);
+      const unknown = await hashesCompared();
+
+      vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ passwordHash: null, authProvider: "google" }) as never);
+      const googleOnly = await hashesCompared();
+
+      vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+      vi.mocked(db.isAccountLocked).mockResolvedValue(lockedFor(5) as never);
+      const locked = await hashesCompared();
+
+      vi.mocked(db.isAccountLocked).mockResolvedValue({ locked: false } as never);
+      const wrongPassword = await hashesCompared();
+
+      for (const hashes of [unknown, googleOnly, locked]) {
+        expect(hashes).toEqual([TIMING_EQUALISER_HASH]);
+      }
+      /* Positive control: the open account compares against ITS OWN hash,
+         once, and never against the equaliser. */
+      expect(wrongPassword).toEqual([STORED_HASH]);
+      /* The equaliser costs what a stored password costs — the register arm
+         above holds the stored cost at twelve. */
+      expect(bcrypt.getRounds(TIMING_EQUALISER_HASH)).toBe(12);
+      expect(await bcrypt.compare("SecurePass1", TIMING_EQUALISER_HASH)).toBe(false);
+    } finally {
+      compare.mockRestore();
+    }
+  });
+
+  it("tells a SUSPENDED account so only once the password is proven — 403 suspended, audited, no session", async () => {
+    vi.mocked(db.isAccountLocked).mockResolvedValue(SUSPENDED as never);
 
     const response = await post("/api/auth/login", CREDENTIALS);
 
     expect(response.status).toBe(403);
     expect(response.json).toEqual({ error: "suspended" });
     expect(sessionCookie(response)).toBeUndefined();
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
     expect(auditRows()[0]).toMatchObject({
       action: AUDIT_ACTIONS.LOGIN_BLOCKED_SUSPENDED,
       severity: "warning",
@@ -871,26 +947,40 @@ describe("POST /api/auth/login — the doors, in the order the handler asks them
     });
   });
 
-  it("refuses a LOCKED account with the minutes left, audited under its own action", async () => {
-    const lockedUntil = new Date(Date.now() + 7.2 * 60_000);
-    vi.mocked(db.isAccountLocked).mockResolvedValue({ locked: true, lockedUntil, reason: "Too many attempts" } as never);
-
-    const response = await post("/api/auth/login", CREDENTIALS);
-
-    expect(response.status).toBe(403);
-    expect(response.json).toEqual({ error: "locked", minutes: 8 });
-    expect(sessionCookie(response)).toBeUndefined();
-    expect(auditRows()[0]).toMatchObject({ action: AUDIT_ACTIONS.LOGIN_BLOCKED_LOCKED });
-  });
-
-  it("sends a Google-only account to Google rather than failing it silently", async () => {
-    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ passwordHash: null, authProvider: "google" }) as never);
+  it("never tests the password while a LOCK stands — the right one gets the generic answer, audited, no session", async () => {
+    /* Answering "locked" to the right password would confirm a guess on every
+       try, which is the one thing the lockout exists to stop. */
+    vi.mocked(db.isAccountLocked).mockResolvedValue(lockedFor(7.2) as never);
 
     const response = await post("/api/auth/login", CREDENTIALS);
 
     expect(response.status).toBe(401);
-    expect(response.json.error).toBe("This account uses Google sign-in. Please use Google to log in.");
-    expect(db.recordFailedLogin).not.toHaveBeenCalled();
+    expect(response.json).toEqual({ error: GENERIC_LOGIN_REFUSAL });
+    expect(sessionCookie(response)).toBeUndefined();
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(db.resetFailedLogins).not.toHaveBeenCalled();
+    expect(auditRows()[0]).toMatchObject({ action: AUDIT_ACTIONS.LOGIN_BLOCKED_LOCKED });
+  });
+
+  it("a Google-only account, a lock and a suspension count toward NEITHER the lockout nor the alarm — as before #2376", async () => {
+    const cases = [
+      () => vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ passwordHash: null, authProvider: "google" }) as never),
+      () => vi.mocked(db.isAccountLocked).mockResolvedValue(lockedFor(5) as never),
+      () => vi.mocked(db.isAccountLocked).mockResolvedValue(SUSPENDED as never),
+    ];
+    for (const stage of cases) {
+      vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+      vi.mocked(db.isAccountLocked).mockResolvedValue({ locked: false } as never);
+      vi.mocked(db.recordFailedLogin).mockClear();
+      vi.mocked(noteFailedLogin).mockClear();
+      stage();
+
+      const response = await post("/api/auth/login", WRONG);
+
+      expect(response.status).toBe(401);
+      expect(db.recordFailedLogin).not.toHaveBeenCalled();
+      expect(noteFailedLogin).not.toHaveBeenCalled();
+    }
   });
 
   it("records a wrong password against the account AND the site-wide alarm", async () => {
