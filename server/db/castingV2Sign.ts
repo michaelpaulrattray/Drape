@@ -1578,12 +1578,15 @@ export const ROSTER_SEARCH_MAX_LENGTH = 64;
  * `signedCastWhere` names; none of them widens it.
  *
  *  - `all` — every signed cast, which is today's roster.
- *  - `unfiled` — the ones in no campaign of this customer's.
  *  - `campaign` — the ones filed in this customer's campaign `campaignId`.
+ *
+ * There is no `unfiled` scope any more (card #2306): the library's Unfiled
+ * chip left with #2304 on the founder's word (*"yes remove it"*), the client
+ * stopped sending it in #2305, and the server kept accepting it for one full
+ * deploy so an open tab could not error mid-deploy. That deploy has shipped.
  */
 export type RosterScope =
   | { kind: "all" }
-  | { kind: "unfiled" }
   | { kind: "campaign"; campaignId: string };
 
 export type RosterFilter = {
@@ -1593,26 +1596,19 @@ export type RosterFilter = {
 };
 
 /**
- * `NOT EXISTS` over this customer's member rows for the outer cast.
+ * `EXISTS` a member row joining the outer cast to the campaign `campaignId` —
+ * owner-checked on BOTH sides of the join (the member's `userId` and the
+ * campaign's), so a foreign campaign id, or a member row pointing across
+ * accounts, matches nothing.
  *
  * ⚠ **Raw SQL with BOTH sides qualified, on purpose.** Drizzle renders a
  * single-table select's columns UNQUALIFIED, so a correlated subquery written
  * from column refs (`eq(castCampaignMembers.modelId, models.id)`) renders
  * `modelId = id` — and inside the subquery `id` binds to the MEMBER row's own
  * id, so the correlation is silently never the cast (#119's measured defect).
- * The inner table is aliased and the outer one is named by table, so neither
+ * The inner tables are aliased and the outer one is named by table, so neither
  * reading is available. `server/castingRoster-db.test.ts` proves the rows on a
  * real database, where a mis-bound correlation reads as every cast filed or none.
- */
-function unfiledWhere(userId: number): SQL {
-  return sql`NOT EXISTS (SELECT 1 FROM ${castCampaignMembers} AS roster_member WHERE roster_member.modelId = ${models}.id AND roster_member.userId = ${userId})`;
-}
-
-/**
- * `EXISTS` a member row joining the outer cast to the campaign `campaignId` —
- * owner-checked on BOTH sides of the join (the member's `userId` and the
- * campaign's), so a foreign campaign id, or a member row pointing across
- * accounts, matches nothing.
  */
 function inCampaignWhere(userId: number, campaignId: string): SQL {
   return sql`EXISTS (SELECT 1 FROM ${castCampaignMembers} AS roster_member INNER JOIN ${castCampaigns} AS roster_campaign ON roster_campaign.id = roster_member.campaignId AND roster_campaign.userId = ${userId} WHERE roster_member.modelId = ${models}.id AND roster_member.userId = ${userId} AND roster_campaign.publicId = ${campaignId})`;
@@ -1632,7 +1628,6 @@ function nameMatchWhere(search: string): SQL {
 
 /** The scope's own condition, or `undefined` for `all`. */
 function scopeWhere(userId: number, scope: RosterScope): SQL | undefined {
-  if (scope.kind === "unfiled") return unfiledWhere(userId);
   if (scope.kind === "campaign") return inCampaignWhere(userId, scope.campaignId);
   return undefined;
 }
@@ -1665,8 +1660,6 @@ async function ownsCampaign(userId: number, campaignId: string): Promise<boolean
 export type RosterCounts = {
   /** Every signed cast. */
   all: number;
-  /** Signed casts in no campaign. */
-  unfiled: number;
   /** Signed casts in the asked scope that match the asked search. */
   matching: number;
 };
@@ -1697,7 +1690,6 @@ export async function countRoster(
   const [row] = await db
     .select({
       all: sql<number>`COUNT(*)`,
-      unfiled: sql<number>`COALESCE(SUM(CASE WHEN ${unfiledWhere(userId)} THEN 1 ELSE 0 END), 0)`,
       matching: matching
         ? sql<number>`COALESCE(SUM(CASE WHEN ${matching} THEN 1 ELSE 0 END), 0)`
         : sql<number>`COUNT(*)`,
@@ -1708,7 +1700,6 @@ export async function countRoster(
     kind: "counted",
     counts: {
       all: Number(row?.all ?? 0),
-      unfiled: Number(row?.unfiled ?? 0),
       matching: Number(row?.matching ?? 0),
     },
   };

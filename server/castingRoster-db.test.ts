@@ -4,9 +4,10 @@
  * The route suite (`server/castingRosterRoute.test.ts`) proves the door. This
  * file proves the STATEMENTS, driven through the real router:
  *
- *  - Unfiled is a correlated `NOT EXISTS`, and a mis-bound correlation (#119's
- *    measured drizzle defect) reads as every cast filed or none — so the arms
- *    below hold one filed and one unfiled cast side by side;
+ *  - a campaign scope is a correlated `EXISTS`, and a mis-bound correlation
+ *    (#119's measured drizzle defect) reads as every cast filed or none — so
+ *    the arms below hold filed and unfiled casts side by side (the Unfiled
+ *    SCOPE itself was retired in #2306; a cast in no campaign still exists);
  *  - a cast in two campaigns appears under both;
  *  - ⚠ owner isolation on both sides of the member join — a forged member row
  *    pointing across accounts moves nothing, and somebody else's campaign or
@@ -75,7 +76,7 @@ describeWithDatabase("roster scopes (disposable DB)", () => {
     await connection?.end();
   });
 
-  it("All, Unfiled and a campaign, side by side — and a cast in two campaigns is in both", async () => {
+  it("All and a campaign, side by side — and a cast in two campaigns is in both", async () => {
     const owner = await newUser("Roster Owner");
     const call = callerFor(owner);
     const filedTwice = await newCast(owner, "Ines");
@@ -88,21 +89,20 @@ describeWithDatabase("roster scopes (disposable DB)", () => {
 
     expect(ids(await call.roster({}))).toEqual([unfiled, filedOnce, filedTwice]);
     expect(ids(await call.roster({ scope: "all" }))).toEqual([unfiled, filedOnce, filedTwice]);
-    /* POSITIVE AND NEGATIVE in one list: the unfiled cast is there and the two
-       filed ones are not. A correlation bound to the member row's own id
+    /* POSITIVE AND NEGATIVE in one list: the two filed casts are there and
+       the unfiled one is not. A correlation bound to the member row's own id
        would return all three or none. */
-    expect(ids(await call.roster({ scope: "unfiled" }))).toEqual([unfiled]);
     expect(ids(await call.roster({ scope: "campaign", campaignId: summer.campaignId }))).toEqual([filedOnce, filedTwice]);
     expect(ids(await call.roster({ scope: "campaign", campaignId: autumn.campaignId }))).toEqual([filedTwice]);
 
-    expect(await call.rosterCounts({})).toEqual({ all: 3, unfiled: 1, matching: 3 });
-    expect(await call.rosterCounts({ scope: "unfiled" })).toEqual({ all: 3, unfiled: 1, matching: 1 });
+    expect(await call.rosterCounts({})).toEqual({ all: 3, matching: 3 });
     expect(await call.rosterCounts({ scope: "campaign", campaignId: summer.campaignId }))
-      .toEqual({ all: 3, unfiled: 1, matching: 2 });
+      .toEqual({ all: 3, matching: 2 });
 
-    /* Taking the last cast out of every campaign makes it Unfiled again. */
+    /* Taking a cast out of a campaign drops it from that campaign's chip only. */
     await call.removeCastsFromCampaign({ campaignId: summer.campaignId, castIds: [filedOnce] });
-    expect(ids(await call.roster({ scope: "unfiled" }))).toEqual([unfiled, filedOnce]);
+    expect(ids(await call.roster({ scope: "campaign", campaignId: summer.campaignId }))).toEqual([filedTwice]);
+    expect(ids(await call.roster({}))).toEqual([unfiled, filedOnce, filedTwice]);
   });
 
   it("search is case-insensitive, scoped to the chip, and matches wildcards literally", async () => {
@@ -117,11 +117,11 @@ describeWithDatabase("roster scopes (disposable DB)", () => {
 
     expect(ids(await call.roster({ search: "ines" }))).toEqual([inesToo, ines]);
     expect(ids(await call.roster({ scope: "campaign", campaignId: campaign.campaignId, search: "ines" }))).toEqual([ines]);
-    expect(ids(await call.roster({ scope: "unfiled", search: "ines" }))).toEqual([inesToo]);
     expect(ids(await call.roster({ search: "50%" }))).toEqual([percent]);
     expect(ids(await call.roster({ search: "5_0" }))).toEqual([]);
     expect(ids(await call.roster({ search: "500" }))).toEqual([digits]);
-    expect(await call.rosterCounts({ scope: "unfiled", search: "ines" })).toEqual({ all: 4, unfiled: 3, matching: 1 });
+    expect(await call.rosterCounts({ search: "ines" })).toEqual({ all: 4, matching: 2 });
+    expect(await call.rosterCounts({ scope: "campaign", campaignId: campaign.campaignId, search: "ines" })).toEqual({ all: 4, matching: 1 });
   });
 
   it("⚠ the sixty-first cast is reachable, and search finds a cast past the first page", async () => {
@@ -175,8 +175,11 @@ describeWithDatabase("roster scopes (disposable DB)", () => {
       "INSERT INTO cast_campaign_members (campaignId, modelId, userId) VALUES (?, ?, ?)",
       [campaignRow[0].id, ownerModel, stranger],
     );
-    /* A stranger's member row is not the owner's filing: still Unfiled. */
-    expect(ids(await call.roster({ scope: "unfiled" }))).toEqual([ownerCast]);
+    /* A stranger's member row is not the owner's filing: the owner's own
+       campaign stays empty, and the owner's numbers do not move. */
+    const ownCampaign = await call.createCampaign({ name: "Mine" });
+    expect(ids(await call.roster({ scope: "campaign", campaignId: ownCampaign.campaignId }))).toEqual([]);
+    expect(await call.rosterCounts({})).toEqual({ all: 1, matching: 1 });
     /* And the stranger's campaign does not draw the owner's cast. */
     expect(ids(await callerFor(stranger).roster({ scope: "campaign", campaignId: strangers.campaignId }))).toEqual([strangerCast]);
     expect(ids(await callerFor(stranger).roster({}))).toEqual([strangerCast]);
