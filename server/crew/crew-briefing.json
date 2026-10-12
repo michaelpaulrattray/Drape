@@ -1,12 +1,12 @@
 {
-  "edition": 679,
-  "updatedAt": "2026-10-11T20:30:00.000Z",
-  "shift": "Foreman — foreman-20261012-0603",
+  "edition": 680,
+  "updatedAt": "2026-10-12T01:05:00.000Z",
+  "shift": "Foreman — foreman-20261012-1041",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
       "state": "none",
-      "title": "Campaigns is built and live, and the focus is cleared until you name the next rung. Your library now has named groups: the chips read All / Unfiled / your campaigns / +, you can tick several casts and file them in one go, a cast page lists the campaigns it is in, and after a Sign you get one offer to file the new cast. Card #2269 has your six-step test drive and the three options for what comes next.",
+      "title": "Campaigns is built and live, and the focus is cleared until you name the next rung. Your library now has named groups: the chips read All / your campaigns / +, you can tick several casts and file them in one go, a cast page lists the campaigns it is in, and after a Sign you get one offer to file the new cast. Card #2269 has your six-step test drive and the three options for what comes next.",
       "quote": "N2c — Campaigns",
       "quotedAt": "2026-10-11T04:03:00.000Z"
     },
@@ -18,7 +18,7 @@
           "state": "done"
         },
         {
-          "title": "Your library's chips become All / Unfiled / your campaigns / + — and the search box above the grid finally works (#2250)",
+          "title": "Your library's chips become All / your campaigns / + — and the search box above the grid finally works (#2250; Unfiled removed on your word, #2304)",
           "state": "done"
         },
         {
@@ -3737,8 +3737,8 @@
     {
       "id": "n2c-complete-2269",
       "title": "Campaigns is built and live — your test drive, and one word on what comes next",
-      "productImpact": "You can now put your casts into named groups and look at one group at a time.\n\nYour library's chips used to read All / Signed / Unsigned. They now read All / Unfiled / your campaigns / +, and the + is how you make a new one. You can tick several casts and file them all at once, or take them back out. A cast's own page lists the campaigns it is in and lets you add it to another, and the old \"Use in a campaign · soon\" button that did nothing is gone. After you sign a cast you get one offer to file it — only if you already keep campaigns, never in front of the Sign, and nothing files unless you press it.\n\nSomebody who never makes a campaign sees the library exactly as it looks today. Two old annoyances went with this rung: the search box above your library actually searches by name now, and the library no longer stops at 60 casts. Your campaign names also travel in your data export.\n\nNothing here costs a credit. All five pieces opened and closed today, and every one of them is in the build your site is serving right now.",
-      "workedExample": "Open your library — the chips should read All / Unfiled / your campaigns / +. Press + and make a campaign with a name you would really use. Tick two or three casts and file them in one go, then take one back out. Press the campaign's chip and you should see only those casts. Open one cast's page, find IN CAMPAIGNS, and add it to a second campaign from there. Then sign a cast: you should get one offer to file it afterwards — dismiss it and check nothing was filed. Card #2269 has the same six steps written out.",
+      "productImpact": "You can now put your casts into named groups and look at one group at a time.\n\nYour library's chips used to read All / Signed / Unsigned. They now read All / your campaigns / +, and the + is how you make a new one. (You had Unfiled taken off the row this morning — that is done and live.) You can tick several casts and file them all at once, or take them back out. A cast's own page lists the campaigns it is in and lets you add it to another, and the old \"Use in a campaign · soon\" button that did nothing is gone. After you sign a cast you get one offer to file it — only if you already keep campaigns, never in front of the Sign, and nothing files unless you press it.\n\nSomebody who never makes a campaign sees the library exactly as it looks today. Two old annoyances went with this rung: the search box above your library actually searches by name now, and the library no longer stops at 60 casts. Your campaign names also travel in your data export.\n\nNothing here costs a credit. All five pieces opened and closed today, and every one of them is in the build your site is serving right now.",
+      "workedExample": "Open your library — the chips should read All / your campaigns / +, with no Unfiled. Press + and make a campaign with a name you would really use. Tick two or three casts and file them in one go, then take one back out. Press the campaign's chip and you should see only those casts. Open one cast's page, find IN CAMPAIGNS, and add it to a second campaign from there. Then sign a cast: you should get one offer to file it afterwards — dismiss it and check nothing was filed. Card #2269 has the same six steps written out.",
       "options": [
         {
           "key": "n2d",
