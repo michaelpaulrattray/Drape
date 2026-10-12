@@ -13003,6 +13003,10 @@
       "path": "client/src/staffPagesLazy.test.ts"
     },
     {
+      "id": "test:server/_core/geminiKeyNotRequired.test.ts",
+      "path": "server/_core/geminiKeyNotRequired.test.ts"
+    },
+    {
       "id": "test:server/_core/internalErrorWire.test.ts",
       "path": "server/_core/internalErrorWire.test.ts"
     },
