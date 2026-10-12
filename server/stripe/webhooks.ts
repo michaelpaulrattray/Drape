@@ -96,11 +96,12 @@ const log = createModuleLogger("stripe/webhooks");
  * other way and never APPLY a dead subscription's state — the deleted and
  * final-failure handlers own death, and a dead subscription's tier written
  * over a live account is exactly the stale-overwrite class this set closes.
+ *
+ * Declared in `subscriptionLiveness.ts` since #2394, because the checkout
+ * road's one-subscription guard asks the same question and must get the same
+ * answer (working law 4).
  */
-const DEAD_SUBSCRIPTION_STATUSES: ReadonlySet<string> = new Set([
-  "canceled",
-  "incomplete_expired",
-]);
+import { DEAD_SUBSCRIPTION_STATUSES } from "./subscriptionLiveness";
 
 export interface WebhookResult {
   success: boolean;

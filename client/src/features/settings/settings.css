@@ -1136,6 +1136,11 @@
   border-radius: var(--r-lg);
   background: var(--raised);
 }
+/* #2394 — the same row, leading the pane: a failed payment's notice. */
+.dp-plan__cross--lead {
+  margin-top: 0;
+  margin-bottom: var(--s-6);
+}
 
 .dp-plan__foot {
   display: flex;

@@ -42,6 +42,7 @@ import {
 import { formatCustomerShortDate } from "@shared/customerDate";
 import { PLAN_TIERS, PlanTier } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
+import { isSubscriptionAlive } from "./subscriptionLiveness";
 const log = createModuleLogger("stripe/stripeService");
 
 /**
@@ -382,6 +383,72 @@ export async function retrieveLiveSubscription(
       return { outcome: "missing" };
     }
     log.error({ err: error }, `[Stripe] Live read of subscription ${subscriptionId} failed:`);
+    return { outcome: "failed", error: String(error) };
+  }
+}
+
+/**
+ * DOES THIS CUSTOMER ALREADY HOLD A LIVE SUBSCRIPTION AT STRIPE? (#2394)
+ *
+ * The question `createSubscriptionCheckout` must ask before it sells one.
+ * Without it a subscriber whose payment had failed (`past_due` / `unpaid`,
+ * which `getStatus` reports as `hasSubscription: false`) was sent to Checkout
+ * for a SECOND subscription, while Stripe kept retrying the first one's open
+ * invoice — two live plans on one card, and two charges for one plan.
+ *
+ * ⚠ **IT ASKS STRIPE, AND IT ASKS ABOUT THE WHOLE CUSTOMER, NOT THE ONE ID ON
+ * RECORD.** Two readings were declined, each for a defect it would ship:
+ *  · the stored `subscriptionStatus` — `mapStripeStatus` folds `paused` and
+ *    `incomplete` into `"canceled"`, so a paused plan (alive, and resumable)
+ *    would read as gone and be sold a second one;
+ *  · a live read of the stored `stripeSubscriptionId` alone — the webhook
+ *    layer already allows an account to hold two live subscriptions at once
+ *    (`webhooks.ts`, the #804 paragraph), and the id on record is only one of
+ *    them. A list by customer answers for every subscription the account can
+ *    be billed on, in one request.
+ *
+ * `status: "all"` because Stripe's default list leaves out `canceled` — and
+ * the liveness rule is the shared `DEAD_SUBSCRIPTION_STATUSES`, not a filter
+ * passed to Stripe, so this guard and the webhook roads cannot disagree on
+ * what dead means. Auto-pagination walks every page and stops at the first
+ * live one.
+ *
+ * Three outcomes, kept apart: `none` sells, `live` refuses with a sentence
+ * the caller chooses from what it carries, and `failed` REFUSES too —
+ * invariant 7's direction. A guard that sells when it cannot look is the
+ * double charge it exists to stop, on the one day Stripe is slow.
+ */
+export type LiveSubscriptionOnCustomer =
+  | { outcome: "none" }
+  | {
+      outcome: "live";
+      subscriptionId: string;
+      status: Stripe.Subscription.Status;
+      collectionPaused: boolean;
+    }
+  | { outcome: "failed"; error: string };
+
+export async function findLiveSubscriptionOnCustomer(
+  customerId: string,
+): Promise<LiveSubscriptionOnCustomer> {
+  try {
+    for await (const subscription of stripe.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 100,
+    })) {
+      if (isSubscriptionAlive(subscription.status)) {
+        return {
+          outcome: "live",
+          subscriptionId: subscription.id,
+          status: subscription.status,
+          collectionPaused: !!subscription.pause_collection,
+        };
+      }
+    }
+    return { outcome: "none" };
+  } catch (error) {
+    log.error({ err: error }, `[Stripe] Could not list subscriptions for customer ${customerId}:`);
     return { outcome: "failed", error: String(error) };
   }
 }

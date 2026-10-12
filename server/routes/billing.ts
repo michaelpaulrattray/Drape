@@ -11,6 +11,7 @@ import {
 } from "../db";
 import {
   getOrCreateStripeCustomer,
+  findLiveSubscriptionOnCustomer,
   createSubscriptionCheckoutSession,
   createTopupCheckoutSession,
   createCustomerPortalSession,
@@ -518,6 +519,51 @@ export const billingRouter = router({
             message: "We could not set up your billing account. Nothing was charged — please try again in a moment.",
           });
         }
+      }
+
+      /*
+        ⚠ ONE SUBSCRIPTION PER ACCOUNT — REFUSED BEFORE A SESSION IS MINTED
+        (#2394). This procedure checked the frozen flag and the slider and then
+        sold a subscription to anyone, so a subscriber whose payment had failed
+        — `getStatus` reads `past_due` / `unpaid` as `hasSubscription: false`,
+        and Change plan sent that to Checkout — bought a SECOND live plan while
+        Stripe kept retrying the first one's open invoice: two charges for one
+        plan. The client no longer sends them here; this is the guard that
+        holds whichever caller does, including a bundle older than that fix.
+
+        The question goes to Stripe, about the whole customer
+        (`findLiveSubscriptionOnCustomer` says why neither the stored status
+        nor the stored id is enough). It runs on the customer id just resolved,
+        so a freshly minted customer — which holds nothing — costs one empty
+        list and sells as before.
+
+        The sentence is `planChangeRefusal`'s, derived rather than retyped: a
+        customer refused here is in exactly the state that function words for
+        Change plan, and the failed-payment one names the next step (the card).
+        An `active`, unpaused plan is the one state it answers `null` for —
+        there, the plan is fine and the customer is simply on it.
+      */
+      const existing = await findLiveSubscriptionOnCustomer(customerId);
+      if (existing.outcome === "failed") {
+        throw spokenError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "We couldn't check your current plan just now. Nothing was charged — please try again in a moment.",
+        });
+      }
+      if (existing.outcome === "live") {
+        log.warn(
+          { userId: ctx.user.id, subscriptionId: existing.subscriptionId, status: existing.status },
+          "[Billing] Refused a subscription checkout — the account already holds a live subscription at Stripe",
+        );
+        throw spokenError({
+          code: "CONFLICT",
+          message:
+            planChangeRefusal(
+              { status: existing.status, collectionPaused: existing.collectionPaused, endsAtSec: null },
+              { deferred: false },
+            ) ??
+            "You already have a plan, so a second one can't be started. Nothing was charged — use Change plan to move to another one.",
+        });
       }
 
       // Create checkout session — the return URLs come from the one production
