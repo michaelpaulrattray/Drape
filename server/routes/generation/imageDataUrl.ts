@@ -56,11 +56,21 @@
  *
  * ⚠ **One answer does change, and it changes toward the truth.** The old body
  * put the response's `content-type` HEADER into the data URL; this puts the mime
- * `fetchTrustedImage` derives from the BYTES. A real dev `board_items` object is
- * served `image/png` while its bytes are JPEG — and `ImageActionBar`'s copy
- * path reads that mime back out of the data URL to key a `ClipboardItem`, so the
- * old road handed the browser jpeg bytes labelled png. The download path names
- * its file `.png` from a template either way.
+ * `fetchTrustedImage` derives from the BYTES. Driven through the real reader on
+ * real stored objects: **all 3 sampled `board_items` rows are JPEG bytes served
+ * as `image/png`**, while 6 of 6 `model_assets` rows are PNG with a header that
+ * agrees. So the header is demonstrably not reliable and the bytes are.
+ *
+ * ⚠ **What that is NOT, stated because an earlier draft of this paragraph
+ * claimed it:** it is not a proven customer-facing bug fix. `ImageActionBar`
+ * does key a `ClipboardItem` off this mime (`ImageActionBar.tsx:230`), but it is
+ * rendered only from `features/casting/ImageViewerPanel.tsx`, `StudioCanvas` and
+ * the wardrobe — **not from the boards canvas**, so the mislabelled population
+ * is not known to reach it, and every object measured on the paths that DO read
+ * the mime was labelled correctly. The mislabelled rows reach the canvas zip,
+ * whose entry names are a `.png` client template either way. The change is
+ * correct-making; the inference that it repairs a live clipboard defect was
+ * mine and was not measured.
  *
  * # What is deliberately NOT brought across, and why it is named rather than
  * quietly omitted
