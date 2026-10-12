@@ -16,7 +16,6 @@ import { enforceDailyQuota } from "../../db/dailyQuota";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { iterateInputSchema } from "./iterateInput";
-import { validateProxyUrl } from "../../security/urlValidator";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../../security/rateLimit";
 import {
   buildEthnicityHint,
@@ -764,44 +763,13 @@ export const castingRefinementRouter = router({
       }
     }),
 
-  // Proxy endpoint to fetch S3 images and return as base64 (bypasses CORS)
-  // SECURITY: Restricted to trusted S3/CDN domains to prevent SSRF
-  proxyImage: protectedProcedure
-    .input(z.object({
-      imageUrl: z.string().url(),
-    }))
-    .mutation(async ({ input }) => {
-      // Validate URL against allowlist before fetching
-      const validation = validateProxyUrl(input.imageUrl);
-      if (!validation.valid) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `URL not allowed: ${validation.reason}`,
-        });
-      }
-
-      try {
-        const response = await fetch(input.imageUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image: ${response.status}`);
-        }
-        const buffer = await response.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        const contentType = response.headers.get('content-type') || 'image/png';
-        return {
-          success: true,
-          base64: `data:${contentType};base64,${base64}`,
-        };
-      } catch (error) {
-        // Fetch errors can carry the target URL/host detail — logged in
-        // full, never sent to the client (final corrections).
-        log.error({ err: error }, '[ProxyImage] Error:');
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch image',
-        });
-      }
-    }),
+  /* `proxyImage` moved OUT to `./imageDataUrl.ts` (#2315 step 2 item 1).
+     It calls no Gemini anything — it validates a URL against the allowlist
+     and hands back the bytes as a data URL — and the canvas, the export
+     pack and the studio's image bar still use it, so deleting this file as
+     "the legacy casting refine route" would have taken a live control with
+     it. The callable id is unchanged: both routers are spread into the flat
+     `generation` namespace by `./index.ts`. */
 
   // Enhance user prompt with AI
   // NOTE: If TypeScript shows errors about this endpoint not existing on the router,

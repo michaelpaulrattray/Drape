@@ -12,6 +12,44 @@ const read = (rel: string) => fs.readFileSync(path.join(__dirname, "..", rel), "
 const serverFile = (rel: string) => read(path.join("server", rel));
 const clientFile = (rel: string) => read(path.join("client", "src", rel));
 
+/**
+ * SLICE A BLOCK OUT OF A SOURCE FILE, AND REFUSE IF EITHER ANCHOR IS GONE.
+ *
+ * ⚠ **Why this exists, measured 2026-10-12 (#2315 step 2 item 1).** Three arms
+ * in this file sliced `iterate:` → `"// Proxy endpoint"`. Moving `proxyImage`
+ * out of `castingRefinement.ts` deleted that comment, and `String.indexOf`
+ * answers **-1**, which `String.slice` reads as "one character from the end" —
+ * so each slice silently swallowed four more procedures instead of erroring.
+ * **Only ONE of the three went red.** The other two kept passing over the wrong
+ * text: one asserts the ORDER of four indices, and a wider block still
+ * satisfies it.
+ *
+ * That is the dangerous direction. A widened slice that happens to break an
+ * arm is a nuisance; a widened or narrowed slice that still passes is a guard
+ * that has stopped guarding, with nothing anywhere to say so — and this file is
+ * all guards, over a file the retirement program is actively deleting from.
+ *
+ * So an absent anchor is a LOUD failure naming the anchor, never a -1.
+ */
+function blockBetween(src: string, from: string, to: string, where: string): string {
+  const start = src.indexOf(from);
+  const end = src.indexOf(to);
+  expect(start, `${where}: the slice's START anchor ${JSON.stringify(from)} is not in the source — re-point this guard rather than letting indexOf(-1) widen the block`).toBeGreaterThan(-1);
+  expect(end, `${where}: the slice's END anchor ${JSON.stringify(to)} is not in the source — re-point this guard rather than letting indexOf(-1) widen the block`).toBeGreaterThan(-1);
+  expect(end, `${where}: the END anchor ${JSON.stringify(to)} sits BEFORE the start anchor ${JSON.stringify(from)} — the slice would be empty and every not.toContain would pass vacuously`).toBeGreaterThan(start);
+  return src.slice(start, end);
+}
+
+/**
+ * The end anchor for every `iterate:` slice below — declared ONCE because it
+ * had three copies and they were broken in one edit (working law 4). It is the
+ * next procedure's DECLARATION rather than a comment, because comments are
+ * edited more freely than declarations. ⚠ `enhance` is itself inside #2315's
+ * retirement, and when it goes `blockBetween` will say so by name instead of
+ * going quietly green.
+ */
+const AFTER_ITERATE = "enhance: protectedProcedure";
+
 describe("no client can submit authorization/provenance fields (M2/M21)", () => {
   // The tRPC input surfaces that touch model assets/identity. Model-asset
   // provenance is server-written ONLY; board-item placement provenance
@@ -73,6 +111,10 @@ describe("no automatic reconcile caller survives (M4)", () => {
   });
   it("the server procedure refuses instead of writing", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
+    /* One-anchor slice: once `reconcile:` goes (it is inside #2315's
+       retirement) `indexOf` answers -1 and `slice(-1)` is the file's LAST
+       CHARACTER — both assertions below would then pass over one byte. */
+    expect(src.indexOf("reconcile:"), "the reconcile anchor is gone — re-point this guard").toBeGreaterThan(-1);
     const reconcileBlock = src.slice(src.indexOf("reconcile:"));
     expect(reconcileBlock.slice(0, 900)).toContain("REFUSAL_COPY.reconcileDisabled");
     expect(reconcileBlock.slice(0, 900)).not.toContain("reconcileSchemaWithImage");
@@ -82,7 +124,7 @@ describe("no automatic reconcile caller survives (M4)", () => {
 describe("image-only branches never write identity documents or stale flags (M17)", () => {
   it("iterate's image-only path has no updateModel / stale / compaction call", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
-    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
+    const iterateBlock = blockBetween(src, "iterate:", AFTER_ITERATE, "castingRefinement iterate");
     // Both successful branches cross the R7 atomic snapshot boundary; the
     // route itself owns no direct model/asset/stale writer.
     expect(iterateBlock).toContain("commitIteratedIdentitySnapshot");
@@ -169,7 +211,7 @@ describe("headshot snapshot reads stay server-owned", () => {
 describe("iteration snapshot reads stay server-owned", () => {
   it("captures one mode, selects only package views, and validates the receipt head before money", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
-    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
+    const iterateBlock = blockBetween(src, "iterate:", AFTER_ITERATE, "castingRefinement iterate");
     expect(iterateBlock).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
     expect(iterateBlock).toContain("resolveEffectiveCastStateForRead");
     expect(src).toContain("state.selectedViews.find");
@@ -412,7 +454,7 @@ describe("package generation preserves exact storage ownership", () => {
 describe("masked editing stays closed (M3)", () => {
   it("the server mask refusal remains before admission, charging, and generation", () => {
     const src = serverFile("routes/generation/castingRefinement.ts");
-    const iterateBlock = src.slice(src.indexOf("iterate:"), src.indexOf("// Proxy endpoint"));
+    const iterateBlock = blockBetween(src, "iterate:", AFTER_ITERATE, "castingRefinement iterate");
     const maskRefusal = iterateBlock.indexOf("if (input.maskBase64)");
     const rateLimit = iterateBlock.indexOf("checkRateLimit");
     const creditBoundary = iterateBlock.indexOf("withAtomicCredits");
