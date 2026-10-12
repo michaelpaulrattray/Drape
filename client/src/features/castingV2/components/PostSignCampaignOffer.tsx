@@ -166,7 +166,7 @@ export type PostSignCampaignOfferProps = {
 };
 
 function castCountLine(count: number): string {
-  return count === 1 ? "1 cast" : `${count} casts`;
+  return count === 1 ? "1 character" : `${count} characters`;
 }
 
 /**

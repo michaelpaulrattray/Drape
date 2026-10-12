@@ -20,8 +20,14 @@ import { Router } from "wouter";
   against a real database in `server/castCampaigns-db.test.ts`.
 */
 vi.mock("@/lib/trpc", () => ({ trpc: {} }));
+/* The dialog shell portals into `document.body`, which the server renderer has
+   no copy of; the shell is driven on its own, so here it only passes children. */
+vi.mock("@/foundation/CastingModal", () => ({
+  ModalScrim: ({ children }: { children: unknown }) => createElement("div", null, children as never),
+}));
 
 const { CastCampaignsPanel, campaignLibraryHref } = await import("./CastCampaignsCard");
+const { NewCampaignDialog } = await import("./NewCampaignDialog");
 
 const SUMMER = { campaignId: "a".repeat(32), name: "Summer refill" };
 const AUTUMN = { campaignId: "b".repeat(32), name: "Autumn launch" };
@@ -57,8 +63,10 @@ describe("a cast in campaigns lists them, by name, with a real count", () => {
     expect(html).toContain(`href="${campaignLibraryHref(SUMMER.campaignId)}"`);
     expect(html).toContain(`href="${campaignLibraryHref(AUTUMN.campaignId)}"`);
     expect(campaignLibraryHref(SUMMER.campaignId)).toBe(`/app/casting?campaign=${SUMMER.campaignId}`);
-    expect(text(html)).toContain("Summer refill 3 casts");
-    expect(text(html)).toContain("Autumn launch 1 cast");
+    expect(text(html)).toContain("Summer refill 3 characters");
+    expect(text(html)).toContain("Autumn launch 1 character");
+    /* NEGATIVE CONTROL (#2318): the count no longer says "cast" — customers call them characters. */
+    expect(text(html)).not.toMatch(/\b\d+ casts?\b/);
     /* NEGATIVE CONTROL: a campaign the cast is not in is not listed as one. */
     expect(html).not.toContain(`href="${campaignLibraryHref(WINTER.campaignId)}"`);
   });
@@ -99,7 +107,7 @@ describe("one add row, and it is live", () => {
   it("offers only the campaigns the cast is not already in, plus a new one", () => {
     const html = render({ defaultOpen: true });
     const picker = html.slice(html.indexOf("dpc-camp__picker"));
-    expect(text(picker)).toContain("Winter 0 casts");
+    expect(text(picker)).toContain("Winter 0 characters");
     expect(picker).not.toContain("Summer refill");
     expect(picker).not.toContain("Autumn launch");
     expect(picker).toContain('placeholder="New campaign name"');
@@ -176,5 +184,44 @@ describe("the cast page header", () => {
     expect(room).toMatch(/<CastCampaignsCard key=\{data\.castId\} castId=\{data\.castId\} castName=\{[^}]+\} \/>/);
     expect(room).not.toMatch(/Campaigns aren.t built yet/);
     expect(room).not.toContain("Use in a new campaign");
+  });
+});
+
+/*
+  #2318 — his word, 2026-10-12: "campaign wording should say 'character', not
+  'cast'. Customers call them characters." The counts are pinned above, in the
+  panel's own render; these pin the other three sentences on the campaign path.
+*/
+describe("the campaign path says character, not cast (#2318)", () => {
+  const dialog = (currentName?: string) =>
+    text(
+      renderToStaticMarkup(
+        createElement(NewCampaignDialog, { busy: false, error: null, onCancel: () => {}, onCreate: () => {}, currentName }),
+      ),
+    );
+
+  it("naming a new campaign says a character can be in more than one", () => {
+    const words = dialog();
+    expect(words).toContain("A character can be in more than one campaign.");
+    expect(words).not.toMatch(/\bcast member/i);
+  });
+
+  it("renaming says the characters in it stay as they are", () => {
+    const words = dialog("Summer refill");
+    expect(words).toContain("Only the name changes. The characters in it stay as they are.");
+    expect(words).not.toMatch(/\bcast member/i);
+    /* NEGATIVE CONTROL: each mode carries its own sentence and not the other's. */
+    expect(words).not.toContain("more than one campaign");
+  });
+
+  it("a filing the server refused without words falls back to a sentence naming a character", () => {
+    /* The fallback lives in the store-wired `file`, which needs a tRPC client the
+       server renderer has none of; read out of that function's own body. */
+    const source = readFileSync(new URL("./CastCampaignsCard.tsx", import.meta.url), "utf8");
+    const start = source.indexOf("const file = async (campaignId: string)");
+    expect(start).toBeGreaterThan(-1);
+    const body = source.slice(start, source.indexOf("const onCreate = async", start));
+    expect(body).toContain(`readableFailure(error, "This character couldn't be added to that campaign.")`);
+    expect(body).not.toMatch(/This cast couldn.t be added/);
   });
 });
