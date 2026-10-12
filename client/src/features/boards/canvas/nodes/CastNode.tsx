@@ -245,8 +245,12 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
 
   // D-51: the package verb — one strip slot, three honest states. Ghost
   // tiles are the in-card accelerator; this is the stable anchor.
+  // #2408: both verbs open the casting environment to add views, which is
+  // paused while the rebuild door is shut — so the slot is empty rather than
+  // promising a change that lands on the paused card. Edit stays the node's
+  // one door to that card (#2335), which explains itself.
   const packageVerb: ControlSegment[] =
-    modelReady && data.imageUrl && !isView
+    REBUILD_DOOR_OPEN && modelReady && data.imageUrl && !isView
       ? isDraft
         ? [{ kind: "action", content: "Build comp card", onClick: () => openEdit(true) }]
         : sheet.minted && !sheet.completeCard
@@ -398,9 +402,10 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                documented rule (D-2/D-37, its header: "disabled actions stay
                visible with explanatory tooltips") — a verb that silently
                vanishes reads as lost work, which is the fear the door's sentence
-               exists to answer. Rerun is NOT sealed here: its popover's Fork
-               half is free and still works, and the Recast half is sealed in
-               `ForkRecastPopover` beside D-43's minted row. */
+               exists to answer. Rerun is NOT sealed here: its popover seals
+               each half with its own reason, in `ForkRecastPopover` beside
+               D-43's minted row — Recast behind this door, and Fork behind the
+               rebuild door while editing is paused (#2408). */
             id: "variations" as const,
             label: !CANVAS_CAST_OPEN
               ? "Variations — unavailable while we rebuild the canvas"
@@ -644,6 +649,7 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                 openEdit(false, angle);
               }}
               onGhostClick={() => openEdit(true)}
+              ghostClosedNote={REBUILD_DOOR_OPEN ? undefined : REBUILD_DOOR_CLOSED}
             />
           ) : (
             <CastImageArea
@@ -736,14 +742,19 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           // #2335: while the rebuild door is shut the draft's
                           // exit (editing it) is paused, so the line names no
                           // road; restoring an earlier version stays open.
+                          // #2408: the signed exit (forking) is sealed behind
+                          // the same door, so the signed line names no road
+                          // either while it is shut.
                           <div className="text-canvas-xs text-canvas-ink-soft">
                             {sheet.minted
-                              ? "Headshot out of sync — it never refreshes. Changing this identity forks a new cast"
+                              ? REBUILD_DOOR_OPEN
+                                ? "Headshot out of sync — it never refreshes. Changing this identity forks a new cast"
+                                : "Headshot out of sync — it never refreshes"
                               : REBUILD_DOOR_OPEN
                                 ? "Headshot out of sync — it never refreshes. Edit it in the environment"
                                 : "Headshot out of sync — it never refreshes"}
                             {slot.version > 1
-                              ? sheet.minted || REBUILD_DOOR_OPEN
+                              ? REBUILD_DOOR_OPEN
                                 ? ", or reuse a version from the current look in its history"
                                 : ". Reuse a version from the current look in its history"
                               : ""}.
@@ -785,7 +796,9 @@ function CastNodeInner({ data, selected }: NodeProps<CastFlowNode>) {
                           // MINTED answer; a draft's answer is the environment
                           <div className="px-2 py-1.5 text-canvas-xs text-canvas-ink-faint">
                             {sheet.minted
-                              ? "The headshot is this identity — fork to change it"
+                              ? REBUILD_DOOR_OPEN
+                                ? "The headshot is this identity — fork to change it"
+                                : "The headshot is this identity" /* #2408: forking is paused */
                               : REBUILD_DOOR_OPEN
                                 ? "The headshot anchors every view — edit it in the environment"
                                 : "The headshot anchors every view" /* #2335: editing is paused */}

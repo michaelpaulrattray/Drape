@@ -12501,6 +12501,10 @@
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/pausedCanvasEntrances2408.test.ts",
+      "path": "client/src/features/boards/pausedCanvasEntrances2408.test.ts"
+    },
+    {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
       "path": "client/src/features/casting/castingPrices.test.ts"
     },
@@ -18840,6 +18844,11 @@
     {
       "from": "module:client/src/features/boards/canvas/ForkRecastPopover.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/ForkRecastPopover.tsx",
+      "to": "module:shared/rebuildDoor.ts",
       "kind": "imports"
     },
     {
