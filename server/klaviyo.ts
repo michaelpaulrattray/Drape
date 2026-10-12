@@ -285,10 +285,15 @@ export async function sendAccountFrozenEmail(params: {
     user_name: params.userName,
     freeze_reason: params.freezeReason,
     frozen_by: params.frozenBy,
+    /* #2363: the day is read in UTC, as every server-written customer date
+       is (`shared/customerDate.ts`), so it no longer moves with the host's
+       `TZ`. The en-US notation is left as it was: a change of notation is a
+       copy decision, not this fix. */
     frozen_date: new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "UTC",
     }),
     support_url: params.supportUrl || FROZEN_ACCOUNT_SUPPORT_URL,
     /* #1955: a Klaviyo flow template renders this into the email the customer
