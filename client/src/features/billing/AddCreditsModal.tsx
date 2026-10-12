@@ -71,12 +71,14 @@ import { displayBalance, displaySpent, formatCredits } from "@shared/creditDispl
 import {
   TOPUP_MAX_UNITS,
   TOPUP_PACKS,
+  TOPUP_PLAN_PAUSED_SENTENCE,
   bestValueTopupUnits,
   isSellableTopupUnits,
   topupEligibility,
   topupLedgerCredits,
   topupPriceInCents,
 } from "@shared/creditTopups";
+import { SUPPORT_EMAIL } from "@shared/supportEmail";
 import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { announcePlanChange } from "./planChangeToast";
@@ -1271,6 +1273,63 @@ function PaymentFailedPacksPane({ onClose }: { onClose: () => void }) {
 }
 
 /**
+ * A PLAN HOLDER WHOSE PLAN IS PAUSED IS TOLD WHO RESUMES IT, NOT SHOWN THE
+ * PACKS — #2456.
+ *
+ * #2454 made the server refuse a pack on a paused plan (*"you need to be on an
+ * active plan to buy credit packs."*), and the pane still drew the packs, so
+ * the customer chose an amount and pressed Add credits only to be told the
+ * plan was paused. This is the failed-payment view above, one state over: a
+ * heading, the notice, and one button. Nothing on it is for sale, so nothing
+ * on it has a price.
+ *
+ * ⚠ **THE ROAD IS A PERSON, BECAUSE NOTHING IN THE PRODUCT RESUMES A PAUSE**
+ * (the relay's finding on PR #2457). `pause_collection` is set and cleared
+ * nowhere in this tree, so a pause is only ever made by staff in Stripe, and
+ * `useResumePlan` undoes a scheduled cancellation, which is a different thing.
+ * The first wording sent the customer to a billing page with no such control.
+ * The notice is `TOPUP_PLAN_PAUSED_SENTENCE`, the same words the press refuses
+ * with, and the button writes to the one support address (`SUPPORT_EMAIL`).
+ *
+ * The disappearing-technology gate: nothing to learn, one thing to do, and no
+ * status word, engine or figure on the page.
+ */
+function PausedPlanPacksPane({ onClose }: { onClose: () => void }) {
+  return (
+    <ModalScrim
+      label="Resume your plan"
+      scrimClassName="dp-topup__scrim"
+      cardClassName="dp-topup__card"
+      busy={false}
+      onDismiss={onClose}
+    >
+      <div className="dp-topup__pane">
+        <p className="dp-topup__eyebrow">CREDITS</p>
+        <h2 className="dp-topup__title">Resume your plan</h2>
+        <p className="dp-topup__reason" role="status">
+          {TOPUP_PLAN_PAUSED_SENTENCE}
+        </p>
+      </div>
+      <div className="dp-topup__foot">
+        <span className="dp-set__spacer" />
+        <Button variant="quiet" size="small" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="small"
+          onClick={() => {
+            window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Resume my paused plan")}`;
+          }}
+        >
+          Email support
+        </Button>
+      </div>
+    </ModalScrim>
+  );
+}
+
+/**
  * THE CREDIT PACKS — what a plan holder is shown, and the whole of slice 2.
  *
  * His design, 2026-10-02 (terminal), verbatim: *"for our add credits we should
@@ -1702,9 +1761,36 @@ export function AddCreditsModal({
      statuses, read the way the plan pane reads them (#2394). */
   const paymentFailed =
     status?.subscriptionStatus === "past_due" || status?.subscriptionStatus === "unpaid";
+  /*
+    #2456: a PAUSED plan is not on the stored status at all — the pause lives
+    only at Stripe, so `getStatus` reads `active` for it (the procedure's own
+    docblock says why). `getTopupStanding` asks Stripe the same question the
+    top-up gate asks, and only when the packs are the next thing to draw.
+  */
+  const standingAsked = eligibility === "may-buy" && !paymentFailed;
+  const standing = trpc.billing.getTopupStanding.useQuery(undefined, {
+    enabled: standingAsked,
+  });
 
   if (eligibility === "may-buy") {
     if (paymentFailed) return <PaymentFailedPacksPane onClose={onClose} />;
+    if (standing.data?.planPaused === true) return <PausedPlanPacksPane onClose={onClose} />;
+    /*
+      ⚠ THE PACKS WAIT FOR THE ANSWER — drawing them and then swapping them
+      for the paused pane a beat later is the offer-then-withdraw this card is
+      about, at a smaller size. The held shell below stands meanwhile.
+
+      ⚠ AND A READ THAT COULD NOT BE MADE DRAWS THE PACKS (`planPaused: null`,
+      or the query itself failing). That is not a guess that the plan is
+      active: the server's gate reads Stripe again on the press and refuses
+      with its own sentence if the plan is not. Holding the pane shut instead
+      would turn a slow billing provider into a modal that never opens for
+      every plan holder, to spare the rare paused one a refusal it already
+      gets in plain words.
+    */
+    if (standing.isPending) {
+      return <HeldCreditsShell onClose={onClose} />;
+    }
     return <CreditPacksPane onClose={onClose} onChangePlan={onChangePlan} />;
   }
   if (eligibility === "needs-a-plan") {
@@ -1719,6 +1805,15 @@ export function AddCreditsModal({
     reaching it is about to be shown packs: the only honest title here is the
     noun both panes share, which is the one the eyebrow already carries.
   */
+  return <HeldCreditsShell onClose={onClose} />;
+}
+
+/**
+ * The held beat — the scrim and the noun both panes share, and nothing else.
+ * Drawn while the rung is unread (#1836's reasoning above) and, for a plan
+ * holder, while `getTopupStanding` is answering (#2456).
+ */
+function HeldCreditsShell({ onClose }: { onClose: () => void }) {
   return (
     <ModalScrim
       label="Credits"
