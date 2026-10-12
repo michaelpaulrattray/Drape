@@ -566,7 +566,7 @@ describe("Sign's money", () => {
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
     ).rejects.toMatchObject({
       code: "PRECONDITION_FAILED",
-      message: expect.stringMatching(/^Not enough credits\. Signing a Cast costs [\d,.]+ credits\.$/),
+      message: expect.stringMatching(/^Not enough credits\. Signing a character costs [\d,.]+ credits\.$/),
     });
 
     expect(ledger.charges).toHaveLength(0);

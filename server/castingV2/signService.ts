@@ -457,7 +457,7 @@ export async function signCandidate(
       operationId,
       error: chargeRefusal(
         chargeResult,
-        `Not enough credits. Signing a Cast costs ${formatCredits(displayPrice(price))} credits.`,
+        `Not enough credits. Signing a character costs ${formatCredits(displayPrice(price))} credits.`,
       ),
       chargedCredits: 0,
       refundedCredits: 0,
@@ -1287,7 +1287,7 @@ async function completeSignPackage(
         userId: input.userId,
         operationId: input.operationId,
         publicMessage:
-          `Part of this Cast's refund could not be recorded — quote operation ${input.operationId} and support will restore the balance.`,
+          `Part of this character's refund could not be recorded — quote operation ${input.operationId} and support will restore the balance.`,
         chargedCredits: input.chargedCredits,
         refundedCredits: result.refundedCredits,
       }).catch((error) => {
@@ -1498,7 +1498,7 @@ async function settleAbandonedSign(input: {
     case "recovery_required":
       throw spokenError({
         code: "INTERNAL_SERVER_ERROR",
-        message: `This Cast needs support review before it can be retried. Operation ${operationId}.`,
+        message: `This character needs support review before it can be retried. Operation ${operationId}.`,
       });
     case "durable_success":
     case "partial":
@@ -1509,17 +1509,17 @@ async function settleAbandonedSign(input: {
       */
       throw spokenError({
         code: "PRECONDITION_FAILED",
-        message: `That Cast was signed, but its settlement was interrupted. Reload the studio. Operation ${operationId}.`,
+        message: `That character was signed, but its settlement was interrupted. Reload the studio. Operation ${operationId}.`,
       });
     case "paid_failure":
       throw spokenError({
         code: "PRECONDITION_FAILED",
-        message: "That Cast wasn't signed. Everything you paid was refunded.",
+        message: "That character wasn't signed. Everything you paid was refunded.",
       });
     case "free_failure":
       throw spokenError({
         code: "PRECONDITION_FAILED",
-        message: "That Cast wasn't signed. You were not charged.",
+        message: "That character wasn't signed. You were not charged.",
       });
   }
 }
@@ -1549,7 +1549,7 @@ function signRefusal(error: unknown, refunded: boolean, operationId: string): TR
       default:
         return spokenError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `The Cast couldn't be signed. ${tail}`,
+          message: `The character couldn't be signed. ${tail}`,
         });
     }
   }
@@ -1557,7 +1557,7 @@ function signRefusal(error: unknown, refunded: boolean, operationId: string): TR
      panel's generic line — see `shared/spokenError`. */
   return spokenError({
     code: "INTERNAL_SERVER_ERROR",
-    message: `The Cast couldn't be signed. ${tail}`,
+    message: `The character couldn't be signed. ${tail}`,
   });
 }
 

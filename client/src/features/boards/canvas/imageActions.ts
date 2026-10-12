@@ -4,19 +4,20 @@
  * cross-origin and CORS-less.
  */
 import { toast } from "sonner";
+import { imageProxyUrl } from "@/lib/imageProxy";
 
 /** Build a same-origin proxy URL to bypass CORS for stored images */
-function proxyUrl(originalUrl: string, download = false): string {
-  const params = new URLSearchParams({ url: originalUrl });
-  if (download) params.set("download", "1");
-  return `/api/image-proxy?${params.toString()}`;
+function proxyUrl(originalUrl: string, download = false, saveAs?: string): string {
+  return imageProxyUrl(originalUrl, { download, filename: saveAs });
 }
 
 export async function downloadImage(url: string, filename: string) {
   try {
     // Use server proxy — sets Content-Disposition: attachment
     const a = document.createElement("a");
-    a.href = proxyUrl(url, true);
+    // The name rides on the proxy URL too: its Content-Disposition beats the
+    // `download` attribute, and without it the file saved as a storage id (#2407).
+    a.href = proxyUrl(url, true, filename);
     a.download = filename;
     document.body.appendChild(a);
     a.click();

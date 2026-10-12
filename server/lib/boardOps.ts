@@ -756,9 +756,22 @@ export async function listCastableModels(
   userId: number,
   limit = 30,
   readMode: SnapshotReadMode = "r6",
+  search?: string,
 ) {
-  const { getUserModels, getHeadshotsForModels } = await import("../db");
-  const models = await getUserModels(userId, limit * 2); // headroom for filtering
+  // #2406: signed characters and drafts are read as TWO queries, each sorted
+  // and searched in its own owner-scoped statement before its own limit, so
+  // drafts can never use up the signed characters' places and a search finds
+  // a character the newest page did not hold. `limit` is per group.
+  const { getUserPickerModels, getHeadshotsForModels } = await import("../db");
+  const term = search?.trim() || undefined;
+  const read = (group: "signed" | "draft") =>
+    getUserPickerModels(userId, group, {
+      limit: limit * 2, // headroom for rows with no canonical headshot
+      search: term,
+      draftAutoName: DRAFT_AUTO_NAME,
+    });
+  const [signedRows, draftRows] = await Promise.all([read("signed"), read("draft")]);
+  const models = [...signedRows, ...draftRows];
   // Snapshot mode resolves the frozen model cohort in one transaction. R6
   // keeps the historical two-query newest-frontClose reader byte-for-byte.
   const headshots = readMode === "r6"
@@ -770,14 +783,15 @@ export async function listCastableModels(
         const selected = selectedAssetForAngle(state, "frontClose");
         return selected ? [[modelId, selected.storageUrl] as const] : [];
       }));
-  const out: Array<{ id: number; name: string | null; headshotUrl: string; draft: boolean }> = [];
-  for (const model of models) {
-    if (out.length >= limit) break;
-    const headshotUrl = headshots.get(model.id);
-    if (headshotUrl) {
+  const present = (rows: typeof models) => {
+    const out: Array<{ id: number; name: string | null; headshotUrl: string; draft: boolean }> = [];
+    for (const model of rows) {
+      if (out.length >= limit) break;
+      const headshotUrl = headshots.get(model.id);
+      if (!headshotUrl) continue;
       // Batch B: archived/unknown statuses are unavailable, never presented
-      // (getUserModels already excludes archived — FR-4 — this is the read
-      // model's own refusal, so the picker can't regress if that filter does)
+      // (the reader already excludes them — FR-4 — this is the read model's
+      // own refusal, so the picker can't regress if that filter does)
       if (!isModelAvailableStatus(model.status)) continue;
       const draft = isModelDraftStatus(model.status);
       out.push({
@@ -787,9 +801,14 @@ export async function listCastableModels(
         draft,
       });
     }
-  }
-  // Minted first; drafts below (each group keeps recency order)
-  return out.sort((a, b) => Number(a.draft) - Number(b.draft));
+    return out;
+  };
+  const signed = present(signedRows);
+  const drafts = present(draftRows);
+  // Minted first; drafts below (each group keeps recency order). The sort
+  // keys on status truth, so a row whose status disagrees with the group it
+  // was read under still lands in its honest section.
+  return [...signed, ...drafts].sort((a, b) => Number(a.draft) - Number(b.draft));
 }
 
 // ── applyModelEdit (R3 — identity events, D-11/D-41) ───────────────────────

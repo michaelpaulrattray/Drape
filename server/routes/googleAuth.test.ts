@@ -109,7 +109,11 @@ vi.mock("../db", () => ({
   isAccountLocked: vi.fn().mockResolvedValue({ locked: false }),
   resetFailedLogins: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("../db/users", () => ({ getUserByEmail: vi.fn() }));
+vi.mock("../db/users", () => ({
+  getUserByEmail: vi.fn(),
+  getUsersByGoogleSub: vi.fn(),
+  bindGoogleSub: vi.fn(),
+}));
 vi.mock("../db/validateInviteCode", () => ({ validateInviteCode: vi.fn() }));
 vi.mock("../db/inviteCodes", () => ({ redeemInviteCode: vi.fn() }));
 vi.mock("../_core/sdk", () => ({
@@ -152,7 +156,7 @@ import { DEVICE_COOKIE_NAME } from "../security/deviceKey";
 import * as db from "../db";
 import { AUDIT_ACTIONS, logAuditEvent } from "../auditLog";
 import { redeemInviteCode } from "../db/inviteCodes";
-import { getUserByEmail } from "../db/users";
+import { bindGoogleSub, getUserByEmail, getUsersByGoogleSub } from "../db/users";
 import { validateInviteCode } from "../db/validateInviteCode";
 import { sdk } from "../_core/sdk";
 import { checkRateLimit } from "../security/rateLimit";
@@ -283,7 +287,10 @@ function aGooglePayload(overrides: Record<string, unknown> = {}) {
 function anAccount(overrides: Record<string, unknown> = {}) {
   return {
     id: 7,
-    openId: "google_existing",
+    /* An account Google created: bound to the person's Google account by its
+       openId, so a sign-in finds it on `sub` (#2389). */
+    openId: `google_${GOOGLE_SUB}`,
+    googleSub: null,
     email: "person@example.com",
     name: "A Person",
     avatarUrl: null,
@@ -308,6 +315,29 @@ beforeEach(() => {
     id: 42, openId, email: "person@example.com", name: "A Person",
   })) as never);
   vi.mocked(getUserByEmail).mockResolvedValue(null as never);
+  /*
+    THE ACCOUNTS TABLE, AS THE SUB LOOKUP SEES IT (#2389). The arms in this file
+    stage "the account that exists" by staging `getUserByEmail`; the sub lookup
+    reads that same staged account and returns it only when it is bound to the
+    `sub` asked for — by a `google_<sub>` openId or a linked `googleSub`, the
+    two shapes `server/db/googleSubBinding.test.ts` proves the real statement
+    asks for. So an arm that stages an email-and-password account walks the
+    linking road, and one that stages a Google-created account walks the bound
+    road, without either arm having to say so. It reads the staged answer
+    without CALLING `getUserByEmail`, so arms asserting that the address was
+    never consulted still mean what they say.
+  */
+  vi.mocked(getUsersByGoogleSub).mockImplementation((async (sub: string) => {
+    const staged = vi.mocked(getUserByEmail).getMockImplementation();
+    const row = (staged ? await staged("person@example.com") : null) as
+      | { openId: string; googleSub?: string | null }
+      | null;
+    if (!row) return [];
+    const bound = row.googleSub
+      ?? (row.openId.startsWith("google_") ? row.openId.slice("google_".length) : null);
+    return bound === sub ? [row] : [];
+  }) as never);
+  vi.mocked(bindGoogleSub).mockResolvedValue(true);
   vi.mocked(validateInviteCode).mockResolvedValue({ valid: true });
   vi.mocked(redeemInviteCode).mockResolvedValue({ success: true });
   vi.mocked(sdk.createSessionToken).mockResolvedValue("session-token-stand-in");
@@ -561,7 +591,7 @@ describe("GET /api/auth/google/callback — the state nonce is bound to the brow
     );
 
     expect(response.location).toBe("/app");
-    expect(sdk.createSessionToken).toHaveBeenCalledWith("google_existing", expect.anything());
+    expect(sdk.createSessionToken).toHaveBeenCalledWith(`google_${GOOGLE_SUB}`, expect.anything());
     expect(sessionCookie(response)).toBeDefined();
   });
 
@@ -759,6 +789,8 @@ describe("GET /api/auth/google/callback — Google's email_verified is a gate (#
       /* Refused BEFORE the lookup, so the token never learns an account exists,
          and nothing about the account is touched. */
       expect(getUserByEmail).not.toHaveBeenCalled();
+      expect(getUsersByGoogleSub).not.toHaveBeenCalled();
+      expect(bindGoogleSub).not.toHaveBeenCalled();
       expect(db.upsertUser).not.toHaveBeenCalled();
       expect(db.resetFailedLogins).not.toHaveBeenCalled();
     });
@@ -869,7 +901,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     expect(db.upsertUser).not.toHaveBeenCalled();
     expect(auditRows()[0]).toMatchObject({
       action: AUDIT_ACTIONS.LOGIN_BLOCKED_SUSPENDED,
-      resourceId: "google_existing",
+      resourceId: `google_${GOOGLE_SUB}`,
       severity: "warning",
       metadata: { reason: "Suspended by an admin" },
     });
@@ -919,6 +951,22 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     expect(sessionCookie(response)).toBeDefined();
   });
 
+  it("refuses the session when the checker said yes but the REDEEM refuses — the code's last use went to someone else in between (#2373)", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ approved: false }) as never);
+    vi.mocked(redeemInviteCode).mockResolvedValue({
+      success: false,
+      error: "This access code has reached its usage limit.",
+    });
+
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(redeemInviteCode).toHaveBeenCalledWith(7, "BETA123");
+    expect(response.location).toBe("/login?error=code_redeem_failed");
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(sessionCookie(response)).toBeUndefined();
+    expect(db.upsertUser).not.toHaveBeenCalled();
+  });
+
   it("lets an ADMIN through the approval gate without a code — the enumerated exemption", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(
       anAccount({ approved: false, role: "admin" }) as never,
@@ -936,7 +984,7 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
 
     expect(response.location).toBe("/app");
     expect(sdk.createSessionToken).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe("google_existing");
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe(`google_${GOOGLE_SUB}`);
 
     const cookie = sessionCookie(response);
     expect(cookie).toBeDefined();
@@ -948,12 +996,12 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
   it("clears the failed-login count on a successful sign-in, and audits the success", async () => {
     await callback("code=auth-code");
 
-    expect(db.resetFailedLogins).toHaveBeenCalledWith("google_existing");
+    expect(db.resetFailedLogins).toHaveBeenCalledWith(`google_${GOOGLE_SUB}`);
     expect(auditRows()).toHaveLength(1);
     expect(auditRows()[0]).toMatchObject({
       action: AUDIT_ACTIONS.LOGIN_SUCCESS,
       resourceType: "auth",
-      resourceId: "google_existing",
+      resourceId: `google_${GOOGLE_SUB}`,
       metadata: { email: "person@example.com", loginMethod: "google", returningUser: true },
     });
   });
@@ -978,6 +1026,161 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     const [written] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
     expect(written.authProvider).toBe("google");
     expect(written.lastSignedIn).toBeInstanceOf(Date);
+  });
+});
+
+/*
+  ─── WHICH ACCOUNT A GOOGLE SIGN-IN OPENS: the person, not the address (#2389) ───
+*/
+
+describe("GET /api/auth/google/callback — the account is found by Google's sub, not by the address (#2389)", () => {
+  const OTHER_SUB = "9999999999";
+
+  /* PATH 1 — bound, same sub. */
+  it("BOUND, SAME SUB: a Google-created account signs in on its sub, and the address is never asked", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount() as never);
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(sessionCookie(response)).toBeDefined();
+    expect(getUsersByGoogleSub).toHaveBeenCalledWith(GOOGLE_SUB);
+    expect(getUserByEmail).not.toHaveBeenCalled();
+    expect(bindGoogleSub).not.toHaveBeenCalled();
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe(`google_${GOOGLE_SUB}`);
+  });
+
+  it("BOUND, SAME SUB: the account still opens after the person's Google address CHANGED", async () => {
+    /* The address on the Google account is new; nothing here holds it. The
+       match follows the person. */
+    vi.mocked(getUsersByGoogleSub).mockResolvedValue(
+      [anAccount({ email: "old-address@example.com" })] as never,
+    );
+    vi.mocked(getUserByEmail).mockResolvedValue(null as never);
+    google.verifyIdToken.mockResolvedValue({
+      getPayload: () => aGooglePayload({ email: "new-address@example.com" }),
+    });
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe(`google_${GOOGLE_SUB}`);
+    expect(getUserByEmail).not.toHaveBeenCalled();
+    expect(db.upsertUser).toHaveBeenCalledTimes(1);
+    expect(validateInviteCode).not.toHaveBeenCalled();
+  });
+
+  it("BOUND, SAME SUB: an account that LINKED Google earlier signs in on its googleSub, with no second bind", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(
+      anAccount({ openId: "email_owner", authProvider: "email", googleSub: GOOGLE_SUB }) as never,
+    );
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe("email_owner");
+    expect(getUserByEmail).not.toHaveBeenCalled();
+    expect(bindGoogleSub).not.toHaveBeenCalled();
+  });
+
+  /* PATH 2 — bound, different sub. */
+  for (const [label, account] of [
+    ["a Google-created account", { openId: `google_${OTHER_SUB}` }],
+    ["an account that linked a different Google account", { openId: "email_owner", authProvider: "email", googleSub: OTHER_SUB }],
+  ] as const) {
+    it(`⚠ BOUND TO A DIFFERENT SUB: the address of ${label} does not open it`, async () => {
+      vi.mocked(getUserByEmail).mockResolvedValue(anAccount(account) as never);
+
+      const response = await callback("code=auth-code");
+
+      expect(response.location).toBe("/login?error=google_error");
+      expect(sessionCookie(response)).toBeUndefined();
+      expect(sdk.createSessionToken).not.toHaveBeenCalled();
+      expect(bindGoogleSub).not.toHaveBeenCalled();
+      expect(db.upsertUser).not.toHaveBeenCalled();
+      expect(db.resetFailedLogins).not.toHaveBeenCalled();
+      /* And it is not mistaken for a new person either: no account is created. */
+      expect(validateInviteCode).not.toHaveBeenCalled();
+      expect(auditRows()).toHaveLength(1);
+      expect(auditRows()[0]).toMatchObject({
+        userId: 7,
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        severity: "warning",
+        metadata: { reason: "Google account does not match the one this account is bound to" },
+      });
+    });
+  }
+
+  /* PATH 3 — an unbound account linking Google for the first time. */
+  it("UNBOUND, LINKING: an email-and-password account opens on its address, and is bound to this sub before the mint", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(
+      anAccount({ openId: "email_owner", authProvider: "email", googleSub: null }) as never,
+    );
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(bindGoogleSub).toHaveBeenCalledTimes(1);
+    expect(bindGoogleSub).toHaveBeenCalledWith(7, GOOGLE_SUB);
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe("email_owner");
+    /* Bound BEFORE the session exists, so the mint never outruns the binding. */
+    expect(vi.mocked(bindGoogleSub).mock.invocationCallOrder[0]!)
+      .toBeLessThan(vi.mocked(sdk.createSessionToken).mock.invocationCallOrder[0]!);
+    expect(auditRows().at(-1)).toMatchObject({
+      action: AUDIT_ACTIONS.LOGIN_SUCCESS,
+      metadata: { returningUser: true, googleLinked: true },
+    });
+  });
+
+  it("UNBOUND, LINKING: binds NOTHING when a gate refuses the sign-in", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(
+      anAccount({ openId: "email_owner", authProvider: "email", approved: false }) as never,
+    );
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/login?error=not_approved");
+    expect(bindGoogleSub).not.toHaveBeenCalled();
+  });
+
+  it("UNBOUND, LINKING: refuses the session when another sign-in bound the account in between", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(
+      anAccount({ openId: "email_owner", authProvider: "email" }) as never,
+    );
+    vi.mocked(bindGoogleSub).mockResolvedValue(false);
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/login?error=google_error");
+    expect(sessionCookie(response)).toBeUndefined();
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(db.upsertUser).not.toHaveBeenCalled();
+  });
+
+  /* PATH 4 — a new account. */
+  it("NEW: no account bound to the sub and none at the address creates google_<sub>, binding nothing else", async () => {
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(response.location).toBe("/app");
+    expect(getUsersByGoogleSub).toHaveBeenCalledWith(GOOGLE_SUB);
+    expect(getUserByEmail).toHaveBeenCalledWith("person@example.com");
+    expect(bindGoogleSub).not.toHaveBeenCalled();
+    const [written] = vi.mocked(db.upsertUser).mock.calls[0] as [Record<string, unknown>];
+    expect(written.openId).toBe(`google_${GOOGLE_SUB}`);
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe(`google_${GOOGLE_SUB}`);
+  });
+
+  it("⚠ refuses when TWO accounts claim one Google account, rather than opening whichever came first", async () => {
+    vi.mocked(getUsersByGoogleSub).mockResolvedValue([
+      anAccount({ id: 7 }),
+      anAccount({ id: 8, openId: "email_owner", googleSub: GOOGLE_SUB }),
+    ] as never);
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/login?error=google_error");
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(getUserByEmail).not.toHaveBeenCalled();
   });
 });
 

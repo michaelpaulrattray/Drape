@@ -212,7 +212,7 @@ export async function recoverCastingV2SignOperation(
         userId: operation.userId,
         operationId: operation.id,
         publicMessage:
-          `This Cast needs support review before it can be retried. Operation ${operation.id}.`,
+          `This character needs support review before it can be retried. Operation ${operation.id}.`,
       }).catch((error) => {
         log.error({ operationId: operation.id, err: error }, "[signRecovery] could not park a claimed Sign");
       });
@@ -227,7 +227,7 @@ export async function recoverCastingV2SignOperation(
       userId: operation.userId,
       operationId: operation.id,
       errorCode: "PRECONDITION_FAILED",
-      publicMessage: "That Cast wasn't signed. You were not charged.",
+      publicMessage: "That character wasn't signed. You were not charged.",
     });
     return { type: "free_failure", reason: "the Sign never started" };
   }
@@ -250,7 +250,7 @@ export async function recoverCastingV2SignOperation(
       userId: operation.userId,
       operationId: operation.id,
       publicMessage:
-        `This Cast is being settled by support automation. Operation ${operation.id}.`,
+        `This character is being settled by support automation. Operation ${operation.id}.`,
       chargedCredits: ledger.charge.kind === "charged" ? ledger.charge.credits : 0,
       refundedCredits: Math.min(
         ledger.alreadyRefunded,
@@ -288,7 +288,7 @@ export async function recoverCastingV2SignOperation(
   /* ---- fork A: the boundary never committed. Nothing exists; refund it all. */
   if (!cast) {
     if (ledger.charge.kind === "not_charged") {
-      await sealFailure(options, operation, 0, 0, "That Cast wasn't signed. You were not charged.");
+      await sealFailure(options, operation, 0, 0, "That character wasn't signed. You were not charged.");
       return { type: "free_failure", reason: "the Sign crashed before the charge" };
     }
     const owed = ledger.charge.credits - ledger.alreadyRefunded;
@@ -322,7 +322,7 @@ export async function recoverCastingV2SignOperation(
       operation,
       ledger.charge.credits,
       refunded,
-      "That Cast wasn't signed. Everything you paid was refunded.",
+      "That character wasn't signed. Everything you paid was refunded.",
     );
     return { type: "paid_failure", chargedCredits: ledger.charge.credits, refundedCredits: refunded };
   }
@@ -660,7 +660,7 @@ async function park(
   outcome: Extract<SignRecoveryOutcome, { type: "recovery_required" }>,
 ): Promise<SignRecoveryOutcome> {
   const publicMessage =
-    `This Cast needs support review before it can be retried. Operation ${operation.id}.`;
+    `This character needs support review before it can be retried. Operation ${operation.id}.`;
   try {
     await (options.park ?? parkFencedCastingV2SignOperation)({
       userId: operation.userId,
@@ -692,7 +692,7 @@ async function parkRunning(
     userId: operation.userId,
     operationId: operation.id,
     publicMessage:
-      `This Cast needs support review before it can be retried. Operation ${operation.id}.`,
+      `This character needs support review before it can be retried. Operation ${operation.id}.`,
     chargedCredits: operation.chargedCredits,
     refundedCredits: Math.min(operation.refundedCredits, operation.chargedCredits),
   }).catch((error) => {

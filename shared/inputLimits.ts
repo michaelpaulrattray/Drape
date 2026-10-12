@@ -57,6 +57,18 @@ export const ANNOUNCEMENT_MESSAGE_MAX_LENGTH = 2000;
    `server/routes/boards.ts`, create and update, and `BoardHeader`. */
 export const BOARD_NAME_MAX_LENGTH = 128;
 
+/* ── Boards: the text on a canvas item (a note's words, a node's label) ───
+   #2405. ONE idea, FIVE schemas and FOUR boxes: `boards.addItem`, `addItems`
+   and `updateItem` in `server/routes/boards.ts`, `createNode.execute` and
+   `updateNodeMetadata` in `server/routes/boardOps.ts`; and on the canvas the
+   note's textarea (`NoteNode`) and the rename inputs of `CastNode`,
+   `BoardItemNode` and `FrameNode`. It is also the width of
+   `board_items.label` (`varchar(256)`, `drizzle/schema.ts`), which is why the
+   number is 256 and not a product choice made here. Until #2405 the boxes had
+   no cap at all: a 359-character note was refused by the server on click-away
+   and snapped back to its old text without a word. */
+export const BOARD_ITEM_LABEL_MAX_LENGTH = 256;
+
 /* ── Casting V2: a Cast's name ────────────────────────────────────────────
    ONE idea, FIVE places: `castingV2.renameCast` and `castingV2.sign` on the
    server, and `RenameCastDialog`, `CastingRoom` and `SignConfirm` on the

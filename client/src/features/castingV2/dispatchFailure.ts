@@ -1,7 +1,7 @@
 import { errorIsSpoken } from "@shared/spokenError";
 import { failureIsOurs, readableFailure } from "@/lib/failureSentence";
 
-import type { DispatchFailureKind } from "./sheetState";
+import type { DispatchFailure, DispatchFailureKind } from "./sheetState";
 
 /**
  * Turn a failed roll dispatch into something a person can act on.
@@ -134,4 +134,29 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
 /** The action a failure state offers. Refusals send you back to the words. */
 export function failureActionLabel(kind: DispatchFailureKind): string {
   return kind === "refused" ? "Edit the brief" : "Back to casting";
+}
+
+/**
+ * THE BANNER IS DEFINITIONALLY STALE ONCE A NEWER ROLL RENDERS — except a short
+ * balance.
+ *
+ * `createRoll` commits its rows and charges while the request is still open, so
+ * a transport failure means we never heard the answer, not that nothing
+ * happened. If the roll the sheet is RENDERING is not the one the failed
+ * dispatch fired on top of, a roll arrived after that failure, and the failure
+ * describes a world that no longer exists (`DispatchFailure.afterRollId`).
+ *
+ * ⚠ **A credits refusal is the exception (#2387's sheet half).** A charge that
+ * fails writes the roll's rows first and then fails them as `unpaid`, so a newer
+ * roll DOES appear — eight "Didn't start · not charged" tiles — and the rule
+ * above dismissed the one notice saying why within a poll. That roll is the
+ * failure, not news after it, and nothing can be running behind a refusal about
+ * the account. So it stands until the next dispatch clears it
+ * (`rollDispatched`) or the customer leaves by its own button.
+ */
+export function failureIsStale(failure: DispatchFailure | null, activeRollId: string | null): boolean {
+  return failure !== null
+    && failure.kind !== "credits"
+    && activeRollId !== null
+    && activeRollId !== failure.afterRollId;
 }

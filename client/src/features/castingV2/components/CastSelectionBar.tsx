@@ -50,7 +50,7 @@ export function CastSelectionBar({
   const byId = (campaignId: string) => campaigns.find((campaign) => campaign.campaignId === campaignId);
 
   return (
-    <div className="dpc-pickbar" role="toolbar" aria-label="Selected cast">
+    <div className="dpc-pickbar" role="toolbar" aria-label="Selected characters">
       <span className="dpc-pickbar__count" aria-live="polite">
         {selectedLabel(count)}
       </span>
@@ -68,7 +68,7 @@ export function CastSelectionBar({
         ) : (
           <>
             <Popover
-              label="Add the selected cast to a campaign"
+              label="Add the selected characters to a campaign"
               heading="Add to campaign"
               options={options}
               footer={{ label: "New campaign…", onSelect: onNewCampaign }}
@@ -81,7 +81,7 @@ export function CastSelectionBar({
             </Popover>
             {campaigns.length > 0 ? (
               <Popover
-                label="Take the selected cast out of a campaign"
+                label="Take the selected characters out of a campaign"
                 heading="Remove from campaign"
                 options={options}
                 onSelect={(campaignId) => {

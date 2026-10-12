@@ -6,6 +6,8 @@
  */
 import { memo, useState, useEffect, useRef } from 'react';
 import { NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from '@shared/inputLimits';
+import { RENAME_NODE_EVENT, renameEventDraft } from '../itemSaveFailure';
 
 /* ── Types ────────────────────────────────────────────────── */
 
@@ -25,26 +27,39 @@ function FrameNodeInner({ data, selected }: NodeProps<FrameFlowNode>) {
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(data.label ?? 'Frame');
   const inputRef = useRef<HTMLInputElement>(null);
+  // The words a failed save handed back (#2405), or null for a plain rename —
+  // read by the focus effect below to decide where the caret goes (#2427).
+  // Every road that opens the box sets it, so it is never cleared there —
+  // a StrictMode double effect run would read a cleared ref and select
+  // the draft again.
+  const recoveredDraftRef = useRef<string | null>(null);
 
   // Listen for rename trigger from context menu
   useEffect(() => {
     function handleRenameEvent(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail?.itemId === data.itemId) {
-        setEditLabel(data.label ?? 'Frame');
+        const draft = renameEventDraft(e);
+        recoveredDraftRef.current = draft;
+        setEditLabel(draft ?? data.label ?? 'Frame');
         setIsEditing(true);
       }
     }
-    window.addEventListener('board-rename-node', handleRenameEvent);
-    return () => window.removeEventListener('board-rename-node', handleRenameEvent);
+    window.addEventListener(RENAME_NODE_EVENT, handleRenameEvent);
+    return () => window.removeEventListener(RENAME_NODE_EVENT, handleRenameEvent);
   }, [data.itemId, data.label]);
 
   // Focus input when editing starts
   useEffect(() => {
     if (isEditing) {
+      // A recovered draft is kept, and not selected, so a stray keystroke
+      // cannot wipe it a second time (#2427, as CastNode does)
+      const draft = recoveredDraftRef.current;
       const timer = setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        const input = inputRef.current;
+        input?.focus();
+        if (draft === null) input?.select();
+        else input?.setSelectionRange(draft.length, draft.length);
       }, 30);
       return () => clearTimeout(timer);
     }
@@ -119,6 +134,7 @@ function FrameNodeInner({ data, selected }: NodeProps<FrameFlowNode>) {
               ref={inputRef}
               autoFocus
               value={editLabel}
+              maxLength={BOARD_ITEM_LABEL_MAX_LENGTH}
               onChange={(e) => setEditLabel(e.target.value)}
               onBlur={handleRename}
               onKeyDown={(e) => {
@@ -146,6 +162,7 @@ function FrameNodeInner({ data, selected }: NodeProps<FrameFlowNode>) {
           ) : (
             <span
               onDoubleClick={() => {
+                recoveredDraftRef.current = null;
                 setEditLabel(data.label ?? 'Frame');
                 setIsEditing(true);
               }}

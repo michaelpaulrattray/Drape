@@ -1,52 +1,51 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { ERROR_PAGE_HOME_HREF } from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
+
+/** Where a signed-out visitor's way home leads: the landing page. */
+export const NOT_FOUND_VISITOR_HOME_HREF = "/";
+
+/**
+ * Where "Go to Home" leads from a wrong address (#2380).
+ *
+ * A signed-in customer goes to the lobby — the same home the crash page uses
+ * (`ERROR_PAGE_HOME_HREF`, #2379), read from there rather than restated — and
+ * not the marketing `/`, which sent someone who mistyped a link out of the
+ * product. Only a visitor the session check has SETTLED as signed out goes to
+ * `/`. While the check is still out the answer is the lobby, because the
+ * lobby's own guard sends a signed-out person to sign in, whereas `/` would
+ * strand a signed-in customer on the marketing page.
+ */
+export function notFoundHomeHref(session: { loading: boolean; isAuthenticated: boolean }): string {
+  if (!session.loading && !session.isAuthenticated) return NOT_FOUND_VISITOR_HOME_HREF;
+  return ERROR_PAGE_HOME_HREF;
+}
+
+/**
+ * The page itself, drawn from the app's tokens so it follows the theme and the
+ * monochrome system — the scaffold's slate gradient, red pulse and blue button
+ * are gone. One plain sentence and one way back, like the crash page.
+ */
+export function NotFoundView({ onGoHome }: { onGoHome: () => void }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+      <div className="flex w-full max-w-sm flex-col items-center text-center">
+        <h1 className="text-lg font-medium">There is no page at this address.</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Check the link, or go back to Home.
+        </p>
+        <div className="mt-6 flex justify-center">
+          <Button onClick={onGoHome}>Go to Home</Button>
+        </div>
+      </div>
+    </main>
+  );
+}
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
+  const { loading, isAuthenticated } = useAuth();
 
-  const handleGoHome = () => {
-    setLocation("/");
-  };
-
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
-          </div>
-
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
-
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div
-            id="not-found-button-group"
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <NotFoundView onGoHome={() => setLocation(notFoundHomeHref({ loading, isAuthenticated }))} />;
 }

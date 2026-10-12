@@ -22,7 +22,7 @@
     {
       "id": "domain:boards",
       "name": "boards",
-      "moduleCount": 51
+      "moduleCount": 52
     },
     {
       "id": "domain:casting",
@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 67
+      "moduleCount": 68
     },
     {
       "id": "domain:client-shared",
@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 67
+      "moduleCount": 68
     },
     {
       "id": "domain:wardrobe",
@@ -949,6 +949,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/boards/itemSaveFailure.ts",
+      "path": "client/src/features/boards/itemSaveFailure.ts",
+      "domain": "boards",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "path": "client/src/features/boards/nodes/BoardItemNode.tsx",
       "domain": "boards",
@@ -1311,6 +1317,12 @@
     {
       "id": "module:client/src/features/castingV2/cancelNotice.ts",
       "path": "client/src/features/castingV2/cancelNotice.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/carriedBrief.ts",
+      "path": "client/src/features/castingV2/carriedBrief.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2709,6 +2721,12 @@
     {
       "id": "module:client/src/lib/failureSentence.ts",
       "path": "client/src/lib/failureSentence.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/lib/imageProxy.ts",
+      "path": "client/src/lib/imageProxy.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -7597,7 +7615,8 @@
       "rateLimited": false,
       "file": "server/routes/billing.ts",
       "clientCallers": [
-        "client/src/features/billing/ChangePlanModal.tsx"
+        "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -7612,7 +7631,8 @@
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
-        "client/src/features/settings/AccountSurfaces.tsx"
+        "client/src/features/settings/AccountSurfaces.tsx",
+        "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
     {
@@ -8552,6 +8572,7 @@
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/components/CastCampaignsCard.tsx",
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -8578,6 +8599,7 @@
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -8722,6 +8744,7 @@
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
+        "client/src/pages/CastingRoom.tsx",
         "client/src/pages/CastingV2.tsx"
       ]
     },
@@ -12472,8 +12495,20 @@
       "path": "client/src/features/boards/characterNoun2322.test.ts"
     },
     {
+      "id": "test:client/src/features/boards/itemSaveFailure2405.test.ts",
+      "path": "client/src/features/boards/itemSaveFailure2405.test.ts"
+    },
+    {
+      "id": "test:client/src/features/boards/nodes/renameCaret2427.test.ts",
+      "path": "client/src/features/boards/nodes/renameCaret2427.test.ts"
+    },
+    {
       "id": "test:client/src/features/boards/pausedCanvasCopy.test.ts",
       "path": "client/src/features/boards/pausedCanvasCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/boards/pausedCanvasEntrances2408.test.ts",
+      "path": "client/src/features/boards/pausedCanvasEntrances2408.test.ts"
     },
     {
       "id": "test:client/src/features/casting/castingPrices.test.ts",
@@ -12506,6 +12541,10 @@
     {
       "id": "test:client/src/features/castingV2/cardMenuAnatomy.test.ts",
       "path": "client/src/features/castingV2/cardMenuAnatomy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/carriedBrief.test.ts",
+      "path": "client/src/features/castingV2/carriedBrief.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/castSelection.test.ts",
@@ -12840,6 +12879,10 @@
       "path": "client/src/features/settings/card1607-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/card2400-guard.test.ts",
+      "path": "client/src/features/settings/card2400-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
       "path": "client/src/features/settings/card385-guard.test.ts"
     },
@@ -12870,6 +12913,14 @@
     {
       "id": "test:client/src/features/settings/section03-guard.test.ts",
       "path": "client/src/features/settings/section03-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/billingSection2392.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2392.test.ts"
+    },
+    {
+      "id": "test:client/src/features/settings/sections/billingSection2393.test.ts",
+      "path": "client/src/features/settings/sections/billingSection2393.test.ts"
     },
     {
       "id": "test:client/src/features/settings/settings387-guard.test.ts",
@@ -12996,6 +13047,10 @@
       "path": "client/src/foundation/topbarPhone2260-guard.test.ts"
     },
     {
+      "id": "test:client/src/lib/imageProxy.test.ts",
+      "path": "client/src/lib/imageProxy.test.ts"
+    },
+    {
       "id": "test:client/src/lib/staffPage.test.ts",
       "path": "client/src/lib/staffPage.test.ts"
     },
@@ -13010,6 +13065,22 @@
     {
       "id": "test:client/src/pages/CastingSheet.retryFailure.test.ts",
       "path": "client/src/pages/CastingSheet.retryFailure.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/CastingSheet.signFailure.test.ts",
+      "path": "client/src/pages/CastingSheet.signFailure.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/castingDeleteFailure2383.test.ts",
+      "path": "client/src/pages/castingDeleteFailure2383.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/characterNoun2382.test.ts",
+      "path": "client/src/pages/characterNoun2382.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/notFoundPage.test.ts",
+      "path": "client/src/pages/notFoundPage.test.ts"
     },
     {
       "id": "test:client/src/staffPagesLazy.test.ts",
@@ -13284,6 +13355,10 @@
       "path": "server/boardDeletionChildren.test.ts"
     },
     {
+      "id": "test:server/boardItemLabelCap.test.ts",
+      "path": "server/boardItemLabelCap.test.ts"
+    },
+    {
       "id": "test:server/boardTypes.test.ts",
       "path": "server/boardTypes.test.ts"
     },
@@ -13374,6 +13449,10 @@
     {
       "id": "test:server/castModelModal.test.ts",
       "path": "server/castModelModal.test.ts"
+    },
+    {
+      "id": "test:server/castPickerReach.test.ts",
+      "path": "server/castPickerReach.test.ts"
     },
     {
       "id": "test:server/castRefusalVocabulary.test.ts",
@@ -15376,6 +15455,14 @@
       "path": "server/db/dailyQuota.test.ts"
     },
     {
+      "id": "test:server/db/googleSubBinding.test.ts",
+      "path": "server/db/googleSubBinding.test.ts"
+    },
+    {
+      "id": "test:server/db/inviteCodeRedeemRace.test.ts",
+      "path": "server/db/inviteCodeRedeemRace.test.ts"
+    },
+    {
       "id": "test:server/db/migrationLag.test.ts",
       "path": "server/db/migrationLag.test.ts"
     },
@@ -15658,6 +15745,10 @@
     {
       "id": "test:server/interactionLatency.test.ts",
       "path": "server/interactionLatency.test.ts"
+    },
+    {
+      "id": "test:server/inviteCodeRedeem-db.test.ts",
+      "path": "server/inviteCodeRedeem-db.test.ts"
     },
     {
       "id": "test:server/jevCardCategory.test.ts",
@@ -15966,6 +16057,10 @@
     {
       "id": "test:server/providers/withRetryBilled.test.ts",
       "path": "server/providers/withRetryBilled.test.ts"
+    },
+    {
+      "id": "test:server/publicEndpointLimiters.test.ts",
+      "path": "server/publicEndpointLimiters.test.ts"
     },
     {
       "id": "test:server/publicEndpointRateLimits.test.ts",
@@ -18583,6 +18678,11 @@
     },
     {
       "from": "module:client/src/features/boards/BoardPage.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/BoardPage.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18757,8 +18857,18 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/boards/canvas/ForkRecastPopover.tsx",
+      "to": "module:shared/rebuildDoor.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/boards/canvas/GroupSelectionOverlay.tsx",
       "to": "module:client/src/features/boards/canvas/NodeFloatingToolbar.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/imageActions.ts",
+      "to": "module:client/src/lib/imageProxy.ts",
       "kind": "imports"
     },
     {
@@ -18888,6 +18998,11 @@
     },
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:client/src/features/boards/stores/useCanvasLayers.ts",
       "kind": "imports"
     },
@@ -18919,6 +19034,11 @@
     {
       "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/canvas/nodes/CastNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -19144,6 +19264,36 @@
     {
       "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
       "to": "module:client/src/features/boards/components/VersionHistoryBadge.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/BoardItemNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/FrameNode.tsx",
+      "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:client/src/features/boards/itemSaveFailure.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/boards/nodes/NoteNode.tsx",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {
@@ -20124,6 +20274,16 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/refineProgress.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -21534,6 +21694,11 @@
     {
       "from": "module:client/src/features/settings/sections/BillingSection.tsx",
       "to": "module:shared/planCancelCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:shared/planCreditSlider.ts",
       "kind": "imports"
     },
     {
@@ -23538,7 +23703,17 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
@@ -23574,6 +23749,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/cancelNotice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/carriedBrief.ts",
       "kind": "imports"
     },
     {
@@ -23789,6 +23969,11 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:client/src/components/AppChrome.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingV2.tsx",
+      "to": "module:client/src/features/castingV2/carriedBrief.ts",
       "kind": "imports"
     },
     {
@@ -24173,12 +24358,17 @@
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/button.tsx",
+      "to": "module:client/src/_core/hooks/useAuth.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/NotFound.tsx",
-      "to": "module:client/src/components/ui/card.tsx",
+      "to": "module:client/src/components/ErrorBoundary.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/NotFound.tsx",
+      "to": "module:client/src/components/ui/button.tsx",
       "kind": "imports"
     },
     {
@@ -36544,6 +36734,11 @@
     {
       "from": "module:server/routes/boardOps.ts",
       "to": "module:shared/boardTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/boardOps.ts",
+      "to": "module:shared/inputLimits.ts",
       "kind": "imports"
     },
     {

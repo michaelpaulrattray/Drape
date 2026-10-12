@@ -36,6 +36,7 @@ import {
   completeDirectOperationSuccess,
   failClaimedDirectOperation,
 } from "../casting/directOperation";
+import { BOARD_ITEM_LABEL_MAX_LENGTH } from "../../shared/inputLimits";
 import { bootstrapModelSnapshot } from "../casting/snapshotBootstrap";
 import { captureSnapshotReadMode } from "../casting/snapshotReadScope";
 import {
@@ -286,7 +287,7 @@ export const boardOpsRouter = router({
         provenance: provenanceSchema,
         position: positionSchema,
         size: z.object({ width: z.number().int().min(50).max(2000), height: z.number().int().min(50).max(2000) }).optional(),
-        label: z.string().max(256).optional(),
+        label: z.string().max(BOARD_ITEM_LABEL_MAX_LENGTH).optional(),
         imageUrl: z.string().max(2048).optional(),
         metadata: z.record(z.string(), z.unknown()).optional(),
       }))
@@ -301,7 +302,7 @@ export const boardOpsRouter = router({
       boardId: z.number().int().positive(),
       itemId: z.number().int().positive(),
       metadata: z.record(z.string(), z.unknown()),
-      label: z.string().max(256).optional(),
+      label: z.string().max(BOARD_ITEM_LABEL_MAX_LENGTH).optional(),
     }).strict())
     .mutation(async ({ ctx, input }) => {
       await requireBoardOwnership(input.boardId, ctx.user.id);
@@ -459,10 +460,15 @@ export const boardOpsRouter = router({
 
   /** D-28 picker data: models with canonical headshots only. */
   listCastableModels: protectedProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(50).default(30) }).strict().optional())
+    .input(z.object({
+      /** Per group: up to `limit` signed characters AND up to `limit` drafts. */
+      limit: z.number().int().min(1).max(50).default(30),
+      /** #2406: matched against the name in the owner-scoped statement. */
+      search: z.string().max(80).optional(),
+    }).strict().optional())
     .query(async ({ ctx, input }) => {
       const readMode = captureSnapshotReadMode(ctx.user.id);
-      return boardOps.listCastableModels(ctx.user.id, input?.limit ?? 30, readMode);
+      return boardOps.listCastableModels(ctx.user.id, input?.limit ?? 30, readMode, input?.search);
     }),
 
   /** D-28: fill an empty cast node in place from the Models library. */
