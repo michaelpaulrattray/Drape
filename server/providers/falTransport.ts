@@ -71,6 +71,32 @@ export function classifyFalHttp(status: number, body: string): ProviderFailureCl
  */
 const CDN_LIFETIME_SECONDS = 3600;
 
+/**
+ * AND FAL DOES NOT KEEP THE REQUEST ITSELF (#2334, his word 2026-10-12: *"yes"*).
+ *
+ * The lifetime above governs the generated FILES. The JSON of every request and
+ * every answer — the prompt, the reference pictures we send inline as data URIs,
+ * and an inline result — is a second thing fal keeps, and it keeps it unless
+ * told not to. fal Support (2026-08-04) and the media-expiration page name the
+ * switch: `X-Fal-Store-IO: 0`, which "prevents storage of the JSON payloads
+ * only"; generated CDN files stay subject to the lifetime above.
+ *
+ * ⚠ THE RISK WAS THE QUEUE, AND IT WAS MEASURED BEFORE THIS LINE SHIPPED. Our
+ * queue walk submits, polls, then GETs the result — if "not stored" meant "not
+ * retrievable", every picture we make would arrive as nothing. fal's docs do
+ * not say either way, so it was driven (2026-10-12, `fal-ai/sam-3/image`, six
+ * calls, $0.025 by the balance read before and after): with the header on, the
+ * queue result GET answered 200 with the full payload, and `fal.run` direct
+ * answered 200 with a mask URL that fetched 200. The instrument was proven
+ * able to tell the difference first: fal's request log
+ * (`GET /v1/models/requests/by-endpoint?expand=payloads`) held the input and
+ * output for the header-OFF control on both roads and held NEITHER for the
+ * header-ON rounds.
+ *
+ * Every fal call this product makes builds its headers here — the queue walk,
+ * the cancel, the balance read, and the segmentation reader on `fal.run` — so
+ * the setting cannot be on one road and missing from another.
+ */
 export function falHeaders(apiKey: string) {
   return {
     Authorization: `Key ${apiKey}`,
@@ -78,6 +104,7 @@ export function falHeaders(apiKey: string) {
     "X-Fal-Object-Lifecycle-Preference": JSON.stringify({
       expiration_duration_seconds: CDN_LIFETIME_SECONDS,
     }),
+    "X-Fal-Store-IO": "0",
   };
 }
 

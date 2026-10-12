@@ -24,6 +24,7 @@ import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
+import { falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
@@ -35,13 +36,14 @@ const SAM3 = "fal-ai/sam-3/image";
 const BIREFNET = "fal-ai/birefnet/v2";
 const POINT = "fal-ai/moondream3-preview/point";
 
-/**
- * fal keeps generated objects for seven days by default; a mask we use once and
- * discard has no business outliving the request. Asked for on the outgoing call
- * rather than cleaned up afterwards — an expiry cannot be forgotten, a purge
- * depends on a worker staying healthy.
- */
-const LIFECYCLE = JSON.stringify({ expiration_duration_seconds: 3600 });
+/*
+  fal keeps generated objects for seven days by default; a mask we use once and
+  discard has no business outliving the request — and since #2334 fal keeps no
+  copy of the request or its answer either. Both are asked for on the outgoing
+  call, through the transport's own `falHeaders`, rather than a second copy of
+  them here: this reader carried its own copy of the lifetime header, and a
+  copy is where the next header would have been forgotten (law 4).
+*/
 
 /**
  * EVERY CALL THIS READER MAKES GOES THROUGH THE GATE (fable-505/506).
@@ -68,11 +70,7 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
     async () => {
     const response = await fetch(`https://fal.run/${endpoint}`, {
       method: "POST",
-      headers: {
-        Authorization: `Key ${apiKey}`,
-        "Content-Type": "application/json",
-        "X-Fal-Object-Lifecycle-Preference": LIFECYCLE,
-      },
+      headers: falHeaders(apiKey),
       body: JSON.stringify(body),
       signal,
     });
