@@ -1,0 +1,154 @@
+/*
+ * THE PUBLIC CHECK PAGE AND ITS TOGGLE — N2d-3 (#2313).
+ *
+ * Its own file, so a stylesheet another slice of the same rung touches cannot
+ * collide with it. Tokens only (`foundation/tokens.css`), so both themes come
+ * from the token layer and nothing here names a colour. The `dpx-` prefix is
+ * new and owned by this file alone.
+ */
+
+/* ---- the record, as a stranger sees it (page and preview alike) ---- */
+
+.dpx-check {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  min-width: 0;
+}
+
+.dpx-check__head { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.dpx-check__eyebrow {
+  font: 500 10.5px var(--font-mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+
+.dpx-check__title {
+  margin: 0;
+  font: 500 22px/1.25 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dpx-check__real { margin: 0; font: 400 13px/1.5 var(--font-sans); color: var(--metaStrong); }
+
+.dpx-check__facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--rule);
+}
+
+.dpx-check__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-7);
+  padding: var(--s-5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.dpx-check__row dt { flex: none; font: 400 12px var(--font-sans); color: var(--meta); }
+.dpx-check__row dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  font: 400 13px/1.45 var(--font-sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dpx-check__row--stack { flex-direction: column; align-items: stretch; gap: var(--s-2); }
+.dpx-check__row--stack dd { text-align: left; }
+
+.dpx-check__row dd.dpx-check__mono { font: 400 12px/1.6 var(--font-mono); letter-spacing: 0.02em; }
+.dpx-check__row dd.dpx-check__fingerprint { color: var(--secondary); word-break: break-all; }
+
+.dpx-check__foot { margin: 0; font: 400 12px/1.5 var(--font-sans); color: var(--meta); }
+
+/* ---- the public page's frame ---- */
+
+/* The page sits inside its own `.dp-root` (the token scope and the app's
+   anchor blanket), so its anchors are rooted below like every other surface's. */
+.dpx-checkpage {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-9) var(--s-7);
+}
+
+.dpx-checkpage__mark { align-self: flex-start; }
+.dp-root a.dpx-checkpage__mark,
+.dp-root a.dpx-checkpage__mark:hover { color: var(--ink); text-decoration: none; }
+
+.dpx-checkpage__main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: clamp(32px, 9vh, 96px);
+}
+
+.dpx-checkpage__card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--surface);
+  border: 1px solid var(--borderCard);
+  border-radius: var(--r-2xl);
+  padding: var(--s-10) var(--s-10) var(--s-9);
+}
+
+@media (max-width: 480px) {
+  .dpx-checkpage { padding: var(--s-7); }
+  .dpx-checkpage__card { padding: var(--s-8) var(--s-7); }
+}
+
+.dpx-checkpage__status { margin: 0; font: 400 13px/1.5 var(--font-sans); color: var(--metaStrong); }
+
+/* ---- the owner's toggle, in the casting room ---- */
+
+.dpx-toggle__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dpx-toggle__state { display: inline-flex; align-items: center; gap: var(--s-3); }
+.dpx-toggle__word { font: 400 11px var(--font-sans); color: var(--meta); }
+
+.dpx-toggle__preview {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--page);
+  padding: var(--s-8) var(--s-7);
+}
+
+.dpx-toggle__preview .dpx-check__title { font-size: 17px; }
+.dpx-toggle__preview .dpx-check { gap: var(--s-6); }
+
+.dpx-toggle__intro { margin: 0; font: 500 11.5px/1.5 var(--font-sans); color: var(--ink); }
+
+.dpx-toggle__actions { display: flex; gap: var(--s-3); justify-content: flex-end; flex-wrap: wrap; }
+
+.dpx-toggle__link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.dpx-toggle__url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px var(--font-mono);
+}
+.dp-root a.dpx-toggle__url { color: var(--metaStrong); text-decoration: none; }
+.dp-root a.dpx-toggle__url:hover,
+.dp-root a.dpx-toggle__url:focus-visible { color: var(--ink); text-decoration: underline; }
+
+.dpx-toggle__refusal { margin: 0; font: 400 11.5px/1.5 var(--font-sans); color: var(--errorInk); }

@@ -12,7 +12,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 44
+      "moduleCount": 45
     },
     {
       "id": "domain:billing",
@@ -32,12 +32,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 202
+      "moduleCount": 203
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 63
+      "moduleCount": 66
     },
     {
       "id": "domain:client-shared",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 71
+      "moduleCount": 72
     },
     {
       "id": "domain:evidence",
@@ -87,7 +87,7 @@
     {
       "id": "domain:pages",
       "name": "pages",
-      "moduleCount": 18
+      "moduleCount": 19
     },
     {
       "id": "domain:platform",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 88
+      "moduleCount": 89
     },
     {
       "id": "domain:staff",
@@ -1489,6 +1489,24 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/creationCheck/CreationCheckRecord.tsx",
+      "path": "client/src/features/castingV2/creationCheck/CreationCheckRecord.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "path": "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/creationCheck/creationCheck.css",
+      "path": "client/src/features/castingV2/creationCheck/creationCheck.css",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/dispatchFailure.ts",
       "path": "client/src/features/castingV2/dispatchFailure.ts",
       "domain": "castingV2",
@@ -2803,6 +2821,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/pages/CreationCheck.tsx",
+      "path": "client/src/pages/CreationCheck.tsx",
+      "domain": "pages",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/pages/DrapeStudio.tsx",
       "path": "client/src/pages/DrapeStudio.tsx",
       "domain": "pages",
@@ -3943,6 +3967,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/creationCheck.ts",
+      "path": "server/castingV2/creationCheck.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/creationRecord.ts",
       "path": "server/castingV2/creationRecord.ts",
       "domain": "casting-v2",
@@ -5029,6 +5059,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/db/castCreationCheck.ts",
+      "path": "server/db/castCreationCheck.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/db/castCreationRecords.ts",
       "path": "server/db/castCreationRecords.ts",
       "domain": "data",
@@ -5697,6 +5733,12 @@
     {
       "id": "module:server/routes/characterSheet.ts",
       "path": "server/routes/characterSheet.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/creationCheck.ts",
+      "path": "server/routes/creationCheck.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -6435,6 +6477,12 @@
     {
       "id": "module:shared/const.ts",
       "path": "shared/const.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/creationCheckCopy.ts",
+      "path": "shared/creationCheckCopy.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8672,6 +8720,58 @@
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/pages/CastingSheet.tsx"
+      ]
+    },
+    {
+      "id": "route:creationCheck.lookup",
+      "namespace": "creationCheck",
+      "name": "lookup",
+      "type": "query",
+      "auth": "public",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/creationCheck.ts",
+      "clientCallers": [
+        "client/src/pages/CreationCheck.tsx"
+      ]
+    },
+    {
+      "id": "route:creationCheck.preview",
+      "namespace": "creationCheck",
+      "name": "preview",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/creationCheck.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
+      ]
+    },
+    {
+      "id": "route:creationCheck.setPublic",
+      "namespace": "creationCheck",
+      "name": "setPublic",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/creationCheck.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
+      ]
+    },
+    {
+      "id": "route:creationCheck.status",
+      "namespace": "creationCheck",
+      "name": "status",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/creationCheck.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
       ]
     },
     {
@@ -12360,6 +12460,10 @@
       "path": "client/src/features/castingV2/conceptUpload.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/creationCheck/creationCheck.test.ts",
+      "path": "client/src/features/castingV2/creationCheck/creationCheck.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/cssBlockOwnership.test.ts",
       "path": "client/src/features/castingV2/cssBlockOwnership.test.ts"
     },
@@ -14868,6 +14972,10 @@
       "path": "server/court.test.ts"
     },
     {
+      "id": "test:server/creationCheckRoute.test.ts",
+      "path": "server/creationCheckRoute.test.ts"
+    },
+    {
       "id": "test:server/creditBalanceLoadingState.test.ts",
       "path": "server/creditBalanceLoadingState.test.ts"
     },
@@ -15106,6 +15214,10 @@
     {
       "id": "test:server/cycleSpend.test.ts",
       "path": "server/cycleSpend.test.ts"
+    },
+    {
+      "id": "test:server/db/castCreationCheck.test.ts",
+      "path": "server/db/castCreationCheck.test.ts"
     },
     {
       "id": "test:server/db/castCreationRecords.test.ts",
@@ -16840,6 +16952,11 @@
     {
       "from": "module:client/src/App.tsx",
       "to": "module:client/src/pages/CastingV2.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/App.tsx",
+      "to": "module:client/src/pages/CreationCheck.tsx",
       "kind": "imports"
     },
     {
@@ -20108,6 +20225,36 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/creationCheck/CreationCheckRecord.tsx",
+      "to": "module:shared/creationCheckCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "to": "module:client/src/features/castingV2/creationCheck/CreationCheckRecord.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "to": "module:shared/creationCheckCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/castingV2/dispatchFailure.ts",
       "to": "module:client/src/features/castingV2/sheetState.ts",
       "kind": "imports"
@@ -23144,6 +23291,11 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/creationCheck/PublicCheckCard.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/features/castingV2/masterLookLine.ts",
       "kind": "imports"
     },
@@ -23560,6 +23712,26 @@
     {
       "from": "module:client/src/pages/CastingV2.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CreationCheck.tsx",
+      "to": "module:client/src/features/castingV2/creationCheck/CreationCheckRecord.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CreationCheck.tsx",
+      "to": "module:client/src/foundation/KliegWordmark.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CreationCheck.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CreationCheck.tsx",
+      "to": "module:shared/creationCheckCopy.ts",
       "kind": "imports"
     },
     {
@@ -28195,6 +28367,16 @@
     {
       "from": "module:server/castingV2/conceptDescribe.ts",
       "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationCheck.ts",
+      "to": "module:server/casting/castPublicId.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/creationCheck.ts",
+      "to": "module:server/castingV2/creationRecord.ts",
       "kind": "imports"
     },
     {
@@ -33178,6 +33360,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/db/castCreationCheck.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationCheck.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castCreationCheck.ts",
+      "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/db/castCreationRecords.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -35339,6 +35536,11 @@
     },
     {
       "from": "module:server/routers.ts",
+      "to": "module:server/routes/creationCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routers.ts",
       "to": "module:server/routes/credits.ts",
       "kind": "imports"
     },
@@ -36415,6 +36617,51 @@
     {
       "from": "module:server/routes/characterSheet.ts",
       "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/_core/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/castingV2/creationCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/castingV2/creationRecordService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/db/castCreationCheck.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/db/castCreationRecords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/creationCheck.ts",
+      "to": "module:shared/waitPhrase.ts",
       "kind": "imports"
     },
     {
@@ -40614,6 +40861,13 @@
       "severity": "info",
       "kind": "public-endpoint",
       "subject": "route:billing.getPlans",
+      "message": "Public endpoint. The allowlist is enumerated by decision (access-control law 5) — confirm this belongs on it."
+    },
+    {
+      "id": "finding:public-endpoint:route:creationCheck.lookup",
+      "severity": "info",
+      "kind": "public-endpoint",
+      "subject": "route:creationCheck.lookup",
       "message": "Public endpoint. The allowlist is enumerated by decision (access-control law 5) — confirm this belongs on it."
     },
     {
