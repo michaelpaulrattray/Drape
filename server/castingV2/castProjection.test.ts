@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { castCalendarDate, publicCheckDate } from "../../shared/creationCheckCopy";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
@@ -802,5 +803,65 @@ describe("N2b's two lines on the signed Cast projection", () => {
     expect(serialized).not.toContain("personaDraftedAt");
     expect(serialized).not.toContain("EditedAt");
     expect(projection.persona?.personality?.drafted).toBe(false);
+  });
+});
+
+/*
+ * #2360 — the room's header date and the public check page's date are said in
+ * ONE calendar: UTC. The header used to format with no `timeZone`, so on a
+ * server clock away from UTC the same instant read a day apart on one screen
+ * ("Created on 4 October" above "Created 3 October 2026"). These arms move the
+ * process clock off UTC for real — vitest runs each file in its own forked
+ * process, and Node re-reads `process.env.TZ` when it is assigned — and the
+ * first arm of each proves the move took, so the assertions after it can fail.
+ */
+describe("the room's date and the check page's date are one calendar day (#2360)", () => {
+  const before = process.env.TZ;
+  afterEach(() => {
+    if (before === undefined) delete process.env.TZ;
+    else process.env.TZ = before;
+  });
+
+  function headerFor(castFromAt: Date): string | null {
+    return projectSignedCast({
+      model: model(),
+      assets: ledger(anchor()),
+      lineage: { ...lineage, castFromAt },
+    }).provenance;
+  }
+
+  it("says the UTC day on a clock ahead of UTC (the measured cast: roll at 17:27:14Z)", () => {
+    process.env.TZ = "Pacific/Kiritimati"; // UTC+14
+    const rolledAt = new Date("2026-10-03T17:27:14Z");
+    // The clock really moved: locally this instant is already the 4th.
+    expect(rolledAt.getDate()).toBe(4);
+
+    expect(headerFor(rolledAt)).toBe("Created on 3 October");
+    expect(publicCheckDate(rolledAt.toISOString())).toBe("3 October 2026");
+  });
+
+  it("says the UTC day on a clock behind UTC", () => {
+    process.env.TZ = "Pacific/Pago_Pago"; // UTC-11
+    const rolledAt = new Date("2026-10-04T05:00:00Z");
+    expect(rolledAt.getDate()).toBe(3);
+
+    expect(headerFor(rolledAt)).toBe("Created on 4 October");
+    expect(publicCheckDate(rolledAt.toISOString())).toBe("4 October 2026");
+  });
+
+  it("agrees with the check page's day for the same instant, in every zone tried", () => {
+    const at = new Date("2026-10-03T23:30:00Z");
+    for (const zone of ["UTC", "Australia/Sydney", "America/Los_Angeles", "Pacific/Kiritimati", "Pacific/Pago_Pago"]) {
+      process.env.TZ = zone;
+      const checkDay = publicCheckDate(at.toISOString()).replace(/ \d{4}$/, "");
+      expect({ zone, header: headerFor(at) }).toEqual({ zone, header: `Created on ${checkDay}` });
+      expect(castCalendarDate(at, "day-month")).toBe("3 October");
+    }
+  });
+
+  it("leaves no date line where the lineage has no moment, rather than inventing one", () => {
+    expect(
+      projectSignedCast({ model: model(), assets: ledger(anchor()), lineage: { ...lineage, castFromAt: null } }).provenance,
+    ).toBeNull();
   });
 });

@@ -28317,6 +28317,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/castProjection.ts",
+      "to": "module:shared/creationCheckCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/castReads.ts",
       "to": "module:server/castingV2/castPersona.ts",
       "kind": "imports"

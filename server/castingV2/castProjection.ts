@@ -26,6 +26,7 @@ import {
 import { CAST_PACKAGE_VIEWS, castPackageLabel } from "./castViewPackage";
 import { castPronouns, type CastPronouns } from "./castPronouns";
 import { projectCastPersona, type CastPersonaProjection } from "./castPersonaProjection";
+import { castCalendarDate } from "../../shared/creationCheckCopy";
 
 /**
  * `pending` — nothing has started on this slot yet.
@@ -927,6 +928,7 @@ export function projectSignedCast(input: {
   };
 }
 
+/** The header's date, said in the same UTC calendar day the public check page and the record use (#2360). */
 function formatCastDate(value: Date): string {
-  return value.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+  return castCalendarDate(value, "day-month");
 }
