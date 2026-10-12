@@ -15370,6 +15370,10 @@
       "path": "server/db/dailyQuota.test.ts"
     },
     {
+      "id": "test:server/db/inviteCodeRedeemRace.test.ts",
+      "path": "server/db/inviteCodeRedeemRace.test.ts"
+    },
+    {
       "id": "test:server/db/migrationLag.test.ts",
       "path": "server/db/migrationLag.test.ts"
     },
@@ -15652,6 +15656,10 @@
     {
       "id": "test:server/interactionLatency.test.ts",
       "path": "server/interactionLatency.test.ts"
+    },
+    {
+      "id": "test:server/inviteCodeRedeem-db.test.ts",
+      "path": "server/inviteCodeRedeem-db.test.ts"
     },
     {
       "id": "test:server/jevCardCategory.test.ts",

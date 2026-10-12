@@ -919,6 +919,22 @@ describe("GET /api/auth/google/callback — RETURNING user: the gates in front o
     expect(sessionCookie(response)).toBeDefined();
   });
 
+  it("refuses the session when the checker said yes but the REDEEM refuses — the code's last use went to someone else in between (#2373)", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(anAccount({ approved: false }) as never);
+    vi.mocked(redeemInviteCode).mockResolvedValue({
+      success: false,
+      error: "This access code has reached its usage limit.",
+    });
+
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(redeemInviteCode).toHaveBeenCalledWith(7, "BETA123");
+    expect(response.location).toBe("/login?error=code_redeem_failed");
+    expect(sdk.createSessionToken).not.toHaveBeenCalled();
+    expect(sessionCookie(response)).toBeUndefined();
+    expect(db.upsertUser).not.toHaveBeenCalled();
+  });
+
   it("lets an ADMIN through the approval gate without a code — the enumerated exemption", async () => {
     vi.mocked(getUserByEmail).mockResolvedValue(
       anAccount({ approved: false, role: "admin" }) as never,
