@@ -12834,6 +12834,10 @@
       "path": "client/src/features/settings/card1607-guard.test.ts"
     },
     {
+      "id": "test:client/src/features/settings/card2400-guard.test.ts",
+      "path": "client/src/features/settings/card2400-guard.test.ts"
+    },
+    {
       "id": "test:client/src/features/settings/card385-guard.test.ts",
       "path": "client/src/features/settings/card385-guard.test.ts"
     },
