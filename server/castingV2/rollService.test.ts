@@ -300,6 +300,7 @@ const { recordRefund } = await import("../casting/atomicCredits");
 const { SpokenError, withSpokenFlag } = await import("../_core/spokenError");
 const { TRPCError } = await import("@trpc/server");
 const { readableFailure } = await import("../../client/src/lib/failureSentence");
+const { classifyDispatchFailure } = await import("../../client/src/features/castingV2/dispatchFailure");
 
 /*
   WHAT HER SCREEN SHOWS (#2058, the roll's twin of #2049) — the thrown error
@@ -1857,7 +1858,7 @@ describe("a reader outage on a roll is free (#126 — founder, Crew reply #7: 'r
     refusal's freedom rests on: the compile runs before the claim, so the
     money is never touched. Roll 219 went the other way and cost 160 credits.
   */
-  it("refuses BAD_REQUEST with the outage sentence, and nothing is claimed or charged", async () => {
+  it("refuses SERVICE_UNAVAILABLE with the outage sentence, and nothing is claimed or charged (#2386)", async () => {
     const compileBrief = (compilerInput: Record<string, unknown>) =>
       castingBriefCompiler({
         ...(compilerInput as never as Parameters<typeof castingBriefCompiler>[0]),
@@ -1876,11 +1877,51 @@ describe("a reader outage on a roll is free (#126 — founder, Crew reply #7: 'r
           briefText: "a young woman with an intense cyber-goth aesthetic, platinum-silver asymmetric shaved hair, pale porcelain skin, a leather harness and a choker",
         },
       ),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: READER_OUTAGE_MESSAGE });
+    ).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE", message: READER_OUTAGE_MESSAGE });
     expect(journal).not.toContain("claim");
     expect(journal).not.toContain("charge");
     expect(journal).not.toContain("dispatch");
     expect(dbCalls.createRoll).not.toHaveBeenCalled();
+  });
+
+  /*
+    #2386 — WHAT THE SHEET MAKES OF IT. The thrown error, through the formatter
+    the server wires and the sheet's own classifier: an outage is the studio's
+    (the "didn't start" kind, "Back to casting"), never the brief's ("That
+    brief can't be cast", "Edit the brief"). The negative control is the same
+    road refusing on the WORDS, which must still read as the brief's.
+  */
+  const onTheSheet = (error: unknown) => classifyDispatchFailure(
+    withSpokenFlag({ message: (error as Error).message, data: { code: (error as { code?: string }).code } }, error),
+  );
+  const thrown = async (run: Promise<unknown>) => {
+    try {
+      await run;
+    } catch (error) {
+      return error;
+    }
+    throw new Error("expected the roll to refuse");
+  };
+
+  it("reads on the sheet as the studio's, with the outage sentence, and is a spoken sentence", async () => {
+    const compileBrief = (compilerInput: Record<string, unknown>) =>
+      castingBriefCompiler({
+        ...(compilerInput as never as Parameters<typeof castingBriefCompiler>[0]),
+        engine: { id: "test:interpreter-down", complete: async () => { throw new Error("socket hang up"); } },
+      });
+    const error = await thrown(createRoll({ ...(baseDependencies() as object), compileBrief } as never, INPUT));
+    expect(error).toBeInstanceOf(SpokenError);
+    const failure = onTheSheet(error);
+    expect(failure.kind).toBe("busy");
+    expect(failure.message).toBe(READER_OUTAGE_MESSAGE);
+    expect(journal).not.toContain("charge");
+  });
+
+  it("negative control: a refusal about the WORDS still reads as the brief's", async () => {
+    const error = await thrown(createRoll({ ...(baseDependencies() as object) } as never, { ...INPUT, briefText: "x" }));
+    expect(error).toMatchObject({ code: "BAD_REQUEST" });
+    expect(onTheSheet(error).kind).toBe("refused");
+    expect(journal).not.toContain("charge");
   });
 });
 

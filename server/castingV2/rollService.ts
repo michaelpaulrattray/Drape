@@ -104,6 +104,7 @@ import {
   castingBriefCompiler,
   statedAnchorFrom,
   type BriefCompiler,
+  type BriefRefusalCode,
   type CompiledRollBrief,
   type LockOverrides,
   type UnlockableField,
@@ -347,6 +348,27 @@ function closedSessionRefusal(status: Exclude<CastingSession["status"], "open">)
     ? "This casting has expired, so it can't be rolled on. Nothing was charged — start a new casting to roll these words again."
     : "This casting was closed, so it can't be rolled on. Nothing was charged — start a new casting to roll these words again.";
 }
+
+/**
+ * WHOSE FAULT EACH ROLL REFUSAL IS (#2386).
+ *
+ * Every `BriefRefusal` used to leave as `BAD_REQUEST`, and the sheet reads
+ * `BAD_REQUEST` as "the brief": it titled a reader OUTAGE "That brief can't be
+ * cast" and offered "Edit the brief", above a sentence saying the reader did
+ * not answer and to try again. The words were fine; the studio was down.
+ *
+ * So each code says whose it is. `brief` stays `BAD_REQUEST` — the words have
+ * to change. `studio` leaves as `SERVICE_UNAVAILABLE`, still free (the compile
+ * runs before the claim), and the sheet reads it as "the roll didn't start".
+ * A `Record` over the code union, so a new refusal cannot ship without
+ * choosing — the class of this defect was one code answering two questions.
+ */
+const BRIEF_REFUSAL_FAULT: Readonly<Record<BriefRefusalCode, "brief" | "studio">> = {
+  uninterpretable: "brief",
+  likeness: "brief",
+  not_a_being: "brief",
+  reader_outage: "studio",
+};
 
 export async function createRoll(
   dependencies: RollServiceDependencies,
@@ -806,6 +828,9 @@ export async function createRoll(
     await stopCasting();
     if (error instanceof BriefRefusal) {
       // A free refusal: no claim, no charge, no operation to reconcile.
+      if (BRIEF_REFUSAL_FAULT[error.code] === "studio") {
+        throw spokenError({ code: "SERVICE_UNAVAILABLE", message: error.message, cause: error });
+      }
       throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
     }
     throw error;
