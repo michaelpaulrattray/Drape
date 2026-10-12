@@ -32,6 +32,23 @@ import { mayGrantFreeCredits, noteFreeGrantMade } from "../security/freeGrantLim
 
 const BCRYPT_ROUNDS = 12;
 
+/** The one answer sign-in gives until a password is proven (#2376). */
+export const GENERIC_LOGIN_REFUSAL = "Invalid email or password";
+
+/*
+  A real bcrypt hash of a random string nobody kept, at BCRYPT_ROUNDS, so a
+  comparison against it costs exactly what a comparison against a stored
+  password costs. A literal rather than `hashSync` at import, which would put
+  a quarter of a second on every boot and every suite that imports this file.
+  `server/routes/emailAuth.test.ts` holds its cost to BCRYPT_ROUNDS.
+*/
+export const TIMING_EQUALISER_HASH = "$2b$12$AHPjgHlyr.XxQwVUeTvvNej4pFyQo6VvhX3G8zv2j20MGu37Q5djy";
+
+/** Spend one comparison an exit with no password to check would otherwise save. */
+async function spendOneComparison(password: string): Promise<void> {
+  await bcrypt.compare(password, TIMING_EQUALISER_HASH);
+}
+
 // The wire schemas live in `./emailAuthInput` so the validation suite can
 // import the real ones instead of transcribing a copy that drifts.
 
@@ -295,9 +312,36 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
   const { email, password } = parsed.data;
 
   try {
+    /*
+      ⚠ ONE ANSWER UNTIL THE PASSWORD IS PROVEN — #2376.
+
+      Every exit below that runs before a correct password answers the same
+      401 "Invalid email or password", and every one of them spends one bcrypt
+      comparison at the product's own cost, so neither the words, the status
+      nor the time tells a stranger whether an address has an account, signs
+      in with Google, is locked or is suspended. Until #2376 four of these
+      exits answered before any password was checked: "uses Google sign-in",
+      403 `locked` with the minutes left, 403 `suspended`, and an unknown
+      address that skipped bcrypt altogether and came back measurably faster.
+
+      Only a proven password earns a specific note (suspended, unverified,
+      unapproved). A temporary LOCK never tests the password at all: answering
+      "locked" to the right password would turn the lockout into an oracle that
+      confirms a guess on every try, which is the one thing it exists to stop.
+
+      The counter and the alarm fire on exactly the exits they did before: the
+      unknown address rings the site-wide alarm, a wrong password on an open
+      account with a password counts toward its lockout AND rings the alarm,
+      and the locked, suspended and no-password exits do neither.
+    */
+    const refuse = () => {
+      res.status(401).json({ error: GENERIC_LOGIN_REFUSAL });
+    };
+
     // Find user by email
     const user = await getUserByEmail(email);
     if (!user) {
+      await spendOneComparison(password);
       /*
         COUNTED, and this is the exit that matters most for the alarm.
         Credential stuffing works from a leaked list, so most of its attempts
@@ -309,15 +353,14 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
         Fire-and-forget: a broken alarm may never slow or break a login.
       */
       void noteFailedLogin();
-      // Generic error to prevent email enumeration
-      res.status(401).json({ error: "Invalid email or password" });
+      refuse();
       return;
     }
 
     // Check if account is locked/suspended
     const lockStatus = await db.isAccountLocked(user.openId);
+    const isSuspended = lockStatus.locked && !lockStatus.lockedUntil;
     if (lockStatus.locked) {
-      const isSuspended = !lockStatus.lockedUntil;
       await logAuditEvent({
         userId: user.id,
         action: isSuspended
@@ -330,28 +373,35 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
         ipAddress: clientIp,
         userAgent,
       });
+    }
 
-      if (isSuspended) {
-        res.status(403).json({ error: "suspended" });
-      } else {
-        const remainingMinutes = lockStatus.lockedUntil
-          ? Math.ceil((lockStatus.lockedUntil.getTime() - Date.now()) / 60000)
-          : 15;
-        res.status(403).json({ error: "locked", minutes: remainingMinutes });
-      }
+    // A temporary lock: the password is never tested while it stands.
+    if (lockStatus.locked && !isSuspended) {
+      await spendOneComparison(password);
+      refuse();
       return;
     }
 
-    // Check if user has a password (might be Google-only account)
+    // No password on file (a Google-only account): nothing can prove one.
     if (!user.passwordHash) {
-      res.status(401).json({
-        error: "This account uses Google sign-in. Please use Google to log in.",
-      });
+      await spendOneComparison(password);
+      refuse();
       return;
     }
 
     // Verify password
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
+
+    // A suspension is told only to the person who proved the password.
+    if (isSuspended) {
+      if (passwordValid) {
+        res.status(403).json({ error: "suspended" });
+      } else {
+        refuse();
+      }
+      return;
+    }
+
     if (!passwordValid) {
       // Record failed login
       await db.recordFailedLogin(user.openId);
@@ -371,7 +421,7 @@ emailAuthRouter.post("/login", async (req: Request, res: Response) => {
         userAgent,
       });
 
-      res.status(401).json({ error: "Invalid email or password" });
+      refuse();
       return;
     }
 
