@@ -74,7 +74,9 @@ function textOf(pdf: Buffer): string {
   const runs = pdf.toString("latin1").match(/\((?:\\.|[^\\)])*\) Tj/g) ?? [];
   return runs
     .map((run) => run.slice(1, -4).replace(/\\([()\\])/g, "$1"))
-    .join(" ");
+    .join(" ")
+    /* A date's own spaces are non-breaking on the page (it never wraps mid-date). */
+    .replace(/\u00a0/g, " ");
 }
 
 describe("the certificate's words", () => {

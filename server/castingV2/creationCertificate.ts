@@ -304,7 +304,14 @@ export function renderCreationCertificate(input: CreationCertificateInput): Buff
   fact("Character", castName, "times", 16);
   fact(`${PRODUCT_NAME} ID`, kliegId, "courier", 11);
   fact("Made by", maker || "No display name recorded", "times", 13);
-  fact("Dates", certificateDatesLine(createdAt, input.stampedAt), "times", 11.5);
+  /* A date never breaks across a line ("12 / October 2026"): its own spaces
+     are non-breaking, so the wrap falls between the phrases instead. */
+  fact(
+    "Dates",
+    certificateDatesLine(createdAt, input.stampedAt).replace(/(\d{1,2}) ([A-Z][a-z]+) (\d{4})/g, "$1\u00a0$2\u00a0$3"),
+    "times",
+    11.5,
+  );
 
   label(doc, "Fingerprint of the master picture", factsX, fy);
   doc.setFont("courier", "normal");
