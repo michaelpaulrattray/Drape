@@ -73,6 +73,20 @@ export function planCancelledReceipt(periodEnd: PeriodEnd): string {
 }
 
 /**
+ * #2395 — the receipt for taking a cancel back. It answers the one question a
+ * customer who changed their mind has: is the plan going to renew? The date is
+ * the same period end the cancel receipt quoted, because resuming leaves the
+ * period exactly where it was (Stripe's `cancel_at_period_end` goes back to
+ * false and nothing else moves).
+ */
+export function planResumedReceipt(periodEnd: PeriodEnd): string {
+  const on = shortDate(periodEnd);
+  return on
+    ? `Your plan is back on. It renews on ${on}.`
+    : "Your plan is back on. It renews as usual.";
+}
+
+/**
  * #1940 B26 — the Billing tab's plan line after a cancel, in place of
  * `renews {date}`. `null` when there is no date to state: the segment is
  * omitted rather than claiming a renewal that will not happen.

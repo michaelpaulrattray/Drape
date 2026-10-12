@@ -17,7 +17,7 @@
     {
       "id": "domain:billing",
       "name": "billing",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:boards",
@@ -657,6 +657,12 @@
     {
       "id": "module:client/src/features/billing/planChangeToast.ts",
       "path": "client/src/features/billing/planChangeToast.ts",
+      "domain": "billing",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/billing/resumePlan.ts",
+      "path": "client/src/features/billing/resumePlan.ts",
       "domain": "billing",
       "lifecycle": "active"
     },
@@ -7615,6 +7621,7 @@
       "clientCallers": [
         "client/src/features/billing/AddCreditsModal.tsx",
         "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/AccountSurfaces.tsx",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
@@ -7630,6 +7637,7 @@
       "file": "server/routes/billing.ts",
       "clientCallers": [
         "client/src/features/billing/ChangePlanModal.tsx",
+        "client/src/features/billing/resumePlan.ts",
         "client/src/features/settings/sections/BillingSection.tsx"
       ]
     },
@@ -7656,7 +7664,9 @@
       "input": "none",
       "rateLimited": false,
       "file": "server/routes/billing.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/billing/resumePlan.ts"
+      ]
     },
     {
       "id": "route:boardOps.addEdge",
@@ -12441,6 +12451,10 @@
     {
       "id": "test:client/src/features/billing/pricingWords2153-guard.test.ts",
       "path": "client/src/features/billing/pricingWords2153-guard.test.ts"
+    },
+    {
+      "id": "test:client/src/features/billing/resumePlan2395.test.ts",
+      "path": "client/src/features/billing/resumePlan2395.test.ts"
     },
     {
       "id": "test:client/src/features/billing/workDivisor1758-guard.test.ts",
@@ -18251,6 +18265,11 @@
     },
     {
       "from": "module:client/src/features/billing/ChangePlanModal.tsx",
+      "to": "module:client/src/features/billing/resumePlan.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/ChangePlanModal.tsx",
       "to": "module:client/src/features/billing/spentShareSentence.ts",
       "kind": "imports"
     },
@@ -18332,6 +18351,21 @@
     {
       "from": "module:client/src/features/billing/LowBalanceWarning.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/billing/resumePlan.ts",
+      "to": "module:shared/planCancelCopy.ts",
       "kind": "imports"
     },
     {
@@ -21417,6 +21451,11 @@
     {
       "from": "module:client/src/features/settings/ReferralBlock.tsx",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/sections/BillingSection.tsx",
+      "to": "module:client/src/features/billing/resumePlan.ts",
       "kind": "imports"
     },
     {

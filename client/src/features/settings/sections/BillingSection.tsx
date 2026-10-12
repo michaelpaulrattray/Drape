@@ -41,6 +41,7 @@ import { Bar, SettingsCard, SettingsGroup, SettingsList } from "../parts";
 import { ReferralBlock } from "../ReferralBlock";
 import { formatDollars, formatShortDate } from "../planMath";
 import { cancelledPlanSegment } from "@shared/planCancelCopy";
+import { cancelStateOf, useResumePlan } from "@/features/billing/resumePlan";
 
 export function BillingSection({
   planName,
@@ -114,7 +115,16 @@ export function BillingSection({
     the one pane that shows plan state; it is not worth slowing down every
     paint everywhere.
   */
-  const { data: subscriptionDetails } = trpc.billing.getSubscriptionDetails.useQuery();
+  const subscriptionDetailsQuery = trpc.billing.getSubscriptionDetails.useQuery();
+  const subscriptionDetails = subscriptionDetailsQuery.data;
+  /* #2395 — a plan set to end at its period end, read the one way the Change
+     plan dialog reads it too (`features/billing/resumePlan.ts`). */
+  const cancelled =
+    cancelStateOf(
+      subscriptionDetails,
+      subscriptionDetailsQuery.isSuccess || subscriptionDetailsQuery.isError,
+    ) === "cancelled";
+  const resumePlan = useResumePlan(renewsAt);
   const pendingChange = subscriptionDetails?.pendingChange ?? null;
   /*
     WHAT IS CHANGING AND WHEN, in her words — `null` when nothing is pending.
@@ -254,7 +264,7 @@ export function BillingSection({
               while the row (and so the dialog a moment earlier) said 9 Oct. One
               fact, one source, or the toast and this line name two days.
             */
-            subscriptionDetails?.cancelAtPeriodEnd === true
+            cancelled
               ? cancelledPlanSegment(renewsAt)
               : pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
           ]
@@ -278,7 +288,26 @@ export function BillingSection({
             DIFFERENT change is going anyway (asking for one replaces the
             pending one on the server, by the same release rule).
           */}
-          {pendingChange ? (
+          {/*
+            ⚠ **THE WAY BACK OUT OF A CANCEL (#2395).** A plan set to end
+            offers Resume plan IN PLACE of Change plan, on the precedent the
+            scheduled-change control set just below: one button, the thing the
+            customer can actually do. Changing a plan that is ending is refused
+            by the server with *"Resume your plan first"*, so Change plan here
+            would only lead to that refusal. It outranks a pending change for
+            the reason the plan line gives: a cancel releases the schedule
+            first, so both cannot be true.
+          */}
+          {cancelled ? (
+            <Button
+              variant="secondary"
+              size="small"
+              disabled={resumePlan.isPending}
+              onClick={() => resumePlan.mutate()}
+            >
+              {resumePlan.isPending ? "Resuming…" : "Resume plan"}
+            </Button>
+          ) : pendingChange ? (
             <Button
               variant="secondary"
               size="small"
