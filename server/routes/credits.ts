@@ -3,6 +3,7 @@ import {
   getUserCredits, getCreditTransactions,
 } from "../db";
 import { CREDIT_COSTS } from "../casting/aiService";
+import { enforcePublicRateLimit, RATE_LIMITS } from "../security/rateLimit";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -47,7 +48,8 @@ export const creditsRouter = router({
     }),
     
   // Get credit costs for UI display
-  getCosts: publicProcedure.query(() => {
+  getCosts: publicProcedure.query(({ ctx }) => {
+    enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicCreditCosts);
     return CREDIT_COSTS;
   }),
 });

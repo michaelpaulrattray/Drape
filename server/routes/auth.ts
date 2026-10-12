@@ -3,10 +3,11 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { checkRateLimit, getClientIp } from "../security/rateLimit";
+import { checkRateLimit, enforcePublicRateLimit, getClientIp, RATE_LIMITS } from "../security/rateLimit";
 
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => {
+    enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicAuthMe);
     if (!ctx.user) return null;
     // Invariant 8: expose only fields the authenticated client actually uses.
     // This must remain a positive projection so future users-table columns stay
@@ -32,6 +33,7 @@ export const authRouter = router({
     };
   }),
   logout: publicProcedure.mutation(({ ctx }) => {
+    enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicAuthLogout);
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
     return { success: true } as const;

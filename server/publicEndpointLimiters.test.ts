@@ -29,11 +29,13 @@
  * missing database. Either way it was LET IN, and letting in is the only thing
  * this guard asks about. Every limiter in the tree runs before its read.
  *
- * ⚠ SIX PUBLIC ENDPOINTS HAVE NO LIMITER TODAY, measured by this guard on its
- * first run. They are `KNOWN_UNLIMITED` below, each with what it does per call.
- * This card adds the guard and changes no product code, so they are listed and
- * not fixed. The list ONLY SHRINKS: a debt that starts refusing reddens until
- * its line is deleted, so it cannot stay on the list after it is paid.
+ * ⚠ SIX PUBLIC ENDPOINTS HAD NO LIMITER when this guard first ran (#2409):
+ * `auth.me`, `auth.logout`, `billing.getPlans`, `credits.getCosts`,
+ * `generation.costs` and `system.health`. #2423 gave each one a per-address
+ * limit (`RATE_LIMITS.public*`, `server/security/rateLimit.ts`) and deleted
+ * their `KNOWN_UNLIMITED` lines, so all thirteen are now driven by the main arm.
+ * The list stays, empty, and ONLY SHRINKS: a debt that starts refusing reddens
+ * until its line is deleted, so it cannot stay on the list after it is paid.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -58,27 +60,21 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 /**
  * How many calls one address may make before an endpoint counts as unlimited.
- * The most generous limiter today is `announcements.getActive` at 120 a minute;
- * this leaves room for a deliberately generous one without letting "no limiter
- * at all" pass. A limiter set above it reads as unlimited and the message says
- * so, which is the honest answer: past this, the limit protects nothing.
+ * The most generous limiter today is `auth.me` at 600 a minute (#2423 — it runs
+ * on every page load, so it is set far above real traffic); this leaves room
+ * above it without letting "no limiter at all" pass. A limiter set above it
+ * reads as unlimited and the message says so, which is the honest answer: past
+ * this, the limit protects nothing. It was 400 until `auth.me` needed more.
  */
-const DRIVE_CEILING = 400;
+const DRIVE_CEILING = 1000;
 
 /**
- * KNOWN DEBTS: public endpoints that do not call a limiter today. Each was read
- * at its source on 2026-10-12. The card allows `auth.me`/`auth.logout` as
- * exceptions only if the reader agrees; none of the six is ruled an exception
- * here. They wait for that decision, on the card.
+ * KNOWN DEBTS: public endpoints that do not call a limiter today. EMPTY since
+ * #2423, which paid all six that #2409 measured. A new line here is a
+ * deliberate, stated exception — id → what it does per call and why it may
+ * stay unlimited — never a way to make a new endpoint pass.
  */
-const KNOWN_UNLIMITED: Record<string, string> = {
-  "auth.me": "returns the session's own projection; no read beyond the per-request session lookup (server/routes/auth.ts)",
-  "auth.logout": "clears the session cookie; no read (server/routes/auth.ts)",
-  "billing.getPlans": "maps constants into the plan ladder; no read (server/routes/billing.ts)",
-  "credits.getCosts": "returns the CREDIT_COSTS constant (server/routes/credits.ts)",
-  "generation.costs": "returns the CREDIT_COSTS constant (server/routes/generation/castingExport.ts)",
-  "system.health": "returns { ok: true } (server/_core/systemRouter.ts)",
-};
+const KNOWN_UNLIMITED: Record<string, string> = {};
 
 /**
  * HOW to call each member — never WHICH members there are. The population comes
@@ -264,4 +260,14 @@ describe("every public tRPC endpoint refuses with TOO_MANY_REQUESTS once over it
       ).toBe("limited");
     });
   }
+
+  it("auth.me's limit stays far above real traffic: one address gets at least 300 a minute (#2423)", async () => {
+    /* `auth.me` runs on every page load (measured 2026-10-12: one per cold
+       load, about one per two in-app navigations, no poll). A limit tightened
+       toward real traffic would leave an office's pages waiting on retries, so
+       the floor is pinned, not just the presence of a limit. */
+    const verdict = await judge(callThroughAppRouter("auth.me", INPUTS["auth.me"]));
+    expect(verdict.kind).toBe("limited");
+    expect((verdict as { letIn: number }).letIn).toBeGreaterThanOrEqual(300);
+  });
 });

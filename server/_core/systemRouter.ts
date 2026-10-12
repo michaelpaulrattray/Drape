@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { enforcePublicRateLimit, RATE_LIMITS } from "../security/rateLimit";
 import { publicProcedure, router } from "./trpc";
 
 export const systemRouter = router({
@@ -13,9 +14,10 @@ export const systemRouter = router({
         timestamp: z.number().min(0, "timestamp cannot be negative"),
       }).strict()
     )
-    .query(() => ({
-      ok: true,
-    })),
+    .query(({ ctx }) => {
+      enforcePublicRateLimit(ctx.req, RATE_LIMITS.publicSystemHealth);
+      return { ok: true };
+    }),
 
   // `notifyOwner` lived here until #800: it forwarded to the Slack webhooks
   // and returned `false` forever in production (no webhook was ever
