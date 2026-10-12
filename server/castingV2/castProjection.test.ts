@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { castCalendarDate, publicCheckDate } from "../../shared/creationCheckCopy";
 
 import type { Model, ModelAsset } from "../../drizzle/schema";
+import type { CastLineage } from "../db/castingV2Sign";
 import { CASTING_V2_VIEW_RETRY_PRICE_CREDITS } from "../casting/castingCreditCosts";
 
 /**
@@ -822,31 +823,34 @@ describe("the room's date and the check page's date are one calendar day (#2360)
     else process.env.TZ = before;
   });
 
-  function headerFor(castFromAt: Date): string | null {
+  /* The header reads the CAST's moment; the roll's sits a minute earlier so
+     that any arm reading the wrong field cannot land on the same day by luck
+     near midnight. */
+  function headerFor(castCreatedAt: Date): string | null {
     return projectSignedCast({
-      model: model(),
+      model: model({ createdAt: castCreatedAt }),
       assets: ledger(anchor()),
-      lineage: { ...lineage, castFromAt },
+      lineage: { ...lineage, castFromAt: new Date(castCreatedAt.getTime() - 60_000) },
     }).provenance;
   }
 
-  it("says the UTC day on a clock ahead of UTC (the measured cast: roll at 17:27:14Z)", () => {
+  it("says the UTC day on a clock ahead of UTC (the measured cast: created 17:28:39Z)", () => {
     process.env.TZ = "Pacific/Kiritimati"; // UTC+14
-    const rolledAt = new Date("2026-10-03T17:27:14Z");
+    const createdAt = new Date("2026-10-03T17:28:39Z");
     // The clock really moved: locally this instant is already the 4th.
-    expect(rolledAt.getDate()).toBe(4);
+    expect(createdAt.getDate()).toBe(4);
 
-    expect(headerFor(rolledAt)).toBe("Created on 3 October");
-    expect(publicCheckDate(rolledAt.toISOString())).toBe("3 October 2026");
+    expect(headerFor(createdAt)).toBe("Created on 3 October");
+    expect(publicCheckDate(createdAt.toISOString())).toBe("3 October 2026");
   });
 
   it("says the UTC day on a clock behind UTC", () => {
     process.env.TZ = "Pacific/Pago_Pago"; // UTC-11
-    const rolledAt = new Date("2026-10-04T05:00:00Z");
-    expect(rolledAt.getDate()).toBe(3);
+    const createdAt = new Date("2026-10-04T05:00:00Z");
+    expect(createdAt.getDate()).toBe(3);
 
-    expect(headerFor(rolledAt)).toBe("Created on 4 October");
-    expect(publicCheckDate(rolledAt.toISOString())).toBe("4 October 2026");
+    expect(headerFor(createdAt)).toBe("Created on 4 October");
+    expect(publicCheckDate(createdAt.toISOString())).toBe("4 October 2026");
   });
 
   it("agrees with the check page's day for the same instant, in every zone tried", () => {
@@ -858,10 +862,44 @@ describe("the room's date and the check page's date are one calendar day (#2360)
       expect(castCalendarDate(at, "day-month")).toBe("3 October");
     }
   });
+});
 
-  it("leaves no date line where the lineage has no moment, rather than inventing one", () => {
-    expect(
-      projectSignedCast({ model: model(), assets: ledger(anchor()), lineage: { ...lineage, castFromAt: null } }).provenance,
-    ).toBeNull();
+/*
+ * #2360, the second half (his word 2026-10-12, accepting the relay's
+ * recommendation): "Created" on the room's header names the CAST's moment —
+ * `models.createdAt`, the field the creation record and the certificate read —
+ * never the roll's. The two straddle UTC midnight here, which is the only way
+ * the difference shows: a roll at 23:59:30 on the 3rd kept and signed at
+ * 00:00:40 on the 4th. The record says the 4th; so must the header.
+ */
+describe("the header's 'Created' is the cast's moment, not the roll's (#2360)", () => {
+  const rolledAt = new Date("2026-10-03T23:59:30Z");
+  const castCreatedAt = new Date("2026-10-04T00:00:40Z");
+
+  function project(lineageOverrides: Partial<CastLineage> = {}) {
+    return projectSignedCast({
+      model: model({ createdAt: castCreatedAt }),
+      assets: ledger(anchor()),
+      lineage: { ...lineage, castFromAt: rolledAt, ...lineageOverrides },
+    });
+  }
+
+  it("names the cast's day, the same day the record's createdAt says", () => {
+    // The fixture really straddles midnight: the two instants are different UTC days.
+    expect(castCalendarDate(rolledAt, "day-month")).toBe("3 October");
+    expect(castCalendarDate(castCreatedAt, "day-month")).toBe("4 October");
+
+    expect(project().provenance).toBe("Created on 4 October");
+    // The public check page reads the record's createdAt, which is models.createdAt.
+    expect(publicCheckDate(castCreatedAt.toISOString())).toBe("4 October 2026");
+  });
+
+  it("never says the roll's day, even though the roll's moment is on the lineage", () => {
+    expect(project().provenance).not.toContain("3 October");
+  });
+
+  it("still says the cast's day when the roll is gone from the lineage", () => {
+    expect(project({ castFromAt: null, rollPublicId: null, rollIndex: null }).provenance)
+      .toBe("Created on 4 October");
   });
 });

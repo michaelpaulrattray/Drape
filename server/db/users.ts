@@ -2,7 +2,7 @@
  * Users Domain — user CRUD, profile updates, and storage management.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { InsertUser, users, points } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
 import { getDb } from "./connection";
@@ -135,6 +135,54 @@ export async function getUserByEmail(email: string) {
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * EVERY ACCOUNT BOUND TO ONE GOOGLE ACCOUNT (#2389) — the ones Google created
+ * (`openId = google_<sub>`) and the ones that linked Google later
+ * (`googleSub = <sub>`), in one statement.
+ *
+ * It returns up to TWO rows rather than one, on purpose: two accounts claiming
+ * one Google account should never exist, and the caller refuses when it sees
+ * both rather than signing into whichever the database happened to return
+ * first.
+ */
+export async function getUsersByGoogleSub(sub: string) {
+  const db = await getDb();
+  if (!db) {
+    log.warn("[Database] Cannot get user: database not available");
+    return [];
+  }
+
+  return db
+    .select()
+    .from(users)
+    .where(or(eq(users.openId, `google_${sub}`), eq(users.googleSub, sub)))
+    .limit(2);
+}
+
+/**
+ * RECORD THAT AN ACCOUNT IS NOW GOOGLE'S `sub` (#2389) — written once, the
+ * first time an account that has no Google binding signs in with Google.
+ *
+ * The statement only writes a row that is still unbound, so two sign-ins racing
+ * cannot each bind a different Google account; the unique index on `googleSub`
+ * stops one Google account binding to two rows. Returns whether THIS call made
+ * the binding — `false` means somebody else got there first, and the caller
+ * refuses rather than guessing which.
+ */
+export async function bindGoogleSub(userId: number, sub: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) {
+    log.warn("[Database] Cannot bind Google account: database not available");
+    return false;
+  }
+
+  const result = await db
+    .update(users)
+    .set({ googleSub: sub })
+    .where(and(eq(users.id, userId), isNull(users.googleSub)));
+  return ((result as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0) === 1;
 }
 
 export async function getUserById(userId: number) {

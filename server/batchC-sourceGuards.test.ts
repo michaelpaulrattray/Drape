@@ -343,7 +343,7 @@ describe("B4 account-owned model projections stay snapshot-selected", () => {
       boardRoute.indexOf("/** D-28: fill"),
     );
     expect(picker).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");
-    expect(picker).toMatch(/listCastableModels\([\s\S]*?readMode\)/);
+    expect(picker).toMatch(/listCastableModels\([\s\S]*?readMode[,)]/);
 
     const lobby = serverFile("routes/lobby.ts");
     expect(lobby).toContain("const readMode = captureSnapshotReadMode(ctx.user.id)");

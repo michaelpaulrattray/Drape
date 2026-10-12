@@ -39,13 +39,76 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 
 import { Bar, SettingsCard, SettingsGroup, SettingsList } from "../parts";
 import { ReferralBlock } from "../ReferralBlock";
-import { formatDollars, formatShortDate } from "../planMath";
+import {
+  creditStepsPriceAMonth,
+  formatDollars,
+  formatShortDate,
+  formatWholeDollars,
+  priceAMonth,
+} from "../planMath";
+import { planCreditSliderLedgerCredits } from "@shared/planCreditSlider";
 import { cancelledPlanSegment } from "@shared/planCancelCopy";
+import { cancelStateOf, useResumePlan } from "@/features/billing/resumePlan";
+
+/**
+ * WHAT THIS CUSTOMER PAYS AND RECEIVES, said the way Change plan says it — #2392.
+ *
+ * The plan card used to print `planPriceInCents` and `allowance` as they
+ * arrived, and both are the rung's LIST facts (`ownPlanFacts` on the server
+ * reads `PLAN_TIERS[tier]` and nothing else). So a Pro customer billed yearly
+ * read **"$68.00/mo"** here while Change plan, one click away, priced the same
+ * plan at **"$56 / month, billed yearly"**; and a Pro Plus customer who had
+ * moved the credit slider read the bottom of the dial for both the price and
+ * the credits.
+ *
+ * ⚠ **NO ARITHMETIC OF ITS OWN (working law 4).** The price goes through the
+ * two `planMath` functions Change plan's own `priceOf` is built from —
+ * `priceAMonth` for the plan and `creditStepsPriceAMonth` for the dial — and is
+ * printed with the same `formatWholeDollars`, so the two surfaces cannot name
+ * different figures for one plan. The credits add the dial through
+ * `planCreditSliderLedgerCredits`, the one declaration the server's grant and
+ * Change plan's `creditsWithSlider` also read.
+ *
+ * ⚠ **AND AN UNREAD INPUT HOLDS THE FIGURE (#1727 / #1741 / #1763).**
+ * - `billingInterval` that is not `"month"` or `"year"` on a paid plan is
+ *   unknown, never monthly — #1763 is the same collapse on Change plan.
+ * - `sliderUnits === null` is the dial's position not read yet (or the server
+ *   saying it could not read the subscription), never the bottom of the dial;
+ *   both the price and the credits stand down, because the dial moves both.
+ * - `0` slider units is a real answer: a rung with no dial, or the dial at rest.
+ *
+ * `"No charge"` is decided by the plan's own price before anything else is
+ * asked: a rung with nothing to charge has no interval and no dial.
+ */
+export function ownPlanTerms(input: {
+  planPriceInCents: number | null;
+  allowance: number | null;
+  billingInterval: string | null | undefined;
+  sliderUnits: number | null;
+}): { price: string | null; allowance: number | null } {
+  const { planPriceInCents, allowance, billingInterval, sliderUnits } = input;
+  const withSlider =
+    allowance === null || sliderUnits === null
+      ? null
+      : allowance + planCreditSliderLedgerCredits(sliderUnits);
+  if (planPriceInCents === null) return { price: null, allowance: withSlider };
+  if (planPriceInCents <= 0) return { price: "No charge", allowance: withSlider };
+  if (sliderUnits === null) return { price: null, allowance: withSlider };
+  if (billingInterval !== "month" && billingInterval !== "year") {
+    return { price: null, allowance: withSlider };
+  }
+  const annual = billingInterval === "year";
+  const cents = priceAMonth(planPriceInCents, annual) + creditStepsPriceAMonth(sliderUnits, annual);
+  return {
+    price: `${formatWholeDollars(cents)}/mo${annual ? ", billed yearly" : ""}`,
+    allowance: withSlider,
+  };
+}
 
 export function BillingSection({
   planName,
   planPriceInCents,
-  allowance,
+  allowance: listAllowance,
   balance,
   renewsAt,
   onChangePlan,
@@ -97,6 +160,41 @@ export function BillingSection({
   */
   const { data: status } = trpc.billing.getStatus.useQuery();
   /*
+    #2392 — WHERE THE CREDIT DIAL SITS, read the way Change plan reads it: the
+    dial's rung and reach come off `getPlans` (served, never a rung named
+    here), and the position off `getPlanCreditUnits`, which is what bills.
+
+    ⚠ The position is asked only when this customer IS on the dial's rung —
+    every other rung's answer is 0 without a Stripe round trip. Until both
+    the status and the catalogue have answered, nobody knows which rung has
+    the dial, so the position is `null` (unread) rather than 0.
+  */
+  const { data: plans } = trpc.billing.getPlans.useQuery();
+  const sliderSpec = plans?.creditSlider ?? null;
+  const onDialRung =
+    status !== undefined &&
+    sliderSpec !== null &&
+    sliderSpec.maxUnits > 0 &&
+    status.planTier === sliderSpec.planId;
+  const { data: sliderPosition } = trpc.billing.getPlanCreditUnits.useQuery(undefined, {
+    enabled: onDialRung,
+  });
+  const sliderUnits: number | null =
+    status === undefined || plans === undefined
+      ? null
+      : !onDialRung
+        ? 0
+        : sliderPosition === undefined
+          ? null
+          : sliderPosition.units;
+  const terms = ownPlanTerms({
+    planPriceInCents,
+    allowance: listAllowance,
+    billingInterval: status === undefined ? undefined : status.billingInterval,
+    sliderUnits,
+  });
+  const allowance = terms.allowance;
+  /*
     ⚠ **THE CHANGE WAITING AT THE PERIOD BOUNDARY (#1936) — AND WITHOUT THIS
     QUERY THE WHOLE DEFERRAL IS INVISIBLE.** Since his option 1, asking to drop
     a plan or lower the dial no longer does anything today: it is scheduled for
@@ -114,7 +212,16 @@ export function BillingSection({
     the one pane that shows plan state; it is not worth slowing down every
     paint everywhere.
   */
-  const { data: subscriptionDetails } = trpc.billing.getSubscriptionDetails.useQuery();
+  const subscriptionDetailsQuery = trpc.billing.getSubscriptionDetails.useQuery();
+  const subscriptionDetails = subscriptionDetailsQuery.data;
+  /* #2395 — a plan set to end at its period end, read the one way the Change
+     plan dialog reads it too (`features/billing/resumePlan.ts`). */
+  const cancelled =
+    cancelStateOf(
+      subscriptionDetails,
+      subscriptionDetailsQuery.isSuccess || subscriptionDetailsQuery.isError,
+    ) === "cancelled";
+  const resumePlan = useResumePlan(renewsAt);
   const pendingChange = subscriptionDetails?.pendingChange ?? null;
   /*
     WHAT IS CHANGING AND WHEN, in her words — `null` when nothing is pending.
@@ -215,6 +322,44 @@ export function BillingSection({
   const granted = allowance !== null && allowance > 0;
   const remainingShare = balance !== null && renews && granted ? balance / allowance : 0;
   const quotable = balance !== null && renews && granted;
+  /*
+    ⚠ **A SHARE OVER 100% IS NOT A SHARE OF THIS MONTH'S ALLOWANCE — #2393.**
+    The sweep above took *"491% of this month's allowance left"* off the free
+    plan, and the same sentence stayed reachable on a paying one: a renewal
+    writes `outside-plan + monthly grant + rollover`, so a Pro customer who
+    spent nothing last month renews at 175% and a Pro Plus one at 200%, and any
+    top-up lifts the balance past the grant too. `Bar` clamps; the sentence
+    did not.
+
+    It is DROPPED there rather than clamped. *"100% left"* on a balance that
+    also holds top-ups is a different wrong sentence, so where the balance is
+    more than a month's grant the figure above speaks for itself and the bar
+    reads full, which is true.
+
+    ⚠ **WHAT THIS DOES NOT REACH, stated rather than shipped quietly:** the
+    numerator is still the TOTAL balance, so a subscriber under the grant who
+    also holds top-up credits reads a share of the whole balance, not of the
+    plan's part. The plan's part is `planAllowanceRemaining`
+    (`server/db/credits.ts`), and `getStatus` does not serve it — that is a
+    server change, filed on the card rather than guessed at here.
+  */
+  const percentQuotable = quotable && remainingShare <= 1;
+  /*
+    ⚠ **WHO HAS A CARD TO UPDATE — #2397.** `createPortalSession` refuses an
+    account with no Stripe customer (*"No billing account found. Please
+    subscribe to a plan first."*), and a free account only gets one by starting
+    a checkout. So `Update card` on a free account was a button whose only
+    answer was an error, the same shape #1836 took `Add credits` off this pane
+    for. `Change plan` on the card above is the road.
+
+    It is read off `stripeCustomerId`, never `canManage`: that one is keyed on a
+    SUBSCRIPTION id, and would hide the card from a lapsed customer who still
+    has a card on file and may want to change it. Unread holds it back, the
+    direction #1836 chose for the credit controls: a subscriber waits a beat for
+    a control; a free account is never shown one that only errors.
+  */
+  const hasBillingAccount =
+    status !== undefined && "stripeCustomerId" in status && Boolean(status.stripeCustomerId);
   const invoices = invoicesData?.invoices ?? [];
 
   return (
@@ -224,11 +369,9 @@ export function BillingSection({
           /* An em dash in the title's own slot — see the prop's docblock (#1741). */
           label={planName ?? "—"}
           note={[
-            planPriceInCents === null
-              ? null
-              : planPriceInCents > 0
-                ? `${formatDollars(planPriceInCents)}/mo`
-                : "No charge",
+            /* `planPriceInCents === null` holds it (#1727); the interval and
+               the dial are read in `ownPlanTerms` (#2392). */
+            planPriceInCents === null ? null : terms.price,
             renews && granted ? `${formatCredits(displayBalance(allowance))} credits/mo` : null,
             /*
               ⚠ **A PENDING CHANGE REPLACES THE RENEWAL SEGMENT RATHER THAN
@@ -254,7 +397,7 @@ export function BillingSection({
               while the row (and so the dialog a moment earlier) said 9 Oct. One
               fact, one source, or the toast and this line name two days.
             */
-            subscriptionDetails?.cancelAtPeriodEnd === true
+            cancelled
               ? cancelledPlanSegment(renewsAt)
               : pendingSentence ?? (renewsAt ? `renews ${formatShortDate(renewsAt)}` : null),
           ]
@@ -278,7 +421,26 @@ export function BillingSection({
             DIFFERENT change is going anyway (asking for one replaces the
             pending one on the server, by the same release rule).
           */}
-          {pendingChange ? (
+          {/*
+            ⚠ **THE WAY BACK OUT OF A CANCEL (#2395).** A plan set to end
+            offers Resume plan IN PLACE of Change plan, on the precedent the
+            scheduled-change control set just below: one button, the thing the
+            customer can actually do. Changing a plan that is ending is refused
+            by the server with *"Resume your plan first"*, so Change plan here
+            would only lead to that refusal. It outranks a pending change for
+            the reason the plan line gives: a cancel releases the schedule
+            first, so both cannot be true.
+          */}
+          {cancelled ? (
+            <Button
+              variant="secondary"
+              size="small"
+              disabled={resumePlan.isPending}
+              onClick={() => resumePlan.mutate()}
+            >
+              {resumePlan.isPending ? "Resuming…" : "Resume plan"}
+            </Button>
+          ) : pendingChange ? (
             <Button
               variant="secondary"
               size="small"
@@ -337,7 +499,7 @@ export function BillingSection({
               figure makes the same claim the figure does. */}
           {quotable ? <Bar ratio={remainingShare} token="--ink" /> : null}
           <span className="dp-set__note">
-            {quotable
+            {percentQuotable
               ? `${Math.round(remainingShare * 100)}% of this month's allowance left · `
               : ""}
             {/*
@@ -354,28 +516,34 @@ export function BillingSection({
                 true. */}
             {topupEligibility(status?.planTier) === "may-buy" ? (
               <button type="button" className="dp-set__linkbtn" onClick={onAddCredits}>
-                {renews && granted ? "more credits" : "Add more credits"}
+                {/* Keyed on the SENTENCE it continues (#2393), so wherever
+                    the percentage stands down — over the grant, or a balance
+                    not read yet — the link carries its own verb. */}
+                {percentQuotable ? "more credits" : "Add more credits"}
               </button>
             ) : null}
           </span>
         </div>
-        <div className="dp-set__minicard">
-          <span className="dp-set__minilabel">PAYMENT METHOD</span>
-          {/* No reader for brand or last four — see the docblock. */}
-          <span className="dp-set__note">
-            Your card is held by Stripe, and only Stripe can show it to you.
-          </span>
-          <span>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => portal.mutate()}
-              disabled={portal.isPending}
-            >
-              {portal.isPending ? "Opening…" : "Update card"}
-            </Button>
-          </span>
-        </div>
+        {/* #2397 — only an account with a card on file is offered to update it. */}
+        {hasBillingAccount ? (
+          <div className="dp-set__minicard">
+            <span className="dp-set__minilabel">PAYMENT METHOD</span>
+            {/* No reader for brand or last four — see the docblock. */}
+            <span className="dp-set__note">
+              Your card is held by Stripe, and only Stripe can show it to you.
+            </span>
+            <span>
+              <Button
+                variant="secondary"
+                size="small"
+                onClick={() => portal.mutate()}
+                disabled={portal.isPending}
+              >
+                {portal.isPending ? "Opening…" : "Update card"}
+              </Button>
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div style={{ marginTop: "var(--s-8)" }}>

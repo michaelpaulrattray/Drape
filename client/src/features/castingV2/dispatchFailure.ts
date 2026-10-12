@@ -1,4 +1,4 @@
-import type { DispatchFailureKind } from "./sheetState";
+import type { DispatchFailure, DispatchFailureKind } from "./sheetState";
 
 /**
  * Turn a failed roll dispatch into something a person can act on.
@@ -27,13 +27,29 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
   const serverMessage = typeof err?.message === "string" ? err.message : "";
 
   /*
-    BAD_REQUEST is the brief compiler's refusal: it could not read the brief,
-    or the brief asks for a cohort no adapter is certified for. The server's
+    BAD_REQUEST is the brief compiler's refusal about the WORDS: too little to
+    cast from, a named person or character, or something that is not a being.
+    A reader that did not answer is not one of these (see below). The server's
     own sentence is already written for a person, so it is used verbatim
     rather than replaced by something vaguer.
   */
   if (code === "BAD_REQUEST") {
     return { kind: "refused", message: serverMessage || "That brief could not be cast." };
+  }
+
+  /*
+    SERVICE_UNAVAILABLE is the studio, not the brief (#2386). The brief reader
+    did not answer, so nothing was read, claimed or charged — the same words
+    will roll once it does. It used to arrive as BAD_REQUEST and the sheet
+    titled it "That brief can't be cast" with "Edit the brief" under a sentence
+    saying to try again. It is the busy kind's twin: the roll didn't start,
+    through no fault of the words, and the server's own sentence says so.
+  */
+  if (code === "SERVICE_UNAVAILABLE") {
+    return {
+      kind: "busy",
+      message: serverMessage || "The studio couldn't start that roll just now. Try again in a moment — you were not charged.",
+    };
   }
 
   if (code === "TOO_MANY_REQUESTS") {
@@ -86,4 +102,29 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
 /** The action a failure state offers. Refusals send you back to the words. */
 export function failureActionLabel(kind: DispatchFailureKind): string {
   return kind === "refused" ? "Edit the brief" : "Back to casting";
+}
+
+/**
+ * THE BANNER IS DEFINITIONALLY STALE ONCE A NEWER ROLL RENDERS — except a short
+ * balance.
+ *
+ * `createRoll` commits its rows and charges while the request is still open, so
+ * a transport failure means we never heard the answer, not that nothing
+ * happened. If the roll the sheet is RENDERING is not the one the failed
+ * dispatch fired on top of, a roll arrived after that failure, and the failure
+ * describes a world that no longer exists (`DispatchFailure.afterRollId`).
+ *
+ * ⚠ **A credits refusal is the exception (#2387's sheet half).** A charge that
+ * fails writes the roll's rows first and then fails them as `unpaid`, so a newer
+ * roll DOES appear — eight "Didn't start · not charged" tiles — and the rule
+ * above dismissed the one notice saying why within a poll. That roll is the
+ * failure, not news after it, and nothing can be running behind a refusal about
+ * the account. So it stands until the next dispatch clears it
+ * (`rollDispatched`) or the customer leaves by its own button.
+ */
+export function failureIsStale(failure: DispatchFailure | null, activeRollId: string | null): boolean {
+  return failure !== null
+    && failure.kind !== "credits"
+    && activeRollId !== null
+    && activeRollId !== failure.afterRollId;
 }

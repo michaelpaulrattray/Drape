@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { showLowBalanceToast, LOW_BALANCE_THRESHOLD } from "@/features/billing/LowBalanceWarning";
 import { CASTING_BRANDS } from "@shared/castingOptions";
 import {
@@ -335,7 +336,10 @@ export function useCastingGeneration({
 
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Generation failed";
+      // Our server's refusal word for word; a gateway page or a dropped
+      // connection gets our sentence instead (#2432).
+      logRawFailure("casting.generate", error);
+      const message = readableFailure(error, "The casting didn't finish. Try again.");
       castingOperation.fail({ message, background: !session.isCurrent() });
       if (!session.isCurrent()) {
         return;
@@ -496,8 +500,12 @@ export function useCastingGeneration({
       if (session.isCurrent()) setGenState({ isGenerating: false, currentStep: "", error: null });
       return "completed";
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Iteration failed";
-      castingOperation.fail({ message, background: !session.isCurrent() });
+      // `message` only decides which branch below runs — both tests read our
+      // own server's sentences. What the customer is SHOWN is `shown` (#2432).
+      const message = error instanceof Error ? error.message : "";
+      logRawFailure("casting.iterate", error);
+      const shown = readableFailure(error, "That edit didn't finish. Try again.");
+      castingOperation.fail({ message: shown, background: !session.isCurrent() });
       if (!session.isCurrent()) return "failed";
       // A1 stage 2: the identity seal's refusal is TAUGHT, not toasted —
       // the designed fork-guidance surface renders where the edit happened
@@ -508,16 +516,16 @@ export function useCastingGeneration({
           isGenerating: false,
           currentStep: "",
           error: null,
-          identityRefusal: { message, editText: prompt },
+          identityRefusal: { message: shown, editText: prompt },
         });
         return "failed";
       }
       if (/insufficient credits/i.test(message)) {
         setIsTopupOpen(true);
       }
-      setGenState({ isGenerating: false, currentStep: "", error: message });
+      setGenState({ isGenerating: false, currentStep: "", error: shown });
       setFailedAction({ type: 'ITERATE', args: { text: prompt, view: activeView, mask: maskBase64 } });
-      toast.error(message);
+      toast.error(shown);
       return "failed";
     }
   }, [currentModelId, currentAssets, activeView, getSessionToken, setIsTopupOpen]);

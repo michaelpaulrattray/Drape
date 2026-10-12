@@ -228,6 +228,7 @@ function aCustomer(): User {
     approvedAt: now,
     passwordHash: "fixture-hash",
     authProvider: "email",
+    googleSub: null,
     emailVerified: true,
     emailVerificationToken: null,
     emailVerificationExpiresAt: null,

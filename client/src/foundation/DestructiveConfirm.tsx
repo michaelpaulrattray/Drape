@@ -1,7 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
-import { CastingModal, firstNameOf } from "./CastingModal";
+import { CastingModal } from "./CastingModal";
+
+/**
+ * THE DIALOG NAMES THE WHOLE CHARACTER, AND ASKS FOR THE WHOLE NAME (#2432).
+ *
+ * It used the first word of the name everywhere: for "Leave Test" it read
+ * "Delete Leave?", "TYPE LEAVE" and "Keep Leave" — a name the customer never
+ * gave anything, on the one screen where being sure WHICH character goes is
+ * the whole job.
+ *
+ * Up to `CONFIRM_NAME_MAX` characters the customer types the name they chose,
+ * which proves they are looking at the right one. Past it the typing becomes
+ * a chore with no extra safety (the title already names the character in
+ * full), so the word is DELETE — the same word the account's own delete asks
+ * for (`SecuritySection`). Matching ignores case and extra spaces, never
+ * punctuation the customer can see in the placeholder.
+ */
+export const CONFIRM_NAME_MAX = 24;
+
+/** One name, spaced the way it reads. */
+function wholeName(name: string): string {
+  return name.trim().replace(/\s+/g, " ");
+}
+
+/** What the customer types to arm the delete. */
+export function deleteConfirmWord(name: string): string {
+  const whole = wholeName(name);
+  return whole.length > 0 && whole.length <= CONFIRM_NAME_MAX ? whole : "DELETE";
+}
+
+/** The cancel button: the name when it fits, a plain phrase when it does not. */
+export function keepLabel(name: string): string {
+  const whole = wholeName(name);
+  return whole.length > 0 && whole.length <= CONFIRM_NAME_MAX ? `Keep ${whole}` : "Keep this character";
+}
+
+/** Case and spacing never decide it. */
+export function confirmMatches(typed: string, word: string): boolean {
+  return wholeName(typed).toLowerCase() === wholeName(word).toLowerCase();
+}
 
 /**
  * The delete-cast ceremony, rebuilt to the prototype (spec, 2026-08-03).
@@ -49,12 +88,13 @@ export function DestructiveConfirm({
   const inputRef = useRef<HTMLInputElement>(null);
 
   /*
-    Case-insensitive, trimmed, FIRST NAME only. Requiring an exact-case full
-    name is friction without safety — and full names carry trailing initials,
-    so "type Maya R." asks for punctuation nobody will guess.
+    Case-insensitive and space-forgiving, on the WHOLE name (#2432) — the
+    first word alone named someone the customer never made. The placeholder
+    shows exactly what to type, punctuation included.
   */
-  const first = firstNameOf(name);
-  const armed = typed.trim().toLowerCase() === first.toLowerCase();
+  const whole = wholeName(name);
+  const word = deleteConfirmWord(name);
+  const armed = confirmMatches(typed, word);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -68,7 +108,7 @@ export function DestructiveConfirm({
 
   return (
     <CastingModal
-      label={`Delete ${first}?`}
+      label={`Delete ${whole}?`}
       portrait={imageUrl}
       portraitMuted
       busy={busy}
@@ -78,7 +118,7 @@ export function DestructiveConfirm({
         PERMANENT · NOT REFUNDABLE
       </span>
 
-      <h2 className="dpc-modal__title">Delete {first}?</h2>
+      <h2 className="dpc-modal__title">Delete {whole}?</h2>
 
       <p className="dpc-modal__explainer">
         {signed
@@ -95,7 +135,7 @@ export function DestructiveConfirm({
       */}
       <div className="dpc-modal__typerow">
         <label className="dpc-modal__label" htmlFor="dpc-delete-confirm">
-          TYPE {first.toUpperCase()}
+          TYPE {word.toUpperCase()}
         </label>
         <div className={armed ? "dpc-modal__field is-armed" : "dpc-modal__field"}>
           <input
@@ -104,8 +144,8 @@ export function DestructiveConfirm({
             value={typed}
             disabled={busy}
             autoComplete="off"
-            placeholder={first}
-            aria-label={`Type ${first} to confirm deletion`}
+            placeholder={word}
+            aria-label={`Type ${word} to confirm deletion`}
             onChange={(event) => setTyped(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") confirm();
@@ -124,7 +164,7 @@ export function DestructiveConfirm({
           disabled={busy}
           onClick={onCancel}
         >
-          Keep {first}
+          {keepLabel(name)}
         </button>
         <button
           type="button"

@@ -66,7 +66,11 @@ describe("#2394 — the failed-payment state is its own state", () => {
     expect(footer).toMatch(/\{compare && offered && offered\.id !== currentId && !paymentFailed \? \(/);
   });
 
-  it("⚠ Cancel plan stays in reach for them", () => {
-    expect(footer).toMatch(/\{hasSubscription === true \|\| paymentFailed \? \(\s*<Button[^>]*onClick=\{\(\) => setConfirmingDrop\(true\)\}/);
+  it("⚠ Cancel plan stays in reach for them — the footer's plan control counts them as holding a plan", () => {
+    /* #2395 moved the footer onto `planFootControl`; this card feeds it. */
+    expect(changePlanModal).toMatch(/const holdsPlan = hasSubscription === true \|\| paymentFailed;/);
+    expect(changePlanModal).toMatch(/useQuery\(undefined, \{\s*enabled: holdsPlan,\s*\}\)/);
+    expect(changePlanModal).toMatch(/planFootControl\(\s*holdsPlan \? true : hasSubscription,/);
+    expect(footer).toMatch(/\{footControl === "cancel" \? \(\s*<Button[^>]*onClick=\{\(\) => setConfirmingDrop\(true\)\}/);
   });
 });

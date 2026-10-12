@@ -17,6 +17,7 @@ import { trpc } from '@/lib/trpc';
   2026-08-16. The raw message still reaches the console.
 */
 import { logRawFailure, readableFailure } from '@/lib/failureSentence';
+import { itemSaveFailure, RENAME_NODE_EVENT } from './itemSaveFailure';
 import { BoardCanvas, type BoardItemRecord } from './BoardCanvas';
 import { BoardHeader } from './BoardHeader';
 import { CanvasImageViewer } from './canvas/CanvasImageViewer';
@@ -421,6 +422,18 @@ function BoardPageImpl() {
 
   const updateItemMutation = trpc.boards.updateItem.useMutation({
     onSuccess: () => utils.boards.getItems.invalidate({ boardId }),
+    // #2405: every note, rename, move and resize saves through here, and a
+    // failure used to vanish into the console. Say what did not save, and
+    // hand the customer's text back to the node it came from.
+    onError: (err, variables) => {
+      logRawFailure('boards.updateItem', err);
+      const failure = itemSaveFailure(variables);
+      toast.error(readableFailure(err, failure.fallback), { id: failure.toastId });
+      if (failure.reopen) {
+        window.dispatchEvent(new CustomEvent(RENAME_NODE_EVENT, { detail: failure.reopen }));
+      }
+      utils.boards.getItems.invalidate({ boardId });
+    },
   });
 
   // ── R4 delete trust net (Decision 7 / D-17): soft delete + Undo ──────────

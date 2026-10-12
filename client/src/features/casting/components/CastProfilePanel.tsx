@@ -3,6 +3,7 @@ import { displayPrice, formatCredits } from "@shared/creditDisplay";
 import { Check, Copy, ExternalLink, LockKeyhole, Pencil, X } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { logRawFailure, readableFailure } from '@/lib/failureSentence';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { useCastingFormStore } from '@/features/casting/stores/useCastingFormStore';
@@ -151,7 +152,9 @@ export function CastProfilePanel({
         utils.boards.getItems.invalidate(),
       ]).catch(() => undefined);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't save the name");
+      // Our server's refusal word for word; anything else is our sentence (#2432).
+      logRawFailure("models.rename", error);
+      toast.error(readableFailure(error, "That name could not be saved."));
     }
   };
 

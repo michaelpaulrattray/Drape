@@ -6,6 +6,7 @@
  *   - access.redeem: Protected — validates an invite code and approves the user
  *   - access.status: Protected — checks if the current user is approved
  */
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { router, publicProcedure, onboardingProcedure } from "../_core/trpc";
 import { redeemInviteCode } from "../db/inviteCodes";
@@ -13,6 +14,20 @@ import { validateInviteCode } from "../db/validateInviteCode";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { ACCESS_CODE_MAX_LENGTH } from "../../shared/inputLimits";
+import { waitPhrase } from "@shared/waitPhrase";
+
+/**
+ * The sentence both procedures throw when the limiter says no (#2371).
+ *
+ * Until #2371 both answered a refusal as an ordinary 200 carrying an `error`
+ * field, which invariant 6 forbids: the client could not tell "too many tries"
+ * from "this code is not valid", there was no wait to show, and nothing keyed
+ * on the status ever fired. Now a real TOO_MANY_REQUESTS, in the shape
+ * `routes/referral.ts` already uses, and it says when to come back.
+ */
+export function accessCodeRefusalMessage(resetIn: number): string {
+  return `Too many attempts. Try again ${waitPhrase(resetIn)}.`;
+}
 
 export const accessRouter = router({
   /**
@@ -37,7 +52,7 @@ export const accessRouter = router({
         keyPrefix: "access_validate",
       });
       if (!rl.allowed) {
-        return { valid: false, error: "Too many attempts. Please try again later." };
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: accessCodeRefusalMessage(rl.resetIn) });
       }
 
       const result = await validateInviteCode(input.code);
@@ -62,7 +77,7 @@ export const accessRouter = router({
         keyPrefix: "access_redeem",
       });
       if (!rl.allowed) {
-        return { success: false, error: "Too many attempts. Please try again later." };
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: accessCodeRefusalMessage(rl.resetIn) });
       }
 
       const result = await redeemInviteCode(ctx.user.id, input.code);

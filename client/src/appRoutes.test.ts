@@ -314,8 +314,10 @@ describe("App routes — the class the #261 sweep named", () => {
   const PUBLIC_BY_DESIGN: Record<string, string> = {
     "Home.tsx": "the marketing home page — public by design",
     "VerifyEmail.tsx": "the email-verification landing, reached from a mail link",
-    "NotFound.tsx": "the 404",
   };
+  /* NotFound.tsx left this list with #2380: it now reads the session to choose
+     where its way home leads (the lobby for a signed-in customer, the landing
+     page for a visitor), so it consults one and the arm below finds that. */
   /* Login.tsx is public too and is deliberately NOT here: it calls the auth
      procedures, so it consults a session and never reaches this list. The list
      is "allowed to consult nothing", not "allowed to be public". */

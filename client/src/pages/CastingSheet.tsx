@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute, useSearch } from "wouter";
+import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,7 +43,7 @@ import {
   type BriefDraft,
 } from "@/features/castingV2/briefDraft";
 import { BOX_EDITED_MARK, boxDiffersFromSheet } from "@/features/castingV2/chipEdit";
-import { classifyDispatchFailure, failureActionLabel } from "@/features/castingV2/dispatchFailure";
+import { classifyDispatchFailure, failureActionLabel, failureIsStale } from "@/features/castingV2/dispatchFailure";
 import { cancelStory } from "@/features/castingV2/cancelNotice";
 import { refineOutcomeNote } from "@/features/castingV2/refineOutcomeNote";
 import { waitExceeds } from "@/features/castingV2/waitNotice";
@@ -51,6 +52,7 @@ import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { showingProvisionalRoll } from "@/features/castingV2/rollOnScreen";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
+import { carriedBriefState, readCarriedBrief, sheetBoxStart } from "@/features/castingV2/carriedBrief";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
 import {
@@ -147,6 +149,105 @@ export function retryFailureSentence(error: unknown): string {
   /* Gated: Retry is behind CASTING_RETRY_SCOPE, so a scope that closes
      under an open sheet would otherwise toast "No such thing." */
   return readableGatedFailure(error, RETRY_UNCONFIRMED_SENTENCE);
+}
+
+/**
+ * WHAT A FAILED SIGN SAYS WHEN THE SERVER'S ANSWER NEVER ARRIVED (#2381).
+ *
+ * The `onError` used to close the dialog and toast *"Signing didn't go through.
+ * Nothing has changed — try again."* for every error the server did not speak:
+ * a gateway 502, a dropped connection, a deploy landing mid-request. The client
+ * cannot know that. The Sign may have reached the server, charged, and made the
+ * cast, with only the reply lost — and pressing Sign again then meets the
+ * server's own *"That candidate can't be signed … already signed"*, which
+ * contradicts the first message. Same shape as #2033 and #2048: a fallback
+ * stating a money outcome nobody confirmed.
+ *
+ * So an unread failure is not answered from the client's imagination: the page
+ * re-reads the candidate from the server first (`findLandedSign`). If it is
+ * signed, the customer is taken to the cast exactly as a heard success would
+ * have, because that is what happened. If it is not — or the read fails too —
+ * the toast says only what is known: we could not confirm it. The balance and
+ * the receipt carry the money; this toast never does. Every sentence the server
+ * DID speak (`signService.ts`'s refusals, each honest about money) still passes
+ * through untouched.
+ */
+export const SIGN_UNCONFIRMED_SENTENCE =
+  "We couldn't confirm the signing. Check your roster before signing again.";
+
+/** How many times the page re-reads the candidate before giving the honest no. */
+export const SIGN_RECHECK_ATTEMPTS = 3;
+
+/**
+ * How long one re-read may take before it counts as "not seen" (#2426).
+ *
+ * A gateway that holds the connection open, rather than failing it, would
+ * otherwise keep the Sign dialog on *Signing…* — with no Cancel — for as long
+ * as the browser waits. Two poll intervals: a healthy `getRoll` answers well
+ * inside one, so a read that has not answered in two is not going to help the
+ * customer by being waited on. With the waits between reads, the whole re-check
+ * ends in at most `SIGN_RECHECK_ATTEMPTS * SIGN_RECHECK_READ_TIMEOUT_MS +
+ * (SIGN_RECHECK_ATTEMPTS - 1) * POLL_MS` — twenty seconds.
+ */
+export const SIGN_RECHECK_READ_TIMEOUT_MS = 2 * POLL_MS;
+
+/** The candidate as a re-read sees it — the two fields this question needs. */
+export type SignRecheckCandidate = { candidateId: string; status: string; castId: string | null };
+
+export type SignFailureOutcome =
+  | { kind: "spoken"; sentence: string }
+  | { kind: "landed"; castPublicId: string }
+  | { kind: "unconfirmed"; sentence: string };
+
+/**
+ * Settle a failed Sign against the server's own record.
+ *
+ * `readCandidates` re-reads the candidate's roll; it is asked up to
+ * `SIGN_RECHECK_ATTEMPTS` times, `waitMs` apart, because a reply lost to a
+ * gateway can leave the server still finishing the Sign it already charged
+ * for. A read that throws — or does not answer within `readTimeoutMs` —
+ * counts as "not seen", never as "not signed".
+ */
+export async function signFailureOutcome(
+  error: unknown,
+  input: {
+    candidateId: string;
+    readCandidates: (() => Promise<readonly SignRecheckCandidate[]>) | null;
+    waitMs?: number;
+    readTimeoutMs?: number;
+    sleep?: (ms: number) => Promise<void>;
+  },
+): Promise<SignFailureOutcome> {
+  if (failureIsOurs(error)) {
+    return { kind: "spoken", sentence: readableFailure(error, SIGN_UNCONFIRMED_SENTENCE) };
+  }
+  const read = input.readCandidates;
+  const sleep = input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const waitMs = input.waitMs ?? POLL_MS;
+  const readTimeoutMs = input.readTimeoutMs ?? SIGN_RECHECK_READ_TIMEOUT_MS;
+  if (read) {
+    for (let attempt = 0; attempt < SIGN_RECHECK_ATTEMPTS; attempt += 1) {
+      if (attempt > 0) await sleep(waitMs);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const answered = await Promise.race([
+          read(),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error("re-read timed out")), readTimeoutMs);
+          }),
+        ]);
+        const candidate = answered.find((entry) => entry.candidateId === input.candidateId);
+        if (candidate?.status === "signed" && candidate.castId) {
+          return { kind: "landed", castPublicId: candidate.castId };
+        }
+      } catch {
+        // Not seen is not "not signed": keep asking, then say we couldn't confirm.
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+  }
+  return { kind: "unconfirmed", sentence: SIGN_UNCONFIRMED_SENTENCE };
 }
 
 export default function CastingSheet() {
@@ -400,8 +501,12 @@ export default function CastingSheet() {
       candidateId: string;
       indexLabel: string;
       imageUrl: string | null;
+      /** Which roll the candidate came from — where a lost reply is re-read (#2381). */
+      sourceRollIndex: number;
     } | null
   >(null);
+  /* True while a Sign whose reply never arrived is being re-read (#2381). */
+  const [signChecking, setSignChecking] = useState(false);
   /*
     Which kept candidate the dock's Sign acts on.
 
@@ -538,10 +643,8 @@ export default function CastingSheet() {
     world that no longer exists. No predicate to keep in step, no latch to tear
     down: the banner reads what the sheet reads.
   */
-  const staleFailure =
-    dispatchFailure !== null
-    && activeRollId !== null
-    && activeRollId !== dispatchFailure.afterRollId;
+  // The rule, and its one exception (a short balance), live in `failureIsStale`.
+  const staleFailure = failureIsStale(dispatchFailure, activeRollId);
 
   /*
     A ROLL THE USER CANCELLED IS NOT A FAILURE TO REPORT BACK TO THEM.
@@ -692,7 +795,17 @@ export default function CastingSheet() {
    * share a sentence, and walking between them is still arriving somewhere new.
    */
   const shownBrief = roll.data?.briefText ?? "";
-  const brief = displayText(draft, shownBrief);
+  /*
+    WORDS THAT ARRIVED WITH THE SHEET AND WERE NEVER CAST (#2385). The casting
+    page moves here before its roll is read, so a refused brief made no roll
+    and `shownBrief` is empty — and the box used to be empty with it, throwing
+    away what the customer wrote. Until the sheet has a roll of its own, the box
+    starts from the words the casting page sent (`carriedBrief.ts`). They are
+    NOT `shownBrief`: the record above the grid says "The brief this casting
+    was cast from", and these were not cast.
+  */
+  const arrivedBrief = readCarriedBrief(useHistoryState());
+  const brief = displayText(draft, sheetBoxStart({ shownBrief, activeRollId, arrived: arrivedBrief }));
   /*
     THE BOX HAS BEEN EDITED AWAY FROM THE SHEET (#534, his §16) — the single
     condition under which the record says a word about a difference. It reads
@@ -2951,7 +3064,11 @@ export default function CastingSheet() {
                 size="small"
                 onClick={() => {
                   setDispatchFailure(null);
-                  navigate("/app/casting");
+                  /*
+                    The words go back with them (#2385): "Edit the brief" that
+                    opens an empty box asks for the brief again from memory.
+                  */
+                  navigate("/app/casting", { state: carriedBriefState(brief) });
                 }}
               >
                 {failureActionLabel(visibleFailure.kind)}
@@ -3172,7 +3289,14 @@ export default function CastingSheet() {
               onStyle={setStyleChoice}
             />
           ) : null}
-          <div className="dp-row" style={{ gap: 10, flexWrap: "nowrap" }}>
+          {/*
+            One line at every width but a phone's (#2388): at 390 the priced
+            button kept its whole label and squeezed the brief to ~70px, one
+            word-fragment per line. `.dpc-dockrow` (castingV2.css) wraps the
+            row under 460px, so the brief takes the full width and Roll again
+            sits under it.
+          */}
+          <div className="dp-row dpc-dockrow">
             <Field className="dp-split__main dpc-briefrow">
               {/*
                 RE-IMAGINE (#535) where the sparkle sat — a press, not a mark:
@@ -3435,6 +3559,7 @@ export default function CastingSheet() {
                         candidateId: signTarget.candidateId,
                         indexLabel: signTarget.indexLabel,
                         imageUrl: signTarget.imageUrl ?? signTarget.thumbUrl ?? null,
+                        sourceRollIndex: signTarget.sourceRollIndex,
                       })
                     : undefined
                 }
@@ -3769,7 +3894,7 @@ export default function CastingSheet() {
           imageUrl={signing.imageUrl}
           signsVersion={signsVersion}
           priceCredits={signPrice}
-          busy={sign.isPending}
+          busy={sign.isPending || signChecking}
           onCancel={() => setSigning(null)}
           onConfirm={(name) => {
             /*
@@ -3798,8 +3923,35 @@ export default function CastingSheet() {
                   navigate(`/app/casting/cast/${result.castPublicId}`);
                 },
                 onError: (error) => {
-                  setSigning(null);
-                  toast.error(readableFailure(error, "Signing didn't go through. Nothing has changed — try again."));
+                  /*
+                    A LOST REPLY IS RE-READ, NEVER ANSWERED FROM HERE (#2381).
+                    The dialog stays busy while the page asks the server whether
+                    this candidate is now signed; see `signFailureOutcome`.
+                  */
+                  const rollId =
+                    rolls.find((entry) => entry.rollIndex === signing.sourceRollIndex)?.rollId ?? null;
+                  const candidateId = signing.candidateId;
+                  setSignChecking(true);
+                  void signFailureOutcome(error, {
+                    candidateId,
+                    readCandidates: rollId
+                      ? async () => (await utils.client.castingV2.getRoll.query({ rollId })).candidates
+                      : null,
+                  }).then((outcome) => {
+                    setSignChecking(false);
+                    setSigning(null);
+                    if (outcome.kind === "landed") {
+                      markJustSigned(outcome.castPublicId);
+                      navigate(`/app/casting/cast/${outcome.castPublicId}`);
+                      return;
+                    }
+                    if (outcome.kind === "unconfirmed") {
+                      /* Whatever did happen, the sheet and the balance show it. */
+                      void invalidate();
+                      void utils.credits.getBalance.invalidate();
+                    }
+                    toast.error(outcome.sentence);
+                  });
                 },
               },
             );

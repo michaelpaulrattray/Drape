@@ -24,6 +24,7 @@
  * palette. The board itself stays light until the canvas redesign (#916).
  */
 import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { User, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -80,8 +81,16 @@ function ModelCard({
   );
 }
 
+/** How long typing must pause before the search goes to the server. */
+const SEARCH_SETTLE_MS = 250;
+
 export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPickerModalProps) {
   const [search, setSearch] = useState("");
+  const [settledSearch, setSettledSearch] = useState("");
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettledSearch(search.trim()), SEARCH_SETTLE_MS);
+    return () => window.clearTimeout(t);
+  }, [search]);
 
   const actions = useCastActions({ boardId, itemId });
   const disabled = actions.fillPending || itemId < 0;
@@ -97,20 +106,25 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
     return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
-  const { data: models, isLoading } = trpc.boardOps.listCastableModels.useQuery({ limit: 30 });
+  // #2406: the search is asked of the SERVER, which reads signed characters
+  // and drafts as separate groups, each searched and sorted before its own
+  // limit — so an older signed character is never out of reach. (It used to
+  // filter the newest 30 rows here, drafts included, and answered "No
+  // characters match" for a character who exists.) With no search the input
+  // is exactly `{ limit: 30 }`, the key the board and the Cast node prefetch.
+  const { data: models, isLoading } = trpc.boardOps.listCastableModels.useQuery(
+    settledSearch ? { limit: 30, search: settledSearch } : { limit: 30 },
+    { placeholderData: keepPreviousData },
+  );
 
   // D-42: minted models first, drafts in a quieter section below
   const { minted, drafts } = useMemo(() => {
-    let list = models ?? [];
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter((m) => (m.name ?? "").toLowerCase().includes(q));
-    }
+    const list = models ?? [];
     return {
       minted: list.filter((m) => !m.draft),
       drafts: list.filter((m) => m.draft),
     };
-  }, [models, search]);
+  }, [models]);
 
   const pick = (model: PickableModel) => {
     // The picker's thumbnail fills the node optimistically (D-38/D-42)
@@ -133,7 +147,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
 
       <div className="relative w-[640px] max-w-[92vw] max-h-[80vh] flex flex-col bg-[var(--surface)] border-hairline border-[var(--borderCard)] rounded-canvas-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3">
+        <div className="shrink-0 flex items-center justify-between px-5 pt-4 pb-3">
           <span className="text-canvas-md font-medium text-[var(--ink)]">Your characters</span>
           <button
             type="button"
@@ -147,7 +161,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
 
         <div className="flex-1 min-h-0 flex flex-col px-5 pb-5">
           {/* Search + the create path, one row (ElevenLabs picker pattern) */}
-          <div className="flex items-center gap-2.5 mb-4">
+          <div className="shrink-0 flex items-center gap-2.5 mb-4">
             <input
               type="text"
               value={search}
@@ -184,7 +198,7 @@ export function CastPickerModal({ boardId, itemId, onClose, onCastNew }: CastPic
               )}
             </div>
           ) : (
-            <div className="overflow-y-auto pr-1">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               {minted.length > 0 && (
                 <div className="grid grid-cols-4 gap-3">
                   {minted.map((m) => (

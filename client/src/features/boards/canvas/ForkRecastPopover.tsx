@@ -12,6 +12,11 @@ import { cn } from "@/lib/utils";
    (`server/lib/canvasCastDoor.ts`), so the row a customer sees and the refusal
    a request would meet cannot disagree (working law 4). */
 import { CANVAS_CAST_OPEN } from "@shared/canvasCastDoor";
+/* #2408 — the rebuild door (#2315/#2328). A fork succeeds and then opens the
+   copy in the casting environment, which is paused behind this door, so while
+   it is shut Fork would write a duplicate nobody can edit and then show the
+   paused card. The row is sealed instead, before any copy is made. */
+import { REBUILD_DOOR_CLOSED, REBUILD_DOOR_OPEN } from "@shared/rebuildDoor";
 import { CostLabel } from "./CostLabel";
 
 interface ForkRecastPopoverContentProps {
@@ -40,6 +45,9 @@ export function ForkRecastPopoverContent({
   const recastCost = plan?.estimatedCreditCost ?? null;
   const forkCost = plan?.forkCreditCost ?? null;
   const who = name || "this cast";
+  /* #2408: "Fork instead" points at the Fork row, so it is said only while
+     that row can be pressed. */
+  const forkInstead = REBUILD_DOOR_OPEN ? " Fork instead." : "";
 
   return (
     <div className="flex flex-col gap-3">
@@ -51,18 +59,24 @@ export function ForkRecastPopoverContent({
       </div>
 
       <div className="flex flex-col gap-2">
-        <ChoiceRow
-          autoFocus
-          title="Fork to edit"
-          description={`Create an independent editable copy of ${who}. The original stays unchanged.`}
-          cost={forkCost}
-          onClick={onFork}
-        />
+        {REBUILD_DOOR_OPEN ? (
+          <ChoiceRow
+            autoFocus
+            title="Fork to edit"
+            description={`Create an independent editable copy of ${who}. The original stays unchanged.`}
+            cost={forkCost}
+            onClick={onFork}
+          />
+        ) : (
+          /* #2408 — sealed the way D-43's minted Recast row is: visible,
+             disabled, carrying the door's one sentence, no cost, no handler. */
+          <ChoiceRow disabled title="Fork to edit" description={REBUILD_DOOR_CLOSED} cost={null} />
+        )}
         {isMinted ? (
           <ChoiceRow
             disabled
             title="Recast this cast"
-            description={`${who} is minted — identity is sealed. Fork instead.`}
+            description={`${who} is minted — identity is sealed.${forkInstead}`}
             cost={null}
           />
         ) : !CANVAS_CAST_OPEN ? (
@@ -77,7 +91,7 @@ export function ForkRecastPopoverContent({
           <ChoiceRow
             disabled
             title="Recast this cast"
-            description="Making new pictures on the canvas is unavailable while we rebuild it. Fork instead."
+            description={`Making new pictures on the canvas is unavailable while we rebuild it.${forkInstead}`}
             cost={null}
           />
         ) : (

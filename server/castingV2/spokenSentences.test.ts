@@ -48,7 +48,7 @@ const SITES = [
   { file: "server/castingV2/refineService.ts", says: "argued with one of your earlier changes" },
   { file: "server/castingV2/refineService.ts", says: "asked for a change and forbidden it in the same breath" },
   { file: "server/castingV2/refineService.ts", says: "That refinement didn't come through" },
-  { file: "server/castingV2/signService.ts", says: "The Cast couldn't be signed" },
+  { file: "server/castingV2/signService.ts", says: "The character couldn't be signed" },
 ];
 
 describe("a sentence written for a customer reaches the customer", () => {

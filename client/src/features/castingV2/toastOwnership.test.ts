@@ -96,9 +96,9 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "'Restored' is duplicated by the card returning; 'not kept' is not. The only in-place evidence is a missing ring, which looks identical to a card that was never kept.",
   },
   {
-    match: '"Signing didn\'t go through. Nothing has changed — try again."',
+    match: "toast.error(outcome.sentence)",
     because:
-      "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. Ours rather than the error's since run-9; a PRECONDITION_FAILED from our own server still passes through verbatim, because that sentence names its wall.",
+      "A failed Sign. It navigates on success, so a failure leaves the user on a closed modal with nothing said. A sentence our own server spoke still passes through verbatim, because that sentence names its wall. When the reply never arrived, the page re-reads the candidate first and goes to the cast if the Sign landed; otherwise it says only that it could not confirm the signing, and claims nothing about money (card 2381).",
   },
   {
     match: "readableFailure(error, 'That name could not be saved.')",
@@ -142,7 +142,7 @@ const ALLOWED: Array<{ match: string; because: string }> = [
       "A filing that STOPPED HALF WAY (card 2275). Over 60 ticked casts go in slices, so a refusal in a later call leaves the earlier ones genuinely filed — and until this sentence existed the customer was told the opposite ('Those casts couldn't be added') with 60 of them already in the campaign, every one still ticked. Nothing on the grid distinguishes 60-of-63 from 0-of-63. So the landed half is said out of what the server answered for, this half names the remainder, and the remainder is what stays selected, which makes a second press the retry rather than a re-send.",
   },
   {
-    match: "Those casts couldn't be added to",
+    match: "Those characters couldn't be added to",
     because:
       "A bulk filing or unfiling where the FIRST call was refused, so nothing landed. The whole selection stays ticked and the grid is unchanged, which looks exactly like the press not having happened; a refusal has no surface of its own. The server's own sentence passes through readableFailure (a cast that stopped being this customer's, a campaign deleted in another tab); this is only the fallback when it has none. A refusal after something landed takes the pair of sentences above instead, because this one would be false.",
   },
@@ -177,6 +177,12 @@ const ALLOWED: Array<{ match: string; because: string }> = [
   {
     match: "could not be deleted.",
     because: "She is still on the roster; that is not an explanation.",
+  },
+  // ---- CastingRoom.tsx (deleting from the character's page — #2383)
+  {
+    match: "toast.error(roomDeleteFailureSentence(",
+    because:
+      "A refused or failed delete from the character's page. The confirm closes and the page is unchanged, which looks exactly like Keep. The sentence moved into `roomDeleteFailureSentence` (card 2383) so a transport failure shows our sentence rather than the error's; a server refusal still passes through.",
   },
   /*
     ---- ConceptUploadCard.tsx (Upload a concept, #185 slice two)

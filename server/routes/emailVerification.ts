@@ -258,9 +258,19 @@ emailVerificationRouter.post("/resend-verification", async (req: Request, res: R
       return;
     }
 
-    // Already verified
+    /*
+      Already verified: nothing is sent, and the answer SAYS so in a field the
+      page reads (#2370). It used to carry only a `message`, which the verify page
+      never read — so it showed "Verification email resent" and started a
+      60-second countdown for an email that did not exist. The page keys on
+      `alreadyVerified`, never on the wording of `message`.
+
+      Not a new disclosure: this branch already answered a different sentence
+      from the unknown-address branch above, so the wire said the same thing
+      before the flag existed.
+    */
     if (user.emailVerified) {
-      res.json({ success: true, message: "Email is already verified. You can sign in." });
+      res.json({ success: true, alreadyVerified: true, message: "Email is already verified. You can sign in." });
       return;
     }
 
@@ -338,9 +348,22 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
 
     const user = result[0];
 
-    // Check if already verified
+    /*
+      ALREADY VERIFIED — a second click, or a click after a mail scanner (Outlook
+      Safe Links and the like) has already opened the link for the customer.
+      A calm note on the sign-in page, and NO session: this exit mints nothing,
+      so invariant 9's gates are untouched.
+
+      ⚠ Reachable only because the success path below KEEPS the token (#2370).
+      Until then it cleared it, so a repeat click found no row and took the
+      `invalid_token` exit — "Authentication Error" for a customer who had done
+      everything right — and this branch was dead code. It also sent
+      `?message=`, which the sign-in page never read; it is an `error` code now,
+      so `ERROR_MESSAGES` carries its note and `loginRefusalNotes.test.ts` holds
+      the pair together.
+    */
     if (user.emailVerified) {
-      res.redirect("/login?message=already_verified");
+      res.redirect("/login?error=already_verified");
       return;
     }
 
@@ -360,14 +383,17 @@ emailVerificationRouter.get("/verify-email", async (req: Request, res: Response)
       return;
     }
 
-    // Mark email as verified and clear token
+    /*
+      Mark the email verified and KEEP the token (#2370). A used token is what
+      lets a repeat click resolve to "already verified" rather than "invalid".
+      It can reach nothing else now: the already-verified exit above is checked
+      first and mints no session, before the expiry check is ever read. A
+      resend never replaces it for a verified account (that branch returns
+      before a new token is made), so it stays with the row.
+    */
     await db
       .update(users)
-      .set({
-        emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpiresAt: null,
-      })
+      .set({ emailVerified: true })
       .where(eq(users.id, user.id));
 
     // Create session (auto-login)

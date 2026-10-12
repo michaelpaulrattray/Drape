@@ -44,6 +44,7 @@ export {
   createModel,
   getModelById,
   getUserModels,
+  getUserPickerModels,
   getModelStatusesIn,
   updateModel,
   mintModelAtomically,

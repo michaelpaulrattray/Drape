@@ -50,8 +50,36 @@ export function isAllowedUrl(url: string): boolean {
   return validateProxyUrl(url).valid;
 }
 
+function extensionFor(mime: TrustedImage["mime"]): string {
+  return mime === "image/jpeg" ? "jpg" : mime.slice("image/".length);
+}
+
+/**
+ * THE NAME THE APP ASKED FOR, MADE SAFE (#2407, #2369).
+ *
+ * A browser gives this header's filename priority over the anchor's `download`
+ * attribute, so until the caller could name the file here every download
+ * through the proxy landed under its storage key — a hex id where a character's
+ * name was asked for. The requested name is only a STEM: anything outside
+ * ASCII letters, digits, `.`, `_` and `-` becomes `_` (no path separators, no
+ * quotes, nothing a header can be split on), leading dots are dropped, and the
+ * extension is always the one the VERIFIED bytes carry, never the caller's —
+ * so a request cannot label a PNG as anything but a PNG. Absent, empty or
+ * unusable, the storage-key name below stands as before.
+ */
+function requestedDownloadFilename(requested: unknown, mime: TrustedImage["mime"]): string | null {
+  if (typeof requested !== "string") return null;
+  const stem = requested
+    .replace(/\.(png|jpe?g|webp|gif)$/i, "")
+    .replace(/[^A-Za-z0-9._-]/g, "_")
+    .replace(/^[._]+/, "")
+    .slice(0, 120);
+  if (!/[A-Za-z0-9]/.test(stem)) return null;
+  return `${stem}.${extensionFor(mime)}`;
+}
+
 function safeDownloadFilename(url: string, mime: TrustedImage["mime"]): string {
-  const fallbackExtension = mime === "image/jpeg" ? "jpg" : mime.slice("image/".length);
+  const fallbackExtension = extensionFor(mime);
   let candidate = "";
   try {
     const encoded = new URL(url).pathname.split("/").pop() ?? "";
@@ -120,7 +148,8 @@ export function createImageProxyRouter(
       res.setHeader("Content-Type", image.mime);
       res.setHeader("Cache-Control", "private, max-age=3600");
       if (download) {
-        const filename = safeDownloadFilename(url, image.mime);
+        const filename = requestedDownloadFilename(req.query.filename, image.mime)
+          ?? safeDownloadFilename(url, image.mime);
         res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
       }
       res.status(200).send(image.bytes);

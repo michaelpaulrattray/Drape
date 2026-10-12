@@ -29,7 +29,7 @@ import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { redactQueryValuesInText, withoutQueryValues } from "../monitoring/queryErrorRedaction";
-import { getUserByEmail } from "../db/users";
+import { bindGoogleSub, getUserByEmail, getUsersByGoogleSub } from "../db/users";
 import {
   FREE_GRANT_REFUSAL_ERROR_CODE,
   mayGrantFreeCredits,
@@ -111,6 +111,17 @@ function startedInThisBrowser(req: Request, nonce: unknown): boolean {
   /* `timingSafeEqual` throws on a length mismatch, so the length is compared
      first — and a wrong length is already a wrong answer. */
   return expected.length === presented.length && timingSafeEqual(expected, presented);
+}
+
+/**
+ * THE GOOGLE ACCOUNT AN ACCOUNT IS BOUND TO, OR `null` (#2389). An account
+ * Google created carries it in its openId; one that linked Google later carries
+ * it in `googleSub`. The two are one question and are answered in one place.
+ */
+function boundGoogleSub(user: { openId: string; googleSub?: string | null }): string | null {
+  if (user.googleSub) return user.googleSub;
+  if (user.openId.startsWith("google_")) return user.openId.slice("google_".length);
+  return null;
 }
 
 export const googleAuthRouter = Router();
@@ -266,9 +277,9 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
     /*
       ⚠ GOOGLE MUST HAVE CONFIRMED THE ADDRESS BEFORE IT OPENS ANYTHING (#2377).
 
-      Everything below keys on `email` — the returning-user branch finds the
-      account with `getUserByEmail(email)` and mints a session for it, and the
-      new-user branch creates an account under it. A Google account can present
+      Below, an account with no Google binding yet is found by `email` and a
+      session minted for it (#2389 binds it then), and the new-user branch
+      creates an account under it. A Google account can present
       an address Google never confirmed, and the ID token says so in
       `email_verified`. Without this gate, anyone who could make a Google account
       show a customer's address could sign straight into that customer's
@@ -314,8 +325,63 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
       return;
     }
 
-    // Check if user already exists
-    const existingUser = await getUserByEmail(email);
+    /*
+      ⚠ THE ACCOUNT IS FOUND BY THE PERSON, NOT BY THE ADDRESS (#2389).
+
+      Google's `sub` is the person's Google account and never changes; the
+      address on it can. So the account bound to this `sub` is looked up FIRST,
+      and only when none exists may the address decide — and then only for an
+      account with no Google binding at all, which is an email-and-password
+      account linking Google for the first time. That link is recorded below,
+      after every gate has passed, so the next sign-in matches on `sub`.
+
+      An address that matches an account bound to a DIFFERENT Google account is
+      refused: whoever is presenting it is not the Google account that account
+      trusts. Both refusals answer `google_error`, the note this page already
+      has for a Google sign-in that did not work; a sentence of its own is copy
+      on the sign-in page, which waits for that page's redesign.
+
+      Nothing here adds a session mint: invariant 9's count of five is
+      unchanged, and these are gates inside the existing returning-user one.
+    */
+    const boundToSub = await getUsersByGoogleSub(googleId);
+    if (boundToSub.length > 1) {
+      await logAuditEvent({
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        resourceType: "auth",
+        metadata: { reason: "Google account bound to more than one account", email },
+        severity: "warning",
+        ipAddress: clientIp,
+        userAgent,
+      });
+      res.redirect("/login?error=google_error");
+      return;
+    }
+
+    let existingUser = boundToSub[0];
+    let linkingGoogle = false;
+    if (!existingUser) {
+      const byEmail = await getUserByEmail(email);
+      if (byEmail) {
+        const bound = boundGoogleSub(byEmail);
+        if (bound !== null && bound !== googleId) {
+          await logAuditEvent({
+            userId: byEmail.id,
+            action: AUDIT_ACTIONS.LOGIN_FAILED,
+            resourceType: "auth",
+            resourceId: byEmail.openId,
+            metadata: { reason: "Google account does not match the one this account is bound to", email },
+            severity: "warning",
+            ipAddress: clientIp,
+            userAgent,
+          });
+          res.redirect("/login?error=google_error");
+          return;
+        }
+        existingUser = byEmail;
+        linkingGoogle = bound === null;
+      }
+    }
 
     if (existingUser) {
       // --- RETURNING USER ---
@@ -346,7 +412,15 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         if (statePayload.betaCode) {
           const codeResult = await validateInviteCode(statePayload.betaCode);
           if (codeResult.valid) {
-            await redeemInviteCode(existingUser.id, statePayload.betaCode);
+            /* The redeem is what approves the account, and it can refuse after
+               the check above said yes — the code's last use taken by someone
+               else in between (#2373). A refused redeem leaves the account
+               unapproved, so no session is minted for it. */
+            const redeemResult = await redeemInviteCode(existingUser.id, statePayload.betaCode);
+            if (!redeemResult.success) {
+              res.redirect("/login?error=code_redeem_failed");
+              return;
+            }
           } else {
             res.redirect("/login?error=not_approved");
             return;
@@ -355,6 +429,25 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
           res.redirect("/login?error=not_approved");
           return;
         }
+      }
+
+      /* The first Google sign-in of an unbound account binds it, now that every
+         gate has passed and just before the mint. If the write does not land,
+         another sign-in bound the account in between — refused rather than
+         guessed at; the next attempt matches on `sub` above. */
+      if (linkingGoogle && !(await bindGoogleSub(existingUser.id, googleId))) {
+        await logAuditEvent({
+          userId: existingUser.id,
+          action: AUDIT_ACTIONS.LOGIN_FAILED,
+          resourceType: "auth",
+          resourceId: existingUser.openId,
+          metadata: { reason: "Google account binding was taken by another sign-in", email },
+          severity: "warning",
+          ipAddress: clientIp,
+          userAgent,
+        });
+        res.redirect("/login?error=google_error");
+        return;
       }
 
       // Update user info (link Google if they were email-only)
@@ -387,7 +480,12 @@ googleAuthRouter.get("/google/callback", async (req: Request, res: Response) => 
         action: AUDIT_ACTIONS.LOGIN_SUCCESS,
         resourceType: "auth",
         resourceId: existingUser.openId,
-        metadata: { email, loginMethod: "google", returningUser: true },
+        metadata: {
+          email,
+          loginMethod: "google",
+          returningUser: true,
+          ...(linkingGoogle ? { googleLinked: true } : {}),
+        },
         severity: "info",
         ipAddress: clientIp,
         userAgent,
