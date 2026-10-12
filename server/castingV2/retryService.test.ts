@@ -266,7 +266,7 @@ function dependencies(outcome: "delivers" | "fails" = "delivers", enabled = true
     }),
     deduct: vi.fn(async () => {
       journal.push("charge");
-      return chargeSucceeds ? { success: true, newBalance: 100 } : { success: false, error: "Insufficient credits" };
+      return chargeSucceeds ? { success: true, newBalance: 100 } : { success: false, error: "Insufficient credits", insufficient: true as const };
     }),
     storeImage: vi.fn(async () => ({ key: "casting-v2/candidates/x.png" })),
   } as never;
@@ -676,8 +676,8 @@ describe("when the money does not move", () => {
   it("restores the ORIGINAL failure class when the charge does not land — not `unpaid`", async () => {
     chargeSucceeds = false;
     await expect(retryCandidate(dependencies(), INPUT)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message: "Insufficient credits",
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. Retrying a tile costs [\d,.]+ credits\.$/),
     });
     expect(dbCalls.restore).toHaveBeenCalledWith(5, "transport");
     expect(rows.candidates.find((row) => row.id === 5)).toMatchObject({ status: "failed", failureClass: "transport" });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyDispatchFailure } from "./dispatchFailure";
+import { classifyDispatchFailure, failureActionLabel } from "./dispatchFailure";
 
 /**
  * A transport failure is not a refusal, and must not be reported as one.
@@ -48,5 +48,26 @@ describe("only say what we actually know", () => {
     expect(classifyDispatchFailure(trpcError("TOO_MANY_REQUESTS")).kind).toBe("busy");
     expect(classifyDispatchFailure(trpcError("PRECONDITION_FAILED")).kind).toBe("credits");
     expect(classifyDispatchFailure(trpcError("FORBIDDEN")).kind).toBe("credits");
+  });
+});
+
+/*
+  #2387 — a customer short of credits is not told their brief is the problem.
+  The sentences here are the server's own (`server/lib/chargeRefusal.ts` and
+  the roll's price sentence); `server/castingV2/rollService.test.ts` drives the
+  real refusal through this classifier from the other end.
+*/
+describe("a short balance is an account problem, never a brief one (#2387)", () => {
+  it("the not-enough-credits refusal keeps its sentence and its price, and offers no brief edit", () => {
+    const sentence = "Not enough credits. A roll costs 160 credits.";
+    const failure = classifyDispatchFailure(trpcError("PRECONDITION_FAILED", sentence));
+    expect(failure).toEqual({ kind: "credits", message: sentence });
+    expect(failureActionLabel(failure.kind)).not.toBe("Edit the brief");
+  });
+
+  it("negative control: the shape that shipped WAS read as the brief's refusal", () => {
+    const failure = classifyDispatchFailure(trpcError("BAD_REQUEST", "Insufficient credits"));
+    expect(failure.kind).toBe("refused");
+    expect(failureActionLabel(failure.kind)).toBe("Edit the brief");
   });
 });

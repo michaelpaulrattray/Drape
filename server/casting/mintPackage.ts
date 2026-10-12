@@ -75,6 +75,7 @@ import type { EffectiveCastState } from "./effectiveCastState";
 import type { SnapshotReadMode } from "./snapshotReadScope";
 import { withUniqueCastPublicId } from "./castPublicId";
 import { slotCost } from "./packagePricing";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 export { slotCost } from "./packagePricing";
 
@@ -646,7 +647,7 @@ export async function executeMintPackage(input: MintPackageInput) {
       { toolKind: "image" }, // the charge pays for generating the missing view images
     );
     if (!deduct.success) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
+      throw chargeRefusal(deduct, `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.`);
     }
     input.onCharged?.(totalCost);
   }

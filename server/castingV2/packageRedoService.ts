@@ -154,6 +154,7 @@ import {
   PACKAGE_REDO_REFUSED_SHEET_REFUND_DESCRIPTION,
 } from "./viewRetryRecovery";
 import { castWardrobeLine, castWardrobeSource } from "./wardrobeLine";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/packageRedoService");
 
@@ -530,20 +531,16 @@ export async function redoCastPackage(
         error: new TRPCError({ code: "BAD_REQUEST", message: PACKAGE_REDO_UNAVAILABLE_MESSAGE }),
       }).catch(() => undefined);
     }
+    const refusal = chargeRefusal(
+      charge,
+      `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
+    );
     await failClaimedDirectOperation({
       userId: input.userId,
       operationId: pressOperationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: charge.error
-          || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
-      }),
+      error: refusal,
     }).catch(() => undefined);
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: charge.error
-        || `Not enough credits. Asking for all the views again costs ${formatCredits(displayPrice(offer.priceCredits))} credits.`,
-    });
+    throw refusal;
   }
 
   /* ---- the sheets: the Sign's own road, not the plate's ---- */

@@ -147,7 +147,7 @@
     {
       "id": "domain:unassigned",
       "name": "unassigned",
-      "moduleCount": 66
+      "moduleCount": 67
     },
     {
       "id": "domain:wardrobe",
@@ -5505,6 +5505,12 @@
     {
       "id": "module:server/lib/canvasCastDoor.ts",
       "path": "server/lib/canvasCastDoor.ts",
+      "domain": "unassigned",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/lib/chargeRefusal.ts",
+      "path": "server/lib/chargeRefusal.ts",
       "domain": "unassigned",
       "lifecycle": "active"
     },
@@ -15667,6 +15673,10 @@
       "path": "server/lib/boardOps.test.ts"
     },
     {
+      "id": "test:server/lib/chargeRefusal.test.ts",
+      "path": "server/lib/chargeRefusal.test.ts"
+    },
+    {
       "id": "test:server/lib/publicError.test.ts",
       "path": "server/lib/publicError.test.ts"
     },
@@ -24731,6 +24741,11 @@
     },
     {
       "from": "module:server/casting/atomicCredits.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/atomicCredits.ts",
       "to": "module:server/lib/publicError.ts",
       "kind": "imports"
     },
@@ -25472,6 +25487,11 @@
     {
       "from": "module:server/casting/evidence/evidencePackageExecution.ts",
       "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/evidence/evidencePackageExecution.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -26896,6 +26916,11 @@
     },
     {
       "from": "module:server/casting/mintPackage.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/mintPackage.ts",
       "to": "module:server/lib/publicError.ts",
       "kind": "imports"
     },
@@ -27192,6 +27217,11 @@
     {
       "from": "module:server/casting/refreshSlots.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/refreshSlots.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -30191,6 +30221,11 @@
     },
     {
       "from": "module:server/castingV2/packageRedoService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/packageRedoService.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -31726,6 +31761,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -32146,6 +32186,11 @@
     },
     {
       "from": "module:server/castingV2/retryService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/retryService.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
@@ -32407,6 +32452,11 @@
     {
       "from": "module:server/castingV2/rollService.ts",
       "to": "module:server/db/generations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/rollService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -32747,6 +32797,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/db/storageCleanup.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -33127,6 +33182,11 @@
     {
       "from": "module:server/castingV2/viewRetryService.ts",
       "to": "module:server/db/generationOperations.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/viewRetryService.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -35351,6 +35411,11 @@
     },
     {
       "from": "module:server/lib/boardOps.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/boardOps.ts",
       "to": "module:server/lib/publicError.ts",
       "kind": "imports"
     },
@@ -35407,6 +35472,16 @@
     {
       "from": "module:server/lib/canvasCastDoor.ts",
       "to": "module:shared/canvasCastDoor.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/chargeRefusal.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/lib/chargeRefusal.ts",
+      "to": "module:server/db/credits.ts",
       "kind": "imports"
     },
     {
@@ -37507,6 +37582,11 @@
     {
       "from": "module:server/routes/generation/castingImaging.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/generation/castingImaging.ts",
+      "to": "module:server/lib/chargeRefusal.ts",
       "kind": "imports"
     },
     {
@@ -41256,10 +41336,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/packageRedoService.ts:212",
+      "id": "finding:redeclared-shape:server/castingV2/packageRedoService.ts:213",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/packageRedoService.ts:212",
+      "subject": "server/castingV2/packageRedoService.ts:213",
       "message": "Names 3 of ViewRetryInput's 4 fields (server/castingV2/viewRetryService.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -41284,17 +41364,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:754",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:755",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:754",
+      "subject": "server/castingV2/refineService.ts:755",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:930",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:931",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:930",
+      "subject": "server/castingV2/refineService.ts:931",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -41319,24 +41399,24 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1485",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1486",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1485",
+      "subject": "server/castingV2/rollService.ts:1486",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:274",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:275",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:274",
+      "subject": "server/castingV2/rollService.ts:275",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:320",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:321",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:320",
+      "subject": "server/castingV2/rollService.ts:321",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     }
   ]

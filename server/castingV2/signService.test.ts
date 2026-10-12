@@ -235,7 +235,7 @@ vi.mock("../db/castingV2Sign", () => ({
 vi.mock("../db/credits", () => ({
   deductCredits: vi.fn(async (_userId: number, amount: number, _type: string, _label: string, reference: string) => {
     journal.push("deduct");
-    if (!chargeSucceeds) return { success: false, error: "Not enough credits" };
+    if (!chargeSucceeds) return { success: false, error: "Insufficient credits", insufficient: true as const };
     ledger.charges.push({ amount, reference });
     return { success: true };
   }),
@@ -564,7 +564,10 @@ describe("Sign's money", () => {
     chargeSucceeds = false;
     await expect(
       signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input),
-    ).rejects.toThrow(/Not enough credits/);
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringMatching(/^Not enough credits\. Signing a Cast costs [\d,.]+ credits\.$/),
+    });
 
     expect(ledger.charges).toHaveLength(0);
     expect(ledger.refunds).toHaveLength(0);

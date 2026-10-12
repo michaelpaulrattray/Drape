@@ -122,6 +122,7 @@ import {
   settleCancelledSlices,
   type RollRecoveryOutcome,
 } from "./rollRecovery";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/rollService");
 
@@ -1001,10 +1002,10 @@ export async function createRoll(
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId: gate.operationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: chargeResult.error || `Not enough credits. A roll costs ${formatCredits(displayPrice(price))} credits.`,
-      }),
+      error: chargeRefusal(
+        chargeResult,
+        `Not enough credits. A roll costs ${formatCredits(displayPrice(price))} credits.`,
+      ),
       chargedCredits: 0,
       refundedCredits: 0,
     });

@@ -89,6 +89,7 @@ import type {
 } from "../../drizzle/schema";
 import { createModuleLogger } from "../logging/logger";
 import { storageDelete } from "../storage";
+import { chargeRefusal } from "./chargeRefusal";
 
 const log = createModuleLogger("lib/boardOps");
 
@@ -413,10 +414,7 @@ export async function executeRunGeneration(input: RunGenerationInput) {
     { toolKind: "image" },
   );
   if (!deduct.success) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.`,
-    });
+    throw chargeRefusal(deduct, `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.`);
   }
   input.onCharged(cost);
 
@@ -1110,7 +1108,7 @@ export async function executeApplyModelEdit(input: ApplyModelEditInput) {
       { toolKind: "image" },
     );
     if (!deduct.success) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.` });
+      throw chargeRefusal(deduct, `Insufficient credits. Need ${formatCredits(displayPrice(cost))} credits.`);
     }
     input.onCharged(cost);
 
@@ -1437,7 +1435,7 @@ export async function executeRunVariations(input: {
     { toolKind: "image" },
   );
   if (!deduct.success) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: deduct.error || `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.` });
+    throw chargeRefusal(deduct, `Insufficient credits. Need ${formatCredits(displayPrice(totalCost))} credits.`);
   }
   input.onCharged(totalCost);
   const positions = variationPositions(item, count);

@@ -34,6 +34,7 @@ import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createModuleLogger } from "../logging/logger";
+import { chargeRefusal } from "../lib/chargeRefusal";
 const log = createModuleLogger("casting/atomicCredits");
 
 interface AtomicCreditOptions {
@@ -192,10 +193,7 @@ export async function withAtomicCredits<T>(
   );
 
   if (!deductResult.success) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: deductResult.error || `Insufficient credits. Need ${formatCredits(displayPrice(amount))} credits.`,
-    });
+    throw chargeRefusal(deductResult, `Insufficient credits. Need ${formatCredits(displayPrice(amount))} credits.`);
   }
   onCharged?.(amount, chargeReferenceId);
 

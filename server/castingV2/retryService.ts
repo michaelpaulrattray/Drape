@@ -89,6 +89,7 @@ import { displayPrice, displayRefund, formatCredits } from "../../shared/creditD
 import { creditsReturnedText } from "../../shared/refundCopy";
 import type { StatedInk } from "./castingIntent";
 import type { CreativeEngine } from "../providers/types";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/retryService");
 
@@ -395,10 +396,10 @@ export async function retryCandidate(
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: charge.error || `Not enough credits. Retrying a tile costs ${formatCredits(displayPrice(price))} credits.`,
-      }),
+      error: chargeRefusal(
+        charge,
+        `Not enough credits. Retrying a tile costs ${formatCredits(displayPrice(price))} credits.`,
+      ),
       chargedCredits: 0,
       refundedCredits: 0,
     });

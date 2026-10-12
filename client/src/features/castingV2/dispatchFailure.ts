@@ -46,6 +46,14 @@ export function classifyDispatchFailure(error: unknown): ClassifiedFailure {
   /*
     FORBIDDEN covers a frozen account; PRECONDITION_FAILED covers the flag and
     insufficient credits. Both are about the account rather than the sentence.
+
+    ⚠ UNTIL #2387 A SHORT BALANCE NEVER REACHED THIS BRANCH. Every paid road
+    threw `BAD_REQUEST` with the ledger's bare "Insufficient credits", so a
+    customer short of credits read "That brief can't be cast" with an "Edit
+    the brief" button above it. The server now refuses a short balance with
+    `PRECONDITION_FAILED` and its own sentence with the price
+    (`server/lib/chargeRefusal.ts`), which lands here and offers "Back to
+    casting" instead.
   */
   if (code === "FORBIDDEN" || code === "PRECONDITION_FAILED") {
     return { kind: "credits", message: serverMessage || "This account cannot cast right now." };

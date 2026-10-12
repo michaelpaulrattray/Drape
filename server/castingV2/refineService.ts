@@ -337,6 +337,7 @@ import {
 } from "./presentationState";
 import { castingIdentityEngine } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
+import { chargeRefusal } from "../lib/chargeRefusal";
 
 const log = createModuleLogger("castingV2/refineService");
 
@@ -6055,10 +6056,10 @@ async function refineCandidateCounted(
     return completeDirectOperationFailure({
       userId: input.userId,
       operationId,
-      error: new TRPCError({
-        code: "BAD_REQUEST",
-        message: charge.error || `Not enough credits. A refinement costs ${formatCredits(displayPrice(price))} credits.`,
-      }),
+      error: chargeRefusal(
+        charge,
+        `Not enough credits. A refinement costs ${formatCredits(displayPrice(price))} credits.`,
+      ),
       chargedCredits: 0,
       refundedCredits: 0,
     });

@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2664"
+          "server/castingV2/refineService.ts:2665"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1316"
+          "server/castingV2/refineService.ts:1317"
         ]
       },
       {
@@ -65,7 +65,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4968",
+          "server/castingV2/refineService.ts:4969",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -77,7 +77,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1298"
+          "server/castingV2/refineService.ts:1299"
         ]
       },
       {
@@ -189,7 +189,7 @@
           "server/castingV2/refineDelta.ts:596",
           "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineDelta.ts:1586",
-          "server/castingV2/refineService.ts:2529"
+          "server/castingV2/refineService.ts:2530"
         ]
       },
       {
@@ -220,8 +220,8 @@
           "server/castingV2/refineDelta.ts:569",
           "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineDelta.ts:1563",
-          "server/castingV2/refineService.ts:2528",
-          "server/castingV2/refineService.ts:2534"
+          "server/castingV2/refineService.ts:2529",
+          "server/castingV2/refineService.ts:2535"
         ]
       },
       {
@@ -245,7 +245,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3030"
+          "server/castingV2/refineService.ts:3031"
         ]
       },
       {
@@ -255,7 +255,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3733"
+          "server/castingV2/refineService.ts:3734"
         ]
       },
       {
@@ -299,7 +299,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2764"
+          "server/castingV2/refineService.ts:2765"
         ]
       },
       {
@@ -309,7 +309,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1305"
+          "server/castingV2/refineService.ts:1306"
         ]
       },
       {
@@ -408,7 +408,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4427"
+          "server/castingV2/refineService.ts:4428"
         ]
       },
       {
@@ -431,7 +431,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3501"
+          "server/castingV2/refineService.ts:3502"
         ]
       },
       {
@@ -441,7 +441,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3482"
+          "server/castingV2/refineService.ts:3483"
         ]
       },
       {
@@ -451,7 +451,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3577"
+          "server/castingV2/refineService.ts:3578"
         ]
       },
       {
@@ -461,8 +461,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3259",
-          "server/castingV2/refineService.ts:3276"
+          "server/castingV2/refineService.ts:3260",
+          "server/castingV2/refineService.ts:3277"
         ]
       },
       {
@@ -472,7 +472,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4397"
+          "server/castingV2/refineService.ts:4398"
         ]
       },
       {
@@ -482,7 +482,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3073"
+          "server/castingV2/refineService.ts:3074"
         ]
       },
       {
@@ -548,7 +548,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4947"
+          "server/castingV2/refineService.ts:4948"
         ]
       },
       {
@@ -558,8 +558,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1386",
-          "server/castingV2/refineService.ts:1424"
+          "server/castingV2/refineService.ts:1387",
+          "server/castingV2/refineService.ts:1425"
         ]
       },
       {
@@ -569,7 +569,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:427"
+          "server/castingV2/rollService.ts:428"
         ]
       },
       {
@@ -579,7 +579,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:421"
+          "server/castingV2/rollService.ts:422"
         ]
       },
       {
@@ -589,7 +589,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:415"
+          "server/castingV2/rollService.ts:416"
         ]
       },
       {
@@ -611,7 +611,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2710"
+          "server/castingV2/refineService.ts:2711"
         ]
       },
       {
@@ -744,8 +744,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1292",
-          "server/castingV2/refineService.ts:2636"
+          "server/castingV2/refineService.ts:1293",
+          "server/castingV2/refineService.ts:2637"
         ]
       },
       {
