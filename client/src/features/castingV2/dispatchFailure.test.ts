@@ -44,7 +44,8 @@ describe("only say what we actually know", () => {
     expect(refused.message).toBe("That brief can't be cast.");
   });
 
-  it("reads a reader outage as the studio's, never as the brief's (#2386)", () => {
+  // Card 2386: an outage arrived as BAD_REQUEST and read as the brief's fault.
+  it("reads a reader outage as the studio's, never as the brief's", () => {
     const outage = classifyDispatchFailure(
       trpcError("SERVICE_UNAVAILABLE", "The studio couldn't read your brief just now. Try again in a moment."),
     );
