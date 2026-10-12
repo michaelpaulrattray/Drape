@@ -10238,9 +10238,9 @@
     {
       "id": "atlas-client-callers-shape-blind-2349",
       "severity": "warning",
-      "state": "open",
-      "title": "Our own map of the product can say a screen that IS being used has no users — and that is the reading we delete on (#2349)",
-      "detail": "Before the crew deletes anything, it asks one map whether anything still uses it. That map reads one of the two ways our screens call the server, and not the other.\n\nMeasured tonight, both ways, over the whole app: the first way reads correctly — 254 of 254. The second way reads 0 of 7. And five things come out as \"nothing uses this\" when something does, including a customer downloading a copy of their own data and three of the staff export buttons.\n\nNothing is broken for a customer today and nothing has been wrongly deleted. The risk is the next deletion: \"no one uses this\" is exactly the answer that makes it safe to remove, and on those five it is wrong.\n\nIt was found because tonight's own job appeared in that map missing one of its four callers. The repair is on #2349: teach the map the second way, and have a second reader check it that does not share the first one's blind spot."
+      "state": "resolved",
+      "title": "Fixed — our own map of the product could say a screen that IS being used has no users, and that is the reading we delete on (#2349)",
+      "detail": "Fixed and live, within the hour it was found.\n\nBefore the crew deletes anything, it asks one map whether anything still uses it. That map read one of the two ways our screens call the server, and not the other — so five things came out as \"nothing uses this\" while something did, including a customer downloading a copy of their own data and three of the staff export buttons.\n\nMeasured both ways with a control: the first way read correctly, 254 of 254; the second read 0 of 6. Read back after the repair, all five now name their screen, and the job that found it names all four of its own.\n\nNothing was ever wrongly deleted and no customer was affected. The risk was the next deletion: \"no one uses this\" is exactly the answer that makes removing something safe, and on those five it was wrong. A fourth way of calling the server now makes the check fail rather than go quiet.\n\nIt was found because that night's own job appeared in the map missing one of its four callers."
     }
   ],
   "acknowledgedReplyIds": [
