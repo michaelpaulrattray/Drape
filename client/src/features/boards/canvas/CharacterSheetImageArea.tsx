@@ -57,6 +57,16 @@ export interface CharacterSheetImageAreaProps {
   onTileDoubleClick: (angle: CanonicalViewAngle, url: string) => void;
   /** Ghost click — opens the takeover with upgrade intent (D-39c/D-51). */
   onGhostClick: () => void;
+  /**
+   * #2408 — set while adding a view cannot happen (the rebuild door is shut,
+   * `shared/rebuildDoor.ts`). The ghost then stops inviting: no `+`, no hover
+   * lift, no click, and this sentence as its tooltip. The slot's name stays,
+   * so the mosaic still says which view is missing. `aria-disabled` rather
+   * than `disabled`, because a disabled button swallows the pointer and the
+   * card must stay selectable and draggable by its face (the ghost's own note
+   * below).
+   */
+  ghostClosedNote?: string;
 }
 
 export function CharacterSheetImageArea({
@@ -65,6 +75,7 @@ export function CharacterSheetImageArea({
   onTileContextMenu,
   onTileDoubleClick,
   onGhostClick,
+  ghostClosedNote,
 }: CharacterSheetImageAreaProps) {
   const { zoom } = useCanvasZoom();
   const dotScale = screenLegibleScale(zoom);
@@ -92,7 +103,9 @@ export function CharacterSheetImageArea({
               key={tile.angle}
               type="button"
               style={{ gridArea: area }}
-              onClick={tile.failed ? undefined : onGhostClick}
+              onClick={tile.failed || ghostClosedNote ? undefined : onGhostClick}
+              aria-disabled={ghostClosedNote && !tile.failed ? true : undefined}
+              title={ghostClosedNote && !tile.failed ? ghostClosedNote : undefined}
               onContextMenu={
                 tile.failed
                   ? (event) => {
@@ -104,12 +117,16 @@ export function CharacterSheetImageArea({
               }
               className={cn(
                 "relative bg-canvas-surface-inset flex flex-col items-center justify-center gap-0.5",
-                "text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors group",
+                ghostClosedNote
+                  ? "text-canvas-ink-faint cursor-default"
+                  : "text-canvas-ink-faint hover:text-canvas-ink-soft transition-colors group",
               )}
             >
-              {/* Ghost affordance (D-39c): dashed inset, + glyph, slot name */}
+              {/* Ghost affordance (D-39c): dashed inset, + glyph, slot name.
+                  #2408: while the door is shut the `+` goes — it promised an
+                  add the canvas cannot make right now. */}
               <span className="absolute inset-1 border border-dashed border-canvas-border group-hover:border-canvas-border-strong rounded-canvas-sm pointer-events-none" />
-              <Plus className="w-3 h-3" strokeWidth={1.4} />
+              {ghostClosedNote ? null : <Plus className="w-3 h-3" strokeWidth={1.4} />}
               <span className="text-[9px] leading-tight">{tile.label}</span>
               {tile.failed && (
                 <span
