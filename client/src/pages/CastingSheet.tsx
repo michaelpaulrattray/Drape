@@ -178,6 +178,19 @@ export const SIGN_UNCONFIRMED_SENTENCE =
 /** How many times the page re-reads the candidate before giving the honest no. */
 export const SIGN_RECHECK_ATTEMPTS = 3;
 
+/**
+ * How long one re-read may take before it counts as "not seen" (#2426).
+ *
+ * A gateway that holds the connection open, rather than failing it, would
+ * otherwise keep the Sign dialog on *Signing…* — with no Cancel — for as long
+ * as the browser waits. Two poll intervals: a healthy `getRoll` answers well
+ * inside one, so a read that has not answered in two is not going to help the
+ * customer by being waited on. With the waits between reads, the whole re-check
+ * ends in at most `SIGN_RECHECK_ATTEMPTS * SIGN_RECHECK_READ_TIMEOUT_MS +
+ * (SIGN_RECHECK_ATTEMPTS - 1) * POLL_MS` — twenty seconds.
+ */
+export const SIGN_RECHECK_READ_TIMEOUT_MS = 2 * POLL_MS;
+
 /** The candidate as a re-read sees it — the two fields this question needs. */
 export type SignRecheckCandidate = { candidateId: string; status: string; castId: string | null };
 
@@ -192,7 +205,8 @@ export type SignFailureOutcome =
  * `readCandidates` re-reads the candidate's roll; it is asked up to
  * `SIGN_RECHECK_ATTEMPTS` times, `waitMs` apart, because a reply lost to a
  * gateway can leave the server still finishing the Sign it already charged
- * for. A read that throws counts as "not seen", never as "not signed".
+ * for. A read that throws — or does not answer within `readTimeoutMs` —
+ * counts as "not seen", never as "not signed".
  */
 export async function signFailureOutcome(
   error: unknown,
@@ -200,6 +214,7 @@ export async function signFailureOutcome(
     candidateId: string;
     readCandidates: (() => Promise<readonly SignRecheckCandidate[]>) | null;
     waitMs?: number;
+    readTimeoutMs?: number;
     sleep?: (ms: number) => Promise<void>;
   },
 ): Promise<SignFailureOutcome> {
@@ -209,16 +224,26 @@ export async function signFailureOutcome(
   const read = input.readCandidates;
   const sleep = input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const waitMs = input.waitMs ?? POLL_MS;
+  const readTimeoutMs = input.readTimeoutMs ?? SIGN_RECHECK_READ_TIMEOUT_MS;
   if (read) {
     for (let attempt = 0; attempt < SIGN_RECHECK_ATTEMPTS; attempt += 1) {
       if (attempt > 0) await sleep(waitMs);
+      let timer: ReturnType<typeof setTimeout> | undefined;
       try {
-        const candidate = (await read()).find((entry) => entry.candidateId === input.candidateId);
+        const answered = await Promise.race([
+          read(),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error("re-read timed out")), readTimeoutMs);
+          }),
+        ]);
+        const candidate = answered.find((entry) => entry.candidateId === input.candidateId);
         if (candidate?.status === "signed" && candidate.castId) {
           return { kind: "landed", castPublicId: candidate.castId };
         }
       } catch {
         // Not seen is not "not signed": keep asking, then say we couldn't confirm.
+      } finally {
+        clearTimeout(timer);
       }
     }
   }
