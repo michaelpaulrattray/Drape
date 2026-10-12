@@ -1142,10 +1142,32 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        N2c → N3, so the rung he had just named had no key here at all** — and
        `focusRungFromLadder` can only ever answer with a key the ladder holds,
        so a flip that moved only the `state` would have left this pin reading
-       `N3`. **This pin moves only on his word. The next flip is N2d → whatever
-       he names, on N2d's completion card and his word — never on N2d merely
-       finishing.** */
-    expect(focusRungFromLadder(ladder)).toBe("N2d");
+       `N3`.
+
+       ⚠ **MOVED N2d → BH (the bug hunt) ON 2026-10-12, AND IT IS THE FIRST
+       FLIP HE DID NOT GIVE A RUNG ID FOR.** His word, in his terminal at
+       09:09Z, verbatim and entire: *"2314 just park it or defer it for now it
+       could be ages before i get a reply. 2360 go with your reccomendation 2115
+       we can do the bug hunt now."* — recorded on #2359 and #2115 within the
+       minute, and given after all SIX of #2359's test-drive steps came back
+       `matched` (#281–#286, 09:05Z). He named the WORK, so the key is this
+       team's bookkeeping and the row's title is his sentence; `BH` goes between
+       N2d and N3 because *"before we start n3"* is his own rule for where the
+       hunt sits. The rulebook's `CURRENT FOCUS` line, this briefing's ladder,
+       this pin and `seatFocusTwoTruths.test.ts`'s pin and sabotage anchor all
+       moved in ONE commit. ⚠ **AND THE THREE AND A HALF HOURS BEFORE THAT
+       COMMIT ARE WHAT THIS PIN IS FOR:** his word sat on two cards while the
+       ladder still read `N2d` and his page's focus block still asked him to
+       name a rung, and 33 commits of hunt fixes merged in the gap. ⚠ **One
+       thing a later flip must NOT copy from this one: no `rung:BH` label goes
+       on the hunt's FIX cards.** They are `bug` cards, `rungHoldFor` holds every
+       rung-labelled card that is not the focus rung, and labelling them would
+       hold the lot the moment the focus moves off `BH` — so the label sits on
+       the parent #2115 alone and the fixes stay rungless and takeable. **This
+       pin moves only on his word. The next flip is BH → whatever he names, on
+       the hunt's completion card and his word — never on the fix list merely
+       emptying.** */
+    expect(focusRungFromLadder(ladder)).toBe("BH");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {

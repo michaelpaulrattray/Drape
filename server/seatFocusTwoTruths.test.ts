@@ -249,14 +249,34 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        done and N2D answered on the card on my desk"*). Both files, both pins
        and the sabotage anchor below moved in ONE commit. ⚠ **This flip also
        had to INSERT the rung on the ladder** — it ran N2c → N3, so there was no
-       `N2d` key for this pin to agree with until the edition added one. **The
-       next flip is N2d → whatever he names, on N2d's completion card and his
-       word, never on N2d merely finishing.** */
+       `N2d` key for this pin to agree with until the edition added one.
+
+       ⚠ **N2d → BH (the bug hunt) on 2026-10-12, his terminal at 09:09Z,
+       verbatim and entire: *"2314 just park it or defer it for now it could be
+       ages before i get a reply. 2360 go with your reccomendation 2115 we can
+       do the bug hunt now."*** — recorded on #2359 and on #2115 within the
+       minute, and given after all SIX of #2359's test-drive steps came back
+       `matched` (#281–#286, 09:05Z). **AND THIS IS THE FLIP THIS SUITE WAS
+       WRITTEN FOR, WHICH IS ALSO THE LIMIT IT ALREADY STATES: his word reached
+       two CARDS and reached neither file, so for three and a half hours the
+       rulebook declared `N2d` current, his page's focus block read
+       `state: "none"` and asked him for *"the one word on what comes next"*
+       which he had already given, and 33 first-parent commits of bug-hunt fixes
+       merged underneath it — and this arm was GREEN the whole time, because the
+       two artifacts agreed on `N2d`.** Agreeing on a stale rung is not a
+       disagreement, and no reader here can know his word landed on a card; what
+       this arm buys is that the flip, once written, cannot be written by halves.
+       ⚠ **This flip also had to INVENT the key**: he named the hunt, not a rung
+       id, and `focusRungFromLadder` can only answer with a key the ladder holds,
+       so `BH` is inserted between N2d and N3 — where his own rule puts the hunt
+       (*"before we start n3"*). **The next flip is BH → whatever he names, on
+       the hunt's completion card and his word, never on the fix list merely
+       emptying.** */
     const declared = focusRungFromRulebook(read(RULEBOOK));
-    expect(declared).toMatchObject({ kind: "rung", rung: "N2d" });
+    expect(declared).toMatchObject({ kind: "rung", rung: "BH" });
   });
 
-  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N2d", () => {
+  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds BH", () => {
     /*
       #1840's exact state, driven: the briefing left behind while his word has
       reached the rulebook. The card asks for this one by name.
@@ -272,7 +292,8 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
 
        ⚠ **AND THE ANCHOR MUST NAME THE RUNG THAT IS CURRENT, which is why it
        moved from `P2` to `N2b` on 2026-10-08, from `N2b` to `N2c` on
-       2026-10-11, and from `N2c` to `N2d` on 2026-10-12.** Doctoring a rung
+       2026-10-11, from `N2c` to `N2d` on 2026-10-12 and from `N2d` to `BH`
+       later the same day.** Doctoring a rung
        that is `done` leaves the ladder's one `current` rung untouched, the two
        artifacts still AGREE, and this control passes while proving nothing —
        the inert-sabotage shape the comment above is already about, one rung
@@ -286,15 +307,18 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        that catches it is `verdict.ok` below** — the two artifacts would still
        agree on `N2d`, so a false verdict never arrives and this test goes red
        naming the repair. That is the assertion earning its place, and it is why
-       the anchor is checked at every flip rather than at every rename. */
-    const stale = real.replace('"key": "N2d",', '"key": "N2dx",');
+       the anchor is checked at every flip rather than at every rename. ⚠ **And
+       the 2026-10-12 BH flip is the second worked example of exactly that**: a
+       `done` N2d keeps its `"key": "N2d",` line, so the anchor one flip old
+       still matched here too. */
+    const stale = real.replace('"key": "BH",', '"key": "BHx",');
     expect(stale, "the doctored copy must differ, or this control proves nothing").not.toBe(real);
-    /* N2c is `done` and N2d is now `N2dx`, so the ladder's one `current` rung
-       is `N2dx` — a rung the rulebook does not declare. */
+    /* N2d is `done` and BH is now `BHx`, so the ladder's one `current` rung
+       is `BHx` — a rung the rulebook does not declare. */
     const verdict = agree(rulebook, stale);
     expect(verdict.ok, "a disagreeing pair MUST fail, or the arm above is decoration").toBe(false);
     expect(verdict.why).toContain("TWO SOURCES OF TRUTH");
-    expect(verdict.why).toContain("N2dx");
+    expect(verdict.why).toContain("BHx");
   });
 
   it("⚠ PROVEN ABLE TO FAIL — a ladder with NO current rung, which is #1541's shape", () => {

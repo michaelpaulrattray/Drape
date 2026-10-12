@@ -1,36 +1,36 @@
 {
-  "edition": 688,
-  "updatedAt": "2026-10-12T09:10:00.000Z",
-  "shift": "Foreman — foreman-20261012-1843 (focus: #2315 step 3 — the Gemini key is no longer required to boot, so it can be deleted; and N2d is live for your account, so your test drive can start)",
+  "edition": 689,
+  "updatedAt": "2026-10-12T13:10:00.000Z",
+  "shift": "Foreman — foreman-20261012-2240 (focus: #2115 — your word this morning opened the bug hunt, and it had reached neither the rulebook nor this page)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "N2d is built and the focus is clear. Every character you sign now has a signed, independently timestamped record behind its Klieg ID, a certificate you can download, and an optional page anyone can use to check the ID is genuine. It is switched ON for your account now — your own \"1) yes\" from this morning — so your test drive can start tonight. Your test drive and the one word on what comes next are on card #2359. Nothing new starts until you name it.",
-      "quote": null,
-      "quotedAt": null
+      "state": "confirmed",
+      "title": "The bug hunt is the focus, on your own word this morning. Agents read through every screen a customer touches, every real defect they find becomes a card, and all of those cards get fixed before N3 starts. It is already well along: 40 were found today and 39 of them are fixed, merged and live. Nothing new is being built while it runs, and nothing here needs an answer from you.",
+      "quote": "2314 just park it or defer it for now it could be ages before i get a reply. 2360 go with your reccomendation 2115 we can do the bug hunt now.",
+      "quotedAt": "2026-10-12T09:09:05.000Z"
     },
     "milestone": {
-      "title": "N2d — the ID on your master picture stops being just a label. It becomes a record of when a cast was made and by whom, signed by us and timestamped by somebody independent, with a certificate you can download and an optional page anyone can check. Nothing here changes how a cast is made, and nothing about it costs a credit.",
+      "title": "The bug hunt — every defect a customer could hit, found and fixed before N3. Nothing new gets built while it runs: this rung is about what already exists stopping being wrong.",
       "steps": [
         {
-          "title": "The design first: what gets signed, what the certificate shows, and what it must never show — done, the design is in the tree and the cards are cut (#2134 stays open behind them)",
-          "state": "done"
+          "title": "The hunting itself — agents read through every screen a customer touches and file every real defect as a card. This one is the relay's to run, not the crew's (#2115)",
+          "state": "in-progress"
         },
         {
-          "title": "The signed, timestamped record behind every ID (#2311)",
-          "state": "done"
+          "title": "Fixing what they found — 40 cards filed today, 39 of them already fixed, merged and live",
+          "state": "in-progress"
         },
         {
-          "title": "Your downloadable Certificate of Creation (#2312)",
-          "state": "done"
+          "title": "The last one still in flight: the sign-up form tells a stranger whether an email already has an account (#2443)",
+          "state": "in-progress"
         },
         {
-          "title": "A page anyone can check — off unless you turn it on, for one cast at a time (#2313)",
-          "state": "done"
+          "title": "Four we are deliberately not fixing now — three wait for the sign-in, landing and canvas redesigns you have already ordered, and one we decided against (#1921, #1922, #1707, #1736)",
+          "state": "waiting"
         },
         {
-          "title": "The three wording changes to the terms — your hand and a lawyer's, and nothing about training or ownership is published anywhere until counsel signs (#2314)",
+          "title": "Your completion card, with what is worth your hands and eyes — filed the day the fix list is clear and the hunting is called done",
           "state": "waiting"
         }
       ]
@@ -69,6 +69,11 @@
       {
         "key": "N2d",
         "title": "The Klieg ID becomes a record of creation — signed, timestamped, with a certificate you can download",
+        "state": "done"
+      },
+      {
+        "key": "BH",
+        "title": "The bug hunt — every defect a customer could hit, found and fixed before N3. Your own order: it runs once all of N2 is finished and before N3 starts",
         "state": "current"
       },
       {
@@ -135,14 +140,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T07:53:30.704Z",
+      "readAt": "2026-10-12T12:54:50.774Z",
       "items": [
-        {
-          "issueNumber": 2359,
-          "title": "Evidence of creation is built — N2d's completion card and your test-drive list (your Klieg IDs can now be checked, and one word needed on what comes next)",
-          "kind": "rung",
-          "rung": "N2d"
-        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -3792,7 +3791,7 @@
     {
       "id": "n2d-complete-2359",
       "title": "Evidence of creation is built — your test drive, and one word on what comes next",
-      "productImpact": "Every character you sign now has a real record behind its Klieg ID, and you can prove it.\n\nThree things. First, a record made for you at Sign — who made the character, when, a fingerprint of its master picture, and the steps it went through. You do nothing, and characters you signed before tonight get theirs the first time anything asks. Second, a Download certificate button at the bottom of a signed character's page: a three-page PDF, page one the certificate itself, pages two and three an appendix for anyone who ever wants to check it independently without asking us. Third, a public page anyone can use to check an ID — off unless you turn it on, one character at a time.\n\nThe switch is the only decision in the whole rung, and pressing it does not publish anything: it shows you exactly what a stranger would see first, with Cancel and Turn on underneath. Turn it off and the page is gone the same second — and an ID that is private, unknown or deleted all give a stranger the same answer, so nobody can use the page to find out an ID exists.\n\nEverywhere, the words are \"evidence of creation\" and never \"proof of ownership\". That is the honest line and it was settled before any of it was built.\n\nOne thing to know before you look: this is OFF on production right now. The relay has the change open that turns it on for your account only — your \"1) yes\" this morning — and until that lands you will not see any of these buttons. Nothing here costs a credit.",
+      "productImpact": "Every character you sign now has a real record behind its Klieg ID, and you can prove it.\n\nThree things. First, a record made for you at Sign — who made the character, when, a fingerprint of its master picture, and the steps it went through. You do nothing, and characters you signed before tonight get theirs the first time anything asks. Second, a Download certificate button at the bottom of a signed character's page: a three-page PDF, page one the certificate itself, pages two and three an appendix for anyone who ever wants to check it independently without asking us. Third, a public page anyone can use to check an ID — off unless you turn it on, one character at a time.\n\nThe switch is the only decision in the whole rung, and pressing it does not publish anything: it shows you exactly what a stranger would see first, with Cancel and Turn on underneath. Turn it off and the page is gone the same second — and an ID that is private, unknown or deleted all give a stranger the same answer, so nobody can use the page to find out an ID exists.\n\nEverywhere, the words are \"evidence of creation\" and never \"proof of ownership\". That is the honest line and it was settled before any of it was built.\n\nYou have driven this. It is switched on for your account, all six steps came back matched, and you signed the certificate off in your own words — \"i checked the certifcate and everything looks good.\" Nothing here costs a credit.",
       "workedExample": "I drove all three surfaces tonight in the running app, in both light and dark, rather than writing this from the cards — your last two completion cards went stale that way.\n\nOn a signed character: the certificate button appeared only after the server confirmed there was a certificate to give; the PDF came back named after the character; page one carried the picture, the ID, the maker, the dates, the fingerprint and three plain sentences about how the character was made. Nothing creative was anywhere in it — no brief, no prompt, no settings — and that is enforced in the code, not promised.\n\nThe toggle previewed the page instead of publishing it. With it on, I opened the link with no account and no cookie at all and got the ID, the display name, two dates and the fingerprint — no picture, no brief, not even the character's name. With it off, the same link said \"No public record for this ID\".\n\nSix steps for you are on the card. One small thing I found while looking is filed separately as #2360: a character's page can show two different \"Created\" dates at once, a day apart, because the header reads the roll's date and the certificate reads the character's. It is not folded into this rung.",
       "options": [
         {
@@ -3812,7 +3811,7 @@
         }
       ],
       "recommendation": "The bug hunt (#2115) — and really this is you reminding yourself, not the crew choosing. You ruled that it runs once all of N2 is finished and before N3 begins, and that is now true. If you would rather keep building, N4b is the next feature on your own ladder. Until you name one, the crew does maintenance only and never picks the next feature itself.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-12T07:55:00.000Z",
       "issueNumber": 2359
     }
@@ -7041,7 +7040,7 @@
       "id": "n2d-three-surfaces-2359",
       "title": "This is what evidence of creation looks like — before you switch it on",
       "question": "NOTHING IS BROKEN HERE AND NOTHING IS BEING ASKED YET. These are the three N2d screens, driven tonight in the running app, so you can see what you are about to switch on before you drive it.\n\nThey are on a development character (\"Hallvard\", made by a test account), because production has this switched off until the relay turns it on for your account. The screens, the record and the certificate are the real ones — nothing here is a mock-up or a stand-in.\n\nFRAME 1 — the owner's toggle, pressed. This is the whole decision the rung puts in front of a customer, and pressing the switch did NOT publish anything: it showed the page first, with Cancel and Turn on underneath. Worth your eye: the sentence under the switch states the whole consequence, including that your display name is shown.\n\nFRAME 2 — the certificate row, dark theme, at the bottom of a signed character's page. One line and one button. You will have to scroll past the character sheet to reach it.\n\nFRAME 3 — the public page as a complete stranger sees it, with no account and no cookie. The ID, the maker, two dates, the fingerprint, and the footer saying what it is not. No picture, no brief, no character name.\n\nOne thing frame 1 shows that is filed separately as #2360: the header says \"Created on 4 October\" and the record says \"Created 3 October 2026\". Two different dates on one screen — the header reads when the roll happened, the record reads when the character was made. A small fix, not part of this rung.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-12T07:55:00.000Z",
       "issueNumber": 2359,
       "cardId": "n2d-complete-2359",
@@ -10582,10 +10581,16 @@
     277,
     278,
     279,
-    280
+    280,
+    281,
+    282,
+    283,
+    284,
+    285,
+    286
   ],
   "nextUp": {
-    "readAt": "2026-10-12T07:53:30.704Z",
+    "readAt": "2026-10-12T12:54:50.773Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10636,20 +10641,7 @@
       {
         "issueNumber": 2115,
         "title": "Bug hunt across the product — after all of N2 closes, before N3 starts (his word, 2026-10-09)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "N2d (#2134) — the one N2 rung still open. N2b and N2c both closed on 2026-10-11; this is not waiting on you and nothing here needs an answer."
-        }
-      },
-      {
-        "issueNumber": 2134,
-        "title": "N2d: the Klieg ID becomes a record of creation — signed, timestamped, with a downloadable certificate (his word 2026-10-09)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — the test drive and the next rung are on the completion card #2359. #2314 (your hand and counsel) is the only other remainder."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2140,
