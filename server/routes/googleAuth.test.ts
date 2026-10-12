@@ -269,6 +269,10 @@ const GOOGLE_SUB = "1234567890";
 function aGooglePayload(overrides: Record<string, unknown> = {}) {
   return {
     email: "person@example.com",
+    /* Google's own word that it confirmed the address (#2377). Every arm that
+       expects to get past the callback relies on it; the arms that take it away
+       are in the email_verified describe below. */
+    email_verified: true,
     name: "A Person",
     sub: GOOGLE_SUB,
     picture: "https://lh3.googleusercontent.com/a/third-party-photo",
@@ -718,6 +722,97 @@ describe("GET /api/auth/google/callback — the answers from Google the route re
       severity: "warning",
       metadata: { reason: "Google OAuth callback error", error: "invalid_grant" },
     });
+  });
+});
+
+/*
+  ─── GOOGLE MUST HAVE CONFIRMED THE ADDRESS (#2377) ───
+
+  The attack: an account was made with email and password; somebody else gets a
+  Google account to present that same address without Google ever confirming it,
+  and presses "Continue with Google". The callback found the account by email
+  alone and minted a session for it. These arms drive that exact token through
+  the real callback, on both branches, and assert nothing is opened.
+*/
+
+describe("GET /api/auth/google/callback — Google's email_verified is a gate (#2377)", () => {
+  /* Every shape that is not literally `true` — the claim absent, false, and a
+     string that merely reads as true. */
+  const UNVERIFIED: ReadonlyArray<[string, Record<string, unknown>]> = [
+    ["false", { email_verified: false }],
+    ["absent", { email_verified: undefined }],
+    ['the string "true"', { email_verified: "true" }],
+  ];
+
+  for (const [label, override] of UNVERIFIED) {
+    it(`⚠ THE ATTACK: an EXISTING email-and-password account is not opened when email_verified is ${label}`, async () => {
+      vi.mocked(getUserByEmail).mockResolvedValue(
+        anAccount({ openId: "email_owner", authProvider: "email" }) as never,
+      );
+      google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload(override) });
+
+      const response = await callback("code=auth-code");
+
+      expect(response.location).toBe("/login?error=invalid_token");
+      expect(sessionCookie(response)).toBeUndefined();
+      expect(sdk.createSessionToken).not.toHaveBeenCalled();
+      /* Refused BEFORE the lookup, so the token never learns an account exists,
+         and nothing about the account is touched. */
+      expect(getUserByEmail).not.toHaveBeenCalled();
+      expect(db.upsertUser).not.toHaveBeenCalled();
+      expect(db.resetFailedLogins).not.toHaveBeenCalled();
+    });
+
+    it(`creates NO new account when email_verified is ${label}, even with a valid beta code`, async () => {
+      google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload(override) });
+
+      const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+      expect(response.location).toBe("/login?error=invalid_token");
+      expect(sessionCookie(response)).toBeUndefined();
+      expect(sdk.createSessionToken).not.toHaveBeenCalled();
+      expect(validateInviteCode).not.toHaveBeenCalled();
+      expect(redeemInviteCode).not.toHaveBeenCalled();
+      expect(db.upsertUser).not.toHaveBeenCalled();
+      expect(recordFreeGrantClaim).not.toHaveBeenCalled();
+    });
+  }
+
+  it("audits the refusal as a failed sign-in, naming why", async () => {
+    google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload({ email_verified: false }) });
+
+    await callback("code=auth-code");
+
+    expect(auditRows()).toHaveLength(1);
+    expect(auditRows()[0]).toMatchObject({
+      action: AUDIT_ACTIONS.LOGIN_FAILED,
+      resourceType: "auth",
+      severity: "warning",
+      metadata: { reason: "Google email not verified", email: "person@example.com" },
+    });
+  });
+
+  it("POSITIVE CONTROL: a VERIFIED address still signs the existing account in", async () => {
+    vi.mocked(getUserByEmail).mockResolvedValue(
+      anAccount({ openId: "email_owner", authProvider: "email" }) as never,
+    );
+    google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload({ email_verified: true }) });
+
+    const response = await callback("code=auth-code");
+
+    expect(response.location).toBe("/app");
+    expect(sessionCookie(response)).toBeDefined();
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe("email_owner");
+  });
+
+  it("POSITIVE CONTROL: a VERIFIED address still creates a new account with a valid code", async () => {
+    google.verifyIdToken.mockResolvedValue({ getPayload: () => aGooglePayload({ email_verified: true }) });
+
+    const response = await callback("code=auth-code", { betaCode: "BETA123" });
+
+    expect(response.location).toBe("/app");
+    expect(sessionCookie(response)).toBeDefined();
+    expect(vi.mocked(sdk.createSessionToken).mock.calls[0]![0]).toBe(`google_${GOOGLE_SUB}`);
   });
 });
 
