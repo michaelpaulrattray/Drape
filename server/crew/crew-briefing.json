@@ -1,7 +1,7 @@
 {
-  "edition": 685,
-  "updatedAt": "2026-10-12T04:54:32.076Z",
-  "shift": "Foreman — foreman-20261012-1428 (focus: N2d-1 verified at the artifacts and closed)",
+  "edition": 686,
+  "updatedAt": "2026-10-12T06:40:00.000Z",
+  "shift": "Foreman — foreman-20261012-1548 (focus: #2315 step 2 — proxyImage out of the retiring file)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -23,11 +23,11 @@
         },
         {
           "title": "Your downloadable Certificate of Creation (#2312)",
-          "state": "in-progress"
+          "state": "done"
         },
         {
           "title": "A page anyone can check — off unless you turn it on, for one cast at a time (#2313)",
-          "state": "in-progress"
+          "state": "done"
         },
         {
           "title": "The three wording changes to the terms — a lawyer reads them before a word of it is published (#2314)",
@@ -135,14 +135,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T04:54:08.301Z",
+      "readAt": "2026-10-12T06:33:48.934Z",
       "items": [
-        {
-          "issueNumber": 2323,
-          "title": "N2d: the signed record carries no cast name, but the public check page (#2313) says it shows one",
-          "kind": "rung",
-          "rung": "N2d"
-        },
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
@@ -286,6 +280,18 @@
           "title": "Before the first promo ships: a refund of a promo-funded charge that lands after the promo expired returns as plan credits",
           "kind": "roadmap",
           "rung": null
+        },
+        {
+          "issueNumber": 2332,
+          "title": "Customer pictures move behind sign-in (today they sit at public, unguessable addresses)",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 2351,
+          "title": "After launch: migrate TypeScript 7, vitest 5 and recharts 3 (dependency majors that went red)",
+          "kind": "roadmap",
+          "rung": null
         }
       ]
     }
@@ -297,7 +303,7 @@
       "productImpact": "Before the product can ever promise \"we don't train on your characters\", that sentence has to be true of every company we send pictures to. The crew read their terms this shift. Google's paid tier is clean, and fal's terms say customers own their uploads — but one fal clause lets them use anonymized data derived from uploads to develop their AI, and only a lawyer can say whether our wording survives that. OpenRouter is a router: it only refuses the providers that train if OUR account says so.\n\nThree things, none of them the crew's to do:\n\n1. On your OpenRouter account, turn on the setting that refuses providers that train on inputs, with the relay. Pictures of customers' casts pass through there for quality checks.\n2. Confirm our Google AI account is on the paid tier (paid doesn't train on your data; the free tier does). Wardrobe pictures go there.\n3. Send your lawyer the three terms changes with the pack the crew prepared — it is section 6 of the design document on card 2314, quotes and dates included.",
       "workedExample": "A customer downloads their Certificate of Creation next month and asks: do you train on my character? Today the honest answer has footnotes. After these three acts it is a plain no, written into the terms by someone qualified to write it.",
       "options": [],
-      "recommendation": "Do the two account checks with the relay this week; send the lawyer pack whenever suits. The build (#2311) starts now either way.",
+      "recommendation": "Do the two account checks with the relay this week; send the lawyer pack whenever suits. All three build cards are closed and live, so these three acts are what is left of the rung.",
       "state": "open",
       "filedAt": "2026-10-12T02:54:33.308Z",
       "issueNumber": 2314
@@ -10065,6 +10071,13 @@
       "status": "merged",
       "prNumber": 2302,
       "note": "Live. Our own tooling: fourteen assertions now carry the tool’s own words, and the check can say “I could not run” instead of “wrong”."
+    },
+    {
+      "id": "proxyimage-out-of-retiring-file-2315",
+      "title": "The picture-download helper is out of the file being deleted, and it now goes through our strict reader (#2315)",
+      "status": "merged",
+      "prNumber": 2353,
+      "note": "Live. A retirement was about to delete the helper three live screens use to download and copy pictures; it moved out first, and on the way it stopped following redirects."
     }
   ],
   "problems": [
@@ -10221,6 +10234,13 @@
       "state": "resolved",
       "title": "Fixed — one of the crew’s own checks was failing for no reason about a third of the time (#2298)",
       "detail": "Met twice tonight. Before the crew sends work up, it runs a check over everything; one part of that check failed on two runs out of three and then passed on its own when run by itself — nothing in the work being sent could have caused it. The risk is not the wasted minutes: a check that cries wolf teaches whoever reads it to stop believing it, and this same part can also refuse to send work that is perfectly fine. Two earlier versions of this same fault were found and closed before (in the same check), so this is the third time the shape has come back — which is why it is filed to be looked at properly rather than patched again. Nothing a customer can see is affected.\n\n✅ RESOLVED — the repair is merged and live, and the build serving it is the one this row ships with (pull request #2302, `cbb97b0f`, read at the running service rather than at the merge). Reading it turned up that the card’s own account of the fault did not follow from its own evidence, so the first thing done was a correction rather than a fix: the failure that was photographed came from one of fourteen places in that check that threw away what the tool had actually said. Those fourteen now carry it, so the next time it fires we will be told which one. The real fault underneath is fixed too — the check can now tell “I could not run” apart from “the answer is wrong”, which is the distinction it was missing."
+    },
+    {
+      "id": "atlas-client-callers-shape-blind-2349",
+      "severity": "warning",
+      "state": "open",
+      "title": "Our own map of the product can say a screen that IS being used has no users — and that is the reading we delete on (#2349)",
+      "detail": "Before the crew deletes anything, it asks one map whether anything still uses it. That map reads one of the two ways our screens call the server, and not the other.\n\nMeasured tonight, both ways, over the whole app: the first way reads correctly — 254 of 254. The second way reads 0 of 7. And five things come out as \"nothing uses this\" when something does, including a customer downloading a copy of their own data and three of the staff export buttons.\n\nNothing is broken for a customer today and nothing has been wrongly deleted. The risk is the next deletion: \"no one uses this\" is exactly the answer that makes it safe to remove, and on those five it is wrong.\n\nIt was found because tonight's own job appeared in that map missing one of its four callers. The repair is on #2349: teach the map the second way, and have a second reader check it that does not share the first one's blind spot."
     }
   ],
   "acknowledgedReplyIds": [
@@ -10506,7 +10526,7 @@
     280
   ],
   "nextUp": {
-    "readAt": "2026-10-12T04:54:08.300Z",
+    "readAt": "2026-10-12T06:33:48.934Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10569,7 +10589,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "its children — #2311 closed and live; #2312 and #2313 being built now; #2314 your hand. One open question on #2323."
+          "because": "YOU — #2314 only. All three build slices are closed and live; #2314 is two account settings and a lawyer handoff."
         }
       },
       {
@@ -10580,16 +10600,6 @@
       {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2312,
-        "title": "N2d-2 — The Certificate of Creation: one download button on a signed cast's page",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2313,
-        "title": "N2d-3 — The public check page, off by default, with the owner's one toggle",
         "urgent": false
       },
       {
