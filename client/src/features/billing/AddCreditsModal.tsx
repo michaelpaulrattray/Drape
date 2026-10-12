@@ -1207,6 +1207,70 @@ function PlanStepUpPane({ onClose }: { onClose: () => void }) {
 }
 
 /**
+ * A PLAN HOLDER WHOSE PAYMENT FAILED IS SHOWN THE CARD, NOT THE PACKS — #2454.
+ *
+ * His word, 2026-10-12, verbatim: *"you need to be on an active plan to buy
+ * credit packs."* The packs pane is chosen by the plan RUNG, and the rung still
+ * reads Pro after a card fails, so a `past_due` / `unpaid` subscriber was shown
+ * three packs and a price to pay. The server now refuses that sale whoever
+ * asks (`createTopupCheckout`, which reads the plan live from Stripe); this is
+ * the surface not offering it.
+ *
+ * It is the plan pane's failed-payment view (#2441) on the credits door: the
+ * same heading, the same notice up to its last clause, and the same Update
+ * card button on the Billing tab's own road — Stripe's portal. Nothing on it
+ * is for sale, so nothing on it has a price.
+ *
+ * The disappearing-technology gate: nothing to learn, one thing to do (the
+ * card), and no status word, engine or figure on the page.
+ */
+function PaymentFailedPacksPane({ onClose }: { onClose: () => void }) {
+  /* The Billing tab's "Update card" road (#2394) — Stripe's portal. */
+  const portal = trpc.billing.createPortalSession.useMutation({
+    onSuccess: (result) => {
+      if (result?.portalUrl) window.open(result.portalUrl, "_blank");
+    },
+    onError: (error) => {
+      logRawFailure("billing.createPortalSession", error);
+      toast.error(readableFailure(error, "The billing portal could not be opened."));
+    },
+  });
+
+  return (
+    <ModalScrim
+      label="Update your card"
+      scrimClassName="dp-topup__scrim"
+      cardClassName="dp-topup__card"
+      busy={false}
+      onDismiss={onClose}
+    >
+      <div className="dp-topup__pane">
+        <p className="dp-topup__eyebrow">CREDITS</p>
+        <h2 className="dp-topup__title">Update your card</h2>
+        <p className="dp-topup__reason" role="status">
+          Your last payment didn&apos;t go through. Update your card to keep your plan — you can
+          add credits once the payment goes through.
+        </p>
+      </div>
+      <div className="dp-topup__foot">
+        <span className="dp-set__spacer" />
+        <Button variant="quiet" size="small" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="small"
+          onClick={() => portal.mutate()}
+          disabled={portal.isPending}
+        >
+          {portal.isPending ? "Opening…" : "Update card"}
+        </Button>
+      </div>
+    </ModalScrim>
+  );
+}
+
+/**
  * THE CREDIT PACKS — what a plan holder is shown, and the whole of slice 2.
  *
  * His design, 2026-10-02 (terminal), verbatim: *"for our add credits we should
@@ -1633,8 +1697,14 @@ export function AddCreditsModal({
 }) {
   const { data: status } = trpc.billing.getStatus.useQuery();
   const eligibility = topupEligibility(status?.planTier);
+  /* #2454: the rung says a plan, and a failed payment means it is not an
+     ACTIVE one — the card, not the packs. Both of Stripe's failed-payment
+     statuses, read the way the plan pane reads them (#2394). */
+  const paymentFailed =
+    status?.subscriptionStatus === "past_due" || status?.subscriptionStatus === "unpaid";
 
   if (eligibility === "may-buy") {
+    if (paymentFailed) return <PaymentFailedPacksPane onClose={onClose} />;
     return <CreditPacksPane onClose={onClose} onChangePlan={onChangePlan} />;
   }
   if (eligibility === "needs-a-plan") {

@@ -285,18 +285,20 @@ export const TOPUP_NEEDS_A_PLAN_SENTENCE =
  * WHETHER AN ACCOUNT MAY BUY A CREDIT PACK — the card's rule, in one place.
  *
  * *"Plan holders only, enforced server-side."* So it is the plan RUNG and
- * nothing else, and the two things deliberately absent are worth naming
- * because each looks like diligence:
+ * nothing else — the question a screen can answer off `billing.getStatus`.
  *
- *  · **The Stripe status is not read.** A `past_due` or `unpaid` subscriber is
- *    a plan holder whose card needs attention, and refusing to sell credits to
- *    a customer trying to pay us is a wall the card never asked for. A
- *    subscription that truly ends takes the rung with it — the deleted-event
- *    handler downgrades the account to `free` — so the dead case is already
- *    answered by the rung alone.
- *  · **No separate sentence for a dying plan**, for the same reason: with the
- *    rung as the whole rule there is exactly one refusal, and a second sentence
- *    nobody can reach is a copy waiting to be edited into service.
+ * ⚠ **IT IS NOT THE WHOLE RULE ANY MORE, AND THIS DOCBLOCK SAID IT WAS UNTIL
+ * #2454.** It read *"The Stripe status is not read"*, reasoning that a
+ * `past_due` or `unpaid` subscriber is a plan holder and refusing them is a
+ * wall nobody asked for. He asked for it, 2026-10-12, verbatim: *"you need to
+ * be on an active plan to buy credit packs."* The rung still reads `pro` for a
+ * card that failed and for a plan that is paused, so the server's
+ * `createTopupCheckout` now also reads the subscription LIVE from Stripe and
+ * refuses anything but an active plan, with a sentence per state
+ * (`topupPlanRefusal`, `server/routes/billing.ts`). This function stays the
+ * rung alone because the live read is a Stripe request and belongs on the
+ * server; the client's packs pane reads the failed-payment status off
+ * `getStatus` itself and shows the card's notice instead of the packs.
  *
  * ⚠ **AND IT ANSWERS THREE STATES, NOT TWO, FOR THE REASON THIS SURFACE HAS
  * PAID EIGHT TIMES THIS WEEK** (#1703, #1725, #1727, #1730, #1741, #1747,

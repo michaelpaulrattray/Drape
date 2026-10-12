@@ -168,6 +168,57 @@ function planChangeRefusal(
 }
 
 /**
+ * WHY A CREDIT PACK CANNOT BE SOLD ON THIS PLAN, IN THE CUSTOMER'S WORDS — OR
+ * `null` (#2454, his word: *"you need to be on an active plan to buy credit
+ * packs."*).
+ *
+ * It answers the live read `findLiveSubscriptionOnCustomer` returns (never
+ * its `failed` outcome, which the caller refuses on its own). The states:
+ *
+ *  · `active` with collection running, and `trialing` — an active plan. The
+ *    only two that sell. (The card names `trialing` as active; the product
+ *    sells no trials today, so it is unreachable rather than a decision.)
+ *  · `past_due` / `unpaid` — a payment failed; the one thing to do is the
+ *    card, and the Billing tab's button for it is "Update card".
+ *  · `paused`, or `active` with `pause_collection` set — resume first.
+ *  · `incomplete` — the first payment is still being confirmed.
+ *  · anything else, including a status Stripe adds later — refused. The
+ *    default arm is the refusal, so a new status cannot reach a sale by being
+ *    unnamed.
+ *  · `none` — the rung says a plan and Stripe holds no live subscription for
+ *    the customer. There is no active plan, so it is the no-plan sentence.
+ *
+ * Each sentence says what was refused and what to do, and none names a
+ * status (the disappearing-technology law's refusal clause).
+ */
+/** One sentence for both of Stripe's pause shapes, said once. */
+const TOPUP_PLAN_PAUSED_SENTENCE =
+  "Your plan is paused, so credit packs can't be bought right now. Nothing was charged — resume your plan under Billing, then you can add credits.";
+
+function topupPlanRefusal(
+  live:
+    | { outcome: "none" }
+    | { outcome: "live"; status: string; collectionPaused: boolean },
+): string | null {
+  if (live.outcome === "none") return TOPUP_NEEDS_A_PLAN_SENTENCE;
+  if (live.collectionPaused) return TOPUP_PLAN_PAUSED_SENTENCE;
+  switch (live.status) {
+    case "active":
+    case "trialing":
+      return null;
+    case "past_due":
+    case "unpaid":
+      return "Your last payment didn't go through, so credit packs can't be bought until it does. Nothing was charged — update your card under Billing, then try again.";
+    case "paused":
+      return TOPUP_PLAN_PAUSED_SENTENCE;
+    case "incomplete":
+      return "Your plan's first payment is still being confirmed, so credit packs can't be bought yet. Nothing was charged — check Billing again in a few minutes.";
+    default:
+      return "Your plan isn't active right now, so credit packs can't be bought. Nothing was charged.";
+  }
+}
+
+/**
  * What is left of the PLAN's part of her balance, for the quote (#1965). A
  * missing credit row answers 0 — the reading under which nothing can be
  * taken back, so the switch's unused share is paid for rather than given
@@ -660,6 +711,9 @@ export const billingRouter = router({
    *  · **The plan rung is a gate.** `topupEligibility` is the card's own rule,
    *    and the refusal is a sentence that offers a plan rather than naming a
    *    tier (the disappearing-technology law's refusal clause).
+   *  · **And the plan must be ACTIVE at Stripe (#2454).** The rung alone sold
+   *    a pack to a subscriber whose card had failed or whose plan was paused;
+   *    the live read below refuses both, and refuses when it cannot look.
    *  · **Nothing is granted here.** The credits land when the webhook says the
    *    money did. This procedure's only effect on the account is a Stripe
    *    customer id, exactly as the subscription road's does.
@@ -729,6 +783,43 @@ export const billingRouter = router({
             message: "We could not set up your billing account. Nothing was charged — please try again in a moment.",
           });
         }
+      }
+
+      /*
+        ⚠ THE PLAN MUST BE ACTIVE, NOT MERELY NAMED — #2454, his word,
+        2026-10-12, verbatim: *"you need to be on an active plan to buy credit
+        packs."* The rung above reads `pro` for a subscriber whose card failed
+        (`past_due` / `unpaid`) and for one whose plan is paused, because the
+        rung only moves when the subscription is deleted — so until now both
+        were sold a pack on a plan that was not being paid for.
+
+        The status is read LIVE from Stripe, about the whole customer, through
+        #2394's `findLiveSubscriptionOnCustomer` — not a second reader, and not
+        the stored `subscriptionStatus`, whose `mapStripeStatus` folds `paused`
+        into `"canceled"`. It runs on the customer id just resolved and saved,
+        before any session exists, and every refusal says what to do.
+        `failed` REFUSES (invariant 7): a gate that sells when it cannot look
+        is the hole it exists to close, on the one day Stripe is slow.
+      */
+      const live = await findLiveSubscriptionOnCustomer(customerId);
+      if (live.outcome === "failed") {
+        throw spokenError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "We couldn't check your plan just now. Nothing was charged — please try again in a moment.",
+        });
+      }
+      const inactive = topupPlanRefusal(live);
+      if (inactive !== null) {
+        log.info(
+          {
+            userId: ctx.user.id,
+            outcome: live.outcome,
+            status: live.outcome === "live" ? live.status : null,
+            collectionPaused: live.outcome === "live" ? live.collectionPaused : null,
+          },
+          "[Billing] top-up refused — the plan is not active at Stripe",
+        );
+        throw spokenError({ code: "FORBIDDEN", message: inactive });
       }
 
       const baseUrl = appBaseUrl();
