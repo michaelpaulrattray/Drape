@@ -173,8 +173,13 @@ const walk = (dir: string): string[] =>
   This map used to be built at module scope with a bare `readFileSync`, so a
   file that left between the walk and the read did not fail an arm — it failed
   COLLECTION, which is the loudest and least legible way this class can land. It
-  is not hypothetical: `scriptWorldGuard.test.ts` plants and unlinks a real file
-  in `scripts/` while this suite is walking it in another worker.
+  was not hypothetical: `scriptWorldGuard.test.ts` used to plant and unlink a
+  real file in `scripts/` while this suite was walking it in another worker.
+  That plant also ran the race the OTHER way — present mid-walk, and judged
+  here as a real script that does not exit (#2361) — so it now lives in a
+  scratch repository under the OS temp directory, where no walker of the real
+  tree can see it. The tolerance stays for the untracked one-shot benches,
+  which still come and go under a running walk.
 
   Filtering here rather than at the readers keeps every `sourceOf.get(rel)!`
   below sound: a member of `scriptFiles` or `universe` is, by construction, a

@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -81,9 +81,10 @@ function walk(dir: string, out: string[] = []): string[] {
 /** Everything under `scripts/` that reaches the app's own pool. */
 export function databaseScripts(root: string): string[] {
   return walk(root)
-    /* A file this walk just listed can be gone by the time it is read: the
-       positive control below plants one in this very directory while six other
-       suites are walking it in parallel workers (#223). */
+    /* A file this walk just listed can be gone by the time it is read (#223).
+       This suite's own control no longer plants in the real `scripts/`
+       (#2361), but the tree's untracked one-shot benches still come and go
+       under a running walk, so the tolerance stays. */
     .filter((file) => readListedSource(file)?.includes("getDb()") ?? false)
     .map((file) => path.relative(root, file).split(path.sep).join("/"));
 }
@@ -125,19 +126,25 @@ function callsTheGuard(source: string): boolean {
  * for the twenty-fifth promotion. This closes the class: the names stay as the
  * citers spell them, and the suffix is now residue.
  */
-function trackedScripts(root: string): Set<string> {
+function trackedScripts(root: string, repo: string = repoRoot): Set<string> {
   /* Through `runHook` like every other child in this suite: a git that never
      ran throws, and a git that ran and failed is refused by its exit code —
      both before an empty listing could exempt the tree. (A listing past
      spawnSync's 1 MB default buffer kills the child, which `runHook` also
-     throws on; the listing is ~24 KB today.) */
-  const run = runHook("git", ["ls-files", "--", "scripts"], { cwd: repoRoot });
+     throws on; the listing is ~24 KB today.)
+
+     `repo` is a parameter so the positive control can drive this exact
+     function at a scratch repository instead of planting in the real
+     `scripts/` (#2361). The pathspec is derived from `root`, so the real call
+     still asks git for `scripts` and nothing else. */
+  const pathspec = path.relative(repo, root).split(path.sep).join("/");
+  const run = runHook("git", ["ls-files", "--", pathspec], { cwd: repo });
   if (run.status !== 0) throw new Error(`git ls-files exited ${run.status} — the exemption cannot be decided`);
   const listed = run.stdout;
   const names = listed
     .split(/\r?\n/)
     .filter((line) => line !== "")
-    .map((line) => path.relative(root, path.join(repoRoot, line)).split(path.sep).join("/"));
+    .map((line) => path.relative(root, path.join(repo, line)).split(path.sep).join("/"));
   /*
     REFUSE, DO NOT ALLOW, WHEN THE DEPENDENCY IS MISSING. This predicate decides
     who is EXEMPT, so an empty answer — git absent, a detached export, a build
@@ -149,8 +156,8 @@ function trackedScripts(root: string): Set<string> {
 }
 
 /** In scope, unguarded, and not a one-shot bench. */
-export function unguardedScripts(root: string): string[] {
-  const tracked = trackedScripts(root);
+export function unguardedScripts(root: string, repo: string = repoRoot): string[] {
+  const tracked = trackedScripts(root, repo);
   return databaseScripts(root).filter((relative) => {
     if (!tracked.has(relative)) return false;
     if (relative in EXEMPT) return false;
@@ -176,7 +183,7 @@ describe("a script that reads the app's database declares its world", () => {
   });
 
   /*
-    POSITIVE CONTROL, on a real unguarded file rather than a string.
+    POSITIVE CONTROL, on real files in a real git repository rather than a string.
 
     Without it the assertion above is what a scan that found NOTHING prints,
     and a walk that silently stopped reading — a renamed directory, a changed
@@ -185,41 +192,64 @@ describe("a script that reads the app's database declares its world", () => {
     The first cut of this control leaned on the untracked one-shot benches as
     a known-positive population — which exists only on a working dev machine.
     A clean checkout (CI) has no litter, so the control failed there for lack
-    of a fixture rather than for a blind reader; its own failure message said
-    to swap in a synthetic one, and this is that swap: the control now PLANTS
-    an untracked unguarded script, proves the reader finds it, and removes it.
-    The main assertion above filters to tracked files, so the plant can never
-    redden it, even mid-flight.
+    of a fixture rather than for a blind reader; the second cut PLANTED an
+    untracked unguarded script in the real `scripts/` and removed it after.
 
-    ⚠ AND THAT SENTENCE WAS TRUE OF THIS SUITE AND SILENT ABOUT EVERY OTHER ONE
-    (#223, 2026-08-29). vitest runs test FILES in parallel, and six other suites
-    walk this same directory: they list (the plant is there), then read each
-    entry (the plant is gone). The ENOENT came out of a `.filter()` in
-    `uploadRefusalCopy.test.ts` and REFUSED THE DEPLOY RITE ON A CLEAN TREE.
-    The plant stays in the real tree — that is what makes this control worth
-    having — and the readers now tolerate a listed file that has left, through
-    `readListedSource` (`server/testing/listedSource.ts`), which carries the
-    receipt and the reasoning.
+    ⚠ AND THE PLANT WAS A FIXTURE EVERY OTHER WALKER OF `scripts/` COULD SEE.
+    vitest runs test FILES in parallel, and several suites walk that directory.
+    #223 and #589 were the plant VANISHING mid-walk (an ENOENT that refused the
+    deploy rite on a clean tree), repaired by tolerating absence. #2361 is the
+    same race the other way: the plant was PRESENT while
+    `scriptExitDiscipline.test.ts` walked, and was judged as a real breach —
+    "last statement does not exit: const db = getDb();" — 5 runs out of 5 with
+    the three script guards in one invocation. Tolerating absence does nothing
+    about presence, and excluding this one filename from that one walker would
+    leave the class open for the next fixture.
+
+    So the control no longer touches the real tree at all. It builds a scratch
+    repository under the OS temp directory and drives THE SAME FUNCTIONS the
+    main assertion runs — `unguardedScripts` and `trackedScripts`, git and all —
+    at it. That is stronger than the plant, not merely safer: the plant could
+    only prove the reader finds an UNTRACKED file, while the main assertion is
+    about TRACKED ones. This proves the main path itself reports a tracked,
+    unguarded script, and stays quiet on a guarded one, on one that never
+    reaches the pool, on a one-shot bench, and on a file outside the root.
   */
-  it("POSITIVE CONTROL — the reader does find an unguarded getDb() script", () => {
-    const plantedName = `_scriptworldguard-positive-control-${process.pid}-disposable.mts`;
-    const plantedPath = path.join(scriptsDir, plantedName);
-    writeFileSync(
-      plantedPath,
-      "// synthetic fixture planted by scriptWorldGuard.test.ts — deleted by the same test\nconst db = getDb();\n",
-    );
+  it("POSITIVE CONTROL — the main path does find a tracked, unguarded getDb() script", () => {
+    const repo = mkdtempSync(path.join(tmpdir(), "drape-2361-world-guard-"));
     try {
-      const tracked = trackedScripts(scriptsDir);
-      expect(tracked.has(plantedName), "the planted fixture must read as untracked").toBe(false);
-      const benches = databaseScripts(scriptsDir)
-        .filter((relative) => !tracked.has(relative))
-        .filter((relative) => {
-          const source = readListedSource(path.join(scriptsDir, relative));
-          return source !== null && !callsTheGuard(source);
-        });
-      expect(benches).toContain(plantedName);
+      const git = (...args: string[]) => {
+        const run = runHook("git", args, { cwd: repo });
+        if (run.status !== 0) throw new Error(`git ${args.join(" ")} exited ${run.status}: ${run.stderr}`);
+      };
+      git("init", "-q");
+      const scripts = path.join(repo, "scripts");
+      mkdirSync(path.join(scripts, "lib"), { recursive: true });
+      writeFileSync(path.join(scripts, "unguarded.mts"), "const db = getDb();\n");
+      writeFileSync(path.join(scripts, "lib", "nested-unguarded.mts"), "const db = getDb();\n");
+      writeFileSync(path.join(scripts, "guarded.mts"), 'assertOneWorld(["DATABASE_URL"]);\nconst db = getDb();\n');
+      writeFileSync(path.join(scripts, "no-database.mts"), "console.log(1);\n");
+      /* The index is what `git ls-files` reads; no commit is needed. */
+      git(
+        "add", "--",
+        "scripts/unguarded.mts", "scripts/lib/nested-unguarded.mts", "scripts/guarded.mts", "scripts/no-database.mts",
+      );
+      /* A one-shot bench: unguarded, and deliberately never added. */
+      writeFileSync(path.join(scripts, "bench-disposable.mts"), "const db = getDb();\n");
+      /* Tracked and unguarded, but outside the scripts root — not this guard's business. */
+      writeFileSync(path.join(repo, "outside.mts"), "const db = getDb();\n");
+      git("add", "--", "outside.mts");
+
+      /* POSITIVE, and exact: both tracked unguarded scripts, the nested one
+         included, and nothing else. */
+      expect(unguardedScripts(scripts, repo).sort()).toEqual(["lib/nested-unguarded.mts", "unguarded.mts"]);
+      /* The bench IS seen by the reader, and is exempt only for being untracked. */
+      expect(databaseScripts(scripts)).toContain("bench-disposable.mts");
+      const tracked = trackedScripts(scripts, repo);
+      expect(tracked.has("bench-disposable.mts"), "the bench must read as untracked").toBe(false);
+      expect(tracked.has("guarded.mts"), "a tracked file must read as tracked").toBe(true);
     } finally {
-      unlinkSync(plantedPath);
+      rmSync(repo, { recursive: true, force: true });
     }
   });
 
