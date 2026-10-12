@@ -113,3 +113,73 @@ describe("the controls that make the refusal mean something", () => {
     expect(outbound[0]).toContain("/lists");
   });
 });
+
+/**
+ * #2446 — `newsletter.subscribe` answered "This email is already on the list."
+ * (and `isNew: false`) for an address the email provider already held, and
+ * "Welcome! You've been subscribed…" for a new one: an address oracle on a
+ * public endpoint. Driven through tRPC's real request handler over the real
+ * `appRouter` and the real provider helper, with only the provider's HTTP
+ * answer stubbed — 201 for a new profile, 409 for one it already has.
+ */
+describe("newsletter.subscribe gives every address the same answer (#2446)", () => {
+  let ipSeq = 0;
+
+  function stubProvider(existing: Set<string>) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        outbound.push(String(input instanceof Request ? input.url : input));
+        const email = JSON.parse(String(init?.body ?? "{}"))?.data?.attributes?.email;
+        return existing.has(email)
+          ? new Response(JSON.stringify({ errors: [{ code: "duplicate_profile" }] }), { status: 409 })
+          : new Response(JSON.stringify({ data: { id: "prof_fixture" } }), { status: 201 });
+      }),
+    );
+  }
+
+  async function subscribe(email: string): Promise<{ status: number; body: unknown }> {
+    ipSeq += 1;
+    const response = await fetchRequestHandler({
+      endpoint: "/api/trpc",
+      req: new Request("http://localhost/api/trpc/newsletter.subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ json: { email } }),
+      }),
+      router: appRouter,
+      createContext: (): TrpcContext =>
+        ({
+          user: null,
+          // A fresh address per call, so the per-IP limit never decides an arm.
+          req: { headers: {}, socket: {}, ip: `203.0.113.${ipSeq}` } as unknown as TrpcContext["req"],
+          res: {} as unknown as TrpcContext["res"],
+          correlationId: "newsletter-test",
+        }) as TrpcContext,
+    });
+    return { status: response.status, body: (await response.json())?.result?.data?.json };
+  }
+
+  it("a new address and one already on the list get the same status and the same body", async () => {
+    stubProvider(new Set(["known@example.com"]));
+    const fresh = await subscribe("fresh@example.com");
+    const known = await subscribe("known@example.com");
+    expect(fresh.status).toBe(200);
+    expect(known.status).toBe(200);
+    expect(known.body).toEqual(fresh.body);
+    expect(fresh.body).toEqual({ success: true, message: "You're on the list." });
+  });
+
+  it("the provider really told the two apart — the control that makes the sameness mean something", async () => {
+    stubProvider(new Set(["known@example.com"]));
+    const { newsletterSignup } = await import("../klaviyo");
+    expect((await newsletterSignup("fresh@example.com")).isNew).toBe(true);
+    expect((await newsletterSignup("known@example.com")).isNew).toBe(false);
+  });
+
+  it("a provider failure is still a refusal, not a pretend success — the negative control", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
+    const failed = await subscribe("anyone@example.com");
+    expect(failed.status).toBe(500);
+  });
+});
