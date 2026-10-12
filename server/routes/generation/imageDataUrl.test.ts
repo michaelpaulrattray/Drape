@@ -69,9 +69,11 @@ describe("generation.proxyImage — after the move out of castingRefinement", ()
 
     expect(reader).toHaveBeenCalledWith(ALLOWED);
     expect(result.success).toBe(true);
-    /* The old body wrote the response's content-type header here. A dev
-       `board_items` object is served `image/png` with JPEG bytes, and
-       `ImageActionBar` keys a ClipboardItem off this very string. */
+    /* The old body wrote the response's content-type HEADER here. Driven
+       through the real reader on real objects: all 3 sampled `board_items` rows
+       are JPEG bytes served as `image/png`, so the header is not reliable and
+       the bytes are. (Whether a mislabelled object reaches a consumer that acts
+       on the mime is NOT claimed — see the module's docblock.) */
     expect(result.base64.startsWith("data:image/jpeg;base64,")).toBe(true);
     expect(result.base64.endsWith(JPEG.toString("base64"))).toBe(true);
   });
