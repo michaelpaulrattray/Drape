@@ -4633,6 +4633,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/refusalLoopCorpus.ts",
+      "path": "server/castingV2/refusalLoopCorpus.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/refusalTag.ts",
       "path": "server/castingV2/refusalTag.ts",
       "domain": "casting-v2",
@@ -14508,6 +14514,10 @@
     {
       "id": "test:server/castingV2/refusalLoopCapture.test.ts",
       "path": "server/castingV2/refusalLoopCapture.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refusalLoopCorpus.test.ts",
+      "path": "server/castingV2/refusalLoopCorpus.test.ts"
     },
     {
       "id": "test:server/castingV2/refusalTag.test.ts",
@@ -31581,6 +31591,11 @@
     {
       "from": "module:server/castingV2/refusalLoopCapture.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refusalLoopCorpus.ts",
+      "to": "module:server/castingV2/refusalLoopCapture.ts",
       "kind": "imports"
     },
     {
