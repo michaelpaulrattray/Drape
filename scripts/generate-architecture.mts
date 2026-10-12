@@ -610,6 +610,35 @@ const UNREACHABLE_ROUTERS: string[] = [];
  * remove**: the 2026-08-23 edge-graph hole arriving through a new door. Those
  * four are the positive control in `server/architectureClientCallers.test.ts`.
  *
+ * ⚠ **AND A THIRD SHAPE WAS MISSED FOR A DAY — #2349, 2026-10-12, in the same
+ * silence direction.** The cache handle carries the VANILLA client under
+ * `.client`: `utils.client.account.exportData.query()`, the shape a component
+ * uses when it needs the answer inline (a file download) rather than as a hook.
+ * The chain off `utils` began with `client`, matched no callable path, and was
+ * dropped without a word — so **seven call sites in six files read as absent,
+ * and five procedures read as having no client caller at all**:
+ * `account.exportData` (a customer downloading their own data), the three
+ * `moderatorExports.*Csv` exports, and `boardOps.addEdge` (the canvas). The
+ * second reader agreed with it, because it was blind to the same shape for a
+ * different reason — two readers that do not share a resolver can still share
+ * a SHAPE LIST, and agreement then proves nothing about the shape neither of
+ * them reads. So the suite now also derives the POPULATION: every chain off a
+ * client root in `client/src` must resolve to a procedure through one of the
+ * shapes below or be one of the named non-procedure members, and a fourth
+ * shape reddens instead of going quiet.
+ *
+ * **EXACTLY THREE SHAPES ARE READ, AND NO OTHER:**
+ *
+ *   1. hook      `trpc.<path>.…`               — the imported client binding
+ *   2. cache     `<handle>.<path>.…`           — `const <handle> = trpc.useUtils()`
+ *                                                  (or `useContext()`), any name
+ *   3. vanilla   `<handle>.client.<path>.…`    — the `.client` hop, off a handle only
+ *
+ * NOT read, and none on the tree as of #2349: an alias of the vanilla client
+ * (`const c = utils.client; c.x.y.query()`), `trpc.useUtils().x…` inline, or a
+ * client built anywhere but `createTRPCReact`. Each would read as no caller,
+ * and the suite's population arm is what says so.
+ *
  * A cache reach is not a fresh call and this does not pretend otherwise:
  * `invalidate` marks a query stale, `setData` writes the cache, `fetch` does
  * call. Every one of them NAMES the procedure, so every one of them breaks when
@@ -681,9 +710,14 @@ export function collectClientCallers(
   const callable = new Set(callablePaths);
   const maxDepth = Math.max(0, ...[...callable].map((id) => id.split(".").length));
 
-  /** The names a file has bound to the client, or to one of its cache handles. */
-  const rootsIn = (sourceFile: SourceFile): Set<string> => {
+  /**
+   * The names a file has bound to the client (`hooks`), and the subset of them
+   * that are cache handles (`handles`) — kept apart because only a cache handle
+   * carries the vanilla client under `.client` (#2349).
+   */
+  const rootsIn = (sourceFile: SourceFile): { roots: Set<string>; handles: Set<string> } => {
     const roots = new Set<string>();
+    const handles = new Set<string>();
     for (const declaration of sourceFile.getImportDeclarations()) {
       if (declaration.getModuleSpecifierSourceFile() !== trpcModule) continue;
       for (const named of declaration.getNamedImports()) {
@@ -691,7 +725,7 @@ export function collectClientCallers(
         roots.add(named.getAliasNode()?.getText() ?? named.getName());
       }
     }
-    if (roots.size === 0) return roots;
+    if (roots.size === 0) return { roots, handles };
     /* `const utils = trpc.useUtils()` — the cache handle, under whatever local
        name the file chose (`utils` and `trpcUtils` are both in use today).
        ⚠ DESCENDANTS, NOT `getVariableDeclarations()`, WHICH IS TOP-LEVEL ONLY —
@@ -712,16 +746,20 @@ export function collectClientCallers(
       if (name !== "useUtils" && name !== "useContext") continue;
       if (!roots.has(callee.getExpression().getText())) continue;
       const bound = declaration.getNameNode().asKind(SyntaxKind.Identifier);
-      if (bound) roots.add(bound.getText());
+      if (bound) {
+        roots.add(bound.getText());
+        handles.add(bound.getText());
+      }
     }
-    return roots;
+    return { roots, handles };
   };
 
-  /** The property names hanging off this identifier, outward. */
+  /** The property names hanging off this identifier, outward — one past the
+      deepest callable path, so a `.client` hop still leaves the whole path. */
   const chainFrom = (root: Node): string[] => {
     const segments: string[] = [];
     let current: Node = root;
-    while (segments.length < maxDepth) {
+    while (segments.length < maxDepth + 1) {
       const access = current.getParent()?.asKind(SyntaxKind.PropertyAccessExpression);
       if (!access || access.getExpression() !== current) break;
       segments.push(access.getName());
@@ -738,13 +776,20 @@ export function collectClientCallers(
     /* A suite naming a procedure is not the customer's bundle reaching it. */
     if (/\.test\.tsx?$/.test(relative) || relative.endsWith(".d.ts")) continue;
 
-    const roots = rootsIn(sourceFile);
+    const { roots, handles } = rootsIn(sourceFile);
     if (roots.size === 0) continue;
     importers += 1;
 
     for (const identifier of sourceFile.getDescendantsOfKind(SyntaxKind.Identifier)) {
       if (!roots.has(identifier.getText())) continue;
-      const segments = chainFrom(identifier);
+      let segments = chainFrom(identifier);
+      /* Shape 3, the vanilla client: `utils.client.<path>.query()` /
+         `.mutate()`. The hop is taken ONLY off a cache handle — that is where
+         tRPC hangs the vanilla client — so `trpc.client…` stays unread rather
+         than being invented as a reach. */
+      if (handles.has(identifier.getText()) && segments[0] === "client") {
+        segments = segments.slice(1);
+      }
       for (let take = segments.length; take >= 1; take -= 1) {
         const candidate = segments.slice(0, take).join(".");
         if (!callable.has(candidate)) continue;

@@ -6958,7 +6958,9 @@
       "input": "none",
       "rateLimited": true,
       "file": "server/routes/account.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/settings/sections/SecuritySection.tsx"
+      ]
     },
     {
       "id": "route:admin.adjustCredits",
@@ -7626,7 +7628,9 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/boardOps.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx"
+      ]
     },
     {
       "id": "route:boardOps.applyModelEdit.execute",
@@ -9419,6 +9423,7 @@
       "rateLimited": false,
       "file": "server/routes/generation/imageDataUrl.ts",
       "clientCallers": [
+        "client/src/features/boards/BoardPage.tsx",
         "client/src/features/export/useExportPack.ts",
         "client/src/features/studio/components/ImageActionBar.tsx",
         "client/src/features/wardrobe/WardrobeWorkspaceSection.tsx"
@@ -9905,7 +9910,9 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/moderator/AuditLogsTab.tsx"
+      ]
     },
     {
       "id": "route:moderatorExports.exportUserCreditHistoryCsv",
@@ -9916,7 +9923,9 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/moderator/CreditsSubTab.tsx"
+      ]
     },
     {
       "id": "route:moderatorExports.exportUserGenerationHistoryCsv",
@@ -9927,7 +9936,9 @@
       "input": "open",
       "rateLimited": false,
       "file": "server/routes/moderatorExports.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/features/moderator/GenerationsSubTab.tsx"
+      ]
     },
     {
       "id": "route:moderatorReconciliation.freezeAccount",
