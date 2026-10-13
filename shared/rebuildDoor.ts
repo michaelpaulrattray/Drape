@@ -21,8 +21,11 @@
  * backstop here is stronger than theirs: it is `getAiClient()` itself
  * (`server/casting/geminiClient.ts`), the ONE place in the server that reads the
  * key and constructs the client, so a road nobody listed below still sends
- * nothing — it fails instead. Deleting the code is step 2 of the card; removing
- * the key is step 3. Nothing a customer owns is touched: reading, listing,
+ * nothing — it fails instead. ⚠ **Removing the key was step 3 and is DONE;
+ * deleting the code was step 2 and is DECLINED — his word, 2026-10-13 on #2315:
+ * "KEEP — leave the code where it is, switched off".** So this door is the
+ * permanent state of these roads until the redesign replaces them, not a
+ * holding pattern in front of a deletion. Nothing a customer owns is touched: reading, listing,
  * renaming, restoring and deleting casts, garments, looks and boards all stay
  * open.
  *
@@ -40,7 +43,14 @@
  *
  * ⚠ **Not a feature flag, and must not become one.** His word is compiled in:
  * no environment variable, no per-user scope. The road does not come back by a
- * switch — step 2 deletes it.
+ * switch; it comes back only with the redesign that replaces it.
+ *
+ * ⚠ **AND IT IS NOT DELETED EITHER — his word, 2026-10-13 (Desk reply #293, on
+ * #2315), verbatim and entire: "KEEP — leave the code where it is, switched
+ * off".** This clause read *"step 2 deletes it"* until then, which is an
+ * instruction to do the thing he declined. **There is no step 2.** The code
+ * behind this door stays compiled, switched off and readable — which is also
+ * his #364 word, *"as we work through our v2 redesign"*.
  *
  * Typed `boolean` rather than left to infer `false`, so guarded branches stay
  * ordinary conditionals that still typecheck (the wardrobe door records the 16
@@ -56,8 +66,12 @@ export const REBUILD_DOOR_OPEN: boolean = false;
  * which is being redesigned, while the wardrobe and the old refine road behind
  * this same door are being RETIRED — and it says "characters", the customer's
  * word since #2320/#2322, never "casts". It no longer names garments in the
- * sentence; that promise is not dropped, it is #2315 step 2's to keep: deleting
- * the wardrobe code must never delete a customer's garments.
+ * sentence; that promise is not dropped. ⚠ **It was #2315 step 2's to keep, and
+ * step 2 is DECLINED (his word, 2026-10-13: KEEP), so it is kept by there being
+ * no deletion at all** — nothing removes the wardrobe code, so nothing can
+ * remove a customer's garments with it. It binds again, unchanged, the day the
+ * redesign does replace that road: **deleting the wardrobe code must never
+ * delete a customer's garments.**
  */
 export const REBUILD_DOOR_CLOSED =
   "This isn't available right now. Your characters and pictures are safe and still here.";

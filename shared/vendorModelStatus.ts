@@ -220,7 +220,9 @@ export const WIRED_DESPITE_SHUTDOWN: readonly AcknowledgedModelDebt[] = [
       "✅ AND `generation.refreshSlots` IS NOW CLOSED TOO — #2315 step 1, 2026-10-12, on his 'yes' " +
       "to switching off editing a cast on the canvas: it refuses at the mouth behind the rebuild " +
       "door (`shared/rebuildDoor.ts`), before any charge, and `getAiClient()` itself refuses as " +
-      "the backstop, so no road reaches this id. The id stays listed until step 2 deletes the code.",
+      "the backstop, so no road reaches this id. ⚠ The id stays listed for good: his word of "
+      + "2026-10-13 on #2315 is KEEP — \"leave the code where it is, switched off\" — so there is "
+      + "no step 2, and this row records a permanently shut road rather than a pending deletion.",
   },
   {
     id: "gemini-3.1-flash-image-preview",

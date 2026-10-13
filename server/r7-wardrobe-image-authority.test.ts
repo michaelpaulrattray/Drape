@@ -3,9 +3,10 @@ import type { TrpcContext } from "./_core/context";
 
 /* #2315 step 1: the rebuild door (`shared/rebuildDoor.ts`) now refuses these
    procedures at the mouth. The arms here test the road BEHIND the door, which
-   stays compiled until step 2 deletes it, so the door is held open for them
-   exactly as the canvas door is held open for the batchC suites — the door
-   itself is driven shut in `server/rebuildDoor.test.ts`. */
+   stays compiled for good — his word of 2026-10-13 on #2315 is KEEP, so there is
+   no step 2 — and the door is held open for them exactly as the canvas door is
+   held open for the batchC suites — the door itself is driven shut in
+   `server/rebuildDoor.test.ts`. */
 vi.mock("@shared/rebuildDoor", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   REBUILD_DOOR_OPEN: true,

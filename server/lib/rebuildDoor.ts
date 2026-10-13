@@ -36,7 +36,10 @@ export function rebuildDoorClosed(): TRPCError {
 /**
  * Throws the refusal while the door is shut. `void`, not `never`, for the
  * wardrobe door's recorded reason: `never` narrows everything after the call to
- * unreachable and rots the code behind the door before step 2 deletes it.
+ * unreachable and rots the code behind the door. ⚠ **That reason got STRONGER on
+ * 2026-10-13, not weaker**: his word on #2315 is KEEP, so there is no step 2 and
+ * the code behind this door stays compiled indefinitely rather than until a
+ * deletion — so it has to keep typechecking for longer than this line assumed.
  */
 export function assertRebuildDoorOpen(): void {
   if (REBUILD_DOOR_OPEN) return;

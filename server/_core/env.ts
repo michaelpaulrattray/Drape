@@ -105,7 +105,10 @@ const REQUIRED_VARS: Record<string, string> = {
    * capability that is in fact a closed one.
    *
    * `ENV.geminiApiKey` stays mapped below so the code behind the door still
-   * compiles; step 2 of the card deletes that module and the mapping with it.
+   * compiles. ⚠ **And it stays for good: his word of 2026-10-13 on #2315 is
+   * "KEEP — leave the code where it is, switched off", so there is no step 2 and
+   * no deletion of that module or this mapping.** This clause read *"step 2 of
+   * the card deletes that module and the mapping with it"* until then.
    */
   STRIPE_SECRET_KEY: "billing",
   STRIPE_WEBHOOK_SECRET: "Stripe webhook signature verification",
