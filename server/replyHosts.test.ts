@@ -24,6 +24,7 @@ import { describe, expect, it } from "vitest";
 
 import type { BriefingFacts } from "../scripts/lib/liveBriefing.mts";
 import { hostIndex, staleOpenHosts, type ReplyRow } from "../scripts/lib/replyHosts.mts";
+import { testDriveCardId } from "../shared/crewTestDrive";
 
 /**
  * Edition 99 as it actually stood, cut to the ids this judgement turns on:
@@ -63,6 +64,8 @@ describe("hostIndex", () => {
 
   it("carries both halves of the namespace, and names which half each id came from", () => {
     const index = hostIndex(EDITION_99);
+    /* Five slugs; none of edition 99's rows carries an issue number, so no
+       derived `card-<n>` key joins them. */
     expect(index.size).toBe(5);
     expect(index.get("fable-cap-review-arm-219")!.kind).toBe("card");
     expect(index.get("portrait-crop-198")!.kind).toBe("eye item");
@@ -152,5 +155,94 @@ describe("staleOpenHosts", () => {
         item.state === "open" ? { ...item, state: "answered" } : item),
     };
     expect(staleOpenHosts(fixed, REPLIES)).toEqual([]);
+  });
+});
+
+/**
+ * THE THIRD SPELLING — `card-<issueNumber>`, the id a test-drive answer is
+ * addressed by (#2466).
+ *
+ * Measured over production 2026-10-13: 31 of his 292 replies printed "(not in
+ * the current briefing)" over six cards the briefing was holding, because
+ * `testDriveCardId` writes `card-<n>` and the index held only slugs. The
+ * fixture is the bug hunt's real shape: a completion card holding the issue
+ * under its slug, an eye item sharing one issue with a card, and a retired id.
+ */
+const EDITION_694: BriefingFacts = {
+  edition: 694,
+  acknowledgedReplyIds: [301, 302, 303, 304],
+  needsYou: [
+    { id: "bughunt-complete-2462", title: "The bug hunt is done", state: "open", issueNumber: 2462 },
+    { id: "n2d-complete-2359", title: "N2d is done", state: "done", issueNumber: 2359 },
+    { id: "no-issue-card", title: "A card with no GitHub card", state: "open", issueNumber: null },
+  ],
+  eyeItems: [
+    { id: "n2-test-drive-1644", title: "Drive N2", state: "done", issueNumber: 1644 },
+    { id: "n2d-three-surfaces-2359", title: "Three surfaces", state: "done", issueNumber: 2359 },
+  ],
+};
+
+describe("hostIndex — a test-drive answer's card-<n> id (#2466)", () => {
+  it("resolves card-<n> to the needs-you card holding that issue under a slug, and names the slug", () => {
+    const host = hostIndex(EDITION_694).get(testDriveCardId(2462));
+    expect(host).toBeDefined();
+    expect(host!.id).toBe("bughunt-complete-2462");
+    expect(host!.kind).toBe("card");
+    expect(host!.via).toBe("card number");
+  });
+
+  it("resolves card-<n> to an eye item when that is the only row naming the issue", () => {
+    const host = hostIndex(EDITION_694).get(testDriveCardId(1644));
+    expect(host?.id).toBe("n2-test-drive-1644");
+    expect(host?.kind).toBe("eye item");
+  });
+
+  it("a card and an eye item on one issue: the card wins, as needsYou wins on slugs", () => {
+    expect(hostIndex(EDITION_694).get(testDriveCardId(2359))?.id).toBe("n2d-complete-2359");
+  });
+
+  it("NEGATIVE CONTROL: a card-<n> no row carries stays absent — the 9 genuinely gone ids", () => {
+    expect(hostIndex(EDITION_694).get(testDriveCardId(1999))).toBeUndefined();
+    /* and a retired eye item's slug, the 42nd reply on the day */
+    expect(hostIndex(EDITION_694).get("eye-398-crew-surface")).toBeUndefined();
+  });
+
+  it("a row with no issue number derives no key, and nothing derives card-null", () => {
+    const keys = [...hostIndex(EDITION_694).keys()];
+    expect(keys.filter((key) => key.startsWith("card-")).sort())
+      .toEqual([testDriveCardId(1644), testDriveCardId(2359), testDriveCardId(2462)].sort());
+  });
+
+  it("an explicit slug that reads card-<n> keeps its own row — nothing that resolved moves", () => {
+    const facts: BriefingFacts = {
+      ...EDITION_694,
+      eyeItems: [...EDITION_694.eyeItems, { id: testDriveCardId(2462), title: "Slug that looks numeric", state: "open" }],
+    };
+    const host = hostIndex(facts).get(testDriveCardId(2462));
+    expect(host?.title).toBe("Slug that looks numeric");
+    expect(host?.via).toBe("id");
+  });
+
+  it("every slug still resolves by its own id, exactly as before", () => {
+    const index = hostIndex(EDITION_694);
+    for (const row of [...EDITION_694.needsYou, ...EDITION_694.eyeItems]) {
+      expect(index.get(row.id)?.id).toBe(row.id);
+      expect(index.get(row.id)?.via).toBe("id");
+    }
+  });
+});
+
+describe("staleOpenHosts — a card-<n> answer is not an answer to the card's question (#2466)", () => {
+  /* His six matched bug-hunt verdicts, acknowledged, on a completion card that
+     is `open` on purpose: it waits on his word on the next rung. */
+  const DRIVE: ReplyRow[] = [301, 302, 303].map((id) => ({ id, cardId: testDriveCardId(2462) }));
+
+  it("an acknowledged test-drive answer on an open completion card is NOT swept", () => {
+    expect(staleOpenHosts(EDITION_694, DRIVE)).toEqual([]);
+  });
+
+  it("CONTROL: the same acknowledged reply addressed by the card's own slug IS swept", () => {
+    const bySlug: ReplyRow[] = [{ id: 304, cardId: "bughunt-complete-2462" }];
+    expect(staleOpenHosts(EDITION_694, bySlug).map((entry) => entry.host.id)).toEqual(["bughunt-complete-2462"]);
   });
 });

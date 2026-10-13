@@ -337,7 +337,11 @@ try {
       const card = row.cardId === null
         ? "general note"
         : host
-          ? `${host.kind} ${row.cardId} [${host.state ?? "no state"}] — "${host.title}"`
+          /* A `card-<n>` test-drive answer resolves by issue number (#2466), so
+             the slug the page draws it under is named beside it — that is
+             the id a shift edits. */
+          ? `${host.kind} ${row.cardId}${host.id === row.cardId ? "" : ` → ${host.id}`} `
+            + `[${host.state ?? "no state"}] — "${host.title}"`
           : `card ${row.cardId} (not in the current briefing)`;
       console.log(`  #${row.id}  ${utc(row.createdAt)}  ${card}`);
       /* Verbatim, every line of it, indented but never reflowed or truncated —
