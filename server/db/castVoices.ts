@@ -19,7 +19,48 @@ import { and, eq, sql } from "drizzle-orm";
 import { castVoices, models, type CastVoiceRow } from "../../drizzle/schema";
 import { getDb, type TransactionHandle } from "./connection";
 import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
-import { signedCastWhere } from "./castingV2Sign";
+
+/**
+ * THE ROSTER'S OWN PREDICATE, FETCHED LAZILY — and the reason is measured, not
+ * stylistic.
+ *
+ * `signedCastWhere` is a four-line pure drizzle predicate and importing it is
+ * the right call: it is exported precisely so a new store decides *"is this the
+ * owner's signed live cast"* with the SAME rule the roster draws by rather than
+ * a second copy that drifts (working law 4), and the campaign store (#2249) and
+ * the creation record (#2311) both already reach for it this way.
+ *
+ * ⚠ **BUT A STATIC IMPORT OF IT HERE BROKE 26 MONEY TESTS IN TWO SUITES THAT
+ * THIS CARD NEVER TOUCHED, and the chain is worth writing down because the next
+ * new store under `db/` will meet it.** Measured by bisection, with the
+ * suites green on `main` and green again with this one line changed:
+ *
+ *   the `./db` BARREL → `accountDeletion` → `accountCastingPurge` → THIS MODULE
+ *   → `castingV2Sign` → `casting/atomicCredits` → `import { addCredits } from "../db"`
+ *
+ * `batchC-doors` and `batchC-failureInjection` mock the `./db` barrel with a
+ * factory that calls `importOriginal()`. That call initialises the REAL barrel,
+ * which — once this module joined its closure — initialised `atomicCredits`,
+ * whose **static** `addCredits` binding therefore captured the real function
+ * before the mock existed. Every refund then went to the real credit layer,
+ * found no database, and logged *"REFUND FAILED TO RECORD"* while the mocked
+ * `addCredits` was never called: `expect(addCredits).toHaveBeenCalledTimes(2)`
+ * saw 0, and a `refunded: 300` assertion read `refunded: 0`.
+ *
+ * **Nothing here can bite production, which is why this is a lazy import and
+ * not a money-path change**: production mocks nothing, so the static binding
+ * resolves to the same function either way. What the edge does is make a money
+ * test's mock sensitive to who else imports the barrel — so **the root cause is
+ * filed on its own card** (`atomicCredits` reaching money functions through the
+ * barrel rather than through `db/credits`) — **#2483** — and is deliberately NOT
+ * repaired here: it is the money path, and a fix there wants its own review and
+ * its own eye, not a ride on a voice card. When #2483 lands, this helper goes
+ * back to being a static import and that card says so.
+ */
+async function signedCastWhereLazy(userId: number) {
+  const { signedCastWhere } = await import("./castingV2Sign");
+  return signedCastWhere(userId);
+}
 
 async function requireDb() {
   const db = await getDb();
@@ -65,7 +106,7 @@ export async function readCastVoiceLine(
   const [row] = await db
     .select({ modelId: models.id, name: models.name, voice: models.voice })
     .from(models)
-    .where(and(eq(models.id, modelId), signedCastWhere(userId)))
+    .where(and(eq(models.id, modelId), await signedCastWhereLazy(userId)))
     .limit(1);
   return row ?? null;
 }
@@ -140,7 +181,7 @@ export async function insertCastVoice(input: {
           keptAt: sql<Date>`CURRENT_TIMESTAMP`.as("keptAt"),
         })
         .from(models)
-        .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
+        .where(and(eq(models.id, input.modelId), await signedCastWhereLazy(input.userId))),
     );
     return { inserted: affectedRows(result) === 1 };
   } catch (error) {
