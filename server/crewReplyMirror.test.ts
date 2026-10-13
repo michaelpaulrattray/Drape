@@ -349,4 +349,52 @@ describe("the schedule recipe, which is the only road back after a rebuild", () 
     expect(source).toMatch(/--quiet",\s*0,\s*True\)/);
     expect(source).toContain("WScript.Quit rc");
   });
+
+  it("records that the REGISTRATION died once, so a rebuild asks for the task and not for this file", () => {
+    /* ⚠ #2465, 2026-10-13: the machine changed around 7 October, this recipe came
+       with the repository and the launcher came with `.agents/` — and the task
+       itself came with neither. The mirror was dead for eleven days, 33 of his
+       replies sat past a waterline that had not moved since 2 October, and
+       nothing went red anywhere, because `.agents/` is gitignored and the whole
+       process lived in a scheduled task. What it cost is one instruction: ask
+       for the task BY NAME, and treat the two intact files as no evidence at
+       all. That instruction is held here for the same reason the arms above
+       are — a docblock nobody holds is a docblock that gets tidied away.
+
+       ⚠ SLICED, NEVER READ WHOLE-FILE. The exact-lookup command also sits in the
+       read-it-back paragraph one above it, so `expect(source).toContain(…)`
+       would stay green on a file that had lost this finding entirely — the
+       sibling trap this suite already paid for once on `IgnoreNew`. The slice is
+       anchored on the card number, that anchor is proven unique BEFORE it is
+       used, and the prose is unwrapped so a re-flowed docblock does not read as
+       a deleted one. */
+    const anchor = "card #2465";
+    expect(
+      source.split(anchor).length - 1,
+      `\`${anchor}\` is no longer a unique anchor — re-slice this arm before trusting it`,
+    ).toBe(1);
+    /* The finding runs from the anchor to the END OF THE SCHEDULE SECTION — what
+       died, then what to do about it, with a command line between them. Cutting
+       on paragraph breaks instead would stop at the command, which is exactly
+       the half the arms below are about; so the cut is the next `#` heading (or
+       the docblock's close), and that it was FOUND is asserted — a search that
+       answered nothing would otherwise hand the arms the entire file and pass. */
+    const tail = source.slice(source.indexOf(anchor));
+    const end = tail.search(/\r?\n \* # |\r?\n \*\//);
+    expect(end, "no heading or docblock close after the finding — the slice is blind").toBeGreaterThan(0);
+    const finding = tail
+      .slice(0, end)
+      .replace(/^\s*\*\s?/gm, "")
+      .replace(/\s+/g, " ");
+    expect(finding, "the exact lookup is the whole instruction — a rebuild must ask by name").toContain(
+      "Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror'",
+    );
+    expect(finding, "the finding is that the files survived and the registration did not").toMatch(
+      /asks for the task by name/i,
+    );
+    expect(finding, "a restored mirror seeds; the backlog is already on the cards by hand").toMatch(/--seed/);
+    expect(finding, "`schtasks /query` reads an absence here identically to an empty machine").toMatch(
+      /schtasks/,
+    );
+  });
 });

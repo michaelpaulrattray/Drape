@@ -84,6 +84,40 @@
  *
  *   (Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror').Actions | Format-List Execute,Arguments
  *
+ * ⚠ **AND THE FIRST THING THAT READER ANSWERS IS WHETHER THE TASK IS THERE AT
+ * ALL — IT WAS NOT, FROM EARLY OCTOBER UNTIL 2026-10-13 (card #2465).** The
+ * machine changed around 2026-10-07; the recipe above arrived with the
+ * repository, the launcher arrived with `.agents/`, and **the registration
+ * arrived with neither.** Read at the artifacts the night it was found: 188
+ * scheduled tasks on this machine, exactly one of them Drape's (`Drape Foreman
+ * Watchdog`, running), and an exact lookup of this task's name answering
+ * nothing. `.agents/crew-reply-mirror.json` still read `lastMirroredId: 259`
+ * with an mtime of 2026-10-02, and **33 of his replies sat past that
+ * waterline** — among them every step of two milestone test drives. **Nothing
+ * failed, nothing went red, and no suite could ever have seen it**: `.agents/`
+ * is gitignored and the whole process lived in a scheduled task, which is
+ * working law 7's path-three class exactly — written, wired, live, then
+ * orphaned by a change aimed at something else entirely.
+ *
+ * ⚠ **SO A MACHINE CHANGE ASKS FOR THE TASK BY NAME, AND NEITHER THIS RECIPE
+ * NOR THE LAUNCHER FILE BEING INTACT IS EVIDENCE THAT IT IS REGISTERED** — on
+ * 2026-10-13 both were, byte for byte, and the mirror had been dead for eleven
+ * days:
+ *
+ *   Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror'
+ *
+ * Nothing back means run the recipe above — and **seed rather than mirror the
+ * backlog** (`--seed` installs the waterline at the newest reply and posts
+ * nothing), because a reply that waited behind a dead mirror has already been
+ * recorded on its card by hand by the shift that acted on it: the restoration
+ * of 2026-10-13 would otherwise have posted 33 comments across 11 cards, 25 of
+ * them duplicate test-drive confirmations. ⚠ **And ask with
+ * `Get-ScheduledTask`, never `schtasks /query`, which on this machine returned
+ * zero parseable rows for all 188 tasks** — an absence read with that reader is
+ * indistinguishable from a machine holding no tasks at all. The Watchdog is the
+ * positive control: a Drape task that IS registered must be visible to the same
+ * reader before an absence counts as one.
+ *
  * # WHY A POLLER AND NOT A HOOK IN THE SERVER
  *
  * The in-server shape needs a GitHub WRITE credential on the customer-facing
