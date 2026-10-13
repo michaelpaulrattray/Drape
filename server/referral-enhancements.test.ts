@@ -153,6 +153,9 @@ import { getOrCreateReferralCode, recordEmailInvite } from "./db/referrals";
    the arm this replaces asserted `12500` against the `12500` it had just
    handed the mock, so the two could never disagree. */
 import { REFERRAL_REWARD_CREDITS } from "../drizzle/schema";
+/* #2478: the email carries the DISPLAY figure; the wire-level arm (the JSON
+   Klaviyo receives) is `referralInviteCreditScale.test.ts`. */
+import { displayBalance } from "../shared/creditDisplay";
 
 const klaviyo = vi.mocked(sendReferralInviteEmail);
 const codeReader = vi.mocked(getOrCreateReferralCode);
@@ -243,7 +246,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
       inviteeEmail: "friend@example.com",
       referrerName: "John Doe",
       referralLink: `${ORIGIN}?ref=DRAPE-ABC123`,
-      rewardCredits: REFERRAL_REWARD_CREDITS,
+      rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
     });
   });
 

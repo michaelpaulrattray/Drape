@@ -16499,6 +16499,10 @@
       "path": "server/referralCodeFormat.test.ts"
     },
     {
+      "id": "test:server/referralInviteCreditScale.test.ts",
+      "path": "server/referralInviteCreditScale.test.ts"
+    },
+    {
       "id": "test:server/refineEchoWidth.test.ts",
       "path": "server/refineEchoWidth.test.ts"
     },
@@ -35620,6 +35624,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/klaviyo.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/lib/adminActions/approvalStateBlocker.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
@@ -38802,6 +38811,11 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

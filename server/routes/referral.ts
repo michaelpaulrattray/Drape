@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
+import { displayBalance } from "@shared/creditDisplay";
 import { PRODUCT_NAME } from "@shared/brand";
 import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
@@ -135,7 +136,13 @@ export const referralRouter = router({
            name is the information rather than noise. */
         referrerName: ctx.user.name || `A ${PRODUCT_NAME} user`,
         referralLink,
-        rewardCredits: REFERRAL_REWARD_CREDITS,
+        /* #2478: the display figure, converted HERE and only here. The other
+           three uses of this constant in this file (getMyCode, getStats,
+           redeem) stay on the ledger scale because their readers
+           (ReferralBlock and RedeemCodeModal) convert at the render, so
+           converting the constant itself would make those screens say 500.
+           An email has no client to convert for it, so the router does. */
+        rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
       }).catch((err) => {
         log.error({ err: err }, "[Referral] Klaviyo email delivery failed:");
       });

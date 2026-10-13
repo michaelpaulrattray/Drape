@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from "@shared/brand";
+import type { DisplayCredits } from "@shared/creditDisplay";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("klaviyo");
 
@@ -222,7 +223,18 @@ export async function sendReferralInviteEmail(params: {
   inviteeEmail: string;
   referrerName: string;
   referralLink: string;
-  rewardCredits: number;
+  /**
+   * #2478: the reward on the DISPLAY scale (the number every screen shows),
+   * typed `DisplayCredits` so a raw ledger figure is a compile error at the
+   * caller rather than a factor-of-five lie in an email. Until this card the
+   * router sent `REFERRAL_REWARD_CREDITS` unconverted: 12,500 ledger, which
+   * the app reads to the same person as 2,500.
+   *
+   * ⚠ Whether the Klaviyo template prints `reward_credits` at all is NOT known
+   * from this repository (the template lives in Klaviyo). What is fixed here is
+   * that the value we send agrees with the product's screens.
+   */
+  rewardCredits: DisplayCredits;
 }): Promise<{ success: boolean; error?: string }> {
   // Create/update the invitee profile first
   await createOrUpdateProfile({
