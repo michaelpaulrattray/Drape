@@ -101,8 +101,6 @@ const ENROLLED: Record<string, string> = {
     "exportFileName() in exportAccountData.ts — PRODUCT_NAME, driven by exportAccountData.test.ts",
   "client/src/pages/AdminAuditLogs.tsx:result.filename":
     "server/routes/admin/auditLogs.ts — `audit-logs-<date>.csv`, staff only",
-  "client/src/pages/CastingRoom.tsx:file.name":
-    "the literal list a few lines above — character-sheet.jpg and the cast's own name",
   "client/src/features/castingV2/components/CreationCertificateRow.tsx:name":
     "the Content-Disposition server/routes/creationCertificate.ts sets — `<cast name>-certificate-of-creation.pdf` — else the literal fallback beside it",
 };

@@ -9,8 +9,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 
 import { trpc } from "@/lib/trpc";
-import { sameOriginDownloadHref } from "@/lib/imageProxy";
-import { productFilename } from "@shared/brand";
+import {
+  PACKAGE_DOWNLOAD_FAILED,
+  PACKAGE_DOWNLOAD_WORKING,
+  buildPackageZip,
+  packageFiles,
+  packageZipFilename,
+} from "./castingRoomPackage";
 import { createClientRequestId } from "@shared/clientRequestId";
 import "@/features/castingV2/castingV2.css";
 import {
@@ -111,54 +116,39 @@ const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70
 const COMPANION_LABELS = ["Three-quarter", "Side profile"];
 
 /**
- * Save every landed image in the package, one after another.
+ * Save the whole package — the character sheet and every landed view — as ONE
+ * zip named after the character (#2463, his word 2026-10-13: *"when
+ * downloading the images it should be a package not 5 individual downloads"*).
  *
- * Deliberately not a zip: an archive means a server endpoint, a temp file and a
- * new way for someone else's Cast to be read out of the wrong scope. These are
- * the same pictures the viewer already serves, fetched through the existing
- * same-origin image proxy, so the control adds an affordance and no attack
- * surface.
+ * Built in the browser (`castingRoomPackage.ts`) from the same same-origin
+ * requests the per-file links made, so the archive adds an affordance and no
+ * server surface. All or nothing: a failed fetch saves nothing and returns
+ * false so the room can say so in a sentence.
  *
- * Staggered because browsers throttle or silently drop a burst of simultaneous
- * downloads, which would look like the button half-working.
+ * THE CHARACTER SHEET LEADS (D-104): it is the one file that answers "who is
+ * this" on its own, so it is first in the archive.
  */
-function downloadPackage(frames: readonly ViewerFrame[], castId: string) {
-  /*
-    THE CHARACTER SHEET LEADS (D-104).
-
-    It is the one file that answers "who is she" on its own — the whole pack
-    composed into a single labelled turnaround — and it is what a real workflow
-    conditions on. Saved first so it is the first thing in the downloads folder
-    rather than the last.
-
-    It comes from an authenticated route rather than a public URL, because
-    unlike the views it is composed on demand for this owner. The browser sends
-    the session cookie with a same-origin navigation, so the anchor works
-    exactly like the others.
-  */
-  const files = [
-    // JPEG: the sheet is bounded to the envelope external tools accept.
-    { url: `/api/cast/${encodeURIComponent(castId)}/sheet`, name: "character-sheet.jpg" },
-    ...frames.map((frame) => ({ url: frame.url, name: productFilename(`${frame.downloadName}.png`) })),
-  ];
-  /*
-    EVERY FILE GOES OUT FROM THIS ORIGIN (#2369). The master and the views live
-    on the storage host, and a browser ignores `download` on a cross-origin link
-    — the first such click navigated this very tab to a bare picture, which also
-    cancelled the sheet still being composed, and nothing was saved. Through the
-    same-origin image proxy the attribute is honoured and the tab stays put.
-  */
-  files.forEach((file, index) => {
-    window.setTimeout(() => {
-      const link = document.createElement("a");
-      link.href = sameOriginDownloadHref(file.url, window.location.origin, file.name);
-      link.download = file.name;
-      link.rel = "noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    }, index * 400);
-  });
+async function downloadPackage(
+  frames: readonly ViewerFrame[],
+  castId: string,
+  castName: string | null,
+): Promise<boolean> {
+  let built: Awaited<ReturnType<typeof buildPackageZip>>;
+  try {
+    built = await buildPackageZip(packageFiles(frames, castId), window.location.origin);
+  } catch (error) {
+    logRawFailure("castingRoom.downloadPackage", error);
+    return false;
+  }
+  const url = URL.createObjectURL(new Blob([new Uint8Array(built.bytes)], { type: "application/zip" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = packageZipFilename(castName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return true;
 }
 
 /**
@@ -322,6 +312,8 @@ export default function CastingRoom() {
   const [deleting, setDeleting] = useState(false);
   /** The character sheet row's ⋯ menu (#2144). Above every early return. */
   const [sheetMenuOpen, setSheetMenuOpen] = useState(false);
+  /* The package zip being put together (#2463). Above every early return. */
+  const [packaging, setPackaging] = useState(false);
   /*
     The server owns the door; the client only decides whether to OFFER the
     control. `castingV2.deleteCast` asserts the same flag itself, so a menu that
@@ -1190,8 +1182,9 @@ export default function CastingRoom() {
                       THE BULK-OWNERSHIP AFFORDANCE (founder ruling,
                       2026-08-02) is unchanged under its shorter word: per-image
                       download lives in the viewer, this is everything the cast
-                      is in one action — a plain sequence of the same public URLs
-                      the viewer serves, no new server surface, no archive.
+                      is in one action — one zip built in the browser from the
+                      same same-origin requests the viewer serves, no new server
+                      surface (#2463).
 
                       ⚠ THE "A DESTRUCTIVE ACTION IS A SENTENCE, NOT A MENU"
                       RULING (founder, 2026-08-03; DECISION_LOG, same title) IS
@@ -1218,14 +1211,22 @@ export default function CastingRoom() {
                       <Button
                         variant="quiet"
                         size="small"
-                        disabled={packageFrames.length === 0}
-                        onClick={() => downloadPackage(packageFrames, castId)}
+                        disabled={packageFrames.length === 0 || packaging}
+                        aria-busy={packaging || undefined}
+                        onClick={() => {
+                          setPackaging(true);
+                          void downloadPackage(packageFrames, castId, data.name ?? null)
+                            .then((saved) => {
+                              if (!saved) toast.error(PACKAGE_DOWNLOAD_FAILED);
+                            })
+                            .finally(() => setPackaging(false));
+                        }}
                         /* The visible word is the short one his Option A
                            drew; a screen reader hears what is downloaded. */
                         aria-label="Download character sheet"
                       >
                         <Download size={12} strokeWidth={1.9} aria-hidden="true" />
-                        Download
+                        {packaging ? PACKAGE_DOWNLOAD_WORKING : "Download"}
                       </Button>
                       <span className="dpc-takes__menu dpc-menuhost">
                         <CardMenu

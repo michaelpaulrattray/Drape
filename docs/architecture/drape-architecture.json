@@ -87,7 +87,7 @@
     {
       "id": "domain:pages",
       "name": "pages",
-      "moduleCount": 19
+      "moduleCount": 20
     },
     {
       "id": "domain:platform",
@@ -2889,6 +2889,12 @@
     {
       "id": "module:client/src/pages/VerifyEmail.tsx",
       "path": "client/src/pages/VerifyEmail.tsx",
+      "domain": "pages",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/pages/castingRoomPackage.ts",
+      "path": "client/src/pages/castingRoomPackage.ts",
       "domain": "pages",
       "lifecycle": "active"
     },
@@ -13131,6 +13137,10 @@
     {
       "id": "test:client/src/pages/castingDeleteFailure2383.test.ts",
       "path": "client/src/pages/castingDeleteFailure2383.test.ts"
+    },
+    {
+      "id": "test:client/src/pages/castingRoomPackage.test.ts",
+      "path": "client/src/pages/castingRoomPackage.test.ts"
     },
     {
       "id": "test:client/src/pages/characterNoun2382.test.ts",
@@ -23806,17 +23816,12 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:client/src/lib/imageProxy.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
-      "to": "module:shared/brand.ts",
+      "to": "module:client/src/pages/castingRoomPackage.ts",
       "kind": "imports"
     },
     {
@@ -23832,6 +23837,16 @@
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:shared/refundCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/castingRoomPackage.ts",
+      "to": "module:client/src/lib/imageProxy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/castingRoomPackage.ts",
+      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {
