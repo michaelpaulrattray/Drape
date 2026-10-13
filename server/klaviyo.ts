@@ -230,9 +230,31 @@ export async function sendReferralInviteEmail(params: {
    * router sent `REFERRAL_REWARD_CREDITS` unconverted: 12,500 ledger, which
    * the app reads to the same person as 2,500.
    *
-   * ⚠ Whether the Klaviyo template prints `reward_credits` at all is NOT known
-   * from this repository (the template lives in Klaviyo). What is fixed here is
-   * that the value we send agrees with the product's screens.
+   * ⚠ **THE "NOT KNOWN" SENTENCE THAT STOOD HERE WAS WRONG ABOUT THIS
+   * REPOSITORY — corrected 2026-10-13 (#2478's last item).** It read *"Whether
+   * the Klaviyo template prints `reward_credits` at all is NOT known from this
+   * repository (the template lives in Klaviyo)"*, and the template that flow
+   * was built from is IN the tree: `server/scripts/setupKlaviyoReferralFlow.mjs`
+   * creates it, and it prints the variable **three times** — the SUBJECT LINE
+   * (`:331`, *"claim your {{ event.reward_credits }} credits"*), a 36-pixel
+   * headline (`:94`) and the sentence under the button (`:112`). So this field
+   * is customer-facing COPY rather than metadata, and it is in the first
+   * sentence a stranger ever reads about this product.
+   *
+   * ⚠ **The LIVE flow is still the artifact and that script is a report of it**
+   * (working law 1): it may have been run, re-run, or replaced by hand since,
+   * and nothing here can tell. What no longer stands is the belief that the
+   * question is unanswerable from inside the repository — it is answerable
+   * about the template we ship, and that is the one this field was written for.
+   *
+   * ✅ **AND NOBODY HAS EVER READ THE WRONG FIGURE — read at production
+   * 2026-10-13, three ways that agree.** `audit_logs` holds 0 rows of
+   * `referral.invite_sent` and `referrals` 0 rows all time, so no invite has
+   * ever been fired; and the service holds no `KLAVIYO_PRIVATE_KEY` at all, so
+   * none could have reached Klaviyo if one had been (read twice, with
+   * `RESEND_API_KEY` as the positive control on the reader). ⚠ **That absence
+   * is its own defect and it is #2481, not this one**: the invite answers
+   * *"Invitation sent."* while no email can leave the building.
    */
   rewardCredits: DisplayCredits;
 }): Promise<{ success: boolean; error?: string }> {
@@ -264,9 +286,20 @@ export async function sendReferralInviteEmail(params: {
  * address `Login.tsx` gives the same person in the same situation (#392), which
  * is why it is a `mailto:` and not an invented page.
  *
- * ⚠ It is NOT known whether the Klaviyo template renders `support_url` at all —
- * the template lives in Klaviyo, not in this repository. Do not assert it in
- * either direction; what is fixed here is that the value we send is reachable.
+ * ⚠ **AND THE SAME "NOT KNOWN" SENTENCE STOOD HERE AND WAS WRONG THE SAME WAY
+ * — corrected 2026-10-13 in #2478's sweep, because a wrong sentence repeated
+ * in two docblocks is one class and not two instances.** It read *"It is NOT
+ * known whether the Klaviyo template renders `support_url` at all — the
+ * template lives in Klaviyo, not in this repository."* The template this flow
+ * was built from is in the tree as well: `docs/klaviyo-account-frozen-flow-setup.md`
+ * carries the HTML to paste, and it renders `support_url` **twice** — as the
+ * appeal BUTTON's `href` (`:211`) and as the *"contact support"* link in the
+ * closing line (`:240`). So this address is the only way out of a freeze that
+ * email offers, which is why #452 was worth its card.
+ *
+ * ⚠ **The live flow is still the artifact** (working law 1) — a hand-built
+ * flow could render something else, and nothing here can tell. What is
+ * corrected is only the claim that the repository cannot say.
  */
 const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";
 

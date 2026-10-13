@@ -15,9 +15,22 @@
  * procedures whose readers DO convert keep the ledger figure, so a repair at
  * the constant (which would make those screens say 500) reddens here.
  *
- * Not proven, because it cannot be from this repository: whether the Klaviyo
- * template prints `reward_credits` at all.
+ * ⚠ **AND THE CARD'S LAST ITEM IS ANSWERED, SO THE SENTENCE THAT CLOSED THIS
+ * BLOCK IS GONE — 2026-10-13.** It read *"Not proven, because it cannot be from
+ * this repository: whether the Klaviyo template prints `reward_credits` at
+ * all."* The template that flow was built from is in the tree
+ * (`server/scripts/setupKlaviyoReferralFlow.mjs`), it prints the variable in
+ * the SUBJECT LINE and twice in the body, and the third describe below reads
+ * that file and proves it — so the citation in `klaviyo.ts`'s own docblock
+ * cannot rot quietly into a false comment.
+ *
+ * ⚠ **What is still not provable here is narrower and is stated in that
+ * describe's own body**: whether the LIVE Klaviyo flow is that template.
+ * Working law 1 — the script is a report, the flow is the artifact.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./db/referrals", () => ({
@@ -48,6 +61,10 @@ import { displayBalance } from "../shared/creditDisplay";
 
 const ORIGIN = "https://klieglabs.com";
 const EVENTS_URL = "https://a.klaviyo.com/api/events";
+/* Said ONCE: the wire arm below asserts the event carries this metric name, and
+   the template arm asserts the file it reads is the setup for the same one. Two
+   copies of it would be free to drift apart into agreement with nothing. */
+const INVITE_METRIC = "Referral Invite Sent";
 
 /* A fresh id per caller: the invite and redeem rate limits are keyed on the
    user id in module-level maps no export can clear. */
@@ -91,7 +108,7 @@ async function inviteEventProperties(): Promise<Record<string, unknown>> {
   });
   const [, init] = fetchMock.mock.calls.find(([url]) => url === EVENTS_URL)!;
   const body = JSON.parse((init as { body: string }).body);
-  expect(body.data.attributes.metric.data.attributes.name).toBe("Referral Invite Sent");
+  expect(body.data.attributes.metric.data.attributes.name).toBe(INVITE_METRIC);
   return body.data.attributes.properties;
 }
 
@@ -134,5 +151,49 @@ describe("the three screens that convert for themselves still receive the ledger
     vi.mocked(redeemReferralCode).mockResolvedValue({ success: true } as never);
     const result = await caller().redeem({ code: "KLIEG-ABC123" });
     expect(result.rewardCredits).toBe(REFERRAL_REWARD_CREDITS);
+  });
+});
+
+/*
+  THE CARD'S THIRD "DONE WHEN", AND IT IS THE ONE PR #2480 LEFT OPEN: read the
+  template, so the record says whether anybody could ever have seen the wrong
+  number instead of leaving it unknown a second time.
+
+  The answer is that this field is COPY and not metadata — it is in the subject
+  line of an email to somebody who has never heard of this product — and the
+  arms below hold that citation to the bytes it cites, because a comment naming
+  a file and three line numbers is exactly the kind of claim this repository has
+  been bitten by believing.
+
+  ⚠ WHAT THESE ARMS DO NOT PROVE, and it is why the describe is named as it is:
+  the LIVE Klaviyo flow is the artifact and this script is a report of it
+  (working law 1). It may have been run, re-run, or replaced by hand. What is
+  proven is the template this repository prescribes — and that nobody has yet
+  received either version, read at production 2026-10-13: zero
+  `referral.invite_sent` audit rows, zero `referrals` rows all time, and no
+  `KLAVIYO_PRIVATE_KEY` on the service at all, which is its own defect (#2481).
+
+  ONE named, tracked file is read — not a tree walk — so this suite stays out of
+  the contended-timeout population and needs no `readListedSource`.
+*/
+const INVITE_TEMPLATE_SETUP = join(import.meta.dirname, "scripts", "setupKlaviyoReferralFlow.mjs");
+
+describe("the template this repository prescribes for that flow prints the figure", () => {
+  const setup = readFileSync(INVITE_TEMPLATE_SETUP, "utf8");
+
+  it("is the setup for the metric this event fires, so it is the right file to be reading", () => {
+    /* The control on the instrument: without this the arms below would pass on
+       any file in the tree that happened to carry the variable. */
+    expect(setup).toContain(`name: "${INVITE_METRIC}"`);
+  });
+
+  it("prints reward_credits, so what we send is read by a person and not by a machine", () => {
+    expect(setup).toMatch(/\{\{\s*event\.reward_credits\s*\}\}/);
+  });
+
+  it("prints it in the SUBJECT LINE — the half that settles copy versus metadata", () => {
+    /* Deliberately the brand-free fragment: the subject still says the retired
+       product's name (#2481), and this arm must not redden when that is fixed. */
+    expect(setup).toContain("claim your {{ event.reward_credits }} credits");
   });
 });

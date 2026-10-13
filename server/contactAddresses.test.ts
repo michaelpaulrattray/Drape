@@ -217,10 +217,21 @@ describe("#392 — the client's contact addresses", () => {
  *
  * - It reads **string literals in server source**. A pointer assembled at
  *   runtime, or read from an env var, is invisible to it.
- * - **Whether Klaviyo's template renders `support_url` at all is UNVERIFIED** —
- *   the template lives in Klaviyo, not in this repository. What is proven here
- *   is that the value we put on the wire is reachable, not that a customer's
- *   eye ever meets it.
+ * - ⚠ **THE BULLET THAT STOOD HERE WAS WRONG ABOUT THIS REPOSITORY —
+ *   corrected 2026-10-13 in #2478's sweep, the third copy of one sentence.**
+ *   It read *"Whether Klaviyo's template renders `support_url` at all is
+ *   UNVERIFIED — the template lives in Klaviyo, not in this repository."* The
+ *   template this flow was built from is in the tree:
+ *   `docs/klaviyo-account-frozen-flow-setup.md` carries the HTML to paste and
+ *   renders `support_url` **twice** — the appeal BUTTON's `href` (`:211`) and
+ *   the closing *"contact support"* link (`:240`). So this address is the only
+ *   way out of a freeze that the email offers, which is what makes the arms
+ *   below worth their run. What is still unverified is narrower and is the
+ *   LIVE flow (working law 1: the doc is a report, the flow is the artifact),
+ *   and ⚠ **there is no transport for it at all today** — production holds no
+ *   `KLAVIYO_PRIVATE_KEY`, so a frozen customer is told nothing by any
+ *   template (#2481, read at the service 2026-10-13). So a clean run here
+ *   still does not mean a customer's eye met the address.
  * - The dead-path arm compares a **literal** path against the route table, so a
  *   pointer into a parameterized route (`/casting/cast/123` against the declared
  *   `/casting/cast/:castId`) would false-red. Fail-LOUD, and deliberately not
