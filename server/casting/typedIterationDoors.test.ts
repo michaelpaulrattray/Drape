@@ -65,10 +65,21 @@ vi.mock("../db", async (importOriginal) => {
     createModelAsset: vi.fn().mockResolvedValue({ success: true, assetId: 501 }),
     markModelAssetsStale: vi.fn().mockResolvedValue({ success: true }),
     finalizeClaimedGenerationOperationSuccess: vi.fn().mockResolvedValue(undefined),
-    deductCredits: vi.fn().mockResolvedValue({ success: true }),
-    addCredits: vi.fn().mockResolvedValue({ success: true }),
     markGenerationOperationRunning: vi.fn().mockResolvedValue({ operationId: "11111111-1111-4111-8111-111111111111", chargeReferenceId: "op:11111111-1111-4111-8111-111111111111:charge" }),
     assertGenerationOperationSnapshotHead: vi.fn().mockResolvedValue(undefined),
+  };
+});
+/* The money functions are mocked where they are DECLARED, not on the barrel
+   (#2483): `casting/atomicCredits` binds them from `db/credits`, so a barrel
+   override would never reach it. The barrel re-exports this module, so
+   `deductCredits`/`addCredits` imported from the barrel below are these same
+   mocks, whatever order the import graph initialises in. */
+vi.mock("../db/credits", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../db/credits")>();
+  return {
+    ...actual,
+    deductCredits: vi.fn().mockResolvedValue({ success: true }),
+    addCredits: vi.fn().mockResolvedValue({ success: true }),
   };
 });
 vi.mock("../db/connection", async (importOriginal) => {

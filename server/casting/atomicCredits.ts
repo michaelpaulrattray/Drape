@@ -25,8 +25,18 @@
 import { randomUUID } from "node:crypto";
 import { displayPrice, displayRefund, formatCredits } from "../../shared/creditDisplay";
 import { creditsReturnedText } from "../../shared/refundCopy";
-import { deductCredits, addCredits, normalizeCreditReferenceId } from "../db";
-import type { CreditToolKind } from "../db/credits";
+// From the module that DECLARES them, never through the `../db` barrel (#2483).
+// Through the barrel, a test's barrel mock reached this binding only when no
+// module in the barrel's own import closure imported this file first — one
+// ordinary new import edge under db/ turned 54 money assertions red in four
+// suites the change never touched. Bound here, a test reaches it by mocking
+// `db/credits`, which holds whatever the import graph does.
+import {
+  deductCredits,
+  addCredits,
+  normalizeCreditReferenceId,
+  type CreditToolKind,
+} from "../db/credits";
 import { TRPCError } from "@trpc/server";
 import { SpokenError, spokenError } from "../_core/spokenError";
 import { publicErrorMessage } from "../lib/publicError";

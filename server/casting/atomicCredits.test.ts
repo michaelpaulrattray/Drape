@@ -26,8 +26,13 @@ const ledger = vi.hoisted(() => {
   return state;
 });
 
-vi.mock("../db", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../db")>();
+/* The money functions are mocked where they are DECLARED, not on the barrel
+   (#2483): `casting/atomicCredits` binds them from `db/credits`, so a barrel
+   override would never reach it. The barrel re-exports this module, so
+   `deductCredits`/`addCredits` imported from the barrel below are these same
+   mocks, whatever order the import graph initialises in. */
+vi.mock("../db/credits", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../db/credits")>();
   return {
     ...actual,
     // Mirrors deductCredits: atomic conditional decrement + a transaction row
