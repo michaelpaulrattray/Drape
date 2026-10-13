@@ -4,6 +4,31 @@
  *
  * Sensitive fields (internal IDs, S3 keys, suspension metadata, IP addresses)
  * are excluded from the export to prevent information leakage.
+ *
+ * ⚠ **EVERY CREDIT FIGURE IN HERE IS ON THE CUSTOMER'S SCALE, AND IT WAS THE
+ * LEDGER'S UNTIL #2475.** This file is a customer-facing surface wearing a
+ * `server/db/` path: `account.exportData` hands what it returns to
+ * `JSON.stringify` and a browser download (Settings → Security → *Export my
+ * data*), with nothing between the rows and the file. So the founder's P1
+ * ruling binds it exactly as it binds a screen — the display helper is *"the
+ * ONLY source of any credit number a customer sees"* — and nine fields plus
+ * the stored transaction sentence were shipping the internal figure, five
+ * times what the balance chip showed the same person on the same account.
+ *
+ * The repair is at the READ and the stored rows are untouched (#2027's
+ * precedent): each figure below goes through `shared/creditDisplay.ts` by its
+ * own meaning — a balance DOWN, a charge UP, a signed history row by its sign
+ * — and the transaction sentence is composed here rather than replayed, for
+ * the reasons on `customerCreditNote`.
+ *
+ * ⚠ **Nothing in the credit-number census could see this file and nothing can
+ * see one like it.** `server/testing/creditDisplaySites.ts` reads three
+ * textual shapes, and `balance: userCredits.balance` inside an object literal
+ * is none of them — so the one customer-facing surface that ships every credit
+ * number at once was the surface outside the instrument. The guard here is
+ * `server/gdprExportCreditScale.test.ts`, which drives the real procedure over
+ * sentinel ledger rows and reads the serialized file; the census now names
+ * this shape in its own "what it does NOT see" list.
  */
 
 import { asc, eq, desc, inArray } from "drizzle-orm";
@@ -22,6 +47,13 @@ import {
   modelEvidenceCrops,
   modelReferencePlates,
 } from "../../drizzle/schema";
+import {
+  customerCreditNote,
+  displayBalance,
+  displayMovement,
+  displayPrice,
+  type DisplayCredits,
+} from "../../shared/creditDisplay";
 import { getDb } from "./connection";
 import {
   resolveEvidenceOwnerDelivery,
@@ -49,21 +81,38 @@ export interface GdprExportData {
     createdAt: string;
     lastSignedIn: string;
   };
+  /**
+   * ⚠ **THE FOUR CREDIT FIGURES HERE ARE `DisplayCredits`, NOT `number`
+   * (#2475)** — the brand is the half of the repair a reader cannot walk past:
+   * assigning `userCredits.balance` back to any of them is a `pnpm check`
+   * error at the line, not a wrong number in a customer's file.
+   */
   subscription: {
     planTier: string;
-    balance: number;
-    creditsPurchased: number;
-    creditsUsed: number;
-    rolloverCredits: number;
+    balance: DisplayCredits;
+    /** Lifetime bought, so a balance-shaped figure: rounds DOWN. */
+    creditsPurchased: DisplayCredits;
+    /** Lifetime charged, so a price-shaped figure: rounds UP. */
+    creditsUsed: DisplayCredits;
+    rolloverCredits: DisplayCredits;
     subscriptionStatus: string | null;
     currentPeriodStart: string | null;
     currentPeriodEnd: string | null;
   } | null;
   creditHistory: Array<{
-    amount: number;
+    /** Signed, so the sign picks the rounding — `displayMovement` (#2475). */
+    amount: DisplayCredits;
     type: string;
-    description: string | null;
-    balanceAfter: number;
+    /**
+     * COMPOSED HERE, never the stored sentence (#2475, #1736). The stored one
+     * holds ledger figures — *"Monthly credit refresh (180000 credits + 0
+     * rollover)"* — and is already written, so it cannot be made correct for a
+     * customer; `customerCreditNote` states the kind, the direction and the
+     * same converted figure this record's `amount` carries. Never null, because
+     * it no longer depends on a column that may be.
+     */
+    description: string;
+    balanceAfter: DisplayCredits;
     createdAt: string;
   }>;
   models: Array<{
@@ -156,7 +205,8 @@ export interface GdprExportData {
   generations: Array<{
     type: string;
     status: string;
-    pointsCost: number;
+    /** What this cost, so it rounds UP — never less than was charged (#2475). */
+    pointsCost: DisplayCredits;
     resultUrl: string | null;
     createdAt: string;
     completedAt: string | null;
@@ -166,7 +216,8 @@ export interface GdprExportData {
     sent: Array<{
       referredEmail: string | null;
       status: string;
-      creditsAwarded: number;
+      /** Credits the customer EARNED, so a balance: rounds DOWN (#2475). */
+      creditsAwarded: DisplayCredits;
       createdAt: string;
     }>;
   };
@@ -206,12 +257,20 @@ export async function exportUserData(
     .where(eq(credits.userId, userId))
     .limit(1);
 
-  // 3. Credit history (all transactions)
+  /*
+    3. Credit history (all transactions)
+
+    ⚠ **`description` IS NOT SELECTED, AND THAT IS THE FIX RATHER THAN A
+    TIDY-UP (#2475).** The stored sentence holds ledger figures and is not
+    exported, so the column never enters this process — leaving it in the
+    projection and declining to use it would put the wrong figure one keystroke
+    from the file again. `server/gdprExportCreditScale.test.ts` reads the
+    statement on the wire for it (working law 5).
+  */
   const txns = await db
     .select({
       amount: creditTransactions.amount,
       type: creditTransactions.type,
-      description: creditTransactions.description,
       balanceAfter: creditTransactions.balanceAfter,
       createdAt: creditTransactions.createdAt,
     })
@@ -520,22 +579,35 @@ export async function exportUserData(
     subscription: userCredits
       ? {
           planTier: userCredits.planTier,
-          balance: userCredits.balance,
-          creditsPurchased: userCredits.creditsPurchased,
-          creditsUsed: userCredits.creditsUsed,
-          rolloverCredits: userCredits.rolloverCredits,
+          /*
+            Each by its own meaning, and the pairing is the house answer rather
+            than a choice made here: the admin panel's own account detail reads
+            these same two columns as `displayBalance(creditsPurchased)` and
+            `displayPrice(creditsUsed)` (`client/src/features/admin/UserTable.tsx`).
+          */
+          balance: displayBalance(userCredits.balance),
+          creditsPurchased: displayBalance(userCredits.creditsPurchased),
+          creditsUsed: displayPrice(userCredits.creditsUsed),
+          rolloverCredits: displayBalance(userCredits.rolloverCredits),
           subscriptionStatus: userCredits.subscriptionStatus,
           currentPeriodStart: userCredits.currentPeriodStart?.toISOString() ?? null,
           currentPeriodEnd: userCredits.currentPeriodEnd?.toISOString() ?? null,
         }
       : null,
-    creditHistory: txns.map((t) => ({
-      amount: t.amount,
-      type: t.type,
-      description: t.description,
-      balanceAfter: t.balanceAfter,
-      createdAt: t.createdAt.toISOString(),
-    })),
+    creditHistory: txns.map((t) => {
+      /*
+        ONE conversion, read twice — the field and the sentence cannot disagree
+        about the figure, which is the property the half-fix fails.
+      */
+      const amount = displayMovement(t.amount);
+      return {
+        amount,
+        type: t.type,
+        description: customerCreditNote(t.type, amount),
+        balanceAfter: displayBalance(t.balanceAfter),
+        createdAt: t.createdAt.toISOString(),
+      };
+    }),
     models: modelsWithAssets,
     campaigns: exportedCampaigns,
     creationRecords: exportedCreationRecords,
@@ -546,7 +618,7 @@ export async function exportUserData(
     generations: gens.map((g) => ({
       type: g.type,
       status: g.status,
-      pointsCost: g.pointsCost,
+      pointsCost: displayPrice(g.pointsCost),
       resultUrl: g.resultUrl,
       createdAt: g.createdAt.toISOString(),
       completedAt: g.completedAt?.toISOString() ?? null,
@@ -556,7 +628,7 @@ export async function exportUserData(
       sent: sentReferrals.map((r) => ({
         referredEmail: r.referredEmail,
         status: r.status,
-        creditsAwarded: r.creditsAwarded,
+        creditsAwarded: displayBalance(r.creditsAwarded),
         createdAt: r.createdAt.toISOString(),
       })),
     },
