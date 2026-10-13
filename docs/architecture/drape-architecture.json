@@ -15755,6 +15755,10 @@
       "path": "server/gdprExportCreationRecords.test.ts"
     },
     {
+      "id": "test:server/gdprExportCreditScale.test.ts",
+      "path": "server/gdprExportCreditScale.test.ts"
+    },
+    {
       "id": "test:server/gdprExportPersona.test.ts",
       "path": "server/gdprExportPersona.test.ts"
     },
@@ -34807,6 +34811,11 @@
     {
       "from": "module:server/db/gdprExport.ts",
       "to": "module:server/db/connection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/gdprExport.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {

@@ -326,6 +326,109 @@ export function staffLedgerProse(description: string): string {
 }
 
 /**
+ * What one credit movement is CALLED in a customer's own data export — the
+ * kind and the direction, and never a reason the row does not carry (#2475).
+ *
+ * # Why the export composes its sentence instead of printing the stored one
+ *
+ * `staffLedgerProse` above is the other half of this question and takes the
+ * other road: a moderator reads the STORED sentence with its composed figures
+ * restated, because a moderator has the ledger figure beside every number and
+ * can see which scale each is on. A customer has neither, and the stored
+ * sentence cannot be made correct for them:
+ *
+ *   - it holds LEDGER figures — the monthly-refresh sentence states the plan's
+ *     internal grant, five times the figure on the plan card — and those rows
+ *     are already written, so no fix reaches them retroactively (#1736's own
+ *     second bullet);
+ *   - `staffLedgerProse`'s repair cannot be reused as written, because the
+ *     labelled form it produces puts the internal figure on the line beside
+ *     the customer's, on purpose;
+ *   - and the half-fix — converting the row's `amount` while still printing
+ *     the stored sentence — is worse than today: one record would hold the
+ *     converted amount beside a sentence stating the internal one, two scales
+ *     with nothing to tell them apart.
+ *
+ * ⚠ **The worked example is in `server/gdprExportCreditScale.test.ts`'s own
+ * header and NOT here, on purpose**: it quotes a plan's grant, this module is
+ * on `MONEY_PATHS`, and `server/pricedProseFreshness.test.ts` indicts a credit
+ * figure in a priced module's prose precisely because that is where one rots
+ * unnoticed. The example belongs beside the fixture that drives it.
+ *
+ * So the export states the one thing it can state truthfully and completely:
+ * what KIND of movement this was, which way it went, and how many credits on
+ * the only scale the customer has ever been shown.
+ *
+ * # It never claims a reason, and that is deliberate rather than terse
+ *
+ * One `type` covers movements with different causes: `subscription` is both
+ * the monthly refresh and the plan-credit expiry 30 days after a plan ends
+ * (`server/db/billing.ts`), and `bonus` is the welcome bonus, the referral
+ * bonus, goodwill credits AND the 90-day promo expiry. A sentence saying
+ * *"Monthly plan refresh"* over an expiry row would be a NEW wrong statement
+ * in place of a wrongly-scaled one, which is no repair at all. The direction
+ * comes from the sign the row already carries; the cause does not, so it is
+ * not asserted.
+ *
+ * ⚠ **The declared loss, so it is not discovered later as a defect**: the
+ * stored sentences that hold no figure at all are correct as written and are
+ * dropped with the rest — *"Plan credits expired 30 days after the plan
+ * ended"*, *"Welcome bonus: referred by a friend"*, *"Wardrobe VTO
+ * generation"*. Nothing of the CUSTOMER'S leaves the export (the amount, the
+ * kind, the balance, the date and every other row stay, and a stored
+ * description is the product's own prose or a staff member's, never theirs) —
+ * but a reason they could read before is gone, and restoring one honestly
+ * means naming the cause on the ROW rather than parsing it back out of our old
+ * prose.
+ */
+const CUSTOMER_CREDIT_KIND: Readonly<Record<string, string>> = {
+  generation: "Studio work",
+  purchase: "Purchase",
+  bonus: "Bonus",
+  refund: "Refund",
+  signup: "Signup bonus",
+  topup: "Credit top-up",
+  subscription: "Plan credits",
+  admin_add: "Adjustment by the Klieg team",
+  admin_deduct: "Adjustment by the Klieg team",
+};
+
+/**
+ * The kind word for a `creditTransactions.type`, or a plain fallback.
+ *
+ * The vocabulary is held equal to the column's own enum by
+ * `server/gdprExportCreditScale.test.ts`, which reads `enumValues` off the
+ * schema rather than restating the nine values — a tenth kind added to the
+ * column reddens there instead of shipping as "Credit movement". The fallback
+ * exists anyway, because a row written before a value was retired must still
+ * export rather than throw.
+ */
+export function customerCreditKind(type: string): string {
+  return CUSTOMER_CREDIT_KIND[type] ?? "Credit movement";
+}
+
+/**
+ * The sentence a customer's export states about one credit movement.
+ *
+ * Takes a `DisplayCredits`, so the figure in the sentence is the SAME
+ * converted figure as the record's own `amount` field and cannot be a second
+ * scale — which is the property the half-fix above fails. A ledger number
+ * passed here does not compile.
+ */
+export function customerCreditNote(type: string, movement: DisplayCredits): string {
+  const value = finiteLedger(movement, "customerCreditNote");
+  const kind = customerCreditKind(type);
+  if (value === 0) return `${kind} — no credits moved`;
+  /*
+    The magnitude of a display figure is still a display figure — this takes no
+    scale decision, which is why it is a cast inside this module rather than a
+    conversion. The sign has already chosen the rounding in `displayMovement`.
+  */
+  const magnitude = (value < 0 ? -value : value) as DisplayCredits;
+  return `${kind} — ${value < 0 ? "used" : "added"} ${formatCredits(magnitude)} credits`;
+}
+
+/**
  * The most one admin Add or Deduct may move, in DISPLAY credits (#1986) — and,
  * since #2010, the most one moderator credit request may ask for.
  *
