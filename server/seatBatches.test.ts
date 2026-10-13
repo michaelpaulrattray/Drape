@@ -1163,11 +1163,36 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        on the hunt's FIX cards.** They are `bug` cards, `rungHoldFor` holds every
        rung-labelled card that is not the focus rung, and labelling them would
        hold the lot the moment the focus moves off `BH` — so the label sits on
-       the parent #2115 alone and the fixes stay rungless and takeable. **This
-       pin moves only on his word. The next flip is BH → whatever he names, on
-       the hunt's completion card and his word — never on the fix list merely
-       emptying.** */
-    expect(focusRungFromLadder(ladder)).toBe("BH");
+       the parent #2115 alone and the fixes stay rungless and takeable.
+
+       ⚠ **MOVED BH → N4b ON 2026-10-13, AND IT IS THE FIRST FLIP IN FIVE THAT
+       NEEDED NO NEW KEY.** His word, in chat: *"Yes we will begin n4b"* —
+       recorded on the hunt's completion card **#2462** at 03:26:12Z in the
+       comment that closed it, and carried in the merged design doc's own header
+       (`9a3dc1586`). He gave it after all six of that card's test-drive steps
+       came back `matched` (#287–#292, 01:29–01:33Z), and he **passed over the
+       recommendation**, which was N3 — a boundary is where he changes scope, so
+       no reader here may ever treat a recommendation as the next rung.
+
+       ⚠ **AND THE TWO HOURS BEFORE THIS COMMIT ARE THE FIFTH INSTANCE OF THE
+       CLASS THE PARAGRAPH ABOVE DESCRIBES, ON THE VERY NEXT BOUNDARY.** His
+       word reached THREE artifacts — the closing comment, #2469's first line,
+       and the design doc — and reached neither the rulebook nor this briefing,
+       so the cut answered `milestone BH` with `focusCard: null` while all five
+       N4b cards, four of them `founder-ordered`, were skipped with *"on rung
+       N4b, and the milestone is BH … opens on his word"*. ⚠ **The sharper half:
+       the previous shift QUOTED his word in its handoff and then wrote *"DO NOT
+       FLIP THE LADDER"* — a stale hold is indistinguishable from a live one,
+       which is law 2y, and it is why the clause below names its own condition.
+
+       ⚠ **Unlike the last two flips, `N4b` was already on the ladder**, so only
+       its `state` moved — and it is deliberately LEFT below `N3` and `N4`,
+       because this reader finds the `current` row by state and never by
+       position, and the order then tells him the truth: he chose N4b over two
+       rungs still queued above it. **This pin moves only on his word. The next
+       flip is N4b → whatever he names, on N4b's completion card and his word —
+       never on the four build cards merely closing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N4b");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {

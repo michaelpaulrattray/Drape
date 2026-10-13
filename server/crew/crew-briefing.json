@@ -1,33 +1,41 @@
 {
-  "edition": 694,
-  "updatedAt": "2026-10-13T02:35:00.000Z",
-  "shift": "Foreman — foreman-20261013-1219 (background: your six test-drive answers came back matched and this page said the crew had not read them — and the reply mirror, the standing process that copies your Desk replies onto their cards within a minute, had not been running since 2 October and is registered and firing again, #2465)",
+  "edition": 695,
+  "updatedAt": "2026-10-13T04:45:00.000Z",
+  "shift": "Foreman — foreman-20261013-1517 (you opened the Voice rung this morning — \"Yes we will begin n4b\" — and this page was still asking you to name it. The four cards you ordered were held from every builder on a rung that had already finished. The ladder, the rulebook and both guards move together here, and the cards are takeable now. Queue: 52 open, 17 with no movement in a week, and one card still waits on you — #2315, whether the retired Gemini code is deleted or kept)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "The bug hunt is finished and the focus is clear. Fifty problems were found by reading through the screens a customer actually touches: forty-six are fixed and live, and four were closed without a fix — one was the same problem twice, one did not happen when it was tested against real Stripe, and one was your own call about a remade Google account. Nothing new was built while it ran. You drove all six test-drive steps and all six came back matched, so the only thing left on card #2462 is the one word on what comes next. Nothing new starts until you name it.",
-      "quote": null,
-      "quotedAt": null
+      "state": "confirmed",
+      "title": "Voice. Every signed cast already has a written line saying how they sound — this rung lets you hear it. The crew makes a few real voices from that line, you play each one and keep the one that sounds right, and from then on that voice belongs to the cast. Nothing on screen names the company making the sound. It is built on your account first, in four steps: making and storing a voice with no screen yet, then listening and picking on the cast's Voice card, then the real price and the limits, then re-making a voice when a slot is needed. The design is written and merged.",
+      "quote": "Yes we will begin n4b",
+      "quotedAt": "2026-10-13T03:26:12Z"
     },
     "milestone": {
-      "title": "The bug hunt — every defect a customer could hit, found and fixed before N3. Nothing new gets built while it runs: this rung is about what already exists stopping being wrong.",
+      "title": "Voice — a cast's written voice line becomes a voice you can actually hear, make again, and keep. Built on your account first, and nothing on screen names the company making the sound.",
       "steps": [
         {
-          "title": "The hunting itself — agents read through every screen a customer touches and filed every real defect as a card. Called done by the relay on 13 October, and you closed the rung on that (#2115)",
+          "title": "The design, written and merged — one engine for creatures and people alike, settled by your ear on six pairs, and the Voice card surface you had already approved",
           "state": "done"
         },
         {
-          "title": "Fixing what they found — fifty cards in all: forty-six fixed, merged and live, and four closed without a fix. Every bug card filed during the hunt is closed",
-          "state": "done"
-        },
-        {
-          "title": "Four older ones we are deliberately not fixing now — three wait for the sign-in, landing and canvas redesigns you have already ordered, and one we decided against (#1921, #1922, #1707, #1736)",
+          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a 90-second reading of it stored beside it (#2469)",
           "state": "waiting"
         },
         {
-          "title": "Your completion card, with what is worth your hands and eyes — filed on the relay's judgement that the hunting was done, not because the fix list was empty (#2462) — you drove all six of its steps and all six came back matched",
-          "state": "done"
+          "title": "Listen and pick, on the cast's Voice card — a few voices made from the text, play each one, keep the one that sounds right (#2470)",
+          "state": "waiting"
+        },
+        {
+          "title": "Ready to widen — the real price on the button, the monthly allowance visible to staff, and every refusal seen on screen before anyone else gets it (#2471)",
+          "state": "waiting"
+        },
+        {
+          "title": "Re-making a voice when the slots are full, after your ear closed its court — you said re-mint sounds better in some cases (#2472)",
+          "state": "waiting"
+        },
+        {
+          "title": "One correction owed to the design before it is built from — it describes your ElevenLabs account as it was before you upgraded it (#2474)",
+          "state": "waiting"
         }
       ]
     },
@@ -69,8 +77,8 @@
       },
       {
         "key": "BH",
-        "title": "The bug hunt — every defect a customer could hit, found and fixed before N3. Your own order: it runs once all of N2 is finished and before N3 starts",
-        "state": "current"
+        "title": "The bug hunt — fifty problems found by reading the screens a customer touches: forty-six fixed and live, four closed without a fix. You drove all six checks and all six matched",
+        "state": "done"
       },
       {
         "key": "N3",
@@ -84,8 +92,8 @@
       },
       {
         "key": "N4b",
-        "title": "Voice — the cast gets a voice, on your word: \"give voice its own rung its very important\"",
-        "state": "queued"
+        "title": "Voice — the cast gets a voice you can hear, make again and keep, on your word: \"give voice its own rung its very important\"",
+        "state": "current"
       },
       {
         "key": "N5",
@@ -136,7 +144,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-13T01:36:45.266Z",
+      "readAt": "2026-10-13T04:34:18.097Z",
       "items": [
         {
           "issueNumber": 14,
@@ -214,6 +222,12 @@
           "issueNumber": 499,
           "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
           "kind": "design-unbuilt",
+          "rung": "N4b"
+        },
+        {
+          "issueNumber": 2474,
+          "title": "The N4b design doc on main describes his ElevenLabs account as it was before he upgraded it — nine lines, and three of them are load-bearing on the design",
+          "kind": "rung",
           "rung": "N4b"
         },
         {
@@ -3883,7 +3897,7 @@
         }
       ],
       "recommendation": "N3 — and this is your own order rather than the crew choosing: you said the hunt runs once all of N2 is finished and before N3 starts, and that is now true. If you would rather build something a customer can see straight away, N4b is the voice rung you called very important. Until you name one, the crew does maintenance only.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-13T01:22:13.000Z",
       "issueNumber": 2462
     }
@@ -10668,7 +10682,7 @@
     292
   ],
   "nextUp": {
-    "readAt": "2026-10-13T01:36:45.264Z",
+    "readAt": "2026-10-13T04:34:18.097Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10719,7 +10733,11 @@
       {
         "issueNumber": 2140,
         "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2470, the build card that carries this design. Nothing here needs your word."
+        }
       },
       {
         "issueNumber": 2191,
@@ -10732,8 +10750,28 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "his desk card `gemini-code-delete-2315` is open"
+          "because": "YOU — DELETE the wardrobe and legacy refine code now, or KEEP it readable per your #364 word? Recommend KEEP and close this card."
         }
+      },
+      {
+        "issueNumber": 2469,
+        "title": "N4b-1: the voice road, dark (design, save, 90 s audition clip stored; no UI)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2470,
+        "title": "N4b-2: Listen and pick on the Voice card, Voice 1-3 and Keep, dark on his account",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2471,
+        "title": "N4b-3: ready to widen (real price, the voice ration on the admin panel, refusals seen)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2472,
+        "title": "N4b-4: the re-mint court for his ear, then eviction and re-mint",
+        "urgent": false
       }
     ]
   }
