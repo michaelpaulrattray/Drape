@@ -109,6 +109,31 @@ Get-ScheduledTaskInfo -TaskName 'Drape Foreman Watchdog' |
   Format-List LastRunTime, LastTaskResult, NextRunTime
 ```
 
+## ⚠ And first ask whether the task is there at all — the mirror's was not (#2465)
+
+The read-back above assumes there is a task to read. **On 2026-10-13 the other
+Drape task, `Drape Crew Reply Mirror`, was found absent.** The machine changed
+around 2026-10-07; this repository's recipes came with it, the gitignored
+launcher came with `.agents/`, and the registration came with neither. The
+mirror had been dead for eleven days, 33 of his Desk replies sat past its
+waterline, and **nothing went red anywhere** — no suite can read a scheduled
+task, here or in CI. **This task survived the same change, which is the only
+reason that absence was readable as one.** So a machine change asks for both
+tasks by name before it trusts either recipe:
+
+```powershell
+Get-ScheduledTask -TaskName 'Drape Foreman Watchdog'
+Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror'
+```
+
+Nothing back means the task is gone, however intact its recipe is — and the
+recipe being intact is not evidence either way, which is exactly what made the
+mirror's eleven days invisible. ⚠ **Ask with `Get-ScheduledTask`, never
+`schtasks /query`, which on this machine returned zero parseable rows for all
+188 tasks**: an absence read with that reader is indistinguishable from a machine
+holding no tasks at all. A task that IS registered, read by the same reader in
+the same sitting, is the positive control that makes an absence mean something.
+
 ## What is deliberately NOT here
 
 - **The runner's own body.** `.agents/foreman/foreman-runner.ps1` is 810 lines

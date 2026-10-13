@@ -94,6 +94,15 @@ const blocks = powershellBlocks(recipe);
    top must not silently re-point these arms at the wrong one. */
 const register = blocks.find((block) => block.includes("Register-ScheduledTask")) ?? "";
 const readback = blocks.find((block) => block.includes("Get-ScheduledTaskInfo")) ?? "";
+/* The existence check (#2465) — the block that asks whether each task is there
+   AT ALL, as opposed to what one of them is set to. ⚠ Found by BOTH TASK NAMES
+   and not by `Get-ScheduledTask -TaskName`, which the repetition-duration block
+   above it also carries: a finder on that string would have silently re-pointed
+   this arm at the wrong block, which is the trap the comment above names. */
+const existence =
+  blocks.find(
+    (block) => block.includes("'Drape Foreman Watchdog'") && block.includes("'Drape Crew Reply Mirror'"),
+  ) ?? "";
 
 describe("#1610 · the Foreman Watchdog's registration recipe survives a rebuild", () => {
   it("⚠ the recipe is TRACKED — an untracked file is the defect, not the fix", () => {
@@ -178,5 +187,24 @@ describe("#1610 · the Foreman Watchdog's registration recipe survives a rebuild
     expect(readback).toContain("$t.Actions");
     expect(readback).toContain("$t.Settings");
     expect(readback).toContain("$t.Triggers[0].Repetition");
+  });
+
+  it("⚠ tells the reader to ask whether each task EXISTS, which is a different question (#2465)", () => {
+    /* The read-back above assumes a task to read. The mirror's registration was
+       found ABSENT on 2026-10-13 — eleven days dead, 33 of his Desk replies past
+       its waterline, both its recipe and its gitignored launcher perfectly
+       intact, and nothing red anywhere. This document survived the same machine
+       change, which is the only reason that absence could be read as one, so it
+       is where the instruction to check BOTH belongs.
+
+       Asked of the block and of the prose separately, because they carry
+       different halves: the lookup is only useful with the reader warning beside
+       it — `schtasks /query` answered zero parseable rows for all 188 tasks on
+       that machine, so an absence read with it looks exactly like an empty
+       machine. */
+    expect(existence, "no fenced block asks after both tasks by name").not.toBe("");
+    expect(existence).toContain("Get-ScheduledTask -TaskName 'Drape Foreman Watchdog'");
+    expect(existence).toContain("Get-ScheduledTask -TaskName 'Drape Crew Reply Mirror'");
+    expect(recipe, "the `schtasks` reader trap is what makes the lookup trustworthy").toMatch(/schtasks \/query/);
   });
 });
