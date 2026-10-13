@@ -28,6 +28,7 @@ import {
   summarizeFinalCastDeletion,
   type FinalCastDeletionSummary,
 } from "./finalCastDeletion";
+import { releaseVoiceSlots } from "../castingV2/voiceService";
 /*
   Both through the `db` barrel, deliberately — that is the module `routes/models`
   imported from before this ceremony was extracted, and the seam every existing
@@ -102,13 +103,36 @@ export async function runFinalCastDeletionCeremony(input: {
     heartbeat: false,
   });
 
+  /*
+    THE CAST'S VOICE SLOTS — N4b-1 (#2469). Collected inside the deletion's own
+    transaction (it is about to delete the rows that name them) and released
+    AFTER it commits, below. Nothing is collected unless the cast has a kept
+    voice, which needs `CASTING_VOICE_SCOPE` on.
+  */
+  const voiceSlots: { voiceIds: string[] } = { voiceIds: [] };
+
   try {
     const result = await executeFinalCastDeletion({
       userId: input.userId,
       modelId: input.modelId,
       operationId: gate.operationId,
       audit: input.audit,
+      collect: voiceSlots,
     });
+
+    /*
+      ⚠ **AFTER THE COMMIT, AND IT CANNOT FAIL THE DELETION.** The customer's
+      data is already gone — the row, the line it held and the clip's key are
+      all inside the transaction above. What is left is one slot of OUR provider
+      plan, and a vendor outage must never be able to refuse an erasure. A slot
+      that will not release is logged with its id (`releaseVoiceSlots`) so it
+      can be swept by hand; it is never silent, and it is never the customer's
+      problem. The voice OPERATION the slot cost is not refundable by a release
+      (measured), so there is nothing here to reconcile about money.
+    */
+    if (voiceSlots.voiceIds.length > 0) {
+      await releaseVoiceSlots(voiceSlots.voiceIds.map((voiceId) => ({ voiceId })));
+    }
     /*
       THE TERMINAL EVENT (#1429). The ceremony claims an operation, so it emits
       `generation started`; the authority it wraps seals the receipt with an

@@ -129,6 +129,14 @@ export const REFUSING_KEYS: readonly string[] = [
   "personalityOwnWords",
   "voiceOwnWords",
   "ownWords",
+  /* The voice line a kept voice was DESIGNED from, copied verbatim at design
+     time (N4b-1, #2469, `cast_voices.designSentence`) — a real column the Keep
+     writes, and the ⚠ above is its own argument for being here rather than a
+     ninth name for a field nothing can produce. It is the same words as `voice`
+     and therefore the same family as `masterPrompt`; the schema's own header
+     says so. The provider's design request carries it, so a provider error
+     echoing the request body is exactly the event this list exists to refuse. */
+  "designSentence",
 ];
 
 const REFUSING_KEY_SET = new Set(REFUSING_KEYS.map((key) => key.toLowerCase()));

@@ -4203,6 +4203,94 @@ export type CastCreationRecordRow = typeof castCreationRecords.$inferSelect;
 export type InsertCastCreationRecordRow = typeof castCreationRecords.$inferInsert;
 
 /**
+ * A CAST'S KEPT VOICE — N4b-1 (#2469), design
+ * `docs/specs/N4B_VOICE_DESIGN_2026-10-13.md` §4.
+ *
+ * One row is: **a voice a customer heard, picked and kept**, plus the ~90-second
+ * audition clip that voice recorded. His own storage design, pasted from the
+ * cinema research lane: *the clip is the cast's asset, and the engine's saved-
+ * voice slot is a cache.* The row is built that way round, and it is the whole
+ * reason the columns are split the way they are.
+ *
+ * # `voiceId` IS NULLABLE AND NULL IS A MEMBER OF THE VOCABULARY
+ *
+ * It holds the provider's saved-voice id **while the voice is resident in a
+ * slot**. NULL means *not resident* — evicted, or released because the plan's
+ * slots ran short — and it is not a missing value: the clip is still here, the
+ * design sentence is still here, and N4b-4 re-mints the voice from the clip
+ * when something is about to speak with it. A reader that treats NULL as "this
+ * cast has no voice" has read the cache for the asset.
+ *
+ * # THE DESIGN SENTENCE IS THE CUSTOMER'S OWN WRITING
+ *
+ * `designSentence` is `models.voice` **verbatim, as it read when the voices
+ * were made** — not a pointer to it. A pointer would be wrong rather than
+ * merely lossy: the same words give a different voice every run (the spike
+ * confirmed it even with a fixed seed), so the only honest record of what this
+ * voice was made from is a copy taken at the moment it was made. Editing the
+ * line afterwards changes what the NEXT design is made from and nothing about
+ * this one.
+ *
+ * ⚠ **So it is the same field family as `masterPrompt` and `voice`**: owner-only,
+ * on `REFUSING_KEYS` so an error event carrying it refuses, in no staff
+ * projection, in the GDPR export, and scrubbed by the deletion tombstone.
+ *
+ * # THE CLIP IS A CLONING SOURCE, WHICH MAKES IT CLOSER TO THE RECIPE THAN TO A
+ * PICTURE
+ *
+ * Ninety seconds of a voice is enough to clone it, and instant cloning is ON on
+ * this account (read live, 2026-10-13). So `clipStorageKey` is a key and **never
+ * a URL**: nothing projects it, and the owner-only authenticated route that
+ * serves it arrives with the surface that needs it (N4b-2), on the
+ * `/api/reference/:referenceId` shape — owner in the `WHERE`, and the bytes
+ * refused when their sha256 is not the one this row records, which is what
+ * `clipSha256` is for.
+ *
+ * # ONE ROW PER CAST, AND A SECOND KEEP IS REFUSED IN SLICE 1 — DECLARED
+ * SCAFFOLDING, NOT AN OVERSIGHT
+ *
+ * `uq_cast_voices_model` holds it. Keeping a second voice REPLACES the first
+ * (the design's §9: *"a kept voice is changed only by keeping another"*), and
+ * that replacement needs somewhere for the superseded clip's bytes to go — a
+ * `storage_cleanup_batches.kind` of its own, because this schema's own rule is
+ * one enum value per retention policy and *"a kept voice was replaced"* is not
+ * a candidate's lifecycle. Widening that enum is a `MODIFY COLUMN`, which the
+ * deploy rite classifies as DESTRUCTIVE and refuses to apply unattended — it is
+ * the founder's hand. So it rides N4b-2's pull request, with the button that
+ * presses it; until then a second Keep refuses in plain words rather than
+ * orphaning bytes nothing will ever collect.
+ */
+export const castVoices = mysqlTable("cast_voices", {
+  id: int("id").autoincrement().primaryKey(),
+  modelId: int("modelId").notNull(), // →models — one kept voice per cast
+  userId: int("userId").notNull(), // denormalised owner — single-statement ownership
+  /** `models.voice` verbatim at design time. CREATIVE — see the header. */
+  designSentence: text("designSentence").notNull(),
+  /** The provider's saved-voice id while resident. NULL = not resident. */
+  voiceId: varchar("voiceId", { length: 128 }),
+  /** The audition clip's storage key. A KEY, never a URL. */
+  clipStorageKey: varchar("clipStorageKey", { length: 512 }).notNull(),
+  /** sha256 of the stored bytes — the route refuses bytes that disagree. */
+  clipSha256: varchar("clipSha256", { length: 64 }).notNull(),
+  clipBytes: int("clipBytes").notNull(),
+  clipContentType: varchar("clipContentType", { length: 64 }).notNull(),
+  /** Which house passage the clip read (`VOICE_AUDITION_PASSAGE_VERSION`). */
+  passageVersion: int("passageVersion").notNull(),
+  /** For the cache (N4b-4): when something last spoke with this voice. */
+  lastUsedAt: timestamp("lastUsedAt"),
+  keptAt: timestamp("keptAt").defaultNow().notNull(),
+}, (table) => ([
+  /* One kept voice per cast; a second Keep loses the insert and is refused. */
+  uniqueIndex("uq_cast_voices_model").on(table.modelId),
+  index("ix_cast_voices_user").on(table.userId),
+  /* Least-recently-used eviction (N4b-4) reads this, and only this. */
+  index("ix_cast_voices_last_used").on(table.lastUsedAt),
+]));
+
+export type CastVoiceRow = typeof castVoices.$inferSelect;
+export type InsertCastVoiceRow = typeof castVoices.$inferInsert;
+
+/**
  * THE FOUNDER'S REPLIES — the steering half of the Crew tab (migration 0054;
  * issue #41, design `docs/specs/CREW_TAB_DESIGN.md` §3).
  *

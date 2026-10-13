@@ -36,6 +36,7 @@ import {
   castCampaignMembers,
   castCampaigns,
   castCreationRecords,
+  castVoices,
   users,
   credits,
   creditTransactions,
@@ -169,6 +170,31 @@ export interface GdprExportData {
     /** When the owner turned the public check page on; null while it is off (#2313). */
     publicAt: string | null;
     createdAt: string;
+  }>;
+  /**
+   * The voice behind each of the customer's casts (N4b-1, #2469).
+   *
+   * `designSentence` is their OWN WRITING — the voice line verbatim as it read
+   * when the voice was made — so it belongs in their export, exactly as the
+   * personality and voice lines on `models` above do. What stays out is ours
+   * and internal: the storage key, the provider's saved-voice id, and the row
+   * ids. The clip's `sha256` and byte size ARE here, because together they are
+   * how a customer proves a copy they hold is the clip this record describes.
+   *
+   * ⚠ **The audition's bytes are not in the export.** A JSON document is the
+   * wrong carrier for ninety seconds of audio per cast, and whether the clip
+   * itself travels — it is a cloning source — is a question nobody has put to
+   * the founder. Stated here rather than left as an apparent oversight: the
+   * recipe (`masterPrompt`, `technicalSchema`, `preferences`) is absent from
+   * this export for the same kind of reason, and this file already says so.
+   */
+  voices: Array<{
+    castId: string;
+    designSentence: string;
+    passageVersion: number;
+    clipSha256: string;
+    clipBytes: number;
+    keptAt: string;
   }>;
   evidence: {
     referencePlates: Array<{
@@ -423,6 +449,38 @@ export async function exportUserData(
     .from(castCreationRecords)
     .where(eq(castCreationRecords.userId, userId))
     .orderBy(asc(castCreationRecords.id));
+  /*
+    The kept voices (N4b-1, #2469), on the records' shape clause for clause: the
+    owner is in the statement's own WHERE (invariant 1) and every row is
+    re-anchored IN MEMORY to this customer's casts read above, so a voice whose
+    cast is not theirs, or is gone, cannot reach the export (invariant 2). One
+    statement at any size (#1989).
+  */
+  const ownedVoices = await db
+    .select({
+      modelId: castVoices.modelId,
+      designSentence: castVoices.designSentence,
+      passageVersion: castVoices.passageVersion,
+      clipSha256: castVoices.clipSha256,
+      clipBytes: castVoices.clipBytes,
+      keptAt: castVoices.keptAt,
+    })
+    .from(castVoices)
+    .where(eq(castVoices.userId, userId))
+    .orderBy(asc(castVoices.id));
+  const exportedVoices = ownedVoices.flatMap((voice) => {
+    const castId = castPublicIdByModel.get(voice.modelId);
+    if (!castId) return [];
+    return [{
+      castId,
+      designSentence: voice.designSentence,
+      passageVersion: voice.passageVersion,
+      clipSha256: voice.clipSha256,
+      clipBytes: voice.clipBytes,
+      keptAt: voice.keptAt.toISOString(),
+    }];
+  });
+
   const exportedCreationRecords = ownedCreationRecords.flatMap((record) => {
     const castId = castPublicIdByModel.get(record.modelId);
     if (!castId) return [];
@@ -611,6 +669,7 @@ export async function exportUserData(
     models: modelsWithAssets,
     campaigns: exportedCampaigns,
     creationRecords: exportedCreationRecords,
+    voices: exportedVoices,
     evidence: {
       referencePlates: exportedReferencePlates,
       crops: exportedEvidenceCrops,

@@ -18,6 +18,7 @@
  *      subscriptionRenewalReminders (userId)
  *  9d. castCampaignMembers (userId), then castCampaigns (userId)
  *  9e. castCreationRecords (userId)
+ *  9f. castVoices — inside `purgeAccountCastingIn` (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -85,6 +86,7 @@ import type { TransactionHandle } from "./connection";
 import { findRenderInFlightForUserIn, type InFlightRender } from "./generationOperations";
 import { createStorageCleanupManifestIn } from "./storageCleanup";
 import { purgeAccountCastingIn } from "../castingV2/accountCastingPurge";
+import { releaseVoiceSlots } from "../castingV2/voiceService";
 import { classifyStorageReference, parseJsonValue } from "../casting/deletionAudit";
 import type { StorageCleanupManifestItem } from "../casting/storageCleanupContract";
 import { createModuleLogger } from "../logging/logger";
@@ -224,6 +226,17 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     its cast — so it dies with the account too. Gone stays gone.
   */
   "castCreationRecords.userId": "deleted",
+  /*
+    A cast's kept voice: the customer's own voice line verbatim as it read when
+    the voice was made (the schema's own header calls it the same field family
+    as `masterPrompt`), and the ~90-second audition clip that voice recorded.
+    Ninety seconds of a voice is a cloning source, which puts the clip nearer
+    the recipe than a picture — so it is `deleted` for the same reason the
+    attached photograph is, and `purgeAccountCastingIn` is where the statement
+    lives because the clip's key has to reach the same manifest as every other
+    casting object.
+  */
+  "castVoices.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -401,6 +414,7 @@ function zeroDeletionCounts() {
     castCampaignMembers: 0,
     castCampaigns: 0,
     castCreationRecords: 0,
+    castVoices: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,
@@ -984,6 +998,13 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
     const operationId = randomUUID();
     let cleanupBatchId: string | null = null;
     let cleanupObjects = 0;
+    /*
+      The provider voice slots this account still occupies (N4b-1, #2469),
+      carried out of the transaction so they can be released after it commits.
+      Releasing one is a network call, and a vendor outage must never be able to
+      refuse an erasure — the same split `finalCastDeletionCeremony` makes.
+    */
+    let residentVoiceIds: string[] = [];
 
     // All deletion steps run inside a single transaction for atomicity
     const refusedOn = await withTransaction(async (tx): Promise<InFlightRender | null> => {
@@ -1043,6 +1064,7 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
       */
       const castingPurge = await purgeAccountCastingIn(tx, userId);
       Object.assign(counts, castingPurge.counts);
+      residentVoiceIds = castingPurge.voiceIds;
 
       const manifest = await createStorageCleanupManifestIn(tx, {
         userId,
@@ -1391,6 +1413,17 @@ export async function deleteUserAccount(userId: number): Promise<DeletionResult>
         refusedOnOperationId: refusedOn.operationId,
         error: ACCOUNT_DELETION_RENDER_IN_FLIGHT,
       };
+    }
+
+    /*
+      THE VOICE SLOTS, AFTER THE COMMIT — N4b-1 (#2469). The customer's rows and
+      their clips' keys are already gone or manifested; what is left is slots of
+      OUR provider plan. A slot that will not release is logged with its id by
+      `releaseVoiceSlots` so it can be swept by hand, and it never changes the
+      answer this function gives.
+    */
+    if (residentVoiceIds.length > 0) {
+      await releaseVoiceSlots(residentVoiceIds.map((voiceId) => ({ voiceId })));
     }
 
     return {

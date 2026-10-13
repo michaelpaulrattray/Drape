@@ -99,6 +99,7 @@ import {
   deleteAccountSessionRowsIn,
   listAccountCandidatesIn,
 } from "../db/castingV2";
+import { deleteAccountVoicesIn, readAccountVoiceReleaseFactsIn } from "../db/castVoices";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import {
@@ -145,7 +146,16 @@ const TOLERANCE_CONTEXT = "accountCastingPurge";
 export type AccountCastingPurgeResult = {
   /** Every object the casting studio owned for this account, exact keys. */
   storageItems: StorageCleanupManifestItem[];
+  /**
+   * The provider voice slots this account still occupies (N4b-1, #2469).
+   *
+   * Returned rather than released, because releasing one is a network call and
+   * this runs inside the erasure's transaction. The caller releases them after
+   * the commit; nothing here can fail an erasure on a vendor's behalf.
+   */
+  voiceIds: string[];
   counts: {
+    castVoices: number;
     castingCandidates: number;
     castingCandidateVariants: number;
     castingSegments: number;
@@ -184,6 +194,7 @@ export async function purgeAccountCastingIn(
 ): Promise<AccountCastingPurgeResult> {
   const storageItems: StorageCleanupManifestItem[] = [];
   const counts: AccountCastingPurgeResult["counts"] = {
+    castVoices: 0,
     castingCandidates: 0,
     castingCandidateVariants: 0,
     castingSegments: 0,
@@ -479,6 +490,36 @@ export async function purgeAccountCastingIn(
     );
   }
 
+  /*
+    THE ACCOUNT'S KEPT VOICES — N4b-1 (#2469).
+
+    Keyed on its own `userId`, so it needs no candidate walk: a kept voice
+    belongs to a SIGNED cast, and `finalCastDeletion` already takes one with its
+    cast. This is the account's whole set, including any whose cast row is
+    already a tombstone.
+
+    Two things go: the ~90-second audition CLIP, whose bytes are 90 seconds of a
+    voice and therefore a cloning source — of everything in this function it
+    sits beside the attached photograph above as a thing an erasure most
+    obviously promised to destroy — and the ROW, which holds the customer's own
+    voice line verbatim as it read when the voice was made.
+
+    ⚠ **THE PROVIDER SLOT IS NOT RELEASED HERE AND CANNOT BE.** It is a network
+    call, this is a database transaction, and a vendor outage must never be able
+    to refuse an erasure. The resident ids are RETURNED so the caller can
+    release them after the commit, which is the same split
+    `finalCastDeletionCeremony` makes.
+  */
+  const voices = await readAccountVoiceReleaseFactsIn(tx, { userId });
+  const voiceIds: string[] = [];
+  if (voices.length > 0) {
+    for (const voice of voices) {
+      storageItems.push(publicItem(voice.clipStorageKey));
+      if (voice.voiceId) voiceIds.push(voice.voiceId);
+    }
+    counts.castVoices = await deleteAccountVoicesIn(tx, { userId });
+  }
+
   counts.castingCandidates = await deleteAccountCandidateRowsIn(tx, userId);
   counts.castingRolls = await deleteAccountRollRowsIn(tx, userId);
   counts.castingSessions = await deleteAccountSessionRowsIn(tx, userId);
@@ -487,5 +528,5 @@ export async function purgeAccountCastingIn(
     { userId, objects: storageItems.length, ...counts },
     "[accountCastingPurge] casting studio erased with the account",
   );
-  return { storageItems, counts };
+  return { storageItems, counts, voiceIds };
 }
