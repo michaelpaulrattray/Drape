@@ -453,7 +453,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "zero. Wider than users:1 on his eye and not before",
   },
   CASTING_VOICE_SCOPE: {
-    position: "unset",
+    /*
+      `off`, not "unset" — and the distinction is this table's vocabulary rather
+      than a fact about the service. `UNSET` in this module IS the string "off"
+      (line 94), so a variable ABSENT from the service reads as `off` here; the
+      flag is genuinely absent from the Drape service, read by name on
+      2026-10-13. The rite caught the wrong token on the first push after this
+      row was written, which is the comparison earning its keep on its own
+      newest row.
+    */
+    position: "off",
     why:
       "BUILT DARK 2026-10-13 (N4b-1, card #2469; the rung opened on his word the same day, "
       + "verbatim and entire: \"Yes we will begin n4b\"). A signed cast's written voice line "
