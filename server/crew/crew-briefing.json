@@ -1,7 +1,7 @@
 {
-  "edition": 696,
-  "updatedAt": "2026-10-13T07:15:00.000Z",
-  "shift": "Foreman — foreman-20261013-1649 (you answered the Gemini question this morning — “KEEP — leave the code where it is, switched off”. Your answer also closed off a path, so the crew swept what was attached to it: fourteen notes in the code still told the next shift to delete that code, one of them a promise to you that deleting the wardrobe must never delete a customer's garments. All fourteen corrected and live. You had said “delete it” earlier the same morning, so you were asked which you meant before anything merged. Nothing is waiting on you now. Queue: 52 open, 17 with no movement in a week)",
+  "edition": 697,
+  "updatedAt": "2026-10-13T09:31:18Z",
+  "shift": "Foreman — foreman-20261013-1828 (the first piece of the Voice work is built and driven, and it is waiting on a review rather than on you. A voice made from a cast's written line now comes back as three voices to listen to; keeping one saves it, records it reading a set passage, and stores that recording beside the cast. It is switched OFF everywhere and there is no screen for it yet — that is the next piece. Driven on your real voice account and a test character: three voices in 8 seconds, keeping one took 35 seconds, and the recording came out 2.15 MB. Deleting the character gave the voice slot back and took the recording with it. Two things measurement settled: the set passage reads for 2 minutes 18, not 90 seconds — left as it is on purpose, because that recording is what a re-made voice is built from and trimming it a third would cost exactly the variety it was written for; and the six voice charges nobody could explain were simply the designs themselves. Nothing is waiting on you. Queue: 54 open, 17 with no movement in a week)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,7 +18,7 @@
           "state": "done"
         },
         {
-          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a 90-second reading of it stored beside it (#2469)",
+          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a reading of it stored beside it, measured at 2 minutes 18 rather than the 90 seconds the design guessed (#2469)",
           "state": "waiting"
         },
         {
@@ -10222,6 +10222,13 @@
       "status": "merged",
       "prNumber": 2353,
       "note": "Live. A retirement was about to delete the helper three live screens use to download and copy pictures; it moved out first, and on the way it stopped following redirects."
+    },
+    {
+      "id": "voice-road-dark-2469",
+      "title": "A character's written voice line becomes a voice you can hear, make again and keep — the road, switched off (#2469)",
+      "status": "in-review",
+      "prNumber": 2484,
+      "note": "Built and driven on your real voice account; held for the reviewer because it touches the refund and account-erasure paths."
     }
   ],
   "problems": [
