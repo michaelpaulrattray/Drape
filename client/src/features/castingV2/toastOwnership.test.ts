@@ -178,6 +178,11 @@ const ALLOWED: Array<{ match: string; because: string }> = [
     match: "could not be deleted.",
     because: "She is still on the roster; that is not an explanation.",
   },
+  // ---- CastingRoom.tsx (the package zip on the character's page — #2463)
+  {
+    match: "toast.error(PACKAGE_DOWNLOAD_FAILED)",
+    because: "A package download that produced no file changes nothing on screen — the button returns to rest — so without it a press that failed reads as one that worked. Same shape as the certificate's row above.",
+  },
   // ---- CastingRoom.tsx (deleting from the character's page — #2383)
   {
     match: "toast.error(roomDeleteFailureSentence(",

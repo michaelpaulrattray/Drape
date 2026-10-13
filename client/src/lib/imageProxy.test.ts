@@ -60,7 +60,11 @@ describe("both character-page download sites go through the same-origin road", (
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     const body = src.slice(start, end);
-    expect(body).toContain("link.href = sameOriginDownloadHref(file.url, window.location.origin, file.name);");
+    // #2463: one zip, built from fetches that go through the same-origin road
+    // (`castingRoomPackage.ts`, driven at the wire in its own suite).
+    expect(body).toContain("buildPackageZip(packageFiles(frames, castId), window.location.origin)");
+    expect(read("client/src/pages/castingRoomPackage.ts"))
+      .toContain("fetchImpl(sameOriginDownloadHref(file.url, pageOrigin, file.name)");
     expect(body).not.toMatch(/link\.href\s*=\s*file\.url/);
   });
 
