@@ -2902,3 +2902,111 @@ export function validateCastingCreationRecordEnvironment(input: {
   loadCreationRecordKey(input.privateKey);
   return child;
 }
+
+/* ------------------------------------------------------- the voice sub-flag */
+
+/**
+ * VOICE — `CASTING_VOICE_SCOPE` (N4b-1, #2469; design
+ * `docs/specs/N4B_VOICE_DESIGN_2026-10-13.md`).
+ *
+ * Whether a signed cast this account owns can have its written voice line
+ * turned into a voice you can hear, make again and keep. Off, and absent means
+ * off, no design call is made, no voice is saved, no clip is recorded and no
+ * `cast_voices` row is written — not one statement runs, and the room draws
+ * exactly what it draws today (*"No voice yet"*).
+ *
+ * Its parent is `CASTING_V2_SCOPE`: a voice is OF a signed cast, and an account
+ * outside casting has none to give one to.
+ *
+ * ⚠ **ON WITHOUT THE KEY REFUSES BOOT AND NAMES THE VARIABLE** — the
+ * `CASTING_CREATION_RECORD_SCOPE` shape, and invariant 7's reasoning rather
+ * than a convention. A voice road with no transport does not degrade
+ * gracefully: it would offer *"Make new voices from this text"*, take the
+ * press, and fail every single time — and in slice 2 that press carries a
+ * price. A flag that reads as live while nothing behind it can answer is the
+ * control this law exists to forbid. The key's VALUE is never in the message.
+ *
+ * ⚠ **AND THE FLAG DOES NOT FENCE THE ACCOUNT'S PROVIDER RATION, because it
+ * cannot.** The voice-operation ceiling is per PROVIDER ACCOUNT, not per
+ * customer (§5), so widening this scope does not multiply what the house can
+ * spend — it divides one monthly allowance among more people. That is why the
+ * design keeps the scope at his account until a plan decision is made, and it
+ * is a product fact rather than something this parser can enforce: the live
+ * read before every Keep (`readAllowance`) is the control, and this flag only
+ * decides who can reach it.
+ */
+export const CASTING_VOICE_SCOPE_ENV = "CASTING_VOICE_SCOPE";
+
+export class CastingVoiceScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_VOICE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingVoiceScopeConfigurationError";
+  }
+}
+
+export class CastingVoiceCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_VOICE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingVoiceCoverageError";
+  }
+}
+
+export class CastingVoiceTransportConfigurationError extends Error {
+  constructor(variable: string) {
+    super(
+      `${CASTING_VOICE_SCOPE_ENV} cannot be enabled unless the voice transport (${variable}) is configured`,
+    );
+    this.name = "CastingVoiceTransportConfigurationError";
+  }
+}
+
+export function parseCastingVoiceScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingVoiceScopeConfigurationError();
+  });
+}
+
+/** Captured at the point of use, the chain ANDed — its siblings' rule. */
+export function captureCastingVoiceEnabled(userId: number): boolean {
+  const child = parseCastingVoiceScope(process.env[CASTING_VOICE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingVoiceEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+  /** The transport credential's raw value — tested for presence, never echoed. */
+  voiceKey: string | undefined;
+  /** The variable's NAME, so the refusal can say which one to set. */
+  voiceKeyVariable: string;
+}): CastingV2Scope {
+  const child = parseCastingVoiceScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingVoiceCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a voice is of a signed cast, and there is none`,
+    );
+  }
+  if (parent.kind === "users") {
+    if (child.kind === "all") {
+      throw new CastingVoiceCoverageError(
+        `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+      );
+    }
+    const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+    if (uncovered.length > 0) {
+      throw new CastingVoiceCoverageError(
+        `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+      );
+    }
+  }
+  if (!input.voiceKey) {
+    throw new CastingVoiceTransportConfigurationError(input.voiceKeyVariable);
+  }
+  return child;
+}

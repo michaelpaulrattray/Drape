@@ -452,6 +452,21 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "button — so its live population on his account is every refused tile he has, not "
       + "zero. Wider than users:1 on his eye and not before",
   },
+  CASTING_VOICE_SCOPE: {
+    position: "unset",
+    why:
+      "BUILT DARK 2026-10-13 (N4b-1, card #2469; the rung opened on his word the same day, "
+      + "verbatim and entire: \"Yes we will begin n4b\"). A signed cast's written voice line "
+      + "becomes a voice you can hear, make again and keep. UNSET on purpose and not merely "
+      + "un-flipped: slice 1 is the ROAD and no surface reaches it, so switching it on would "
+      + "change nothing a customer could see while putting the account's voice-operation "
+      + "ration within reach of a road nobody can walk. His account waits on N4b-2's Voice "
+      + "card (#2470); wider than that waits on his word AND on a plan decision, because the "
+      + "voice-operation ceiling is per PROVIDER ACCOUNT rather than per customer - widening "
+      + "this scope divides one monthly allowance among more people instead of multiplying it. "
+      + "ON WITHOUT ELEVENLABS_API_KEY REFUSES BOOT by design, so the key is set by his hand "
+      + "FIRST or the next deploy crash-loops",
+  },
   CASTING_CREATION_RECORD_SCOPE: {
     position: "users:1",
     why:

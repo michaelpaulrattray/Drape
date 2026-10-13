@@ -624,7 +624,7 @@ it off the list, with the reader's positive control beside it.
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 
-⚠ **THE THIRTY-FIVE SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
+⚠ **THE THIRTY-SIX SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
 [`docs/architecture/FEATURE_FLAGS.md`](docs/architecture/FEATURE_FLAGS.md).**
 Their entries — 122,893 bytes, two thirds of this file as it stood — moved
 there on 2026-08-31 under the founder's own card (#330: *"why are simple code changes
@@ -668,6 +668,7 @@ the live service on every push.
 | `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
 | `CASTING_CREATION_RECORD_SCOPE` | the signed, independently timestamped record behind each Klieg ID (N2d-1) — needs `CREATION_RECORD_PRIVATE_KEY` |
+| `CASTING_VOICE_SCOPE` | a signed cast's written voice line becoming a voice you can hear, make again and keep (N4b-1) — needs `ELEVENLABS_API_KEY` |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |
 | `R7_SNAPSHOT_RESTORE_SCOPE` | the restore half of it |
@@ -684,6 +685,7 @@ the live service on every push.
 - `FAL_CONCURRENCY` (default 6 — was 6, then 5 from 2026-08-18 while the plate mint was wired, back to 6 by his word on #2206) — how many fal calls the segmenter may have in flight at once. The account's ceiling is **20 concurrent requests**, and one panel scan asks eleven questions with every bilateral one becoming two more, so an ungated reader spends the whole allowance on one face: measured 2026-08-14, eight panels opened at once returned no rows at all on five of them, with the provider answering `429 concurrent_requests_limit`. Below 20 on purpose — roll dispatch spends from the same allowance
 - `ROLL_IMAGE_CONCURRENCY` (default 8), `ROLL_IMAGE_MAX_QUEUE_DEPTH` (default 64) — casting provider budget; roll creation refuses with a real `TOO_MANY_REQUESTS` when a whole roll would not fit
 - `CREATION_RECORD_PRIVATE_KEY` — a SECRET: the private Ed25519 JWK, one line of JSON, that signs the record behind each Klieg ID. Required only when `CASTING_CREATION_RECORD_SCOPE` is on, and then its absence REFUSES BOOT naming the variable. Set by his or the relay's hand; never committed, never logged. See the catalogue entry
+- `ELEVENLABS_API_KEY` — the voice transport: the one engine for creatures and people alike, on his ear over six creature pairs (2026-10-13, verbatim: *"okay ellevenlabs is clearly better and converting it to inworld is a hit and a miss"*), which **dropped Inworld entirely** — there is no second voice provider and no fallback. Required only when `CASTING_VOICE_SCOPE` is on, and then its absence REFUSES BOOT naming the variable and never its value. Absent with the scope off, nothing reads it and no voice road exists. Set on Railway by his hand. See the catalogue entry
 - `RESEND_API_KEY` — verification emails (signup breaks without it unless dev-mode skip applies)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth login
 - `VITE_STRIPE_PUBLISHABLE_KEY` — client-side Stripe

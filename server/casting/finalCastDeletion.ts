@@ -44,6 +44,7 @@ import { assertOwnedEvidenceStorageKey } from "./evidence/evidenceLifecycle";
 import { parseEvidenceStorageKey } from "./evidence/evidenceDelivery";
 import { purgeCastLineageIn } from "./castLineagePurge";
 import { deleteCastCreationRecordsIn } from "../db/castCreationRecords";
+import { deleteCastVoicesIn, readCastVoiceReleaseFactsIn } from "../db/castVoices";
 import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/finalCastDeletion");
@@ -801,6 +802,22 @@ export async function executeFinalCastDeletion(input: {
   currentPublicUrl?: string;
   audit?: { ipAddress?: string | null; userAgent?: string | null };
   failurePoint?: FinalCastDeletionFailurePoint;
+  /**
+   * OUT-OF-BAND, AND DELIBERATELY NOT PART OF THE RESULT — N4b-1 (#2469).
+   *
+   * The cast's resident provider voice slots, collected inside the transaction
+   * so the caller can release them AFTER it commits. Two reasons it is a
+   * collector rather than a return value: {@link FinalCastDeletionResult} is
+   * PERSISTED as the deletion receipt and read back on a replay, and a
+   * provider-side id has no business in a stored receipt (§E rule 1); and
+   * releasing a slot is a network call, which must not sit inside a database
+   * transaction nor be able to fail an erasure.
+   *
+   * Absent, nothing is collected and nothing is released — which is the state
+   * every caller but the ceremony is in, since no voice can exist unless
+   * `CASTING_VOICE_SCOPE` is on.
+   */
+  collect?: { voiceIds: string[] };
 }): Promise<FinalCastDeletionResult> {
   const currentPublicUrl = input.currentPublicUrl ?? process.env.R2_PUBLIC_URL ?? "";
   if (!currentPublicUrl) throw new Error("R2_PUBLIC_URL is required to plan safe storage cleanup");
@@ -986,6 +1003,30 @@ export async function executeFinalCastDeletion(input: {
       });
       privateEvidenceKeys.add(crop.storageKey);
     }
+    /*
+      THE KEPT VOICE'S CLIP GOES WITH THE CAST — N4b-1 (#2469), design §4.
+
+      Read HERE, inside the transaction and before the manifest, because the
+      statements below are about to delete the rows that name these keys and a
+      key nobody read is a key nobody ever collects. It is a cast-owned key like
+      an asset's, so it joins `storageKeys` before `castOwnedKeys` is frozen.
+
+      ⚠ **Ninety seconds of a voice is a cloning source**, which is why the clip
+      is on this list rather than preserved the way a reference INPUT is: there
+      is nothing ambiguous about its ownership and nothing that wants it kept.
+
+      The resident provider SLOT is a different kind of thing and is released
+      after this transaction commits — see `input.collect` and the ceremony.
+    */
+    const castVoiceRows = await readCastVoiceReleaseFactsIn(tx, {
+      userId: input.userId,
+      modelId: input.modelId,
+    });
+    for (const voice of castVoiceRows) {
+      storageKeys.add(voice.clipStorageKey);
+      if (voice.voiceId && input.collect) input.collect.voiceIds.push(voice.voiceId);
+    }
+
     for (const asset of assets) {
       collectManifestKey(storageKeys, currentPublicUrl, { storageKey: asset.storageKey, url: asset.storageUrl });
     }
@@ -1153,6 +1194,16 @@ export async function executeFinalCastDeletion(input: {
       that rolled back nor survive one that committed.
     */
     await deleteCastCreationRecordsIn(tx, { userId: input.userId, modelId: input.modelId });
+
+    /*
+      AND THE KEPT VOICE GOES TOO — N4b-1 (#2469). The row holds the customer's
+      own voice line verbatim as it read when the voice was made (the schema's
+      own header calls it the same field family as `masterPrompt`), so a row
+      surviving the tombstone would keep exactly the kind of writing this
+      deletion promises to forget. Its clip's bytes are already on the manifest
+      above; owner and cast in the one WHERE, inside this transaction.
+    */
+    await deleteCastVoicesIn(tx, { userId: input.userId, modelId: input.modelId });
 
     const now = new Date();
     failAt("before_tombstone", input.failurePoint);

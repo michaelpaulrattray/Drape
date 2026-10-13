@@ -169,6 +169,22 @@ let orphanPlatesPresent = true;
 const ORPHAN_PLATE_READ = /from `casting_ink_plates`[\s\S]*`casting_ink_designs`[\s\S]*is null/i;
 
 /**
+ * Whether SHE HAS A KEPT VOICE of her own (N4b-1, #2469) — the plate flag's
+ * reasoning exactly, for the same reason and with one difference worth stating.
+ *
+ * `cast_voices` is keyed on her `userId` and her `modelId` and **holds no
+ * `candidateId` at all**, so it is structurally incapable of reaching another
+ * customer's candidate: it is not a member of the candidate-child class these
+ * arms are about. Her own voice clip is rightly swept, so leaving it on in the
+ * arms that assert the manifest is EMPTY would put a legitimately-collected key
+ * in it and force the assertion to be weakened — which is the trap the plate
+ * flag above exists to avoid. It is switched off in those arms only.
+ */
+let accountVoicesPresent = true;
+/** Her kept-voice read, by the one table only it names. */
+const ACCOUNT_VOICE_READ = /from `cast_voices`/i;
+
+/**
  * The columns a `select` asks for, in order, read off the statement.
  *
  * ⚠ **BECAUSE `drizzle-orm/mysql2` SENDS `rowsAsArray: true` AND MAPS ROWS
@@ -213,6 +229,12 @@ const FIXTURE_ROW: Record<string, unknown> = {
   refusedContentKey: null,
   refusedMaskKey: null,
   geometry: { slots: [{ maskKey: "casts/77/f.png" }] },
+  /* The kept voice (N4b-1, #2469): a resident provider slot and the audition
+     clip's key. Both are read by `purgeAccountCastingIn` so the clip reaches
+     the manifest and the slot is released after the commit — and this fixture's
+     own error message is what named them. */
+  voiceId: "saved-voice-77",
+  clipStorageKey: "casting/voices/77/300/clip.mp3",
 };
 
 function project(row: Record<string, unknown>, sql: string): unknown[] {
@@ -233,6 +255,7 @@ function answerFor(sql: string): unknown {
     return orphanAnswer.map((id) => [id]);
   }
   if (!orphanPlatesPresent && ORPHAN_PLATE_READ.test(sql)) return [];
+  if (!accountVoicesPresent && ACCOUNT_VOICE_READ.test(sql)) return [];
   if (OWNER_BLIND_BY_DESIGN.test(sql)) return existingCandidateIds.map((id) => [id]);
   if (/from `casting_candidates`/.test(sql)) {
     return candidateRows.map((row) => project(row, sql));
@@ -312,6 +335,7 @@ beforeEach(() => {
   candidateRows = [];
   existingCandidateIds = [];
   orphanPlatesPresent = true;
+  accountVoicesPresent = true;
 });
 
 describe("the real purge never reaches an orphan id without its owner (#1959)", () => {
@@ -486,6 +510,7 @@ describe("a child row under another customer's live candidate survives the erasu
     orphanAnswer = [ORPHAN_ID];
     existingCandidateIds = [ORPHAN_ID];
     orphanPlatesPresent = false;
+    accountVoicesPresent = false;
 
     const result = await runPurge();
 

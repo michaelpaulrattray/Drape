@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 205
+      "moduleCount": 207
     },
     {
       "id": "domain:castingV2",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 72
+      "moduleCount": 73
     },
     {
       "id": "domain:evidence",
@@ -102,7 +102,7 @@
     {
       "id": "domain:providers",
       "name": "providers",
-      "moduleCount": 9
+      "moduleCount": 11
     },
     {
       "id": "domain:referral",
@@ -4987,6 +4987,18 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/voiceAuditionPassage.ts",
+      "path": "server/castingV2/voiceAuditionPassage.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/voiceService.ts",
+      "path": "server/castingV2/voiceService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/wardrobeCards.ts",
       "path": "server/castingV2/wardrobeCards.ts",
       "domain": "casting-v2",
@@ -5127,6 +5139,12 @@
     {
       "id": "module:server/db/castPersonaScope.ts",
       "path": "server/db/castPersonaScope.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castVoices.ts",
+      "path": "server/db/castVoices.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -5623,6 +5641,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/providers/elevenlabsVoice.ts",
+      "path": "server/providers/elevenlabsVoice.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/providers/falImages.ts",
       "path": "server/providers/falImages.ts",
       "domain": "providers",
@@ -5667,6 +5691,12 @@
     {
       "id": "module:server/providers/types.ts",
       "path": "server/providers/types.ts",
+      "domain": "providers",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/providers/voiceTypes.ts",
+      "path": "server/providers/voiceTypes.ts",
       "domain": "providers",
       "lifecycle": "active"
     },
@@ -11052,6 +11082,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_VOICE_SCOPE",
+      "name": "CASTING_VOICE_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CREW_TAB_SCOPE",
       "name": "CREW_TAB_SCOPE",
       "valueRecorded": false
@@ -11436,6 +11471,11 @@
     {
       "id": "flag:CASTING_V2_SCOPE",
       "name": "CASTING_V2_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_VOICE_SCOPE",
+      "name": "CASTING_VOICE_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -15115,6 +15155,14 @@
       "path": "server/castingV2/vocabularyPin.test.ts"
     },
     {
+      "id": "test:server/castingV2/voiceScope.test.ts",
+      "path": "server/castingV2/voiceScope.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/voiceService.test.ts",
+      "path": "server/castingV2/voiceService.test.ts"
+    },
+    {
       "id": "test:server/castingV2/wallDOpenKind.test.ts",
       "path": "server/castingV2/wallDOpenKind.test.ts"
     },
@@ -15489,6 +15537,10 @@
     {
       "id": "test:server/db/castPersonaWrite.test.ts",
       "path": "server/db/castPersonaWrite.test.ts"
+    },
+    {
+      "id": "test:server/db/castVoices.test.ts",
+      "path": "server/db/castVoices.test.ts"
     },
     {
       "id": "test:server/db/castingV2InkDeliveryCrops.test.ts",
@@ -16093,6 +16145,10 @@
     {
       "id": "test:server/providers/bannedEngines.test.ts",
       "path": "server/providers/bannedEngines.test.ts"
+    },
+    {
+      "id": "test:server/providers/elevenlabsVoiceWire.test.ts",
+      "path": "server/providers/elevenlabsVoiceWire.test.ts"
     },
     {
       "id": "test:server/providers/falImagesAnchored.test.ts",
@@ -24643,6 +24699,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/_core/env.ts",
+      "to": "module:server/providers/elevenlabsVoice.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/_core/index.ts",
       "to": "module:drizzle/schema.ts",
       "kind": "imports"
@@ -26649,6 +26710,11 @@
     },
     {
       "from": "module:server/casting/finalCastDeletion.ts",
+      "to": "module:server/db/castVoices.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
@@ -26675,6 +26741,11 @@
     {
       "from": "module:server/casting/finalCastDeletionCeremony.ts",
       "to": "module:server/casting/operationContract.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletionCeremony.ts",
+      "to": "module:server/castingV2/voiceService.ts",
       "kind": "imports"
     },
     {
@@ -28170,6 +28241,11 @@
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castVoices.ts",
       "kind": "imports"
     },
     {
@@ -33613,6 +33689,46 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/castingV2/voiceAuditionPassage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/db/castVoices.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/providers/elevenlabsVoice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/providers/voiceTypes.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/wardrobeDoor.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -33800,6 +33916,11 @@
     {
       "from": "module:server/db/accountDeletion.ts",
       "to": "module:server/castingV2/refusalLoopCapture.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/accountDeletion.ts",
+      "to": "module:server/castingV2/voiceService.ts",
       "kind": "imports"
     },
     {
@@ -34520,6 +34641,26 @@
     {
       "from": "module:server/db/castPersonaScope.ts",
       "to": "module:server/db/castPersonaField.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoices.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoices.ts",
+      "to": "module:server/db/castingV2InkDeliveryCrops.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoices.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoices.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {
@@ -36008,6 +36149,21 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/providers/elevenlabsVoice.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/elevenlabsVoice.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/elevenlabsVoice.ts",
+      "to": "module:server/providers/voiceTypes.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/providers/falImages.ts",
       "to": "module:server/providers/falTransport.ts",
       "kind": "imports"
@@ -36135,6 +36291,11 @@
     {
       "from": "module:server/providers/types.ts",
       "to": "module:server/providers/renderBudget.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/providers/voiceTypes.ts",
+      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
