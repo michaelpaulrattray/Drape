@@ -37,11 +37,19 @@
  * and recorded rather than a text trimmed until a stopwatch agrees.
  *
  * ⚠ **AND IT IS MEASURED NOW, SO THE DESIGN'S "~90 s" IS SUPERSEDED BY A REAL
- * NUMBER: 1,348 characters delivered 2,202,688 bytes of `mp3_44100_128`, which
- * at a constant 128 kbps is 137.7 SECONDS — about 2 minutes 18, not 90 seconds**
- * (the first real clip, driven on 2026-10-13 through the real entrance; the
- * audition call took 29.3 s to produce it). Measured rate: **9.8 characters a
- * second**, so a genuinely 90-second passage would be about 880 characters.
+ * NUMBER: 262 words / 1,348 characters delivered 2,202,688 bytes of
+ * `mp3_44100_128`, which at a constant 128 kbps is 137.7 SECONDS — about 2
+ * minutes 18, not 90 seconds** (the first real clip, driven on 2026-10-13
+ * through the real entrance; the audition call took 29.3 s to produce it).
+ * Measured rate: **9.8 characters a second**, so a genuinely 90-second passage
+ * would be about 880 characters.
+ *
+ * Those figures are STATED here rather than computed by an exported helper. The
+ * draft carried a `voiceAuditionPassageWordCount()` for them and nothing ever
+ * called it — the repository's uncalled-export sweep flagged it on this card's
+ * own preflight, which is the sweep earning its keep on the diff that created
+ * the dead export. A one-off receipt figure wants a measurement, not a
+ * permanent function.
  *
  * **The text is deliberately NOT cut to hit the design's figure**, and the
  * reason is the clip's job rather than inertia: it exists to be a re-mint
@@ -86,11 +94,6 @@ export const VOICE_AUDITION_PASSAGE = [
  * drift from it (working law 4).
  */
 export const VOICE_AUDITION_PASSAGE_VERSION = 1;
-
-/** Words in the passage, derived — a receipt figure, never a budget. */
-export function voiceAuditionPassageWordCount(): number {
-  return VOICE_AUDITION_PASSAGE.split(/\s+/).filter((word) => word.length > 0).length;
-}
 
 /**
  * What the three PREVIEWS read while a customer is choosing.
