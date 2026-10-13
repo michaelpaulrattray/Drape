@@ -1,7 +1,7 @@
 {
-  "edition": 695,
-  "updatedAt": "2026-10-13T04:45:00.000Z",
-  "shift": "Foreman — foreman-20261013-1517 (you opened the Voice rung this morning — \"Yes we will begin n4b\" — and this page was still asking you to name it. The four cards you ordered were held from every builder on a rung that had already finished. The ladder, the rulebook and both guards move together here, and the cards are takeable now. Queue: 52 open, 17 with no movement in a week, and one card still waits on you — #2315, whether the retired Gemini code is deleted or kept)",
+  "edition": 696,
+  "updatedAt": "2026-10-13T07:15:00.000Z",
+  "shift": "Foreman — foreman-20261013-1649 (you answered the Gemini question this morning — “KEEP — leave the code where it is, switched off”. Your answer also closed off a path, so the crew swept what was attached to it: fourteen notes in the code still told the next shift to delete that code, one of them a promise to you that deleting the wardrobe must never delete a customer's garments. All fourteen corrected and live. You had said “delete it” earlier the same morning, so you were asked which you meant before anything merged. Nothing is waiting on you now. Queue: 52 open, 17 with no movement in a week)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -314,9 +314,9 @@
   "needsYou": [
     {
       "id": "gemini-code-delete-2315",
-      "title": "The wardrobe is switched off — delete its code now, or keep it until the redesign?",
-      "productImpact": "Nothing a customer can see is waiting on this, and no pictures are going to Google any more. That part is finished and live, and so is removing the key.\n\nWhat is left is a tidy-up question. The old wardrobe and the old casting-refine screens are switched off. A customer cannot reach any of them: the wardrobe only ever opened inside the old studio, which is admin-only, and the lobby pages that used to show garments were unhooked weeks ago. I checked all forty-six places the code still calls those switched-off screens. Not one of them is something a customer can press.\n\nSo deleting the code now buys nothing a customer would feel. And in September you asked for the opposite, in your own words: that the wardrobe stays in the codebase so we can see how it works while the redesign is going on.\n\nYour later word on this card was to retire the paths and remove the key. Both are done. Whether that also meant delete the code you asked to keep is the one thing I cannot decide for you.",
-      "workedExample": "Nothing changes for a customer either way. The difference is what a developer finds in six weeks: either the old wardrobe is still there to read while the new one is designed, or it is gone and the only record is the history.",
+      "title": "Done — “KEEP”: the old wardrobe code stays where it is, switched off",
+      "productImpact": "Your word, 2026-10-13: “KEEP — leave the code where it is, switched off”.\n\nYou had said “delete it” about five hours earlier, so these were two opposite answers to the same question. Rather than assume the newer one won, the crew held the change and asked you straight out. You said “Keep”, and that is what is built.\n\nSo nothing is deleted. The old wardrobe and the old casting-refine screens stay in the codebase, readable, with no road to them — which is also what you asked for in September, that they stay readable while the redesign is going on. The two things you did ask for are both done and live: no pictures go to Google any more, and the key is gone.\n\nYour answer also settled something the crew had to act on straight away. Fourteen sentences in the code still said a deletion was coming — notes left for whoever worked on it next. Left alone, each one would have told a future shift to do the thing you just said not to do. All fourteen now say what you decided.\n\nOne of those fourteen was a promise to you rather than a note: that deleting the old wardrobe must never delete a customer's garments. It was written down as something the deletion had to honour — so with no deletion happening, it had nowhere to live. It is kept now by there being nothing to delete, and it is written to come back into force the day the redesign replaces that screen for real.",
+      "workedExample": "Nothing changes for a customer. What changes is what a developer finds in six weeks: the old wardrobe is still there to read, and the notes beside it say “kept, on his word” instead of “about to be deleted”.",
       "options": [
         {
           "key": "keep",
@@ -329,8 +329,8 @@
           "consequence": "Several careful changes over a few nights, invisible to customers. The old wardrobe stops being there to read during the redesign, and the only record is the history."
         }
       ],
-      "recommendation": "Recommend KEEP, and close this card. The two things you asked for — no pictures to Google, and the key gone — are both done and live. Deleting the code is a separate job that already has a home later, and your September word asked for it to stay readable until the redesign is through.",
-      "state": "open",
+      "recommendation": "Nothing to decide — this is your answer carried out, and it is live. One thing worth knowing rather than acting on: you gave two different answers on this a few hours apart, so the crew stopped and asked you which you meant instead of taking the later one. Your “Keep” settled it.",
+      "state": "done",
       "filedAt": "2026-10-13T00:25:00.000Z",
       "issueNumber": 2315
     },
@@ -10679,7 +10679,8 @@
     289,
     290,
     291,
-    292
+    292,
+    293
   ],
   "nextUp": {
     "readAt": "2026-10-13T04:34:18.097Z",
