@@ -20,8 +20,6 @@
  * throws and nothing is saved: a zip quietly missing the sheet would look like
  * the whole package and be less than it.
  */
-import JSZip from "jszip";
-
 import { productFilename } from "@shared/brand";
 import { sameOriginDownloadHref } from "@/lib/imageProxy";
 
@@ -84,6 +82,9 @@ export async function buildPackageZip(
     return { name: dispositionFilename(response.headers.get("content-disposition")) ?? file.name, bytes };
   }));
 
+  /* Loaded on the press, never on first paint: the archive library is ~30 kB
+     gzipped and this page sits in the entry chunk (bundle budget, preflight). */
+  const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
   const taken = new Set<string>();
   const names: string[] = [];
