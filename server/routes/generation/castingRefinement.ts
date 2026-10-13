@@ -763,7 +763,10 @@ export const castingRefinementRouter = router({
       }
     }),
 
-  /* `proxyImage` moved OUT to `./imageDataUrl.ts` (#2315 step 2 item 1).
+  /* `proxyImage` moved OUT to `./imageDataUrl.ts` (#2315 step 2 item 1 — the
+     move happened; ⚠ step 2 ITSELF is now DECLINED on his word of 2026-10-13,
+     "KEEP — leave the code where it is, switched off", so this file is not
+     being deleted and the reasoning below stands for the redesign instead).
      It calls no Gemini anything — it validates a URL against the allowlist
      and hands back the bytes as a data URL — and the canvas, the export
      pack and the studio's image bar still use it, so deleting this file as

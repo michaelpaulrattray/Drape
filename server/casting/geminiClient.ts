@@ -36,8 +36,12 @@ const getTextQueue = async () => {
  * ⚠ THE BACKSTOP OF THE REBUILD DOOR (#2315 step 1). This is the only place the
  * server reads the key and the only place the client is constructed, so the
  * refusal stands FIRST: while the door is shut no road — listed at a procedure's
- * mouth or not — can build a client, and nothing is sent. Step 2 deletes this
- * module; until then the road behind the door stays compiled.
+ * mouth or not — can build a client, and nothing is sent.
+ *
+ * ⚠ **THIS MODULE IS NOT DELETED — his word, 2026-10-13 (Desk reply #293, on
+ * #2315), verbatim and entire: "KEEP — leave the code where it is, switched
+ * off".** These two lines read *"Step 2 deletes this module"* until then. The
+ * road behind the door stays compiled until the redesign replaces it.
  */
 export const getAiClient = () => {
   assertRebuildDoorOpen();

@@ -163,8 +163,11 @@ export function identityCommitFailureSentence(error: unknown): string {
  * it would hand the customer a room full of buttons that each fail. Instead the
  * canvas's "Cast new" and a cast's Edit open one quiet card that says so, reads
  * the SAME compiled fact and sentence the server refuses with (working law 4),
- * and offers the one way back. The environment below stays compiled for step 2
- * to delete. A wrapper rather than an early return inside it: the environment's
+ * and offers the one way back. The environment below stays compiled — ⚠ **for
+ * good, not for a step 2 to delete: his word of 2026-10-13 on #2315 is "KEEP —
+ * leave the code where it is, switched off"**, and this line read *"stays
+ * compiled for step 2 to delete"* until then. A wrapper rather than an early
+ * return inside it: the environment's
  * hooks must never sit below a conditional return (React #310).
  */
 export function CastingTakeover(props: CastingTakeoverProps) {
