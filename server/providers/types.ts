@@ -889,23 +889,36 @@ interface Validator {
   }): Promise<IdentityVerdict>;
 }
 
-/**
- * Deferred to M8b. Typed here because §E ratifies the surface, unimplemented
- * because the transport is an open M3 question: whether prompt-based voice
- * *design* is reachable through Fal's ElevenLabs endpoints, or needs the direct
- * ElevenLabs API (no key is configured). If neither works at acceptable cost,
- * M8b drops from V2.0 and the room simply never renders a Voice card — the
- * honest-capability law (§I), not a greyed-out control.
- */
-interface VoiceEngine {
-  readonly id: string;
-  designVoice(input: { description: string; signal?: AbortSignal }): Promise<{
-    providerVoiceRef: string;
-    provenance: ProviderProvenance;
-  }>;
-  synthesizeAudition(input: {
-    providerVoiceRef: string;
-    text: string;
-    signal?: AbortSignal;
-  }): Promise<{ bytes: Buffer; contentType: string; provenance: ProviderProvenance }>;
-}
+/*
+  ⚠ THE DEFERRED `VoiceEngine` STOOD HERE AND IS GONE — N4b-1 (#2469). The real
+  surface is `server/providers/voiceTypes.ts`, written against the engine the
+  spike measured.
+
+  It read:
+
+      interface VoiceEngine {
+        designVoice(input: { description, signal? }):
+          Promise<{ providerVoiceRef, provenance }>;
+        synthesizeAudition(input: { providerVoiceRef, text, signal? }):
+          Promise<{ bytes, contentType, provenance }>;
+      }
+
+  Both members were unbuildable as typed, and this docblock's own warning above
+  — *"writing an interface against behaviour nobody has measured is the exact
+  failure this milestone's gate exists to prevent"* — is what it was warning
+  about:
+
+    · a design returns THREE previews, not one `providerVoiceRef`, and the
+      choice between them by ear is the whole feature (#2140);
+    · a preview id CANNOT speak. `POST /v1/text-to-speech/{generated_voice_id}`
+      answers 404 `voice_not_found` until the preview is saved, so
+      `synthesizeAudition(providerVoiceRef)` straight off a design was a call
+      that could only fail. Keep is irreducibly save-then-speak.
+
+  Nothing ever imported it (it was not even exported), so nothing broke; it is
+  struck here rather than silently deleted so the next reader meets the reason
+  and does not re-derive the shape that cannot work. The replacement is a real
+  module rather than a type in this file because it carries values — the
+  allowance shape and the two "is there room" readers a road calls before it
+  spends.
+*/

@@ -872,7 +872,8 @@
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
       "CASTING_SIDE_PHRASING_SCOPE",
-      "CASTING_V2_SCOPE"
+      "CASTING_V2_SCOPE",
+      "CASTING_VOICE_SCOPE"
     ],
     "procedures": [
       "castingV2.abandonSession",

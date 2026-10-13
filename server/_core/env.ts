@@ -17,6 +17,7 @@ import {
 import { assertDiagnosticCaptureConfigured } from "../castingV2/diagnosticCapture";
 import { assertFalBudget } from "../castingV2/falBudget";
 import { CREATION_RECORD_PRIVATE_KEY_VARIABLE } from "../castingV2/creationRecordSigning";
+import { ELEVENLABS_API_KEY_VARIABLE } from "../providers/elevenlabsVoice";
 import {
   EVIDENCE_PACKAGE_SCOPE_ENV,
   validateEvidencePackageEnvironment,
@@ -54,6 +55,8 @@ import {
   validateCastingConceptUploadEnvironment,
   CASTING_CREATION_RECORD_SCOPE_ENV,
   validateCastingCreationRecordEnvironment,
+  CASTING_VOICE_SCOPE_ENV,
+  validateCastingVoiceEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -665,6 +668,19 @@ export function validateEnv(): void {
     scope: process.env[CASTING_CREATION_RECORD_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
     privateKey: process.env[CREATION_RECORD_PRIVATE_KEY_VARIABLE],
+  });
+
+  /*
+    VOICE (N4b-1, #2469). On without its transport REFUSES BOOT and names the
+    variable, never its value — the same posture as the record above and for a
+    sharper reason: a voice road with no transport would offer the press, take
+    it, and fail every time, and in slice 2 that press carries a price.
+  */
+  validateCastingVoiceEnvironment({
+    scope: process.env[CASTING_VOICE_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+    voiceKey: process.env[ELEVENLABS_API_KEY_VARIABLE],
+    voiceKeyVariable: ELEVENLABS_API_KEY_VARIABLE,
   });
 
   const budget = assertFalBudget();
