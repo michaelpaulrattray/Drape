@@ -1,24 +1,24 @@
 {
-  "edition": 692,
-  "updatedAt": "2026-10-12T21:20:00.000Z",
-  "shift": "Foreman — foreman-20261013-0659 (background: the one untriaged risk on your Notion desk, verified at the code and carded as #2461 — a remade Google account locks a customer out with no way back)",
+  "edition": 693,
+  "updatedAt": "2026-10-13T01:50:00.000Z",
+  "shift": "Foreman — foreman-20261013-1122 (focus: the BH boundary — the hunt closes on your word, the focus clears, and your completion card reaches this page)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "The bug hunt is the focus, on your own word on 12 October. Agents read through every screen a customer touches, every real defect they find becomes a card, and all of those cards get fixed before N3 starts. It is already well along: 41 defects were found that day and all 41 of them are fixed, merged and live — the last repair closed the same day and nothing new has turned up since. Nothing new is being built while it runs, and nothing here needs an answer from you.",
-      "quote": "2314 just park it or defer it for now it could be ages before i get a reply. 2360 go with your reccomendation 2115 we can do the bug hunt now.",
-      "quotedAt": "2026-10-12T09:09:05.000Z"
+      "state": "none",
+      "title": "The bug hunt is finished and the focus is clear. Fifty problems were found by reading through the screens a customer actually touches: forty-six are fixed and live, and four were closed without a fix — one was the same problem twice, one did not happen when it was tested against real Stripe, and one was your own call about a remade Google account. Nothing new was built while it ran. Your test drive and the one word on what comes next are on card #2462. Nothing new starts until you name it.",
+      "quote": null,
+      "quotedAt": null
     },
     "milestone": {
       "title": "The bug hunt — every defect a customer could hit, found and fixed before N3. Nothing new gets built while it runs: this rung is about what already exists stopping being wrong.",
       "steps": [
         {
-          "title": "The hunting itself — agents read through every screen a customer touches and file every real defect as a card. This one is the relay's to run, not the crew's (#2115)",
-          "state": "in-progress"
+          "title": "The hunting itself — agents read through every screen a customer touches and filed every real defect as a card. Called done by the relay on 13 October, and you closed the rung on that (#2115)",
+          "state": "done"
         },
         {
-          "title": "Fixing what they found — 41 cards were filed on 12 October and all 41 are fixed, merged and live; the last repair closed the same day",
+          "title": "Fixing what they found — fifty cards in all: forty-six fixed, merged and live, and four closed without a fix. Every bug card filed during the hunt is closed",
           "state": "done"
         },
         {
@@ -26,8 +26,8 @@
           "state": "waiting"
         },
         {
-          "title": "Your completion card, with what is worth your hands and eyes — filed once the hunting itself is called done, not just because the fix list is empty",
-          "state": "waiting"
+          "title": "Your completion card, with what is worth your hands and eyes — filed on the relay's judgement that the hunting was done, not because the fix list was empty (#2462)",
+          "state": "done"
         }
       ]
     },
@@ -136,7 +136,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-12T14:05:41.336Z",
+      "readAt": "2026-10-13T01:36:45.266Z",
       "items": [
         {
           "issueNumber": 14,
@@ -327,7 +327,7 @@
       "workedExample": "A customer downloads their Certificate of Creation next month and asks: do you train on my character? Today the honest answer has footnotes. After these three acts it is a plain no, written into the terms by someone qualified to write it.",
       "options": [],
       "recommendation": "Do the two account checks with the relay this week; send the lawyer pack whenever suits. All three build cards are closed and live, so these three acts are what is left of the rung.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-12T02:54:33.308Z",
       "issueNumber": 2314
     },
@@ -3835,7 +3835,7 @@
     },
     {
       "id": "google-lockout-2461",
-      "title": "A customer whose Google account is remade cannot get back into their own work",
+      "title": "Answered — “thats not our problem”: a remade Google account is between the customer and Google",
       "productImpact": "If someone signs in with Google and their Google account is ever replaced — deleted and remade at the same address, or rebuilt by their work's IT — Klieg will not let them in again.\n\nThey see \"Google Sign-In Failed. Please try again\", and trying again never works. Their email and password will not work either, because an account made with Google never had a password. Their credits and every character they signed are still sitting there, and they cannot reach any of it. Nothing on the page tells them what to do, and there is nothing in the product that can let them back in. Today the only way back is a change made directly in the database by hand.\n\nNobody has hit this. I read the accounts tonight: there are six, and three of them are exposed — every account made through Google, because not one of them has a password. The other three have passwords and are fine. The exposure grows with every Google sign-up, so this wants fixing before the doors open rather than after.\n\nThe change that caused it is a good change and should stay. On 12 October we started recognising people by Google's own permanent id instead of by their email address, and that closed a real way for one person to take over another person's account. What is missing is a way back for the person it shuts out.",
       "workedExample": "I checked all four ways out in the code rather than assuming them.\n\nGoogle sign-in refuses, because the account is still tied to the old Google id. Email and password refuses, because there is no password to check. Password reset does not exist anywhere in Klieg at all — I searched the whole product and there is none — so \"send them a reset email\" is not something we can do today without building it first. And nothing in the admin panel can move an account onto a new Google id.\n\nAll four doors are shut, which is why this is a question rather than a fix already done: the repair adds something new that a customer uses, and which shape it takes is your call.\n\nThis came from Squall, who spotted it on the pull request two minutes before it merged, so it shipped without anyone reading him. Everything he said checked out, and one part was wider than he thought — the set-a-password way back does not exist to be used.",
       "options": [
@@ -3856,9 +3856,36 @@
         }
       ],
       "recommendation": "The first one — let support move an account onto a new Google account. It is the smallest build, it uses the admin panel that already exists, and it changes nothing about the sign-in rules we just tightened. The second is the nicer product and is worth doing when you want password recovery for its own sake, but it is not a reason to wait for this. The third is needed whichever you pick and rides the sign-in page redesign, so it is not really a choice on its own.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-12T21:20:00.000Z",
       "issueNumber": 2461
+    },
+    {
+      "id": "bughunt-complete-2462",
+      "title": "The bug hunt is done — your test drive, and one word on what comes next",
+      "productImpact": "The bug hunt you started yesterday morning is finished, and nothing new was built while it ran.\n\nFifty problems were found by reading through the screens a customer actually touches. Forty-six are fixed and live. Four were closed without a fix: one was the same problem twice, one turned out not to happen when it was tested against real Stripe, and one was your own call — the customer who remakes their Google account.\n\nWhat is different for a customer. Signing in no longer tells a stranger whether an email has an account here. Billing never sells a second subscription to somebody whose card has failed, and its prices and allowances read right. Out of credits, casting says the balance is short and gives the price, instead of saying the brief cannot be cast. Long notes on the canvas stop vanishing. Downloads are named after the character and keep you on Klieg. A page that does not exist gets our own 404 rather than a blank one.\n\nNone of this is new, and that is the point of the rung: it is things that were wrong stopping being wrong. So the test drive is six things to check rather than something to try out.\n\nTwo things rode alongside it on your word the same day. The Gemini key is gone and every old Gemini road is shut. The lawyer card is closed with its receipts.\n\nYou are asked for one word: what comes next. Until you give it, the crew does maintenance only and never picks the next thing itself.",
+      "workedExample": "I checked the hunt's own list myself rather than taking the count off the card. Forty-two bug cards were filed from yesterday morning on, and all forty-two are closed. The only four bug cards still open are older than the hunt: three wait on the sign-in, landing and canvas redesigns you have already ordered, and one you decided against.\n\nI could not check the forty-six and the four against each other, and the reason is worth knowing. We deliberately never write “closes card 123” into a change, so GitHub cannot tell us which fix closed which card. That split is the relay's own count and is reported as such.\n\nOne thing I repaired on the way. This card was not appearing in your Needs you list at all. The six test-drive steps were showing, but the actual question — name what comes next — was invisible, because the card was missing the one marker this page reads to decide that something is waiting on you. It is on now, and I ran the page's own reader before and after to be sure, with a check either way so the result means something.",
+      "options": [
+        {
+          "key": "n3",
+          "label": "N3 — the refine era completes (#1689, #2191)",
+          "consequence": "Your own order puts N3 after the hunt. It finishes the refine side of casting, and two of its cards are about making a refine and a face scan cost us less so the prices can come down."
+        },
+        {
+          "key": "n4b",
+          "label": "N4b — voices, listen and pick (#2140)",
+          "consequence": "Real voices made from the voice text, chosen by ear. Your own words: give voice its own rung, it is very important."
+        },
+        {
+          "key": "workspace",
+          "label": "The shared workspace (#1788)",
+          "consequence": "Nothing can be priced per seat until a team can exist in the product. You have never ordered it, and Team pricing has been waiting on it since Phase 2."
+        }
+      ],
+      "recommendation": "N3 — and this is your own order rather than the crew choosing: you said the hunt runs once all of N2 is finished and before N3 starts, and that is now true. If you would rather build something a customer can see straight away, N4b is the voice rung you called very important. Until you name one, the crew does maintenance only.",
+      "state": "open",
+      "filedAt": "2026-10-13T01:22:13.000Z",
+      "issueNumber": 2462
     }
   ],
   "eyeItems": [
@@ -10635,7 +10662,7 @@
     286
   ],
   "nextUp": {
-    "readAt": "2026-10-12T14:05:41.334Z",
+    "readAt": "2026-10-13T01:36:45.264Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10684,11 +10711,6 @@
         }
       },
       {
-        "issueNumber": 2115,
-        "title": "Bug hunt across the product — after all of N2 closes, before N3 starts (his word, 2026-10-09)",
-        "urgent": false
-      },
-      {
         "issueNumber": 2140,
         "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
         "urgent": false
@@ -10699,21 +10721,12 @@
         "urgent": false
       },
       {
-        "issueNumber": 2314,
-        "title": "N2d-4 — Provider no-training positions and the lawyer pack (hand acts; nothing published)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — two account reads/settings (OpenRouter, Gemini tier) are your or the"
-        }
-      },
-      {
         "issueNumber": 2315,
         "title": "Retire every Gemini path and remove GEMINI_API_KEY — wardrobe, the legacy casting refine, and the canvas's old model-edit routing",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — DELETE the wardrobe and legacy refine code now, or KEEP it readable per your #364 word? Recommend KEEP and close this card."
+          "because": "his desk card `gemini-code-delete-2315` is open"
         }
       }
     ]
