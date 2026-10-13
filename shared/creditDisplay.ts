@@ -337,17 +337,23 @@ export function staffLedgerProse(description: string): string {
  * can see which scale each is on. A customer has neither, and the stored
  * sentence cannot be made correct for them:
  *
- *   - it holds LEDGER figures — *"Monthly credit refresh (180000 credits + 0
- *     rollover)"* on a plan whose card says 36,000 — and those rows are
- *     already written, so no fix reaches them retroactively (#1736's own
+ *   - it holds LEDGER figures — the monthly-refresh sentence states the plan's
+ *     internal grant, five times the figure on the plan card — and those rows
+ *     are already written, so no fix reaches them retroactively (#1736's own
  *     second bullet);
  *   - `staffLedgerProse`'s repair cannot be reused as written, because the
- *     labelled form it produces (*"36,000 credits · 180,000 ledger"*) puts the
- *     internal figure on a customer's line on purpose;
+ *     labelled form it produces puts the internal figure on the line beside
+ *     the customer's, on purpose;
  *   - and the half-fix — converting the row's `amount` while still printing
- *     the stored sentence — is worse than today: one record would hold
- *     `"amount": 36000` beside *"(180,000 credits …)"*, two scales with nothing
- *     to tell them apart.
+ *     the stored sentence — is worse than today: one record would hold the
+ *     converted amount beside a sentence stating the internal one, two scales
+ *     with nothing to tell them apart.
+ *
+ * ⚠ **The worked example is in `server/gdprExportCreditScale.test.ts`'s own
+ * header and NOT here, on purpose**: it quotes a plan's grant, this module is
+ * on `MONEY_PATHS`, and `server/pricedProseFreshness.test.ts` indicts a credit
+ * figure in a priced module's prose precisely because that is where one rots
+ * unnoticed. The example belongs beside the fixture that drives it.
  *
  * So the export states the one thing it can state truthfully and completely:
  * what KIND of movement this was, which way it went, and how many credits on
