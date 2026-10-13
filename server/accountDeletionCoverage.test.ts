@@ -76,6 +76,11 @@ const DELETION_MODULES = [
   "server/db/castingV2InkDeliveryCrops.ts",
   "server/db/castingV2ReferenceCrops.ts",
   "server/db/castingV2ReferenceAttachments.ts",
+  /* The kept voice (N4b-1, #2469) — the tenth, on exactly that shape:
+     `accountCastingPurge.ts` names `deleteAccountVoicesIn` and the statement
+     lives beside the table in `castVoices.ts`. This guard is what caught the
+     omission on the diff that created it. */
+  "server/db/castVoices.ts",
 ] as const;
 
 function read(relativePath: string): string {

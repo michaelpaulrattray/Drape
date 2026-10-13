@@ -63,7 +63,23 @@ vi.mock("./connection", () => ({
   },
 }));
 
-const { insertCastVoice, readCastVoice, readCastVoiceLine } = await import("./castVoices");
+const {
+  deleteAccountVoicesIn,
+  deleteCastVoicesIn,
+  insertCastVoice,
+  readAccountVoiceReleaseFactsIn,
+  readCastVoice,
+  readCastVoiceLine,
+  readCastVoiceReleaseFactsIn,
+} = await import("./castVoices");
+
+/**
+ * A transaction handle, for the four statements the deletion roads run INSIDE
+ * one. The recording pool is the same; what differs is only that production
+ * hands these a `tx` rather than the pool, so they are driven with a handle of
+ * that shape.
+ */
+const tx = drizzle(recordingPool as never, { mode: "default" } as never) as never;
 
 const WRITE = {
   userId: USER_ID,
@@ -179,5 +195,78 @@ describe("the kept voice's statements", () => {
     await expect(readCastVoice(0, MODEL_ID)).rejects.toThrow(/userId/);
     await expect(readCastVoice(USER_ID, -1)).rejects.toThrow(/modelId/);
     expect(sent).toHaveLength(0);
+  });
+});
+
+/**
+ * THE FOUR STATEMENTS THE DELETION ROADS RUN INSIDE A TRANSACTION — and they
+ * are here because SABOTAGE FOUND THEM UNGUARDED.
+ *
+ * `accountDeletionOrphanOwnerScope.test.ts` joins these roads and stayed GREEN
+ * with the owner clause CUT OUT of `readAccountVoiceReleaseFactsIn` — correctly,
+ * because its arms inspect the statements carrying an ORPHAN CANDIDATE ID and
+ * these four carry none. A neighbouring suite touching the same road is not
+ * coverage of it (memory: a surviving sabotage may mean a blind guard), so the
+ * owner clause on each of the four is driven here, where it is the subject.
+ *
+ * What each is really protecting: the two READS feed a manifest that DESTROYS
+ * objects and a provider call that RELEASES slots, and the two DELETES remove a
+ * customer's own writing. An owner-blind version of any of them reaches another
+ * account's row, which is enforcement invariant 1 at its sharpest — the
+ * statement, not a check before it.
+ */
+describe("the statements the deletion roads run inside a transaction", () => {
+  it("⚠ the CAST's release facts carry the owner AND the cast", async () => {
+    answers = [[["saved-7", "casting/voices/41/907/a.mp3"]]];
+
+    const facts = await readCastVoiceReleaseFactsIn(tx, { userId: USER_ID, modelId: MODEL_ID });
+
+    expect(facts).toEqual([{ voiceId: "saved-7", clipStorageKey: "casting/voices/41/907/a.mp3" }]);
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/from `cast_voices`/i);
+    expect(statement?.sql).toMatch(/`userId` = \?/);
+    expect(statement?.sql).toMatch(/`modelId` = \?/);
+    expect(statement?.params).toContain(USER_ID);
+    expect(statement?.params).toContain(MODEL_ID);
+    /* It reads the two facts a release needs and NOT the customer's writing. */
+    expect(statement?.sql).not.toContain("designSentence");
+  });
+
+  it("⚠ the ACCOUNT's release facts carry the owner — the clause sabotage removed", async () => {
+    answers = [[[null, "casting/voices/41/907/b.mp3"]]];
+
+    const facts = await readAccountVoiceReleaseFactsIn(tx, { userId: USER_ID });
+
+    /* A null `voiceId` is "not resident", not "missing" — it still has a clip. */
+    expect(facts).toEqual([{ voiceId: null, clipStorageKey: "casting/voices/41/907/b.mp3" }]);
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/from `cast_voices`/i);
+    expect(statement?.sql).toMatch(/`userId` = \?/);
+    expect(statement?.params).toContain(USER_ID);
+    expect(statement?.sql).not.toContain("designSentence");
+  });
+
+  it("⚠ the CAST's delete carries the owner beside the cast", async () => {
+    writeAffected = 1;
+
+    expect(await deleteCastVoicesIn(tx, { userId: USER_ID, modelId: MODEL_ID })).toBe(1);
+
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/^delete from `cast_voices`/i);
+    expect(statement?.sql).toMatch(/`userId` = \?/);
+    expect(statement?.sql).toMatch(/`modelId` = \?/);
+    expect(statement?.params).toContain(USER_ID);
+    expect(statement?.params).toContain(MODEL_ID);
+  });
+
+  it("⚠ the ACCOUNT's delete carries the owner, and reports what it removed", async () => {
+    writeAffected = 3;
+
+    expect(await deleteAccountVoicesIn(tx, { userId: USER_ID })).toBe(3);
+
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/^delete from `cast_voices`/i);
+    expect(statement?.sql).toMatch(/`userId` = \?/);
+    expect(statement?.params).toContain(USER_ID);
   });
 });
