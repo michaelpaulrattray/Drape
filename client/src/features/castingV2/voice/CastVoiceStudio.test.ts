@@ -2,6 +2,17 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 
+/*
+  ⚠ **THE SHARED STRIPPER, NEVER A PRIVATE ONE (#1629).** The arms at the foot
+  of this file read the component's own source, so they must tell what it SAYS
+  from what it DISCUSSES — the comment beside the repair names the very constant
+  the arm bans, which is exactly the sentence a future reader needs. The first
+  draft hand-rolled `//` to end of line and `server/commentStripperShape.test.ts`
+  refused it on the push: a `//` inside a string literal is not a comment, and a
+  guard that reads SHORT passes for the wrong reason.
+*/
+import { withoutComments } from "../../../../../server/testing/withoutComments";
+
 import { TRPCClientError } from "@trpc/client";
 import { describe, expect, it } from "vitest";
 
@@ -355,17 +366,6 @@ describe("the catch-all shows the server's sentence, not a money claim (finding 
     new URL("./CastVoiceStudio.tsx", import.meta.url),
     "utf8",
   );
-
-  /**
-   * ⚠ **COMMENTS ARE STRIPPED, AND THAT IS NOT A CONVENIENCE.** The first run
-   * of the arm below went red on the EXPLANATION beside the repair — the
-   * comment there names `VOICE_MAKE_FAILED` to say what it replaced, which is
-   * exactly the sentence a future reader needs. A guard that a comment can trip
-   * is a guard that teaches people to stop writing them, and in this file that
-   * would cost more than the guard is worth. It reads code; prose is free.
-   */
-  const withoutComments = (text: string): string =>
-    text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/.*/g, " ");
 
   const slice = (afterAnchor: string, untilAnchor: string): string => {
     expect(source.split(afterAnchor)).toHaveLength(2);

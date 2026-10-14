@@ -270,7 +270,11 @@ describe("a cast with no name is a real case", () => {
   });
 });
 
-describe("what the card says about the money (the relay's findings on PR #2499)", () => {
+/* The pull request number lives in this comment and not in the title: the token
+   guard reads a bare #NNNN in a STRING as a hex colour, and 2499 is a valid one
+   — the same reason the price arm above carries its number this way. The
+   findings are the relay's, on PR 2499. */
+describe("what the card says about the money (the relay's findings)", () => {
   /**
    * The claim that may only be made when the ledger has answered.
    *
