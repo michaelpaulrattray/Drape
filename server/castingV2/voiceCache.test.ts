@@ -108,6 +108,25 @@ vi.mock("../db/castVoices", () => ({
   removeCastVoice: async () => null,
 }));
 
+/** Every log line the service writes, so an ORPHAN log is asserted, not hoped for (#2507 item 5). */
+const logged: Array<{ fields: Record<string, unknown>; message: string }> = [];
+vi.mock("../logging/logger", () => {
+  const record = (fields: unknown, message?: unknown) => {
+    if (typeof fields === "string") logged.push({ fields: {}, message: fields });
+    else logged.push({ fields: (fields ?? {}) as Record<string, unknown>, message: String(message ?? "") });
+  };
+  const logger: Record<string, unknown> = { info: record, warn: record, error: record, debug: record, trace: record, fatal: record };
+  logger.child = () => logger;
+  return { createModuleLogger: () => logger, logger };
+});
+
+/** The orphan lines that name `voiceId` — what an operator would search for. */
+function orphanLogsFor(voiceId: string): string[] {
+  return logged
+    .filter((line) => line.fields.voiceId === voiceId && /orphaned on the account/.test(line.message))
+    .map((line) => line.message);
+}
+
 vi.mock("../db/castVoiceCards", () => ({
   readCastVoiceCardSources: async () => null,
   readCastVoiceCard: async () => null,
@@ -198,6 +217,7 @@ beforeEach(() => {
     { id: 13, userId: 1, modelId: 905, voiceId: "warm", clipSha256: "sha-of-13" },
   ];
   foundByName = [];
+  logged.length = 0;
   candidateReads.length = 0;
   evictionLoses = new Set();
   remintRecorded = true;
@@ -300,8 +320,42 @@ describe("a Keep on a full plan evicts the least-recently-used voice", () => {
       expect(timeline.some((step) => step.startsWith("restore-row"))).toBe(false);
       expect(calls).toEqual(["allowance", "delete"]);
       expect(operationsSpent(calls)).toBe(0);
+      /* #2507 item 5: the slot may still be held and no row names it — so the
+         provider voice id is NAMED in the log, for an operator to release. */
+      expect(orphanLogsFor("coldest")).toEqual([
+        expect.stringMatching(/possibly orphaned on the account/),
+      ]);
     });
   }
+
+  it("⚠ A REFUSED DELETE WHOSE ROW CANNOT BE PUT BACK NAMES THE SLOT AS ORPHANED (#2507 item 5)", async () => {
+    const castVoices = await import("../db/castVoices");
+    const restoreSpy = vi.spyOn(castVoices, "restoreCastVoiceSlot").mockResolvedValueOnce(false);
+    const { engine } = stubEngine({
+      async deleteVoice(input) {
+        timeline.push(`release-failed:${input.voiceId}`);
+        throw new ProviderError("rate_limit", "busy", { status: 429 });
+      },
+    });
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
+    expect(restoreSpy).toHaveBeenCalledTimes(1);
+    expect(orphanLogsFor("coldest")).toEqual([expect.stringMatching(/is now orphaned on the account/)]);
+    restoreSpy.mockRestore();
+  });
+
+  it("NEGATIVE CONTROL — a refused delete that IS put back names no orphan (the row still names its slot)", async () => {
+    const { engine } = stubEngine({
+      async deleteVoice(input) {
+        timeline.push(`release-failed:${input.voiceId}`);
+        throw new ProviderError("rate_limit", "busy", { status: 429 });
+      },
+    });
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
+    expect(timeline).toContain("restore-row:11:coldest:sha-of-11");
+    expect(orphanLogsFor("coldest")).toEqual([]);
+  });
 
   it("⚠ A REPLACE'S OWN SLOT, refused release, is put back keyed on ITS OWN clip", async () => {
     ownVoice = { id: OWN_ROW, voiceId: "own-old", clipStorageKey: "k", clipSha256: CLIP_SHA, clipContentType: "audio/mpeg" };

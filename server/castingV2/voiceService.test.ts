@@ -798,8 +798,29 @@ describe("the card's keepability hint", () => {
     expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
   });
 
-  it("says no when every slot the plan allows is full", async () => {
+  it("says no when every slot is full AND the plan cannot clone (nothing may be evicted)", async () => {
+    const { engine } = stubEngine({
+      allowance: { ...LIVE, slotsUsed: 30, slotsTotal: 30, instantCloning: false },
+    });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
+  });
+
+  it("⚠ SAYS YES ON A FULL PLAN THAT CAN CLONE — Keep makes room by eviction, so the card still designs (#2507 item 4)", async () => {
+    /*
+      Until #2507's repair this read "is a slot free" alone, so the moment the
+      house plan filled, the card stopped its automatic first three on every
+      cast — while a Keep pressed there would have succeeded by evicting the
+      least-recently-used voice. The client designs whenever this is not
+      `false` (`CastVoiceStudio.tsx`, `canKeep !== false`).
+    */
     const { engine } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30, slotsTotal: 30 } });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+  });
+
+  it("says no on a plan over its limit by more than one press would clear — the Keep's own refusal", async () => {
+    const { engine } = stubEngine({ allowance: { ...LIVE, slotsUsed: 40, slotsTotal: 30 } });
 
     expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
   });

@@ -847,7 +847,11 @@ export async function readVoiceKeepability(
   }
   try {
     const allowance = await engineFor(deps).readAllowance({});
-    const canKeep = voiceOperationsAvailable(allowance) && voiceSlotsAvailable(allowance);
+    /* #2507 item 4: a FULL plan that can clone is still keepable — Keep makes
+       room by eviction — so the hint asks the eviction's own question rather
+       than "is a slot free", or the card stops designing on a plan where every
+       Keep would in fact succeed. */
+    const canKeep = voiceOperationsAvailable(allowance) && roomForOneVoiceObtainable(allowance);
     keepabilityCache = { atMs, canKeep };
     return { canKeep };
   } catch (error) {
@@ -897,6 +901,27 @@ export function resetVoiceKeepabilityCache(): void {
  */
 const EVICTION_MAX_SLOTS_TO_FREE = 3;
 const EVICTION_SPARE_CANDIDATES = 4;
+
+/**
+ * The wording every "nothing will ever give this slot back" log carries, so an
+ * operator searching the logs for orphaned slots finds every road that can
+ * leave one, each with the provider voice id beside it (#2507 item 5).
+ */
+const SLOT_ORPHANED = "this slot is now orphaned on the account";
+const SLOT_POSSIBLY_ORPHANED = "this slot is possibly orphaned on the account";
+
+/**
+ * CAN ONE MORE VOICE BE GIVEN A SLOT on this live reading — a free slot, or
+ * one {@link makeRoomForOneVoice} would make by eviction. The same arithmetic
+ * and the same two refusals as that function's own guard (no instant cloning;
+ * over the limit by more than one press may clear), read from here by both, so
+ * the card's hint and the Keep cannot disagree (#2507 item 4).
+ */
+function roomForOneVoiceObtainable(allowance: VoiceAllowance): boolean {
+  const needed = allowance.slotsUsed - allowance.slotsTotal + 1;
+  if (needed <= 0) return true;
+  return allowance.instantCloning && needed <= EVICTION_MAX_SLOTS_TO_FREE;
+}
 
 /**
  * DID THE PROVIDER PROVABLY NOT DO IT? True only for a clean refusal: an HTTP
@@ -964,14 +989,16 @@ async function makeRoomForOneVoice(
 ): Promise<{ ok: true; evicted: number } | { ok: false }> {
   const needed = allowance.slotsUsed - allowance.slotsTotal + 1;
   if (needed <= 0) return { ok: true, evicted: 0 };
-  if (!allowance.instantCloning) {
-    log.warn("[Voice] every slot is full and this plan cannot re-mint — nothing evicted");
-    return { ok: false };
-  }
-  if (needed > EVICTION_MAX_SLOTS_TO_FREE) {
-    /* The plan holds far more than it allows — a downgrade, or slots this
-       product does not own. Not something to clear out on one press. */
-    log.error({ needed }, "[Voice] the plan is over its slot limit by more than eviction will clear");
+  /* The guard the card's hint reads too (`roomForOneVoiceObtainable`), so the
+     two cannot disagree; the branches below only name WHICH refusal it was. */
+  if (!roomForOneVoiceObtainable(allowance)) {
+    if (!allowance.instantCloning) {
+      log.warn("[Voice] every slot is full and this plan cannot re-mint — nothing evicted");
+    } else {
+      /* The plan holds far more than it allows — a downgrade, or slots this
+         product does not own. Not something to clear out on one press. */
+      log.error({ needed }, "[Voice] the plan is over its slot limit by more than eviction will clear");
+    }
     return { ok: false };
   }
 
@@ -1011,9 +1038,11 @@ async function makeRoomForOneVoice(
           operation) on its next use, plus a slot that may still be held, so it
           is not counted as freed and is logged.
         */
+        /* #2507 item 5: the voice id is NAMED, so an operator can find the
+           slot and release it by hand; an unnamed orphan is unfindable. */
         log.error(
-          { failureClass, evictedRowId: candidate.id },
-          "[Voice] an eviction's delete did not answer; the row stays evicted (re-minted on next use) and the slot may still be held",
+          { failureClass, evictedRowId: candidate.id, voiceId: candidate.voiceId },
+          `[Voice] an eviction's delete did not answer; the row stays evicted (re-minted on next use) — ${SLOT_POSSIBLY_ORPHANED}`,
         );
         break;
       }
@@ -1022,10 +1051,20 @@ async function makeRoomForOneVoice(
         voiceId: candidate.voiceId,
         clipSha256: candidate.clipSha256,
       }).catch(() => false);
-      log.error(
-        { failureClass, evictedRowId: candidate.id, restored },
-        "[Voice] an eviction's slot was refused release; the row was put back and eviction stopped",
-      );
+      if (restored) {
+        log.error(
+          { failureClass, evictedRowId: candidate.id },
+          "[Voice] an eviction's slot was refused release; the row was put back and eviction stopped",
+        );
+      } else {
+        /* #2507 item 5: refused release AND no row names it any more (the row
+           was replaced, re-minted or removed meanwhile, or the write failed).
+           Nothing in the product will ever release it, so the id is NAMED. */
+        log.error(
+          { failureClass, evictedRowId: candidate.id, voiceId: candidate.voiceId },
+          `[Voice] an eviction's slot was refused release and could not be put back — ${SLOT_ORPHANED}`,
+        );
+      }
       /* A provider that refused one delete will refuse the next; stop here. */
       break;
     }
@@ -1237,7 +1276,7 @@ export async function releaseSlotQuietly(engine: VoiceEngine, voiceId: string): 
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
     log.error(
       { failureClass, voiceId },
-      "[Voice] a saved voice could not be released — this slot is now orphaned on the account",
+      `[Voice] a saved voice could not be released — ${SLOT_ORPHANED}`,
     );
     return false;
   }
