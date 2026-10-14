@@ -256,8 +256,49 @@ export async function insertCastVoice(input: {
   } catch (error) {
     if (error instanceof CastVoiceRowNotWritten) return { inserted: false, replaced: null };
     if (isDuplicateKey(error)) return { inserted: false, replaced: null };
+    if (isLostLockRace(error)) return { inserted: false, replaced: null };
     throw error;
   }
+}
+
+/**
+ * THE OTHER SHAPE A LOST KEEP ARRIVES IN — #2503, item 1.
+ *
+ * Two FIRST Keeps on one cast at once both run the `SELECT … FOR UPDATE` above
+ * against a row that does not exist yet. Under REPEATABLE READ that takes a
+ * GAP lock on `uq_cast_voices_model`, and gap locks do not conflict with each
+ * other — so both get one, both reach the `INSERT`, each insert waits on the
+ * other's gap, and InnoDB kills one of them with **1213 (deadlock)**. That
+ * transaction is the race's loser exactly as a 1062 would have made it: the
+ * survivor's insert proceeds and its voice is the cast's. Before this it was
+ * rethrown, so the customer saw the generic failure instead of the clean
+ * refusal the duplicate-key loser already gets.
+ *
+ * **1205 (lock wait timeout)** is the same contest decided by the clock rather
+ * than the detector. What holds these rows that long can only be another Keep,
+ * a Remove, a cast deletion or an account erasure; whichever it was, THIS Keep
+ * did not land — the transaction is rolled back in full on the way out
+ * (`withTransaction` rethrows, drizzle rolls back), so nothing it wrote
+ * survives — and "it did not land" is the true sentence, where a generic
+ * failure is not.
+ *
+ * ⚠ **IT IS DELIBERATELY NOT A RETRY.** Retrying a deadlock victim here would
+ * walk straight into the survivor's committed row and replace it — two Keeps
+ * pressed at once would silently become "the second one wins and the first
+ * voice's slot is released", which is a product decision nobody made. The loser
+ * owns nothing; its caller releases the new slot and deletes the new clip.
+ *
+ * Walks `cause` the way `isDuplicateKey` does, because drizzle wraps the driver
+ * error and a top-level read passes its own test and fails live.
+ */
+export function isLostLockRace(error: unknown): boolean {
+  for (let link: unknown = error, depth = 0; link && depth < 5; depth += 1) {
+    const { code, errno, cause } = link as { code?: string; errno?: number; cause?: unknown };
+    if (code === "ER_LOCK_DEADLOCK" || errno === 1213) return true;
+    if (code === "ER_LOCK_WAIT_TIMEOUT" || errno === 1205) return true;
+    link = cause;
+  }
+  return false;
 }
 
 /**
@@ -363,7 +404,10 @@ async function dischargeClipManifestIn(
  * one transaction, so a crash leaves either the voice with its clip or neither.
  *
  * Returns the provider slot the caller must release AFTER the commit (the
- * deletion road's order), or `null` when there was no voice to remove.
+ * deletion road's order), or `null` when there was no voice to remove — which
+ * includes a cast that stopped being the owner's live signed cast before the
+ * delete ran (#2503: the proof is in the DELETE, and a zero-row delete rolls
+ * the whole removal back).
  */
 export async function removeCastVoice(
   userId: number,
@@ -394,12 +438,38 @@ export async function removeCastVoice(
       storageItems: [{ storageKey: row.clipStorageKey, storageBackend: "public_r2" as const }],
     });
 
-    await tx.delete(castVoices).where(and(
+    const deleted = await tx.delete(castVoices).where(and(
       eq(castVoices.id, row.id),
       eq(castVoices.userId, userId),
       eq(castVoices.modelId, modelId),
+      /*
+        THE OWNED-AND-LIVE PROOF RIDES THE DELETE — #2503, item 3 (invariant
+        1). The route's `requireCast` proves the live signed cast BEFORE this
+        transaction; the Keep's write already re-proves it IN its statement,
+        and Remove now does the same with the same predicate, so "the cast is
+        live and signed" is a fact of this statement rather than of a read
+        taken a moment earlier.
+      */
+      inArray(
+        castVoices.modelId,
+        tx.select({ id: models.id }).from(models).where(and(
+          eq(models.id, modelId),
+          signedCastWhere(userId),
+        )),
+      ),
     ));
+    /*
+      Zero rows means the cast stopped being live and signed between the route's
+      check and here. THROWN, so the clip manifest written above rolls back with
+      it — queueing the clip of a voice whose row survives would delete the bytes
+      a row still names. The voice is left to the cast's own deletion road,
+      which takes it with the cast.
+    */
+    if (affectedRows(deleted) !== 1) throw new CastVoiceRowNotWritten();
     return { voiceId: row.voiceId };
+  }).catch((error: unknown) => {
+    if (error instanceof CastVoiceRowNotWritten) return null;
+    throw error;
   });
 }
 
@@ -407,6 +477,27 @@ function affectedRows(result: unknown): number {
   const header = Array.isArray(result) ? result[0] : result;
   return Number((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0);
 }
+
+/*
+  ⚠ **THE TWO RELEASE-FACT READS ARE LOCKING READS — #2503, item 2, and its
+  sibling.** Each feeds a DELETE a few statements later in the same transaction,
+  and the delete takes whatever row is committed by then. A plain `SELECT`
+  under REPEATABLE READ reads the transaction's SNAPSHOT instead, which the
+  account erasure establishes many statements earlier — so a replacing Keep
+  committing between the read and the delete left the read naming the OLD clip
+  and slot while the delete removed the row naming the NEW ones: a cloning
+  source left in the public bucket and a provider slot nothing would release.
+
+  `FOR UPDATE` reads the latest committed row and holds it (and, on the
+  account read, the `ix_cast_voices_user` range, so a FIRST Keep cannot insert
+  behind it either) until the transaction ends, so the read and the delete see
+  the same rows. A Keep racing it waits, and then finds the cast gone.
+
+  The cast-deletion road's read is the same shape and gets the same repair:
+  every other read in `finalCastDeletion`'s transaction is already `FOR UPDATE`,
+  and this one was the exception. Neither adds a lock the delete below it was
+  not about to take — it takes it one statement earlier.
+*/
 
 /** The same read, inside the cast-deletion transaction — its authoritative one. */
 export async function readCastVoiceReleaseFactsIn(
@@ -418,7 +509,8 @@ export async function readCastVoiceReleaseFactsIn(
   return tx
     .select({ voiceId: castVoices.voiceId, clipStorageKey: castVoices.clipStorageKey })
     .from(castVoices)
-    .where(and(eq(castVoices.modelId, input.modelId), eq(castVoices.userId, input.userId)));
+    .where(and(eq(castVoices.modelId, input.modelId), eq(castVoices.userId, input.userId)))
+    .for("update");
 }
 
 /** The same read, inside a transaction — the account purge's door. */
@@ -430,7 +522,8 @@ export async function readAccountVoiceReleaseFactsIn(
   return tx
     .select({ voiceId: castVoices.voiceId, clipStorageKey: castVoices.clipStorageKey })
     .from(castVoices)
-    .where(eq(castVoices.userId, input.userId));
+    .where(eq(castVoices.userId, input.userId))
+    .for("update");
 }
 
 /**

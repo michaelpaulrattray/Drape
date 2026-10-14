@@ -512,6 +512,14 @@ export async function purgeAccountCastingIn(
     to refuse an erasure. The resident ids are RETURNED so the caller can
     release them after the commit, which is the same split
     `finalCastDeletionCeremony` makes.
+
+    ⚠ **THE READ IS `FOR UPDATE`, AND THE READ COMES BEFORE THE DELETE — #2503.**
+    A plain read here saw this transaction's snapshot, taken many statements
+    earlier, so a Keep that REPLACED a voice (or kept a first one) in between
+    was invisible to it: the delete then removed a row naming a clip and a slot
+    nobody had collected. The locking read sees the latest committed rows and
+    holds the account's range until the erasure commits, so what is collected
+    here is exactly what the delete below removes.
   */
   const voices = await readAccountVoiceReleaseFactsIn(tx, { userId });
   const voiceIds: string[] = [];
