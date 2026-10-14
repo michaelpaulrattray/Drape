@@ -272,6 +272,41 @@ describe("two presses of Keep on one handle", () => {
     })).toMatchObject({ ok: true });
   });
 
+  it("⚠ a Keep that LOST A LOCK RACE is refunded AND leaves the three voices keepable (#2506)", async () => {
+    /*
+      The card's own test. A lock wait that ran out on a live cast used to
+      arrive here as `cast_not_available` and end the design; the service now
+      calls it `lost_race`, and this arm proves the route answers that with
+      the money back and the same three handles still good.
+    */
+    const userId = freshUser();
+    const design = await designVoicesForCard({ userId, castId: "KI-A", automatic: true });
+    if (!design.ok) throw new Error("unreachable");
+    keepResult = { ok: false, refusal: "lost_race" };
+
+    const press = {
+      userId,
+      castId: "KI-A",
+      designId: design.designId,
+      handle: design.voices[2].handle,
+    };
+    expect(await keepVoiceForCard(press)).toEqual({
+      ok: false,
+      refusal: "lost_race",
+      refunded: true,
+      refundReference: null,
+    });
+    expect(charges.map((charge) => charge.amount)).toEqual([VOICE_KEEP_PRICE]);
+    expect(refunds).toEqual([
+      { amount: VOICE_KEEP_PRICE, reference: `refund:${charges[0].reference}` },
+    ]);
+
+    /* The same handle keeps on the next press — the design was given back. */
+    expect(voiceDesignStoreSize()).toBe(1);
+    keepResult = { ok: true, clipBytes: 77 };
+    expect(await keepVoiceForCard(press)).toMatchObject({ ok: true });
+  });
+
   it("⚠ does NOT give it back when the cast itself is gone", async () => {
     /* Nothing can ever be kept against a deleted cast, so a restorable handle
        there is a name with no referent. */

@@ -129,6 +129,13 @@ export type VoiceRefusal =
   | "voice_off"
   /** Not this owner's, not live, or not signed — one answer for all three. */
   | "cast_not_available"
+  /**
+   * #2506: the Keep lost its row write to another transaction on the same
+   * cast (a second Keep, a deadlock, a lock wait that ran out) while the cast
+   * is still there. Nothing landed and the customer's three voices can still
+   * be kept — the opposite of `cast_not_available`, which ends the design.
+   */
+  | "lost_race"
   /** The cast has no written voice line to make a voice from. */
   | "no_voice_line"
   /** The line is shorter than the engine can design from. */
@@ -741,14 +748,19 @@ export async function keepCastVoice(
       the delete here is the prompt road and the worker is the backstop if this
       process dies between the two. Belt and braces on purpose — the bytes are a
       cloning source, and the slower road is measured in minutes.
+
+      ⚠ **WHICH REFUSAL IS ASKED ONLY AFTER BOTH ARE GONE (#2506)**, and it is
+      not a detail: `cast_not_available` makes the route throw the customer's
+      three designed voices away, so it is said only of a cast that really
+      went away — see {@link lostWriteRefusal}.
     */
     await releaseSlotQuietly(engine, voiceId);
     await deleteClipQuietly(clipStorageKey, { userId: input.userId, modelId: input.modelId });
     log.warn(
-      { modelId: input.modelId },
+      { modelId: input.modelId, lost: written.lost },
       "[Voice] Keep lost its write — slot and clip released, one voice operation spent",
     );
-    return { ok: false, refusal: "cast_not_available" };
+    return { ok: false, refusal: await lostWriteRefusal(input, written.lost) };
   }
 
   /*
@@ -781,6 +793,41 @@ export async function keepCastVoice(
     replaced,
     evicted,
   };
+}
+
+/**
+ * WHAT A KEEP THAT DID NOT LAND IS CALLED — #2506.
+ *
+ * A row write that matched no live cast is `cast_not_available`, and the route
+ * ends the design on it, because nothing can ever be kept against that cast.
+ *
+ * A row write that LOST A RACE (another Keep on the unique index, a deadlock, a
+ * lock wait that ran out) says nothing either way about the cast — the lock
+ * may have been held by a second Keep on a live cast, or by the deletion that
+ * is removing it. So the cast is READ AGAIN, after the losing transaction has
+ * rolled back, through the same owned-live-signed reader the Keep opened with:
+ * still there → `lost_race`, and the three voices stay keepable; gone →
+ * `cast_not_available`, exactly as before.
+ *
+ * ⚠ **A READ THAT FAILS ANSWERS `lost_race`.** The two errors are not equal:
+ * wrongly keeping a design for a gone cast costs one more refused (and
+ * refunded) press, because every Keep re-proves the cast before it spends and
+ * again in its write; wrongly ending it destroys three voices the customer
+ * paid to have made. The read is not a gate on money — the slot is already
+ * released and the clip already deleted above.
+ */
+async function lostWriteRefusal(
+  input: { userId: number; modelId: number },
+  lost: "cast_gone" | "race",
+): Promise<"cast_not_available" | "lost_race"> {
+  if (lost === "cast_gone") return "cast_not_available";
+  try {
+    const stillThere = await readCastVoiceLine(input.userId, input.modelId);
+    return stillThere ? "lost_race" : "cast_not_available";
+  } catch (error) {
+    log.warn({ err: error, modelId: input.modelId }, "[Voice] cast unreadable after a lost Keep race — design kept");
+    return "lost_race";
+  }
 }
 
 /**

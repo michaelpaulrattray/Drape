@@ -775,6 +775,12 @@ export async function keepVoiceForCard(input: {
           minute later. The one exception is a cast that is no longer there to
           keep a voice for — nothing can ever be kept against it, so the handles
           stay gone.
+
+          ⚠ **A KEEP THAT LOST A LOCK RACE IS NOT THAT EXCEPTION (#2506).** It
+          used to arrive here as `cast_not_available` too, so a lock wait that
+          ran out on a live cast threw the three voices away. The service now
+          says `lost_race` for it and re-reads the cast before ever saying
+          `cast_not_available`, so the design comes back on this line.
         */
         if (result.refusal !== "cast_not_available") restoreVoiceDesign(input.designId);
         return { ok: false as const, refusal: result.refusal };
