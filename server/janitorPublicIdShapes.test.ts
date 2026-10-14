@@ -21,7 +21,7 @@
  * clean database either way, which is the silence direction and the one no
  * green run can tell you about.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
@@ -33,7 +33,13 @@ import {
   publicIdStores,
   UnjudgedWidthError,
 } from "../scripts/lib/publicIdShapes.mts";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
+
+/* This suite reads files off the real tree (`readListedSource`), which enrols it
+   in #741's derived population: vitest's 5 s default goes red under load on
+   somebody's machine rather than in CI. File level, so every arm inherits it. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /** The value that was actually found in `casting_sessions.publicId` (#1098). */
 const THE_LITTER = "1086-inflight-e3ad6977";
