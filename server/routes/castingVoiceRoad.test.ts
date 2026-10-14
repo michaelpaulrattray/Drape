@@ -28,6 +28,16 @@ let voiceOn = true;
 let keepResult: unknown = { ok: true, clipBytes: 1_234 };
 /** When set, the next design REFUSES with this key (#2471's refund arms). */
 let designRefusal: string | null = null;
+/**
+ * When set, the next design THROWS this.
+ *
+ * A refusal and a throw are different roads through the money and the limiter —
+ * the refusal comes back in the result (invariant 6) and a throw is a genuine
+ * failure `withAtomicCredits` refunds and re-words. The repair of the relay's
+ * finding on PR #2499 touches BOTH, so a lever that could only refuse would
+ * have left the throw half of every arm below unproven.
+ */
+let designThrows: Error | null = null;
 let keepability = { canKeep: true };
 let keptRow: unknown = null;
 const saves: string[] = [];
@@ -114,18 +124,20 @@ vi.mock("../db/castVoices", () => ({
 }));
 
 vi.mock("../castingV2/voiceService", () => ({
-  designCastVoices: async () => (designRefusal !== null
-    ? { ok: false, refusal: designRefusal }
-    : {
-    ok: true,
-    designSentence: SENTENCE,
-    previews: [
-      { previewId: "gen-a", bytes: Buffer.from("a"), contentType: "audio/mpeg", durationSeconds: 19 },
-      { previewId: "gen-b", bytes: Buffer.from("b"), contentType: "audio/mpeg", durationSeconds: 21 },
-      { previewId: "gen-c", bytes: Buffer.from("c"), contentType: "audio/mpeg", durationSeconds: 20 },
-    ],
-    latencyMs: 7_000,
-  }),
+  designCastVoices: async () => {
+    if (designThrows !== null) throw designThrows;
+    if (designRefusal !== null) return { ok: false, refusal: designRefusal };
+    return {
+      ok: true,
+      designSentence: SENTENCE,
+      previews: [
+        { previewId: "gen-a", bytes: Buffer.from("a"), contentType: "audio/mpeg", durationSeconds: 19 },
+        { previewId: "gen-b", bytes: Buffer.from("b"), contentType: "audio/mpeg", durationSeconds: 21 },
+        { previewId: "gen-c", bytes: Buffer.from("c"), contentType: "audio/mpeg", durationSeconds: 20 },
+      ],
+      latencyMs: 7_000,
+    };
+  },
   /*
     ⚠ **THE SAVE IS RECORDED, AND IT IS SLOW ON PURPOSE.** One monthly voice
     operation is what a save spends, so the COUNT of these calls is the money
@@ -146,7 +158,7 @@ const {
   CASTING_V2_VOICE_DESIGN_PRICE_CREDITS: VOICE_DESIGN_PRICE,
   CASTING_V2_VOICE_KEEP_PRICE_CREDITS: VOICE_KEEP_PRICE,
 } = await import("../casting/castingCreditCosts");
-const { RATE_LIMITS } = await import("../security/rateLimit");
+const { RATE_LIMITS, checkRateLimit } = await import("../security/rateLimit");
 const { resetVoiceDesignStore, voiceDesignStoreSize } =
   await import("../castingV2/voiceDesignStore");
 
@@ -154,6 +166,7 @@ beforeEach(() => {
   voiceOn = true;
   keepResult = { ok: true, clipBytes: 1_234 };
   designRefusal = null;
+  designThrows = null;
   keepability = { canKeep: true };
   keptRow = null;
   saves.length = 0;
@@ -218,7 +231,16 @@ describe("two presses of Keep on one handle", () => {
        charged" truthfully — a spent month must not cost a customer 100 credits
        for a voice they did not get. The refund lands under the DERIVED
        reference, which is what makes a retry idempotent. */
-    expect(refused).toEqual({ ok: false, refusal: "no_operations_left", refunded: true });
+    /* ⚠ **AND NO REFERENCE, BECAUSE THE REFUND RECORDED.** A reference quoted
+       beside credits that came back is machinery with nothing to do; it is
+       carried ONLY on the road where the customer is genuinely out of pocket
+       (the relay's finding on PR #2499, item 4). */
+    expect(refused).toEqual({
+      ok: false,
+      refusal: "no_operations_left",
+      refunded: true,
+      refundReference: null,
+    });
     /* TWO charges — the design press, then the Keep — and only the KEEP's comes
        back: the three voices were delivered and paid for, the voice was not. */
     expect(charges.map((charge) => charge.amount)).toEqual([
@@ -447,7 +469,12 @@ describe("a refusal gives the money back", () => {
 
     const refused = await designVoicesForCard({ userId, castId: "KI-BAD" });
 
-    expect(refused).toEqual({ ok: false, refusal: "provider_failed", refunded: true });
+    expect(refused).toEqual({
+      ok: false,
+      refusal: "provider_failed",
+      refunded: true,
+      refundReference: null,
+    });
     expect(charges.map((charge) => charge.amount)).toEqual([VOICE_DESIGN_PRICE]);
     expect(refunds).toEqual([
       { amount: VOICE_DESIGN_PRICE, reference: `refund:${charges[0].reference}` },
@@ -467,7 +494,19 @@ describe("a refusal gives the money back", () => {
 
     const refused = await designVoicesForCard({ userId, castId: "KI-OWED" });
 
-    expect(refused).toEqual({ ok: false, refusal: "provider_failed", refunded: false });
+    /* ⚠ **AND THE REFERENCE TRAVELS WITH IT** (the relay's finding on PR
+       #2499, item 4). Telling a customer their credits have not come back and
+       then giving them nothing to quote makes them the lookup key for a problem
+       the rest of the product hands them the answer to — `refundTruth` quotes
+       this same reference on every other money surface. It is the DERIVED
+       refund reference, which is what support reconciles against and what makes
+       a manual retry idempotent. */
+    expect(refused).toEqual({
+      ok: false,
+      refusal: "provider_failed",
+      refunded: false,
+      refundReference: `refund:${charges[0].reference}`,
+    });
     /* Charged, and genuinely still charged — which is exactly why the sentence
        must change. */
     expect(charges).toHaveLength(1);
@@ -583,10 +622,18 @@ describe("the daily ceilings are declared where the limiter can read them", () =
   it("pins the ONE place these buckets dominate an hourly one, so a change has to read the reason", () => {
     /*
       THE FREE DAILY CEILING (20) IS BELOW THE HOURLY AUTOMATIC BUCKET (30), so
-      the hourly one can never be the limit that bites — it is a live, invoked
-      backstop that is currently unreachable. That is stated on the bucket
-      itself; this arm is what makes it impossible to change one number without
-      meeting the fact.
+      on the happy road the hourly one is never the limit that bites. That is
+      stated on the bucket itself; this arm is what makes it impossible to
+      change one number without meeting the fact.
+
+      ⚠ **IT IS NO LONGER UNREACHABLE, AND THIS COMMENT SAID IT WAS UNTIL
+      2026-10-14.** The hand-back added for the relay's finding 3 returns the
+      DAILY token when no voices came back and deliberately keeps the hourly
+      one — so on the refusal road the daily ceiling stops accumulating and the
+      hourly 30 becomes the ceiling that actually binds. That is the point of
+      the asymmetry rather than a side effect: it is what stops a caller
+      provoking refusals all day on house money. The two numbers now have a
+      second relationship, and 30 is the real bound on provider calls an hour.
 
       The PRESS pair is deliberately NOT like that: 12 an hour and 50 a day are
       complementary, because 12 an hour reaches 50 in about four hours.
@@ -597,5 +644,185 @@ describe("the daily ceilings are declared where the limiter can read them", () =
     expect(RATE_LIMITS.castingVoiceDesignDay.maxRequests).toBeGreaterThan(
       RATE_LIMITS.castingVoiceDesign.maxRequests,
     );
+  });
+});
+
+/* ----------------------------------------------------------------------------
+   THE RELAY'S FINDINGS ON PR #2499, DRIVEN.
+
+   All four are one subject from different sides: on a charged road, what the
+   card SAYS about the money is part of the money. Every arm below was
+   confirmed to fail against the code as the relay read it.
+---------------------------------------------------------------------------- */
+
+describe("a free design that delivered nothing is handed back (finding 3)", () => {
+  /**
+   * The bucket key the server spends a cast's free design from.
+   *
+   * ⚠ **IT IS PROVEN BEFORE IT IS TRUSTED, by the positive control in the
+   * first arm.** This is a second spelling of a key the route derives
+   * (`bucketIdentifier`), and a wrong one would make every arm here pass for
+   * the worst possible reason: it would read a bucket nobody ever spent, find
+   * it free, and call that a successful hand-back.
+   */
+  const freeDesignKey = (userId: number, castId: string) =>
+    `user:${userId}:cast:${modelIdFor(castId)}`;
+
+  it("⚠ A PROVIDER REFUSAL DOES NOT COST THE CAST ITS FREE THREE FOR THE DAY", async () => {
+    const userId = freshUser();
+
+    /* THE POSITIVE CONTROL FOR THE KEY, first: a design that SUCCEEDS spends
+       the cast's one free token, so this key must read as spent afterwards. If
+       it does not, the key is wrong and every hand-back arm here is worthless. */
+    expect(await designVoicesForCard({ userId, castId: "KI-KEY", automatic: true }))
+      .toMatchObject({ ok: true });
+    expect(checkRateLimit(freeDesignKey(userId, "KI-KEY"), RATE_LIMITS.castingVoiceAutoDesignDaily))
+      .toMatchObject({ allowed: false });
+
+    /* Now the finding. The provider refuses, so no voices came back at all. */
+    designRefusal = "provider_failed";
+    const refused = await designVoicesForCard({ userId, castId: "KI-FREE", automatic: true });
+    expect(refused).toMatchObject({ ok: false, refusal: "provider_failed" });
+    /* The automatic road never charges, so there is no money in this one — what
+       the customer loses without the repair is the ENTITLEMENT. */
+    expect(charges).toHaveLength(0);
+
+    /* AND THE FREE THREE ARE STILL THERE. Without the hand-back this second
+       call refuses with TOO_MANY_REQUESTS, and that cast has no free voices
+       until tomorrow having never been given any. */
+    designRefusal = null;
+    expect(await designVoicesForCard({ userId, castId: "KI-FREE", automatic: true }))
+      .toMatchObject({ ok: true });
+    /* Still FREE — the hand-back restores the entitlement; it does not turn the
+       retry into a charge. */
+    expect(charges).toHaveLength(0);
+  });
+
+  it("a THROWN failure hands it back too, which is the commoner road", async () => {
+    /* A refusal is the provider saying no; a throw is the transport, the SDK or
+       a bug, and it takes a different path out of the route. The second is what
+       a real outage looks like. */
+    const userId = freshUser();
+    designThrows = new Error("socket hang up");
+
+    await expect(designVoicesForCard({ userId, castId: "KI-THROW", automatic: true }))
+      .rejects.toThrow("socket hang up");
+
+    designThrows = null;
+    expect(await designVoicesForCard({ userId, castId: "KI-THROW", automatic: true }))
+      .toMatchObject({ ok: true });
+    expect(charges).toHaveLength(0);
+  });
+
+  it("⚠ THE ACCOUNT'S DAY REFUSING DOES NOT ALSO SPEND THAT CAST'S OWN TOKEN", async () => {
+    /*
+      The subtlest half of the finding. The two buckets are checked in order —
+      per cast, then per account — so when the ACCOUNT's day is exhausted the
+      per-cast token has already been taken. Without the repair a customer who
+      hits their twenty-a-day ceiling also loses the free three on whichever
+      cast they happened to open next, silently, for the rest of the day.
+    */
+    const userId = freshUser();
+    for (let index = 0; index < RATE_LIMITS.castingVoiceAutoDesignDay.maxRequests; index += 1) {
+      expect(await designVoicesForCard({ userId, castId: `KI-DAY-${index}`, automatic: true }))
+        .toMatchObject({ ok: true });
+    }
+
+    /* The twenty-first arrival, on a cast that has never had its free three. */
+    await expect(designVoicesForCard({ userId, castId: "KI-DAY-NEXT", automatic: true }))
+      .rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+
+    /* ITS OWN TOKEN IS UNSPENT: tomorrow the account's day rolls over and this
+       cast still has the free three it was never given. */
+    expect(checkRateLimit(
+      freeDesignKey(userId, "KI-DAY-NEXT"),
+      RATE_LIMITS.castingVoiceAutoDesignDaily,
+    )).toMatchObject({ allowed: true });
+  });
+
+  it("⚠ AND THE HOURLY FLOOD BUCKET IS NOT HANDED BACK — it is what bounds house money", async () => {
+    /*
+      THE NEGATIVE CONTROL, AND THE REASON THE HAND-BACK IS SAFE AT ALL. Every
+      refusal still costs us a provider call, so a repair that handed back the
+      HOURLY bucket too would let a scripted caller provoke refusals without
+      limit and spend house money all day. The buckets that grant the CUSTOMER
+      something give their slot back; the one that protects the HOUSE keeps it.
+
+      The arithmetic, stated because the number is otherwise a magic one: the
+      hourly bucket allows 30, the refused design below spends 1, and this check
+      spends another (`checkRateLimit` increments on an allowed read), so 28
+      remain. Were the design's hourly slot wrongly handed back, 29 would.
+    */
+    const userId = freshUser();
+    designRefusal = "provider_failed";
+    await designVoicesForCard({ userId, castId: "KI-HOUR", automatic: true });
+
+    expect(checkRateLimit(`user:${userId}`, RATE_LIMITS.castingVoiceAutoDesign))
+      .toMatchObject({ remaining: RATE_LIMITS.castingVoiceAutoDesign.maxRequests - 2 });
+  });
+});
+
+describe("a shut road is not a money refusal (finding 2)", () => {
+  it("⚠ REFUSES WITH A CODE THE CARD'S MONEY READER CANNOT CATCH", async () => {
+    /*
+      THE DEFECT THIS PINS, in the customer's terms: narrow
+      `CASTING_VOICE_SCOPE` while somebody has the card open, let them press,
+      and they were told *"Not enough credits"* — a lie about their money,
+      caused by two unrelated refusals sharing one tRPC code.
+
+      `chargeRefusal` answers `PRECONDITION_FAILED` for a short balance
+      deliberately, so a surface can tell that one case apart without parsing
+      prose, and `CastVoiceStudio`'s `isShortOfCredits` reads exactly that code.
+      So this road may not throw it. The two halves are one contract; the client
+      half is driven in `CastVoiceStudio.test.ts`.
+    */
+    const userId = freshUser();
+    voiceOn = false;
+
+    for (const act of [
+      () => designVoicesForCard({ userId, castId: "KI-DARK" }),
+      () => keepVoiceForCard({ userId, castId: "KI-DARK", designId: "d-1", handle: "h-1" }),
+    ]) {
+      const error = await act().then(() => null, (thrown: unknown) => thrown);
+      expect(error).toMatchObject({ code: "FORBIDDEN" });
+      /* Asserted on its own rather than left implied by the line above: THIS is
+         the regression, and a change that gives this road back
+         `PRECONDITION_FAILED` must meet a red arm that names the reason. */
+      expect(error).not.toMatchObject({ code: "PRECONDITION_FAILED" });
+    }
+
+    /* And nothing was taken, which is what makes any money sentence wrong. */
+    expect(charges).toHaveLength(0);
+  });
+});
+
+describe("a thrown failure's sentence carries the refund reference (finding 1's premise)", () => {
+  it("⚠ NAMES THE REFERENCE THE CUSTOMER MUST QUOTE, so the card has one to show", async () => {
+    /*
+      THE CONTRACT THE CLIENT REPAIR DEPENDS ON. The card's catch-all used to
+      answer every throw with *"Nothing was charged — try again."*; it now hands
+      the server's own sentence through (`readableFailure`). That is only worth
+      doing because the sentence `withAtomicCredits` throws has already had
+      `refundTruth` appended to it — including, when the refund did not record,
+      the reference support reconciles against.
+
+      So this arm is not about the client: it proves the thing the client now
+      relies on actually travels. If this sentence ever stopped carrying the
+      reference, the card would go quietly back to telling a customer to get in
+      touch with nothing to quote.
+    */
+    const userId = freshUser();
+    designThrows = new Error("provider exploded");
+    refundRecords = false;
+
+    const error = await designVoicesForCard({ userId, castId: "KI-OWED-THROW" })
+      .then(() => null, (thrown: unknown) => thrown);
+
+    expect(charges).toHaveLength(1);
+    expect(refunds).toHaveLength(0);
+    const message = (error as { message?: string })?.message ?? "";
+    expect(message).toContain(`refund:${charges[0].reference}`);
+    /* And it must not claim the money came back. */
+    expect(message).not.toContain("have been returned");
   });
 });

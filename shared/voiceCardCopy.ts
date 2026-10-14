@@ -210,26 +210,77 @@ export const VOICE_KEEP_FAILED =
  * write itself did not land. The customer is genuinely out of pocket, so the
  * sentence says so and names the one thing that fixes it.
  *
- * ⚠ **It quotes no reference, and that is a decision rather than an
- * oversight.** `atomicCredits`' own `refundTruth` hands the customer a
- * reference id for support to reconcile against, and the simpler road here was
- * to do the same. Declined: a reference is machinery on a card whose whole
- * design is that none shows, and it is not needed — `recordRefund` already
- * logs the failure at ERROR with the account, the amount and that reference, so
- * support can find it from the account alone. What the customer needs is to
- * know they are owed and that saying so is enough.
+ * ⚠ **IT QUOTED NO REFERENCE UNTIL 2026-10-14 AND THAT IS REVERSED — the
+ * relay's finding on PR #2499, item 4.** The declined reasoning is kept here
+ * because it was not silly, and because the next person to look at this will
+ * reach for it again: `recordRefund` logs the failure at ERROR with the
+ * account, the amount and the reference, so support *can* find it from the
+ * account alone, and a reference looks like machinery on a card whose whole
+ * design is that none shows.
+ *
+ * What overturns it is the house, not taste. `atomicCredits`' own
+ * `refundTruth` hands the customer the reference on **every
+ * other money surface in this product** — *"quote reference … and support will
+ * restore the N credits"* — so a voice card withholding it made its customer
+ * the lookup key for a problem the product elsewhere hands them the answer to.
+ * That is working law 4's shape: a second answer to a question already
+ * answered, which drifts by construction. And it survives the
+ * disappearing-technology law's third question rather than failing it: a
+ * support reference is not an engine name and not a number nobody can act on —
+ * acting on it is the entire point, and it appears only in the one rare
+ * sentence that asks the customer to get in touch.
  */
-export const VOICE_REFUND_OWED =
-  "Those credits haven't come back yet. Get in touch and we'll put it right.";
+export function voiceRefundOwedText(reference: string | null): string {
+  const owed = "Those credits haven't come back yet.";
+  /* No reference means we never heard which one it was — never a silent gap
+     where a quotable id should be. */
+  return reference === null || reference.trim().length === 0
+    ? `${owed} Get in touch and we'll put it right.`
+    : `${owed} Quote reference ${reference.trim()} and we'll put it right.`;
+}
+
+/**
+ * WE NEVER HEARD THE SERVER, SO WE DO NOT KNOW WHAT THE MONEY DID.
+ *
+ * ⚠ **These two exist because the card used to say "Nothing was charged" here**
+ * (the relay's finding on PR #2499, item 1), and that sentence is reached from
+ * the catch-all — the branch for a transport, a proxy or a parser failing,
+ * where by definition the server's own answer never arrived. The press charges
+ * now, so the card had no basis for either money claim and was making the
+ * cheerful one.
+ *
+ * They follow the house's shape for this exact class, which the billing
+ * surfaces already write: name the act, point at the authoritative number, and
+ * assert nothing about what happened (*"We lost contact while changing your
+ * plan. Check your plan before trying again."*). The balance in the header is
+ * refetched on every press, so *check your credits* is advice a customer can
+ * actually follow on this screen.
+ *
+ * ⚠ **They are a FALLBACK and are expected to be rare.** `readableFailure`
+ * hands the server's own sentence through whenever it reached us, and on this
+ * road that sentence already carries the refund truth and its reference
+ * (`withAtomicCredits` appends `refundTruth` to everything it throws). These
+ * are what is left when nothing came back at all.
+ */
+export const VOICE_MAKE_LOST_CONTACT =
+  "We lost contact while those voices were being made. Check your credits before trying again.";
+
+/** The same, for a Keep. */
+export const VOICE_KEEP_LOST_CONTACT =
+  "We lost contact while that voice was being kept. Check your credits before trying again.";
 
 /** The design-failure sentence, chosen on what the money actually did. */
-export function voiceMakeFailedText(refunded: boolean): string {
-  return refunded ? VOICE_MAKE_FAILED : `That didn't come through. ${VOICE_REFUND_OWED}`;
+export function voiceMakeFailedText(refunded: boolean, refundReference: string | null = null): string {
+  return refunded
+    ? VOICE_MAKE_FAILED
+    : `That didn't come through. ${voiceRefundOwedText(refundReference)}`;
 }
 
 /** The Keep-failure sentence, chosen on what the money actually did. */
-export function voiceKeepFailedText(refunded: boolean): string {
-  return refunded ? VOICE_KEEP_FAILED : `That voice couldn't be kept. ${VOICE_REFUND_OWED}`;
+export function voiceKeepFailedText(refunded: boolean, refundReference: string | null = null): string {
+  return refunded
+    ? VOICE_KEEP_FAILED
+    : `That voice couldn't be kept. ${voiceRefundOwedText(refundReference)}`;
 }
 
 /**
@@ -263,7 +314,8 @@ export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_CLIP_WONT_PLAY,
   VOICE_MAKE_FAILED,
   VOICE_KEEP_FAILED,
-  VOICE_REFUND_OWED,
+  VOICE_MAKE_LOST_CONTACT,
+  VOICE_KEEP_LOST_CONTACT,
   VOICE_LINE_TOO_SHORT,
   VOICE_NEEDS_A_LINE,
 ];
@@ -292,9 +344,22 @@ export function voiceCardEveryString(): readonly string[] {
      and BOTH sides of each boolean — the sentence for a refund that did not
      record is the one most likely to leak accounting words. */
   composed.push(voiceMakeAgainLabel(125));
+  /*
+    ⚠ **AND BOTH SIDES OF THE REFERENCE TOO, WITH A REAL ONE** — the reference
+    is the newest thing on this card that a reader could call machinery, so the
+    sentence carrying it is rendered rather than described. The specimen is the
+    real shape `refundReferenceFor` produces (`refund:pending-<user>-<uuid>`),
+    because a reader walking a tidy fake learns nothing about the live string.
+  */
+  const refSpecimen = "refund:pending-1-3f2a7c18-0b44-4e5e-9a21-7d6c5b8e1f90";
   for (const refunded of [true, false]) {
     composed.push(voiceMakeFailedText(refunded), voiceKeepFailedText(refunded));
+    composed.push(
+      voiceMakeFailedText(refunded, refSpecimen),
+      voiceKeepFailedText(refunded, refSpecimen),
+    );
   }
+  composed.push(voiceRefundOwedText(null), voiceRefundOwedText(refSpecimen));
   for (const during of ["make", "keep"] as const) {
     composed.push(voiceNotEnoughCreditsText(during === "keep" ? 500 : 125, during));
   }

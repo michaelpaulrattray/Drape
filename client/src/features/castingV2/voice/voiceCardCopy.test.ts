@@ -4,14 +4,19 @@ import {
   VOICE_CANNOT_KEEP,
   VOICE_CARD_FIXED_STRINGS,
   VOICE_CLIP_WONT_PLAY,
+  VOICE_KEEP_LOST_CONTACT,
   VOICE_MAKE_AGAIN,
+  VOICE_MAKE_LOST_CONTACT,
   VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceCardEveryString,
   voiceKeepLabel,
   voiceKeptFoot,
   voiceLabel,
+  voiceKeepFailedText,
+  voiceMakeFailedText,
   voicePlayLabel,
+  voiceRefundOwedText,
 } from "@shared/voiceCardCopy";
 
 /**
@@ -262,5 +267,79 @@ describe("a cast with no name is a real case", () => {
 
   it("trims a name rather than pasting it", () => {
     expect(voiceKeptFoot(" Pigman ")).toBe("Pigman's voice");
+  });
+});
+
+describe("what the card says about the money (the relay's findings on PR #2499)", () => {
+  /**
+   * The claim that may only be made when the ledger has answered.
+   *
+   * Written once here because three arms below read it, and read as a
+   * SUBSTRING rather than a whole sentence: the defect was this phrase sitting
+   * inside a longer failure line, not the phrase alone.
+   */
+  const MONEY_CAME_BACK_CLAIM = "Nothing was charged";
+
+  it("⚠ NEVER CLAIMS NOTHING WAS CHARGED WHEN WE DID NOT HEAR THE SERVER", () => {
+    /*
+      Finding 1. Both of these are the catch-all's fallback — the branch for a
+      transport, a proxy or a parser failing, where the server's own answer
+      never arrived. The press charges now, so the card has no basis for either
+      money claim, and it was making the cheerful one.
+    */
+    for (const sentence of [VOICE_MAKE_LOST_CONTACT, VOICE_KEEP_LOST_CONTACT]) {
+      expect(sentence).not.toContain(MONEY_CAME_BACK_CLAIM);
+      /* And it is not silent about money either — it points at the one number
+         on this screen that is authoritative, which the press refetches. */
+      expect(sentence).toContain("credits");
+    }
+  });
+
+  it("⚠ NEVER CLAIMS IT WHEN THE REFUND DID NOT RECORD", () => {
+    /*
+      `atomicCredits`' own law, and the one this module exists to keep: a refund
+      that failed to record is NEVER reported as money that came back. Both
+      sides of the boolean are read, because an arm that only reads the false
+      side cannot tell a correct sentence from a constant.
+    */
+    expect(voiceMakeFailedText(false)).not.toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceKeepFailedText(false)).not.toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceMakeFailedText(true)).toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceKeepFailedText(true)).toContain(MONEY_CAME_BACK_CLAIM);
+  });
+
+  it("⚠ GIVES THE CUSTOMER THE REFERENCE TO QUOTE, rather than making them the lookup key", () => {
+    /*
+      Finding 4. `refundTruth` quotes this same reference on every other money
+      surface in the product (*"quote reference … and support will restore the N
+      credits"*), so the voice card withholding it was the one surface asking
+      its customer to be the lookup key for a problem we can already name.
+
+      The specimen is the real shape `refundReferenceFor` produces, because a
+      reader walking a tidy fake learns nothing about the live string.
+    */
+    const reference = "refund:pending-1-3f2a7c18-0b44-4e5e-9a21-7d6c5b8e1f90";
+    for (const sentence of [
+      voiceMakeFailedText(false, reference),
+      voiceKeepFailedText(false, reference),
+      voiceRefundOwedText(reference),
+    ]) {
+      expect(sentence).toContain(reference);
+    }
+    /* And it is never quoted beside credits that came back, where it would be
+       machinery with nothing to do. */
+    expect(voiceMakeFailedText(true, reference)).not.toContain(reference);
+    expect(voiceKeepFailedText(true, reference)).not.toContain(reference);
+  });
+
+  it("still asks the customer to get in touch when there is no reference to quote", () => {
+    /* The reference can be absent — a refund we never heard the outcome of.
+       The sentence must not then have a gap where an id should be, and it must
+       still tell them they are owed. */
+    for (const sentence of [voiceRefundOwedText(null), voiceRefundOwedText("   ")]) {
+      expect(sentence).toContain("haven't come back");
+      expect(sentence).toContain("Get in touch");
+      expect(sentence).not.toContain("reference");
+    }
   });
 });

@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
+import {
+  checkRateLimit,
+  RATE_LIMITS,
+  rateLimitError,
+  releaseRateLimitSlot,
+} from "../security/rateLimit";
 import { withAtomicCredits, type RefundOutcome } from "../casting/atomicCredits";
 import {
   CASTING_V2_VOICE_DESIGN_PRICE_CREDITS,
@@ -129,17 +134,68 @@ const designHandle = z.string().uuid();
  * choosing a scope: the prefix still names the limit and the scope only ever
  * divides that limit’s own keyspace.
  */
+function bucketIdentifier(userId: number, scope?: string): string {
+  return scope === undefined ? `user:${userId}` : `user:${userId}:${scope}`;
+}
+
 function enforce(
   userId: number,
   config: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS],
   scope?: string,
 ): void {
-  const identifier = scope === undefined ? `user:${userId}` : `user:${userId}:${scope}`;
-  const check = checkRateLimit(identifier, config);
+  const check = checkRateLimit(bucketIdentifier(userId, scope), config);
   if (!check.allowed) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(check.resetIn) });
   }
 }
+
+/**
+ * Hand back one slot this request spent, when what it was spent ON never
+ * happened.
+ *
+ * ⚠ **IT DERIVES THE IDENTIFIER FROM {@link bucketIdentifier}, THE SAME
+ * FUNCTION {@link enforce} SPENDS THROUGH, AND THAT IS THE WHOLE POINT OF ITS
+ * EXISTING.** `releaseRateLimitSlot` must be called with the identifier the
+ * check used or it silently hands back nothing — it reads a key that is not
+ * there and returns. A second copy of `user:<id>:cast:<id>` beside the first is
+ * exactly working law 4's shape, and the failure mode is the quiet one: no
+ * error, no red test, just a free design nobody got back.
+ */
+function release(
+  userId: number,
+  config: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS],
+  scope?: string,
+): void {
+  releaseRateLimitSlot(bucketIdentifier(userId, scope), config);
+}
+
+/**
+ * THE CODE A SHUT ROAD REFUSES WITH, AND IT IS `FORBIDDEN` FOR ONE REASON.
+ *
+ * ⚠ **IT WAS `PRECONDITION_FAILED` UNTIL 2026-10-14 AND THAT COLLIDED WITH THE
+ * MONEY** (the relay's finding on PR #2499, item 2). `withAtomicCredits`
+ * refuses a short balance through `chargeRefusal`, which answers
+ * `PRECONDITION_FAILED` *deliberately* so a surface can tell *"you need more
+ * credits"* apart from every other refusal without parsing prose. The voice
+ * card's `isShortOfCredits` reads exactly that code — so while this function
+ * threw it too, **narrowing `CASTING_VOICE_SCOPE` while a card was open and
+ * then pressing told the customer they could not afford it.** A lie about
+ * their money, produced by two unrelated refusals sharing one code.
+ *
+ * `FORBIDDEN` is also the honester of the two on its own terms: a flag that is
+ * off for this account is *not permitted*, not a failed precondition on the
+ * request. It is in `failureSentence`'s `OURS` set, so the sentence below still
+ * reaches the customer as written; it is the code `withAtomicCredits` already
+ * uses for a frozen account, which is the same KIND of fact; and the casting
+ * sheet's own mapping has always read the two identically
+ * (`client/src/features/castingV2/dispatchFailure.ts`), so nothing downstream
+ * changes shape.
+ *
+ * ⚠ **DO NOT GIVE THIS BACK `PRECONDITION_FAILED`** without reading
+ * `isShortOfCredits` first — the two are one contract now, and
+ * `server/routes/castingVoiceRoad.test.ts` drives the pair.
+ */
+const VOICE_ROAD_SHUT_CODE = "FORBIDDEN" as const;
 
 /**
  * The two gates every voice procedure passes, in this order.
@@ -153,7 +209,7 @@ function enforce(
 function requireVoiceRoad(userId: number): void {
   if (!captureCastingV2Enabled(userId)) {
     throw new TRPCError({
-      code: "PRECONDITION_FAILED",
+      code: VOICE_ROAD_SHUT_CODE,
       message: "Casting is not available for this account yet.",
     });
   }
@@ -165,7 +221,7 @@ function requireVoiceRoad(userId: number): void {
       against a surface that is not open, not a customer meeting a state.
     */
     throw new TRPCError({
-      code: "PRECONDITION_FAILED",
+      code: VOICE_ROAD_SHUT_CODE,
       message: "Voice is not available for this account yet.",
     });
   }
@@ -199,10 +255,33 @@ function requireVoiceRoad(userId: number): void {
 */
 
 /** What a charged voice step gives back: the value, or the refusal AND what the
- *  money did — the two facts a customer-facing sentence needs together. */
+ *  money did — the facts a customer-facing sentence needs together. */
 type ChargedVoiceResult<T> =
   | { ok: true; value: T }
-  | { ok: false; refusal: VoiceRefusal; refunded: boolean };
+  | {
+      ok: false;
+      refusal: VoiceRefusal;
+      refunded: boolean;
+      /**
+       * The refund's own reference, for the rare case where it did NOT record.
+       *
+       * ⚠ **CARRIED SINCE 2026-10-14 BECAUSE THE CUSTOMER WAS BEING TOLD TO
+       * "GET IN TOUCH" WITH NOTHING TO QUOTE** (the relay's finding on PR
+       * #2499, item 4). `recordRefund` logs this reference at ERROR, so support
+       * *could* reach it from the account alone — which is what the first
+       * version of this road reasoned from, and it is why the sentence shipped
+       * without one. The better argument is the house's own: `refundTruth`
+       * (`server/casting/atomicCredits.ts`) hands the customer the reference on
+       * **every other money surface in the product**, so a voice card that
+       * withheld it was the one surface asking its customer to be the lookup
+       * key (working law 4 — a second answer to a question the product had
+       * already answered).
+       *
+       * `null` whenever the refund recorded, which is the ordinary case: there
+       * is nothing to reconcile and nothing to quote.
+       */
+      refundReference: string | null;
+    };
 
 async function withVoiceCharge<T>(input: {
   userId: number;
@@ -252,10 +331,14 @@ async function withVoiceCharge<T>(input: {
         weren't charged". The card's sentence turns on this boolean, so a refund
         that did not record cannot be dressed up as one that did.
       */
+      const refunded = carried.refund?.recorded === true;
       return {
         ok: false,
         refusal: carried.refusal,
-        refunded: carried.refund?.recorded === true,
+        refunded,
+        /* Only when it did NOT record. A reference quoted beside credits that
+           came back is machinery with nothing to do. */
+        refundReference: refunded ? null : carried.refund?.reference ?? null,
       };
     }
     /* A genuine failure. `withAtomicCredits` has already refunded and appended
@@ -435,15 +518,69 @@ export async function designVoicesForCard(input: {
     the priced press available, which is the honest shape.
   */
   if (input.automatic) {
+    const castScope = `cast:${model.id}`;
     /* Keyed on the CAST, so forty signed casts still get a free three each —
        the bound is per cast, not per account. The internal id is the key: one
        canonical row per cast, whatever spelling of the public id arrived. */
-    enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, `cast:${model.id}`);
-    /* And keyed on the ACCOUNT, so a scripted walk across a whole library
-       cannot turn that per-cast allowance into an unbounded one. */
-    enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
-    const result = await designCastVoices({ userId: input.userId, modelId: model.id });
-    if (!result.ok) return { ok: false as const, refusal: result.refusal, refunded: true };
+    enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, castScope);
+    /*
+      ⚠ **A FREE DESIGN THAT DELIVERED NOTHING IS HANDED BACK** (the relay's
+      finding on PR #2499, item 3; the shape is #2491's, where an invite that
+      never left the building returns both of its budgets).
+
+      The entitlement these two buckets hold is *one free three per cast per
+      day*. They are spent the moment they admit the request — before it is
+      known whether any voice will come back — so without the releases below a
+      provider wobble costs the customer that cast's free three **until
+      tomorrow**, having given them nothing. Worse on the second line: if the
+      ACCOUNT's day refuses, the per-cast token above is already spent, so a
+      customer who hit their daily account ceiling would find one of their casts
+      silently out of free voices as well.
+
+      ⚠ **WHAT IS NOT HANDED BACK IS THE HOURLY BUCKET AT THE TOP OF THIS
+      FUNCTION, AND THAT IS DELIBERATE.** `castingVoiceAutoDesign` is the flood
+      bound — it is what stops a scripted caller provoking refusals in a loop on
+      house money — and a refusal still costs us the provider call. So the
+      ceiling that protects the HOUSE keeps its slot, and only the buckets that
+      grant the CUSTOMER something they did not receive give theirs back.
+      `releaseRateLimitSlot` never takes a count below zero and never reaches
+      into a window that has already rolled over, so a late hand-back cannot
+      mint a free design in a new day.
+    */
+    try {
+      /* Keyed on the ACCOUNT, so a scripted walk across a whole library cannot
+         turn that per-cast allowance into an unbounded one. */
+      enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
+    } catch (error) {
+      /* ONLY the per-cast token: a REFUSED check never incremented its own
+         count (`checkRateLimit` returns before the `entry.count++`), so
+         releasing the account's day here would hand back a slot this request
+         never spent. */
+      release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, castScope);
+      throw error;
+    }
+    const releaseFreeDesign = () => {
+      release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, castScope);
+      release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
+    };
+    let result: Awaited<ReturnType<typeof designCastVoices>>;
+    try {
+      result = await designCastVoices({ userId: input.userId, modelId: model.id });
+    } catch (error) {
+      releaseFreeDesign();
+      throw error;
+    }
+    if (!result.ok) {
+      releaseFreeDesign();
+      /* Nothing was charged on this road at all, so there is no refund to
+         report and nothing for support to reconcile. */
+      return {
+        ok: false as const,
+        refusal: result.refusal,
+        refunded: true,
+        refundReference: null,
+      };
+    }
     return rememberedDesign(input.userId, model.id, result);
   }
 
@@ -463,7 +600,12 @@ export async function designVoicesForCard(input: {
     },
   });
   if (!charged.ok) {
-    return { ok: false as const, refusal: charged.refusal, refunded: charged.refunded };
+    return {
+      ok: false as const,
+      refusal: charged.refusal,
+      refunded: charged.refunded,
+      refundReference: charged.refundReference,
+    };
   }
   return rememberedDesign(input.userId, model.id, charged.value);
 }
@@ -604,7 +746,12 @@ export async function keepVoiceForCard(input: {
   });
 
   if (!charged.ok) {
-    return { ok: false as const, refusal: charged.refusal, refunded: charged.refunded };
+    return {
+      ok: false as const,
+      refusal: charged.refusal,
+      refunded: charged.refunded,
+      refundReference: charged.refundReference,
+    };
   }
 
   return {

@@ -3,17 +3,19 @@ import { Pause, Play } from "lucide-react";
 
 import { Button } from "@/foundation";
 import { trpc } from "@/lib/trpc";
-import { logRawFailure } from "@/lib/failureSentence";
+import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { TRPCClientError } from "@trpc/client";
 import {
   VOICE_CANNOT_KEEP,
   VOICE_CHOICES_LABEL,
   VOICE_CLIP_WONT_PLAY,
   VOICE_KEEP_FAILED,
+  VOICE_KEEP_LOST_CONTACT,
   VOICE_KEPT_HINT,
   VOICE_LINE_TOO_SHORT,
   VOICE_MAKE_AGAIN,
   VOICE_MAKE_FAILED,
+  VOICE_MAKE_LOST_CONTACT,
   VOICE_MAKING_LOADER,
   VOICE_NEEDS_A_LINE,
   VOICE_TOO_SOON,
@@ -344,6 +346,12 @@ export function voiceRefusalSentence(
    * truth when they say nothing was charged.
    */
   refunded = true,
+  /**
+   * The refund's reference, when it did NOT record — so the customer has
+   * something to quote rather than being asked to be the lookup key
+   * themselves (the relay's finding on PR #2499, item 4).
+   */
+  refundReference: string | null = null,
 ): string {
   /*
     ⚠ **THE MONEY COMES FIRST WHEN IT HAS NOT COME BACK, AND IT OUTRANKS EVERY
@@ -354,7 +362,9 @@ export function voiceRefusalSentence(
     failed to record is never reported as "you weren't charged".
   */
   if (!refunded) {
-    return during === "keep" ? voiceKeepFailedText(false) : voiceMakeFailedText(false);
+    return during === "keep"
+      ? voiceKeepFailedText(false, refundReference)
+      : voiceMakeFailedText(false, refundReference);
   }
   switch (refusal) {
     case "no_operations_left":
@@ -394,8 +404,18 @@ function isTooSoon(error: unknown): boolean {
  * The sentence is rendered locally from the price the card already holds rather
  * than taken from the error, so every string on this card stays enumerable from
  * `shared/voiceCardCopy.ts`.
+ *
+ * ⚠ **AND THIS CODE IS HALF OF A CONTRACT WITH THE VOICE ROUTE, WHICH IS WHY
+ * THE FUNCTION IS EXPORTED** (the relay's finding on PR #2499, item 2). A
+ * shut `CASTING_VOICE_SCOPE` used to refuse with `PRECONDITION_FAILED` too, so
+ * narrowing the scope while a card was open and then pressing told the
+ * customer they could not afford it — a lie about their money produced by two
+ * unrelated refusals sharing one code. The route now refuses a shut road with
+ * `FORBIDDEN` (`VOICE_ROAD_SHUT_CODE`, `server/routes/castingVoice.ts`), and
+ * the arm below pins this side of it: **anything that is not the ledger
+ * refusing must read as false here.**
  */
-function isShortOfCredits(error: unknown): boolean {
+export function isShortOfCredits(error: unknown): boolean {
   return error instanceof TRPCClientError && error.data?.code === "PRECONDITION_FAILED";
 }
 
@@ -621,7 +641,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
             assumption, and the automatic road reports `true` because it was
             never charged at all.
           */
-          setRefusal(voiceRefusalSentence(result.refusal, "make", result.refunded));
+          setRefusal(
+            voiceRefusalSentence(result.refusal, "make", result.refunded, result.refundReference),
+          );
         }
         return;
       }
@@ -663,7 +685,29 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
           return;
         }
       }
-      if (!automatic) setRefusal(VOICE_MAKE_FAILED);
+      /*
+        ⚠ **OUR SERVER'S OWN SENTENCE, AND "NOTHING WAS CHARGED" IS NOT IN THE
+        FALLBACK ANY MORE** (the relay's finding on PR #2499, item 1).
+
+        This branch used to answer every thrown error with `VOICE_MAKE_FAILED`
+        — *"Nothing was charged — try again."* — which the press made a claim
+        about the ledger the moment it started charging. A design that threw
+        AFTER the charge reaches `withAtomicCredits`' refund, and if that refund
+        failed to record the server says so in the sentence it throws
+        (`refundTruth`, with the reference support needs); the card was throwing
+        that away and cheerfully reporting the opposite.
+        `atomicCredits`' own law: an unrecorded refund is NEVER reported as
+        money that came back.
+
+        `readableFailure` is the product's one rule for this
+        (`client/src/lib/failureSentence.ts`) and this is the sixth instance of
+        the class its docblock describes — *"five authored sentences were thrown
+        as INTERNAL_SERVER_ERROR and every one of them was replaced by the
+        lost-contact line, including three that said 'Nothing was charged'"*.
+        The server's words pass through whenever they reached us; the fallback
+        is only for when they did not, and it now claims nothing either way.
+      */
+      if (!automatic) setRefusal(readableFailure(error, VOICE_MAKE_LOST_CONTACT));
     }
   }, [castId, design, releaseUrls, price, utils]);
 
@@ -693,7 +737,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     try {
       const result = await keep.mutateAsync({ castId, designId, handle });
       if (!result.ok) {
-        setRefusal(voiceRefusalSentence(result.refusal, "keep", result.refunded));
+        setRefusal(
+          voiceRefusalSentence(result.refusal, "keep", result.refunded, result.refundReference),
+        );
         return;
       }
       releaseUrls();
@@ -710,7 +756,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
         setRefusal(voiceNotEnoughCreditsText(keepPrice, "keep"));
         return;
       }
-      setRefusal(VOICE_KEEP_FAILED);
+      /* The same repair as the press above, and it matters more here: a Keep
+         charges 500 and its `insertCastVoice` can throw after the charge. */
+      setRefusal(readableFailure(error, VOICE_KEEP_LOST_CONTACT));
     } finally {
       void utils.castingV2.voice.status.invalidate({ castId });
       /* A Keep is always charged, and a refused one is refunded — either way
