@@ -30,12 +30,49 @@ on the rebaseline ladder once signed.
 > its own rung its very important."*** The ladder is N1 → N2 → N3 → N4 (Takes)
 > → **N4b (Voice)** → N5 → N6 → N7 → N8. Voice was the shelf's "open half" of
 > the rebaseline's §6 question 1; it is on the ladder now, directly after
-> Takes, with his 2026-09-03 engine split as its design intent (ElevenLabs
-> Voice Design for creature / monster / sci-fi voices, Inworld for human
-> voices). Its pointer card carries `rung:N4b`; `CASTING_V2_PLAN_REBASELINE.md`
-> §4 and the briefing's `program.ladder` take the rung in the next edition
-> that touches them. Numbered N4b rather than renumbering N5–N8, so every
-> existing citation of N5–N8 stays true.
+> Takes. Its pointer card carries `rung:N4b`. Numbered N4b rather than
+> renumbering N5–N8, so every existing citation of N5–N8 stays true.
+>
+> ⚠ **TWO CLAUSES STOOD IN THAT SENTENCE AND BOTH WERE FALSE — STRUCK
+> 2026-10-15 (`foreman-20261015-0647`), READ AT THE CODE AND AT THE EDITION.
+> This paragraph is the one the heading above sends a shift to open BEFORE
+> CUTTING ANY CASTING BRIEF, and it is in the half the shift digest does NOT
+> carry — so it is met by opening the file and in no other way.**
+>
+> 1. It gave the engine split as the rung's design intent —
+>    ~~*"with his 2026-09-03 engine split as its design intent (ElevenLabs
+>    Voice Design for creature / monster / sci-fi voices, Inworld for human
+>    voices)"*~~. **His ear dropped Inworld entirely on 2026-10-13**, over six
+>    creature pairs, verbatim and entire: *"okay ellevenlabs is clearly better
+>    and converting it to inworld is a hit and a miss."* **There is ONE voice
+>    engine for creatures and people alike, and no fallback.** Read at the tree
+>    rather than from the ruling: `server/providers/` holds exactly one voice
+>    transport (`elevenlabsVoice.ts`), `createElevenLabsVoiceEngine()` is the
+>    only thing `voiceService.ts:253` can reach, and the only two `inworld`
+>    strings left in the product are a header recording the drop and a
+>    FORBIDDEN_WORDS entry keeping vendor names off customer copy.
+> 2. It told the next shift to do work that was already finished —
+>    ~~*"`CASTING_V2_PLAN_REBASELINE.md` §4 and the briefing's `program.ladder`
+>    take the rung in the next edition that touches them"*~~. **Both landed.**
+>    The rebaseline's §4 header reads *"v3: N4b Voice added on his 2026-09-04
+>    word"* with the rung's own block at its line 271, and edition 708's ladder
+>    carries `N4b · current`. A standing instruction that has been discharged
+>    is indistinguishable from one that has not.
+>
+> ⚠ **WHY THIS WAS MISSED, because the sweep that missed it was a good one.**
+> His ruling CLOSED A PATH, so working law 7's other half ran the same day and
+> ran well: `CASTING_V2_PLAN_REBASELINE.md` carries the supersession twice (§4's
+> M8b row and §6 question 1's amendment, each keeping its old reading rather
+> than deleting it), the merged design doc states it in its settled list, and
+> `CLAUDE.md` and the provider headers all say Inworld is dropped. **What the
+> sweep did not reach was the two artifacts a shift actually opens to learn what
+> the rung IS** — this paragraph, and **#499's body**, which the design doc's own
+> line 14 had already named in writing (*"that #499's body still describes"*) and
+> which nobody then opened. **A sweep that corrects the authoritative documents
+> and misses the most-read ones has inverted its own priority**, which is the
+> `correction-reaches-copy-not-source` class running backwards: fixes track
+> AUTHORITY here instead of READERSHIP, and the cure is the same either way —
+> **grep for the SENTENCE, never for the card number.**
 
 
 - ✅ **`docs/specs/CASTING_V2_PLAN_REBASELINE.md` — THE GOVERNING LADDER,
