@@ -23,6 +23,29 @@ is in the rung.
   2026-10-13): Keep saves the voice; the saved voice reads a ~90 s audition passage; that clip is
   the cast's asset, stored beside the voice sentence; the engine's saved-voice slot is a cache.
 
+⚠ **RE-READ 2026-10-14 (#2474), AND TWO THINGS MOVED UNDER THIS DOCUMENT THE DAY IT LANDED.**
+It was written against his ElevenLabs account **before he upgraded it the same day**, and the
+correction lived only in comments on PR #2468 and #2472 while this file — the thing a seat opens
+as the spec — kept the old figures. Read first-hand at `GET /v1/user/subscription` on
+2026-10-14, twice (17:13 and 17:16 UTC, both agreeing), read-only:
+
+| field | this document said (2026-10-13) | live (2026-10-14) |
+|---|---|---|
+| tier | pay-as-you-go | **creator** |
+| voice slots (`voice_limit`) | 3 | **30** (2 in use) |
+| voice operations a month (`max_voice_add_edits`) | 54 | **95** (counter **9**) |
+| instant voice cloning | off | **on** |
+
+**And the rung has been built since**, read at the code on `origin/main` rather than off the
+cards: N4b-1 the road (#2469, PR #2484), N4b-2 the Voice card (#2470, PR #2488), the hidden
+voice card the voices are made from (#2498, PR #2500), the real prices and the bounds on the
+free three (#2471, PR #2499), change and remove a kept voice (#2497, PR #2502), eviction and
+re-mint (#2472, PR #2507), and the house's ration on the admin panel (#2471, PR #2508). The
+voice flag stands at `users:1` (`scripts/lib/productionFlagPositions.mts`). **Sentences the
+upgrade or the build overtook are struck through below rather than deleted**, each with the
+dated line that replaces it, so the reasoning that was true on 2026-10-13 stays readable. The
+code is the authority on anything this document and the tree disagree on (law 7c).
+
 ---
 
 ## 1 · What a customer gets, in their terms
@@ -36,9 +59,15 @@ the `dpc-voice__player` block). N4b keeps that promise:
 - **Voices made from their words.** Under the voice line, three voices made from it, labelled
   **Voice 1**, **Voice 2**, **Voice 3**, each with play and a waveform. They pick by ear.
 - **Keep "Voice 2".** One press. The card then plays the cast's own voice: a ~90 second
-  audition in that voice, which is what the card holds from then on.
+  audition in that voice, which is what the card holds from then on. *(Measured 2026-10-13: the
+  house passage delivers about **2 minutes 18 seconds**, not 90 — `server/castingV2/voiceAuditionPassage.ts`
+  says why the passage was kept whole rather than cut to the figure.)*
 - **Make new voices from this text · <credits>.** A fresh three from the same words, or from
-  words they have just changed. The price is a placeholder (§7).
+  words they have just changed. ~~The price is a placeholder (§7).~~ *(2026-10-14: priced —
+  25 display credits; §7.)*
+- *(Shipped 2026-10-14, #2497.)* **Change voice** and **Remove voice** on a kept voice: Change
+  makes voices from the line as it reads now and Keep replaces the current one; Remove asks
+  once, in plain words, because it cannot be undone and returns no credits (§6, §9).
 
 What they never meet: an engine name, a slot, a clone, a quota, a file format, a seed.
 
@@ -70,6 +99,21 @@ it (#55's honest-loader line); a **refusal** says what was refused and what to d
 *Declined, and named as the simpler road*: drawing the engine's raw preview text or its
 `generated_voice_id` as a caption.
 
+⚠ **Added 2026-10-14 (#2498): the voices are no longer designed from the visible line, and the
+customer never sees what they ARE designed from.** His word: *"our voices in text are designed
+for the video generator to generate her voice not for ellevenlabs"*, and closing his listening
+test, *"F sounds awesome for both."* So the visible voice line stays exactly as it is, for the
+video generator, and a **hidden voice card** is written for the voice engine from the customer's
+own words and the cast's master picture, together with a line in character for the three voices
+to read (`server/castingV2/voiceCardWriter.ts`, writer pinned as `x-ai/grok-4.7` through
+OpenRouter by his ear on arm F). Answered against the gate: **Q1** nothing new — the card is
+written inside the press; **Q2** no decision is added; **Q3** it shows nowhere, because the card
+and the line are never drawn. Three rules the picture must not break are composed in code rather
+than asked of the writer (sex and age from the customer's words when they state them; no accent
+inferred from appearance; normal volume unless the words ask for a whisper). ⚠ **It adds a
+sub-processor**: the master picture travels to xAI through OpenRouter, which the module's own
+header states.
+
 ## 3 · The engine, read at the wire (the spike, 2026-10-13, scratch only)
 
 Every number below is measured by the spike on #499 (receipts in its comments; the request log
@@ -84,11 +128,20 @@ is `drape-scratch/n4b-spike/out/log.txt`, not committed). Nothing here comes fro
 | Delete a saved voice | `DELETE /v1/voices/{voice_id}` | frees the slot; **does NOT refund the voice operation** (counter stayed at 1 after the delete) |
 | Save a preview later | the same save call on preview 2's id | worked **~53 s** after its design; how long a preview id stays saveable is **unmeasured** |
 
-**The account, read live** (`GET /v1/user/subscription`): tier **pay-as-you-go**; **3** voice
+~~**The account, read live** (`GET /v1/user/subscription`): tier **pay-as-you-go**; **3** voice
 slots; **54** voice operations a month (`max_voice_add_edits`), of which the spike itself used
 **9** on 2026-10-13; character allowance **37,472**, of which the spike used **3,702**;
-**`can_use_instant_voice_cloning: false`** (#499, his card). A design does not touch the
+**`can_use_instant_voice_cloning: false`** (#499, his card).~~ A design does not touch the
 voice-operation counter (it read 0 after the first design and 1 after the first save).
+
+⚠ **The account as it is (2026-10-14, read live, read-only, #2474):** tier **creator**; **30**
+voice slots, **2** in use; **95** voice operations a month, counter at **9**; character
+allowance **182,297** this period, **8,759** used; **instant voice cloning on**. The paragraph
+above was true when the spike read it and was overtaken by his upgrade the same day. ⚠ **No
+figure in this table is a constant in the product, and none may become one**: the road reads the
+slots, the operations and the cloning switch live on every Keep (`readVoiceKeepability` and
+`keepCastVoice`, `server/castingV2/voiceService.ts`), so the next plan change needs no code and
+this paragraph is the only thing it can make stale.
 
 **Format.** Inworld's previews arrived as WAV; that no longer applies. ElevenLabs returned every
 preview and every spoken line as **MP3** (`media_type: "audio/mpeg"`), because the spike asked
@@ -101,6 +154,16 @@ the stored clip is MP3 at that setting.
 the better speaking model on his ear; and the six unexplained 350-character "Voice Generation"
 charges on #499 (02:08–02:15 UTC), which must be accounted for before money is reckoned per
 design.
+
+⚠ **Three of the four are measured now (slice 1, 2026-10-13, recorded where the code uses them):**
+the audition is **29.3 s to record, 1,348 characters, 2.15 MB, about 2 min 18 s long**, and a
+Keep costs the house **about $0.04** (`server/providers/elevenlabsVoice.ts`,
+`server/castingV2/voiceAuditionPassage.ts`, `server/casting/castingCreditCosts.ts`); a preview is
+known saveable for **about fifty seconds** and is treated as gone after that
+(`shared/voiceCardCopy.ts`); and a design is billed **its preview text's own character count,
+once, and zero voice operations** — so the six 350-character charges were six designs whose
+preview text was 350 characters, and nothing is unaccounted for. **Still open: `eleven_v4`**,
+listed and unjudged; whether it speaks better is his ear's call.
 
 ## 4 · Storage — the clip is the asset, the slot is a cache
 
@@ -134,11 +197,22 @@ life of a preview id, so a reload does not lose a paid design, and are swept aft
 
 **The cache, and what it waits on.** With slots as a cache, a Keep on a full account evicts the
 least-recently-used voice, and a later need for an evicted voice re-mints it by instant-cloning
-the stored clip. **Both halves need instant voice cloning, which is OFF on his pay-as-you-go
+the stored clip. ~~**Both halves need instant voice cloning, which is OFF on his pay-as-you-go
 plan.** Until he upgrades, nothing is evicted: on his account, dark, every kept voice stays in
 its slot, and a fourth Keep while three slots are full **refuses** in plain words (§6). That is
 declared scaffolding under the fidelity law — the real source (eviction and re-mint) is slice 4
-and is on the board, blocked.
+and is on the board, blocked.~~
+
+⚠ **Reworked 2026-10-14 (#2474), because the struck reasoning had two parts and only one of them
+was a fact about his plan.** The fact — cloning is off — stopped being true when he upgraded to
+Creator (cloning on, 30 slots). The rule underneath it still holds and is what was built: **an
+evicted voice must be able to come back, so nothing is evicted on a plan that cannot clone.**
+That is now read live, never assumed from a tier: a Keep on a full plan evicts the
+least-recently-used voice when the plan can clone, and refuses in plain words when it cannot,
+when no resident voice of ours can be given up, or when the provider will not release one.
+⚠ **And the threshold is never a number.** The struck "fourth Keep while three slots are full"
+would, written as a constant, refuse a Keep with 27 slots free on today's plan; #2469 was cut to
+read the live limit instead (the relay's rule on PR #2468), and the road has never carried one.
 
 ⚠ **And the re-mint court comes before the eviction code, because it decides whether eviction
 is allowed at all** (#499, his paste): design a voice, save it, record the 90 s clip, delete it,
@@ -151,12 +225,29 @@ plan was upgraded to Creator on 2026-10-13 (instant cloning on), and the court p
 the same day, verbatim: *"remint actually sounds better in some cases both 90s clips were great
 though."* Eviction and re-mint are built in `server/castingV2/voiceService.ts`
 (`makeRoomForOneVoice`, `ensureCastVoiceResident`): a full plan evicts the least-recently-used
-voice instead of refusing, and still refuses on a plan that cannot clone, read live.
+voice instead of refusing, and still refuses on a plan that cannot clone, read live. Eviction
+gives back only the provider slot — the row and the clip stay, and the evicted voice still plays
+from its clip — and a re-mint spends one voice operation only when something is about to speak
+with the voice. Neither moves a customer's credits; both are the house managing its own plan.
+Because the slots are one pool shared by every account, the eviction write is the one
+enumerated cross-account exception in `CLAUDE.md`'s enforcement invariants (#2472, PR #2507).
 
 ## 5 · Rations — the voice-operation quota is the scarce thing, not slots
 
-**54 voice operations a month on this account** (290 on Pro, 1,040 on Scale, #499). Every save
+~~**54 voice operations a month on this account** (290 on Pro, 1,040 on Scale, #499).~~ Every save
 and every clone spends one, and a delete gives none back (measured). A design spends none.
+
+⚠ **Reworked 2026-10-14 (#2474): 95 operations a month against 30 slots, read live** (the
+struck 54 was the pay-as-you-go figure; the Pro and Scale figures were not re-read for this correction and are
+left out rather than repeated). **The conclusion in this section's title still holds, and on
+the new numbers the reason for it is stronger rather than weaker.** On the old plan, 54
+operations against 3 slots meant slots ran out first in practice — the fourth Keep was the wall.
+On Creator, slots are no longer a wall at all: a full plan evicts and re-mints (§4). **But every
+eviction-then-re-mint spends an operation that a pinned slot would not have**, so the cache
+converts slot pressure INTO operation spend. Operations are the one ration nothing gives back —
+not a delete, not an eviction — which is why they, and not slots, are what this section guards.
+A Keep, a Change (which is a Keep) and a re-mint each spend one, so 95 a month is at most 95
+of those between them, across every customer of the house account.
 
 - **Spend only at Keep.** Previews, playback and "Make new voices" never touch the quota.
 - **Read before spending.** Keep reads the counter first; if this month's operations are spent,
@@ -165,9 +256,15 @@ and every clone spends one, and a delete gives none back (measured). A design sp
   the read itself fails (invariant 7).
 - **The cache must genuinely cache** (slice 4): a re-mint spends an operation, so a voice is
   re-minted only when something is about to speak with it, never to keep a slot warm.
-- **It is per account, not per customer.** 54 a month is the whole product's ceiling on Keeps
-  while the plan stands, which is why the scope is his account until the plan changes and why
+- **It is per account, not per customer.** ~~54 a month is the whole product's ceiling on Keeps
+  while the plan stands~~, which is why the scope is his account until the plan changes and why
   the house sees the month's remaining operations on the admin panel (slice 3).
+  *(2026-10-14: the house account's month is 95 operations today, and it is the whole product's
+  ceiling on Keeps, Changes and re-mints together. The scope is `users:1`; widening it stays his
+  word. The admin panel's ration is **shipped** (#2471, PR #2508): operations left of the month's
+  total and slots free of the plan's total, read live, admin-only (`adminProcedure`, never the
+  moderator surface), no cast, no account and no creative content on the road, and its own query
+  so a slow provider costs two rows rather than the whole overview.)*
 
 ## 6 · Words on the card
 
@@ -178,26 +275,68 @@ builder and his eye, never the vendor's:
 - Keeping: *"Recording {name}'s audition"* (wait unmeasured; slice 1 measures it).
 - After Keep: the player plays the clip; the foot names it *"{name}'s voice"* and replaces
   *"No voice yet"*.
-- A full account (dark phase only) or a spent month: *"Voices can't be kept right now. The ones
+- A full account (dark phase only) or a spent month: ~~*"Voices can't be kept right now. The ones
   you made will still be here — try Keep again later."* Then the previews stay playable for as
-  long as their ids live.
+  long as their ids live.~~ *(Shipped 2026-10-14: "Voices can't be kept right now. Make them
+  again in a little while and keep one then." The struck promise was false — previews live in
+  a store a deploy empties and are known saveable for about fifty seconds (#2470's review). And
+  the card no longer makes three voices at all when nothing can be kept, so this is said after
+  a refused Keep rather than before a press.)*
 - A failed design: *"Those voices didn't come through. Nothing was charged — try again."*
+  *(Since the price landed, "Nothing was charged" is said only when the refund is known to have
+  recorded; otherwise the card says the money is owed and gives a reference — #2471.)*
+- *(Shipped, #2497.)* Change: **"Change voice"**, with *"Keeping a new voice replaces the
+  current one."* Remove: **"Remove voice"**, then *"Remove this voice? It can't be brought back,
+  and the credits it cost aren't returned."* — his *"No refund — the customer had the voice"*.
+
+The shipped words live in `shared/voiceCardCopy.ts`, which is their authority; the lines here
+are the record of what was designed and what changed.
 
 No string names a model, a provider, a slot, a quota or a clone. A name falls back to
 "their" / "this character" when the cast has none, and no string genders anyone.
 
-## 7 · Price — a placeholder, priced later
+## 7 · Price — ~~a placeholder, priced later~~ priced 2026-10-14
 
-**"Make new voices from this text · <credits>"** carries a placeholder figure, priced under the
+⚠ **Priced on his word (#2471, PR #2499), read at `server/casting/castingCreditCosts.ts`:**
+
+- **Make new voices** — **125 ledger / 25 display** (`CASTING_V2_VOICE_DESIGN_PRICE_CREDITS`),
+  about 5× the measured ~$0.01. The first recommendation was 50 display and he refused it:
+  *"a massive markup"*. His rule for the whole road: *"the text voice description is free but
+  the audio file wont be"*.
+- **Keep** — **500 ledger / 100 display** (`CASTING_V2_VOICE_KEEP_PRICE_CREDITS`), about 6× the
+  measured ~$0.04, and dearer because a Keep also spends one of the month's operations. A Change
+  is a Keep and costs the same; a Remove charges and returns nothing.
+- **The automatic first three are free** — his *"real cost is neglible we absorb it"* — and are
+  bounded rather than charged: one free three per cast per day and twenty per account per day
+  (`castingVoiceAutoDesignDaily`, `castingVoiceAutoDesignDay`, `server/security/rateLimit.ts`).
+  When either is spent the automatic road makes no call and never falls through to a charge.
+  Paid presses carry their own ceilings (twelve an hour, fifty an account a day). Both charges
+  are atomic and refund on any failure.
+- ⚠ **Not built, and named here so it is not assumed**: a house-wide daily ceiling on the free
+  road across all accounts. The code says so in its own words (`rateLimit.ts`): one process's
+  counter is not a house-wide fact, and that ceiling needs a persisted counter.
+
+What follows is the paragraph as it stood before the price, kept as the record.
+
+~~**"Make new voices from this text · <credits>"** carries a placeholder figure, priced under the
 pricing laws by the pricing rung (#2140: *"The price is an example; Cid prices it."*). The
 measured cost it will be priced against: **about $0.01 per design** (three voices) and **about
 $0.001 per spoken line**. The first three voices are made without a press when the card first
 opens with voice on — *"a text-to-voice design step that runs alongside the text, not later"*
 — and whether that first design is house-paid or charged is part of the same pricing question.
 The cost of Keep's 90 s clip is **unmeasured** and is measured in slice 1 before anything is
-priced.
+priced.~~
 
 ## 8 · Build cards, in slice order
+
+⚠ **Status, read at `origin/main` 2026-10-14 (#2474):** slice 1 **built** (#2469, PR #2484);
+slice 2 **built and live on his account** (#2470, PR #2488; flag `users:1`); slice 3's money
+half and its admin ration **built** (#2471, PRs #2499 and #2508), with the house-wide free-road
+ceiling of §7 still unbuilt; slice 4 **unblocked and built** — his plan upgrade and his ear on
+the re-mint court both landed 2026-10-13 (#2472, PR #2507). Two cards outside this slice order
+also shipped, each its own card per his 2026-09-24 ruling: the hidden voice card (#2498, PR
+#2500, §2) and change and remove (#2497, PR #2502, §1/§6/§9). The slice text below is the
+design as cut; struck clauses are the ones the upgrade overtook.
 
 1. **N4b-1 — the voice road, dark.** An ElevenLabs provider in `server/providers/` implementing
    `VoiceEngine` (`server/providers/types.ts`, today a stub with no implementation): design →
@@ -210,8 +349,8 @@ priced.
    the commit. No UI. **Done when:** driven on his account through the real entrance — a design
    returns three MP3 previews, a Keep saves, records and stores the clip with its sha256 and
    writes the row, and the counter is read before and after; Keep with the key absent, with the
-   quota read failing and with three slots full each refuse cleanly (driven directly, not
-   through a model); deleting the cast releases the slot and the clip; and the slice's receipt
+   quota read failing and with ~~three slots full~~ *every slot full, read live (#2474: never a
+   hard-coded three)* each refuse cleanly (driven directly, not through a model); deleting the cast releases the slot and the clip; and the slice's receipt
    states the measured cost, wait and size of a 90 s clip, how long a preview id stayed
    saveable, and what the six unexplained "Voice Generation" charges were.
 2. **N4b-2 — Listen and pick on the Voice card, dark on his account** (builds on N4b-1). The
@@ -229,17 +368,20 @@ priced.
    `CASTING_V2_PLAN_REBASELINE.md` §4/§6 carrying N4b with one engine. **Done when:** the button
    carries a real price, the house can see the month's ration before a customer meets its end,
    and every refusal has been seen in both themes. Widening beyond his account stays his word.
-4. **N4b-4 — the cache: re-mint court, then eviction and re-mint — BLOCKED on his plan
-   upgrade** (instant voice cloning is off on pay-as-you-go). First the court of §4 to his ear,
+4. **N4b-4 — the cache: re-mint court, then eviction and re-mint** — ~~**BLOCKED on his plan
+   upgrade** (instant voice cloning is off on pay-as-you-go)~~ *unblocked 2026-10-13: Creator,
+   cloning on; the court passed by his ear; built in #2472, PR #2507*. First the court of §4 to his ear,
    on his account through the real entrance. Then, only if he hears a match: least-recently-used
    eviction when slots run short, and re-mint by instant-cloning the stored clip on a miss,
    spending an operation only when something is about to speak. If he hears drift: signed casts
    keep pinned slots and this slice closes on that ruling instead. **Done when:** the court's
    frames-equivalent — the original and the re-mint, side by side — is in front of his ear and
-   his verdict is quoted; and, on a match, a fourth Keep on a three-slot account evicts, a later
-   use re-mints, and the counter moves by exactly the operations spent.
+   his verdict is quoted; and, on a match, ~~a fourth Keep on a three-slot account~~ *a Keep on
+   a plan whose slots are all occupied (read live)* evicts, a later use re-mints, and the
+   counter moves by exactly the operations spent.
 
-Order: 1, then 2, then 3; 4 waits on his upgrade and its court runs before any of its code. A
+Order: 1, then 2, then 3; ~~4 waits on his upgrade and~~ its court runs before any of its code.
+*(2026-10-14: the upgrade and the court both landed on 2026-10-13, in that order.)* A
 finding made while building any of these is its own card, never folded in (his 2026-09-24
 ruling).
 
@@ -252,6 +394,10 @@ ruling).
 - **A model picker.** Voice is a casting door, not a generator; the default is the only path.
 - **The voice line driving the voice.** Editing the line after Keep does not replace the kept
   voice; it only changes what the next "Make new voices" is made from. A kept voice is changed
-  only by keeping another.
+  only by keeping another. (Still true, and since 2026-10-14 there is a door to it: **Change
+  voice** makes voices from the line as it reads now, and the old voice changes only once the
+  new one is fully kept; **Remove voice** leaves the cast with no voice, its clip queued for
+  deletion and its slot released, no refund — #2497, PR #2502. His report that opened it:
+  *"there doesnt seem to be a way to change the voice … or delete the selected voice"*.)
 - **Voice cloning from a customer's own recording.** Not asked for, and a consent question of
   its own.
