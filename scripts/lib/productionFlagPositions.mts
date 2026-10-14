@@ -454,27 +454,24 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   },
   CASTING_VOICE_SCOPE: {
     /*
-      `off`, not "unset" — and the distinction is this table's vocabulary rather
-      than a fact about the service. `UNSET` in this module IS the string "off"
-      (line 94), so a variable ABSENT from the service reads as `off` here; the
-      flag is genuinely absent from the Drape service, read by name on
-      2026-10-13. The rite caught the wrong token on the first push after this
-      row was written, which is the comparison earning its keep on its own
-      newest row.
+      `users:1` since 2026-10-14, set by the relay on his word in chat, verbatim
+      and entire: "no im not resetting the key push through" — keep the existing
+      ElevenLabs key and turn voice on for his account. The key went on FIRST
+      (read back by name, inert while this was absent), then this, after PR #2488
+      (N4b-2, the Voice card) was live; the service restarted healthy on both.
+      Until then this row read `off`, which is this table's word for absent.
     */
-    position: "off",
+    position: "users:1",
     why:
-      "BUILT DARK 2026-10-13 (N4b-1, card #2469; the rung opened on his word the same day, "
-      + "verbatim and entire: \"Yes we will begin n4b\"). A signed cast's written voice line "
-      + "becomes a voice you can hear, make again and keep. UNSET on purpose and not merely "
-      + "un-flipped: slice 1 is the ROAD and no surface reaches it, so switching it on would "
-      + "change nothing a customer could see while putting the account's voice-operation "
-      + "ration within reach of a road nobody can walk. His account waits on N4b-2's Voice "
-      + "card (#2470); wider than that waits on his word AND on a plan decision, because the "
+      "ON FOR HIS ACCOUNT 2026-10-14 (N4b-2, card #2470, PR #2488; his word: \"no im not "
+      + "resetting the key push through\"). The Voice card on a signed cast: three voices "
+      + "from the written voice line, play, and Keep. Built dark 2026-10-13 (N4b-1, #2469). "
+      + "Wider than users:1 waits on his word AND on a plan decision, because the "
       + "voice-operation ceiling is per PROVIDER ACCOUNT rather than per customer - widening "
-      + "this scope divides one monthly allowance among more people instead of multiplying it. "
-      + "ON WITHOUT ELEVENLABS_API_KEY REFUSES BOOT by design, so the key is set by his hand "
-      + "FIRST or the next deploy crash-loops",
+      + "this scope divides one monthly allowance among more people instead of multiplying it - "
+      + "and on N4b-3 (#2471), which brings the real price and its atomic charge; until then "
+      + "nothing is charged. ON WITHOUT ELEVENLABS_API_KEY REFUSES BOOT by design, so the key "
+      + "stays on the service while this is set",
   },
   CASTING_CREATION_RECORD_SCOPE: {
     position: "users:1",
