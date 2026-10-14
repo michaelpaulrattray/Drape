@@ -86,7 +86,7 @@ export const VOICE_CHOICES_LABEL = "LISTEN AND PICK";
 export const VOICE_MAKE_AGAIN = "Make new voices from this text";
 
 /**
- * That press with its price — `Make new voices from this text · 25 credits`.
+ * That press with its price, as the button reads it.
  *
  * Takes the LEDGER number the server served and does the one conversion, so no
  * surface divides by five itself ({@link displayPrice} rounds UP, which is the
