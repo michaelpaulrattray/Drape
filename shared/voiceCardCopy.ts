@@ -8,7 +8,10 @@
  * read a population it can enumerate — strings scattered through a component
  * are a population nothing can be derived from (working law 4's shape: a guard
  * over a hand-listed sample drifts from the surface it is guarding).
- * `shared/voiceCardCopy.test.ts` walks THIS module's exported values.
+ * `client/src/features/castingV2/voice/voiceCardCopy.test.ts` walks THIS
+ * module's exported values. ⚠ This said `shared/` until 2026-10-14 and the
+ * suite has never been there — the pointer guard resolves a BASENAME, by its own
+ * stated scope, so a wrong directory is invisible to it.
  *
  * # THE DISAPPEARING-TECHNOLOGY LAW IS THE WHOLE SPECIFICATION HERE
  *
@@ -43,6 +46,8 @@
  * (`CastCampaignsCard` passes exactly that string).
  */
 
+import { displayPrice, formatCredits } from "./creditDisplay";
+
 /** The label a customer reads for the nth voice. One-based, as it is spoken. */
 export function voiceLabel(index: number): string {
   return `Voice ${index + 1}`;
@@ -66,8 +71,51 @@ export function voiceKeepLabel(index: number): string {
  */
 export const VOICE_CHOICES_LABEL = "LISTEN AND PICK";
 
-/** The press that makes a fresh three from the words as they read now. */
+/**
+ * The press that makes a fresh three from the words as they read now.
+ *
+ * ⚠ **IT CARRIES ITS PRICE SINCE #2471, AND THE BARE CONSTANT IS KEPT ONLY AS
+ * THE PREFIX.** The design's own wording is *"Make new voices from this text ·
+ * <credits>"*, and N4b-2 deliberately shipped it WITHOUT a number: the price was
+ * a placeholder then and the press charged nothing, so a figure beside it would
+ * have been both a false promise and the *"number nobody can act on"* the
+ * disappearing-technology law's third question forbids. The press charges now,
+ * so the number is owed — **the prices-on-paid-buttons law**: a customer must
+ * never learn what something cost by being charged for it.
+ */
 export const VOICE_MAKE_AGAIN = "Make new voices from this text";
+
+/**
+ * That press with its price — `Make new voices from this text · 25 credits`.
+ *
+ * Takes the LEDGER number the server served and does the one conversion, so no
+ * surface divides by five itself ({@link displayPrice} rounds UP, which is the
+ * whole reason it is the only road).
+ */
+export function voiceMakeAgainLabel(ledgerPrice: number): string {
+  return `${VOICE_MAKE_AGAIN} · ${formatCredits(displayPrice(ledgerPrice))} credits`;
+}
+
+/** Keep, naming the one being kept AND what it costs. */
+export function voiceKeepPricedLabel(index: number, ledgerPrice: number): string {
+  return `${voiceKeepLabel(index)} · ${formatCredits(displayPrice(ledgerPrice))} credits`;
+}
+
+/**
+ * A press the balance could not pay for.
+ *
+ * ⚠ **The house's own shape for this sentence, matched deliberately**: every
+ * other paid casting road writes *"Not enough credits. A roll costs N
+ * credits."* at its own call site, beside the price it quotes
+ * (`server/lib/chargeRefusal.ts`'s stated rule). It is rendered HERE rather
+ * than shown from the server's reply so this module stays the one place every
+ * string on the card can be enumerated from — which is what the card's
+ * no-vendor-words reader walks.
+ */
+export function voiceNotEnoughCreditsText(ledgerPrice: number, during: "make" | "keep"): string {
+  const what = during === "keep" ? "Keeping a voice" : "Making new voices";
+  return `Not enough credits. ${what} costs ${formatCredits(displayPrice(ledgerPrice))} credits.`;
+}
 
 /**
  * The first-open loader. About 7–10 seconds, measured (design §3).
@@ -134,13 +182,55 @@ export const VOICE_TOO_SOON =
 export const VOICE_CLIP_WONT_PLAY =
   "That recording wouldn't play just now. Try again in a moment.";
 
-/** A design that did not come through. Says the money part out loud. */
+/**
+ * A design that did not come through. Says the money part out loud.
+ *
+ * ⚠ **"NOTHING WAS CHARGED" WAS A FREE TRUTH UNTIL #2471 AND IS NOW A CLAIM
+ * ABOUT THE LEDGER.** When this sentence was written the press charged nothing
+ * at all, so it could not be wrong. The press charges now, and the claim is
+ * only true because the refusal road refunds — so it may be said ONLY when the
+ * refund is known to have recorded. {@link voiceMakeFailedText} is the road
+ * that decides; this constant is the sentence for the case where it did.
+ *
+ * `server/casting/atomicCredits.ts` states the law this guards in its own
+ * words: a refund that failed to record is **never** reported as "you weren't
+ * charged".
+ */
 export const VOICE_MAKE_FAILED =
   "Those voices didn't come through. Nothing was charged — try again.";
 
-/** A Keep that did not come through. */
+/** A Keep that did not come through. The same claim, under the same rule. */
 export const VOICE_KEEP_FAILED =
   "That voice couldn't be kept. Nothing was charged — try again.";
+
+/**
+ * THE SAME TWO FAILURES WHEN THE MONEY HAS NOT COME BACK YET.
+ *
+ * The rare case: the charge committed, the voice was refused, and the refund
+ * write itself did not land. The customer is genuinely out of pocket, so the
+ * sentence says so and names the one thing that fixes it.
+ *
+ * ⚠ **It quotes no reference, and that is a decision rather than an
+ * oversight.** `atomicCredits`' own `refundTruth` hands the customer a
+ * reference id for support to reconcile against, and the simpler road here was
+ * to do the same. Declined: a reference is machinery on a card whose whole
+ * design is that none shows, and it is not needed — `recordRefund` already
+ * logs the failure at ERROR with the account, the amount and that reference, so
+ * support can find it from the account alone. What the customer needs is to
+ * know they are owed and that saying so is enough.
+ */
+export const VOICE_REFUND_OWED =
+  "Those credits haven't come back yet. Get in touch and we'll put it right.";
+
+/** The design-failure sentence, chosen on what the money actually did. */
+export function voiceMakeFailedText(refunded: boolean): string {
+  return refunded ? VOICE_MAKE_FAILED : `That didn't come through. ${VOICE_REFUND_OWED}`;
+}
+
+/** The Keep-failure sentence, chosen on what the money actually did. */
+export function voiceKeepFailedText(refunded: boolean): string {
+  return refunded ? VOICE_KEEP_FAILED : `That voice couldn't be kept. ${VOICE_REFUND_OWED}`;
+}
 
 /**
  * The line is too short for a voice to be made from it.
@@ -173,6 +263,7 @@ export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_CLIP_WONT_PLAY,
   VOICE_MAKE_FAILED,
   VOICE_KEEP_FAILED,
+  VOICE_REFUND_OWED,
   VOICE_LINE_TOO_SHORT,
   VOICE_NEEDS_A_LINE,
 ];
@@ -193,6 +284,19 @@ export function voiceCardEveryString(): readonly string[] {
   }
   for (let index = 0; index < 3; index += 1) {
     composed.push(voiceLabel(index), voicePlayLabel(index), voiceKeepLabel(index));
+    /* The priced Keep, with a real ledger figure — a template read as a
+       template passes a reader the rendered sentence would fail. */
+    composed.push(voiceKeepPricedLabel(index, 500));
+  }
+  /* The priced press and both money refusals, rendered rather than described,
+     and BOTH sides of each boolean — the sentence for a refund that did not
+     record is the one most likely to leak accounting words. */
+  composed.push(voiceMakeAgainLabel(125));
+  for (const refunded of [true, false]) {
+    composed.push(voiceMakeFailedText(refunded), voiceKeepFailedText(refunded));
+  }
+  for (const during of ["make", "keep"] as const) {
+    composed.push(voiceNotEnoughCreditsText(during === "keep" ? 500 : 125, during));
   }
   return [...VOICE_CARD_FIXED_STRINGS, ...composed];
 }

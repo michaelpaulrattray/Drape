@@ -2,6 +2,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
+import { withAtomicCredits, type RefundOutcome } from "../casting/atomicCredits";
+import {
+  CASTING_V2_VOICE_DESIGN_PRICE_CREDITS,
+  CASTING_V2_VOICE_KEEP_PRICE_CREDITS,
+} from "../casting/castingCreditCosts";
 import { captureCastingV2Enabled, captureCastingVoiceEnabled } from "../castingV2/castingV2Scope";
 import { getOwnedCastByPublicId } from "../db/castingV2Sign";
 import { readCastVoice } from "../db/castVoices";
@@ -115,8 +120,22 @@ const castIdInput = z.string().min(1).max(32);
 /** A handle out of {@link rememberVoiceDesign} — `randomUUID`'s own shape. */
 const designHandle = z.string().uuid();
 
-function enforce(userId: number, config: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS]): void {
-  const check = checkRateLimit(`user:${userId}`, config);
+/**
+ * One limiter bucket, enforced for this account.
+ *
+ * `scope` narrows the identifier WITHIN the account — `cast:<id>` for the
+ * per-cast daily bound. It is a suffix on the identifier rather than a second
+ * `keyPrefix`, so a bucket cannot be made to collide with another bucket by
+ * choosing a scope: the prefix still names the limit and the scope only ever
+ * divides that limit’s own keyspace.
+ */
+function enforce(
+  userId: number,
+  config: (typeof RATE_LIMITS)[keyof typeof RATE_LIMITS],
+  scope?: string,
+): void {
+  const identifier = scope === undefined ? `user:${userId}` : `user:${userId}:${scope}`;
+  const check = checkRateLimit(identifier, config);
   if (!check.allowed) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: rateLimitError(check.resetIn) });
   }
@@ -149,6 +168,99 @@ function requireVoiceRoad(userId: number): void {
       code: "PRECONDITION_FAILED",
       message: "Voice is not available for this account yet.",
     });
+  }
+}
+
+/* ------------------------------------------------------------------ the money.
+
+   WHAT A VOICE COSTS, AND THE ONE THING `withAtomicCredits` DOES NOT COVER.
+
+   The charge itself is not this road's invention: `withAtomicCredits`
+   (`server/casting/atomicCredits.ts`) is the product's audited shape — it
+   deducts BEFORE the provider is called, so five simultaneous presses cannot
+   each pass a balance check; it refunds under a derived idempotent reference if
+   the operation throws; and it refuses a frozen account and an insufficient
+   balance with sentences written for a person.
+
+   ⚠ **BUT IT REFUNDS ON A THROW, AND THIS ROAD DOES NOT THROW ITS REFUSALS.**
+   Every voice refusal comes back in the RESULT as `{ ok: false, refusal }` —
+   that is deliberate and invariant 6's reasoning is in this file's header. So a
+   design the provider refused, or a Keep a spent month refused, would have
+   returned `ok: false` through a helper that saw a perfectly successful
+   operation and **kept the customer's credits for a voice they never got.**
+   That is the defect this wrapper exists to prevent, and it is the reason the
+   charge is not simply `withAtomicCredits(...)` at each call site.
+
+   The shape: the refusal is thrown so the audited refund path runs, and it is
+   carried out in a closure rather than on the error — `withAtomicCredits`
+   rebuilds the outgoing error (it has its own reasons, #2058's spoken marker
+   among them), so the thrown object's identity cannot survive the trip and
+   nothing may be read off it.
+*/
+
+/** What a charged voice step gives back: the value, or the refusal AND what the
+ *  money did — the two facts a customer-facing sentence needs together. */
+type ChargedVoiceResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; refusal: VoiceRefusal; refunded: boolean };
+
+async function withVoiceCharge<T>(input: {
+  userId: number;
+  amount: number;
+  description: string;
+  run: () => Promise<{ ok: true; value: T } | { ok: false; refusal: VoiceRefusal }>;
+}): Promise<ChargedVoiceResult<T>> {
+  /* The carriers. Assigned inside the operation closure and read after it, so
+     neither may be narrowed away by a reader that only sees the declaration. */
+  const carried: { refusal: VoiceRefusal | null; refund: RefundOutcome | null } = {
+    refusal: null,
+    refund: null,
+  };
+  try {
+    const value = await withAtomicCredits(
+      {
+        userId: input.userId,
+        amount: input.amount,
+        description: input.description,
+        /* AUDIO — the first charge in the product that is not an image. The set
+           grew for this road, under its own rule (`server/db/credits.ts`). */
+        toolKind: "audio",
+        engineUsed: "castingV2",
+        onRefunded: (outcome) => {
+          carried.refund = outcome;
+        },
+      },
+      async () => {
+        const result = await input.run();
+        if (!result.ok) {
+          carried.refusal = result.refusal;
+          /* Thrown ONLY to reach the audited refund. The message never reaches a
+             customer: a refusal is answered from `carried.refusal` below, and the
+             card picks its own sentence by the key. */
+          throw new Error(`voice refused: ${result.refusal}`);
+        }
+        return result.value;
+      },
+    );
+    return { ok: true, value };
+  } catch (error) {
+    if (carried.refusal !== null) {
+      /*
+        ⚠ **`refunded` IS READ FROM THE LEDGER'S OWN ANSWER, NEVER ASSUMED.**
+        `recordRefund` logs and reports a refund it could not write, and
+        `atomicCredits`' own law is that such a case is *never* reported as "you
+        weren't charged". The card's sentence turns on this boolean, so a refund
+        that did not record cannot be dressed up as one that did.
+      */
+      return {
+        ok: false,
+        refusal: carried.refusal,
+        refunded: carried.refund?.recorded === true,
+      };
+    }
+    /* A genuine failure. `withAtomicCredits` has already refunded and appended
+       the truth about the money to the message it is throwing. */
+    throw error;
   }
 }
 
@@ -191,6 +303,31 @@ export const voiceKeepInput = z.object({
 }).strict();
 
 /**
+ * THE TWO PRICES THE CARD PUTS ON ITS PAID BUTTONS.
+ *
+ * ⚠ **SERVED, NEVER A CLIENT LITERAL** — the Sign button's own road
+ * (`CastingSheet` reads `signPriceCredits` off its config and renders it with
+ * `displayPrice`), and the reason is working law 4 on the one subject this
+ * repository has been bitten by most: a price written twice is a price that
+ * will one day disagree with what the ledger takes. These are LEDGER numbers;
+ * `shared/creditDisplay.ts` is the only thing that turns one into what a
+ * customer reads.
+ *
+ * ⚠ **THE DESIGN PRICE IS THE PRESS'S, AND THE AUTOMATIC THREE ARE FREE** (his
+ * word, 2026-10-14: *"2 real cost is neglible we absorb it"*). So this number
+ * belongs beside *"Make new voices from this text"* and must never be drawn as
+ * the cost of opening the card.
+ *
+ * They ride the status read rather than a second procedure because the card
+ * already waits on this one before it draws anything, so a price costs no extra
+ * round trip and cannot arrive after the button it belongs on.
+ */
+const VOICE_PRICES = {
+  designPriceCredits: CASTING_V2_VOICE_DESIGN_PRICE_CREDITS,
+  keepPriceCredits: CASTING_V2_VOICE_KEEP_PRICE_CREDITS,
+} as const;
+
+/**
  * WHAT THE VOICE CARD DRAWS BEFORE ANYTHING IS PRESSED.
  *
  * Three facts and no creative content: whether this road is open at all,
@@ -206,7 +343,13 @@ export async function readVoiceCardStatus(input: { userId: number; castId: strin
   if (!captureCastingV2Enabled(input.userId) || !captureCastingVoiceEnabled(input.userId)) {
     /* Dark: the card draws nothing at all rather than an empty voice panel
        (the `PublicCheckCard` precedent). */
-    return { available: false as const, hasLine: false, canKeep: false, kept: null };
+    return {
+      available: false as const,
+      hasLine: false,
+      canKeep: false,
+      kept: null,
+      ...VOICE_PRICES,
+    };
   }
   enforce(input.userId, RATE_LIMITS.castingRead);
   const model = await requireCast(input.userId, input.castId);
@@ -225,6 +368,7 @@ export async function readVoiceCardStatus(input: { userId: number; castId: strin
     available: true as const,
     hasLine: Boolean(model.voice && model.voice.trim().length > 0),
     canKeep,
+    ...VOICE_PRICES,
     kept: kept
       ? {
           clipPath: voiceClipPath(input.castId),
@@ -269,12 +413,70 @@ export async function designVoicesForCard(input: {
   );
   const model = await requireCast(input.userId, input.castId);
 
-  const result = await designCastVoices({ userId: input.userId, modelId: model.id });
-  if (!result.ok) return { ok: false as const, refusal: result.refusal };
+  /*
+    ⚠ **WHETHER THIS DESIGN IS FREE IS THE SERVER'S ANSWER, NOT THE CLIENT'S
+    CLAIM** — his order, 2026-10-14 (#2471): *"the automatic road honoured only
+    when it is genuinely automatic … so a reload or a scripted `automatic: true`
+    cannot farm free designs"*.
 
-  const { designId, handles } = rememberVoiceDesign({
+    `automatic` still arrives from the client, because only the client knows
+    whether a person pressed anything. What changed is that it is no longer a
+    FREE PASS: the free road is granted by the two daily buckets below, and a
+    caller asserting `automatic: true` past them is refused rather than served.
+    Before this, the only thing standing between a reload and another three
+    voices on house money was a module-level `Set` in the client's own page
+    session, which a reload empties by definition.
+
+    ⚠ **A SPENT FREE BUCKET REFUSES; IT NEVER FALLS THROUGH TO THE CHARGE.**
+    Nobody pressed anything, so charging would bill a customer for an arrival.
+    The refusal is a real `TOO_MANY_REQUESTS` (invariant 6) and the card already
+    swallows it silently on the automatic road — *"an automatic design says
+    nothing on a refusal it did not ask for"* — leaving the resting state with
+    the priced press available, which is the honest shape.
+  */
+  if (input.automatic) {
+    /* Keyed on the CAST, so forty signed casts still get a free three each —
+       the bound is per cast, not per account. The internal id is the key: one
+       canonical row per cast, whatever spelling of the public id arrived. */
+    enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, `cast:${model.id}`);
+    /* And keyed on the ACCOUNT, so a scripted walk across a whole library
+       cannot turn that per-cast allowance into an unbounded one. */
+    enforce(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
+    const result = await designCastVoices({ userId: input.userId, modelId: model.id });
+    if (!result.ok) return { ok: false as const, refusal: result.refusal, refunded: true };
+    return rememberedDesign(input.userId, model.id, result);
+  }
+
+  /* A PRESS. The daily ceiling runs BEFORE the charge, so a refused press
+     costs nothing — a limiter that charged first would be selling refusals. */
+  enforce(input.userId, RATE_LIMITS.castingVoiceDesignDay);
+
+  const charged = await withVoiceCharge({
     userId: input.userId,
-    modelId: model.id,
+    amount: CASTING_V2_VOICE_DESIGN_PRICE_CREDITS,
+    description: "Voice design (three voices)",
+    run: async () => {
+      const result = await designCastVoices({ userId: input.userId, modelId: model.id });
+      return result.ok
+        ? { ok: true as const, value: result }
+        : { ok: false as const, refusal: result.refusal };
+    },
+  });
+  if (!charged.ok) {
+    return { ok: false as const, refusal: charged.refusal, refunded: charged.refunded };
+  }
+  return rememberedDesign(input.userId, model.id, charged.value);
+}
+
+/** The three voices, remembered and handed back — the shape both roads return. */
+function rememberedDesign(
+  userId: number,
+  modelId: number,
+  result: { designSentence: string; previews: readonly { previewId: string; bytes: Buffer; contentType: string; durationSeconds?: number | null }[] },
+) {
+  const { designId, handles } = rememberVoiceDesign({
+    userId,
+    modelId,
     designSentence: result.designSentence,
     previewIds: result.previews.map((preview) => preview.previewId),
   });
@@ -320,61 +522,94 @@ export async function keepVoiceForCard(input: {
   const model = await requireCast(input.userId, input.castId);
 
   /*
-    ⚠ **CLAIMED, NOT RESOLVED — AND THE DIFFERENCE IS ONE OF THE ACCOUNT'S 95
-    MONTHLY VOICE OPERATIONS.** The claim takes the design out of reach in the
-    same indivisible step that reads it, so a double-press, a retry or a second
-    tab cannot both reach the provider's save. It is put back below if the Keep
-    does not land.
+    ⚠ **THE CHARGE IS OUTSIDE THE CLAIM, AND THE ORDER IS THE WHOLE POINT.**
+
+    A Keep costs 500 ledger and the claim below consumes the design — so the two
+    possible orders are not equivalent and only one of them is safe:
+
+      · **charge, then claim** (this one): a customer who is short of credits is
+        refused by the ledger before anything is consumed, and still has their
+        three voices to keep later. A claim that then fails refunds, because the
+        refusal travels out through {@link withVoiceCharge}.
+      · claim, then charge: a short balance would consume the design and give
+        nothing back — the customer loses the three voices they were choosing
+        between AND is told they cannot afford the one they picked. Nothing in
+        the ledger would look wrong, which is what makes it the dangerous order.
+
+    Every refusal inside the run therefore gives the money back: a provider
+    outage, a spent month, an expired handle. A customer who has no voice has
+    not bought one.
   */
-  const resolved = claimVoiceDesignHandle({
+  const charged = await withVoiceCharge({
     userId: input.userId,
-    modelId: model.id,
-    designId: input.designId,
-    handle: input.handle,
+    amount: CASTING_V2_VOICE_KEEP_PRICE_CREDITS,
+    description: "Voice kept for a cast",
+    run: async () => {
+      /*
+        ⚠ **CLAIMED, NOT RESOLVED — AND THE DIFFERENCE IS ONE OF THE ACCOUNT'S
+        MONTHLY VOICE OPERATIONS.** The claim takes the design out of reach in
+        the same indivisible step that reads it, so a double-press, a retry or a
+        second tab cannot both reach the provider's save. It is put back below if
+        the Keep does not land.
+      */
+      const resolved = claimVoiceDesignHandle({
+        userId: input.userId,
+        modelId: model.id,
+        designId: input.designId,
+        handle: input.handle,
+      });
+      if (!resolved) {
+        /*
+          The handle expired, was never ours, belongs to another cast, or a press
+          that got here first is still in flight. The customer-facing answer is
+          the same as a failed design — make them again — because that is the
+          only thing that can be done about it, and the cases must not be told
+          apart to a caller holding a handle it should not have.
+        */
+        return { ok: false as const, refusal: "provider_failed" as VoiceRefusal };
+      }
+
+      let result: Awaited<ReturnType<typeof keepCastVoice>>;
+      try {
+        result = await keepCastVoice({
+          userId: input.userId,
+          modelId: model.id,
+          previewId: resolved.previewId,
+          designSentence: resolved.designSentence,
+        });
+      } catch (error) {
+        /* A throw is not a refusal and the voices may still be keepable — the
+           design goes back before the error travels. The charge is refunded by
+           `withAtomicCredits`' own catch, which this throw passes through. */
+        restoreVoiceDesign(input.designId);
+        throw error;
+      }
+      if (!result.ok) {
+        /*
+          A REFUSED Keep gives the design back, so a provider outage or a spent
+          month does not also cost the customer three voices they could keep a
+          minute later. The one exception is a cast that is no longer there to
+          keep a voice for — nothing can ever be kept against it, so the handles
+          stay gone.
+        */
+        if (result.refusal !== "cast_not_available") restoreVoiceDesign(input.designId);
+        return { ok: false as const, refusal: result.refusal };
+      }
+
+      /* The other two voices of this design can never be kept now — one voice
+         per cast — so the claim is made permanent rather than left restorable. */
+      forgetVoiceDesign(input.designId);
+      return { ok: true as const, value: { clipBytes: result.clipBytes } };
+    },
   });
-  if (!resolved) {
-    /*
-      The handle expired, was never ours, belongs to another cast, or a press
-      that got here first is still in flight. The customer-facing answer is the
-      same as a failed design — make them again — because that is the only thing
-      that can be done about it, and the cases must not be told apart to a
-      caller holding a handle it should not have.
-    */
-    return { ok: false as const, refusal: "provider_failed" as VoiceRefusal };
-  }
 
-  let result: Awaited<ReturnType<typeof keepCastVoice>>;
-  try {
-    result = await keepCastVoice({
-      userId: input.userId,
-      modelId: model.id,
-      previewId: resolved.previewId,
-      designSentence: resolved.designSentence,
-    });
-  } catch (error) {
-    /* A throw is not a refusal and the voices may still be keepable — the design
-       goes back before the error travels. */
-    restoreVoiceDesign(input.designId);
-    throw error;
+  if (!charged.ok) {
+    return { ok: false as const, refusal: charged.refusal, refunded: charged.refunded };
   }
-  if (!result.ok) {
-    /*
-      A REFUSED Keep gives the design back, so a provider outage or a spent
-      month does not also cost the customer three voices they could keep a
-      minute later. The one exception is a cast that is no longer there to keep a
-      voice for — nothing can ever be kept against it, so the handles stay gone.
-    */
-    if (result.refusal !== "cast_not_available") restoreVoiceDesign(input.designId);
-    return { ok: false as const, refusal: result.refusal };
-  }
-
-  /* The other two voices of this design can never be kept now — one voice per
-     cast — so the claim is made permanent rather than left restorable. */
-  forgetVoiceDesign(input.designId);
 
   return {
     ok: true as const,
     clipPath: voiceClipPath(input.castId),
-    byteSize: result.clipBytes,
+    byteSize: charged.value.clipBytes,
   };
 }

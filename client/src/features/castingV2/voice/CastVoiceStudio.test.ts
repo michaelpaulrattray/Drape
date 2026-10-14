@@ -73,6 +73,11 @@ function render(props: Partial<CastVoiceStudioPanelProps> = {}): string {
     onToggle: () => {},
     onMake: () => {},
     onKeep: () => {},
+    /* The real ledger prices the route serves (#2471). A fixture that omitted
+       them rendered a panel no customer can reach, and the omission is what
+       found the `undefined` the component now degrades on. */
+    designPriceCredits: 125,
+    keepPriceCredits: 500,
   };
   return renderToStaticMarkup(createElement(CastVoiceStudioPanel, { ...base, ...props }));
 }

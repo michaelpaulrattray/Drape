@@ -11935,6 +11935,20 @@
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "name": "CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "constant": "CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "credits": 125,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "name": "CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "constant": "CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "credits": 500,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
       "id": "cost:server/casting/castingCreditCosts.ts:CREDIT_COSTS.allViews",
       "name": "CREDIT_COSTS.allViews",
       "constant": "CREDIT_COSTS",
@@ -37605,6 +37619,16 @@
     },
     {
       "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -40390,6 +40414,11 @@
     },
     {
       "from": "module:shared/refundCopy.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/voiceCardCopy.ts",
       "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     }

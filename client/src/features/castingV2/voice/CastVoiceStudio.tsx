@@ -19,8 +19,13 @@ import {
   VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceKeepLabel,
+  voiceKeepPricedLabel,
   voiceKeptFoot,
   voiceLabel,
+  voiceMakeAgainLabel,
+  voiceMakeFailedText,
+  voiceKeepFailedText,
+  voiceNotEnoughCreditsText,
   voicePlayLabel,
 } from "@shared/voiceCardCopy";
 import {
@@ -159,6 +164,18 @@ export type CastVoiceStudioPanelProps = {
   onToggle: (key: string) => void;
   onMake: () => void;
   onKeep: (handle: string) => void;
+  /**
+   * What the two paid presses cost, in LEDGER credits as the server served
+   * them (#2471).
+   *
+   * ⚠ **Required, not optional, and that is the control.** The
+   * prices-on-paid-buttons law says a customer must never learn what something
+   * cost by being charged for it; an optional price is one a future render can
+   * silently omit. `null` is the honest "not read yet" and the button says the
+   * bare sentence for that moment only — the Sign button's own shape.
+   */
+  designPriceCredits: number | null;
+  keepPriceCredits: number | null;
 };
 
 /** The key a strip is addressed by. One spelling, used by both halves. */
@@ -181,6 +198,8 @@ export function CastVoiceStudioPanel({
   onToggle,
   onMake,
   onKeep,
+  designPriceCredits,
+  keepPriceCredits,
 }: CastVoiceStudioPanelProps) {
   /*
     THE DARK CARD, AND IT IS THE STUB'S OWN MARKUP.
@@ -279,7 +298,9 @@ export function CastVoiceStudioPanel({
                 disabled={working}
                 onClick={() => onKeep(choice.handle)}
               >
-                {voiceKeepLabel(index)}
+                {Number.isFinite(keepPriceCredits)
+                  ? voiceKeepPricedLabel(index, keepPriceCredits as number)
+                  : voiceKeepLabel(index)}
               </Button>
             </div>
           ))}
@@ -292,7 +313,9 @@ export function CastVoiceStudioPanel({
 
       <div className="dpc-voice__foot">
         <Button variant="quiet" size="small" disabled={working} onClick={onMake}>
-          {VOICE_MAKE_AGAIN}
+          {Number.isFinite(designPriceCredits)
+            ? voiceMakeAgainLabel(designPriceCredits as number)
+            : VOICE_MAKE_AGAIN}
         </Button>
         {refusal ? (
           <span className="dpc-voice__refusal" role="alert">{refusal}</span>
@@ -312,7 +335,27 @@ export function CastVoiceStudioPanel({
  * sentence rather than showing nothing — a refusal with no words is the silence
  * direction.
  */
-export function voiceRefusalSentence(refusal: string, during: "make" | "keep"): string {
+export function voiceRefusalSentence(
+  refusal: string,
+  during: "make" | "keep",
+  /**
+   * Did the credits come back? Defaults to TRUE because the two roads that
+   * never charge — an automatic design, and the dark card — are telling the
+   * truth when they say nothing was charged.
+   */
+  refunded = true,
+): string {
+  /*
+    ⚠ **THE MONEY COMES FIRST WHEN IT HAS NOT COME BACK, AND IT OUTRANKS EVERY
+    OTHER SENTENCE HERE (#2471).** Whatever was wrong with the voice, a customer
+    who is out of pocket needs to know that above all of it — and two of the
+    branches below would otherwise say nothing about money at all, which is a
+    lie by omission on a charged road. `atomicCredits`' own law: a refund that
+    failed to record is never reported as "you weren't charged".
+  */
+  if (!refunded) {
+    return during === "keep" ? voiceKeepFailedText(false) : voiceMakeFailedText(false);
+  }
   switch (refusal) {
     case "no_operations_left":
     case "no_slots_left":
@@ -339,6 +382,24 @@ function isTooSoon(error: unknown): boolean {
 }
 
 /**
+ * Was this refused because the balance could not pay for it?
+ *
+ * ⚠ **Read off the CODE, exactly as {@link isTooSoon} is, and the code is
+ * chosen by the server for this reason** — `server/lib/chargeRefusal.ts` answers
+ * `PRECONDITION_FAILED` for a short balance and something else for every other
+ * charge refusal, precisely so a surface can tell *"you need more credits"*
+ * apart from *"we could not take payment"* without parsing prose
+ * ([[spelling-not-meaning]]).
+ *
+ * The sentence is rendered locally from the price the card already holds rather
+ * than taken from the error, so every string on this card stays enumerable from
+ * `shared/voiceCardCopy.ts`.
+ */
+function isShortOfCredits(error: unknown): boolean {
+  return error instanceof TRPCClientError && error.data?.code === "PRECONDITION_FAILED";
+}
+
+/**
  * Which casts have already had their first three made in THIS page session.
  *
  * The design's *"the first three voices are made when the card first opens with
@@ -346,6 +407,18 @@ function isTooSoon(error: unknown): boolean {
  * re-mounts on navigation, and a design costs house money every time. Module
  * scope rather than component state is what makes leaving the room and coming
  * back free.
+ *
+ * ⚠ **IT STOPPED BEING THE CONTROL ON 2026-10-14 (#2471), AND IT IS KEPT
+ * BECAUSE IT IS STILL WORTH HAVING.** It was the only thing standing between a
+ * reload and another three voices on house money — and a reload empties a page
+ * session by definition, so it could never have been that. The bound now lives
+ * on the SERVER: one free automatic design per cast per day, keyed on the cast
+ * (`RATE_LIMITS.castingVoiceAutoDesignDaily`), where neither a reload nor a
+ * scripted caller can reach it.
+ *
+ * What this still earns is a pointless round trip avoided on a re-mount, which
+ * is a real saving and not a protection. **Do not read it as one**: anything
+ * that must actually be true about the free road is enforced where the money is.
  */
 const designedThisSession = new Set<string>();
 
@@ -375,6 +448,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
   /* `undefined` until the status lands, and only `false` suppresses the
      automatic design — an unanswered query must not look like a full account. */
   const canKeep = status.data?.canKeep;
+  /*
+    THE TWO PRICES, SERVED. `undefined` while the status query is in flight
+    becomes `null` — "not read yet" — and a button with no number says its bare
+    sentence for that moment rather than inventing a figure. A price literal here
+    would be the second copy working law 4 bans, on a money surface.
+  */
+  const price = status.data?.designPriceCredits ?? null;
+  const keepPrice = status.data?.keepPriceCredits ?? null;
 
   const releaseUrls = useCallback(() => {
     for (const url of Array.from(urls.current.values())) URL.revokeObjectURL(url);
@@ -531,7 +612,17 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
         /* An AUTOMATIC design says nothing on a refusal it did not ask for: the
            card falls back to its resting state with Make available, which is
            the honest shape. A PRESS always gets words. */
-        if (!automatic) setRefusal(voiceRefusalSentence(result.refusal, "make"));
+        if (!automatic) {
+          /*
+            ⚠ **THE MONEY'S OWN ANSWER PICKS THE SENTENCE (#2471).** A press is
+            charged, and a refused press is refunded — so the card may say
+            "nothing was charged" only when the refund actually recorded.
+            `refunded` is the server reading the ledger's reply, never an
+            assumption, and the automatic road reports `true` because it was
+            never charged at all.
+          */
+          setRefusal(voiceRefusalSentence(result.refusal, "make", result.refunded));
+        }
         return;
       }
       /* The previous design's blobs can never be kept now, so they are released
@@ -552,6 +643,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       if (isTooSoon(error)) {
         if (!automatic) setRefusal(VOICE_TOO_SOON);
         return;
+      }
+      /* Short of credits. Nothing was charged — the ledger refused before the
+         provider was ever called — so this says what to do, not what failed. */
+      if (isShortOfCredits(error)) {
+        if (!automatic && price !== null) {
+          setRefusal(voiceNotEnoughCreditsText(price, "make"));
+          return;
+        }
       }
       if (!automatic) setRefusal(VOICE_MAKE_FAILED);
     }
@@ -583,7 +682,7 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     try {
       const result = await keep.mutateAsync({ castId, designId, handle });
       if (!result.ok) {
-        setRefusal(voiceRefusalSentence(result.refusal, "keep"));
+        setRefusal(voiceRefusalSentence(result.refusal, "keep", result.refunded));
         return;
       }
       releaseUrls();
@@ -592,6 +691,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setBars({});
     } catch (error) {
       logRawFailure("castingV2.voice.keep", error);
+      if (isTooSoon(error)) {
+        setRefusal(VOICE_TOO_SOON);
+        return;
+      }
+      if (isShortOfCredits(error) && keepPrice !== null) {
+        setRefusal(voiceNotEnoughCreditsText(keepPrice, "keep"));
+        return;
+      }
       setRefusal(VOICE_KEEP_FAILED);
     } finally {
       void utils.castingV2.voice.status.invalidate({ castId });
@@ -602,7 +709,17 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     ? "keeping"
     : design.isPending ? "making" : choices.length > 0 ? "choosing" : "resting";
 
-  const panel = useMemo(() => ({ stripFor, onToggle: toggle, onMake: () => void make(), onKeep: (handle: string) => void onKeep(handle) }), [stripFor, toggle, make, onKeep]);
+  const panel = useMemo(
+    () => ({
+      stripFor,
+      onToggle: toggle,
+      onMake: () => void make(),
+      onKeep: (handle: string) => void onKeep(handle),
+      designPriceCredits: price,
+      keepPriceCredits: keepPrice,
+    }),
+    [stripFor, toggle, make, onKeep, price, keepPrice],
+  );
 
   return (
     <>
@@ -618,6 +735,8 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
         onToggle={panel.onToggle}
         onMake={panel.onMake}
         onKeep={panel.onKeep}
+        designPriceCredits={panel.designPriceCredits}
+        keepPriceCredits={panel.keepPriceCredits}
       />
       {/*
         ONE audio element for the whole card, so pressing a second voice stops

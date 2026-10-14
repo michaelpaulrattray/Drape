@@ -49,7 +49,27 @@ describe("deductCredits requires attribution (#401)", () => {
 
   it("the documented value set exists and holds the founder's kinds", async () => {
     const source = await readFile(CREDITS, "utf8");
-    expect(source).toMatch(/export type CreditToolKind = "image" \| "video" \| "text";/);
+    /*
+      ⚠ **THE SET GREW ON 2026-10-14 AND THAT IS THE FOUNDER'S OWN RULE, NOT A
+      BREACH OF THIS ARM** — his taxonomy above ends *"but it can grow"*.
+      "audio" is the casting studio's Voice card (#2471), the first charged
+      output that is none of the original three.
+
+      The arm still pins the EXACT declaration rather than asserting each member
+      is present separately, because what is worth catching is a kind added with
+      no author deciding what it means — and a loose per-member check would pass
+      on a union that had quietly LOST one.
+    */
+    expect(source).toMatch(
+      /export type CreditToolKind = "image" \| "video" \| "text" \| "audio";/,
+    );
+  });
+
+  it("positive control: the exact-declaration arm can fail — a dropped kind is caught", () => {
+    const dropped = 'export type CreditToolKind = "image" | "text" | "audio";';
+    expect(dropped).not.toMatch(
+      /export type CreditToolKind = "image" \| "video" \| "text" \| "audio";/,
+    );
   });
 
   it("withAtomicCredits requires a NON-NULL toolKind — everything through it is a tool charge", async () => {
