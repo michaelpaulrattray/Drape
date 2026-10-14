@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 208
+      "moduleCount": 209
     },
     {
       "id": "domain:castingV2",
@@ -47,7 +47,7 @@
     {
       "id": "domain:data",
       "name": "data",
-      "moduleCount": 73
+      "moduleCount": 74
     },
     {
       "id": "domain:evidence",
@@ -5005,6 +5005,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/voiceCardWriter.ts",
+      "path": "server/castingV2/voiceCardWriter.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/voiceDesignStore.ts",
       "path": "server/castingV2/voiceDesignStore.ts",
       "domain": "casting-v2",
@@ -5157,6 +5163,12 @@
     {
       "id": "module:server/db/castPersonaScope.ts",
       "path": "server/db/castPersonaScope.ts",
+      "domain": "data",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/db/castVoiceCards.ts",
+      "path": "server/db/castVoiceCards.ts",
       "domain": "data",
       "lifecycle": "active"
     },
@@ -15271,6 +15283,10 @@
       "path": "server/castingV2/vocabularyPin.test.ts"
     },
     {
+      "id": "test:server/castingV2/voiceCardWriter.test.ts",
+      "path": "server/castingV2/voiceCardWriter.test.ts"
+    },
+    {
       "id": "test:server/castingV2/voiceDesignStore.test.ts",
       "path": "server/castingV2/voiceDesignStore.test.ts"
     },
@@ -15657,6 +15673,10 @@
     {
       "id": "test:server/db/castPersonaWrite.test.ts",
       "path": "server/db/castPersonaWrite.test.ts"
+    },
+    {
+      "id": "test:server/db/castVoiceCards.test.ts",
+      "path": "server/db/castVoiceCards.test.ts"
     },
     {
       "id": "test:server/db/castVoices.test.ts",
@@ -26880,6 +26900,11 @@
     },
     {
       "from": "module:server/casting/finalCastDeletion.ts",
+      "to": "module:server/db/castVoiceCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/casting/finalCastDeletion.ts",
       "to": "module:server/db/castVoices.ts",
       "kind": "imports"
     },
@@ -28411,6 +28436,11 @@
     {
       "from": "module:server/castingV2/accountCastingPurge.ts",
       "to": "module:server/db/castingV2Variants.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/accountCastingPurge.ts",
+      "to": "module:server/db/castVoiceCards.ts",
       "kind": "imports"
     },
     {
@@ -33859,6 +33889,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/castingV2/judgeFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/db/castVoiceCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/providers/elevenlabsVoice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/providers/openrouterText.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/providers/providerQueue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceCardWriter.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/voiceService.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -33866,6 +33931,21 @@
     {
       "from": "module:server/castingV2/voiceService.ts",
       "to": "module:server/castingV2/voiceAuditionPassage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/castingV2/voiceCardWriter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/voiceService.ts",
+      "to": "module:server/db/castVoiceCards.ts",
       "kind": "imports"
     },
     {
@@ -34821,6 +34901,21 @@
     {
       "from": "module:server/db/castPersonaScope.ts",
       "to": "module:server/db/castPersonaField.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoiceCards.ts",
+      "to": "module:drizzle/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoiceCards.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/db/castVoiceCards.ts",
+      "to": "module:server/db/connection.ts",
       "kind": "imports"
     },
     {

@@ -137,6 +137,13 @@ export const REFUSING_KEYS: readonly string[] = [
      says so. The provider's design request carries it, so a provider error
      echoing the request body is exactly the event this list exists to refuse. */
   "designSentence",
+  /* A cast's hidden voice card and its in-character line (#2498,
+     `cast_voice_cards.voiceCard` / `.previewLine`) — real columns the design
+     writes, derived from the brief and the master picture, so the recipe's
+     family. The card is the voice provider's request body, so a provider error
+     echoing it is exactly the event this list refuses. */
+  "voiceCard",
+  "previewLine",
 ];
 
 const REFUSING_KEY_SET = new Set(REFUSING_KEYS.map((key) => key.toLowerCase()));

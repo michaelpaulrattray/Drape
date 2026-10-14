@@ -44,6 +44,14 @@ describe("R7-5C final Cast deletion source contracts", () => {
     expect(implementation).not.toMatch(/from ["']\.\.\/storage["']/);
   });
 
+  it("deletes the cast's hidden voice card (#2498) inside the transaction, before the tombstone", () => {
+    const implementation = source("server/casting/finalCastDeletion.ts");
+    const executor = implementation.slice(implementation.indexOf("export async function executeFinalCastDeletion"));
+    const call = executor.indexOf("await deleteCastVoiceCardsIn(tx, { userId: input.userId, modelId: input.modelId });");
+    expect(call).toBeGreaterThan(-1);
+    expect(call).toBeLessThan(executor.indexOf("const tombstoned = await tx.update(models)"));
+  });
+
   it("exposes a free preview and one atomic ceremony behind every door", () => {
     /*
       The door moved, the authority did not. Casting V2 needs the same permanent

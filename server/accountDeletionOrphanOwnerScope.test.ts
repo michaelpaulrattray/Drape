@@ -646,3 +646,14 @@ describe("a child row under another customer's live candidate survives the erasu
     ).toEqual([]);
   });
 });
+
+describe("the account purge erases the hidden voice cards (#2498)", () => {
+  it("sends an owner-scoped delete of every card and counts it", async () => {
+    const result = await runPurge();
+    const deletes = sent.filter((statement) => /^delete from `cast_voice_cards`/.test(statement.sql));
+    expect(deletes).toHaveLength(1);
+    expect(deletes[0].sql).toMatch(/where `cast_voice_cards`\.`userId` = \?$/);
+    expect(deletes[0].params).toEqual([USER_ID]);
+    expect(result.counts.castVoiceCards).toBe(1);
+  });
+});

@@ -119,6 +119,15 @@ function seed(): void {
     { id: 3, modelId: 80_001, userId: STRANGER, recordVersion: "1", recordJson: '{"kliegId":"STRANGER-RECORD"}', recordSha256: "3".repeat(64),
       signature: "h..s", signingKeyId: "kid", timestampToken: null, timestampAuthority: null, stampedAt: null, createdAt: STAMP },
   ];
+  /* The hidden voice cards (#2498), on the records' three shapes. */
+  tables.cast_voice_cards = [
+    { id: 1, modelId: 70_002, userId: OWNER, voiceCard: "OWNER-CARD", previewLine: "OWNER-LINE", writtenAt: STAMP,
+      sourceHash: "9".repeat(64), writerModel: "x-ai/grok-4.7" },
+    { id: 2, modelId: 80_001, userId: OWNER, voiceCard: "MISSTAMPED-CARD", previewLine: "x", writtenAt: STAMP,
+      sourceHash: "8".repeat(64), writerModel: "x-ai/grok-4.7" },
+    { id: 3, modelId: 80_001, userId: STRANGER, voiceCard: "STRANGER-CARD", previewLine: "x", writtenAt: STAMP,
+      sourceHash: "7".repeat(64), writerModel: "x-ai/grok-4.7" },
+  ];
   tables.model_assets = [];
   tables.model_reference_plates = [];
   tables.model_evidence_crops = [];
@@ -180,5 +189,39 @@ describe("the export carries the customer's creation records", () => {
   it("⚠ RE-ANCHORING — a row with the caller's id on someone else's cast is dropped", async () => {
     const data = await callerFor(OWNER).exportData();
     expect(JSON.stringify(data.creationRecords)).not.toContain("MISSTAMPED");
+  });
+});
+
+/*
+  THE HIDDEN VOICE CARD IS OUT OF THE EXPORT — the relay's finding 5 on PR
+  #2500, which reversed this suite's own arms before that PR merged. These used
+  to assert the card WAS exported; they assert the opposite now, and the reason
+  is in `gdprExport.ts` beside the recipe's note: the card is written by our
+  prompt from the brief and the master picture, so it is the recipe's family,
+  and whether a recipe belongs in an export is a question nobody has put to the
+  founder.
+
+  ⚠ **THE FIXTURE ROWS ARE KEPT ON PURPOSE** — an absence arm over an empty
+  table passes for the wrong reason, which is the shape this repository has been
+  bitten by (law 2). The control below proves the rows are there to be leaked.
+*/
+describe("the export leaves the hidden voice card out (#2498)", () => {
+  it("⚠ POSITIVE CONTROL — the card IS in the fixture and the cast IS in the export, so the absence below is the export's doing", async () => {
+    expect(tables.cast_voice_cards.some((row) => row.userId === OWNER && row.voiceCard === "OWNER-CARD")).toBe(true);
+    const data = await callerFor(OWNER).exportData();
+    expect(JSON.stringify(data)).toContain(OWNER_CAST_B);
+  });
+
+  it("carries no voice card and no in-character line anywhere in the document", async () => {
+    const data = await callerFor(OWNER).exportData();
+    expect(data).not.toHaveProperty("voiceCards");
+    const document = JSON.stringify(data);
+    expect(document).not.toContain("OWNER-CARD");
+    expect(document).not.toContain("OWNER-LINE");
+  });
+
+  it("⚠ never reads the table at all — not read and dropped, but never asked for", async () => {
+    await callerFor(OWNER).exportData();
+    expect(sent.find((entry) => entry.table === "cast_voice_cards")).toBeUndefined();
   });
 });

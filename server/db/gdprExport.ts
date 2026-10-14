@@ -196,6 +196,27 @@ export interface GdprExportData {
     clipBytes: number;
     keptAt: string;
   }>;
+  /*
+    ⚠ **THE HIDDEN VOICE CARD (#2498) IS DELIBERATELY NOT HERE, and it was for
+    one day** — PR #2500 added it, and the relay's finding 5 took it back out
+    before that PR merged. Its reasoning for including it is kept, because it is
+    not silly: the card is written from the customer's own brief and their
+    master picture, so it is data about them, and unlike `masterPrompt` it
+    describes a voice rather than a way to rebuild the cast.
+
+    What overturns it is this file's own standing decision three fields up: the
+    recipe (`masterPrompt`, `technicalSchema`, `preferences`) is absent because
+    whether a recipe belongs in an export is **a question nobody has put to the
+    founder**. The voice card is written BY OUR PROMPT from exactly those
+    sources — the brief and the picture — so it is the same family and the same
+    unanswered question, and answering it quietly by shipping one of them is
+    what this note refuses. The audition clip's bytes sit out for the same kind
+    of reason, two fields down, and say so.
+
+    Nothing is lost by its absence that the customer cannot already see: the
+    voice line and their own sentence behind it are on `models` above, and the
+    card is a thing the product never shows them.
+  */
   evidence: {
     referencePlates: Array<{
       kind: string;
