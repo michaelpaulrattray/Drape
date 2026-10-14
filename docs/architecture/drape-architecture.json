@@ -16567,6 +16567,10 @@
       "path": "server/referralInviteCreditScale.test.ts"
     },
     {
+      "id": "test:server/referralInviteRepeat.test.ts",
+      "path": "server/referralInviteRepeat.test.ts"
+    },
+    {
       "id": "test:server/refineEchoWidth.test.ts",
       "path": "server/refineEchoWidth.test.ts"
     },
