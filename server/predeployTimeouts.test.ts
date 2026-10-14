@@ -10,11 +10,15 @@ import { describe, expect, it } from "vitest";
 import {
   eventsFromConnection,
   isReadOnlyDocument,
+  judgeDeployLog,
   judgeDeployment,
+  logLinesFromResponse,
+  LOG_LINES_SHOWN,
   makeQuery,
   pickTarget,
   projectsFromMe,
   reachedPredeploy,
+  renderDeployLog,
   renderReading,
   summarize,
   type FetchLike,
@@ -112,6 +116,116 @@ describe("summarize / renderReading", () => {
   it("a reading cut short by --limit says so", () => {
     expect(renderReading(summarize([]), "Drape", true)).toContain("the --limit was reached");
     expect(renderReading(summarize([]), "Drape", false)).not.toContain("the --limit was reached");
+  });
+});
+
+/* ───────── #2501 step 3 · the log beside the count, and the control on it ───────── */
+
+/**
+ * `deploymentLogs(deploymentId: "9b3ef98d-…")` as Railway answered it on
+ * 2026-10-14, copied line for line. This is the incident: three pre-deploy
+ * lines ending on the verdict, and then nothing for ten minutes.
+ */
+const TIMEOUT_LOG = [
+  { timestamp: "2026-10-14T15:08:50.407383993Z", message: "Starting Container" },
+  { timestamp: "2026-10-14T15:08:50.963398745Z", message: "predeploy: mysql.railway.internal:3306/railway" },
+  { timestamp: "2026-10-14T15:08:50.963401858Z", message: "[db] mysql.railway.internal:3306/railway" },
+  { timestamp: "2026-10-14T15:08:50.963404721Z", message: "  nothing pending — the service holds everything the code declares" },
+];
+
+describe("#2501 step 3 · judgeDeployLog — zero lines is three different facts", () => {
+  it("POSITIVE: the real 9b3ef98d log reads as READ, with its four lines", () => {
+    const verdict = judgeDeployLog(logLinesFromResponse(TIMEOUT_LOG), []);
+    expect(verdict.kind).toBe("read");
+    expect(verdict.kind === "read" && verdict.lines).toHaveLength(4);
+  });
+
+  it("⚠ THE CORRECTION: empty with an empty same-day control is PAST RETENTION, not silence", () => {
+    /* The 2026-09-09 timeout returned zero lines and a hand reading took that
+       for a container that printed nothing. Twelve same-day deployments were
+       empty too — the day is gone. This is the arm that keeps the wrong
+       reading from coming back. */
+    expect(judgeDeployLog([], [{ id: "213eee0b-aaaa", lines: [] }])).toEqual({
+      kind: "past-retention",
+      controlId: "213eee0b-aaaa",
+    });
+  });
+
+  it("⚠ AND THE OTHER WAY: empty while the day is readable IS a silent container", () => {
+    expect(judgeDeployLog([], [{ id: "74fb050f-bbbb", lines: TIMEOUT_LOG }])).toEqual({
+      kind: "silent",
+      controlId: "74fb050f-bbbb",
+    });
+  });
+
+  it("ONE readable control settles it — a silent control cannot turn a live day into a dead one", () => {
+    /* The order is deliberately worst-case: the empty control comes first. */
+    expect(judgeDeployLog([], [
+      { id: "empty000-0000", lines: [] },
+      { id: "haslines-0000", lines: TIMEOUT_LOG },
+    ]).kind).toBe("silent");
+  });
+
+  it("FAIL-CLOSED: empty with no readable control is UNDECIDED, never one of the two", () => {
+    expect(judgeDeployLog([], []).kind).toBe("undecided");
+    expect(judgeDeployLog([], [{ id: "x", lines: null }]).kind).toBe("undecided");
+    expect(judgeDeployLog([], []).kind).not.toBe("past-retention");
+    expect(judgeDeployLog([], []).kind).not.toBe("silent");
+  });
+
+  it("a failed log query is UNREAD and carries the API's own message", () => {
+    expect(judgeDeployLog(null, [], "Not Authorized")).toEqual({ kind: "unread", why: "Not Authorized" });
+  });
+
+  it("logLinesFromResponse: a non-array answer is null, and a malformed row is dropped not guessed", () => {
+    expect(logLinesFromResponse(undefined)).toBeNull();
+    expect(logLinesFromResponse({ nope: 1 })).toBeNull();
+    expect(logLinesFromResponse([])).toEqual([]);
+    expect(logLinesFromResponse([{ message: "a" }, { timestamp: "t" }, null])).toEqual([{ timestamp: null, message: "a" }]);
+  });
+});
+
+describe("#2501 step 3 · the reading prints the words under the row", () => {
+  const timeout = (log?: ReturnType<typeof judgeDeployLog>): Judged => {
+    const parsed = eventsFromConnection(TIMED_OUT);
+    return {
+      id: "9b3ef98d-1ba5",
+      status: "FAILED",
+      createdAt: "2026-10-14T15:04:42.499Z",
+      commitHash: "74dfca76587dc857f12ccc9c3c1c47fe0920600e",
+      verdict: judgeDeployment(parsed),
+      reachedPredeploy: reachedPredeploy(parsed),
+      ...(log ? { log } : {}),
+    };
+  };
+
+  it("the verdict line the card is waiting on reaches the reading", () => {
+    const text = renderReading(summarize([timeout(judgeDeployLog(logLinesFromResponse(TIMEOUT_LOG), []))]), "Drape");
+    expect(text).toContain("held 611s");
+    expect(text).toContain("log (4 line(s))");
+    expect(text).toContain("nothing pending — the service holds everything the code declares");
+  });
+
+  it("an aged-out log says GONE and says it cannot be diagnosed — not an empty space", () => {
+    const text = renderReading(summarize([timeout(judgeDeployLog([], [{ id: "213eee0b-aaaa", lines: [] }]))]), "Drape");
+    expect(text).toContain("GONE — past Railway's log retention");
+    expect(text).toContain("213eee0b");
+    expect(text).not.toContain("printed nothing");
+  });
+
+  it("a timeout nobody fetched a log for prints no log line at all, and the count still stands", () => {
+    const text = renderReading(summarize([timeout()]), "Drape");
+    expect(text).toContain("pre-deploy TIMED OUT: 1");
+    expect(text).not.toContain("log");
+  });
+
+  it("⚠ the dump is CAPPED and the cap is visible, so it can never read as the whole log", () => {
+    const many = Array.from({ length: LOG_LINES_SHOWN + 5 }, (_, i) => ({ timestamp: null, message: `line ${i}` }));
+    const lines = renderDeployLog(judgeDeployLog(many, []));
+    expect(lines[0]).toContain(`log (${LOG_LINES_SHOWN + 5} line(s), first ${LOG_LINES_SHOWN} shown)`);
+    expect(lines).toHaveLength(LOG_LINES_SHOWN + 1);
+    expect(lines.join("\n")).toContain(`line ${LOG_LINES_SHOWN - 1}`);
+    expect(lines.join("\n")).not.toContain(`line ${LOG_LINES_SHOWN}`);
   });
 });
 

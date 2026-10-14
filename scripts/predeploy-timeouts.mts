@@ -1,10 +1,19 @@
 /**
- * HOW OFTEN DOES THE PRE-DEPLOY TIME OUT? — #2501 step 2 ("Count it").
+ * HOW OFTEN DOES THE PRE-DEPLOY TIME OUT, AND WHAT DID EACH ONE SAY?
+ * — #2501 steps 2 ("Count it") and 3 ("Then diagnose").
  *
  * Lists the Drape service's recent Railway deployments and counts those whose
  * pre-deploy command timed out, with dates, beside the total in the same
- * window. Every verdict is made in `scripts/lib/predeployTimeouts.mts`, driven
- * by `server/predeployTimeouts.test.ts`; this file is the door to the API.
+ * window — and prints each timeout's OWN DEPLOY LOG under its row. Every
+ * verdict is made in `scripts/lib/predeployTimeouts.mts`, driven by
+ * `server/predeployTimeouts.test.ts`; this file is the door to the API.
+ *
+ * ⚠ **THE LOG IS WHY STEP 3 LIVES HERE.** Railway holds a deployment's log
+ * about thirty days (measured 2026-10-14, a sharp edge at 2026-09-13/14), and
+ * the watchdog's diagnosis — the one line that will ever name what held the
+ * process — is printed nowhere else. One of the three timeouts step 2 found is
+ * already past that wall. See the lib header's step 3 section; an empty log is
+ * never reported as a silent container without a same-day control saying so.
  *
  * # READ-ONLY, at the wire
  *
@@ -29,7 +38,9 @@ import path from "node:path";
 import {
   eventsFromConnection,
   makeQuery,
+  judgeDeployLog,
   judgeDeployment,
+  logLinesFromResponse,
   reachedPredeploy,
   pickTarget,
   projectsFromMe,
@@ -38,6 +49,8 @@ import {
   type FetchLike,
   type Judged,
   type ListedDeployment,
+  type LogControl,
+  type LogLine,
 } from "./lib/predeployTimeouts.mts";
 
 const ENDPOINT = "https://backboard.railway.com/graphql/v2";
@@ -131,6 +144,54 @@ async function judgeAll(rows: ListedDeployment[]): Promise<Judged[]> {
   return judged;
 }
 
+/**
+ * ONE DEPLOYMENT'S LOG. `null` on any failure — the judging half decides what
+ * an empty answer and an unreadable one each mean, and this returns the
+ * API's own message with it so a refusal is diagnosable.
+ */
+async function readLog(id: string): Promise<{ lines: LogLine[] | null; why: string }> {
+  try {
+    const data = await query<Record<string, unknown>>(
+      `query { l: deploymentLogs(deploymentId: ${JSON.stringify(id)}, limit: 500) { timestamp message } }`,
+    );
+    return { lines: logLinesFromResponse(data.l), why: "the API answered a shape this cannot read" };
+  } catch (err) {
+    return { lines: null, why: (err as Error).message };
+  }
+}
+
+/** How many same-day controls to try. See `judgeDeployLog`: one with lines settles it. */
+const CONTROLS_PER_TIMEOUT = 3;
+
+/**
+ * STEP 3 — THE WORDS, FETCHED ONLY FOR A TIMEOUT.
+ *
+ * Three rows in 1,430, so the cost is three queries plus their controls rather
+ * than one per deployment. The controls are other deployments from the SAME DAY
+ * that reached the pre-deploy step, which is a fact `judgeAll` already read —
+ * no second events query — and they are what tells an aged-out log from a
+ * container that printed nothing. The subject itself is never its own control.
+ */
+async function attachLogs(judged: Judged[]): Promise<void> {
+  const dayOf = (iso: string) => iso.slice(0, 10);
+  for (const row of judged) {
+    if (row.verdict.kind !== "predeploy-timeout") continue;
+    const subject = await readLog(row.id);
+    const controls: LogControl[] = [];
+    if (subject.lines !== null && subject.lines.length === 0) {
+      const candidates = judged.filter(
+        (other) => other.id !== row.id && other.reachedPredeploy && dayOf(other.createdAt) === dayOf(row.createdAt),
+      );
+      for (const candidate of candidates.slice(0, CONTROLS_PER_TIMEOUT)) {
+        controls.push({ id: candidate.id, lines: (await readLog(candidate.id)).lines });
+        /* One control with lines proves the day readable; stop asking. */
+        if (controls[controls.length - 1]!.lines?.length) break;
+      }
+    }
+    row.log = judgeDeployLog(subject.lines, controls, subject.why);
+  }
+}
+
 async function main(): Promise<void> {
   const want = {
     project: arg("project", "drape-production"),
@@ -142,6 +203,7 @@ async function main(): Promise<void> {
   const ids = pickTarget(projectsFromMe(await query(PROJECTS)), want);
   const rows = await listDeployments(ids, limit);
   const judged = await judgeAll(rows);
+  await attachLogs(judged);
   console.log(renderReading(summarize(judged), want.service, rows.length >= limit));
 }
 
