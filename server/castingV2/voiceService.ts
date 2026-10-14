@@ -235,13 +235,38 @@ async function holdClipForWrite(input: {
  * Nothing here logs the words, the card or the line — only that a card was
  * written, how long it took, and what it cost in tokens.
  */
+type VoiceCardResult =
+  | { ok: true; voiceCard: string; previewLine: string }
+  | { ok: false; refusal: VoiceRefusal; failureClass?: string };
+
+/**
+ * ONE WRITER CALL PER CAST PER SET OF WORDS, IN THIS PROCESS — the relay's
+ * finding 1 on PR #2500. A card now takes about thirty seconds to write, and
+ * two designs of one cast arrive inside that window as a matter of course: the
+ * automatic design when the Voice card opens, and a press or a second tab while
+ * it is still thinking. Each used to pay the writer, and then the two writes
+ * collided on the unique `modelId`. **The second caller awaits the first
+ * instead**, so the house pays once and both get the same card.
+ *
+ * ⚠ **THE KEY CARRIES THE SOURCE HASH, NOT ONLY THE CAST.** Keyed on the cast
+ * alone, a customer who rewrites their voice line mid-design would be handed
+ * the card written from the OLD wording — the collapse has to be of identical
+ * work, not merely of concurrent work.
+ *
+ * Two limits, both stated rather than left to be found. **A joiner inherits the
+ * leader's cancellation**: were the leader's request abandoned, the joiner
+ * would meet the writer's refusal. No production call site passes a signal
+ * today (`routes/castingVoice.ts` calls `designCastVoices` with none), so this
+ * is a shape to know about and not a live hazard. And **one process's Map is
+ * not a house-wide fact** — two processes across a deploy can still both write,
+ * which is exactly why the statement underneath is an upsert and not a lock.
+ */
+const voiceCardWritesInFlight = new Map<string, Promise<VoiceCardResult>>();
+
 async function ensureVoiceCard(
   input: { userId: number; modelId: number; signal?: AbortSignal },
   deps: VoiceServiceDeps | undefined,
-): Promise<
-  | { ok: true; voiceCard: string; previewLine: string }
-  | { ok: false; refusal: VoiceRefusal; failureClass?: string }
-> {
+): Promise<VoiceCardResult> {
   const sources = await readCastVoiceCardSources(input.userId, input.modelId);
   if (!sources) return { ok: false, refusal: "cast_not_available" };
 
@@ -258,6 +283,35 @@ async function ensureVoiceCard(
     return { ok: true, voiceCard: kept.voiceCard, previewLine: kept.previewLine };
   }
 
+  const key = `${input.userId}:${input.modelId}:${sourceHash}`;
+  const alreadyWriting = voiceCardWritesInFlight.get(key);
+  if (alreadyWriting) {
+    log.info({ modelId: input.modelId }, "[Voice] a card for these words is already being written — waiting on it");
+    return alreadyWriting;
+  }
+  const writing = writeAndKeepVoiceCard(
+    { ...input, sources, pictureKey, sourceHash, rewriting: Boolean(kept) },
+    deps,
+  ).finally(() => {
+    voiceCardWritesInFlight.delete(key);
+  });
+  voiceCardWritesInFlight.set(key, writing);
+  return writing;
+}
+
+/** The expensive half, behind {@link voiceCardWritesInFlight}. */
+async function writeAndKeepVoiceCard(
+  input: {
+    userId: number;
+    modelId: number;
+    signal?: AbortSignal;
+    sources: Awaited<ReturnType<typeof readCastVoiceCardSources>> & object;
+    pictureKey: string | null;
+    sourceHash: string;
+    rewriting: boolean;
+  },
+  deps: VoiceServiceDeps | undefined,
+): Promise<VoiceCardResult> {
   const writer = deps && "cardWriter" in deps ? deps.cardWriter ?? null : voiceCardWriterEngine();
   if (!writer) {
     log.error("[Voice] no voice card writer on this deployment — design refused before any spend");
@@ -265,9 +319,9 @@ async function ensureVoiceCard(
   }
 
   let picture: ReferenceImage | null = null;
-  if (pictureKey) {
+  if (input.pictureKey) {
     try {
-      picture = await (deps?.readPicture ?? storageReadBytes)(pictureKey);
+      picture = await (deps?.readPicture ?? storageReadBytes)(input.pictureKey);
     } catch (error) {
       /* The key is not logged: on the public bucket it is the credential. */
       log.warn({ errName: (error as Error)?.name, modelId: input.modelId }, "[Voice] master picture bytes unreadable — card written from the words");
@@ -276,7 +330,7 @@ async function ensureVoiceCard(
 
   let written: Awaited<ReturnType<typeof writeVoiceCard>>;
   try {
-    written = await writeVoiceCard({ sources, picture, engine: writer, signal: input.signal });
+    written = await writeVoiceCard({ sources: input.sources, picture, engine: writer, signal: input.signal });
   } catch (error) {
     if (error instanceof ProviderError) {
       log.warn({ failureClass: error.failureClass, status: error.status }, "[Voice] card writer refused");
@@ -285,14 +339,51 @@ async function ensureVoiceCard(
     throw error;
   }
 
-  const saved = await saveCastVoiceCard({
-    userId: input.userId,
-    modelId: input.modelId,
-    sourceHash,
-    voiceCard: written.voiceCard,
-    previewLine: written.previewLine,
-    writerModel: written.writerModel,
-  });
+  /*
+    THE CARD IS KEPT UNDER THE HASH OF WHAT IT WAS ACTUALLY WRITTEN FROM — the
+    relay's finding 2 on PR #2500. The picture can fall away twice between the
+    hash and the ask: its bytes may not read (just above), or `boundForJudge`
+    may throw inside the writer. Keyed on the picture's storage key regardless,
+    a words-only card was filed under the with-picture hash and then reused for
+    the life of the cast — the picture bought and never read, with nothing left
+    that would ever try again. Keyed honestly, the NEXT design re-writes it with
+    the picture.
+
+    Its cost, named: a cast whose picture is permanently unreadable re-writes on
+    every design instead of once. That is bounded by the design ration (one free
+    set per cast a day), it is the honest consequence of a broken picture, and
+    the other way round is a cast whose voices never see its face.
+  */
+  const keptUnder = written.withPicture ? input.sourceHash : voiceCardSourceHash(input.sources, null);
+
+  let saved: Awaited<ReturnType<typeof saveCastVoiceCard>>;
+  try {
+    saved = await saveCastVoiceCard({
+      userId: input.userId,
+      modelId: input.modelId,
+      sourceHash: keptUnder,
+      voiceCard: written.voiceCard,
+      previewLine: written.previewLine,
+      writerModel: written.writerModel,
+    });
+  } catch (error) {
+    /*
+      THE WRITER IS ALREADY PAID, SO A FAILED KEEP DOES NOT REFUSE THE DESIGN —
+      the other half of finding 1. The statement is an upsert now and cannot
+      collide on itself, but a dropped connection or a deadlock elsewhere in the
+      transaction would once have left this unhandled and answered a 500. The
+      card is in hand: the voices are designed from it and it is simply not
+      kept, so the only cost is that the next design writes another one.
+      `written: false` below is the different answer and stays a refusal — it
+      means the cast itself is gone, and designing voices for a deleted cast is
+      not a kindness.
+    */
+    log.error(
+      { errName: (error as Error)?.name, modelId: input.modelId },
+      "[Voice] the voice card could not be kept — designing from it anyway, unkept",
+    );
+    return { ok: true, voiceCard: written.voiceCard, previewLine: written.previewLine };
+  }
   if (!saved.written) return { ok: false, refusal: "cast_not_available" };
 
   log.info(
@@ -300,8 +391,8 @@ async function ensureVoiceCard(
       modelId: input.modelId,
       latencyMs: written.latencyMs,
       tokens: written.tokens,
-      withPicture: Boolean(picture),
-      rewritten: Boolean(kept),
+      withPicture: written.withPicture,
+      rewritten: input.rewriting,
     },
     "[Voice] voice card written",
   );

@@ -42,7 +42,6 @@ const OWNER_PREDICATE: Record<string, string> = {
   cast_campaigns: "`cast_campaigns`.`userId` = ?",
   cast_campaign_members: "`cast_campaign_members`.`userId` = ?",
   cast_creation_records: "`cast_creation_records`.`userId` = ?",
-  cast_voice_cards: "`cast_voice_cards`.`userId` = ?",
 };
 
 const fakeClient = {
@@ -193,23 +192,36 @@ describe("the export carries the customer's creation records", () => {
   });
 });
 
-describe("the export carries the customer's hidden voice cards (#2498)", () => {
-  it("exports the owner's card and line keyed by public cast id, without our hash or the writer's slug", async () => {
+/*
+  THE HIDDEN VOICE CARD IS OUT OF THE EXPORT — the relay's finding 5 on PR
+  #2500, which reversed this suite's own arms before that PR merged. These used
+  to assert the card WAS exported; they assert the opposite now, and the reason
+  is in `gdprExport.ts` beside the recipe's note: the card is written by our
+  prompt from the brief and the master picture, so it is the recipe's family,
+  and whether a recipe belongs in an export is a question nobody has put to the
+  founder.
+
+  ⚠ **THE FIXTURE ROWS ARE KEPT ON PURPOSE** — an absence arm over an empty
+  table passes for the wrong reason, which is the shape this repository has been
+  bitten by (law 2). The control below proves the rows are there to be leaked.
+*/
+describe("the export leaves the hidden voice card out (#2498)", () => {
+  it("⚠ POSITIVE CONTROL — the card IS in the fixture and the cast IS in the export, so the absence below is the export's doing", async () => {
+    expect(tables.cast_voice_cards.some((row) => row.userId === OWNER && row.voiceCard === "OWNER-CARD")).toBe(true);
     const data = await callerFor(OWNER).exportData();
-    expect(data.voiceCards).toEqual([{
-      castId: OWNER_CAST_B,
-      voiceCard: "OWNER-CARD",
-      previewLine: "OWNER-LINE",
-      writtenAt: expect.any(String),
-    }]);
-    expect(JSON.stringify(data.voiceCards)).not.toMatch(/grok|9{64}/);
+    expect(JSON.stringify(data)).toContain(OWNER_CAST_B);
   });
 
-  it("⚠ NEGATIVE — another account's card never appears, and a misstamped row is dropped", async () => {
+  it("carries no voice card and no in-character line anywhere in the document", async () => {
     const data = await callerFor(OWNER).exportData();
-    expect(JSON.stringify(data.voiceCards)).not.toMatch(/STRANGER-CARD|MISSTAMPED-CARD/);
-    const statement = sent.find((entry) => entry.table === "cast_voice_cards");
-    expect(statement?.sql).toContain("`cast_voice_cards`.`userId` = ?");
-    expect(statement?.params[0]).toBe(OWNER);
+    expect(data).not.toHaveProperty("voiceCards");
+    const document = JSON.stringify(data);
+    expect(document).not.toContain("OWNER-CARD");
+    expect(document).not.toContain("OWNER-LINE");
+  });
+
+  it("⚠ never reads the table at all — not read and dropped, but never asked for", async () => {
+    await callerFor(OWNER).exportData();
+    expect(sent.find((entry) => entry.table === "cast_voice_cards")).toBeUndefined();
   });
 });

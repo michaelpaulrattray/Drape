@@ -5,8 +5,10 @@
  *
  *   1. the source read binds the OWNER on the cast AND on the roll it joins, so
  *      a cast can never borrow another account's brief (invariant 2);
- *   2. the write is an `INSERT … SELECT` over the owner's live signed cast, and
- *      the old row's delete is owner-scoped in the same transaction;
+ *   2. the write is ONE `INSERT … SELECT … ON DUPLICATE KEY UPDATE` over the
+ *      owner's live signed cast — no delete, no transaction, nothing two
+ *      concurrent designs of one cast can collide on (the relay's finding 1 on
+ *      PR #2500);
  *   3. the card and its line travel as BOUND PARAMETERS, never interpolated;
  *   4. both deletion doors carry the owner in their own `WHERE`.
  */
@@ -23,6 +25,16 @@ const CARD = "Native English. Female, 30s. Studio quality. Persona: it's 'certai
 
 const sent: Array<{ sql: string; params: unknown[] }> = [];
 let insertAffected = 1;
+/**
+ * What a `SELECT` on the card table answers — the upsert's read-back.
+ *
+ * POSITIONAL, not an object, in the select's own order (`sourceHash`,
+ * `voiceCard`, `previewLine`): drizzle's mysql2 driver maps a row to the
+ * selected fields BY POSITION and this pool answers with no `fields` metadata,
+ * so an object row reads as every column `undefined`. `castVoices.test.ts`
+ * carries the same note for the same reason — and it bit here first time.
+ */
+let keptRow: [string, string, string] | null = null;
 
 const recordingPool = {
   query(...args: unknown[]) {
@@ -31,7 +43,7 @@ const recordingPool = {
     const params = (args[1] as unknown[]) ?? (typeof config === "string" ? [] : config.values ?? []);
     sent.push({ sql, params });
     const rows = /^\s*select/i.test(sql)
-      ? []
+      ? (keptRow && /from `cast_voice_cards`/.test(sql) ? [keptRow] : [])
       : { affectedRows: /^\s*insert/i.test(sql) ? insertAffected : 1 };
     const callback = args.find((argument) => typeof argument === "function") as
       | ((error: unknown, rows: unknown, fields: unknown) => void)
@@ -75,6 +87,7 @@ const WRITE = {
 beforeEach(() => {
   sent.length = 0;
   insertAffected = 1;
+  keptRow = null;
 });
 
 describe("the hidden voice card's statements", () => {
@@ -96,20 +109,61 @@ describe("the hidden voice card's statements", () => {
     expect(params).toEqual(expect.arrayContaining([MODEL_ID, USER_ID]));
   });
 
-  it("writes as INSERT … SELECT over the owner's live signed cast, the old row deleted owner-scoped first, the card BOUND", async () => {
+  it("writes as ONE INSERT … SELECT over the owner's live signed cast, with the card BOUND", async () => {
     expect(await saveCastVoiceCard(WRITE)).toEqual({ written: true });
-    const deleted = sent.find((statement) => /^\s*delete/i.test(statement.sql));
-    const inserted = sent.find((statement) => /^\s*insert/i.test(statement.sql));
-    expect(deleted?.sql).toMatch(/`cast_voice_cards`\.`modelId` = \? and `cast_voice_cards`\.`userId` = \?/);
-    expect(inserted?.sql).toMatch(/insert into `cast_voice_cards` .*select/i);
-    expect(inserted?.sql).toMatch(/`models`\.`userId` = \?/);
-    expect(inserted?.sql).not.toContain(CARD);
-    expect(inserted?.params).toContain(CARD);
-    expect(inserted?.params).toContain(USER_ID);
+    expect(sent, "one statement — the two-statement window was the collision").toHaveLength(1);
+    const [inserted] = sent;
+    expect(inserted.sql).toMatch(/insert into `cast_voice_cards` .*select/i);
+    expect(inserted.sql).toMatch(/`models`\.`userId` = \?/);
+    expect(inserted.sql).toMatch(/`models`\.`deletedAt` is null/);
+    expect(inserted.sql).not.toContain(CARD);
+    expect(inserted.params).toContain(CARD);
+    expect(inserted.params).toContain(USER_ID);
+  });
+
+  /*
+    ⚠ **NO DELETE, AND NO TRANSACTION** — the relay's finding 1 on PR #2500.
+    `modelId` is UNIQUE, so delete-then-insert put two statements between two
+    concurrent designs of one cast and one of them met `ER_DUP_ENTRY` or a
+    deadlock, which nothing caught. This arm is the one that would catch the
+    two-statement shape coming back.
+  */
+  it("⚠ never deletes, and takes the collision as a no-op in the statement itself", async () => {
+    await saveCastVoiceCard(WRITE);
+    expect(sent.find((statement) => /^\s*delete/i.test(statement.sql))).toBeUndefined();
+    expect(sent[0].sql.toLowerCase()).toContain("on duplicate key update");
+    /* The owner it just proved is written again, so a stale one is corrected. */
+    expect(sent[0].sql).toMatch(/on duplicate key update .*`userId`/i);
+  });
+
+  it("an UPDATE rather than an insert is a write — MySQL answers 2, and nothing is re-read", async () => {
+    insertAffected = 2;
+    expect(await saveCastVoiceCard(WRITE)).toEqual({ written: true });
+    expect(sent).toHaveLength(1);
   });
 
   it("a cast gone before the write lands nothing and says so", async () => {
     insertAffected = 0;
+    expect(await saveCastVoiceCard(WRITE)).toEqual({ written: false });
+  });
+
+  /*
+    ZERO AFFECTED ROWS IS THE ONE AMBIGUOUS ANSWER — both "no owned live signed
+    cast" and "the row already held exactly this", which MySQL counts as
+    nothing. It is READ rather than reasoned about.
+  */
+  it("⚠ zero rows with the card already holding this hash is a WRITE, read at the row", async () => {
+    insertAffected = 0;
+    keptRow = [WRITE.sourceHash, CARD, WRITE.previewLine];
+    expect(await saveCastVoiceCard(WRITE)).toEqual({ written: true });
+    const readBack = sent.filter((statement) => /^\s*select/i.test(statement.sql));
+    expect(readBack, "the ambiguity is resolved by asking, not by assuming").toHaveLength(1);
+    expect(readBack[0].params).toEqual(expect.arrayContaining([MODEL_ID, USER_ID]));
+  });
+
+  it("⚠ CONTROL — zero rows with a DIFFERENT hash on the row is not a write", async () => {
+    insertAffected = 0;
+    keptRow = ["b".repeat(64), CARD, WRITE.previewLine];
     expect(await saveCastVoiceCard(WRITE)).toEqual({ written: false });
   });
 

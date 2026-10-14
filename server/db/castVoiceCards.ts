@@ -16,7 +16,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { castingRolls, castVoiceCards, models } from "../../drizzle/schema";
-import { getDb, withTransaction, type TransactionHandle } from "./connection";
+import { getDb, type TransactionHandle } from "./connection";
 import { signedCastWhere } from "./castingV2Sign";
 
 async function requireDb() {
@@ -107,9 +107,26 @@ export async function readCastVoiceCard(
  *
  * ⚠ **THE OWNED-AND-LIVE PROOF IS IN THE INSERT ITSELF** — an `INSERT … SELECT`
  * out of `signedCastWhere`, because the writer call takes tens of seconds and
- * the cast can be deleted inside it. The old row is removed in the same
- * transaction, so a lost insert (cast gone) rolls the delete back too and the
- * answer is `written: false`.
+ * the cast can be deleted inside it. A `SELECT` that matches nothing writes
+ * nothing, and the answer is `written: false`.
+ *
+ * ⚠ **IT IS AN UPSERT, AND IT USED TO BE DELETE-THEN-INSERT IN A TRANSACTION**
+ * (the relay's finding 1 on PR #2500). `modelId` is UNIQUE, so two designs of
+ * one cast arriving together — the automatic one on opening the Voice card,
+ * which now takes about thirty seconds, and a press or a second tab inside it —
+ * each deleted and each inserted, and one of them met `ER_DUP_ENTRY` or a
+ * deadlock. Neither is `CastVoiceCardNotWritten`, the only error that was
+ * caught, so the customer got a 500 where the card has a trouble sentence
+ * ready. `ON DUPLICATE KEY UPDATE` makes the collision a no-op in ONE statement
+ * instead, which is this repository's own shape for it
+ * (`castCampaigns.ts`'s member add). **The transaction is gone with the delete**
+ * — a single statement is atomic, and the two-statement window was the whole
+ * reason there was one.
+ *
+ * The duplicate branch cannot be reached by an account that does not own the
+ * cast: with no owned live signed cast the `SELECT` yields no row, so there is
+ * nothing to conflict with and the clause never fires. `userId` is in the SET
+ * for that reason — it can only ever write the owner it just proved.
  */
 export async function saveCastVoiceCard(input: {
   userId: number;
@@ -121,39 +138,47 @@ export async function saveCastVoiceCard(input: {
 }): Promise<{ written: boolean }> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
-  await requireDb();
-  try {
-    return await withTransaction(async (tx) => {
-      await tx.delete(castVoiceCards).where(and(
-        eq(castVoiceCards.modelId, input.modelId),
-        eq(castVoiceCards.userId, input.userId),
-      ));
-      const result = await tx.insert(castVoiceCards).select(
-        tx
-          .select({
-            id: sql<number>`NULL`.as("id"),
-            modelId: models.id,
-            userId: models.userId,
-            /* BOUND VALUES, never interpolation. */
-            sourceHash: sql<string>`${input.sourceHash}`.as("sourceHash"),
-            voiceCard: sql<string>`${input.voiceCard}`.as("voiceCard"),
-            previewLine: sql<string>`${input.previewLine}`.as("previewLine"),
-            writerModel: sql<string>`${input.writerModel}`.as("writerModel"),
-            writtenAt: sql<Date>`CURRENT_TIMESTAMP`.as("writtenAt"),
-          })
-          .from(models)
-          .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
-      );
-      if (affectedRows(result) !== 1) throw new CastVoiceCardNotWritten();
-      return { written: true };
+  const db = await requireDb();
+  const result = await db
+    .insert(castVoiceCards)
+    .select(
+      db
+        .select({
+          id: sql<number>`NULL`.as("id"),
+          modelId: models.id,
+          userId: models.userId,
+          /* BOUND VALUES, never interpolation. */
+          sourceHash: sql<string>`${input.sourceHash}`.as("sourceHash"),
+          voiceCard: sql<string>`${input.voiceCard}`.as("voiceCard"),
+          previewLine: sql<string>`${input.previewLine}`.as("previewLine"),
+          writerModel: sql<string>`${input.writerModel}`.as("writerModel"),
+          writtenAt: sql<Date>`CURRENT_TIMESTAMP`.as("writtenAt"),
+        })
+        .from(models)
+        .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
+    )
+    .onDuplicateKeyUpdate({
+      set: {
+        userId: sql<number>`${input.userId}`,
+        sourceHash: sql<string>`${input.sourceHash}`,
+        voiceCard: sql<string>`${input.voiceCard}`,
+        previewLine: sql<string>`${input.previewLine}`,
+        writerModel: sql<string>`${input.writerModel}`,
+        writtenAt: sql<Date>`CURRENT_TIMESTAMP`,
+      },
     });
-  } catch (error) {
-    if (error instanceof CastVoiceCardNotWritten) return { written: false };
-    throw error;
-  }
+  /*
+    MySQL answers 1 for an inserted row and 2 for an updated one, so anything
+    at or above 1 wrote. ZERO IS THE ONE AMBIGUOUS ANSWER — it is both "no owned
+    live signed cast" and "the row already held exactly these values" (an
+    update that changes nothing counts nothing). It is not resolved by
+    reasoning: the row is read back, and a card already carrying this hash was
+    written, whoever's call wrote it.
+  */
+  if (affectedRows(result) >= 1) return { written: true };
+  const kept = await readCastVoiceCard(input.userId, input.modelId);
+  return { written: kept?.sourceHash === input.sourceHash };
 }
-
-class CastVoiceCardNotWritten extends Error {}
 
 function affectedRows(result: unknown): number {
   const header = Array.isArray(result) ? result[0] : result;
