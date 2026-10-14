@@ -4,9 +4,11 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "@/foundation";
 import { trpc } from "@/lib/trpc";
 import { logRawFailure } from "@/lib/failureSentence";
+import { TRPCClientError } from "@trpc/client";
 import {
   VOICE_CANNOT_KEEP,
   VOICE_CHOICES_LABEL,
+  VOICE_CLIP_WONT_PLAY,
   VOICE_KEEP_FAILED,
   VOICE_KEPT_HINT,
   VOICE_LINE_TOO_SHORT,
@@ -14,6 +16,7 @@ import {
   VOICE_MAKE_FAILED,
   VOICE_MAKING_LOADER,
   VOICE_NEEDS_A_LINE,
+  VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceKeepLabel,
   voiceKeptFoot,
@@ -214,6 +217,18 @@ export function CastVoiceStudioPanel({
         <div className="dpc-voice__foot">
           <span className="dpc-voice__name">{voiceKeptFoot(name)}</span>
           <span className="dpc-rcard__hint">{VOICE_KEPT_HINT}</span>
+          {/*
+            ⚠ **THIS BRANCH HAD NOWHERE TO PUT A REFUSAL, WHICH WOULD HAVE MADE
+            HALF OF #2470's ITEM 6 INERT** — found by the arm written for that
+            item, not by reading. The kept card is exactly where a play failure
+            happens: it is the only state whose audio comes down over the clip
+            route, so a sentence set by the player's `onError` had to render
+            HERE or nowhere. The resting branches below already had a foot that
+            draws it.
+          */}
+          {refusal ? (
+            <span className="dpc-voice__refusal" role="alert">{refusal}</span>
+          ) : null}
         </div>
       </>
     );
@@ -312,6 +327,18 @@ export function voiceRefusalSentence(refusal: string, during: "make" | "keep"): 
 }
 
 /**
+ * Was this refused because too many voices were asked for too fast?
+ *
+ * ⚠ **Read off the tRPC error's own CODE, never its message** — the rate
+ * limiter's prose is not a contract and the class
+ * [[spelling-not-meaning]] names what keying on it costs. The same reading
+ * `main.tsx` uses to keep the retry policy off a limited request.
+ */
+function isTooSoon(error: unknown): boolean {
+  return error instanceof TRPCClientError && error.data?.code === "TOO_MANY_REQUESTS";
+}
+
+/**
  * Which casts have already had their first three made in THIS page session.
  *
  * The design's *"the first three voices are made when the card first opens with
@@ -345,6 +372,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
   const available = status.data?.available === true;
   const kept = status.data?.kept ?? null;
   const hasLine = status.data?.hasLine === true;
+  /* `undefined` until the status lands, and only `false` suppresses the
+     automatic design — an unanswered query must not look like a full account. */
+  const canKeep = status.data?.canKeep;
 
   const releaseUrls = useCallback(() => {
     for (const url of Array.from(urls.current.values())) URL.revokeObjectURL(url);
@@ -470,7 +500,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
         source = await sourceFor(key);
       } catch (error) {
         logRawFailure("voiceClip.fetch", error);
-        setRefusal(VOICE_KEEP_FAILED);
+        /* The clip would not come down. Nothing was kept or lost by this press,
+           so it says the play sentence rather than the Keep's. */
+        setRefusal(VOICE_CLIP_WONT_PLAY);
         return;
       }
       if (!source) return;
@@ -484,18 +516,22 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       void element.play().catch((error) => {
         logRawFailure("voiceClip.play", error);
         setPlayingKey(null);
+        setRefusal(VOICE_CLIP_WONT_PLAY);
       });
     })();
   }, [bars, measure, playingKey, sourceFor]);
 
-  const make = useCallback(async () => {
+  const make = useCallback(async (automatic = false) => {
     setRefusal(null);
     audio.current?.pause();
     setPlayingKey(null);
     try {
-      const result = await design.mutateAsync({ castId });
+      const result = await design.mutateAsync({ castId, automatic });
       if (!result.ok) {
-        setRefusal(voiceRefusalSentence(result.refusal, "make"));
+        /* An AUTOMATIC design says nothing on a refusal it did not ask for: the
+           card falls back to its resting state with Make available, which is
+           the honest shape. A PRESS always gets words. */
+        if (!automatic) setRefusal(voiceRefusalSentence(result.refusal, "make"));
         return;
       }
       /* The previous design's blobs can never be kept now, so they are released
@@ -506,7 +542,18 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setChoices(result.voices);
     } catch (error) {
       logRawFailure("castingV2.voice.design", error);
-      setRefusal(VOICE_MAKE_FAILED);
+      /*
+        ⚠ **THE LIMIT IS NOT A FAILURE, AND THE CARD USED TO SAY IT WAS**
+        (#2470's finding, item 4). Opening a thirteenth cast in an hour threw
+        here, and `VOICE_MAKE_FAILED` told the customer to *try again* on a road
+        where trying again failed identically. An automatic design swallows it —
+        nobody asked — and a press gets the honest *in a little while*.
+      */
+      if (isTooSoon(error)) {
+        if (!automatic) setRefusal(VOICE_TOO_SOON);
+        return;
+      }
+      if (!automatic) setRefusal(VOICE_MAKE_FAILED);
     }
   }, [castId, design, releaseUrls]);
 
@@ -514,10 +561,19 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
      session — see `designedThisSession` for why that is not per mount. */
   useEffect(() => {
     if (!available || !hasLine || kept || choices.length > 0) return;
+    /*
+      ⚠ **NOTHING IS DESIGNED WHEN NOTHING COULD BE KEPT** (#2470's finding,
+      item 5). `canKeep` is the server's cached, fail-open read of the house
+      allowance: with no slot and no operation left, three voices would be made
+      on house money and then refused at the press, so the card simply waits and
+      offers Make. The Keep's own live read is still the gate that protects the
+      spend.
+    */
+    if (canKeep === false) return;
     if (designedThisSession.has(castId)) return;
     designedThisSession.add(castId);
-    void make();
-  }, [available, hasLine, kept, choices.length, castId, make]);
+    void make(true);
+  }, [available, hasLine, kept, canKeep, choices.length, castId, make]);
 
   const onKeep = useCallback(async (handle: string) => {
     if (!designId) return;
@@ -582,7 +638,15 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
           setPlayingKey(null);
           setPosition(0);
         }}
-        onError={() => setPlayingKey(null)}
+        /*
+          ⚠ **A KEPT CLIP THAT WILL NOT PLAY SAYS SO** (#2470's finding, item
+          6). This used to release the button and nothing else, which reads as a
+          product that ignored the press.
+        */
+        onError={() => {
+          setPlayingKey(null);
+          setRefusal(VOICE_CLIP_WONT_PLAY);
+        }}
       />
     </>
   );

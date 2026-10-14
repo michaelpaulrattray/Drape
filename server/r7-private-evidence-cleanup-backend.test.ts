@@ -187,6 +187,10 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // retired there is no writer, and `keepSegmentsFromRender` was proven
       // structurally unable to file a row on the live road before it was cut.
       "server/castingV2/signService.ts",
+      /* #2470's repair: the kept voice clip's write-ahead hold, named
+         `public_r2` at its one item — the bytes stay in the public bucket,
+         because the private evidence store accepts `image/webp` alone. */
+      "server/castingV2/voiceService.ts",
       // The kept scan's ROW-FILING statement, and it is the second manifest on
       // that road rather than a duplicate of the one above. `keepScan` registers
       // the NEW stencils before they exist; this one registers the stencils of

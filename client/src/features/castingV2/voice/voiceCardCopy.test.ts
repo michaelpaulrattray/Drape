@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  VOICE_CANNOT_KEEP,
   VOICE_CARD_FIXED_STRINGS,
+  VOICE_CLIP_WONT_PLAY,
   VOICE_MAKE_AGAIN,
+  VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceCardEveryString,
   voiceKeepLabel,
@@ -156,6 +159,63 @@ describe("the labels are his design's", () => {
        with the charge, and this arm is what that card edits. */
     expect(VOICE_MAKE_AGAIN).toBe("Make new voices from this text");
     expect(VOICE_MAKE_AGAIN).not.toMatch(/\d/);
+  });
+});
+
+/**
+ * THE SENTENCES #2470's FINDING CORRECTED — items 4, 5 and 6.
+ *
+ * Each of the three was a sentence that said something untrue or said nothing
+ * at all, and each arm is about the PROMISE rather than the phrasing: a copy
+ * arm pinned to an exact string is a change-detector, but a copy arm pinned to
+ * what a sentence may not claim survives a rewrite and still catches the
+ * defect coming back.
+ */
+describe("the refusals say what is true", () => {
+  it("⚠ DOES NOT PROMISE THE MADE VOICES WILL STILL BE THERE", () => {
+    /*
+      It said *"The ones you made will still be here — try Keep again later"*.
+      The handles live in an in-process store a deploy empties, and a preview is
+      only known saveable for about fifty seconds, so *later* they are reliably
+      gone. The sentence now promises nothing about persistence and names the
+      one thing that works instead.
+    */
+    expect(VOICE_CANNOT_KEEP).not.toMatch(/still be (here|there)|will still|are still/i);
+    expect(VOICE_CANNOT_KEEP).toMatch(/make them again/i);
+  });
+
+  it("⚠ TELLS A LIMITED PRESS TO WAIT, rather than to try the thing that just failed", () => {
+    /*
+      The limit is per hour, so a bare *try again* invites the press that fails
+      identically — which is exactly what the generic failure sentence did when
+      the automatic design hit the press limit.
+    */
+    expect(VOICE_TOO_SOON).toMatch(/little while/i);
+    expect(VOICE_TOO_SOON).not.toMatch(/try again\.?$/i);
+    /* It names no number: twelve an hour is our pacing of house money, not a
+       fact a customer has any use for. */
+    expect(VOICE_TOO_SOON).not.toMatch(/\d/);
+  });
+
+  it("⚠ HAS WORDS AT ALL FOR A CLIP THAT WILL NOT PLAY", () => {
+    /*
+      The press used to release the button and say nothing, which reads as a
+      product that ignored you. It must also not blame the network or name a
+      bucket — the machinery is not the customer's to read.
+    */
+    expect(VOICE_CLIP_WONT_PLAY.trim().length).toBeGreaterThan(0);
+    expect(VOICE_CLIP_WONT_PLAY).not.toMatch(/network|bucket|storage|url|cdn|fetch|404|500/i);
+  });
+
+  it("all three are inside the population the no-technology reader walks", () => {
+    /*
+      The reader's own population, not a second list — a new sentence that the
+      vendor-and-pronoun reader never sees is a sentence nobody checked.
+    */
+    const every = voiceCardEveryString();
+    for (const sentence of [VOICE_CANNOT_KEEP, VOICE_TOO_SOON, VOICE_CLIP_WONT_PLAY]) {
+      expect(every).toContain(sentence);
+    }
   });
 });
 

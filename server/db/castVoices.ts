@@ -16,9 +16,16 @@
  */
 import { and, eq, sql } from "drizzle-orm";
 
-import { castVoices, models, type CastVoiceRow } from "../../drizzle/schema";
-import { getDb, type TransactionHandle } from "./connection";
+import {
+  castVoices,
+  models,
+  storageCleanupBatches,
+  storageCleanupItems,
+  type CastVoiceRow,
+} from "../../drizzle/schema";
+import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
+import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
 
 /*
   The roster's own predicate, imported statically.
@@ -108,6 +115,16 @@ export async function readCastVoice(
 }
 
 /**
+ * The write-ahead manifest was not there to discharge — an invariant violation
+ * rather than a race, since the same Keep created it moments earlier. Exported
+ * so a driver can assert it by type instead of on a message.
+ */
+export class CastVoiceManifestUndischargeable extends Error {}
+
+/** The row did not land: the cast went away, or a second Keep won the index. */
+class CastVoiceRowNotWritten extends Error {}
+
+/**
  * Write the kept voice.
  *
  * ⚠ **THE OWNED-AND-LIVE PROOF IS IN THE INSERT ITSELF**, not in a `SELECT`
@@ -133,38 +150,86 @@ export async function insertCastVoice(input: {
   clipBytes: number;
   clipContentType: string;
   passageVersion: number;
+  /**
+   * THE WRITE-AHEAD MANIFEST HOLDING THIS CLIP'S BYTES, discharged in the SAME
+   * transaction that writes the row — the keeper-receipt pattern, and the same
+   * shape `recordReferenceAttachment` uses.
+   *
+   * The clip is in the public bucket before this statement runs, named by a
+   * manifest and by no row. Discharging it here is what makes the bytes the
+   * row's rather than the worker's, and doing it in this transaction is the
+   * whole of it: until this commits, a crash leaves the manifest standing and
+   * the worker collects bytes nothing references, which is correct.
+   */
+  cleanupBatchId: string;
 }): Promise<{ inserted: boolean }> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
-  const db = await requireDb();
+  await requireDb();
 
   try {
-    const result = await db.insert(castVoices).select(
-      db
-        .select({
-          id: sql<number>`NULL`.as("id"),
-          modelId: models.id,
-          userId: models.userId,
-          /*
-            BOUND VALUES, never interpolation. The design sentence is a
-            customer's own writing and travels as a parameter; `sql` with a
-            `${}` placeholder is what makes that true.
-          */
-          designSentence: sql<string>`${input.designSentence}`.as("designSentence"),
-          voiceId: sql<string | null>`${input.voiceId}`.as("voiceId"),
-          clipStorageKey: sql<string>`${input.clipStorageKey}`.as("clipStorageKey"),
-          clipSha256: sql<string>`${input.clipSha256}`.as("clipSha256"),
-          clipBytes: sql<number>`${input.clipBytes}`.as("clipBytes"),
-          clipContentType: sql<string>`${input.clipContentType}`.as("clipContentType"),
-          passageVersion: sql<number>`${input.passageVersion}`.as("passageVersion"),
-          lastUsedAt: sql<Date | null>`NULL`.as("lastUsedAt"),
-          keptAt: sql<Date>`CURRENT_TIMESTAMP`.as("keptAt"),
-        })
-        .from(models)
-        .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
-    );
-    return { inserted: affectedRows(result) === 1 };
+    return await withTransaction(async (tx) => {
+      const result = await tx.insert(castVoices).select(
+        tx
+          .select({
+            id: sql<number>`NULL`.as("id"),
+            modelId: models.id,
+            userId: models.userId,
+            /*
+              BOUND VALUES, never interpolation. The design sentence is a
+              customer's own writing and travels as a parameter; `sql` with a
+              `${}` placeholder is what makes that true.
+            */
+            designSentence: sql<string>`${input.designSentence}`.as("designSentence"),
+            voiceId: sql<string | null>`${input.voiceId}`.as("voiceId"),
+            clipStorageKey: sql<string>`${input.clipStorageKey}`.as("clipStorageKey"),
+            clipSha256: sql<string>`${input.clipSha256}`.as("clipSha256"),
+            clipBytes: sql<number>`${input.clipBytes}`.as("clipBytes"),
+            clipContentType: sql<string>`${input.clipContentType}`.as("clipContentType"),
+            passageVersion: sql<number>`${input.passageVersion}`.as("passageVersion"),
+            lastUsedAt: sql<Date | null>`NULL`.as("lastUsedAt"),
+            keptAt: sql<Date>`CURRENT_TIMESTAMP`.as("keptAt"),
+          })
+          .from(models)
+          .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
+      );
+      /*
+        A zero-row insert is the deleted-cast race the docblock above describes.
+        It THROWS rather than returning, so the transaction rolls back and the
+        manifest is left standing — the bytes stay the worker's, and the caller
+        deletes them immediately besides.
+      */
+      if (affectedRows(result) !== 1) throw new CastVoiceRowNotWritten();
+
+      /*
+        The discharge is scoped to the OWNER and to an UNDISCHARGED batch, and a
+        count of anything but one throws. A discharge that silently affected
+        zero rows would leave the worker holding a live clip's bytes while this
+        call reported success — the one outcome worse than an orphan.
+      */
+      await tx
+        .delete(storageCleanupItems)
+        .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+      const released = await tx.delete(storageCleanupBatches).where(and(
+        eq(storageCleanupBatches.id, input.cleanupBatchId),
+        eq(storageCleanupBatches.userId, input.userId),
+        undischargedStorageCleanupBatchWhere(),
+      ));
+      if (affectedRows(released) !== 1) {
+        /*
+          Not a race and not a customer's problem: this manifest was created by
+          this same Keep moments ago. It rolls back and propagates, because
+          dressing an invariant violation up as a lost race is how one goes
+          unnoticed.
+        */
+        throw new CastVoiceManifestUndischargeable(
+          "the kept voice's write-ahead manifest was not there to discharge",
+        );
+      }
+      return { inserted: true };
+    });
   } catch (error) {
+    if (error instanceof CastVoiceRowNotWritten) return { inserted: false };
     if (isDuplicateKey(error)) return { inserted: false };
     throw error;
   }

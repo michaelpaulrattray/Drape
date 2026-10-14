@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   VOICE_CANNOT_KEEP,
+  VOICE_CLIP_WONT_PLAY,
   VOICE_KEPT_HINT,
   VOICE_MAKE_AGAIN,
   VOICE_MAKING_LOADER,
@@ -227,5 +228,23 @@ describe("a refusal says what to do", () => {
   it("tells a failed make from a failed keep", () => {
     expect(voiceRefusalSentence("provider_failed", "make"))
       .not.toBe(voiceRefusalSentence("provider_failed", "keep"));
+  });
+
+  /* The card number lives in this comment and not in the title: the token guard
+     reads a bare #NNNN in a STRING as a hex colour, and 2470 is a valid one —
+     the same reason the copy suite's price arm carries its number this way. */
+  it("⚠ DRAWS THE PLAY FAILURE'S OWN SENTENCE — the finding's item 6", () => {
+    /*
+      #2470, item 6. A kept clip that would not play used to release the button
+      and say nothing. The wiring that sets this is the audio element's `onError` and
+      the play promise's `catch` in the wired card; what this arm proves is the
+      other half — that the panel has somewhere to PUT the sentence, so the
+      wiring is not writing into a state nothing renders.
+    */
+    const html = render({
+      kept: { clipPath: "/api/cast/KI-A/voice-clip" },
+      refusal: VOICE_CLIP_WONT_PLAY,
+    });
+    expect(html).toContain(asMarkup(VOICE_CLIP_WONT_PLAY));
   });
 });

@@ -265,6 +265,28 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_voice_design',
   },
   /*
+    THE FIRST THREE, MADE WHEN A CARD OPENS — its own bucket, and the reason is
+    a defect this limiter caused (#2470's finding, item 4).
+
+    The card designs three voices automatically on open, so OPENING casts was
+    spending the press limit above: a thirteenth signed cast in an hour threw
+    `TOO_MANY_REQUESTS`, the card turned it into *"Those voices didn't come
+    through… try again"*, and trying again failed the same way. Browsing is not
+    pressing, and it must never be able to refuse a press.
+
+    ⚠ **SO IT IS A SECOND BUCKET AND NOT A LIFTED LIMIT.** House money is still
+    bounded — thirty automatic designs an hour is about $0.30 at the measured
+    $0.01 a design — and the twelve presses above are now untouchable by
+    browsing. The alternative, letting the automatic road spend nothing, leaves
+    the house ceiling to the flag alone, which is the one thing #2470 could not
+    rely on once the flag opens.
+  */
+  castingVoiceAutoDesign: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 30,
+    keyPrefix: 'casting_voice_auto_design',
+  },
+  /*
     KEEPING A VOICE — its own bucket, and TIGHTER than the design's, because
     what it spends is the genuinely scarce thing.
 

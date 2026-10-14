@@ -24,6 +24,7 @@ import {
   keepVoiceForCard,
   readVoiceCardStatus,
   voiceCastInput,
+  voiceDesignInput,
   voiceKeepInput,
 } from "./castingVoice";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
@@ -956,8 +957,12 @@ const voiceRouter = router({
     .query(({ ctx, input }) => readVoiceCardStatus({ userId: ctx.user.id, castId: input.castId })),
 
   design: protectedProcedure
-    .input(voiceCastInput)
-    .mutation(({ ctx, input }) => designVoicesForCard({ userId: ctx.user.id, castId: input.castId })),
+    .input(voiceDesignInput)
+    .mutation(({ ctx, input }) => designVoicesForCard({
+      userId: ctx.user.id,
+      castId: input.castId,
+      automatic: input.automatic,
+    })),
 
   keep: protectedProcedure
     .input(voiceKeepInput)

@@ -5,11 +5,17 @@ import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLim
 import { captureCastingV2Enabled, captureCastingVoiceEnabled } from "../castingV2/castingV2Scope";
 import { getOwnedCastByPublicId } from "../db/castingV2Sign";
 import { readCastVoice } from "../db/castVoices";
-import { designCastVoices, keepCastVoice, type VoiceRefusal } from "../castingV2/voiceService";
 import {
+  designCastVoices,
+  keepCastVoice,
+  readVoiceKeepability,
+  type VoiceRefusal,
+} from "../castingV2/voiceService";
+import {
+  claimVoiceDesignHandle,
   forgetVoiceDesign,
   rememberVoiceDesign,
-  resolveVoiceDesignHandle,
+  restoreVoiceDesign,
 } from "../castingV2/voiceDesignStore";
 import { voiceClipPath } from "../../shared/voiceClipDelivery";
 
@@ -162,6 +168,22 @@ async function requireCast(userId: number, castId: string) {
    mounting point (working law 4). Every one is `.strict()` (invariant 4). */
 
 export const voiceCastInput = z.object({ castId: castIdInput }).strict();
+
+/**
+ * The design's input — the cast, and whether this was a PRESS or the card
+ * opening.
+ *
+ * ⚠ **`automatic` is OPTIONAL, and that is a deploy-skew rule rather than
+ * convenience** (`CLAUDE.md`'s removal contract, read the other way): `.strict()`
+ * rejects an UNKNOWN key and says nothing about a MISSING optional one, so a
+ * bundle loaded before this ships and omitting it still works against the new
+ * server. It defaults to a PRESS, which is the stricter bucket of the two — a
+ * caller that does not say gets the twelve-an-hour limit, never the thirty.
+ */
+export const voiceDesignInput = z.object({
+  castId: castIdInput,
+  automatic: z.boolean().optional(),
+}).strict();
 export const voiceKeepInput = z.object({
   castId: castIdInput,
   designId: z.string().uuid(),
@@ -184,14 +206,25 @@ export async function readVoiceCardStatus(input: { userId: number; castId: strin
   if (!captureCastingV2Enabled(input.userId) || !captureCastingVoiceEnabled(input.userId)) {
     /* Dark: the card draws nothing at all rather than an empty voice panel
        (the `PublicCheckCard` precedent). */
-    return { available: false as const, hasLine: false, kept: null };
+    return { available: false as const, hasLine: false, canKeep: false, kept: null };
   }
   enforce(input.userId, RATE_LIMITS.castingRead);
   const model = await requireCast(input.userId, input.castId);
   const kept = await readCastVoice(input.userId, model.id);
+  /*
+    ⚠ **`canKeep` IS WHY THE CARD NO LONGER DESIGNS VOICES NOBODY CAN KEEP**
+    (#2470's finding, item 5). It is a cached, fail-open hint about the HOUSE
+    account's allowance — never the gate, which stays a live read inside Keep —
+    and it is read only for a cast that could actually design: a cast with a
+    kept voice already has what it needs, and one with no line has nothing to
+    make from, so neither spends a provider round trip on this.
+  */
+  const needsKeepability = !kept && Boolean(model.voice && model.voice.trim().length > 0);
+  const canKeep = needsKeepability ? (await readVoiceKeepability()).canKeep : true;
   return {
     available: true as const,
     hasLine: Boolean(model.voice && model.voice.trim().length > 0),
+    canKeep,
     kept: kept
       ? {
           clipPath: voiceClipPath(input.castId),
@@ -216,9 +249,24 @@ export async function readVoiceCardStatus(input: { userId: number; castId: strin
  * (`VoicePreview`'s own rule), so each voice answers to an opaque handle and
  * only the server can turn one back into a provider id.
  */
-export async function designVoicesForCard(input: { userId: number; castId: string }) {
+export async function designVoicesForCard(input: {
+  userId: number;
+  castId: string;
+  automatic?: boolean;
+}) {
   requireVoiceRoad(input.userId);
-  enforce(input.userId, RATE_LIMITS.castingVoiceDesign);
+  /*
+    ⚠ **TWO BUCKETS, AND BROWSING MAY NOT SPEND A PRESS** (#2470's finding,
+    item 4). The card designs three voices when it opens, so the press limit was
+    being spent by OPENING casts: a thirteenth signed cast in an hour refused,
+    and the refusal read as *"try again"* on a road where trying again failed
+    identically. The automatic road has its own, larger bucket; house money
+    stays bounded by both.
+  */
+  enforce(
+    input.userId,
+    input.automatic ? RATE_LIMITS.castingVoiceAutoDesign : RATE_LIMITS.castingVoiceDesign,
+  );
   const model = await requireCast(input.userId, input.castId);
 
   const result = await designCastVoices({ userId: input.userId, modelId: model.id });
@@ -271,7 +319,14 @@ export async function keepVoiceForCard(input: {
   enforce(input.userId, RATE_LIMITS.castingVoiceKeep);
   const model = await requireCast(input.userId, input.castId);
 
-  const resolved = resolveVoiceDesignHandle({
+  /*
+    ⚠ **CLAIMED, NOT RESOLVED — AND THE DIFFERENCE IS ONE OF THE ACCOUNT'S 95
+    MONTHLY VOICE OPERATIONS.** The claim takes the design out of reach in the
+    same indivisible step that reads it, so a double-press, a retry or a second
+    tab cannot both reach the provider's save. It is put back below if the Keep
+    does not land.
+  */
+  const resolved = claimVoiceDesignHandle({
     userId: input.userId,
     modelId: model.id,
     designId: input.designId,
@@ -279,25 +334,42 @@ export async function keepVoiceForCard(input: {
   });
   if (!resolved) {
     /*
-      The handle expired, was never ours, or belongs to another cast. The
-      customer-facing answer is the same as a failed design — make them again —
-      because that is the only thing that can be done about it, and the three
-      cases must not be told apart to a caller holding a handle it should not
-      have.
+      The handle expired, was never ours, belongs to another cast, or a press
+      that got here first is still in flight. The customer-facing answer is the
+      same as a failed design — make them again — because that is the only thing
+      that can be done about it, and the cases must not be told apart to a
+      caller holding a handle it should not have.
     */
     return { ok: false as const, refusal: "provider_failed" as VoiceRefusal };
   }
 
-  const result = await keepCastVoice({
-    userId: input.userId,
-    modelId: model.id,
-    previewId: resolved.previewId,
-    designSentence: resolved.designSentence,
-  });
-  if (!result.ok) return { ok: false as const, refusal: result.refusal };
+  let result: Awaited<ReturnType<typeof keepCastVoice>>;
+  try {
+    result = await keepCastVoice({
+      userId: input.userId,
+      modelId: model.id,
+      previewId: resolved.previewId,
+      designSentence: resolved.designSentence,
+    });
+  } catch (error) {
+    /* A throw is not a refusal and the voices may still be keepable — the design
+       goes back before the error travels. */
+    restoreVoiceDesign(input.designId);
+    throw error;
+  }
+  if (!result.ok) {
+    /*
+      A REFUSED Keep gives the design back, so a provider outage or a spent
+      month does not also cost the customer three voices they could keep a
+      minute later. The one exception is a cast that is no longer there to keep a
+      voice for — nothing can ever be kept against it, so the handles stay gone.
+    */
+    if (result.refusal !== "cast_not_available") restoreVoiceDesign(input.designId);
+    return { ok: false as const, refusal: result.refusal };
+  }
 
   /* The other two voices of this design can never be kept now — one voice per
-     cast — so the handles are dropped rather than left resolvable. */
+     cast — so the claim is made permanent rather than left restorable. */
   forgetVoiceDesign(input.designId);
 
   return {

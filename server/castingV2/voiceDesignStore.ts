@@ -86,6 +86,17 @@ type StoredDesign = {
 /** Insertion-ordered, so the oldest entry is the first key (`Map` guarantees it). */
 const designs = new Map<string, StoredDesign>();
 
+/**
+ * Designs a Keep has CLAIMED and not yet finished with.
+ *
+ * A claimed design is unresolvable — that is the whole point of the claim — but
+ * it must still be restorable if the Keep fails, and the provider ids inside it
+ * must not leave this module to do it (the header's rule: a preview id never
+ * leaves here). So it moves between two maps and the caller holds only the
+ * design id it already had.
+ */
+const claimed = new Map<string, StoredDesign>();
+
 function now(): number {
   return Date.now();
 }
@@ -95,6 +106,12 @@ function dropExpired(atMs: number): void {
      a Map is a typecheck error — the house style everywhere under `server/`. */
   for (const [designId, stored] of Array.from(designs.entries())) {
     if (atMs - stored.createdAtMs >= VOICE_DESIGN_TTL_MS) designs.delete(designId);
+  }
+  /* The claimed map expires on the same clock. A Keep that died mid-flight
+     without restoring or dropping would otherwise hold its entry for the life
+     of the process. */
+  for (const [designId, stored] of Array.from(claimed.entries())) {
+    if (atMs - stored.createdAtMs >= VOICE_DESIGN_TTL_MS) claimed.delete(designId);
   }
 }
 
@@ -164,20 +181,93 @@ export function resolveVoiceDesignHandle(input: {
 }
 
 /**
- * Forget one design. Called after a Keep lands, because its other two voices
- * can never be kept now (one voice per cast) and a resolvable handle for a
- * voice nothing may keep is a name with no referent.
+ * CLAIM a handle — resolve it and take the design out of reach in one step, so a
+ * second press cannot resolve it again.
+ *
+ * ⚠ **THIS IS THE ONLY ROAD A KEEP MAY TAKE, AND THE REASON IS MONEY.** Keep
+ * spends one of the account's monthly voice operations (95 on this plan) and the
+ * provider's save is tens of seconds long. Resolving first and forgetting after
+ * — which is what this road did until #2470's second finding — leaves a window
+ * in which two presses on one handle BOTH resolve and BOTH call the provider:
+ * the loser releases its slot, but its operation is spent and no delete refunds
+ * it. `disabled={working}` on the button is render-time and stops none of it; a
+ * fast double-click, a retry, or a second tab all get through.
+ *
+ * ⚠ **The atomicity is the single-threaded event loop's, which is a real
+ * guarantee rather than a hopeful one** — there is no `await` between the `get`
+ * and the move below, so no other request runs in the gap. It holds for THIS
+ * PROCESS, the same bound the store itself has (one map per process, stated in
+ * the header); two processes racing one cast are fenced at the row by the unique
+ * index, not here.
+ *
+ * On a failed Keep the caller puts it back with {@link restoreVoiceDesign}, so a
+ * provider outage does not cost a customer three voices they could still keep.
+ */
+export function claimVoiceDesignHandle(input: {
+  userId: number;
+  modelId: number;
+  designId: string;
+  handle: string;
+}): { previewId: string; designSentence: string } | null {
+  const atMs = now();
+  dropExpired(atMs);
+  const stored = designs.get(input.designId);
+  if (!stored) return null;
+  if (stored.userId !== input.userId || stored.modelId !== input.modelId) return null;
+  const previewId = stored.byHandle.get(input.handle);
+  if (!previewId) return null;
+  /* The claim, indivisible: nothing above it awaits. */
+  designs.delete(input.designId);
+  claimed.set(input.designId, stored);
+  return { previewId, designSentence: stored.designSentence };
+}
+
+/**
+ * Put a claimed design back, because its Keep did not land.
+ *
+ * ⚠ **The TTL is the ORIGINAL `createdAtMs`, never a fresh one** — it is the
+ * same object moving back. Re-stamping it would let a failing Keep extend a
+ * preview's life past the provider's own window, turning an honest provider
+ * refusal into a refusal about our bookkeeping, which is the trade the header
+ * picks the other way. A design whose TTL lapsed while the Keep was in flight is
+ * dropped rather than restored.
+ */
+export function restoreVoiceDesign(designId: string): void {
+  const stored = claimed.get(designId);
+  if (!stored) return;
+  claimed.delete(designId);
+  if (now() - stored.createdAtMs >= VOICE_DESIGN_TTL_MS) return;
+  designs.set(designId, stored);
+}
+
+/**
+ * Forget one design. Called after a Keep LANDS, because its other two voices can
+ * never be kept now (one voice per cast) and a resolvable handle for a voice
+ * nothing may keep is a name with no referent.
+ *
+ * It clears BOTH maps, so it is the right call whether the design was claimed
+ * (the Keep road) or merely remembered (the deletion road and the drivers).
  */
 export function forgetVoiceDesign(designId: string): void {
   designs.delete(designId);
+  claimed.delete(designId);
 }
 
-/** For the drivers: the store's own size, so a suite can see eviction happen. */
+/**
+ * For the drivers: how many designs are RESOLVABLE, so a suite can see eviction
+ * happen — and, since #2470's second finding, see a claim remove one.
+ */
 export function voiceDesignStoreSize(): number {
   return designs.size;
+}
+
+/** For the drivers: how many are claimed and awaiting a restore or a drop. */
+export function claimedVoiceDesignCount(): number {
+  return claimed.size;
 }
 
 /** For the drivers: empty it between arms. Never called by production code. */
 export function resetVoiceDesignStore(): void {
   designs.clear();
+  claimed.clear();
 }

@@ -3,10 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   VOICE_DESIGN_STORE_MAX,
   VOICE_DESIGN_TTL_MS,
+  claimVoiceDesignHandle,
+  claimedVoiceDesignCount,
   forgetVoiceDesign,
   rememberVoiceDesign,
   resetVoiceDesignStore,
   resolveVoiceDesignHandle,
+  restoreVoiceDesign,
   voiceDesignStoreSize,
 } from "./voiceDesignStore";
 
@@ -159,5 +162,130 @@ describe("forgetting a design", () => {
 
   it("is harmless on a design that is already gone", () => {
     expect(() => forgetVoiceDesign("never-existed")).not.toThrow();
+  });
+
+  it("drops a design that was CLAIMED and never restored", () => {
+    /* The claimed map is swept by the same call, so a landed Keep leaves
+       nothing behind in either of them. */
+    const { designId, handles } = rememberVoiceDesign(DESIGN);
+    expect(claimVoiceDesignHandle({
+      userId: 1, modelId: 300, designId, handle: handles[0],
+    })).not.toBeNull();
+    expect(claimedVoiceDesignCount()).toBe(1);
+
+    forgetVoiceDesign(designId);
+
+    expect(claimedVoiceDesignCount()).toBe(0);
+    restoreVoiceDesign(designId);
+    expect(resolveVoiceDesignHandle({
+      userId: 1, modelId: 300, designId, handle: handles[0],
+    })).toBeNull();
+  });
+});
+
+/**
+ * CLAIMING A HANDLE — #2470's finding, item 3.
+ *
+ * Keep spends one of the account's 95 monthly voice operations and the
+ * provider's save takes tens of seconds. Resolving first and forgetting after
+ * left a window in which two presses on ONE handle both resolved and both
+ * reached the provider: the loser released its slot, but its operation was
+ * spent and no delete refunds it. `disabled={working}` is render-time and stops
+ * none of a double-click, a retry, or a second tab.
+ */
+describe("claiming a handle, so one press cannot become two", () => {
+  it("⚠ A SECOND CLAIM ON THE SAME HANDLE GETS NOTHING — the double-press, driven", () => {
+    const { designId, handles } = rememberVoiceDesign(DESIGN);
+    const one = { userId: 1, modelId: 300, designId, handle: handles[0] };
+
+    const first = claimVoiceDesignHandle(one);
+    const second = claimVoiceDesignHandle(one);
+
+    expect(first).toMatchObject({
+      previewId: "gen-a",
+      designSentence: DESIGN.designSentence,
+    });
+    /* THE CLAIM OF THIS SUITE. Before the repair this was a second resolve, and
+       the route then made a second provider call on it. */
+    expect(second).toBeNull();
+  });
+
+  it("takes the WHOLE design out of reach, not just the handle pressed", () => {
+    /* One voice per cast, so while a Keep is in flight none of the three may
+       start another. */
+    const { designId, handles } = rememberVoiceDesign(DESIGN);
+    claimVoiceDesignHandle({ userId: 1, modelId: 300, designId, handle: handles[0] });
+
+    for (const handle of handles) {
+      expect(claimVoiceDesignHandle({ userId: 1, modelId: 300, designId, handle })).toBeNull();
+    }
+    expect(voiceDesignStoreSize()).toBe(0);
+    expect(claimedVoiceDesignCount()).toBe(1);
+  });
+
+  it("still refuses another account and another cast, exactly as the resolve did", () => {
+    /*
+      The claim replaced the resolve on the Keep road, so the bearer-name lock
+      had to move with it. A claim that skipped these would be a worse hole than
+      the one it closed.
+    */
+    const { designId, handles } = rememberVoiceDesign(DESIGN);
+
+    expect(claimVoiceDesignHandle({
+      userId: 2, modelId: 300, designId, handle: handles[0],
+    })).toBeNull();
+    expect(claimVoiceDesignHandle({
+      userId: 1, modelId: 301, designId, handle: handles[0],
+    })).toBeNull();
+    expect(claimVoiceDesignHandle({
+      userId: 1, modelId: 300, designId, handle: "not-a-handle",
+    })).toBeNull();
+    /* None of those refusals consumed it: the owner's press still works. */
+    expect(claimVoiceDesignHandle({
+      userId: 1, modelId: 300, designId, handle: handles[0],
+    })).not.toBeNull();
+  });
+
+  it("gives the design back when a Keep does not land, so three voices are not lost", () => {
+    const { designId, handles } = rememberVoiceDesign(DESIGN);
+    claimVoiceDesignHandle({ userId: 1, modelId: 300, designId, handle: handles[0] });
+
+    restoreVoiceDesign(designId);
+
+    expect(claimedVoiceDesignCount()).toBe(0);
+    for (const handle of handles) {
+      expect(resolveVoiceDesignHandle({
+        userId: 1, modelId: 300, designId, handle,
+      })).not.toBeNull();
+    }
+  });
+
+  it("⚠ A RESTORE DOES NOT RE-STAMP THE CLOCK", () => {
+    /*
+      The restored design keeps its ORIGINAL age. Re-stamping it would let a
+      failing Keep extend a preview's life past the provider's own window, and
+      turn an honest provider refusal into a refusal about our bookkeeping —
+      the trade this module's header picks the other way.
+    */
+    vi.useFakeTimers();
+    try {
+      const { designId, handles } = rememberVoiceDesign(DESIGN);
+      claimVoiceDesignHandle({ userId: 1, modelId: 300, designId, handle: handles[0] });
+
+      vi.advanceTimersByTime(VOICE_DESIGN_TTL_MS + 1);
+      restoreVoiceDesign(designId);
+
+      expect(resolveVoiceDesignHandle({
+        userId: 1, modelId: 300, designId, handle: handles[0],
+      })).toBeNull();
+      expect(claimedVoiceDesignCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("is harmless to restore a design nothing claimed", () => {
+    expect(() => restoreVoiceDesign("never-claimed")).not.toThrow();
+    expect(voiceDesignStoreSize()).toBe(0);
   });
 });

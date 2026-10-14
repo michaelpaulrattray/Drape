@@ -95,14 +95,44 @@ export const VOICE_KEPT_HINT = "An audition in their own voice.";
 /**
  * A full account or a spent month, in the customer's terms (design §6).
  *
- * ⚠ **It says the made voices are still there, because they are, and that is
- * the only actionable half.** The house's reason — no slot free, or no
- * operations left this period — is two different accounting facts the customer
- * can do nothing about and would have to be taught to read. What they can act
- * on is pressing Keep again later, so that is what it says.
+ * The house's reason — no slot free, or no operations left this period — is two
+ * different accounting facts the customer can do nothing about and would have to
+ * be taught to read, so it says neither.
+ *
+ * ⚠ **IT USED TO PROMISE *"The ones you made will still be here"* AND THAT WAS
+ * FALSE (#2470's finding, item 5).** The handles live in an in-process store a
+ * deploy empties, and a preview is only known saveable for about fifty seconds —
+ * so *later* they are reliably gone. It now says the one thing that is true and
+ * actionable: make them again. **The card no longer designs three voices on
+ * house money when nothing can be kept at all** (`voice.status` answers
+ * `canKeep`), so this sentence is what a customer sees after a Keep was refused
+ * rather than before they ever press.
  */
 export const VOICE_CANNOT_KEEP =
-  "Voices can't be kept right now. The ones you made will still be here — try Keep again later.";
+  "Voices can't be kept right now. Make them again in a little while and keep one then.";
+
+/**
+ * The design limit, in the customer's terms.
+ *
+ * ⚠ **"In a little while", never a bare "try again"** — the limit is per hour,
+ * so *try again* invites the press that fails the same way, which is what the
+ * generic failure sentence did until #2470's finding (item 4). It names no
+ * number: twelve an hour is our pacing of house money, not a fact a customer has
+ * any use for.
+ */
+export const VOICE_TOO_SOON =
+  "That's a lot of voices in one go. Try again in a little while.";
+
+/**
+ * A kept clip that would not play.
+ *
+ * ⚠ **The press used to just stop** (#2470's finding, item 6) — the button
+ * released and nothing was said, which reads as a product that ignored you. It
+ * says what happened and the one thing worth trying, and it never blames the
+ * network or names a bucket.
+ */
+export const VOICE_CLIP_WONT_PLAY =
+  "That recording wouldn't play just now. Try again in a moment.";
 
 /** A design that did not come through. Says the money part out loud. */
 export const VOICE_MAKE_FAILED =
@@ -139,6 +169,8 @@ export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_MAKING_LOADER,
   VOICE_KEPT_HINT,
   VOICE_CANNOT_KEEP,
+  VOICE_TOO_SOON,
+  VOICE_CLIP_WONT_PLAY,
   VOICE_MAKE_FAILED,
   VOICE_KEEP_FAILED,
   VOICE_LINE_TOO_SHORT,

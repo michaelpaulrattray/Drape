@@ -65,11 +65,33 @@ const KEY_FIELDS = ["storageKey", "clipStorageKey", "imageKey", "thumbKey"] as c
  * and deliberately only the object, because the message is prose a key cannot
  * hide in without being spelled as a field.
  *
- * ⚠ **Its limit is stated rather than discovered**: a key put into a VARIABLE
- * first and logged under another name (`log.error({ where: key }, …)`) is
- * invisible here, so a clean reading is a FLOOR and not coverage. What it does
- * catch is the shape every instance so far has taken — the field passed
- * straight through — which is the shape a hurried diagnosis reaches for.
+ * ⚠ **ITS LIMITS ARE STATED PLAINLY, AND THEY ARE WIDER THAN THIS FILE FIRST
+ * ADMITTED — the relay's reading on PR #2488.** The shift that wrote it called
+ * it a reader that *"walks every tracked server source"*, which is true of the
+ * POPULATION and says nothing about the PATTERN; four shapes go straight
+ * through it, and naming them is worth more than widening the regex in a card
+ * that owes a different repair:
+ *
+ *   1. **`console.*`** — only `log.<level>(` is read. ⚠ **This clause first
+ *      claimed nothing under `server/` logs that way, and that was false at
+ *      the tree**: SEVEN tracked server modules do (`_core/env.ts`,
+ *      `_core/index.ts`, `_core/sdk.ts`, `_core/vite.ts`, `crew/crewBriefing.ts`,
+ *      `routes/emailAuth.ts`, `routes/googleAuth.ts`). Measured the same
+ *      sitting, none of the seven mentions any of {@link KEY_FIELDS} at all —
+ *      they are boot, auth and briefing modules with no storage writer among
+ *      them — so the exposure today is nil for a reason that could change the
+ *      day one of them touches an object.
+ *   2. **A key in the MESSAGE TEMPLATE** — `` log.warn({}, `failed for ${key}`) ``
+ *      is invisible, because only the first argument's object is walked.
+ *   3. **A field name not on {@link KEY_FIELDS}** — a key logged as `key`,
+ *      `objectKey` or `path` reads as ordinary diagnostics.
+ *   4. **A key put into a VARIABLE first** and logged under another name
+ *      (`log.error({ where: key }, …)`).
+ *
+ * **So a clean reading is a FLOOR and not coverage**, and the four above are
+ * the honest remainder rather than a promise to widen. What it DOES catch is
+ * the shape every instance so far has taken — the field passed straight
+ * through — which is the shape a hurried diagnosis reaches for.
  */
 function logCallsCarryingAKey(source: string): string[] {
   const hits: string[] = [];
