@@ -7,18 +7,20 @@ import {
   getReferralHistory,
   getUserByReferralCode,
   recordEmailInvite,
+  hasInvitedEmail,
   isValidReferralCodeFormat,
 } from "../db";
+import { ALREADY_INVITED_MESSAGE } from "../db/referrals";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { displayBalance } from "@shared/creditDisplay";
-import { PRODUCT_NAME } from "@shared/brand";
 import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
-import { sendReferralInviteEmail } from "../klaviyo";
+import { sendReferralInviteEmail } from "../mail";
+import { spokenError } from "../_core/spokenError";
 import { appBaseUrl } from "../_core/appOrigin";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("routes/referral");
@@ -31,6 +33,13 @@ const REDEEM_RATE = { maxRequests: 5, windowMs: 60 * 60 * 1000, keyPrefix: "ref-
  * surface: per address, the same budget `access.validate` gives an invite code
  * (10 in 5 minutes) — plenty for a person typing a code, useless for a sweep (#2375).
  */
+/**
+ * What the customer reads when the invite did not go (#2481). It says what
+ * happened and what to do, and offers the road that needs no email at all.
+ */
+export const INVITE_NOT_SENT_SENTENCE =
+  "That invitation didn't go out. Try again in a moment, or copy your link and send it yourself.";
+
 export const VALIDATE_RATE = { maxRequests: 10, windowMs: 5 * 60 * 1000, keyPrefix: "ref-validate" };
 
 export const referralRouter = router({
@@ -79,8 +88,17 @@ export const referralRouter = router({
   }),
 
   /**
-   * Send an email invitation (records the invite, email delivery is future).
+   * Send an email invitation.
    * Rate limited: 10/day per user.
+   *
+   * ⚠ **`{ sent: true }` MEANS THE EMAIL WENT — #2481, his ruling 2026-10-14.**
+   * Until then the send was a fire-and-forget Klaviyo event, production had no
+   * Klaviyo key, and this answered `{ sent: true }` regardless, which the
+   * client turned into "Invitation sent." over an email that could never leave
+   * the building. Now: the duplicate check runs first, the email is sent and
+   * AWAITED through Resend, and the invite is recorded only once it has gone —
+   * so a failed send refuses out loud and leaves no row behind to answer the
+   * retry with "Already invited".
    */
   sendInvite: protectedProcedure
     .input(
@@ -116,25 +134,22 @@ export const referralRouter = router({
         });
       }
 
-      const result = await recordEmailInvite(ctx.user.id, input.email, ip);
-      if (!result.success) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: result.error || "Failed to send invite",
-        });
+      // A duplicate never becomes a second email (the rule is the writer's own).
+      if (await hasInvitedEmail(ctx.user.id, input.email)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: ALREADY_INVITED_MESSAGE });
       }
 
-      // Send email via Klaviyo (non-blocking — invite is recorded regardless)
-      const baseUrl = ctx.req.headers.origin || appBaseUrl();
+      /* The link is built on the product's OWN address, never the request's
+         `Origin`: this one goes out in an email from our sending domain to a
+         stranger, so a header the caller controls must not choose where its
+         button leads. (`getMyCode` still shows the referrer their link on the
+         origin they are using; that one is read by the person who asked.) */
       const code = await getOrCreateReferralCode(ctx.user.id, ip);
-      const referralLink = code ? `${baseUrl}?ref=${code}` : baseUrl;
+      const referralLink = code ? `${appBaseUrl()}?ref=${code}` : appBaseUrl();
 
-      sendReferralInviteEmail({
-        inviteeEmail: input.email,
-        /* #1955: the product's name, from the one constant. The invitee has
-           never heard of us, so this is the one place in the fix where the
-           name is the information rather than noise. */
-        referrerName: ctx.user.name || `A ${PRODUCT_NAME} user`,
+      const sent = await sendReferralInviteEmail({
+        to: input.email,
+        referrerName: ctx.user.name || null,
         referralLink,
         /* #2478: the display figure, converted HERE and only here. The other
            three uses of this constant in this file (getMyCode, getStats,
@@ -143,11 +158,26 @@ export const referralRouter = router({
            converting the constant itself would make those screens say 500.
            An email has no client to convert for it, so the router does. */
         rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
-      }).catch((err) => {
-        log.error({ err: err }, "[Referral] Klaviyo email delivery failed:");
       });
 
-      return { sent: true };
+      if (!sent.success) {
+        log.error({ err: sent.error }, "[Referral] invite email was not sent");
+        throw spokenError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: INVITE_NOT_SENT_SENTENCE,
+        });
+      }
+
+      /* Recorded only now that it has gone. A refusal HERE is the duplicate
+         race (two sends of one address at once) or a database outage — the
+         email has already gone either way, so the answer is still the truth:
+         it was sent. */
+      const result = await recordEmailInvite(ctx.user.id, input.email, ip);
+      if (!result.success) {
+        log.warn({ err: result.error }, "[Referral] invite sent but not recorded");
+      }
+
+      return { sent: true as const };
     }),
 
   /**

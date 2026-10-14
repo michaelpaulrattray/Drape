@@ -49,8 +49,13 @@ vi.mock("./auditLog", async (importOriginal) => {
   return { ...actual, logAuditEvent: vi.fn().mockResolvedValue(undefined) };
 });
 
-vi.mock("./klaviyo", () => ({
-  sendAccountFrozenEmail: vi.fn().mockResolvedValue(undefined),
+/* #2481: the freeze notice goes through `server/mail.ts` (Resend) now, and the
+   .env this suite loads holds a real key — so the notice is stubbed here, or a
+   local run would email the fixture's address. Its own arms are
+   `accountFreeze.test.ts`'s, at the wire. */
+vi.mock("./mail", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./mail")>()),
+  noticeOfFreeze: vi.fn(async () => ({ notice: "sent", noticeMessage: "Account frozen." })),
 }));
 
 vi.mock("./security/adminSecurity", async (importOriginal) => {

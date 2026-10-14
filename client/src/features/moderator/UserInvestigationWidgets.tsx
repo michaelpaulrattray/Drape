@@ -224,15 +224,17 @@ function FreezeAction({
   const [open, setOpen] = useState(false);
   const utils = trpc.useUtils();
 
-  const done = (message: string) => {
-    toast.success(message);
+  const done = (message: string, warn = false) => {
+    if (warn) toast.warning(message);
+    else toast.success(message);
     setOpen(false);
     utils.moderator.getUserDetails.invalidate({ userId });
     utils.moderatorReconciliation.getFlaggedUsers.invalidate();
   };
 
   const freezeMutation = trpc.moderatorReconciliation.freezeAccount.useMutation({
-    onSuccess: () => done("Account frozen"),
+    // #2481: the server says whether the customer was told; a notice that did not go is a warning.
+    onSuccess: (data) => done(data.noticeMessage, data.notice === "not_sent"),
     onError: (err) => toast.error(err.message || "Failed to freeze account"),
   });
 

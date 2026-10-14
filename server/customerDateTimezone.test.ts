@@ -18,7 +18,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatCustomerShortDate } from "@shared/customerDate";
 import { cancelPlanBody, cancelledPlanSegment, planCancelledReceipt } from "@shared/planCancelCopy";
 import { formatShortDate } from "../client/src/features/settings/planMath";
-import { sendAccountFrozenEmail } from "./klaviyo";
 
 /** The dev billing fixture's real test-mode period end, read from Stripe 2026-10-12. */
 const FIXTURE_PERIOD_END = new Date("2027-09-09T03:06:18Z");
@@ -97,27 +96,8 @@ describe("#2363 — the customer's short date does not move with the host clock"
     expect(fresh.formatCustomerShortDate(FIXTURE_PERIOD_END)).toBe("9 Sept");
   });
 
-  it("the frozen-account email's date on the wire is the UTC day", async () => {
-    process.env.KLAVIYO_PRIVATE_KEY = "pk_test_key";
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 202, json: async () => ({}) });
-    const realFetch = global.fetch;
-    global.fetch = fetchMock as unknown as typeof fetch;
-    try {
-      vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(NEAR_MIDNIGHT);
-      process.env.TZ = EAST;
-      await sendAccountFrozenEmail({
-        userEmail: "frozen@example.test",
-        userName: "Test",
-        freezeReason: "Manual freeze",
-        frozenBy: "system",
-      });
-      const eventCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/events"));
-      expect(eventCall, "the event request was sent").toBeDefined();
-      const body = JSON.parse((eventCall![1] as { body: string }).body);
-      expect(body.data.attributes.properties.frozen_date).toBe("November 7, 2026");
-    } finally {
-      global.fetch = realFetch;
-    }
-  });
+  /* An arm stood here proving the frozen-account email's `frozen_date` was the
+     UTC day. #2481 moved that email off Klaviyo onto Resend and its words into
+     `server/mail.ts`, and the new notice prints no date at all — so its
+     subject is gone rather than untested. */
 });

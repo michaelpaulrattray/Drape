@@ -135,7 +135,8 @@ export default function AdminUserManagement() {
   });
 
   const freezeMutation = trpc.admin.freezeUser.useMutation({
-    onSuccess: () => { toast.success("Account frozen successfully"); setFreezeModalOpen(false); setFreezeReason(""); usersQuery.refetch(); userDetailsQuery.refetch(); },
+    // #2481: the server says whether the customer was told; a notice that did not go is a warning, never a quiet success.
+    onSuccess: (data) => { if (data.notice === "not_sent") toast.warning(data.noticeMessage); else toast.success(data.noticeMessage); setFreezeModalOpen(false); setFreezeReason(""); usersQuery.refetch(); userDetailsQuery.refetch(); },
     onError: (error) => { toast.error(error.message); },
   });
 

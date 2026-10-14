@@ -28,7 +28,7 @@
  * WHAT REPLACED THEM, and the rule applied to each:
  *
  * - **The invite email → DRIVEN through `referralRouter.sendInvite`.** The
- *   mocked Klaviyo sender stays, but it is now the FAR END of the product
+ *   mocked sender (Klaviyo's until #2481, `server/mail.ts`'s since) stays, but it is now the FAR END of the product
  *   rather than the subject: every arm calls the real procedure and then reads
  *   the argument the ROUTER passed on (law 5, assert at the wire). The count
  *   control in `soleCallTo` is what keeps the two apart — a procedure that
@@ -118,10 +118,11 @@ describe("Disposable Email Blocking on Signup", () => {
 
 // ── Features 3 and 4: the invite a customer actually sends ──
 
-vi.mock("./klaviyo", () => ({
+/* #2481: the sender is `server/mail.ts`'s now (Resend). Stubbed as the far end;
+   the wire itself — what Resend is handed — is `referralInviteCreditScale.test.ts`'s. */
+vi.mock("./mail", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./mail")>()),
   sendReferralInviteEmail: vi.fn(),
-  createOrUpdateProfile: vi.fn(),
-  trackEvent: vi.fn(),
 }));
 
 /*
@@ -131,7 +132,11 @@ vi.mock("./klaviyo", () => ({
  * re-export block: a name missing here is a barrel that fails to load, not a
  * silently real function.
  */
-vi.mock("./db/referrals", () => ({
+vi.mock("./db/referrals", async (importOriginal) => ({
+  /* The refusal SENTENCE passes through — it is the product's, and a copy typed
+     here would agree with nothing. Every function below is a stand-in. */
+  ALREADY_INVITED_MESSAGE: (await importOriginal<typeof import("./db/referrals")>()).ALREADY_INVITED_MESSAGE,
+  hasInvitedEmail: vi.fn(),
   expireStalePendingReferrals: vi.fn(),
   getOrCreateReferralCode: vi.fn(),
   getUserByReferralCode: vi.fn(),
@@ -147,8 +152,11 @@ vi.mock("./db/referrals", () => ({
 }));
 
 import { referralRouter } from "./routes/referral";
-import { sendReferralInviteEmail } from "./klaviyo";
-import { getOrCreateReferralCode, recordEmailInvite } from "./db/referrals";
+import { sendReferralInviteEmail, UNNAMED_REFERRER } from "./mail";
+import { ALREADY_INVITED_MESSAGE, getOrCreateReferralCode, hasInvitedEmail, recordEmailInvite } from "./db/referrals";
+import { INVITE_NOT_SENT_SENTENCE } from "./routes/referral";
+import { SpokenError } from "./_core/spokenError";
+import { appBaseUrl } from "./_core/appOrigin";
 /* The reward the product declares, not a number typed on the line above it —
    the arm this replaces asserted `12500` against the `12500` it had just
    handed the mock, so the two could never disagree. */
@@ -157,7 +165,8 @@ import { REFERRAL_REWARD_CREDITS } from "../drizzle/schema";
    Klaviyo receives) is `referralInviteCreditScale.test.ts`. */
 import { displayBalance } from "../shared/creditDisplay";
 
-const klaviyo = vi.mocked(sendReferralInviteEmail);
+const sender = vi.mocked(sendReferralInviteEmail);
+const inviteChecker = vi.mocked(hasInvitedEmail);
 const codeReader = vi.mocked(getOrCreateReferralCode);
 const inviteWriter = vi.mocked(recordEmailInvite);
 
@@ -234,30 +243,55 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     vi.clearAllMocks();
     codeReader.mockResolvedValue("DRAPE-ABC123");
     inviteWriter.mockResolvedValue({ success: true });
-    klaviyo.mockResolvedValue({ success: true });
+    inviteChecker.mockResolvedValue(false);
+    sender.mockResolvedValue({ success: true });
   });
 
-  it("hands Klaviyo the invitee, the referrer, the share link and the declared reward", async () => {
+  it("hands the sender the invitee, the referrer, the share link and the declared reward", async () => {
     const { caller } = callerFor();
 
     await expect(caller.sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
 
-    expect(soleCallTo(klaviyo)).toEqual({
-      inviteeEmail: "friend@example.com",
+    expect(soleCallTo(sender)).toEqual({
+      to: "friend@example.com",
       referrerName: "John Doe",
-      referralLink: `${ORIGIN}?ref=DRAPE-ABC123`,
+      /* #2481: the product's own address, never the request's Origin. */
+      referralLink: `${appBaseUrl()}?ref=DRAPE-ABC123`,
       rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
     });
   });
 
+  /* #2481: the link goes out in an email from our domain to a stranger, so a
+     header the caller controls must not choose where its button leads. The
+     control: the fixture's Origin really differs from the product's address. */
+  it("builds the emailed link on the product's address, not the request's Origin", async () => {
+    expect(ORIGIN).not.toBe(appBaseUrl());
+    const { caller } = callerFor();
+
+    await caller.sendInvite({ email: "friend@example.com" });
+
+    const link = String(soleCallTo(sender).referralLink);
+    expect(link.startsWith(`${appBaseUrl()}?ref=`)).toBe(true);
+    expect(link.startsWith(ORIGIN)).toBe(false);
+  });
+
+  it("passes no name rather than inventing one, so the email says who in its own words", async () => {
+    const { caller } = callerFor({ name: null });
+    await caller.sendInvite({ email: "friend@example.com" });
+    expect(soleCallTo(sender).referrerName).toBeNull();
+    expect(UNNAMED_REFERRER.length).toBeGreaterThan(0);
+  });
+
   /* Invariant 3: the owner comes from the session, never from the input. */
-  it("records the invite against the caller's own id and ip, before any email", async () => {
+  it("records the invite against the caller's own id and ip, AFTER the email went", async () => {
     const { user, caller } = callerFor();
 
     await caller.sendInvite({ email: "friend@example.com" });
 
     expect(inviteWriter).toHaveBeenCalledWith(user.id, "friend@example.com", CALLER_IP);
+    expect(inviteChecker).toHaveBeenCalledWith(user.id, "friend@example.com");
     expect(codeReader).toHaveBeenCalledWith(user.id, CALLER_IP);
+    expect(sender.mock.invocationCallOrder[0]).toBeLessThan(inviteWriter.mock.invocationCallOrder[0]);
   });
 
   /*
@@ -272,7 +306,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     expect(refusal.code).toBe("BAD_REQUEST");
     expect(refusal.message).toBe("Please use a permanent email address");
     expect(inviteWriter).not.toHaveBeenCalled();
-    expect(klaviyo).not.toHaveBeenCalled();
+    expect(sender).not.toHaveBeenCalled();
   });
 
   it("refuses a self-invite whatever the casing, and sends nothing", async () => {
@@ -282,43 +316,60 @@ describe("referral.sendInvite — driven through the real procedure", () => {
 
     expect(refusal.code).toBe("BAD_REQUEST");
     expect(refusal.message).toBe("You cannot invite yourself");
-    expect(klaviyo).not.toHaveBeenCalled();
+    expect(sender).not.toHaveBeenCalled();
   });
 
   /*
-   * A duplicate invite must not become a second email — the writer is the thing
-   * that knows an address was already invited, so its refusal has to stop the
-   * send rather than be logged past.
+   * A duplicate invite must not become a second email — the duplicate rule is
+   * the writer's own (`hasInvitedEmail`), and it is asked BEFORE the send.
    */
-  it("refuses when the invite could not be recorded, and sends nothing", async () => {
-    inviteWriter.mockResolvedValue({ success: false, error: "Already invited this email" });
+  it("refuses an address already invited, and sends nothing", async () => {
+    inviteChecker.mockResolvedValue(true);
     const { caller } = callerFor();
 
     const refusal = await refusalFrom(() => caller.sendInvite({ email: "friend@example.com" }));
 
     expect(refusal.code).toBe("BAD_REQUEST");
-    expect(refusal.message).toBe("Already invited this email");
-    expect(klaviyo).not.toHaveBeenCalled();
+    expect(refusal.message).toBe(ALREADY_INVITED_MESSAGE);
+    expect(sender).not.toHaveBeenCalled();
+    expect(inviteWriter).not.toHaveBeenCalled();
   });
 
   /*
-   * Delivery is deliberately non-blocking (`routes/referral.ts`: "invite is
-   * recorded regardless"). The arm this replaces claimed to cover "Klaviyo API
-   * failure gracefully" and only proved that a rejected promise it had created
-   * itself rejected.
+   * #2481 — THE CARD. This arm read "still reports the invite sent when Klaviyo
+   * rejects it", and it was the product's bug written down as its contract.
    */
-  it("still reports the invite sent when Klaviyo rejects it", async () => {
-    klaviyo.mockRejectedValue(new Error("Klaviyo API error: 500"));
+  it("REFUSES out loud when the email did not go, and records nothing", async () => {
+    sender.mockResolvedValue({ success: false, error: "RESEND_API_KEY is not configured" });
+    const { caller } = callerFor();
+
+    const refusal = await refusalFrom(() => caller.sendInvite({ email: "friend@example.com" }));
+
+    expect(refusal.code).toBe("INTERNAL_SERVER_ERROR");
+    expect(refusal.message).toBe(INVITE_NOT_SENT_SENTENCE);
+    expect(sender).toHaveBeenCalledTimes(1);
+    /* No row left behind, so the retry is not answered with "Already invited". */
+    expect(inviteWriter).not.toHaveBeenCalled();
+  });
+
+  it("that refusal is SPOKEN, so the customer reads the sentence and not a generic failure", async () => {
+    sender.mockResolvedValue({ success: false, error: "x" });
+    const { caller } = callerFor();
+
+    const thrown = await caller.sendInvite({ email: "friend@example.com" }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    expect(thrown).toBeInstanceOf(SpokenError);
+  });
+
+  it("an email that went is still 'sent' when only the record fails afterwards", async () => {
+    inviteWriter.mockResolvedValue({ success: false, error: ALREADY_INVITED_MESSAGE });
     const { caller } = callerFor();
 
     await expect(caller.sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
-    expect(inviteWriter).toHaveBeenCalledTimes(1);
-    /* Self-contained on the reviewer's note (PR #739): without this the arm
-       would stay green if the send were deleted outright. Coverage held
-       collectively either way — the first arm's `soleCallTo` reddens a deleted
-       send — but an arm that needs its neighbours to mean anything is one
-       refactor away from meaning nothing. */
-    expect(klaviyo).toHaveBeenCalledTimes(1);
+    expect(sender).toHaveBeenCalledTimes(1);
   });
 
   /* Invariant 6: a rate limit is a real TOO_MANY_REQUESTS, not a 200 carrying
@@ -333,6 +384,6 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     const refusal = await refusalFrom(() => caller.sendInvite({ email: "eleventh@example.com" }));
 
     expect(refusal.code).toBe("TOO_MANY_REQUESTS");
-    expect(klaviyo).toHaveBeenCalledTimes(10);
+    expect(sender).toHaveBeenCalledTimes(10);
   });
 });
