@@ -1384,6 +1384,20 @@ export type StaffVoiceAllowance =
       /** Saved-voice slots free right now, and the plan's whole set. */
       slotsLeft: number;
       slotsTotal: number;
+      /**
+       * Characters left this period, and the period's whole budget — the one
+       * HOUSE-WIDE meter here (#2509). Projected because it is the only number
+       * on this card that free designs can exhaust for every account at once:
+       * a design is billed its preview line, 180–350 characters, and nothing
+       * else in the product has ever been able to see the total.
+       *
+       * ⚠ **`null` is NOT REPORTED and is drawn as such, never as none left.**
+       * The provider omitting its own meter and the meter reading zero are
+       * opposite facts, and a panel that renders both as `0` would say the
+       * voice road is out of characters on an account with a full budget.
+       */
+      charactersLeft: number | null;
+      charactersTotal: number | null;
     }
   /** No transport, so no voice road for anyone — nothing to ration. */
   | { state: "not_configured" }
@@ -1422,6 +1436,17 @@ export async function readVoiceAllowanceForStaff(
       operationsTotal: allowance.operationsTotal,
       slotsLeft: Math.max(0, allowance.slotsTotal - allowance.slotsUsed),
       slotsTotal: allowance.slotsTotal,
+      /* Same clamp, same reason as above: the counter and the ceiling are
+         reported independently, and a period's budget lowered under a spent
+         counter must read as none left rather than as a negative.
+
+         BOTH halves must be numbers before a subtraction happens — a meter
+         reported only half-way is not a meter, and `null - 5` is `NaN`, which
+         would render as a word on his panel rather than refusing to answer. */
+      charactersLeft: allowance.charactersTotal !== null && allowance.charactersUsed !== null
+        ? Math.max(0, allowance.charactersTotal - allowance.charactersUsed)
+        : null,
+      charactersTotal: allowance.charactersTotal,
     };
     staffAllowanceCache = { atMs, value };
     return value;

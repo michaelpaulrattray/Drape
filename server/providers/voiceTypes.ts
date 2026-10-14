@@ -77,6 +77,36 @@ export type VoiceAllowance = {
    * could never be cloned back, so nothing is evicted and a full plan refuses.
    */
   instantCloning: boolean;
+  /**
+   * `character_limit` — ⚠ **THE ONLY HOUSE-WIDE METER THE VOICE ROAD HAS, AND
+   * IT IS HARD.** Added 2026-10-14 on #2509, which was filed saying there is
+   * *"no house-wide ceiling at all"*. That is true of OUR code and false of the
+   * system: this ceiling is the provider's, it is shared by every account and
+   * both worlds, and it cannot be extended — read live the day it was added,
+   * `max_character_limit_extension: 0` and
+   * `allowed_to_extend_character_limit: false`.
+   *
+   * **It was already on the wire and discarded**, which is the
+   * disappearing-technology law's clause 4 (*read what the engine already gives
+   * you before reaching for a better one*) and the SAM 3 `include_scores`
+   * precedent exactly: `/v1/user/subscription` returns 30 keys, this reader
+   * kept 6, and the two that bound the house's whole month were among the 24
+   * thrown away. Reading them costs nothing — same call, same body.
+   *
+   * ⚠ **What spends it: a DESIGN is billed its preview text's own character
+   * count, once** (driven 2026-10-13 with the counter read either side — 204
+   * in, 204 charged; see `elevenlabsVoice.ts`'s header). `VOICE_PREVIEW_ASK` is
+   * 180–350 characters, so twenty free designs — one account's daily ceiling —
+   * is up to 7,000 characters of a budget nothing in this product can see.
+   *
+   * ⚠ **`null` MEANS NOT REPORTED, AND IT IS NULLABLE WHERE THE TWO CEILINGS
+   * ABOVE ARE NOT.** Those gate a spend, so a missing one refuses (invariant
+   * 7); this gates nothing yet, so a missing one must never be able to refuse a
+   * Keep. `readOptionalNumber` in `elevenlabsVoice.ts` carries the reasoning.
+   */
+  charactersTotal: number | null;
+  /** `character_count` — spent this period, house-wide. See above. */
+  charactersUsed: number | null;
   /** The plan's own name. Internal, for a receipt — never a customer string. */
   tier: string;
 };

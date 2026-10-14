@@ -67,6 +67,11 @@ function stubVoiceTransport(responses: {
           voice_slots_used: 0,
           max_voice_add_edits: 95,
           voice_add_edit_counter: 4,
+          /* A real answer carries these — read live 2026-10-14 (#2509). The
+             default mirrors the provider so every other arm here sees the
+             shape production sees; the absent case has its own arm below. */
+          character_limit: 182297,
+          character_count: 8782,
           can_use_instant_voice_cloning: true,
         }), { status: 200, headers: { "content-type": "application/json" } });
       }
@@ -176,6 +181,8 @@ describe("the voice transport's outgoing requests", () => {
         voice_slots_used: 3,
         max_voice_add_edits: 54,
         voice_add_edit_counter: 54,
+        character_limit: 30000,
+        character_count: 29998,
         can_use_instant_voice_cloning: false,
       },
     });
@@ -192,6 +199,8 @@ describe("the voice transport's outgoing requests", () => {
       slotsUsed: 3,
       operationsTotal: 54,
       operationsUsed: 54,
+      charactersTotal: 30000,
+      charactersUsed: 29998,
       instantCloning: false,
       tier: "pay-as-you-go",
     });
@@ -205,6 +214,61 @@ describe("the voice transport's outgoing requests", () => {
 
     /* No `voice_limit`. A zero or a default here is a refusal with slots free. */
     await expect(createElevenLabsVoiceEngine().readAllowance()).rejects.toThrow(/voice_limit/);
+  });
+
+  /*
+    THE ASYMMETRY ARM, AND IT IS THE REASON #2509 CHOSE A NULLABLE FIELD. The
+    arm above proves a missing SPEND ceiling refuses; this proves a missing
+    house METER does not. Both directions are needed, because getting this one
+    wrong is invisible until the provider drops a field and every Keep in the
+    product starts refusing on a number the panel only ever displayed.
+  */
+  it("does NOT refuse when the house character meter is missing — it reports it absent", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    stubVoiceTransport({
+      subscription: {
+        tier: "creator",
+        voice_limit: 30,
+        voice_slots_used: 2,
+        max_voice_add_edits: 95,
+        voice_add_edit_counter: 10,
+        can_use_instant_voice_cloning: true,
+        /* Both character fields absent — the shape a plan that does not report
+           them would send. The spend ceilings are all present. */
+      },
+    });
+
+    const allowance = await createElevenLabsVoiceEngine().readAllowance();
+
+    expect(allowance.charactersTotal).toBeNull();
+    expect(allowance.charactersUsed).toBeNull();
+    /* And the reading a Keep depends on is untouched — the whole point. */
+    expect(allowance.slotsTotal).toBe(30);
+    expect(allowance.operationsTotal).toBe(95);
+  });
+
+  it("reads a zero character meter as zero and never as absent", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    stubVoiceTransport({
+      subscription: {
+        tier: "creator",
+        voice_limit: 30,
+        voice_slots_used: 2,
+        max_voice_add_edits: 95,
+        voice_add_edit_counter: 10,
+        can_use_instant_voice_cloning: true,
+        /* A spent month, which is a FACT and not an absence. The two render
+           differently on the panel, so a reader that conflated them would say
+           "Not reported" about a house that cannot speak. */
+        character_limit: 182297,
+        character_count: 182297,
+      },
+    });
+
+    const allowance = await createElevenLabsVoiceEngine().readAllowance();
+
+    expect(allowance.charactersUsed).toBe(182297);
+    expect(allowance.charactersTotal).toBe(182297);
   });
 
   it("⚠ ALWAYS sends `text`, because a design without it is a 400 the provider will not serve", async () => {
