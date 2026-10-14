@@ -46,6 +46,8 @@ const FULL: VoiceAllowance = {
   slotsUsed: 1,
   operationsTotal: 95,
   operationsUsed: 4,
+  charactersTotal: 182297,
+  charactersUsed: 8782,
   instantCloning: true,
   tier: "creator",
 };
@@ -125,7 +127,7 @@ describe("the ration reaches the admin panel and stops there", () => {
 });
 
 describe("what it projects, and what it must not (invariant 8)", () => {
-  it("returns the four counts and nothing else", async () => {
+  it("returns the six counts and nothing else", async () => {
     const { engine } = engineReading();
     const result = await readVoiceAllowanceForStaff({ engine });
 
@@ -135,7 +137,55 @@ describe("what it projects, and what it must not (invariant 8)", () => {
       operationsTotal: 95,
       slotsLeft: 29,
       slotsTotal: 30,
+      /* The house-wide character meter, added on #2509. `toEqual` is the arm
+         that catches an OVER-projection too (invariant 8), so this pair being
+         named here is what keeps `tier` and `instantCloning` out. */
+      charactersLeft: 173515,
+      charactersTotal: 182297,
     });
+  });
+
+  /*
+    THE HOUSE METER'S THREE READINGS, AND THEY MUST NOT COLLAPSE INTO EACH
+    OTHER (#2509). `null` is the provider not reporting; `0` is a month that is
+    spent. The panel draws them as "Not reported" and "0 of …", and a reader
+    that turned absence into a zero would tell a staff member the voice road is
+    finished on an account with a full budget.
+  */
+  it("carries an ABSENT character meter through as null, never as zero", async () => {
+    const { engine } = engineReading({ charactersTotal: null, charactersUsed: null });
+    const result = await readVoiceAllowanceForStaff({ engine });
+
+    expect(result).toMatchObject({
+      state: "read",
+      charactersLeft: null,
+      charactersTotal: null,
+    });
+  });
+
+  it("reads a SPENT character meter as none left, which is a different fact", async () => {
+    const { engine } = engineReading({ charactersTotal: 182297, charactersUsed: 182297 });
+    const result = await readVoiceAllowanceForStaff({ engine });
+
+    expect(result).toMatchObject({ state: "read", charactersLeft: 0, charactersTotal: 182297 });
+  });
+
+  it("clamps a counter past its ceiling to none left, never to a negative", async () => {
+    /* The ceilings are reported independently, so a budget lowered mid-period
+       under an already-spent counter is a real answer the provider can send. */
+    const { engine } = engineReading({ charactersTotal: 100_000, charactersUsed: 182_297 });
+    const result = await readVoiceAllowanceForStaff({ engine });
+
+    expect(result).toMatchObject({ state: "read", charactersLeft: 0 });
+  });
+
+  it("never lets half a meter become a number", async () => {
+    /* `null - 8782` is NaN, which would reach his panel as a WORD. Both halves
+       must be numbers before anything is subtracted. */
+    const { engine } = engineReading({ charactersTotal: null, charactersUsed: 8782 });
+    const result = await readVoiceAllowanceForStaff({ engine });
+
+    expect(result).toMatchObject({ state: "read", charactersLeft: null });
   });
 
   it("never carries the vendor's plan name or its capability flag", async () => {
@@ -311,12 +361,49 @@ describe("the panel's own wiring", () => {
       "the slots row is missing or draws something else — an account with operations left and every slot full cannot keep a voice, and this card would read healthy while customers met a wall",
     ).toContain("a.slotsLeft");
 
+    /* AND THE HOUSE METER, which is a THIRD thing that ends a voice road and
+       the only one of the three that is not an account's (#2509). When the
+       month's characters are spent the provider refuses every design and every
+       spoken line for everybody, so a card drawing only the two rows above can
+       read entirely healthy while no voice in the product can speak. */
+    /* ⚠ THE WHOLE CALL, NOT THE NAME. A bare `toContain("a.charactersLeft")`
+       SURVIVED the sabotage that rewrote this row to draw slots twice, because
+       the row's own `a.charactersLeft === null` guard still mentioned it — the
+       sibling shape sabotage S7 found one arm up, repeated in the arm written
+       to answer it. The VALUE render is the subject, so the value render is
+       what is read. */
+    expect(
+      rows,
+      "the character row is missing or draws something else — free designs spend the house's shared monthly budget, and a design costs no operation and no slot, so both rows above sit still while it empties",
+    ).toContain("ofTotal(a.charactersLeft, a.charactersTotal)");
+
     /* POSITIVE CONTROL: the slice is the row region and not the whole file —
        it holds a row this card had before #2471 and none of the prop type. */
     expect(rows).toContain('label="Active banners"');
     expect(rows, "the slice reached the prop type, so it is not row-scoped").not.toContain(
       "slotsTotal: number",
     );
+    /* The same reading for the field added on #2509: its prop-type line must
+       be outside the slice too, or this arm is satisfied by the type again —
+       which is exactly the defect sabotage S7 found above. */
+    expect(rows, "the slice reached the prop type, so it is not row-scoped").not.toContain(
+      "charactersTotal: number | null",
+    );
+  });
+
+  it("draws an unreported meter as words and never as a zero", () => {
+    const card = code(read(CARD));
+    const rowsStart = card.indexOf('"dp-leaders dp-leaders--divided"');
+    const rows = card.slice(rowsStart, card.indexOf("</div>", rowsStart));
+
+    /* `null` is the provider not reporting its meter; `0` is a spent month.
+       Rendering the first as the second would tell a staff member the voice
+       road is finished on a house with a full budget. */
+    expect(
+      rows,
+      "the character row does not tell an absent meter from a spent one",
+    ).toContain("Not reported");
+    expect(rows).toContain("a.charactersLeft === null");
   });
 
   it("the quiet-vendor row never lights the server's Unreachable badge", () => {

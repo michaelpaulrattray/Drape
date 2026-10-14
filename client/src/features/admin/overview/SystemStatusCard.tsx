@@ -73,6 +73,9 @@ type VoiceAllowanceView =
       operationsTotal: number;
       slotsLeft: number;
       slotsTotal: number;
+      /** `null` when the provider did not report its own meter (#2509). */
+      charactersLeft: number | null;
+      charactersTotal: number | null;
     }
   | { state: "not_configured" }
   | { state: "unreadable"; failureClass: string };
@@ -196,6 +199,30 @@ export function SystemStatusCard({
         <LeaderRow
           label="Voice slots free"
           value={voiceRowValue(voiceAllowance, (a) => ofTotal(a.slotsLeft, a.slotsTotal))}
+        />
+        {/*
+          AND THE THIRD CEILING, WHICH IS THE HOUSE'S AND NOT AN ACCOUNT'S
+          (#2509). The two rows above are the pair that ends a KEEP. This one
+          ends everything: when the month's characters are spent the provider
+          refuses every design AND every spoken line, for every account at once,
+          and the budget cannot be extended (read live 2026-10-14 —
+          `allowed_to_extend_character_limit: false`).
+
+          ⚠ **It is the row free designs actually move**, which is why it was
+          worth adding: a design costs no operation and no slot, so a scripted
+          caller could empty the house's month while both rows above sat still.
+          "Voice characters" is the plain noun — a staff member reads it as how
+          much speech is left to make.
+        */}
+        <LeaderRow
+          label="Voice characters left this month"
+          value={voiceRowValue(voiceAllowance, (a) =>
+            /* Absent is NOT zero — see the server field. A provider that does
+               not report its meter must not read as a spent one. */
+            a.charactersLeft === null || a.charactersTotal === null
+              ? "Not reported"
+              : ofTotal(a.charactersLeft, a.charactersTotal),
+          )}
         />
       </div>
 
