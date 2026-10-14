@@ -1,7 +1,7 @@
 {
-  "edition": 697,
-  "updatedAt": "2026-10-13T09:31:18Z",
-  "shift": "Foreman — foreman-20261013-1828 (the first piece of the Voice work is built and driven, and it is waiting on a review rather than on you. A voice made from a cast's written line now comes back as three voices to listen to; keeping one saves it, records it reading a set passage, and stores that recording beside the cast. It is switched OFF everywhere and there is no screen for it yet — that is the next piece. Driven on your real voice account and a test character: three voices in 8 seconds, keeping one took 35 seconds, and the recording came out 2.15 MB. Deleting the character gave the voice slot back and took the recording with it. Two things measurement settled: the set passage reads for 2 minutes 18, not 90 seconds — left as it is on purpose, because that recording is what a re-made voice is built from and trimming it a third would cost exactly the variety it was written for; and the six voice charges nobody could explain were simply the designs themselves. Nothing is waiting on you. Queue: 54 open, 17 with no movement in a week)",
+  "edition": 698,
+  "updatedAt": "2026-10-14T08:10:00Z",
+  "shift": "Foreman — foreman-20261014-1635 (the Voice card is built: open a signed character and, under the line about how they sound, three voices made from those exact words — play each one, then keep the one that sounds right, and the character's own audition plays there from then on. It is waiting on a review, not on you. Driven end to end on a test character using your real voice account: the three arrive about seven seconds after the page opens, each with a real waveform drawn from its own sound, and keeping one recorded a reading that plays back in the card. Two things only looking could have caught were found and fixed on the spot — the recording would not play at all the first time, and the kept player was drawing a decorative shape rather than the recording's own. ⚠ TWO SETTINGS FROM YOU turn it on for your account once the review passes, and the order matters — card #2489 has both. Nothing else is waiting on you. Queue: 54 open, 17 with no movement in a week)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,7 +18,7 @@
           "state": "done"
         },
         {
-          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a reading of it stored beside it, measured at 2 minutes 18 rather than the 90 seconds the design guessed (#2469)",
+          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a reading of it stored beside it, measured at 1½ to 2¼ minutes depending on the voice — not the flat 90 seconds the design guessed (#2469)",
           "state": "waiting"
         },
         {
@@ -7150,6 +7150,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "voice-card-2470",
+      "title": "Listen and pick — three voices on a character's Voice card, and Keep gives them one (#2470)",
+      "status": "in-review",
+      "prNumber": 2488,
+      "note": "Held for review: it is a screen customers see and it stores a recording of a voice."
+    },
     {
       "id": "press-busy-pin-1903",
       "title": "The redo's own row can never be mistaken for a picture being made (#1903)",
