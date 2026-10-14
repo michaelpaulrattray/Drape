@@ -1629,3 +1629,9 @@
   verdict: KEEP
   why: "the one written answer to what the clip route's Express pattern is, and the thing that holds the registration honest. The route itself must register as `CONSTANT + \"literal\"` because that is the only composed shape the architecture Atlas resolves — passing this identifier instead recorded the route as '(declares no path this reader can see)', which architectureExpressSurfaces.test.ts refuses — so the parts and the whole are two spellings by necessity, and voiceClipDelivery.test.ts asserts them equal. Deleting it removes the guard and leaves the duplication"
   argued: "#2470 (N4b-2)"
+
+- symbol: resetVoiceAllowanceStaffCache
+  file: server/castingV2/voiceService.ts
+  verdict: KEEP
+  why: "the staff ration caches ONE house-wide reading at module level for the staff refresh cadence, so without this the cache arm, the failure-not-cached arm and the not-configured-before-the-cache arm all read each other's entry and the verdict depends on which ran first — the same reason resetVoiceKeepabilityCache exists twenty lines up and resetVoiceDesignStore one module over. It is what makes the three claims testable at all: that N open staff tabs cost one provider call, that a failure is NEVER cached so a recovered provider reads correctly at once, and that a process whose key has gone cannot be answered from a cached success. All three were driven and all three go red under sabotage (S4, S5, and the cache-ordering arm). Its docblock says production never calls it"
+  argued: "#2471 (N4b-3)"
