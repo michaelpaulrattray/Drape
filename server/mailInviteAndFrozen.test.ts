@@ -29,6 +29,7 @@ import { SUPPORT_EMAIL } from "@shared/supportEmail";
 import type { DisplayCredits } from "@shared/creditDisplay";
 import {
   FROZEN_NOTICE_STAFF_SENTENCE,
+  REFERRER_NAME_MAX,
   UNNAMED_REFERRER,
   accountFrozenEmail,
   mailSender,
@@ -105,6 +106,18 @@ describe("the referral invite", () => {
     expect(email.html).not.toContain("<img src=x");
     expect(email.html).toContain("Eve &lt;img src=x");
     expect(email.subject).not.toMatch(/[\r\n]/);
+  });
+});
+
+describe("a name is not a place to write to a stranger (#2481)", () => {
+  it("the referrer's name is cut to its limit in the subject and the body", () => {
+    const long = `Sam ${"x".repeat(200)} visit evil.example now`;
+    const email = referralInviteEmail({ ...INVITE, referrerName: long });
+    expect(email.subject).not.toContain("evil.example");
+    expect(email.html).not.toContain("evil.example");
+    expect(email.subject.length).toBeLessThanOrEqual(REFERRER_NAME_MAX + ` invited you to ${PRODUCT_NAME}`.length);
+    // Control: a name within the limit is carried whole.
+    expect(referralInviteEmail({ ...INVITE, referrerName: "Sam Rivera" }).subject).toContain("Sam Rivera");
   });
 });
 

@@ -227,6 +227,9 @@ function oneLine(value: string): string {
   return value.replace(/[\r\n]+/g, " ").trim();
 }
 
+/** The longest referrer name an invite repeats; the rest is cut (#2481). */
+export const REFERRER_NAME_MAX = 60;
+
 /** Who the invite says it is from when the referrer never gave a name. */
 export const UNNAMED_REFERRER = "A friend";
 
@@ -254,16 +257,18 @@ export interface ReferralInviteCopy {
  * make your first picture" in their words rather than ours.
  */
 export function referralInviteEmail(copy: ReferralInviteCopy): ProductEmail {
-  const plainName = oneLine(copy.referrerName ?? "") || UNNAMED_REFERRER;
+  /* Whatever the referrer typed as their name: one line (it reaches the
+     subject header), at most REFERRER_NAME_MAX characters (a name is not a
+     place to write a message to a stranger), and escaped below for the body. */
+  const plainName = oneLine(copy.referrerName ?? "").slice(0, REFERRER_NAME_MAX).trim() || UNNAMED_REFERRER;
   const name = escapeEmailHtml(plainName);
-  const credits = formatCredits(copy.rewardCredits);
   const link = escapeEmailHtml(copy.referralLink);
   const rows = [
     paragraphRow(
       `${name} thinks you would like ${PRODUCT_NAME}, a studio for making short films, ads and creator content with people who stay the same from shot to shot.`,
     ),
     paragraphRow(
-      `Join through their link and you get <strong style="color: #0A0A0A;">${credits} credits</strong> when you make your first picture.`,
+      `Join through their link and you get <strong style="color: #0A0A0A;">${formatCredits(copy.rewardCredits)} credits</strong> when you make your first picture.`,
     ),
     buttonRow(link, "Accept the invitation"),
     smallRow(`If the button does not work, paste this link into your browser:<br />${link}`),

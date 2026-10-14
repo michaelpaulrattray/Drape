@@ -83,7 +83,12 @@ function caller() {
   } as never);
 }
 
+/* A fresh address per arm: #2481 gave each address its own daily budget. */
+let nextFriend = 0;
+let FRIEND = "";
+
 beforeEach(() => {
+  FRIEND = `friend-${nextFriend++}@example.com`;
   vi.clearAllMocks();
   vi.stubEnv("RESEND_API_KEY", "re_test_not_a_real_key");
   vi.mocked(getOrCreateReferralCode).mockResolvedValue("KLIEG-ABC123");
@@ -112,15 +117,15 @@ describe("referral invite email — the reward on the wire is the display figure
   });
 
   it("prints the display figure in the email the customer opens", async () => {
-    await expect(caller().sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
+    await expect(caller().sendInvite({ email: FRIEND })).resolves.toEqual({ sent: true });
 
     const email = theInviteOnTheWire();
-    expect(email.to).toBe("friend@example.com");
+    expect(email.to).toBe(FRIEND);
     expect(email.html).toContain(`${DISPLAY} credits`);
   });
 
   it("never prints the ledger figure", async () => {
-    await caller().sendInvite({ email: "friend@example.com" });
+    await caller().sendInvite({ email: FRIEND });
 
     expect(theInviteOnTheWire().html).not.toContain(LEDGER);
   });

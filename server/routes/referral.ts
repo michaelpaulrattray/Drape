@@ -40,6 +40,19 @@ const REDEEM_RATE = { maxRequests: 5, windowMs: 60 * 60 * 1000, keyPrefix: "ref-
 export const INVITE_NOT_SENT_SENTENCE =
   "That invitation didn't go out. Try again in a moment, or copy your link and send it yourself.";
 
+/**
+ * How many invitations one ADDRESS may receive, across every referrer (#2481).
+ * Ten referrers each inviting a stranger once is ten emails from our domain;
+ * three a day is plenty for a person several friends want to bring in.
+ */
+export const INVITE_RECIPIENT_RATE = { maxRequests: 3, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite-to" };
+
+/** A second press while the first invite to the same address is still going out. */
+export const INVITE_IN_FLIGHT_MESSAGE = "That invitation is already on its way.";
+
+/** `${referrerId}:${address}` for every invite between its duplicate check and its record. */
+const invitesInFlight = new Set<string>();
+
 export const VALIDATE_RATE = { maxRequests: 10, windowMs: 5 * 60 * 1000, keyPrefix: "ref-validate" };
 
 export const referralRouter = router({
@@ -134,50 +147,79 @@ export const referralRouter = router({
         });
       }
 
-      // A duplicate never becomes a second email (the rule is the writer's own).
-      if (await hasInvitedEmail(ctx.user.id, input.email)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: ALREADY_INVITED_MESSAGE });
-      }
-
-      /* The link is built on the product's OWN address, never the request's
-         `Origin`: this one goes out in an email from our sending domain to a
-         stranger, so a header the caller controls must not choose where its
-         button leads. (`getMyCode` still shows the referrer their link on the
-         origin they are using; that one is read by the person who asked.) */
-      const code = await getOrCreateReferralCode(ctx.user.id, ip);
-      const referralLink = code ? `${appBaseUrl()}?ref=${code}` : appBaseUrl();
-
-      const sent = await sendReferralInviteEmail({
-        to: input.email,
-        referrerName: ctx.user.name || null,
-        referralLink,
-        /* #2478: the display figure, converted HERE and only here. The other
-           three uses of this constant in this file (getMyCode, getStats,
-           redeem) stay on the ledger scale because their readers
-           (ReferralBlock and RedeemCodeModal) convert at the render, so
-           converting the constant itself would make those screens say 500.
-           An email has no client to convert for it, so the router does. */
-        rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
-      });
-
-      if (!sent.success) {
-        log.error({ err: sent.error }, "[Referral] invite email was not sent");
-        throw spokenError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: INVITE_NOT_SENT_SENTENCE,
+      /* #2481: now that this really mails a stranger from our domain, the
+         RECIPIENT has a budget too, across every referrer — so a handful of
+         accounts cannot turn one address into a target. Synchronous, like the
+         per-user limit above, so no concurrent request can slip past it. */
+      const recipient = input.email.toLowerCase();
+      const recipientCheck = checkRateLimit(recipient, INVITE_RECIPIENT_RATE);
+      if (!recipientCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `That address has had enough invitations for now. Try again ${waitPhrase(recipientCheck.resetIn)}.`,
         });
       }
 
-      /* Recorded only now that it has gone. A refusal HERE is the duplicate
-         race (two sends of one address at once) or a database outage — the
-         email has already gone either way, so the answer is still the truth:
-         it was sent. */
-      const result = await recordEmailInvite(ctx.user.id, input.email, ip);
-      if (!result.success) {
-        log.warn({ err: result.error }, "[Referral] invite sent but not recorded");
+      /* #2481: ONE invite per (referrer, address) in flight at a time, claimed
+         SYNCHRONOUSLY before the first await. The duplicate check below is a
+         read and the record is a later write; without this two parallel
+         presses would both pass the read and both send. The rate limits are
+         in-process too, so this holds exactly as far as they do. */
+      const flightKey = `${ctx.user.id}:${recipient}`;
+      if (invitesInFlight.has(flightKey)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: INVITE_IN_FLIGHT_MESSAGE });
       }
+      invitesInFlight.add(flightKey);
+      try {
+        // A duplicate never becomes a second email (the rule is the writer's own).
+        if (await hasInvitedEmail(ctx.user.id, input.email)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: ALREADY_INVITED_MESSAGE });
+        }
 
-      return { sent: true as const };
+        /* The link is built on the product's OWN address, never the request's
+           `Origin`: this one goes out in an email from our sending domain to a
+           stranger, so a header the caller controls must not choose where its
+           button leads. (`getMyCode` still shows the referrer their link on the
+           origin they are using; that one is read by the person who asked.) */
+        const code = await getOrCreateReferralCode(ctx.user.id, ip);
+        const referralLink = code ? `${appBaseUrl()}?ref=${code}` : appBaseUrl();
+
+        const sent = await sendReferralInviteEmail({
+          to: input.email,
+          referrerName: ctx.user.name || null,
+          referralLink,
+          /* #2478: the display figure, converted HERE and only here. The other
+             three uses of this constant in this file (getMyCode, getStats,
+             redeem) stay on the ledger scale because their readers
+             (ReferralBlock and RedeemCodeModal) convert at the render, so
+             converting the constant itself would make those screens say 500.
+             An email has no client to convert for it, so the router does. */
+          rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
+        });
+
+        if (!sent.success) {
+          log.error({ err: sent.error }, "[Referral] invite email was not sent");
+          throw spokenError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: INVITE_NOT_SENT_SENTENCE,
+          });
+        }
+
+        /* Recorded only now that it has gone, and the record writes the
+           `referral.invite_sent` audit row — so the audit names exactly the
+           invites that left the building. The in-flight claim above means a
+           refusal here is not a same-process duplicate; it is a database outage
+           or a second server instance, and the email has gone either way, so the
+           answer is still the truth: it was sent. */
+        const result = await recordEmailInvite(ctx.user.id, input.email, ip);
+        if (!result.success) {
+          log.error({ err: result.error, userId: ctx.user.id }, "[Referral] invite SENT but not recorded or audited");
+        }
+
+        return { sent: true as const };
+      } finally {
+        invitesInFlight.delete(flightKey);
+      }
     }),
 
   /**

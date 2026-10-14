@@ -154,7 +154,7 @@ vi.mock("./db/referrals", async (importOriginal) => ({
 import { referralRouter } from "./routes/referral";
 import { sendReferralInviteEmail, UNNAMED_REFERRER } from "./mail";
 import { ALREADY_INVITED_MESSAGE, getOrCreateReferralCode, hasInvitedEmail, recordEmailInvite } from "./db/referrals";
-import { INVITE_NOT_SENT_SENTENCE } from "./routes/referral";
+import { INVITE_IN_FLIGHT_MESSAGE, INVITE_NOT_SENT_SENTENCE, INVITE_RECIPIENT_RATE } from "./routes/referral";
 import { SpokenError } from "./_core/spokenError";
 import { appBaseUrl } from "./_core/appOrigin";
 /* The reward the product declares, not a number typed on the line above it —
@@ -238,8 +238,15 @@ async function refusalFrom(run: () => Promise<unknown>): Promise<{ code: string;
   throw new Error("expected the procedure to refuse, and it returned");
 }
 
+/* A fresh address per arm: #2481 gave each ADDRESS its own daily budget in a
+   module-level map no export can clear, so a shared one would let earlier arms
+   spend it for later ones — the same reason `nextUserId` exists. */
+let nextFriend = 0;
+let FRIEND = "";
+
 describe("referral.sendInvite — driven through the real procedure", () => {
   beforeEach(() => {
+    FRIEND = `friend-${nextFriend++}@example.com`;
     vi.clearAllMocks();
     codeReader.mockResolvedValue("DRAPE-ABC123");
     inviteWriter.mockResolvedValue({ success: true });
@@ -250,10 +257,10 @@ describe("referral.sendInvite — driven through the real procedure", () => {
   it("hands the sender the invitee, the referrer, the share link and the declared reward", async () => {
     const { caller } = callerFor();
 
-    await expect(caller.sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
+    await expect(caller.sendInvite({ email: FRIEND })).resolves.toEqual({ sent: true });
 
     expect(soleCallTo(sender)).toEqual({
-      to: "friend@example.com",
+      to: FRIEND,
       referrerName: "John Doe",
       /* #2481: the product's own address, never the request's Origin. */
       referralLink: `${appBaseUrl()}?ref=DRAPE-ABC123`,
@@ -268,7 +275,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     expect(ORIGIN).not.toBe(appBaseUrl());
     const { caller } = callerFor();
 
-    await caller.sendInvite({ email: "friend@example.com" });
+    await caller.sendInvite({ email: FRIEND });
 
     const link = String(soleCallTo(sender).referralLink);
     expect(link.startsWith(`${appBaseUrl()}?ref=`)).toBe(true);
@@ -277,7 +284,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
 
   it("passes no name rather than inventing one, so the email says who in its own words", async () => {
     const { caller } = callerFor({ name: null });
-    await caller.sendInvite({ email: "friend@example.com" });
+    await caller.sendInvite({ email: FRIEND });
     expect(soleCallTo(sender).referrerName).toBeNull();
     expect(UNNAMED_REFERRER.length).toBeGreaterThan(0);
   });
@@ -286,10 +293,10 @@ describe("referral.sendInvite — driven through the real procedure", () => {
   it("records the invite against the caller's own id and ip, AFTER the email went", async () => {
     const { user, caller } = callerFor();
 
-    await caller.sendInvite({ email: "friend@example.com" });
+    await caller.sendInvite({ email: FRIEND });
 
-    expect(inviteWriter).toHaveBeenCalledWith(user.id, "friend@example.com", CALLER_IP);
-    expect(inviteChecker).toHaveBeenCalledWith(user.id, "friend@example.com");
+    expect(inviteWriter).toHaveBeenCalledWith(user.id, FRIEND, CALLER_IP);
+    expect(inviteChecker).toHaveBeenCalledWith(user.id, FRIEND);
     expect(codeReader).toHaveBeenCalledWith(user.id, CALLER_IP);
     expect(sender.mock.invocationCallOrder[0]).toBeLessThan(inviteWriter.mock.invocationCallOrder[0]);
   });
@@ -327,7 +334,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     inviteChecker.mockResolvedValue(true);
     const { caller } = callerFor();
 
-    const refusal = await refusalFrom(() => caller.sendInvite({ email: "friend@example.com" }));
+    const refusal = await refusalFrom(() => caller.sendInvite({ email: FRIEND }));
 
     expect(refusal.code).toBe("BAD_REQUEST");
     expect(refusal.message).toBe(ALREADY_INVITED_MESSAGE);
@@ -343,7 +350,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     sender.mockResolvedValue({ success: false, error: "RESEND_API_KEY is not configured" });
     const { caller } = callerFor();
 
-    const refusal = await refusalFrom(() => caller.sendInvite({ email: "friend@example.com" }));
+    const refusal = await refusalFrom(() => caller.sendInvite({ email: FRIEND }));
 
     expect(refusal.code).toBe("INTERNAL_SERVER_ERROR");
     expect(refusal.message).toBe(INVITE_NOT_SENT_SENTENCE);
@@ -356,7 +363,7 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     sender.mockResolvedValue({ success: false, error: "x" });
     const { caller } = callerFor();
 
-    const thrown = await caller.sendInvite({ email: "friend@example.com" }).then(
+    const thrown = await caller.sendInvite({ email: FRIEND }).then(
       () => null,
       (error: unknown) => error,
     );
@@ -368,8 +375,58 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     inviteWriter.mockResolvedValue({ success: false, error: ALREADY_INVITED_MESSAGE });
     const { caller } = callerFor();
 
-    await expect(caller.sendInvite({ email: "friend@example.com" })).resolves.toEqual({ sent: true });
+    await expect(caller.sendInvite({ email: FRIEND })).resolves.toEqual({ sent: true });
     expect(sender).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * #2481, the relay's security read: two presses at once for one address must
+   * not both pass the duplicate READ and both send. The first is held inside
+   * its send while the second arrives — the exact interleaving the claim exists
+   * for — and the control is that once the first finishes, the address is free
+   * of the claim again (the duplicate rule, not the lock, answers from then on).
+   */
+  it("two concurrent invites to one address send ONE email", async () => {
+    let release!: () => void;
+    sender.mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({ success: true }); }),
+    );
+    const { caller } = callerFor();
+
+    const first = caller.sendInvite({ email: "race@example.com" });
+    await vi.waitFor(() => expect(sender).toHaveBeenCalledTimes(1));
+    const second = await refusalFrom(() => caller.sendInvite({ email: "RACE@example.com" }));
+    release();
+
+    await expect(first).resolves.toEqual({ sent: true });
+    expect(second.message).toBe(INVITE_IN_FLIGHT_MESSAGE);
+    expect(sender).toHaveBeenCalledTimes(1);
+    expect(inviteWriter).toHaveBeenCalledTimes(1);
+
+    /* Control: the claim is released, so a third press reaches the duplicate
+       rule (mocked "not invited" here) and sends — the lock never sticks. */
+    await expect(caller.sendInvite({ email: "race@example.com" })).resolves.toEqual({ sent: true });
+    expect(sender).toHaveBeenCalledTimes(2);
+  });
+
+  it("a failed send releases the claim too, so the customer can retry", async () => {
+    sender.mockResolvedValueOnce({ success: false, error: "x" });
+    const { caller } = callerFor();
+    await refusalFrom(() => caller.sendInvite({ email: "retry@example.com" }));
+    await expect(caller.sendInvite({ email: "retry@example.com" })).resolves.toEqual({ sent: true });
+  });
+
+  /* #2481: one ADDRESS has a budget across every referrer, so several accounts
+     cannot turn our sending domain on one stranger. Positive control first:
+     the budget's worth of different referrers all get through. */
+  it("an address takes at most its budget of invitations, whoever sends them", async () => {
+    const target = `popular-${Date.now()}@example.com`;
+    for (let i = 0; i < INVITE_RECIPIENT_RATE.maxRequests; i++) {
+      await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+    }
+    const refusal = await refusalFrom(() => callerFor().caller.sendInvite({ email: target.toUpperCase() }));
+    expect(refusal.code).toBe("TOO_MANY_REQUESTS");
+    expect(sender).toHaveBeenCalledTimes(INVITE_RECIPIENT_RATE.maxRequests);
   });
 
   /* Invariant 6: a rate limit is a real TOO_MANY_REQUESTS, not a 200 carrying
