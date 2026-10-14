@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Download, Lock, Play, Plus } from "lucide-react";
+import { ArrowLeft, Download, Lock, Plus } from "lucide-react";
 
 import { creditsReturnedText } from "@shared/refundCopy";
 import { Button, EmptyState, Skeleton } from "@/foundation";
@@ -40,6 +40,7 @@ import { masterLookLine } from "@/features/castingV2/masterLookLine";
 import { CastCampaignsCard } from "@/features/castingV2/components/CastCampaignsCard";
 import { CreationCertificateRow } from "@/features/castingV2/components/CreationCertificateRow";
 import { PublicCheckCard } from "@/features/castingV2/creationCheck/PublicCheckCard";
+import { CastVoiceStudio } from "@/features/castingV2/voice/CastVoiceStudio";
 import { siblingsIntroLine, siblingsNoneLine } from "@/features/castingV2/siblingsLines";
 import {
   CastPersonalityCard,
@@ -108,9 +109,6 @@ const TAKE_PLACEHOLDERS = [
 
 /** The drawn refine chips. Inert until refinement ships. */
 const REFINE_CHIPS = ["Softer light", "Plain styling", "Outdoors", "Closer crop", "Tired, end of day"];
-
-/** The voice card's waveform, at rest. Fixed heights: no fake audio. */
-const WAVE = [30, 55, 40, 70, 45, 85, 35, 60, 50, 75, 40, 65, 30, 80, 45, 55, 70, 35, 60, 40, 75, 50, 65, 30, 55, 45, 70, 40, 60, 35];
 
 /** What the two companion cells show, before either has landed. */
 const COMPANION_LABELS = ["Three-quarter", "Side profile"];
@@ -1445,24 +1443,16 @@ export default function CastingRoom() {
                     card, the way door 1 replaces the Personality card's body.
                   */}
                   {ownWordsDoors.voice.stage === "shut" ? (
-                  <>
-                  <div className="dpc-voice__player">
-                    <span className="dpc-voice__play">
-                      <Play size={13} strokeWidth={2} aria-hidden="true" />
-                    </span>
-                    <span className="dpc-voice__wave" aria-hidden="true">
-                      {WAVE.map((height, index) => (
-                        <span key={index} style={{ height: `${height}%` }} />
-                      ))}
-                    </span>
-                  </div>
-                  <div className="dpc-voice__foot">
-                    <span className="dpc-voice__name">No voice yet</span>
-                    <span className="dpc-rcard__hint">
-                      A designed voice and an audition clip arrive with voice.
-                    </span>
-                  </div>
-                  </>
+                    /*
+                      LISTEN AND PICK — N4b-2 (#2470). The player and foot that
+                      stood here inline are inside this component now, drawn
+                      unchanged while `CASTING_VOICE_SCOPE` is shut: it answers
+                      `available: false` and renders the same resting strip and
+                      the same "No voice yet". One drawing of the resting card
+                      rather than two that drift (working law 4), which is also
+                      why `WAVE` moved there as `VOICE_RESTING_WAVE`.
+                    */
+                    <CastVoiceStudio castId={data.castId} name={data.name ?? null} />
                   ) : null}
                 </section>
 

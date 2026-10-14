@@ -222,3 +222,80 @@ export async function deleteAccountVoicesIn(
   const result = await tx.delete(castVoices).where(eq(castVoices.userId, input.userId));
   return (result as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0;
 }
+
+/**
+ * ONE CAST'S KEPT CLIP, BY THE PUBLIC KI ID, FOR THE ACCOUNT THAT OWNS IT —
+ * the owner-only clip route's single statement (N4b-2, #2470).
+ *
+ * ⚠ **THE WHOLE POINT IS THAT IT IS ONE STATEMENT.** The route is handed a
+ * `castId` out of a URL, and the thing it must not do is resolve that to a
+ * model id, then read the voice by that id — a two-step that leaves a window
+ * and spreads the owner across two `WHERE`s (invariant 1, and invariant 2's
+ * *re-anchor the child to the owned parent in that same statement*). So the
+ * join carries, together: the owner on BOTH tables, the public id, and
+ * `signedCastWhere`'s own liveness — the same predicate the roster draws by.
+ *
+ * A cast that is not this account's, not live, not signed, or has no kept
+ * voice, all answer `null`, so the route's 404 cannot be used to discover which
+ * cast ids are real.
+ *
+ * It returns the clip's facts and NOT `designSentence`: the sentence is the
+ * customer's own writing and the bytes are what a player needs, so the one
+ * statement a byte-serving route makes has no reason to load the other
+ * (invariant 8 — sensitive field groups stay out by construction).
+ */
+export async function readOwnedCastVoiceClipByPublicId(
+  userId: number,
+  castId: string,
+): Promise<{
+  modelId: number;
+  clipStorageKey: string;
+  clipSha256: string;
+  clipBytes: number;
+  clipContentType: string;
+} | null> {
+  assertPositiveId(userId, "userId");
+  if (typeof castId !== "string" || castId.length === 0) return null;
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      modelId: castVoices.modelId,
+      clipStorageKey: castVoices.clipStorageKey,
+      clipSha256: castVoices.clipSha256,
+      clipBytes: castVoices.clipBytes,
+      clipContentType: castVoices.clipContentType,
+    })
+    .from(castVoices)
+    .innerJoin(models, and(
+      eq(models.id, castVoices.modelId),
+      eq(castVoices.userId, userId),
+      eq(models.agencyId, castId),
+      signedCastWhere(userId),
+    ))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * Mark a kept voice as used, so the cache has something to be least-recently
+ * used BY (design §4).
+ *
+ * N4b-4 is what reads it; this slice writes it on every clip serve, because the
+ * write has to exist before the eviction that consults it or the column is
+ * uniformly null the day that code lands and every voice looks equally cold.
+ * Owner and cast in the one `WHERE`; a row that is not this account's is not
+ * touched and nothing is reported, since the caller has already proved the
+ * ownership it cares about.
+ */
+export async function touchCastVoiceUsed(input: {
+  userId: number;
+  modelId: number;
+}): Promise<void> {
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await requireDb();
+  await db
+    .update(castVoices)
+    .set({ lastUsedAt: sql`now()` })
+    .where(and(eq(castVoices.modelId, input.modelId), eq(castVoices.userId, input.userId)));
+}

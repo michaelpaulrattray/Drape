@@ -418,6 +418,54 @@ export const ROADS: readonly Road[] = [
     ],
   },
   {
+    id: "voice-listen-and-pick",
+    title: "Listen and pick — a cast's written voice line becomes three voices, and one of them becomes theirs",
+    entrances: [
+      "server/routes/castingV2.ts",
+      "server/routes/castingVoice.ts",
+      "server/routes/voiceClipDelivery.ts",
+      "server/castingV2/voiceService.ts",
+    ],
+    procedures: [
+      "castingV2.voice.status",
+      "castingV2.voice.design",
+      "castingV2.voice.keep",
+    ],
+    summary:
+      "N4b-2 (#2470), his approved design `docs/specs/N4B_VOICE_DESIGN_2026-10-13.md` §1/§4/§6, on the "
+      + "road N4b-1 (#2469) built. The VOICE card already held a written line about how a cast sounds (N2b); under "
+      + "it now sit three voices made from exactly those words — Voice 1, Voice 2, Voice 3, each with play and a "
+      + "waveform — and `Keep \"Voice 2\"` makes one of them the cast's own. The three are made WITHOUT a press "
+      + "when the card first opens (his design: 'a text-to-voice design step that runs alongside the text, not "
+      + "later'), once per cast per page session, and `Make new voices from this text` makes a fresh three from the "
+      + "words as they read now. A Keep is the service's three provider steps and is not done until all three are: "
+      + "save the chosen one to a slot, record it reading the house audition passage, store that clip with its "
+      + "sha256 beside the line it was made from. The kept clip then plays in the card's own player in place of "
+      + "'No voice yet'. NOTHING IS CHARGED on this road and no price is drawn: the real price and its atomic "
+      + "charge are #2471, and a credit figure beside a press that charges nothing is a promise the till would not "
+      + "keep. House spend is paced by `RATE_LIMITS.castingVoiceDesign` (twelve designs an hour, about $0.01 each) "
+      + "and `RATE_LIMITS.castingVoiceKeep` (ten an hour), the second tighter because a Keep spends one of the "
+      + "account's voice operations for the month and a delete refunds none.",
+    doors: [],
+    doorsNote:
+      "THIS ROAD DECLARES NO DOOR, on the persona road's own argument. Outside `CASTING_VOICE_SCOPE` the status "
+      + "read answers `available: false` and the card draws exactly what it drew before — the resting strip and "
+      + "'No voice yet' — while both mutations refuse `PRECONDITION_FAILED`; another account's cast is "
+      + "`NOT_FOUND` before any provider is asked; the ceilings are the two limiters above; and every remaining "
+      + "outcome is a member of `VoiceRefusal` (`server/castingV2/voiceService.ts`) returned as a discriminated "
+      + "result the client reads a sentence for, never a 200 carrying a server message — the words are "
+      + "`shared/voiceCardCopy.ts`'s and a test reads every one of them for vendor and pipeline words. No corpus "
+      + "row can reach it: the corpus drives `refineCandidate` only.",
+    flags: ["CASTING_V2_SCOPE", "CASTING_VOICE_SCOPE"],
+    notes: [
+      "THE KEPT CLIP HAS NO PUBLIC ADDRESS, AND THAT IS THE ROAD'S ONE SECURITY FACT. Ninety seconds of a voice is a cloning source and instant cloning is ON on the account (read at the provider 2026-10-13), which makes the clip closer to the recipe than to a picture. So `castingV2.voice.status` returns an authenticated app PATH and never a storage URL, and the only way to hear it is `/api/cast/:castId/voice-clip` — the EIGHTH authenticated Express route, on CLAUDE.md invariant 5's enumerated list in the commit that created it, with owner, public cast id and `signedCastWhere`'s liveness in ONE statement and a refusal on any byte whose size or sha256 is not the row's.",
+      "THE BYTES STAY IN THE PUBLIC BUCKET AND THAT WAS READ AT THE CODE RATHER THAN PREFERRED: the private evidence store's `putCanonical` accepts `image/webp` alone, by mime AND by byte sniff, under its own parsed key grammar — an MP3 is `invalid_payload` there — so moving the clip means widening a validated image-only store inside the R7 family, which is parked by founder ruling. Two consequences carried rather than assumed: both deletion roads stay correct BECAUSE the bucket did not move (`accountCastingPurge.ts` files it with `publicItem`, `finalCastDeletion.ts` adds it to the cast-owned public set), and the key remains a credential — so nothing logs it, held by `server/storageKeyNotLogged.test.ts`, which swept one sibling out of `rollService` on the way in.",
+      "THE THREE PREVIEWS GET NO ADDRESS AT ALL, which is stronger than owner-only and is a departure from the design's cleanup-manifest sentence, declared under the fidelity law. They come back as base64 in the design result and are held by the browser that asked; there is no key, no object, no route and no row for a preview. The reason is the asset's own lifetime: a preview id stops being saveable at a provider-side moment nobody has measured (known good at 49–53 s), so a durable store would persist audio whose only possible use may already have expired, and then sweep it. What a reload costs is one design — about $0.01 of house money, charged to nobody. A durable preview store is its own card if the reload ever matters.",
+      "WHICH VOICE IS BEING KEPT IS RESOLVED SERVER-SIDE AND THE PROVIDER'S ID NEVER REACHES A CLIENT (the engine boundary's own rule). `server/castingV2/voiceDesignStore.ts` maps an opaque handle to the provider id, in process, with the owner and the cast recorded beside it and refused on either mismatch; it also returns the DESIGN SENTENCE, so the stored record cannot be made to say the voice came from words it did not come from, and an edit to the line between the design and the Keep cannot rewrite it. Its limit is stated: in memory, so a deploy loses the handles — the same shape as the login-attack counter, and the cost is one design.",
+      "THE WAVEFORM IS DECODED, NOT DRAWN. The card has always carried a 30-bar strip at rest, and drawing it three times would have been the fidelity law's violation on the one surface whose purpose is COMPARING: the browser's own `decodeAudioData` gives real samples, `peaksFromSamples` reduces them to one peak per bar (peak and not mean, because a mean flattens speech into a line), and the strip stays at rest when there is nothing decoded. The played portion is lit from the element's real position.",
+    ],
+  },
+  {
     id: "persona-say-it-your-way",
     title: "Say it your way — the customer's own sentence, turned into a cast's personality or voice line",
     entrances: ["server/routes/castingV2.ts", "server/castingV2/castPersonaTranslate.ts"],
@@ -583,6 +631,31 @@ export const UNMAPPED_ENTRANCES: Readonly<Record<string, string>> = {};
  * left to a reader to notice.
  */
 export const UNDECLARED_PROSE_NAMES: Readonly<Record<string, { readonly why: string }>> = {
+  decodeAudioData: {
+    why:
+      "THE BROWSER'S OWN DECODER, not ours — `AudioContext.prototype.decodeAudioData`, a Web " +
+      "Audio API method, so no module here declares it and none should. The voice road's " +
+      "sentence names it because naming it IS the content: the fidelity law's whole question on " +
+      "that surface was whether to draw the card's resting ornament three times or use the " +
+      "dedicated decoder the platform already ships, and a reader checking that the waveform is " +
+      "measured rather than invented needs the name of the thing doing the measuring.",
+  },
+  invalid_payload: {
+    why:
+      "A STRING MEMBER of `PrivateEvidenceStorageErrorCode`, not a declared name — the code " +
+      "`putCanonical` throws for a payload that is not `image/webp` by mime and by byte sniff. " +
+      "The voice road's sentence names it because it is the measured ANSWER to the card's bucket " +
+      "question: a reader asking why a cloning source sits in the public bucket must be able to " +
+      "find the refusal that settles it, rather than take the conclusion on trust.",
+  },
+  PRECONDITION_FAILED: {
+    why:
+      "A tRPC ERROR CODE, declared by `@trpc/server` and not by this tree, which is why it " +
+      "resolves to nothing here while being exactly the right word in the sentence. The road's " +
+      "doorsNote names it to say what a mutation does OUTSIDE its scope — a real error the " +
+      "client can tell apart, never a 200 carrying a message (invariant 6) — and the code is " +
+      "the only precise way to say which.",
+  },
   CAST_PACKAGE_VIEW_PRICE: {
     why:
       "DELETED by #1968 (2026-10-08) with the per-view refund it priced — his word, " +

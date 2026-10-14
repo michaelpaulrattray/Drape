@@ -12,7 +12,7 @@
     {
       "id": "domain:api",
       "name": "api",
-      "moduleCount": 47
+      "moduleCount": 49
     },
     {
       "id": "domain:billing",
@@ -32,12 +32,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 207
+      "moduleCount": 208
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 68
+      "moduleCount": 70
     },
     {
       "id": "domain:client-shared",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 91
+      "moduleCount": 93
     },
     {
       "id": "domain:staff",
@@ -1701,6 +1701,18 @@
     {
       "id": "module:client/src/features/castingV2/viewerCompare.ts",
       "path": "client/src/features/castingV2/viewerCompare.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "path": "client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/voice/waveform.ts",
+      "path": "client/src/features/castingV2/voice/waveform.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -4993,6 +5005,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/voiceDesignStore.ts",
+      "path": "server/castingV2/voiceDesignStore.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/voiceService.ts",
       "path": "server/castingV2/voiceService.ts",
       "domain": "casting-v2",
@@ -5821,6 +5839,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/routes/castingVoice.ts",
+      "path": "server/routes/castingVoice.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/routes/characterSheet.ts",
       "path": "server/routes/characterSheet.ts",
       "domain": "api",
@@ -6027,6 +6051,12 @@
     {
       "id": "module:server/routes/usage.ts",
       "path": "server/routes/usage.ts",
+      "domain": "api",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/routes/voiceClipDelivery.ts",
+      "path": "server/routes/voiceClipDelivery.ts",
       "domain": "api",
       "lifecycle": "active"
     },
@@ -6975,6 +7005,18 @@
     {
       "id": "module:shared/viewThumbnails.ts",
       "path": "shared/viewThumbnails.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/voiceCardCopy.ts",
+      "path": "shared/voiceCardCopy.ts",
+      "domain": "shared",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:shared/voiceClipDelivery.ts",
+      "path": "shared/voiceClipDelivery.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -8880,6 +8922,45 @@
       ]
     },
     {
+      "id": "route:castingV2.voice.design",
+      "namespace": "castingV2.voice",
+      "name": "design",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
+      ]
+    },
+    {
+      "id": "route:castingV2.voice.keep",
+      "namespace": "castingV2.voice",
+      "name": "keep",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
+      ]
+    },
+    {
+      "id": "route:castingV2.voice.status",
+      "namespace": "castingV2.voice",
+      "name": "status",
+      "type": "query",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
+      ]
+    },
+    {
       "id": "route:creationCheck.lookup",
       "namespace": "creationCheck",
       "name": "lookup",
@@ -8898,7 +8979,7 @@
       "name": "preview",
       "type": "query",
       "auth": "protected",
-      "input": "strict",
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
@@ -8924,7 +9005,7 @@
       "name": "status",
       "type": "query",
       "auth": "protected",
-      "input": "strict",
+      "input": "open",
       "rateLimited": false,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
@@ -10844,6 +10925,14 @@
       "path": "/api/cast/:castId/sheet",
       "handler": "createCharacterSheetRouter()",
       "file": "server/routes/characterSheet.ts",
+      "mountedBy": "server/_core/index.ts"
+    },
+    {
+      "id": "express:GET /api/cast/:castId/voice-clip (createVoiceClipDeliveryRouter())",
+      "method": "GET",
+      "path": "/api/cast/:castId/voice-clip",
+      "handler": "createVoiceClipDeliveryRouter()",
+      "file": "server/routes/voiceClipDelivery.ts",
       "mountedBy": "server/_core/index.ts"
     },
     {
@@ -12913,6 +13002,18 @@
     {
       "id": "test:client/src/features/castingV2/viewerCompare.test.ts",
       "path": "client/src/features/castingV2/viewerCompare.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/voice/CastVoiceStudio.test.ts",
+      "path": "client/src/features/castingV2/voice/CastVoiceStudio.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/voice/voiceCardCopy.test.ts",
+      "path": "client/src/features/castingV2/voice/voiceCardCopy.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/voice/waveform.test.ts",
+      "path": "client/src/features/castingV2/voice/waveform.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/voiceCard2139.test.ts",
@@ -15155,6 +15256,10 @@
       "path": "server/castingV2/vocabularyPin.test.ts"
     },
     {
+      "id": "test:server/castingV2/voiceDesignStore.test.ts",
+      "path": "server/castingV2/voiceDesignStore.test.ts"
+    },
+    {
       "id": "test:server/castingV2/voiceScope.test.ts",
       "path": "server/castingV2/voiceScope.test.ts"
     },
@@ -16731,6 +16836,10 @@
       "path": "server/routes/topupStanding2456.test.ts"
     },
     {
+      "id": "test:server/routes/voiceClipDelivery.test.ts",
+      "path": "server/routes/voiceClipDelivery.test.ts"
+    },
+    {
       "id": "test:server/schemaConformance.test.ts",
       "path": "server/schemaConformance.test.ts"
     },
@@ -16885,6 +16994,10 @@
     {
       "id": "test:server/storageCleanupEnumCopies.test.ts",
       "path": "server/storageCleanupEnumCopies.test.ts"
+    },
+    {
+      "id": "test:server/storageKeyNotLogged.test.ts",
+      "path": "server/storageKeyNotLogged.test.ts"
     },
     {
       "id": "test:server/storageManifestReceipt.test.ts",
@@ -20849,6 +20962,31 @@
       "kind": "imports"
     },
     {
+      "from": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "to": "module:client/src/features/castingV2/voice/waveform.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "to": "module:client/src/lib/failureSentence.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "to": "module:client/src/lib/trpc.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "to": "module:shared/voiceCardCopy.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:client/src/features/export/ExportPackDialog.tsx",
       "to": "module:client/src/features/casting/constants.ts",
       "kind": "imports"
@@ -23870,6 +24008,11 @@
     },
     {
       "from": "module:client/src/pages/CastingRoom.tsx",
+      "to": "module:client/src/features/castingV2/voice/CastVoiceStudio.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingRoom.tsx",
       "to": "module:client/src/foundation/index.ts",
       "kind": "imports"
     },
@@ -24891,6 +25034,11 @@
     {
       "from": "module:server/_core/index.ts",
       "to": "module:server/routes/referenceDelivery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/_core/index.ts",
+      "to": "module:server/routes/voiceClipDelivery.ts",
       "kind": "imports"
     },
     {
@@ -37390,6 +37538,11 @@
     },
     {
       "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/routes/castingVoice.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
       "to": "module:server/routes/models.ts",
       "kind": "imports"
     },
@@ -37426,6 +37579,41 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/castingV2/voiceDesignStore.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/castingV2/voiceService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/db/castVoices.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:shared/voiceClipDelivery.ts",
       "kind": "imports"
     },
     {
@@ -39001,6 +39189,36 @@
     {
       "from": "module:server/routes/usage.ts",
       "to": "module:server/db/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:server/_core/sdk.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:server/db/castVoices.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:server/security/rateLimit.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:server/storage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/voiceClipDelivery.ts",
+      "to": "module:shared/voiceClipDelivery.ts",
       "kind": "imports"
     },
     {
@@ -41327,6 +41545,20 @@
       "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
     },
     {
+      "id": "finding:non-strict-input:route:creationCheck.preview",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:creationCheck.preview",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
+      "id": "finding:non-strict-input:route:creationCheck.status",
+      "severity": "warn",
+      "kind": "non-strict-input",
+      "subject": "route:creationCheck.status",
+      "message": "Input schema does not call .strict(), so unknown fields are silently dropped rather than rejected (law 4)."
+    },
+    {
       "id": "finding:non-strict-input:route:credits.checkBalance",
       "severity": "warn",
       "kind": "non-strict-input",
@@ -42013,10 +42245,10 @@
       "message": "Names 7 of LockFacts's 7 fields (server/castingV2/castingIntent.ts), 7 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1511",
+      "id": "finding:redeclared-shape:server/castingV2/rollService.ts:1518",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/rollService.ts:1511",
+      "subject": "server/castingV2/rollService.ts:1518",
       "message": "Names 2 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

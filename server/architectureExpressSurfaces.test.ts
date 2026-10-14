@@ -165,7 +165,8 @@ describe("against the real bootstrap", () => {
       limit an anonymous request. Measured over every router module in the tree:
 
         characterSheet · evidenceDelivery · imageProxy · inkDesignDelivery ·
-        referenceDelivery                                     <- all five, the
+        referenceDelivery · creationCertificate · crewEyeFrames ·
+        voiceClipDelivery                                     <- all of them, the
                                                                  enumerated set
         emailAuth · emailVerification · googleAuth · heroProxy <- ZERO, the
                                                                  public ones
@@ -186,7 +187,7 @@ describe("against the real bootstrap", () => {
        assertion below vacuously true (`absence-only-expect-passes-on-nothing`). */
     expect(userLimited).toEqual([
       "characterSheet", "creationCertificate", "crewEyeFrames", "evidenceDelivery", "imageProxy",
-      "inkDesignDelivery", "referenceDelivery",
+      "inkDesignDelivery", "referenceDelivery", "voiceClipDelivery",
     ]);
 
     /* Then: each one is actually MOUNTED. This is the direction the arm above
@@ -527,6 +528,10 @@ describe("⚠ ONE HOP: a router mounted with no prefix declares its own paths", 
       "/api/cast/:castId/sheet",
       "/api/ink-design/:designId",
       "/api/reference/:referenceId",
+      /* The voice clip (N4b-2, #2470). It is on this list because its pattern
+         is a LITERAL for exactly this reader's sake — see the constant's own
+         docblock in `shared/voiceClipDelivery.ts`. */
+      "/api/cast/:castId/voice-clip",
     ]) {
       expect(paths, `${route} must be a PATH in the Atlas, not a router name`).toContain(route);
     }

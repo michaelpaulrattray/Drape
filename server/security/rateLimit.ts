@@ -249,6 +249,42 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_reference_read',
   },
   /*
+    MAKING VOICES FROM A CAST'S WRITTEN LINE — `castingReferenceRead`'s shape
+    and its numbers, for the same stated reason (N4b-2, #2470).
+
+    A design keeps NOTHING, so there is no storage to protect. What it spends is
+    a PROVIDER CALL on house money — about $0.01 for three voices, measured —
+    every single time, with **no credit path pacing it in this slice**: the
+    price and the charge are #2471. That is the shape that has to be bounded by
+    the limiter or by nothing. Twelve an hour is generous for a person listening
+    and picking, and cheap to be wrong about.
+  */
+  castingVoiceDesign: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 12,
+    keyPrefix: 'casting_voice_design',
+  },
+  /*
+    KEEPING A VOICE — its own bucket, and TIGHTER than the design's, because
+    what it spends is the genuinely scarce thing.
+
+    A Keep spends one voice OPERATION of the account's month (95 on the plan
+    today, read live and never hard-coded — design §5), and a delete refunds
+    none. The provider's own ceiling is already read immediately before the
+    spend and refuses when the month is out, so this limiter is not the quota —
+    it bounds the RATE at which one account can walk toward it, which a quota
+    read cannot do. Ten an hour is far above a person picking a voice and far
+    below a loop eating the month.
+
+    Separate from the design's bucket so that listening to a lot of voices can
+    never refuse a Keep, which is the press that matters.
+  */
+  castingVoiceKeep: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 10,
+    keyPrefix: 'casting_voice_keep',
+  },
+  /*
     ATTACHING A PICTURE TO A CAST — the same shape as the ink upload and the
     same numbers, deliberately.
 

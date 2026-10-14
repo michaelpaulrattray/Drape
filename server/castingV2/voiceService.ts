@@ -118,11 +118,28 @@ export type VoiceKeepResult =
  * ⚠ **THE KEY IS NOT A PERMISSION, AND THIS CLIP IS WHY THAT MATTERS MORE HERE
  * THAN FOR A PICTURE.** `server/storage.ts` writes to a PUBLIC bucket and its
  * URLs never expire, so anything there is protected only by its key being hard
- * to guess — and ninety seconds of a voice is a cloning source. Slice 1 never
- * projects this key and no route serves it; the owner-only route and the
- * decision on whether these bytes belong in the private evidence bucket instead
- * both ride N4b-2, which is where the design puts them. **Until then the only
- * thing that can read a clip is this server.**
+ * to guess — and ninety seconds of a voice is a cloning source.
+ *
+ * ⚠ **BOTH QUESTIONS THIS PARAGRAPH LEFT OPEN ARE ANSWERED — N4b-2 (#2470),
+ * and the answer is kept here because this is where the key is minted.** It
+ * read *"the owner-only route and the decision on whether these bytes belong in
+ * the private evidence bucket instead both ride N4b-2"*:
+ *
+ *   · **The bytes stay in this public bucket**, because the private evidence
+ *     store cannot hold them — its `putCanonical` refuses anything that is not
+ *     `image/webp` by mime AND by byte sniff, under its own parsed key grammar
+ *     (`server/casting/evidence/privateEvidenceStorage.ts`). Read at the code,
+ *     not preferred. `shared/voiceClipDelivery.ts` carries the full reading and
+ *     what follows from it.
+ *   · **The owner-only route exists**: `/api/cast/:castId/voice-clip`
+ *     (`server/routes/voiceClipDelivery.ts`), on CLAUDE.md's enumerated
+ *     authenticated-Express list in the commit that created it.
+ *
+ * **So the key is still never projected and still never logged**, and the only
+ * things that can read a clip are this server and the owner's own authenticated
+ * request. The deletion roads are unaffected and that is a consequence of not
+ * moving the bucket rather than a thing to remember: both file the clip as a
+ * PUBLIC item, which is what it is.
  */
 function voiceClipKey(userId: number, modelId: number): string {
   return `casting/voices/${userId}/${modelId}/${randomUUID()}.mp3`;
@@ -326,7 +343,7 @@ export async function keepCastVoice(
       rather than being quietly absorbed.
     */
     await releaseSlotQuietly(engine, voiceId);
-    await deleteClipQuietly(clipStorageKey);
+    await deleteClipQuietly(clipStorageKey, { userId: input.userId, modelId: input.modelId });
     log.warn(
       { modelId: input.modelId },
       "[Voice] Keep lost its write — slot and clip released, one voice operation spent",
@@ -371,11 +388,47 @@ export async function releaseSlotQuietly(engine: VoiceEngine, voiceId: string): 
   }
 }
 
-async function deleteClipQuietly(storageKey: string): Promise<void> {
+/**
+ * Delete an unclaimed clip's bytes, best effort.
+ *
+ * ⚠ **THE KEY IS NOT LOGGED, AND ON THIS BUCKET THAT IS A SECURITY RULE RATHER
+ * THAN TIDINESS — N4b-2 (#2470).** `server/storage.ts` writes to a permanently
+ * PUBLIC bucket, so CLAUDE.md's sentence about what protects an object there is
+ * the whole of it: *"protected only by the URL being hard to guess"*. The key IS
+ * the credential, and ninety seconds of a voice is a cloning source — so
+ * printing the key here widened a cloning source's address to wherever logs
+ * travel.
+ *
+ * **It was left deliberately unfixed by slice 1's review, because its right
+ * form depended on a decision this card owns** (the relay's third requirement
+ * on #2470): move the bytes to a private bucket and the key stops being a
+ * credential, so logging it is ordinary diagnostics; keep them public and serve
+ * them owner-only, and the key must never be logged at all. This card read the
+ * private evidence store at the code and found it **accepts `image/webp`
+ * only** — an MP3 is `invalid_payload` there — so the bytes stay public behind
+ * an owner-only route (`shared/voiceClipDelivery.ts` carries that reading), and
+ * this is the second road.
+ *
+ * ⚠ **`REFUSING_KEYS` is the wrong tool for it and was measured to be**: this
+ * was the ONLY log call in the server carrying `storageKey`, and
+ * `shared/errorEventScrub.ts`'s own docblock records what a refusing key for a
+ * field that cannot appear costs — *"it is a list nobody can trust"*. The fix
+ * is the log line.
+ *
+ * What a diagnosis actually needs is which cast lost a clip; the key is one
+ * row away for anyone who may read it.
+ */
+async function deleteClipQuietly(
+  storageKey: string,
+  cast: { userId: number; modelId: number },
+): Promise<void> {
   try {
     await storageDelete(storageKey);
   } catch (error) {
-    log.error({ err: error, storageKey }, "[Voice] an unclaimed clip could not be deleted");
+    log.error(
+      { err: error, userId: cast.userId, modelId: cast.modelId },
+      "[Voice] an unclaimed clip could not be deleted — its key is on the cast's voice row",
+    );
   }
 }
 
