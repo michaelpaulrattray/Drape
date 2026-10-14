@@ -9,6 +9,7 @@ import {
   VOICE_CLIP_ROUTE_PATTERN,
   voiceClipPath,
 } from "../../shared/voiceClipDelivery";
+import { baseUrlOf, listenOnFetchablePort } from "../testing/fetchablePort";
 import {
   createVoiceClipDeliveryRouter,
   type VoiceClipDeliveryDependencies,
@@ -55,16 +56,24 @@ function appWith(overrides: Partial<VoiceClipDeliveryDependencies> = {}) {
   return app;
 }
 
+/**
+ * ⚠ **THE PORT COMES FROM `listenOnFetchablePort`, NEVER FROM A BARE
+ * `listen(0)`.** `server/testing/fetchablePort.ts` carries the measurement: on
+ * this machine the dynamic port range starts at 1024, so an OS-chosen port can
+ * land on one of the Fetch standard's *bad ports* and `fetch` refuses before a
+ * packet leaves — roughly one bind in seven hundred, which reads as a timing
+ * flake and is not one. The first draft of this file bound directly and
+ * `server/testing/fetchablePort.test.ts` caught it on the gate, which is that
+ * guard doing exactly its job.
+ */
 async function get(
   app: express.Express,
   path = voiceClipPath("KI-WHGH-MQQ8-D7MV-8V8G"),
   method = "GET",
 ): Promise<{ status: number; body: string; headers: Record<string, string> }> {
-  const server = app.listen(0);
+  const server = await listenOnFetchablePort((port) => app.listen(port, "127.0.0.1"));
   try {
-    const address = server.address();
-    const port = typeof address === "object" && address ? address.port : 0;
-    const response = await fetch(`http://127.0.0.1:${port}${path}`, { method });
+    const response = await fetch(`${baseUrlOf(server)}${path}`, { method });
     const headers: Record<string, string> = {};
     response.headers.forEach((value, key) => { headers[key] = value; });
     return { status: response.status, body: await response.text(), headers };
