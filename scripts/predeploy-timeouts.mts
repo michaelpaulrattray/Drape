@@ -145,7 +145,10 @@ async function main(): Promise<void> {
   console.log(renderReading(summarize(judged), want.service, rows.length >= limit));
 }
 
-main().catch((err) => {
-  console.error(`predeploy-timeouts: ${(err as Error).message}`);
-  process.exit(1);
-});
+main().then(
+  () => process.exit(0),
+  (err) => {
+    console.error(`predeploy-timeouts: ${(err as Error).message}`);
+    process.exit(1);
+  },
+);
