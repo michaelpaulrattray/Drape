@@ -51,15 +51,26 @@ import { captureCastingVoiceEnabled } from "./castingV2Scope";
 import {
   VOICE_AUDITION_PASSAGE,
   VOICE_AUDITION_PASSAGE_VERSION,
-  VOICE_PREVIEW_TEXT,
 } from "./voiceAuditionPassage";
 import { insertCastVoice, readCastVoice, readCastVoiceLine } from "../db/castVoices";
+import {
+  readCastVoiceCard,
+  readCastVoiceCardSources,
+  saveCastVoiceCard,
+} from "../db/castVoiceCards";
+import { readCastOriginalAnchorKey } from "../db/castingV2Sign";
+import type { ReferenceImage, TextEngine } from "../providers/types";
+import {
+  voiceCardSourceHash,
+  voiceCardWriterEngine,
+  writeVoiceCard,
+} from "./voiceCardWriter";
 import { withTransaction } from "../db/connection";
 import {
   createStorageCleanupManifestIn,
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
-import { storageDelete, storagePut } from "../storage";
+import { storageDelete, storagePut, storageReadBytes } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/voiceService");
@@ -154,8 +165,14 @@ function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-/** Injectable for the drivers; production always gets the real transport. */
-export type VoiceServiceDeps = { engine?: VoiceEngine };
+/** Injectable for the drivers; production always gets the real transports. */
+export type VoiceServiceDeps = {
+  engine?: VoiceEngine;
+  /** The hidden voice card's writer (#2498). `null` = no writer configured. */
+  cardWriter?: TextEngine | null;
+  /** The master picture's bytes, by its storage key. */
+  readPicture?: (key: string) => Promise<ReferenceImage>;
+};
 
 function engineFor(deps: VoiceServiceDeps | undefined): VoiceEngine {
   return deps?.engine ?? createElevenLabsVoiceEngine();
@@ -201,7 +218,104 @@ async function holdClipForWrite(input: {
 }
 
 /**
+ * THE HIDDEN VOICE CARD — written once, kept, re-written only when its sources
+ * change (card #2498; `voiceCardWriter.ts` carries the rules and why).
+ *
+ * The sources are hashed (`voiceCardSourceHash`): the customer's words, both
+ * lines, the description paragraph, the master picture's key and the writer's
+ * version. A kept card with the same hash is reused and costs nothing; any
+ * change — the customer rewrites the voice line, the personality, anything —
+ * re-writes it on the next design.
+ *
+ * ⚠ **A WRITER THAT CANNOT ANSWER REFUSES THE DESIGN.** The fallback to the
+ * visible line is exactly the road that gave a cast written as female three male voices,
+ * so it is not taken silently; the customer meets the card's existing
+ * "trouble" sentence and nothing is designed or spent at the voice provider.
+ *
+ * Nothing here logs the words, the card or the line — only that a card was
+ * written, how long it took, and what it cost in tokens.
+ */
+async function ensureVoiceCard(
+  input: { userId: number; modelId: number; signal?: AbortSignal },
+  deps: VoiceServiceDeps | undefined,
+): Promise<
+  | { ok: true; voiceCard: string; previewLine: string }
+  | { ok: false; refusal: VoiceRefusal; failureClass?: string }
+> {
+  const sources = await readCastVoiceCardSources(input.userId, input.modelId);
+  if (!sources) return { ok: false, refusal: "cast_not_available" };
+
+  let pictureKey: string | null = null;
+  try {
+    pictureKey = await readCastOriginalAnchorKey(input.userId, input.modelId);
+  } catch (error) {
+    log.warn({ errName: (error as Error)?.name, modelId: input.modelId }, "[Voice] master picture unreadable — card written from the words");
+  }
+
+  const sourceHash = voiceCardSourceHash(sources, pictureKey);
+  const kept = await readCastVoiceCard(input.userId, input.modelId);
+  if (kept && kept.sourceHash === sourceHash) {
+    return { ok: true, voiceCard: kept.voiceCard, previewLine: kept.previewLine };
+  }
+
+  const writer = deps && "cardWriter" in deps ? deps.cardWriter ?? null : voiceCardWriterEngine();
+  if (!writer) {
+    log.error("[Voice] no voice card writer on this deployment — design refused before any spend");
+    return { ok: false, refusal: "provider_failed", failureClass: "provider_account" };
+  }
+
+  let picture: ReferenceImage | null = null;
+  if (pictureKey) {
+    try {
+      picture = await (deps?.readPicture ?? storageReadBytes)(pictureKey);
+    } catch (error) {
+      /* The key is not logged: on the public bucket it is the credential. */
+      log.warn({ errName: (error as Error)?.name, modelId: input.modelId }, "[Voice] master picture bytes unreadable — card written from the words");
+    }
+  }
+
+  let written: Awaited<ReturnType<typeof writeVoiceCard>>;
+  try {
+    written = await writeVoiceCard({ sources, picture, engine: writer, signal: input.signal });
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      log.warn({ failureClass: error.failureClass, status: error.status }, "[Voice] card writer refused");
+      return { ok: false, refusal: "provider_failed", failureClass: error.failureClass };
+    }
+    throw error;
+  }
+
+  const saved = await saveCastVoiceCard({
+    userId: input.userId,
+    modelId: input.modelId,
+    sourceHash,
+    voiceCard: written.voiceCard,
+    previewLine: written.previewLine,
+    writerModel: written.writerModel,
+  });
+  if (!saved.written) return { ok: false, refusal: "cast_not_available" };
+
+  log.info(
+    {
+      modelId: input.modelId,
+      latencyMs: written.latencyMs,
+      tokens: written.tokens,
+      withPicture: Boolean(picture),
+      rewritten: Boolean(kept),
+    },
+    "[Voice] voice card written",
+  );
+  return { ok: true, voiceCard: written.voiceCard, previewLine: written.previewLine };
+}
+
+/**
  * The cast's words → three voices.
+ *
+ * ⚠ **THE VOICE PROVIDER NEVER READS THE VISIBLE LINE ANY MORE (#2498).** It
+ * reads the cast's hidden voice card and an in-character line
+ * ({@link ensureVoiceCard}). `designSentence` is still the visible line,
+ * returned verbatim, because a Keep stores what the customer's line read when
+ * the voice was made.
  *
  * ⚠ **The previews are returned in process and nothing stores them.** The
  * design asks for the three to be held under the cleanup-manifest pattern so a
@@ -221,10 +335,13 @@ export async function designCastVoices(
   const designSentence = (cast.voice ?? "").trim();
   if (designSentence.length === 0) return { ok: false, refusal: "no_voice_line" };
 
+  const card = await ensureVoiceCard(input, deps);
+  if (!card.ok) return card;
+
   try {
     const { previews, latencyMs } = await engineFor(deps).designVoices({
-      description: designSentence,
-      previewText: VOICE_PREVIEW_TEXT,
+      description: card.voiceCard,
+      previewText: card.previewLine,
       signal: input.signal,
     });
     return { ok: true, previews, designSentence, latencyMs };

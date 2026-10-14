@@ -81,6 +81,9 @@ const DELETION_MODULES = [
      lives beside the table in `castVoices.ts`. This guard is what caught the
      omission on the diff that created it. */
   "server/db/castVoices.ts",
+  /* The hidden voice card (#2498) — the eleventh, on the same shape:
+     `deleteAccountVoiceCardsIn` lives beside its table. */
+  "server/db/castVoiceCards.ts",
 ] as const;
 
 function read(relativePath: string): string {

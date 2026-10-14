@@ -273,11 +273,17 @@ describe("an orphan's key reaches the manifest before its row is deleted", () =>
       `affectedRows: 1`. So those three read 1 here as an artefact of the
       fixture, not of the product, and asserting them at zero would be
       asserting something about the double.
+
+      `castVoiceCards` (#2498) is the fourth of that shape: its DELETE is keyed
+      on the account alone and issued unconditionally (a card row holds no
+      storage key, so there is nothing to collect first), so it reads 1 here
+      for the same reason. Its owner scope is driven against real SQL in
+      `accountDeletionOrphanOwnerScope.test.ts`.
     */
     const result = await purgeAccountCastingIn(tx as never, 4242);
     expect(result.storageItems, "a key was collected from an account with no rows").toEqual([]);
     const childStores = Object.entries(result.counts)
-      .filter(([store]) => !["castingCandidates", "castingRolls", "castingSessions"].includes(store));
+      .filter(([store]) => !["castingCandidates", "castingRolls", "castingSessions", "castVoiceCards"].includes(store));
     expect(
       childStores.filter(([, count]) => count !== 0),
       "a child store reported rows for an account that has none",

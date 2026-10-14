@@ -10,9 +10,10 @@
  * ⚠ **EXPLICIT PROJECTIONS ONLY (invariant 8).** The `models` read below names
  * its columns. It reads `voice` — the customer's own line, which is what a
  * voice is designed FROM — and nothing else creative: no `masterPrompt`, no
- * `technicalSchema`, no `preferences`, no `personality`. A voice road has no
- * use for the recipe, and the cheapest way to keep it out of a provider request
- * is never to load it.
+ * `technicalSchema`, no `preferences`, no `personality`. **The one voice
+ * module that does read them is `castVoiceCards.ts`** (#2498): the hidden
+ * voice card is written FROM the customer's words and picture, so that read is
+ * kept in its own module and returned to the card writer alone.
  */
 import { and, eq, sql } from "drizzle-orm";
 

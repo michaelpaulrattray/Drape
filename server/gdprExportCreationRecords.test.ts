@@ -42,6 +42,7 @@ const OWNER_PREDICATE: Record<string, string> = {
   cast_campaigns: "`cast_campaigns`.`userId` = ?",
   cast_campaign_members: "`cast_campaign_members`.`userId` = ?",
   cast_creation_records: "`cast_creation_records`.`userId` = ?",
+  cast_voice_cards: "`cast_voice_cards`.`userId` = ?",
 };
 
 const fakeClient = {
@@ -119,6 +120,15 @@ function seed(): void {
     { id: 3, modelId: 80_001, userId: STRANGER, recordVersion: "1", recordJson: '{"kliegId":"STRANGER-RECORD"}', recordSha256: "3".repeat(64),
       signature: "h..s", signingKeyId: "kid", timestampToken: null, timestampAuthority: null, stampedAt: null, createdAt: STAMP },
   ];
+  /* The hidden voice cards (#2498), on the records' three shapes. */
+  tables.cast_voice_cards = [
+    { id: 1, modelId: 70_002, userId: OWNER, voiceCard: "OWNER-CARD", previewLine: "OWNER-LINE", writtenAt: STAMP,
+      sourceHash: "9".repeat(64), writerModel: "x-ai/grok-4.7" },
+    { id: 2, modelId: 80_001, userId: OWNER, voiceCard: "MISSTAMPED-CARD", previewLine: "x", writtenAt: STAMP,
+      sourceHash: "8".repeat(64), writerModel: "x-ai/grok-4.7" },
+    { id: 3, modelId: 80_001, userId: STRANGER, voiceCard: "STRANGER-CARD", previewLine: "x", writtenAt: STAMP,
+      sourceHash: "7".repeat(64), writerModel: "x-ai/grok-4.7" },
+  ];
   tables.model_assets = [];
   tables.model_reference_plates = [];
   tables.model_evidence_crops = [];
@@ -180,5 +190,26 @@ describe("the export carries the customer's creation records", () => {
   it("⚠ RE-ANCHORING — a row with the caller's id on someone else's cast is dropped", async () => {
     const data = await callerFor(OWNER).exportData();
     expect(JSON.stringify(data.creationRecords)).not.toContain("MISSTAMPED");
+  });
+});
+
+describe("the export carries the customer's hidden voice cards (#2498)", () => {
+  it("exports the owner's card and line keyed by public cast id, without our hash or the writer's slug", async () => {
+    const data = await callerFor(OWNER).exportData();
+    expect(data.voiceCards).toEqual([{
+      castId: OWNER_CAST_B,
+      voiceCard: "OWNER-CARD",
+      previewLine: "OWNER-LINE",
+      writtenAt: expect.any(String),
+    }]);
+    expect(JSON.stringify(data.voiceCards)).not.toMatch(/grok|9{64}/);
+  });
+
+  it("⚠ NEGATIVE — another account's card never appears, and a misstamped row is dropped", async () => {
+    const data = await callerFor(OWNER).exportData();
+    expect(JSON.stringify(data.voiceCards)).not.toMatch(/STRANGER-CARD|MISSTAMPED-CARD/);
+    const statement = sent.find((entry) => entry.table === "cast_voice_cards");
+    expect(statement?.sql).toContain("`cast_voice_cards`.`userId` = ?");
+    expect(statement?.params[0]).toBe(OWNER);
   });
 });

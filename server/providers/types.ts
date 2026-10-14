@@ -652,7 +652,15 @@ export type ReadPurpose =
    * could be answered, and the disappearing-technology law's third clause
    * obliges both to be.
    */
-  | "persona.translate";
+  | "persona.translate"
+  /**
+   * ONE HIDDEN VOICE CARD WRITTEN FOR A CAST — card #2498 (N4b). Its own word
+   * on `persona`'s argument: it prices a card per DESIGN whose sources changed
+   * (a kept card is reused), paid by the house, and lumping it with any other
+   * bucket would make "what does a cast's voice card cost us" unanswerable —
+   * the question the disappearing-technology law's third clause obliges.
+   */
+  | "voice.card";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -673,6 +681,7 @@ export const READ_PURPOSES = Object.freeze([
   "persona",
   "reads",
   "persona.translate",
+  "voice.card",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

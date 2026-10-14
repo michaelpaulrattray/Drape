@@ -194,12 +194,13 @@ describe("R7-5 Cast dependency and writer coverage", () => {
       "cast_campaign_members.modelId",
       "cast_creation_records.modelId",
       "cast_voices.modelId",
+      "cast_voice_cards.modelId",
       "board_items.sourceModelId",
       "`audit_logs`",
     ]) {
       expect(inventory, `missing inventory row for ${table}`).toContain(table);
     }
-    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(21);
+    expect(schema.match(/modelId:\s*int\("modelId"\)/g)).toHaveLength(22);
     expect(schema).toContain('sourceModelId: int("sourceModelId")');
   });
 

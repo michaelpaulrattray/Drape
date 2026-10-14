@@ -19,6 +19,7 @@
  *  9d. castCampaignMembers (userId), then castCampaigns (userId)
  *  9e. castCreationRecords (userId)
  *  9f. castVoices — inside `purgeAccountCastingIn` (userId)
+ *  9g. castVoiceCards — inside `purgeAccountCastingIn` (userId)
  *  10. creditTransactions (userId)
  *  11. credits (userId)
  *  12. auditLogs (userId) — anonymize, don't delete (compliance)
@@ -237,6 +238,12 @@ export const ACCOUNT_DELETION_DISPOSITIONS = {
     casting object.
   */
   "castVoices.userId": "deleted",
+  /*
+    A cast's hidden voice card (#2498): written from the customer's brief and
+    their master picture, so the same field family as `masterPrompt`. Deleted
+    with the account inside `purgeAccountCastingIn`.
+  */
+  "castVoiceCards.userId": "deleted",
 
   /* ---- anonymised ---- */
   /*
@@ -415,6 +422,7 @@ function zeroDeletionCounts() {
     castCampaigns: 0,
     castCreationRecords: 0,
     castVoices: 0,
+    castVoiceCards: 0,
     creditTransactions: 0,
     credits: 0,
     auditLogsAnonymized: 0,

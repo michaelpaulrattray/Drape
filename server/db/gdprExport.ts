@@ -37,6 +37,7 @@ import {
   castCampaigns,
   castCreationRecords,
   castVoices,
+  castVoiceCards,
   users,
   credits,
   creditTransactions,
@@ -195,6 +196,21 @@ export interface GdprExportData {
     clipSha256: string;
     clipBytes: number;
     keptAt: string;
+  }>;
+  /**
+   * The hidden voice card behind each cast's voices (#2498): the description
+   * the voice designer reads and the in-character line the previews speak.
+   * Never shown in the product, but written from the customer's own words and
+   * picture, so it is data about them and travels in their export. Unlike the
+   * recipe above it cannot reproduce the cast — it describes a voice — which is
+   * why it is here while `masterPrompt` is not. What stays out: the source hash
+   * and the writer's model slug, both ours.
+   */
+  voiceCards: Array<{
+    castId: string;
+    voiceCard: string;
+    previewLine: string;
+    writtenAt: string;
   }>;
   evidence: {
     referencePlates: Array<{
@@ -481,6 +497,29 @@ export async function exportUserData(
     }];
   });
 
+  /* The hidden voice cards (#2498), on the kept voices' shape: owner in the
+     statement's WHERE, re-anchored in memory to this customer's casts. */
+  const ownedVoiceCards = await db
+    .select({
+      modelId: castVoiceCards.modelId,
+      voiceCard: castVoiceCards.voiceCard,
+      previewLine: castVoiceCards.previewLine,
+      writtenAt: castVoiceCards.writtenAt,
+    })
+    .from(castVoiceCards)
+    .where(eq(castVoiceCards.userId, userId))
+    .orderBy(asc(castVoiceCards.id));
+  const exportedVoiceCards = ownedVoiceCards.flatMap((card) => {
+    const castId = castPublicIdByModel.get(card.modelId);
+    if (!castId) return [];
+    return [{
+      castId,
+      voiceCard: card.voiceCard,
+      previewLine: card.previewLine,
+      writtenAt: card.writtenAt.toISOString(),
+    }];
+  });
+
   const exportedCreationRecords = ownedCreationRecords.flatMap((record) => {
     const castId = castPublicIdByModel.get(record.modelId);
     if (!castId) return [];
@@ -670,6 +709,7 @@ export async function exportUserData(
     campaigns: exportedCampaigns,
     creationRecords: exportedCreationRecords,
     voices: exportedVoices,
+    voiceCards: exportedVoiceCards,
     evidence: {
       referencePlates: exportedReferencePlates,
       crops: exportedEvidenceCrops,
