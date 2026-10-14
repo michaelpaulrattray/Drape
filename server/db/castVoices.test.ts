@@ -40,6 +40,8 @@ let writeAffected = 1;
  * deletes) and an arm has to be able to move zero rows on exactly one of them.
  */
 let affectedBySql: Array<{ match: RegExp; affected: number }> = [];
+/** How many transactions the mock saw THROW — i.e. would have rolled back. */
+let transactionsRolledBack = 0;
 
 function affectedFor(sql: string): number {
   for (const rule of affectedBySql) if (rule.match.test(sql)) return rule.affected;
@@ -77,8 +79,17 @@ const recordingPool = {
 */
 vi.mock("./connection", () => ({
   getDb: async () => drizzle(recordingPool as never, { mode: "default" } as never),
-  withTransaction: async (run: (tx: unknown) => unknown) =>
-    run(drizzle(recordingPool as never, { mode: "default" } as never)),
+  withTransaction: async (run: (tx: unknown) => unknown) => {
+    try {
+      return await run(drizzle(recordingPool as never, { mode: "default" } as never));
+    } catch (error) {
+      /* What the real `db.transaction` does with a throw is ROLL BACK; this
+         records that it would have, so an arm can tell "answered null after
+         rolling back" from "answered null and committed". */
+      transactionsRolledBack += 1;
+      throw error;
+    }
+  },
 }));
 
 const {
@@ -119,6 +130,7 @@ beforeEach(() => {
   answers = [];
   writeAffected = 1;
   affectedBySql = [];
+  transactionsRolledBack = 0;
 });
 
 describe("the kept voice's statements", () => {
@@ -211,6 +223,57 @@ describe("the kept voice's statements", () => {
 
     vi.doUnmock("./connection");
     vi.resetModules();
+  });
+
+  /*
+    #2503 ITEM 1 — TWO FIRST KEEPS AT ONCE. Both take a gap lock at the
+    `SELECT … FOR UPDATE`, both INSERT, and InnoDB kills one with 1213 rather
+    than the 1062 the arm above drives. The loser must read as the lost race
+    (`inserted: false`, the clean refusal), not a thrown failure. Driven with the
+    driver error WRAPPED in a `cause` as drizzle delivers it, and bare.
+  */
+  async function insertWithFailingPool(error: unknown) {
+    const failing = { ...recordingPool, query: () => Promise.reject(error) };
+    vi.doMock("./connection", () => ({
+      getDb: async () => drizzle(failing as never, { mode: "default" } as never),
+      withTransaction: async (run: (tx: unknown) => unknown) =>
+        run(drizzle(failing as never, { mode: "default" } as never)),
+    }));
+    vi.resetModules();
+    try {
+      const { insertCastVoice: insertAgain } = await import("./castVoices");
+      return await insertAgain(WRITE);
+    } finally {
+      vi.doUnmock("./connection");
+      vi.resetModules();
+    }
+  }
+
+  it("⚠ a DEADLOCK between two first Keeps is the lost race, not a failure (1213, wrapped)", async () => {
+    const deadlock = Object.assign(new Error("Deadlock found when trying to get lock"), {
+      code: "ER_LOCK_DEADLOCK",
+      errno: 1213,
+    });
+    const wrapped = Object.assign(new Error("Failed query: insert into `cast_voices` …"), { cause: deadlock });
+
+    expect(await insertWithFailingPool(wrapped)).toEqual({ inserted: false, replaced: null });
+  });
+
+  it("⚠ a LOCK WAIT TIMEOUT is the same contest decided by the clock (1205)", async () => {
+    const timeout = Object.assign(new Error("Lock wait timeout exceeded"), {
+      code: "ER_LOCK_WAIT_TIMEOUT",
+      errno: 1205,
+    });
+
+    expect(await insertWithFailingPool(timeout)).toEqual({ inserted: false, replaced: null });
+  });
+
+  it("NEGATIVE CONTROL: any other database failure still THROWS — it is not a lost race", async () => {
+    const dropped = Object.assign(new Error("Connection lost"), { code: "PROTOCOL_CONNECTION_LOST" });
+
+    /* drizzle wraps the driver error ("Failed query: …") with it as `cause` —
+       the reason the classifier walks the chain — so the original is read there. */
+    await expect(insertWithFailingPool(dropped)).rejects.toMatchObject({ cause: dropped });
   });
 
   it("refuses a non-positive id before it reaches the database at all", async () => {
@@ -333,6 +396,31 @@ describe("the statements the deletion roads run inside a transaction", () => {
     expect(statement?.sql).toMatch(/`userId` = \?/);
     expect(statement?.params).toContain(USER_ID);
     expect(statement?.sql).not.toContain("designSentence");
+  });
+
+  /*
+    #2503 ITEM 2 — THE RELEASE-FACT READS LOCK. A plain read sees the erasure's
+    snapshot, so a replacing Keep committing between it and the delete left the
+    NEW clip and slot uncollected while the delete removed their row. A locking
+    read sees the latest committed row and holds it, so read and delete agree.
+  */
+  it("⚠ the ACCOUNT's release facts are a LOCKING read, so a racing Keep cannot slip between read and delete", async () => {
+    await readAccountVoiceReleaseFactsIn(tx, { userId: USER_ID });
+
+    expect(sent[0]?.sql).toMatch(/^select .* from `cast_voices` .* for update$/i);
+  });
+
+  it("⚠ the CAST's release facts are a LOCKING read too — the sibling on the cast-deletion road", async () => {
+    await readCastVoiceReleaseFactsIn(tx, { userId: USER_ID, modelId: MODEL_ID });
+
+    expect(sent[0]?.sql).toMatch(/^select .* from `cast_voices` .* for update$/i);
+  });
+
+  it("NEGATIVE CONTROL: the plain owner read is NOT locking — the assertion above can tell the two apart", async () => {
+    await readCastVoice(USER_ID, MODEL_ID);
+
+    expect(sent[0]?.sql).toMatch(/^select .* from `cast_voices`/i);
+    expect(sent[0]?.sql).not.toMatch(/for update/i);
   });
 
   it("⚠ the CAST's delete carries the owner beside the cast", async () => {
@@ -482,6 +570,42 @@ describe("Remove voice (#2497)", () => {
     /* The clip is queued BEFORE the row that names it goes, inside one
        transaction — so a crash leaves both or neither. */
     expect(sent.indexOf(writes[1]!)).toBeLessThan(sent.indexOf(removal!));
+  });
+
+  /*
+    #2503 ITEM 3 — THE LIVE-CAST PROOF IS IN THE DELETE (invariant 1), not only
+    in the route's `requireCast` before the transaction.
+  */
+  it("⚠ re-proves the owner's LIVE SIGNED cast inside the DELETE itself", async () => {
+    answers = [PRIOR_ROW];
+
+    await removeCastVoice(USER_ID, MODEL_ID);
+
+    const removal = sent.find((one) => /^delete from `cast_voices`/i.test(one.sql));
+    expect(removal?.sql).toMatch(/`cast_voices`\.`modelId` in \(select `id` from `models`/i);
+    expect(removal?.sql).toMatch(/deletedAt/);
+    expect(removal?.params).toEqual(expect.arrayContaining([77, USER_ID, MODEL_ID]));
+  });
+
+  it("⚠ a cast that stopped being live before the delete removes NOTHING and answers null", async () => {
+    /*
+      The delete moves zero rows. It must THROW inside the transaction so the
+      clip manifest written a statement earlier rolls back — answering a voice
+      id here would release the slot of a voice whose row still stands.
+    */
+    answers = [PRIOR_ROW];
+    affectedBySql = [{ match: /^delete from `cast_voices`/i, affected: 0 }];
+
+    expect(await removeCastVoice(USER_ID, MODEL_ID)).toBeNull();
+    /* Null BY ROLLING BACK — the manifest queued above does not survive. */
+    expect(transactionsRolledBack).toBe(1);
+  });
+
+  it("NEGATIVE CONTROL: a delete that lands commits, and hands back the slot", async () => {
+    answers = [PRIOR_ROW];
+
+    expect(await removeCastVoice(USER_ID, MODEL_ID)).toEqual({ voiceId: "old-saved-voice" });
+    expect(transactionsRolledBack).toBe(0);
   });
 
   it("answers null and writes nothing when the cast has no voice", async () => {

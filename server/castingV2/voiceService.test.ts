@@ -887,10 +887,13 @@ describe("a Keep that replaces the cast's voice", () => {
 
   it("⚠ A THROWN WRITE RELEASES ONLY THE NEW SLOT, and rethrows", async () => {
     replacedVoice = { voiceId: OLD };
-    insertThrows = new Error("ER_LOCK_DEADLOCK");
+    /* A dropped connection, not a deadlock: since #2503 a deadlock is a lost
+       race and `insertCastVoice` answers it as `inserted: false` itself, so the
+       write that still THROWS out of it is the unknown failure. */
+    insertThrows = new Error("ECONNRESET: connection lost mid-write");
     const { engine } = stubEngine();
 
-    await expect(keepCastVoice(KEEP, { engine })).rejects.toThrow(/DEADLOCK/);
+    await expect(keepCastVoice(KEEP, { engine })).rejects.toThrow(/ECONNRESET/);
     expect(timeline).toEqual(["row-write", "release:saved-7"]);
   });
 
