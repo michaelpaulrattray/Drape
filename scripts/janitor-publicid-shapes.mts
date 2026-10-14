@@ -1,0 +1,202 @@
+/**
+ * `janitor-publicid-shapes` — CAN THE PRODUCT STILL REACH EVERY ROW IT HAS? (#2496)
+ *
+ *     npx tsx scripts/janitor-publicid-shapes.mts            the listing
+ *     npx tsx scripts/janitor-publicid-shapes.mts --json     the same, machine-readable
+ *
+ * The class it reads for, the two verdicts, why they are weighted differently
+ * and what it deliberately cannot see are all in `scripts/lib/publicIdShapes.mts`
+ * and in `docs/JANITOR_LOG.md`. This file finds the tables, reads their rows and
+ * prints.
+ *
+ * # It reads whichever world its environment names, and SAYS WHICH
+ *
+ * `openDatabase()` resolves `MYSQL_PUBLIC_URL` before `DATABASE_URL`, so a plain
+ * local run reads the DEV database off `.env` and
+ * `railway run --service MySQL -- …` reads PRODUCTION — and the door prints the
+ * host and port either way. That line is load-bearing rather than decorative:
+ * the two worlds differ only by port (`:52008` dev, `:23768` production) with
+ * the same host and the same database name, and a reading whose world has to be
+ * inferred has been inferred wrongly here before.
+ *
+ * **The dev database is the subject that matters.** Production rows are written
+ * by the product alone; dev rows are written by the product AND by every
+ * disposable a shift has ever run, which is the whole class.
+ *
+ * # ⚠ A TABLE IT COULD NOT READ IS NAMED, AND THE RUN IS THEN NOT A TOTAL
+ *
+ * The dev database has repeatedly sat behind the schema (memory
+ * `r6-recovery-state`: migration 0005 was live in production and absent from
+ * dev), so a table in `schema.ts` may genuinely not exist in the world being
+ * read. An unreadable table is reported as `unread` with its driver error, and
+ * the summary then says the reading is a FLOOR and not a total.
+ *
+ * That is #2501's lesson arriving in another instrument on the same day it was
+ * written: a pre-deploy log that had aged out of retention was read by hand as
+ * *"the container printed nothing"*, which was a different and wrong fact.
+ * **Absence of evidence is reported as absence of evidence.**
+ *
+ * # The exit code is half the report
+ *
+ *     0  every value reachable (`unminted` rows may still be listed)
+ *     2  at least one value its own route can never load again
+ *     1  refused — nothing was read, or a width has no judge
+ */
+/* The DEV world — the one that matters here — lives in `.env`, so it is loaded.
+   That is normally the setup for reading dev under a production wrapper by
+   mistake, and the repair is already in the door: `resolveDatabaseUrl()` prefers
+   `MYSQL_PUBLIC_URL`, which only exists when somebody wrapped the command on
+   purpose, and `assertSameWorld` refuses a mismatch outright. */
+import "dotenv/config";
+
+import {
+  JUDGED_WIDTHS,
+  judgeId,
+  judgedPublicIdStores,
+  PUBLIC_ID_COLUMN,
+  type PublicIdStore,
+} from "./lib/publicIdShapes.mts";
+import { openDatabase, worldOf, resolveDatabaseUrl } from "./lib/dbConnection.mts";
+
+type Finding = {
+  table: string;
+  width: number;
+  value: string;
+  unreachable: boolean;
+  unminted: boolean;
+};
+
+type TableReading =
+  | { table: string; symbol: string; width: number; read: true; rows: number; findings: Finding[] }
+  | { table: string; symbol: string; width: number; read: false; error: string };
+
+const asJson = process.argv.includes("--json");
+
+async function main(): Promise<number> {
+  /* Refuses on an empty population or an unjudged width, before anything is
+     opened — a reading nobody can trust is worse than no reading. */
+  const stores: PublicIdStore[] = judgedPublicIdStores();
+
+  const url = resolveDatabaseUrl();
+  const db = await openDatabase();
+  const readings: TableReading[] = [];
+  try {
+    for (const store of stores) {
+      try {
+        const [rows] = await db.query<Array<Record<string, unknown>>>(
+          /* The table name comes from the schema's own declaration, never from
+             an argument or an environment value, so there is no road from
+             outside this process into this statement. */
+          `select \`${PUBLIC_ID_COLUMN}\` as value from \`${store.table}\``,
+        );
+        const findings: Finding[] = [];
+        for (const row of rows) {
+          const value = typeof row.value === "string" ? row.value : String(row.value ?? "");
+          const verdict = judgeId(value, store.width);
+          if (verdict.unreachable || verdict.unminted) {
+            findings.push({ table: store.table, width: store.width, value, ...verdict });
+          }
+        }
+        readings.push({ ...store, read: true, rows: rows.length, findings });
+      } catch (error: unknown) {
+        readings.push({
+          ...store,
+          read: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  } finally {
+    await db.end();
+  }
+
+  const unread = readings.filter((reading): reading is Extract<TableReading, { read: false }> => !reading.read);
+  const read = readings.filter((reading): reading is Extract<TableReading, { read: true }> => reading.read);
+  const rows = read.reduce((total, reading) => total + reading.rows, 0);
+  const findings = read.flatMap((reading) => reading.findings);
+  const unreachable = findings.filter((finding) => finding.unreachable);
+  const unminted = findings.filter((finding) => finding.unminted && !finding.unreachable);
+
+  if (asJson) {
+    console.log(JSON.stringify(
+      {
+        world: worldOf(url),
+        tables: stores.length,
+        rows,
+        unread: unread.map((reading) => ({ table: reading.table, error: reading.error })),
+        unreachable,
+        unmintedOnly: unminted,
+        total: unread.length === 0,
+      },
+      null,
+      2,
+    ));
+    return unreachable.length === 0 ? 0 : 2;
+  }
+
+  console.log(`world: ${worldOf(url)}`);
+  console.log(
+    `\nTABLES DECLARING ${PUBLIC_ID_COLUMN} (${stores.length}), widths ${JUDGED_WIDTHS.join("/")}:`,
+  );
+  for (const reading of readings) {
+    const shape = `${reading.table} (${reading.width})`.padEnd(42);
+    if (!reading.read) {
+      console.log(`  ${shape} UNREAD — ${reading.error}`);
+      continue;
+    }
+    const faults = reading.findings.filter((finding) => finding.unreachable).length;
+    const odd = reading.findings.length - faults;
+    console.log(
+      `  ${shape} ${String(reading.rows).padStart(6)} rows  `
+        + `${faults} unreachable  ${odd} unminted`,
+    );
+  }
+
+  console.log(`\nrows judged: ${rows}`);
+
+  console.log(`\nUNREACHABLE — its own route's parser refuses it (${unreachable.length}):`);
+  for (const finding of unreachable) {
+    console.log(`  ${finding.table}.${PUBLIC_ID_COLUMN} = ${JSON.stringify(finding.value)}`);
+  }
+
+  console.log(
+    `\nUNMINTED ONLY — reachable, but not what the product's mint emits (${unminted.length}).`
+      + " Reported, not a fault:",
+  );
+  for (const finding of unminted) {
+    console.log(`  ${finding.table}.${PUBLIC_ID_COLUMN} = ${JSON.stringify(finding.value)}`);
+  }
+
+  if (unread.length > 0) {
+    console.log(
+      `\n⚠ ${unread.length} of ${stores.length} table(s) could not be read, so this reading is a FLOOR`
+        + " and not a total. They are named above with the driver's own words.",
+    );
+  }
+
+  /* The one blind spot, printed every run rather than left in a docblock: the
+     campaign parser is looser than the campaign mint, so the fault axis cannot
+     fire in that table at all. Saying so here is what stops a clean run being
+     read as "this class cannot be present anywhere". */
+  const loose = readings.filter((reading) => reading.width === 32).map((reading) => reading.table);
+  if (loose.length > 0) {
+    console.log(
+      `\nnote: ${loose.join(", ")} parses its id as z.string().min(1).max(32), which refuses nothing a`
+        + " 32-wide column can hold — so in that table this class shows only on the unminted axis.",
+    );
+  }
+
+  console.log(`\nFAULTS (unreachable): ${unreachable.length}`);
+  return unreachable.length === 0 ? 0 : 2;
+}
+
+/* Ends by ending the process (`scriptExitDiscipline`): nothing imports this
+   file — it is a command, and a command's LAST top-level statement exits. */
+main()
+  .then((code) => process.exit(code))
+  .catch((error: unknown) => {
+    console.error(
+      `janitor-publicid-shapes: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    process.exit(1);
+  });
