@@ -1,7 +1,7 @@
 {
-  "edition": 701,
-  "updatedAt": "2026-10-14T10:40:00Z",
-  "shift": "Janitor — patrol #15 (janitor-20261014-1955) · THE TEAM'S OWN WORKSPACE HAD ITS THREE-DAY TIDY-UP, AND NOTHING A CUSTOMER SEES CHANGED. The one real decision in it had been put off eight times, and it is now made and closed. Three practice character sheets in our test database could never be opened at all — they were created with the wrong kind of name, so clicking one gave an error that looked exactly like a fault in the product. It cost an earlier shift three attempts to work out that the cause was our own leftover test data and not its work. The three are deleted, and the little script that made them is fixed so it cannot do it again. Everything deleted anywhere tonight was written down first, with a way to put it back. Also fixed on this page: it had been showing the first piece of the voice work as \"in review\" since yesterday morning, when it had actually gone live — that row now reads correctly. Your voice work is still waiting on the one thing only you can do: open a signed character and listen to the three voices. Nothing else needs you. No credits and no money were spent.",
+  "edition": 702,
+  "updatedAt": "2026-10-14T12:02:03.109Z",
+  "shift": "Foreman — N4b-3, the money half (foreman-20261014-2055) · THE VOICE BUTTONS NOW SAY WHAT THEY COST, AND THE FREE ONES CANNOT BE RUN UP. Open a signed character and the Voice card reads \"Make new voices from this text · 25 credits\", with \"Keep Voice 1 · 100 credits\" beside each of the three — the prices you set on 13 October. The three voices that appear on their own when the card opens are still free, as you asked, and the house pays for those. What changed underneath is that nobody can keep asking for free ones: a character gets one free set a day, and an account gets twenty a day, and asking past that quietly does nothing rather than charging you. If a voice fails after you have paid, the credits come back, and if for any reason they cannot, the card says so instead of claiming you were not charged. I drove the whole thing on a real character in both the light and dark screens: the free set took nothing, the paid press took exactly 25, and the balance at the top of the screen now updates the moment it does — it did not before, which I only found by watching it. This is one half of that card: the staff view of the monthly voice allowance and a whole-company daily limit are still to come, so the card stays open. It is waiting on a review, not on you. Your voice work still needs the one thing only you can do: open a signed character and listen.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -26,8 +26,8 @@
           "state": "waiting"
         },
         {
-          "title": "Ready to widen — the real price on the button, the monthly allowance visible to staff, and every refusal seen on screen before anyone else gets it (#2471)",
-          "state": "waiting"
+          "title": "Ready to widen — the real prices are on the buttons and the free voices are bounded, in review now; the staff view of the monthly allowance and a whole-company daily limit are still to come (#2471)",
+          "state": "in-progress"
         },
         {
           "title": "Re-making a voice when the slots are full, after your ear closed its court — you said re-mint sounds better in some cases (#2472)",
@@ -144,7 +144,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-14T10:27:02.986Z",
+      "readAt": "2026-10-14T12:03:12.509Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10731,7 +10731,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-14T10:27:02.985Z",
+    "readAt": "2026-10-14T12:03:12.508Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10810,6 +10810,16 @@
       {
         "issueNumber": 2472,
         "title": "N4b-4: the re-mint court for his ear, then eviction and re-mint",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2497,
+        "title": "N4b: change or remove a kept voice — the card has no road to either once a voice is kept",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2498,
+        "title": "N4b: voices are designed from the video-generator line alone — write a hidden voice card from the words and the picture (his listening test: F)",
         "urgent": false
       }
     ]
