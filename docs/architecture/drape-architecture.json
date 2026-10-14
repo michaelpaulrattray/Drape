@@ -9054,6 +9054,7 @@
         "client/src/features/casting/evidence/useInkAddWorkflow.ts",
         "client/src/features/casting/hooks/useCastingGeneration.ts",
         "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx",
         "client/src/features/operations/GenerationOperationBridge.tsx",
         "client/src/features/studio/components/CastingWorkspace.tsx",
         "client/src/features/studio/takeover/CastingTakeover.tsx",
@@ -11944,6 +11945,20 @@
       "name": "CASTING_V2_VIEW_RETRY_PRICE_CREDITS",
       "constant": "CASTING_V2_VIEW_RETRY_PRICE_CREDITS",
       "credits": 1850,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "name": "CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "constant": "CASTING_V2_VOICE_DESIGN_PRICE_CREDITS",
+      "credits": 125,
+      "file": "server/casting/castingCreditCosts.ts"
+    },
+    {
+      "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "name": "CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "constant": "CASTING_V2_VOICE_KEEP_PRICE_CREDITS",
+      "credits": 500,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -37700,6 +37715,16 @@
     },
     {
       "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/casting/atomicCredits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
+      "to": "module:server/casting/castingCreditCosts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingVoice.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -40485,6 +40510,11 @@
     },
     {
       "from": "module:shared/refundCopy.ts",
+      "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/voiceCardCopy.ts",
       "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     }

@@ -325,6 +325,105 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_voice_keep',
   },
   /*
+    ─────────────────────────────────────────────────────────────────────────
+    THE THREE DAILY CEILINGS ON VOICES — his order, 2026-10-14 (#2471),
+    verbatim: *"but we need to stop people being able to spam generate new
+    voices otherwise it would cost us a fortune?"*
+
+    The three buckets above are HOURLY, and hourly alone is what he was asking
+    about: 12 presses + 30 automatic an hour is about **1,000 free designs per
+    account per day**, roughly $10 of house money, and the automatic bucket
+    could be asked for directly with `automatic: true` by any caller without
+    opening a card at all. A price (#2471's other half) bounds the PRESS by the
+    customer's balance — it does nothing about the free road, and it makes the
+    free road the attractive one, so the charge and these ceilings belong in one
+    change.
+
+    ⚠ **THESE ARE 24-HOUR WINDOWS IN AN IN-MEMORY STORE, SO A DEPLOY RESETS
+    THEM, AND THAT IS STATED RATHER THAN HIDDEN.** This product deploys on every
+    merge to `main`, so a busy day can empty these counters several times. Two
+    things make it the right trade for now and neither is "it is fine":
+
+      · It is the house's own attested shape for a daily limit — `INVITE_RATE`
+        and `INVITE_RECIPIENT_RATE` (`routes/referral.ts`) are 24-hour windows in
+        this same store, and #2493 fixed the sweep precisely so a window longer
+        than an hour is honoured rather than silently shortened to one.
+      · A reset costs at most one more free design per cast, because the
+        per-cast bucket below is keyed on the cast and the cast population is
+        what actually bounds the spend.
+
+    **The honest remainder, which is #2471's own next slice**: his *"house-wide
+    daily ceiling across all accounts"* cannot live here at all — one process's
+    Map is not a house-wide fact, and an alarm nobody receives is invariant 7's
+    control that does not exist. That one needs a persisted counter and is NOT
+    built by this change.
+    ───────────────────────────────────────────────────────────────────────── */
+
+  /*
+    ONE FREE AUTOMATIC DESIGN PER CAST PER DAY — his *"at most once per cast per
+    day per account, keyed on the cast"*.
+
+    **This is the bucket that makes the automatic road genuinely automatic.** The
+    card designs three voices when it opens, and the three are free (his *"2 real
+    cost is neglible we absorb it"*), so the free road had to stop being
+    repeatable: before this, a reload re-opened the card and spent house money
+    again, and the only thing standing in the way was a module-level `Set` in the
+    CLIENT'S page session, which a reload empties by definition.
+
+    ⚠ **KEYED ON THE CAST, SO IT IS A BOUND AND NOT A BLOCK.** A customer with
+    forty signed casts still gets a free three on each of them — which is the
+    feature working — while nobody gets a second free three on the same cast the
+    same day. The account-wide bucket below is what bounds the forty.
+
+    ⚠ **AND IT NEVER CHARGES INSTEAD.** When this bucket is spent the automatic
+    road REFUSES and makes no provider call; it does not quietly fall through to
+    the paid press. Charging for an arrival nobody pressed is the one outcome
+    this road must never produce.
+  */
+  castingVoiceAutoDesignDaily: {
+    windowMs: 24 * 60 * 60 * 1000, // 1 day
+    maxRequests: 1,
+    keyPrefix: 'casting_voice_auto_design_daily',
+  },
+  /*
+    TWENTY FREE AUTOMATIC DESIGNS AN ACCOUNT A DAY — the relay's recommendation
+    on his order, and the ceiling that bounds the whole free road.
+
+    The per-cast bucket above bounds a cast; this bounds the ACCOUNT, so a
+    scripted walk across a library of signed casts cannot turn forty casts into
+    forty free designs an hour indefinitely. Twenty a day is about $0.20 of house
+    money and is far above a person opening casts to hear how they sound.
+
+    It is the SECOND gate on the same press, deliberately: a customer who hits
+    it meets the same silent resting state as the per-cast bound, because an
+    automatic design nobody asked for says nothing when it is refused.
+  */
+  castingVoiceAutoDesignDay: {
+    windowMs: 24 * 60 * 60 * 1000, // 1 day
+    maxRequests: 20,
+    keyPrefix: 'casting_voice_auto_design_day',
+  },
+  /*
+    FIFTY PAID PRESSES AN ACCOUNT A DAY — the relay's recommendation on his
+    order, and the one ceiling here that sits on top of a CHARGE.
+
+    A press costs 25 display credits, so the customer's own balance is the first
+    bound and this is the second. It exists because a balance is not a ceiling on
+    HOUSE cost: a customer holding a large balance could spend it entirely on
+    voice designs in an afternoon, and at about $0.01 a design our side of that
+    is real money moving faster than anyone would notice.
+
+    ⚠ **Fifty presses is 1,250 display credits in one day on this one surface**,
+    which is far beyond picking a voice and well short of a loop. A customer who
+    reaches it is told *in a little while* and nothing is charged for the
+    refusal — the limiter runs BEFORE the charge.
+  */
+  castingVoiceDesignDay: {
+    windowMs: 24 * 60 * 60 * 1000, // 1 day
+    maxRequests: 50,
+    keyPrefix: 'casting_voice_design_day',
+  },
+  /*
     ATTACHING A PICTURE TO A CAST — the same shape as the ink upload and the
     same numbers, deliberately.
 

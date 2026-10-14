@@ -182,6 +182,15 @@ describe("R7-7E1 evidence-aware package foundation contract", () => {
       // behind the casting scope chain.
       "routes/billing.ts",
       "routes/castingV2.ts",
+      // ⚠ A VOICE SURFACE ARRIVED ON 2026-10-14 (#2471) — the fourth time this
+      // inventory has surfaced a new price READER, which is the job it was
+      // written for. The Voice card's two mutations charge for AUDIO (125 ledger
+      // for three voices from a cast's written line, 500 to keep one), and the
+      // same module serves both figures to the card so the buttons carry their
+      // price without the client holding a literal. Still a declaration-only
+      // read: the price module gains no dependency, which is the purity this
+      // suite is actually about.
+      "routes/castingVoice.ts",
       "routes/generation/castingExport.ts",
     ]);
 

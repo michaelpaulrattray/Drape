@@ -1,5 +1,19 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+
+/*
+  ⚠ **THE SHARED STRIPPER, NEVER A PRIVATE ONE (#1629).** The arms at the foot
+  of this file read the component's own source, so they must tell what it SAYS
+  from what it DISCUSSES — the comment beside the repair names the very constant
+  the arm bans, which is exactly the sentence a future reader needs. The first
+  draft hand-rolled `//` to end of line and `server/commentStripperShape.test.ts`
+  refused it on the push: a `//` inside a string literal is not a comment, and a
+  guard that reads SHORT passes for the wrong reason.
+*/
+import { withoutComments } from "../../../../../server/testing/withoutComments";
+
+import { TRPCClientError } from "@trpc/client";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -14,6 +28,7 @@ import {
 
 import {
   CastVoiceStudioPanel,
+  isShortOfCredits,
   KEPT_STRIP_KEY,
   VOICE_RESTING_WAVE,
   voiceRefusalSentence,
@@ -73,6 +88,11 @@ function render(props: Partial<CastVoiceStudioPanelProps> = {}): string {
     onToggle: () => {},
     onMake: () => {},
     onKeep: () => {},
+    /* The real ledger prices the route serves (#2471). A fixture that omitted
+       them rendered a panel no customer can reach, and the omission is what
+       found the `undefined` the component now degrades on. */
+    designPriceCredits: 125,
+    keepPriceCredits: 500,
   };
   return renderToStaticMarkup(createElement(CastVoiceStudioPanel, { ...base, ...props }));
 }
@@ -246,5 +266,172 @@ describe("a refusal says what to do", () => {
       refusal: VOICE_CLIP_WONT_PLAY,
     });
     expect(html).toContain(asMarkup(VOICE_CLIP_WONT_PLAY));
+  });
+});
+
+describe("the card's money reader, and what it must not catch (finding 2)", () => {
+  /** A tRPC client error as the card actually receives one. */
+  const refusal = (code: string) =>
+    new TRPCClientError("…", { result: { error: { data: { code } } } } as never);
+
+  it("⚠ READS THE LEDGER'S REFUSAL — the positive control", () => {
+    /* `chargeRefusal` answers `PRECONDITION_FAILED` for a short balance
+       deliberately, so this must stay true or the card stops being able to say
+       "Not enough credits" at all. Without this arm the one below passes by
+       reading nothing. */
+    expect(isShortOfCredits(refusal("PRECONDITION_FAILED"))).toBe(true);
+  });
+
+  it("⚠ DOES NOT READ A SHUT ROAD AS A MONEY PROBLEM", () => {
+    /*
+      THE DEFECT, in the customer's terms: narrow `CASTING_VOICE_SCOPE` while
+      somebody has the card open, let them press, and they were told *"Not
+      enough credits"*. The route's half of this contract is driven in
+      `server/routes/castingVoiceRoad.test.ts` — it refuses a shut road with
+      `FORBIDDEN` — and this is the half that makes the code choice matter.
+    */
+    expect(isShortOfCredits(refusal("FORBIDDEN"))).toBe(false);
+  });
+
+  it("does not read a rate limit, a missing cast or a transport failure as one either", () => {
+    for (const code of ["TOO_MANY_REQUESTS", "NOT_FOUND", "INTERNAL_SERVER_ERROR"]) {
+      expect(isShortOfCredits(refusal(code))).toBe(false);
+    }
+    /* And a non-tRPC failure — a proxy's plain-text 502, the shape
+       `failureSentence`'s own incident was about — is not a money fact. */
+    expect(isShortOfCredits(new Error("upstream error"))).toBe(false);
+  });
+});
+
+describe("the refusal sentence carries the refund reference (finding 4)", () => {
+  const REFERENCE = "refund:pending-1-3f2a7c18-0b44-4e5e-9a21-7d6c5b8e1f90";
+
+  it("⚠ QUOTES IT WHEN THE REFUND DID NOT RECORD", () => {
+    /* The card is what the customer reads, so the reference has to survive the
+       whole way out to the sentence — not merely exist on the wire. */
+    for (const during of ["make", "keep"] as const) {
+      const sentence = voiceRefusalSentence("provider_failed", during, false, REFERENCE);
+      expect(sentence).toContain(REFERENCE);
+      expect(sentence).not.toContain("Nothing was charged");
+    }
+  });
+
+  it("says nothing about a reference when the credits came back", () => {
+    for (const during of ["make", "keep"] as const) {
+      expect(voiceRefusalSentence("provider_failed", during, true, REFERENCE))
+        .not.toContain(REFERENCE);
+    }
+  });
+
+  it("⚠ STILL SAYS THEY ARE OWED WHEN NO REFERENCE REACHED US", () => {
+    /* The reference is nullable on the wire, and a missing one must not turn
+       the sentence back into a claim that nothing was charged. */
+    const sentence = voiceRefusalSentence("provider_failed", "keep", false, null);
+    expect(sentence).toContain("haven't come back");
+    expect(sentence).not.toContain("Nothing was charged");
+  });
+
+  it("⚠ PUTS THE MONEY FIRST EVEN FOR A REFUSAL THAT HAS ITS OWN SENTENCE", () => {
+    /*
+      `no_operations_left` has a sentence of its own (*"Voices can't be kept
+      right now…"*), which says nothing about money. A customer who is out of
+      pocket needs to hear that above everything else, so the unrecorded-refund
+      branch outranks the whole switch below it.
+    */
+    const sentence = voiceRefusalSentence("no_operations_left", "keep", false, REFERENCE);
+    expect(sentence).not.toBe(VOICE_CANNOT_KEEP);
+    expect(sentence).toContain(REFERENCE);
+  });
+});
+
+describe("the catch-all shows the server's sentence, not a money claim (finding 1)", () => {
+  /**
+   * The two catch blocks, each sliced out of the component's own source.
+   *
+   * ⚠ **WHY A SOURCE READ RATHER THAN A RENDER.** The repair is at a CALL SITE
+   * inside the wired card, not in the pure panel these arms render, and the
+   * wired half needs a tRPC provider to mount. Every other arm here would stay
+   * green if somebody put `VOICE_MAKE_FAILED` back in that catch: the copy arms
+   * read the CONSTANTS, which are still correct, and the road suite reads the
+   * SERVER, which still sends the right sentence. This is the only reader that
+   * can see the one line in between.
+   *
+   * ⚠ **AND IT IS SLICED, NOT READ WHOLE.** A `toContain` over the file passes
+   * on an identical line in a neighbouring function — the class that has
+   * survived sabotage green in this repository before — so each arm gets the
+   * bytes of its own handler and nothing else, and the slice anchors are proven
+   * unique before anything is asserted about them.
+   */
+  const source = readFileSync(
+    new URL("./CastVoiceStudio.tsx", import.meta.url),
+    "utf8",
+  );
+
+  const slice = (afterAnchor: string, untilAnchor: string): string => {
+    expect(source.split(afterAnchor)).toHaveLength(2);
+    const fromAnchor = source.slice(source.indexOf(afterAnchor));
+    const end = fromAnchor.indexOf(untilAnchor);
+    expect(end).toBeGreaterThan(0);
+    return withoutComments(fromAnchor.slice(0, end));
+  };
+
+  /*
+    ⚠ **THE SLICING IS LAZY, AND THAT WAS MEASURED RATHER THAN PREFERRED.** The
+    first version computed each body here in the describe body, and sabotaging
+    an anchor took the WHOLE FILE out at collection: thirty-one arms vanished
+    and the run reported no tests at all rather than a failing one
+    ([[test-files-tally-not-tests-tally]]). A guard whose own failure is
+    indistinguishable from a broken suite is a guard nobody can diagnose, so
+    each arm asks for its own bytes and only its own arm goes red.
+  */
+  const CATCHES = [
+    {
+      what: "the press",
+      body: () => slice('logRawFailure("castingV2.voice.design", error);', "}, [castId, design"),
+      fallback: "VOICE_MAKE_LOST_CONTACT",
+      banned: "VOICE_MAKE_FAILED",
+    },
+    {
+      what: "the Keep",
+      body: () => slice('logRawFailure("castingV2.voice.keep", error);', "} finally {"),
+      fallback: "VOICE_KEEP_LOST_CONTACT",
+      banned: "VOICE_KEEP_FAILED",
+    },
+  ];
+
+  it("sliced the right region (the positive control)", () => {
+    /* Without this, a slice that silently came back empty would make both arms
+       below pass by reading nothing at all. */
+    for (const handler of CATCHES) {
+      const body = handler.body();
+      expect(body.length).toBeGreaterThan(80);
+      expect(body).toContain("setRefusal");
+    }
+  });
+
+  it("⚠ HANDS THE SERVER'S OWN SENTENCE THROUGH", () => {
+    /* `readableFailure` is the product's one rule for this
+       (`client/src/lib/failureSentence.ts`), and on this road the server's
+       sentence already carries the refund truth and its reference. */
+    for (const handler of CATCHES) {
+      expect(handler.body()).toContain(`readableFailure(error, ${handler.fallback})`);
+    }
+  });
+
+  it("⚠ AND NEVER ANSWERS A THROW WITH *NOTHING WAS CHARGED*", () => {
+    /*
+      THE DEFECT ITSELF. Both constants say *"Nothing was charged"*, which the
+      press made a claim about the ledger the moment it started charging — and
+      the catch-all is reached by a design that threw AFTER the charge, where
+      the refund may not have recorded. `atomicCredits`' law: an unrecorded
+      refund is never reported as money that came back.
+
+      The constants are not deleted — they are still the right words where the
+      refusal road has told us the refund DID record (`voiceMakeFailedText`).
+      What may not happen is reaching them from here.
+    */
+    for (const handler of CATCHES) {
+      expect(handler.body()).not.toContain(handler.banned);
+    }
   });
 });
