@@ -76,8 +76,11 @@
  * checkout can. Passing anything else under that name is a lie the marker will
  * carry into the feed — see `readProbeBuild`'s header.
  *
- * Exit 0 only on `arrived`. Any other verdict exits 2 — a finding, in the
- * gate-stall-check sense, so a rite step or `deploy-verify` can read it.
+ * Exit 0 on `arrived`, and on `not-yet-visible` (#2514) — Sentry's ingest
+ * answered 2xx to the event and the DSN names the project being read, so an id
+ * that is not readable yet is indexing lag rather than a dead pipe. Any other
+ * verdict exits 2 — a finding, in the gate-stall-check sense, so a rite step or
+ * `deploy-verify` can read it.
  *
  * ⚠ **AND THE CODE IS PRINTED AS `EXIT <n>` ON STDOUT, WHICH IS THE READING TO
  * KEY ON.** The first production run returned 1 while having printed its
@@ -110,12 +113,16 @@ import {
   initErrorTracker,
 } from "../server/monitoring/errorTracker";
 import {
+  dsnProjectId,
+  matchDsnProject,
   PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
   readProbeSlugs,
   readTrackerProbe,
+  type DsnProjectMatch,
+  type IngestAnswer,
   type VendorLookup,
 } from "../server/monitoring/trackerVerdict";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
@@ -150,6 +157,57 @@ interface LookupOutcome {
   readonly lookup: VendorLookup;
   /** What was actually done, for the receipt — never a reconstruction. */
   readonly note: string;
+  /** Asked only on an absence (#2514): does the DSN name the project being read? */
+  readonly dsnProject?: DsnProjectMatch;
+  readonly projectNote?: string;
+}
+
+/**
+ * WHICH SENTRY PROJECT THE DSN SENDS INTO, against the project the read-back asks
+ * about (#2514) — the *"DSN points somewhere else"* half of a dead pipe, read as
+ * two numeric ids rather than suspected.
+ *
+ * `GET /api/0/projects/{org}/{project}/` carries the project's numeric `id`, and
+ * Sentry's docs give it the SAME scopes as the event lookup above
+ * (`project:read`/`write`/`admin`), so a token that can ask about the event can
+ * ask this. The DSN is parsed in memory by `dsnProjectId`, which hands back the
+ * id alone; the DSN and the token are never printed.
+ */
+async function readDsnProject(
+  token: string,
+  org: string,
+  project: string,
+): Promise<{ readonly match: DsnProjectMatch; readonly note: string }> {
+  const dsnId = dsnProjectId(process.env.SENTRY_DSN);
+  if (dsnId === undefined) {
+    return { match: "unknown", note: "the DSN carries no readable project id" };
+  }
+  try {
+    const response = await fetch(
+      `https://sentry.io/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (response.status !== 200) {
+      return { match: "unknown", note: `Sentry answered ${response.status} for ${org}/${project}'s own record` };
+    }
+    const body = (await response.json()) as { id?: unknown };
+    const readId = typeof body.id === "string" || typeof body.id === "number" ? String(body.id) : undefined;
+    const match = matchDsnProject(dsnId, readId);
+    return {
+      match,
+      note:
+        match === "matches"
+          ? `the DSN sends into ${org}/${project} (project id ${dsnId})`
+          : match === "differs"
+            ? `the DSN sends into project id ${dsnId}, and ${org}/${project} is project id ${readId}`
+            : `${org}/${project}'s record carried no id`,
+    };
+  } catch (error) {
+    return {
+      match: "unknown",
+      note: `the project read itself failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
 }
 
 /**
@@ -204,11 +262,14 @@ async function lookUpAtSentry(eventId: string): Promise<LookupOutcome> {
     await sleep(LOOKUP_INTERVAL_MS);
   }
 
+  const dsnProject = await readDsnProject(token, org, project);
   return {
     lookup: "absent",
     note:
       `Sentry answered ${lastStatus} (not found) on every one of ${attempts} attempts across ` +
       `${Math.round(LOOKUP_WINDOW_MS / 1000)}s for ${org}/${project}.`,
+    dsnProject: dsnProject.match,
+    projectNote: dsnProject.note,
   };
 }
 
@@ -248,6 +309,40 @@ console.log(`boot     ${bootLine}`);
 
 const before = errorTrackerStatus();
 
+/*
+  ⚠ THE INGEST'S OWN ANSWER, READ OFF THE SDK RATHER THAN INFERRED (#2514).
+
+  The id lookup sees Sentry's INDEX, and on 2026-10-14 the index was slower than
+  the 90 s window while both probe events had arrived — so "not found yet" alone
+  cannot tell lag from a dead pipe. The SDK already holds the fact that can: the
+  HTTP status Sentry's ingest returned to the envelope, handed to every
+  `afterSendEvent` listener (`@sentry/core`'s `client.sendEvent`; a transport
+  that never reached the door resolves with no `statusCode`). Clause 4 of the
+  disappearing-technology law — a signal bought and unread.
+
+  The import resolves to the SAME module instance `initErrorTracker` loaded, so
+  `getClient()` is the tracker's own client — no second SDK, no second init, and
+  `server/monitoring/errorTracker.ts` is untouched. Keyed by event id, so a
+  session or a stray event cannot answer for the probe's.
+*/
+const ingestById = new Map<string, IngestAnswer>();
+if (before.ready) {
+  try {
+    const sentrySdk = await import("@sentry/node");
+    sentrySdk.getClient()?.on("afterSendEvent", (event, response) => {
+      if (!event.event_id) return;
+      const status = (response as { statusCode?: unknown } | undefined)?.statusCode;
+      ingestById.set(
+        event.event_id,
+        typeof status === "number" ? { kind: "answered", status } : { kind: "no-answer" },
+      );
+    });
+  } catch {
+    /* No hook means `not-observed`, which the verdict reads as no evidence of
+       receipt — the conservative direction, never a pass. */
+  }
+}
+
 /* The real crash path, with the real options and the real scrub. `kind: "probe"`
    rides as a tag so the event is filterable in the feed as well as findable by
    its marker.
@@ -274,12 +369,27 @@ const refused = after.refused - before.refused;
 console.log(`eventId  ${eventId ?? "(none — the SDK returned no id)"}`);
 console.log(`counters sent +${sent} · refused +${refused} · configured=${after.configured} ready=${after.ready}`);
 
-const outcome =
+const ingest: IngestAnswer =
+  (eventId === undefined ? undefined : ingestById.get(eventId)) ?? { kind: "not-observed" };
+console.log(
+  `ingest   ${
+    ingest.kind === "answered"
+      ? `Sentry's ingest answered HTTP ${ingest.status} to the envelope`
+      : ingest.kind === "no-answer"
+        ? "the transport got NO answer from Sentry's ingest"
+        : "not observed — the SDK reported no send for this event"
+  }`,
+);
+
+const outcome: LookupOutcome =
   eventId === undefined
     ? { lookup: "not-checked" as VendorLookup, note: "No event id, so there was nothing to look up." }
     : await lookUpAtSentry(eventId);
 
 console.log(`lookup   ${outcome.lookup} — ${outcome.note}`);
+if (outcome.projectNote) {
+  console.log(`project  ${outcome.dsnProject} — ${outcome.projectNote}`);
+}
 
 const reading = readTrackerProbe({
   configured: after.configured,
@@ -288,6 +398,8 @@ const reading = readTrackerProbe({
   refused,
   eventId,
   lookup: outcome.lookup,
+  ingest,
+  dsnProject: outcome.dsnProject,
 });
 
 console.log("");

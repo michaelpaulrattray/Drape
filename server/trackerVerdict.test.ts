@@ -24,12 +24,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  dsnProjectId,
+  matchDsnProject,
+  PASSING_TRACKER_VERDICTS,
   PROBE_ERROR_CONTEXT,
   probeErrorMessage,
   probeMarker,
   readProbeBuild,
   readProbeSlugs,
   readTrackerProbe,
+  trackerVerdictPasses,
   type TrackerProbeFacts,
 } from "./monitoring/trackerVerdict";
 import { scrubErrorEvent } from "../shared/errorEventScrub";
@@ -125,6 +129,138 @@ describe("the tracker probe's verdict (#1542)", () => {
       expect(reading.summary.length).toBeGreaterThan(40);
       expect(reading.verdict).not.toBe("");
     }
+  });
+});
+
+/**
+ * #2514 — AN EVENT THAT IS ONLY SLOW TO INDEX MUST NOT READ AS LOST.
+ *
+ * On 2026-10-14 the rite exited 1 on `lost-in-transit` while both probe events
+ * were in Sentry: the id lookup sees Sentry's index, and the index was slower
+ * than the 90 s window. The verdict now reads the absence beside the ingest's own
+ * HTTP answer and whether the DSN names the project being read. ONE combination
+ * passes; every arm after the first is a negative control proving a real dead
+ * pipe still fails.
+ */
+describe("an absence read beside what Sentry's ingest said (#2514)", () => {
+  const lagging: TrackerProbeFacts = {
+    ...arrived,
+    lookup: "absent",
+    ingest: { kind: "answered", status: 200 },
+    dsnProject: "matches",
+  };
+
+  it("calls ingest-200 into THIS project, not yet readable, NOT-YET-VISIBLE — and does not fail the rite", () => {
+    const reading = readTrackerProbe(lagging);
+    expect(reading.verdict).toBe("not-yet-visible");
+    expect(reading.healthy).toBe(true);
+    expect(reading.summary).toContain("abc123def456");
+    expect(reading.summary).toMatch(/lag/);
+    // The stronger claim the card names as the defect is never made here.
+    expect(reading.summary).not.toMatch(/does not have it/);
+  });
+
+  it("any 2xx is a receipt, not only 200", () => {
+    expect(readTrackerProbe({ ...lagging, ingest: { kind: "answered", status: 202 } }).verdict).toBe(
+      "not-yet-visible",
+    );
+  });
+
+  it("NEGATIVE — a DSN naming ANOTHER project is still the dead pipe, even with a 200 at the door", () => {
+    const reading = readTrackerProbe({ ...lagging, dsnProject: "differs" });
+    expect(reading.verdict).toBe("lost-in-transit");
+    expect(reading.healthy).toBe(false);
+    expect(reading.summary).toMatch(/DIFFERENT Sentry project/);
+  });
+
+  it("NEGATIVE — an ingest REFUSAL (a bad key's 401) is still the dead pipe", () => {
+    const reading = readTrackerProbe({ ...lagging, ingest: { kind: "answered", status: 401 } });
+    expect(reading.verdict).toBe("lost-in-transit");
+    expect(reading.healthy).toBe(false);
+    expect(reading.summary).toContain("401");
+  });
+
+  it("NEGATIVE — a 429 (quota, rate limit) is a refusal too, not a receipt", () => {
+    const reading = readTrackerProbe({ ...lagging, ingest: { kind: "answered", status: 429 } });
+    expect(reading.verdict).toBe("lost-in-transit");
+  });
+
+  it("NEGATIVE — a transport that never reached the door (no HTTP answer) is still the dead pipe", () => {
+    const reading = readTrackerProbe({ ...lagging, ingest: { kind: "no-answer" } });
+    expect(reading.verdict).toBe("lost-in-transit");
+    expect(reading.summary).toMatch(/NO answer/);
+  });
+
+  it("NEGATIVE — a 200 whose project could NOT be matched is not enough to pass", () => {
+    // The wrong-project DSN answers 200 too; only the id compare tells it apart.
+    expect(readTrackerProbe({ ...lagging, dsnProject: "unknown" }).verdict).toBe("lost-in-transit");
+    expect(readTrackerProbe({ ...lagging, dsnProject: undefined }).verdict).toBe("lost-in-transit");
+  });
+
+  it("NEGATIVE — a send nobody observed is no evidence of receipt (the pre-#2514 facts read as before)", () => {
+    expect(readTrackerProbe({ ...lagging, ingest: { kind: "not-observed" } }).verdict).toBe("lost-in-transit");
+    expect(readTrackerProbe({ ...lagging, ingest: undefined }).verdict).toBe("lost-in-transit");
+  });
+
+  it("an ingest receipt never stands in for a read-back that was not made or failed", () => {
+    // A 200 at the door is evidence about an ABSENCE; it is not a lookup.
+    expect(readTrackerProbe({ ...lagging, lookup: "not-checked" }).verdict).toBe("accepted-unverified");
+    expect(readTrackerProbe({ ...lagging, lookup: "unreadable" }).verdict).toBe("accepted-unverified");
+  });
+
+  it("the passing words are exactly the verdicts any reading calls healthy (derived, both ways)", () => {
+    const facts: TrackerProbeFacts[] = [
+      arrived,
+      lagging,
+      { ...lagging, dsnProject: "differs" },
+      { ...lagging, ingest: { kind: "answered", status: 401 } },
+      { ...lagging, ingest: { kind: "no-answer" } },
+      { ...arrived, lookup: "absent" },
+      { ...arrived, lookup: "not-checked" },
+      { ...arrived, lookup: "unreadable" },
+      { ...arrived, configured: false },
+      { ...arrived, ready: false },
+      { ...arrived, sent: 0, refused: 1, eventId: undefined },
+      { ...arrived, sent: 0, refused: 0, eventId: undefined },
+    ];
+    const healthyWords = new Set<string>();
+    for (const fact of facts) {
+      const reading = readTrackerProbe(fact);
+      expect(trackerVerdictPasses(reading.verdict)).toBe(reading.healthy);
+      if (reading.healthy) healthyWords.add(reading.verdict);
+    }
+    expect([...healthyWords].sort()).toEqual([...PASSING_TRACKER_VERDICTS].sort());
+    expect(trackerVerdictPasses("lost-in-transit")).toBe(false);
+    expect(trackerVerdictPasses(null)).toBe(false);
+  });
+});
+
+describe("the DSN's project, read without printing the DSN (#2514)", () => {
+  /* A made-up DSN in Sentry's own shape — no real key or project. */
+  const FAKE_DSN = "https://0123456789abcdef0123456789abcdef@o1.ingest.us.sentry.io/4242";
+
+  it("reads the numeric project id off the end of the DSN", () => {
+    expect(dsnProjectId(FAKE_DSN)).toBe("4242");
+    expect(dsnProjectId(`  ${FAKE_DSN}/  `)).toBe("4242");
+  });
+
+  it("never hands back the key", () => {
+    expect(dsnProjectId(FAKE_DSN)).not.toContain("0123456789abcdef");
+  });
+
+  it("says nothing rather than guessing for a blank, absent or malformed DSN", () => {
+    expect(dsnProjectId(undefined)).toBeUndefined();
+    expect(dsnProjectId("")).toBeUndefined();
+    expect(dsnProjectId("not a url")).toBeUndefined();
+    expect(dsnProjectId("https://key@o1.ingest.sentry.io/")).toBeUndefined();
+    expect(dsnProjectId("https://key@o1.ingest.sentry.io/klieg-server")).toBeUndefined();
+  });
+
+  it("matches, differs, or admits it does not know", () => {
+    expect(matchDsnProject("4242", "4242")).toBe("matches");
+    expect(matchDsnProject("4242", "9999")).toBe("differs");
+    expect(matchDsnProject(undefined, "4242")).toBe("unknown");
+    expect(matchDsnProject("4242", undefined)).toBe("unknown");
   });
 });
 

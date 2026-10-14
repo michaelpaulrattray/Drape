@@ -105,6 +105,20 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     path: "server/testing/withoutComments.ts",
     why: "the instruction-surface step (#1813) strips comments with THE one source walk before deciding which suites a docs push must run — a fifth private copy of that walk is #1623's bug a fifth time, so the rite imports it across trees rather than owning one",
   },
+  /* ⚠ THE TRACKER VERDICT'S PASSING WORDS (#2514). The rite's probe-step reader
+     (`scripts/lib/trackerProbeStep.mts`) now imports `PASSING_TRACKER_VERDICTS`
+     from the verdict module rather than spelling `"arrived"` a second time, so
+     these bytes decide whether a probe run costs the rite its OK. Exact entries,
+     and the verdict module's only import is the no-imports declaration below it,
+     so the graph grows by exactly these two and the derived arm caught both. */
+  {
+    path: "server/monitoring/trackerVerdict.ts",
+    why: "the probe-step reader imports the passing tracker verdicts from these bytes at module load (#2514)",
+  },
+  {
+    path: "shared/monitoringProjects.ts",
+    why: "imported by the tracker verdict module the probe-step reader loads (#2514)",
+  },
   /* The six `shared/` modules the briefing judge imports at module load —
      exact entries, not a `shared/` prefix, so the founder's parked product
      edits under `shared/` stay desk-only. The suite DERIVES the rite's static
