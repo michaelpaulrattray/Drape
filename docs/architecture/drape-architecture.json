@@ -9042,6 +9042,7 @@
         "client/src/features/casting/evidence/useInkAddWorkflow.ts",
         "client/src/features/casting/hooks/useCastingGeneration.ts",
         "client/src/features/casting/hooks/useCastingPackageRefresh.ts",
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx",
         "client/src/features/operations/GenerationOperationBridge.tsx",
         "client/src/features/studio/components/CastingWorkspace.tsx",
         "client/src/features/studio/takeover/CastingTakeover.tsx",

@@ -631,6 +631,17 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setBars({});
       setDesignId(result.designId);
       setChoices(result.voices);
+      /*
+        ⚠ **THE BALANCE IS STALE THE MOMENT A PRESS LANDS (#2471), AND NOTHING
+        ELSE ON THIS PAGE REFETCHES IT.** Found in the running app, not by
+        reading: the ledger took 125 and the header went on reading the old
+        number, because this card was written when nothing it did cost anything.
+        Every other paid surface in the product invalidates here.
+
+        ONLY on a press: the automatic three are free, and invalidating after
+        them would spend a round trip to learn the balance has not moved.
+      */
+      if (!automatic) void utils.credits.getBalance.invalidate();
     } catch (error) {
       logRawFailure("castingV2.voice.design", error);
       /*
@@ -654,7 +665,7 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       }
       if (!automatic) setRefusal(VOICE_MAKE_FAILED);
     }
-  }, [castId, design, releaseUrls]);
+  }, [castId, design, releaseUrls, price, utils]);
 
   /* THE FIRST THREE ARRIVE WITHOUT A PRESS (design §1), once per cast per page
      session — see `designedThisSession` for why that is not per mount. */
@@ -702,6 +713,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setRefusal(VOICE_KEEP_FAILED);
     } finally {
       void utils.castingV2.voice.status.invalidate({ castId });
+      /* A Keep is always charged, and a refused one is refunded — either way
+         the number in the header is no longer the number in the ledger. */
+      void utils.credits.getBalance.invalidate();
     }
   }, [castId, designId, keep, releaseUrls, utils]);
 
