@@ -1,7 +1,7 @@
 {
-  "edition": 707,
-  "updatedAt": "2026-10-14T17:45:00.000Z",
-  "shift": "THE VOICE WORK IS BUILT — ALL OF IT, AND THE LAST PIECE WAS PROVED AGAINST THE REAL VOICE SERVICE TONIGHT. When a voice has to give up its place, the crew now makes it again from the recording it left behind: driven end to end, the voice came back, it spoke, and it cost one unit of the month’s allowance out of 95. Nothing is left for the crew to build on this rung. Four things wait on you, all on this page — two listens and two presses — and two of them were invisible until tonight: they were finished and live with nothing anywhere asking you to look.",
+  "edition": 708,
+  "updatedAt": "2026-10-14T19:10:00.000Z",
+  "shift": "THE COMPANY'S VOICE BUDGET WAS BEING READ AND THROWN AWAY, AND NOW IT IS ON THE DASHBOARD. Every time the product checks the voice account it already gets back a monthly limit on how much speech the whole company can make — shared by every account, and it cannot be raised. Nothing in the product has ever looked at it. Tonight it does: the staff dashboard now has a third voice line reading 173,515 of 182,297, beside the two that were already there. It matters because the FREE voices a customer makes come out of that one shared pot, and they cost no \"keep\" and no slot — so the two numbers on the dashboard would have sat perfectly still while the month emptied. At today's free limit one account on its own could use the whole company's month. Nobody can hit that yet: six accounts exist, one has ever cast, and the month is 4.8% used. So nothing is being blocked or refused, and no limit was invented — choosing that number is yours, and it is worth doing before voice is switched on for anyone beyond you. Nothing a customer sees changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -34,7 +34,7 @@
           "state": "waiting"
         },
         {
-          "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read. The plan document that still called Voice unbuilt is corrected (#2471)",
+          "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read: keeps, slots, and (new tonight) the shared monthly speech budget that the free voices actually spend. The plan document that still called Voice unbuilt is corrected (#2471, #2509)",
           "state": "done"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-14T17:41:30.401Z",
+      "readAt": "2026-10-14T19:08:46.562Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10308,6 +10308,13 @@
       "status": "merged",
       "prNumber": 2508,
       "note": "Live. Two numbers rather than one, because either a full slot list or a spent month stops a Keep; honest words when the service is quiet or absent."
+    },
+    {
+      "id": "voice-house-characters-2509",
+      "title": "The company's shared monthly speech budget is read and shown, instead of being fetched and thrown away (#2509)",
+      "status": "merged",
+      "prNumber": 2517,
+      "note": "Live. The limit was already arriving on every check and being discarded; it is now the dashboard's third voice line. No limit and no refusal was built — that number is yours to choose."
     }
   ],
   "problems": [
@@ -10769,7 +10776,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-14T17:41:30.400Z",
+    "readAt": "2026-10-14T19:08:46.561Z",
     "items": [
       {
         "issueNumber": 1598,
