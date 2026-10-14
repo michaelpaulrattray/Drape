@@ -320,6 +320,46 @@ describe("the hop, and the population it was widened for (#2289)", () => {
   });
 });
 
+describe("a suite the derived signal cannot see, pinned by name (#2518)", () => {
+  /*
+    ⚠ **THE POPULATION ABOVE IS SUITES THAT WALK THE TREE, AND A SUITE CAN BE
+    SLOW ENOUGH TO REDDEN A DEPLOY WITHOUT WALKING IT.**
+    `architectureExpressSurfaces.test.ts` imports the architecture generator and
+    reads CLAUDE.md three times; inside the deploy rite its invariant-5 arm hit
+    `Test timed out in 5000ms` on a correct push and passed 18 of 18 alone.
+
+    The card chose to declare the floor on this one file rather than widen the
+    signal on one instance (the `readdirSync` widening was measured to indict 54
+    innocent files to catch 9). So this is a pin, and it says so: a list of one,
+    held here because the deriver cannot hold it.
+  */
+  const FILE = "server/architectureExpressSurfaces.test.ts";
+
+  it("declares the class's timeout", () => {
+    expect(
+      declaresTheFloor(readFileSync(join(ROOT, FILE), "utf8")),
+      `${FILE} is back on vitest's 5 s default and will time out inside the deploy rite (#2518)`,
+    ).toBe(true);
+  });
+
+  it("CONTROL — the same file without its declaration reads as undeclared", () => {
+    /* The reader must be able to say no about THIS file's real source, not
+       only about the synthetic one-liners above. */
+    const stripped = readFileSync(join(ROOT, FILE), "utf8").replace(
+      /vi\s*\.\s*setConfig\s*\(\s*\{[^}]*\}\s*\)\s*;?/g,
+      "",
+    );
+    expect(declaresTheFloor(stripped)).toBe(false);
+  });
+
+  it("is still outside the derived population — when it joins, delete this block", () => {
+    /* If the signal is ever widened to see it, the arm above is redundant with
+       "every one of them declares it", and this says so rather than letting a
+       hand-kept pin outlive its reason. */
+    expect(sourceSweepSuites(ROOT).map((row) => row.file)).not.toContain(FILE);
+  });
+});
+
 describe("the constant itself", () => {
   it("is the figure three independent sizings landed on", () => {
     /* Not a taste check — it pins the relationship the docblock argues, so a
