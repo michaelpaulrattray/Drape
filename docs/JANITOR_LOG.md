@@ -70,9 +70,20 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    `npx tsx scripts/janitor-publicid-shapes.mts`, on this same three-day clock.
    It asks whether the product can still reach every row it has: every table in
    `drizzle/schema.ts` declaring a `publicId`, every value in it, judged against
-   the shape that column's declared width says the product mints. Exit **2**
-   means a row exists that its own route's parser will refuse — which is a row
-   nobody can ever load again. The run records the counts here.
+   **the parser its own route uses** — and against the shape that column's
+   declared width says the product mints. Exit **2** means a row exists that its
+   own route's parser will refuse — which is a row nobody can ever load again.
+   The run records the counts here.
+   ⚠ **THREE OF THE THIRTEEN TABLES DO NOT GO THROUGH THE SHARED
+   `z.string().uuid()` DOOR, AND THE RUN PRINTS WHICH.** `cast_campaigns` is
+   LOOSER (`z.string().min(1).max(32)`), so the fault axis cannot fire in it at
+   all; `casting_ink_designs` and `casting_reference_attachments` are STRICTER —
+   their image routes test a path segment against the lowercase canonical
+   pattern before a row is read, so an uppercase or nil id there is a row whose
+   picture answers 404 for good. Keying the judge on the WIDTH alone reported
+   both of those as fine, which was the relay's finding on PR #2516 and is
+   repaired. A verdict is not readable without the rule behind it, so the
+   listing and the `--json` document both carry the mapping.
    ⚠ **IT IS A READING AND NOT A GUARD, AND THAT IS STRUCTURAL.** Its subject is
    rows, and `vitest.setup.ts` strips `DATABASE_URL` precisely so no suite can
    reach one — so no gate will ever notice this. **And the three guards a shift
@@ -98,6 +109,14 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    different and wrong fact.
    `server/janitorPublicIdShapes.test.ts` proves the JUDGE and the POPULATION
    against the real specimen from #1098; this clock is the other half.
+   ⚠ **And it guards the one direction the per-table map can be wrong in**: a
+   table absent from that map is judged by the shared parser, which is exactly
+   how the two delivery tables came to read as reachable. The suite sweeps
+   `server/routes/` for the image-route pattern and holds the files declaring it
+   equal to the map's sources plus an enumerated exemption list, each exemption
+   carrying its reason — so a fifth route adopting the pattern reddens the gate
+   rather than its table going quiet. **A route strict in some OTHER shape is
+   invisible to that sweep, so the arm is a floor and not coverage.**
 
 Every Janitor run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. knip, the Atlas

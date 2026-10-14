@@ -9,6 +9,12 @@
  * and in `docs/JANITOR_LOG.md`. This file finds the tables, reads their rows and
  * prints.
  *
+ * ⚠ **Three of the thirteen tables are judged by their OWN route's parser and
+ * not by the shared `z.string().uuid()` door, and the run PRINTS which** — two
+ * image routes that are stricter and the campaign door that is looser. A verdict
+ * without the rule behind it is not readable, so the `--json` document carries
+ * the same mapping.
+ *
  * # It reads whichever world its environment names, and SAYS WHICH
  *
  * `openDatabase()` resolves `MYSQL_PUBLIC_URL` before `DATABASE_URL`, so a plain
@@ -63,6 +69,8 @@ import {
   judgeId,
   judgedPublicIdStores,
   PUBLIC_ID_COLUMN,
+  routeParserFor,
+  TABLE_ROUTE_PARSERS,
   type PublicIdStore,
 } from "./lib/publicIdShapes.mts";
 import { openDatabase, worldOf, resolveDatabaseUrl } from "./lib/dbConnection.mts";
@@ -101,7 +109,7 @@ async function main(): Promise<number> {
         const findings: Finding[] = [];
         for (const row of rows) {
           const value = typeof row.value === "string" ? row.value : String(row.value ?? "");
-          const verdict = judgeId(value, store.width);
+          const verdict = judgeId(value, store);
           if (verdict.unreachable || verdict.unminted) {
             findings.push({ table: store.table, width: store.width, value, ...verdict });
           }
@@ -131,6 +139,13 @@ async function main(): Promise<number> {
       {
         world: worldOf(url),
         tables: stores.length,
+        /* The rule each table was judged by, so no verdict in this document
+           arrives without the parser that produced it (#2516's finding). */
+        parsers: stores.map((store) => ({
+          table: store.table,
+          parser: routeParserFor(store).spelling,
+          source: routeParserFor(store).source,
+        })),
         rows,
         unread: unread.map((reading) => ({ table: reading.table, error: reading.error })),
         unreachable,
@@ -183,15 +198,23 @@ async function main(): Promise<number> {
     );
   }
 
-  /* The one blind spot, printed every run rather than left in a docblock: the
-     campaign parser is looser than the campaign mint, so the fault axis cannot
-     fire in that table at all. Saying so here is what stops a clean run being
-     read as "this class cannot be present anywhere". */
-  const loose = readings.filter((reading) => reading.width === 32).map((reading) => reading.table);
-  if (loose.length > 0) {
+  /* ⚠ THE RULE EACH ODD TABLE WAS JUDGED BY, PRINTED EVERY RUN rather than left
+     in a docblock. Three of the thirteen do not go through the shared
+     `z.string().uuid()` door, and a clean run is only readable if it says which
+     rule it applied: the campaign parser is LOOSER than its own mint, so the
+     fault axis cannot fire in that table at all, and the two image routes are
+     STRICTER, which is the gap the relay's finding on PR #2516 named — an
+     uppercase id there reads unreachable now and read as fine before. */
+  const judgedByTheirOwnDoor = readings.filter((reading) => TABLE_ROUTE_PARSERS[reading.table]);
+  if (judgedByTheirOwnDoor.length > 0) {
+    console.log("\nnote: these tables are NOT judged by the shared z.string().uuid() door:");
+    for (const reading of judgedByTheirOwnDoor) {
+      const parser = routeParserFor(reading);
+      console.log(`  ${reading.table} — ${parser.spelling}  (${parser.source})`);
+    }
     console.log(
-      `\nnote: ${loose.join(", ")} parses its id as z.string().min(1).max(32), which refuses nothing a`
-        + " 32-wide column can hold — so in that table this class shows only on the unminted axis.",
+      "  A looser door means the fault axis cannot fire in that table at all; a stricter one means a"
+        + " value the shared door accepts is still a row whose picture the product cannot serve.",
     );
   }
 
