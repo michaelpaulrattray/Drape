@@ -16051,6 +16051,10 @@
       "path": "server/inviteCodeRedeem-db.test.ts"
     },
     {
+      "id": "test:server/janitorPublicIdShapes.test.ts",
+      "path": "server/janitorPublicIdShapes.test.ts"
+    },
+    {
       "id": "test:server/jevCardCategory.test.ts",
       "path": "server/jevCardCategory.test.ts"
     },

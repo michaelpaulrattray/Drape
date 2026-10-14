@@ -66,6 +66,58 @@ founder 2026-08-26, *"do it"*). What lives here and nowhere else:
    and every tip immediately before the delete — which fired on run 11 inside
    one sitting when a seat moved a worktree's branch mid-run.
 
+5. **The public-id shape reading** (#2496) —
+   `npx tsx scripts/janitor-publicid-shapes.mts`, on this same three-day clock.
+   It asks whether the product can still reach every row it has: every table in
+   `drizzle/schema.ts` declaring a `publicId`, every value in it, judged against
+   **the parser its own route uses** — and against the shape that column's
+   declared width says the product mints. Exit **2** means a row exists that its
+   own route's parser will refuse — which is a row nobody can ever load again.
+   The run records the counts here.
+   ⚠ **THREE OF THE THIRTEEN TABLES DO NOT GO THROUGH THE SHARED
+   `z.string().uuid()` DOOR, AND THE RUN PRINTS WHICH.** `cast_campaigns` is
+   LOOSER (`z.string().min(1).max(32)`), so the fault axis cannot fire in it at
+   all; `casting_ink_designs` and `casting_reference_attachments` are STRICTER —
+   their image routes test a path segment against the lowercase canonical
+   pattern before a row is read, so an uppercase or nil id there is a row whose
+   picture answers 404 for good. Keying the judge on the WIDTH alone reported
+   both of those as fine, which was the relay's finding on PR #2516 and is
+   repaired. A verdict is not readable without the rule behind it, so the
+   listing and the `--json` document both carry the mapping.
+   ⚠ **IT IS A READING AND NOT A GUARD, AND THAT IS STRUCTURAL.** Its subject is
+   rows, and `vitest.setup.ts` strips `DATABASE_URL` precisely so no suite can
+   reach one — so no gate will ever notice this. **And the three guards a shift
+   close DOES name are each blind to it by construction**: `scriptExitDiscipline`
+   reads how a script exits, `scriptConnectionDiscipline` reads how it opens a
+   database, and `check:scripts` excludes untracked files, which is every
+   disposable. The writer in #1098 passed all three for three weeks while
+   holding the defect.
+   ⚠ **The DEV world is the subject.** Production rows are written by the product
+   alone; dev rows are written by the product and by every disposable a shift has
+   ever run. A plain local run reads dev off `.env` and prints the host and port,
+   because the two worlds differ only by their port.
+   ⚠ **It reports two things and only one is a fault.** `unreachable` — the
+   route's own parser refuses it — is the fault. `unminted` — reachable, but not
+   what the mint emits — is a pointer to look at a row, printed and not a fault:
+   driven at the real zod in this tree, `z.string().uuid()` accepts an uppercase
+   uuid, a v1 uuid and the nil uuid, none of which `crypto.randomUUID()` can
+   produce, so calling those faults would redden the reading over rows the
+   product serves correctly.
+   ⚠ **A table it could not read is NAMED and the run is then a FLOOR**, never a
+   total — the dev database has sat behind the schema before. That is #2501's
+   lesson in another instrument: an aged-out artifact read as silence is a
+   different and wrong fact.
+   `server/janitorPublicIdShapes.test.ts` proves the JUDGE and the POPULATION
+   against the real specimen from #1098; this clock is the other half.
+   ⚠ **And it guards the one direction the per-table map can be wrong in**: a
+   table absent from that map is judged by the shared parser, which is exactly
+   how the two delivery tables came to read as reachable. The suite sweeps
+   `server/routes/` for the image-route pattern and holds the files declaring it
+   equal to the map's sources plus an enumerated exemption list, each exemption
+   carrying its reason — so a fifth route adopting the pattern reddens the gate
+   rather than its table going quiet. **A route strict in some OTHER shape is
+   invisible to that sweep, so the arm is a floor and not coverage.**
+
 Every Janitor run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. knip, the Atlas
 and the un-wiring differ are three readers with no shared resolver, and
