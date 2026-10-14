@@ -6,7 +6,9 @@
  * here step for step with only the error-free payload fields dropped.
  */
 import { describe, expect, it } from "vitest";
+import path from "node:path";
 
+import { readListedSource } from "./testing/listedSource";
 import {
   eventsFromConnection,
   isReadOnlyDocument,
@@ -293,5 +295,82 @@ describe("pickTarget — by name, exactly one, or refuse", () => {
 
   it("refuses an empty listing rather than guessing", () => {
     expect(() => pickTarget(projectsFromMe({}), { project: "drape-production", environment: "production", service: "Drape" })).toThrow(/found 0/);
+  });
+});
+
+/**
+ * ⚠ **THE COUNTER'S CALLER — invariant 7, on the one instrument whose output
+ * window is thirty days wide (#2501).**
+ *
+ * Steps 1 to 3 of #2501 all shipped, and then nothing ran the result. Measured
+ * at the bytes 2026-10-15, `git grep predeploy-timeouts` over the tracked tree
+ * answered with **its own module, its own header and this suite and nothing
+ * else** — no patrol clock, no document, no shift-close step, no mention in the
+ * standing orders. So the reading existed and was never taken.
+ *
+ * That is not a tidiness point here, because **this instrument's subject
+ * expires.** `armExitWatchdog`'s line is the only thing that will ever name what
+ * held a timed-out pre-deploy, it is printed into that deployment's log and
+ * nowhere else, Railway keeps a log about thirty days, and a timeout arrives
+ * about once every two to three weeks. An uncalled counter therefore does not
+ * merely go unread — **it guarantees the card's own last question can never be
+ * answered**, which is exactly what already happened to the 2026-09-09 instance.
+ *
+ * So the wiring is a FACT this suite holds, not prose in a docblock: the Machinist
+ * ledger names the command, and its clock is short enough to read a log four
+ * times before the wall. #286's lesson, on the card that needs it most.
+ *
+ * ⚠ **This reads ONE value out of ONE named file and derives no population.**
+ * `scripts/patrol-clocks.mts` owns the canonical `**Clock:**` reader and
+ * `server/patrolClocks.test.ts` already holds every `docs/` log's line to it, so
+ * the line's existence and spelling are guarded there; this arm only asks what
+ * the number is.
+ */
+describe("the counter is on a clock, and the clock beats the retention wall", () => {
+  /** Railway's measured log retention, from the lib header's own reading. */
+  const RETENTION_DAYS = 30;
+  const LEDGER = "docs/MACHINIST_LEDGER.md";
+
+  const ledger = () => {
+    const absolute = path.resolve(
+      new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"),
+      LEDGER,
+    );
+    const source = readListedSource(absolute);
+    expect(source, `${LEDGER} could not be read — this arm would be reading nothing`).not.toBeNull();
+    return source ?? "";
+  };
+
+  it("⚠ a patrol log names the counter, or nobody ever runs it", () => {
+    expect(
+      ledger(),
+      `${LEDGER} no longer names scripts/predeploy-timeouts.mts — the counter has lost its only caller,`
+        + " and the watchdog line it exists to carry will age out of Railway's log retention unread",
+    ).toContain("scripts/predeploy-timeouts.mts");
+  });
+
+  it("⚠ it names a --limit, because the default covers less than the clock", () => {
+    /* Measured 2026-10-15 on this service: the default 200 reached back 4 days
+       and 500 reached back 12.5. At ~50 deploys a day a seven-day clock run
+       without a limit silently skips the days between. */
+    expect(
+      ledger(),
+      `${LEDGER} cites the counter without a --limit, so a run on its clock would read back about four`
+        + " days and miss the rest of the window",
+    ).toMatch(/scripts\/predeploy-timeouts\.mts\s+--limit\s+(\d+)/);
+    const limit = Number(/scripts\/predeploy-timeouts\.mts\s+--limit\s+(\d+)/.exec(ledger())?.[1]);
+    expect(limit, "the cited --limit is below the 500 measured to cover 12.5 days").toBeGreaterThanOrEqual(500);
+  });
+
+  it("⚠ the clock it sits on reads a log at least twice before retention takes it", () => {
+    const clock = /^\*\*Clock:\*\*\s+every\s+(\d+)\s+days?\b/m.exec(ledger());
+    expect(clock, `${LEDGER} declares no clock, so citing the counter there schedules nothing`).not.toBeNull();
+    const days = Number(clock?.[1]);
+    expect(days, "the clock is not a positive number of days").toBeGreaterThan(0);
+    expect(
+      days * 2,
+      `${LEDGER}'s clock is every ${days} days against a ${RETENTION_DAYS}-day log retention — a diagnosis`
+        + " printed into a deploy log would age out before a second reading could catch it",
+    ).toBeLessThanOrEqual(RETENTION_DAYS);
   });
 });
