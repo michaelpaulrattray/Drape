@@ -1,7 +1,7 @@
 {
-  "edition": 705,
-  "updatedAt": "2026-10-14T15:29:19Z",
-  "shift": "Foreman — the hidden voice card repaired and live, and the row that sends you to listen corrected (foreman-20261015-0010)\nTHE PIECE THAT MAKES A VOICE SOUND LIKE THE CHARACTER IS LIVE, AND THE ROW ASKING FOR YOUR EAR WAS TELLING YOU TWO THINGS\nTHAT HAD STOPPED BEING TRUE.\n\nThe review of the voice-design work found five real faults and all five are fixed, reviewed and live. The two you\nwould have met yourself: a character described as \"a woman searching for her lost son\" was read as having no stated\nsex at all, because those words name two people — so the picture decided, which is the exact fault this piece exists\nto remove. And a brief saying the character never whispers was read as asking for a whisper, so the card threw away\nthe very instruction it had been given. The three underneath: opening a character's Voice card and pressing it at the\nsame time could crash and pay twice; a card written when the picture could not be read was kept as though it had seen\nthe picture, so it was never written again; and the hidden description was travelling in your data export, which it\nshould not — it is written from your brief and your picture by our own prompt, so it is the same family as the recipe,\nand whether the recipe belongs in an export is a question nobody has put to you.\n\nChecking that first fault for brothers and sisters found the same mistake twice more, in places nobody had reported:\n\"not a teenager\" was read as the age \"teenager\", and \"with no Scottish accent\" as a Scottish accent.\n\n⚠ And I corrected the row on this page that asks for your ear. It still said nothing was charged and that the price\nwould come later — the prices went live yesterday — and it did not know that the first open of a character's Voice\ncard now takes about half a minute. Both are in it now, so the listen does not read as broken when you try it.\n\nOne thing went wrong on my side and is filed: shipping this page failed its first deploy. The step that checks the\ndatabase before a new build takes over decided in half a second and then sat there for ten minutes, so the deploy was\nkilled. Your site never wavered — the old build kept serving, which is the design working — and the same build went\nup cleanly on a second attempt. It is card 2501, with the logs.",
+  "edition": 706,
+  "updatedAt": "2026-10-14T16:41:17.541Z",
+  "shift": "THE HOUSE CAN NOW SEE HOW MUCH VOICE IT HAS LEFT, AND A PLAN DOCUMENT THAT STILL SAID VOICE WAS NEVER BUILT HAS BEEN CORRECTED.\n\nNothing on your side of the product changed tonight. What changed is that the staff dashboard now shows two numbers it never had: how many voices the company can still keep this month, and how many saved-voice slots are free. Both come from the voice service itself, live, and tonight they read 86 of 95 keeps left and 28 of 30 slots free.\n\nIt shows two numbers rather than one on purpose. Keeping a voice needs BOTH a slot and one of the month's allowance, and either running out stops a customer dead. A panel showing only the monthly number would have looked perfectly healthy on a day when every slot was full and nobody could keep anything.\n\nIt also tells the truth when it cannot get an answer. If the voice service is quiet the rows say \"Not readable\" and name what happened; if there is no voice service set up at all, they say \"Not set up\" rather than showing a fault that is not one. Neither of those lights the warning that means YOUR site is down — that one still means only our own server, because saying the platform is down when a supplier is quiet would send somebody looking in the wrong place.\n\nThe other half of the night was a document. Our own casting plan still described Voice as unbuilt — \"zero implementations, no database table\" — when the whole thing is live and you have been listening to it, and it still named the two-supplier split your ear overruled on 13 October. Every line of that is corrected, with the old wording kept struck through so nobody re-opens a settled question. The document even asked, back in September, whether one supplier might by then do both jobs well enough that a second was not worth it — that question is now marked answered, because that is exactly how it turned out.\n\nOne thing I found and did NOT build, filed as its own card instead: the free voices every character gets are capped per account per day, not across the company, and that cap resets whenever we ship. It costs us about a cent a time and your supplier allowance is separately protected, so nothing is at risk — but it is worth a decision rather than a quiet assumption.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -26,12 +26,12 @@
           "state": "waiting"
         },
         {
-          "title": "Voices that sound like the character, not like the written line — a second description written for the voice designer from your words and the character's picture, which you never see. The piece your listening test chose. Built; its review found five faults and all five are repaired and with the reviewer (#2498)",
+          "title": "Voices that sound like the character, not like the written line — a second description written for the voice designer from your words and the character's picture, which you never see. The piece your listening test chose. Built, reviewed and live; your ear on the result is the last word (#2498)",
           "state": "in-progress"
         },
         {
-          "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the review's four findings about what the card says about your money are fixed and live; the staff view of the monthly allowance and a whole-company daily limit are still to come (#2471)",
-          "state": "in-progress"
+          "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read. The plan document that still called Voice unbuilt is corrected (#2471)",
+          "state": "done"
         },
         {
           "title": "Re-making a voice when the slots are full, after your ear closed its court — you said re-mint sounds better in some cases (#2472)",
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-14T14:57:35.591Z",
+      "readAt": "2026-10-14T16:38:38.502Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7191,7 +7191,7 @@
     {
       "id": "voice-card-writer-2498",
       "title": "Voices designed from a hidden card written from your words and the character's picture (#2498)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2500,
       "note": "All five of the reviewer's findings repaired, plus two more of the same kind found by sweeping the class; 19 of 19 deliberate breakages caught by name; preflight green. Held for the reviewer's eye."
     },
@@ -10281,6 +10281,13 @@
       "status": "merged",
       "prNumber": 2484,
       "note": "Built and driven on your real voice account; held for the reviewer because it touches the refund and account-erasure paths."
+    },
+    {
+      "id": "voice-ration-staff-2471",
+      "title": "The staff dashboard shows how much voice the company has left, and the plan document stops calling Voice unbuilt (#2471)",
+      "status": "merged",
+      "prNumber": 2508,
+      "note": "Live. Two numbers rather than one, because either a full slot list or a spent month stops a Keep; honest words when the service is quiet or absent."
     }
   ],
   "problems": [
@@ -10742,7 +10749,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-14T14:57:35.591Z",
+    "readAt": "2026-10-14T16:38:38.501Z",
     "items": [
       {
         "issueNumber": 1598,
