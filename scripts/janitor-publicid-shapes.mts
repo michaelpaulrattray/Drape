@@ -38,9 +38,18 @@
  *
  * # The exit code is half the report
  *
- *     0  every value reachable (`unminted` rows may still be listed)
+ *     0  every table read, every value reachable (`unminted` rows may be listed)
  *     2  at least one value its own route can never load again
+ *     3  no fault found, but a table could not be read — a FLOOR, not a total
  *     1  refused — nothing was read, or a width has no judge
+ *
+ * ⚠ **3 exists because 0 was wrong here, and it was wrong in the direction this
+ * card is about.** The first cut printed a loud FLOOR warning over an unreadable
+ * table and still exited 0, so a shift recording the code alone would have
+ * filed an incomplete reading as a clean one. That is #2501's step-3 mistake
+ * exactly — an artifact that had aged out of retention read as *"the container
+ * printed nothing"* — and a reading tool must never let the cheap half of its
+ * output say more than it knows.
  */
 /* The DEV world — the one that matters here — lives in `.env`, so it is loaded.
    That is normally the setup for reading dev under a production wrapper by
@@ -131,7 +140,7 @@ async function main(): Promise<number> {
       null,
       2,
     ));
-    return unreachable.length === 0 ? 0 : 2;
+    return exitCode(unreachable.length, unread.length);
   }
 
   console.log(`world: ${worldOf(url)}`);
@@ -187,7 +196,17 @@ async function main(): Promise<number> {
   }
 
   console.log(`\nFAULTS (unreachable): ${unreachable.length}`);
-  return unreachable.length === 0 ? 0 : 2;
+  return exitCode(unreachable.length, unread.length);
+}
+
+/**
+ * The verdict as a number. A fault outranks an incomplete reading, because a row
+ * nobody can load is worse news than a table nobody could read — but an
+ * incomplete reading never reports itself as a clean one.
+ */
+function exitCode(unreachable: number, unread: number): number {
+  if (unreachable > 0) return 2;
+  return unread > 0 ? 3 : 0;
 }
 
 /* Ends by ending the process (`scriptExitDiscipline`): nothing imports this
