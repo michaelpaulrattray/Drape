@@ -57,7 +57,9 @@ type OwnVoice = {
 let cast: { modelId: number; name: string | null; voice: string | null } | null = null;
 let ownVoice: OwnVoice | null = null;
 /** What the LRU read hands back, oldest first. */
-let candidates: Array<{ id: number; userId: number; modelId: number; voiceId: string }> = [];
+let candidates: Array<{ id: number; userId: number; modelId: number; voiceId: string; clipSha256: string }> = [];
+/** What the orphan sweep's exact-name lookup finds (#2507 item 3). */
+let foundByName: string[] = [];
 const candidateReads: Array<{ limit: number; excludeId?: number }> = [];
 /** Rows whose eviction compare-and-set LOSES (another road moved them). */
 let evictionLoses = new Set<number>();
@@ -83,8 +85,8 @@ vi.mock("../db/castVoices", () => ({
     timeline.push(`evict-row:${input.id}`);
     return true;
   },
-  restoreCastVoiceSlot: async (input: { id: number; voiceId: string }) => {
-    timeline.push(`restore-row:${input.id}:${input.voiceId}`);
+  restoreCastVoiceSlot: async (input: { id: number; voiceId: string; clipSha256: string }) => {
+    timeline.push(`restore-row:${input.id}:${input.voiceId}:${input.clipSha256}`);
     return true;
   },
   recordRemintedCastVoice: async (input: (typeof remintWrites)[number]) => {
@@ -132,7 +134,7 @@ vi.mock("../storage", () => ({
 
 const { ensureCastVoiceResident, keepCastVoice } = await import("./voiceService");
 
-type Call = "allowance" | "save" | "speak" | "delete" | "clone";
+type Call = "allowance" | "save" | "speak" | "delete" | "clone" | "find";
 
 /** The two calls that spend a voice operation (measured, #2469). */
 function operationsSpent(calls: Call[]): number {
@@ -172,6 +174,11 @@ function stubEngine(
       cloned.push({ name: input.name, bytes: input.bytes, contentType: input.contentType });
       return { voiceId: "reminted-1", latencyMs: 3_200 };
     },
+    async findVoicesByName(input) {
+      calls.push("find");
+      timeline.push(`find:${input.name}`);
+      return foundByName;
+    },
     ...overrides,
   };
   return { engine, calls, cloned };
@@ -186,10 +193,11 @@ beforeEach(() => {
   cast = { modelId: MODEL_ID, name: "Reva", voice: SENTENCE };
   ownVoice = null;
   candidates = [
-    { id: 11, userId: 5, modelId: 501, voiceId: "coldest" },
-    { id: 12, userId: 6, modelId: 602, voiceId: "colder" },
-    { id: 13, userId: 1, modelId: 905, voiceId: "warm" },
+    { id: 11, userId: 5, modelId: 501, voiceId: "coldest", clipSha256: "sha-of-11" },
+    { id: 12, userId: 6, modelId: 602, voiceId: "colder", clipSha256: "sha-of-12" },
+    { id: 13, userId: 1, modelId: 905, voiceId: "warm", clipSha256: "sha-of-13" },
   ];
+  foundByName = [];
   candidateReads.length = 0;
   evictionLoses = new Set();
   remintRecorded = true;
@@ -248,20 +256,68 @@ describe("a Keep on a full plan evicts the least-recently-used voice", () => {
     expect(operationsSpent(calls)).toBe(0);
   });
 
-  it("⚠ A SLOT THAT WILL NOT RELEASE PUTS THE ROW BACK, and nothing is saved", async () => {
+  it("⚠ A SLOT THE PROVIDER REFUSED TO RELEASE (a clean 4xx) PUTS THE ROW BACK, keyed on the clip it was evicted with", async () => {
     const { engine, calls } = stubEngine({
       async deleteVoice(input) {
         calls.push("delete");
         timeline.push(`release-failed:${input.voiceId}`);
-        throw new ProviderError("transport", "vendor down", { status: 503 });
+        throw new ProviderError("rate_limit", "busy", { status: 429 });
       },
     });
 
     expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
-    expect(timeline).toEqual(["evict-row:11", "release-failed:coldest", "restore-row:11:coldest"]);
+    /* #2507 item 2: the restore carries the fingerprint seen AT EVICTION, so it
+       can never land on the same row after a replace gave it a new clip. */
+    expect(timeline).toEqual(["evict-row:11", "release-failed:coldest", "restore-row:11:coldest:sha-of-11"]);
     /* One failed delete stops the eviction — it does not walk the whole pool. */
     expect(calls).toEqual(["allowance", "delete"]);
     expect(operationsSpent(calls)).toBe(0);
+  });
+
+  /*
+    #2507, the relay's finding, item 1: a delete that did not ANSWER may have
+    happened. Put back, the row would name a deleted voice that the cache then
+    answers as resident and whose first line fails, with nothing to heal it.
+  */
+  for (const [label, error] of [
+    ["a timeout", new ProviderError("timeout", "The voice call exceeded its deadline")],
+    ["a transport fault", new ProviderError("transport", "The voice transport is unreachable")],
+    ["a 5xx", new ProviderError("transport", "vendor down", { status: 503 })],
+    ["a 408 (the provider's own timeout)", new ProviderError("timeout", "timed out", { status: 408 })],
+    ["a non-provider throw", new Error("socket hang up")],
+  ] as const) {
+    it(`⚠ A DELETE THAT DID NOT ANSWER (${label}) IS NOT PUT BACK — the row stays evicted, nothing is saved`, async () => {
+      const { engine, calls } = stubEngine({
+        async deleteVoice(input) {
+          calls.push("delete");
+          timeline.push(`release-failed:${input.voiceId}`);
+          throw error;
+        },
+      });
+
+      expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
+      expect(timeline).toEqual(["evict-row:11", "release-failed:coldest"]);
+      expect(timeline.some((step) => step.startsWith("restore-row"))).toBe(false);
+      expect(calls).toEqual(["allowance", "delete"]);
+      expect(operationsSpent(calls)).toBe(0);
+    });
+  }
+
+  it("⚠ A REPLACE'S OWN SLOT, refused release, is put back keyed on ITS OWN clip", async () => {
+    ownVoice = { id: OWN_ROW, voiceId: "own-old", clipStorageKey: "k", clipSha256: CLIP_SHA, clipContentType: "audio/mpeg" };
+    const { engine } = stubEngine({
+      async deleteVoice(input) {
+        timeline.push(`release-failed:${input.voiceId}`);
+        throw new ProviderError("capability", "refused", { status: 422 });
+      },
+    });
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
+    expect(timeline).toEqual([
+      `evict-row:${OWN_ROW}`,
+      "release-failed:own-old",
+      `restore-row:${OWN_ROW}:own-old:${CLIP_SHA}`,
+    ]);
   });
 
   it("a slot already gone at the provider (404) leaves its row empty and tries the next voice", async () => {
@@ -362,7 +418,9 @@ describe("a later use re-mints an evicted voice from its clip", () => {
     /* The bytes sent are the stored clip's, exactly, and the name is ours. */
     expect(cloned).toHaveLength(1);
     expect(cloned[0]?.bytes.equals(CLIP)).toBe(true);
-    expect(cloned[0]?.name).toBe(`klieg-${USER_ID}-${MODEL_ID}`);
+    /* Ours, and this ATTEMPT's own (#2507 item 3): the orphan sweep finds a
+       voice by exact name, so two attempts must never share one. */
+    expect(cloned[0]?.name).toMatch(new RegExp(`^klieg-${USER_ID}-${MODEL_ID}-[0-9a-f]{8}$`));
     expect(cloned[0]?.name).not.toContain("Reva");
     /* Recorded against the clip it was cloned from. */
     expect(remintWrites).toEqual([
@@ -441,6 +499,80 @@ describe("a later use re-mints an evicted voice from its clip", () => {
 
     expect(await ensureCastVoiceResident(USE, { engine })).toMatchObject({ ok: false, refusal: "provider_failed" });
     expect(remintWrites).toEqual([]);
+  });
+
+  it("⚠ A CLONE THAT DID NOT ANSWER IS LOOKED UP BY ITS ATTEMPT NAME, and a voice it left behind is RELEASED", async () => {
+    ownVoice = { ...EVICTED };
+    foundByName = ["orphan-1"];
+    let sentName = "";
+    const { engine, calls } = stubEngine({
+      allowance: { ...FULL, slotsUsed: 0 },
+      async cloneVoice(input) {
+        calls.push("clone");
+        timeline.push("clone-timeout");
+        sentName = input.name;
+        throw new ProviderError("timeout", "The voice call exceeded its deadline");
+      },
+    });
+
+    expect(await ensureCastVoiceResident(USE, { engine })).toMatchObject({ ok: false, refusal: "provider_failed" });
+    /* The lookup asks for exactly the name the clone was sent, and the slot it
+       finds goes back: no orphan is left to switch eviction off. */
+    expect(timeline).toEqual(["clip-read:own", "clone-timeout", `find:${sentName}`, "release:orphan-1"]);
+    expect(remintWrites).toEqual([]);
+  });
+
+  it("NEGATIVE CONTROL — a clone the provider REFUSED (4xx) made nothing, so nothing is looked up", async () => {
+    ownVoice = { ...EVICTED };
+    foundByName = ["must-not-be-touched"];
+    const { engine, calls } = stubEngine({
+      allowance: { ...FULL, slotsUsed: 0 },
+      async cloneVoice() {
+        calls.push("clone");
+        throw new ProviderError("rate_limit", "busy", { status: 429 });
+      },
+    });
+
+    expect(await ensureCastVoiceResident(USE, { engine })).toMatchObject({ ok: false, refusal: "provider_failed" });
+    expect(calls).toEqual(["allowance", "clone"]);
+    expect(timeline).not.toContain("release:must-not-be-touched");
+  });
+
+  it("a lookup that itself fails leaves the re-mint refused and releases nothing", async () => {
+    ownVoice = { ...EVICTED };
+    const { engine, calls } = stubEngine({
+      allowance: { ...FULL, slotsUsed: 0 },
+      async cloneVoice() {
+        calls.push("clone");
+        throw new ProviderError("transport", "down");
+      },
+      async findVoicesByName() {
+        calls.push("find");
+        throw new ProviderError("transport", "still down");
+      },
+    });
+
+    expect(await ensureCastVoiceResident(USE, { engine })).toMatchObject({ ok: false, refusal: "provider_failed" });
+    expect(calls).toEqual(["allowance", "clone", "find"]);
+    expect(calls).not.toContain("delete");
+  });
+
+  it("⚠ THE SAME CLASS AT KEEP — a save that did not answer is looked up by its attempt name and released", async () => {
+    foundByName = ["orphan-save"];
+    let sentName = "";
+    const { engine, calls } = stubEngine({
+      allowance: { ...FULL, slotsUsed: 0 },
+      async saveVoice(input) {
+        calls.push("save");
+        sentName = input.name;
+        throw new ProviderError("timeout", "The voice call exceeded its deadline");
+      },
+    });
+
+    expect(await keepCastVoice(KEEP, { engine })).toMatchObject({ ok: false, refusal: "provider_failed" });
+    expect(sentName).toMatch(new RegExp(`^klieg-${USER_ID}-${MODEL_ID}-[0-9a-f]{8}$`));
+    expect(timeline).toEqual([`find:${sentName}`, "release:orphan-save"]);
+    expect(calls).toEqual(["allowance", "save", "find", "delete"]);
   });
 
   it("⚠ A RE-MINT THAT LOSES ITS WRITE RELEASES ITS CLONE, and speaks with the voice that won", async () => {

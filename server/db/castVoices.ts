@@ -648,12 +648,23 @@ export async function touchCastVoiceUsed(input: {
   ═══════════════════════════════════════════════════════════════════════════
 */
 
-/** A resident voice the cache may evict. Ids and the slot only — nothing creative. */
+/**
+ * A resident voice the cache may evict. Ids, the slot, and the clip's
+ * FINGERPRINT — nothing creative.
+ *
+ * `clipSha256` rides along for one reason (the relay's finding on #2507, item
+ * 2): a replace rewrites the SAME row id with a new clip, so an eviction's undo
+ * keyed on the id alone could put a predecessor's slot onto its successor's
+ * clip. The fingerprint is what proves the row is still the voice that was
+ * evicted. It is a hash, not the clip and not its key: it cannot fetch,
+ * reconstruct or locate anything, and it never leaves the server.
+ */
 export type EvictionCandidate = {
   id: number;
   userId: number;
   modelId: number;
   voiceId: string;
+  clipSha256: string;
 };
 
 /**
@@ -693,6 +704,7 @@ export async function readEvictionCandidates(input: {
       userId: castVoices.userId,
       modelId: castVoices.modelId,
       voiceId: castVoices.voiceId,
+      clipSha256: castVoices.clipSha256,
     })
     .from(castVoices)
     .where(and(
@@ -723,17 +735,33 @@ export async function evictCastVoiceSlot(input: { id: number; voiceId: string })
 }
 
 /**
- * UNDO AN EVICTION whose provider delete failed, so the row names the slot
- * that is in fact still occupied. Only if the row is still empty — a re-mint
- * that landed in between is the truer state and is left alone.
+ * UNDO AN EVICTION whose provider delete was REFUSED, so the row names the
+ * slot that is in fact still occupied. Only if the row is still empty — a
+ * re-mint that landed in between is the truer state and is left alone — AND
+ * still carries the clip it carried when it was evicted.
+ *
+ * ⚠ **THE CLIP IS IN THE WHERE BECAUSE THE ROW ID IS NOT THE VOICE** (the
+ * relay's finding on #2507, item 2). A replace rewrites the same row id with a
+ * new clip and a new slot; if that new slot is then evicted in turn, the row is
+ * empty again and an id-only restore of a slow, failed delete from BEFORE the
+ * replace would hand the new clip its predecessor's voice. Keyed on the
+ * fingerprint seen at eviction, that restore matches nothing.
  */
-export async function restoreCastVoiceSlot(input: { id: number; voiceId: string }): Promise<boolean> {
+export async function restoreCastVoiceSlot(input: {
+  id: number;
+  voiceId: string;
+  clipSha256: string;
+}): Promise<boolean> {
   assertPositiveId(input.id, "id");
   const db = await requireDb();
   const result = await db
     .update(castVoices)
     .set({ voiceId: input.voiceId })
-    .where(and(eq(castVoices.id, input.id), isNull(castVoices.voiceId)));
+    .where(and(
+      eq(castVoices.id, input.id),
+      isNull(castVoices.voiceId),
+      eq(castVoices.clipSha256, input.clipSha256),
+    ));
   return affectedRows(result) === 1;
 }
 

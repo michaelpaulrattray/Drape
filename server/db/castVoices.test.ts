@@ -636,11 +636,11 @@ describe("Remove voice (#2497)", () => {
  */
 describe("the voice cache (#2472)", () => {
   it("⚠ ranks the pool by COALESCE(lastUsedAt, keptAt) — a never-used voice is as old as its Keep", async () => {
-    answers = [[[11, 5, 501, "coldest"]]];
+    answers = [[[11, 5, 501, "coldest", "sha-of-11"]]];
 
     const rows = await readEvictionCandidates({ limit: 5 });
 
-    expect(rows).toEqual([{ id: 11, userId: 5, modelId: 501, voiceId: "coldest" }]);
+    expect(rows).toEqual([{ id: 11, userId: 5, modelId: 501, voiceId: "coldest", clipSha256: "sha-of-11" }]);
     const [statement] = sent;
     /* Ranked on lastUsedAt ALONE, MySQL's NULLs-first would evict the
        voice kept a minute ago before every other. */
@@ -649,15 +649,19 @@ describe("the voice cache (#2472)", () => {
     expect(statement?.params).toContain(5);
   });
 
-  it("⚠ the house-wide read projects ids and the slot — NOTHING the customer made", async () => {
+  it("⚠ the house-wide read projects ids, the slot and the clip's FINGERPRINT — NOTHING the customer made", async () => {
     answers = [[]];
 
     await readEvictionCandidates({ limit: 5, excludeId: 77 });
 
     const [statement] = sent;
-    for (const forbidden of ["designSentence", "clipStorageKey", "clipSha256", "masterPrompt", "voice`,"]) {
+    /* No sentence, no clip KEY (the public bucket's only credential), no recipe. */
+    for (const forbidden of ["designSentence", "clipStorageKey", "masterPrompt", "voice`,"]) {
       expect(statement?.sql).not.toContain(forbidden);
     }
+    /* #2507 item 2: the fingerprint IS read — the restore needs it to prove the
+       row is still the voice that was evicted. A hash locates nothing. */
+    expect(statement?.sql).toMatch(/^select [^]*`clipSha256` from `cast_voices`/);
     /* A re-mint never chooses the row it is about to fill. */
     expect(statement?.sql).toMatch(/`cast_voices`\.`id` <> \?/);
     expect(statement?.params).toContain(77);
@@ -678,12 +682,23 @@ describe("the voice cache (#2472)", () => {
     expect(await evictCastVoiceSlot({ id: 11, voiceId: "coldest" })).toBe(false);
   });
 
-  it("a restore puts the slot back only into a row that is still EMPTY", async () => {
-    expect(await restoreCastVoiceSlot({ id: 11, voiceId: "coldest" })).toBe(true);
+  it("⚠ a restore puts the slot back only into a row that is still EMPTY and still carries the clip it was evicted with", async () => {
+    const SHA = "e".repeat(64);
+    expect(await restoreCastVoiceSlot({ id: 11, voiceId: "coldest", clipSha256: SHA })).toBe(true);
 
     const [statement] = sent;
     expect(statement?.sql).toMatch(/`cast_voices`\.`voiceId` is null/i);
-    expect(statement?.params).toEqual(expect.arrayContaining([11, "coldest"]));
+    /* #2507 item 2: a replace rewrites the SAME row id with a new clip; keyed on
+       the id alone, a slow failed delete from before the replace would hand the
+       new clip its predecessor's voice. */
+    expect(statement?.sql).toMatch(/`cast_voices`\.`clipSha256` = \?/);
+    expect(statement?.params).toEqual(expect.arrayContaining([11, "coldest", SHA]));
+  });
+
+  it("NEGATIVE CONTROL: a restore that matched no row (replaced, or re-minted meanwhile) reports false", async () => {
+    writeAffected = 0;
+
+    expect(await restoreCastVoiceSlot({ id: 11, voiceId: "coldest", clipSha256: "e".repeat(64) })).toBe(false);
   });
 
   it("⚠ the re-mint's read binds owner, cast and the LIVE SIGNED cast in one statement, and loads no sentence", async () => {

@@ -228,6 +228,10 @@ function stubEngine(
       /* The re-mint (#2472) is driven in `voiceCache.test.ts`; nothing here clones. */
       throw new Error("no re-mint on this road");
     },
+    async findVoicesByName() {
+      /* The orphan sweep (#2507 item 3) is driven in `voiceCache.test.ts`; here it finds nothing. */
+      return [];
+    },
     ...overrides,
   };
   return { engine, calls };

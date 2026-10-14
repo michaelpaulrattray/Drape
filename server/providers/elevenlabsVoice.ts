@@ -433,6 +433,37 @@ export function createElevenLabsVoiceEngine(): VoiceEngine {
       return { voiceId, latencyMs };
     },
 
+    async findVoicesByName(input) {
+      /*
+        `GET /v2/voices` — the same read the voice spike's probe drove on his
+        account (`drape-scratch/n4b-spike/00-probe.mjs`: `voice_type=personal`,
+        200 in 261 ms, `voices[]` of `voice_id` / `name`). `search` narrows the
+        page; it is a fuzzy match, so the EXACT name is compared here and
+        nothing else is trusted. One page of 100: an attempt name is unique, so
+        more than a handful of hits is already not ours.
+      */
+      const query = new URLSearchParams({
+        search: input.name,
+        voice_type: "personal",
+        page_size: "100",
+      });
+      const { json } = await call({
+        method: "GET",
+        path: `/v2/voices?${query.toString()}`,
+        timeoutMs: SHORT_TIMEOUT_MS,
+        signal: input.signal,
+        expect: "json",
+      });
+      const voices = ((json ?? {}) as { voices?: unknown }).voices;
+      if (!Array.isArray(voices)) return [];
+      return voices
+        .filter((voice): voice is { voice_id: string; name: string } =>
+          typeof voice === "object" && voice !== null
+          && typeof (voice as { voice_id?: unknown }).voice_id === "string"
+          && (voice as { name?: unknown }).name === input.name)
+        .map((voice) => voice.voice_id);
+    },
+
     async deleteVoice(input) {
       await call({
         method: "DELETE",

@@ -607,7 +607,9 @@ export async function keepCastVoice(
     */
     const own = await readCastVoiceForUse(input.userId, input.modelId);
     const room = await makeRoomForOneVoice(engine, allowanceBefore, {
-      preferFirst: own?.voiceId ? { id: own.id, voiceId: own.voiceId } : undefined,
+      preferFirst: own?.voiceId
+        ? { id: own.id, voiceId: own.voiceId, clipSha256: own.clipSha256 }
+        : undefined,
     });
     if (!room.ok) return { ok: false, refusal: "no_slots_left" };
     evicted = room.evicted;
@@ -615,12 +617,15 @@ export async function keepCastVoice(
 
   let voiceId: string;
   let saveLatencyMs: number;
+  /* OUR name, internal, and deliberately not the cast's: a provider-side
+     label is one more place a customer's naming could travel. Named for this
+     ATTEMPT, so a save whose answer never came back can be found and released
+     without touching anyone else's voice (see `releaseUnansweredVoice`). */
+  const saveName = voiceAttemptName(input.userId, input.modelId);
   try {
     const saved = await engine.saveVoice({
       previewId: input.previewId,
-      /* OUR name, internal, and deliberately not the cast's: a provider-side
-         label is one more place a customer's naming could travel. */
-      name: `klieg-${input.userId}-${input.modelId}`,
+      name: saveName,
       description: input.designSentence,
       signal: input.signal,
     });
@@ -630,6 +635,7 @@ export async function keepCastVoice(
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
     const billed = error instanceof ProviderError && error.completed;
     log.warn({ failureClass, billed }, "[Voice] save refused");
+    await releaseUnansweredVoice(engine, error, saveName);
     return { ok: false, refusal: "provider_failed", failureClass };
   }
 
@@ -872,11 +878,16 @@ export function resetVoiceKeepabilityCache(): void {
  * In that order on purpose: the other order leaves, for a moment, a row naming
  * a slot that no longer exists, which a road about to speak would trust.
  *
- * ⚠ **A DELETE THAT FAILS PUTS THE ROW BACK** (`restoreCastVoiceSlot`),
+ * ⚠ **A DELETE THE PROVIDER REFUSED PUTS THE ROW BACK** (`restoreCastVoiceSlot`),
  * because the slot is still occupied and a row that says otherwise would
- * re-mint a voice that was never gone — one operation spent on nothing. A 404
- * is the exception: the provider says the slot is ALREADY free, so the row is
- * right to be empty and stays so, but nothing was freed by it either.
+ * re-mint a voice that was never gone, one operation spent on nothing. Only a
+ * clean 4xx proves that ({@link providerProvablyRefused}); a delete that did
+ * not ANSWER (timeout, transport, 5xx) may have happened, so its row stays
+ * evicted rather than resurrect a deleted voice (#2507 item 1), and the restore
+ * is keyed on the clip seen at eviction so it can never land on a replaced row
+ * (#2507 item 2). A 404 is the other exception: the provider says the slot is
+ * ALREADY free, so the row is right to be empty and stays so, but nothing was
+ * freed by it either.
  *
  * ⚠ **NOTHING IS EVICTED ON A PLAN THAT CANNOT CLONE**, read off the same live
  * allowance the caller just read. An evicted voice must be able to come back,
@@ -887,10 +898,69 @@ export function resetVoiceKeepabilityCache(): void {
 const EVICTION_MAX_SLOTS_TO_FREE = 3;
 const EVICTION_SPARE_CANDIDATES = 4;
 
+/**
+ * DID THE PROVIDER PROVABLY NOT DO IT? True only for a clean refusal: an HTTP
+ * 4xx the provider sent back (404 is answered by its own branch at each
+ * caller; 408 is the provider saying IT timed out, which proves nothing). A
+ * timeout, a transport fault, a 5xx, a cancel or a non-provider throw all leave
+ * the question open: the provider may have finished the job and only the
+ * answer was lost (#2507, the relay's finding, item 1).
+ */
+export function providerProvablyRefused(error: unknown): boolean {
+  if (!(error instanceof ProviderError)) return false;
+  if (error.completed) return false;
+  const status = error.status;
+  return typeof status === "number" && status >= 400 && status < 500 && status !== 408;
+}
+
+/**
+ * The internal provider-side name for ONE save or clone attempt: the ids
+ * (never the cast's name) and a fresh suffix, so the orphan sweep's exact-name
+ * lookup can only ever find this attempt's voice.
+ */
+function voiceAttemptName(userId: number, modelId: number): string {
+  return `klieg-${userId}-${modelId}-${randomUUID().slice(0, 8)}`;
+}
+
+/**
+ * A SAVE OR CLONE THAT DID NOT ANSWER MAY STILL HAVE TAKEN A SLOT. Find it by
+ * its attempt name and give it back (#2507, the relay's finding, item 3).
+ *
+ * Without this, a timed-out clone that the provider in fact completed leaves a
+ * slot that no row names: it can never be chosen for eviction, it raises the
+ * live `slotsUsed` for good, and enough of them switch eviction off, so every
+ * Keep on a full plan then refuses forever. A clean 4xx refusal made nothing
+ * and is skipped. Best effort, and stated: a voice the provider finishes AFTER
+ * this lookup is still missed, and is logged as a possible orphan by name.
+ */
+async function releaseUnansweredVoice(engine: VoiceEngine, error: unknown, name: string): Promise<void> {
+  if (providerProvablyRefused(error)) return;
+  let found: string[];
+  try {
+    found = await engine.findVoicesByName({ name });
+  } catch (lookupError) {
+    const failureClass = lookupError instanceof ProviderError ? lookupError.failureClass : "unknown";
+    log.error(
+      { failureClass, attemptName: name },
+      "[Voice] an unanswered voice call could not be looked up; a slot may be orphaned under this name",
+    );
+    return;
+  }
+  if (found.length === 0) {
+    log.warn({ attemptName: name }, "[Voice] an unanswered voice call left no voice behind (yet)");
+    return;
+  }
+  for (const voiceId of found) await releaseSlotQuietly(engine, voiceId);
+  log.warn(
+    { attemptName: name, released: found.length },
+    "[Voice] an unanswered voice call HAD made a voice; its slot was released",
+  );
+}
+
 async function makeRoomForOneVoice(
   engine: VoiceEngine,
   allowance: VoiceAllowance,
-  options: { preferFirst?: { id: number; voiceId: string }; excludeId?: number },
+  options: { preferFirst?: { id: number; voiceId: string; clipSha256: string }; excludeId?: number },
 ): Promise<{ ok: true; evicted: number } | { ok: false }> {
   const needed = allowance.slotsUsed - allowance.slotsTotal + 1;
   if (needed <= 0) return { ok: true, evicted: 0 };
@@ -931,11 +1001,30 @@ async function makeRoomForOneVoice(
         continue;
       }
       const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
-      const restored = await restoreCastVoiceSlot({ id: candidate.id, voiceId: candidate.voiceId })
-        .catch(() => false);
+      if (!providerProvablyRefused(error)) {
+        /*
+          ⚠ **A DELETE THAT DID NOT ANSWER IS NOT PUT BACK** (#2507, the relay's
+          finding, item 1). A timeout or a 5xx may have deleted the voice, and a
+          row restored onto a deleted voice is a resurrection: the cache would
+          answer it as resident, its first line would fail, and nothing heals
+          it. Left evicted, the worst case is one spare re-mint (one voice
+          operation) on its next use, plus a slot that may still be held, so it
+          is not counted as freed and is logged.
+        */
+        log.error(
+          { failureClass, evictedRowId: candidate.id },
+          "[Voice] an eviction's delete did not answer; the row stays evicted (re-minted on next use) and the slot may still be held",
+        );
+        break;
+      }
+      const restored = await restoreCastVoiceSlot({
+        id: candidate.id,
+        voiceId: candidate.voiceId,
+        clipSha256: candidate.clipSha256,
+      }).catch(() => false);
       log.error(
         { failureClass, evictedRowId: candidate.id, restored },
-        "[Voice] an eviction's slot would not release — the row was put back and eviction stopped",
+        "[Voice] an eviction's slot was refused release; the row was put back and eviction stopped",
       );
       /* A provider that refused one delete will refuse the next; stop here. */
       break;
@@ -1062,10 +1151,11 @@ async function remintCastVoice(
   }
 
   let voiceId: string;
+  /* OUR name, internal, as at Keep: never the cast's, and this attempt's own. */
+  const cloneName = voiceAttemptName(input.userId, input.modelId);
   try {
     const cloned = await engine.cloneVoice({
-      /* OUR name, internal, as at Keep — never the cast's. */
-      name: `klieg-${input.userId}-${input.modelId}`,
+      name: cloneName,
       bytes: clip.bytes,
       contentType: kept.clipContentType,
       signal: input.signal,
@@ -1075,6 +1165,7 @@ async function remintCastVoice(
     const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
     const billed = error instanceof ProviderError && error.completed;
     log.warn({ failureClass, billed }, "[Voice] re-mint refused — the kept voice is unchanged");
+    await releaseUnansweredVoice(engine, error, cloneName);
     return { ok: false, refusal: "provider_failed", failureClass };
   }
 

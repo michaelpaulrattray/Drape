@@ -182,4 +182,15 @@ export interface VoiceEngine {
     contentType: string;
     signal?: AbortSignal;
   }): Promise<{ voiceId: string; latencyMs: number }>;
+
+  /**
+   * FIND OUR OWN VOICES BY THEIR EXACT INTERNAL NAME — the orphan sweep for a
+   * save or a clone whose answer never arrived (#2472, the relay's finding,
+   * item 3). A timeout is not a refusal: the provider may have made the voice
+   * and taken a slot that no row names, and a slot no row names can never be
+   * evicted, so enough of them switch eviction off for good. Every save and
+   * clone is named for its own ATTEMPT, so the ids this answers are that
+   * attempt's and nobody else's. Free: a read, no voice operation.
+   */
+  findVoicesByName(input: { name: string; signal?: AbortSignal }): Promise<string[]>;
 }
