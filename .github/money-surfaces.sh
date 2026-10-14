@@ -612,9 +612,16 @@
 # refused sheet's share to the ledger inside the Sign's fenced transaction
 # (`addCreditsIn`), so the module now REACHES the credit primitive.
 #
+# #2471 ADDED `server/routes/castingVoice.ts`: the Voice card's two mutations
+# charge for audio — 125 ledger for three voices made from a cast's written
+# line, 500 to keep one — through `withVoiceCharge`, which wraps the credit
+# primitive (`withAtomicCredits`) and REFUNDS on a REFUSAL as well as on a
+# throw. That refund-on-refusal branch is a decision about whether money comes
+# back, so the module is on the list by the same reading as `castingV2Sign.ts`.
+#
 # NAMED FILES, NEVER DIRECTORIES — `server/db/` and `server/castingV2/` stay off.
 #
-MONEY_PATHS='^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry|castingV2Sign)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/(renewalReminder|annualMonthlyGrant|annualCreditMonths|planCreditsExpiry)\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
+MONEY_PATHS='^server/routes/castingVoice\.ts$|^server/routes/(billing|credits|auth|emailAuth|googleAuth|emailVerification)|^server/routes/admin/changeRequests\.ts$|^server/db/(billing|credits|admin|accountDeletion|castingV2ViewRetry|castingV2Sign)\.ts$|^server/stripe/|^server/_core/(sdk|cookies|trpc|env)\.ts$|^server/security/|^server/lib/adminActions/(approvalExecution|approvalStateBlocker|changeRequestActions)\.ts$|^server/casting/atomicCredits\.ts$|^server/casting/(castingCreditCosts|packagePricing)\.ts$|^server/casting/evidence/evidenceCandidateContract\.ts$|^server/wardrobe/creditCosts\.ts$|^server/billing/(renewalReminder|annualMonthlyGrant|annualCreditMonths|planCreditsExpiry)\.ts$|^server/castingV2/(castViewPackage|packageOrchestrator|packageRedoService|castProjection)\.ts$|^client/src/features/casting/(constants|castingPrices)\.ts$|^shared/(const|creditDisplay|annualBilling|creditTopups|planCreditSlider|changeRequestApproval|changeRequestLabels)\.ts$|^scripts/ceremony-topup-prices-1606\.mts$|^scripts/ceremony-spent-share-product-2023\.mts$|^drizzle/'
 
 # ── 2 · SYMBOLS — where money is DECIDED ────────────────────────────────────
 #

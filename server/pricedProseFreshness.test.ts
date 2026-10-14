@@ -175,14 +175,32 @@ function priceVocabulary(): { values: ReadonlySet<number>; constants: readonly s
  * the #2110 block of `PROSE_NOT_A_CURRENT_PRICE`.
  *
  * Its stated limit, which moved rather than vanished: a figure that was a price
- * only BEFORE the Atlas existed (the Sign's 500, two repricings ago) is not on
- * it, because no map ever carried it. 500 is read wherever a module is enrolled
- * some other way — `server/routes/castingV2.ts` and `CastingV2.tsx` both declare
- * one — but it cannot enrol a module by itself.
+ * only BEFORE the Atlas existed is not on it, because no map ever carried it.
+ *
+ * ⚠ **THAT LIMIT USED TO BE ILLUSTRATED WITH THE SIGN'S 500 AND THAT EXAMPLE
+ * DIED ON 2026-10-14 — 500 IS A CURRENT PRICE AGAIN.** It read *"the Sign's
+ * 500, two repricings ago … cannot enrol a module by itself"*, and #2471 gave
+ * the voice Keep a price of **500 ledger** (100 display, his word of
+ * 2026-10-13). So 500 both enrols a module by itself now and passes the
+ * staleness arm — which is why `CandidateTile.tsx` arrived in this
+ * population carrying a stale 640 that had been invisible for as long as it
+ * had been there.
+ *
+ * ⚠ **AND IT COST THREE EXEMPTIONS, DELETED IN THE SAME COMMIT RATHER THAN
+ * LEFT AS THEATRE** (this file's own arm demands it: an exemption that absolves
+ * no reachable finding is theatre). They declared the retired SIGN price of
+ * 500 quoted historically in `server/routes/castingV2.ts`,
+ * `KeptTray.tsx` and `CastingV2.tsx`; their prose is unchanged and now
+ * passes because the figure is current again — **by coincidence, not because
+ * anything about those records changed.** If the voice Keep price ever moves
+ * off 500, all three become findings again and their readings are in this
+ * commit's history, not lost. That is the cost of the collision and it is
+ * stated rather than discovered.
  */
 const FIGURES_THE_PRICE_LIST_HAS_CARRIED: ReadonlySet<number> = new Set([
-  0, 0.5, 5, 8, 10, 20, 25, 50, 100, 150, 160, 200, 250, 300, 350, 450, 900,
-  1000, 1200, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850, 25000,
+  0, 0.5, 5, 8, 10, 20, 25, 50, 100, 125, 150, 160, 200, 250, 300, 350, 450,
+  500, 900, 1000, 1200, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850,
+  25000,
 ]);
 
 /** What enrols a module: a figure that is a price now, or ever was one here. */
@@ -527,16 +545,6 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "historical sums, not prices.",
   },
   {
-    file: "server/routes/castingV2.ts",
-    credits: 500,
-    quote: "he had paid 500 credits for",
-    why:
-      "THE FOUNDER'S OWN LOST CAST, at the Sign price of the day (500, two "
-      + "repricings ago) — the incident this roster procedure exists because of. "
-      + "The number is the size of what went missing, which is the whole argument "
-      + "for the surface.",
-  },
-  {
     file: "server/routes/billing.ts",
     credits: 200_000,
     quote: '("200,000 credits/month with',
@@ -721,22 +729,22 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "(describes → described) because the paragraph is about a past state.",
   },
   {
-    file: "client/src/features/castingV2/components/KeptTray.tsx",
-    credits: 500,
-    quote: "the price the day he said it; 3,250 since #1968",
+    file: "client/src/features/castingV2/components/CandidateTile.tsx",
+    credits: 640,
+    quote: "cost the founder 640 credits",
     why:
-      "THE FOUNDER'S OWN FINDING, at the Sign price of the day — the tray's one "
-      + "job is comparing a shortlist before a Sign, and 24px chips were not "
-      + "comparable. ⚠ It is STAMPED rather than rewritten (`500 … 3,250 since "
-      + "#1968`), which is the one shape that serves both readers: a human sees "
-      + "today's price without the record being falsified, and this declaration "
-      + "quotes the stamp so a bare `500` coming back is still a finding. The "
-      + "claim about today in the same file — *a 3,250-credit ceremony* — is "
-      + "corrected rather than declared, which is the distinction this card names. "
-      + "⚠ The stamp moved 8,500 → 3,250 with #1968 and this guard is what asked "
-      + "for it: the stale `since` figure raised its own finding on the same line, "
-      + "which made the 500 exemption unreachable — a stamp is only honest while "
-      + "the price it stamps is today’s.",
+      "THE INCIDENT D-15 WAS WRITTEN AFTER — Follow reading as free, at the "
+      + "Follow price of that day. The number is the size of the surprise spend, "
+      + "which is the whole argument for the rule, so rewriting it to 320 would "
+      + "delete the argument and leave a paragraph asserting that today's price "
+      + "was once wrong. "
+      + "⚠ IT BECAME VISIBLE ON 2026-10-14 WITHOUT ANYONE EDITING THIS FILE, and "
+      + "the road is worth knowing: this module names no price constant, and its "
+      + "only other price figure is *a Cast signed for 500 credits* — also "
+      + "historical. #2471 gave the voice Keep a price of 500 ledger, so that "
+      + "line became a CURRENT price, which enrolled the module, which exposed "
+      + "this one. The 640 was stale for as long as it had been written; nothing "
+      + "about it changed.",
   },
   {
     file: "client/src/features/settings/sections/UsageSection.tsx",
@@ -1089,15 +1097,6 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
   },
   {
     file: "client/src/pages/CastingV2.tsx",
-    credits: 500,
-    quote: "the founder signed a Cast for 500 credits",
-    why:
-      "THE FOUNDER'S OWN LOST CAST — the same incident `server/routes/castingV2.ts` "
-      + "declares above, at the Sign price of that day. It is the reason the "
-      + "roster stopped being a hardcoded zero.",
-  },
-  {
-    file: "client/src/pages/CastingV2.tsx",
     credits: 30,
     quote: "Yuna's wording read *\"30 credits a face\"*",
     why:
@@ -1389,6 +1388,11 @@ describe("a module enrolled by its prose stays enrolled when that figure retires
     was the Sign price. The module names no price constant; *"an 8,500-credit
     ceremony"* was its only way in. Quoted rather than read with `git show` so
     the control does not depend on how deep a checkout's history is.
+
+    ⚠ *"was its only way in"* IS TRUE OF THE DEFECT AND NO LONGER TRUE OF THE
+    TREE: the same block names a *500-credit Sign*, and 500 became a current
+    price again on 2026-10-14 (#2471, the voice Keep). The arm below subtracts
+    it and says why. The quotation itself is untouched.
   */
   const KEPT_TRAY_BEFORE_1968 = [
     "/**",
@@ -1417,16 +1421,38 @@ describe("a module enrolled by its prose stays enrolled when that figure retires
 
     /* The defect, reproduced through the same function: read against the
        CURRENT prices alone, as the population was until #2106, the module is
-       not enrolled at all, so nothing below would ever read it. */
-    expect(enrols(KEPT_TRAY_BEFORE_1968, constants, values)).toBe(false);
+       not enrolled at all, so nothing below would ever read it.
+
+       ⚠ **500 IS SUBTRACTED, AND NOT TO MAKE THIS ARM PASS.** The specimen is a
+       VERBATIM quotation of a real tree, and it happens to mention the Sign
+       price of its own day — 500 — alongside the 8,500 this control is about.
+       That was a retired figure for as long as this control has existed, and on
+       2026-10-14 #2471 made 500 a current price again (the voice Keep). So the
+       specimen now has a second way in that has nothing whatever to do with
+       #2106's defect, and reading against the raw current set would prove only
+       that an unrelated price collides with a quotation.
+
+       The fixture is NOT edited, because rewriting a quoted record falsifies
+       it. What is narrowed is the question: *could 8,500 alone enrol this
+       module?* — which is the claim #2106 is about. */
+    const withoutTheVoiceKeep = new Set([...values].filter((value) => value !== 500));
+    expect(values.has(500), "500 is a current price again since #2471").toBe(true);
+    expect(enrols(KEPT_TRAY_BEFORE_1968, constants, withoutTheVoiceKeep)).toBe(false);
 
     expect(enrols(KEPT_TRAY_BEFORE_1968, constants, enrollingFigures(values))).toBe(true);
     const stale = priceFiguresInProse(KEPT_TRAY_BEFORE_1968)
       .filter((figure) => !values.has(figure.credits));
-    expect(stale.map((figure) => [figure.line, figure.credits])).toEqual([
-      [6, 500],
-      [14, 8500],
-    ]);
+    /*
+      ⚠ **ONE FIGURE, NOT TWO, SINCE 2026-10-14 — AND THE SPECIMEN DID NOT
+      CHANGE.** This read `[[6, 500], [14, 8500]]`: the quoted block names the
+      Sign price of its own day on line 6 and the 8,500 ceremony on line 14, and
+      both were retired figures. #2471 gave the voice Keep a price of 500 ledger,
+      so line 6's figure is a CURRENT price again and is no longer stale — by
+      collision, not because the record moved.
+
+      The 8,500 is what this control is for, and it is untouched.
+    */
+    expect(stale.map((figure) => [figure.line, figure.credits])).toEqual([[14, 8500]]);
     expect(
       stale.filter((figure) => declaredFor(
         "client/src/features/castingV2/components/KeptTray.tsx",

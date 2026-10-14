@@ -444,3 +444,61 @@ export const CASTING_V2_PACKAGE_REDO_PRICE_CREDITS = 3250;
  * a money path.
  */
 export const CASTING_V2_SIGN_PRICE_CREDITS = 3250;
+
+/**
+ * THREE VOICES MADE FROM A CAST'S OWN WRITTEN LINE — the press, N4b-3 (#2471).
+ *
+ * **125 = 25 display**, his word of 2026-10-13 on the relay's revised
+ * recommendation, verbatim and entire: *"those numbers sound good"*.
+ *
+ * **His pricing principle is the sentence above the number** (2026-10-13,
+ * verbatim): *"because this obviously wont be free the text voice description
+ * is free but the audio file wont be"*. So the voice LINE a cast is born with
+ * (N2b) stays free, and everything that makes AUDIO is paid. That is the whole
+ * rule, and it is why this constant exists at all.
+ *
+ * **Measured cost to the house: about $0.01 for the three** (design §3's
+ * spike, three previews per call). At 25 display that is roughly 5× — in the
+ * product's own 3–6× band, and deliberately beside a Roll's ratio (320 display
+ * against about $0.12). ⚠ **The first recommendation was 50 display and HE
+ * REFUSED IT**, verbatim: *"a massive markup"* — at about 10–12× it sat outside
+ * that band. The band is the reason the number is what it is.
+ *
+ * ⚠ **THE AUTOMATIC THREE ARE NOT CHARGED, AND THAT IS A SEPARATE RULING OF
+ * HIS** (2026-10-14, verbatim): *"2 real cost is neglible we absorb it."* The
+ * card designs three voices when it opens, nobody pressed anything, and
+ * charging for an arrival is not a price — it is a surprise. So this price is
+ * the PRESS's alone (*"Make new voices from this text"*), and what bounds the
+ * free road is `RATE_LIMITS.castingVoiceAutoDesignDaily` rather than a charge.
+ *
+ * **One unit, not three slices.** A design call returns exactly three voices or
+ * it refuses; there is nothing to reconcile per voice, so the whole charge
+ * refunds on any failure — the refine's reasoning, for the same reason.
+ */
+export const CASTING_V2_VOICE_DESIGN_PRICE_CREDITS = 125;
+
+/**
+ * KEEPING ONE OF THEM — this is the cast's voice from now on, N4b-3 (#2471).
+ *
+ * **500 = 100 display**, his word of 2026-10-13, the same *"those numbers sound
+ * good"* that set the design's price.
+ *
+ * **Dearer than the design by four times, and the cost is only half the
+ * reason.** Measured: a Keep is about $0.04 (the save plus the ~90 s audition
+ * clip it records and stores), so 100 display is roughly 6×. The other half is
+ * that a Keep spends one of the account's **monthly voice operations**, and a
+ * delete gives none back (measured, design §5) — that allowance is the
+ * genuinely scarce thing on this road, not the cents.
+ *
+ * ⚠ **THE ALLOWANCE IS READ LIVE AND IS NEVER A NUMBER IN THIS REPOSITORY.**
+ * The design document's §5 says *"54 voice operations a month"* and that figure
+ * is STALE — he upgraded the account, and the correction to the document is
+ * #2474, the relay's. Nothing here or on the road reads a hard-coded ceiling:
+ * `readVoiceKeepability` asks the provider. A price is not a quota and must not
+ * imply one.
+ *
+ * **The charge is atomic and refunds on failure.** A Keep that the provider
+ * refuses, or that a spent month refuses, gives the credits back — a customer
+ * who got no voice has not bought one.
+ */
+export const CASTING_V2_VOICE_KEEP_PRICE_CREDITS = 500;

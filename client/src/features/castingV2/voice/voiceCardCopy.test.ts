@@ -4,14 +4,19 @@ import {
   VOICE_CANNOT_KEEP,
   VOICE_CARD_FIXED_STRINGS,
   VOICE_CLIP_WONT_PLAY,
+  VOICE_KEEP_LOST_CONTACT,
   VOICE_MAKE_AGAIN,
+  VOICE_MAKE_LOST_CONTACT,
   VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceCardEveryString,
   voiceKeepLabel,
   voiceKeptFoot,
   voiceLabel,
+  voiceKeepFailedText,
+  voiceMakeFailedText,
   voicePlayLabel,
+  voiceRefundOwedText,
 } from "@shared/voiceCardCopy";
 
 /**
@@ -51,6 +56,25 @@ import {
  * Each is matched on a WORD BOUNDARY, which matters more than it looks: a
  * substring reader banning "he" would refuse the word "the", and a substring
  * reader banning "api" would refuse "rapid".
+ *
+ * ⚠ **"credit" AND "credits" CAME OFF THIS LIST ON 2026-10-14 (#2471), AND IT
+ * IS THE ONE REMOVAL THAT NEEDS ITS REASON WRITTEN DOWN.** They were correct
+ * here while the card had no price: nothing on it charged, so the word could
+ * only have arrived as the house talking about its own books. The press charges
+ * now, and **the prices-on-paid-buttons law requires the price on the button** —
+ * a customer must never learn what something cost by being charged for it.
+ *
+ * **The distinction this list is really drawing is not "money words" — it is
+ * WHOSE accounting a word belongs to.** "Quota", "slot" and "operation" are the
+ * house's: a customer has no basis to act on any of them and would have to be
+ * taught to read them. A credit is the customer's OWN unit — it is what they
+ * hold, what they buy, and what every other paid button in the product is
+ * denominated in (`shared/creditDisplay.ts` exists for exactly this, and the
+ * Sign button says it). "Ledger" stays banned, because that one is the books.
+ *
+ * ⚠ **A price is still only allowed to be the number the server served.** The
+ * reader below cannot see that; `shared/voiceCardCopy.ts` renders every price
+ * through `displayPrice`, and the route serves the ledger figure.
  */
 const FORBIDDEN_WORDS = [
   // Vendors and engines, whoever they are this month.
@@ -58,7 +82,7 @@ const FORBIDDEN_WORDS = [
   "fal", "sunburst", "flare", "banana", "runway", "higgsfield",
   // The house's own accounting, which a customer has no basis to act on.
   "quota", "slot", "slots", "clone", "cloning", "operation", "operations",
-  "credit", "credits", "ledger",
+  "ledger",
   // The pipeline's vocabulary.
   "preview", "previews", "generated", "engine", "model", "provider", "api",
   "token", "tokens", "payload", "buffer", "sha256", "bucket", "mp3", "codec",
@@ -81,6 +105,11 @@ describe("the reader can see a leak (the positive control)", () => {
   it("finds a vendor name, an accounting noun and a pipeline noun", () => {
     expect(offendingWords("Made with ElevenLabs", FORBIDDEN_WORDS)).toContain("elevenlabs");
     expect(offendingWords("No voice slots left this month", FORBIDDEN_WORDS)).toContain("slots");
+    /* The house's books are still banned, and the customer's own unit is not —
+       the two halves of the distinction this list draws (#2471). */
+    expect(offendingWords("Your ledger was debited", FORBIDDEN_WORDS)).toContain("ledger");
+    expect(offendingWords("Make new voices from this text · 25 credits", FORBIDDEN_WORDS))
+      .toEqual([]);
     expect(offendingWords("The preview could not be generated", FORBIDDEN_WORDS))
       .toEqual(expect.arrayContaining(["preview", "generated"]));
   });
@@ -238,5 +267,83 @@ describe("a cast with no name is a real case", () => {
 
   it("trims a name rather than pasting it", () => {
     expect(voiceKeptFoot(" Pigman ")).toBe("Pigman's voice");
+  });
+});
+
+/* The pull request number lives in this comment and not in the title: the token
+   guard reads a bare #NNNN in a STRING as a hex colour, and 2499 is a valid one
+   — the same reason the price arm above carries its number this way. The
+   findings are the relay's, on PR 2499. */
+describe("what the card says about the money (the relay's findings)", () => {
+  /**
+   * The claim that may only be made when the ledger has answered.
+   *
+   * Written once here because three arms below read it, and read as a
+   * SUBSTRING rather than a whole sentence: the defect was this phrase sitting
+   * inside a longer failure line, not the phrase alone.
+   */
+  const MONEY_CAME_BACK_CLAIM = "Nothing was charged";
+
+  it("⚠ NEVER CLAIMS NOTHING WAS CHARGED WHEN WE DID NOT HEAR THE SERVER", () => {
+    /*
+      Finding 1. Both of these are the catch-all's fallback — the branch for a
+      transport, a proxy or a parser failing, where the server's own answer
+      never arrived. The press charges now, so the card has no basis for either
+      money claim, and it was making the cheerful one.
+    */
+    for (const sentence of [VOICE_MAKE_LOST_CONTACT, VOICE_KEEP_LOST_CONTACT]) {
+      expect(sentence).not.toContain(MONEY_CAME_BACK_CLAIM);
+      /* And it is not silent about money either — it points at the one number
+         on this screen that is authoritative, which the press refetches. */
+      expect(sentence).toContain("credits");
+    }
+  });
+
+  it("⚠ NEVER CLAIMS IT WHEN THE REFUND DID NOT RECORD", () => {
+    /*
+      `atomicCredits`' own law, and the one this module exists to keep: a refund
+      that failed to record is NEVER reported as money that came back. Both
+      sides of the boolean are read, because an arm that only reads the false
+      side cannot tell a correct sentence from a constant.
+    */
+    expect(voiceMakeFailedText(false)).not.toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceKeepFailedText(false)).not.toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceMakeFailedText(true)).toContain(MONEY_CAME_BACK_CLAIM);
+    expect(voiceKeepFailedText(true)).toContain(MONEY_CAME_BACK_CLAIM);
+  });
+
+  it("⚠ GIVES THE CUSTOMER THE REFERENCE TO QUOTE, rather than making them the lookup key", () => {
+    /*
+      Finding 4. `refundTruth` quotes this same reference on every other money
+      surface in the product (*"quote reference … and support will restore the N
+      credits"*), so the voice card withholding it was the one surface asking
+      its customer to be the lookup key for a problem we can already name.
+
+      The specimen is the real shape `refundReferenceFor` produces, because a
+      reader walking a tidy fake learns nothing about the live string.
+    */
+    const reference = "refund:pending-1-3f2a7c18-0b44-4e5e-9a21-7d6c5b8e1f90";
+    for (const sentence of [
+      voiceMakeFailedText(false, reference),
+      voiceKeepFailedText(false, reference),
+      voiceRefundOwedText(reference),
+    ]) {
+      expect(sentence).toContain(reference);
+    }
+    /* And it is never quoted beside credits that came back, where it would be
+       machinery with nothing to do. */
+    expect(voiceMakeFailedText(true, reference)).not.toContain(reference);
+    expect(voiceKeepFailedText(true, reference)).not.toContain(reference);
+  });
+
+  it("still asks the customer to get in touch when there is no reference to quote", () => {
+    /* The reference can be absent — a refund we never heard the outcome of.
+       The sentence must not then have a gap where an id should be, and it must
+       still tell them they are owed. */
+    for (const sentence of [voiceRefundOwedText(null), voiceRefundOwedText("   ")]) {
+      expect(sentence).toContain("haven't come back");
+      expect(sentence).toContain("Get in touch");
+      expect(sentence).not.toContain("reference");
+    }
   });
 });
