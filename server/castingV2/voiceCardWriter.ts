@@ -228,7 +228,14 @@ const ACCENT_DECORATION_NOUNS =
 const ACCENT_DECORATION_WORDS = new Set([
   "red", "blue", "green", "gold", "golden", "brass", "copper", "black", "white", "silver", "teal",
   "pink", "orange", "purple", "violet", "yellow", "grey", "gray", "brown", "cream", "navy", "beige",
-  "bronze", "chrome", "neon", "pastel", "metallic", "wooden", "leather", "velvet",
+  "bronze", "chrome", "pastel", "metallic", "wooden", "leather", "velvet",
+  /* ⚠ ONE GLOWING COLOUR IS DELIBERATELY ABSENT, AND IT CANNOT BE NAMED HERE:
+     `d246VerificationBar.test.ts` bans that word from EVERY source file —
+     comments included, since it lowercases the whole file — so that
+     fable-166's never-built iris refusal cannot creep back in. A decorative
+     colour in an accent list is not that refusal, but the guard is blunt on
+     purpose and the word earns this list nothing, so the list gives way
+     rather than the guard. (It caught this on the first preflight.) */
 ]);
 
 /**
