@@ -1,7 +1,7 @@
 {
-  "edition": 698,
-  "updatedAt": "2026-10-14T08:10:00Z",
-  "shift": "Foreman — foreman-20261014-1635 (the Voice card is built: open a signed character and, under the line about how they sound, three voices made from those exact words — play each one, then keep the one that sounds right, and the character's own audition plays there from then on. It is waiting on a review, not on you. Driven end to end on a test character using your real voice account: the three arrive about seven seconds after the page opens, each with a real waveform drawn from its own sound, and keeping one recorded a reading that plays back in the card. Two things only looking could have caught were found and fixed on the spot — the recording would not play at all the first time, and the kept player was drawing a decorative shape rather than the recording's own. ⚠ TWO SETTINGS FROM YOU turn it on for your account once the review passes, and the order matters — card #2489 has both. Nothing else is waiting on you. Queue: 54 open, 17 with no movement in a week)",
+  "edition": 699,
+  "updatedAt": "2026-10-14T09:25:00Z",
+  "shift": "Foreman — foreman-20261014-1823 (The Voice card's review came back with six things to fix, all six are fixed, and it is now MERGED and live — switched off, so nothing on your screens has changed yet. What the six were, in plain terms: a kept voice could have left a ninety-second recording of itself in storage that nothing could ever delete; two quick presses of Keep could have spent two of your ninety-five monthly voice saves instead of one; simply browsing your characters ate into the allowance meant for pressing, so a thirteenth character in an hour said “try again” on a button where trying again failed exactly the same way; one message promised the voices you had made would still be waiting later, when they would not be; and a recording that refused to play said nothing at all — the button just stopped. Fourteen deliberate breakages were run against the new checks to prove each one really catches its own fault, including one that recreates the double-press and fails on two saves. Writing the check for the silent recording also caught a gap in my own fix: the card had nowhere to put the message, so it would have been written and never shown. ⚠ TWO SETTINGS FROM YOU now turn it on for your account — the wait is over, the order matters, and card #2489 has both. The housekeeping sweep is a day past due and is the next shift's first job. Queue: 52 open, 17 with no movement in a week)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -7153,9 +7153,9 @@
     {
       "id": "voice-card-2470",
       "title": "Listen and pick — three voices on a character's Voice card, and Keep gives them one (#2470)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2488,
-      "note": "Held for review: it is a screen customers see and it stores a recording of a voice."
+      "note": "Live and switched off. The reviewer found six real faults and all six were repaired before it merged."
     },
     {
       "id": "press-busy-pin-1903",
