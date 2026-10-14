@@ -85,6 +85,17 @@ export default function AdminOverview() {
     staleTime: 10_000,
   });
 
+  /* #2471 — the house's voice ration, its OWN query rather than a field on
+     getOverview: that one is seven database reads in a Promise.all and this is
+     an HTTP call to a vendor, so folded in a hung provider would stop every
+     KPI on the page. `voiceAllowance.ts` carries the full reading. */
+  // staff-poll: watched — a customer keeping a voice spends the house's ration
+  const voiceAllowanceQuery = trpc.admin.getVoiceAllowance.useQuery(undefined, {
+    enabled: isAdmin,
+    refetchInterval: autoRefresh ? STAFF_REFRESH_INTERVAL_MS : false,
+    staleTime: 10_000,
+  });
+
   useEffect(() => {
     if (overviewQuery.dataUpdatedAt) {
       setLastRefresh(new Date(overviewQuery.dataUpdatedAt));
@@ -94,8 +105,9 @@ export default function AdminOverview() {
   const handleRefresh = useCallback(() => {
     overviewQuery.refetch();
     timeSeriesQuery.refetch();
+    voiceAllowanceQuery.refetch();
     toast.success("Dashboard refreshed");
-  }, [overviewQuery, timeSeriesQuery]);
+  }, [overviewQuery, timeSeriesQuery, voiceAllowanceQuery]);
 
   // Auth guards
   if (authLoading) {
@@ -206,6 +218,7 @@ export default function AdminOverview() {
                 <SystemStatusCard
                   activeBanners={data.system.activeBanners}
                   serverStartedAt={data.system.serverStartedAt}
+                  voiceAllowance={voiceAllowanceQuery.data}
                 />
                 <BannerManagement />
               </div>

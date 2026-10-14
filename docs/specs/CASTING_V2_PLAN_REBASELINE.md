@@ -57,7 +57,7 @@ goal was met by a different build, or the founder's direction moved).
 | **M7b — Home vision skeleton** | Rebuild Home to `02-home.md`: greeting, unified composer, Quick Start, On the Wire | **unbuilt** | `client/src/pages/Home.tsx` contains none of the skeleton's anatomy (grep for composer/greeting/Quick Start/wire: zero hits); PROGRAM.md's closed list is "M0–M7 (plus M2b, M4a)" — M7b is not in it. The design north star (`docs/specs/Casting-ui-ux-design/`) now owns this surface. |
 | **S0 — Security hygiene** (gates old M13 with M5b) | Approval gate on the API + staff image boundary | **done** | `protectedProcedure` = `requireUser` + `requireApproved` since 2026-07-30 (CLAUDE.md, access-control section); guarded by `server/approvalGate.test.ts` and `server/staffImageBoundary.test.ts` — both present and in the suite. |
 | **M8 — Takes** (migration 0019) | takeService + identity gate + room Takes grid | **unbuilt** | No `server/castingV2/takeService.ts`; `casting_takes` absent from `drizzle/schema.ts` (grep: 0 hits); no `castingV2.take` operation kind. The design direction exists and is founder-endorsed but is not a build order: `CASTING_TAKES_DESIGN.md`, issue **#18**. |
-| **M8b — Voice** (migration 0019b) | VoiceEngine (TWO engines, split by voice kind — see the 2026-09-03 amendment in §6), voice design, audition card | **unbuilt** | The `VoiceEngine` interface exists as a stub (`server/providers/types.ts:535` — `designVoice`/`synthesizeAudition`) with **zero implementations and zero callers**; `cast_voices` absent from schema; no ELEVENLABS reference outside that types file. The M3 voice-transport verification the milestone depends on was never run. |
+| **M8b — Voice** | VoiceEngine (ONE engine — the 2026-09-03 split is superseded, §6), voice design, audition card | **done — shipped as rung N4b** | ⚠ **Every clause of this row's old reading is now false and it is corrected rather than struck (#2471, 2026-10-14), because a cell saying "unbuilt" over a live rung is read as a fact.** It said *"the `VoiceEngine` interface exists as a stub (`server/providers/types.ts:535`) with zero implementations and zero callers; `cast_voices` absent from schema; no ELEVENLABS reference outside that types file"*. Read at the tree: the stub is **deleted** and `types.ts` says so where it stood (*"THE DEFERRED `VoiceEngine` STOOD HERE AND IS GONE — N4b-1 (#2469)"*); the real interface is `server/providers/voiceTypes.ts` with a real implementation in `server/providers/elevenlabsVoice.ts`; `cast_voices` **and** `cast_voice_cards` are in `drizzle/schema.ts:4263` onward; and the road `server/castingV2/voiceService.ts` is live on production behind `CASTING_VOICE_SCOPE`. The transport verification this row called never-run was done by the rung itself. **What is NOT yet built is named so nobody reads "done" too widely**: N4b-4's eviction and re-mint (#2472). |
 | **M9 — Cohorts beyond photoreal** | Anime + humanlike-fantasy cohort adapters in a `server/castingV2/cohorts/` registry | **unbuilt as specified; direction superseded** | No `cohorts/` directory exists. Non-human briefs meet the `unsupported_cohort` wall (`server/castingV2/briefCompiler.ts:244,950`); the founder's own cyborg brief refuses ~1 in 7 (**#25**), the cohort-wall double check awaits countersign (**#20**), fantastical anatomy goes through `CASTING_OPEN_LANE_SCOPE` instead of a cohort adapter. The successor architecture is named in `CREATIVE_REGISTER_DESIGN.md` §5: *"the creative register is, deliberately, the first seam of the cohort-module architecture the creative-casts program needs anyway."* M9's goal survives; its shape belongs to the register era (**#16**, **#22**). |
 | **M10 — Canvas + Wardrobe entries** | CastPicker "Cast new" → V2 session with board origin; wardrobe picker reads signed Casts | **partial** | Server half scaffolded: `CASTING_SESSION_ORIGINS = ["roster","canvas","wardrobe"]` (`drizzle/schema.ts:1952`) and the projection carries `originType` (`server/castingV2/rollProjection.ts:161`). Client half not re-pointed: the boards surface still imports the **legacy** casting feature (`BoardPage.tsx:51` → `@/features/casting/pendingCastRegistry`; `CastNode.tsx:46` → `@/features/casting/components/SlotVersionHistory`), and wardrobe's navigation has no V2 route (grep of `overlayNavigation.ts`: 0 hits). |
 | **M11 — Cutover plumbing** | `/studio?tool=casting*` deep-link redirects, mixed-deploy verification, disposal list | **unbuilt** | No `tool=casting` redirect exists anywhere in `server/` or `client/src/App.tsx` (grep: 0 hits). Legacy `/studio` is still a first-class route (`App.tsx:55`, "Classic Drape Studio (fallback)"). |
@@ -269,17 +269,36 @@ D-117's gate verdict + pricing rulings + his eye on the shipped surface.
 Rollback: flag off.
 
 ⚠ **N4b — Voice** *(a rung on the founder's own word, 2026-09-04, terminal,
-verbatim: "give voice its own rung its very important.")*: the cast's voice
-package, built to the engine split he ruled the day before (§6 question 1's
-amendment — ElevenLabs Voice Design for creature / monster / sci-fi, Inworld
-for human). **Nothing is built**: the interface has zero implementations and
-zero callers, `cast_voices` is absent from the schema, and the transport was
-never verified — so this rung starts at a design, not at a migration. Its
-design answers THE DISAPPEARING-TECHNOLOGY LAW's three questions in its own
-body before anything is cut (`CLAUDE.md`), because the split names two engines
-and clause 5 is exactly about when a customer may see one. **Numbered N4b
+verbatim: "give voice its own rung its very important.")*: the cast's written
+voice line becomes a voice you can hear, make again and keep. **Numbered N4b
 rather than renumbering N5–N8, so every existing citation of those rungs stays
 true.** Gate: his eye on a voiced cast. Rollback: flag off. Design card: #499.
+Its design, written on his word opening the rung, is
+`docs/specs/N4B_VOICE_DESIGN_2026-10-13.md` (`9a3dc1586`), whose §8 slice order
+is the only thing the rung's cards are cut from.
+
+⚠ **THIS ENTRY WAS STALE IN BOTH HALVES AND BOTH ARE CORRECTED HERE (#2471,
+2026-10-14), because a plan document that describes a shipped rung as unbuilt
+is law 7c's exact shape — the tree wins and the document is the bug.**
+
+1. **It said *"Nothing is built"*** — *"the interface has zero implementations
+   and zero callers, `cast_voices` is absent from the schema, and the transport
+   was never verified"*. ⚠ **All four clauses are false.** Read at the tree:
+   `server/providers/elevenlabsVoice.ts` is a real implementation,
+   `server/castingV2/voiceService.ts` is the road and has callers,
+   `cast_voices` and `cast_voice_cards` are in `drizzle/schema.ts`, and the
+   transport is live on production behind `CASTING_VOICE_SCOPE`. N4b-1 (#2469),
+   N4b-2 (#2470) and the money half (#2499) are merged and serving; the voice a
+   customer keeps is downloadable through `/api/cast/:castId/voice-clip`.
+2. ⚠ **It named the TWO-ENGINE SPLIT, and his 2026-10-13 ruling dropped
+   Inworld entirely** — verbatim and entire: *"okay ellevenlabs is clearly
+   better and converting it to inworld is a hit and a miss"*, given on his own
+   ear over six creature pairs. **There is ONE engine for creatures and people
+   alike and no fallback.** §6 question 1's amendment is superseded and is
+   marked so at its own paragraph; the sentence about *"the split names two
+   engines"* went with it, though the disappearing-technology obligation it
+   pointed at did NOT — the design answers the law's three questions in its own
+   body, and **no vendor or engine name appears on any customer screen**.
 
 **N5 — Entries converge** *(original M10 finished)*: canvas Cast-new and the
 wardrobe picker re-pointed at V2 sessions/casts; the boards surface stops
@@ -343,6 +362,24 @@ and waits for his word (THE MILESTONE GATE, PROGRAM.md).
    verified, nothing depends on it) is still true and is now a fact about how
    the rung STARTS, not a reason to defer it. This question is closed.
 
+   ✅ **SUPERSEDED 2026-10-13 — THERE IS ONE ENGINE, AND INWORLD IS DROPPED
+   ENTIRELY. The amendment below is kept unaltered as the record of what was
+   intended, and it is no longer the design.** His ruling, verbatim and entire:
+   *"okay ellevenlabs is clearly better and converting it to inworld is a hit
+   and a miss"* — given on his own ear over **six creature pairs**, which is
+   precisely the court this amendment prescribed (*"design the same three voices
+   for three real casts on each candidate and listen"*). **ElevenLabs voices
+   creatures and people alike; there is no second provider and no fallback.**
+   Read at the tree, not from the ruling: `ELEVENLABS_API_KEY` is the voice
+   transport's only credential and no Inworld reference exists in the product.
+   ⚠ **So the open question at the foot of this amendment is CLOSED, and it
+   closed the way it asked to be** — *"whether one engine by then does both well
+   enough that two integrations are not worth their cost"* — **yes, measured on
+   his ear, and the second integration was never built.** His *"for now"* did
+   the work that sentence credited it with. Clause 5 still binds and is kept:
+   no vendor name appears on any customer path, and the control a customer does
+   get chooses a VOICE — they listen to three and keep one.
+
    ⚠ **AMENDMENT 2026-09-03 — THE ENGINE SPLIT, on his ruling.** Asked whether
    a cheaper or better model had overtaken the spec's vendor, he answered with a
    split rather than a swap, verbatim: *"for now we are sticking with elevenlabs
@@ -383,10 +420,11 @@ and waits for his word (THE MILESTONE GATE, PROGRAM.md).
      voice has no basis for choosing between two vendors and should never be
      handed that decision.
 
-   **Kept as the open question it is:** whether the split survives a real court
+   ~~**Kept as the open question it is:** whether the split survives a real court
    at build time, and whether one engine by then does both well enough that two
-   integrations are not worth their cost. **His “for now” is doing real work in
-   that sentence.**
+   integrations are not worth their cost.~~ **ANSWERED — see the ✅ at the head of
+   this amendment: it did not survive, one engine does both, and his “for now”
+   was doing exactly the work this sentence credited it with.**
 2. **Is a post-Sign revision product still wanted** (the real M12), now that
    the refine arc serves identity edits pre-Sign? The sign-mint (7b-ii) is
    the first concrete piece if yes. Recommendation: fold into the shelf until

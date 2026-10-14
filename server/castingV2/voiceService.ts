@@ -51,7 +51,10 @@ import {
   type VoiceAllowance,
   type VoiceEngine,
 } from "../providers/voiceTypes";
-import { createElevenLabsVoiceEngine } from "../providers/elevenlabsVoice";
+import {
+  ELEVENLABS_API_KEY_VARIABLE,
+  createElevenLabsVoiceEngine,
+} from "../providers/elevenlabsVoice";
 import { captureCastingVoiceEnabled } from "./castingV2Scope";
 import {
   VOICE_AUDITION_PASSAGE,
@@ -787,6 +790,136 @@ export async function readVoiceKeepability(
 /** For the drivers: forget the cached allowance between arms. */
 export function resetVoiceKeepabilityCache(): void {
   keepabilityCache = null;
+}
+
+/**
+ * WHAT THE HOUSE HAS LEFT — the staff reading (N4b-3, #2471).
+ *
+ * His card: *"the house can see the month's ration before a customer meets its
+ * end"*. The allowance is a property of OUR provider plan, so this is one
+ * house-wide fact and never a per-customer one — there is nothing to key it by
+ * and no customer id in this road at all.
+ *
+ * # BOTH NUMBERS, BECAUSE EITHER ONE ENDS A KEEP
+ *
+ * The card asks for *"a count"*, and it ships TWO. `keepCastVoice` refuses on
+ * `voiceOperationsAvailable` **or** `voiceSlotsAvailable` (two separate
+ * refusals, `no_operations_left` and the slot road), so a panel showing
+ * operations alone would hide half the cliff: an account with 40 operations
+ * left and every slot full cannot keep a voice, and the page would read
+ * healthy. Showing one number would have been obeying the card's letter while
+ * failing the thing it was filed for.
+ *
+ * # IT RETURNS A VERDICT AND NEVER THROWS
+ *
+ * An unreadable allowance is a {@link StaffVoiceAllowance} state, not an
+ * exception — the panel must be able to say *"not readable"* in the row, where
+ * a throw would take the whole card to an error boundary and tell a staff
+ * member nothing about which half is quiet. This is neither of the other two
+ * roads' answers on purpose: the Keep fails CLOSED (money), the card's hint
+ * fails OPEN (a blip must not hide a working feature), and a staff reading
+ * does neither, because it is a measurement and reports what it measured.
+ *
+ * # `not_configured` IS A THIRD STATE AND NOT A FAILURE, AND IT IS READ RATHER
+ * # THAN INFERRED
+ *
+ * ⚠ **Without it this panel cries wolf on every machine where voice is off.**
+ * `requireKey()` throws `provider_account` for an absent key, and that class
+ * also means no credit, a bad key or a suspended account — so a developer
+ * machine with no voice transport would show the same *"not readable"* as a
+ * dead production account, which is the silence direction wearing an alarm's
+ * clothes. The variable is checked FIRST, before any call, and the two are
+ * reported apart.
+ *
+ * It is an honest distinction rather than a convenience, because the absence
+ * means something exact: `validateCastingVoiceEnvironment` REFUSES BOOT when
+ * `CASTING_VOICE_SCOPE` names anyone and this variable is missing, so a
+ * running process with no key is a process where **no account has a voice
+ * road at all** — there is no ration to show, not a ration we failed to read.
+ * This is `SENTRY_DSN`'s posture: say there is no tracker rather than imply
+ * one is watching.
+ *
+ * # CACHED, SUCCESSES ONLY
+ *
+ * One house account again, so the cache is the keepability hint's reasoning
+ * exactly: without it, every open staff tab is its own provider round trip on
+ * every poll. The TTL matches the staff panel's own 30s cadence, so however
+ * many tabs are open the provider sees at most one call per cadence.
+ * ⚠ **A FAILURE IS NEVER CACHED** — the same rule the hint carries one
+ * function up: pinning "not readable" for a cadence after one blip is how a
+ * recovered provider keeps reading as broken.
+ *
+ * # WHAT IS DELIBERATELY NOT PROJECTED (invariant 8)
+ *
+ * {@link VoiceAllowance} also carries `tier` and `instantCloning`, and neither
+ * crosses this boundary. `tier` is the VENDOR's plan name — naming a vendor on
+ * a rendered surface serves nothing a staff member can act on, and the
+ * disappearing-technology law's line about engine names is not one to walk up
+ * to for decoration; `instantCloning` is a capability flag N4b-4's receipt
+ * reads, not a ration. The projection is explicit so a later field added to
+ * the allowance cannot arrive here by being spread.
+ */
+export type StaffVoiceAllowance =
+  | {
+      state: "read";
+      /** Saves and clones left this period, and the period's whole ration. */
+      operationsLeft: number;
+      operationsTotal: number;
+      /** Saved-voice slots free right now, and the plan's whole set. */
+      slotsLeft: number;
+      slotsTotal: number;
+    }
+  /** No transport, so no voice road for anyone — nothing to ration. */
+  | { state: "not_configured" }
+  /** There is a transport and it did not answer. */
+  | { state: "unreadable"; failureClass: string };
+
+const STAFF_ALLOWANCE_TTL_MS = 30 * 1000;
+let staffAllowanceCache: { atMs: number; value: StaffVoiceAllowance } | null = null;
+
+export async function readVoiceAllowanceForStaff(
+  deps?: VoiceServiceDeps,
+): Promise<StaffVoiceAllowance> {
+  /* Asked BEFORE the cache, so a key set or unset mid-process is never
+     answered from a reading taken under the other configuration. It is a bare
+     env read, so asking every time costs nothing.
+
+     `!deps?.engine` first because an INJECTED engine is the question's own
+     answer: a driver handing in a stub is not asking whether this machine has
+     a transport, and without this clause every arm below would need the real
+     variable set to reach the code it is driving. */
+  if (!deps?.engine && !process.env[ELEVENLABS_API_KEY_VARIABLE]) {
+    return { state: "not_configured" };
+  }
+  const atMs = Date.now();
+  if (staffAllowanceCache && atMs - staffAllowanceCache.atMs < STAFF_ALLOWANCE_TTL_MS) {
+    return staffAllowanceCache.value;
+  }
+  try {
+    const allowance = await engineFor(deps).readAllowance({});
+    /* `Math.max(0, …)` because the provider reports a counter and a ceiling
+       independently: a ration lowered mid-period, or a counter past its
+       ceiling, must read as none left rather than as a negative count. */
+    const value: StaffVoiceAllowance = {
+      state: "read",
+      operationsLeft: Math.max(0, allowance.operationsTotal - allowance.operationsUsed),
+      operationsTotal: allowance.operationsTotal,
+      slotsLeft: Math.max(0, allowance.slotsTotal - allowance.slotsUsed),
+      slotsTotal: allowance.slotsTotal,
+    };
+    staffAllowanceCache = { atMs, value };
+    return value;
+  } catch (error) {
+    const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    log.warn({ failureClass }, "[Voice] allowance unreadable for the staff panel");
+    /* NOT cached — see the docblock. */
+    return { state: "unreadable", failureClass };
+  }
+}
+
+/** For the drivers: forget the cached staff reading between arms. */
+export function resetVoiceAllowanceStaffCache(): void {
+  staffAllowanceCache = null;
 }
 
 /**
