@@ -213,3 +213,97 @@ export function closeLine(outcome: CloseOutcome): string | null {
     : `closing the database connection failed (${outcome.detail}) — socket destroyed instead (#1745).`
       + " The verdict above was already decided; this changes nothing about it.";
 }
+
+/**
+ * ONCE THE VERDICT EXISTS, THE PROCESS LEAVES ON A CLOCK OF ITS OWN (#2501).
+ *
+ * # What happened, at the bytes
+ *
+ * Deployment `9b3ef98d` of `74dfca765` (an edition-only commit) failed with
+ * Railway's own diagnosis *"Pre-deploy command timed out after 600 seconds"*.
+ * Its whole log was four lines, every one inside 556 ms, ending on the verdict
+ * *"nothing pending"* — and then nothing for ten minutes. The same build was
+ * redeployed by hand and came back SUCCESS, so it is intermittent.
+ *
+ * ⚠ **THIS WAS PAST `closeWithin`, AND THE LOG PROVES IT RAN**: a destroyed
+ * close prints `closeLine`, and no such line appeared, so the close reported
+ * `closed` or `absent`. `process.exit(code)` was the next statement and did not
+ * visibly run. **Why it did not is NOT known** — nothing drove it, and this
+ * module does not pretend otherwise. What is known is the shape of the cost:
+ * the decision existed and was correct, and something after it took the exit.
+ *
+ * # So the exit no longer depends on the road to it
+ *
+ * `closeWithin` bounded ONE thing that could stand between the verdict and the
+ * exit. This bounds ALL of them that run on the event loop: armed the moment
+ * the exit code is known, it waits `EXIT_WATCHDOG_MS` and then exits WITH THAT
+ * CODE — whatever is still pending, whatever is keeping the loop alive, and
+ * whether or not the top-level await ever settles. Before it exits it prints
+ * what was still holding the process (`process.getActiveResourcesInfo()`: handle
+ * TYPE names only, never an address or a credential), so the next instance is a
+ * diagnosis instead of a silence.
+ *
+ * ⚠ **IT IS A REF'D TIMER ON PURPOSE**, for the reason `closeWithin`'s own timer
+ * is: an unref'd watchdog on an idle loop with an unsettled top-level await lets
+ * node exit **13** first, which loses the decided code exactly as the hang did.
+ * It cannot hold a healthy process up: the ordinary road reaches `process.exit`
+ * within milliseconds and the armed timer dies with the process.
+ *
+ * ⚠ **IT CAN NEVER CHANGE A VERDICT.** It exits with the code it was HANDED and
+ * has no default of its own; a refusal (1) leaves as a refusal. It decides only
+ * WHEN, never WHAT.
+ *
+ * # What it cannot reach, said rather than implied
+ *
+ * A hang inside `process.exit` itself (native teardown), or a main thread
+ * blocked in a synchronous call, never returns to the event loop, so no timer
+ * can fire there. That is why the script also prints one line immediately
+ * before its exit (the card's first ask): if a future instance shows that line
+ * and still times out, the hang is past JavaScript, and that is the next card.
+ */
+
+/**
+ * Sized so it can never pre-empt the bounded close (2 s) on a healthy run, and
+ * so the worst case is a rounding error beside Railway's 600 s.
+ */
+export const EXIT_WATCHDOG_MS = 10_000;
+
+export function exitWatchdogLine(code: number, bound: number, holding: readonly string[]): string {
+  return `predeploy: still running ${bound} ms after the verdict was decided — exiting ${code} anyway (#2501).`
+    + ` Still holding the process: ${holding.length ? holding.join(", ") : "nothing reported"}.`
+    + " The verdict above is unchanged; only the wait was cut.";
+}
+
+let armedWatchdog: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Arm the watchdog. Call it the moment the exit code is known, BEFORE anything
+ * else that could wait (the verdict lines, the close).
+ *
+ * ⚠ **A LATER ARMING REPLACES AN EARLIER ONE.** The verdict road arms with the
+ * verdict's code; if anything after that throws, the refusal road arms with 1.
+ * Two live watchdogs would let the FIRST (a 0) fire over the refusal — the one
+ * road on which this could turn a failure into a success — so the latest
+ * decision is the only one that can fire.
+ */
+export function armExitWatchdog(
+  code: number,
+  options: {
+    bound?: number;
+    exit?: (code: number) => void;
+    log?: (line: string) => void;
+  } = {},
+): void {
+  const bound = options.bound ?? EXIT_WATCHDOG_MS;
+  const exit = options.exit ?? ((decided: number) => process.exit(decided));
+  const log = options.log ?? ((line: string) => console.log(line));
+  clearTimeout(armedWatchdog);
+  armedWatchdog = setTimeout(() => {
+    try {
+      log(exitWatchdogLine(code, bound, process.getActiveResourcesInfo()));
+    } catch {
+      /* A log that throws must not cost the exit — the exit is the job. */
+    }
+    exit(code);
+  }, bound);
+}

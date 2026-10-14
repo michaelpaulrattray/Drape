@@ -41,7 +41,7 @@ import {
   type MissingObjects,
 } from "./lib/ceremonyAutoApply.mts";
 import { predeployVerdict } from "./lib/predeployVerdict.mts";
-import { closeLine, closeWithin } from "./lib/boundedClose.mts";
+import { armExitWatchdog, closeLine, closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase, worldOf } from "./lib/dbConnection.mts";
 
 const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT);
@@ -79,9 +79,14 @@ const code = await (async (): Promise<number> => {
       dry: false,
     });
     const verdict = predeployVerdict(report);
+    /* #2501 — the code is known: from here the process leaves on a clock of its
+       own, whatever stands between this line and the exit. See the watchdog's
+       header in `boundedClose.mts`. */
+    armExitWatchdog(verdict.exitCode);
     for (const line of verdict.lines) console.log(`  ${line}`);
     return verdict.exitCode;
   } catch (error: any) {
+    armExitWatchdog(1);
     console.log("predeploy: REFUSED — the schema could not be read or the applier could not run,");
     console.log("  so nothing proves the new build's tables exist. The old build keeps serving.");
     console.log(`  (${error?.constructor?.name ?? "Error"}${error?.code ? ` · ${error.code}` : ""})`);
@@ -108,4 +113,11 @@ const code = await (async (): Promise<number> => {
   }
 })();
 
+/*
+  #2501 — the card's first ask: one line between the verdict and the exit, so a
+  log that ends on the verdict means "never reached here" and a log that ends on
+  THIS line and still times out means the hang is inside the exit itself. Both
+  were indistinguishable before, which is why the incident could not be read.
+*/
+console.log(`predeploy: exiting ${code}`);
 process.exit(code);
