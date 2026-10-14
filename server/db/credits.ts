@@ -282,10 +282,13 @@ export function grantBucket(
  * words: "i think for now tools should just refer to was an image generated?
  * its filed as image or video? its video or LLM its LLM or Text … but it can
  * grow"). A documented set over a varchar column, not a DB enum, so growing
- * it is an edit here rather than a migration. As of 2026-09-03 every tool
- * charge in the product generates images; "video" and "text" are reserved.
+ * it is an edit here rather than a migration. ⚠ **This closed with *"as of
+ * 2026-09-03 every tool charge in the product generates images; video and
+ * text are reserved"* until 2026-10-14, and the first half stopped being
+ * true that day**: the casting studio's Voice card charges for audio (#2471).
+ * `video` and `text` are still reserved and have no charge site.
  */
-export type CreditToolKind = "image" | "video" | "text";
+export type CreditToolKind = "image" | "video" | "text" | "audio";
 
 /**
  * Required on every deduction — the ruling that keeps toolKind honest where
@@ -297,6 +300,14 @@ export type CreditToolKind = "image" | "video" | "text";
  *   the plan-change credit unwind in routes/billing.ts (#664).
  *   Null never means "unlabelled tool charge": the field is required, so a
  *   new charge site cannot compile without its author deciding.
+ * - ⚠ **`audio` ARRIVED 2026-10-14 (#2471) AND IT IS THIS SET'S OWN RULE
+ *   BEING FOLLOWED RATHER THAN AN EXCEPTION TO IT.** The founder's taxonomy as
+ *   quoted in `server/creditToolKind.test.ts` ends *"but it can grow"*, and a
+ *   voice is the first charged output that is none of the three: the casting
+ *   studio's Voice card charges for three voices designed from a cast's own
+ *   written line, and for keeping one. Writing `"text"` for it would have been
+ *   the cheap lie — the charge pays for a recording, not for words — and
+ *   `null` is reserved for a row that is not a tool charge at all.
  * - A charged operation with genuinely no output kind has no live instance
  *   today (measured at every call site, 2026-09-03: mint package, refresh
  *   views and the evidence package sync all charge only to generate view
