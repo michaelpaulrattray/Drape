@@ -3757,3 +3757,323 @@ and its heartbeats, and the queue counts under his switches.
    explicitly local; `delete_branch_on_merge` handles the merged ones, so these 222
    are the un-merged remainder. Not a defect on this reading — measured so the next
    run can see whether it moves.
+
+## Run 15 — 2026-10-14 19:55–2x:xx AEST (Janitor, patrol #15, card #1098 CLOSED; #2496 filed)
+
+**A FULL patrol, and it took the card this seat had skipped eight times as the
+headline unit** — which run 14's item 4 demanded in those words (*"either take it
+or write down why it keeps being skipped"*) and which the Retro had narrowed to
+*"either give it one §-section, or `park` it… and either way stop carrying it"*.
+It got the section. The focus rung (N4b) had no startable card for this seat, no
+`founder-ordered` card was on offer, **0 open pull requests** so no repair was
+owed, and the clock had fired — so the patrol was the admissible brief.
+
+| run 14's next-run item | outcome |
+|---|---|
+| 1 — anchor the dev-server read on the ENTRY POINT, not `tsx watch` | ✅ **DONE, and the corrected anchor was proven able to fire: 8/8 predicate controls, including the exact `cli.mjs" "watch"` shape that defeated the narrow one.** 0 dev-shaped processes. §C |
+| 2 — the `%TEMP%` trees; read the floor in UTC | ✅ **READ AND LEFT, as instructed. 189 entries now (was 123); oldest still `2026-10-07T16:15:59Z`, floor passing `2026-10-14T16:15:59Z` — 6 h 19 m AFTER this reading.** §F |
+| 3 — the 533 unnameable disposables are the standing remainder | ⚠ **Unchanged in kind, 517 now. No cleverer fallback was proposed, as instructed.** §B |
+| 4 — **#1098, past seven firings** | ✅ **TAKEN, DECIDED, CLOSED.** §A |
+| 5 — the 6 `drape-scratch-*` loose files | ⚠ **STILL INSIDE THEIR FLOORS — run 14's dates were right.** §F |
+| 6 — run 12's items 5, 7, 8, three runs unreached | ⚠ **ITEM 5 WAS ALREADY DISCHARGED BY RUN 14 ITSELF and re-carried anyway — retired here with its receipt. 7 does not apply to this run's act. 8 carried deliberately.** §G |
+| 7 — remote `origin/team/*` is 222, measured so the next run can see it move | ⚠ **THE NUMBER WAS NEVER A REMOTE BACKLOG — it was read from this clone's CACHE. GitHub held 68.** §D |
+
+### A. CARD #1098 — DECIDED ON THE NINTH FIRING, AND THE DECIDER WAS TRACKED CODE
+
+The card left two readings and reserved the choice to this seat. **What settled it
+was not a preference — it was `scripts/lib/latencyFixture.mts`, which is TRACKED
+and is the only thing in the repository that still mentions these rows:**
+
+> *"a client reading anchored to an INHERITED fixture decays silently, and the
+> product's own retention is what expires it. The repair is **not a fresher id —
+> that is the same defect with a later date** — it is a fixture the instrument
+> MINTS, and re-asserts, every time it runs."*
+
+Re-minting three publicIds is exactly "a fresher id" for an inherited fixture.
+That library exists because the Machinist retired this pattern after it cost two
+patrol runs, so **re-mint was not a neutral alternative: it was the thing the
+house had already decided against**, and it would have preserved the retired
+pattern under a cleanup's name (his 2026-09-24 ruling, read the other way round).
+
+Three supporting facts, each read:
+
+1. **Nothing ever reachable is lost.** `getSession` parses `sessionId` with
+   `z.string().uuid()` — **`server/routes/castingV2.ts:205`, used at `:1287`**
+   (the card says `:190`; it has drifted). A non-UUID publicId dies at the input
+   parse before any ownership or existence check.
+2. **Nothing in code consumed them.** The single tracked mention is the prose
+   docblock above, citing them as the *history of a defect*.
+3. ⚠ **THE ONE REAL RISK WAS MEASURED AND WAS ABSENT, and it would have been a
+   path-three death.** `DONOR_OPEN_ID = "verify-bot-local"` (`scripts/lib/outsider.mts:68`)
+   is the owner of these very sessions, and **three tracked fixture libraries**
+   clone a donor from it. Driven with their own donor query: the pool is **8
+   candidates, none in sessions 94/95/96**, the donor is candidate 733 in session
+   102, and the pool is **still 8** after the delete. Session 96's two `ready`
+   rows never qualified — no `internalPrompt`.
+
+**Deleted by manifest** (`output/janitor-run15/1098-fixture-session-manifest.txt`,
+every row's full contents): **3 sessions, 3 rolls, 12 candidates, 0 variants**,
+children first, in one transaction that refuses to commit unless exactly 3
+sessions go. `casting_sessions` 69 → 66.
+
+**Three gate controls, because a gate that cannot refuse is not a gate:**
+
+| control | result |
+|---|---|
+| the sweep pointed at three **openable** (real-UUID) sessions | **REFUSED** — *"publicId … IS a UUID — it is openable, not litter"* |
+| a session that does not exist | **REFUSED** — *"expected 3 sessions, found 2"* |
+| the real three | both gates PASS |
+
+A fourth gate refuses if the delete would empty the donor pool. The reader's regex
+carried its own positive and negative control in the same run, so **0 non-UUID** is
+a finding rather than an inert reader.
+
+⚠ **AND THE CLASS WAS CLOSED, NOT JUST THE INSTANCE — the writer would have
+re-laid it, and it is protected from the sweeper BY THIS LOG.**
+`disposable-age --list` calls `scripts/_1086-lobby-fixture-disposable.mts`
+**`KEEP — cited by docs/JANITOR_LOG.md`**: it survives because the Janitor wrote
+about it. Its first act was to delete its own prior fixtures by `publicId like
+'1086-%'` and lay them down again in the same malformed shape — so deleting the
+rows alone leaves a dormant re-infection road. Two changes (untracked file, so
+nothing merges): the mint is `randomUUID()`, and **the idempotency handle moves
+off the validated column onto the roll's `briefText`**, declared once as
+`FIXTURE_BRIEFS` and read by both the cleanup and all three call sites.
+**Proven against the real contract: driving the same `z.string().uuid()`, the new
+mint is ACCEPTED and the old shape REFUSED.** `pnpm check:scripts` exits 0 but
+**excludes untracked files, so it never saw the edit** — an esbuild parse is what
+covers it.
+
+The card's figures re-measured: `casting_sessions` 54 → 66 rows, 13 tables
+declaring `publicId` (unchanged), 360 → 333 rows across them, **non-UUID 3 → 0**.
+The finding held exactly; only the numbers moved. **#2496** carries the durable
+guard question, **filed and deliberately not built** (the anti-boredom rule), with
+a recommendation that may well be *"a note is the whole of it"*.
+
+### B. THE DISPOSABLE SWEEP — 32 SWEPT, AND THE FLOOR THAT MATTERED PASSED 42 MINUTES EARLIER
+
+**Every anchor card was re-read at GitHub before the sweep, because "card closed
+>7d" is the premise every nomination rests on:** #1837 closed `2026-10-07T09:37:37Z`,
+#1855/#1867/#1872/#1877 all `2026-10-03`. ⚠ **#1837's 7-day floor passed at
+`09:37Z` and this reading was `10:19Z` — forty-two minutes.** A run an hour earlier
+would correctly have kept nine of these files. Run 12's *"the floor is an instant,
+not a date"* earned its keep.
+
+- **Manifest** — `output/janitor-run15/disposable-sweep-manifest.md`: 32 rows,
+  **100,995 bytes (98.6 kB)**, bytes + sha1 + verdict + reason + anchor + mtime per
+  row; 32 distinct sha1.
+- **Archive** — `C:\Users\Admin\drape-janitor-run15-disposables-2026-10-14.zip`,
+  50,479 bytes, **verified 32/32 by size AND by sha1 out of a full extraction, read
+  from the zip's own directory**, with 0 entries in the zip absent from the
+  manifest. ⚠ Not verified by the writer exiting 0 — run 14's failed write still
+  printed `zip written: 0 bytes`.
+  ⚠ **It is named to the convention `janitor-backup-retention.mts` dates, and that
+  was checked rather than assumed**: the tool now reports it `TOO-RECENT … inside
+  the 7-day floor, not judged on its contents`. So the archive entered the
+  retention lifecycle instead of becoming permanent litter of its own.
+- **Two gates at the instant of deletion**: every verdict re-read (**0 moved**) and
+  every file's bytes still matching the archived sha1 (**0 drifted**). Either
+  refuses the whole sweep.
+
+| reading | before | after |
+|---|---|---|
+| untracked under `scripts/` (git) | 694 | **662** |
+| reader population | 670 | **638** |
+| sweepable | 29 | **0** |
+| chain | 3 | **0** |
+| cited by a file that stays | 117 | **117** |
+| unresolved by name (kept on purpose) | 518 | **517** |
+
+⚠ **`chain 0` after is a real check.** The 3 chain rows were swept with the citers
+keeping them, so a shallow reader would have exposed a second-order chain the
+moment they went. None appeared — a fixed point in one pass.
+
+⚠ **One row now reads `artifact says old, filesystem says new` where run 14 had
+none, and it is MINE**: my edit to the #1086 writer moved its mtime. Benign, still
+`KEEP`, recorded so run 16 does not hunt it.
+
+### C. THE DEV SERVERS — RUN 14's CORRECTION APPLIED, AND THE READER PROVEN ABLE TO FIRE
+
+`netstat` 3000–3010: **nothing**. `scripts/dev-servers.mts`: *"no dev server is
+running on this machine."* Neither is an answer on its own, because run 14's five
+were **portless**.
+
+Anchored on the dev ENTRY POINT as run 14 prescribed (`server/_core/index.ts`,
+`cross-env`, `pnpm.cjs dev`, and `tsx` + `"watch"` as separate tokens):
+**0 dev-shaped processes**, and **0 processes whose command line names any
+`drape-` path** — so run 14's ten named-but-not-killed have all exited on their
+own.
+
+⚠ **A reader returning 0 proves nothing until it is shown it can fire (working law
+2, and run 14 §E paid for exactly this).** The predicate was driven against eight
+command-line shapes: **8/8**, including the real `…/tsx/dist/cli.mjs" "watch"`
+string that the narrow anchor missed, and three negatives (a vitest run, this very
+shell, a claude session). **The protected set was read and is intact**: the Foreman
+runner (pid 33852 — this shift's own parent) alive, 5 `claude.exe` sessions alive,
+nothing killed because nothing needed killing.
+
+### D. THE REMOTE-REF NUMBER WAS A CACHE READING, AND IT HAD NEVER BEEN A BACKLOG
+
+Run 14's item 7 recorded *"remote `origin/team/*` is 222 and nothing sweeps it …
+these 222 are the un-merged remainder"*. **It counted `refs/remotes/origin/team/*`
+— this clone's own cache — and not the remote.** Measured both ways this run:
+
+```
+local remote-tracking refs   340
+what GitHub actually holds    68
+refs GitHub has that we do not track   0
+```
+
+So **272 were stale**: `delete_branch_on_merge` removed each branch when its pull
+request merged, and nothing has ever pruned the cache. The sentence was not merely
+out of date — it described a backlog that did not exist.
+
+**Pruned, with provenance for the whole population rather than a sample.** A
+6-of-272 spot check found all six MERGED, which is not provenance — so the answer
+was derived in **one network call**: `git ls-remote origin 'refs/pull/*/head'`
+(1266 heads), then set membership on every stale ref's tip. **272 of 272 covered,
+0 uncovered**, and `refs/pull/<n>/head` is not a branch and survives forever, so
+every row has a permanent restore road. Manifest:
+`output/janitor-run15/stale-tracking-prune-manifest.txt`. One row's claimed road
+was re-read live and returned its claimed tip exactly.
+
+After `git fetch --prune origin`: **both numbers read 68**. Local branches (309)
+and worktrees (39) untouched, as a cache prune should leave them.
+
+### E. THE LOCAL BRANCH SWEEP — 404 → 309
+
+404 local `team/*` refs (258 at run 14's close; **+146 in three days**).
+`scripts/janitor-local-branches.mts`: deletable 95 · keep 274 · held 35, with 39
+worktree holds.
+
+**Checked before believed**, three controls:
+
+| control | result |
+|---|---|
+| the manifest's restore road returns its claimed tip (3 rows) | **3/3 MATCH** |
+| those pull requests are really MERGED | **3/3 MERGED** |
+| ⚠ the documented trap: are deletable tips ancestors of `origin/main`? | **0 of 95 are; 95 are NOT** |
+
+That last one is why `git branch --merged` must never be the reader here — it
+would keep every one of the 95, and inverting `--no-merged` would delete work this
+machine alone holds (#1797). The tool's own pre-act re-read said *"95 unchanged, 0
+moved or gone, 0 newly held"*. **Deleted 95: 404 → 309**, deletable **0** after,
+keep 274, held 35, all 39 worktree holds intact, `HEAD` still `main`.
+
+### F. THE FLOORS THAT HAVE NOT PASSED — READ IN UTC, LEFT ALONE, AND SAID SO
+
+- **`%TEMP%` `drape-*`: 189 entries, 8,941 files.** Oldest
+  `2026-10-07T16:15:59Z` — **the same oldest run 14 recorded**, so no new floor has
+  opened; it passes `2026-10-14T16:15:59Z`, **6 h 19 m after this reading**
+  (`2026-10-14T09:56Z`). **LEFT, and they are not a defect**: run 13 drove this to
+  a no-defect verdict (orphans of interrupted vitest runs) and nothing here
+  contradicts it. **Run 16 is the first that may sweep them**, and its floor is now
+  genuinely open.
+- **The 6 `drape-scratch-*` loose files, 5.1 MB**: floors passing `2026-10-15
+  13:38Z` through `2026-10-16 16:14Z` — **all still inside, exactly as run 14
+  predicted.** No judgement was needed and none was invented. ⚠ **No manifest rule
+  covers `C:\Users\Admin\drape-scratch-*`; a run that wants to sweep them writes
+  that rule first.** A new `drape-scratch` DIRECTORY appeared today (0.06 MB, floor
+  `2026-10-21`) and is inside its floor too.
+
+### G. 31 EMPTY DIRECTORIES, AND THE `.git` AND MEMORY READINGS
+
+`drape-*` entries stood at **85** (run 14 closed at 33 directories + 6 files), of
+which **31 held 0 entries** — the documented git-on-Windows behaviour, where
+`git worktree remove` unregisters the tree and leaves the directory.
+
+Classified with **run 14 §E's corrected shape and both its controls** (the main
+tree must read registered — PASS; an impossible path must read absent — PASS),
+in node with `path.resolve` normalisation: **0 still registered, 31 unregistered.**
+Removed with **`rmdirSync`, not `rm -rf`**, so emptiness is re-checked by the act:
+**31 removed, 0 refused.** `drape-*` entries **85 → 54** (48 directories + 7 loose
+files, the seventh being this run's own archive). Worktrees still **39** — #2155's
+territory, still `blocked` on three decisions none of which is a seat's.
+
+⚠ **ONE FAILURE OF MY OWN, because its shape is the lesson.** The first removal
+loop extracted its paths through a shell `grep -oE` + `sed` and matched nothing, so
+it reported **`removed: 0   refused: 0`** — an empty list reading exactly like
+"nothing to do". It was caught only because the after-count had not moved. Redone
+in node, where the list already existed. A second slip the same hour: a quoted
+heredoc collapsed `\\` to `\` and git read `C:UsersAdminDrape` — the
+`heredoc-eats-one-backslash-level` memory, paid again. **Both are arguments for
+doing the act in the language that already holds the data.**
+
+- **Memory index** (header item 3): **333 files, 333 pointed at, 0 faults** across
+  5 indexes (was 319/0). `MEMORY.md` is 19,266 bytes — well inside the read limit
+  that once silently dropped its tail.
+- **Backup retention** (header item 1): **expired 0 · kept 1 · too-recent 1 ·
+  redundant 0.** The keep is grounded (31 of 31 entries unrecoverable elsewhere);
+  the too-recent is this run's own archive. **No rows for the receipt table.**
+- **`.git`**: garbage **0**, size-garbage **0**, no stale `*.lock`. Guards after:
+  script exit + connection discipline **18/18**, `pnpm check:scripts` **exit 0**.
+- **Run 12's carried items, settled rather than carried a fourth time:** item 5
+  (#1796/#1797 "filed and unworked") is **RETIRED — run 14's own §D discharged it
+  and then re-listed it as unreached**; item 7 (the junction canary before any
+  sweep outside the repository) **does not apply to this run's act** — only EMPTY
+  directories were removed, and an empty directory holds no `node_modules`
+  junction by definition; item 8 (the knip types SET diff) is **carried
+  deliberately** — no knip reading was taken this run, so there was no row to
+  diff.
+
+### H. THE COUNTS
+
+| | run 14 close | run 15 close | Δ over 3 days |
+|---|---|---|---|
+| untracked under `scripts/` | 698 | **662** | **−36** (694 before the sweep: −4 then −32) |
+| …of which permanent for want of a name | 533 | **517** | 78% of the remainder |
+| untracked repo-wide | 758 | **733** | |
+| local `team/*` branches | 258 | **309** | **−95 swept** (404 before: +146 then −95) |
+| remote-tracking `origin/team/*` | 222 | **68** | **−272 stale cache pruned** (340 before) |
+| …and what GitHub actually holds | *never measured* | **68** | the two now agree |
+| `drape-*` directories | 33 | **48** | 85 entries before §G removed 31 |
+| `drape-*` loose files | 6 | **7** | 5.1 MB; the 7th is this run's archive |
+| registered worktrees | 27 | **39** | +12 — #2155's, untouched |
+| dev-server processes killed | 5 | **0** | none alive by the corrected anchor |
+| live listening dev servers | 0 | **0** | |
+| `%TEMP%` `drape-*` entries | 123 | **189** | 8,941 files; **no floor passed** |
+| memory-index faults | 0 | **0** | 333 files, 333 pointed at (was 319) |
+| retention: expired / kept | 0 / 1 | **0 / 1** | plus 1 too-recent (this run's archive) |
+| `.git` garbage | 0 | **0** | |
+| dev `casting_sessions` non-UUID publicIds | 3 | **0** | #1098 closed |
+| queue: open / rotting | — | **52 / 17** | |
+
+### I. Anti-boredom check
+
+Every act traces to **run 14's own numbered next-run list** (items 1, 2, 4, 5, 6,
+7), to **#1098's reserved decision plus the Retro's recommendation on it**, or to
+the standing instructions in this file's header (memory index, backup retention,
+local branches). **One card closed with its receipt (#1098, after nine firings of
+this clock), one filed (#2496, deliberately not built).** No code was changed by
+this patrol: the only tracked edit is this log entry, and the one untracked edit is
+the #1086 fixture writer, which exists to stop #1098 returning.
+
+**Spend: nothing** — no credits, no house money, no paid model call, no image call,
+no production variable, no migration, no flag flip. Production writes: this
+shift's row and its heartbeats, and the queue counts under his switches. Database
+writes: **dev only**, port 52008 asserted before every statement.
+
+**Next run (~2026-10-17):**
+
+1. ⚠ **THE `%TEMP%` FLOOR IS NOW GENUINELY OPEN — 189 entries, 8,941 files, oldest
+   floor passed `2026-10-14T16:15:59Z`.** Two runs have deferred this correctly
+   because the floor had not passed; it has. Read the mtimes in UTC and compare in
+   UTC, and expect the population to have grown again.
+2. **The 6 `drape-scratch-*` files (5.1 MB) are past their floors from 15–16 Oct.**
+   ⚠ **No manifest rule covers that path — write the rule before sweeping them**,
+   as run 14 said and this run did not need to.
+3. ⚠ **A sweep outside the repository that touches a NON-EMPTY directory must
+   re-drive the junction canary first** (run 12's item 7). This run skipped it
+   legitimately because it removed only empty directories; that exemption does not
+   transfer.
+4. **The knip types SET diff has never been done** (run 12's item 8, now four runs
+   unreached). **Either take a knip reading and diff both sets, or retire the item
+   — do not carry it a fifth time.** ⚠ Do NOT carry forward that types arrive
+   faster than exports: that was run 12's own corrected error.
+5. **The 517 unnameable disposables are the standing remainder and no sweep touches
+   them.** The only lever is shifts naming their files `_<card>-<what>-disposable.mts`.
+6. **Remote `origin/team/*` now reads 68 and is a REAL number.** If it diverges
+   from `git ls-remote --heads` again, the cache has gone stale, not the backlog —
+   §D has the one-call derivation.
+7. **#2155 (37 worktrees, 23 holding live `node_modules` junctions) is still
+   `blocked` on three decisions none of which is a seat's**, re-read this run. It is
+   the reason `registered worktrees` keeps climbing, and no patrol may clear it.

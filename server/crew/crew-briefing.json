@@ -1,7 +1,7 @@
 {
-  "edition": 700,
-  "updatedAt": "2026-10-14T09:40:00Z",
-  "shift": "Foreman — foreman-20261014-1823 (✅ VOICE IS LIVE ON YOUR ACCOUNT AND THERE IS NOTHING LEFT TO SET UP — both settings went on while this shift was running, and they were read back off the live service to be sure. Open any signed character: under the line about how they sound there are now three voices made from those exact words. Press play on each, keep the one that sounds right, and that character's own audition plays there from then on. Your ear is the last step on card #2470 and the only thing it is waiting for. Nothing is charged. — What this shift did: the Voice card's review came back with six real faults and all six are fixed and merged. A kept voice could have left a ninety-second recording of itself in storage that nothing could ever delete; two quick presses of Keep could have spent two of your ninety-five monthly voice saves instead of one; simply browsing your characters ate into the allowance meant for pressing, so a thirteenth character in an hour said “try again” on a button where trying again failed exactly the same way; one message promised the voices you had made would still be waiting later, when they would not be; and a recording that refused to play said nothing at all — the button just stopped. Fourteen deliberate breakages were run against the new checks to prove each catches its own fault, including one that recreates the double-press and fails on two saves. Writing the check for the silent recording caught a gap in my own fix too: the card had nowhere to put the message, so it would have been written and never shown. The housekeeping sweep is a day past due and is the next shift's first job. Queue: 52 open, 17 with no movement in a week)",
+  "edition": 701,
+  "updatedAt": "2026-10-14T10:40:00Z",
+  "shift": "Janitor — patrol #15 (janitor-20261014-1955) · THE TEAM'S OWN WORKSPACE HAD ITS THREE-DAY TIDY-UP, AND NOTHING A CUSTOMER SEES CHANGED. The one real decision in it had been put off eight times, and it is now made and closed. Three practice character sheets in our test database could never be opened at all — they were created with the wrong kind of name, so clicking one gave an error that looked exactly like a fault in the product. It cost an earlier shift three attempts to work out that the cause was our own leftover test data and not its work. The three are deleted, and the little script that made them is fixed so it cannot do it again. Everything deleted anywhere tonight was written down first, with a way to put it back. Also fixed on this page: it had been showing the first piece of the voice work as \"in review\" since yesterday morning, when it had actually gone live — that row now reads correctly. Your voice work is still waiting on the one thing only you can do: open a signed character and listen to the three voices. Nothing else needs you. No credits and no money were spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -144,7 +144,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-13T04:34:18.097Z",
+      "readAt": "2026-10-14T10:27:02.986Z",
       "items": [
         {
           "issueNumber": 14,
@@ -231,6 +231,12 @@
           "rung": "N4b"
         },
         {
+          "issueNumber": 2489,
+          "title": "Two settings from you turn the Voice work on for your account (after PR #2488 merges)",
+          "kind": "rung",
+          "rung": "N4b"
+        },
+        {
           "issueNumber": 29,
           "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
           "kind": "rung",
@@ -305,6 +311,12 @@
         {
           "issueNumber": 2351,
           "title": "After launch: migrate TypeScript 7, vitest 5 and recharts 3 (dependency majors that went red)",
+          "kind": "roadmap",
+          "rung": null
+        },
+        {
+          "issueNumber": 2479,
+          "title": "PROPOSAL: a customer's data export can say what kind of credit movement each row was, and no longer WHY - the declared loss of #2475",
           "kind": "roadmap",
           "rung": null
         }
@@ -10255,7 +10267,7 @@
     {
       "id": "voice-road-dark-2469",
       "title": "A character's written voice line becomes a voice you can hear, make again and keep — the road, switched off (#2469)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2484,
       "note": "Built and driven on your real voice account; held for the reviewer because it touches the refund and account-erasure paths."
     }
@@ -10719,7 +10731,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-13T04:34:18.097Z",
+    "readAt": "2026-10-14T10:27:02.985Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10782,23 +10794,13 @@
         "urgent": false
       },
       {
-        "issueNumber": 2315,
-        "title": "Retire every Gemini path and remove GEMINI_API_KEY — wardrobe, the legacy casting refine, and the canvas's old model-edit routing",
+        "issueNumber": 2470,
+        "title": "N4b-2: Listen and pick on the Voice card, Voice 1-3 and Keep, dark on his account",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — DELETE the wardrobe and legacy refine code now, or KEEP it readable per your #364 word? Recommend KEEP and close this card."
+          "because": "#2489 — his test drive, now that voice is ON for his account (both settings read back on the live service 2026-10-14). His ear on a real signed cast closes thi…"
         }
-      },
-      {
-        "issueNumber": 2469,
-        "title": "N4b-1: the voice road, dark (design, save, 90 s audition clip stored; no UI)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2470,
-        "title": "N4b-2: Listen and pick on the Voice card, Voice 1-3 and Keep, dark on his account",
-        "urgent": false
       },
       {
         "issueNumber": 2471,
