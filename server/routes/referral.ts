@@ -7,18 +7,20 @@ import {
   getReferralHistory,
   getUserByReferralCode,
   recordEmailInvite,
+  hasInvitedEmail,
   isValidReferralCodeFormat,
 } from "../db";
+import { ALREADY_INVITED_MESSAGE } from "../db/referrals";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { displayBalance } from "@shared/creditDisplay";
-import { PRODUCT_NAME } from "@shared/brand";
 import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
 import { checkRateLimit, getClientIp } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
-import { sendReferralInviteEmail } from "../klaviyo";
+import { sendReferralInviteEmail } from "../mail";
+import { spokenError } from "../_core/spokenError";
 import { appBaseUrl } from "../_core/appOrigin";
 import { createModuleLogger } from "../logging/logger";
 const log = createModuleLogger("routes/referral");
@@ -31,6 +33,26 @@ const REDEEM_RATE = { maxRequests: 5, windowMs: 60 * 60 * 1000, keyPrefix: "ref-
  * surface: per address, the same budget `access.validate` gives an invite code
  * (10 in 5 minutes) — plenty for a person typing a code, useless for a sweep (#2375).
  */
+/**
+ * What the customer reads when the invite did not go (#2481). It says what
+ * happened and what to do, and offers the road that needs no email at all.
+ */
+export const INVITE_NOT_SENT_SENTENCE =
+  "That invitation didn't go out. Try again in a moment, or copy your link and send it yourself.";
+
+/**
+ * How many invitations one ADDRESS may receive, across every referrer (#2481).
+ * Ten referrers each inviting a stranger once is ten emails from our domain;
+ * three a day is plenty for a person several friends want to bring in.
+ */
+export const INVITE_RECIPIENT_RATE = { maxRequests: 3, windowMs: 24 * 60 * 60 * 1000, keyPrefix: "ref-invite-to" };
+
+/** A second press while the first invite to the same address is still going out. */
+export const INVITE_IN_FLIGHT_MESSAGE = "That invitation is already on its way.";
+
+/** `${referrerId}:${address}` for every invite between its duplicate check and its record. */
+const invitesInFlight = new Set<string>();
+
 export const VALIDATE_RATE = { maxRequests: 10, windowMs: 5 * 60 * 1000, keyPrefix: "ref-validate" };
 
 export const referralRouter = router({
@@ -79,8 +101,17 @@ export const referralRouter = router({
   }),
 
   /**
-   * Send an email invitation (records the invite, email delivery is future).
+   * Send an email invitation.
    * Rate limited: 10/day per user.
+   *
+   * ⚠ **`{ sent: true }` MEANS THE EMAIL WENT — #2481, his ruling 2026-10-14.**
+   * Until then the send was a fire-and-forget Klaviyo event, production had no
+   * Klaviyo key, and this answered `{ sent: true }` regardless, which the
+   * client turned into "Invitation sent." over an email that could never leave
+   * the building. Now: the duplicate check runs first, the email is sent and
+   * AWAITED through Resend, and the invite is recorded only once it has gone —
+   * so a failed send refuses out loud and leaves no row behind to answer the
+   * retry with "Already invited".
    */
   sendInvite: protectedProcedure
     .input(
@@ -116,38 +147,79 @@ export const referralRouter = router({
         });
       }
 
-      const result = await recordEmailInvite(ctx.user.id, input.email, ip);
-      if (!result.success) {
+      /* #2481: now that this really mails a stranger from our domain, the
+         RECIPIENT has a budget too, across every referrer — so a handful of
+         accounts cannot turn one address into a target. Synchronous, like the
+         per-user limit above, so no concurrent request can slip past it. */
+      const recipient = input.email.toLowerCase();
+      const recipientCheck = checkRateLimit(recipient, INVITE_RECIPIENT_RATE);
+      if (!recipientCheck.allowed) {
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: result.error || "Failed to send invite",
+          code: "TOO_MANY_REQUESTS",
+          message: `That address has had enough invitations for now. Try again ${waitPhrase(recipientCheck.resetIn)}.`,
         });
       }
 
-      // Send email via Klaviyo (non-blocking — invite is recorded regardless)
-      const baseUrl = ctx.req.headers.origin || appBaseUrl();
-      const code = await getOrCreateReferralCode(ctx.user.id, ip);
-      const referralLink = code ? `${baseUrl}?ref=${code}` : baseUrl;
+      /* #2481: ONE invite per (referrer, address) in flight at a time, claimed
+         SYNCHRONOUSLY before the first await. The duplicate check below is a
+         read and the record is a later write; without this two parallel
+         presses would both pass the read and both send. The rate limits are
+         in-process too, so this holds exactly as far as they do. */
+      const flightKey = `${ctx.user.id}:${recipient}`;
+      if (invitesInFlight.has(flightKey)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: INVITE_IN_FLIGHT_MESSAGE });
+      }
+      invitesInFlight.add(flightKey);
+      try {
+        // A duplicate never becomes a second email (the rule is the writer's own).
+        if (await hasInvitedEmail(ctx.user.id, input.email)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: ALREADY_INVITED_MESSAGE });
+        }
 
-      sendReferralInviteEmail({
-        inviteeEmail: input.email,
-        /* #1955: the product's name, from the one constant. The invitee has
-           never heard of us, so this is the one place in the fix where the
-           name is the information rather than noise. */
-        referrerName: ctx.user.name || `A ${PRODUCT_NAME} user`,
-        referralLink,
-        /* #2478: the display figure, converted HERE and only here. The other
-           three uses of this constant in this file (getMyCode, getStats,
-           redeem) stay on the ledger scale because their readers
-           (ReferralBlock and RedeemCodeModal) convert at the render, so
-           converting the constant itself would make those screens say 500.
-           An email has no client to convert for it, so the router does. */
-        rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
-      }).catch((err) => {
-        log.error({ err: err }, "[Referral] Klaviyo email delivery failed:");
-      });
+        /* The link is built on the product's OWN address, never the request's
+           `Origin`: this one goes out in an email from our sending domain to a
+           stranger, so a header the caller controls must not choose where its
+           button leads. (`getMyCode` still shows the referrer their link on the
+           origin they are using; that one is read by the person who asked.) */
+        const code = await getOrCreateReferralCode(ctx.user.id, ip);
+        const referralLink = code ? `${appBaseUrl()}?ref=${code}` : appBaseUrl();
 
-      return { sent: true };
+        const sent = await sendReferralInviteEmail({
+          to: input.email,
+          referrerName: ctx.user.name || null,
+          referralLink,
+          /* #2478: the display figure, converted HERE and only here. The other
+             three uses of this constant in this file (getMyCode, getStats,
+             redeem) stay on the ledger scale because their readers
+             (ReferralBlock and RedeemCodeModal) convert at the render, so
+             converting the constant itself would make those screens say 500.
+             An email has no client to convert for it, so the router does. */
+          rewardCredits: displayBalance(REFERRAL_REWARD_CREDITS),
+        });
+
+        if (!sent.success) {
+          log.error({ err: sent.error }, "[Referral] invite email was not sent");
+          throw spokenError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: INVITE_NOT_SENT_SENTENCE,
+          });
+        }
+
+        /* Recorded only now that it has gone, and the record writes the
+           `referral.invite_sent` audit row — so the audit names exactly the
+           invites that left the building. The in-flight claim above means a
+           refusal here is not a same-process duplicate; it is a database outage
+           or a second server instance, and the email has gone either way, so the
+           answer is still the truth: it was sent. */
+        const result = await recordEmailInvite(ctx.user.id, input.email, ip);
+        if (!result.success) {
+          log.error({ err: result.error, userId: ctx.user.id }, "[Referral] invite SENT but not recorded or audited");
+        }
+
+        return { sent: true as const };
+      } finally {
+        invitesInFlight.delete(flightKey);
+      }
     }),
 
   /**

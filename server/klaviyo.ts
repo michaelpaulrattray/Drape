@@ -1,13 +1,21 @@
-import { PRODUCT_NAME } from "@shared/brand";
-import type { DisplayCredits } from "@shared/creditDisplay";
 import { createModuleLogger } from "./logging/logger";
 const log = createModuleLogger("klaviyo");
 
 /**
  * Klaviyo Integration
  * 
- * Server-side helper for Klaviyo API operations including
- * profile creation and newsletter subscriptions.
+ * Server-side helper for Klaviyo's marketing list: the waitlist and newsletter
+ * profile sync, and nothing else.
+ *
+ * ⚠ **NO EMAIL A CUSTOMER WAITS FOR GOES THROUGH HERE ANY MORE — #2481,
+ * his ruling 2026-10-14.** The referral invite and the account-frozen notice
+ * were Klaviyo events (a `trackEvent` that fired a Flow), production never had
+ * `KLAVIYO_PRIVATE_KEY`, so neither had ever been delivered, while the screens
+ * said they had. Both now send through `server/mail.ts` (Resend) with their
+ * words in the bundle. The two Klaviyo templates prescribed for them
+ * (`server/scripts/setupKlaviyoReferralFlow.mjs`,
+ * `docs/klaviyo-account-frozen-flow-setup.md`) are no longer reached by any
+ * code and still carry the retired FormaStudio brand.
  */
 
 const KLAVIYO_API_URL = "https://a.klaviyo.com/api";
@@ -36,70 +44,12 @@ function getHeaders(): Record<string, string> {
   };
 }
 
-interface ProfileAttributes {
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  phone_number?: string;
-  properties?: Record<string, unknown>;
-}
-
 export interface CreateProfileResponse {
   success: boolean;
   profileId?: string;
   error?: string;
   isNew?: boolean;
 }
-
-/**
- * Create or update a profile in Klaviyo
- * Uses the POST /api/profile-import endpoint which handles both create and update
- */
-async function createOrUpdateProfile(
-  attributes: ProfileAttributes
-): Promise<CreateProfileResponse> {
-  try {
-    const response = await fetch(`${KLAVIYO_API_URL}/profile-import`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        data: {
-          type: "profile",
-          attributes: {
-            email: attributes.email,
-            first_name: attributes.first_name,
-            last_name: attributes.last_name,
-            phone_number: attributes.phone_number,
-            properties: attributes.properties || {},
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      log.error({ err: response.status, errorData }, "[Klaviyo] API error:");
-      return {
-        success: false,
-        error: `Klaviyo API error: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-    return {
-      success: true,
-      profileId: data.data?.id,
-      isNew: response.status === 201,
-    };
-  } catch (error) {
-    log.error({ err: error }, "[Klaviyo] Request failed:");
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
 
 /**
  * Simple newsletter signup - creates/updates profile with email subscription consent
@@ -165,186 +115,6 @@ export async function newsletterSignup(
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }
-}
-
-/**
- * Track a custom event in Klaviyo (triggers Flows for transactional emails)
- */
-async function trackEvent(
-  email: string,
-  metricName: string,
-  properties: Record<string, unknown> = {}
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch(`${KLAVIYO_API_URL}/events`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        data: {
-          type: "event",
-          attributes: {
-            metric: {
-              data: {
-                type: "metric",
-                attributes: { name: metricName },
-              },
-            },
-            profile: {
-              data: {
-                type: "profile",
-                attributes: { email },
-              },
-            },
-            properties,
-            time: new Date().toISOString(),
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      log.error({ err: response.status, errorData }, `[Klaviyo] trackEvent(${metricName}) error:`);
-      return { success: false, error: `Klaviyo API error: ${response.status}` };
-    }
-
-    return { success: true };
-  } catch (error) {
-    log.error({ err: error }, `[Klaviyo] trackEvent(${metricName}) failed:`);
-    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
-  }
-}
-
-/**
- * Send a referral invite email via Klaviyo event (triggers a Flow)
- * Set up a Klaviyo Flow triggered by "Referral Invite Sent" metric
- */
-export async function sendReferralInviteEmail(params: {
-  inviteeEmail: string;
-  referrerName: string;
-  referralLink: string;
-  /**
-   * #2478: the reward on the DISPLAY scale (the number every screen shows),
-   * typed `DisplayCredits` so a raw ledger figure is a compile error at the
-   * caller rather than a factor-of-five lie in an email. Until this card the
-   * router sent `REFERRAL_REWARD_CREDITS` unconverted: 12,500 ledger, which
-   * the app reads to the same person as 2,500.
-   *
-   * ⚠ **THE "NOT KNOWN" SENTENCE THAT STOOD HERE WAS WRONG ABOUT THIS
-   * REPOSITORY — corrected 2026-10-13 (#2478's last item).** It read *"Whether
-   * the Klaviyo template prints `reward_credits` at all is NOT known from this
-   * repository (the template lives in Klaviyo)"*, and the template that flow
-   * was built from is IN the tree: `server/scripts/setupKlaviyoReferralFlow.mjs`
-   * creates it, and it prints the variable **three times** — the SUBJECT LINE
-   * (`:331`, *"claim your {{ event.reward_credits }} credits"*), a 36-pixel
-   * headline (`:94`) and the sentence under the button (`:112`). So this field
-   * is customer-facing COPY rather than metadata, and it is in the first
-   * sentence a stranger ever reads about this product.
-   *
-   * ⚠ **The LIVE flow is still the artifact and that script is a report of it**
-   * (working law 1): it may have been run, re-run, or replaced by hand since,
-   * and nothing here can tell. What no longer stands is the belief that the
-   * question is unanswerable from inside the repository — it is answerable
-   * about the template we ship, and that is the one this field was written for.
-   *
-   * ✅ **AND NOBODY HAS EVER READ THE WRONG FIGURE — read at production
-   * 2026-10-13, three ways that agree.** `audit_logs` holds 0 rows of
-   * `referral.invite_sent` and `referrals` 0 rows all time, so no invite has
-   * ever been fired; and the service holds no `KLAVIYO_PRIVATE_KEY` at all, so
-   * none could have reached Klaviyo if one had been (read twice, with
-   * `RESEND_API_KEY` as the positive control on the reader). ⚠ **That absence
-   * is its own defect and it is #2481, not this one**: the invite answers
-   * *"Invitation sent."* while no email can leave the building.
-   */
-  rewardCredits: DisplayCredits;
-}): Promise<{ success: boolean; error?: string }> {
-  // Create/update the invitee profile first
-  await createOrUpdateProfile({
-    email: params.inviteeEmail,
-    properties: {
-      referral_invite_received: true,
-      referred_by: params.referrerName,
-    },
-  });
-
-  // Fire the event to trigger the Klaviyo Flow
-  return trackEvent(params.inviteeEmail, "Referral Invite Sent", {
-    referrer_name: params.referrerName,
-    referral_link: params.referralLink,
-    reward_credits: params.rewardCredits,
-    invite_date: new Date().toISOString(),
-  });
-}
-
-/**
- * The live appeal route for a frozen customer (#452, founder's word 2026-09-02:
- * *"Point it at support@klieglabs.com"*).
- *
- * It replaces the retired domain's `/support` URL, which was dead twice over:
- * the old domain, and a `/support` path that has never existed in the client — so
- * swapping only the domain would have produced a tidier 404. This is the same
- * address `Login.tsx` gives the same person in the same situation (#392), which
- * is why it is a `mailto:` and not an invented page.
- *
- * ⚠ **AND THE SAME "NOT KNOWN" SENTENCE STOOD HERE AND WAS WRONG THE SAME WAY
- * — corrected 2026-10-13 in #2478's sweep, because a wrong sentence repeated
- * in two docblocks is one class and not two instances.** It read *"It is NOT
- * known whether the Klaviyo template renders `support_url` at all — the
- * template lives in Klaviyo, not in this repository."* The template this flow
- * was built from is in the tree as well: `docs/klaviyo-account-frozen-flow-setup.md`
- * carries the HTML to paste, and it renders `support_url` **twice** — as the
- * appeal BUTTON's `href` (`:211`) and as the *"contact support"* link in the
- * closing line (`:240`). So this address is the only way out of a freeze that
- * email offers, which is why #452 was worth its card.
- *
- * ⚠ **The live flow is still the artifact** (working law 1) — a hand-built
- * flow could render something else, and nothing here can tell. What is
- * corrected is only the claim that the repository cannot say.
- */
-const FROZEN_ACCOUNT_SUPPORT_URL = "mailto:support@klieglabs.com";
-
-/**
- * Send account frozen notification email via Klaviyo event (triggers a Flow)
- * Set up a Klaviyo Flow triggered by "Account Frozen" metric.
- * Use the same email template styling as the referral invite flow for brand consistency.
- */
-export async function sendAccountFrozenEmail(params: {
-  userEmail: string;
-  userName: string;
-  freezeReason: string;
-  frozenBy: string;
-  supportUrl?: string;
-}): Promise<{ success: boolean; error?: string }> {
-  // Ensure the profile exists in Klaviyo with latest info
-  await createOrUpdateProfile({
-    email: params.userEmail,
-    first_name: params.userName,
-    properties: {
-      account_frozen: true,
-      last_freeze_date: new Date().toISOString(),
-    },
-  });
-
-  // Fire the event to trigger the Klaviyo Flow
-  return trackEvent(params.userEmail, "Account Frozen", {
-    user_name: params.userName,
-    freeze_reason: params.freezeReason,
-    frozen_by: params.frozenBy,
-    /* #2363: the day is read in UTC, as every server-written customer date
-       is (`shared/customerDate.ts`), so it no longer moves with the host's
-       `TZ`. The en-US notation is left as it was: a change of notation is a
-       copy decision, not this fix. */
-    frozen_date: new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      timeZone: "UTC",
-    }),
-    support_url: params.supportUrl || FROZEN_ACCOUNT_SUPPORT_URL,
-    /* #1955: a Klaviyo flow template renders this into the email the customer
-       reads, so it is copy rather than metadata and it said "Drape". */
-    app_name: PRODUCT_NAME,
-  });
 }
 
 /**

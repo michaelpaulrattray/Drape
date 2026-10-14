@@ -12,6 +12,7 @@ vi.mock("./db/referrals", () => ({
   getReferralStats: vi.fn(),
   getReferralHistory: vi.fn(),
   recordEmailInvite: vi.fn(),
+  hasInvitedEmail: vi.fn(async () => false),
   isValidReferralCodeFormat: vi.fn(),
 }));
 

@@ -1,6 +1,6 @@
 import { adminProcedure, router } from "../../_core/trpc";
 import { logAuditEvent, AUDIT_ACTIONS } from "../../auditLog";
-import { sendAccountFrozenEmail } from "../../klaviyo";
+import { noticeOfFreeze } from "../../mail";
 import { logAdminAction, writeImmutableLog } from "../../security/adminSecurity";
 import { getClientIp } from "../../security/rateLimit";
 import { z } from "zod";
@@ -238,17 +238,13 @@ export const usersRouter = router({
         userAgent: ctx.req.headers["user-agent"] || undefined,
       });
 
-      // Send freeze notification email (non-blocking)
-      if (targetUser.email) {
-        sendAccountFrozenEmail({
-          userEmail: targetUser.email,
-          userName: targetUser.name || `User ${input.userId}`,
-          freezeReason: reason,
-          frozenBy: ctx.user.name || `Admin ${ctx.user.id}`,
-        }).catch((err) => log.error("[Klaviyo] Admin freeze email failed:", err));
-      }
+      /* #2481: the notice is AWAITED and its fate answered beside the freeze.
+         It was fire-and-forget through Klaviyo, which production never had,
+         and this said `{ success: true }` over a customer nobody told. */
+      const { notice, noticeMessage } = await noticeOfFreeze({ email: targetUser.email, name: targetUser.name });
+      if (notice === "not_sent") log.error({ userId: input.userId }, "[Freeze] admin freeze notice was not sent");
 
-      return { success: true };
+      return { success: true, notice, noticeMessage };
     }),
 
   // Unfreeze a user account

@@ -610,15 +610,22 @@ export async function getReferralHistory(userId: number): Promise<
 /**
  * Record an email invitation (creates a pending referral).
  */
-export async function recordEmailInvite(
-  referrerUserId: number,
-  email: string,
-  referrerIp?: string
-): Promise<{ success: boolean; error?: string }> {
-  const db = await getDb();
-  if (!db) return { success: false, error: "Database unavailable" };
+/** The refusal both readers of the rule below give, said once. */
+export const ALREADY_INVITED_MESSAGE = "Already invited this email";
 
-  // Check if already invited this email
+/**
+ * Has this referrer already invited this address? — THE ONE STATEMENT OF THE RULE.
+ *
+ * #2481: `referral.sendInvite` now asks this BEFORE it sends, and records the
+ * invite only once the email has actually gone — so a send that fails leaves no
+ * row behind to refuse the customer's retry with "Already invited". Until then
+ * the writer below was the only reader, and the check lived inline in it; a
+ * second copy in the router would have been working law 4's drift, so the
+ * writer reads it from here too.
+ */
+export async function hasInvitedEmail(referrerUserId: number, email: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
   const [existing] = await db
     .select({ id: referrals.id })
     .from(referrals)
@@ -629,9 +636,19 @@ export async function recordEmailInvite(
       )
     )
     .limit(1);
+  return Boolean(existing);
+}
 
-  if (existing) {
-    return { success: false, error: "Already invited this email" };
+export async function recordEmailInvite(
+  referrerUserId: number,
+  email: string,
+  referrerIp?: string
+): Promise<{ success: boolean; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, error: "Database unavailable" };
+
+  if (await hasInvitedEmail(referrerUserId, email)) {
+    return { success: false, error: ALREADY_INVITED_MESSAGE };
   }
 
   await db.insert(referrals).values({

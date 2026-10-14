@@ -15927,6 +15927,10 @@
       "path": "server/machinistFaceScanPrice.test.ts"
     },
     {
+      "id": "test:server/mailInviteAndFrozen.test.ts",
+      "path": "server/mailInviteAndFrozen.test.ts"
+    },
+    {
       "id": "test:server/managerFactSheet.test.ts",
       "path": "server/managerFactSheet.test.ts"
     },
@@ -35764,16 +35768,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/klaviyo.ts",
-      "to": "module:shared/brand.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/klaviyo.ts",
-      "to": "module:shared/creditDisplay.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/lib/adminActions/approvalStateBlocker.ts",
       "to": "module:server/db/index.ts",
       "kind": "imports"
@@ -36051,6 +36045,11 @@
     {
       "from": "module:server/mail.ts",
       "to": "module:shared/brand.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/mail.ts",
+      "to": "module:shared/creditDisplay.ts",
       "kind": "imports"
     },
     {
@@ -36780,12 +36779,12 @@
     },
     {
       "from": "module:server/routes/admin/users.ts",
-      "to": "module:server/klaviyo.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/admin/users.ts",
-      "to": "module:server/logging/logger.ts",
+      "to": "module:server/mail.ts",
       "kind": "imports"
     },
     {
@@ -38840,12 +38839,12 @@
     },
     {
       "from": "module:server/routes/moderatorReconciliation.ts",
-      "to": "module:server/klaviyo.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/moderatorReconciliation.ts",
-      "to": "module:server/logging/logger.ts",
+      "to": "module:server/mail.ts",
       "kind": "imports"
     },
     {
@@ -38945,6 +38944,11 @@
     },
     {
       "from": "module:server/routes/referral.ts",
+      "to": "module:server/_core/spokenError.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
       "to": "module:server/_core/trpc.ts",
       "kind": "imports"
     },
@@ -38955,12 +38959,17 @@
     },
     {
       "from": "module:server/routes/referral.ts",
-      "to": "module:server/klaviyo.ts",
+      "to": "module:server/db/referrals.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/referral.ts",
+      "to": "module:server/mail.ts",
       "kind": "imports"
     },
     {
@@ -38971,11 +38980,6 @@
     {
       "from": "module:server/routes/referral.ts",
       "to": "module:server/security/rateLimit.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/routes/referral.ts",
-      "to": "module:shared/brand.ts",
       "kind": "imports"
     },
     {

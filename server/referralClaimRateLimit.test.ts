@@ -31,6 +31,7 @@ vi.mock("./db/referrals", () => ({
   getReferralHistory: vi.fn(),
   getReferralCreditsEarned: vi.fn(),
   recordEmailInvite: vi.fn(),
+  hasInvitedEmail: vi.fn(async () => false),
   completeReferral: vi.fn(),
   creditReferrerOnPaidAction: vi.fn(),
   isValidReferralCodeFormat: vi.fn(() => true),

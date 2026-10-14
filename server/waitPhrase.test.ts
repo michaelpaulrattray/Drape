@@ -26,10 +26,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { waitPhrase, waitPhraseFromMinutes } from "../shared/waitPhrase";
 
-vi.mock("./klaviyo", () => ({
-  sendReferralInviteEmail: vi.fn(),
-  createOrUpdateProfile: vi.fn(),
-  trackEvent: vi.fn(),
+/* #2481: the invite goes through `server/mail.ts` (Resend) now; stubbed so no
+   arm here can reach a real transport with the key the .env holds. */
+vi.mock("./mail", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./mail")>()),
+  sendReferralInviteEmail: vi.fn(async () => ({ success: true })),
 }));
 /* The `../db` barrel re-exports these from `./referrals`; mocking the declaring
    module intercepts them (the same list `referral-enhancements.test.ts` keeps). */
@@ -45,6 +46,7 @@ vi.mock("./db/referrals", () => ({
   getReferralStats: vi.fn(),
   getReferralHistory: vi.fn(),
   recordEmailInvite: vi.fn(),
+  hasInvitedEmail: vi.fn(async () => false),
   isValidReferralCodeFormat: vi.fn(),
 }));
 

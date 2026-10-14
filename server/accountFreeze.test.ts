@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
 import { FREEZE_REASON_MAX_LENGTH, UNFREEZE_NOTES_MAX_LENGTH } from "../shared/inputLimits";
@@ -68,9 +68,29 @@ vi.mock("./auditLog", async (importOriginal) => {
   return { ...actual, logAuditEvent: vi.fn().mockResolvedValue(undefined) };
 });
 
-vi.mock("./klaviyo", () => ({
-  sendAccountFrozenEmail: vi.fn().mockResolvedValue(undefined),
+/* #2481: the notice goes through Resend now. The TRANSPORT is the stand-in, so
+   every arm below reads what would have gone out on the wire — the real
+   `noticeOfFreeze` and the real email builder run. A mock of the notice
+   function itself would let the router report "sent" over a builder that
+   threw. */
+const { resendSend } = vi.hoisted(() => ({
+  resendSend: vi.fn(async (_payload: unknown) => ({ data: { id: "email_1" } as null | { id: string }, error: null as null | { message: string } })),
 }));
+vi.mock("resend", () => ({
+  Resend: class {
+    emails = { send: resendSend };
+  },
+}));
+/* A key the transport can see, so CI (which has no .env) and this machine
+   (whose .env holds a real one) drive the same road. The transport is mocked
+   above either way — nothing leaves the process. */
+beforeEach(() => {
+  vi.stubEnv("RESEND_API_KEY", "re_test_not_a_real_key");
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+const sentNotices = () => resendSend.mock.calls.map(([payload]) => payload as { to: string; subject: string; html: string });
 
 // The admin gate PASSES THROUGH (the moderator-refused arm drives it); only the
 // two log writers are stubbed.
@@ -95,7 +115,7 @@ vi.mock("./db/discrepancyQueries", async (importOriginal) => {
 });
 
 import { logAuditEvent, AUDIT_ACTIONS } from "./auditLog";
-import { sendAccountFrozenEmail } from "./klaviyo";
+import { FROZEN_NOTICE_STAFF_SENTENCE } from "./mail";
 import { logAdminAction } from "./security/adminSecurity";
 import { getDb } from "./db/connection";
 import { moderatorReconciliationRouter } from "./routes/moderatorReconciliation";
@@ -160,7 +180,7 @@ describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
     expect(getDb).not.toHaveBeenCalled();
     expect(mockFreezeUser).not.toHaveBeenCalled();
     // The bound is inclusive — the control that keeps the arm above from refusing everything.
-    await expect(caller().freezeAccount({ userId: 42, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toEqual({ success: true });
+    await expect(caller().freezeAccount({ userId: 42, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toMatchObject({ success: true });
   });
 
   it("refuses a WHITESPACE-ONLY reason — a blank on record is not a reason (#816)", async () => {
@@ -193,21 +213,44 @@ describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
     }));
   });
 
-  it("the notice to the customer carries the PREFIXED reason and the moderator's name", async () => {
+  it("the notice goes to the customer, and says so to the moderator (#2481)", async () => {
+    const result = await caller().freezeAccount({ userId: 42, reason: "repeated chargebacks" });
+    expect(sentNotices()).toHaveLength(1);
+    expect(sentNotices()[0].to).toBe("target@example.com");
+    expect(result).toEqual({ success: true, notice: "sent", noticeMessage: FROZEN_NOTICE_STAFF_SENTENCE.sent });
+  });
+
+  it("the notice carries neither the staff reason nor the staff name (#2481)", async () => {
     await caller().freezeAccount({ userId: 42, reason: "repeated chargebacks" });
-    expect(sendAccountFrozenEmail).toHaveBeenCalledTimes(1);
-    expect(sendAccountFrozenEmail).toHaveBeenCalledWith({
-      userEmail: "target@example.com",
-      userName: "Target",
-      freezeReason: "Manual freeze by moderator: repeated chargebacks",
-      frozenBy: "Mod",
-    });
+    const [email] = sentNotices();
+    expect(email.html).toContain("Target");
+    expect(email.html).not.toContain("repeated chargebacks");
+    expect(email.html).not.toContain("Manual freeze by moderator");
+    expect(email.html).not.toContain("Mod,");
+  });
+
+  it("a notice the transport refuses is REPORTED, and the freeze still lands (#2481)", async () => {
+    resendSend.mockResolvedValueOnce({ data: null, error: { message: "domain not verified" } });
+    const result = await caller().freezeAccount({ userId: 42, reason: "x" });
+    expect(result).toEqual({ success: true, notice: "not_sent", noticeMessage: FROZEN_NOTICE_STAFF_SENTENCE.not_sent });
+    expect(mockFreezeUser).toHaveBeenCalledWith(42, "Manual freeze by moderator: x", "7");
+  });
+
+  it("no transport key is a notice NOT sent, never a throw past the freeze (#2481)", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+    const result = await caller().freezeAccount({ userId: 42, reason: "x" });
+    expect(result).toMatchObject({ success: true, notice: "not_sent" });
+    expect(resendSend).not.toHaveBeenCalled();
   });
 
   it("no email address, no notice — and the freeze still lands", async () => {
     vi.mocked(getDb).mockResolvedValue(dbReturning([{ ...TARGET, email: null }]) as never);
-    await expect(caller().freezeAccount({ userId: 42, reason: "x" })).resolves.toEqual({ success: true });
-    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
+    await expect(caller().freezeAccount({ userId: 42, reason: "x" })).resolves.toEqual({
+      success: true,
+      notice: "no_address",
+      noticeMessage: FROZEN_NOTICE_STAFF_SENTENCE.no_address,
+    });
+    expect(resendSend).not.toHaveBeenCalled();
     expect(mockFreezeUser).toHaveBeenCalledWith(42, "Manual freeze by moderator: x", "7");
   });
 
@@ -216,7 +259,7 @@ describe("moderatorReconciliation.freezeAccount — DRIVEN", () => {
     await expect(caller().freezeAccount({ userId: 42, reason: "x" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
     // The row and the email are the two things that would say "frozen" about an account that is not.
     expect(logAuditEvent).not.toHaveBeenCalled();
-    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
+    expect(resendSend).not.toHaveBeenCalled();
   });
 });
 
@@ -310,7 +353,7 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
 
   it("an admin may freeze THEMSELVES — the one admin target the rule allows", async () => {
     mockGetUserById.mockResolvedValue({ id: 2, role: "admin", email: "admin2@example.com", name: "Admin", frozenAt: null });
-    await expect(caller().freezeUser({ userId: 2, reason: "stepping away" })).resolves.toEqual({ success: true });
+    await expect(caller().freezeUser({ userId: 2, reason: "stepping away" })).resolves.toMatchObject({ success: true });
     expect(mockFreezeUser).toHaveBeenCalledWith(2, "Admin freeze: stepping away", "2");
   });
 
@@ -320,7 +363,7 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
     }
     expect(mockGetUserById).not.toHaveBeenCalled();
     expect(mockFreezeUser).not.toHaveBeenCalled();
-    await expect(caller().freezeUser({ userId: 1, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toEqual({ success: true });
+    await expect(caller().freezeUser({ userId: 1, reason: "a".repeat(FREEZE_REASON_MAX_LENGTH) })).resolves.toMatchObject({ success: true });
   });
 
   it("refuses a WHITESPACE-ONLY reason, and trims the reason it stores (#816)", async () => {
@@ -363,15 +406,20 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
     }));
   });
 
-  it("the notice to the customer carries the prefixed reason and the admin's name", async () => {
-    await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
-    expect(sendAccountFrozenEmail).toHaveBeenCalledTimes(1);
-    expect(sendAccountFrozenEmail).toHaveBeenCalledWith({
-      userEmail: "u@example.com",
-      userName: "User",
-      freezeReason: "Admin freeze: Billing investigation",
-      frozenBy: "Admin",
-    });
+  it("the notice goes to the customer, without the staff reason, and says so to the admin (#2481)", async () => {
+    const result = await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
+    expect(sentNotices()).toHaveLength(1);
+    expect(sentNotices()[0].to).toBe("u@example.com");
+    expect(sentNotices()[0].html).not.toContain("Billing investigation");
+    expect(sentNotices()[0].html).not.toContain("Admin freeze");
+    expect(result).toEqual({ success: true, notice: "sent", noticeMessage: FROZEN_NOTICE_STAFF_SENTENCE.sent });
+  });
+
+  it("a notice the transport refuses is REPORTED to the admin, and the freeze still lands (#2481)", async () => {
+    resendSend.mockResolvedValueOnce({ data: null, error: { message: "rate limited" } });
+    const result = await caller().freezeUser({ userId: 1, reason: "Billing investigation" });
+    expect(result).toEqual({ success: true, notice: "not_sent", noticeMessage: FROZEN_NOTICE_STAFF_SENTENCE.not_sent });
+    expect(mockFreezeUser).toHaveBeenCalledTimes(1);
   });
 
   it("a database refusal on FREEZE surfaces as INTERNAL_SERVER_ERROR — no audit row, no admin log, no notice (#817)", async () => {
@@ -379,7 +427,7 @@ describe("admin.users.freezeUser — DRIVEN, and nothing drove it before", () =>
     await expect(caller().freezeUser({ userId: 1, reason: "Billing investigation" })).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
     expect(logAuditEvent).not.toHaveBeenCalled();
     expect(logAdminAction).not.toHaveBeenCalled();
-    expect(sendAccountFrozenEmail).not.toHaveBeenCalled();
+    expect(resendSend).not.toHaveBeenCalled();
   });
 });
 

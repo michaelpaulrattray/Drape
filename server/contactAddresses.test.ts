@@ -328,15 +328,19 @@ describe("#452 — the support pointers the SERVER sends a customer", () => {
     expect(found.length, "no support pointer found in server/ — the extractor is broken").toBeGreaterThan(0);
   });
 
-  it("the frozen customer's appeal route is present and reaches the live domain", () => {
+  it("the frozen customer's appeal route is present and reaches the live domain", async () => {
     /*
       ⚠ THE POSITIVE HALF, and it is the arm that matters most: every arm below
       is green if the pointer is DELETED, and sending a frozen customer nothing
       at all is worse than sending them the wrong place.
     */
-    const klaviyo = fs.readFileSync(path.join(SERVER_SRC, "klaviyo.ts"), "utf8");
-    expect(klaviyo).toMatch(/FROZEN_ACCOUNT_SUPPORT_URL\s*=\s*"mailto:support@klieglabs\.com"/);
-    expect(klaviyo).toMatch(/support_url:\s*params\.supportUrl\s*\|\|\s*FROZEN_ACCOUNT_SUPPORT_URL/);
+    /* #2481 moved the notice off Klaviyo onto Resend and its words into
+       `server/mail.ts`, so this reads the EMAIL ITSELF rather than a constant
+       near it (working law 5): the real builder runs, and the address his word
+       named must be a link in the page the customer opens. */
+    const { accountFrozenEmail } = await import("./mail");
+    const email = accountFrozenEmail({ to: "frozen@example.test", name: "Pat" });
+    expect(email.html).toContain('href="mailto:support@klieglabs.com"');
   });
 
   it("no server support pointer names the retired domain", () => {

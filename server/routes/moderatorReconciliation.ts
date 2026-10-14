@@ -4,7 +4,7 @@ import { getDetailedCreditHistory, getDetailedGenerationHistory, getUsersWithDis
 import { computeDiscrepancy, getUserRecordCosts, type DiscrepancyReading } from "../db/discrepancyQueries";
 import { freezeUser, unfreezeUser } from "../db";
 import { logAuditEvent, AUDIT_ACTIONS } from "../auditLog";
-import { sendAccountFrozenEmail } from "../klaviyo";
+import { noticeOfFreeze } from "../mail";
 import { getDb } from "../db/connection";
 import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -295,17 +295,13 @@ export const moderatorReconciliationRouter = router({
         },
       });
 
-      // Send freeze notification email (non-blocking)
-      if (user.email) {
-        sendAccountFrozenEmail({
-          userEmail: user.email,
-          userName: user.name || `User ${input.userId}`,
-          freezeReason: reason,
-          frozenBy: ctx.user.name || `Moderator ${ctx.user.id}`,
-        }).catch((err) => log.error("[Klaviyo] Manual freeze email failed:", err));
-      }
+      /* #2481: the notice is AWAITED and its fate answered beside the freeze.
+         It was fire-and-forget through Klaviyo, which production never had,
+         and this said `{ success: true }` over a customer nobody told. */
+      const { notice, noticeMessage } = await noticeOfFreeze({ email: user.email, name: user.name });
+      if (notice === "not_sent") log.error({ userId: input.userId }, "[Freeze] moderator freeze notice was not sent");
 
-      return { success: true };
+      return { success: true, notice, noticeMessage };
     }),
 
   /** Moderator direct-unfreeze: lighter than suspension, mods can resolve directly. */

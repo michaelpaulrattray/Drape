@@ -188,6 +188,7 @@ export {
   getReferralStats,
   getReferralHistory,
   recordEmailInvite,
+  hasInvitedEmail,
   isValidReferralCodeFormat,
   expireStalePendingReferrals,
 } from "./referrals";
