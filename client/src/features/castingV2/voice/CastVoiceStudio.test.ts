@@ -457,7 +457,8 @@ describe("the catch-all shows the server's sentence, not a money claim (finding 
  * selected voice"*. The kept card returned with no road to either; these arms
  * pin both roads on the card and the states each one opens.
  */
-describe("a kept voice can be changed or removed (#2497)", () => {
+/* Card #2497. */
+describe("a kept voice can be changed or removed", () => {
   const KEPT = { clipPath: "/api/cast/KI-ABCD/voice-clip" };
 
   it("⚠ THE KEPT CARD OFFERS BOTH — the defect was that it offered neither", () => {
