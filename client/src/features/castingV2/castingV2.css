@@ -2776,6 +2776,39 @@
 .dpc-voice__foot { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
 .dpc-voice__name { font: 500 12.5px var(--font-sans); color: var(--ink); }
 
+/* ---- voice: listen and pick (N4b-2, #2470) ---- */
+
+/* The play control becomes a real button once there is something to play; the
+   resting `span` above keeps its look so the dark card is unchanged. */
+.dpc-voice__play--live { cursor: pointer; color: var(--ink); }
+.dpc-voice__play--live:hover { border-color: var(--ink); }
+
+/* A played bar. The FILL is the measured thing on a resting strip — the bar
+   heights are an ornament until `peaksFromSamples` replaces them. */
+.dpc-voice__bar--lit { background: var(--ink); }
+
+.dpc-voice__len { font: 400 11px var(--font-sans); color: var(--faint); flex: none; font-variant-numeric: tabular-nums; }
+
+.dpc-voice__choices { display: flex; flex-direction: column; gap: 10px; }
+.dpc-voice__choice { display: flex; align-items: center; gap: 12px; }
+/* The label is fixed-width so three strips start on the same line — a ragged
+   left edge makes three comparable things look like three different ones. */
+.dpc-voice__choiceName { font: 500 11.5px var(--font-sans); color: var(--ink); flex: none; width: 52px; }
+.dpc-voice__choice .dpc-voice__player { flex: 1; min-width: 0; }
+
+.dpc-voice__working { display: flex; align-items: center; gap: 8px; min-height: 34px; }
+.dpc-voice__workingDot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ink); flex: none;
+  animation: dpc-voice-pulse 1.4s ease-in-out infinite;
+}
+.dpc-voice__workingWord { font: 400 12px var(--font-sans); color: var(--faint); }
+@keyframes dpc-voice-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .dpc-voice__workingDot { animation: none; opacity: 0.6; }
+}
+
+.dpc-voice__refusal { font: 400 11.5px/1.45 var(--font-sans); color: var(--faint); }
+
 /* ---- campaigns: flush card, rows own their padding ---- */
 
 .dpc-camp__head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }

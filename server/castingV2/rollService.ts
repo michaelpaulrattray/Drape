@@ -620,8 +620,15 @@ export async function createRoll(
       const source = await storageReadBytes(followAnchorImageKey);
       anchorImage = { bytes: source.bytes, contentType: source.contentType, imageKey: followAnchorImageKey };
     } catch (error) {
+      /* ⚠ THE KEY IS NOT LOGGED — it names an object on the PUBLIC bucket,
+         where CLAUDE.md's sentence is the whole protection: *"protected only by
+         the URL being hard to guess"*. The parent is what a diagnosis needs and
+         is what the sibling refusal eight lines up already logs; the key is one
+         row away for anyone who may read it. Swept here by working law 7 from
+         the voice clip's own instance (#2470), and held by
+         `server/storageKeyNotLogged.test.ts`. */
       log.warn(
-        { err: String(error).slice(0, 200), imageKey: followAnchorImageKey },
+        { err: String(error).slice(0, 200), parent: input.followCandidatePublicId },
         "[rollService] a follow's anchor frame would not load — refusing free before the claim",
       );
       throw new TRPCError({

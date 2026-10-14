@@ -62,7 +62,42 @@ const storageDeletes: string[] = [];
 vi.mock("../db/castVoices", () => ({
   readCastVoiceLine: async () => cast,
   readCastVoice: async () => keptAlready,
-  insertCastVoice: async () => ({ inserted }),
+  insertCastVoice: async () => {
+    if (insertThrows) throw insertThrows;
+    return { inserted };
+  },
+}));
+
+/**
+ * THE CLIP'S WRITE-AHEAD HOLD, recorded — #2470's finding, item 2.
+ *
+ * The REAL `holdClipForWrite` runs against these: a stub injected through the
+ * deps would have proven only that the service called something, where this
+ * proves the manifest's own two decisions (born held, and the kind) and its
+ * ORDER against the `storagePut`.
+ */
+const clipHolds: Array<{
+  id: string;
+  userId: number;
+  kind: string;
+  heldUntil: Date | null | undefined;
+  storageItems: ReadonlyArray<{ storageKey: string; storageBackend: string }>;
+}> = [];
+let holdThrows = false;
+/** A row write that THROWS rather than reporting zero rows — the orphan case. */
+let insertThrows: Error | null = null;
+
+vi.mock("../db/connection", () => ({
+  withTransaction: async (run: (tx: unknown) => unknown) => run({}),
+}));
+
+vi.mock("../db/storageCleanup", () => ({
+  storageCleanupManifestHeldUntil: () => new Date(Date.now() + 5 * 60 * 1000),
+  createStorageCleanupManifestIn: async (_tx: unknown, input: unknown) => {
+    if (holdThrows) throw new Error("manifest refused");
+    clipHolds.push(input as (typeof clipHolds)[number]);
+    return input;
+  },
 }));
 
 vi.mock("../storage", () => ({
@@ -74,7 +109,12 @@ vi.mock("../storage", () => ({
   },
 }));
 
-const { designCastVoices, keepCastVoice } = await import("./voiceService");
+const {
+  designCastVoices,
+  keepCastVoice,
+  readVoiceKeepability,
+  resetVoiceKeepabilityCache,
+} = await import("./voiceService");
 
 /** What the engine was asked to do, in order — the only honest order claim. */
 type Call = "allowance" | "design" | "save" | "speak" | "delete";
@@ -126,6 +166,10 @@ beforeEach(() => {
   inserted = true;
   storagePuts.length = 0;
   storageDeletes.length = 0;
+  clipHolds.length = 0;
+  holdThrows = false;
+  insertThrows = null;
+  resetVoiceKeepabilityCache();
 });
 
 afterEach(() => {
@@ -352,6 +396,73 @@ describe("a Keep, once it is allowed to spend", () => {
     expect(storagePuts).toEqual(storageDeletes);
   });
 
+  /*
+    THE CLIP IS HELD BEFORE IT IS STORED — #2470's finding, item 2.
+
+    A process death between the `storagePut` and the row write leaves ninety
+    seconds of a voice in the PUBLIC bucket under a key no row names, and both
+    deletion roads find clips THROUGH the rows — so no try/catch can reach it
+    and only a write-ahead manifest can. These arms are about the ORDER and
+    about the manifest's two decisions.
+  */
+  it("⚠ HOLDS THE CLIP'S KEY BEFORE THE BYTES ARE STORED, born held and on the right key", async () => {
+    const { engine } = stubEngine();
+    expect(await keepCastVoice(KEEP, { engine })).toMatchObject({ ok: true });
+
+    expect(clipHolds).toHaveLength(1);
+    const [hold] = clipHolds;
+    /* THE ORDER IS THE CLAIM: the key is held, and only then written. */
+    expect(hold?.storageItems.map((one) => one.storageKey)).toEqual(storagePuts);
+    expect(hold?.storageItems[0]?.storageBackend).toBe("public_r2");
+    /*
+      BORN HELD. Without a hold the manifest is claimable the instant it is
+      written — the worker's in-flight fence tests the batch against a live
+      operation row, and this batch's operation id is synthetic, so the fence
+      passes trivially and the worker would delete the clip mid-upload.
+    */
+    expect(hold?.heldUntil).toBeInstanceOf(Date);
+    expect((hold?.heldUntil as Date).getTime()).toBeGreaterThan(Date.now());
+    expect(hold?.kind).toBe("casting_candidate_cleanup");
+    expect(hold?.userId).toBe(USER_ID);
+  });
+
+  it("⚠ STORES NOTHING when the hold cannot be written, and releases the slot", async () => {
+    /*
+      The hold is the thing that makes the bytes recoverable, so storing them
+      without it is the one order this road must never take. Nothing is in the
+      bucket yet, so there is nothing to delete — only the slot the save spent.
+    */
+    holdThrows = true;
+    const { engine, calls } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({
+      ok: false,
+      refusal: "provider_failed",
+      failureClass: "transport",
+    });
+    expect(storagePuts).toEqual([]);
+    expect(storageDeletes).toEqual([]);
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+  });
+
+  it("⚠ A THROWN ROW WRITE RELEASES THE SLOT, DELETES THE CLIP, AND RETHROWS", async () => {
+    /*
+      The finding's own case, and it is NOT the lost-write arm above: a dropped
+      connection or a timeout at the INSERT throws rather than reporting zero
+      rows, and before this repair it propagated with the slot still held and
+      the clip still stored. It rethrows rather than becoming a refusal, because
+      a Keep that failed for an unknown reason is not the same fact as one the
+      provider refused.
+    */
+    insertThrows = new Error("ETIMEDOUT");
+    const { engine, calls } = stubEngine();
+
+    await expect(keepCastVoice(KEEP, { engine })).rejects.toThrow(/ETIMEDOUT/);
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+    expect(storageDeletes).toHaveLength(1);
+    expect(storagePuts).toEqual(storageDeletes);
+  });
+
   it("refuses a second Keep on a cast that already has one, before any spend", async () => {
     keptAlready = { id: 1, modelId: MODEL_ID };
     const { engine, calls } = stubEngine();
@@ -367,5 +478,74 @@ describe("a Keep, once it is allowed to spend", () => {
       refusal: "cast_not_available",
     });
     expect(calls).toEqual([]);
+  });
+});
+
+/**
+ * CAN ANYTHING BE KEPT AT ALL — the card's own question (#2470's finding, item
+ * 5).
+ *
+ * ⚠ **IT IS A HINT AND NOT A GATE, AND THESE ARMS ARE WRITTEN TO HOLD THAT
+ * DISTINCTION.** The spend gate is the LIVE read inside Keep, covered above
+ * and unchanged. What this answers is whether three voices should be designed
+ * on house money at all when nothing could be kept from them — so it is cached
+ * and it fails OPEN, which is the opposite of what the gate does and would be
+ * a defect if it were the gate.
+ */
+describe("the card's keepability hint", () => {
+  it("says no when the month's operations are spent", async () => {
+    const { engine } = stubEngine({
+      allowance: { ...LIVE, operationsUsed: 95, operationsTotal: 95 },
+    });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
+  });
+
+  it("says no when every slot the plan allows is full", async () => {
+    const { engine } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30, slotsTotal: 30 } });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
+  });
+
+  it("says yes on a live plan, and reads the provider ONCE for a minute", async () => {
+    /*
+      It is one HOUSE account, not one per customer, so there is nothing to key
+      a cache by — and without one every signed cast's page open would be a
+      provider round trip. The two things that move this answer are a Keep and
+      the month turning.
+    */
+    const { engine, calls } = stubEngine();
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+
+    expect(calls).toEqual(["allowance"]);
+  });
+
+  it("⚠ FAILS OPEN on an unreadable allowance, and does not cache the guess", async () => {
+    /*
+      The safe direction HERE, and only here: an unreadable allowance leaves the
+      card working, because the live read inside Keep still refuses before any
+      spend (`allowance_unreadable`). Failing closed would hide a working
+      feature on a transient blip and save nothing.
+
+      And the optimistic answer is NOT cached — a one-second outage must not pin
+      it for a minute.
+    */
+    let refuse = true;
+    const { engine, calls } = stubEngine({
+      async readAllowance() {
+        calls.push("allowance");
+        if (refuse) throw new Error("provider down");
+        return LIVE;
+      },
+    });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+    refuse = false;
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+
+    /* Asked again rather than answered from a cached guess. */
+    expect(calls).toEqual(["allowance", "allowance"]);
   });
 });

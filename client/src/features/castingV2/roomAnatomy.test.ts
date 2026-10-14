@@ -29,6 +29,11 @@ const TABLE = new URL(
 );
 
 const PANEL = new URL("./components/CastCampaignsCard.tsx", import.meta.url);
+/* The voice card's player moved out of the room with N4b-2 (#2470) — the
+   resting strip, its foot and the three voices under the line all live in the
+   studio component now, and it draws the resting one unchanged while the road
+   is shut. */
+const VOICE = new URL("./voice/CastVoiceStudio.tsx", import.meta.url);
 
 /**
  * Every module the drawing has, the class that proves it was built, and — for
@@ -53,7 +58,7 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string; file?: URL }> = [
   { element: "refine chips", marker: "dpc-rrefine__chip" },
   { element: "takes section", marker: "dpc-takes__grid" },
   { element: "takes add tile", marker: "dpc-takes__tile--add" },
-  { element: "voice player skeleton", marker: "dpc-voice__wave" },
+  { element: "voice player skeleton", marker: "dpc-voice__wave", file: VOICE },
   { element: "campaigns add row", marker: "dpc-camp__add", file: PANEL },
   { element: "campaign rows", marker: "dpc-camp__row", file: PANEL },
   { element: "sibling tiles", marker: "dpc-sib__tile" },
@@ -63,9 +68,26 @@ const DRAWN_ELEMENTS: Array<{ element: string; marker: string; file?: URL }> = [
 describe("the casting room is built to the drawing", () => {
   it("renders every drawn module", async () => {
     const source = await readFile(ROOM, "utf8");
-    const panel = await readFile(PANEL, "utf8");
     expect(source, "the room draws the campaigns panel").toContain("<CastCampaignsCard ");
-    const missing = DRAWN_ELEMENTS.filter(({ marker, file }) => !(file === PANEL ? panel : source).includes(marker));
+    expect(source, "the room draws the voice studio").toContain("<CastVoiceStudio ");
+    /*
+      ⚠ READ WHICHEVER FILE THE ROW NAMES, rather than the one file this knew
+      about. It was `file === PANEL ? panel : source`, so the second module to
+      move out of the room would have been looked for in `CastingRoom.tsx` —
+      where it is no longer drawn — and reported as NOT BUILT. N4b-2 was that
+      second module, and this read is why the guard says "a module that moved
+      into its own component" rather than "the campaigns panel".
+    */
+    const sources = new Map<string, string>();
+    for (const { file } of DRAWN_ELEMENTS) {
+      if (!file || sources.has(file.href)) continue;
+      sources.set(file.href, await readFile(file, "utf8"));
+    }
+    const missing = DRAWN_ELEMENTS.filter(({ marker, file }) => {
+      const text = file ? sources.get(file.href) : source;
+      /* A row naming a file that could not be read must never read as built. */
+      return text === undefined || !text.includes(marker);
+    });
     expect(
       missing.map((entry) => entry.element),
       "drawn modules missing from the room",

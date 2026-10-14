@@ -176,6 +176,20 @@ const BORN_HELD_WRITERS = [
   "castingV2/referenceMint.ts",
   "castingV2/refusalLoopCapture.ts",
   /*
+    ⚠ THE KEPT VOICE'S CLIP ARRIVED WITH #2470's REPAIR, and it is the first
+    writer in this population whose bytes are an AUDIO cloning source rather
+    than a picture.
+
+    It was added here by the repair that created it, in the same commit, which
+    is what the wardrobe pair below did not manage. The road: a customer presses
+    Keep on one of three voices, the provider saves it and reads the audition
+    passage, and the clip is stored BEFORE its row exists — so a process death
+    between the two would leave ninety seconds of a voice in the public bucket
+    under a key no row names, and both deletion roads find clips THROUGH the
+    rows.
+  */
+  "castingV2/voiceService.ts",
+  /*
     ⚠ TWO WARDROBE WRITERS ARRIVED WITH #1961, AND THE FIRST OF THEM REDDENED
     THIS ARM FOR FIVE AND A HALF HOURS BEFORE ANYBODY READ IT.
 
@@ -422,6 +436,13 @@ describe("the discharge accepts a held manifest, and only an untouched one", () 
        The per-file assertion above is inside the loop, so an empty walk would
        run no assertions at all and pass. */
     expect(dischargers.sort(), "a discharge left the population, or a new one appeared").toEqual([
+      /*
+        The seventh, #2470's repair: `insertCastVoice` discharges the kept
+        clip's receipt in the SAME transaction that writes the voice row. It
+        sorts first because `castVoices` precedes `castingV2…` — the list is
+        sorted, not grouped by road.
+      */
+      "db/castVoices.ts",
       "db/castingV2FaceScans.ts",
       "db/castingV2InkDeliveryCrops.ts",
       "db/castingV2InkDesigns.ts",

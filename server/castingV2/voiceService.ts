@@ -54,6 +54,11 @@ import {
   VOICE_PREVIEW_TEXT,
 } from "./voiceAuditionPassage";
 import { insertCastVoice, readCastVoice, readCastVoiceLine } from "../db/castVoices";
+import { withTransaction } from "../db/connection";
+import {
+  createStorageCleanupManifestIn,
+  storageCleanupManifestHeldUntil,
+} from "../db/storageCleanup";
 import { storageDelete, storagePut } from "../storage";
 import { createModuleLogger } from "../logging/logger";
 
@@ -118,11 +123,28 @@ export type VoiceKeepResult =
  * ⚠ **THE KEY IS NOT A PERMISSION, AND THIS CLIP IS WHY THAT MATTERS MORE HERE
  * THAN FOR A PICTURE.** `server/storage.ts` writes to a PUBLIC bucket and its
  * URLs never expire, so anything there is protected only by its key being hard
- * to guess — and ninety seconds of a voice is a cloning source. Slice 1 never
- * projects this key and no route serves it; the owner-only route and the
- * decision on whether these bytes belong in the private evidence bucket instead
- * both ride N4b-2, which is where the design puts them. **Until then the only
- * thing that can read a clip is this server.**
+ * to guess — and ninety seconds of a voice is a cloning source.
+ *
+ * ⚠ **BOTH QUESTIONS THIS PARAGRAPH LEFT OPEN ARE ANSWERED — N4b-2 (#2470),
+ * and the answer is kept here because this is where the key is minted.** It
+ * read *"the owner-only route and the decision on whether these bytes belong in
+ * the private evidence bucket instead both ride N4b-2"*:
+ *
+ *   · **The bytes stay in this public bucket**, because the private evidence
+ *     store cannot hold them — its `putCanonical` refuses anything that is not
+ *     `image/webp` by mime AND by byte sniff, under its own parsed key grammar
+ *     (`server/casting/evidence/privateEvidenceStorage.ts`). Read at the code,
+ *     not preferred. `shared/voiceClipDelivery.ts` carries the full reading and
+ *     what follows from it.
+ *   · **The owner-only route exists**: `/api/cast/:castId/voice-clip`
+ *     (`server/routes/voiceClipDelivery.ts`), on CLAUDE.md's enumerated
+ *     authenticated-Express list in the commit that created it.
+ *
+ * **So the key is still never projected and still never logged**, and the only
+ * things that can read a clip are this server and the owner's own authenticated
+ * request. The deletion roads are unaffected and that is a consequence of not
+ * moving the bucket rather than a thing to remember: both file the clip as a
+ * PUBLIC item, which is what it is.
  */
 function voiceClipKey(userId: number, modelId: number): string {
   return `casting/voices/${userId}/${modelId}/${randomUUID()}.mp3`;
@@ -137,6 +159,45 @@ export type VoiceServiceDeps = { engine?: VoiceEngine };
 
 function engineFor(deps: VoiceServiceDeps | undefined): VoiceEngine {
   return deps?.engine ?? createElevenLabsVoiceEngine();
+}
+
+/**
+ * THE HOLD ON BYTES THAT DO NOT YET HAVE A ROW.
+ *
+ * The same write-ahead manifest every other casting writer uses
+ * (`referenceAttachService`, `keptFaceScan`, `signService`), and the two
+ * decisions inside it are theirs rather than new ones:
+ *
+ * - **a synthetic operation id**, because the column is unique and NOT NULL and
+ *   a Keep is not a generation operation;
+ * - **BORN HELD**, because the cleanup worker's in-flight fence tests a batch
+ *   against a live operation row and a synthetic id matches none — so without
+ *   the hold this manifest is claimable the instant it is written, while the
+ *   clip is still uploading. That race really fired once, mid-mint;
+ *   `createStorageCleanupManifestIn` carries the full reading.
+ *
+ * ⚠ **`casting_candidate_cleanup` IS THE RIGHT KIND AND IT WAS READ RATHER THAN
+ * ASSUMED.** The enum's own comment reserves a new value for a different
+ * RETENTION POLICY, and this clip's policy is the one every other write-ahead
+ * hold in the casting domain has — discharged by its row, collected by the
+ * worker if the row never lands. Reference attachments (a customer's own
+ * photograph), kept face scans, ink designs and Sign's plates all sit under
+ * this value for exactly that reason; only the DIAGNOSTIC family, which is
+ * swept on a schedule instead, earned its own.
+ */
+async function holdClipForWrite(input: {
+  id: string;
+  userId: number;
+  storageKey: string;
+}): Promise<void> {
+  await withTransaction((tx) => createStorageCleanupManifestIn(tx, {
+    id: input.id,
+    userId: input.userId,
+    operationId: randomUUID(),
+    heldUntil: storageCleanupManifestHeldUntil(),
+    kind: "casting_candidate_cleanup",
+    storageItems: [{ storageKey: input.storageKey, storageBackend: "public_r2" as const }],
+  }));
 }
 
 /**
@@ -298,6 +359,32 @@ export async function keepCastVoice(
 
   const clipStorageKey = voiceClipKey(input.userId, input.modelId);
   const clipSha256 = sha256(clipBytes);
+
+  /*
+    THE HOLD GOES ON BEFORE THE BYTES DO, which is what covers the gap no
+    try/catch can reach: a process death between the `storagePut` below and the
+    row write would otherwise leave ninety seconds of a voice in the PUBLIC
+    bucket under a key no row names — and both deletion roads find clips THROUGH
+    the rows, so neither could ever remove it (#2470's finding, item 2).
+
+    `holdClipForWrite` carries the two decisions inside it; `insertCastVoice`
+    discharges it in the SAME transaction as the row.
+  */
+  const cleanupBatchId = randomUUID();
+  try {
+    await holdClipForWrite({
+      id: cleanupBatchId,
+      userId: input.userId,
+      storageKey: clipStorageKey,
+    });
+  } catch (error) {
+    /* Nothing is in the bucket yet, so there is nothing to collect — only the
+       slot the save spent, which is recoverable. */
+    await releaseSlotQuietly(engine, voiceId);
+    log.error({ err: error }, "[Voice] clip hold could not be written — slot released, nothing stored");
+    return { ok: false, refusal: "provider_failed", failureClass: "transport" };
+  }
+
   try {
     await storagePut(clipStorageKey, clipBytes, clipContentType);
   } catch (error) {
@@ -306,17 +393,37 @@ export async function keepCastVoice(
     return { ok: false, refusal: "provider_failed", failureClass: "transport" };
   }
 
-  const written = await insertCastVoice({
-    userId: input.userId,
-    modelId: input.modelId,
-    designSentence: input.designSentence,
-    voiceId,
-    clipStorageKey,
-    clipSha256,
-    clipBytes: clipBytes.byteLength,
-    clipContentType,
-    passageVersion: VOICE_AUDITION_PASSAGE_VERSION,
-  });
+  /*
+    ⚠ **A THROW HERE IS THE ORPHAN THIS GUARD EXISTS FOR.** A dropped connection
+    or a timeout at the INSERT leaves the provider voice held and the clip
+    stored, and the manifest above only collects it after its hold lapses — so
+    the slot is released and the bytes deleted on the spot, and the error is
+    rethrown rather than being turned into a refusal, because a Keep that failed
+    for an unknown reason is not the same fact as one the provider refused.
+  */
+  let written: { inserted: boolean };
+  try {
+    written = await insertCastVoice({
+      userId: input.userId,
+      modelId: input.modelId,
+      designSentence: input.designSentence,
+      voiceId,
+      clipStorageKey,
+      clipSha256,
+      clipBytes: clipBytes.byteLength,
+      clipContentType,
+      passageVersion: VOICE_AUDITION_PASSAGE_VERSION,
+      cleanupBatchId,
+    });
+  } catch (error) {
+    await releaseSlotQuietly(engine, voiceId);
+    await deleteClipQuietly(clipStorageKey, { userId: input.userId, modelId: input.modelId });
+    log.error(
+      { err: error, userId: input.userId, modelId: input.modelId },
+      "[Voice] the kept voice's row could not be written — slot and clip released",
+    );
+    throw error;
+  }
   if (!written.inserted) {
     /*
       The cast went away inside the three provider steps, or a second Keep won
@@ -324,9 +431,14 @@ export async function keepCastVoice(
       delete the bytes. The voice OPERATION stays spent — a delete refunds none
       (measured) — which is a real cost of a lost race and is logged as one
       rather than being quietly absorbed.
+
+      The insert's transaction rolled back, so the hold above is STILL STANDING:
+      the delete here is the prompt road and the worker is the backstop if this
+      process dies between the two. Belt and braces on purpose — the bytes are a
+      cloning source, and the slower road is measured in minutes.
     */
     await releaseSlotQuietly(engine, voiceId);
-    await deleteClipQuietly(clipStorageKey);
+    await deleteClipQuietly(clipStorageKey, { userId: input.userId, modelId: input.modelId });
     log.warn(
       { modelId: input.modelId },
       "[Voice] Keep lost its write — slot and clip released, one voice operation spent",
@@ -345,6 +457,58 @@ export async function keepCastVoice(
     saveLatencyMs,
     speakLatencyMs,
   };
+}
+
+/**
+ * CAN ANYTHING BE KEPT AT ALL — the card's own question, answered cheaply.
+ *
+ * ⚠ **THIS IS A HINT AND NEVER A GATE, AND THE DISTINCTION IS THE WHOLE
+ * DOCBLOCK.** The spend decision stays exactly where it was: `keepCastVoice`
+ * reads the allowance LIVE immediately before it saves, for the reason this
+ * module's header records — a hard-coded *"three slots"* would have refused a
+ * Keep with 27 free the day the plan was upgraded. What this answers is the
+ * cheaper question the CARD needs: should three voices be designed on house
+ * money at all, when nothing could be kept from them (#2470's finding, item 5)?
+ *
+ * ⚠ **IT IS CACHED FOR A MINUTE, PER PROCESS, BECAUSE IT IS ONE HOUSE ACCOUNT
+ * AND NOT ONE PER CUSTOMER.** The allowance is a property of our provider plan,
+ * so there is nothing to key it by; without the cache every signed cast's page
+ * open would be a provider round trip. A minute is short against the only two
+ * things that move it — a Keep, and the month turning.
+ *
+ * ⚠ **IT FAILS OPEN, DELIBERATELY, AND THAT IS THE SAFE DIRECTION HERE** — the
+ * opposite of what the Keep does. An unreadable allowance returns `true`, so a
+ * provider blip leaves the card working; the money is still protected, because
+ * the live read inside Keep refuses before any spend (`allowance_unreadable`).
+ * Failing closed would hide a working feature on a transient read, and nothing
+ * would be saved by it.
+ */
+const KEEPABILITY_TTL_MS = 60 * 1000;
+let keepabilityCache: { atMs: number; canKeep: boolean } | null = null;
+
+export async function readVoiceKeepability(
+  deps?: VoiceServiceDeps,
+): Promise<{ canKeep: boolean }> {
+  const atMs = Date.now();
+  if (keepabilityCache && atMs - keepabilityCache.atMs < KEEPABILITY_TTL_MS) {
+    return { canKeep: keepabilityCache.canKeep };
+  }
+  try {
+    const allowance = await engineFor(deps).readAllowance({});
+    const canKeep = voiceOperationsAvailable(allowance) && voiceSlotsAvailable(allowance);
+    keepabilityCache = { atMs, canKeep };
+    return { canKeep };
+  } catch (error) {
+    const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    log.warn({ failureClass }, "[Voice] allowance unreadable for the card's hint — answering yes");
+    /* NOT cached: a blip must not pin an optimistic answer for a minute. */
+    return { canKeep: true };
+  }
+}
+
+/** For the drivers: forget the cached allowance between arms. */
+export function resetVoiceKeepabilityCache(): void {
+  keepabilityCache = null;
 }
 
 /**
@@ -371,11 +535,47 @@ export async function releaseSlotQuietly(engine: VoiceEngine, voiceId: string): 
   }
 }
 
-async function deleteClipQuietly(storageKey: string): Promise<void> {
+/**
+ * Delete an unclaimed clip's bytes, best effort.
+ *
+ * ⚠ **THE KEY IS NOT LOGGED, AND ON THIS BUCKET THAT IS A SECURITY RULE RATHER
+ * THAN TIDINESS — N4b-2 (#2470).** `server/storage.ts` writes to a permanently
+ * PUBLIC bucket, so CLAUDE.md's sentence about what protects an object there is
+ * the whole of it: *"protected only by the URL being hard to guess"*. The key IS
+ * the credential, and ninety seconds of a voice is a cloning source — so
+ * printing the key here widened a cloning source's address to wherever logs
+ * travel.
+ *
+ * **It was left deliberately unfixed by slice 1's review, because its right
+ * form depended on a decision this card owns** (the relay's third requirement
+ * on #2470): move the bytes to a private bucket and the key stops being a
+ * credential, so logging it is ordinary diagnostics; keep them public and serve
+ * them owner-only, and the key must never be logged at all. This card read the
+ * private evidence store at the code and found it **accepts `image/webp`
+ * only** — an MP3 is `invalid_payload` there — so the bytes stay public behind
+ * an owner-only route (`shared/voiceClipDelivery.ts` carries that reading), and
+ * this is the second road.
+ *
+ * ⚠ **`REFUSING_KEYS` is the wrong tool for it and was measured to be**: this
+ * was the ONLY log call in the server carrying `storageKey`, and
+ * `shared/errorEventScrub.ts`'s own docblock records what a refusing key for a
+ * field that cannot appear costs — *"it is a list nobody can trust"*. The fix
+ * is the log line.
+ *
+ * What a diagnosis actually needs is which cast lost a clip; the key is one
+ * row away for anyone who may read it.
+ */
+async function deleteClipQuietly(
+  storageKey: string,
+  cast: { userId: number; modelId: number },
+): Promise<void> {
   try {
     await storageDelete(storageKey);
   } catch (error) {
-    log.error({ err: error, storageKey }, "[Voice] an unclaimed clip could not be deleted");
+    log.error(
+      { err: error, userId: cast.userId, modelId: cast.modelId },
+      "[Voice] an unclaimed clip could not be deleted — its key is on the cast's voice row",
+    );
   }
 }
 

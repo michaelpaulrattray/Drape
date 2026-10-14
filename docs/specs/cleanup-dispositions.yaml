@@ -1587,3 +1587,45 @@
   verdict: KEEP
   why: "server/testing/ is test infrastructure by directory (13a). It is the reader behind scriptGuards.test.ts's derived guard that no tracked server suite hands this repository's own root to inWorktreeOf / runScriptGuardsOnCommit / runTypecheckOnCommit (#2212); its negative control drives each spelling it claims, and deleting it leaves the class with nothing to stop the next arm written beside the converted ones from bringing the stopwatch back"
   argued: "#2212"
+
+- symbol: resetVoiceDesignStore
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "the voice design store is a module-level Map, so its state survives between arms of its own suite — this is the only thing that can isolate them, and without it the eviction and TTL arms read each other's entries and the ceiling arm's result depends on which arm ran first. Its docblock says in as many words that production never calls it. Deleting it does not remove a road; it makes a suite non-deterministic in the direction that passes"
+  argued: "#2470 (N4b-2)"
+
+- symbol: voiceDesignStoreSize
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "the only way a suite can see the store's CEILING hold rather than just its eviction. The arms prove an evicted handle stops resolving, which is eviction; this proves the bound — that 500 entries in gives at most 500 entries held — and an unbounded map on a long-lived process is exactly the leak the bound exists for. A reading nothing can observe is a bound nobody can test"
+  argued: "#2470 (N4b-2)"
+
+- symbol: claimedVoiceDesignCount
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "the claim moved designs into a SECOND module-level Map, and this is the only way a suite can see that map at all — that a claim really took the design out of reach, that a restore really gave it back, and that a landed Keep leaves nothing behind in either map. The sibling reading, voiceDesignStoreSize, can only ever show the resolvable side, so without this the claimed side's leak would be invisible: an entry held for the life of the process by a Keep that died mid-flight reads identically to one that was cleaned up. Its docblock says production never calls it"
+  argued: "#2470 (N4b-2), the relay's finding item 3"
+
+- symbol: resetVoiceKeepabilityCache
+  file: server/castingV2/voiceService.ts
+  verdict: KEEP
+  why: "the keepability hint caches ONE house-wide answer at module level for a minute, so without this the cache arm and the fail-open arm read each other's entry and the result depends on which ran first — the same reason resetVoiceDesignStore exists one module over. It is what makes the two claims testable at all: that two reads cost one provider call, and that an unreadable allowance answers yes WITHOUT being cached. Both were driven and both go red under sabotage. Its docblock says production never calls it"
+  argued: "#2470 (N4b-2), the relay's finding item 5"
+
+- symbol: resolveVoiceDesignHandle
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "production stopped calling it in #2470's repair — the Keep road CLAIMS a handle now, which resolves and removes in one indivisible step so a double-press cannot spend two of the account's 95 monthly voice operations. What is left is the only read that does NOT consume: a suite asking 'is this handle resolvable' through the claim would destroy the state it is asking about, so the restore arm could check one handle instead of three and the eviction and TTL arms could not be written at all. Deleting it would not remove a road, it would remove the only non-destructive observation of this store"
+  argued: "#2470 (N4b-2), the relay's finding item 3"
+
+- symbol: voiceCardEveryString
+  file: shared/voiceCardCopy.ts
+  verdict: KEEP
+  why: "it IS the derived population of the voice card's no-vendor-words reader (#2470's own done-when: a test reads every string on the card). It composes the fixed strings with the COMPOSED ones rendered at real arguments, including the nameless fallback, because a template read as a template passes a reader the rendered sentence would fail. Deleting it leaves that guard over a hand-typed sample, which is working law 4 on the one surface the disappearing-technology law names by hand"
+  argued: "#2470 (N4b-2)"
+
+- symbol: VOICE_CLIP_ROUTE_PATTERN
+  file: shared/voiceClipDelivery.ts
+  verdict: KEEP
+  why: "the one written answer to what the clip route's Express pattern is, and the thing that holds the registration honest. The route itself must register as `CONSTANT + \"literal\"` because that is the only composed shape the architecture Atlas resolves — passing this identifier instead recorded the route as '(declares no path this reader can see)', which architectureExpressSurfaces.test.ts refuses — so the parts and the whole are two spellings by necessity, and voiceClipDelivery.test.ts asserts them equal. Deleting it removes the guard and leaves the duplication"
+  argued: "#2470 (N4b-2)"

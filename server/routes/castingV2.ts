@@ -19,6 +19,14 @@ import { TRPCError } from "@trpc/server";
 import { BRIEF_TEXT_MAX_AUTHOR_ROAD } from "../castingV2/briefLength";
 
 import { router, protectedProcedure } from "../_core/trpc";
+import {
+  designVoicesForCard,
+  keepVoiceForCard,
+  readVoiceCardStatus,
+  voiceCastInput,
+  voiceDesignInput,
+  voiceKeepInput,
+} from "./castingVoice";
 import { checkRateLimit, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { sheetPreviewTiles } from "../castingV2/sheetPreview";
 import { castPronouns } from "../castingV2/castPronouns";
@@ -921,6 +929,50 @@ const referenceRouter = router({
     If a surface ever earns an explicit read-this-picture affordance, it re-earns
     a door with it.
   */
+});
+
+/**
+ * THE VOICE CARD'S THREE — N4b-2 (#2470). `castingV2.voice.status`, `.design`,
+ * `.keep`.
+ *
+ * Declared here, beside `ink`, `conceptRouter` and `referenceRouter`, because
+ * that is what its siblings do; the work each one does is three plain functions
+ * in `./castingVoice`, whose header records the spelling that was tried first
+ * and why it is wrong (a `._def.procedures` spread is not type-safe on the
+ * client).
+ *
+ * ⚠ **A SENTENCE HERE CLAIMED THIS PLACEMENT WAS REQUIRED BY THE CAPABILITY
+ * ATLAS, AND IT WAS FALSE — kept as the correction because the mistake is the
+ * reusable part.** The capability map reads its procedure population out of
+ * `docs/architecture/drape-architecture.json`, and the reading behind that
+ * claim was taken before regenerating it. Driven afterwards, both forms: the
+ * architecture walker resolves an IMPORTED router reference to
+ * `castingV2.<name>.<procedure>` exactly as it resolves a same-file const. So
+ * placement is style here, and the three procedures are on the map either way
+ * (43 `castingV2` routes, these three among them).
+ */
+const voiceRouter = router({
+  status: protectedProcedure
+    .input(voiceCastInput)
+    .query(({ ctx, input }) => readVoiceCardStatus({ userId: ctx.user.id, castId: input.castId })),
+
+  design: protectedProcedure
+    .input(voiceDesignInput)
+    .mutation(({ ctx, input }) => designVoicesForCard({
+      userId: ctx.user.id,
+      castId: input.castId,
+      automatic: input.automatic,
+    })),
+
+  keep: protectedProcedure
+    .input(voiceKeepInput)
+    .mutation(({ ctx, input }) => keepVoiceForCard({
+      /* `userId` is the AUTHENTICATED one and never an input (invariant 3). */
+      userId: ctx.user.id,
+      castId: input.castId,
+      designId: input.designId,
+      handle: input.handle,
+    })),
 });
 
 export const castingV2Router = router({
@@ -3014,4 +3066,5 @@ export const castingV2Router = router({
   ink: inkRouter,
   reference: referenceRouter,
   concept: conceptRouter,
+  voice: voiceRouter,
 });

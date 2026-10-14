@@ -238,6 +238,10 @@ const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/keptFaceScan.ts": "the scan's stencils — THE ONE THAT WAS MISSING, fixed 2026-08-19",
   "server/castingV2/referenceAttachService.ts": "the picture a customer attached to her Cast",
   "server/castingV2/referenceMint.ts": "a library crop and its mask",
+  /* #2470's repair, and the first keeper here whose bytes are AUDIO: ninety
+     seconds of a kept voice reading the audition passage. `insertCastVoice`
+     discharges the receipt in the transaction that writes the voice row. */
+  "server/castingV2/voiceService.ts": "the kept voice's audition clip",
   /*
     ⚠ TWO ROWS LEFT THIS TABLE WITH THE SEGMENT STORE (#1160 slice 2), and both
     left the simplest way there is: the modules are DELETED. They read

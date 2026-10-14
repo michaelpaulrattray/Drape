@@ -33,6 +33,18 @@ const SENTENCE = "Low, dry — it doesn't 'ask'; it decides. 100% sure of itself
 const sent: Array<{ sql: string; params: unknown[] }> = [];
 let answers: unknown[][] = [];
 let writeAffected = 1;
+/**
+ * A per-statement override of the affected count, keyed on a fragment of the
+ * SQL — needed since #2470's repair, because the kept-voice write now sends
+ * THREE statements in one transaction (the insert and the manifest's two
+ * deletes) and an arm has to be able to move zero rows on exactly one of them.
+ */
+let affectedBySql: Array<{ match: RegExp; affected: number }> = [];
+
+function affectedFor(sql: string): number {
+  for (const rule of affectedBySql) if (rule.match.test(sql)) return rule.affected;
+  return writeAffected;
+}
 
 const recordingPool = {
   query(...args: unknown[]) {
@@ -41,7 +53,7 @@ const recordingPool = {
     const params = (args[1] as unknown[]) ?? (typeof config === "string" ? [] : config.values ?? []);
     const index = sent.length;
     sent.push({ sql, params });
-    const rows = /^\s*select/i.test(sql) ? (answers[index] ?? []) : { affectedRows: writeAffected };
+    const rows = /^\s*select/i.test(sql) ? (answers[index] ?? []) : { affectedRows: affectedFor(sql) };
     const callback = args.find((argument) => typeof argument === "function") as
       | ((error: unknown, rows: unknown, fields: unknown) => void)
       | undefined;
@@ -56,14 +68,21 @@ const recordingPool = {
   },
 };
 
+/*
+  ⚠ **THIS MOCK USED TO THROW ON `withTransaction`, ASSERTING THAT THE KEPT
+  VOICE'S WRITE NEEDED NO TRANSACTION — AND #2470's FINDING IS THAT IT DOES.**
+  The row write now discharges the clip's write-ahead cleanup manifest in its
+  own transaction, so the callback is RUN here, against the same recording pool,
+  and the statements it sends are what the arms below read.
+*/
 vi.mock("./connection", () => ({
   getDb: async () => drizzle(recordingPool as never, { mode: "default" } as never),
-  withTransaction: () => {
-    throw new Error("castVoices.test.ts: no transaction is expected on these statements");
-  },
+  withTransaction: async (run: (tx: unknown) => unknown) =>
+    run(drizzle(recordingPool as never, { mode: "default" } as never)),
 }));
 
 const {
+  CastVoiceManifestUndischargeable,
   deleteAccountVoicesIn,
   deleteCastVoicesIn,
   insertCastVoice,
@@ -91,12 +110,14 @@ const WRITE = {
   clipBytes: 1_234_567,
   clipContentType: "audio/mpeg",
   passageVersion: 1,
+  cleanupBatchId: "11111111-2222-3333-4444-555555555555",
 };
 
 beforeEach(() => {
   sent.length = 0;
   answers = [];
   writeAffected = 1;
+  affectedBySql = [];
 });
 
 describe("the kept voice's statements", () => {
@@ -178,9 +199,8 @@ describe("the kept voice's statements", () => {
     const failing = { ...recordingPool, query: () => Promise.reject(duplicate) };
     vi.doMock("./connection", () => ({
       getDb: async () => drizzle(failing as never, { mode: "default" } as never),
-      withTransaction: () => {
-        throw new Error("no transaction expected");
-      },
+      withTransaction: async (run: (tx: unknown) => unknown) =>
+        run(drizzle(failing as never, { mode: "default" } as never)),
     }));
     vi.resetModules();
     const { insertCastVoice: insertAgain } = await import("./castVoices");
@@ -195,6 +215,72 @@ describe("the kept voice's statements", () => {
     await expect(readCastVoice(0, MODEL_ID)).rejects.toThrow(/userId/);
     await expect(readCastVoice(USER_ID, -1)).rejects.toThrow(/modelId/);
     expect(sent).toHaveLength(0);
+  });
+
+  /*
+    THE CLIP'S WRITE-AHEAD MANIFEST IS DISCHARGED IN THIS SAME TRANSACTION —
+    #2470's finding, item 2.
+
+    The clip is in the PUBLIC bucket before this statement runs, named by a
+    manifest and by no row, because a process death between the two would
+    otherwise leave ninety seconds of a voice under a key no row points at —
+    and both deletion roads find clips THROUGH the rows. These arms are about
+    the three statements and their ORDER, because the order is the whole
+    correctness argument.
+  */
+  it("discharges the clip's write-ahead manifest in the SAME transaction as the row", async () => {
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: true });
+
+    expect(sent).toHaveLength(3);
+    expect(sent[0]?.sql).toMatch(/^insert into `cast_voices`/i);
+    expect(sent[1]?.sql).toMatch(/^delete from `storage_cleanup_items`/i);
+    expect(sent[1]?.params).toContain(WRITE.cleanupBatchId);
+    expect(sent[2]?.sql).toMatch(/^delete from `storage_cleanup_batches`/i);
+    expect(sent[2]?.params).toEqual(
+      expect.arrayContaining([WRITE.cleanupBatchId, USER_ID]),
+    );
+  });
+
+  it("⚠ INSERTS BEFORE IT DISCHARGES, so a failed write never hands live bytes to the worker", async () => {
+    /*
+      THE ORDER IS THE CLAIM. Discharging first and inserting second would, on a
+      zero-row insert, leave the clip with no manifest AND no row — the exact
+      orphan this repair exists to close, reached by the repair itself.
+    */
+    affectedBySql = [{ match: /^insert into `cast_voices`/i, affected: 0 }];
+
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.sql).toMatch(/^insert into `cast_voices`/i);
+    /* No discharge was attempted, so the manifest still stands and the worker
+       collects the bytes — which is correct, since nothing references them. */
+    expect(sent.some((one) => /storage_cleanup/i.test(one.sql))).toBe(false);
+  });
+
+  it("⚠ scopes the discharge to an UNDISCHARGED batch, never to the id alone", async () => {
+    await insertCastVoice(WRITE);
+
+    const discharge = sent[2]?.sql ?? "";
+    /*
+      `undischargedStorageCleanupBatchWhere()`'s shape. Without it this delete
+      could retire a batch the cleanup worker had already claimed and begun
+      deleting from — which would report success over bytes being removed.
+    */
+    expect(discharge).toMatch(/status/i);
+    expect(discharge).toMatch(/leaseToken/i);
+    expect(discharge).toMatch(/attemptedAt/i);
+  });
+
+  it("⚠ THROWS when there is no manifest to discharge, rather than reporting a write", async () => {
+    /*
+      POSITIVE CONTROL for the one case that must not be absorbed. This manifest
+      was created by the same Keep moments earlier, so a zero-row discharge is an
+      invariant violation and not a race — and dressing it up as `inserted:
+      false` is how one would go unnoticed for months.
+    */
+    affectedBySql = [{ match: /^delete from `storage_cleanup_batches`/i, affected: 0 }];
+
+    await expect(insertCastVoice(WRITE)).rejects.toThrow(CastVoiceManifestUndischargeable);
   });
 });
 
