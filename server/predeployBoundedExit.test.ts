@@ -400,3 +400,126 @@ describe("#1745 · the pre-deploy command is wired to it (invariant 7)", () => {
     expect(codeOf(PREDEPLOY_FROM_BUILD)).toContain("closeLine(");
   });
 });
+
+/* ─────────── #2501 · past the close: the exit leaves on its own clock ─────────── */
+
+const WATCHDOG_IMPORT = IMPORT_LINE.replace("{ closeWithin }", "{ armExitWatchdog }");
+
+/**
+ * The incident's shape with the cause left open, as the card leaves it: the
+ * verdict is decided, then the road to `process.exit` never completes while
+ * something keeps the loop alive. A ref'd interval stands in for "something".
+ */
+const stuckAfterVerdict = (arm: string): string => `
+  ${WATCHDOG_IMPORT}
+  setInterval(() => {}, 1_000);
+  ${arm}
+  console.log("verdict printed");
+  await new Promise(() => {});
+  process.exit(99);
+`;
+
+describe("#2501 · armExitWatchdog — the decided code leaves even when the road to the exit does not", () => {
+  it("THE INCIDENT: a live loop and an await that never settles still exit with the DECIDED code", () => {
+    const began = Date.now();
+    const result = driveExit(stuckAfterVerdict("armExitWatchdog(7, { bound: 150 });"));
+
+    expect(result.status, result.stderr).toBe(7);
+    /* The silence is now a diagnosis: the line names what held the process. */
+    expect(result.stdout).toContain("exiting 7 anyway (#2501)");
+    expect(result.stdout).toContain("Timeout");
+    expect(Date.now() - began).toBeLessThan(30_000);
+  });
+
+  it("the NEGATIVE control: without the watchdog the same child never exits (killed by the driver)", () => {
+    /* Working law 2: the arm above proves nothing unless this shape really
+       hangs. It must be killed, not exit — a SpawnFailure carries the signal. */
+    expect(() => runHook(
+      process.execPath,
+      ["--import", LOADER, "--input-type=module", "--eval", stuckAfterVerdict("")],
+      { cwd: REPO, timeout: 4_000 },
+    )).toThrow(/killed by/);
+  });
+
+  it("⚠ it NEVER turns a refusal into a success — a decided 1 leaves as 1, a decided 0 as 0", () => {
+    expect(driveExit(stuckAfterVerdict("armExitWatchdog(1, { bound: 100 });")).status).toBe(1);
+    expect(driveExit(stuckAfterVerdict("armExitWatchdog(0, { bound: 100 });")).status).toBe(0);
+  });
+
+  it("⚠ a later decision REPLACES an earlier one — a 0 armed before a refusal can never fire over it", () => {
+    const result = driveExit(stuckAfterVerdict("armExitWatchdog(0, { bound: 100 }); armExitWatchdog(1, { bound: 300 });"));
+    expect(result.status, result.stderr).toBe(1);
+  });
+
+  it("an IDLE loop with an unsettled await exits with the decided code, not node's 13 — the timer is ref'd", () => {
+    /* `closeWithin`'s first cut lost the code to 13 by unref'ing its timer; a
+       watchdog that did the same would fail this arm the same way. */
+    const result = driveExit(`
+      ${WATCHDOG_IMPORT}
+      armExitWatchdog(7, { bound: 100 });
+      await new Promise(() => {});
+      process.exit(99);
+    `);
+    expect(result.status, result.stderr).toBe(7);
+  });
+
+  it("the ordinary road is untouched: an armed watchdog never fires on a process that exits on time", () => {
+    const began = Date.now();
+    const result = driveExit(`
+      ${WATCHDOG_IMPORT}
+      armExitWatchdog(1, { bound: 20_000 });
+      process.exit(0);
+    `);
+    /* 0 while the watchdog holds 1 — it decides only WHEN, never WHAT, and a
+       process that reaches its own exit keeps its own code. */
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).not.toContain("#2501");
+    expect(Date.now() - began).toBeLessThan(15_000);
+  });
+
+  it("the bound can never pre-empt the bounded close on a healthy run", async () => {
+    const { EXIT_WATCHDOG_MS } = await import("../scripts/lib/boundedClose.mts");
+    expect(EXIT_WATCHDOG_MS).toBeGreaterThanOrEqual(CLOSE_BOUND_MS * 3);
+    expect(EXIT_WATCHDOG_MS).toBeLessThanOrEqual(60_000);
+  });
+});
+
+describe("#2501 · the pre-deploy command is wired to it (invariant 7)", () => {
+  const source = (): string => codeOf(PREDEPLOY_FROM_BUILD);
+
+  it("arms the watchdog with the verdict's code the moment it is decided — before the lines and the close", () => {
+    const s = source();
+    const decided = s.indexOf("const verdict = predeployVerdict(report);");
+    const armed = s.indexOf("armExitWatchdog(verdict.exitCode);");
+    expect(armed, "the verdict road does not arm the watchdog").toBeGreaterThan(decided);
+    expect(armed).toBeLessThan(s.indexOf("for (const line of verdict.lines)"));
+    expect(armed).toBeLessThan(s.indexOf("closeWithin(connection)"));
+  });
+
+  it("the refusal road arms it with 1, as its first statement", () => {
+    expect(source()).toMatch(/catch \(error: any\) \{\s*armExitWatchdog\(1\);/);
+  });
+
+  it("prints one line immediately before the exit, so a stuck exit is distinguishable from a stuck road", () => {
+    /* Raw source: the comment-stripper also blanks template-literal text. */
+    expect(read(PREDEPLOY_FROM_BUILD).trimEnd()).toMatch(/console\.log\(`predeploy: exiting \$\{code\}`\);\s*process\.exit\(code\);$/);
+  });
+
+  it("THE REAL SCRIPT, driven: a refused connection exits 1, says so, and does it promptly", () => {
+    /* The whole entrypoint in a real child, pointed at a port nothing listens
+       on — no database is touched. RAILWAY_ENVIRONMENT satisfies the
+       off-platform refusal; MYSQL_PUBLIC_URL is cleared so the world check
+       cannot open anything else. */
+    const began = Date.now();
+    const env: NodeJS.ProcessEnv = { ...process.env, RAILWAY_ENVIRONMENT: "test-drive", DATABASE_URL: "mysql://u:p@127.0.0.1:1/none" };
+    delete env.MYSQL_PUBLIC_URL;
+    delete env.PUBLIC_DATABASE_URL;
+    const result = runHook(process.execPath, ["--import", LOADER, PREDEPLOY_FROM_BUILD], { cwd: REPO, env, timeout: 60_000 });
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stdout).toContain("predeploy: REFUSED");
+    expect(result.stdout.trimEnd().endsWith("predeploy: exiting 1")).toBe(true);
+    expect(result.stdout).not.toContain("u:p@");
+    expect(Date.now() - began).toBeLessThan(30_000);
+  });
+});
