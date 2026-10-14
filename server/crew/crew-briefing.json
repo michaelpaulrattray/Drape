@@ -1,7 +1,7 @@
 {
-  "edition": 706,
-  "updatedAt": "2026-10-14T16:41:17.541Z",
-  "shift": "THE HOUSE CAN NOW SEE HOW MUCH VOICE IT HAS LEFT, AND A PLAN DOCUMENT THAT STILL SAID VOICE WAS NEVER BUILT HAS BEEN CORRECTED.\n\nNothing on your side of the product changed tonight. What changed is that the staff dashboard now shows two numbers it never had: how many voices the company can still keep this month, and how many saved-voice slots are free. Both come from the voice service itself, live, and tonight they read 86 of 95 keeps left and 28 of 30 slots free.\n\nIt shows two numbers rather than one on purpose. Keeping a voice needs BOTH a slot and one of the month's allowance, and either running out stops a customer dead. A panel showing only the monthly number would have looked perfectly healthy on a day when every slot was full and nobody could keep anything.\n\nIt also tells the truth when it cannot get an answer. If the voice service is quiet the rows say \"Not readable\" and name what happened; if there is no voice service set up at all, they say \"Not set up\" rather than showing a fault that is not one. Neither of those lights the warning that means YOUR site is down — that one still means only our own server, because saying the platform is down when a supplier is quiet would send somebody looking in the wrong place.\n\nThe other half of the night was a document. Our own casting plan still described Voice as unbuilt — \"zero implementations, no database table\" — when the whole thing is live and you have been listening to it, and it still named the two-supplier split your ear overruled on 13 October. Every line of that is corrected, with the old wording kept struck through so nobody re-opens a settled question. The document even asked, back in September, whether one supplier might by then do both jobs well enough that a second was not worth it — that question is now marked answered, because that is exactly how it turned out.\n\nOne thing I found and did NOT build, filed as its own card instead: the free voices every character gets are capped per account per day, not across the company, and that cap resets whenever we ship. It costs us about a cent a time and your supplier allowance is separately protected, so nothing is at risk — but it is worth a decision rather than a quiet assumption.",
+  "edition": 707,
+  "updatedAt": "2026-10-14T17:45:00.000Z",
+  "shift": "THE VOICE WORK IS BUILT — ALL OF IT, AND THE LAST PIECE WAS PROVED AGAINST THE REAL VOICE SERVICE TONIGHT. When a voice has to give up its place, the crew now makes it again from the recording it left behind: driven end to end, the voice came back, it spoke, and it cost one unit of the month’s allowance out of 95. Nothing is left for the crew to build on this rung. Four things wait on you, all on this page — two listens and two presses — and two of them were invisible until tonight: they were finished and live with nothing anywhere asking you to look.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -19,7 +19,7 @@
         },
         {
           "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a reading of it stored beside it, measured at 1½ to 2¼ minutes depending on the voice — not the flat 90 seconds the design guessed (#2469)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Listen and pick, on the cast's Voice card — a few voices made from the text, play each one, keep the one that sounds right (#2470)",
@@ -27,19 +27,23 @@
         },
         {
           "title": "Voices that sound like the character, not like the written line — a second description written for the voice designer from your words and the character's picture, which you never see. The piece your listening test chose. Built, reviewed and live; your ear on the result is the last word (#2498)",
-          "state": "in-progress"
+          "state": "waiting"
+        },
+        {
+          "title": "Changing or removing a voice you have kept — your own report that there was no way to do either. Change voice makes three new ones from the line as it reads now and keeping one replaces the old; Remove clears it and asks first. Built, reviewed and live; your hands on it are the last word (#2497)",
+          "state": "waiting"
         },
         {
           "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read. The plan document that still called Voice unbuilt is corrected (#2471)",
           "state": "done"
         },
         {
-          "title": "Re-making a voice when the slots are full, after your ear closed its court — you said re-mint sounds better in some cases (#2472)",
-          "state": "waiting"
+          "title": "Re-making a voice when the slots are full — your ear closed its court, and it is now built, live and driven against the real voice service: a voice that gave up its place came back from its own stored recording, spoke, and cost one unit of the month’s allowance. A voice already in place costs nothing to use (#2472)",
+          "state": "done"
         },
         {
-          "title": "One correction owed to the design before it is built from — it describes your ElevenLabs account as it was before you upgraded it (#2474)",
-          "state": "waiting"
+          "title": "The design now describes your voice account as it actually is, and the rung as built — the correction it was owed is merged (#2474)",
+          "state": "done"
         }
       ]
     },
@@ -148,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-14T16:38:38.502Z",
+      "readAt": "2026-10-14T17:41:30.401Z",
       "items": [
         {
           "issueNumber": 14,
@@ -224,14 +228,8 @@
         },
         {
           "issueNumber": 499,
-          "title": "N4b — Voice: the cast's voice package gets its own rung, two engines by voice kind (his word, 4 Sep)",
+          "title": "N4b — Voice: the cast's voice package gets its own rung (his word, 4 Sep)",
           "kind": "design-unbuilt",
-          "rung": "N4b"
-        },
-        {
-          "issueNumber": 2474,
-          "title": "The N4b design doc on main describes his ElevenLabs account as it was before he upgraded it — nine lines, and three of them are load-bearing on the design",
-          "kind": "rung",
           "rung": "N4b"
         },
         {
@@ -328,6 +326,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "voice-sounds-right-2498",
+      "title": "Your voices come out the right way round now — one listen",
+      "productImpact": "You told us: “her voices are male”. You were right, and the reason was ours. The written line on a cast is written for the video generator — pacing, silences, how the words land — and we were handing that line to the voice service on its own. It never knew whether the character was a woman or a man, so it guessed, and a line like “a low voice with a rough edge” gets heard as a man. Every cast also read the same neutral house paragraph, which suited none of them. Since Tuesday afternoon each cast gets a second description you never see, written from your own words and the character’s picture, plus a line in character for the voices to read. Your words win where they say something; the picture only fills in what you left open, and an accent is never guessed from a face.",
+      "workedExample": "Open Kiki, a signed cast, and press to make voices. Before this she came back with three male voices. Now the three should read as the character, in the character’s own words rather than our house paragraph. Pigman is the other half of it: he should sound like Pigman.",
+      "options": [],
+      "recommendation": null,
+      "state": "waiting",
+      "filedAt": "2026-10-14T17:45:00.000Z",
+      "issueNumber": 2498
+    },
+    {
+      "id": "voice-change-remove-2497",
+      "title": "A kept voice can now be changed or removed — two presses to try",
+      "productImpact": "Your words: “there doesnt seem to be a way to change the voice if you change the description or whatever or delete the selected voice”. There was not. Once a voice was kept the card closed over it and both roads were missing. They are there now. Change voice reopens the picker and makes three new voices from the line as it reads at that moment; keeping one replaces the old voice and costs what a Keep costs, with the price on the button and a line saying plainly that keeping a new one replaces the current one. Remove voice asks once — it says the voice cannot be brought back and the credits are not returned — and then the card goes back to “No voice yet”.",
+      "workedExample": "The old voice is only let go once the new one is completely safe — saved, its recording stored, the record written. If anything fails on the way, you keep the voice you had and nothing is charged. Editing the written line on its own still changes nothing until you press Change voice, which is how you asked for it.",
+      "options": [],
+      "recommendation": null,
+      "state": "waiting",
+      "filedAt": "2026-10-14T17:45:00.000Z",
+      "issueNumber": 2497
+    },
     {
       "id": "gemini-code-delete-2315",
       "title": "Done — “KEEP”: the old wardrobe code stays where it is, switched off",
@@ -10749,7 +10769,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-14T16:38:38.501Z",
+    "readAt": "2026-10-14T17:41:30.400Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10821,24 +10841,22 @@
         }
       },
       {
-        "issueNumber": 2471,
-        "title": "N4b-3: ready to widen (real price, the voice ration on the admin panel, refusals seen)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2472,
-        "title": "N4b-4: the re-mint court for his ear, then eviction and re-mint",
-        "urgent": false
-      },
-      {
         "issueNumber": 2497,
         "title": "N4b: change or remove a kept voice — the card has no road to either once a voice is kept",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — two presses on a character that already has a kept voice: Change voice, then Remove voice. Do they both do what you would expect?"
+        }
       },
       {
         "issueNumber": 2498,
         "title": "N4b: voices are designed from the video-generator line alone — write a hidden voice card from the words and the picture (his listening test: F)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — a listen. You reported a character written as a woman getting male voices. That is fixed and live: do the three voices now match the character?"
+        }
       }
     ]
   }
