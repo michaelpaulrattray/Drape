@@ -4246,19 +4246,24 @@ export type InsertCastCreationRecordRow = typeof castCreationRecords.$inferInser
  * refused when their sha256 is not the one this row records, which is what
  * `clipSha256` is for.
  *
- * # ONE ROW PER CAST, AND A SECOND KEEP IS REFUSED IN SLICE 1 — DECLARED
- * SCAFFOLDING, NOT AN OVERSIGHT
+ * # ONE ROW PER CAST, AND A SECOND KEEP REPLACES IT (#2497)
  *
  * `uq_cast_voices_model` holds it. Keeping a second voice REPLACES the first
- * (the design's §9: *"a kept voice is changed only by keeping another"*), and
- * that replacement needs somewhere for the superseded clip's bytes to go — a
- * `storage_cleanup_batches.kind` of its own, because this schema's own rule is
- * one enum value per retention policy and *"a kept voice was replaced"* is not
- * a candidate's lifecycle. Widening that enum is a `MODIFY COLUMN`, which the
- * deploy rite classifies as DESTRUCTIVE and refuses to apply unattended — it is
- * the founder's hand. So it rides N4b-2's pull request, with the button that
- * presses it; until then a second Keep refuses in plain words rather than
- * orphaning bytes nothing will ever collect.
+ * (the design's §9: *"a kept voice is changed only by keeping another"*): the
+ * row is updated in place inside the Keep's own transaction and the old clip is
+ * handed to the cleanup worker in that same transaction (`insertCastVoice`).
+ * Remove deletes the row and queues the clip the same way (`removeCastVoice`).
+ *
+ * ⚠ **THIS PARAGRAPH SAID A REPLACE NEEDED A NEW `storage_cleanup_batches.kind`
+ * — A `MODIFY COLUMN` THE RITE REFUSES UNATTENDED — AND READ AT THE CODE IT DID
+ * NOT.** The rule it cited is one enum value per RETENTION POLICY, and two
+ * shipped roads already retire a customer's KEPT casting bytes under
+ * `casting_candidate_cleanup`, unheld, in the transaction that drops their row:
+ * a replaced face scan's stencils and a removed ink design. *"Nothing references
+ * these bytes now; delete them"* is that policy, and a replaced or removed
+ * voice's clip is the same policy — so it takes the same value and no migration
+ * is owed. A second Keep refused in slice 1 until the button that presses it
+ * existed (#2497).
  */
 export const castVoices = mysqlTable("cast_voices", {
   id: int("id").autoincrement().primaryKey(),

@@ -15,7 +15,8 @@
  * voice card is written FROM the customer's words and picture, so that read is
  * kept in its own module and returned to the card writer alone.
  */
-import { and, eq, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import {
   castVoices,
@@ -26,7 +27,10 @@ import {
 } from "../../drizzle/schema";
 import { getDb, withTransaction, type TransactionHandle } from "./connection";
 import { isDuplicateKey } from "./castingV2InkDeliveryCrops";
-import { undischargedStorageCleanupBatchWhere } from "./storageCleanup";
+import {
+  createStorageCleanupManifestIn,
+  undischargedStorageCleanupBatchWhere,
+} from "./storageCleanup";
 
 /*
   The roster's own predicate, imported statically.
@@ -126,20 +130,48 @@ export class CastVoiceManifestUndischargeable extends Error {}
 class CastVoiceRowNotWritten extends Error {}
 
 /**
- * Write the kept voice.
+ * The voice a Keep REPLACED, read under lock inside the Keep's own transaction
+ * (#2497). `null` from {@link insertCastVoice} means the cast had no voice.
  *
- * ⚠ **THE OWNED-AND-LIVE PROOF IS IN THE INSERT ITSELF**, not in a `SELECT`
- * before it. Invariant 1's whole content: a check-then-write leaves a race, and
- * this one has a real window — a Keep calls the provider three times between
- * any prior check and this statement, which is tens of seconds in which the
- * cast can be deleted. The `SELECT … WHERE signedCastWhere` inside the
- * `INSERT … SELECT` closes it: a deleted cast makes the insert write zero rows
- * and the caller is told, rather than a voice landing on a tombstone.
+ * Returned so the caller can release the old provider slot AFTER the commit —
+ * the same order the cast-deletion road uses, because a vendor call inside a
+ * transaction holds row locks for as long as the vendor takes.
+ */
+export type ReplacedCastVoice = { voiceId: string | null };
+
+/**
+ * Write the kept voice — the first one, or one that REPLACES the cast's
+ * current voice (#2497, his *"keeping a new one replaces the old"*).
  *
- * Returns `inserted: false` when the cast already has a kept voice (the unique
- * index refuses it) or when the cast is no longer one this road may touch. The
- * two are told apart by the caller's own read, because only it knows which it
- * asked for.
+ * # REPLACING IS ONE TRANSACTION, AND THE OLD VOICE IS TOUCHED ONLY INSIDE IT
+ *
+ * His rule on the card: *"the old voice is released only after the new one is
+ * fully kept (slot saved, clip stored, row written); a failed replace leaves the
+ * old voice exactly as it was."* By the time this runs the new slot is saved
+ * and the new clip stored, so this statement IS "the row written", and the old
+ * voice's row changes in the same transaction or not at all:
+ *
+ *   1. the cast's current voice row, read `FOR UPDATE` (owner and cast bound);
+ *   2. if there is one, it is UPDATED IN PLACE to the new voice — keyed on its
+ *      own id AND the owner AND the owned-live-signed cast, so the deleted-cast
+ *      race below holds for a replace exactly as for an insert; otherwise the
+ *      `INSERT … SELECT` below;
+ *   3. the OLD clip is handed to an unheld cleanup manifest — the worker that
+ *      already deletes every other object this product retires;
+ *   4. the NEW clip's write-ahead manifest is discharged.
+ *
+ * A throw anywhere rolls all four back: the old row, its clip and its slot are
+ * untouched, and the new bytes are still held by their manifest.
+ *
+ * ⚠ **THE OLD CLIP'S MANIFEST IS `casting_candidate_cleanup`, AND THE SCHEMA'S
+ * OWN DOCBLOCK SAID A REPLACE WOULD NEED A NEW ENUM VALUE.** Read at the code
+ * instead of taken from it: two shipped roads already retire a customer's KEPT
+ * casting bytes under this value, unheld, in the transaction that drops their
+ * row — a replaced face scan's stencils (`castingV2FaceScans.ts`) and a removed
+ * ink design (`castingV2InkDesignRemoval.ts`). A replaced voice's clip is the
+ * same policy — *nothing references these bytes now; delete them* — so it gets
+ * the same value, and no `MODIFY COLUMN` (a destructive migration, his hand) is
+ * owed. The schema's paragraph is corrected in the same commit.
  */
 export async function insertCastVoice(input: {
   userId: number;
@@ -151,89 +183,224 @@ export async function insertCastVoice(input: {
   clipBytes: number;
   clipContentType: string;
   passageVersion: number;
-  /**
-   * THE WRITE-AHEAD MANIFEST HOLDING THIS CLIP'S BYTES, discharged in the SAME
-   * transaction that writes the row — the keeper-receipt pattern, and the same
-   * shape `recordReferenceAttachment` uses.
-   *
-   * The clip is in the public bucket before this statement runs, named by a
-   * manifest and by no row. Discharging it here is what makes the bytes the
-   * row's rather than the worker's, and doing it in this transaction is the
-   * whole of it: until this commits, a crash leaves the manifest standing and
-   * the worker collects bytes nothing references, which is correct.
-   */
   cleanupBatchId: string;
-}): Promise<{ inserted: boolean }> {
+}): Promise<{ inserted: boolean; replaced: ReplacedCastVoice | null }> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   await requireDb();
 
   try {
     return await withTransaction(async (tx) => {
-      const result = await tx.insert(castVoices).select(
-        tx
-          .select({
-            id: sql<number>`NULL`.as("id"),
-            modelId: models.id,
-            userId: models.userId,
-            /*
-              BOUND VALUES, never interpolation. The design sentence is a
-              customer's own writing and travels as a parameter; `sql` with a
-              `${}` placeholder is what makes that true.
-            */
-            designSentence: sql<string>`${input.designSentence}`.as("designSentence"),
-            voiceId: sql<string | null>`${input.voiceId}`.as("voiceId"),
-            clipStorageKey: sql<string>`${input.clipStorageKey}`.as("clipStorageKey"),
-            clipSha256: sql<string>`${input.clipSha256}`.as("clipSha256"),
-            clipBytes: sql<number>`${input.clipBytes}`.as("clipBytes"),
-            clipContentType: sql<string>`${input.clipContentType}`.as("clipContentType"),
-            passageVersion: sql<number>`${input.passageVersion}`.as("passageVersion"),
-            lastUsedAt: sql<Date | null>`NULL`.as("lastUsedAt"),
-            keptAt: sql<Date>`CURRENT_TIMESTAMP`.as("keptAt"),
-          })
-          .from(models)
-          .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
-      );
-      /*
-        A zero-row insert is the deleted-cast race the docblock above describes.
-        It THROWS rather than returning, so the transaction rolls back and the
-        manifest is left standing — the bytes stay the worker's, and the caller
-        deletes them immediately besides.
-      */
-      if (affectedRows(result) !== 1) throw new CastVoiceRowNotWritten();
+      const [prior] = await tx
+        .select({
+          id: castVoices.id,
+          voiceId: castVoices.voiceId,
+          clipStorageKey: castVoices.clipStorageKey,
+        })
+        .from(castVoices)
+        .where(and(eq(castVoices.modelId, input.modelId), eq(castVoices.userId, input.userId)))
+        .limit(1)
+        .for("update");
 
-      /*
-        The discharge is scoped to the OWNER and to an UNDISCHARGED batch, and a
-        count of anything but one throws. A discharge that silently affected
-        zero rows would leave the worker holding a live clip's bytes while this
-        call reported success — the one outcome worse than an orphan.
-      */
-      await tx
-        .delete(storageCleanupItems)
-        .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
-      const released = await tx.delete(storageCleanupBatches).where(and(
-        eq(storageCleanupBatches.id, input.cleanupBatchId),
-        eq(storageCleanupBatches.userId, input.userId),
-        undischargedStorageCleanupBatchWhere(),
-      ));
-      if (affectedRows(released) !== 1) {
-        /*
-          Not a race and not a customer's problem: this manifest was created by
-          this same Keep moments ago. It rolls back and propagates, because
-          dressing an invariant violation up as a lost race is how one goes
-          unnoticed.
-        */
-        throw new CastVoiceManifestUndischargeable(
-          "the kept voice's write-ahead manifest was not there to discharge",
-        );
+      if (prior) {
+        const updated = await tx
+          .update(castVoices)
+          .set({
+            /* Bound values, as in the insert: the sentence is the customer's own. */
+            designSentence: input.designSentence,
+            voiceId: input.voiceId,
+            clipStorageKey: input.clipStorageKey,
+            clipSha256: input.clipSha256,
+            clipBytes: input.clipBytes,
+            clipContentType: input.clipContentType,
+            passageVersion: input.passageVersion,
+            /* A new voice has never been used, whatever the old one had. */
+            lastUsedAt: null,
+            keptAt: sql`CURRENT_TIMESTAMP`,
+          })
+          .where(and(
+            eq(castVoices.id, prior.id),
+            eq(castVoices.userId, input.userId),
+            eq(castVoices.modelId, input.modelId),
+            /*
+              THE OWNED-AND-LIVE PROOF RIDES THE WRITE, exactly as the insert's
+              does: a cast deleted during the three provider calls makes this
+              move zero rows and the whole Keep rolls back.
+            */
+            inArray(
+              castVoices.modelId,
+              tx.select({ id: models.id }).from(models).where(and(
+                eq(models.id, input.modelId),
+                signedCastWhere(input.userId),
+              )),
+            ),
+          ));
+        if (affectedRows(updated) !== 1) throw new CastVoiceRowNotWritten();
+
+        /* The old clip goes to the worker — inside this transaction, so it is
+           queued if and only if the row stopped naming it. */
+        await createStorageCleanupManifestIn(tx, {
+          id: randomUUID(),
+          userId: input.userId,
+          operationId: randomUUID(),
+          kind: "casting_candidate_cleanup",
+          storageItems: [{ storageKey: prior.clipStorageKey, storageBackend: "public_r2" as const }],
+        });
+      } else {
+        await insertVoiceRowIn(tx, input);
       }
-      return { inserted: true };
+
+      await dischargeClipManifestIn(tx, input);
+      return { inserted: true, replaced: prior ? { voiceId: prior.voiceId } : null };
     });
   } catch (error) {
-    if (error instanceof CastVoiceRowNotWritten) return { inserted: false };
-    if (isDuplicateKey(error)) return { inserted: false };
+    if (error instanceof CastVoiceRowNotWritten) return { inserted: false, replaced: null };
+    if (isDuplicateKey(error)) return { inserted: false, replaced: null };
     throw error;
   }
+}
+
+/**
+ * The first Keep's row.
+ *
+ * ⚠ **THE OWNED-AND-LIVE PROOF IS IN THE INSERT ITSELF**, not in a `SELECT`
+ * before it. Invariant 1's whole content: a check-then-write leaves a race, and
+ * this one has a real window — a Keep calls the provider three times between
+ * any prior check and this statement, which is tens of seconds in which the
+ * cast can be deleted. The `SELECT … WHERE signedCastWhere` inside the
+ * `INSERT … SELECT` closes it: a deleted cast makes the insert write zero rows
+ * and the caller is told, rather than a voice landing on a tombstone.
+ *
+ * A zero-row insert, or the unique index refusing a Keep that raced another,
+ * reaches the caller as `inserted: false`.
+ */
+async function insertVoiceRowIn(
+  tx: TransactionHandle,
+  input: Parameters<typeof insertCastVoice>[0],
+): Promise<void> {
+  const result = await tx.insert(castVoices).select(
+    tx
+      .select({
+        id: sql<number>`NULL`.as("id"),
+        modelId: models.id,
+        userId: models.userId,
+        /*
+          BOUND VALUES, never interpolation. The design sentence is a
+          customer's own writing and travels as a parameter; `sql` with a
+          `${}` placeholder is what makes that true.
+        */
+        designSentence: sql<string>`${input.designSentence}`.as("designSentence"),
+        voiceId: sql<string | null>`${input.voiceId}`.as("voiceId"),
+        clipStorageKey: sql<string>`${input.clipStorageKey}`.as("clipStorageKey"),
+        clipSha256: sql<string>`${input.clipSha256}`.as("clipSha256"),
+        clipBytes: sql<number>`${input.clipBytes}`.as("clipBytes"),
+        clipContentType: sql<string>`${input.clipContentType}`.as("clipContentType"),
+        passageVersion: sql<number>`${input.passageVersion}`.as("passageVersion"),
+        lastUsedAt: sql<Date | null>`NULL`.as("lastUsedAt"),
+        keptAt: sql<Date>`CURRENT_TIMESTAMP`.as("keptAt"),
+      })
+      .from(models)
+      .where(and(eq(models.id, input.modelId), signedCastWhere(input.userId))),
+  );
+  /*
+    A zero-row insert is the deleted-cast race the docblock above describes.
+    It THROWS rather than returning, so the transaction rolls back and the
+    manifest is left standing — the bytes stay the worker's, and the caller
+    deletes them immediately besides.
+  */
+  if (affectedRows(result) !== 1) throw new CastVoiceRowNotWritten();
+}
+
+/**
+ * THE WRITE-AHEAD MANIFEST HOLDING THE NEW CLIP'S BYTES, discharged in the SAME
+ * transaction that writes the row — the keeper-receipt pattern, and the same
+ * shape `recordReferenceAttachment` uses.
+ *
+ * The clip is in the public bucket before this runs, named by a manifest and by
+ * no row. Discharging it here is what makes the bytes the row's rather than the
+ * worker's, and doing it in this transaction is the whole of it: until this
+ * commits, a crash leaves the manifest standing and the worker collects bytes
+ * nothing references, which is correct.
+ */
+async function dischargeClipManifestIn(
+  tx: TransactionHandle,
+  input: { userId: number; cleanupBatchId: string },
+): Promise<void> {
+  /*
+    The discharge is scoped to the OWNER and to an UNDISCHARGED batch, and a
+    count of anything but one throws. A discharge that silently affected
+    zero rows would leave the worker holding a live clip's bytes while this
+    call reported success — the one outcome worse than an orphan.
+  */
+  await tx
+    .delete(storageCleanupItems)
+    .where(eq(storageCleanupItems.batchId, input.cleanupBatchId));
+  const released = await tx.delete(storageCleanupBatches).where(and(
+    eq(storageCleanupBatches.id, input.cleanupBatchId),
+    eq(storageCleanupBatches.userId, input.userId),
+    undischargedStorageCleanupBatchWhere(),
+  ));
+  if (affectedRows(released) !== 1) {
+    /*
+      Not a race and not a customer's problem: this manifest was created by
+      this same Keep moments ago. It rolls back and propagates, because
+      dressing an invariant violation up as a lost race is how one goes
+      unnoticed.
+    */
+    throw new CastVoiceManifestUndischargeable(
+      "the kept voice's write-ahead manifest was not there to discharge",
+    );
+  }
+}
+
+/**
+ * REMOVE THE CAST'S VOICE — #2497, his *"Remove voice: back to 'No voice yet',
+ * slot released, clip deleted. No refund — the customer had the voice."*
+ *
+ * The ink-design removal's shape (`castingV2InkDesignRemoval.ts`): the row is
+ * read and locked with the owner in the statement, its clip is handed to an
+ * unheld cleanup manifest, and the row is deleted with the owner AGAIN — all in
+ * one transaction, so a crash leaves either the voice with its clip or neither.
+ *
+ * Returns the provider slot the caller must release AFTER the commit (the
+ * deletion road's order), or `null` when there was no voice to remove.
+ */
+export async function removeCastVoice(
+  userId: number,
+  modelId: number,
+): Promise<ReplacedCastVoice | null> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(modelId, "modelId");
+  await requireDb();
+
+  return withTransaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        id: castVoices.id,
+        voiceId: castVoices.voiceId,
+        clipStorageKey: castVoices.clipStorageKey,
+      })
+      .from(castVoices)
+      .where(and(eq(castVoices.modelId, modelId), eq(castVoices.userId, userId)))
+      .limit(1)
+      .for("update");
+    if (!row) return null;
+
+    await createStorageCleanupManifestIn(tx, {
+      id: randomUUID(),
+      userId,
+      operationId: randomUUID(),
+      kind: "casting_candidate_cleanup",
+      storageItems: [{ storageKey: row.clipStorageKey, storageBackend: "public_r2" as const }],
+    });
+
+    await tx.delete(castVoices).where(and(
+      eq(castVoices.id, row.id),
+      eq(castVoices.userId, userId),
+      eq(castVoices.modelId, modelId),
+    ));
+    return { voiceId: row.voiceId };
+  });
 }
 
 function affectedRows(result: unknown): number {

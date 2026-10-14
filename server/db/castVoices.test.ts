@@ -90,6 +90,7 @@ const {
   readCastVoice,
   readCastVoiceLine,
   readCastVoiceReleaseFactsIn,
+  removeCastVoice,
 } = await import("./castVoices");
 
 /**
@@ -159,8 +160,9 @@ describe("the kept voice's statements", () => {
   it("writes through an INSERT … SELECT over the owned live signed cast — never a plain insert", async () => {
     const result = await insertCastVoice(WRITE);
 
-    expect(result).toEqual({ inserted: true });
-    const [statement] = sent;
+    expect(result).toEqual({ inserted: true, replaced: null });
+    /* sent[0] is the locked read of the cast's current voice (#2497). */
+    const statement = sent[1];
     expect(statement?.sql).toMatch(/^insert into `cast_voices`/i);
     /*
       THE CLAIM OF THIS SUITE. A plain `insert … values` would write a voice onto
@@ -176,7 +178,7 @@ describe("the kept voice's statements", () => {
   it("sends the customer's sentence as a BOUND PARAMETER, never inside the SQL text", async () => {
     await insertCastVoice(WRITE);
 
-    const [statement] = sent;
+    const statement = sent[1];
     expect(statement?.params).toContain(SENTENCE);
     /*
       The positive control is the line above; this is the one that matters. An
@@ -191,7 +193,7 @@ describe("the kept voice's statements", () => {
     /* An `INSERT … SELECT` whose predicate matches nothing moves zero rows. */
     writeAffected = 0;
 
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false });
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
   });
 
   it("reports `inserted: false` on the unique index rather than throwing at a caller", async () => {
@@ -205,7 +207,7 @@ describe("the kept voice's statements", () => {
     vi.resetModules();
     const { insertCastVoice: insertAgain } = await import("./castVoices");
 
-    expect(await insertAgain(WRITE)).toEqual({ inserted: false });
+    expect(await insertAgain(WRITE)).toEqual({ inserted: false, replaced: null });
 
     vi.doUnmock("./connection");
     vi.resetModules();
@@ -229,14 +231,15 @@ describe("the kept voice's statements", () => {
     correctness argument.
   */
   it("discharges the clip's write-ahead manifest in the SAME transaction as the row", async () => {
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: true });
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: true, replaced: null });
 
-    expect(sent).toHaveLength(3);
-    expect(sent[0]?.sql).toMatch(/^insert into `cast_voices`/i);
-    expect(sent[1]?.sql).toMatch(/^delete from `storage_cleanup_items`/i);
-    expect(sent[1]?.params).toContain(WRITE.cleanupBatchId);
-    expect(sent[2]?.sql).toMatch(/^delete from `storage_cleanup_batches`/i);
-    expect(sent[2]?.params).toEqual(
+    expect(sent).toHaveLength(4);
+    expect(sent[0]?.sql).toMatch(/^select .* from `cast_voices`.* for update$/i);
+    expect(sent[1]?.sql).toMatch(/^insert into `cast_voices`/i);
+    expect(sent[2]?.sql).toMatch(/^delete from `storage_cleanup_items`/i);
+    expect(sent[2]?.params).toContain(WRITE.cleanupBatchId);
+    expect(sent[3]?.sql).toMatch(/^delete from `storage_cleanup_batches`/i);
+    expect(sent[3]?.params).toEqual(
       expect.arrayContaining([WRITE.cleanupBatchId, USER_ID]),
     );
   });
@@ -249,9 +252,9 @@ describe("the kept voice's statements", () => {
     */
     affectedBySql = [{ match: /^insert into `cast_voices`/i, affected: 0 }];
 
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false });
-    expect(sent).toHaveLength(1);
-    expect(sent[0]?.sql).toMatch(/^insert into `cast_voices`/i);
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
+    expect(sent).toHaveLength(2);
+    expect(sent[1]?.sql).toMatch(/^insert into `cast_voices`/i);
     /* No discharge was attempted, so the manifest still stands and the worker
        collects the bytes — which is correct, since nothing references them. */
     expect(sent.some((one) => /storage_cleanup/i.test(one.sql))).toBe(false);
@@ -260,7 +263,7 @@ describe("the kept voice's statements", () => {
   it("⚠ scopes the discharge to an UNDISCHARGED batch, never to the id alone", async () => {
     await insertCastVoice(WRITE);
 
-    const discharge = sent[2]?.sql ?? "";
+    const discharge = sent[3]?.sql ?? "";
     /*
       `undischargedStorageCleanupBatchWhere()`'s shape. Without it this delete
       could retire a batch the cleanup worker had already claimed and begun
@@ -354,5 +357,142 @@ describe("the statements the deletion roads run inside a transaction", () => {
     expect(statement?.sql).toMatch(/^delete from `cast_voices`/i);
     expect(statement?.sql).toMatch(/`userId` = \?/);
     expect(statement?.params).toContain(USER_ID);
+  });
+});
+
+/**
+ * CHANGE AND REMOVE — #2497, at the wire.
+ *
+ * His rule for a replace: *"the old voice is released only after the new one is
+ * fully kept (slot saved, clip stored, row written); a failed replace leaves the
+ * old voice exactly as it was."* By the time `insertCastVoice` runs the new slot
+ * and clip exist, so these arms are about the one transaction that turns them
+ * into the cast's voice — what it locks, what it proves, and what it hands to
+ * the cleanup worker, in what order.
+ *
+ * The prior row is POSITIONAL (`id`, `voiceId`, `clipStorageKey`) for the reason
+ * the line-read arm above gives.
+ */
+const OLD_CLIP = "casting/voices/41/907/old-voice.mp3";
+const PRIOR_ROW = [[77, "old-saved-voice", OLD_CLIP]];
+
+/** The manifest INSERTs a replace or a remove sent, with the old clip's key. */
+function manifestWrites() {
+  return sent.filter((one) => /^insert into `storage_cleanup_(batches|items)`/i.test(one.sql));
+}
+
+describe("a Keep on a cast that already has a voice replaces it (#2497)", () => {
+  it("⚠ LOCKS the current voice with the owner bound, before anything is written", async () => {
+    answers = [PRIOR_ROW];
+
+    await insertCastVoice(WRITE);
+
+    const read = sent[0];
+    expect(read?.sql).toMatch(/^select .* from `cast_voices`/i);
+    expect(read?.sql).toMatch(/for update$/i);
+    expect(read?.params).toEqual(expect.arrayContaining([MODEL_ID, USER_ID]));
+  });
+
+  it("updates the ONE row in place — owner, cast, and the live signed cast in the same statement", async () => {
+    answers = [PRIOR_ROW];
+
+    expect(await insertCastVoice(WRITE)).toEqual({
+      inserted: true,
+      replaced: { voiceId: "old-saved-voice" },
+    });
+
+    const update = sent[1];
+    expect(update?.sql).toMatch(/^update `cast_voices`/i);
+    /* No second row: the unique index stays one voice per cast. */
+    expect(sent.some((one) => /^insert into `cast_voices`/i.test(one.sql))).toBe(false);
+    /* Keyed on the locked row's id AND the owner AND the cast … */
+    expect(update?.params).toEqual(expect.arrayContaining([77, USER_ID, MODEL_ID]));
+    /* … AND re-proved live and signed IN the statement (invariant 1): a cast
+       deleted during the three provider calls must make this move zero rows. */
+    expect(update?.sql).toMatch(/`cast_voices`\.`modelId` in \(select `id` from `models`/i);
+    expect(update?.sql).toMatch(/deletedAt/);
+    /* The new voice's facts, as bound values. */
+    expect(update?.params).toEqual(expect.arrayContaining([SENTENCE, WRITE.clipStorageKey, WRITE.voiceId]));
+    expect(update?.sql).not.toContain("decides");
+  });
+
+  it("⚠ HANDS THE OLD CLIP TO THE CLEANUP WORKER, unheld, in the same transaction", async () => {
+    answers = [PRIOR_ROW];
+
+    await insertCastVoice(WRITE);
+
+    const writes = manifestWrites();
+    expect(writes).toHaveLength(2);
+    const [batch, items] = writes;
+    /* The kind every other retired KEPT casting byte uses (face scans, removed
+       ink designs) — and the value the column already has, so no migration. */
+    expect(batch?.params).toContain("casting_candidate_cleanup");
+    /* UNHELD: claimable at once, because nothing references these bytes now. */
+    expect(batch?.params).toContain("pending");
+    expect(batch?.params).toContain(USER_ID);
+    expect(items?.params).toContain(OLD_CLIP);
+    /* And it is the OLD clip that is queued — never the new one. */
+    expect(items?.params).not.toContain(WRITE.clipStorageKey);
+  });
+
+  it("⚠ queues the old clip only AFTER the row stopped naming it, and discharges the new one last", async () => {
+    answers = [PRIOR_ROW];
+
+    await insertCastVoice(WRITE);
+
+    const order = sent.map((one) => one.sql.slice(0, 40).toLowerCase());
+    const updateAt = order.findIndex((one) => one.startsWith("update `cast_voices`"));
+    const queueAt = order.findIndex((one) => one.startsWith("insert into `storage_cleanup_batches`"));
+    const dischargeAt = order.findIndex((one) => one.startsWith("delete from `storage_cleanup_batches`"));
+    expect(updateAt).toBeGreaterThan(0);
+    expect(queueAt).toBeGreaterThan(updateAt);
+    expect(dischargeAt).toBeGreaterThan(queueAt);
+  });
+
+  it("⚠ A REPLACE THAT LOSES ITS ROW QUEUES NOTHING — the old voice is left exactly as it was", async () => {
+    /*
+      The update moves zero rows (the cast went away mid-Keep). The transaction
+      must throw before the old clip is queued: queueing it would delete the
+      bytes of a voice the row still names.
+    */
+    answers = [PRIOR_ROW];
+    affectedBySql = [{ match: /^update `cast_voices`/i, affected: 0 }];
+
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
+    expect(manifestWrites()).toHaveLength(0);
+    expect(sent.some((one) => /storage_cleanup/i.test(one.sql))).toBe(false);
+  });
+});
+
+describe("Remove voice (#2497)", () => {
+  it("removes the row, queues its clip, and hands back the slot to release", async () => {
+    answers = [PRIOR_ROW];
+
+    expect(await removeCastVoice(USER_ID, MODEL_ID)).toEqual({ voiceId: "old-saved-voice" });
+
+    expect(sent[0]?.sql).toMatch(/^select .* from `cast_voices`.* for update$/i);
+    expect(sent[0]?.params).toEqual(expect.arrayContaining([MODEL_ID, USER_ID]));
+    const writes = manifestWrites();
+    expect(writes[0]?.params).toContain("casting_candidate_cleanup");
+    expect(writes[0]?.params).toContain("pending");
+    expect(writes[1]?.params).toContain(OLD_CLIP);
+    const removal = sent.find((one) => /^delete from `cast_voices`/i.test(one.sql));
+    /* The owner AGAIN on the delete, never the id alone (invariant 1). */
+    expect(removal?.params).toEqual(expect.arrayContaining([77, USER_ID, MODEL_ID]));
+    /* The clip is queued BEFORE the row that names it goes, inside one
+       transaction — so a crash leaves both or neither. */
+    expect(sent.indexOf(writes[1]!)).toBeLessThan(sent.indexOf(removal!));
+  });
+
+  it("answers null and writes nothing when the cast has no voice", async () => {
+    answers = [[]];
+
+    expect(await removeCastVoice(USER_ID, MODEL_ID)).toBeNull();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("refuses a non-positive id before it reaches the database", async () => {
+    await expect(removeCastVoice(0, MODEL_ID)).rejects.toThrow(/userId/);
+    expect(sent).toHaveLength(0);
   });
 });

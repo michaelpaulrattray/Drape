@@ -303,6 +303,53 @@ export const VOICE_LINE_TOO_SHORT =
 export const VOICE_NEEDS_A_LINE =
   "Write how they sound first, and voices can be made from those words.";
 
+/**
+ * THE EMPTY CARD'S NAME — *"No voice yet"*, the words the card has always drawn
+ * before a voice is kept, and the state Remove returns to (#2497, his *"back
+ * to 'No voice yet'"*). One spelling, so the dark card, the no-line card and
+ * the resting card cannot drift apart.
+ */
+export const VOICE_NONE_YET = "No voice yet";
+
+/**
+ * CHANGE AND REMOVE — the kept card's two presses (#2497).
+ *
+ * His approved behaviour, on the card: *"Change voice on the kept card:
+ * reopens the picker and makes three new voices from the voice line as it
+ * reads now"*, and *"Remove voice: back to 'No voice yet'"*. Two plain words
+ * each, on a card the customer already uses — nothing to learn (the
+ * disappearing-technology law's first question).
+ */
+export const VOICE_CHANGE = "Change voice";
+export const VOICE_REMOVE = "Remove voice";
+
+/**
+ * Said while choosing a replacement, because a Keep now does something it did
+ * not do before: it REPLACES the voice the customer has. The press says its
+ * price already; this says what it changes, so nobody learns it by losing the
+ * old voice.
+ */
+export const VOICE_CHANGE_HINT = "Keeping a new voice replaces the current one.";
+
+/** The way back out of choosing, leaving the kept voice exactly as it was. */
+export const VOICE_CHANGE_CANCEL = "Cancel";
+
+/**
+ * THE ONE QUESTION BEFORE A REMOVE, AND IT SAYS WHAT THE MONEY DOES.
+ *
+ * A remove cannot be undone and gives nothing back (his *"No refund — the
+ * customer had the voice"*), so a single stray press must not cost a paid
+ * voice. The confirmation says both facts in the customer's words rather than
+ * leaving the second to be discovered on the balance.
+ */
+export const VOICE_REMOVE_CONFIRM =
+  "Remove this voice? It can't be brought back, and the credits it cost aren't returned.";
+export const VOICE_REMOVE_YES = "Remove";
+
+/** A remove that did not go through. Nothing was removed and nothing charged. */
+export const VOICE_REMOVE_FAILED =
+  "That voice couldn't be removed just now. It's still here — try again in a moment.";
+
 /** Every fixed string on the card, for the no-vendor-words reader. */
 export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_CHOICES_LABEL,
@@ -318,6 +365,14 @@ export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_KEEP_LOST_CONTACT,
   VOICE_LINE_TOO_SHORT,
   VOICE_NEEDS_A_LINE,
+  VOICE_NONE_YET,
+  VOICE_CHANGE,
+  VOICE_REMOVE,
+  VOICE_CHANGE_HINT,
+  VOICE_CHANGE_CANCEL,
+  VOICE_REMOVE_CONFIRM,
+  VOICE_REMOVE_YES,
+  VOICE_REMOVE_FAILED,
 ];
 
 /**

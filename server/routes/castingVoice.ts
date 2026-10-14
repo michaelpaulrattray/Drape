@@ -19,6 +19,7 @@ import {
   designCastVoices,
   keepCastVoice,
   readVoiceKeepability,
+  removeCastVoiceForCast,
   type VoiceRefusal,
 } from "../castingV2/voiceService";
 import {
@@ -441,11 +442,15 @@ export async function readVoiceCardStatus(input: { userId: number; castId: strin
     ⚠ **`canKeep` IS WHY THE CARD NO LONGER DESIGNS VOICES NOBODY CAN KEEP**
     (#2470's finding, item 5). It is a cached, fail-open hint about the HOUSE
     account's allowance — never the gate, which stays a live read inside Keep —
-    and it is read only for a cast that could actually design: a cast with a
-    kept voice already has what it needs, and one with no line has nothing to
-    make from, so neither spends a provider round trip on this.
+    and it is read only for a cast that could actually design: one with no line
+    has nothing to make from, so it spends no provider round trip on this.
+
+    ⚠ **A CAST WITH A KEPT VOICE IS ASKED TOO, SINCE #2497.** It read *"a cast
+    with a kept voice already has what it needs"* — true until the card could
+    CHANGE a voice. Change voice designs three new ones and a replacing Keep
+    needs a free slot like any Keep, so the same question gets the same answer.
   */
-  const needsKeepability = !kept && Boolean(model.voice && model.voice.trim().length > 0);
+  const needsKeepability = Boolean(model.voice && model.voice.trim().length > 0);
   const canKeep = needsKeepability ? (await readVoiceKeepability()).canKeep : true;
   return {
     available: true as const,
@@ -775,8 +780,9 @@ export async function keepVoiceForCard(input: {
         return { ok: false as const, refusal: result.refusal };
       }
 
-      /* The other two voices of this design can never be kept now — one voice
-         per cast — so the claim is made permanent rather than left restorable. */
+      /* The design is spent: a cast has one voice, and keeping another of
+         these three would mean another paid replace from a stale set. So the
+         claim is made permanent rather than left restorable. */
       forgetVoiceDesign(input.designId);
       return { ok: true as const, value: { clipBytes: result.clipBytes } };
     },
@@ -796,4 +802,33 @@ export async function keepVoiceForCard(input: {
     clipPath: voiceClipPath(input.castId),
     byteSize: charged.value.clipBytes,
   };
+}
+
+/**
+ * REMOVE — the cast has no voice from now on (#2497).
+ *
+ * ⚠ **NOT CHARGED AND NOT REFUNDED, ON HIS WORD**: *"Remove voice: back to 'No
+ * voice yet', slot released, clip deleted. No refund — the customer had the
+ * voice."* So there is no `withVoiceCharge` here and nothing that could move
+ * the ledger.
+ *
+ * Paced by `castingSheet` — the bucket the limiter's own header names for
+ * *"what a PERSON does — every mutation"* on a cast — because a remove spends
+ * no provider operation and no house money, so none of the voice buckets
+ * (which bound those) is its business.
+ */
+export async function removeVoiceForCard(input: { userId: number; castId: string }) {
+  requireVoiceRoad(input.userId);
+  enforce(input.userId, RATE_LIMITS.castingSheet);
+  const model = await requireCast(input.userId, input.castId);
+  const result = await removeCastVoiceForCast({ userId: input.userId, modelId: model.id });
+  if (!result.ok) {
+    /* Unreachable past `requireVoiceRoad`, which reads the same scope — kept
+       as the shut road's own refusal rather than a silent success. */
+    throw new TRPCError({
+      code: VOICE_ROAD_SHUT_CODE,
+      message: "Voice is not available for this account yet.",
+    });
+  }
+  return { ok: true as const, removed: result.removed };
 }

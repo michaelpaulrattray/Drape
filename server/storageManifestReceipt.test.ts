@@ -264,6 +264,14 @@ const KEEPERS: Readonly<Record<string, string>> = {
   "server/castingV2/refineService.ts": "the variant image a paid refine is about to write",
   "server/db/castingV2FaceScans.ts": "the REPLACED reading's stencils, at the moment nothing references them",
   /*
+    #2497 — FACE SCANS' SHAPE, ON A VOICE. A Keep on a cast that already has a
+    voice replaces it, and Remove clears it: in each, the row stops naming the
+    old clip and the manifest that deletes those bytes is written in the same
+    transaction. It is a KEEPER, not a collector, because the same transaction
+    also discharges the NEW clip's receipt (`insertCastVoice`).
+  */
+  "server/db/castVoices.ts": "a REPLACED or REMOVED voice's clip, at the moment nothing references it",
+  /*
     THE OLDER ROAD'S ONE KEEPER, read 2026-08-19. A fork registers the
     DESTINATION keys of the copies it is about to make, so a fork that dies
     half-copied leaves nothing orphaned on the bucket, and its own commit
