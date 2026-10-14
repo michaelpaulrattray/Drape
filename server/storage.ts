@@ -99,9 +99,38 @@ function destroyStorageBody(body: unknown): void {
   }
 }
 
+/**
+ * Which family of object a read is willing to accept.
+ *
+ * ⚠ **IT IS A PARAMETER RATHER THAN A SECOND READER, AND THAT IS WORKING LAW 4
+ * ON A BOUNDED READ.** Every check around it — a declared length, a ceiling, a
+ * streamed total that must equal the declaration — is the part a copy would get
+ * subtly wrong, and a second audio-shaped reader beside this one would drift
+ * from it the first time either was touched. The FAMILY is the only thing that
+ * differs between callers, so the family is the only thing that is passed.
+ *
+ * ⚠ **AND IT STAYS AN ALLOWLIST PER CALLER — never widened to "anything".** The
+ * image-only rule here was not decoration: the callers that read bytes to hand
+ * to a provider are reading a customer's face, and an object that is not what
+ * the caller expects must fail at the read rather than downstream. `audio/` was
+ * added by #2470 for the kept voice clip, and the way it was found is the
+ * argument for keeping each caller narrow: the clip route was written against
+ * `storageReadBytes`, every unit arm passed because they stub the reader, and
+ * the first real press in the running app answered **500** — *"Storage copy
+ * source is unavailable"* — because an MP3 is not an image. Law 6, earning its
+ * keep.
+ */
+export type StorageReadFamily = "image" | "audio";
+
+const FAMILY_PREFIX: Readonly<Record<StorageReadFamily, string>> = {
+  image: "image/",
+  audio: "audio/",
+};
+
 async function readStorageBytesExact(
   config: StorageConfig,
   key: string,
+  family: StorageReadFamily = "image",
 ): Promise<{ bytes: Buffer; contentType: string; contentHash: string }> {
   const response = await getClient(config).send(new GetObjectCommand({
     Bucket: config.bucket,
@@ -114,7 +143,7 @@ async function readStorageBytesExact(
     || declared <= 0
     || declared > MAX_FORK_COPY_BYTES
     || typeof response.ContentType !== "string"
-    || !response.ContentType.startsWith("image/")
+    || !response.ContentType.startsWith(FAMILY_PREFIX[family])
   ) {
     destroyStorageBody(response.Body);
     throw new Error("Storage copy source is unavailable");
@@ -183,6 +212,28 @@ export async function storageReadBytes(
 ): Promise<{ bytes: Buffer; contentType: string }> {
   const config = getStorageConfig();
   const { bytes, contentType } = await readStorageBytesExact(config, normalizeKey(relKey));
+  return { bytes, contentType };
+}
+
+/**
+ * Read one owned AUDIO object's bytes — a cast's kept voice clip (#2470).
+ *
+ * The same bounded reader as the image one, with the one difference that
+ * matters stated in its own type: this caller accepts `audio/`. It exists
+ * because the clip is served by an owner-only route and never by a URL
+ * (`shared/voiceClipDelivery.ts`), so this server is the only thing that ever
+ * opens those bytes.
+ *
+ * The ceiling is the shared 20 MB. A measured clip is **2.15 MB**
+ * (`mp3_44100_128`, 137.7 s — #2469's receipt), so the bound is generous
+ * against the real object and still refuses anything that has grown a decimal
+ * place.
+ */
+export async function storageReadAudioBytes(
+  relKey: string,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  const config = getStorageConfig();
+  const { bytes, contentType } = await readStorageBytesExact(config, normalizeKey(relKey), "audio");
   return { bytes, contentType };
 }
 

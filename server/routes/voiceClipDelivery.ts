@@ -9,7 +9,7 @@ import {
 import { answerForSessionFailure, sdk } from "../_core/sdk";
 import { readOwnedCastVoiceClipByPublicId, touchCastVoiceUsed } from "../db/castVoices";
 import { createModuleLogger } from "../logging/logger";
-import { storageReadBytes } from "../storage";
+import { storageReadAudioBytes } from "../storage";
 import { checkUserRateLimit, type RateLimitConfig } from "../security/rateLimit";
 
 const log = createModuleLogger("routes/voiceClipDelivery");
@@ -123,7 +123,7 @@ const productionDependencies: VoiceClipDeliveryDependencies = {
   authenticate: (req) => sdk.authenticateRequest(req, { recordActivity: false }),
   rateLimit: (userId) => checkUserRateLimit(userId, VOICE_CLIP_RATE_LIMIT),
   load: readOwnedCastVoiceClipByPublicId,
-  readBytes: storageReadBytes,
+  readBytes: storageReadAudioBytes,
   touch: touchCastVoiceUsed,
 };
 

@@ -356,20 +356,68 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     releaseUrls();
   }, [releaseUrls]);
 
-  /** A playable address for one strip: a blob for a voice, the route for the clip. */
-  const sourceFor = useCallback((key: string): string | null => {
-    if (key === KEPT_STRIP_KEY) return kept?.clipPath ?? null;
+  /** base64 → bytes. One spelling, used by the player and by the decoder. */
+  const bytesOf = useCallback((base64: string): Uint8Array<ArrayBuffer> => {
+    const binary = atob(base64);
+    /* The buffer is named so the type is `Uint8Array<ArrayBuffer>` rather than
+       `ArrayBufferLike`: a `SharedArrayBuffer` is not a `BlobPart`, and TS 5.9
+       widens a bare `new Uint8Array(n)` to the union. */
+    const buffer = new ArrayBuffer(binary.length);
+    const bytes = new Uint8Array(buffer);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return bytes;
+  }, []);
+
+  /**
+   * A playable address for one strip.
+   *
+   * ⚠ **THE KEPT CLIP IS FETCHED ONCE AND PLAYED FROM A BLOB, rather than
+   * handed to the element as a URL** — and that is not an optimisation, it is
+   * what lets its waveform be MEASURED. The route answers `private, no-store`,
+   * so a browser fetching it twice (once to play, once to decode) would really
+   * pull ~1.6 MB twice; one fetch feeds both. Drawing the resting ornament
+   * instead was the first shape, and the rendered frame is what refused it: in
+   * the kept state there IS audio, so an invented shape under a playing clip
+   * reads as that clip's shape. The fidelity law, caught by looking.
+   */
+  const sourceFor = useCallback(async (key: string): Promise<{ url: string; bytes: Uint8Array<ArrayBuffer> } | null> => {
     const existing = urls.current.get(key);
-    if (existing) return existing;
+    if (key === KEPT_STRIP_KEY) {
+      if (existing) return { url: existing, bytes: new Uint8Array(new ArrayBuffer(0)) };
+      if (!kept?.clipPath) return null;
+      const response = await fetch(kept.clipPath, { credentials: "same-origin" });
+      if (!response.ok) throw new Error(`clip ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      urls.current.set(key, url);
+      return { url, bytes: new Uint8Array(await blob.arrayBuffer()) };
+    }
     const choice = choices.find((candidate) => voiceStripKey(candidate) === key);
     if (!choice) return null;
-    const binary = atob(choice.audioBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    const bytes = bytesOf(choice.audioBase64);
+    if (existing) return { url: existing, bytes };
     const url = URL.createObjectURL(new Blob([bytes], { type: choice.contentType }));
     urls.current.set(key, url);
-    return url;
-  }, [choices, kept]);
+    return { url, bytes };
+  }, [bytesOf, choices, kept]);
+
+  /** Decode one strip's bytes into its real shape. Silent on failure. */
+  const measure = useCallback(async (key: string, bytes: Uint8Array<ArrayBuffer>) => {
+    if (bytes.byteLength === 0) return;
+    const AudioContextCtor = window.AudioContext
+      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const context = new AudioContextCtor();
+    try {
+      const decoded = await context.decodeAudioData(bytes.buffer.slice(0) as ArrayBuffer);
+      const peaks = peaksFromSamples(decoded.getChannelData(0), VOICE_WAVE_BARS);
+      if (peaks.length > 0) setBars((previous) => ({ ...previous, [key]: peaks }));
+    } catch {
+      /* The strip stays at rest. Nothing about their voice has gone wrong. */
+    } finally {
+      void context.close().catch(() => {});
+    }
+  }, []);
 
   /*
     THE REAL SHAPE OF EACH VOICE, decoded once per voice.
@@ -380,36 +428,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     at rest, which is honest, so it is caught and dropped.
   */
   useEffect(() => {
-    let cancelled = false;
-    const AudioContextCtor = window.AudioContext
-      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextCtor) return;
     const pending = choices.filter((choice) => !bars[voiceStripKey(choice)]);
     if (pending.length === 0) return;
-    const context = new AudioContextCtor();
     void (async () => {
       for (const choice of pending) {
-        try {
-          const binary = atob(choice.audioBase64);
-          const raw = new Uint8Array(binary.length);
-          for (let index = 0; index < binary.length; index += 1) raw[index] = binary.charCodeAt(index);
-          const decoded = await context.decodeAudioData(raw.buffer);
-          if (cancelled) return;
-          const peaks = peaksFromSamples(decoded.getChannelData(0), VOICE_WAVE_BARS);
-          if (peaks.length > 0) {
-            setBars((previous) => ({ ...previous, [voiceStripKey(choice)]: peaks }));
-          }
-        } catch {
-          /* The strip stays at rest. Nothing is said to the customer, because
-             nothing about their voice has gone wrong. */
-        }
+        await measure(voiceStripKey(choice), bytesOf(choice.audioBase64));
       }
-      void context.close().catch(() => {});
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [choices, bars]);
+  }, [choices, bars, bytesOf, measure]);
 
   const stripFor = useCallback((key: string): VoiceStripState => {
     const playing = playingKey === key;
@@ -436,19 +462,31 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setPlayingKey(null);
       return;
     }
-    const source = sourceFor(key);
-    if (!source) return;
     /* One at a time, deliberately: comparing voices means hearing one voice. */
     element.pause();
-    element.src = source;
-    setPosition(0);
-    setDuration(0);
-    setPlayingKey(key);
-    void element.play().catch((error) => {
-      logRawFailure("voiceClip.play", error);
-      setPlayingKey(null);
-    });
-  }, [playingKey, sourceFor]);
+    void (async () => {
+      let source: { url: string; bytes: Uint8Array<ArrayBuffer> } | null;
+      try {
+        source = await sourceFor(key);
+      } catch (error) {
+        logRawFailure("voiceClip.fetch", error);
+        setRefusal(VOICE_KEEP_FAILED);
+        return;
+      }
+      if (!source) return;
+      element.src = source.url;
+      setPosition(0);
+      setDuration(0);
+      setPlayingKey(key);
+      /* Measured after the press rather than before it, so the fetch pays for
+         the play first and the shape arrives a moment later. */
+      if (!bars[key]) void measure(key, source.bytes);
+      void element.play().catch((error) => {
+        logRawFailure("voiceClip.play", error);
+        setPlayingKey(null);
+      });
+    })();
+  }, [bars, measure, playingKey, sourceFor]);
 
   const make = useCallback(async () => {
     setRefusal(null);

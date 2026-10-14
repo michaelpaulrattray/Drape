@@ -38,6 +38,18 @@ export const VOICE_WAVE_FLOOR_PCT = 12;
  * produce a useless picture. The peak per window is what makes two voices look
  * different from each other.
  *
+ * ⚠ **RMS WAS MEASURED AGAINST IT ON THE REAL AUDIO AND LOST — recorded here so
+ * nobody re-runs the experiment.** The obvious objection to a peak is that it
+ * SATURATES over a long window, and it does: driven in the running app on a
+ * real kept clip (99 s, 30 bars, so 3.3 s a bar), the peak strip spans 72–100
+ * — a spread of **28** — because almost every 3.3 s of speech contains a loud
+ * consonant. An RMS envelope over the same clip spans 62–100, a spread of
+ * **38**: better, but not by much. On the three PREVIEWS (15–20 s, so half a
+ * second a bar) the peak strip spans **12–100**, and those are the strips whose
+ * entire job is letting someone tell three voices apart. So peak wins where it
+ * matters and loses mildly where it does not, and a long clip's nearly even
+ * strip is simply the true shape of a hundred seconds of continuous reading.
+ *
  * Normalised to the loudest bar so a quiet recording and a loud one both fill
  * the strip: the strip is about the SHAPE of a reading, never its volume, and
  * nothing in the product invites a customer to compare two clips' loudness.
