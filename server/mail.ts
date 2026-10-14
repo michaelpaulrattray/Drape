@@ -23,6 +23,7 @@
  * caller's decision (retry tomorrow, or tell the customer) depends on knowing
  * the difference.
  */
+import { createHash } from "node:crypto";
 import { Resend } from "resend";
 import { PRODUCT_NAME } from "@shared/brand";
 import { formatCredits, type DisplayCredits } from "@shared/creditDisplay";
@@ -79,6 +80,15 @@ export interface ProductEmail {
   to: string;
   subject: string;
   html: string;
+  /**
+   * Resend's `Idempotency-Key` (#2493). Two sends carrying the same key within
+   * Resend's 24 hours become ONE email: the second is answered with the first
+   * one's id and nothing is mailed. For an email whose retry must never become
+   * a second copy — the provider accepted it, the reply was lost, the caller
+   * tries again. Resend's limit is 256 characters; the keys built here are a
+   * fixed-length hash.
+   */
+  idempotencyKey?: string;
 }
 
 export type MailResult = { success: true } | { success: false; error: string };
@@ -97,13 +107,18 @@ export async function sendProductEmail(email: ProductEmail): Promise<MailResult>
     throw new Error("RESEND_API_KEY is not configured");
   }
 
-  const { error } = await new Resend(apiKey).emails.send({
-    from: mailSender(email.purpose),
-    replyTo: SUPPORT_EMAIL,
-    to: email.to,
-    subject: email.subject,
-    html: email.html,
-  });
+  const { error } = await new Resend(apiKey).emails.send(
+    {
+      from: mailSender(email.purpose),
+      replyTo: SUPPORT_EMAIL,
+      to: email.to,
+      subject: email.subject,
+      html: email.html,
+    },
+    /* resend@6's `CreateEmailRequestOptions.idempotencyKey`, sent as the
+       `Idempotency-Key` header (read in node_modules/resend's types, #2493). */
+    email.idempotencyKey ? { idempotencyKey: email.idempotencyKey } : undefined,
+  );
 
   if (error) return { success: false, error: error.message };
   return { success: true };
@@ -234,6 +249,8 @@ export const REFERRER_NAME_MAX = 60;
 export const UNNAMED_REFERRER = "A friend";
 
 export interface ReferralInviteCopy {
+  /** The referrer's user id — half of what makes the invite one email (#2493). */
+  referrerId: number;
   to: string;
   /** The referrer's name as they typed it, or null. Escaped here, not by the caller. */
   referrerName: string | null;
@@ -245,6 +262,30 @@ export interface ReferralInviteCopy {
    * caller rather than a factor-of-five lie in the email.
    */
   rewardCredits: DisplayCredits;
+}
+
+/**
+ * The idempotency key of one referrer's invite to one address (#2493).
+ *
+ * ⚠ **A SEND WHOSE REPLY IS LOST MUST NOT BECOME TWO EMAILS.** If Resend
+ * accepted the invite and the answer never came back, the router reports "it
+ * didn't go", records nothing and hands both rate-limit slots back — so the
+ * retry would mail the same stranger again, with no cap. With this key the
+ * retry is the SAME request to Resend, which answers with the first email's id
+ * and sends nothing.
+ *
+ * Keyed on (referrer, address) and deliberately NOT on the day the card
+ * suggested: an invite is already once per (referrer, address) for ever
+ * (`hasInvitedEmail`), and Resend forgets a key after 24 hours on its own, so a
+ * date in the key would add nothing but a hole at midnight — a lost reply at
+ * 23:59 and a retry at 00:01 would be two keys and two emails.
+ *
+ * Hashed: fixed length (well under Resend's 256), and the address does not sit
+ * in a header in plain text. Lowercased, as the duplicate check is.
+ */
+export function referralInviteIdempotencyKey(referrerId: number, to: string): string {
+  const digest = createHash("sha256").update(`${referrerId}:${to.trim().toLowerCase()}`).digest("hex");
+  return `referral-invite/${digest}`;
 }
 
 /**
@@ -280,6 +321,7 @@ export function referralInviteEmail(copy: ReferralInviteCopy): ProductEmail {
   return {
     purpose: "invite",
     to: copy.to,
+    idempotencyKey: referralInviteIdempotencyKey(copy.referrerId, copy.to),
     subject: `${plainName} invited you to ${PRODUCT_NAME}`,
     html: emailShell(`You&rsquo;re invited to ${PRODUCT_NAME}`, rows),
   };

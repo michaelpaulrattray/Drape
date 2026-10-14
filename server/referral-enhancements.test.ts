@@ -255,11 +255,12 @@ describe("referral.sendInvite — driven through the real procedure", () => {
   });
 
   it("hands the sender the invitee, the referrer, the share link and the declared reward", async () => {
-    const { caller } = callerFor();
+    const { caller, user } = callerFor();
 
     await expect(caller.sendInvite({ email: FRIEND })).resolves.toEqual({ sent: true });
 
     expect(soleCallTo(sender)).toEqual({
+      referrerId: user.id,
       to: FRIEND,
       referrerName: "John Doe",
       /* #2481: the product's own address, never the request's Origin. */

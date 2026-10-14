@@ -11,6 +11,33 @@ import { waitPhrase } from "@shared/waitPhrase";
 interface RateLimitEntry {
   count: number;
   windowStart: number;
+  /**
+   * The window this entry was opened under (#2493). The sweep reads it, so an
+   * entry is forgotten only once ITS OWN window has passed — never on a fixed
+   * hour that silently shortens every longer limit.
+   */
+  windowMs: number;
+}
+
+/** How often the two stores below are swept. */
+const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Forget the entries whose own window has passed (#2493).
+ *
+ * ⚠ Until #2493 both sweeps deleted anything whose window began more than ONE
+ * HOUR ago, whatever that entry's window was. The invite limits are 24-hour
+ * windows (`INVITE_RATE`, `INVITE_RECIPIENT_RATE` in `routes/referral.ts`), so
+ * "10 a day" and "3 a day per address" quietly became "per hour or so". An
+ * expired entry and a missing one answer identically in `checkRateLimit`, so
+ * deleting at the entry's own window changes nothing but memory.
+ */
+function sweepExpired(store: Map<string, RateLimitEntry>, now: number): void {
+  for (const [key, entry] of Array.from(store.entries())) {
+    if (now - entry.windowStart >= entry.windowMs) {
+      store.delete(key);
+    }
+  }
 }
 
 const TRUSTED_PROXY_HOPS = 1;
@@ -24,17 +51,8 @@ export function configureTrustedProxy(app: {
 // In-memory store for rate limiting (per IP/identifier)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(rateLimitStore.entries());
-  for (const [key, entry] of entries) {
-    // Remove entries older than 1 hour
-    if (now - entry.windowStart > 60 * 60 * 1000) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
+// Forget expired entries every 5 minutes — each at its own window (#2493).
+setInterval(() => sweepExpired(rateLimitStore, Date.now()), SWEEP_INTERVAL_MS);
 
 export interface RateLimitConfig {
   windowMs: number;      // Time window in milliseconds
@@ -57,7 +75,7 @@ export function checkRateLimit(
   
   if (!entry || now - entry.windowStart >= config.windowMs) {
     // New window
-    rateLimitStore.set(key, { count: 1, windowStart: now });
+    rateLimitStore.set(key, { count: 1, windowStart: now, windowMs: config.windowMs });
     return {
       allowed: true,
       remaining: config.maxRequests - 1,
@@ -426,16 +444,8 @@ export function rateLimitError(resetIn: number): string {
 
 const userRateLimitStore = new Map<string, RateLimitEntry>();
 
-// Cleanup user rate limit entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(userRateLimitStore.entries());
-  for (const [key, entry] of entries) {
-    if (now - entry.windowStart > 60 * 60 * 1000) {
-      userRateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
+// Forget expired user entries every 5 minutes — each at its own window (#2493).
+setInterval(() => sweepExpired(userRateLimitStore, Date.now()), SWEEP_INTERVAL_MS);
 
 /**
  * Check per-user rate limit (regardless of IP)
@@ -451,7 +461,7 @@ export function checkUserRateLimit(
   const entry = userRateLimitStore.get(key);
   
   if (!entry || now - entry.windowStart >= config.windowMs) {
-    userRateLimitStore.set(key, { count: 1, windowStart: now });
+    userRateLimitStore.set(key, { count: 1, windowStart: now, windowMs: config.windowMs });
     return {
       allowed: true,
       remaining: config.maxRequests - 1,

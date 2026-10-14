@@ -201,6 +201,9 @@ export const referralRouter = router({
         const referralLink = code ? `${appBaseUrl()}?ref=${code}` : appBaseUrl();
 
         const sent = await sendReferralInviteEmail({
+          /* #2493: with the address, the invite's idempotency key — a retry
+             after a lost reply is the same email to Resend, never a second. */
+          referrerId: ctx.user.id,
           to: input.email,
           referrerName: ctx.user.name || null,
           referralLink,

@@ -52,6 +52,7 @@ afterEach(() => {
 });
 
 const INVITE = {
+  referrerId: 4242,
   to: "friend@example.com",
   referrerName: "Sam Rivera",
   referralLink: "https://klieglabs.com?ref=KLIEG-ABC123",
