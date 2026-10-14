@@ -22,13 +22,13 @@
  */
 import { execFile } from "node:child_process";
 import { createServer, type Server } from "node:http";
-import type { AddressInfo } from "node:net";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+import { listenOnFetchablePort, portOf } from "./testing/fetchablePort";
 
 /* Each arm spawns the real script, which imports the SDK — the child-process floor. */
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
@@ -45,26 +45,43 @@ afterEach(async () => {
   server = undefined;
 });
 
-/** A stand-in ingest that answers every request with `status`, and records what it was sent. */
+/**
+ * A stand-in ingest that answers every request with `status`, and records what
+ * it was sent.
+ *
+ * The port is drawn through {@link listenOnFetchablePort} rather than by a raw
+ * `listen(0)`, and here that is load-bearing rather than house style: the SDK
+ * doing the fetching lives in the CHILD, so a blocked draw would have it refuse
+ * before it sent and this suite would read the stand-in as having answered
+ * nothing. `server/testing/fetchablePort.ts` carries the mechanism and the
+ * measured rate.
+ */
 async function fakeIngest(status: number): Promise<{ port: number; paths: string[] }> {
   const paths: string[] = [];
-  server = createServer((request, response) => {
-    paths.push(`${request.method} ${request.url}`);
-    request.resume();
-    request.on("end", () => {
-      response.statusCode = status;
-      response.end("{}");
-    });
-  });
-  await new Promise<void>((done) => server!.listen(0, "127.0.0.1", () => done()));
-  return { port: (server!.address() as AddressInfo).port, paths };
+  server = await listenOnFetchablePort((port) =>
+    createServer((request, response) => {
+      paths.push(`${request.method} ${request.url}`);
+      request.resume();
+      request.on("end", () => {
+        response.statusCode = status;
+        response.end("{}");
+      });
+    }).listen(port, "127.0.0.1"),
+  );
+  return { port: portOf(server), paths };
 }
 
-/** A port with nothing listening — bound, read, and released. */
+/**
+ * A port with nothing listening — bound, read, and released.
+ *
+ * This one needs the fetchable helper MORE than the stand-in does rather than
+ * less: its arm EXPECTS no answer, so a blocked port would deliver that
+ * expectation for entirely the wrong reason and the control would pass while
+ * proving nothing.
+ */
 async function closedPort(): Promise<number> {
-  const probe = createServer();
-  await new Promise<void>((done) => probe.listen(0, "127.0.0.1", () => done()));
-  const { port } = probe.address() as AddressInfo;
+  const probe = await listenOnFetchablePort((port) => createServer().listen(port, "127.0.0.1"));
+  const port = portOf(probe);
   await new Promise<void>((done) => probe.close(() => done()));
   return port;
 }
