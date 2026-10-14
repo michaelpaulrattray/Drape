@@ -429,6 +429,116 @@ describe("referral.sendInvite — driven through the real procedure", () => {
     expect(sender).toHaveBeenCalledTimes(INVITE_RECIPIENT_RATE.maxRequests);
   });
 
+  /*
+   * #2491: both invite budgets are counted when a request is admitted, before
+   * it is known whether an email will go. Every exit where none went must hand
+   * both slots back. Each arm spends MORE than a budget's worth of refusals and
+   * then proves the budget is whole: under the bug the follow-up send is the
+   * one refused "That address has had enough invitations" / "Invite limit".
+   */
+  describe("#2491 — a refusal or a failed send spends neither invite budget", () => {
+    const RECIPIENT_BUDGET = INVITE_RECIPIENT_RATE.maxRequests;
+    const USER_BUDGET = 10;
+
+    it("'Already invited' refusals from several referrers leave the address's budget whole", async () => {
+      const target = `dup-${nextFriend++}@example.com`;
+      inviteChecker.mockResolvedValue(true);
+      for (let i = 0; i <= RECIPIENT_BUDGET; i++) {
+        const refusal = await refusalFrom(() => callerFor().caller.sendInvite({ email: target }));
+        expect(refusal.message).toBe(ALREADY_INVITED_MESSAGE);
+      }
+      inviteChecker.mockResolvedValue(false);
+      for (let i = 0; i < RECIPIENT_BUDGET; i++) {
+        await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+      }
+      expect(sender).toHaveBeenCalledTimes(RECIPIENT_BUDGET);
+    });
+
+    it("failed sends (the retry the copy invites) leave the address's budget whole", async () => {
+      const target = `flaky-${nextFriend++}@example.com`;
+      sender.mockResolvedValue({ success: false, error: "provider down" });
+      const { caller } = callerFor();
+      for (let i = 0; i <= RECIPIENT_BUDGET; i++) {
+        const refusal = await refusalFrom(() => caller.sendInvite({ email: target }));
+        expect(refusal.message).toBe(INVITE_NOT_SENT_SENTENCE);
+      }
+      sender.mockResolvedValue({ success: true });
+      for (let i = 0; i < RECIPIENT_BUDGET; i++) {
+        await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+      }
+    });
+
+    it("a send that THROWS, rather than reporting failure, gives the slots back too", async () => {
+      const target = `throws-${nextFriend++}@example.com`;
+      sender.mockRejectedValue(new Error("socket hang up"));
+      for (let i = 0; i <= RECIPIENT_BUDGET; i++) {
+        await refusalFrom(() => callerFor().caller.sendInvite({ email: target }));
+      }
+      sender.mockResolvedValue({ success: true });
+      for (let i = 0; i < RECIPIENT_BUDGET; i++) {
+        await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+      }
+    });
+
+    it("failed sends and duplicates leave the referrer's own daily budget whole", async () => {
+      const { caller } = callerFor();
+      sender.mockResolvedValue({ success: false, error: "provider down" });
+      for (let i = 0; i < USER_BUDGET; i++) {
+        await refusalFrom(() => caller.sendInvite({ email: `u-fail-${nextFriend++}@example.com` }));
+      }
+      sender.mockResolvedValue({ success: true });
+      inviteChecker.mockResolvedValue(true);
+      for (let i = 0; i < USER_BUDGET; i++) {
+        await refusalFrom(() => caller.sendInvite({ email: `u-dup-${nextFriend++}@example.com` }));
+      }
+      inviteChecker.mockResolvedValue(false);
+      for (let i = 0; i < USER_BUDGET; i++) {
+        await expect(caller.sendInvite({ email: `u-ok-${nextFriend++}@example.com` })).resolves.toEqual({ sent: true });
+      }
+      /* Positive control: sends that went DO spend, so the next one is refused. */
+      const refusal = await refusalFrom(() => caller.sendInvite({ email: `u-over-${nextFriend++}@example.com` }));
+      expect(refusal.code).toBe("TOO_MANY_REQUESTS");
+    });
+
+    it("a second press while the first is going out spends nothing either", async () => {
+      const target = `press-${nextFriend++}@example.com`;
+      let release!: () => void;
+      sender.mockImplementationOnce(
+        () => new Promise((resolve) => { release = () => resolve({ success: true }); }),
+      );
+      const { caller } = callerFor();
+      const first = caller.sendInvite({ email: target });
+      await vi.waitFor(() => expect(sender).toHaveBeenCalledTimes(1));
+      for (let i = 0; i < RECIPIENT_BUDGET; i++) {
+        const refusal = await refusalFrom(() => caller.sendInvite({ email: target }));
+        expect(refusal.message).toBe(INVITE_IN_FLIGHT_MESSAGE);
+      }
+      release();
+      await expect(first).resolves.toEqual({ sent: true });
+      /* The first send spent one; the rest of the budget is still there. */
+      for (let i = 1; i < RECIPIENT_BUDGET; i++) {
+        await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+      }
+    });
+
+    /* Positive control on the address budget: a send that went keeps its slot,
+       even when only the record fails afterwards — the email left the building. */
+    it("a send that went keeps its slot even when the record fails afterwards", async () => {
+      const target = `kept-${nextFriend++}@example.com`;
+      inviteWriter.mockResolvedValue({ success: false, error: "db down" });
+      for (let i = 0; i < RECIPIENT_BUDGET - 1; i++) {
+        await expect(callerFor().caller.sendInvite({ email: target })).resolves.toEqual({ sent: true });
+      }
+      /* And when the record THROWS after the email went: whatever the caller is
+         answered, the email left the building, so its slot is not handed back. */
+      inviteWriter.mockRejectedValueOnce(new Error("connection reset"));
+      await callerFor().caller.sendInvite({ email: target }).catch(() => undefined);
+      expect(sender).toHaveBeenCalledTimes(RECIPIENT_BUDGET);
+      const refusal = await refusalFrom(() => callerFor().caller.sendInvite({ email: target }));
+      expect(refusal.code).toBe("TOO_MANY_REQUESTS");
+    });
+  });
+
   /* Invariant 6: a rate limit is a real TOO_MANY_REQUESTS, not a 200 carrying
      an error field the client cannot tell from a validation failure. */
   it("returns a real TOO_MANY_REQUESTS on the eleventh invite of the day", async () => {

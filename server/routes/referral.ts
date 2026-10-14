@@ -17,7 +17,7 @@ import { REFERRAL_REWARD_CREDITS } from "../../drizzle/schema";
 import { displayBalance } from "@shared/creditDisplay";
 import { waitPhrase } from "@shared/waitPhrase";
 import { REFERRAL_CODE_FORMAT_MESSAGE } from "../../shared/referralCodeFormat";
-import { checkRateLimit, getClientIp } from "../security/rateLimit";
+import { checkRateLimit, getClientIp, releaseRateLimitSlot } from "../security/rateLimit";
 import { isDisposableEmail } from "../security/disposableEmails";
 import { sendReferralInviteEmail } from "../mail";
 import { spokenError } from "../_core/spokenError";
@@ -165,11 +165,27 @@ export const referralRouter = router({
          read and the record is a later write; without this two parallel
          presses would both pass the read and both send. The rate limits are
          in-process too, so this holds exactly as far as they do. */
+      /* #2491: both budgets above were spent the moment they admitted this
+         request — before it is known whether an email will go. That count is
+         what stops a flood and it stays where it is. But on every exit below
+         where NO email left the building (a second press while the first is
+         going out, "Already invited", a send that failed or threw), both
+         slots are handed back: otherwise a referrer retrying a failing send
+         twice spends a stranger's whole day, and a different friend is told
+         the address "has had enough invitations" when nobody was emailed. */
+      const releaseInviteSlots = () => {
+        releaseRateLimitSlot(`${ctx.user.id}`, INVITE_RATE);
+        releaseRateLimitSlot(recipient, INVITE_RECIPIENT_RATE);
+      };
       const flightKey = `${ctx.user.id}:${recipient}`;
       if (invitesInFlight.has(flightKey)) {
+        releaseInviteSlots();
         throw new TRPCError({ code: "BAD_REQUEST", message: INVITE_IN_FLIGHT_MESSAGE });
       }
       invitesInFlight.add(flightKey);
+      /* Set the moment the provider says the email went; from then on the
+         slots are kept, whatever happens to the record afterwards. */
+      let emailWent = false;
       try {
         // A duplicate never becomes a second email (the rule is the writer's own).
         if (await hasInvitedEmail(ctx.user.id, input.email)) {
@@ -204,6 +220,7 @@ export const referralRouter = router({
             message: INVITE_NOT_SENT_SENTENCE,
           });
         }
+        emailWent = true;
 
         /* Recorded only now that it has gone, and the record writes the
            `referral.invite_sent` audit row — so the audit names exactly the
@@ -217,6 +234,9 @@ export const referralRouter = router({
         }
 
         return { sent: true as const };
+      } catch (error) {
+        if (!emailWent) releaseInviteSlots();
+        throw error;
       } finally {
         invitesInFlight.delete(flightKey);
       }
