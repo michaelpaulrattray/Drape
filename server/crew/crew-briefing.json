@@ -1,7 +1,7 @@
 {
-  "edition": 699,
-  "updatedAt": "2026-10-14T09:25:00Z",
-  "shift": "Foreman — foreman-20261014-1823 (The Voice card's review came back with six things to fix, all six are fixed, and it is now MERGED and live — switched off, so nothing on your screens has changed yet. What the six were, in plain terms: a kept voice could have left a ninety-second recording of itself in storage that nothing could ever delete; two quick presses of Keep could have spent two of your ninety-five monthly voice saves instead of one; simply browsing your characters ate into the allowance meant for pressing, so a thirteenth character in an hour said “try again” on a button where trying again failed exactly the same way; one message promised the voices you had made would still be waiting later, when they would not be; and a recording that refused to play said nothing at all — the button just stopped. Fourteen deliberate breakages were run against the new checks to prove each one really catches its own fault, including one that recreates the double-press and fails on two saves. Writing the check for the silent recording also caught a gap in my own fix: the card had nowhere to put the message, so it would have been written and never shown. ⚠ TWO SETTINGS FROM YOU now turn it on for your account — the wait is over, the order matters, and card #2489 has both. The housekeeping sweep is a day past due and is the next shift's first job. Queue: 52 open, 17 with no movement in a week)",
+  "edition": 700,
+  "updatedAt": "2026-10-14T09:40:00Z",
+  "shift": "Foreman — foreman-20261014-1823 (✅ VOICE IS LIVE ON YOUR ACCOUNT AND THERE IS NOTHING LEFT TO SET UP — both settings went on while this shift was running, and they were read back off the live service to be sure. Open any signed character: under the line about how they sound there are now three voices made from those exact words. Press play on each, keep the one that sounds right, and that character's own audition plays there from then on. Your ear is the last step on card #2470 and the only thing it is waiting for. Nothing is charged. — What this shift did: the Voice card's review came back with six real faults and all six are fixed and merged. A kept voice could have left a ninety-second recording of itself in storage that nothing could ever delete; two quick presses of Keep could have spent two of your ninety-five monthly voice saves instead of one; simply browsing your characters ate into the allowance meant for pressing, so a thirteenth character in an hour said “try again” on a button where trying again failed exactly the same way; one message promised the voices you had made would still be waiting later, when they would not be; and a recording that refused to play said nothing at all — the button just stopped. Fourteen deliberate breakages were run against the new checks to prove each catches its own fault, including one that recreates the double-press and fails on two saves. Writing the check for the silent recording caught a gap in my own fix too: the card had nowhere to put the message, so it would have been written and never shown. The housekeeping sweep is a day past due and is the next shift's first job. Queue: 52 open, 17 with no movement in a week)",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -3900,6 +3900,28 @@
       "state": "done",
       "filedAt": "2026-10-13T01:22:13.000Z",
       "issueNumber": 2462
+    },
+    {
+      "id": "voice-live-2470",
+      "title": "Your characters can speak — voice is on for your account, and all it needs is your ear",
+      "productImpact": "Open any character you have signed. Under the line about how they sound there are now three voices made from those exact words.\n\nPress play on each one. Keep the one that sounds right, and that character's own audition plays there from then on — a reading of about a minute and a half to two and a quarter, in their voice.\n\nNothing is left for you to set up. Both settings went on today and were read back off the live service to be sure of it. It is on for your account only, and nothing is charged — the price arrives with a later card.\n\nThis is the only thing either voice card is still waiting for. Your ear is what closes it, so there is no decision here, just a listen.",
+      "workedExample": "Before this went live its review found six real faults and all six were fixed. The two worth knowing about are money and privacy. A kept voice could have left a ninety-second recording of itself in storage that nothing could ever delete — not a leak, but a recording of a voice sitting somewhere nobody could reach to remove it. And two quick presses of Keep could have spent two of your ninety-five monthly voice saves instead of one, because the second press did not know the first was still working.\n\nThe other four were things you would have noticed and been annoyed by: simply browsing your characters ate into the allowance meant for pressing, so a thirteenth character in an hour said \"try again\" on a button where trying again failed exactly the same way; one message promised the voices you had made would still be waiting later, when they would not be; and a recording that refused to play said nothing at all — the button just stopped.\n\nEach fix got a check, and each check was then deliberately broken fourteen different ways to prove it really catches its own fault. One of those checks caught a mistake in the fix itself: the message for a recording that would not play had nowhere to appear on a character who already had a voice, so it would have been written and never shown.",
+      "options": [
+        {
+          "key": "listen",
+          "label": "Open a signed character and press play on the three voices",
+          "consequence": "Keeping one records that character's audition and the card plays it from then on. If any of it sounds wrong, say so and it becomes a card — your ear beats any check we can write."
+        },
+        {
+          "key": "wait",
+          "label": "Leave it for now",
+          "consequence": "Nothing breaks and nothing is charged. The two cards stay open waiting for your ear, and the next rung does not start on them."
+        }
+      ],
+      "recommendation": "Have a listen — it is the whole point of the rung and it costs you nothing. Three voices, about seven seconds after the page opens.",
+      "state": "open",
+      "filedAt": "2026-10-14T09:40:00.000Z",
+      "issueNumber": 2470
     }
   ],
   "eyeItems": [
