@@ -14,6 +14,28 @@
  *   · {@link removeCastVoiceForCast} (#2497) — the cast has no voice again: the
  *     clip is queued for deletion and the slot released. Charges and refunds
  *     nothing.
+ *   · {@link ensureCastVoiceResident} (#2472) — the door anything that is about
+ *     to SPEAK with a kept voice walks first: it answers the voice's slot, and
+ *     re-mints it from the stored clip if the cache evicted it.
+ *
+ * # THE SLOT IS A CACHE, AND THE CLIP IS THE VOICE (N4b-4, #2472)
+ *
+ * His ear passed the re-mint court on 2026-10-13, verbatim: *"remint actually
+ * sounds better in some cases both 90s clips were great though."* So a Keep on
+ * a plan whose slots are all occupied no longer refuses: it EVICTS the
+ * least-recently-used voice ({@link makeRoomForOneVoice}) — the row and its clip
+ * stay, only the provider slot is given back — and the evicted voice is cloned
+ * back from its clip the next time something is about to speak with it. Three
+ * rules hold all of it:
+ *
+ *   · **Nothing is evicted on a plan that cannot clone**, read LIVE
+ *     (`instantCloning`). An evicted voice there could never come back, so a
+ *     full plan refuses exactly as it did before this card.
+ *   · **A re-mint spends a voice operation, so it happens only on a real use**
+ *     (design §5: *"never to keep a slot warm"*), never on a clip play — the
+ *     clip plays from storage and never touches the provider.
+ *   · **Neither costs the customer anything.** Eviction and re-mint are the
+ *     house managing its own plan; no credit moves on either.
  *
  * **No UI reaches either of them yet.** Slice 1 is the road; N4b-2 is the Voice
  * card that walks it. There is no tRPC procedure here on purpose — a procedure
@@ -57,7 +79,17 @@ import {
   VOICE_AUDITION_PASSAGE,
   VOICE_AUDITION_PASSAGE_VERSION,
 } from "./voiceAuditionPassage";
-import { insertCastVoice, readCastVoiceLine, removeCastVoice } from "../db/castVoices";
+import {
+  evictCastVoiceSlot,
+  insertCastVoice,
+  readCastVoiceForUse,
+  readCastVoiceLine,
+  readEvictionCandidates,
+  recordRemintedCastVoice,
+  removeCastVoice,
+  restoreCastVoiceSlot,
+  touchCastVoiceUsed,
+} from "../db/castVoices";
 import {
   readCastVoiceCard,
   readCastVoiceCardSources,
@@ -75,7 +107,12 @@ import {
   createStorageCleanupManifestIn,
   storageCleanupManifestHeldUntil,
 } from "../db/storageCleanup";
-import { storageDelete, storagePut, storageReadBytes } from "../storage";
+import {
+  storageDelete,
+  storagePut,
+  storageReadAudioBytes,
+  storageReadBytes,
+} from "../storage";
 import { createModuleLogger } from "../logging/logger";
 
 const log = createModuleLogger("castingV2/voiceService");
@@ -100,7 +137,19 @@ export type VoiceRefusal =
   /** Every saved-voice slot the plan allows is occupied. */
   | "no_slots_left"
   /** The provider failed. The class is internal; the customer gets §6's words. */
-  | "provider_failed";
+  | "provider_failed"
+  /** N4b-4: the cast has no kept voice to speak with. */
+  | "no_kept_voice"
+  /**
+   * N4b-4: the voice is not resident and the plan cannot clone (read live), so
+   * it cannot be re-minted. The kept voice itself is untouched.
+   */
+  | "remint_unavailable"
+  /**
+   * N4b-4: the stored clip could not be read, or its bytes disagree with the
+   * sha256 the row recorded. Nothing is cloned from bytes we cannot vouch for.
+   */
+  | "clip_unreadable";
 
 export type VoiceDesignResult =
   | {
@@ -132,6 +181,12 @@ export type VoiceKeepResult =
        * {@link releaseSlotQuietly}; the customer's voice is the new one either way.
        */
       replaced: { slotReleased: boolean } | null;
+      /**
+       * How many other voices this Keep evicted from their slots to make room
+       * (#2472). Their rows and clips are untouched; each is re-minted on its
+       * next use. `0` when the plan had room.
+       */
+      evicted: number;
     }
   | { ok: false; refusal: VoiceRefusal; failureClass?: string };
 
@@ -512,8 +567,11 @@ export async function keepCastVoice(
 
     ⚠ **A REPLACE NEEDS A FREE SLOT FOR A MOMENT**: the new voice is saved
     before the old one is released, because the other order loses the old
-    voice when the new save fails. So a plan with every slot full refuses a
-    replace as it refuses a first Keep (`no_slots_left`), rather than evicting.
+    voice when the new save fails. On a full plan that slot is made by
+    eviction (#2472) exactly as for a first Keep — and a replace gives up its
+    OWN current slot first, since that slot is going back anyway once the new
+    voice lands. If the replace then fails, the old voice is still the cast's:
+    evicted, not removed, and re-minted from its clip on its next use.
   */
   const engine = engineFor(deps);
 
@@ -535,15 +593,24 @@ export async function keepCastVoice(
   if (!voiceOperationsAvailable(allowanceBefore)) {
     return { ok: false, refusal: "no_operations_left" };
   }
+  let evicted = 0;
   if (!voiceSlotsAvailable(allowanceBefore)) {
     /*
-      Declared scaffolding (design §4): with no eviction yet, a full plan
-      refuses. N4b-4 replaces this with least-recently-used eviction once his
-      ear has passed the re-mint court — the court decides whether eviction is
-      allowed at all, so this refusal is not a placeholder for a decision
-      already made.
+      ⚠ **THIS WAS A REFUSAL UNTIL #2472, AND ITS COMMENT SAID THE RE-MINT
+      COURT STILL HAD TO DECIDE WHETHER EVICTION WAS ALLOWED AT ALL.** The court
+      passed by his ear on 2026-10-13 (*"remint actually sounds better in some
+      cases both 90s clips were great though"*), so a full plan now evicts the
+      least-recently-used voice. It still REFUSES when nothing may be evicted:
+      a plan that cannot clone (an evicted voice could never come back), no
+      resident voice of ours to give up, or a provider that will not release.
+      Nothing has been spent at that point.
     */
-    return { ok: false, refusal: "no_slots_left" };
+    const own = await readCastVoiceForUse(input.userId, input.modelId);
+    const room = await makeRoomForOneVoice(engine, allowanceBefore, {
+      preferFirst: own?.voiceId ? { id: own.id, voiceId: own.voiceId } : undefined,
+    });
+    if (!room.ok) return { ok: false, refusal: "no_slots_left" };
+    evicted = room.evicted;
   }
 
   let voiceId: string;
@@ -703,6 +770,7 @@ export async function keepCastVoice(
     saveLatencyMs,
     speakLatencyMs,
     replaced,
+    evicted,
   };
 }
 
@@ -787,6 +855,277 @@ export async function readVoiceKeepability(
 /** For the drivers: forget the cached allowance between arms. */
 export function resetVoiceKeepabilityCache(): void {
   keepabilityCache = null;
+}
+
+/**
+ * MAKE ROOM FOR ONE MORE VOICE — least-recently-used eviction (#2472).
+ *
+ * Frees as many slots as the LIVE reading says are missing for one more voice
+ * (normally one; more only if the plan was cut below what is held), by giving
+ * back the slots of the voices used longest ago. Each eviction is:
+ *
+ *   1. the row stops naming the slot — a compare-and-set on the slot it saw,
+ *      so a voice replaced, removed or evicted in the meantime is skipped;
+ *   2. THEN the provider slot is deleted. A delete refunds no operation and
+ *      costs none (measured), so eviction is free.
+ *
+ * In that order on purpose: the other order leaves, for a moment, a row naming
+ * a slot that no longer exists, which a road about to speak would trust.
+ *
+ * ⚠ **A DELETE THAT FAILS PUTS THE ROW BACK** (`restoreCastVoiceSlot`),
+ * because the slot is still occupied and a row that says otherwise would
+ * re-mint a voice that was never gone — one operation spent on nothing. A 404
+ * is the exception: the provider says the slot is ALREADY free, so the row is
+ * right to be empty and stays so, but nothing was freed by it either.
+ *
+ * ⚠ **NOTHING IS EVICTED ON A PLAN THAT CANNOT CLONE**, read off the same live
+ * allowance the caller just read. An evicted voice must be able to come back,
+ * or eviction is deletion with a nicer name.
+ *
+ * It never touches money. It never removes a voice from a cast.
+ */
+const EVICTION_MAX_SLOTS_TO_FREE = 3;
+const EVICTION_SPARE_CANDIDATES = 4;
+
+async function makeRoomForOneVoice(
+  engine: VoiceEngine,
+  allowance: VoiceAllowance,
+  options: { preferFirst?: { id: number; voiceId: string }; excludeId?: number },
+): Promise<{ ok: true; evicted: number } | { ok: false }> {
+  const needed = allowance.slotsUsed - allowance.slotsTotal + 1;
+  if (needed <= 0) return { ok: true, evicted: 0 };
+  if (!allowance.instantCloning) {
+    log.warn("[Voice] every slot is full and this plan cannot re-mint — nothing evicted");
+    return { ok: false };
+  }
+  if (needed > EVICTION_MAX_SLOTS_TO_FREE) {
+    /* The plan holds far more than it allows — a downgrade, or slots this
+       product does not own. Not something to clear out on one press. */
+    log.error({ needed }, "[Voice] the plan is over its slot limit by more than eviction will clear");
+    return { ok: false };
+  }
+
+  const ranked = await readEvictionCandidates({
+    limit: needed + EVICTION_SPARE_CANDIDATES,
+    excludeId: options.excludeId,
+  });
+  const preferred = options.preferFirst;
+  const candidates = preferred
+    ? [preferred, ...ranked.filter((one) => one.id !== preferred.id)]
+    : ranked;
+
+  let freed = 0;
+  for (const candidate of candidates) {
+    if (freed >= needed) break;
+    if (!(await evictCastVoiceSlot({ id: candidate.id, voiceId: candidate.voiceId }))) continue;
+    try {
+      await engine.deleteVoice({ voiceId: candidate.voiceId });
+      freed += 1;
+      log.info(
+        { evictedRowId: candidate.id },
+        "[Voice] a voice was evicted from its slot — still kept, re-minted on its next use",
+      );
+    } catch (error) {
+      if (error instanceof ProviderError && error.status === 404) {
+        log.warn({ evictedRowId: candidate.id }, "[Voice] an evicted slot was already gone at the provider");
+        continue;
+      }
+      const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+      const restored = await restoreCastVoiceSlot({ id: candidate.id, voiceId: candidate.voiceId })
+        .catch(() => false);
+      log.error(
+        { failureClass, evictedRowId: candidate.id, restored },
+        "[Voice] an eviction's slot would not release — the row was put back and eviction stopped",
+      );
+      /* A provider that refused one delete will refuse the next; stop here. */
+      break;
+    }
+  }
+  return freed >= needed ? { ok: true, evicted: freed } : { ok: false };
+}
+
+export type VoiceUseResult =
+  | {
+      ok: true;
+      /** The provider slot to speak with. Internal — never a client field. */
+      voiceId: string;
+      /** Whether this call cloned the voice back from its clip. */
+      reminted: boolean;
+      /** Other voices evicted to make room for the re-mint. */
+      evicted: number;
+    }
+  | { ok: false; refusal: VoiceRefusal; failureClass?: string };
+
+/**
+ * One re-mint per kept voice at a time, in this process — the voice card
+ * writer's single-flight shape (`voiceCardWritesInFlight`). Two things about to
+ * speak with one evicted voice at once must spend ONE voice operation, not two;
+ * keyed on the row AND its clip, so a replaced voice is never collapsed into
+ * its predecessor's re-mint. One process's Map is not a house-wide fact, which
+ * is why the write underneath is a compare-and-set that releases a losing clone.
+ */
+const remintsInFlight = new Map<string, Promise<VoiceUseResult>>();
+
+/**
+ * THE DOOR TO SPEAK WITH A KEPT VOICE — #2472.
+ *
+ * Anything about to speak with a cast's kept voice asks here first and gets the
+ * slot to speak with. A resident voice is answered at once and marked used, so
+ * the cache knows it is warm. An EVICTED voice is cloned back from its stored
+ * audition clip — one voice operation, house-paid, never the customer's — with
+ * the clip's bytes proved against the sha256 the row recorded before a byte is
+ * sent.
+ *
+ * ⚠ **NO ROAD IN THE PRODUCT SPEAKS WITH A KEPT VOICE YET**, so nothing calls
+ * this today: Keep records the audition itself, and the clip route plays the
+ * stored bytes without the provider. The first road that speaks a line in a
+ * cast's voice walks this door; until then an evicted voice simply stays
+ * evicted, which costs nothing. Stated rather than left to be found.
+ *
+ * Every refusal leaves the kept voice exactly as it was — the row, the clip and
+ * the cast's voice are never touched by a failed re-mint.
+ */
+export async function ensureCastVoiceResident(
+  input: { userId: number; modelId: number; signal?: AbortSignal },
+  deps?: VoiceServiceDeps,
+): Promise<VoiceUseResult> {
+  if (!captureCastingVoiceEnabled(input.userId)) return { ok: false, refusal: "voice_off" };
+
+  const cast = await readCastVoiceLine(input.userId, input.modelId);
+  if (!cast) return { ok: false, refusal: "cast_not_available" };
+  const kept = await readCastVoiceForUse(input.userId, input.modelId);
+  if (!kept) return { ok: false, refusal: "no_kept_voice" };
+
+  if (kept.voiceId) {
+    await markUsedQuietly(input);
+    return { ok: true, voiceId: kept.voiceId, reminted: false, evicted: 0 };
+  }
+
+  const key = `${kept.id}:${kept.clipSha256}`;
+  const already = remintsInFlight.get(key);
+  if (already) return already;
+  const reminting = remintCastVoice(input, kept, deps).finally(() => {
+    remintsInFlight.delete(key);
+  });
+  remintsInFlight.set(key, reminting);
+  return reminting;
+}
+
+async function remintCastVoice(
+  input: { userId: number; modelId: number; signal?: AbortSignal },
+  kept: NonNullable<Awaited<ReturnType<typeof readCastVoiceForUse>>>,
+  deps: VoiceServiceDeps | undefined,
+): Promise<VoiceUseResult> {
+  const engine = engineFor(deps);
+
+  let allowance: VoiceAllowance;
+  try {
+    allowance = await engine.readAllowance({ signal: input.signal });
+  } catch (error) {
+    /* Invariant 7, as at Keep: a re-mint is a spend, and an unread ration refuses it. */
+    const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    log.warn({ failureClass }, "[Voice] allowance unreadable — re-mint refused before any spend");
+    return { ok: false, refusal: "allowance_unreadable", failureClass };
+  }
+  if (!allowance.instantCloning) return { ok: false, refusal: "remint_unavailable" };
+  if (!voiceOperationsAvailable(allowance)) return { ok: false, refusal: "no_operations_left" };
+
+  /*
+    THE CLIP IS READ AND PROVED BEFORE ANYTHING IS EVICTED FOR IT — a bad clip
+    must not cost another customer their slot. The key is never logged: on the
+    public bucket it is the credential, and ninety seconds of a voice is a
+    cloning source (`deleteClipQuietly`'s docblock).
+  */
+  let clip: { bytes: Buffer; contentType: string };
+  try {
+    clip = await storageReadAudioBytes(kept.clipStorageKey);
+  } catch (error) {
+    log.error(
+      { errName: (error as Error)?.name, modelId: input.modelId },
+      "[Voice] the kept clip could not be read — no re-mint",
+    );
+    return { ok: false, refusal: "clip_unreadable" };
+  }
+  if (sha256(clip.bytes) !== kept.clipSha256) {
+    log.error(
+      { modelId: input.modelId },
+      "[Voice] the kept clip's bytes disagree with its recorded sha256 — no re-mint",
+    );
+    return { ok: false, refusal: "clip_unreadable" };
+  }
+
+  let evicted = 0;
+  if (!voiceSlotsAvailable(allowance)) {
+    const room = await makeRoomForOneVoice(engine, allowance, { excludeId: kept.id });
+    if (!room.ok) return { ok: false, refusal: "no_slots_left" };
+    evicted = room.evicted;
+  }
+
+  let voiceId: string;
+  try {
+    const cloned = await engine.cloneVoice({
+      /* OUR name, internal, as at Keep — never the cast's. */
+      name: `klieg-${input.userId}-${input.modelId}`,
+      bytes: clip.bytes,
+      contentType: kept.clipContentType,
+      signal: input.signal,
+    });
+    voiceId = cloned.voiceId;
+  } catch (error) {
+    const failureClass = error instanceof ProviderError ? error.failureClass : "unknown";
+    const billed = error instanceof ProviderError && error.completed;
+    log.warn({ failureClass, billed }, "[Voice] re-mint refused — the kept voice is unchanged");
+    return { ok: false, refusal: "provider_failed", failureClass };
+  }
+
+  let recorded: boolean;
+  try {
+    recorded = await recordRemintedCastVoice({
+      id: kept.id,
+      userId: input.userId,
+      modelId: input.modelId,
+      clipSha256: kept.clipSha256,
+      voiceId,
+    });
+  } catch (error) {
+    await releaseSlotQuietly(engine, voiceId);
+    log.error(
+      { err: error, modelId: input.modelId },
+      "[Voice] a re-mint could not be recorded — its slot released",
+    );
+    throw error;
+  }
+  if (!recorded) {
+    /*
+      Another road moved the row while the clone ran: a re-mint in another
+      process filled it, a Keep replaced it, or the cast went away. This clone
+      belongs to nobody, so its slot goes back. If the row is resident now,
+      that voice is the one to speak with.
+    */
+    await releaseSlotQuietly(engine, voiceId);
+    log.warn(
+      { modelId: input.modelId },
+      "[Voice] a re-mint lost its write — its slot released, one voice operation spent",
+    );
+    const now = await readCastVoiceForUse(input.userId, input.modelId);
+    if (now?.voiceId) return { ok: true, voiceId: now.voiceId, reminted: false, evicted };
+    return { ok: false, refusal: "cast_not_available" };
+  }
+
+  log.info({ modelId: input.modelId, evicted }, "[Voice] a kept voice was re-minted from its clip");
+  return { ok: true, voiceId, reminted: true, evicted };
+}
+
+/** The cache's `lastUsedAt`, best effort — a missed mark only ages a warm voice. */
+async function markUsedQuietly(input: { userId: number; modelId: number }): Promise<void> {
+  try {
+    await touchCastVoiceUsed(input);
+  } catch (error) {
+    log.warn(
+      { errName: (error as Error)?.name, modelId: input.modelId },
+      "[Voice] lastUsedAt was not written",
+    );
+  }
 }
 
 /**

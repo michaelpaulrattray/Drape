@@ -76,6 +76,14 @@ vi.mock("../db/castVoices", () => ({
     timeline.push("row-remove");
     return removable;
   },
+  /* The cache's statements (#2472). Driven in `voiceCache.test.ts`; here they
+     only have to exist, and answer "nothing to evict". */
+  readCastVoiceForUse: async () => null,
+  readEvictionCandidates: async () => [],
+  evictCastVoiceSlot: async () => false,
+  restoreCastVoiceSlot: async () => false,
+  recordRemintedCastVoice: async () => false,
+  touchCastVoiceUsed: async () => undefined,
 }));
 
 /**
@@ -215,6 +223,10 @@ function stubEngine(
     async deleteVoice(input) {
       calls.push("delete");
       timeline.push(`release:${input.voiceId}`);
+    },
+    async cloneVoice() {
+      /* The re-mint (#2472) is driven in `voiceCache.test.ts`; nothing here clones. */
+      throw new Error("no re-mint on this road");
     },
     ...overrides,
   };
@@ -587,8 +599,12 @@ describe("a Keep reads the allowance BEFORE it spends", () => {
     expect(calls).toEqual(["allowance"]);
   });
 
-  it("refuses when every slot the plan allows is occupied", async () => {
-    const { engine, calls } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30 } });
+  it("refuses when every slot the plan allows is occupied AND the plan cannot re-mint", async () => {
+    /* Since #2472 a full plan that CAN clone evicts instead (`voiceCache.test.ts`);
+       one that cannot still refuses, because an evicted voice could never come back. */
+    const { engine, calls } = stubEngine({
+      allowance: { ...LIVE, slotsUsed: 30, instantCloning: false },
+    });
     expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
     expect(calls).toEqual(["allowance"]);
   });
@@ -911,9 +927,11 @@ describe("a Keep that replaces the cast's voice", () => {
     });
   });
 
-  it("a full plan refuses a replace before any spend — the new voice needs a slot first", async () => {
+  it("a full plan that cannot re-mint refuses a replace before any spend — the new voice needs a slot first", async () => {
     replacedVoice = { voiceId: OLD };
-    const { engine, calls } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30 } });
+    const { engine, calls } = stubEngine({
+      allowance: { ...LIVE, slotsUsed: 30, instantCloning: false },
+    });
 
     expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
     expect(calls).toEqual(["allowance"]);

@@ -95,6 +95,11 @@ vi.mock("./connection", () => ({
 const {
   CastVoiceManifestUndischargeable,
   deleteAccountVoicesIn,
+  evictCastVoiceSlot,
+  readCastVoiceForUse,
+  readEvictionCandidates,
+  recordRemintedCastVoice,
+  restoreCastVoiceSlot,
   deleteCastVoicesIn,
   insertCastVoice,
   readAccountVoiceReleaseFactsIn,
@@ -618,5 +623,113 @@ describe("Remove voice (#2497)", () => {
   it("refuses a non-positive id before it reaches the database", async () => {
     await expect(removeCastVoice(0, MODEL_ID)).rejects.toThrow(/userId/);
     expect(sent).toHaveLength(0);
+  });
+});
+
+/**
+ * THE CACHE'S STATEMENTS — N4b-4 (#2472), at the wire.
+ *
+ * Eviction, re-mint, replace, remove and both deletion roads can all reach one
+ * row while provider calls take seconds, so every cache write is a
+ * compare-and-set on the slot it saw. These arms read the statements actually
+ * sent for the clause that makes each one safe.
+ */
+describe("the voice cache (#2472)", () => {
+  it("⚠ ranks the pool by COALESCE(lastUsedAt, keptAt) — a never-used voice is as old as its Keep", async () => {
+    answers = [[[11, 5, 501, "coldest"]]];
+
+    const rows = await readEvictionCandidates({ limit: 5 });
+
+    expect(rows).toEqual([{ id: 11, userId: 5, modelId: 501, voiceId: "coldest" }]);
+    const [statement] = sent;
+    /* Ranked on lastUsedAt ALONE, MySQL's NULLs-first would evict the
+       voice kept a minute ago before every other. */
+    expect(statement?.sql).toMatch(/order by COALESCE\(`cast_voices`\.`lastUsedAt`, `cast_voices`\.`keptAt`\) asc/i);
+    expect(statement?.sql).toMatch(/`cast_voices`\.`voiceId` is not null/i);
+    expect(statement?.params).toContain(5);
+  });
+
+  it("⚠ the house-wide read projects ids and the slot — NOTHING the customer made", async () => {
+    answers = [[]];
+
+    await readEvictionCandidates({ limit: 5, excludeId: 77 });
+
+    const [statement] = sent;
+    for (const forbidden of ["designSentence", "clipStorageKey", "clipSha256", "masterPrompt", "voice`,"]) {
+      expect(statement?.sql).not.toContain(forbidden);
+    }
+    /* A re-mint never chooses the row it is about to fill. */
+    expect(statement?.sql).toMatch(/`cast_voices`\.`id` <> \?/);
+    expect(statement?.params).toContain(77);
+  });
+
+  it("⚠ an eviction clears the slot ONLY if the row still names the slot it chose", async () => {
+    expect(await evictCastVoiceSlot({ id: 11, voiceId: "coldest" })).toBe(true);
+
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/^update `cast_voices` set `voiceId` = \?/i);
+    expect(statement?.sql).toMatch(/`cast_voices`\.`voiceId` = \?/);
+    expect(statement?.params).toEqual(expect.arrayContaining([11, "coldest"]));
+  });
+
+  it("an eviction another road beat reports false, so its slot is not released", async () => {
+    writeAffected = 0;
+
+    expect(await evictCastVoiceSlot({ id: 11, voiceId: "coldest" })).toBe(false);
+  });
+
+  it("a restore puts the slot back only into a row that is still EMPTY", async () => {
+    expect(await restoreCastVoiceSlot({ id: 11, voiceId: "coldest" })).toBe(true);
+
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/`cast_voices`\.`voiceId` is null/i);
+    expect(statement?.params).toEqual(expect.arrayContaining([11, "coldest"]));
+  });
+
+  it("⚠ the re-mint's read binds owner, cast and the LIVE SIGNED cast in one statement, and loads no sentence", async () => {
+    answers = [[[77, null, "casting/voices/41/907/abc.mp3", "f".repeat(64), "audio/mpeg"]]];
+
+    const row = await readCastVoiceForUse(USER_ID, MODEL_ID);
+
+    expect(row).toEqual({
+      id: 77,
+      voiceId: null,
+      clipStorageKey: "casting/voices/41/907/abc.mp3",
+      clipSha256: "f".repeat(64),
+      clipContentType: "audio/mpeg",
+    });
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/inner join `models`/i);
+    expect(statement?.sql).toMatch(/deletedAt/);
+    expect(statement?.params).toEqual(expect.arrayContaining([USER_ID, MODEL_ID]));
+    expect(statement?.sql).not.toContain("designSentence");
+  });
+
+  it("⚠ A RE-MINT LANDS ONLY ON AN EMPTY ROW STILL CARRYING THE CLIP IT CLONED, of the owner's live signed cast", async () => {
+    const SHA = "a".repeat(64);
+
+    expect(await recordRemintedCastVoice({
+      id: 77, userId: USER_ID, modelId: MODEL_ID, clipSha256: SHA, voiceId: "reminted-1",
+    })).toBe(true);
+
+    const [statement] = sent;
+    expect(statement?.sql).toMatch(/^update `cast_voices`/i);
+    /* Still empty — a re-mint in another process may have filled it. */
+    expect(statement?.sql).toMatch(/`cast_voices`\.`voiceId` is null/i);
+    /* Still the same clip — a replaced voice must not get the old voice back. */
+    expect(statement?.sql).toMatch(/`cast_voices`\.`clipSha256` = \?/);
+    expect(statement?.params).toContain(SHA);
+    /* Owner, cast, and the live signed cast re-proved IN the write (invariant 1). */
+    expect(statement?.params).toEqual(expect.arrayContaining([77, USER_ID, MODEL_ID, "reminted-1"]));
+    expect(statement?.sql).toMatch(/`cast_voices`\.`modelId` in \(select `id` from `models`/i);
+    expect(statement?.sql).toMatch(/deletedAt/);
+  });
+
+  it("NEGATIVE CONTROL: a re-mint that moved no row reports false, so the caller releases the clone", async () => {
+    writeAffected = 0;
+
+    expect(await recordRemintedCastVoice({
+      id: 77, userId: USER_ID, modelId: MODEL_ID, clipSha256: "a".repeat(64), voiceId: "reminted-1",
+    })).toBe(false);
   });
 });

@@ -15296,6 +15296,10 @@
       "path": "server/castingV2/vocabularyPin.test.ts"
     },
     {
+      "id": "test:server/castingV2/voiceCache.test.ts",
+      "path": "server/castingV2/voiceCache.test.ts"
+    },
+    {
       "id": "test:server/castingV2/voiceCardWriter.test.ts",
       "path": "server/castingV2/voiceCardWriter.test.ts"
     },

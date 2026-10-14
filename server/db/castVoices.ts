@@ -16,7 +16,7 @@
  * kept in its own module and returned to the card writer alone.
  */
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 
 import {
   castVoices,
@@ -624,4 +624,193 @@ export async function touchCastVoiceUsed(input: {
     .update(castVoices)
     .set({ lastUsedAt: sql`now()` })
     .where(and(eq(castVoices.modelId, input.modelId), eq(castVoices.userId, input.userId)));
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════════════════
+  THE CACHE — N4b-4 (#2472): eviction and re-mint.
+
+  His ear passed the re-mint court on 2026-10-13, verbatim: *"remint actually
+  sounds better in some cases both 90s clips were great though."* So the
+  stored ~90 s audition clip is the voice, and a provider slot is only where
+  that voice is cached. `voiceId` NULL on a row means "kept, not resident":
+  the cast still HAS its voice (the clip plays from the owner-only route, which
+  never touches the provider), and it is cloned back from the clip the next
+  time something is about to speak with it.
+
+  ⚠ **EVERY WRITE HERE IS A COMPARE-AND-SET ON THE SLOT IT SAW.** Eviction,
+  re-mint, replace, remove and both deletion roads can all reach one row, and
+  the provider calls between a read and a write take seconds. So an eviction
+  clears `voiceId` only if it still names the voice it chose, and a re-mint
+  fills it only if it is still empty AND the row still carries the clip that
+  was cloned — a voice replaced (new clip) while its old clip was being cloned
+  must not be handed the old voice.
+  ═══════════════════════════════════════════════════════════════════════════
+*/
+
+/** A resident voice the cache may evict. Ids and the slot only — nothing creative. */
+export type EvictionCandidate = {
+  id: number;
+  userId: number;
+  modelId: number;
+  voiceId: string;
+};
+
+/**
+ * THE LEAST-RECENTLY-USED RESIDENT VOICES, oldest first — the cache's choice.
+ *
+ * ⚠ **THIS IS THE ONE VOICE READ THAT IS NOT OWNER-SCOPED, AND IT IS ON
+ * PURPOSE.** The provider slots belong to the HOUSE account, one pool shared by
+ * every customer's kept voices, so the least-recently-used voice is a fact
+ * about the whole pool — a per-owner read would let one busy customer fill the
+ * plan and never be asked to give a slot back. What keeps it inside the
+ * access-control grid: it projects ids and the provider slot and NOTHING the
+ * customer made (no sentence, no clip key), it is never projected to any
+ * client, and the only write it feeds is {@link evictCastVoiceSlot}, which
+ * changes where a voice is cached and never what it is. An evicted customer
+ * loses nothing: the clip, the row and the voice stay theirs.
+ *
+ * ⚠ **RANKED BY `COALESCE(lastUsedAt, keptAt)`, NOT BY `lastUsedAt` ALONE.**
+ * MySQL sorts NULL first, and a voice kept a minute ago has never been used —
+ * ranked on `lastUsedAt` alone, the newest voice in the product would be the
+ * first evicted, every time. A voice that has never been used is as old as its
+ * Keep. (`ix_cast_voices_last_used` cannot serve this expression; the scan is
+ * over the resident rows, which the plan's slot count bounds.)
+ *
+ * Only RESIDENT rows are candidates (a row dies with its cast in the deletion
+ * transaction, so there is no tombstone to skip); `excludeId` keeps a re-mint
+ * from choosing the row it is about to fill.
+ */
+export async function readEvictionCandidates(input: {
+  limit: number;
+  excludeId?: number;
+}): Promise<EvictionCandidate[]> {
+  if (!Number.isInteger(input.limit) || input.limit <= 0) throw new Error("limit must be a positive integer");
+  const db = await requireDb();
+  const rows = await db
+    .select({
+      id: castVoices.id,
+      userId: castVoices.userId,
+      modelId: castVoices.modelId,
+      voiceId: castVoices.voiceId,
+    })
+    .from(castVoices)
+    .where(and(
+      isNotNull(castVoices.voiceId),
+      input.excludeId === undefined ? undefined : ne(castVoices.id, input.excludeId),
+    ))
+    .orderBy(asc(sql`COALESCE(${castVoices.lastUsedAt}, ${castVoices.keptAt})`), asc(castVoices.id))
+    .limit(input.limit);
+  return rows.filter((row): row is EvictionCandidate => typeof row.voiceId === "string");
+}
+
+/**
+ * EVICT — the row stops naming its slot, if it still names THIS slot.
+ *
+ * Returns whether this call cleared it. `false` means another road got there
+ * first (a replace, a remove, a deletion, another eviction) and this caller
+ * owns nothing: it must not release the slot, because whoever moved the row
+ * owns that decision.
+ */
+export async function evictCastVoiceSlot(input: { id: number; voiceId: string }): Promise<boolean> {
+  assertPositiveId(input.id, "id");
+  const db = await requireDb();
+  const result = await db
+    .update(castVoices)
+    .set({ voiceId: null })
+    .where(and(eq(castVoices.id, input.id), eq(castVoices.voiceId, input.voiceId)));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * UNDO AN EVICTION whose provider delete failed, so the row names the slot
+ * that is in fact still occupied. Only if the row is still empty — a re-mint
+ * that landed in between is the truer state and is left alone.
+ */
+export async function restoreCastVoiceSlot(input: { id: number; voiceId: string }): Promise<boolean> {
+  assertPositiveId(input.id, "id");
+  const db = await requireDb();
+  const result = await db
+    .update(castVoices)
+    .set({ voiceId: input.voiceId })
+    .where(and(eq(castVoices.id, input.id), isNull(castVoices.voiceId)));
+  return affectedRows(result) === 1;
+}
+
+/**
+ * The cast's kept voice as the re-mint needs it — owner, cast and the owned
+ * LIVE SIGNED cast in the one statement (the clip route's shape). The clip's
+ * key travels to the server's own storage read and nowhere else.
+ */
+export async function readCastVoiceForUse(
+  userId: number,
+  modelId: number,
+): Promise<{
+  id: number;
+  voiceId: string | null;
+  clipStorageKey: string;
+  clipSha256: string;
+  clipContentType: string;
+} | null> {
+  assertPositiveId(userId, "userId");
+  assertPositiveId(modelId, "modelId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      id: castVoices.id,
+      voiceId: castVoices.voiceId,
+      clipStorageKey: castVoices.clipStorageKey,
+      clipSha256: castVoices.clipSha256,
+      clipContentType: castVoices.clipContentType,
+    })
+    .from(castVoices)
+    .innerJoin(models, and(
+      eq(models.id, castVoices.modelId),
+      eq(castVoices.userId, userId),
+      eq(castVoices.modelId, modelId),
+      signedCastWhere(userId),
+    ))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * RECORD A RE-MINT — the empty row takes the cloned slot, and is marked used
+ * (it is about to speak).
+ *
+ * The compare-and-set carries: the row's id, the owner and the cast; the slot
+ * still EMPTY; the clip still the one that was cloned (its sha256); and the
+ * owned live signed cast re-proved in the statement (invariant 1), because a
+ * clone takes seconds and the cast can be deleted inside them. `false` means
+ * the clone belongs to nobody and the caller releases it.
+ */
+export async function recordRemintedCastVoice(input: {
+  id: number;
+  userId: number;
+  modelId: number;
+  clipSha256: string;
+  voiceId: string;
+}): Promise<boolean> {
+  assertPositiveId(input.id, "id");
+  assertPositiveId(input.userId, "userId");
+  assertPositiveId(input.modelId, "modelId");
+  const db = await requireDb();
+  const result = await db
+    .update(castVoices)
+    .set({ voiceId: input.voiceId, lastUsedAt: sql`now()` })
+    .where(and(
+      eq(castVoices.id, input.id),
+      eq(castVoices.userId, input.userId),
+      eq(castVoices.modelId, input.modelId),
+      isNull(castVoices.voiceId),
+      eq(castVoices.clipSha256, input.clipSha256),
+      inArray(
+        castVoices.modelId,
+        db.select({ id: models.id }).from(models).where(and(
+          eq(models.id, input.modelId),
+          signedCastWhere(input.userId),
+        )),
+      ),
+    ));
+  return affectedRows(result) === 1;
 }

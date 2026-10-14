@@ -72,8 +72,9 @@ export type VoiceAllowance = {
   /** `voice_add_edit_counter`. */
   operationsUsed: number;
   /**
-   * `can_use_instant_voice_cloning`. N4b-4's eviction-and-re-mint needs it;
-   * slice 1 only reports it so a receipt can say what the account could do.
+   * `can_use_instant_voice_cloning`. N4b-4's eviction and re-mint (#2472) read
+   * it LIVE before evicting anything: on a plan without it an evicted voice
+   * could never be cloned back, so nothing is evicted and a full plan refuses.
    */
   instantCloning: boolean;
   /** The plan's own name. Internal, for a receipt — never a customer string. */
@@ -158,4 +159,27 @@ export interface VoiceEngine {
    * cache eviction and never an undo of a spend.
    */
   deleteVoice(input: { voiceId: string; signal?: AbortSignal }): Promise<void>;
+
+  /**
+   * RE-MINT — N4b-4 (#2472): a voice made back from its stored audition clip by
+   * instant cloning. **One voice operation and one slot**, like a save.
+   *
+   * This is what makes a slot a cache rather than the voice itself: the clip
+   * is the durable asset, and a voice evicted from its slot is cloned back from
+   * it the next time something is about to speak with it. His ear passed the
+   * re-mint court on 2026-10-13, verbatim: *"remint actually sounds better in
+   * some cases both 90s clips were great though."*
+   *
+   * Needs {@link VoiceAllowance.instantCloning}; a caller checks that on a
+   * LIVE reading before it evicts anything, because an evicted voice on a plan
+   * that cannot clone could never come back.
+   */
+  cloneVoice(input: {
+    /** OUR name, internal — never the cast's. */
+    name: string;
+    /** The stored audition clip's bytes. */
+    bytes: Buffer;
+    contentType: string;
+    signal?: AbortSignal;
+  }): Promise<{ voiceId: string; latencyMs: number }>;
 }
