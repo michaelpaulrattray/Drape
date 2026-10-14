@@ -20,6 +20,36 @@ it"*, card #98). What lives here and nowhere else:
 3. **Attempted-and-reverted work** — a measured change that did not pay is
    recorded as explicitly as one that did, so no later seat retries it from
    ignorance.
+4. **The pre-deploy timeout reading** (#2501) —
+   `npx tsx scripts/predeploy-timeouts.mts --limit 500`, on this same seven-day
+   clock. Read-only, no injected variable, no database: it counts the deploys
+   whose pre-deploy command timed out and prints **each one's own deploy log**
+   under its row. The run records the count, the window and — when there is a
+   timeout — what the log said. Three have happened, 2026-09-09, 2026-10-02 and
+   2026-10-14, about one in 480 deploys that reach the step.
+   ⚠ **IT IS ON A CLOCK BECAUSE ITS SUBJECT EXPIRES, AND THE ARITHMETIC IS THE
+   WHOLE REASON.** A pre-deploy that times out decides in half a second and then
+   holds the container for the full 600 s, and the only thing that will ever name
+   what held it is `armExitWatchdog`'s line — printed into **that deployment's
+   log and nowhere else**. Railway holds a log about **thirty days** (measured
+   2026-10-14, a sharp edge at 2026-09-13/14), and these arrive about one every
+   two to three weeks, so **an unread diagnosis ages out**: that is not a worry,
+   it is what already happened to the 2026-09-09 instance, whose shape can
+   therefore never be compared with the other two. A seven-day clock reads it
+   four times before the wall.
+   ⚠ **`--limit` IS NOT OPTIONAL AND THE DEFAULT IS TOO SMALL FOR THIS CLOCK.**
+   Measured 2026-10-15: the default 200 covered **4 days** and 500 covered
+   **12.5 days** (2026-10-02 → 2026-10-14), because this service deploys roughly
+   fifty times a day. A default run on a seven-day clock would silently skip the
+   days between — and the script says `the --limit was reached: older deployments
+   exist and were not read`, so the warning is there to be read either way.
+   ⚠ **An empty log is NEVER recorded as a silent container.** Zero lines is the
+   same answer for a container that printed nothing and for a log past
+   retention, with opposite meanings, and reading the 2026-09-09 one by hand gave
+   the wrong one first. The tool takes a same-day control and says which; record
+   its words, not a paraphrase.
+   `server/predeployTimeouts.test.ts` proves the judging half and holds this
+   clock honest against the retention wall; this clock is the other half.
 
 Every Machinist run BEGINS by reading this file and ENDS by appending to it.
 Findings are deduped against the queue, open and closed. The anti-boredom rule
@@ -37,6 +67,7 @@ The instruments and their record pages:
 | the delivery-rate report (D-236) | `server/castingV2/reliabilityReport.ts` via `scripts/drive-self-walk.mts` | did the customer GET the thing — per class, with the false-pass bucket | `DECISION_LOG.md` D-236 |
 | the client bundle read | `pnpm machinist:bundle` | how many bytes a visitor downloads, and whose they are | this file |
 | the house-command bench | `pnpm machinist:bench` | what our own commands cost — check, atlas, build, suite | this file |
+| the pre-deploy timeout reading (#2501) | `npx tsx scripts/predeploy-timeouts.mts --limit 500` | how often a deploy's pre-deploy command times out, and what each one's own log said before it went silent | this file |
 | the interaction-latency drive (#555) | `pnpm machinist:latency --base <url> --token <owner's app_session_id> --session <sheet publicId> [--samples 8] [--spend] [--only follow] [--json …]` · its own proof: `pnpm machinist:latency --controls` (in the gate) | click → first visible change on the sheet's own actions — Keep/Unkeep (free), Roll again / Follow / Retry (`--spend`), the chip edit — p50/p95 per action against a declared bar | this file |
 
 Two things the ledger read does NOT measure, stated so the absence is never
