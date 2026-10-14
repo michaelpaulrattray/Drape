@@ -5,9 +5,10 @@
  * `9b3ef98d` (the deployment #2501 was filed on), read 2026-10-14 and copied
  * here step for step with only the error-free payload fields dropped.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import path from "node:path";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import {
   eventsFromConnection,
@@ -26,6 +27,11 @@ import {
   type FetchLike,
   type Judged,
 } from "../scripts/lib/predeployTimeouts.mts";
+
+/* This suite reads files off the real tree (`readListedSource`), which enrols it
+   in #741's derived population: vitest's 5 s default goes red under load on
+   somebody's machine rather than in CI. File level, so every arm inherits it. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const node = (step: string, createdAt: string, completedAt: string, error: string | null = null) => ({
   node: { step, createdAt, completedAt, payload: { attempt: null, detail: null, durationMs: null, error, maxAttempts: null, reason: null, skipped: null } },
