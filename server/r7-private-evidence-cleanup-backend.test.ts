@@ -201,6 +201,9 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // because a stencil is the shape of a feature on a person's face and it
       // lives in the public bucket.
       "server/db/accountDeletion.ts",
+      // #2497: a replaced or removed voice clip, named `public_r2` because the
+      // clip lives in the public bucket (see `voiceClipKey`).
+      "server/db/castVoices.ts",
       "server/db/castingV2FaceScans.ts",
       "server/db/castingV2InkDesignRemoval.ts",
       "server/db/evidenceCandidates.ts",

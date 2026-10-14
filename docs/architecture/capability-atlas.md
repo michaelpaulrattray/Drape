@@ -236,7 +236,7 @@ N4b-2 (#2470), his approved design `docs/specs/N4B_VOICE_DESIGN_2026-10-13.md` �
 
 _Entrances:_ `server/routes/castingV2.ts` · `server/routes/castingVoice.ts` · `server/routes/voiceClipDelivery.ts` · `server/castingV2/voiceService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
 
-_Called as:_ `castingV2.voice.status` · `castingV2.voice.design` · `castingV2.voice.keep`
+_Called as:_ `castingV2.voice.status` · `castingV2.voice.design` · `castingV2.voice.keep` · `castingV2.voice.remove`
 
 > THIS ROAD DECLARES NO DOOR, on the persona road's own argument. Outside `CASTING_VOICE_SCOPE` the status read answers `available: false` and the card draws exactly what it drew before — the resting strip and 'No voice yet' — while both mutations refuse `PRECONDITION_FAILED`; another account's cast is `NOT_FOUND` before any provider is asked; the ceilings are the two limiters above; and every remaining outcome is a member of `VoiceRefusal` (`server/castingV2/voiceService.ts`) returned as a discriminated result the client reads a sentence for, never a 200 carrying a server message — the words are `shared/voiceCardCopy.ts`'s and a test reads every one of them for vendor and pipeline words. No corpus row can reach it: the corpus drives `refineCandidate` only.
 
@@ -244,6 +244,7 @@ _Called as:_ `castingV2.voice.status` · `castingV2.voice.design` · `castingV2.
 - THE BYTES STAY IN THE PUBLIC BUCKET AND THAT WAS READ AT THE CODE RATHER THAN PREFERRED: the private evidence store's `putCanonical` accepts `image/webp` alone, by mime AND by byte sniff, under its own parsed key grammar — an MP3 is `invalid_payload` there — so moving the clip means widening a validated image-only store inside the R7 family, which is parked by founder ruling. Two consequences carried rather than assumed: both deletion roads stay correct BECAUSE the bucket did not move (`accountCastingPurge.ts` files it with `publicItem`, `finalCastDeletion.ts` adds it to the cast-owned public set), and the key remains a credential — so nothing logs it, held by `server/storageKeyNotLogged.test.ts`, which swept one sibling out of `rollService` on the way in.
 - THE THREE PREVIEWS GET NO ADDRESS AT ALL, which is stronger than owner-only and is a departure from the design's cleanup-manifest sentence, declared under the fidelity law. They come back as base64 in the design result and are held by the browser that asked; there is no key, no object, no route and no row for a preview. The reason is the asset's own lifetime: a preview id stops being saveable at a provider-side moment nobody has measured (known good at 49–53 s), so a durable store would persist audio whose only possible use may already have expired, and then sweep it. What a reload costs is one design — about $0.01 of house money, charged to nobody. A durable preview store is its own card if the reload ever matters.
 - WHICH VOICE IS BEING KEPT IS RESOLVED SERVER-SIDE AND THE PROVIDER'S ID NEVER REACHES A CLIENT (the engine boundary's own rule). `server/castingV2/voiceDesignStore.ts` maps an opaque handle to the provider id, in process, with the owner and the cast recorded beside it and refused on either mismatch; it also returns the DESIGN SENTENCE, so the stored record cannot be made to say the voice came from words it did not come from, and an edit to the line between the design and the Keep cannot rewrite it. Its limit is stated: in memory, so a deploy loses the handles — the same shape as the login-attack counter, and the cost is one design.
+- CHANGE AND REMOVE (#2497, his approved behaviour on the card). The kept card offers `Change voice` and `Remove voice`. Change opens the picker under the kept voice and makes three from the line as it reads now on the free automatic road (one free three per cast per day, server-bounded); when that day's three are spent it rests on the priced press. A Keep on a cast that already has a voice REPLACES it — a normal paid Keep — and `castingV2.voice.keep` needs no sibling for it: the service no longer refuses a second Keep, and `insertCastVoice` updates the row in place in one transaction that also queues the old clip for the cleanup worker (the cleanup kind replaced face scans and removed ink designs already use) and discharges the new clip's receipt; the OLD provider slot is released only after that commits, so a failed replace leaves the old voice exactly as it was. `castingV2.voice.remove` deletes the row and queues the clip in one transaction, releases the slot after, and charges and refunds nothing (his 'No refund — the customer had the voice'), paced by `RATE_LIMITS.castingSheet`. Editing the line after a Keep still changes nothing by itself (design §9).
 - THE WAVEFORM IS DECODED, NOT DRAWN. The card has always carried a 30-bar strip at rest, and drawing it three times would have been the fidelity law's violation on the one surface whose purpose is COMPARING: the browser's own `decodeAudioData` gives real samples, `peaksFromSamples` reduces them to one peak per bar (peak and not mean, because a mean flattens speech into a line), and the strip stays at rest when there is nothing decoded. The played portion is lit from the element's real position.
 
 ### Say it your way — the customer's own sentence, turned into a cast's personality or voice line
@@ -297,7 +298,7 @@ _Called as:_ `castingV2.concept.describe`
 - EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 
-## Every way in — the 43 procedures the casting entrance exposes
+## Every way in — the 44 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
@@ -345,6 +346,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.variants` | life-of-a-cast |
 | `castingV2.voice.design` | voice-listen-and-pick |
 | `castingV2.voice.keep` | voice-listen-and-pick |
+| `castingV2.voice.remove` | voice-listen-and-pick |
 | `castingV2.voice.status` | voice-listen-and-pick |
 
 ## The laws that hold on every road

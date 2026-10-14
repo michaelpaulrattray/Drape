@@ -8960,6 +8960,19 @@
       ]
     },
     {
+      "id": "route:castingV2.voice.remove",
+      "namespace": "castingV2.voice",
+      "name": "remove",
+      "type": "mutation",
+      "auth": "protected",
+      "input": "strict",
+      "rateLimited": false,
+      "file": "server/routes/castingV2.ts",
+      "clientCallers": [
+        "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
+      ]
+    },
+    {
       "id": "route:castingV2.voice.status",
       "namespace": "castingV2.voice",
       "name": "status",

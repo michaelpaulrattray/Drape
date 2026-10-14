@@ -41,6 +41,9 @@ let designThrows: Error | null = null;
 let keepability = { canKeep: true };
 let keptRow: unknown = null;
 const saves: string[] = [];
+/** #2497 — the casts Remove was asked about, and whether it found a voice. */
+const removals: number[] = [];
+let removeFinds = true;
 
 vi.mock("../castingV2/castingV2Scope", () => ({
   captureCastingV2Enabled: () => true,
@@ -150,9 +153,14 @@ vi.mock("../castingV2/voiceService", () => ({
     return keepResult;
   },
   readVoiceKeepability: async () => keepability,
+  /* #2497 — what Remove found, recorded so an arm can count the calls. */
+  removeCastVoiceForCast: async (input: { userId: number; modelId: number }) => {
+    removals.push(input.modelId);
+    return { ok: true, removed: removeFinds, slotReleased: removeFinds ? true : null };
+  },
 }));
 
-const { designVoicesForCard, keepVoiceForCard, readVoiceCardStatus } =
+const { designVoicesForCard, keepVoiceForCard, readVoiceCardStatus, removeVoiceForCard } =
   await import("./castingVoice");
 const {
   CASTING_V2_VOICE_DESIGN_PRICE_CREDITS: VOICE_DESIGN_PRICE,
@@ -170,6 +178,8 @@ beforeEach(() => {
   keepability = { canKeep: true };
   keptRow = null;
   saves.length = 0;
+  removals.length = 0;
+  removeFinds = true;
   balance = 1_000_000;
   refundRecords = true;
   charges.length = 0;
@@ -366,19 +376,20 @@ describe("what the card is told before it designs anything", () => {
     expect(status).toMatchObject({ available: true, hasLine: true, canKeep: false });
   });
 
-  it("does not ask the provider at all for a cast that already has a voice", async () => {
+  it("⚠ ASKS FOR A CAST THAT ALREADY HAS A VOICE TOO, since Change voice can design (#2497)", async () => {
     /*
-      The hint costs a provider round trip on a cache miss, and a cast that
-      already has a voice has nothing to design — so it is not asked. `canKeep`
-      is `true` there because nothing is being withheld, not because an
-      allowance was read.
+      This arm read *"does not ask the provider at all for a cast that already
+      has a voice"* and pinned `canKeep: true` there — right while a kept voice
+      could not be changed. Change voice designs three new voices, and a
+      replacing Keep needs a free slot like any Keep, so the card must hear
+      "nothing can be kept" before it makes voices nobody can keep.
     */
     keptRow = { clipBytes: 2_100_000, keptAt: new Date() };
     keepability = { canKeep: false };
 
     const status = await readVoiceCardStatus({ userId: freshUser(), castId: "KI-A" });
 
-    expect(status.canKeep).toBe(true);
+    expect(status.canKeep).toBe(false);
     expect(status.kept).not.toBeNull();
   });
 
@@ -886,5 +897,77 @@ describe("handing a free design back may not become free provider calls", () => 
 
     expect(accountDayRemaining(userId))
       .toBe(RATE_LIMITS.castingVoiceAutoDesignDay.maxRequests - 2);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHANGE AND REMOVE — #2497.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+describe("a replacing Keep is a normal paid Keep (#2497)", () => {
+  it("a Keep on a cast that already has a voice reaches the service and is charged 500", async () => {
+    /* The road used to refuse this inside the service (`already_kept`); the
+       route adds no rule of its own, so a cast with a voice is charged and kept
+       exactly as a first Keep is. */
+    keptRow = { clipBytes: 2_100_000, keptAt: new Date() };
+    const userId = freshUser();
+    const design = await designVoicesForCard({ userId, castId: "KI-CHG", automatic: true });
+    if (!design.ok) throw new Error("unreachable");
+
+    const kept = await keepVoiceForCard({
+      userId,
+      castId: "KI-CHG",
+      designId: design.designId,
+      handle: design.voices[1].handle,
+    });
+
+    expect(kept.ok).toBe(true);
+    expect(saves).toEqual(["save"]);
+    expect(charges.map((charge) => charge.amount)).toEqual([VOICE_KEEP_PRICE]);
+    expect(refunds).toHaveLength(0);
+  });
+});
+
+describe("Remove voice (#2497)", () => {
+  it("⚠ CHARGES NOTHING AND REFUNDS NOTHING — his *No refund — the customer had the voice*", async () => {
+    const userId = freshUser();
+
+    expect(await removeVoiceForCard({ userId, castId: "KI-RM" })).toEqual({ ok: true, removed: true });
+
+    expect(removals).toEqual([modelIdFor("KI-RM")]);
+    expect(charges).toHaveLength(0);
+    expect(refunds).toHaveLength(0);
+  });
+
+  it("answers `removed: false` for a cast with no voice, and still moves no money", async () => {
+    removeFinds = false;
+
+    expect(await removeVoiceForCard({ userId: freshUser(), castId: "KI-RM2" })).toEqual({
+      ok: true,
+      removed: false,
+    });
+    expect(charges).toHaveLength(0);
+  });
+
+  it("⚠ is refused on a shut road before anything is asked of the service", async () => {
+    voiceOn = false;
+
+    await expect(removeVoiceForCard({ userId: freshUser(), castId: "KI-RM3" })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(removals).toHaveLength(0);
+  });
+
+  it("is paced by the person's own mutation bucket and refuses with a real TOO_MANY_REQUESTS", async () => {
+    const userId = freshUser();
+    const ceiling = RATE_LIMITS.castingSheet.maxRequests;
+    for (let index = 0; index < ceiling; index += 1) {
+      await removeVoiceForCard({ userId, castId: "KI-RM4" });
+    }
+
+    await expect(removeVoiceForCard({ userId, castId: "KI-RM4" })).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+    });
+    expect(removals).toHaveLength(ceiling);
   });
 });

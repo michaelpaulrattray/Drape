@@ -55,17 +55,26 @@ const LIVE: VoiceAllowance = {
 };
 
 let cast: { modelId: number; name: string | null; voice: string | null } | null = null;
-let keptAlready: unknown = null;
+/** The voice an insert REPLACED (#2497) — `null` = the cast had none. */
+let replacedVoice: { voiceId: string | null } | null = null;
 let inserted = true;
+/** What `removeCastVoice` finds (#2497) — `null` = no voice to remove. */
+let removable: { voiceId: string | null } | null = null;
+/** Every provider release and row write, in the order they happened. */
+const timeline: string[] = [];
 const storagePuts: string[] = [];
 const storageDeletes: string[] = [];
 
 vi.mock("../db/castVoices", () => ({
   readCastVoiceLine: async () => cast,
-  readCastVoice: async () => keptAlready,
   insertCastVoice: async () => {
+    timeline.push("row-write");
     if (insertThrows) throw insertThrows;
-    return { inserted };
+    return { inserted, replaced: inserted ? replacedVoice : null };
+  },
+  removeCastVoice: async () => {
+    timeline.push("row-remove");
+    return removable;
   },
 }));
 
@@ -163,6 +172,7 @@ const {
   designCastVoices,
   keepCastVoice,
   readVoiceKeepability,
+  removeCastVoiceForCast,
   resetVoiceKeepabilityCache,
 } = await import("./voiceService");
 
@@ -202,8 +212,9 @@ function stubEngine(
       calls.push("speak");
       return { bytes: CLIP, contentType: "audio/mpeg", latencyMs: 4_200 };
     },
-    async deleteVoice() {
+    async deleteVoice(input) {
       calls.push("delete");
+      timeline.push(`release:${input.voiceId}`);
     },
     ...overrides,
   };
@@ -235,7 +246,9 @@ beforeEach(() => {
   anchorKey = "casting/anchors/1/904/master.png";
   writerRequests.length = 0;
   designInputs.length = 0;
-  keptAlready = null;
+  replacedVoice = null;
+  removable = null;
+  timeline.length = 0;
   inserted = true;
   storagePuts.length = 0;
   storageDeletes.length = 0;
@@ -727,12 +740,12 @@ describe("a Keep, once it is allowed to spend", () => {
     expect(storagePuts).toEqual(storageDeletes);
   });
 
-  it("refuses a second Keep on a cast that already has one, before any spend", async () => {
-    keptAlready = { id: 1, modelId: MODEL_ID };
-    const { engine, calls } = stubEngine();
-    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "already_kept" });
-    expect(calls).toEqual([]);
-  });
+  /*
+    ⚠ **A SECOND KEEP USED TO BE REFUSED HERE AS `already_kept`, AND THAT WAS
+    THE DEFECT #2497 REPORTS** — the card had no road to change a voice. A Keep
+    on a cast with a voice now REPLACES it; its arms are the block below
+    "a Keep that replaces the cast's voice".
+  */
 
   it("refuses a cast that went away before the first provider call", async () => {
     cast = null;
@@ -811,5 +824,150 @@ describe("the card's keepability hint", () => {
 
     /* Asked again rather than answered from a cached guess. */
     expect(calls).toEqual(["allowance", "allowance"]);
+  });
+});
+
+/**
+ * CHANGE — A KEEP ON A CAST THAT ALREADY HAS A VOICE REPLACES IT (#2497).
+ *
+ * His rule: *"the old voice is released only after the new one is fully kept
+ * (slot saved, clip stored, row written); a failed replace leaves the old voice
+ * exactly as it was."* The old voice's ROW and CLIP change only inside the one
+ * write (`server/db/castVoices.test.ts` drives that transaction); what is
+ * proven here is the provider half — the OLD slot is released only after that
+ * write lands, and never on any failure.
+ */
+describe("a Keep that replaces the cast's voice", () => {
+  const OLD = "old-saved-voice";
+
+  it("⚠ saves, records and writes the new voice, and only THEN releases the old slot", async () => {
+    replacedVoice = { voiceId: OLD };
+    const { engine, calls } = stubEngine();
+
+    const result = await keepCastVoice(KEEP, { engine });
+
+    expect(result).toMatchObject({ ok: true, replaced: { slotReleased: true } });
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+    /* The order claim, on the calls actually made. */
+    expect(timeline).toEqual(["row-write", `release:${OLD}`]);
+    expect(storagePuts).toHaveLength(1);
+    expect(storageDeletes).toEqual([]);
+  });
+
+  it("a first Keep releases nothing (the negative control)", async () => {
+    const { engine, calls } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toMatchObject({ ok: true, replaced: null });
+    expect(calls).toEqual(["allowance", "save", "speak"]);
+    expect(timeline).toEqual(["row-write"]);
+  });
+
+  it("⚠ A FAILED REPLACE NEVER TOUCHES THE OLD VOICE — the audition refused", async () => {
+    replacedVoice = { voiceId: OLD };
+    const { engine } = stubEngine({
+      async speak() {
+        throw new ProviderError("transport", "audition refused");
+      },
+    });
+
+    expect((await keepCastVoice(KEEP, { engine })).ok).toBe(false);
+    /* Only the NEW slot is given back; the row was never written. */
+    expect(timeline).toEqual(["release:saved-7"]);
+  });
+
+  it("⚠ A REPLACE THAT LOSES ITS WRITE RELEASES THE NEW SLOT AND CLIP, NOT THE OLD", async () => {
+    replacedVoice = { voiceId: OLD };
+    inserted = false;
+    const { engine } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "cast_not_available" });
+    expect(timeline).toEqual(["row-write", "release:saved-7"]);
+    expect(storageDeletes).toEqual(storagePuts);
+  });
+
+  it("⚠ A THROWN WRITE RELEASES ONLY THE NEW SLOT, and rethrows", async () => {
+    replacedVoice = { voiceId: OLD };
+    insertThrows = new Error("ER_LOCK_DEADLOCK");
+    const { engine } = stubEngine();
+
+    await expect(keepCastVoice(KEEP, { engine })).rejects.toThrow(/DEADLOCK/);
+    expect(timeline).toEqual(["row-write", "release:saved-7"]);
+  });
+
+  it("an old slot that will not release does not undo the new voice — it is logged", async () => {
+    replacedVoice = { voiceId: OLD };
+    const { engine } = stubEngine({
+      async deleteVoice() {
+        throw new ProviderError("transport", "vendor down");
+      },
+    });
+
+    expect(await keepCastVoice(KEEP, { engine })).toMatchObject({
+      ok: true,
+      replaced: { slotReleased: false },
+    });
+  });
+
+  it("a full plan refuses a replace before any spend — the new voice needs a slot first", async () => {
+    replacedVoice = { voiceId: OLD };
+    const { engine, calls } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30 } });
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "no_slots_left" });
+    expect(calls).toEqual(["allowance"]);
+    expect(timeline).toEqual([]);
+  });
+});
+
+describe("Remove voice (#2497)", () => {
+  it("removes the voice and THEN releases its slot", async () => {
+    removable = { voiceId: "old-saved-voice" };
+    const { engine, calls } = stubEngine();
+
+    expect(await removeCastVoiceForCast({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+      ok: true,
+      removed: true,
+      slotReleased: true,
+    });
+    expect(calls).toEqual(["delete"]);
+    expect(timeline).toEqual(["row-remove", "release:old-saved-voice"]);
+  });
+
+  it("makes no provider call at all when there is no voice to remove", async () => {
+    const { engine, calls } = stubEngine();
+
+    expect(await removeCastVoiceForCast({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+      ok: true,
+      removed: false,
+      slotReleased: null,
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it("a slot that will not release still leaves the voice removed — the customer asked for it gone", async () => {
+    removable = { voiceId: "old-saved-voice" };
+    const { engine } = stubEngine({
+      async deleteVoice() {
+        throw new ProviderError("transport", "vendor down");
+      },
+    });
+
+    expect(await removeCastVoiceForCast({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+      ok: true,
+      removed: true,
+      slotReleased: false,
+    });
+  });
+
+  it("⚠ is behind the voice scope, and off touches nothing", async () => {
+    delete process.env[CASTING_VOICE_SCOPE_ENV];
+    removable = { voiceId: "old-saved-voice" };
+    const { engine, calls } = stubEngine();
+
+    expect(await removeCastVoiceForCast({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+      ok: false,
+      refusal: "voice_off",
+    });
+    expect(calls).toEqual([]);
+    expect(timeline).toEqual([]);
   });
 });

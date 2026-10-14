@@ -2809,6 +2809,11 @@
 
 .dpc-voice__refusal { font: 400 11.5px/1.45 var(--font-sans); color: var(--faint); }
 
+/* Change and Remove on the kept card, and the remove question's two answers
+   (#2497). A row, so two quiet presses read as a pair rather than as two
+   stacked full-width bars in the foot's column. */
+.dpc-voice__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+
 /* ---- campaigns: flush card, rows own their padding ---- */
 
 .dpc-camp__head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; }

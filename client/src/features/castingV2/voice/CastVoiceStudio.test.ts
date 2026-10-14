@@ -23,6 +23,13 @@ import {
   VOICE_MAKE_AGAIN,
   VOICE_MAKING_LOADER,
   VOICE_NEEDS_A_LINE,
+  VOICE_CHANGE,
+  VOICE_CHANGE_CANCEL,
+  VOICE_CHANGE_HINT,
+  VOICE_NONE_YET,
+  VOICE_REMOVE,
+  VOICE_REMOVE_CONFIRM,
+  VOICE_REMOVE_YES,
   voiceAuditionLoader,
 } from "@shared/voiceCardCopy";
 
@@ -93,6 +100,14 @@ function render(props: Partial<CastVoiceStudioPanelProps> = {}): string {
        found the `undefined` the component now degrades on. */
     designPriceCredits: 125,
     keepPriceCredits: 500,
+    changing: false,
+    removeAsked: false,
+    removing: false,
+    onChange: () => {},
+    onCancelChange: () => {},
+    onAskRemove: () => {},
+    onConfirmRemove: () => {},
+    onCancelRemove: () => {},
   };
   return renderToStaticMarkup(createElement(CastVoiceStudioPanel, { ...base, ...props }));
 }
@@ -433,5 +448,76 @@ describe("the catch-all shows the server's sentence, not a money claim (finding 
     for (const handler of CATCHES) {
       expect(handler.body()).not.toContain(handler.banned);
     }
+  });
+});
+
+/**
+ * CHANGE AND REMOVE — #2497, his report: *"there doesnt seem to be a way to
+ * change the voice if you change the description or whatever or delete the
+ * selected voice"*. The kept card returned with no road to either; these arms
+ * pin both roads on the card and the states each one opens.
+ */
+/* Card #2497. */
+describe("a kept voice can be changed or removed", () => {
+  const KEPT = { clipPath: "/api/cast/KI-ABCD/voice-clip" };
+
+  it("⚠ THE KEPT CARD OFFERS BOTH — the defect was that it offered neither", () => {
+    const html = render({ kept: KEPT });
+    expect(html).toContain(VOICE_CHANGE);
+    expect(html).toContain(VOICE_REMOVE);
+    /* Still no Make press on the kept card itself: editing the line changes
+       nothing by itself (design §9) — Change voice is the press that does. */
+    expect(html).not.toContain(VOICE_MAKE_AGAIN);
+  });
+
+  it("asks once before a remove, and says the credits are not returned", () => {
+    const html = render({ kept: KEPT, removeAsked: true });
+    expect(html).toContain(asMarkup(VOICE_REMOVE_CONFIRM));
+    expect(html).toContain(`>${VOICE_REMOVE_YES}<`);
+    expect(html).toContain(VOICE_CHANGE_CANCEL);
+    /* The two presses give way to the question, so nothing else can be hit. */
+    expect(html).not.toContain(VOICE_CHANGE);
+  });
+
+  it("disables every press while a remove is in flight", () => {
+    const html = render({ kept: KEPT, removeAsked: true, removing: true });
+    expect((html.match(/disabled=""/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("⚠ CHANGING DRAWS THE PICKER, and says a Keep now replaces the voice they have", () => {
+    const html = render({ kept: KEPT, changing: true, choices: CHOICES, stage: "choosing" });
+    expect(html).toContain("Keep &quot;Voice 1&quot;");
+    expect(html).toContain(asMarkup(VOICE_CHANGE_HINT));
+    expect(html).toContain(VOICE_CHANGE_CANCEL);
+    /* The priced press is there, so more voices are one honest press away. */
+    expect(html).toContain(VOICE_MAKE_AGAIN);
+    /* The kept card's own presses are not drawn while choosing. */
+    expect(html).not.toContain(VOICE_REMOVE);
+  });
+
+  it("changing with nothing made yet rests on the priced press, not on No voice yet", () => {
+    /* The cast HAS a voice while it is being changed, so the empty state's name
+       would be a lie here. */
+    const html = render({ kept: KEPT, changing: true });
+    expect(html).not.toContain(VOICE_NONE_YET);
+    expect(html).toContain(VOICE_MAKE_AGAIN);
+  });
+
+  it("the replace hint and Cancel are drawn ONLY while changing (the negative control)", () => {
+    const html = render({ choices: CHOICES, stage: "choosing" });
+    expect(html).not.toContain(asMarkup(VOICE_CHANGE_HINT));
+    expect(html).not.toContain(VOICE_CHANGE_CANCEL);
+  });
+
+  it("⚠ AFTER A REMOVE THE CARD SAYS *No voice yet* — his *back to 'No voice yet'*", () => {
+    /* The state Remove returns to: no kept voice, a line, nothing made yet. */
+    const html = render({ kept: null });
+    expect(html).toContain(VOICE_NONE_YET);
+    expect(html).toContain(VOICE_MAKE_AGAIN);
+  });
+
+  it("but never under three voices to listen to", () => {
+    expect(render({ choices: CHOICES, stage: "choosing" })).not.toContain(VOICE_NONE_YET);
+    expect(render({ stage: "making" })).not.toContain(VOICE_NONE_YET);
   });
 });

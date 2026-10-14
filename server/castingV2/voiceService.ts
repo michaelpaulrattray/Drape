@@ -2,13 +2,18 @@
  * THE VOICE ROAD — N4b-1 (#2469), design
  * `docs/specs/N4B_VOICE_DESIGN_2026-10-13.md` §4/§5.
  *
- * Two entrances, and the whole of slice 1:
+ * The entrances:
  *
  *   · {@link designCastVoices} — the cast's written voice line becomes three
  *     voices to listen to. Spends no voice operation.
  *   · {@link keepCastVoice} — the chosen one becomes the cast's voice: saved,
  *     recorded reading the house passage, and the clip stored beside the line
- *     it was made from. **One voice operation and one slot.**
+ *     it was made from. **One voice operation and one slot.** On a cast that
+ *     already has a voice it REPLACES that voice (#2497), the old one changing
+ *     only once the new one is fully kept.
+ *   · {@link removeCastVoiceForCast} (#2497) — the cast has no voice again: the
+ *     clip is queued for deletion and the slot released. Charges and refunds
+ *     nothing.
  *
  * **No UI reaches either of them yet.** Slice 1 is the road; N4b-2 is the Voice
  * card that walks it. There is no tRPC procedure here on purpose — a procedure
@@ -52,7 +57,7 @@ import {
   VOICE_AUDITION_PASSAGE,
   VOICE_AUDITION_PASSAGE_VERSION,
 } from "./voiceAuditionPassage";
-import { insertCastVoice, readCastVoice, readCastVoiceLine } from "../db/castVoices";
+import { insertCastVoice, readCastVoiceLine, removeCastVoice } from "../db/castVoices";
 import {
   readCastVoiceCard,
   readCastVoiceCardSources,
@@ -88,8 +93,6 @@ export type VoiceRefusal =
   | "no_voice_line"
   /** The line is shorter than the engine can design from. */
   | "voice_line_too_short"
-  /** This cast already has a kept voice (slice-1 scaffolding — see the header). */
-  | "already_kept"
   /** The allowance could not be read, so nothing is spent. Invariant 7. */
   | "allowance_unreadable"
   /** The account's voice operations for this period are spent. */
@@ -122,6 +125,13 @@ export type VoiceKeepResult =
       allowanceBefore: VoiceAllowance;
       saveLatencyMs: number;
       speakLatencyMs: number;
+      /**
+       * Whether this Keep REPLACED a voice the cast already had (#2497), and
+       * if so whether the old provider slot came back. `null` = nothing was
+       * replaced. A slot that would not release is logged by
+       * {@link releaseSlotQuietly}; the customer's voice is the new one either way.
+       */
+      replaced: { slotReleased: boolean } | null;
     }
   | { ok: false; refusal: VoiceRefusal; failureClass?: string };
 
@@ -491,9 +501,20 @@ export async function keepCastVoice(
   const cast = await readCastVoiceLine(input.userId, input.modelId);
   if (!cast) return { ok: false, refusal: "cast_not_available" };
 
-  const existing = await readCastVoice(input.userId, input.modelId);
-  if (existing) return { ok: false, refusal: "already_kept" };
+  /*
+    ⚠ **A CAST THAT ALREADY HAS A VOICE IS NOT REFUSED ANY MORE — #2497.** It
+    was refused here as `already_kept` (slice-1 scaffolding, declared as such)
+    because nothing could yet collect a replaced clip. A Keep now REPLACES:
+    every step below runs for the NEW voice while the old one stays exactly as
+    it is, and the old voice changes only inside `insertCastVoice`'s one
+    transaction, after the new slot is saved and the new clip stored. Any
+    refusal or throw before that leaves the old voice untouched.
 
+    ⚠ **A REPLACE NEEDS A FREE SLOT FOR A MOMENT**: the new voice is saved
+    before the old one is released, because the other order loses the old
+    voice when the new save fails. So a plan with every slot full refuses a
+    replace as it refuses a first Keep (`no_slots_left`), rather than evicting.
+  */
   const engine = engineFor(deps);
 
   let allowanceBefore: VoiceAllowance;
@@ -609,7 +630,7 @@ export async function keepCastVoice(
     rethrown rather than being turned into a refusal, because a Keep that failed
     for an unknown reason is not the same fact as one the provider refused.
   */
-  let written: { inserted: boolean };
+  let written: Awaited<ReturnType<typeof insertCastVoice>>;
   try {
     written = await insertCastVoice({
       userId: input.userId,
@@ -654,6 +675,23 @@ export async function keepCastVoice(
     return { ok: false, refusal: "cast_not_available" };
   }
 
+  /*
+    THE OLD SLOT GOES ONLY NOW — after the transaction that made the new voice
+    the cast's has committed (his *"only after the new one is fully kept"*).
+    Its clip is already queued for the cleanup worker inside that transaction.
+    Best effort, as on the deletion road: the customer's voice is the new one
+    whatever the vendor answers, and a slot that will not release is logged
+    with its id so it can be swept by hand.
+  */
+  let replaced: { slotReleased: boolean } | null = null;
+  if (written.replaced) {
+    const oldVoiceId = written.replaced.voiceId;
+    replaced = {
+      slotReleased: oldVoiceId ? await releaseSlotQuietly(engine, oldVoiceId) : true,
+    };
+    log.info({ modelId: input.modelId, slotReleased: replaced.slotReleased }, "[Voice] a kept voice was replaced");
+  }
+
   return {
     ok: true,
     clipStorageKey,
@@ -664,7 +702,39 @@ export async function keepCastVoice(
     allowanceBefore,
     saveLatencyMs,
     speakLatencyMs,
+    replaced,
   };
+}
+
+/**
+ * REMOVE — the cast has no voice from now on (#2497).
+ *
+ * His word on the card: *"Remove voice: back to 'No voice yet', slot released,
+ * clip deleted. **No refund** — the customer had the voice."* So nothing here
+ * touches money, and nothing here calls the provider except to give the slot
+ * back.
+ *
+ * The row and the clip's manifest change in one transaction
+ * (`removeCastVoice`); the slot is released after it commits, best effort —
+ * the cast-deletion road's order and its reasoning.
+ */
+export async function removeCastVoiceForCast(
+  input: { userId: number; modelId: number },
+  deps?: VoiceServiceDeps,
+): Promise<
+  | { ok: true; removed: boolean; slotReleased: boolean | null }
+  | { ok: false; refusal: "voice_off" }
+> {
+  if (!captureCastingVoiceEnabled(input.userId)) return { ok: false, refusal: "voice_off" };
+
+  const removed = await removeCastVoice(input.userId, input.modelId);
+  if (!removed) return { ok: true, removed: false, slotReleased: null };
+
+  const slotReleased = removed.voiceId
+    ? await releaseSlotQuietly(engineFor(deps), removed.voiceId)
+    : true;
+  log.info({ modelId: input.modelId, slotReleased }, "[Voice] a kept voice was removed");
+  return { ok: true, removed: true, slotReleased };
 }
 
 /**

@@ -146,6 +146,8 @@ async function manifestSites(): Promise<ManifestSite[]> {
  * places the same shape occurs.
  */
 const DELETION_ORDERS: Record<string, string> = {
+  "db/castVoices.ts":
+    "a replaced or removed voice's clip (#2497) — the row stopped naming it in the same transaction",
   "castingV2/candidateRetention.ts":
     "the retention sweep — the manifest IS the deletion order",
   "db/castingV2FaceScans.ts":

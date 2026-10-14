@@ -7,6 +7,9 @@ import { logRawFailure, readableFailure } from "@/lib/failureSentence";
 import { TRPCClientError } from "@trpc/client";
 import {
   VOICE_CANNOT_KEEP,
+  VOICE_CHANGE,
+  VOICE_CHANGE_CANCEL,
+  VOICE_CHANGE_HINT,
   VOICE_CHOICES_LABEL,
   VOICE_CLIP_WONT_PLAY,
   VOICE_KEEP_FAILED,
@@ -18,6 +21,11 @@ import {
   VOICE_MAKE_LOST_CONTACT,
   VOICE_MAKING_LOADER,
   VOICE_NEEDS_A_LINE,
+  VOICE_NONE_YET,
+  VOICE_REMOVE,
+  VOICE_REMOVE_CONFIRM,
+  VOICE_REMOVE_FAILED,
+  VOICE_REMOVE_YES,
   VOICE_TOO_SOON,
   voiceAuditionLoader,
   voiceKeepLabel,
@@ -178,6 +186,24 @@ export type CastVoiceStudioPanelProps = {
    */
   designPriceCredits: number | null;
   keepPriceCredits: number | null;
+  /**
+   * CHANGE AND REMOVE (#2497). Required rather than optional for the same
+   * reason the prices are: a kept card rendered without them is a card with
+   * no road to either, which is the defect this card exists to end.
+   *
+   * `changing` — a kept voice is being replaced: the picker is drawn under it
+   * while the kept voice stays exactly as it is until a Keep lands.
+   * `removeAsked` — the one question before a remove is on screen.
+   * `removing` — a remove is in flight.
+   */
+  changing: boolean;
+  removeAsked: boolean;
+  removing: boolean;
+  onChange: () => void;
+  onCancelChange: () => void;
+  onAskRemove: () => void;
+  onConfirmRemove: () => void;
+  onCancelRemove: () => void;
 };
 
 /** The key a strip is addressed by. One spelling, used by both halves. */
@@ -202,6 +228,14 @@ export function CastVoiceStudioPanel({
   onKeep,
   designPriceCredits,
   keepPriceCredits,
+  changing,
+  removeAsked,
+  removing,
+  onChange,
+  onCancelChange,
+  onAskRemove,
+  onConfirmRemove,
+  onCancelRemove,
 }: CastVoiceStudioPanelProps) {
   /*
     THE DARK CARD, AND IT IS THE STUB'S OWN MARKUP.
@@ -216,7 +250,7 @@ export function CastVoiceStudioPanel({
       <>
         <VoiceStrip label="" state={stripFor(KEPT_STRIP_KEY)} />
         <div className="dpc-voice__foot">
-          <span className="dpc-voice__name">No voice yet</span>
+          <span className="dpc-voice__name">{VOICE_NONE_YET}</span>
           <span className="dpc-rcard__hint">
             A designed voice and an audition clip arrive with voice.
           </span>
@@ -226,8 +260,10 @@ export function CastVoiceStudioPanel({
   }
 
   /* A kept voice IS the card from then on: the player plays the cast's own
-     audition and the foot names it, replacing "No voice yet" (design §6). */
-  if (kept) {
+     audition and the foot names it, replacing "No voice yet" (design §6) —
+     until Change voice is pressed, when the picker below is drawn instead and
+     the kept voice waits, untouched, for a Keep or a Cancel (#2497). */
+  if (kept && !changing) {
     return (
       <>
         <VoiceStrip
@@ -247,6 +283,35 @@ export function CastVoiceStudioPanel({
             HERE or nowhere. The resting branches below already had a foot that
             draws it.
           */}
+          {/*
+            CHANGE AND REMOVE — #2497. The card used to return here with no road
+            to either: *"there doesnt seem to be a way to change the voice … or
+            delete the selected voice"* (his report, 2026-10-14). Editing the
+            line still changes nothing by itself (design §9); Change voice is
+            the press that makes voices from the line as it reads now.
+          */}
+          {removeAsked ? (
+            <>
+              <span className="dpc-voice__refusal" role="alert">{VOICE_REMOVE_CONFIRM}</span>
+              <div className="dpc-voice__actions">
+                <Button variant="secondary" size="small" disabled={removing} onClick={onConfirmRemove}>
+                  {VOICE_REMOVE_YES}
+                </Button>
+                <Button variant="quiet" size="small" disabled={removing} onClick={onCancelRemove}>
+                  {VOICE_CHANGE_CANCEL}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="dpc-voice__actions">
+              <Button variant="quiet" size="small" disabled={removing} onClick={onChange}>
+                {VOICE_CHANGE}
+              </Button>
+              <Button variant="quiet" size="small" disabled={removing} onClick={onAskRemove}>
+                {VOICE_REMOVE}
+              </Button>
+            </div>
+          )}
           {refusal ? (
             <span className="dpc-voice__refusal" role="alert">{refusal}</span>
           ) : null}
@@ -262,7 +327,7 @@ export function CastVoiceStudioPanel({
       <>
         <VoiceStrip label="" state={stripFor(KEPT_STRIP_KEY)} />
         <div className="dpc-voice__foot">
-          <span className="dpc-voice__name">No voice yet</span>
+          <span className="dpc-voice__name">{VOICE_NONE_YET}</span>
           <span className="dpc-rcard__hint">{VOICE_NEEDS_A_LINE}</span>
         </div>
       </>
@@ -309,16 +374,34 @@ export function CastVoiceStudioPanel({
         </div>
       ) : null}
 
-      {choices.length === 0 && !working ? (
+      {choices.length === 0 && !working && !changing ? (
         <VoiceStrip label="" state={stripFor(KEPT_STRIP_KEY)} />
       ) : null}
 
       <div className="dpc-voice__foot">
-        <Button variant="quiet" size="small" disabled={working} onClick={onMake}>
-          {Number.isFinite(designPriceCredits)
-            ? voiceMakeAgainLabel(designPriceCredits as number)
-            : VOICE_MAKE_AGAIN}
-        </Button>
+        {/*
+          THE EMPTY CARD SAYS SO — the state Remove returns to (his *"back to
+          'No voice yet'"*, #2497), and the words the dark and no-line cards
+          already said. Only while there is nothing to listen to and nothing
+          being made, so it never sits under three voices.
+        */}
+        {choices.length === 0 && !working && !changing ? (
+          <span className="dpc-voice__name">{VOICE_NONE_YET}</span>
+        ) : null}
+        {/* While replacing, say what a Keep will now do to the voice they have. */}
+        {changing ? <span className="dpc-rcard__hint">{VOICE_CHANGE_HINT}</span> : null}
+        <div className="dpc-voice__actions">
+          <Button variant="quiet" size="small" disabled={working} onClick={onMake}>
+            {Number.isFinite(designPriceCredits)
+              ? voiceMakeAgainLabel(designPriceCredits as number)
+              : VOICE_MAKE_AGAIN}
+          </Button>
+          {changing ? (
+            <Button variant="quiet" size="small" disabled={working} onClick={onCancelChange}>
+              {VOICE_CHANGE_CANCEL}
+            </Button>
+          ) : null}
+        </div>
         {refusal ? (
           <span className="dpc-voice__refusal" role="alert">{refusal}</span>
         ) : null}
@@ -448,6 +531,7 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
   const status = trpc.castingV2.voice.status.useQuery({ castId }, { enabled: Boolean(castId) });
   const design = trpc.castingV2.voice.design.useMutation();
   const keep = trpc.castingV2.voice.keep.useMutation();
+  const remove = trpc.castingV2.voice.remove.useMutation();
 
   const [designId, setDesignId] = useState<string | null>(null);
   const [choices, setChoices] = useState<readonly VoiceChoice[]>([]);
@@ -456,6 +540,9 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [bars, setBars] = useState<Record<string, number[]>>({});
+  /* #2497 — choosing a replacement for the kept voice, and the remove question. */
+  const [changing, setChanging] = useState(false);
+  const [removeAsked, setRemoveAsked] = useState(false);
 
   const audio = useRef<HTMLAudioElement | null>(null);
   /* Object URLs are revoked when they are replaced and on unmount: a blob held
@@ -746,6 +833,8 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       setChoices([]);
       setDesignId(null);
       setBars({});
+      /* A replacing Keep landed: the new voice is the card now (#2497). */
+      setChanging(false);
     } catch (error) {
       logRawFailure("castingV2.voice.keep", error);
       if (isTooSoon(error)) {
@@ -767,6 +856,72 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
     }
   }, [castId, designId, keep, releaseUrls, utils]);
 
+  /*
+    CHANGE VOICE — #2497, his *"reopens the picker and makes three new voices
+    from the voice line as it reads now"*.
+
+    ⚠ **THE THREE ARE MADE ON THE AUTOMATIC ROAD, AND THAT IS A DECISION, NOT A
+    SHORTCUT.** Pressing Change opens the picker, and a picker opening is the
+    event the free three already belong to (design §1). The server bounds that
+    road at one free three per cast per day (#2471) — the control his *"stop
+    people being able to spam generate"* asked for — so this press cannot farm
+    anything a reload could not. When that day's free three are spent, the
+    automatic road says nothing (as it always has) and the picker rests with
+    the PRICED "Make new voices" press under it: nobody is charged by a button
+    that names no price.
+
+    The kept voice is untouched throughout: it changes only when a Keep lands,
+    and Cancel puts the card back exactly as it was. Any voices already made
+    stay, so changing their mind and coming back costs nothing.
+  */
+  const onChange = useCallback(() => {
+    setRefusal(null);
+    setRemoveAsked(false);
+    audio.current?.pause();
+    setPlayingKey(null);
+    setChanging(true);
+    /* Nothing designed when nothing could be kept — the first-open rule. */
+    if (choices.length === 0 && canKeep !== false) void make(true);
+  }, [canKeep, choices.length, make]);
+
+  const onCancelChange = useCallback(() => {
+    setRefusal(null);
+    audio.current?.pause();
+    setPlayingKey(null);
+    setChanging(false);
+  }, []);
+
+  /*
+    REMOVE VOICE — #2497, his *"back to 'No voice yet', slot released, clip
+    deleted. No refund — the customer had the voice."* One question first,
+    because the press cannot be undone and gives nothing back.
+  */
+  const onConfirmRemove = useCallback(async () => {
+    setRefusal(null);
+    audio.current?.pause();
+    setPlayingKey(null);
+    try {
+      await remove.mutateAsync({ castId });
+      releaseUrls();
+      setBars({});
+      setChoices([]);
+      setDesignId(null);
+      setRemoveAsked(false);
+      /*
+        The card goes back to "No voice yet" and RESTS there, rather than
+        designing three new voices nobody asked for the moment the old one
+        goes. Making voices is one priced press away.
+      */
+      designedThisSession.add(castId);
+    } catch (error) {
+      logRawFailure("castingV2.voice.remove", error);
+      setRemoveAsked(false);
+      setRefusal(isTooSoon(error) ? VOICE_TOO_SOON : VOICE_REMOVE_FAILED);
+    } finally {
+      void utils.castingV2.voice.status.invalidate({ castId });
+    }
+  }, [castId, releaseUrls, remove, utils]);
+
   const stage: VoiceStudioStage = keep.isPending
     ? "keeping"
     : design.isPending ? "making" : choices.length > 0 ? "choosing" : "resting";
@@ -779,8 +934,16 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       onKeep: (handle: string) => void onKeep(handle),
       designPriceCredits: price,
       keepPriceCredits: keepPrice,
+      onChange,
+      onCancelChange,
+      onAskRemove: () => {
+        setRefusal(null);
+        setRemoveAsked(true);
+      },
+      onConfirmRemove: () => void onConfirmRemove(),
+      onCancelRemove: () => setRemoveAsked(false),
     }),
-    [stripFor, toggle, make, onKeep, price, keepPrice],
+    [stripFor, toggle, make, onKeep, price, keepPrice, onChange, onCancelChange, onConfirmRemove],
   );
 
   return (
@@ -799,6 +962,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
         onKeep={panel.onKeep}
         designPriceCredits={panel.designPriceCredits}
         keepPriceCredits={panel.keepPriceCredits}
+        changing={changing && Boolean(kept)}
+        removeAsked={removeAsked}
+        removing={remove.isPending}
+        onChange={panel.onChange}
+        onCancelChange={panel.onCancelChange}
+        onAskRemove={panel.onAskRemove}
+        onConfirmRemove={panel.onConfirmRemove}
+        onCancelRemove={panel.onCancelRemove}
       />
       {/*
         ONE audio element for the whole card, so pressing a second voice stops

@@ -23,6 +23,7 @@ import {
   designVoicesForCard,
   keepVoiceForCard,
   readVoiceCardStatus,
+  removeVoiceForCard,
   voiceCastInput,
   voiceDesignInput,
   voiceKeepInput,
@@ -932,8 +933,9 @@ const referenceRouter = router({
 });
 
 /**
- * THE VOICE CARD'S THREE — N4b-2 (#2470). `castingV2.voice.status`, `.design`,
- * `.keep`.
+ * THE VOICE CARD'S PROCEDURES — N4b-2 (#2470). `castingV2.voice.status`,
+ * `.design`, `.keep`, and `.remove` (#2497 — a Keep on a cast that already has
+ * a voice replaces it, so Change voice needs no procedure of its own).
  *
  * Declared here, beside `ink`, `conceptRouter` and `referenceRouter`, because
  * that is what its siblings do; the work each one does is three plain functions
@@ -972,6 +974,14 @@ const voiceRouter = router({
       castId: input.castId,
       designId: input.designId,
       handle: input.handle,
+    })),
+
+  remove: protectedProcedure
+    .input(voiceCastInput)
+    .mutation(({ ctx, input }) => removeVoiceForCard({
+      /* `userId` is the AUTHENTICATED one and never an input (invariant 3). */
+      userId: ctx.user.id,
+      castId: input.castId,
     })),
 });
 
