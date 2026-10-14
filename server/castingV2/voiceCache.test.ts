@@ -42,6 +42,8 @@ const FULL: VoiceAllowance = {
   slotsUsed: 3,
   operationsTotal: 95,
   operationsUsed: 9,
+  charactersTotal: 182297,
+  charactersUsed: 8782,
   instantCloning: true,
   tier: "creator",
 };

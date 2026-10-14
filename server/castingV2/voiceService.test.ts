@@ -50,6 +50,10 @@ const LIVE: VoiceAllowance = {
   slotsUsed: 3,
   operationsTotal: 95,
   operationsUsed: 4,
+  /* The character pair read first-hand 2026-10-14 on #2509 — the same account,
+     one day later than the figures above. */
+  charactersTotal: 182297,
+  charactersUsed: 8782,
   instantCloning: true,
   tier: "creator",
 };

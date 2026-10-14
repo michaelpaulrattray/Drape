@@ -252,6 +252,29 @@ function readNumber(source: Record<string, unknown>, field: string): number {
   return value;
 }
 
+/**
+ * The same read for a field that is a READING rather than a ceiling on a spend.
+ *
+ * ⚠ **IT RETURNS `null` AND DOES NOT REFUSE, AND THE ASYMMETRY WITH
+ * {@link readNumber} ABOVE IS THE WHOLE POINT (#2509).** That function's
+ * reasoning is *"this is the read a Keep asks before it spends"* — true of the
+ * slot and operation ceilings, which gate money. The character meter gates
+ * nothing in this product today: it is projected to the staff panel so the
+ * house's one shared budget is visible at all. Reading it with `readNumber`
+ * would hand a diagnostic field the power to refuse every Keep the first time
+ * the provider omitted it on some plan shape, which is a worse failure than the
+ * row it would protect.
+ *
+ * **`null` means NOT REPORTED and is never shown as a zero** — the staff
+ * projection carries the absence through rather than inventing a number, which
+ * is the distinction a previous shift's own mistake turned on: an absent field
+ * and an unfetched field look identical unless something says which.
+ */
+function readOptionalNumber(source: Record<string, unknown>, field: string): number | null {
+  const value = source[field];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 export function createElevenLabsVoiceEngine(): VoiceEngine {
   return {
     id: "elevenlabs",
@@ -270,6 +293,13 @@ export function createElevenLabsVoiceEngine(): VoiceEngine {
         slotsUsed: readNumber(body, "voice_slots_used"),
         operationsTotal: readNumber(body, "max_voice_add_edits"),
         operationsUsed: readNumber(body, "voice_add_edit_counter"),
+        /* The house-wide character meter — same call, same body, nothing extra
+           spent. #2509, and the reasoning is on the field in `voiceTypes.ts`:
+           these two were already arriving and being thrown away. Optional on
+           purpose — see `readOptionalNumber`: a meter nothing gates on must not
+           be able to refuse a Keep. */
+        charactersTotal: readOptionalNumber(body, "character_limit"),
+        charactersUsed: readOptionalNumber(body, "character_count"),
         instantCloning: body.can_use_instant_voice_cloning === true,
         tier: typeof body.tier === "string" ? body.tier : "unknown",
       };
