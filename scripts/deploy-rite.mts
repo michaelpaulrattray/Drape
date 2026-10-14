@@ -1717,7 +1717,7 @@ const anchor = uptimeAnchor(healths[0]!);
   only runs inside the script that pushes to production is a judgement nothing
   can drive.
 */
-const tracker = ((): { line: string; problems: readonly string[] } => {
+const tracker = ((): { line: string; problems: readonly string[]; confirmation: string } => {
   /* The SERVING build, from the artifact this run just read three times — not
      from `sha`, which is what was PUSHED. They are the same commit on a normal
      night and are exactly what the uptime anchor exists to tell apart. */
@@ -1745,7 +1745,7 @@ const tracker = ((): { line: string; problems: readonly string[] } => {
     output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
     status: result.status,
   });
-  return { line: reading.line, problems: reading.problems };
+  return { line: reading.line, problems: reading.problems, confirmation: reading.confirmation };
 })();
 
 /* ── 5. the flags, OFF THE SERVICE ──────────────────────────────────────── */
@@ -2057,7 +2057,9 @@ if (assets.problems.length === 0) {
 say("");
 say(`ERROR TRACKER, probed through the real crash path (#1643): ${tracker.line}`);
 if (tracker.problems.length === 0) {
-  say("  ✓ a deliberate test exception reached Sentry, so a quiet Errors feed is genuine silence");
+  /* The tick says what the probe PROVED, at its own strength (#2514) — an event
+     still being indexed is not one that "reached" the feed. */
+  say(`  ${tracker.confirmation}`);
 } else {
   say(`  *** ERROR TRACKER PROBLEM — ${tracker.problems.length} ***`);
   for (const problem of tracker.problems) say(`  ! ${problem}`);

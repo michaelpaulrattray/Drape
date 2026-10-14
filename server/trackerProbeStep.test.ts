@@ -81,6 +81,42 @@ const NO_TRACKER_OUTPUT = [
   "EXIT     2",
 ].join("\n");
 
+/**
+ * #2514's two shapes. Composed from the probe's own print statements rather than
+ * pasted from a run: the not-yet-visible road needs a slow Sentry index to occur
+ * live, and the lost one a dead pipe — neither can be fired on purpose from here.
+ * The summaries are `readTrackerProbe`'s own words for these facts.
+ */
+const NOT_YET_VISIBLE_OUTPUT = [
+  "— error tracker probe (#1542) —",
+  "marker   probe:a7a6a14c:mv8eo86k-nh4s6z",
+  "eventId  0f4c1d2e3b4a59687a8b9c0d1e2f3a4b",
+  "counters sent +1 · refused +0 · configured=true ready=true",
+  "ingest   Sentry's ingest answered HTTP 200 to the envelope",
+  "lookup   absent — Sentry answered 404 (not found) on every one of 11 attempts across 90s for klieg-labs/klieg-server.",
+  "project  matches — the DSN sends into klieg-labs/klieg-server (project id 4242)",
+  "",
+  "VERDICT  not-yet-visible",
+  "Sentry's ingest answered 200 to the event … but the event is not yet readable by id.",
+  "EXIT     0",
+].join("\n");
+
+const LOST_OUTPUT = [
+  "— error tracker probe (#1542) —",
+  "marker   probe:a7a6a14c:mv8eravd-qv5uyi",
+  "eventId  0f4c1d2e3b4a59687a8b9c0d1e2f3a4b",
+  "counters sent +1 · refused +0 · configured=true ready=true",
+  "ingest   Sentry's ingest answered HTTP 401 to the envelope",
+  "lookup   absent — Sentry answered 404 (not found) on every one of 11 attempts across 90s for klieg-labs/klieg-server.",
+  "project  matches — the DSN sends into klieg-labs/klieg-server (project id 4242)",
+  "",
+  "VERDICT  lost-in-transit  (finding)",
+  "The SDK accepted the event and Sentry's ingest REFUSED it with HTTP 401.",
+  "",
+  "Record this on #1542: the verdict, the event id, and the lookup note above.",
+  "EXIT     2",
+].join("\n");
+
 describe("the rite's reading of the probe (#1643)", () => {
   it("reads a REAL driven run — the no-DSN road, and the `(finding)` suffix is not part of the verdict", () => {
     const reading = readProbeStep({ output: NO_TRACKER_OUTPUT, status: 2 });
@@ -104,6 +140,30 @@ describe("the rite's reading of the probe (#1643)", () => {
     expect(reading.problems).toEqual([]);
     expect(reading.line).toContain("arrived");
     expect(reading.line).toContain("probe:cd969b54:muon8kgq-kjri81");
+  });
+
+  it("⚠ calls an event only slow to INDEX a NOTE, not a problem — and never says it reached the feed (#2514)", () => {
+    const reading = readProbeStep({ output: NOT_YET_VISIBLE_OUTPUT, status: 0 });
+
+    expect(reading.verdict).toBe("not-yet-visible");
+    expect(reading.healthy).toBe(true);
+    expect(reading.problems).toEqual([]);
+    expect(reading.line).toContain("not-yet-visible");
+    expect(reading.confirmation).toMatch(/ingest received/);
+    expect(reading.confirmation).not.toMatch(/reached Sentry/);
+  });
+
+  it("an arrived run's tick still says it reached Sentry (the confirmation's positive control)", () => {
+    expect(readProbeStep({ output: ARRIVED_OUTPUT, status: 0 }).confirmation).toMatch(/reached Sentry/);
+  });
+
+  it("NEGATIVE — a real dead pipe (lost-in-transit, EXIT 2) still costs the rite its OK (#2514)", () => {
+    const reading = readProbeStep({ output: LOST_OUTPUT, status: 2 });
+
+    expect(reading.verdict).toBe("lost-in-transit");
+    expect(reading.healthy).toBe(false);
+    expect(reading.problems).toHaveLength(1);
+    expect(reading.problems[0]).toContain("lost-in-transit");
   });
 
   it("calls a non-arrived verdict a PROBLEM, and says the deploy is not rolled back", () => {
@@ -224,6 +284,16 @@ describe("the rite's reading of the probe (#1643)", () => {
     it("flags a VERDICT and an EXIT that cannot both be true", () => {
       const reading = readProbeStep({
         output: "marker   probe:x:y\nVERDICT  arrived\nEXIT     2\n",
+        status: 2,
+      });
+
+      expect(reading.healthy).toBe(false);
+      expect(reading.problems.some((problem) => /disagree/.test(problem))).toBe(true);
+    });
+
+    it("⚠ a not-yet-visible verdict under EXIT 2 is incoherent too — the passing words are derived (#2514)", () => {
+      const reading = readProbeStep({
+        output: "VERDICT  not-yet-visible\nEXIT     2\n",
         status: 2,
       });
 

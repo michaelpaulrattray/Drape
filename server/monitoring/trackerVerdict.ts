@@ -59,10 +59,45 @@ export type TrackerVerdict =
   | "not-accepted"
   /** Accepted and confirmed present at the vendor. The only healthy answer. */
   | "arrived"
-  /** Accepted, and the vendor does not have it. THE dead-pipe answer. */
+  /**
+   * Accepted, not readable by id after the window, and NOTHING positively shows
+   * Sentry received it into this project — or something positively shows it did
+   * not. THE dead-pipe answer.
+   */
   | "lost-in-transit"
+  /**
+   * Accepted, Sentry's ingest answered 2xx to the envelope that carried it, and
+   * the DSN names the very project being read — but the event is not yet
+   * readable by id. Sentry's indexing lag, not a dead pipe (#2514). A NOTE on
+   * the receipt, never a finding.
+   */
+  | "not-yet-visible"
   /** Accepted; arrival unproven because nothing asked the vendor. */
   | "accepted-unverified";
+
+/**
+ * What Sentry's INGEST endpoint answered to the envelope that carried the probe's
+ * event — read off the SDK's own `afterSendEvent` hook, so it is the vendor's
+ * answer at the door rather than a guess about it (#2514).
+ */
+export type IngestAnswer =
+  /** The ingest endpoint answered with this HTTP status. */
+  | { readonly kind: "answered"; readonly status: number }
+  /**
+   * The transport resolved WITHOUT an HTTP status — a network failure, a
+   * rate-limit backoff, a full queue. Nothing reached Sentry's door.
+   */
+  | { readonly kind: "no-answer" }
+  /** The hook never fired for this event, so nothing is known about the door. */
+  | { readonly kind: "not-observed" };
+
+/**
+ * Whether the DSN this process sends on names the project the read-back asks
+ * about — compared as Sentry's numeric project ids, never by printing the DSN.
+ * `differs` is the *"the DSN points somewhere else"* half of the dead pipe,
+ * proven rather than suspected.
+ */
+export type DsnProjectMatch = "matches" | "differs" | "unknown";
 
 export interface TrackerProbeFacts {
   /** A DSN is set, so this process intends to report. */
@@ -76,6 +111,10 @@ export interface TrackerProbeFacts {
   /** Sentry's own event id, as returned by `captureException`. */
   readonly eventId: string | undefined;
   readonly lookup: VendorLookup;
+  /** What the ingest endpoint answered. Absent reads as `not-observed`. */
+  readonly ingest?: IngestAnswer;
+  /** Whether the DSN names the project being read. Absent reads as `unknown`. */
+  readonly dsnProject?: DsnProjectMatch;
 }
 
 export interface TrackerReading {
@@ -145,14 +184,7 @@ export function readTrackerProbe(facts: TrackerProbeFacts): TrackerReading {
         summary: `The event arrived at Sentry (event id ${facts.eventId}). The pipe is live end to end, so a quiet feed is genuine silence.`,
       };
     case "absent":
-      return {
-        verdict: "lost-in-transit",
-        healthy: false,
-        summary:
-          `The SDK accepted the event (id ${facts.eventId}) and Sentry does not have it. ` +
-          "This is the dead pipe #1542 was filed about: the DSN points somewhere else, or the transport never " +
-          "drained. Check the DSN's project against the project being read.",
-      };
+      return readAbsence(facts.eventId, facts.ingest ?? { kind: "not-observed" }, facts.dsnProject ?? "unknown");
     case "unreadable":
       return {
         verdict: "accepted-unverified",
@@ -171,6 +203,128 @@ export function readTrackerProbe(facts: TrackerProbeFacts): TrackerReading {
           "set the token and re-run.",
       };
   }
+}
+
+/**
+ * THE VERDICTS THAT DO NOT FAIL A RITE, declared once (#2514). The step reader in
+ * `scripts/lib/trackerProbeStep.mts` cross-checks the probe's `EXIT` line against
+ * this, and the suite holds every `healthy: true` reading to it — so the two
+ * sides can never disagree about which words pass (working law 4).
+ */
+export const PASSING_TRACKER_VERDICTS: readonly TrackerVerdict[] = ["arrived", "not-yet-visible"];
+
+export function trackerVerdictPasses(verdict: string | null): boolean {
+  return verdict !== null && (PASSING_TRACKER_VERDICTS as readonly string[]).includes(verdict);
+}
+
+/**
+ * AN EVENT THAT IS NOT READABLE BY ID AFTER THE WINDOW — split by what the vendor
+ * actually said at its door (#2514).
+ *
+ * ⚠ **UNTIL #2514 THIS WAS ONE SENTENCE AND IT WAS A STRONGER CLAIM THAN THE
+ * FACT.** *"Absent after 90 s"* was printed as *"Sentry does not have it"*, and on
+ * 2026-10-14 the rite exited 1 on a working pipe: both probe events were in
+ * Sentry (17:50:37Z and 17:53:00Z), Sentry's outcomes showed zero drops, and the
+ * only thing slower than 90 s was Sentry's indexing — which is all the id lookup
+ * can see. Lengthening the window alone was declined: indexing lag has no bound
+ * this product owns, so a longer window only moves the false alarm.
+ *
+ * So the absence is read beside two facts that are POSITIVE evidence either way:
+ *
+ * - the ingest endpoint's own HTTP answer to the envelope (a 2xx is Sentry
+ *   saying *"received"*; a 4xx/5xx is a refusal; no answer is a pipe that never
+ *   reached the door);
+ * - whether the DSN names the project being read (a 2xx into ANOTHER project is
+ *   the *"DSN points somewhere else"* dead pipe, and only an id compare sees it).
+ *
+ * Only BOTH positive — received, and received into this project — earns
+ * `not-yet-visible`. Every other combination keeps `lost-in-transit` and its
+ * failing exit, with words naming the evidence it rests on.
+ *
+ * ⚠ **What `not-yet-visible` cannot see, named rather than left to be assumed:**
+ * an event the ingest took with a 2xx and Sentry then discarded AFTER the door
+ * (an inbound filter, a later quota drop). Sentry's outcomes API is the reader for
+ * that, and it was not added here: on the night that filed #2514 it lagged too
+ * (it counted 1 accepted event where there were 2), so it could not have been the
+ * tie-breaker either.
+ */
+function readAbsence(eventId: string, ingest: IngestAnswer, dsnProject: DsnProjectMatch): TrackerReading {
+  const received = ingest.kind === "answered" && ingest.status >= 200 && ingest.status < 300;
+
+  if (received && dsnProject === "matches") {
+    return {
+      verdict: "not-yet-visible",
+      healthy: true,
+      summary:
+        `Sentry's ingest answered ${ingest.status} to the event (id ${eventId}) and the DSN names this very ` +
+        "project, but the event is not yet readable by id — Sentry's indexing is slower than the probe's window. " +
+        "That is lag, not a dead pipe; the id will be findable in the feed once Sentry catches up.",
+    };
+  }
+
+  const dead =
+    "This is the dead pipe #1542 was filed about: the DSN points somewhere else, or the transport never drained.";
+
+  if (dsnProject === "differs") {
+    return {
+      verdict: "lost-in-transit",
+      healthy: false,
+      summary:
+        `The SDK accepted the event (id ${eventId}), but the DSN names a DIFFERENT Sentry project from the one ` +
+        `being read, so it can never arrive here. ${dead} Check the DSN's project against the project being read.`,
+    };
+  }
+
+  if (ingest.kind === "answered" && !received) {
+    return {
+      verdict: "lost-in-transit",
+      healthy: false,
+      summary:
+        `The SDK accepted the event (id ${eventId}) and Sentry's ingest REFUSED it with HTTP ${ingest.status}. ` +
+        `${dead} A 401/403 is the DSN's key; a 429 is quota or rate limiting.`,
+    };
+  }
+
+  if (ingest.kind === "no-answer") {
+    return {
+      verdict: "lost-in-transit",
+      healthy: false,
+      summary:
+        `The SDK accepted the event (id ${eventId}) and the transport got NO answer from Sentry's ingest — a ` +
+        `network failure, a backoff or a full queue. ${dead}`,
+    };
+  }
+
+  return {
+    verdict: "lost-in-transit",
+    healthy: false,
+    summary:
+      `The SDK accepted the event (id ${eventId}), it is not readable at Sentry after the window, and nothing ` +
+      `positively shows Sentry received it into this project (ingest ${ingest.kind === "answered" ? ingest.status : "not observed"}, ` +
+      `DSN project ${dsnProject}). ${dead} Check the DSN's project against the project being read.`,
+  };
+}
+
+/**
+ * Sentry's numeric project id out of a DSN (`https://<key>@<host>/<projectId>`),
+ * or `undefined` when the string is not one. Only the id leaves this function —
+ * the key in the DSN is never returned, so a caller cannot print it by accident.
+ */
+export function dsnProjectId(dsn: string | undefined): string | undefined {
+  const raw = dsn?.trim();
+  if (!raw) return undefined;
+  try {
+    const last = new URL(raw).pathname.split("/").filter((segment) => segment !== "").pop();
+    return last && /^\d+$/.test(last) ? last : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Compare the DSN's project id with the id the vendor reports for the project being read. */
+export function matchDsnProject(dsnId: string | undefined, readId: string | undefined): DsnProjectMatch {
+  if (dsnId === undefined || readId === undefined) return "unknown";
+  return dsnId === readId ? "matches" : "differs";
 }
 
 /**

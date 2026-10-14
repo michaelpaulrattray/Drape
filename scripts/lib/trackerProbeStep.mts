@@ -48,6 +48,8 @@
  * nothing can drive. Driven by `server/trackerProbeStep.test.ts`.
  */
 
+import { trackerVerdictPasses } from "../../server/monitoring/trackerVerdict";
+
 /** The probe's invocation, declared once so the rite cannot spell it two ways. */
 export interface ProbeInvocation {
   readonly command: string;
@@ -114,7 +116,19 @@ export interface ProbeStepReading {
   readonly line: string;
   /** Named faults, in the rite's own `problems` shape. Empty when healthy. */
   readonly problems: readonly string[];
+  /**
+   * The receipt's tick line when there are no problems — WHAT the probe proved,
+   * in the strength it proved it (#2514). `arrived` earns *"reached Sentry"*;
+   * `not-yet-visible` earns only *"Sentry's ingest received it"*, because an
+   * event not yet readable is not one anybody has seen in the feed.
+   */
+  readonly confirmation: string;
 }
+
+const CONFIRM_ARRIVED = "✓ a deliberate test exception reached Sentry, so a quiet Errors feed is genuine silence";
+const CONFIRM_NOT_YET_VISIBLE =
+  "✓ Sentry's ingest received a deliberate test exception into this project; it was not yet readable by id"
+  + " inside the probe's window — Sentry's indexing lag, a NOTE and not a dead pipe (#2514)";
 
 /*
   `VERDICT  arrived` / `EXIT     0`, ANCHORED — and the gap is `[ \t]+` rather
@@ -165,6 +179,7 @@ export function readProbeStep(run: ProbeRun): ProbeStepReading {
       line:
         "error tracker UNREAD — the probe printed no EXIT line, so it never reached a verdict"
         + ` (process exit ${run.status === null ? "none" : run.status}) · ${tailOf(run.output, 3)}`,
+      confirmation: "",
       problems: [
         "the error-tracker probe did not run to a verdict — the question \"is the Sentry pipe alive?\" is"
         + " unanswered for this deploy, which is the silence #1542 was filed about. Run"
@@ -193,7 +208,10 @@ export function readProbeStep(run: ProbeRun): ProbeStepReading {
     instrument that cannot notice its own input being incoherent reports whatever
     it happened to match.
   */
-  if (healthy !== (verdict === "arrived")) {
+  /* ⚠ DERIVED (#2514): the passing words are `PASSING_TRACKER_VERDICTS` in the
+     verdict module, the one producer — this read `verdict === "arrived"` until a
+     second passing word existed, which is the second list working law 4 names. */
+  if (healthy !== trackerVerdictPasses(verdict)) {
     problems.push(
       `the probe's own two readings disagree — VERDICT said \`${verdict ?? "nothing"}\` and EXIT said`
       + ` ${exitLine}. They are one fact on the probe's side, so this output is not one coherent run;`
@@ -231,6 +249,7 @@ export function readProbeStep(run: ProbeRun): ProbeStepReading {
         ? ` · ⚠ printed EXIT ${exitLine}, process exited ${run.status} — the LINE is the contract`
         : ""),
     problems,
+    confirmation: verdict === "not-yet-visible" ? CONFIRM_NOT_YET_VISIBLE : CONFIRM_ARRIVED,
   };
 }
 
