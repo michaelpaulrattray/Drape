@@ -109,7 +109,12 @@ vi.mock("../storage", () => ({
   },
 }));
 
-const { designCastVoices, keepCastVoice } = await import("./voiceService");
+const {
+  designCastVoices,
+  keepCastVoice,
+  readVoiceKeepability,
+  resetVoiceKeepabilityCache,
+} = await import("./voiceService");
 
 /** What the engine was asked to do, in order — the only honest order claim. */
 type Call = "allowance" | "design" | "save" | "speak" | "delete";
@@ -164,6 +169,7 @@ beforeEach(() => {
   clipHolds.length = 0;
   holdThrows = false;
   insertThrows = null;
+  resetVoiceKeepabilityCache();
 });
 
 afterEach(() => {
@@ -472,5 +478,74 @@ describe("a Keep, once it is allowed to spend", () => {
       refusal: "cast_not_available",
     });
     expect(calls).toEqual([]);
+  });
+});
+
+/**
+ * CAN ANYTHING BE KEPT AT ALL — the card's own question (#2470's finding, item
+ * 5).
+ *
+ * ⚠ **IT IS A HINT AND NOT A GATE, AND THESE ARMS ARE WRITTEN TO HOLD THAT
+ * DISTINCTION.** The spend gate is the LIVE read inside Keep, covered above
+ * and unchanged. What this answers is whether three voices should be designed
+ * on house money at all when nothing could be kept from them — so it is cached
+ * and it fails OPEN, which is the opposite of what the gate does and would be
+ * a defect if it were the gate.
+ */
+describe("the card's keepability hint", () => {
+  it("says no when the month's operations are spent", async () => {
+    const { engine } = stubEngine({
+      allowance: { ...LIVE, operationsUsed: 95, operationsTotal: 95 },
+    });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
+  });
+
+  it("says no when every slot the plan allows is full", async () => {
+    const { engine } = stubEngine({ allowance: { ...LIVE, slotsUsed: 30, slotsTotal: 30 } });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: false });
+  });
+
+  it("says yes on a live plan, and reads the provider ONCE for a minute", async () => {
+    /*
+      It is one HOUSE account, not one per customer, so there is nothing to key
+      a cache by — and without one every signed cast's page open would be a
+      provider round trip. The two things that move this answer are a Keep and
+      the month turning.
+    */
+    const { engine, calls } = stubEngine();
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+
+    expect(calls).toEqual(["allowance"]);
+  });
+
+  it("⚠ FAILS OPEN on an unreadable allowance, and does not cache the guess", async () => {
+    /*
+      The safe direction HERE, and only here: an unreadable allowance leaves the
+      card working, because the live read inside Keep still refuses before any
+      spend (`allowance_unreadable`). Failing closed would hide a working
+      feature on a transient blip and save nothing.
+
+      And the optimistic answer is NOT cached — a one-second outage must not pin
+      it for a minute.
+    */
+    let refuse = true;
+    const { engine, calls } = stubEngine({
+      async readAllowance() {
+        calls.push("allowance");
+        if (refuse) throw new Error("provider down");
+        return LIVE;
+      },
+    });
+
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+    refuse = false;
+    expect(await readVoiceKeepability({ engine })).toEqual({ canKeep: true });
+
+    /* Asked again rather than answered from a cached guess. */
+    expect(calls).toEqual(["allowance", "allowance"]);
   });
 });

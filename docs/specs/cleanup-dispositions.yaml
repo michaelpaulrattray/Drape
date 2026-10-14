@@ -1600,6 +1600,24 @@
   why: "the only way a suite can see the store's CEILING hold rather than just its eviction. The arms prove an evicted handle stops resolving, which is eviction; this proves the bound — that 500 entries in gives at most 500 entries held — and an unbounded map on a long-lived process is exactly the leak the bound exists for. A reading nothing can observe is a bound nobody can test"
   argued: "#2470 (N4b-2)"
 
+- symbol: claimedVoiceDesignCount
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "the claim moved designs into a SECOND module-level Map, and this is the only way a suite can see that map at all — that a claim really took the design out of reach, that a restore really gave it back, and that a landed Keep leaves nothing behind in either map. The sibling reading, voiceDesignStoreSize, can only ever show the resolvable side, so without this the claimed side's leak would be invisible: an entry held for the life of the process by a Keep that died mid-flight reads identically to one that was cleaned up. Its docblock says production never calls it"
+  argued: "#2470 (N4b-2), the relay's finding item 3"
+
+- symbol: resetVoiceKeepabilityCache
+  file: server/castingV2/voiceService.ts
+  verdict: KEEP
+  why: "the keepability hint caches ONE house-wide answer at module level for a minute, so without this the cache arm and the fail-open arm read each other's entry and the result depends on which ran first — the same reason resetVoiceDesignStore exists one module over. It is what makes the two claims testable at all: that two reads cost one provider call, and that an unreadable allowance answers yes WITHOUT being cached. Both were driven and both go red under sabotage. Its docblock says production never calls it"
+  argued: "#2470 (N4b-2), the relay's finding item 5"
+
+- symbol: resolveVoiceDesignHandle
+  file: server/castingV2/voiceDesignStore.ts
+  verdict: KEEP
+  why: "production stopped calling it in #2470's repair — the Keep road CLAIMS a handle now, which resolves and removes in one indivisible step so a double-press cannot spend two of the account's 95 monthly voice operations. What is left is the only read that does NOT consume: a suite asking 'is this handle resolvable' through the claim would destroy the state it is asking about, so the restore arm could check one handle instead of three and the eviction and TTL arms could not be written at all. Deleting it would not remove a road, it would remove the only non-destructive observation of this store"
+  argued: "#2470 (N4b-2), the relay's finding item 3"
+
 - symbol: voiceCardEveryString
   file: shared/voiceCardCopy.ts
   verdict: KEEP
