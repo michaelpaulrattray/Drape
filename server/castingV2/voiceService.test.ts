@@ -58,6 +58,15 @@ let cast: { modelId: number; name: string | null; voice: string | null } | null 
 /** The voice an insert REPLACED (#2497) — `null` = the cast had none. */
 let replacedVoice: { voiceId: string | null } | null = null;
 let inserted = true;
+/** WHY a write that did not land did not (#2506) — the db layer's own answer. */
+let lostAs: "cast_gone" | "race" = "cast_gone";
+/**
+ * What the cast reads as on each read AFTER the first (#2506). The Keep reads
+ * the cast once on the way in; a lost race reads it again. An Error throws.
+ * Empty = every read answers `cast`.
+ */
+const laterCastReads: Array<typeof cast | Error> = [];
+let castReads = 0;
 /** What `removeCastVoice` finds (#2497) — `null` = no voice to remove. */
 let removable: { voiceId: string | null } | null = null;
 /** Every provider release and row write, in the order they happened. */
@@ -66,11 +75,21 @@ const storagePuts: string[] = [];
 const storageDeletes: string[] = [];
 
 vi.mock("../db/castVoices", () => ({
-  readCastVoiceLine: async () => cast,
+  readCastVoiceLine: async () => {
+    castReads += 1;
+    if (castReads > 1 && laterCastReads.length > 0) {
+      const answer = laterCastReads.shift();
+      if (answer instanceof Error) throw answer;
+      return answer ?? null;
+    }
+    return cast;
+  },
   insertCastVoice: async () => {
     timeline.push("row-write");
     if (insertThrows) throw insertThrows;
-    return { inserted, replaced: inserted ? replacedVoice : null };
+    return inserted
+      ? { inserted, replaced: replacedVoice }
+      : { inserted, replaced: null, lost: lostAs };
   },
   removeCastVoice: async () => {
     timeline.push("row-remove");
@@ -266,6 +285,9 @@ beforeEach(() => {
   removable = null;
   timeline.length = 0;
   inserted = true;
+  lostAs = "cast_gone";
+  laterCastReads.length = 0;
+  castReads = 0;
   storagePuts.length = 0;
   storageDeletes.length = 0;
   clipHolds.length = 0;
@@ -694,6 +716,63 @@ describe("a Keep, once it is allowed to spend", () => {
   });
 
   /*
+    #2506 — A LOST RACE IS NOT A GONE CAST. A lock wait that ran out (1205),
+    a deadlock (1213) or a second Keep on the index (1062) comes back from the
+    db layer as `lost: "race"`. The cast is read again: still there, and the
+    refusal is `lost_race` — which the route answers by giving the three voices
+    back — not `cast_not_available`, which ends them. Every arm still releases
+    the new slot and deletes the new clip.
+  */
+  it("⚠ A LOST RACE ON A LIVE CAST IS `lost_race`, and still releases the slot and the clip", async () => {
+    inserted = false;
+    lostAs = "race";
+    const { engine, calls } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "lost_race" });
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+    expect(storageDeletes).toHaveLength(1);
+    expect(storagePuts).toEqual(storageDeletes);
+    /* The cast was read AGAIN after the loss — the second read is the verdict. */
+    expect(castReads).toBe(2);
+  });
+
+  it("⚠ A LOST RACE ON A CAST THAT WENT AWAY meanwhile is still `cast_not_available`", async () => {
+    /* The lock was held by the deletion removing the cast. */
+    inserted = false;
+    lostAs = "race";
+    laterCastReads.push(null);
+    const { engine, calls } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "cast_not_available" });
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+    expect(storageDeletes).toHaveLength(1);
+    expect(storagePuts).toEqual(storageDeletes);
+  });
+
+  it("a lost race whose re-read FAILS keeps the design — one more refunded press beats three lost voices", async () => {
+    inserted = false;
+    lostAs = "race";
+    laterCastReads.push(new Error("ECONNRESET on the re-read"));
+    const { engine, calls } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "lost_race" });
+    expect(calls).toEqual(["allowance", "save", "speak", "delete"]);
+    expect(storageDeletes).toHaveLength(1);
+    expect(storagePuts).toEqual(storageDeletes);
+  });
+
+  it("NEGATIVE CONTROL: a write that matched no live cast is never re-read into `lost_race`", async () => {
+    /* `cast_gone` is the write's own predicate speaking; a live re-read (the
+       default answer here) must not overrule it. */
+    inserted = false;
+    lostAs = "cast_gone";
+    const { engine } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "cast_not_available" });
+    expect(castReads).toBe(1);
+  });
+
+  /*
     THE CLIP IS HELD BEFORE IT IS STORED — #2470's finding, item 2.
 
     A process death between the `storagePut` and the row write leaves ninety
@@ -922,6 +1001,17 @@ describe("a Keep that replaces the cast's voice", () => {
     const { engine } = stubEngine();
 
     expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "cast_not_available" });
+    expect(timeline).toEqual(["row-write", "release:saved-7"]);
+    expect(storageDeletes).toEqual(storagePuts);
+  });
+
+  it("⚠ A REPLACE THAT LOSES A LOCK RACE is `lost_race` — new slot and clip go, the old voice is untouched (#2506)", async () => {
+    replacedVoice = { voiceId: OLD };
+    inserted = false;
+    lostAs = "race";
+    const { engine } = stubEngine();
+
+    expect(await keepCastVoice(KEEP, { engine })).toEqual({ ok: false, refusal: "lost_race" });
     expect(timeline).toEqual(["row-write", "release:saved-7"]);
     expect(storageDeletes).toEqual(storagePuts);
   });

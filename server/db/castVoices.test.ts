@@ -210,7 +210,8 @@ describe("the kept voice's statements", () => {
     /* An `INSERT … SELECT` whose predicate matches nothing moves zero rows. */
     writeAffected = 0;
 
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
+    /* #2506: told apart from a lost race — this one ends the design. */
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null, lost: "cast_gone" });
   });
 
   it("reports `inserted: false` on the unique index rather than throwing at a caller", async () => {
@@ -224,7 +225,8 @@ describe("the kept voice's statements", () => {
     vi.resetModules();
     const { insertCastVoice: insertAgain } = await import("./castVoices");
 
-    expect(await insertAgain(WRITE)).toEqual({ inserted: false, replaced: null });
+    /* #2506: a second Keep holding the index is a RACE on a live cast, not a gone one. */
+    expect(await insertAgain(WRITE)).toEqual({ inserted: false, replaced: null, lost: "race" });
 
     vi.doUnmock("./connection");
     vi.resetModules();
@@ -261,7 +263,7 @@ describe("the kept voice's statements", () => {
     });
     const wrapped = Object.assign(new Error("Failed query: insert into `cast_voices` …"), { cause: deadlock });
 
-    expect(await insertWithFailingPool(wrapped)).toEqual({ inserted: false, replaced: null });
+    expect(await insertWithFailingPool(wrapped)).toEqual({ inserted: false, replaced: null, lost: "race" });
   });
 
   it("⚠ a LOCK WAIT TIMEOUT is the same contest decided by the clock (1205)", async () => {
@@ -270,7 +272,9 @@ describe("the kept voice's statements", () => {
       errno: 1205,
     });
 
-    expect(await insertWithFailingPool(timeout)).toEqual({ inserted: false, replaced: null });
+    /* #2506: the card's own case — a lock wait that ran out is a RACE, never
+       `cast_gone`, so the service re-reads the cast instead of ending the design. */
+    expect(await insertWithFailingPool(timeout)).toEqual({ inserted: false, replaced: null, lost: "race" });
   });
 
   it("NEGATIVE CONTROL: any other database failure still THROWS — it is not a lost race", async () => {
@@ -320,7 +324,7 @@ describe("the kept voice's statements", () => {
     */
     affectedBySql = [{ match: /^insert into `cast_voices`/i, affected: 0 }];
 
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null, lost: "cast_gone" });
     expect(sent).toHaveLength(2);
     expect(sent[1]?.sql).toMatch(/^insert into `cast_voices`/i);
     /* No discharge was attempted, so the manifest still stands and the worker
@@ -551,7 +555,7 @@ describe("a Keep on a cast that already has a voice replaces it (#2497)", () => 
     answers = [PRIOR_ROW];
     affectedBySql = [{ match: /^update `cast_voices`/i, affected: 0 }];
 
-    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null });
+    expect(await insertCastVoice(WRITE)).toEqual({ inserted: false, replaced: null, lost: "cast_gone" });
     expect(manifestWrites()).toHaveLength(0);
     expect(sent.some((one) => /storage_cleanup/i.test(one.sql))).toBe(false);
   });

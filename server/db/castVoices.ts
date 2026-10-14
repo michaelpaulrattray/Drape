@@ -126,8 +126,31 @@ export async function readCastVoice(
  */
 export class CastVoiceManifestUndischargeable extends Error {}
 
-/** The row did not land: the cast went away, or a second Keep won the index. */
+/** The row did not land because its owned-live-signed predicate matched
+    nothing: the cast went away (or was never this owner's signed cast). */
 class CastVoiceRowNotWritten extends Error {}
+
+/**
+ * What {@link insertCastVoice} answers — and, when nothing landed, WHY (#2506).
+ *
+ * ⚠ **THE TWO "NOT WRITTEN" ANSWERS ARE DIFFERENT FACTS AND WERE ONE BOOLEAN.**
+ * Until #2506 a cast that had gone away and a Keep that merely lost a lock
+ * contest both came back as `inserted: false`, so the service told both
+ * customers *the cast is not available* and the route threw away the three
+ * voices they were choosing between — for a lock-wait timeout on a cast that
+ * was still there. They are told apart here, at the one place that knows:
+ *
+ *   · `"cast_gone"` — the write's own owned-live-signed predicate matched no
+ *     row. Nothing can ever be kept against this cast.
+ *   · `"race"` — the write lost to another transaction on the same rows: a
+ *     second Keep won the unique index (1062), the deadlock detector picked
+ *     this one (1213), or the lock wait ran out (1205). The cast may well be
+ *     live; whoever held the lock decides that, so the CALLER re-reads the
+ *     cast rather than this classifier guessing.
+ */
+export type CastVoiceWrite =
+  | { inserted: true; replaced: ReplacedCastVoice | null }
+  | { inserted: false; replaced: null; lost: "cast_gone" | "race" };
 
 /**
  * The voice a Keep REPLACED, read under lock inside the Keep's own transaction
@@ -184,7 +207,7 @@ export async function insertCastVoice(input: {
   clipContentType: string;
   passageVersion: number;
   cleanupBatchId: string;
-}): Promise<{ inserted: boolean; replaced: ReplacedCastVoice | null }> {
+}): Promise<CastVoiceWrite> {
   assertPositiveId(input.userId, "userId");
   assertPositiveId(input.modelId, "modelId");
   await requireDb();
@@ -251,12 +274,14 @@ export async function insertCastVoice(input: {
       }
 
       await dischargeClipManifestIn(tx, input);
-      return { inserted: true, replaced: prior ? { voiceId: prior.voiceId } : null };
+      return { inserted: true as const, replaced: prior ? { voiceId: prior.voiceId } : null };
     });
   } catch (error) {
-    if (error instanceof CastVoiceRowNotWritten) return { inserted: false, replaced: null };
-    if (isDuplicateKey(error)) return { inserted: false, replaced: null };
-    if (isLostLockRace(error)) return { inserted: false, replaced: null };
+    if (error instanceof CastVoiceRowNotWritten) return { inserted: false, replaced: null, lost: "cast_gone" };
+    /* A second Keep holding the unique index is a lost race on a cast that is
+       still there, exactly as 1213 and 1205 are — not a gone cast (#2506). */
+    if (isDuplicateKey(error)) return { inserted: false, replaced: null, lost: "race" };
+    if (isLostLockRace(error)) return { inserted: false, replaced: null, lost: "race" };
     throw error;
   }
 }
@@ -281,6 +306,12 @@ export async function insertCastVoice(input: {
  * (`withTransaction` rethrows, drizzle rolls back), so nothing it wrote
  * survives — and "it did not land" is the true sentence, where a generic
  * failure is not.
+ *
+ * ⚠ **BUT "IT DID NOT LAND" IS NOT "THE CAST IS GONE" (#2506).** This read
+ * once ended at the sentence above and both answers were `inserted: false`, so
+ * a Keep that only waited too long was told the cast was unavailable and lost
+ * its three designed voices. A lost race now answers `lost: "race"` — the
+ * caller re-reads the cast and keeps the design when it is still there.
  *
  * ⚠ **IT IS DELIBERATELY NOT A RETRY.** Retrying a deadlock victim here would
  * walk straight into the survivor's committed row and replace it — two Keeps
@@ -313,7 +344,8 @@ export function isLostLockRace(error: unknown): boolean {
  * and the caller is told, rather than a voice landing on a tombstone.
  *
  * A zero-row insert, or the unique index refusing a Keep that raced another,
- * reaches the caller as `inserted: false`.
+ * reaches the caller as `inserted: false` — `lost: "cast_gone"` and
+ * `lost: "race"` respectively (#2506).
  */
 async function insertVoiceRowIn(
   tx: TransactionHandle,
