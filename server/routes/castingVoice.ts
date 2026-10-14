@@ -559,19 +559,56 @@ export async function designVoicesForCard(input: {
       release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, castScope);
       throw error;
     }
-    const releaseFreeDesign = () => {
+    /*
+      ⚠ **THE TWO BUCKETS ARE HANDED BACK ON DIFFERENT TERMS, AND THE
+      ASYMMETRY IS THE WHOLE CONTROL.**
+
+      The relay's finding asks for both back when no voices came back. Handing
+      back the ACCOUNT's day unconditionally does something it did not intend:
+      a refusal the PROVIDER produced has already cost us a call, so a caller
+      who can provoke one would no longer be bounded by the twenty-a-day
+      ceiling at all — only by the hourly thirty, which is **30 an hour instead
+      of 20 a day**. That is a thirty-six-fold rise in what the free road can
+      spend of the house's money, and it would arrive wearing a customer
+      repair's clothes.
+
+      So:
+
+      · **The per-cast token always comes back.** It is the entitlement the
+        finding is actually about — *"a provider failure leaves that cast
+        without its free three until tomorrow"* — and giving it back cannot
+        amplify anything, because the account's day still bounds the total.
+      · **The account's day comes back only when no provider call was made.**
+        Then nothing was spent and there is nothing to bound.
+
+      ⚠ **AND THE CLASSIFICATION FAILS TOWARD KEEPING THE SLOT**: a refusal
+      this list does not recognise is treated as having reached the provider,
+      because the cost of being wrong that way is one of a customer's twenty,
+      and the cost of being wrong the other way is unbounded house spend.
+    */
+    const SPENT_NO_PROVIDER_CALL: ReadonlySet<VoiceRefusal> = new Set<VoiceRefusal>([
+      "voice_off",
+      "cast_not_available",
+      "no_voice_line",
+    ]);
+
+    const releaseFreeDesign = (refusal: VoiceRefusal | null) => {
       release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDaily, castScope);
-      release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
+      if (refusal !== null && SPENT_NO_PROVIDER_CALL.has(refusal)) {
+        release(input.userId, RATE_LIMITS.castingVoiceAutoDesignDay);
+      }
     };
     let result: Awaited<ReturnType<typeof designCastVoices>>;
     try {
       result = await designCastVoices({ userId: input.userId, modelId: model.id });
     } catch (error) {
-      releaseFreeDesign();
+      /* A throw is a genuine failure, not a refusal we can classify — the call
+         was attempted, so the account's day stays spent. */
+      releaseFreeDesign(null);
       throw error;
     }
     if (!result.ok) {
-      releaseFreeDesign();
+      releaseFreeDesign(result.refusal);
       /* Nothing was charged on this road at all, so there is no refund to
          report and nothing for support to reconcile. */
       return {

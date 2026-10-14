@@ -826,3 +826,65 @@ describe("a thrown failure's sentence carries the refund reference (finding 1's 
     expect(message).not.toContain("have been returned");
   });
 });
+
+describe("handing a free design back may not become free provider calls", () => {
+  /*
+    THE CORRECTION THIS SUITE EXISTS TO PIN, and it is a HOUSE-money fact
+    rather than a customer one.
+
+    The repair above hands a cast's free three back when nothing came back.
+    Handing the ACCOUNT's day back on the same terms would have raised what the
+    free road can spend from **twenty a day to thirty an hour** — the hourly
+    bucket being the only thing left bounding it — because a refusal the
+    provider produced has already cost us the call. Thirty-six times the house
+    spend, arriving inside a customer repair.
+
+    So the per-cast token always returns and the account's day returns only
+    when no provider call was made. These two arms are the difference, and the
+    arithmetic is stated because the numbers are otherwise magic ones:
+    `checkRateLimit` increments on an allowed read, so a bucket this request
+    spent once reads `max - 2` after the arm's own check, and `max - 1` if it
+    was handed back.
+  */
+  const accountDayRemaining = (userId: number) =>
+    checkRateLimit(`user:${userId}`, RATE_LIMITS.castingVoiceAutoDesignDay).remaining;
+
+  it("⚠ A PROVIDER-REACHING REFUSAL KEEPS THE ACCOUNT'S DAY SPENT", async () => {
+    /* `provider_failed` comes back from the engine's own error
+       (`voiceService.ts`), so by the time we see it the call has been made and
+       paid for. The customer keeps that cast's free three; the house keeps its
+       ceiling. */
+    const userId = freshUser();
+    designRefusal = "provider_failed";
+    await designVoicesForCard({ userId, castId: "KI-COST", automatic: true });
+
+    expect(accountDayRemaining(userId))
+      .toBe(RATE_LIMITS.castingVoiceAutoDesignDay.maxRequests - 2);
+  });
+
+  it("but a refusal that never reached the provider hands it back", async () => {
+    /* `no_voice_line` is decided before the engine is touched, so nothing was
+       spent and there is nothing to bound. */
+    const userId = freshUser();
+    designRefusal = "no_voice_line";
+    await designVoicesForCard({ userId, castId: "KI-NOLINE", automatic: true });
+
+    expect(accountDayRemaining(userId))
+      .toBe(RATE_LIMITS.castingVoiceAutoDesignDay.maxRequests - 1);
+  });
+
+  it("⚠ AND AN UNKNOWN REFUSAL IS TREATED AS HAVING REACHED THE PROVIDER", async () => {
+    /*
+      THE FAIL-SAFE DIRECTION, driven rather than asserted in a comment. A
+      refusal key the classifier does not recognise — a new one added later —
+      must keep the slot: being wrong that way costs a customer one of twenty,
+      and being wrong the other way is unbounded house spend.
+    */
+    const userId = freshUser();
+    designRefusal = "something_added_later";
+    await designVoicesForCard({ userId, castId: "KI-UNKNOWN", automatic: true });
+
+    expect(accountDayRemaining(userId))
+      .toBe(RATE_LIMITS.castingVoiceAutoDesignDay.maxRequests - 2);
+  });
+});
