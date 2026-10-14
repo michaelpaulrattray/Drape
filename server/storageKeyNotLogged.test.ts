@@ -2,10 +2,13 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { readListedSource } from "./testing/listedSource";
 
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/* It shells out to `git ls-files` to derive its population, so it is in the
+   child-process class rather than the merely-contended one — vitest's 5 s
+   default would go red under load on somebody's machine and not in CI (#548). */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(__dirname, "..");
 

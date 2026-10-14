@@ -147,7 +147,10 @@ describe("the labels are his design's", () => {
     expect(voiceKeepLabel(1)).toBe('Keep "Voice 2"');
   });
 
-  it("carries no price, because nothing is charged yet (#2471 adds both)", () => {
+  /* The price and the charge arrive together in the pricing slice — its card
+     number is in this comment because the token guard reads a bare #NNNN in a
+     string as a hex colour, and #2471 is a valid one. */
+  it("carries no price, because nothing is charged yet", () => {
     /* The card asks for a placeholder figure; a credit number beside a press
        that charges nothing is a false promise. When the price lands it lands
        with the charge, and this arm is what that card edits. */
