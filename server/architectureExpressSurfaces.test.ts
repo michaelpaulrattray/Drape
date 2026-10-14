@@ -36,9 +36,20 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { expressSurfacesFrom } from "../scripts/generate-architecture.mts";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* ⚠ OFF THE 5 s DEFAULT, AND OUTSIDE THE GUARD THAT WOULD HAVE ASKED (#2518).
+   This suite imports the architecture generator and reads CLAUDE.md (~84 KB)
+   in three arms. Alone it passes 18 of 18; inside the deploy rite, beside the
+   atlas regeneration and the other pushed-doc suites, the invariant-5 arm hit
+   `Test timed out in 5000ms` on a correct push (receipt
+   `2026-10-14T19-10-13-955Z-34552`). It never walks the tree, so
+   `contendedTestTimeouts.test.ts`'s derived population cannot see it — that
+   suite pins this declaration by name instead. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
