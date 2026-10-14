@@ -95,17 +95,10 @@ export const VOICE_AUDITION_PASSAGE = [
  */
 export const VOICE_AUDITION_PASSAGE_VERSION = 1;
 
-/**
- * What the three PREVIEWS read while a customer is choosing.
- *
- * Short on purpose: the previews are for picking by ear and arrive before
- * anything is kept, so they do not need the cloning breadth the audition needs
- * — and the engine's own floor is 100 characters when the text is supplied at
- * all (`ELEVENLABS_PREVIEW_TEXT_MIN_CHARS`), which this clears with room to
- * spare. The opening of the passage, so the voice a customer picks is heard
- * saying the first thing it will later say at length.
- */
-export const VOICE_PREVIEW_TEXT = [
-  "Let me take it from the top, and I will keep going until you tell me to stop.",
-  "The room is quiet. Outside, a bus pulls away from the kerb, and somewhere further off a dog starts up and thinks better of it.",
-].join(" ");
+/*
+  THE HOUSE PREVIEW LINE (`VOICE_PREVIEW_TEXT`) IS DELETED — #2498. Every cast
+  read the same neutral paragraph, which did not fit the character; the three
+  previews now read an in-character line written with the cast's hidden voice
+  card (`voiceCardWriter.ts`). The audition passage above is unchanged: a kept
+  voice still records it, because the clip is a re-mint source, not a preview.
+*/

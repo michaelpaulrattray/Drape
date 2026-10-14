@@ -34,6 +34,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CASTING_V2_SCOPE_ENV, CASTING_VOICE_SCOPE_ENV } from "./castingV2Scope";
 import { ProviderError } from "../providers/types";
 import type { VoiceAllowance, VoiceEngine } from "../providers/voiceTypes";
+import type { TextEngine } from "../providers/types";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 
 vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
@@ -87,6 +88,31 @@ let holdThrows = false;
 /** A row write that THROWS rather than reporting zero rows — the orphan case. */
 let insertThrows: Error | null = null;
 
+/* THE HIDDEN VOICE CARD'S STORE (#2498) — recorded, so the reuse and re-write
+   arms can be asserted on the rows actually written. */
+let cardSources: Record<string, unknown> | null = null;
+let keptCard: { sourceHash: string; voiceCard: string; previewLine: string } | null = null;
+const savedCards: Array<{ sourceHash: string; voiceCard: string; previewLine: string; writerModel: string }> = [];
+let cardSaveLands = true;
+/** A save that THROWS — a deadlock or a dropped connection, not a gone cast. */
+let cardSaveThrows = false;
+let anchorKey: string | null = "casting/anchors/1/904/master.png";
+
+vi.mock("../db/castVoiceCards", () => ({
+  readCastVoiceCardSources: async () => cardSources,
+  readCastVoiceCard: async () => keptCard,
+  saveCastVoiceCard: async (input: (typeof savedCards)[number]) => {
+    if (cardSaveThrows) throw new Error("ER_LOCK_DEADLOCK: Deadlock found when trying to get lock");
+    if (!cardSaveLands) return { written: false };
+    savedCards.push(input);
+    return { written: true };
+  },
+}));
+
+vi.mock("../db/castingV2Sign", () => ({
+  readCastOriginalAnchorKey: async () => anchorKey,
+}));
+
 vi.mock("../db/connection", () => ({
   withTransaction: async (run: (tx: unknown) => unknown) => run({}),
 }));
@@ -107,7 +133,31 @@ vi.mock("../storage", () => ({
   storageDelete: async (key: string) => {
     storageDeletes.push(key);
   },
+  storageReadBytes: async () => ({ bytes: PICTURE, contentType: "image/png" }),
 }));
+
+const PICTURE = Buffer.from("not really a png", "utf8");
+
+/** A well-behaved card writer — the house shape of arm F's reply. */
+const WRITER_REPLY = JSON.stringify({
+  sex: "female",
+  age: "late 20s to early 30s",
+  body: "Persona: hardened operative. Emotion: controlled, intense. Low-pitched, dry voice with a slightly raspy edge. Measured pacing.",
+  preview: "You walked in like the room was yours. It isn't. Stand where I can see your hands, and do not fill the quiet with a story I did not ask for. Say the name, then leave.",
+});
+
+const writerRequests: Array<{ system: string; user: string; images?: ReadonlyArray<{ bytes: Buffer }>; about?: string }> = [];
+
+function stubWriter(reply: string | (() => never) = WRITER_REPLY): TextEngine {
+  return {
+    id: "stub-writer",
+    async complete(request) {
+      writerRequests.push(request as (typeof writerRequests)[number]);
+      if (typeof reply === "function") reply();
+      return { text: reply as string, latencyMs: 4_000, provenance: { provider: "openrouter", model: "stub" } };
+    },
+  } as TextEngine;
+}
 
 const {
   designCastVoices,
@@ -115,6 +165,9 @@ const {
   readVoiceKeepability,
   resetVoiceKeepabilityCache,
 } = await import("./voiceService");
+
+/** What each design actually sent the voice provider — asserted at the wire. */
+const designInputs: Array<{ description: string; previewText: string }> = [];
 
 /** What the engine was asked to do, in order — the only honest order claim. */
 type Call = "allowance" | "design" | "save" | "speak" | "delete";
@@ -129,8 +182,9 @@ function stubEngine(
       calls.push("allowance");
       return overrides.allowance ?? LIVE;
     },
-    async designVoices() {
+    async designVoices(input) {
       calls.push("design");
+      designInputs.push({ description: input.description, previewText: input.previewText });
       return {
         previews: [
           { previewId: "p1", bytes: CLIP, contentType: "audio/mpeg", durationSeconds: 15 },
@@ -162,6 +216,25 @@ beforeEach(() => {
   process.env[CASTING_VOICE_SCOPE_ENV] = "users:1";
   process.env[CASTING_V2_SCOPE_ENV] = "all";
   cast = { modelId: MODEL_ID, name: "Reva", voice: SENTENCE };
+  cardSources = {
+    modelId: MODEL_ID,
+    name: "Reva",
+    briefText: "a cyberpunk mercenary woman with a metal collar",
+    masterPrompt: "A cyberpunk mercenary.\nFRAMING: waist-up.",
+    personality: "Sits back, says little.",
+    voice: SENTENCE,
+    personalityOwnWords: null,
+    voiceOwnWords: null,
+    personalityEditedAt: null,
+    voiceEditedAt: null,
+  };
+  keptCard = null;
+  savedCards.length = 0;
+  cardSaveLands = true;
+  cardSaveThrows = false;
+  anchorKey = "casting/anchors/1/904/master.png";
+  writerRequests.length = 0;
+  designInputs.length = 0;
   keptAlready = null;
   inserted = true;
   storagePuts.length = 0;
@@ -182,7 +255,7 @@ describe("the flag is the outermost door", () => {
     delete process.env[CASTING_VOICE_SCOPE_ENV];
     const { engine, calls } = stubEngine();
 
-    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() })).toEqual({
       ok: false,
       refusal: "voice_off",
     });
@@ -196,7 +269,7 @@ describe("the flag is the outermost door", () => {
 describe("a design", () => {
   it("CONTROL — the cast's own words become three voices, and spend no operation", async () => {
     const { engine, calls } = stubEngine();
-    const result = await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine });
+    const result = await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -209,7 +282,7 @@ describe("a design", () => {
   it("refuses a cast that is not this owner's live signed cast, and asks nothing", async () => {
     cast = null;
     const { engine, calls } = stubEngine();
-    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() })).toEqual({
       ok: false,
       refusal: "cast_not_available",
     });
@@ -220,7 +293,7 @@ describe("a design", () => {
     for (const voice of [null, "", "   "]) {
       cast = { modelId: MODEL_ID, name: "Reva", voice };
       const { engine, calls } = stubEngine();
-      expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+      expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() })).toEqual({
         ok: false,
         refusal: "no_voice_line",
       });
@@ -234,7 +307,7 @@ describe("a design", () => {
         throw new ProviderError("capability", "A voice needs at least 20 characters to design from");
       },
     });
-    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() })).toEqual({
       ok: false,
       refusal: "voice_line_too_short",
     });
@@ -246,11 +319,202 @@ describe("a design", () => {
         throw new ProviderError("rate_limit", "The voice call was refused");
       },
     });
-    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine })).toEqual({
+    expect(await designCastVoices({ userId: USER_ID, modelId: MODEL_ID }, { engine, cardWriter: stubWriter() })).toEqual({
       ok: false,
       refusal: "provider_failed",
       failureClass: "rate_limit",
     });
+  });
+});
+
+describe("the hidden voice card (#2498) — what the voice provider actually reads", () => {
+  const DESIGN = { userId: USER_ID, modelId: MODEL_ID };
+
+  it("CONTROL — the provider reads the CARD and the in-character line, never the visible line or a house paragraph", async () => {
+    const { engine } = stubEngine();
+    const result = await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(result.ok).toBe(true);
+    expect(designInputs).toHaveLength(1);
+    const [sent] = designInputs;
+    expect(sent.description.startsWith("Native English. Female, late 20s to early 30s. Studio quality. Persona: hardened operative.")).toBe(true);
+    expect(sent.description).not.toContain(SENTENCE);
+    expect(sent.previewText.startsWith("You walked in like the room was yours.")).toBe(true);
+    /* The visible line is still what a Keep stores. */
+    if (result.ok) expect(result.designSentence).toBe(SENTENCE);
+    /* And the card was kept, under a hash and not the sources. */
+    expect(savedCards).toHaveLength(1);
+    expect(savedCards[0].sourceHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(savedCards[0].writerModel).toBe("x-ai/grok-4.7");
+  });
+
+  it("sends the master picture INLINE as bytes, with the purpose named", async () => {
+    const { engine } = stubEngine();
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests).toHaveLength(1);
+    expect(writerRequests[0].about).toBe("voice.card");
+    expect(writerRequests[0].images).toHaveLength(1);
+    expect(writerRequests[0].user).toContain("a cyberpunk mercenary woman with a metal collar");
+    expect(writerRequests[0].user).not.toContain("FRAMING:");
+  });
+
+  it("a cast with no master picture is written from the words alone", async () => {
+    anchorKey = null;
+    const { engine } = stubEngine();
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests[0].images).toBeUndefined();
+    expect(writerRequests[0].user).toContain("There is no picture");
+  });
+
+  it("REUSES a kept card whose sources have not changed — no writer call at all", async () => {
+    const { engine } = stubEngine();
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    keptCard = { ...savedCards[0] };
+    writerRequests.length = 0;
+    designInputs.length = 0;
+
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests).toHaveLength(0);
+    expect(designInputs[0].description).toBe(savedCards[0].voiceCard);
+    expect(savedCards).toHaveLength(1);
+  });
+
+  it("RE-WRITES the card when the customer rewrites the voice line (or anything it was written from)", async () => {
+    const { engine } = stubEngine();
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    keptCard = { ...savedCards[0] };
+
+    for (const change of [
+      { voice: "A bright, quick voice.", voiceEditedAt: new Date() },
+      { personality: "Talks constantly." },
+      { briefText: "an old sea captain" },
+    ]) {
+      cardSources = { ...cardSources!, ...change };
+      writerRequests.length = 0;
+      await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+      expect(writerRequests, JSON.stringify(Object.keys(change))).toHaveLength(1);
+      keptCard = { ...savedCards[savedCards.length - 1] };
+    }
+    expect(new Set(savedCards.map((card) => card.sourceHash)).size).toBe(4);
+  });
+
+  it("⚠ a writer that fails REFUSES the design before any voice is designed — no silent fallback to the visible line", async () => {
+    const { engine, calls } = stubEngine();
+    const result = await designCastVoices(DESIGN, {
+      engine,
+      cardWriter: stubWriter(() => {
+        throw new ProviderError("rate_limit", "The interpreter call was refused");
+      }),
+    });
+    expect(result).toEqual({ ok: false, refusal: "provider_failed", failureClass: "rate_limit" });
+    expect(calls).toEqual([]);
+    expect(savedCards).toEqual([]);
+  });
+
+  it("⚠ an unusable reply (twice) refuses, and the line is never padded by repetition", async () => {
+    const { engine, calls } = stubEngine();
+    const short = JSON.stringify({ sex: "male", age: "50s", body: "Persona: brute.", preview: "Leave me be." });
+    const result = await designCastVoices(DESIGN, { engine, cardWriter: stubWriter(short) });
+    expect(result).toEqual({ ok: false, refusal: "provider_failed", failureClass: "capability" });
+    expect(writerRequests).toHaveLength(2);
+    expect(calls).toEqual([]);
+  });
+
+  it("no writer on this deployment refuses before any spend", async () => {
+    const { engine, calls } = stubEngine();
+    const result = await designCastVoices(DESIGN, { engine, cardWriter: null });
+    expect(result).toEqual({ ok: false, refusal: "provider_failed", failureClass: "provider_account" });
+    expect(calls).toEqual([]);
+  });
+
+  it("a cast deleted while the card was being written designs nothing", async () => {
+    cardSaveLands = false;
+    const { engine, calls } = stubEngine();
+    expect(await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() })).toEqual({
+      ok: false,
+      refusal: "cast_not_available",
+    });
+    expect(calls).toEqual([]);
+  });
+
+  /*
+    THE THREE ARMS BELOW ARE THE RELAY'S FINDINGS 1 AND 2 ON PR #2500.
+  */
+
+  it("⚠ a card written WITHOUT its picture is kept under the words-only hash, so the next design tries again", async () => {
+    const { engine } = stubEngine();
+    const unreadable = async () => {
+      throw new Error("NoSuchKey");
+    };
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter(), readPicture: unreadable });
+    expect(writerRequests[0].images).toBeUndefined();
+    const wordsOnlyHash = savedCards[0].sourceHash;
+
+    /* The SAME cast, same sources, with the picture readable this time. */
+    keptCard = { ...savedCards[0] };
+    writerRequests.length = 0;
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests, "a words-only card must not satisfy a with-picture ask").toHaveLength(1);
+    expect(writerRequests[0].images).toHaveLength(1);
+    expect(savedCards[1].sourceHash).not.toBe(wordsOnlyHash);
+  });
+
+  it("CONTROL — a card written WITH its picture is kept under the with-picture hash and reused", async () => {
+    const { engine } = stubEngine();
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests[0].images).toHaveLength(1);
+    keptCard = { ...savedCards[0] };
+    writerRequests.length = 0;
+    await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(writerRequests, "an honest with-picture card must be reused, not re-bought").toHaveLength(0);
+  });
+
+  it("⚠ two designs of one cast at once pay the writer ONCE and both get the same card", async () => {
+    const { engine } = stubEngine();
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const slowWriter: TextEngine = {
+      id: "slow-writer",
+      async complete(request) {
+        writerRequests.push(request as (typeof writerRequests)[number]);
+        await held;
+        return { text: WRITER_REPLY, latencyMs: 30_000, provenance: { provider: "openrouter", model: "stub" } };
+      },
+    } as TextEngine;
+
+    const first = designCastVoices(DESIGN, { engine, cardWriter: slowWriter });
+    const second = designCastVoices(DESIGN, { engine, cardWriter: slowWriter });
+    /* Both are inside the writer call before it answers — the real window. */
+    await vi.waitFor(() => expect(writerRequests).toHaveLength(1));
+    release();
+    const [one, two] = await Promise.all([first, second]);
+
+    expect(writerRequests, "the house pays for one card, not two").toHaveLength(1);
+    expect(savedCards, "and keeps it once").toHaveLength(1);
+    expect(one.ok && two.ok).toBe(true);
+    expect(designInputs).toHaveLength(2);
+    expect(designInputs[0].description).toBe(designInputs[1].description);
+  });
+
+  it("CONTROL — two designs of DIFFERENT casts are not collapsed into one card", async () => {
+    const { engine } = stubEngine();
+    await Promise.all([
+      designCastVoices(DESIGN, { engine, cardWriter: stubWriter() }),
+      designCastVoices({ userId: USER_ID, modelId: MODEL_ID + 1 }, { engine, cardWriter: stubWriter() }),
+    ]);
+    expect(writerRequests).toHaveLength(2);
+    expect(savedCards).toHaveLength(2);
+  });
+
+  it("⚠ a card that cannot be KEPT still designs the voices, because the writer is already paid", async () => {
+    cardSaveThrows = true;
+    const { engine, calls } = stubEngine();
+    const result = await designCastVoices(DESIGN, { engine, cardWriter: stubWriter() });
+    expect(result.ok, "a failed keep is not a refusal — the card is in hand").toBe(true);
+    expect(savedCards).toEqual([]);
+    expect(calls).toContain("design");
+    expect(designInputs[0].description).toContain("Persona: hardened operative.");
   });
 });
 

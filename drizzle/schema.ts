@@ -4291,6 +4291,50 @@ export type CastVoiceRow = typeof castVoices.$inferSelect;
 export type InsertCastVoiceRow = typeof castVoices.$inferInsert;
 
 /**
+ * A CAST'S HIDDEN VOICE CARD — migration 0084, card #2498 (N4b).
+ *
+ * The visible voice line (`models.voice`) is written for the VIDEO generator:
+ * pacing, silences, delivery. Sent to the voice designer on its own it made a
+ * cast written as female three male voices (his listening test, 2026-10-14). So each cast
+ * gets a second, hidden description written FOR the voice designer — from the
+ * customer's own words, the two lines and the master picture — plus one line
+ * in character for the three voices to read. **The customer never sees either**
+ * (the disappearing-technology law: one line to write; the engines are ours).
+ *
+ * # IT IS PART OF THE CAST'S RECIPE
+ *
+ * The card is derived from the customer's brief and their picture, so it is the
+ * same field family as `masterPrompt`: owner-only, never in a staff projection,
+ * never logged, on `REFUSING_KEYS` (`voiceCard`, `previewLine`), in the
+ * customer's GDPR export, and deleted with the cast and with the account.
+ *
+ * `sourceHash` is the sha256 of everything the card was written from (the
+ * writer's version, the customer's words, both lines, the master picture's
+ * key). A design whose sources hash the same reuses the row; any change
+ * re-writes it. One row per cast; userId denormalised for single-statement
+ * ownership, as `cast_voices` does.
+ */
+export const castVoiceCards = mysqlTable("cast_voice_cards", {
+  id: int("id").autoincrement().primaryKey(),
+  modelId: int("modelId").notNull(), // →models — one card per cast
+  userId: int("userId").notNull(), // denormalised owner — single-statement ownership
+  /** sha256 hex of the card's sources — see the header. Never the sources. */
+  sourceHash: varchar("sourceHash", { length: 64 }).notNull(),
+  /** The description the voice designer reads. CREATIVE — see the header. */
+  voiceCard: text("voiceCard").notNull(),
+  /** The in-character line the three voices read. CREATIVE — see the header. */
+  previewLine: text("previewLine").notNull(),
+  /** Which model wrote it (an OpenRouter slug) — for the record, never shown. */
+  writerModel: varchar("writerModel", { length: 128 }).notNull(),
+  writtenAt: timestamp("writtenAt").defaultNow().notNull(),
+}, (table) => ([
+  uniqueIndex("uq_cast_voice_cards_model").on(table.modelId),
+  index("ix_cast_voice_cards_user").on(table.userId),
+]));
+
+export type CastVoiceCardRow = typeof castVoiceCards.$inferSelect;
+
+/**
  * THE FOUNDER'S REPLIES — the steering half of the Crew tab (migration 0054;
  * issue #41, design `docs/specs/CREW_TAB_DESIGN.md` §3).
  *

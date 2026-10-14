@@ -45,6 +45,7 @@ import { parseEvidenceStorageKey } from "./evidence/evidenceDelivery";
 import { purgeCastLineageIn } from "./castLineagePurge";
 import { deleteCastCreationRecordsIn } from "../db/castCreationRecords";
 import { deleteCastVoicesIn, readCastVoiceReleaseFactsIn } from "../db/castVoices";
+import { deleteCastVoiceCardsIn } from "../db/castVoiceCards";
 import { availableModelWhere } from "./modelAvailability";
 
 const log = createModuleLogger("casting/finalCastDeletion");
@@ -1204,6 +1205,11 @@ export async function executeFinalCastDeletion(input: {
       above; owner and cast in the one WHERE, inside this transaction.
     */
     await deleteCastVoicesIn(tx, { userId: input.userId, modelId: input.modelId });
+    /*
+      AND ITS HIDDEN VOICE CARD (#2498) — written from the brief and the master
+      picture, so the recipe's family. Owner and cast in the one WHERE.
+    */
+    await deleteCastVoiceCardsIn(tx, { userId: input.userId, modelId: input.modelId });
 
     const now = new Date();
     failAt("before_tombstone", input.failurePoint);

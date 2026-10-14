@@ -100,6 +100,7 @@ import {
   listAccountCandidatesIn,
 } from "../db/castingV2";
 import { deleteAccountVoicesIn, readAccountVoiceReleaseFactsIn } from "../db/castVoices";
+import { deleteAccountVoiceCardsIn } from "../db/castVoiceCards";
 import { deleteVariantRowsIn, listPurgeableVariantsIn } from "../db/castingV2Variants";
 import { deleteSegmentRowsIn, listPurgeableSegmentsIn } from "../db/castingV2Segments";
 import {
@@ -156,6 +157,7 @@ export type AccountCastingPurgeResult = {
   voiceIds: string[];
   counts: {
     castVoices: number;
+    castVoiceCards: number;
     castingCandidates: number;
     castingCandidateVariants: number;
     castingSegments: number;
@@ -195,6 +197,7 @@ export async function purgeAccountCastingIn(
   const storageItems: StorageCleanupManifestItem[] = [];
   const counts: AccountCastingPurgeResult["counts"] = {
     castVoices: 0,
+    castVoiceCards: 0,
     castingCandidates: 0,
     castingCandidateVariants: 0,
     castingSegments: 0,
@@ -519,6 +522,13 @@ export async function purgeAccountCastingIn(
     }
     counts.castVoices = await deleteAccountVoicesIn(tx, { userId });
   }
+
+  /*
+    THE ACCOUNT'S HIDDEN VOICE CARDS — #2498. Written from the customer's brief
+    and master picture, so the same family as `masterPrompt`; no bytes, only
+    rows, keyed on their own `userId` like the kept voices above.
+  */
+  counts.castVoiceCards = await deleteAccountVoiceCardsIn(tx, { userId });
 
   counts.castingCandidates = await deleteAccountCandidateRowsIn(tx, userId);
   counts.castingRolls = await deleteAccountRollRowsIn(tx, userId);

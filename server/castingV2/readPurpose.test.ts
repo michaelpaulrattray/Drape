@@ -76,7 +76,11 @@ describe("the read stage's purpose vocabulary", () => {
     three could be answered, and the disappearing-technology law's third
     clause obliges all of them to be.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads` and `persona.translate`", () => {
+  /*
+    SIXTEEN since #2498: `voice.card` prices a cast's hidden voice card per
+    design whose sources changed.
+  */
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate` and `voice.card`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -93,6 +97,7 @@ describe("the read stage's purpose vocabulary", () => {
       "persona",
       "reads",
       "persona.translate",
+      "voice.card",
     ]);
   });
 
