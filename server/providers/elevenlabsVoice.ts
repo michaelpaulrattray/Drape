@@ -137,6 +137,12 @@ type RequestInitLike = {
   method: "GET" | "POST" | "DELETE";
   path: string;
   body?: unknown;
+  /**
+   * A multipart body — the clone call (#2472) uploads the clip as a file.
+   * `fetch` writes the boundary into the content type itself, so no
+   * `Content-Type` header is set for it here (setting one drops the boundary).
+   */
+  form?: FormData;
   timeoutMs: number;
   signal?: AbortSignal;
   /** Audio comes back as bytes; everything else as JSON. */
@@ -169,7 +175,9 @@ async function call(input: RequestInitLike): Promise<{
         "xi-api-key": key,
         ...(input.body === undefined ? {} : { "Content-Type": "application/json" }),
       },
-      ...(input.body === undefined ? {} : { body: JSON.stringify(input.body) }),
+      ...(input.form !== undefined
+        ? { body: input.form }
+        : input.body === undefined ? {} : { body: JSON.stringify(input.body) }),
       signal,
     });
   } catch (error) {
@@ -388,6 +396,72 @@ export function createElevenLabsVoiceEngine(): VoiceEngine {
         expect: "bytes",
       });
       return { bytes: bytes as Buffer, contentType: contentType ?? "audio/mpeg", latencyMs };
+    },
+
+    async cloneVoice(input) {
+      /*
+        THE RE-MINT'S WIRE — the shape the re-mint court drove on his account
+        (2026-10-13, `drape-scratch/n4b-spike/10-remint.mjs`): `POST
+        /v1/voices/add`, multipart, a `name` and the clip as `files`. Answered
+        200 in 2.7–4.7 s with `requires_verification: false`, and his ear passed
+        what it made. Nothing else is sent: no description and no labels, since
+        a provider-side label is one more place a customer's words could travel.
+      */
+      const form = new FormData();
+      form.append("name", input.name);
+      form.append(
+        "files",
+        new Blob([new Uint8Array(input.bytes)], { type: input.contentType }),
+        "audition.mp3",
+      );
+      const { json, latencyMs, providerRef } = await call({
+        method: "POST",
+        path: "/v1/voices/add",
+        form,
+        timeoutMs: DESIGN_TIMEOUT_MS,
+        signal: input.signal,
+        expect: "json",
+      });
+      const voiceId = ((json ?? {}) as { voice_id?: unknown }).voice_id;
+      if (typeof voiceId !== "string" || voiceId.length === 0) {
+        /* Billed exactly as a save that came back without an id is (above). */
+        throw new ProviderError("unknown", "The re-minted voice came back without an id", {
+          providerRef,
+          completed: true,
+        });
+      }
+      return { voiceId, latencyMs };
+    },
+
+    async findVoicesByName(input) {
+      /*
+        `GET /v2/voices` — the same read the voice spike's probe drove on his
+        account (`drape-scratch/n4b-spike/00-probe.mjs`: `voice_type=personal`,
+        200 in 261 ms, `voices[]` of `voice_id` / `name`). `search` narrows the
+        page; it is a fuzzy match, so the EXACT name is compared here and
+        nothing else is trusted. One page of 100: an attempt name is unique, so
+        more than a handful of hits is already not ours.
+      */
+      const query = new URLSearchParams({
+        search: input.name,
+        voice_type: "personal",
+        page_size: "100",
+      });
+      const { json } = await call({
+        method: "GET",
+        path: `/v2/voices?${query.toString()}`,
+        timeoutMs: SHORT_TIMEOUT_MS,
+        signal: input.signal,
+        expect: "json",
+      });
+      const voices = ((json ?? {}) as { voices?: unknown }).voices;
+      if (!Array.isArray(voices)) return [];
+      return voices
+        .filter((voice): voice is { voice_id: string; name: string } =>
+          typeof voice === "object" && voice !== null
+          && typeof (voice as { voice_id?: unknown }).voice_id === "string"
+          && (voice as { name?: unknown }).name === input.name)
+        .map((voice) => voice.voice_id);
     },
 
     async deleteVoice(input) {

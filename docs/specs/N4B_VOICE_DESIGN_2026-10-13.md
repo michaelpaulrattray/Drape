@@ -146,6 +146,13 @@ clone it back from the clip, and play the original and the re-mint side by side 
 (law 9). If they match, slots stop mattering. If they drift, signed casts keep pinned slots, and
 the plan tier becomes the product's ceiling on kept voices.
 
+⚠ **Both waits above are over, and the paragraph is kept as the record (2026-10-14, #2472).** His
+plan was upgraded to Creator on 2026-10-13 (instant cloning on), and the court passed by his ear
+the same day, verbatim: *"remint actually sounds better in some cases both 90s clips were great
+though."* Eviction and re-mint are built in `server/castingV2/voiceService.ts`
+(`makeRoomForOneVoice`, `ensureCastVoiceResident`): a full plan evicts the least-recently-used
+voice instead of refusing, and still refuses on a plan that cannot clone, read live.
+
 ## 5 · Rations — the voice-operation quota is the scarce thing, not slots
 
 **54 voice operations a month on this account** (290 on Pro, 1,040 on Scale, #499). Every save

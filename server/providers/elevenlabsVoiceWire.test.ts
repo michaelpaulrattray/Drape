@@ -310,3 +310,138 @@ describe("the voice transport's outgoing requests", () => {
     expect(String((error as ProviderError).message)).toBe("The voice call was refused");
   });
 });
+
+/**
+ * THE RE-MINT, AT THE WIRE — N4b-4 (#2472).
+ *
+ * The court drove `POST /v1/voices/add` on his account (multipart: a `name`
+ * and the clip as `files`), and his ear passed what it made. What can go wrong
+ * here quietly is the BODY: a JSON content type set by hand on a multipart
+ * request strips the boundary, and a clip sent as anything but its own bytes
+ * clones the wrong voice. So the request is captured and read back.
+ */
+describe("the re-mint's outgoing request (#2472)", () => {
+  const originalKey = process.env[ELEVENLABS_API_KEY_VARIABLE];
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (originalKey === undefined) delete process.env[ELEVENLABS_API_KEY_VARIABLE];
+    else process.env[ELEVENLABS_API_KEY_VARIABLE] = originalKey;
+  });
+
+  function stubClone(answer: Record<string, unknown>): Array<{ url: string; init: RequestInit }> {
+    const seen: Array<{ url: string; init: RequestInit }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+        seen.push({ url: String(url), init: init ?? {} });
+        return new Response(JSON.stringify(answer), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }),
+    );
+    return seen;
+  }
+
+  it("⚠ posts the clip's OWN bytes as a multipart file to /v1/voices/add, with our name and nothing else", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    const seen = stubClone({ voice_id: "reminted-1", requires_verification: false });
+
+    const result = await createElevenLabsVoiceEngine().cloneVoice({
+      name: "klieg-1-904",
+      bytes: CLIP,
+      contentType: "audio/mpeg",
+    });
+
+    expect(result.voiceId).toBe("reminted-1");
+    expect(seen).toHaveLength(1);
+    const [request] = seen;
+    expect(request?.url).toBe("https://api.elevenlabs.io/v1/voices/add");
+    expect(request?.init.method).toBe("POST");
+    const headers = request?.init.headers as Record<string, string>;
+    expect(headers["xi-api-key"]).toBe("sk_test_key");
+    /* No hand-set content type: fetch writes the multipart boundary itself. */
+    expect(headers["Content-Type"]).toBeUndefined();
+    const form = request?.init.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    expect([...form.keys()].sort()).toEqual(["files", "name"]);
+    expect(form.get("name")).toBe("klieg-1-904");
+    const file = form.get("files") as Blob;
+    expect(file.type).toBe("audio/mpeg");
+    expect(Buffer.from(await file.arrayBuffer()).equals(CLIP)).toBe(true);
+  });
+
+  it("marks a clone that answered 200 with no id as BILLED, so no road retries it", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    stubClone({ requires_verification: false });
+
+    const error = await createElevenLabsVoiceEngine()
+      .cloneVoice({ name: "klieg-1-904", bytes: CLIP, contentType: "audio/mpeg" })
+      .then(() => null, (caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ProviderError);
+    expect((error as ProviderError).completed).toBe(true);
+  });
+});
+
+/**
+ * THE ORPHAN SWEEP'S LOOKUP, AT THE WIRE — #2507 (the relay's finding, item 3).
+ *
+ * A save or clone that did not answer may have made a voice. The service looks
+ * it up by its unique attempt name and releases what it finds — so what must
+ * hold here is that the lookup trusts the provider's FUZZY search for nothing:
+ * only a voice whose name is EXACTLY the attempt's comes back, and a near miss
+ * (another attempt for the same cast) is never handed over to be deleted.
+ */
+describe("the orphan sweep's lookup (#2507)", () => {
+  const originalKey = process.env[ELEVENLABS_API_KEY_VARIABLE];
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (originalKey === undefined) delete process.env[ELEVENLABS_API_KEY_VARIABLE];
+    else process.env[ELEVENLABS_API_KEY_VARIABLE] = originalKey;
+  });
+
+  it("⚠ reads /v2/voices for our personal voices by name, and returns ONLY exact-name matches", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    const seen: Array<{ url: string; init: RequestInit }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+        seen.push({ url: String(url), init: init ?? {} });
+        return new Response(JSON.stringify({
+          voices: [
+            { voice_id: "orphan-1", name: "klieg-1-904-a1b2c3d4" },
+            /* The fuzzy search's near misses: another attempt, and a prefix. */
+            { voice_id: "someone-elses", name: "klieg-1-904-ffffffff" },
+            { voice_id: "prefix-only", name: "klieg-1-904" },
+            { name: "klieg-1-904-a1b2c3d4" },
+          ],
+          has_more: false,
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }),
+    );
+
+    const found = await createElevenLabsVoiceEngine().findVoicesByName({ name: "klieg-1-904-a1b2c3d4" });
+
+    expect(found).toEqual(["orphan-1"]);
+    expect(seen).toHaveLength(1);
+    const url = new URL(seen[0]!.url);
+    expect(`${url.origin}${url.pathname}`).toBe("https://api.elevenlabs.io/v2/voices");
+    expect(url.searchParams.get("search")).toBe("klieg-1-904-a1b2c3d4");
+    expect(url.searchParams.get("voice_type")).toBe("personal");
+    expect(seen[0]!.init.method).toBe("GET");
+    expect(seen[0]!.init.body).toBeUndefined();
+  });
+
+  it("NEGATIVE CONTROL: an answer with no voices list finds nothing", async () => {
+    process.env[ELEVENLABS_API_KEY_VARIABLE] = "sk_test_key";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })));
+
+    expect(await createElevenLabsVoiceEngine().findVoicesByName({ name: "klieg-1-904-a1b2c3d4" })).toEqual([]);
+  });
+});
