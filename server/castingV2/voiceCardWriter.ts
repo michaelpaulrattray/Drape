@@ -419,8 +419,3 @@ export async function writeVoiceCard(input: {
   }
   throw lastFailure ?? new ProviderError("capability", "The voice card writer returned no usable card");
 }
-
-/** Test seam: drops the memoized engine. */
-export function resetVoiceCardWriterForTests(): void {
-  writerEngine = null;
-}
