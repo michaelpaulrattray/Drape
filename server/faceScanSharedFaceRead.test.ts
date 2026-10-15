@@ -146,6 +146,26 @@ describe("what the reader asks fal for one frame", () => {
     expect(sides!.left.width).toBe(WIDTH);
   }, 30_000);
 
+  it("two errands racing join one call, which is how a scan actually asks", async () => {
+    const wire = stubFal();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const bytes = await frame();
+    /*
+      THE PATH THAT MATTERS, because the scan asks everything in parallel.
+      A memo holding the settled VALUE rather than the promise would miss on
+      both of these and pay twice — the same mistake `axes` records one
+      function below, and the same one the face-scan cache records in
+      `faceScanService.ts`.
+    */
+    const [head, sides] = await Promise.all([
+      reader.region({ image: bytes, name: "face", absentIsAnswer: true }),
+      reader.regionSides!({ image: bytes, name: "ear", absentIsAnswer: true }),
+    ]);
+    expect(wire.byPrompt.get("face")).toBe(1);
+    expect(head.width).toBe(WIDTH);
+    expect(sides).not.toBeNull();
+  }, 30_000);
+
   it("gives the second asker the same mask the first one got", async () => {
     stubFal();
     const reader = createFalRegionReader({ apiKey: "test-key" });
