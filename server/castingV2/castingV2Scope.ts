@@ -1395,9 +1395,11 @@ export function validateCastingRefineDispatchEnvironment(input: {
  * ungated on 2026-08-21 (`2fdc382d`, fable-1296 §1) — a face ask passed this
  * gate and died one door later at the measured-placement door, so the gate's
  * list stopped naming a surface `INK_PLACEMENTS` does not hold. And what a
- * words ask reaches is `CASTING_INK_WORDS_SCOPE`'s business, which is `all`:
- * her neck, an upper arm and her upper chest, narrowed by what her outfit
- * covers. This flag governs the REFERENCE arm alone.
+ * words ask reaches is the words road's own business, and it serves all three
+ * measured placements — the neck, an upper arm and the upper chest, narrowed by
+ * what the outfit covers. (`CASTING_INK_WORDS_SCOPE` decided that until #1577
+ * slice D3 retired it; there is one placement list now.) This flag governs the
+ * REFERENCE arm alone.
  *
  * # WHY THIS ONE NEEDED A FLAG WHEN THE RESOLVER DID NOT
  *
@@ -2018,143 +2020,6 @@ export function validateCastingInkCutEnvironment(input: {
  * is untouched, and there is no new stored byte anywhere, which is why this
  * flag needs no table and no migration.
  */
-/**
- * WHETHER A TATTOO INVENTED FROM WORDS MAY LAND SOMEWHERE THE ANCHOR BARELY
- * SHOWS — the words road's second step (founder ruling fable-1290, design
- * opus-955, countersigned fable-1296).
- *
- * His words: *"word invented tattoos are fine as long as the engine can find
- * and crop them to be references moving foward into other edits"*. The
- * condition is his and it is load-bearing — the road opens only where the
- * delivery mint can capture the landing, so a tattoo we cannot carry is never
- * painted in the first place.
- *
- * # What it gates, and what it deliberately does not
- *
- * Off, and absent means off, `WORDS_ROAD_PLACEMENTS` is `neck` alone — the one
- * placement proven end to end, by crop #1, minted from a delivered frame with
- * no design row anywhere. An ask naming an upper arm or an upper chest walls at
- * D-137's gate exactly as it does today, free, before the claim.
- *
- * On, those two placements join it and the same ask renders and mints.
- *
- * **It does NOT gate the face retirement, and that is the shape of step 1**
- * (fable-1296 §1): a face ask stopped passing the gate and dying one door later
- * with *"I need to know where it goes"* for EVERYBODY, ungated, because that was
- * a sentence fix rather than a capability and gating an apology keeps it wrong
- * for everyone. This flag governs only what OPENS.
- *
- * # ⚠ ITS SHAPE WAS NOT FINISHED WHEN THIS WAS WRITTEN — AND THE COURT HAS
- * # SINCE REPORTED, THE FOUNDER HAS JUDGED IT, AND THE FLAG IS `all`
- *
- * The flag was armed ahead of its own court because the court cannot drive a
- * walled road without it, and proving the road in a locally-widened
- * configuration that has never existed is the harness-supplied-argument trap
- * with money attached (rejected fable-1298 §3). That is history now: the court
- * RAN (opus-960, ratified fable-1301 §1), he judged the frames and the thirteen
- * glossary styles himself (fable-1398), and **the flip to `all` went through
- * his own hand** (fable-1400) — the first capability this program has taken
- * from `users:1` to `all`. The paragraphs below record what the court was for
- * and what it decided; they are not a live instruction.
- *
- * What the court decides (fable-1296 §2) is whether this flag also has to carry
- * an OCCLUSION REFUSAL. The house line dresses her in a crew-neck tee, so the
- * ordinary master's chest is covered — `inkSurfaceCoverage.ts` is where that
- * fact now lives and is asked (item 7a; it used to be `dependsOnGarment` frozen
- * onto the placement itself, which was the crew tee's answer wearing the
- * clothes of an anatomical one) —
- * and there are three possible outcomes rather than the two a paragraph
- * predicts. Production has shown the third: on the reference road the engine
- * SCOOPED THE NECKLINE and delivered onto bare skin, which the founder saw and
- * accepted. If the words road scoops too, no refusal is needed. If it does not,
- * one belongs here.
- *
- * ⚠ **THIS PARAGRAPH ENDED *"So do not widen this flag on the strength of this
- * docblock — it is armed for a court"* UNTIL 2026-08-24, AND IT WAS A LIVE
- * PROHIBITION AGAINST SOMETHING ALREADY DONE.** It was the FIFTH surface of that
- * sentence: `CLAUDE.md`, `POST_SIGN_ROADMAP.md`, the positions table's own
- * header — which quotes it as the specimen of this exact class — and that
- * table's `why` field were each corrected before this one, because a correction
- * tracks readership rather than authority and nobody re-opens a flag's docblock
- * to read about a flip. What survives of it is narrower and still true: **the
- * occlusion question above is open**, and the chest's answer today comes from
- * `inkSurfaceCoverage.ts` (her outfit) rather than from this flag.
- *
- * # Why the parent is `CASTING_V2_SCOPE` and nothing narrower
- *
- * A words-born tattoo needs no design row, no uploaded picture and no studio
- * door — that is the whole point of the road, and crop #1 is a delivery with
- * `designId` NULL. Hanging this off the studio flag would gate a lane whose
- * subject does not require it, which is a check that reads as a rule and is
- * really a mistake.
- *
- * # It spends nothing new
- *
- * No new engine call, no segmenter call, no text call, no table and no
- * migration. A render on this road is the refine that would have happened
- * anyway, and the mint it fires is the one every delivering ink render already
- * fires. `assertFalBudget` is untouched.
- */
-export const CASTING_INK_WORDS_SCOPE_ENV = "CASTING_INK_WORDS_SCOPE";
-
-export class CastingInkWordsScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_INK_WORDS_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingInkWordsScopeConfigurationError";
-  }
-}
-
-export class CastingInkWordsCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_INK_WORDS_SCOPE_ENV} ${detail}`);
-    this.name = "CastingInkWordsCoverageError";
-  }
-}
-
-export function parseCastingInkWordsScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingInkWordsScopeConfigurationError();
-  });
-}
-
-/** Whether a words-born tattoo may land beyond her neck. */
-export function captureCastingInkWordsEnabled(userId: number): boolean {
-  const child = parseCastingInkWordsScope(process.env[CASTING_INK_WORDS_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
-
-export function validateCastingInkWordsEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingInkWordsScope(input.scope);
-  if (child.kind === "off") return child;
-
-  const parent = parseCastingV2Scope(input.castingScope);
-  if (parent.kind === "off") {
-    throw new CastingInkWordsCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a words-born tattoo is painted by a `
-      + "refine, and a user outside casting has no refine to paint it",
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingInkWordsCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingInkWordsCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
-
 
 /**
  * WHETHER A CAST MAY BE BORN WITH TATTOOS THE PRODUCT KNOWS ABOUT — 7b(a)
@@ -2275,15 +2140,20 @@ export function validateCastingBornInkEnvironment(input: {
  * right and it is what refutes the second: **the subject is the DELIVERED
  * CROP, not the design row**, and the studio door is not what produces one.
  *
- * `CASTING_INK_WORDS_SCOPE` stands at `all`, a words-born tattoo carries no
- * design row at all (crop #1 is a delivery with `designId` NULL), and
+ * The words road serves every measured placement — `CASTING_INK_WORDS_SCOPE`
+ * stood at `all` and is retired (#1577 slice D3) — a words-born tattoo carries
+ * no design row at all (crop #1 is a delivery with `designId` NULL), and
  * `inkApplied.ts` says so in its own header — *"on D-137's road there is no
  * design at all … this is the whole record of the tattoo"*. Delivered ink is
  * counted by SLOT and valued by the crop id, with no design id anywhere in the
  * reading. **So every account already has a subject for a transform, and the
  * studio parent was gating a lane whose subject does not require it** — the
- * same mistake `CASTING_INK_WORDS_SCOPE`'s own docblock names one flag away,
- * in a paragraph that sat directly beside the wrong one in `_core/env.ts`.
+ * same mistake the words road's own fence named one flag away, in a paragraph
+ * that sat directly beside the wrong one in `_core/env.ts`. ⚠ **Both of those
+ * are now TOMBSTONES rather than live paragraphs** — `CASTING_INK_WORDS_SCOPE`
+ * is retired (#1577 slice D3), its docblock here is deleted and its fence in
+ * `_core/env.ts` is a note saying so. The reasoning stands on its own feet
+ * above; what is gone is the neighbour it used to point at.
  *
  * # What moved, and what did not
  *

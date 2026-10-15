@@ -14941,20 +14941,23 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     return {
       harvest: unmasked,
       /*
-        ⚠ THE WORDS ROAD IS OPEN HERE, and it has to be said rather than
-        inherited (2026-08-23, the Basics chest court).
+        ⚠ THE WORDS ROAD IS OPEN HERE — and since #1577 slice D3 it is open by
+        construction rather than by this seam (2026-08-23, the Basics chest
+        court; the flag retired 2026-10-15).
 
         `upperChest` joined `WORDS_ROAD_PLACEMENTS_OPEN`, so a chest ask only
         reaches the COVERAGE branch — the one this whole describe block is about
-        — on an account whose road serves the chest. With the flag closed it
-        falls to the derived document message instead, and every arm below would
-        be measuring a different refusal.
+        — on a road that serves the chest. There is now one such road.
 
-        `true` is production: `CASTING_INK_WORDS_SCOPE` is `all`. The suite's env
-        has no such variable, so without this seam these arms would silently test
-        a state no customer is in.
+        ⚠ `inkWordsEnabled: () => true` stood here, and this comment's own last
+        paragraph is why it mattered: the suite's env held no such variable, so
+        the seam was what kept these arms off a state no customer was in. The
+        flag is gone, the open answer is the only answer, and the seam would now
+        be an injected dependency nothing reads. **It survived the typecheck
+        when the dependency type lost the field, because this object literal is
+        INFERRED rather than annotated — excess-property checking never ran on
+        it. A grep after the compiler is what found it.**
       */
-      inkWordsEnabled: () => true,
       countInkCoverageDemand: async (row: DemandRow) => {
         counted.push(row);
         return true;
@@ -15179,8 +15182,9 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     const shut = await doorShut(refineCandidate(
       {
         harvest: unmasked,
-        /* Open, for `withCounter`'s reason — see its comment. */
-        inkWordsEnabled: () => true,
+        /* ⚠ `inkWordsEnabled: () => true` stood here and is gone with the flag
+           (#1577 slice D3). It injected the OPEN road, which is the only road
+           now, so the arm asks exactly what it always asked. */
         countInkCoverageDemand: async () => {
           throw new Error("the table is not there yet");
         },

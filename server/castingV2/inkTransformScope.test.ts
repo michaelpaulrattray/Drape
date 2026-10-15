@@ -35,7 +35,8 @@ import {
  * content is a picture of a tattoo this product already delivered, and the
  * studio door is what makes a tattoo deliverable at all."* The first clause is
  * right and the second is the error: **the subject is the delivered CROP**, and
- * `CASTING_INK_WORDS_SCOPE` — at `all` — delivers crops carrying no design row
+ * the words road — retired flag, every placement served (#1577 slice D3) —
+ * delivers crops carrying no design row
  * and passing through no studio door. So the studio parent armed this flag over
  * a lane whose subject does not require it, which is the exact failure the
  * words flag's own docblock names one paragraph away.

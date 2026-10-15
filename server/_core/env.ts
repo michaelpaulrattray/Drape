@@ -45,8 +45,6 @@ import {
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
   validateCastingInkTransformEnvironment,
-  validateCastingInkWordsEnvironment,
-  CASTING_INK_WORDS_SCOPE_ENV,
   validateCastingBornInkEnvironment,
   CASTING_BORN_INK_SCOPE_ENV,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
@@ -597,21 +595,26 @@ export function validateEnv(): void {
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
-    WHETHER A WORDS-BORN TATTOO MAY LAND BEYOND HER NECK. Its parent is
-    `CASTING_V2_SCOPE` and nothing narrower: this road needs no design row and
-    no uploaded picture — crop #1 is a delivery with `designId` NULL — so
-    hanging it off the studio door would gate a lane whose subject does not
-    require it.
+    ⚠ `validateCastingInkWordsEnvironment` STOOD HERE AND IS GONE — #1577
+    slice D3, on his word of 2026-10-15 (*"yes approve the plan and switch off
+    the six settings"*). It fenced `CASTING_INK_WORDS_SCOPE`, which decided
+    whether a words-born tattoo could land past the neck. The flag stood at
+    `all` on the service — read by name with a negative control before the cut
+    — so the narrow arm it fenced was a road nobody was on, and the one
+    surviving placement list is now read unconditionally.
+
+    ⚠ THE VARIABLE COMES OFF THE SERVICE ONLY AFTER THIS CODE DEPLOYS. Absent
+    parses as `off`, so unsetting it under the old build would have put every
+    account back on the neck-only list — which is the one ordering mistake this
+    retirement could still make.
   */
-  validateCastingInkWordsEnvironment({
-    scope: process.env[CASTING_INK_WORDS_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
   /*
     WHETHER A CAST MAY BE BORN WITH TATTOOS THE PRODUCT KNOWS ABOUT. Its parent
-    is `CASTING_V2_SCOPE` and nothing narrower for the same reason the words
-    road's is: the BRIEF is the document, so this lane needs no studio door, no
-    design row and no repaint. What it does need is a roll — the row is minted
+    is `CASTING_V2_SCOPE` and nothing narrower, and the reason is its own
+    rather than borrowed from the words road's fence above — which is retired,
+    so the citation that stood here would now point at a tombstone: the BRIEF
+    is the document, so this lane needs no studio door, no design row and no
+    repaint. What it does need is a roll — the row is minted
     when a candidate lands — and that is exactly what the casting scope gates.
   */
   validateCastingBornInkEnvironment({

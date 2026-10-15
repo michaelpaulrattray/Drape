@@ -691,7 +691,8 @@ describe("ink renders only where the anchor is the document", () => {
       actionable, and naming what works.
 
       The interesting arm is the OPEN one below it, which is every production
-      account (`CASTING_INK_WORDS_SCOPE=all`): the chest reaches the coverage
+      account (the words road serves all three placements; its flag retired in
+      #1577 slice D3): the chest reaches the coverage
       gate, and her OUTFIT decides.
     */
     const ask = "a swallow tattoo on her upper chest";
@@ -703,7 +704,7 @@ describe("ink renders only where the anchor is the document", () => {
        tee covers the chest, so the wall is the wardrobe's and the sentence names
        her top. **Byte-identical to what this arm asserted before the widening**,
        which is what makes that change a dark landing in production. */
-    const open: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true };
+    const open: FreeLaneCheck = { instruction: ask };
     expect(readDelta({ free: { ink: ask } }, open)).toBeNull();
     expect(open.wall?.reason).toBe("gate_ink_uncarried");
     expect(open.wall && "place" in open.wall ? open.wall.place : null).toContain("upper chest");
@@ -753,15 +754,15 @@ describe("ink renders only where the anchor is the document", () => {
       const ask = "a swallow tattoo on her upper chest";
       const c: FreeLaneCheck = {
         instruction: ask,
-        inkWordsRoadOpen: true,
         wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
       };
       expect(readDelta({ free: { ink: ask } }, c)?.free?.ink).toBeTruthy();
       expect(c.wall, "her chest is bare and the road can keep it").toBeUndefined();
 
-      /* CONTROL — the SAME ask, the same flag, on the house crew tee: refused,
-         and by the wardrobe. The variable is the outfit and nothing else. */
-      const tee: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true, wardrobe: { kind: "unpathed" } };
+      /* CONTROL — the SAME ask on the house crew tee: refused, and by the
+         wardrobe. The variable is the outfit and nothing else — which is now
+         true by construction rather than by holding a flag still (#1577 D3). */
+      const tee: FreeLaneCheck = { instruction: ask, wardrobe: { kind: "unpathed" } };
       expect(readDelta({ free: { ink: ask } }, tee)).toBeNull();
       expect(tee.wall?.reason).toBe("gate_ink_uncarried");
     });
@@ -839,7 +840,10 @@ describe("ink renders only where the anchor is the document", () => {
          message instead of the wardrobe's wall. The property under test is that
          HER OWN item is gated at all — not which wall — and the wardrobe's wall
          is the one that says something true about a cast in a crew tee. */
-      const c = { ...withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]), inkWordsRoadOpen: true };
+      /* ⚠ `inkWordsRoadOpen: true` rode this spread until #1577 slice D3 and
+       survived the typecheck because a spread literal is inferred, not
+       annotated. The open road is the only road. */
+    const c = { ...withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]) };
       expect(readDelta({ free: { ink: ["another swallow on his upper chest"] } }, c)).toBeNull();
       expect(c.wall?.reason).toBe("gate_ink_uncarried");
     });
@@ -861,7 +865,6 @@ describe("ink renders only where the anchor is the document", () => {
          thing that may differ between them is the PRIOR. */
       const c: FreeLaneCheck = {
         instruction: "give him a small swallow tattoo on his neck",
-        inkWordsRoadOpen: true,
       };
       expect(readDelta(
         { free: { ink: ["a small swallow tattoo on his neck", "a fine-line swallow on his upper chest"] } },
@@ -985,16 +988,27 @@ describe("ink renders only where the anchor is the document", () => {
 
   it("names what DOES work, so the refusal points somewhere", () => {
     /* It INVITES the missing fact rather than only closing a door (D-137 as
-       amended): the user's next move is to say where. */
-    expect(inkNeedsDocumentMessage(false)).toContain("Tell me where");
-    expect(inkNeedsDocumentMessage(false)).toContain("neck tattoo");
-    expect(inkNeedsDocumentMessage(false)).toContain("body-art studio is coming");
-    expect(inkNeedsDocumentMessage(false)).toContain("Nothing was charged");
+       amended): the user's next move is to say where.
+
+       ⚠ **THESE FIVE ARMS WERE DRIVING THE CLOSED ROAD AND ARE NOW DRIVING THE
+       ONLY ONE (#1577 slice D3).** They read `inkNeedsDocumentMessage(false)`
+       and asserted the narrow sentence — *"a neck tattoo is the one I can do"* —
+       while `CASTING_INK_WORDS_SCOPE` stood at `all` on the service, so that
+       is a customer sentence NO ACCOUNT HAS EVER BEEN SHOWN. The live sentence
+       names all three served placements, and it is what is asserted here now.
+       Same class as slice 4b's 134 arms on the dead paste road. */
+    const said = inkNeedsDocumentMessage();
+    expect(said).toContain("Tell me where");
+    expect(said, "every served placement is named, not just the neck").toContain("neck");
+    expect(said).toContain("upper arm");
+    expect(said).toContain("upper chest");
+    expect(said).toContain("body-art studio is coming");
+    expect(said).toContain("Nothing was charged");
     /* ⚠ AND IT NO LONGER CLAIMS FACE INK WORKS. It said "face and neck ink
        works today" for as long as this road existed, and the face half was
        never true — the sentence is the thing this retirement is FOR, so a
        future edit putting it back must go red here. */
-    expect(inkNeedsDocumentMessage(false).toLowerCase()).not.toContain("face");
+    expect(said.toLowerCase()).not.toContain("face");
   });
 });
 
@@ -1618,7 +1632,8 @@ describe("a tattoo she already wears is CARRIED, and its words are not said", ()
     So the neck tattoo was painted a SECOND time from the sentence rather than
     carried as a picture of the one she had — and the frames show a different
     swallow, on the other side of his neck. D-137's forbidden render, on a lane
-    where `CASTING_INK_WORDS_SCOPE` is `all`.
+    where the words road serves every measured placement (`CASTING_INK_WORDS_SCOPE`
+    said so until #1577 slice D3 retired it; nothing narrower replaced it).
 
     ⚠ The discriminator is SOURCE CONTAINMENT, not a placement lookup, and that
     is a repair rather than a preference: the first shape of this resolved each
