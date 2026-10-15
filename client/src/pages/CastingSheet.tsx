@@ -3717,8 +3717,17 @@ export default function CastingSheet() {
             THE FACE'S OWN REGIONS, over the picture (fable-200). Only where a
             box was actually measured — a rectangle over the wrong pixels is a
             promise that clicking there edits that thing.
+
+            AND ONLY WHILE THE DRAWER IS OPEN (#2547, his report 2026-10-15:
+            *"even if i havent clicked into the refine box or anything the
+            box's are appearing around the casts features"*). A face scanned
+            on an earlier visit answers with its kept rows on first paint, for
+            free, so without this the boxes drew in looking mode — and the
+            approved #2533 design says looking is just the picture. Shutting
+            the drawer hides them; the kept reading stays, so reopening shows
+            them at once without a second read.
           */
-          overlay={facePanelData && viewerRefinable ? (
+          overlay={facePanelData && viewerRefinable && drawerOpen ? (
             <FaceRegions
               rows={faceRows}
               selection={faceSelection}
