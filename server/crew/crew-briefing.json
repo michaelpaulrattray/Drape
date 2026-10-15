@@ -1,14 +1,14 @@
 {
-  "edition": 708,
-  "updatedAt": "2026-10-14T19:10:00.000Z",
-  "shift": "THE COMPANY'S VOICE BUDGET WAS BEING READ AND THROWN AWAY, AND NOW IT IS ON THE DASHBOARD. Every time the product checks the voice account it already gets back a monthly limit on how much speech the whole company can make — shared by every account, and it cannot be raised. Nothing in the product has ever looked at it. Tonight it does: the staff dashboard now has a third voice line reading 173,515 of 182,297, beside the two that were already there. It matters because the FREE voices a customer makes come out of that one shared pot, and they cost no \"keep\" and no slot — so the two numbers on the dashboard would have sat perfectly still while the month emptied. At today's free limit one account on its own could use the whole company's month. Nobody can hit that yet: six accounts exist, one has ever cast, and the month is 4.8% used. So nothing is being blocked or refused, and no limit was invented — choosing that number is yours, and it is worth doing before voice is switched on for anyone beyond you. Nothing a customer sees changed.",
+  "edition": 709,
+  "updatedAt": "2026-10-15T00:52:00.000Z",
+  "shift": "YOUR CHARACTERS CAN SPEAK, AND THE VOICE RUNG IS DONE — TEN CARDS, TWO DAYS. Open a signed character and three voices made from their own written words are already there, each with play and a waveform; keep the one that sounds right and that character's own audition plays there from then on. Change it or remove it whenever you like. Nothing on any screen names the company making the sound, and a test reads every string on that card to keep it that way. The last card closed on your own ear tonight — you answered three voice cards in two and a half minutes and the fourth was waiting on the same two sentences. ONE THING IS WORTH YOUR HANDS: keeping a voice costs 100 credits, and our records show no paid keep has ever happened on the live site. The dates explain it rather than contradict you — the card went live on your account at 09:15 and the price only went in at 13:33, so a keep you made in between was free and left no line in your history. It is step 2 of your test drive. Voice is on for your account and nobody else's; widening it is your word, and has one number to choose first. Your test drive and the one word on what comes next are on card #2523.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "confirmed",
-      "title": "Voice. Every signed cast already has a written line saying how they sound — this rung lets you hear it. The crew makes a few real voices from that line, you play each one and keep the one that sounds right, and from then on that voice belongs to the cast. Nothing on screen names the company making the sound. It is built on your account first, in four steps: making and storing a voice with no screen yet, then listening and picking on the cast's Voice card, then the real price and the limits, then re-making a voice when a slot is needed. The design is written and merged.",
-      "quote": "Yes we will begin n4b",
-      "quotedAt": "2026-10-13T03:26:12Z"
+      "state": "none",
+      "title": "Voice is finished and the focus is clear. Every signed character's written voice line is now a voice you can hear: three made from their own words when the card opens, free every time, and keeping one gives that character their own audition for good. Changing and removing a kept voice came with it, and so did voices that sound like the character rather than like the sentence. It is live on your account only — widening it is your word, and there is one number to choose first. Your six-step test drive and the one word on what comes next are on card #2523. Nothing new starts until you name it.",
+      "quote": null,
+      "quotedAt": null
     },
     "milestone": {
       "title": "Voice — a cast's written voice line becomes a voice you can actually hear, make again, and keep. Built on your account first, and nothing on screen names the company making the sound.",
@@ -23,15 +23,15 @@
         },
         {
           "title": "Listen and pick, on the cast's Voice card — a few voices made from the text, play each one, keep the one that sounds right (#2470)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Voices that sound like the character, not like the written line — a second description written for the voice designer from your words and the character's picture, which you never see. The piece your listening test chose. Built, reviewed and live; your ear on the result is the last word (#2498)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Changing or removing a voice you have kept — your own report that there was no way to do either. Change voice makes three new ones from the line as it reads now and keeping one replaces the old; Remove clears it and asks first. Built, reviewed and live; your hands on it are the last word (#2497)",
-          "state": "waiting"
+          "state": "done"
         },
         {
           "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read: keeps, slots, and (new tonight) the shared monthly speech budget that the free voices actually spend. The plan document that still called Voice unbuilt is corrected (#2471, #2509)",
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-14T19:08:46.562Z",
+      "readAt": "2026-10-15T00:50:41.004Z",
       "items": [
         {
           "issueNumber": 14,
@@ -230,12 +230,6 @@
           "issueNumber": 499,
           "title": "N4b — Voice: the cast's voice package gets its own rung (his word, 4 Sep)",
           "kind": "design-unbuilt",
-          "rung": "N4b"
-        },
-        {
-          "issueNumber": 2489,
-          "title": "Two settings from you turn the Voice work on for your account (after PR #2488 merges)",
-          "kind": "rung",
           "rung": "N4b"
         },
         {
@@ -333,7 +327,7 @@
       "workedExample": "Open Kiki, a signed cast, and press to make voices. Before this she came back with three male voices. Now the three should read as the character, in the character’s own words rather than our house paragraph. Pigman is the other half of it: he should sound like Pigman.",
       "options": [],
       "recommendation": null,
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-14T17:45:00.000Z",
       "issueNumber": 2498
     },
@@ -344,7 +338,7 @@
       "workedExample": "The old voice is only let go once the new one is completely safe — saved, its recording stored, the record written. If anything fails on the way, you keep the voice you had and nothing is charged. Editing the written line on its own still changes nothing until you press Change voice, which is how you asked for it.",
       "options": [],
       "recommendation": null,
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-14T17:45:00.000Z",
       "issueNumber": 2497
     },
@@ -3955,9 +3949,36 @@
         }
       ],
       "recommendation": "Have a listen — it is the whole point of the rung and it costs you nothing. Three voices, about seven seconds after the page opens.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-14T09:40:00.000Z",
       "issueNumber": 2470
+    },
+    {
+      "id": "n4b-done-2523",
+      "title": "Voice is done — your characters can speak. Your test drive, and one word on what comes next",
+      "productImpact": "Your characters can speak. Open any character you have signed and, under the line about how they sound,\nthree voices made from those exact words are already there — Voice 1, Voice 2, Voice 3, each with play and\na waveform. Press play on each and keep the one that sounds right. From then on that character's own\naudition plays there: a couple of minutes of them speaking, and it belongs to them.\n\nWhat it costs: the three that appear on their own are FREE, every time, for every character. Making a fresh\nthree is 25 credits. Keeping one is 100. Removing a voice asks you once and gives nothing back.\n\nNothing on any screen names the company that makes the sound — not a button, not a loader, not a refusal.\nA test reads every string on that card and fails the build if a vendor or pipeline word appears, so it\ncannot creep back in.\n\n⚠ IT IS ON YOUR ACCOUNT ONLY. No other customer can see the card or spend a credit on it. Before it goes to\neveryone there is ONE number to choose: a daily house-wide limit on the free voices, so a busy day cannot\nrun the company's monthly speech budget down. Nothing is blocked by it today — six accounts exist, one has\never cast, and the month is 5% used.\n\n⚠ AND ONE STEP IS WORTH YOUR HANDS MORE THAN THE OTHERS. Keeping a voice costs 100 credits, and our own\nrecords show that no paid keep has ever happened on the live site. The dates explain that rather than\ncontradict you: the voice card went live on your account at 09:15 and the price only went in at 13:33, so a\nkeep you made in between was free and left no line in your credit history. The charge, its refund-if-it-\nfails and the replace are all proven by tests and by nothing on production — so if anything here is going\nto be wrong, that is where. It is step 2 of the six on card #2523.",
+      "workedExample": "The last card of the rung closed tonight on your own ear, and how it had been sitting is worth one minute.\n\nYou answered three voice cards in two and a half minutes last night — \"i checked kikis voice everythings\nworks well and sounds good\" and \"yes i removed and changed her voice it worked as expected\". Those words\nclosed all three. The fourth card, the one that actually built Listen and pick, was waiting on exactly the\nsame two sentences — and its own waiting line pointed at one of the cards you had just closed. So the thing\nit needed had arrived six hours before anybody applied it.\n\nThat is the second time in two days on this rung that a finished card sat waiting with nothing to read it.\nThe other two were built, merged and live for a whole day while your page was not asking you to listen at\nall, because neither carried the label the page needs to draw a question. Both are fixed; this one is the\nsame shape one step further on — the answer existed and the card did not know.\n\nThe rung itself: ten cards in two days. Four were the design's own slices — the voice road with no screen,\nListen and pick, the real price with the house's monthly ration on your staff dashboard, and re-making a\nvoice when room is needed, which your ear settled on 13 October. Six more were filed beside them rather\nthan folded in, each its own card: voices that sound like the character instead of like the sentence (your\nown bug report that her voices were male), change and remove, the two settings that switched it on, and the\ndesign doc corrected to your upgraded account.",
+      "options": [
+        {
+          "key": "n3",
+          "label": "N3 — the refine era completes (recommended)",
+          "consequence": "Next on your ladder, and it carries two cards you filed yourself: cutting what a Refine costs so its price can come down, and cutting the cost of a face scan as far as it goes without anyone noticing. Both put money back on every single use."
+        },
+        {
+          "key": "n4",
+          "label": "N4 — Takes",
+          "consequence": "A design direction you endorsed but never ordered built. It would need a design pass before any card could be cut, so it starts slower than N3."
+        },
+        {
+          "key": "workspace",
+          "label": "A shared workspace — several people, one pool of credits, one bill",
+          "consequence": "The thing a per-seat Team plan cannot ship without, and the reason that plan has sat blocked since Pricing phase 2. You have never ordered it, so it waits."
+        }
+      ],
+      "recommendation": "N3. It is next on your ladder, it is the rung you passed over when you chose Voice, and both of its first cards are yours — they cut what we pay on every Refine and every face scan.",
+      "state": "open",
+      "filedAt": "2026-10-15T00:48:00.000Z",
+      "issueNumber": 2523
     }
   ],
   "eyeItems": [
@@ -10776,7 +10797,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-14T19:08:46.561Z",
+    "readAt": "2026-10-15T00:50:41.004Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10825,45 +10846,9 @@
         }
       },
       {
-        "issueNumber": 2140,
-        "title": "N4b: \"Listen and pick\" — real voices made from the voice text, picked by ear (first piece of the Voice rung; his word 2026-10-09)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#2470, the build card that carries this design. Nothing here needs your word."
-        }
-      },
-      {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
         "urgent": false
-      },
-      {
-        "issueNumber": 2470,
-        "title": "N4b-2: Listen and pick on the Voice card, Voice 1-3 and Keep, dark on his account",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#2489 — his test drive, now that voice is ON for his account (both settings read back on the live service 2026-10-14). His ear on a real signed cast closes thi…"
-        }
-      },
-      {
-        "issueNumber": 2497,
-        "title": "N4b: change or remove a kept voice — the card has no road to either once a voice is kept",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — two presses on a character that already has a kept voice: Change voice, then Remove voice. Do they both do what you would expect?"
-        }
-      },
-      {
-        "issueNumber": 2498,
-        "title": "N4b: voices are designed from the video-generator line alone — write a hidden voice card from the words and the picture (his listening test: F)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — a listen. You reported a character written as a woman getting male voices. That is fixed and live: do the three voices now match the character?"
-        }
       }
     ]
   }
