@@ -274,7 +274,7 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
 /**
  * WHAT THE STORED ECHO HAS ROOM FOR — the column width, named once (#1126).
  *
- * ⚠ **It is a MIRROR of `drizzle/schema.ts`'s `requestText: varchar(400)` (220 until migration 0066), and
+ * ⚠ **It is a MIRROR of `drizzle/schema.ts`'s `requestText: varchar(2400)` (220 until migration 0066, 400 until 0085), and
  * a mirror drifts** (working law 4), so it is not left to hold:
  * `server/refineEchoWidth.test.ts` reads the width out of the schema and
  * reddens if the two disagree. It cannot be DERIVED — the schema is a drizzle
@@ -293,8 +293,14 @@ export const REASK_HANDLE_MAX_LENGTH = REASK_KINDS.reduce(
  * the column before this number moved. 400 now holds the longest answer the
  * router accepts (309) plus the studio's own clause, so nothing she types is
  * thrown away; `capForEcho` stays underneath as the belt beside the brace.
+ *
+ * ✅ **AND AGAIN, 400 → 2400 (migration 0085, card #26)** — his word
+ * 2026-10-15, *"yes raise the refine limit to 2000"*, took the box from 200 to
+ * 2,000, so the longest answer is 2,109 and the longest composition 2,141.
+ * `scripts/ceremony-request-text-width-2400.mts` widens the column; it ran on
+ * dev before this number moved and must run on production before it merges.
  */
-export const REFINE_REQUEST_TEXT_MAX_LENGTH = 400;
+export const REFINE_REQUEST_TEXT_MAX_LENGTH = 2400;
 
 /** Her sentence, cut so our own clause survives it. See {@link ReaskOption.echo}. */
 function echoOf(head: string, tail: string): string {

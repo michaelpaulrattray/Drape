@@ -17,7 +17,8 @@
  * survives (`storedEchoOf`). Migration 0066 (his "a" on the Desk card,
  * 2026-09-25; `scripts/ceremony-request-text-width.mts`, applied on both
  * worlds and read back at the column) removed the loss: the column is 400, and
- * nothing she is allowed to type is thrown away. Both halves are guarded here —
+ * nothing she is allowed to type is thrown away. Migration 0085 (card #26) kept
+ * that promise when the box went 200 → 2,000: the column is 2,400. Both halves are guarded here —
  * the second as the promise, the first as the belt beside the brace, driven at
  * the width it was built for so the widening cannot have made it inert.
  *
@@ -75,15 +76,15 @@ const HER: CastPronouns = {
 
 /**
  * The width the column had when the loss was real. The trimming arms are
- * driven at THIS number, not at the live one: at 400 nothing overflows, and an
+ * driven at THIS number, not at the live one: at the live width nothing overflows, and an
  * arm that finds nothing to trim passes by having nothing to check.
  */
 const OLD_WIDTH = 220;
 
 /**
  * A sentence at the longest an ANSWER may be — the case the old column could
- * not hold, and the reason every number here is measured at 309 rather than at
- * the 200 the typing box allows.
+ * not hold, and the reason every number here is measured at the answering cap
+ * (2,109 since card #26) rather than at the 2,000 the typing box allows.
  */
 function askedAtFullLength(seed: string): string {
   const filler = " and keep the lighting soft and even across the whole frame";
@@ -278,13 +279,16 @@ describe("#1126 — what is stored fits, and never cuts a word", () => {
   });
 
   it("NEGATIVE CONTROL — the live reader really does cut, and really does keep a clause", () => {
-    /* Past 400, so the live width is the one being exercised: the fallback
-       behind the promise is doing work, not sitting behind a column that is
-       always wide enough. */
+    /* Past the live width, so the live width is the one being exercised: the
+       fallback behind the promise is doing work, not sitting behind a column
+       that is always wide enough. The repeat is DERIVED from the width — it was
+       a literal 100 words, which stopped overflowing the day the column grew
+       to 2,400 (card #26) and the arm went red rather than blind. */
+    const words = "word ".repeat(Math.ceil(REFINE_REQUEST_TEXT_MAX_LENGTH / 5) + 20);
     const composed: ReaskOption = {
       label: "Her left",
-      resolves: `${"word ".repeat(100)}(her left)`,
-      echo: capForEchoWithTail("word ".repeat(100), "(her left)", REFINE_REQUEST_TEXT_MAX_LENGTH),
+      resolves: `${words}(her left)`,
+      echo: capForEchoWithTail(words, "(her left)", REFINE_REQUEST_TEXT_MAX_LENGTH),
     };
     expect(composed.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(composed).length).toBeLessThanOrEqual(REFINE_REQUEST_TEXT_MAX_LENGTH);
@@ -292,7 +296,7 @@ describe("#1126 — what is stored fits, and never cuts a word", () => {
 
     /* And with no echo it still fits — the fallback is doing work, not sitting
        behind an echo that is always present. */
-    const bare: ReaskOption = { label: "Go ahead anyway", resolves: "word ".repeat(100).trim() };
+    const bare: ReaskOption = { label: "Go ahead anyway", resolves: words.trim() };
     expect(bare.resolves.length).toBeGreaterThan(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(bare).length).toBeLessThanOrEqual(REFINE_REQUEST_TEXT_MAX_LENGTH);
     expect(storedEchoOf(bare).endsWith("word")).toBe(true);

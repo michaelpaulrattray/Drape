@@ -1,0 +1,21 @@
+-- THE RECORD OF WHAT THEY ASKED FITS WHAT THEY ARE NOW ALLOWED TO ASK (card #26,
+-- his word 2026-10-15, verbatim: "yes raise the refine limit to 2000").
+--
+-- The refine box accepted 200 characters and now accepts 2,000
+-- (`REFINE_INSTRUCTION_MAX_LENGTH`, `shared/refineLimits.ts`). An answer to a
+-- clarifying question may carry that plus the longest re-ask handle (109) =
+-- 2,109, and the studio composes its own clause on top: the longest composition
+-- the product can store is 2,141 characters, measured by building every
+-- question at the router's longest answer (`server/refineEchoWidth.test.ts`).
+-- `casting_candidate_variants.requestText` held 400 (migration 0066), so on a
+-- long ask the version rail's label would be cut. 2,400 holds the longest with
+-- the same proportion of room 0066 left (341 → 400).
+--
+-- PURELY ADDITIVE: a WIDENING of one varchar. No row is rewritten, no value can
+-- be truncated by growing its column, nothing is dropped. It is a ceremony
+-- rather than the rite's automatic act only because `MODIFY COLUMN` is refused
+-- by `scripts/lib/ceremonyAutoApply.mts` on purpose — the classifier cannot tell
+-- a widening from a narrowing — so a person runs it, naming the world:
+-- `scripts/ceremony-request-text-width-2400.mts`.
+ALTER TABLE `casting_candidate_variants`
+	MODIFY COLUMN `requestText` varchar(2400);

@@ -121,7 +121,11 @@ import { redoCastPackage } from "../castingV2/packageRedoService";
 import { retryCastView } from "../castingV2/viewRetryService";
 import { captureCastingRetryEnabled } from "../castingV2/castingV2Scope";
 import { signCandidate } from "../castingV2/signService";
-import { REFINE_ANSWERING_MAX_LENGTH, REFINE_INSTRUCTION_MAX_LENGTH } from "../castingV2/refineLimits";
+import {
+  REFINE_ANSWERING_MAX_LENGTH,
+  REFINE_INSTRUCTION_MAX_LENGTH,
+  REFINE_REQUEST_TEXT_MAX_LENGTH,
+} from "../castingV2/refineLimits";
 import {
   readAskReference, readAskScope, readRefineFigure, readRefineStep, readRegeneratedFrom, referencesOf,
   refineCandidate,
@@ -1572,9 +1576,9 @@ export const castingV2Router = router({
    * Refine one face — one paid edit, 500 credits (M8, D-121).
    *
    * Rate-limited on the generation bucket like every other paid surface. The
-   * instruction is capped at 200 characters because it is ONE adjustment, not a
-   * brief: the brief box is where a paragraph belongs, and a long instruction
-   * here is a sign somebody is trying to re-cast rather than refine.
+   * instruction is capped at `REFINE_INSTRUCTION_MAX_LENGTH` — 2,000 characters
+   * since card #26 (his word 2026-10-15: "yes raise the refine limit to 2000");
+   * it was 200 under the retired "one adjustment, not a brief" framing.
    */
   refine: protectedProcedure
     .input(
@@ -1628,9 +1632,20 @@ export const castingV2Router = router({
             Absent on every typed refinement. The `instruction` field above is
             still required by this schema and carries her own sentence for the
             step, which is what the receipt and the operation payload read.
+
+            ⚠ The step's sentence is capped at the longest sentence a step can
+            HOLD, not at what the box accepts: an answered ask stores the answer
+            plus the studio's clause, which `server/refineEchoWidth.test.ts`
+            proves fits `REFINE_REQUEST_TEXT_MAX_LENGTH`. It was a literal 200
+            until card #26 raised the box to 2,000 — a step typed at full length
+            could then never have been pointed at. (No client sends this field
+            today; the cap is bolted to the box all the same.)
           */
           removeStep: z
-            .object({ at: z.number().int().min(0).max(200), instruction: z.string().trim().min(1).max(200) })
+            .object({
+              at: z.number().int().min(0).max(200),
+              instruction: z.string().trim().min(1).max(REFINE_REQUEST_TEXT_MAX_LENGTH),
+            })
             .strict()
             .optional(),
           /*

@@ -16,13 +16,29 @@
  * it. The derived `REFINE_ANSWERING_MAX_LENGTH` stays server-side, because it
  * is built from a handle length nothing on the client needs to know.
  *
- * # ONE ADJUSTMENT, NOT A BRIEF
+ * # 2,000 — HIS WORD, 2026-10-15 (#26)
  *
- * The founder's own framing of the box, and the reason the number is small: the
- * brief box is where a paragraph belongs, and a long instruction here is
- * somebody trying to re-cast rather than refine.
+ * Verbatim: *"yes raise the refine limit to 2000"*. It was 200 — about 35
+ * words — under the framing *"one adjustment, not a brief"*: the brief box was
+ * where a paragraph belonged, and a long instruction here read as somebody
+ * trying to re-cast rather than refine. His word retires that framing for the
+ * box's LENGTH; it was the reason the number was small, and the number is no
+ * longer small. A customer may now change a person in as many words as the
+ * product once let them describe one in.
+ *
+ * ⚠ **It is a literal, not derived from the brief's cap, on purpose.** The card
+ * compared the two (200 against the brief's 2,000), but the brief's entrance
+ * has admitted 4,000 since #1204 (`shared/briefLength.ts`), and his number is
+ * 2,000. Deriving it would have quietly made the refine box 4,000.
+ *
+ * ⚠ **The number is bolted to a column.** An unanswered refine stores what was
+ * typed in `casting_candidate_variants.requestText`, and an ANSWERED one stores
+ * up to this plus the longest re-ask handle plus the studio's own clause, so
+ * `REFINE_REQUEST_TEXT_MAX_LENGTH` (`server/castingV2/refineReask.ts`) and the
+ * schema's declared width must hold that sum — `server/refineEchoWidth.test.ts`
+ * reddens the day this number outgrows them.
  */
-export const REFINE_INSTRUCTION_MAX_LENGTH = 200;
+export const REFINE_INSTRUCTION_MAX_LENGTH = 2000;
 
 /**
  * The room a SCOPED ask actually has to type in.

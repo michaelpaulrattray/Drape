@@ -27,15 +27,21 @@ export { REFINE_INSTRUCTION_MAX_LENGTH };
  *
  * | number | value | what it governs |
  * |---|---|---|
- * | {@link REFINE_INSTRUCTION_MAX_LENGTH} | 200 | what the refine box accepts |
- * | {@link REFINE_ANSWERING_MAX_LENGTH} | 309 | what an ANSWER may carry |
- * | {@link REFINE_REQUEST_TEXT_MAX_LENGTH} | 220 | what the column STORES |
+ * | {@link REFINE_INSTRUCTION_MAX_LENGTH} | 2000 | what the refine box accepts |
+ * | {@link REFINE_ANSWERING_MAX_LENGTH} | 2109 | what an ANSWER may carry (+ the 109-character handle) |
+ * | {@link REFINE_REQUEST_TEXT_MAX_LENGTH} | 2400 | what the column STORES |
  *
- * ⚠ **The third is smaller than the second, and that is the defect #1126 is
- * about rather than a rule.** An answer composed with our own clause reaches
- * 341 against a field that holds 220, so something is always cut; what the
- * echo decides is only that the cut lands on her words rather than on ours.
- * The complete fix is widening the column, which is a founder-run ceremony.
+ * The longest thing the product composes onto an answer is 2,141 characters
+ * (2,109 plus the studio's own 32-character clause), so the third holds the
+ * second whole and nothing typed is thrown away. `server/refineEchoWidth.test.ts`
+ * measures that rather than this table, which is a reading aid and goes stale.
+ *
+ * ⚠ **This table read 200 / 309 / 220 until card #26 (2026-10-15), and the
+ * third figure had been wrong since migration 0066 widened the column to 400
+ * on 2026-09-25** — the warning beneath it described #1126's defect as still
+ * open three weeks after it closed. The box went to 2,000 on his word, *"yes
+ * raise the refine limit to 2000"*, and the column to 2,400 by migration 0085,
+ * whose ceremony must run on a world before code declaring 2,400 reaches it.
  */
 export { REFINE_REQUEST_TEXT_MAX_LENGTH };
 

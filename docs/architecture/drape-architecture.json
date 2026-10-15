@@ -16771,6 +16771,10 @@
       "path": "server/refineEchoWidth.test.ts"
     },
     {
+      "id": "test:server/refineInstructionCap.test.ts",
+      "path": "server/refineInstructionCap.test.ts"
+    },
+    {
       "id": "test:server/refinePanelDoors.test.ts",
       "path": "server/refinePanelDoors.test.ts"
     },
