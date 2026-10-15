@@ -2745,8 +2745,14 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    * ceremony on both worlds before this declaration moved (production held zero
    * rows); `REFINE_REQUEST_TEXT_MAX_LENGTH` is pinned to this number by
    * `server/refineEchoWidth.test.ts`.
+   *
+   * 2400 since migration 0085 (card #26, his word 2026-10-15: "yes raise the
+   * refine limit to 2000"). The box went 200 → 2,000, so an answered refine can
+   * compose 2,141 characters; widened by ceremony
+   * (`scripts/ceremony-request-text-width-2400.mts`) before this declaration
+   * moved.
    */
-  requestText: varchar("requestText", { length: 400 }),
+  requestText: varchar("requestText", { length: 2400 }),
   // INTERNAL — the composed instruction and the FULL resolved identity of this
   // variant. Sign reads its identity documents from here when it is selected,
   // which is why it must be written from the same deltas the prompt was.
