@@ -2259,7 +2259,7 @@ export default function CastingSheet() {
           AN OUTCOME THAT NEEDS A SENTENCE SAYS IT — free or paid.
 
           A FREE one because silence would leave someone assuming
-          they had just spent 1,750 credits on a face they were already
+          they had just spent 500 credits on a face they were already
           looking at (D-163 rule 4). A PAID one that could only be
           served in part because naming the part left out is the
           whole of D-181. This line used to read `kind === "selected"`
@@ -2558,7 +2558,7 @@ export default function CastingSheet() {
       AND A NEW SENTENCE. `RefinePanel` used to be keyed by the face, so its own
       state died with it; the draft is held here now, so the clearing has to be
       too — or walking the viewer with ←/→ carries a half-typed instruction onto
-      the next candidate and the box spends 1,750 credits on whoever you landed on.
+      the next candidate and the box spends 500 credits on whoever you landed on.
     */
     setAskDraft("");
     faceSelection.select(null);
@@ -3771,7 +3771,7 @@ export default function CastingSheet() {
               /*
                 Keyed by the face. Without it, walking the viewer with ←/→
                 carries a half-typed instruction from one candidate to the next,
-                and the box then spends 1,750 credits on whoever you landed on.
+                and the box then spends 500 credits on whoever you landed on.
               */
               /*
                 ⚠ **THE ASK BOX IS NO LONGER TOLD EITHER HALF OF *MAY SHE EDIT

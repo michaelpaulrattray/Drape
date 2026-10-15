@@ -490,7 +490,7 @@ export type RefineInput = {
    * `offeredAgain` already uses one field up.
    *
    * A bare `replay: true` would have been shorter and wrong. The doors it
-   * turns off exist to stop somebody being charged 1,750 credits for a render
+   * turns off exist to stop somebody being charged 500 credits for a render
    * that changes nothing, so a client that could assert its way past them
    * could spend a user's money on a no-op.
    *
@@ -560,7 +560,7 @@ export type RefineResult = {
    * What happened, for the panel to say.
    *
    * Two kinds of outcome need one: a FREE one, where silence would leave
-   * someone assuming they had just spent 1,750 credits (D-163 rule 4); and a PAID
+   * someone assuming they had just spent 500 credits (D-163 rule 4); and a PAID
    * one that could only be served in part, where silence is the product
    * deciding something on the customer's behalf without telling them (D-181,
    * fable-386 §2). The panel says it whenever it is here — a reader that only
@@ -1707,7 +1707,7 @@ async function refineCandidateCounted(
     the claim against its own rows. The named version must be the predecessor
     this render is built on, and that row's `requestText` must be the sentence
     being sent. A bare `replay: true` would have let a client turn off the doors
-    that stop somebody paying 1,750 credits for a render that changes nothing.
+    that stop somebody paying 500 credits for a render that changes nothing.
 
     `requestText` is null on every row landed before that column existed; those
     versions replay exactly as they always have, through the sentence alone.
@@ -2941,7 +2941,7 @@ async function refineCandidateCounted(
     end — so the copy is deleted. Deleting the BRANCH as well was the tempting
     tidy-up and it is the dangerous one: an ask to take a tattoo off, misfiled
     as an edit, would fall through to the words road and **paint a fresh tattoo
-    for 1,750 credits**.
+    for 500 credits**.
 
     So it ROUTES rather than answers. One removal implementation, entered from
     two doors (working law 4) — this converts the parse and falls into the same
@@ -3051,7 +3051,7 @@ async function refineCandidateCounted(
       prune, a confession about her brief, an honest paid render — is a decision
       built on a read we already know we cannot trust. The first draft of this
       sent it to her face; ruled against, and rightly: a free, instant "tell me
-      which one" beats a surprise 1,750 credits resolving an ambiguity she never
+      which one" beats a surprise 500 credits resolving an ambiguity she never
       got to see.
 
       A width claim does not rescue it, which is the one place this goes past
@@ -4714,7 +4714,7 @@ async function refineCandidateCounted(
     picture we already hold.
 
     She asks for eyes that sweep up and her eyes already sweep up. Rendering that
-    spends 1,750 credits to produce the face she is looking at, and then asks a
+    spends 500 credits to produce the face she is looking at, and then asks a
     reader whether it complied, which is how a false pass is manufactured. The
     honest answer is a QUESTION, and asking it is free.
 
@@ -8195,12 +8195,17 @@ async function refineCandidateCounted(
       return {
         rendered,
         /*
-          A BINDING MISS IS RE-READ BEFORE IT COUNTS (D-194).
+          A MISS THE GATE WILL ACT ON IS RE-READ BEFORE IT COUNTS (D-194).
 
           The reader disagrees with itself 21% of the time, measured on the
           trial's own data, so one reading cannot be evidence enough to spend a
           refusal. The extra calls land only on a render already headed for a
           re-render or a refund.
+
+          ⚠ **"BINDING" WAS THE POPULATION UNTIL #2526 AND IS NOW NARROWER:**
+          `confirmVerdict` confirms exactly what `isRefusableMiss` admits, so a
+          quibble and a silence — neither of which can decline this delivery any
+          more — stop buying a confirming vision call they could not act on.
         */
         verification: await confirmVerdict(await read(), read),
       };

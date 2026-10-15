@@ -210,11 +210,13 @@ export const CAST_PACKAGE_VIEWS: readonly CastViewAngle[] = [
  * lands in `CASTING_V2_COSTS`, this figure and every count on every plan card
  * follow it with no copy edit anywhere.
  *
- * **One Refine, not three.** The Refine docblock's own argument is that three
- * variants at 1,750 come to 5,250 on the way to a Sign — a real pattern, and
- * the wrong basis for an example, because an example that assumes the
- * expensive path understates what a plan covers. One correction is the
- * modest, defensible read.
+ * **One Refine, not three.** The Refine docblock's own argument is that several
+ * variants on the way to a Sign are a real pattern — and the wrong basis for an
+ * example, because an example that assumes the expensive path understates what
+ * a plan covers. One correction is the modest, defensible read. ⚠ **It used to
+ * carry the arithmetic of three refines at the price of the day, and that is
+ * deliberately gone**: the figure moved twice in a fortnight (#1601, then
+ * #2526's launch price) and the argument never depended on it.
  *
  * ⚠ **A FOLLOW IS DELIBERATELY NOT IN THIS SUM.** `castingSliceCredits` prices
  * a follow sheet above a roll sheet, and a customer casting one character from

@@ -119,12 +119,21 @@ describe("an affirmative without evidence is not a reading", () => {
     expect(verdict.unavailable).toBe(true);
   });
 
-  it("STILL refuses on a binding miss that named nothing — silence never charges", async () => {
+  it("RECORDS a binding miss that will not say which kind, and no longer acts on it", async () => {
     /*
-      The asymmetry, and the reason for it. Requiring evidence on a negative too
-      looked tidier and would have DELIVERED AND CHARGED for a render the reader
-      believed was non-compliant — manufacturing the exact false pass this guard
-      exists to prevent. This test is the one that caught it.
+      ⚠ THIS ARM USED TO BE "STILL refuses on a binding miss that named nothing
+      — silence never charges", AND #2526 TURNED THE POLARITY OVER.
+
+      Its original reason, kept because it is why the field is ASKED rather than
+      sniffed: requiring evidence on a negative too looked tidier and would have
+      DELIVERED AND CHARGED for a render the reader believed was non-compliant.
+      That argument was about MONEY, and no refine verdict has moved money since
+      fable-721 (`facts_missing` is not in `REFUSES_AFTER_RENDER`) — what a
+      silence can spend now is the house's free re-render, whose second attempt
+      is the frame the customer is handed. His ruling of 2026-10-15: the checker
+      acts only where the asked thing is not in the picture at all.
+
+      So the reading is unchanged and fully recorded; only the ACT is gone.
     */
     const { verdict } = await read(
       ['{"results":[{"id":1,"present":false}]}'],
@@ -132,16 +141,29 @@ describe("an affirmative without evidence is not a reading", () => {
     );
     expect(verdict.checks[0].read).toBe(true);
     expect(verdict.checks[0].verified).toBe(false);
-    expect(verdict.ok).toBe(false);
+    expect(verdict.ok).toBe(true);
+    /* And it is on the watch list, which is where a reader defect is read. */
+    expect(advisoryMisses(verdict).map((c) => c.asked)).toEqual(["pale blue"]);
   });
 
-  it("still refuses on a binding miss that names what it saw", async () => {
+  it("acts on a binding miss the reader calls an outright absence", async () => {
     const { verdict } = await read(
-      ['{"results":[{"id":1,"present":false,"saw":"irises are hazel"}]}'],
+      ['{"results":[{"id":1,"present":false,"absent":true,"saw":"irises are hazel"}]}'],
       [{ subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true }],
     );
     expect(verdict.ok).toBe(false);
     expect(missingFacts(verdict)).toEqual(["pale blue"]);
+  });
+
+  it("does not act on the same miss when the reader says the thing is there", async () => {
+    /* The quibble, unchanged since D-246: "thin and understated, not bold
+       hoops" is the customer's judgement and Regenerate is the remedy. */
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"absent":false,"saw":"irises read more teal"}]}'],
+      [{ subject: aboutFacet(EYE_COLOUR), asked: "pale blue", binding: true }],
+    );
+    expect(verdict.ok).toBe(true);
+    expect(missingFacts(verdict)).toEqual([]);
   });
 });
 
@@ -216,10 +238,24 @@ describe("facets with a measured unreliability prior get a second reading", () =
     expect(rereads).toBe(0);
   });
 
+  /*
+    ⚠ THE "no" READINGS IN BOTH ARMS BELOW NOW CARRY `absent: true`, AND THAT IS
+    THE FIXTURE BECOMING FAITHFUL RATHER THAN THE ARM BEING LOOSENED (#2526).
+
+    A reader answering `present:false` on "tied up" is told by the prompt to say
+    which kind of not-present it means, and *"the hair is not down"* is its own
+    worked example of an outright absence. With the field omitted these arms
+    were driving a shape the live prompt asks the reader not to send, and under
+    the catastrophic gate the demotion would have had nothing to act on — which
+    is what `confirmVerdict`'s own carry of `other.absent` is there to keep.
+  */
   it("makes a demoted BINDING affirmation survive the majority of three", async () => {
     const asked = "tied up";
     const make = (verified: boolean) =>
-      verdictOf([{ subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x" }]);
+      verdictOf([{
+        subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x",
+        ...(verified ? {} : { absent: true }),
+      }]);
 
     /* first says yes, second says no → a split, so a third breaks the tie.
        Third says yes: one doubter out of three is not a refusal. */
@@ -236,12 +272,34 @@ describe("facets with a measured unreliability prior get a second reading", () =
   it("refuses when two of three readings agree the demoted fact is missing", async () => {
     const asked = "tied up";
     const make = (verified: boolean) =>
-      verdictOf([{ subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x" }]);
+      verdictOf([{
+        subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x",
+        ...(verified ? {} : { absent: true }),
+      }]);
 
     const confirmed = await confirmVerdict(make(true), async () => make(false));
     expect(confirmed.readings).toBe(3);
     expect(confirmed.checks[0].verified).toBe(false);
     expect(confirmed.ok).toBe(false);
+  });
+
+  it("leaves a demoted affirmation inert when the re-read will not call it an absence", async () => {
+    /* The other half of the same carry, so neither direction is an accident:
+       a withdrawal that says the thing is THERE and merely not as described is
+       recorded as a miss and buys no third reading and no re-render. */
+    const asked = "tied up";
+    const confirmed = await confirmVerdict(
+      verdictOf([{
+        subject: aboutFacet(HAIR_WORN), asked, verified: true, read: true, binding: true, saw: "low bun",
+      }]),
+      async () => verdictOf([{
+        subject: aboutFacet(HAIR_WORN), asked, verified: false, read: true, binding: true,
+        absent: false, saw: "gathered loosely, half down",
+      }]),
+    );
+    expect(confirmed.readings).toBe(2);
+    expect(confirmed.checks[0].verified).toBe(false);
+    expect(confirmed.ok).toBe(true);
   });
 
   it("delivers rather than refusing when the second opinion is unavailable", async () => {
@@ -343,6 +401,11 @@ describe("a refusal reads as a sentence", () => {
         asked: "no glasses — they have been taken off and are not in the picture",
         shortfall: "with glasses still in the picture",
         binding: true,
+        /* As the one site that builds removals declares it — `refineService`'s
+           departed-from-the-picture loop. A removal's success criterion IS an
+           absence, so a miss on it is the catastrophe and needs no `absent`
+           from the reader (#2526 reads the same flag the gate always did). */
+        absenceIsTheAsk: true,
       }],
     );
 
@@ -359,7 +422,7 @@ describe("a refusal reads as a sentence", () => {
 
   it("leaves an ordinary fact reading exactly as it always did", async () => {
     const { verdict } = await read(
-      ['{"results":[{"id":1,"present":false,"saw":"smooth skin, no freckles"}]}'],
+      ['{"results":[{"id":1,"present":false,"absent":true,"saw":"smooth skin, no freckles"}]}'],
       [{ subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true }],
     );
     expect(joinClauses(shortfalls(verdict))).toBe("without freckles");
@@ -368,7 +431,7 @@ describe("a refusal reads as a sentence", () => {
   it("joins several shortfalls as a person would say them", async () => {
     const { verdict } = await read(
       ['{"results":['
-        + '{"id":1,"present":false,"saw":"smooth skin"},'
+        + '{"id":1,"present":false,"absent":true,"saw":"smooth skin"},'
         + '{"id":2,"present":false,"saw":"still wearing glasses"}]}'],
       [
         { subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true },
@@ -377,6 +440,7 @@ describe("a refusal reads as a sentence", () => {
           asked: "no glasses — they have been taken off and are not in the picture",
           shortfall: "with glasses still in the picture",
           binding: true,
+          absenceIsTheAsk: true,
         },
       ],
     );
@@ -387,8 +451,8 @@ describe("a refusal reads as a sentence", () => {
   it("counts only the failures the product may refuse over", async () => {
     const { verdict } = await read(
       ['{"results":['
-        + '{"id":1,"present":false,"saw":"hair is down"},'
-        + '{"id":2,"present":false,"saw":"smooth skin"}]}'],
+        + '{"id":1,"present":false,"absent":true,"saw":"hair is down"},'
+        + '{"id":2,"present":false,"absent":true,"saw":"smooth skin"}]}'],
       [
         { subject: aboutFacet(HAIR_WORN), asked: "tied up", binding: false },
         { subject: aboutFacet(facetOfSubject("marks")), asked: "freckles", binding: true },
@@ -446,12 +510,21 @@ describe("a pair means both ears", () => {
   });
 
   it("v#156 and v#157 re-read as MISSES, not passes", async () => {
-    /* The reader's own words from the two production rows, now answered under
-       the pair law: one hoop, the other ear visible and bare. */
+    /*
+      The reader's own words from the two production rows, now answered under
+      the pair law: one hoop, the other ear visible and bare.
+      ⚠ **THE FIXTURE CARRIES `absent: true` SINCE #2526, AND WHICH ANSWER A
+      HALF-PAIR EARNS IS WORTH KNOWING RATHER THAN ASSUMING.** The prompt's own
+      line for an outright absence is *"no earrings on either ear"*, so a reader
+      that can see one hoop may legitimately answer either way — and from
+      2026-10-15 only the outright answer acts. That is his ruling working as
+      written (*the checker steps in only when nothing changed at all*), and the
+      arm below is the other answer, pinned so the difference is deliberate.
+    */
     const { verdict } = await read(
-      ['{"results":[{"id":1,"present":false,"saw":"gold hoop on her left ear, right ear bare and visible"}]}',
-        '{"results":[{"id":1,"present":false,"saw":"one hoop only, other ear empty"}]}',
-        '{"results":[{"id":1,"present":false,"saw":"one hoop only, other ear empty"}]}'],
+      ['{"results":[{"id":1,"present":false,"absent":true,"saw":"gold hoop on her left ear, right ear bare and visible"}]}',
+        '{"results":[{"id":1,"present":false,"absent":true,"saw":"one hoop only, other ear empty"}]}',
+        '{"results":[{"id":1,"present":false,"absent":true,"saw":"one hoop only, other ear empty"}]}'],
       [...EARRINGS],
     );
     expect(verdict.ok).toBe(false);
@@ -459,6 +532,21 @@ describe("a pair means both ears", () => {
     expect(verdict.checks[0]?.occluded).toBeUndefined();
     /* And it is a real miss, so it reaches a refusal sentence. */
     expect(shortfalls(verdict)).toEqual(["without gold hoop earrings, one on each ear, a matching pair"]);
+  });
+
+  it("records the same half-pair and does not act when the reader sees one hoop THERE", async () => {
+    /* `absent: false` — something arrived and it is not the whole ask. The
+       record says so, the watch list carries it, and nothing re-renders:
+       D-246's quibble road, which #2526 widened to every answer but the
+       outright one. */
+    const { verdict } = await read(
+      ['{"results":[{"id":1,"present":false,"absent":false,"saw":"one gold hoop, right ear bare"}]}'],
+      [...EARRINGS],
+    );
+    expect(verdict.ok).toBe(true);
+    expect(verdict.checks[0]?.verified).toBe(false);
+    expect(advisoryMisses(verdict)).toHaveLength(1);
+    expect(shortfalls(verdict)).toEqual([]);
   });
 
   /*
@@ -521,9 +609,9 @@ describe("a pair means both ears", () => {
   it("cannot dodge a plain miss by claiming occlusion", async () => {
     /* `present: false` is a miss whatever else the reader says about it. */
     const { verdict } = await read(
-      ['{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}',
-        '{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}',
-        '{"results":[{"id":1,"present":false,"occluded":true,"saw":"no earrings at all"}]}'],
+      ['{"results":[{"id":1,"present":false,"absent":true,"occluded":true,"saw":"no earrings at all"}]}',
+        '{"results":[{"id":1,"present":false,"absent":true,"occluded":true,"saw":"no earrings at all"}]}',
+        '{"results":[{"id":1,"present":false,"absent":true,"occluded":true,"saw":"no earrings at all"}]}'],
       [...EARRINGS],
     );
     expect(verdict.ok).toBe(false);

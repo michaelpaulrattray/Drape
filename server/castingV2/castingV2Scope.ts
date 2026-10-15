@@ -2221,7 +2221,7 @@ export function validateCastingBornInkEnvironment(input: {
  *
  * ⚠ **AND WHETHER A WORDS-ROAD TATTOO MAY BE TRANSFORMED IS STILL HIS
  * QUESTION, DELIBERATELY NOT ANSWERED HERE.** Today such an account meets
- * D-137's free wall; opening it turns a free refusal into a 1,750-credit render,
+ * D-137's free wall; opening it turns a free refusal into a 500-credit render,
  * so it is a widen with numbers attached and not a consequence of a re-parent.
  * This commit makes the question ASKABLE; it does not answer it.
  */

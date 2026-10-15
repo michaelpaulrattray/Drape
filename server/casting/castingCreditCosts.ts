@@ -263,34 +263,43 @@ export function castingSliceCredits(
 
 /**
  * One refinement of one candidate (D-121, founder ruling 2026-08-03; repriced
- * 2026-10-01 under his approved pricing, #1601 item 1).
+ * 2026-10-15 on his own word, #2526).
  *
- * **1,750 = 350 display.** It was 25 from 2026-08-03 to 2026-10-01, under a
+ * **500 = 100 display**, and the word is his, given after he was told what a
+ * Refine costs us and asked whether 100 was safe (2026-10-15, chat, verbatim
+ * and entire): *"launch at 100"*.
+ *
+ * ⚠ **IT IS A LAUNCH PRICE WITH A THINNER MARGIN, AND THE MARGIN IS A BAND
+ * BECAUSE ONE HALF OF THE COST IS STILL UNMEASURED.** Read off the rows rather
+ * than estimated (#1689, every refine production has ever run): a Refine is one
+ * picture and **five** Claude reads, the reads cost **$0.038** exactly (tokens
+ * × list), and the picture is a band of **$0.015–$0.03** — its endpoint
+ * (`openai/gpt-image-2.5/sunburst/edit` at the master's own size) answers fal's
+ * price call in opaque units, which `FAL_MEASURED_USD_PER_IMAGE` leaves out on
+ * purpose. So a first-try Refine costs us about **5–7¢** and a retried one
+ * **9–12¢**, against **17–19¢** of plan revenue at 100 display — about 2.5–3.5×
+ * on the first try and 1.5–2× with one retry. A Refine that fails twice is
+ * refunded and is a loss at any price.
+ *
+ * **It was 1,750 (350 display) from 2026-10-01 to 2026-10-15** under his
+ * approved pricing (#1601 item 1), and 25 from 2026-08-03 before that, under a
  * scale where a sheet candidate was 20 and a package view 50.
  *
- * **Priced on behaviour more than on margin**, though both point the same way.
- * A refine runs on the identity engine — dearer than the roll engine behind a
- * sheet candidate, and it carries checks of its own — so the number sits where
- * the cost sits. What a Refine actually spends is being read rather than
- * assumed: #1689 is his order to count the checks one makes and report the
- * cost per Refine before any price moves again.
- *
- * The stronger half is what it does to exploring. Refine is the path to a
- * Sign: every refine is a deposit toward one, and it cuts post-Sign revision
- * churn because identity decisions get made against one cheap image instead of
- * a whole package. As first written, against the Sign price of #1601's scale,
- * three variants at 1,750 came to 5,250 — visible, and still less than the ceremony they
- * protected. ⚠ **That half no longer holds (#2110 read it, 2026-10-09):** since
- * #1968 a Sign is a flat 3,250 credits (`CASTING_V2_SIGN_PRICE_CREDITS`), so
- * two refines already cost more than the Sign they lead to. This comment
- * records the change and decides nothing about it.
+ * **Priced on behaviour more than on margin**, which is why it could come down
+ * this far: the #1689 reading found the cost was never what was holding the
+ * price up. Refine is the path to a Sign — every refine is a deposit toward one,
+ * and it cuts post-Sign revision churn because identity decisions get made
+ * against one cheap image instead of a whole package. ⚠ **At 350 display two
+ * refines already cost more than the flat Sign they lead to** (#2110's reading,
+ * 2026-10-09, against `CASTING_V2_SIGN_PRICE_CREDITS`); at 100 display six of
+ * them do, which is the exploring this number is meant to buy.
  *
  * **One unit, not eight slices.** A refine is a single image, so the whole
  * charge refunds on any failure. Per-slice accounting exists because a roll has
  * eight things that can fail independently; inventing it for one would be
  * ceremony with nothing to reconcile.
  */
-export const CASTING_V2_REFINE_PRICE_CREDITS = 1750;
+export const CASTING_V2_REFINE_PRICE_CREDITS = 500;
 
 /*
   ⚠ `CASTING_V2_RETRY_PRICE_CREDITS` IS GONE, AND LEAVING IT WOULD HAVE BEEN

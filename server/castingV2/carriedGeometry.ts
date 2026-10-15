@@ -78,7 +78,7 @@ const log = createModuleLogger("castingV2/carriedGeometry");
  * a face scan's reads at (⚠ this credited it to *"twenty segmenter calls for
  * $0.100"* until #2187; a real scan asks more than twenty). So this road costs $0.015–$0.030 on the three- and
  * six-carried-feature faces production actually holds, against a refine that
- * charges 1,750 credits and spends a repaint. That is noise.
+ * charges 500 credits and spends a repaint. That is noise.
  *
  * It is noise *at today's sizes*. It scales linearly with carried features and
  * nothing else bounds it, so a face carrying twenty would be $0.100 a render —

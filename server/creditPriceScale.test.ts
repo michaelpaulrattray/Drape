@@ -236,7 +236,7 @@ describe("every declared price in the product", () => {
         arm counts five rather than six.
       */
       sign: 3250,          // 650 display, flat, however many views she owns
-      refine: 1750,        // 350 display
+      refine: 500,         // 100 display — his launch price, 2026-10-15 (#2526)
       paidTryAgain: 1850,  // 370 display — his change of 2026-10-01
     });
   });
