@@ -85,3 +85,45 @@ What's genuinely new for our record:
 | Speech/Movement/**Stillness** triple, quoted and prompt-ready | **Converges** with N2b; stillness as its own axis is new |
 | Never-clause capture ("what would the wrong drift be?") | **New** question for our drift-lock capture |
 | Ensemble dynamics + structural engines + per-era aesthetics as canon | **New** layers for the Production data model |
+
+---
+
+# Second video: "the AI video explainer you were looking for" (filed 2026-10-15)
+
+`youtube.com/watch?v=fMU7Ku8ma4A`, 29:13, published 2026-08-02 — his first long-form process film, made in the **Seedance 2.0 era** (15s ceiling, 9 refs; it pre-dates the Extend carve-out above, so nothing in it weakens that finding). He builds a complete docu-style short ("DJ Ravena") from nothing on camera: character builder → outfit plates → Cinema Studio elements → AI-director generations → edit → voice. Full transcript read; 9 contact sheets eye-read, with two verbatim prompts recovered off the screen.
+
+## The ElevenLabs ADR lane — demonstrated, not just testified (22:54)
+
+The record until now held the generate-then-dub order as *testimony* (Gossip Goblin, logged in `OPEN_TEST_voice-clips-vs-descriptions.md`). This video is a second practitioner **demonstrating it end to end** on a finished film:
+
+- Every take generates with the engine's own synthesized voice; the character's written voice/personality (his story-bible "Zara" example: "she's got a specific kind of voice… we deliver that every time we talk about Zara") rides in the prompt as text.
+- The finished edit exports as one `.wav`/`.mp3`, goes to ElevenLabs, converts to the chosen voice, and swaps back in: *"we're going to give her her own specific voice that is true to her and stays consistent throughout the whole video… it came across perfectly."*
+- **The generation's non-dialogue audio is kept underneath** — laughs, footsteps, room SFX — *"so it feels like something you're watching and not just a voiceover."* (The split/convert/remix order, from the market.)
+- Persistence, his words: *"you can also get those voices saved in Eleven Labs itself, and you'll never lose them."* He **picks** from the community voice library rather than designing one — the browsing step a design-from-description door dissolves.
+- His review ear for converted audio: **pacing and structure — "make sure it doesn't sound like they're performing."**
+
+## The music lip-sync protocol (24:14) — NEW, with exact numbers
+
+Nothing in the five skills carried this precision. For a character lip-syncing to real music on Seedance:
+
+1. Cut the song section to **4–10 seconds, exactly** — *"has to be 5 seconds exactly, 5.00"* — matched to the shot length you'll ask for.
+2. **Extract the vocal stem** (he names moises.ai) and attach **a cappella vocals only**; the instrumental misleads the engine.
+3. Upload the clip **as a video file, not an .mp3** — an ingestion quirk of the platform/engine.
+4. Declare it the sole audio source with the clip length stated in the prompt.
+
+Skipping any step: *"Seedance begins to hallucinate… makes the song sound completely different entirely, and your characters are not going to be singing it."* This extends the dossier's §5.6 (attached track owns all timing) with the sizing, stem, and container rules — and it is engine-convention-dated like everything else (Seedance 2.0).
+
+## Verbatim artifacts recovered from the frames
+
+- **The Mode 5 outfit-replacement prompt**, complete: *"Replace the character in @image1 with the character in @image2. Keep the outfit and pose from @image1 exactly. Match the face, bone structure, body type, skin tone, and hair from @image2. Clean mid-gray seamless studio background, even neutral mid-gray with no seam line, soft large-source studio lighting, skin and outfit rendering at their true natural tone against the neutral gray, natural film grain, full body framing."* With the operating rule: *"Attach in this exact order: @image1 = the outfit plate, @image2 = your character face card. **Order matters — reversing it breaks the transfer.** The prompt is deliberately lean; the two references carry the photographic load, so don't add stack language on top."* — lean-prompt-plus-heavy-references as an explicit philosophy.
+- **The assistant managing the audio contract itself**: Claude's on-screen reply to a music-video ask — *"you didn't mention a clip upload for this one, so I've written it with @video1 as the driver in line with the other lipsync shots. If there's no clip, say so and I'll swap the Sound Bed to diegetic with silent mouthing."* The assistant tracks which shots carry an audio driver and offers the fallback unprompted — a behaviour spec for our assistant.
+- **Interview-scene direction observed**: camera locked off, eye-line past the lens ("never looks at the camera directly… talking to the director"), and the suppression rule with its cost stated: *"no music at all, only dialogue and sound design… otherwise you're fighting random music that's going to be baked into your video literally, and you can't do anything about it."*
+
+## Confirmations and economics
+
+- **Why 18% gray** (the castkit rule's missing *why*): white backgrounds + hard studio lighting produce "plastic" video generations; flat gray + flat light survives the handoff.
+- **Start frames read as plastic too**: he avoids image-init shots; uses a start frame only to pin an exact placement, and then opens the take from a different angle for depth — the origin statement of the still-as-anchor vs still-as-init distinction.
+- **Credit economics**: with the skills, **1–2 generations per scene**; the bell-curve line: *"prompt boxes are not linear — more detail helps until it doesn't, and then it breaks. The skill is a map of where that peak sits so you're not finding out by burning credits."*
+- **"Get it to 70, not 100"**: grain, grade, warped edges added in the editor; *"an AI video generation doesn't stop right when you generate… the real sauce comes in the editing."* (His deliberate honesty aesthetic; a taste position, filed as his.)
+- **His Cinema Studio read** [C-corpus relevance]: folders + element tags + an in-tool AI director; he calls it "an enhanced video generation project bank file structure" — organization, not direction, which is the gap our cinema fills.
+- Joey's own ensemble includes a character named **Mira** (platinum bob; "CORPS FAN-OUT, MIRA REVEAL" in his shot plan) — no relation to ZEPHYR's Mira; two corpora each carry a Mira, so cite which when quoting.

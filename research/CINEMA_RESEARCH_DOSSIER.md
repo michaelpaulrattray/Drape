@@ -122,6 +122,10 @@
 
 5.8 **Open test, not yet run**: whether every line needs a voice clip or description suffices for background lines — `research/zephyr-teardown/OPEN_TEST_voice-clips-vs-descriptions.md`.
 
+5.9 **The generate-then-dub (ADR) order is demonstrated practice, not just testimony** (added 2026-10-15). Joey's docu-short workflow, shown end to end: every take generates with the engine's own voice; the finished edit exports as one audio file, converts to the chosen voice in ElevenLabs, and swaps back in — with the generation's **non-dialogue audio kept underneath** (laughs, footsteps, room SFX) "so it feels like something you're watching and not just a voiceover." His review ear for converted audio: pacing and structure — "make sure it doesn't sound like they're performing." He picks from ElevenLabs' community voice library; voices saved there persist ("you'll never lose them") [J: video 2]. This corroborates the Gossip Goblin testimony in §5.8's test file from a second independent practitioner.
+
+5.10 **Music lip-sync protocol, with exact numbers** (Seedance 2.0-era convention; added 2026-10-15): the song section the character lip-syncs to is cut to **4–10 seconds exactly** ("has to be 5 seconds exactly, 5.00"), the **vocal stem is extracted** (moises.ai named) and attached **a cappella only**, uploaded **as a video file, not an .mp3**, and declared the sole audio source with the clip length stated. Skipping any step: "Seedance begins to hallucinate… makes the song sound completely different entirely, and your characters are not going to be singing it" [J: video 2]. Extends §5.6's track-owns-all-timing with sizing, stem, and container rules; engine-version-bound like §4.15.
+
 ## 6 · Iteration, selection, and economics
 
 6.1 **A keeper shot costs a median of 5 attempts** (p95 34, max 75), measured per-prompt across 267 of ZEPHYR's 275 keepers. The crude 36.6:1 ratio includes exploration of the whole film [Z: implications #4].
@@ -218,7 +222,7 @@ These are not recommendations and not findings; they are the rulings any design 
 |---|---|---|
 | [Z] | ZEPHYR teardown: 18,918 jobs + makers' briefs + craft playbook + clause catalogue + reference samples (opened, not inferred) | `research/zephyr-teardown/` — start with `FOUNDER-REPORT.md`, then `MAKERS-BRIEFS.md`, `narrative-and-continuity.md`, `implications-for-drape.md`, `THE-CRAFT-PLAYBOOK.md` |
 | [K] | Kaye Creatives: CINEDANCE block library v1 + "GOOD BOY" film breakdown video | `research/cinedance-block-library/` (both files) |
-| [J] | Joey: shotcaller, castkit, scenecraft, motiondojo, story-bible-builder + workflow video | `research/joey-cinema-skills/README.md` (the five skill files themselves are third-party documents, summarized there; originals distributed free via his Higgsfield blog) |
+| [J] | Joey: shotcaller, castkit, scenecraft, motiondojo, story-bible-builder + two workflow videos ("video 2" = the 2026-08-02 explainer: the ADR voice lane demonstrated, the music lip-sync protocol, the Mode 5 outfit-swap prompt verbatim) | `research/joey-cinema-skills/README.md` (the five skill files themselves are third-party documents, summarized there; originals distributed free via his Higgsfield blog) |
 | [C] | Runway + Higgsfield official docs, read 2026-09-03/04, URLs in appendix | `docs/specs/COMPETITOR_WORKFLOW_ANALYSIS.md` |
 | [D] | Drape's own measured incidents (courts, fenced classes) | cited inline (fable-1399 §3 via `CLAUDE.md`/catalogue) |
 
