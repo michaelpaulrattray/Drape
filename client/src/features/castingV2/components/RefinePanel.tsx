@@ -211,6 +211,7 @@ export function RefinePanel({
   shownCut,
   onDismissOutcome,
   draft,
+  onEditIntent,
   onDraft,
   stackHoisted = false,
   regenerates = null,
@@ -323,6 +324,22 @@ export function RefinePanel({
    */
   draft: string;
   onDraft: (value: string) => void;
+  /**
+   * THE FIRST SIGN THAT SOMEBODY MEANS TO EDIT THIS FACE — #2525, his word
+   * 2026-10-15: *"what if someone had to deliberatly hit edit or refine before
+   * it scans the face"*.
+   *
+   * Called when the ask box takes focus, which is the earliest honest moment:
+   * the customer has reached for the field and will spend five or ten seconds
+   * typing, which is longer than the read takes. The page uses it to arm the
+   * face scan; this component neither knows nor cares what it buys.
+   *
+   * It is FOCUS rather than the first keystroke on purpose — the whole point is
+   * to spend those typing seconds on the read, and a change handler would give
+   * them away. **Optional**, so a caller that has nothing to arm passes
+   * nothing, and this panel stays presentational.
+   */
+  onEditIntent?: () => void;
   /**
    * The versions are drawn ELSEWHERE — the rail beside the picture.
    *
@@ -915,6 +932,9 @@ export function RefinePanel({
           className="dpc-refine__field"
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
+          /* Door 1 of #2525's three. Reaching for the box is edit intent, and
+             it is the earliest of the three doors by several seconds. */
+          onFocus={onEditIntent}
           placeholder="Change something about them…"
           /*
             THE ROUTER'S OWN NUMBER, not a copy of it (law 4, ruled fable-1613).
