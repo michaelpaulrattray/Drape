@@ -141,13 +141,14 @@ export const ROADS: readonly Road[] = [
       + "with the claim door shut, so 'would-render' means the ask passed every free door and reached the money.",
     doors: [
       "candidate_missing", "already_signed", "busy", "refine_limit", "master_missing", "version_missing",
-      "history_unreadable", "history_predates_undo", "step_moved", "kind_unserved",
+      "history_unreadable", "history_predates_undo", "step_moved",
     ],
-    flags: ["CASTING_V2_SCOPE", "CASTING_REPAINT_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"],
+    flags: ["CASTING_V2_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"],
     notes: [
       "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
       "`refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.",
       "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.",
+      "`kind_unserved` and the repaint flag left this road in #1577 slice 4b: the door refused a subject only the repaint had been measured on, to an account outside the repaint's flag, and both the flag and the old paste road it guarded are retired. Every refine repaints, so there is no un-measured road left to refuse into.",
     ],
   },
   {
@@ -634,6 +635,16 @@ export const UNMAPPED_ENTRANCES: Readonly<Record<string, string>> = {};
  * left to a reader to notice.
  */
 export const UNDECLARED_PROSE_NAMES: Readonly<Record<string, { readonly why: string }>> = {
+  kind_unserved: {
+    why:
+      "A DOOR THAT IS DEAD, and its death is the sentence's whole content — #1577 slice 4b. It " +
+      "refused free, before the claim, when an ask named a subject only the repaint road had " +
+      "been measured on and the account was outside the repaint's own flag. That flag stood at " +
+      "`all` on production, so the door could not fire for anybody, and it retired with the " +
+      "paste road it was protecting people from. The refine-money road's note names it because " +
+      "a reader who remembers a door by this id has to be able to find out what happened to it; " +
+      "there is no symbol to repoint the sentence at, which is the point.",
+  },
   decodeAudioData: {
     why:
       "THE BROWSER'S OWN DECODER, not ours — `AudioContext.prototype.decodeAudioData`, a Web " +

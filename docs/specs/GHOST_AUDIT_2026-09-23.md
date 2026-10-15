@@ -737,9 +737,101 @@ any of them (his rule on #1398).
      and of the face scan and the kept-scan table under it — so the four moved
      onto a flag with children of its own rather than onto a leaf. The flag
      catalogue's four parent claims are stamped in the same commit;
-   - 4b takes the paste road out (C1-C6) with the flag, corrects CLAUDE.md's
-     `FAL_KEY` locator and the capability atlas's `kind_unserved` door in the
-     same commit, and drives the off arm BEFORE deleting it.
+   - 4b ⚠ **SHIPPED — the paste road is out (C1-C6), the flag with it, and the
+     slice measured four things the audit could not see from the import graph.**
+
+     What went: the `renderOnce` fork and everything below it; the
+     `harvestRefinement` CALL; refine's reach to `castingIdentityEngine`; the
+     masked branch inside the paste arm; the `kind_unserved` door; the six
+     repaint-or-paste guards; `regionOverrides`; three dependency seams
+     (`engine`, `harvest`, `maskedEdit`) and the `repaintEnabled` predicate seam;
+     `CASTING_REPAINT_SCOPE`'s constant, parse, two errors, capture and boot
+     fence; its row in `productionFlagPositions.mts`; a DEAD IMPORT of
+     `captureCastingRepaintEnabled` in `routes/castingV2.ts` (zero call sites,
+     read at the bytes); the flag from the capability atlas's `refine-money`
+     road, with `kind_unserved` moved to `UNDECLARED_PROSE_NAMES` because the
+     door's DEATH is now the sentence's content. CLAUDE.md's `FAL_KEY` locator
+     is corrected and both law surfaces stamp the flag RETIRED.
+
+     **The off arm was driven before anything was cut**, which is the slice's
+     own stated bar, and it is the first of the four findings:
+
+     1. ⚠ **134 of the refine suite's 433 arms were driving the DEAD road.**
+        Measured by sabotage — a throw at the top of the paste half reddened
+        exactly 134 — and the suite's DEFAULT was that road, because with no
+        flag set in a unit test `captureCastingRepaintEnabled` answers false.
+        **Only 20 of them break when every render goes through the repaint**,
+        which is what made this one slice rather than a programme: the empty
+        library repaint is the degenerate case the paste road's single-reference
+        edit resembled. 13 arms retired with the road, 8 were re-pointed onto
+        the live one, and the ones that were re-pointed are the valuable half —
+        they now prove on the only road the product has what they used to prove
+        on a road no customer was ever on.
+     2. ⚠ **TWO CAPABILITIES WERE ALREADY DEAD AND THIS SLICE ONLY MADE IT
+        VISIBLE.** The magnified verification crop
+        (`detailForVerification`) is fed `masterRegions` from the harvest alone
+        and returns `null` the moment that is falsy — so **no paid refine has
+        had a magnified crop since the repaint widened**, although the marks
+        court measured the reader at 8/8 on a 2x face crop against 6/8
+        unanimous at portrait size. The SEAM VERDICT on the landed row is the
+        same shape: the repaint pastes nothing, so there is no join to score and
+        the tear rate has had no denominator since that day. Both are stated at
+        the code where the constant now sits, and both were found by the
+        COMPILER — `rendered.evidence` narrowed to `undefined` and the readers
+        to `never` the moment the fork came out.
+     3. ⚠ **`castingIdentityEngine` IS NOT DELETED, and the re-count is why.**
+        C2 said *"nothing else calls `signEngine.ts:94`'s factory, so it goes
+        too unless the slice's re-count finds a reader"* — the re-count found
+        one: `scripts/calibration/accessory-instance-cell.mts`, TRACKED, which
+        builds it. Refine's reach is gone; the factory stays. Same shape as 4a's
+        fourth child: a retirement slice re-counts before it cuts, and it has
+        now paid for itself twice in two slices.
+     4. ⚠ **ONE CONTROL WAS SAVED FROM THIS SLICE BY READING ITS ARM.** The
+        lineage read (`branchRows`) was gated on the repaint, and the repaint was
+        an AND of its parent — so *repaint on* and *library on* were the same
+        answer. Collapsing it to unconditional made the library's own
+        *"a dark deploy must not pay for a database round trip"* arm fail, and
+        that arm had been passing for the WRONG REASON (what silenced the query
+        was the suite leaving the REPAINT flag unset). It is gated on
+        `CASTING_REFERENCE_LIBRARY_SCOPE` now — the same condition it always
+        had, named at its real parent.
+
+     **What is left standing and is named rather than cut**, because each is its
+     own change with its own suites: `harvestRefinement` itself (~965 lines
+     inside a 2,120-line module whose other exports are live, and whose two
+     suites are tests OF the function rather than of the paste road);
+     `REPAINT_ONLY_SUBJECTS` and the `admittedOn` field it derives from, now read
+     by nothing; `makeupRegionFor`, which lost its only caller with
+     `regionOverrides`; and the mint's harvest-side machinery, which its only
+     caller now reaches with constants. A dead input is not licence to cut a
+     module this slice does not own.
+
+     ⚠ **AND ONE ARM COULD NOT BE RE-POINTED AND IS A DEBT RATHER THAN A
+     RETIREMENT:** *records a departure when the FACE has it but the recipe does
+     not* (rule 3, D-238) drove `marks`/freckles, and on the live road that ask
+     refuses — *"That's a part of her I can't work on yet. Nothing was charged."*
+     It is filed as **#2554** with the reading attached. The departure road
+     itself is NOT in doubt: the founder's-walk arm one block down does the same
+     thing with `statedAccessories`, renders, charges once and files
+     `absent: { statedAccessories: ["glasses"] }` — on the repaint. So what is
+     unproven is that subject, not the road.
+
+     ⚠ **THE VARIABLE'S DELETION FROM THE SERVICE IS THE MERGE'S OWN ACT, AND
+     THE ORDER CANNOT BE REVERSED.** An absent variable parses as `off`, so
+     deleting it while the old build is still serving puts every customer back on
+     the paste road — the one direction of this retirement that could hurt
+     somebody. Code first, variable second, and between the merge and the
+     deletion the rite reports a flag-position mismatch naming
+     `CASTING_REPAINT_SCOPE`, by design: `comparePositions` reports a governed
+     variable with no row, and the row had to go in the same commit as the
+     declaration (`productionFlagPositions.test.ts` reddens otherwise).
+
+     The retirement is held by `server/castingV2/repaintFlagRetirement.test.ts`
+     — no declaration, no read in any of the three shapes this repository uses,
+     no production row, both law surfaces stamped RETIRED, and the paste road's
+     members absent from the service's CODE with comments stripped (the first run
+     of that arm found the road quoted in its own obituary). Proven able to fail
+     by five sabotages, one per arm.
 5. **One flag at a time after that, each on his word**: open lane (D1, with the
    prompt-hash bar), side phrasing (D2), ink words (D3), refine dispatch (D4,
    held review), and the reference library last (D5).

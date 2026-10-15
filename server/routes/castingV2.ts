@@ -41,7 +41,6 @@ import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
 import {
   captureCastingReferenceAttachEnabled,
   captureCastingConceptUploadEnabled,
-  captureCastingRepaintEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import { reimagineBrief } from "../castingV2/reimagine";
@@ -1151,10 +1150,11 @@ export const castingV2Router = router({
       It answered *may a garment ask be admitted for this ACCOUNT*, and it was
       only ever HALF a condition: the other half was the cast's Wardrobe path,
       and the ask box joined them. With the paths retired the cast half is gone,
-      and this half could not be left standing on its own — it reads
-      `captureCastingRepaintEnabled`, which stands at `all` on production, so a
-      surface keying on it alone would claim a capability the wardrobe subject
-      is served to NOBODY for (`SERVED_SUBJECTS`, `refineSubjects.ts`).
+      and this half could not be left standing on its own — it read the
+      repaint's own flag, which stood at `all` on production and is now retired
+      with the paste road (#1577 slice 4b), so a surface keying on it alone
+      would have claimed a capability the wardrobe subject is served to NOBODY
+      for (`SERVED_SUBJECTS`, `refineSubjects.ts`).
 
       Removed rather than kept for later: a gate with no caller is invariant
       7's own subject, and this one would read as a live capability switch to

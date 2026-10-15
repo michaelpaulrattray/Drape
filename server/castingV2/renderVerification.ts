@@ -425,9 +425,9 @@ export function isMiss(check: FacetCheck): boolean {
  * crop kept in its place. It is refused with its reason on #2526 — the crop is
  * cut from the masked road's harvest (`verificationDetail.detailForVerification`
  * returns null without `masterRegions`), `repaintOnce` returns
- * `evidence: undefined`, and `CASTING_REPAINT_SCOPE` is `all` on the service, so
- * production has no crop to keep and deleting the frame read would delete the
- * checker itself. Narrowing what the reading may ACT on is the same ruling
+ * `evidence: undefined`, and since #1577 slice 4b the repaint is the only render
+ * road there is, so production has no crop to keep and deleting the frame read
+ * would delete the checker itself. Narrowing what the reading may ACT on is the same ruling
  * applied to the reading production actually has.
  */
 export function isRefusableMiss(check: FacetCheck): boolean {

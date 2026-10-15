@@ -38,7 +38,6 @@ import {
   CASTING_RETRY_SCOPE_ENV,
   CASTING_ROLL_ENGINE_SCOPE_ENV,
   CASTING_ROLL_ENGINE_MODEL_ENV,
-  CASTING_REPAINT_SCOPE_ENV,
   CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
@@ -70,7 +69,6 @@ import {
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
   validateCastingRollEngineEnvironment,
-  validateCastingRepaintEnvironment,
   validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
   validateCastingV2Environment,
@@ -385,16 +383,18 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    The compositor swap (D-241): checked against the LIBRARY scope rather than
-    the casting scope, and the difference matters. A repaint pastes nothing —
-    a feature survives the next render because the library holds a crop of it
-    and the recipe carries that crop. Armed without a library, the same switch
-    would quietly turn every paid refine into one that forgets her features.
+    ⚠ THE COMPOSITOR SWAP'S OWN FENCE STOOD HERE AND IS RETIRED WITH ITS FLAG
+    (#1577 slice 4b, on his word of 2026-10-15). It checked the repaint scope
+    against the LIBRARY scope rather than the casting scope, because a repaint
+    pastes nothing: a feature survives the next render only because the library
+    holds a crop of it and the recipe carries that crop, so arming the swap
+    without a library would have turned every paid refine into one that forgets
+    the cast's own features. With the paste road gone every refine repaints,
+    there is no switch to cover, and the library's own fence above is what
+    decides whether a render has crops to carry. The four children that used to
+    hang off the repaint were re-parented onto the library one slice earlier
+    (4a) for the same reason.
   */
-  validateCastingRepaintEnvironment({
-    scope: process.env[CASTING_REPAINT_SCOPE_ENV],
-    libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  });
   /*
     Saying which side twice — her anatomy and the half of the picture it is on.
 

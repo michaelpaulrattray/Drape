@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2665"
+          "server/castingV2/refineService.ts:2644"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1317"
+          "server/castingV2/refineService.ts:1296"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4969",
+          "server/castingV2/refineService.ts:4916",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1299"
+          "server/castingV2/refineService.ts:1278"
         ]
       },
       {
@@ -190,7 +190,7 @@
           "server/castingV2/refineDelta.ts:596",
           "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineDelta.ts:1586",
-          "server/castingV2/refineService.ts:2530"
+          "server/castingV2/refineService.ts:2509"
         ]
       },
       {
@@ -221,8 +221,8 @@
           "server/castingV2/refineDelta.ts:569",
           "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineDelta.ts:1563",
-          "server/castingV2/refineService.ts:2529",
-          "server/castingV2/refineService.ts:2535"
+          "server/castingV2/refineService.ts:2508",
+          "server/castingV2/refineService.ts:2514"
         ]
       },
       {
@@ -246,7 +246,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3031"
+          "server/castingV2/refineService.ts:2999"
         ]
       },
       {
@@ -256,7 +256,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3734"
+          "server/castingV2/refineService.ts:3702"
         ]
       },
       {
@@ -294,23 +294,13 @@
         ]
       },
       {
-        "id": "kind_unserved",
-        "kind": "service-refusal",
-        "pinnedBy": [
-          "server/castingV2/refineService.test.ts"
-        ],
-        "sites": [
-          "server/castingV2/refineService.ts:2765"
-        ]
-      },
-      {
         "id": "master_missing",
         "kind": "service-refusal",
         "pinnedBy": [
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1306"
+          "server/castingV2/refineService.ts:1285"
         ]
       },
       {
@@ -409,7 +399,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4428"
+          "server/castingV2/refineService.ts:4399"
         ]
       },
       {
@@ -432,7 +422,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3502"
+          "server/castingV2/refineService.ts:3470"
         ]
       },
       {
@@ -442,7 +432,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3483"
+          "server/castingV2/refineService.ts:3451"
         ]
       },
       {
@@ -452,7 +442,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3578"
+          "server/castingV2/refineService.ts:3546"
         ]
       },
       {
@@ -462,8 +452,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3260",
-          "server/castingV2/refineService.ts:3277"
+          "server/castingV2/refineService.ts:3228",
+          "server/castingV2/refineService.ts:3245"
         ]
       },
       {
@@ -473,7 +463,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4398"
+          "server/castingV2/refineService.ts:4369"
         ]
       },
       {
@@ -483,7 +473,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3074"
+          "server/castingV2/refineService.ts:3042"
         ]
       },
       {
@@ -549,7 +539,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4948"
+          "server/castingV2/refineService.ts:4895"
         ]
       },
       {
@@ -559,8 +549,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1387",
-          "server/castingV2/refineService.ts:1425"
+          "server/castingV2/refineService.ts:1366",
+          "server/castingV2/refineService.ts:1404"
         ]
       },
       {
@@ -612,7 +602,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2711"
+          "server/castingV2/refineService.ts:2690"
         ]
       },
       {
@@ -745,8 +735,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1293",
-          "server/castingV2/refineService.ts:2637"
+          "server/castingV2/refineService.ts:1272",
+          "server/castingV2/refineService.ts:2616"
         ]
       },
       {
@@ -868,7 +858,6 @@
       "CASTING_REFERENCE_ATTACH_SCOPE",
       "CASTING_REFERENCE_LIBRARY_SCOPE",
       "CASTING_REFINE_DISPATCH_SCOPE",
-      "CASTING_REPAINT_SCOPE",
       "CASTING_RETRY_SCOPE",
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
@@ -1579,18 +1568,17 @@
           "version_missing",
           "history_unreadable",
           "history_predates_undo",
-          "step_moved",
-          "kind_unserved"
+          "step_moved"
         ],
         "flags": [
           "CASTING_V2_SCOPE",
-          "CASTING_REPAINT_SCOPE",
           "CASTING_REFINE_DISPATCH_SCOPE"
         ],
         "notes": [
           "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
           "`refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.",
-          "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table."
+          "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.",
+          "`kind_unserved` and the repaint flag left this road in #1577 slice 4b: the door refused a subject only the repaint had been measured on, to an account outside the repaint's flag, and both the flag and the old paste road it guarded are retired. Every refine repaints, so there is no un-measured road left to refuse into."
         ]
       },
       {
@@ -2096,13 +2084,6 @@
         "kind": "documented-unreachable",
         "subject": "inkBeyondToday",
         "message": "no corpus row reaches it: needs a documented ask naming a placement beyond the measured vocabulary — the same states as unplacedInk with an off-vocabulary place word — a row could reach it via: the reference-attached fixture, asking for a sleeve"
-      },
-      {
-        "id": "documented:kind_unserved",
-        "severity": "info",
-        "kind": "documented-unreachable",
-        "subject": "kind_unserved",
-        "message": "no corpus row reaches it: answers an open-kind render the engine table cannot serve — engine-config state — a row could reach it via: pinned by its C5 service arm"
       },
       {
         "id": "documented:master_missing",
@@ -3265,13 +3246,6 @@
       "kind": "documented-unreachable",
       "subject": "inkBeyondToday",
       "message": "no corpus row reaches it: needs a documented ask naming a placement beyond the measured vocabulary — the same states as unplacedInk with an off-vocabulary place word — a row could reach it via: the reference-attached fixture, asking for a sleeve"
-    },
-    {
-      "id": "documented:kind_unserved",
-      "severity": "info",
-      "kind": "documented-unreachable",
-      "subject": "kind_unserved",
-      "message": "no corpus row reaches it: answers an open-kind render the engine table cannot serve — engine-config state — a row could reach it via: pinned by its C5 service arm"
     },
     {
       "id": "documented:master_missing",
