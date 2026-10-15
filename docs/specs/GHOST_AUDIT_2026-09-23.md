@@ -718,8 +718,25 @@ any of them (his rule on #1398).
      without those, every re-pointed arm would pass just as well if the chain
      still ran through the repaint, because production holds both flags wide
      enough to hide it. Proven able to fail by putting one capture back on the
-     repaint — exactly one arm reddened. The flag catalogue's four parent
-     claims are stamped in the same commit;
+     repaint — exactly one arm reddened. ⚠ **And the BOOT gate was rehearsed
+     rather than reasoned about**, which is the switch sitting's own precedent
+     for a scope chain: `scripts/rehearse-reparent-boot-disposable.mts` drives
+     the real `validateEnv()` with production's recorded positions (passes), with
+     each child narrowed under the library (refuses, naming the child's own
+     variable AND the parent's), and with the repaint driven DARK (passes — the
+     arm that fails on the tree as it was, proven by mis-wiring one boot call
+     site back to the repaint, which reddened exactly that arm). ⚠ **Its own
+     first two runs were RED for reasons that had nothing to do with this slice,
+     and its third PASSED FOR THE WRONG REASON** — the repaint's own fence fires
+     first and its message CONTAINS the parent's name, which is
+     `CASTING_INK_CUT_SCOPE`'s recorded trap exactly (*a regex of merely
+     `/FAL_KEY/` matched `CASTING_V2_SCOPE`'s message and printed PROVEN over a
+     control that does nothing*). Every refusal arm now names both variables and
+     silences its siblings. **It also turned up a fact worth keeping: the
+     reference library was ALREADY a parent before this slice** — of the repaint,
+     and of the face scan and the kept-scan table under it — so the four moved
+     onto a flag with children of its own rather than onto a leaf. The flag
+     catalogue's four parent claims are stamped in the same commit;
    - 4b takes the paste road out (C1-C6) with the flag, corrects CLAUDE.md's
      `FAL_KEY` locator and the capability atlas's `kind_unserved` door in the
      same commit, and drives the off arm BEFORE deleting it.
