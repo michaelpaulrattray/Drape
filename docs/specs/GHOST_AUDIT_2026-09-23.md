@@ -767,18 +767,24 @@ any of them (his rule on #1398).
         the live one, and the ones that were re-pointed are the valuable half —
         they now prove on the only road the product has what they used to prove
         on a road no customer was ever on.
-     2. ⚠ **TWO CAPABILITIES WERE ALREADY DEAD AND THIS SLICE ONLY MADE IT
-        VISIBLE.** The magnified verification crop
-        (`detailForVerification`) is fed `masterRegions` from the harvest alone
-        and returns `null` the moment that is falsy — so **no paid refine has
-        had a magnified crop since the repaint widened**, although the marks
-        court measured the reader at 8/8 on a 2x face crop against 6/8
-        unanimous at portrait size. The SEAM VERDICT on the landed row is the
-        same shape: the repaint pastes nothing, so there is no join to score and
-        the tear rate has had no denominator since that day. Both are stated at
-        the code where the constant now sits, and both were found by the
-        COMPILER — `rendered.evidence` narrowed to `undefined` and the readers
-        to `never` the moment the fork came out.
+     2. ⚠ **TWO CAPABILITIES WERE ALREADY DEAD, AND ONLY ONE OF THEM IS A
+        FINDING — the distinction is the honest half of this row.** Both were
+        fed by the harvest and both are `undefined` on a repaint, and the
+        COMPILER named them the moment the fork came out: `rendered.evidence`
+        narrowed to `undefined` and its readers to `never`.
+        **The magnified verification crop was already recorded**, in
+        `renderVerification.ts`'s own #2526 note — *"the crop is cut from the
+        masked road's harvest … `repaintOnce` returns `evidence: undefined` …
+        so production has no crop to keep"* — so this slice CONFIRMS a written
+        fact rather than discovering one, and what it adds is that the call now
+        passes the honest constant instead of reading a field that cannot
+        exist. It still costs what the marks court measured: that reader sees
+        freckles 8/8 on a 2x face crop against 6/8 unanimous at portrait size.
+        **The SEAM VERDICT was not recorded anywhere**, and that half is new:
+        the repaint pastes nothing, so there is no join to score and the tear
+        rate has had no denominator since the repaint widened — a flip decision
+        that had rested on three anecdotes for four shifts, waiting on a
+        denominator that had already stopped being collected.
      3. ⚠ **`castingIdentityEngine` IS NOT DELETED, and the re-count is why.**
         C2 said *"nothing else calls `signEngine.ts:94`'s factory, so it goes
         too unless the slice's re-count finds a reader"* — the re-count found
