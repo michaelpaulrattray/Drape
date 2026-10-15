@@ -65,7 +65,7 @@ describe("the grammar is the siblings' grammar", () => {
 });
 
 describe("the boot guards refuse", () => {
-  const OPEN = { scope: "users:1", repaintScope: "users:1", cleanupWorker: "true" };
+  const OPEN = { scope: "users:1", referenceLibraryScope: "users:1", cleanupWorker: "true" };
 
   it("admits the configuration that is actually coherent — the carve-out", () => {
     /* Working law 2 again: a validator proven only by its refusals could be
@@ -80,9 +80,9 @@ describe("the boot guards refuse", () => {
       .toThrow(/ENABLE_STORAGE_CLEANUP_WORKER/);
   });
 
-  it("refuses while the repaint road is off — the door would open onto a wall", () => {
-    expect(() => validateCastingReferenceAttachEnvironment({ ...OPEN, repaintScope: undefined }))
-      .toThrow(/CASTING_REPAINT_SCOPE is off/);
+  it("refuses while its parent is off — the door would open onto a wall", () => {
+    expect(() => validateCastingReferenceAttachEnvironment({ ...OPEN, referenceLibraryScope: undefined }))
+      .toThrow(/CASTING_REFERENCE_LIBRARY_SCOPE is off/);
   });
 
   it("refuses to reach past its parent, in both of the ways a scope can", () => {
@@ -96,7 +96,7 @@ describe("the boot guards refuse", () => {
     /* Off is off: an unconfigured deployment must boot, and a flag that
        refused startup while disabled would make the dark landing impossible. */
     expect(validateCastingReferenceAttachEnvironment({
-      scope: undefined, repaintScope: undefined, cleanupWorker: undefined,
+      scope: undefined, referenceLibraryScope: undefined, cleanupWorker: undefined,
     }).kind).toBe("off");
   });
 });
@@ -108,24 +108,63 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     expect(castingReferenceAttachArmed()).toBe(false);
   });
 
-  it("opens only for a named user who is ALSO on the repaint road", () => {
+  it("opens only for a named user who is ALSO in the reference library", () => {
+    /*
+      ⚠ THE NARROW FLAG IN THIS FIXTURE USED TO BE THE REPAINT and is now the
+      reference library (#1577 slice 4a). That is not bookkeeping: with the
+      library at `users:1,2` and the repaint at `users:1`, user 2 was refused
+      before the re-parent and is admitted after it, so leaving the fixture as it
+      was would have asserted the OLD chain and gone red — which it did, and is
+      how the change got its own control below.
+    */
     setEnv({
       CASTING_V2_SCOPE: "all",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1,2",
+      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
       CASTING_REPAINT_SCOPE: "users:1",
       [CASTING_REFERENCE_ATTACH_SCOPE_ENV]: "users:1,2",
     });
     expect(captureCastingReferenceAttachEnabled(1)).toBe(true);
     /*
-      USER 2 IS NAMED HERE AND NOT ON THE REPAINT ROAD, and is refused anyway.
-      This is the arm that makes the runtime check worth having: the boot guard
-      would have caught this configuration, but a boot guard only runs at boot,
-      and a variable changed on a live service does not re-run it.
+      USER 2 IS NAMED HERE AND NOT IN THE REFERENCE LIBRARY, and is refused
+      anyway. This is the arm that makes the runtime check worth having: the boot
+      guard would have caught this configuration, but a boot guard only runs at
+      boot, and a variable changed on a live service does not re-run it.
     */
     expect(captureCastingReferenceAttachEnabled(2)).toBe(false);
     expect(captureCastingReferenceAttachEnabled(3)).toBe(false);
     /* Armed is about the flag alone — the retention sweep reads it to decide
        whether a MISSING TABLE is tolerable, which is a different question. */
     expect(castingReferenceAttachArmed()).toBe(true);
+  });
+
+  /*
+    ⚠ THE ONLY BEHAVIOUR #1577 SLICE 4a CHANGED, DRIVEN IN THE DIRECTION THAT
+    PROVES IT — the attach door no longer hangs off the repaint flag.
+
+    Every arm above would pass just as well if the chain still ran through the
+    repaint, because production holds both flags wide enough to hide it. So this
+    one drives the repaint DARK and asserts the door stays open: after the
+    audit's slice 4b deletes that flag, this is the behaviour the three children
+    must already have had.
+  */
+  it("is no longer gated on the repaint flag — the point of the re-parent", () => {
+    setEnv({
+      CASTING_V2_SCOPE: "all",
+      CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
+      CASTING_REPAINT_SCOPE: "off",
+      [CASTING_REFERENCE_ATTACH_SCOPE_ENV]: "users:1",
+    });
+    expect(
+      captureCastingReferenceAttachEnabled(1),
+      "the repaint going dark must NOT close the attach door any more",
+    ).toBe(true);
+
+    /* And the boot fence reads the parent separately from the runtime predicate,
+       so it gets its own assertion rather than being assumed to agree. */
+    expect(validateCastingReferenceAttachEnvironment({
+      scope: "all",
+      referenceLibraryScope: "all",
+      cleanupWorker: "true",
+    })).toEqual({ kind: "all" });
   });
 });

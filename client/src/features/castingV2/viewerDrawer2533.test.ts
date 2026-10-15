@@ -202,6 +202,36 @@ describe("the sheet opens the drawer on intent, and only for the face in front o
   });
 });
 
+describe("the feature boxes over the picture belong to the drawer — card 2547", () => {
+  /* His report, 2026-10-15: "when i open a cast imaghe even if i havent
+     clicked into the refine box or anything the box's are appearing around the
+     casts features". A face scanned before answers with its kept rows on first
+     paint, so the overlay's condition is the only thing standing between those
+     rows and looking mode. */
+  async function overlayCondition(): Promise<string> {
+    const sheet = await readFile(SHEET, "utf8");
+    /* The anchor must be unique, or the slice could read a neighbour. */
+    expect(sheet.split("overlay={").length - 1).toBe(1);
+    const prop = sheet.slice(sheet.indexOf("overlay={"));
+    return prop.slice(0, prop.indexOf("<FaceRegions"));
+  }
+
+  it("draws the regions only while the drawer is open for this face", async () => {
+    const condition = await overlayCondition();
+    expect(condition).toMatch(/&&\s*drawerOpen\s*\?/);
+  });
+
+  it("CONTROL — the condition still needs a refinable face with data, so an open drawer alone draws nothing", async () => {
+    const condition = await overlayCondition();
+    expect(condition).toContain("facePanelData");
+    expect(condition).toContain("viewerRefinable");
+    /* And `drawerOpen` is the candidate-keyed one, not a bare flag that would
+       survive arrowing to the next face. */
+    const sheet = await readFile(SHEET, "utf8");
+    expect(sheet).toContain("const drawerOpen = viewerCandidateId !== null && drawerOpenFor === viewerCandidateId;");
+  });
+});
+
 describe("light mode's corner controls wear the field's glass; dark is untouched", () => {
   it("gives download, close and the drawer's close the field material with no blur, in light only", async () => {
     const css = await readFile(CSS, "utf8");

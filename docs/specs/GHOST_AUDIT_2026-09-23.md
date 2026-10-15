@@ -693,9 +693,50 @@ any of them (his rule on #1398).
    NOT held on him, because nothing waits on it and today's behaviour is one of
    the three answers.
 4. **His question, asked once: retire `CASTING_REPAINT_SCOPE`?** If yes:
-   - 4a re-parents the three children (side phrasing, open lane, reference
-     attach) onto `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1
-     shape, because a child naming a missing parent refuses boot;
+   - 4a ✅ **SHIPPED — and it re-parented FOUR children, not three.** The
+     three named here are the `capture…Enabled` chains (side phrasing, open
+     lane, reference attach); the VALIDATOR side has a fourth,
+     `validateCastingInkStudioEnvironment`, which also took `repaintScope`.
+     ⚠ **The ink studio is RETIRED (#1158) and its flag is unset, so its own
+     off arm returns before it ever reads a parent — which is exactly why
+     nothing had noticed: a retired feature's boot fence outlives the feature,
+     and a child still naming a flag about to be deleted is what refuses
+     boot.** It was found by enumerating every production reader of the flag
+     before editing anything, rather than by trusting this row's count — the
+     rule that a retirement slice re-counts before it cuts, paying for itself
+     one slice after it was written down. All four now read
+     `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1 shape, because
+     a child naming a missing parent refuses boot.
+     **Nothing production holds changes**: both flags stood at `all`, and the
+     repaint's own gate ENDED in the library's, so every user inside the
+     repaint was already inside the library. ⚠ **It is the weaker of the two
+     wherever the repaint is narrower than its own parent** — a child at `all`
+     under a `users:1` repaint used to be refused and would now pass — and
+     after 4b there is no narrower flag to track. **Eleven existing arms went
+     red on the old parent and were re-pointed rather than relaxed, and two
+     NEW arms drive the repaint dark and assert the children survive it**:
+     without those, every re-pointed arm would pass just as well if the chain
+     still ran through the repaint, because production holds both flags wide
+     enough to hide it. Proven able to fail by putting one capture back on the
+     repaint — exactly one arm reddened. ⚠ **And the BOOT gate was rehearsed
+     rather than reasoned about**, which is the switch sitting's own precedent
+     for a scope chain: `scripts/rehearse-reparent-boot-disposable.mts` drives
+     the real `validateEnv()` with production's recorded positions (passes), with
+     each child narrowed under the library (refuses, naming the child's own
+     variable AND the parent's), and with the repaint driven DARK (passes — the
+     arm that fails on the tree as it was, proven by mis-wiring one boot call
+     site back to the repaint, which reddened exactly that arm). ⚠ **Its own
+     first two runs were RED for reasons that had nothing to do with this slice,
+     and its third PASSED FOR THE WRONG REASON** — the repaint's own fence fires
+     first and its message CONTAINS the parent's name, which is
+     `CASTING_INK_CUT_SCOPE`'s recorded trap exactly (*a regex of merely
+     `/FAL_KEY/` matched `CASTING_V2_SCOPE`'s message and printed PROVEN over a
+     control that does nothing*). Every refusal arm now names both variables and
+     silences its siblings. **It also turned up a fact worth keeping: the
+     reference library was ALREADY a parent before this slice** — of the repaint,
+     and of the face scan and the kept-scan table under it — so the four moved
+     onto a flag with children of its own rather than onto a leaf. The flag
+     catalogue's four parent claims are stamped in the same commit;
    - 4b takes the paste road out (C1-C6) with the flag, corrects CLAUDE.md's
      `FAL_KEY` locator and the capability atlas's `kind_unserved` door in the
      same commit, and drives the off arm BEFORE deleting it.

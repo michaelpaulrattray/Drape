@@ -56,7 +56,7 @@ describe("it cannot be armed past the road that would render it", () => {
   it("asserts nothing while it is off", () => {
     expect(validateCastingInkStudioEnvironment({
       scope: undefined,
-      repaintScope: undefined,
+      referenceLibraryScope: undefined,
       cleanupWorker: undefined,
     }).kind).toBe("off");
   });
@@ -70,7 +70,7 @@ describe("it cannot be armed past the road that would render it", () => {
     */
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1",
-      repaintScope: "off",
+      referenceLibraryScope: "off",
       cleanupWorker: "true",
     })).toThrow(CastingInkStudioCoverageError);
   });
@@ -78,7 +78,7 @@ describe("it cannot be armed past the road that would render it", () => {
   it("refuses a user the repaint road does not cover", () => {
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1,7",
-      repaintScope: "users:1",
+      referenceLibraryScope: "users:1",
       cleanupWorker: "true",
     })).toThrow(/7/);
   });
@@ -86,7 +86,7 @@ describe("it cannot be armed past the road that would render it", () => {
   it("refuses all while the repaint road names specific users", () => {
     expect(() => validateCastingInkStudioEnvironment({
       scope: "all",
-      repaintScope: "users:1",
+      referenceLibraryScope: "users:1",
       cleanupWorker: "true",
     })).toThrow(CastingInkStudioCoverageError);
   });
@@ -99,15 +99,15 @@ describe("it cannot be armed past the road that would render it", () => {
     */
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1",
-      repaintScope: "users:1",
+      referenceLibraryScope: "users:1",
       cleanupWorker: undefined,
     })).toThrow(/ENABLE_STORAGE_CLEANUP_WORKER/);
   });
 
-  it("admits a user the repaint road covers, with the worker running", () => {
+  it("admits a user the reference library covers, with the worker running", () => {
     expect(validateCastingInkStudioEnvironment({
       scope: "users:1",
-      repaintScope: "users:1",
+      referenceLibraryScope: "users:1",
       cleanupWorker: "true",
     }).kind).toBe("users");
   });
