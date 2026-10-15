@@ -217,8 +217,21 @@ describe("the panel stands beside the picture, never on top of its height", () =
 describe("the box on the picture is the ask box, at the feature", () => {
   it("submits through the SAME paid handler the ask box submits through", async () => {
     const sheet = withoutProse(await readFile(SHEET, "utf8"));
-    expect(sheet).toContain("onAsk={askRefine}");
     expect(sheet).toContain("onRefine={askRefine}");
+    /*
+      ⚠ THE LAW IS THE HANDLER, NOT THE SPELLING — widened for #2525.
+
+      This read `toContain("onAsk={askRefine}")`, which was the law and its
+      spelling in one string until the picture's door also had to arm the face
+      scan. The promise that matters is that clicking a rectangle spends exactly
+      what the ask box spends: ONE paid handler, no second road to a render. So
+      the arm reads the prop's own body and asserts `askRefine` is what it
+      calls — which a wrapper satisfies and a second mutation does not.
+    */
+    const onAsk = sheet.slice(sheet.indexOf("onAsk={"));
+    expect(onAsk.slice(0, onAsk.indexOf("/>"))).toContain("askRefine(");
+    /* And the picture's door reaches no OTHER mutation on its way there. */
+    expect(onAsk.slice(0, onAsk.indexOf("askRefine("))).not.toContain("mutate");
   });
 
   it("owns Escape while it is open, instead of closing the viewer under itself", async () => {
@@ -489,11 +502,94 @@ describe("the panel's copy, classified", () => {
 
   it("DERIVES that state from the scan query, so a dead scan cannot leave it stuck", async () => {
     const sheet = withoutProse(await readFile(SHEET, "utf8"));
-    expect(sheet).toContain("faceScan.isPending");
+    /*
+      ⚠ `isLoading`, AND IT READ `isPending` UNTIL #2525.
+
+      The law is unchanged — the working line is derived from the scan query, so
+      a dead scan cannot leave it stuck. What changed is which word tells the
+      truth once the scan is GATED on edit intent: a query that is not enabled
+      is `isPending` for ever, so the old spelling would have drawn *"Reading
+      their features…"* over every face somebody merely looked at. `isLoading`
+      is `isPending && isFetching` — no answer yet AND a request really in
+      flight. Pinned by name because that is the whole difference between a
+      derived state and one that outlives its work.
+    */
+    expect(sheet).toContain("faceScan.isLoading");
+    expect(sheet).not.toContain("faceScan.isPending");
     /* No second copy of the fact: a flag set on start and cleared on success is
        the shape that survives an error. */
     expect(sheet).not.toMatch(/useState[^\n]*[Ww]orking/);
     expect(sheet).not.toMatch(/set[A-Za-z]*Working\(/);
+  });
+
+  /*
+    THE SCAN IS BOUGHT AT AN EDIT DOOR, NOT AT A GLANCE — #2525, his word
+    2026-10-15 (*"what if someone had to deliberatly hit edit or refine before
+    it scans the face"*, then *"yes"*).
+
+    The wire proof — zero requests while arrowing, exactly one on the first
+    intent — is a browser drive and is on the pull request. These are the
+    mechanizable half: the SHAPE that makes it true, held so a later refactor
+    cannot quietly put the scan back on the glance. A design law nobody can run
+    is a design law that lasts one refactor.
+  */
+  describe("the face scan waits for edit intent (#2525)", () => {
+    it("fires the scan only once this face is armed", async () => {
+      const sheet = withoutProse(await readFile(SHEET, "utf8"));
+      const query = sheet.slice(sheet.indexOf("trpc.castingV2.faceScan.useQuery"));
+      /* The gate is IN the `enabled` expression, not somewhere a refetch could
+         route around it. */
+      expect(query.slice(0, query.indexOf("staleTime"))).toContain("faceScanArmed");
+    });
+
+    it("keys the arming on the CANDIDATE, so stepping to the next face disarms", async () => {
+      const sheet = withoutProse(await readFile(SHEET, "utf8"));
+      /*
+        A boolean would arm the whole walk the moment one face was edited —
+        this card's own defect wearing a different hat. The fable-465 scope.
+      */
+      expect(sheet).toContain("const [scanArmedFor, setScanArmedFor] = useState<string | null>(null)");
+      expect(sheet).toContain("scanArmedFor === viewerCandidateId");
+      /* And it is not a boolean under another name: the armed READING must be
+         the comparison above, so there is nothing else to be true. */
+      expect(sheet).not.toContain("useState<boolean>");
+    });
+
+    it("arms at all three of the draft's doors, and at nothing else", async () => {
+      const [sheet, refine] = await Promise.all([
+        readFile(SHEET, "utf8").then(withoutProse),
+        readFile(REFINE_PANEL, "utf8").then(withoutProse),
+      ]);
+      /* Door 1 — the ask box takes focus, which is the earliest of the three. */
+      expect(refine).toContain("onFocus={onEditIntent}");
+      expect(sheet).toContain("onEditIntent={armFaceScan}");
+      /* Doors 2 and 3 — a row tapped in the panel, a feature clicked on the
+         picture. Both already write the draft; both now arm as well. */
+      const onScope = sheet.slice(sheet.indexOf("onScope={"));
+      expect(onScope.slice(0, onScope.indexOf("}}"))).toContain("armFaceScan()");
+      const onAsk = sheet.slice(sheet.indexOf("onAsk={"));
+      expect(onAsk.slice(0, onAsk.indexOf("}}"))).toContain("armFaceScan()");
+    });
+
+    it("names no scan and offers no scan button — the panel only gets sharper", async () => {
+      /*
+        The disappearing-technology law's line (clause 5): no engine name and no
+        machinery on a path somebody must walk. A "Scan face" button would be
+        the whole feature failing its own gate, and it is the obvious thing a
+        later hand would add to make the wait legible.
+      */
+      const [sheet, panel, refine] = await Promise.all([
+        readFile(SHEET, "utf8").then(withoutProse),
+        readFile(PANEL, "utf8").then(withoutProse),
+        readFile(REFINE_PANEL, "utf8").then(withoutProse),
+      ]);
+      for (const source of [sheet, panel, refine]) {
+        expect(source).not.toMatch(/>[^<]*\bScan\b[^<]*</);
+        expect(source).not.toMatch(/(?:aria-label|title|placeholder)="[^"]*\bscan(?:ning)?\b/i);
+      }
+      /* And the customer-facing line stays the one about features, not reads. */
+      expect(panel).toContain("Reading {possessive} features…");
+    });
   });
 
   it("says what is true of a list that includes what has never been touched", async () => {
