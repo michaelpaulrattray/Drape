@@ -211,7 +211,7 @@ describe("the acceptance door is behind the flag too, not only the prompt", () =
   });
 });
 
-describe("CASTING_OPEN_LANE_SCOPE — the parent is the REPAINT scope, and that is the finding", () => {
+describe("CASTING_OPEN_LANE_SCOPE — the parent is the REFERENCE LIBRARY since #1577 slice 4a", () => {
   const saved = { ...process.env };
   afterEach(() => {
     process.env[CASTING_OPEN_LANE_SCOPE_ENV] = saved[CASTING_OPEN_LANE_SCOPE_ENV];
@@ -221,33 +221,38 @@ describe("CASTING_OPEN_LANE_SCOPE — the parent is the REPAINT scope, and that 
   });
 
   it("is off when unset, and off is always valid", () => {
-    expect(validateCastingOpenLaneEnvironment({ scope: undefined, repaintScope: undefined }).kind).toBe("off");
-    expect(validateCastingOpenLaneEnvironment({ scope: "off", repaintScope: "off" }).kind).toBe("off");
+    expect(validateCastingOpenLaneEnvironment({ scope: undefined, referenceLibraryScope: undefined }).kind).toBe("off");
+    expect(validateCastingOpenLaneEnvironment({ scope: "off", referenceLibraryScope: "off" }).kind).toBe("off");
   });
 
-  it("REFUSES TO BOOT when the repaint road is off — the wall-(d) reason, in the error", () => {
+  it("REFUSES TO BOOT when its parent is off, and names the parent in the error", () => {
     /*
-      The paste road composes its prompt from `readDelta(variant.deltas)`, which
-      drops `open` by construction. A paste-road user armed here would be charged
-      for a render whose prompt never mentioned their ask.
+      ⚠ THE PARENT MOVED IN #1577 SLICE 4a — it was `CASTING_REPAINT_SCOPE`, and
+      it is now the repaint's own parent, the reference library, because the paste
+      road's flag is retired by the audit's slice 4b.
+
+      The finding that bought this flag is still why it exists and is kept here:
+      the paste road composed its prompt from `readDelta(variant.deltas)`, which
+      drops `open` by construction, so a paste-road user armed here would have
+      been charged for a render whose prompt never mentioned their ask.
     */
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1", repaintScope: "off" }))
-      .toThrow(/CASTING_REPAINT_SCOPE is off/);
+    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1", referenceLibraryScope: "off" }))
+      .toThrow(/CASTING_REFERENCE_LIBRARY_SCOPE is off/);
   });
 
-  it("refuses a user the repaint road does not carry", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1,7", repaintScope: "users:1" }))
-      .toThrow(/names users outside CASTING_REPAINT_SCOPE: 7/);
+  it("refuses a user the reference library does not carry", () => {
+    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1,7", referenceLibraryScope: "users:1" }))
+      .toThrow(/names users outside CASTING_REFERENCE_LIBRARY_SCOPE: 7/);
   });
 
   it("refuses `all` over a limited parent, and admits a covered user", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "all", repaintScope: "users:1" }))
+    expect(() => validateCastingOpenLaneEnvironment({ scope: "all", referenceLibraryScope: "users:1" }))
       .toThrow(/cannot be "all"/);
-    expect(validateCastingOpenLaneEnvironment({ scope: "users:1", repaintScope: "users:1" }).kind).toBe("users");
+    expect(validateCastingOpenLaneEnvironment({ scope: "users:1", referenceLibraryScope: "users:1" }).kind).toBe("users");
   });
 
   it("refuses a scope it cannot parse", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:", repaintScope: "all" }))
+    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:", referenceLibraryScope: "all" }))
       .toThrow(/must be "off", "all", or "users:"/);
   });
 
@@ -259,9 +264,16 @@ describe("CASTING_OPEN_LANE_SCOPE — the parent is the REPAINT scope, and that 
     process.env.CASTING_REPAINT_SCOPE = "users:1";
     process.env[CASTING_OPEN_LANE_SCOPE_ENV] = "users:1,2";
     expect(captureCastingOpenLaneEnabled(1)).toBe(true);
-    /* User 2 is named here and NOT on the repaint road — the runtime AND is what
-       stops them, and this is the arm that would go quiet if it were dropped. */
+    /* User 2 is named here and NOT in the reference library — the runtime AND is
+       what stops them, and this is the arm that would go quiet if it were dropped. */
     expect(captureCastingOpenLaneEnabled(2)).toBe(false);
+
+    /* ⚠ And the repaint no longer gates it (#1577 slice 4a): driving that flag
+       dark leaves user 1 enabled, which is the only behaviour the re-parent
+       changed and the one an arm re-pointed from repaint to library cannot see. */
+    process.env.CASTING_REPAINT_SCOPE = "off";
+    expect(captureCastingOpenLaneEnabled(1), "the repaint must not gate the open lane").toBe(true);
+    process.env.CASTING_REPAINT_SCOPE = "users:1";
 
     process.env[CASTING_OPEN_LANE_SCOPE_ENV] = "off";
     expect(captureCastingOpenLaneEnabled(1)).toBe(false);

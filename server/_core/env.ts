@@ -397,12 +397,15 @@ export function validateEnv(): void {
   });
   /*
     Saying which side twice — her anatomy and the half of the picture it is on.
-    Checked against the REPAINT scope because the clause is written by the
-    repaint recipe and nothing else says it.
+
+    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
+    when the paste road's own flag was retired (#1577 slice 4a). It used to be
+    the REPAINT scope, and that gate ended in the library's anyway, so no
+    position production holds changes.
   */
   validateCastingSidePhrasingEnvironment({
     scope: process.env[CASTING_SIDE_PHRASING_SCOPE_ENV],
-    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
   /*
     The auto-scan: reading a face nobody has edited so the panel is not a
@@ -427,27 +430,43 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    Whether an ask nobody catalogued may name its own kind. Checked against the
-    REPAINT scope rather than the casting scope, and the difference is the
-    finding that bought this flag: the paste road composes its prompt from
-    wall (d)'s re-read, which drops `open` by construction, so a paste-road user
-    would be charged for a render whose prompt never said what they asked for.
+    Whether an ask nobody catalogued may name its own kind.
+
+    The finding that bought this flag was a paste-road one: that road composed
+    its prompt from wall (d)'s re-read, which drops `open` by construction, so a
+    paste-road user would have been charged for a render whose prompt never said
+    what they asked for. That road is being retired, which is why the parent
+    below moved — the finding is kept because it is why the flag exists at all.
+
+    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
+    when the paste road's own flag was retired (#1577 slice 4a). It used to be
+    the REPAINT scope, and that gate ended in the library's anyway, so no
+    position production holds changes.
   */
   validateCastingOpenLaneEnvironment({
     scope: process.env[CASTING_OPEN_LANE_SCOPE_ENV],
-    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
   /*
-    The ink studio's door. Checked against the REPAINT scope for the open lane's
-    reason one step further on: a design reaches a photograph as a cropped
-    reference carried by the repaint recipe, and the paste road carries none —
-    so an upload armed there could never appear on her. And against the cleanup
-    worker, because an uploaded design is bytes we keep under the candidate's
-    purge path.
+    The ink studio's door — RETIRED on his word of 2026-09-24 (*"It retires with
+    N2"*, #1158) and unset on the service, so this check returns at its own off
+    arm before it ever reads a parent. Still checked against the cleanup worker,
+    because an uploaded design is bytes we keep under the candidate's purge path.
+
+    ⚠ IT IS THE FOURTH CHILD OF THE REPAINT FLAG AND THE AUDIT'S SLICE 4a NAMED
+    ONLY THREE — it counted the three `capture…Enabled` chains and the validator
+    side has four. Found when 4a was built, re-parented with the other three, and
+    corrected in the audit: a retired feature's boot fence outlives the feature,
+    and a child still naming a flag about to be deleted is what refuses boot.
+
+    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
+    when the paste road's own flag was retired (#1577 slice 4a). It used to be
+    the REPAINT scope, and that gate ended in the library's anyway, so no
+    position production holds changes.
   */
   validateCastingInkStudioEnvironment({
     scope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
-    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
@@ -455,13 +474,17 @@ export function validateEnv(): void {
     is already `users:1` in production and landing this behind it would open a
     new store on a live account on the deploy that shipped it. What that store
     keeps is a full photograph of whoever is in the picture, so it earns its own
-    switch. Same two parents as the studio, and for the same two reasons: the
-    repaint recipe is what carries a cropped reference into a render, and the
-    cleanup worker is what eventually deletes the bytes.
+    switch. The cleanup worker is still a parent, because it is what eventually
+    deletes the bytes.
+
+    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
+    when the paste road's own flag was retired (#1577 slice 4a). It used to be
+    the REPAINT scope, and that gate ended in the library's anyway, so no
+    position production holds changes.
   */
   validateCastingReferenceAttachEnvironment({
     scope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
-    repaintScope: process.env[CASTING_REPAINT_SCOPE_ENV],
+    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*

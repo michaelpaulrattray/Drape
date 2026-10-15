@@ -440,32 +440,52 @@ export function parseCastingSidePhrasingScope(raw: string | undefined): CastingV
 export function captureCastingSidePhrasingEnabled(userId: number): boolean {
   const child = parseCastingSidePhrasingScope(process.env[CASTING_SIDE_PHRASING_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingRepaintEnabled(userId);
+  return captureCastingReferenceLibraryEnabled(userId);
 }
 
 export function validateCastingSidePhrasingEnvironment(input: {
   scope: string | undefined;
-  repaintScope: string | undefined;
+  referenceLibraryScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingSidePhrasingScope(input.scope);
   if (child.kind === "off") return child;
 
-  const parent = parseCastingRepaintScope(input.repaintScope);
+  /*
+    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
+    re-parented onto the repaint's OWN parent — the reference library —
+    because the paste road and its flag are retired by the ghost audit's
+    slice 4b, and a child naming a missing parent refuses boot.
+
+    It changes nothing at the positions production actually holds: both
+    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
+    and the repaint's own gate ENDED in this very call
+    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
+    so every user inside the repaint was already inside the library.
+
+    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
+    its own parent, and that is stated rather than glossed: a child at `all`
+    under a `users:1` repaint used to be refused here and would now pass.
+    After slice 4b there is no narrower flag to track, because the repaint
+    flag will not exist.
+  */
+  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
     throw new CastingSidePhrasingCoverageError(
-      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — the recipe says the side once, exactly as it does today`,
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingSidePhrasingCoverageError(
-      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingSidePhrasingCoverageError(
-      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
@@ -777,33 +797,52 @@ function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
 export function captureCastingOpenLaneEnabled(userId: number): boolean {
   const child = parseCastingOpenLaneScope(process.env[CASTING_OPEN_LANE_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingRepaintEnabled(userId);
+  return captureCastingReferenceLibraryEnabled(userId);
 }
 
 export function validateCastingOpenLaneEnvironment(input: {
   scope: string | undefined;
-  repaintScope: string | undefined;
+  referenceLibraryScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingOpenLaneScope(input.scope);
   if (child.kind === "off") return child;
 
-  const parent = parseCastingRepaintScope(input.repaintScope);
+  /*
+    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
+    re-parented onto the repaint's OWN parent — the reference library —
+    because the paste road and its flag are retired by the ghost audit's
+    slice 4b, and a child naming a missing parent refuses boot.
+
+    It changes nothing at the positions production actually holds: both
+    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
+    and the repaint's own gate ENDED in this very call
+    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
+    so every user inside the repaint was already inside the library.
+
+    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
+    its own parent, and that is stated rather than glossed: a child at `all`
+    under a `users:1` repaint used to be refused here and would now pass.
+    After slice 4b there is no narrower flag to track, because the repaint
+    flag will not exist.
+  */
+  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
     throw new CastingOpenLaneCoverageError(
-      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — the paste road's wall-(d) re-read `
-      + "drops an open kind, so the ask would be charged for and never said in the prompt",
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingOpenLaneCoverageError(
-      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingOpenLaneCoverageError(
-      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
@@ -915,7 +954,7 @@ export function castingInkStudioArmed(): boolean {
 
 export function validateCastingInkStudioEnvironment(input: {
   scope: string | undefined;
-  repaintScope: string | undefined;
+  referenceLibraryScope: string | undefined;
   cleanupWorker: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingInkStudioScope(input.scope);
@@ -928,23 +967,42 @@ export function validateCastingInkStudioEnvironment(input: {
     );
   }
 
-  const parent = parseCastingRepaintScope(input.repaintScope);
+  /*
+    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
+    re-parented onto the repaint's OWN parent — the reference library —
+    because the paste road and its flag are retired by the ghost audit's
+    slice 4b, and a child naming a missing parent refuses boot.
+
+    It changes nothing at the positions production actually holds: both
+    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
+    and the repaint's own gate ENDED in this very call
+    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
+    so every user inside the repaint was already inside the library.
+
+    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
+    its own parent, and that is stated rather than glossed: a child at `all`
+    under a `users:1` repaint used to be refused here and would now pass.
+    After slice 4b there is no narrower flag to track, because the repaint
+    flag will not exist.
+  */
+  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
     throw new CastingInkStudioCoverageError(
-      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — a design is carried into a `
-      + "render as a cropped reference by the repaint recipe, and the paste road carries none",
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingInkStudioCoverageError(
-      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingInkStudioCoverageError(
-      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
@@ -1034,7 +1092,7 @@ export function parseCastingReferenceAttachScope(raw: string | undefined): Casti
 export function captureCastingReferenceAttachEnabled(userId: number): boolean {
   const child = parseCastingReferenceAttachScope(process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingRepaintEnabled(userId);
+  return captureCastingReferenceLibraryEnabled(userId);
 }
 
 /**
@@ -1050,7 +1108,7 @@ export function castingReferenceAttachArmed(): boolean {
 
 export function validateCastingReferenceAttachEnvironment(input: {
   scope: string | undefined;
-  repaintScope: string | undefined;
+  referenceLibraryScope: string | undefined;
   cleanupWorker: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingReferenceAttachScope(input.scope);
@@ -1063,24 +1121,42 @@ export function validateCastingReferenceAttachEnvironment(input: {
     );
   }
 
-  const parent = parseCastingRepaintScope(input.repaintScope);
+  /*
+    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
+    re-parented onto the repaint's OWN parent — the reference library —
+    because the paste road and its flag are retired by the ghost audit's
+    slice 4b, and a child naming a missing parent refuses boot.
+
+    It changes nothing at the positions production actually holds: both
+    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
+    and the repaint's own gate ENDED in this very call
+    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
+    so every user inside the repaint was already inside the library.
+
+    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
+    its own parent, and that is stated rather than glossed: a child at `all`
+    under a `users:1` repaint used to be refused here and would now pass.
+    After slice 4b there is no narrower flag to track, because the repaint
+    flag will not exist.
+  */
+  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
     throw new CastingReferenceAttachCoverageError(
-      `cannot be enabled while ${CASTING_REPAINT_SCOPE_ENV} is off — a feature taken from an `
-      + "attached picture is carried into a render as a cropped reference by the repaint recipe, "
-      + "and the paste road carries none",
+      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingReferenceAttachCoverageError(
-      `cannot be "all" while ${CASTING_REPAINT_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingReferenceAttachCoverageError(
-      `names users outside ${CASTING_REPAINT_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
