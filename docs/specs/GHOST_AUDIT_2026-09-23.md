@@ -693,9 +693,33 @@ any of them (his rule on #1398).
    NOT held on him, because nothing waits on it and today's behaviour is one of
    the three answers.
 4. **His question, asked once: retire `CASTING_REPAINT_SCOPE`?** If yes:
-   - 4a re-parents the three children (side phrasing, open lane, reference
-     attach) onto `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1
-     shape, because a child naming a missing parent refuses boot;
+   - 4a ✅ **SHIPPED — and it re-parented FOUR children, not three.** The
+     three named here are the `capture…Enabled` chains (side phrasing, open
+     lane, reference attach); the VALIDATOR side has a fourth,
+     `validateCastingInkStudioEnvironment`, which also took `repaintScope`.
+     ⚠ **The ink studio is RETIRED (#1158) and its flag is unset, so its own
+     off arm returns before it ever reads a parent — which is exactly why
+     nothing had noticed: a retired feature's boot fence outlives the feature,
+     and a child still naming a flag about to be deleted is what refuses
+     boot.** It was found by enumerating every production reader of the flag
+     before editing anything, rather than by trusting this row's count — the
+     rule that a retirement slice re-counts before it cuts, paying for itself
+     one slice after it was written down. All four now read
+     `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1 shape, because
+     a child naming a missing parent refuses boot.
+     **Nothing production holds changes**: both flags stood at `all`, and the
+     repaint's own gate ENDED in the library's, so every user inside the
+     repaint was already inside the library. ⚠ **It is the weaker of the two
+     wherever the repaint is narrower than its own parent** — a child at `all`
+     under a `users:1` repaint used to be refused and would now pass — and
+     after 4b there is no narrower flag to track. **Eleven existing arms went
+     red on the old parent and were re-pointed rather than relaxed, and two
+     NEW arms drive the repaint dark and assert the children survive it**:
+     without those, every re-pointed arm would pass just as well if the chain
+     still ran through the repaint, because production holds both flags wide
+     enough to hide it. Proven able to fail by putting one capture back on the
+     repaint — exactly one arm reddened. The flag catalogue's four parent
+     claims are stamped in the same commit;
    - 4b takes the paste road out (C1-C6) with the flag, corrects CLAUDE.md's
      `FAL_KEY` locator and the capability atlas's `kind_unserved` door in the
      same commit, and drives the off arm BEFORE deleting it.
