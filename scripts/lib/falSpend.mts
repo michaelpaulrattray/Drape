@@ -96,11 +96,12 @@ export const FAL_LOW_BALANCE_USD = 20;
  *   fewest 18  one per whole-frame question (7), two per pair — one per side —
  *              (5 pairs, 10), and the face asked ONCE: the midline the pairs are
  *              split on and the head the build row is cut under are one answer
- *   most   39  an anatomy question asked twice (lips, teeth, nose, hair, skin:
- *              +5); an anatomy pair asked again AND healed inside that second
- *              look (eyes, brows, ears: 6 each, +12); a worn pair healed once
+ *   most   38  an anatomy question asked twice (lips, nose, hair, skin: +4);
+ *              an anatomy pair asked again AND healed inside that second look
+ *              (eyes, brows, ears: 6 each, +12); a worn pair healed once
  *              (horns, earrings: 4 each, +4); worn whole-frame questions are
- *              never asked twice (glasses, facial hair)
+ *              never asked twice (glasses, facial hair); and TEETH are never
+ *              asked twice either (#2525)
  *
  * The cutout is never asked twice and never by a re-ask; neither is the
  * describer.
@@ -123,19 +124,32 @@ export const FAL_LOW_BALANCE_USD = 20;
  * per scan, which is the safe direction for a cost number — until somebody
  * re-measures it the way #2183 did. That re-measurement is the one thing #2191
  * still owes.
+ *
+ * ⚠ **AND `most` CAME DOWN BY ONE AGAIN ON 2026-10-15 (#2525, his word: *"stop
+ * looking for teeth twice"*), SO THE MEASURED BAND IS NOW TWO READS BEHIND THE
+ * CODE RATHER THAN ONE.** `teeth` leaves the re-ask population: it is anatomy a
+ * closed mouth hides, the catalogue's own bench measured every phrasing as
+ * silent on all three closed mouths, and the second look was therefore buying a
+ * measured nothing. **Only the CEILING moves here, and that is the honest
+ * shape of it** — `fewest` is the every-question-answered-first-time path and
+ * never included the re-ask, while a real closed-mouth face saves half a cent
+ * it was spending. So the band below is expected at **20–26 at worst and lower
+ * on a closed mouth**, and it STILL is not written by arithmetic, for the same
+ * reason the paragraph above gives.
  */
 export const FACE_SCAN_FAL_CALLS = {
   sam3: {
     fewest: 18,
-    most: 39,
+    most: 38,
     measured: {
       low: 21,
       high: 27,
       source: "#2183 (2026-10-10): 8 production casts scanned through the real scannedFace, "
         + "183 SAM 3 calls matched fal's usage report; production history agrees at 20.9–24.6 "
         + "reads per paid scan (fal hourly usage / casting.scan_miss audit rows). "
-        + "⚠ TAKEN BEFORE #2191, which removed one read from every scan — a re-measurement "
-        + "is expected at 20–26 and is not written here by arithmetic",
+        + "⚠ TAKEN BEFORE #2191, which removed one read from every scan, and before #2525, "
+        + "which removed the second look at teeth — a re-measurement is expected at 20–26 at "
+        + "worst and lower on a closed mouth, and is not written here by arithmetic",
     },
   },
   /** The whole-subject matte the build row is composed from — one per scan. */

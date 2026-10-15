@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { composedPlan, scanFace, scanPlan } from "./faceScan";
+import { composedPlan, facetsHiddenByAPose, scanFace, scanPlan } from "./faceScan";
+import { facetsOfSlot } from "./referenceSlotCatalogue";
 import { armedBornWornClasses } from "./bornWornDetector";
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import type { Mask } from "./maskedComposite";
@@ -300,6 +301,104 @@ describe("the scan files only what it measured", () => {
     expect(looks).toBe(1);
     expect(scan.boxes.has("horns@left")).toBe(true);
     expect(scan.boxes.has("horns@right")).toBe(true);
+  });
+
+  /*
+    ANATOMY A CLOSED MOUTH HIDES IS ASKED ONCE — #2525, his word 2026-10-15:
+    *"stop looking for teeth twice"*.
+
+    The re-ask's own reasoning splits features into always-in-frame (ask again)
+    and can-simply-be-absent (do not). Teeth are neither: they are anatomy
+    nobody is missing, and an ordinary closed mouth hides them — so the first
+    branch claimed them and bought a second read of a question the catalogue's
+    own bench measured as **silent on all three closed mouths**, for all four
+    phrasings it tried.
+
+    Four arms, because a one-armed version of this would be a rule that turned
+    the re-ask off for everybody and passed — which is the shape the departable
+    arms above were written in, for the same reason.
+  */
+  it("asks about TEETH once when the mouth is closed, instead of twice", async () => {
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "all the teeth") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return EMPTY;
+        },
+      }),
+    });
+
+    expect(looks, "a closed mouth is read once — the second look is measured to find nothing").toBe(1);
+    expect(scan.boxes.has("teeth")).toBe(false);
+    expect(scan.empty).toContain("all the teeth");
+  });
+
+  it("behaves exactly as before when the teeth ARE in the picture", async () => {
+    /* The arm that matters most, as with the beard: what is saved is a second
+       look nobody needed, never a first look somebody did. */
+    let looks = 0;
+    const scan = await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "all the teeth") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return maskOf({ x: 480, y: 700, width: 40, height: 18 });
+        },
+      }),
+    });
+
+    expect(looks).toBe(1);
+    expect(scan.boxes.has("teeth")).toBe(true);
+    expect(scan.empty).not.toContain("all the teeth");
+  });
+
+  it("CONTROL — THE LIPS, one region away, still get their second look", async () => {
+    /*
+      The lips are the case this rule must not reach: same mouth, same frame,
+      and an empty read of them IS a missed reading (the founder's own smiling
+      frame is why the re-ask exists). Widen the set to the mouth rather than to
+      the teeth and this goes red.
+    */
+    let looks = 0;
+    await scanFace({
+      describe: null,
+      frame: FRAME,
+      reader: reader({
+        region: (name) => {
+          if (name !== "lips") return maskOf({ x: 5, y: 5, width: 5, height: 5 });
+          looks += 1;
+          return EMPTY;
+        },
+      }),
+    });
+
+    expect(looks, "the lips are always in frame").toBe(2);
+  });
+
+  it("CONTROL — every pose-hidden facet is one the catalogue actually declares", () => {
+    /*
+      `Facet` is a bare `string` alias, so a misspelled member compiles and
+      then silently never matches — the member would read as present while the
+      second look went on being bought for ever. Nothing in the type system can
+      catch that, so the suite does: every member is held against the facets the
+      catalogue itself hands out, which is the same list `canBeAbsent` reads.
+    */
+    const declared = new Set(
+      scanPlan().flatMap((region) =>
+        region.slots.flatMap((slot) => facetsOfSlot(slot.slot) ?? [])),
+    );
+    const members = facetsHiddenByAPose();
+
+    expect(members.length, "a set nobody has measured an entry into is not a feature").toBeGreaterThan(0);
+    for (const facet of members) {
+      expect(declared.has(facet), `${facet} is not a facet any scanned slot declares`).toBe(true);
+    }
   });
 
   it("CONTROL — a feature that is ALWAYS in frame still gets its second look", async () => {
