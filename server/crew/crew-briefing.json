@@ -1,7 +1,7 @@
 {
-  "edition": 718,
-  "updatedAt": "2026-10-16T01:45:00.000Z",
-  "shift": "Tonight took the next piece off the clean-out list you approved yesterday morning. Nothing in the app looks or behaves any differently, no money was spent, and nothing on the service was switched tonight — though one setting does come off it when this lands, as part of the same act rather than a separate errand.\n\nWhat came out is the SWITCH behind the open lane. The open lane is what lets somebody ask for something the product has never heard of — your own \"give her vampire fangs\" — and have the product name the thing itself, instead of quietly keying it onto the nearest feature it does know. You turned that on for everyone on 24 September. The switch stayed, and with it the two older versions of the instruction the product reads an edit with: the ones used only when the lane was shut. Nobody has been given those since September. They are gone, along with the switch, the start-up check that policed it, and a second hidden gate nobody had counted.\n\nThe careful part was what had to NOT change. The instruction every customer actually gets had to come out of this identical, character for character — one word different and every edit in the product reads slightly differently. I took a fingerprint of it before touching anything and re-took it after, and both match exactly. Then I checked the fingerprint reader itself by changing a single letter from capital to lowercase: the fingerprint moved and the length did not, which is why the length alone would have been a useless test.\n\nTwo things worth your minute, both about how the next four of these should be done. The first is that this switch was read in TWO places, not one — the obvious reader, and a second gate further down that would have been left behind by anyone who stopped at the first. The four settings still to retire may each have the same shape, so that is now written down where the next person will meet it. The second is smaller and more useful than it sounds: I wrote a check to make sure the setting cannot quietly come back, and the check's own control FAILED. It was right to. It taught me that in this codebase a setting is almost never read the direct way — only two of them in the whole product are — so the control had to be built on a different setting entirely. A check whose control cannot pass proves nothing, and that one would have looked green forever.\n\nOne piece of housekeeping, because it had been misreporting itself to you for three nights. A card about some old picture-making diagnostics kept showing up on the board as \"finished but still open\". It is not finished — it has two real jobs left — but it also was not waiting on anybody's attention: both jobs sit behind the engine test on your own characters, because that test may change the very thing they would measure. The card now says so, so the board stops flagging a card that is behaving correctly.\n\nThe work is in review rather than live: it touches a file on the money list, so it waits for a review by hand. Every automatic check passed — and one of them caught me out, correctly, when I wrote three lines of explanation into a summary table that is only meant to hold one-line pointers.",
+  "edition": 719,
+  "updatedAt": "2026-10-16T03:20:00.000Z",
+  "shift": "Tonight took the next piece off the clean-out list you approved yesterday morning — the second of five. Nothing in the app looks or behaves any differently, no money was spent, and nothing on the service was switched tonight, though one setting comes off it when this lands, as part of the same act rather than a separate errand.\n\nWhat came out is the SWITCH behind a small piece of wording. When somebody asks you to change one side of a pair — her right eye, his left ear — the product does not only say whose side it is, it also says which half of the picture that side is on: \"her right eye (on the left of the picture as you look at it)\". That exists because the picture engine paints by position rather than by anatomy, and a test of twelve pictures found the clause fixed the side it was getting wrong. You turned it on for everybody on 25 August. The switch stayed behind it, doing nothing, and it is gone now along with the start-up check that policed it.\n\nThe wording itself has not changed and that was the whole job. I took a fingerprint of the sentence the product actually sends — twelve different shapes of ask, one sided feature each way, both of a pair, several asks at once — before touching anything, and re-took it afterwards. All twelve match exactly. Then I tested the fingerprint reader by changing one letter from lower case to capital: the fingerprint moved and the length did not, which is why measuring the length alone would have proved nothing.\n\nThree things worth your minute, and the third is the one I would want to know about.\n\nFirst, the warning the last of these left behind paid off backwards. That one found its switch was read in TWO places, and warned the next four that stopping at the obvious one is not finishing. This switch was read in exactly ONE — and the way I established that rather than hoped it was to delete the setting from the shape the code passes around and let the compiler list everything that broke. It named two places in the product, three test files and six helper scripts, and a hand search afterwards added nothing. The method is what carries forward, not the number.\n\nSecond, taking a thing out can quietly remove a check that was watching something else. The tests for this switch happened to contain the ONLY check covering a change made three days ago — moving four settings off the old picture-making road so that road could be deleted. Deleting the block would have taken that check with it and nothing would have gone red. I checked the other three settings first: two are themselves retired now, one is dead already, and the surviving one keeps its own real check. So nothing was lost — and the written record now says so, because somebody counting the checks afterwards would have found one where there used to be two.\n\nThird, I wrote a check to make sure this setting cannot quietly come back, and then I tried to break it five ways. Four of the five worked. The fifth did not: I deleted the setting's row out of the main rulebook — the one thing that check exists to protect — and the check stayed green. It was reading the rulebook and the detailed catalogue as one lump of text, so the catalogue entry was quietly satisfying it on the rulebook's behalf. It is fixed, re-broken to prove the fix, and the same flaw is in the equivalent check from the last of these, which is now in review: I have written it up on that one rather than reaching into work that is waiting for a review.\n\nOne piece of housekeeping on the way through. The engine test on your own characters shows on the board as waiting for you, which is right — round two's pictures are on it — but the sentence saying so had been struck out when you answered round one, so the board was showing a hold with nothing readable underneath it. It now says what it waits for, in one line taken from the card's own latest note. Nothing else about that card moved and nobody has taken it.\n\nThe work is in review rather than live: it touches a file on the money list, so it waits for a review by hand. Every automatic check passed — and one of them caught me out, correctly, in a way worth repeating: my first attempt at making a now-pointless test refuse to run was a plain stop at the top of the file, and that made everything below it unreachable, which made the type checker forget what it knew about three unrelated lines and go red. The check was right and my method was wrong.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire): one is done and live, and the two biggest — the old dressing answer and the whole old picture-making road with its switch — are in review. the first of the five switch retirements is in review and four are left (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire): one is done and live, and the two biggest — the old dressing answer and the whole old picture-making road with its switch — are in review. two of the five switch retirements are in review and three are left (#1577)",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T15:33:07.591Z",
+      "readAt": "2026-10-15T17:02:28.715Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10472,6 +10472,13 @@
       "status": "in-review",
       "prNumber": 2556,
       "note": "Held for a review by hand — it touches a file on the money list. All checks green. The instruction every customer gets is unchanged, proven by a fingerprint taken before and after."
+    },
+    {
+      "id": "ghost-audit-sliced2-1577",
+      "title": "The switch behind the “which half of the picture” wording comes off (#1577)",
+      "status": "in-review",
+      "prNumber": 2557,
+      "note": "Held for a review by hand — it touches a file on the money list. All 11 checks green. The wording every customer gets is unchanged, proven by a fingerprint over twelve shapes of ask, before and after."
     }
   ],
   "problems": [
@@ -10933,14 +10940,15 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T15:33:07.591Z",
+    "readAt": "2026-10-15T17:02:28.714Z",
     "items": [
       {
         "issueNumber": 801,
         "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
         "urgent": false,
         "held": {
-          "state": "blocked"
+          "state": "blocked",
+          "because": "YOU — round 2's frames are on this card. Say whether A keeps its edits well enough to ship."
         }
       },
       {
