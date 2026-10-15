@@ -1,7 +1,7 @@
 {
-  "edition": 712,
-  "updatedAt": "2026-10-15T04:40:00.000Z",
-  "shift": "Two things got cheaper for us today and neither is anything you will notice. A character's face was being read twice for teeth — and a closed mouth has none to find, which our own bench measured years-deep: four different wordings, three closed mouths, nothing found any of the times. That second look is gone and it is live. The bigger one: we were reading every face you arrowed past in the viewer, about twelve cents each, whether you stopped to edit it or not. Now the read starts the moment you reach for the edit box, tap a row or click a feature — you are still typing for five or ten seconds while it runs, so the boxes land before you press Refine. I drove it in the real app: walking seven faces went from six reads to none, and reaching for the box bought exactly one. That one is waiting on a review before it ships. Your question about what an edit costs is answered and closed.",
+  "edition": 713,
+  "updatedAt": "2026-10-15T06:05:00.000Z",
+  "shift": "You asked whether there is a cheaper and better way to read a face. There is, and both halves of it\nmeasured well tonight — though nothing is built and nothing in the app has changed.\n\nFirst: we have been paying twice for every pair. Left eye, right eye — two separate reads, because a\nmeasurement back in August found the engine would only ever hand back one. That was true of the way we\nwere asking it. There is a setting on that engine we have never once switched on, and with it a single\nread comes back with both. Five reads off every face, about two and a half cents. I pushed hardest on\nthe part that could have gone wrong: asked for something that is simply not in the picture, it still\nanswers nothing rather than inventing it — which is what the whole scan rests on.\n\nSecond, and this is the bigger one: one read of the whole face, with no list at all, named everything on\nthree of your characters. On the elder alien that included its third eye, its pointed ears and the\nmachinery in its jaw — none of which our list has a question for, so today we are blind to all three. It\ninvented nothing: I checked every name it gave against the picture myself, including a studded collar and\nthe tattooing on your cyberpunk operative's neck, and both are really there. It also says plainly what it\ncannot see rather than guessing — on the hooded figure it named five things as hidden. It costs nine\ntenths of a cent, read off the provider's own bill, against the nine to nineteen cents a face scan costs\nus now.\n\nWhat is still missing before any of this becomes a design for you to approve: whether a scan can be\ncarried across versions after an edit, and whether the boxes that read draws are accurate enough to cut\nfrom. Both are written up on the card.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T04:35:38.784Z",
+      "readAt": "2026-10-15T05:55:11.622Z",
       "items": [
         {
           "issueNumber": 14,
@@ -3996,6 +3996,33 @@
       "state": "done",
       "filedAt": "2026-10-15T03:05:00.000Z",
       "issueNumber": 1689
+    },
+    {
+      "id": "n3-drawer-2533",
+      "title": "The edit panel slides out like a drawer — your yes or no on the frames",
+      "productImpact": "Since last night a character's face is only read when you reach for the edit box, which saved about twelve cents every time you arrowed past a face without editing it. You spotted the side effect straight away: the panel sits there half-filled and reads as stuck.\n\nYour own answer was a drawer that slides out once it is activated. That is drawn now, in four moments and both themes, and it is on your eye gallery.\n\nIn plain terms: while you are only looking there is no panel at all, just the picture, so nothing can look stuck. The moment you click into the ask box or tap the face, the drawer slides out and the reading starts together. Features then arrive one by one and light up on the face as they land — that arrival is the loading, instead of a spinner. You can type the whole time.",
+      "workedExample": "You open a character you have no intention of editing. Today: a panel appears and fills in under a \"Reading their features…\" line. With this: nothing but the picture.\n\nYou then decide to change the fringe. You click into the box and start typing. The drawer slides out beside you and Eyes, Brows, Nose, Hair appear one after another, each outlining on the face as it arrives. By the time you have finished the sentence they are all there, and you press Refine.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "Build it as drawn",
+          "consequence": "It goes to a build card. It is customer-visible, so the frames go on the pull request and the relay reads them in both themes before it merges."
+        },
+        {
+          "key": "changes",
+          "label": "Build it with changes",
+          "consequence": "Say what to change and it is redrawn before anybody writes code."
+        },
+        {
+          "key": "no",
+          "label": "Leave the panel as it is",
+          "consequence": "The half-filled panel stays, and so does the stuck feeling you named."
+        }
+      ],
+      "recommendation": "Build it as drawn. It is your own idea, it removes a loading state instead of decorating one, and the looking mode is calmer than what is there today.",
+      "state": "open",
+      "filedAt": "2026-10-15T06:10:00.000Z",
+      "issueNumber": 2533
     }
   ],
   "eyeItems": [
@@ -7241,6 +7268,57 @@
           "key": "crew-eye/c1754bfc-358b-45cb-be78-325d4d5b4a00.png",
           "arm": null,
           "caption": "FRAME 3 — the public check page, opened with no account and no cookie. Six facts and a footer; no picture, no brief, no character name, no account."
+        }
+      ]
+    },
+    {
+      "id": "n3-drawer-frames-2533",
+      "title": "The edit panel as a drawer — four moments, both themes, for your yes or no",
+      "question": "THIS IS A MOCK-UP, NOT THE PRODUCT. Nothing has been built and nothing in the app has changed. These were drawn with the app's own colours, type and spacing so you can judge the idea before anyone writes it.\n\nYou asked how to handle this: now that a face is only read once you mean to edit it, the panel used to sit there half-filled and look stuck. Your own suggestion was a drawer that slides out once it is activated, and this is that, in four moments.\n\nThe one thing to watch for is the FILLING frame. Features arrive one at a time, about two thirds of a second apart, and each one lights up on the face as it lands. The arrival IS the loading — there is no spinner and nothing anywhere says \"scanning\". The question is whether that reads as alive or as unfinished to you.\n\nOne real question inside it: in looking mode there are no per-feature outlines yet, because nothing has been read. So hovering lights the whole picture rather than individual features, and a click anywhere opens the drawer. That is a genuine difference from today and it is worth your eye.\n\nPlaceholders, not product copy: the name \"Ash\", \"3 of 8\", and each feature's words were written for the mock. The headings, the ask-box hint and \"Refine · 100 credits\" are the product's real current wording.\n\nTo see it moving rather than still, the relay can play you the animation — it loops looking, opening, typing while features land, done.",
+      "state": "open",
+      "filedAt": "2026-10-15T06:10:00.000Z",
+      "issueNumber": 2533,
+      "cardId": "n3-drawer-2533",
+      "frames": [
+        {
+          "key": "crew-eye/2ba5951a-6558-4571-a165-d2d3e89fc986.png",
+          "arm": null,
+          "caption": "LOOKING (light) — only the picture and the ask box. There is no panel at all, so nothing can sit there looking stuck. Hovering the face lifts a soft outline and one small Refine chip; clicking anywhere on the face opens the drawer."
+        },
+        {
+          "key": "crew-eye/0622cc91-39b5-4167-8dd5-78765cbc52c4.png",
+          "arm": null,
+          "caption": "LOOKING (dark) — the same calm state in dark."
+        },
+        {
+          "key": "crew-eye/d1f9a363-9b2a-49e4-a648-1aedd4415f2d.png",
+          "arm": null,
+          "caption": "OPENING (light) — they have clicked into \"Change something about them…\". The drawer is caught half way in from the right with only its heading, and the reading starts at that same moment. The picture does not move."
+        },
+        {
+          "key": "crew-eye/e0544d5c-0074-4564-87cb-25996d973a63.png",
+          "arm": null,
+          "caption": "OPENING (dark) — the same moment in dark."
+        },
+        {
+          "key": "crew-eye/11397e4d-de53-44c4-9f08-b5c5d8cabd1c.png",
+          "arm": null,
+          "caption": "FILLING (light) — four features have landed. The newest, Nose, lights in the list and outlines on the face at the same instant; the earlier ones fade to a faint trace; one ghost row below breathes to say more is coming. No spinner and no \"scanning\" wording anywhere. They are already typing, so the wait never blocked them."
+        },
+        {
+          "key": "crew-eye/efcc3e44-83ab-48ea-b206-45c0dfc2c07d.png",
+          "arm": null,
+          "caption": "FILLING (dark) — the same moment in dark."
+        },
+        {
+          "key": "crew-eye/b8d5df0b-f906-4edc-9155-ef539edad818.png",
+          "arm": null,
+          "caption": "DONE (light) — everything is in, the ghost row is gone and the face is clean again. Pointing at a row still lights that feature on the face."
+        },
+        {
+          "key": "crew-eye/f7bab42c-7d40-482b-97fd-b888fc1fa53b.png",
+          "arm": null,
+          "caption": "DONE (dark) — the finished state in dark."
         }
       ]
     }
@@ -10814,7 +10892,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T04:35:38.784Z",
+    "readAt": "2026-10-15T05:55:11.621Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10870,6 +10948,16 @@
       {
         "issueNumber": 2526,
         "title": "Refine: the checker steps in only when nothing changed at all, and the price drops to 100 credits (his word, 2026-10-15)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2532,
+        "title": "N3: a better way to read a face — cheaper, carried across versions, and able to find features that are not on the list (investigation, his word 2026-10-15)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2533,
+        "title": "N3: the edit panel slides out like a drawer when you mean to edit, and fills in feature by feature — looking mode is just the picture (his word 2026-10-15)",
         "urgent": false
       }
     ]
