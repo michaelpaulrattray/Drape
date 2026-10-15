@@ -1,7 +1,7 @@
 {
-  "edition": 711,
-  "updatedAt": "2026-10-15T03:05:00.000Z",
-  "shift": "You asked what a Refine costs us. It is about six cents, and it earns about sixty-five — so the cost was never what was holding the price where it is. The count is five checks, not seven, and cutting it to three saves about two cents while reopening three faults we already fixed. The fifteen-to-nineteen cents in the note looks like it priced a picture engine that is switched off for every account. The whole working is on the card; my recommendation is on your desk, and it is to move the price if you want it moved and leave the checks alone. Nothing was spent to find this out — every figure came off records the product already writes. Nothing else on the rung has started.",
+  "edition": 712,
+  "updatedAt": "2026-10-15T04:40:00.000Z",
+  "shift": "Two things got cheaper for us today and neither is anything you will notice. A character's face was being read twice for teeth — and a closed mouth has none to find, which our own bench measured years-deep: four different wordings, three closed mouths, nothing found any of the times. That second look is gone and it is live. The bigger one: we were reading every face you arrowed past in the viewer, about twelve cents each, whether you stopped to edit it or not. Now the read starts the moment you reach for the edit box, tap a row or click a feature — you are still typing for five or ten seconds while it runs, so the boxes land before you press Refine. I drove it in the real app: walking seven faces went from six reads to none, and reaching for the box bought exactly one. That one is waiting on a review before it ships. Your question about what an edit costs is answered and closed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,11 +18,11 @@
           "state": "waiting"
         },
         {
-          "title": "What an edit costs us — COUNTED: five checks, not seven, and about six cents an edit against sixty-five of revenue. On your desk: cut the checks anyway, or move the price instead (#1689)",
-          "state": "blocked"
+          "title": "What an edit costs us — ANSWERED and closed. Five checks, not seven; about six cents an edit. You chose: keep the checks that describe, let the checker step in only when nothing changed at all, and drop the price to 100 credits. Both are built (#1689, #2526)",
+          "state": "done"
         },
         {
-          "title": "What a face scan costs us — cut it as far as it goes without anyone noticing (#2191)",
+          "title": "What a face scan costs us — three cuts made, all invisible: the same question was being asked twice, teeth were being looked for twice on a closed mouth, and every face you arrowed past was being read. The last one waits on a review (#2191, #2525)",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T02:41:00.761Z",
+      "readAt": "2026-10-15T04:35:38.784Z",
       "items": [
         {
           "issueNumber": 14,
@@ -3993,7 +3993,7 @@
         }
       ],
       "recommendation": "Move the price if you want it moved, and leave the checks alone. Two cents is not worth reopening three faults we already fixed, and the margin you asked about is already nine to thirteen times.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-15T03:05:00.000Z",
       "issueNumber": 1689
     }
@@ -10814,7 +10814,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T02:41:00.759Z",
+    "readAt": "2026-10-15T04:35:38.784Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10828,15 +10828,6 @@
         "held": {
           "state": "blocked",
           "because": "launch day, on his own word — not on him. Nothing here is a decision; every relay-side step is receipted below."
-        }
-      },
-      {
-        "issueNumber": 1689,
-        "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — the number is in. A refine costs us about 6c and earns about 65c. Cutting checks saves 2c. RECOMMEND: move the price, keep the checks."
         }
       },
       {
@@ -10869,6 +10860,16 @@
       {
         "issueNumber": 2191,
         "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2525,
+        "title": "Two ways to make a face scan cheaper, and both are changes you would notice (out of #2191)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2526,
+        "title": "Refine: the checker steps in only when nothing changed at all, and the price drops to 100 credits (his word, 2026-10-15)",
         "urgent": false
       }
     ]
