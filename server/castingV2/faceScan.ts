@@ -80,7 +80,7 @@ import {
   DERIVED_REGION_ASKS,
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
-import { subjectsOfFacet } from "./refineFacets";
+import { subjectsOfFacet, type Facet } from "./refineFacets";
 import { isDepartableSubject } from "./refineSubjects";
 import { boundsOf } from "./segmentCuts";
 
@@ -175,6 +175,74 @@ function armedQuestions(): ReadonlySet<string> {
  * second look. Chosen because the wasted call is EVERY clean face and the
  * missed large feature is rare and self-corrects.
  */
+/**
+ * ANATOMY AN ORDINARY POSE CAN HIDE — the third case, and the one the re-ask's
+ * own reasoning never covered (#2525, his word 2026-10-15: *"stop looking for
+ * teeth twice"*).
+ *
+ * `canBeAbsent` above splits the world in two: a feature that is ALWAYS in
+ * frame (lips, skin — an empty read is a missed reading, so ask again) and one
+ * that can simply not be there (a beard, horns — an empty read is a fact, so
+ * do not). **Teeth are neither.** They are anatomy nobody is missing, and a
+ * closed mouth hides them while the face is in frame — so the first branch
+ * claimed them and bought a second look at a question whose answer cannot
+ * change.
+ *
+ * # Measured, and the measurement was already in the tree
+ *
+ * The catalogue's own teeth bench put four phrasings against three closed
+ * mouths and every one of them came back **silent on all three**
+ * (`referenceSlotCatalogue.ts`, the `all the teeth` entry): *"the segmenter
+ * answers this question with the teeth themselves when they are in the picture
+ * and with nothing when they are not — which makes the region its own
+ * discriminator: a closed mouth yields no box, no row"*. So the second look at
+ * a closed mouth is not merely unlikely to find teeth; it is measured not to,
+ * deterministically, for every wording anybody has tried.
+ *
+ * # What it saves and what it costs
+ *
+ * fal bills SAM 3 per request ($0.005), so this is **half a cent on every
+ * closed-mouth face**, and a closed mouth is the common face. What it costs is
+ * stated rather than discovered: a smiling face whose FIRST read misses its
+ * teeth now waits for the next scan instead of buying a second look — the same
+ * trade `canBeAbsent` already took for the beard, and accepted here on the
+ * narrower ground that the bench found no closed mouth the second look rescues.
+ *
+ * # Why a declared set rather than a predicate
+ *
+ * There is nothing in the subject vocabulary that means "occludable by an
+ * expression" — `departable` is about leaving the person, not about being out
+ * of view — so there is nothing honest to derive this from, and inventing a
+ * vocabulary flag for one member would be a taxonomy nobody asked for. It is
+ * therefore a one-member set with a measured entry bar, which is the shape this
+ * product already uses for exactly this kind of decision (`FINE_DETAIL_FACETS`,
+ * `UNRELIABLE_FACETS`). **Candidates NOT added, because nobody has measured
+ * them: `lips` (benched as always in frame and keeping its second look),
+ * `lashes`, `tongue`.** Each needs its own bench first.
+ *
+ * Keyed through `facetsOfSlot`, the same machinery `canBeAbsent` reads, so a
+ * slot renamed in the catalogue cannot quietly fall out of this set.
+ */
+const POSE_HIDDEN_FACETS: ReadonlySet<Facet> = new Set<Facet>(["teeth"]);
+
+/** Test seam: a list the suite can read is a list the suite can hold to. */
+export function facetsHiddenByAPose(): Facet[] {
+  return Array.from(POSE_HIDDEN_FACETS);
+}
+
+/**
+ * Whether every subject this slot draws is anatomy a pose can conceal.
+ *
+ * EVERY, on `canBeAbsent`'s own argument one block up: a slot that holds a
+ * pose-hidden facet beside one that is always in frame is still always in
+ * frame, and must keep its second look.
+ */
+function canBeHiddenByAPose(slot: SlotDefinition): boolean {
+  const facets = facetsOfSlot(slot.slot);
+  if (facets === null || facets.length === 0) return false;
+  return facets.every((facet) => POSE_HIDDEN_FACETS.has(facet));
+}
+
 function canBeAbsent(slot: SlotDefinition): boolean {
   const facets = facetsOfSlot(slot.slot);
   if (facets === null || facets.length === 0) return false;
@@ -602,7 +670,10 @@ export async function scanFace(input: {
       or the frames — which three screenshots cannot.
     */
     const anatomy = region.slots.every((slot) => slot.tier === "anatomy")
-      && !region.slots.every(canBeAbsent);
+      && !region.slots.every(canBeAbsent)
+      /* And not anatomy a closed mouth or an ordinary expression hides, whose
+         second look is measured to buy the same nothing (#2525). */
+      && !region.slots.every(canBeHiddenByAPose);
     const first = await read();
     if (first === "filed" || first === "failed" || first === "capability" || !anatomy) {
       if (first === "empty" || first === "capability") empty.push(region.question);

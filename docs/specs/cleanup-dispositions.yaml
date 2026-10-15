@@ -322,6 +322,12 @@
   why: the key a pair's row edits, derived from the slot vocabulary rather than spelled a second time
   argued: 6a
 
+- symbol: facetsHiddenByAPose
+  file: server/castingV2/faceScan.ts
+  verdict: KEEP
+  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list. `Facet` is a bare string alias, so a misspelled member compiles and then silently never matches - this seam is how the suite holds every member against the facets the catalogue declares, which is the only reader that can catch it
+  argued: 6a
+
 - symbol: faceScanCacheStats
   file: server/castingV2/faceScanService.ts
   verdict: KEEP
