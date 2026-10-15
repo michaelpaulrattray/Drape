@@ -1,7 +1,7 @@
 {
-  "edition": 714,
-  "updatedAt": "2026-10-15T07:22:37.318Z",
-  "shift": "Two questions were left open on your desk last night about reading a face, and both are answered tonight. Nothing is built and nothing in the app has changed.\n\nThe first was whether the rough boxes that single read draws are accurate enough to cut from. They are not, and not by a little: of the twelve I measured against where each thing actually is, exactly one box even contained the middle of the thing it was pointing at. I checked my own arithmetic two different ways before saying that, because getting it wrong would have blamed the read for my own mistake. So that half of the idea is dead, and the design is simpler without it — the read's job is to NAME what is on the face, which it does beautifully, and the exact shapes come from the existing engine at the moment you touch something, which is what the plan said all along.\n\nThe step underneath is where the real problem is, and it is the one that matters. Asked to cut out the elder alien's third eye, or the machinery in its jaw, the shape engine gives back nothing at all, whatever words I use. Those are exactly the two things this whole idea exists to find. And it can plainly see the jaw hardware — when I asked it for a pair of brass goggles the creature does not have, it cut out the jaw hardware and called it goggles. So it is not blind; it is unreliable about what it has been asked for. Finding an engine that cuts out what was named is the next measurement, and the design now rests on it.\n\nOne thing in it is yours to decide rather than ours to measure. Today every row in the panel shows a small cut-out of that feature, because that is the look you chose. A read that only names things has no cut-out to show, so a panel that filled itself in as you touched things would start as a plain list of names. That comes to you with the finished design, not before it.\n\nSeparately, and at no cost at all: what a face scan costs us is now measured on a hundred and one of your real scans instead of estimated, and it lands exactly where we had said it would. Both of today's savings are confirmed working on your own account. It also turned up something nobody had priced — when a part of a face reads as empty we pay to look a second time, and across those hundred and one scans we bought a hundred and forty second looks and found something twice.",
+  "edition": 715,
+  "updatedAt": "2026-10-15T09:20:00.000Z",
+  "shift": "Your word this morning approved clearing out the old machinery on the paid edit road, and tonight I started at the top of that list. Nothing in the app looks or behaves any differently, and nothing on the service was switched.\n\nThe first piece is done and live. It was genuinely one small function that nothing has called since September — but deleting it turned up the thing a deletion always has to be asked, which is what the dying code was the only record of. Its notes held a measured incident from a real walk through the studio: a character's freckles were meant to be carried across as a picture and were asked for in words as well, so the engine painted them again and lost them, twice, on pictures that had been paid for. That is why the function existed at all. The road it belonged to is retired now, so I moved that fact into the clean-out record rather than let it go with the code.\n\nThe second is a question for you, and I have written it down rather than put it on your desk, because nothing is waiting on it and what the product does today is one of the three possible answers. If you refine a character using your own photograph — you attach a picture and take the hair from it — and then ask for more characters like that one, the new ones do not carry the hair the photograph showed. They go back to the hair the character was born with. It is not a fault anybody introduced; a feature stopped applying to new work as the road underneath it changed. Making it work is a new capability rather than a repair, so it belongs in this rung's design and not in a clean-out, which is why it is filed and not on your desk.\n\nThe third piece is in review now, and it is the step that has to come before the old paste machinery can be taken out at all: four settings hang off it, and they have to be moved onto the setting above it first, or the service refuses to start. The written plan said three settings. There are four — the fourth belongs to the tattoo studio you retired in September, whose start-up safety check outlived the feature itself, which is exactly why nobody had counted it. I found it by listing every piece of code that reads that setting before changing anything, rather than trusting the count. Because this is the kind of change that can stop the site from starting, I rehearsed the start-up with your real settings before shipping it — and the rehearsal was wrong three times before I trusted it, once in the worst way, where it reported a pass over a check that had never actually run.\n\nNone of tonight's work of mine is visible, so one thing that IS: the drawer you approved this evening was built and went live while I was working, by another of the agents on this rung, and so did the bigger edit box. Neither is mine and both are on their own cards — I mention them only so this page does not read as though nothing changed in the app tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to go) and the first two are done and live; the step that lets the big one happen is in review (#1577)",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T07:23:35.032Z",
+      "readAt": "2026-10-15T08:37:12.001Z",
       "items": [
         {
           "issueNumber": 14,
@@ -160,12 +160,6 @@
           "issueNumber": 15,
           "title": "Cast settings modal, second pass: the two 'coming' styles become real (polish, after brief 10; Style is the only setting, his #535 ruling)",
           "kind": "roadmap",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 26,
-          "title": "The inspired EDIT is capped at a tenth of the inspired BRIEF — 200 chars vs 2000",
-          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -199,21 +193,15 @@
           "rung": "N3"
         },
         {
-          "issueNumber": 801,
-          "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
-          "kind": "rung",
-          "rung": "N3"
-        },
-        {
           "issueNumber": 1125,
           "title": "The lock check and the unowned-axis sweep have no author-road equivalent — the verification does not travel with the road",
           "kind": "rung",
           "rung": "N3"
         },
         {
-          "issueNumber": 1577,
-          "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-          "kind": "rung",
+          "issueNumber": 2537,
+          "title": "N3: a Follow does not carry a feature that came from a photograph — the caption hybrid is dead at both ends for every cast made today (ghost audit item A4)",
+          "kind": "design-unbuilt",
           "rung": "N3"
         },
         {
@@ -10431,6 +10419,20 @@
       "status": "merged",
       "prNumber": 2517,
       "note": "Live. The limit was already arriving on every check and being discarded; it is now the dashboard's third voice line. No limit and no refusal was built — that number is yours to choose."
+    },
+    {
+      "id": "ghost-audit-slice1-1577",
+      "title": "The first piece of old edit machinery comes out, and the question underneath it is written down (#1577, #2537)",
+      "status": "merged",
+      "prNumber": 2538,
+      "note": "Live. One function nothing had called since September, plus a design question filed as its own card."
+    },
+    {
+      "id": "ghost-audit-slice4a-1577",
+      "title": "Four settings move off the old paste machinery so it can be taken out (#1577)",
+      "status": "in-review",
+      "prNumber": 2541,
+      "note": "The plan said three settings; there are four. Nothing on the service changes."
     }
   ],
   "problems": [
@@ -10892,8 +10894,18 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T07:23:35.032Z",
+    "readAt": "2026-10-15T08:37:12.000Z",
     "items": [
+      {
+        "issueNumber": 801,
+        "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 1577,
+        "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
+        "urgent": false
+      },
       {
         "issueNumber": 1598,
         "title": "Pricing v2: final credit prices at ×10 display (Roll 240 · Follow 320 · Sign 1,700 · Refine 350 · Try again 350)",
@@ -10951,8 +10963,13 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU - yes or no on the drawer frames, now on your Desk (eye gallery, edition 713)."
+          "because": "his desk card `n3-drawer-2533` is open"
         }
+      },
+      {
+        "issueNumber": 2535,
+        "title": "N3 plan",
+        "urgent": false
       }
     ]
   }
