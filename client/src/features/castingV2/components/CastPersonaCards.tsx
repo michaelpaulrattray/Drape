@@ -59,6 +59,7 @@ import {
   CAST_PERSONALITY_MAX_LENGTH,
   CAST_VOICE_MAX_LENGTH,
 } from "@shared/inputLimits";
+import { VOICE_LINE_BEING_WRITTEN } from "@shared/voiceCardCopy";
 
 /**
  * One of the two lines, exactly as the room is handed it.
@@ -1092,6 +1093,61 @@ export function PersonaWait({ words }: { words: string }) {
   );
 }
 
+/**
+ * THE TWO LINES ARE STILL BEING WRITTEN — #2521, his word 2026-10-15: *"when i
+ * sign a cast there is no pre-load for the personality/voice etc until its been
+ * generated this isnt right"*.
+ *
+ * The drafts are started beside the view renders and written just AFTER the
+ * package seals (`server/castingV2/signService.ts`, `writePersonaDraft`), so
+ * for the whole build the room holds no line and could not tell *"not written
+ * yet"* from *"never coming"*. It drew no Personality card at all, and the
+ * Voice card told the customer to write the line the product was writing.
+ *
+ * ⚠ **PENDING IS ONLY TRUE WHILE A LINE IS GENUINELY ON ITS WAY**: the Cast is
+ * still building (only a Sign builds — `models.status = 'provisioning'` is set
+ * by the Sign alone), or the room has just watched that build finish and the
+ * write that follows the seal has not reached it yet. A settled Cast with no
+ * line is the read-failed and pre-N2b road, and his brief rules that it shows
+ * no empty card; that stands exactly as before.
+ */
+export const PERSONALITY_BEING_WRITTEN = "Writing who they are…";
+
+/**
+ * HOW LONG A ROOM THAT WATCHED THE BUILD FINISH WAITS FOR THE LINES.
+ *
+ * The write lands after the seal, so a poll can read the sealed Cast a moment
+ * before its lines exist — and that read used to stop the poll, leaving the
+ * room on "no line" until a reload. Thirty seconds covers the write behind the
+ * seal many times over; it is NOT a mirror of the reader's own budget, because
+ * the read starts minutes earlier beside the renders and has almost always
+ * landed by the seal. A read that genuinely failed shows the wait for this long
+ * and then rests on today's settled card.
+ */
+export const PERSONA_LANDING_GRACE_MS = 30_000;
+
+/** Is this line on its way, rather than absent? The one reading both cards use. */
+export function personaFieldPending(
+  line: PersonaField | null | undefined,
+  moment: { building: boolean; landing: boolean },
+): boolean {
+  if (line) return false;
+  return moment.building || moment.landing;
+}
+
+/**
+ * SHOULD A SETTLED ROOM KEEP READING FOR ITS LINES? Only while it watched the
+ * build finish (`landing`) and neither line has arrived — the moment either
+ * does, the drafts are written (they are written together) and the poll ends.
+ */
+export function personaLandingPoll(
+  persona: { personality?: PersonaField | null; voice?: PersonaField | null } | null | undefined,
+  landing: boolean,
+): boolean {
+  if (!landing) return false;
+  return !persona?.personality && !persona?.voice;
+}
+
 /** A failure line and its Try again, on every door (#2238). */
 export function PersonaFailure({
   words,
@@ -1260,9 +1316,16 @@ export function CastPersonalityCard({
   ownWordsDoor = null,
   onUnsavedChange,
   pronouns = null,
+  pending = false,
 }: Omit<CastPersonaCardsProps, "voice"> & {
   /** The cast's recorded pronouns, for the reads header (#2238). */
   pronouns?: PersonaPronouns | null;
+  /**
+   * The line is on its way (#2521, {@link personaFieldPending}): with no line,
+   * the card draws its label and the wait instead of nothing. Ignored once
+   * there is a line.
+   */
+  pending?: boolean;
   /**
    * DOOR 1, OR NOTHING AT ALL (#2196).
    *
@@ -1299,6 +1362,19 @@ export function CastPersonalityCard({
   useEffect(() => {
     onUnsavedChange?.("personality", unsaved);
   }, [unsaved, onUnsavedChange]);
+  /* #2521: the wait, in the persona cards' own register — the label, and what
+     is happening to their cast. No box and no doors: nothing exists yet to
+     edit. */
+  if (!personality && pending) {
+    return (
+      <section className="dpc-rcard" style={{ gap: 11 }}>
+        <div className="dpc-rcard__head">
+          <PersonaLabel line="personality" name={name} />
+        </div>
+        <PersonaWait words={PERSONALITY_BEING_WRITTEN} />
+      </section>
+    );
+  }
   if (!personality) return null;
   const doors = personaDoorRowSpecs("personality", name, readsDoor, ownWordsDoor, pronouns);
   /* The two footers cross to each other's door, as his two frames draw. */
@@ -1467,7 +1543,10 @@ export function CastVoiceLine({
   onEditingChange,
   ownWordsDoor = null,
   onUnsavedChange,
+  pending = false,
 }: Omit<CastPersonaCardsProps, "personality"> & {
+  /** The line is on its way (#2521) — draw the wait over the strip. */
+  pending?: boolean;
   editing: boolean;
   onEditingChange: (open: boolean) => void;
   /**
@@ -1488,7 +1567,13 @@ export function CastVoiceLine({
   useEffect(() => {
     onUnsavedChange?.("voice", unsaved);
   }, [unsaved, onUnsavedChange]);
-  if (!voice) return null;
+  if (!voice) {
+    return pending ? (
+      <div className="dpc-persona__voice">
+        <PersonaWait words={VOICE_LINE_BEING_WRITTEN} />
+      </div>
+    ) : null;
+  }
   return (
     <div className="dpc-persona__voice">
       {/* His `05-your-way-dark.png`: the door replaces the line. */}

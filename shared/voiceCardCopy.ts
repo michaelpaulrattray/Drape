@@ -304,6 +304,17 @@ export const VOICE_NEEDS_A_LINE =
   "Write how they sound first, and voices can be made from those words.";
 
 /**
+ * THE VOICE LINE IS STILL BEING WRITTEN (#2521).
+ *
+ * Straight after a Sign the product drafts this line itself, and it lands when
+ * the package seals. Until then the card said {@link VOICE_NEEDS_A_LINE} —
+ * telling the customer to do the product's job. This is said instead, over the
+ * resting strip, for exactly as long as the line is on its way; it names what
+ * is happening to their cast and never what is doing it (#55).
+ */
+export const VOICE_LINE_BEING_WRITTEN = "Writing how they sound…";
+
+/**
  * THE EMPTY CARD'S NAME — *"No voice yet"*, the words the card has always drawn
  * before a voice is kept, and the state Remove returns to (#2497, his *"back
  * to 'No voice yet'"*). One spelling, so the dark card, the no-line card and
@@ -365,6 +376,7 @@ export const VOICE_CARD_FIXED_STRINGS: readonly string[] = [
   VOICE_KEEP_LOST_CONTACT,
   VOICE_LINE_TOO_SHORT,
   VOICE_NEEDS_A_LINE,
+  VOICE_LINE_BEING_WRITTEN,
   VOICE_NONE_YET,
   VOICE_CHANGE,
   VOICE_REMOVE,
