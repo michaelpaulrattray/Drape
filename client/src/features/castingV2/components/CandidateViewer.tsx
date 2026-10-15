@@ -164,6 +164,83 @@ export type ViewerCompare = {
 const COMPARE_HOLD_MS = 150;
 
 /**
+ * THE FACE'S PANEL AS A DRAWER — out of the way while somebody is only looking
+ * (#2533, his approval 2026-10-15: *"the mockup is pretty good, im happy with it
+ * for now."*).
+ *
+ * Passed by a caller that wants `beside` to slide out on intent rather than
+ * stand in the row for good. **The caller owns whether it is open**, because
+ * opening it is a fact the caller acts on — on the sheet it is edit intent, and
+ * edit intent is what buys the face's read (#2525). This component only draws
+ * it and reports the two ways a person shuts it: its own × and Escape.
+ *
+ * Absent, `beside` is the column it always was, so the room and the package
+ * keep today's shape.
+ */
+export type ViewerDrawer = {
+  open: boolean;
+  onClose: () => void;
+};
+
+/**
+ * The space between the picture and the drawer, and the drawer's distance from
+ * the window's edge when there is no room for both. Layout numbers, read once.
+ */
+const DRAWER_GAP_PX = 28;
+const DRAWER_EDGE_PX = 16;
+
+/**
+ * WHERE THE DRAWER STANDS — beside the PICTURE, top to bottom, and never in the
+ * row the picture is centred in.
+ *
+ * In the row, opening it would slide the photograph sideways by half the
+ * drawer's width under the hand that just reached for the ask box — the shove
+ * fable-729 §3 spent a shift removing. Out of the row, the picture never moves;
+ * the drawer is placed against the plate's own box, measured, so it is the
+ * picture's height whatever the window does.
+ */
+function useDrawerPlacement(
+  enabled: boolean,
+  plate: React.RefObject<HTMLSpanElement | null>,
+  drawer: React.RefObject<HTMLElement | null>,
+  viewer: React.RefObject<HTMLDivElement | null>,
+): { top: number; left: number; height: number; width: number } | null {
+  const [place, setPlace] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    const measure = () => {
+      const p = plate.current?.getBoundingClientRect();
+      const v = viewer.current?.getBoundingClientRect();
+      const width = drawer.current?.offsetWidth ?? 0;
+      if (!p || !v || p.width === 0) return;
+      const left = Math.max(
+        DRAWER_EDGE_PX,
+        Math.min(p.right + DRAWER_GAP_PX, v.right - DRAWER_EDGE_PX - width),
+      );
+      const next = {
+        top: Math.round(p.top - v.top),
+        left: Math.round(left - v.left),
+        height: Math.round(p.height),
+        width: Math.round(p.width),
+      };
+      setPlace((was) => (
+        was && was.top === next.top && was.left === next.left && was.height === next.height
+          && was.width === next.width ? was : next
+      ));
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    if (plate.current) observer?.observe(plate.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [enabled, plate, drawer, viewer]);
+  return place;
+}
+
+/**
  * THE ONE STATE THAT IS NOT A STAGE, in words a person uses.
  *
  * ⚠ **THIS WAS A THREE-ENTRY MAP — `in line` / `being drawn` / this — AND ITS
@@ -394,6 +471,7 @@ export function CandidateViewer({
   overlay,
   wait,
   compare,
+  drawer,
 }: {
   /** The set being walked. One image is a set of one. */
   frames: readonly ViewerFrame[];
@@ -448,8 +526,20 @@ export function CandidateViewer({
   /** The frame this one replaced, held against it under a press. Absent on the
    *  original, on a single-frame caller, and wherever there is no previous. */
   compare?: ViewerCompare | null;
+  /** `beside` as a drawer the caller opens on intent — see `ViewerDrawer`. */
+  drawer?: ViewerDrawer | null;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const plateRef = useRef<HTMLSpanElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const asDrawer = Boolean(drawer && beside);
+  /* The quiet counter belongs to the drawer LAYOUT, not to the panel having
+     answered — or the count would jump from under the picture to above it the
+     moment the panel arrived. */
+  const quietCounter = Boolean(drawer);
+  const drawerOpen = asDrawer && Boolean(drawer?.open);
+  const drawerPlace = useDrawerPlacement(Boolean(below || asDrawer), plateRef, drawerRef, viewerRef);
   const asked = frames[index] ?? frames[0];
   const { frame, preview, sizer } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
@@ -516,6 +606,12 @@ export function CandidateViewer({
         */
         if ((event.target as HTMLElement | null)?.closest?.("[data-owns-escape]")) return;
         event.stopPropagation();
+        /* An open drawer is the innermost thing on screen, so Escape shuts it
+           first and the picture stays; the next Escape closes the viewer. */
+        if (drawerOpen) {
+          drawer?.onClose();
+          return;
+        }
         onClose();
         return;
       }
@@ -546,7 +642,7 @@ export function CandidateViewer({
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
     };
-  }, [onClose, onIndexChange, canStep, index, frames.length]);
+  }, [onClose, onIndexChange, canStep, index, frames.length, drawerOpen, drawer]);
 
   /*
     FOCUS IS TAKEN ONCE, WHEN THE VIEWER OPENS — and never again.
@@ -578,6 +674,7 @@ export function CandidateViewer({
 
   return createPortal(
     <div
+      ref={viewerRef}
       className="dpc-viewer"
       role="dialog"
       aria-modal="true"
@@ -609,7 +706,7 @@ export function CandidateViewer({
           time this list has learned the same lesson.
         */
         if (target.closest(
-          "img, .dpc-viewer__chrome, .dpc-viewer__rail, .dpc-viewer__dock, .dpc-refine, .dpc-regions, .dpc-cardmenu__panel, .dpc-cardmenu__trigger",
+          "img, .dpc-viewer__chrome, .dpc-viewer__rail, .dpc-viewer__dock, .dpc-viewer__drawer, .dpc-refine, .dpc-regions, .dpc-cardmenu__panel, .dpc-cardmenu__trigger",
         )) return;
         onClose();
       }}
@@ -650,9 +747,18 @@ export function CandidateViewer({
         THE STAGE: the picture, and whatever stands beside it. One row, so the
         panel's own length can never be taken out of the photograph's height.
       */}
-      <div className="dpc-viewer__stage" data-beside={beside ? "true" : "false"}>
+      <div className="dpc-viewer__stage" data-beside={beside && !asDrawer ? "true" : "false"}>
         {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
-        <div className="dpc-viewer__column">
+        <div
+          className="dpc-viewer__column"
+          /* THE PICTURE'S OWN WIDTH, for the composer under it (#2533). Measured
+             rather than inherited: the column is as wide as the image's NATURAL
+             size allows, which is wider than the picture whenever the window's
+             height is what binds it. */
+          style={drawerPlace
+            ? { ["--dpc-plate-w" as string]: `${drawerPlace.width}px` } as React.CSSProperties
+            : undefined}
+        >
           {/*
             THE SOFTENING IS A CLAIM THAT SOMETHING IS BEING DRAWN, so it is
             withheld the moment nothing is. Photographed first (law 6): a
@@ -664,6 +770,9 @@ export function CandidateViewer({
           <figure
             className="dpc-viewer__frame"
             data-wait={wait ? (wait.stage === "settling" ? "settling" : "true") : "false"}
+            /* With a drawer the count is one quiet line ABOVE the picture, so
+               nothing under the photograph competes with the ask box. */
+            data-counter={quietCounter ? "above" : "below"}
           >
             {/*
               The picture and everything laid over it share one box, so the dots and
@@ -672,6 +781,7 @@ export function CandidateViewer({
               portrait and a landscape frame sat in the same viewer.
             */}
             <span
+              ref={plateRef}
               className="dpc-viewer__plate"
               data-standin={sizer ? "true" : "false"}
               data-comparing={comparing ? "true" : "false"}
@@ -855,6 +965,30 @@ export function CandidateViewer({
                 </>
               ) : null}
             </span>
+            {quietCounter ? (
+              /*
+                THE QUIET COUNTER (#2533): "2 of 8", and the hold cue beside it
+                in the SAME sans family, only while there is a previous version
+                to hold against. On a sheet the frame's own label is the same
+                number as the count, so saying both said one thing twice.
+
+                The cue keeps its place while the press is held — hidden, not
+                removed — so the line does not jump under the badge.
+              */
+              <figcaption className="dpc-viewer__caption dpc-viewer__counter">
+                <span>{canStep ? `${index + 1} of ${frames.length}` : frame.label}</span>
+                {frame.caption ? <span>{frame.caption}</span> : null}
+                {compare ? (
+                  <span
+                    className="dpc-viewer__compareCue"
+                    data-held={comparing ? "true" : "false"}
+                  >
+                    <span aria-hidden="true">·</span>
+                    <span>Hold · Compare</span>
+                  </span>
+                ) : null}
+              </figcaption>
+            ) : (
             <figcaption className="dpc-viewer__caption">
               <span className="dp-chrome">{frame.label}</span>
               {frame.caption ? <span>{frame.caption}</span> : null}
@@ -887,6 +1021,7 @@ export function CandidateViewer({
                 <span className="dp-chrome dpc-viewer__compareHint">Hold · Compare</span>
               ) : null}
             </figcaption>
+            )}
           </figure>
           {/*
             THE FURNITURE STANDS UNDER THE PICTURE, NOT UNDER THE VIEWER
@@ -907,8 +1042,39 @@ export function CandidateViewer({
           */}
           {below}
         </div>
-        {beside ? <aside className="dpc-viewer__dock">{beside}</aside> : null}
+        {beside && !asDrawer ? <aside className="dpc-viewer__dock">{beside}</aside> : null}
       </div>
+      {asDrawer ? (
+        /*
+          THE DRAWER (#2533). Mounted for as long as the caller has a panel to
+          give it, and only ever slid — so reopening it is instant and already
+          full, and nothing inside it is built twice.
+
+          Closed, it is `inert` and hidden from the accessibility tree: a panel
+          nobody can see must not be reachable by Tab either.
+        */
+        <aside
+          ref={drawerRef}
+          className="dpc-viewer__drawer"
+          data-open={drawerOpen ? "true" : "false"}
+          data-placed={drawerPlace ? "true" : "false"}
+          style={drawerPlace
+            ? { top: drawerPlace.top, left: drawerPlace.left, height: drawerPlace.height }
+            : undefined}
+          inert={!drawerOpen}
+          aria-hidden={!drawerOpen}
+        >
+          <button
+            type="button"
+            className="dp-btn--onmedia dpc-viewer__drawerClose"
+            aria-label="Close the panel"
+            onClick={() => drawer?.onClose()}
+          >
+            <X size={15} strokeWidth={2} aria-hidden="true" />
+          </button>
+          {beside}
+        </aside>
+      ) : null}
     </div>,
     document.body,
   );

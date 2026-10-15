@@ -1444,6 +1444,101 @@
 }
 
 /*
+  THE DRAWER (#2533) — the same panel, out of the row, slid in on intent.
+
+  Its container is the ask field's own material — the 8% fill and 24% border
+  `.dpc-refine__box` wears — so the drawer and the composer read as one family
+  on the scrim in both themes. It is placed by the viewer against the picture's
+  own box (`useDrawerPlacement`), so it is the picture's height and the
+  picture never moves when it opens. Until it has been measured it is not
+  drawn at all, rather than flashing at the window's corner.
+*/
+.dpc-viewer__drawer {
+  position: absolute;
+  z-index: 2;
+  width: 332px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  padding: 20px 8px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(36px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(.4, 0, 1, 1), opacity 180ms ease;
+}
+
+.dpc-viewer__drawer[data-placed="false"] { visibility: hidden; }
+
+.dpc-viewer__drawer[data-open="true"] {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  transition: transform 320ms cubic-bezier(.2, .8, .2, 1), opacity 240ms ease;
+}
+
+/* The close control sits in the heading's corner; the heading leaves it room. */
+.dpc-viewer__drawerClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+}
+
+.dpc-viewer__drawer .dpc-face__head { padding-right: 40px; }
+
+/*
+  FEATURE BY FEATURE. The read answers a row at a time (the scan's own
+  part-filled answers), and each row that is new to the list arrives rather
+  than appearing — rows are keyed, so one already there never moves again.
+*/
+.dpc-viewer__drawer .dpc-face__rows > li {
+  animation: dpc-face-arrive 280ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes dpc-face-arrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-viewer__drawer,
+  .dpc-viewer__drawer[data-open="true"] { transition: none; }
+  .dpc-viewer__drawer .dpc-face__rows > li { animation: none; }
+}
+
+/*
+  IN LIGHT MODE THE VIEWER'S CORNER CONTROLS WEAR THE FIELD'S GLASS (#2533, his
+  question on the mock: the solid dark chips looked heavy on the light scrim).
+
+  Download, close, and the drawer's close take the ask field's material. And NO
+  BLUR of their own: `.dp-btn--onmedia`'s backdrop blur, nested inside the
+  viewer's own backdrop filter, samples only the dark scrim and paints the chip
+  dark — which was the heaviness. Dark mode is untouched.
+*/
+:root:not([data-theme="dark"]) .dpc-viewer__download,
+:root:not([data-theme="dark"]) .dpc-viewer__close,
+:root:not([data-theme="dark"]) .dpc-viewer__drawerClose {
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  color: var(--onScrim);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background 120ms ease;
+}
+
+:root:not([data-theme="dark"]) .dpc-viewer__download:hover,
+:root:not([data-theme="dark"]) .dpc-viewer__close:hover:not(:disabled),
+:root:not([data-theme="dark"]) .dpc-viewer__drawerClose:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--onScrim) 14%, transparent);
+}
+
+/*
   A NARROW WINDOW HAS NO ROOM BESIDE THE PICTURE, and stacking is the honest
   answer — but the panel goes back to being SHORT when it does, or it starves the
   photograph exactly the way it did before.
@@ -1479,7 +1574,8 @@
   here on its own class and beats the inherit outright.
 */
 .dpc-viewer__close,
-.dpc-viewer__download {
+.dpc-viewer__download,
+.dpc-viewer__drawerClose {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1924,6 +2020,24 @@
 }
 
 .dpc-viewer__caption .dp-chrome { color: var(--onScrim); opacity: 0.72; }
+
+/*
+  THE QUIET COUNTER (#2533): one line ABOVE the picture — "2 of 8 · Hold ·
+  Compare" — in one sans family. It stays after the plate in the markup (the
+  plate's own laws read it there) and is lifted by `order`.
+*/
+.dpc-viewer__frame[data-counter="above"] > .dpc-viewer__caption { order: -1; }
+
+.dpc-viewer__counter {
+  gap: 5px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  opacity: 0.62;
+}
+
+.dpc-viewer__compareCue { display: inline-flex; gap: 5px; }
+.dpc-viewer__compareCue[data-held="true"] { visibility: hidden; }
 
 /* A tile you can open reads as one — with the ordinary pointer. 
    renders as a magnifying glass, which is loud and reads as a viewer control
@@ -3665,11 +3779,19 @@
   align-items: center;
 }
 
-.dpc-refine__field {
-  flex: 1 1 auto;
+/*
+  THE COMPOSER (#2533): one box carrying the field and, on a bar under it, the
+  `+` and the priced button. The box wears what the field always wore — the
+  same fill, border, radius and type — so nothing about the material is new.
+*/
+.dpc-refine__box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
   min-width: 0;
-  height: 34px;
-  padding: 0 12px;
+  box-sizing: border-box;
+  padding: 9px 8px 7px 12px;
   border-radius: var(--r-sm);
   border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
   background: color-mix(in srgb, var(--onScrim) 8%, transparent);
@@ -3677,11 +3799,84 @@
   font-size: 13px;
 }
 
-/* No inner focus ring on a text field — the border carries the state. */
-.dpc-refine__field:focus {
-  outline: none;
+/* No inner focus ring on the text field — the box's border carries the state. */
+.dpc-refine__box:focus-within {
   border-color: color-mix(in srgb, var(--onScrim) 52%, transparent);
 }
+
+.dpc-refine__field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow-y: hidden;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 18px;
+}
+
+.dpc-refine__field:focus { outline: none; }
+
+.dpc-refine__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dpc-refine__barEnd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* The attach control, a size down so it sits inside the box. */
+.dpc-refine__bar .dpc-refine__attach { width: 28px; height: 28px; margin-left: -4px; }
+
+/*
+  THE COMPOSER IS THE PICTURE'S WIDTH, centred under it (#2533). The viewer
+  measures the plate and hands its width down as `--dpc-plate-w`; the column's
+  own width cannot be used, because it is as wide as the image's NATURAL size
+  allows and the picture is narrower whenever the window's height binds it.
+*/
+.dpc-viewer__column > .dpc-refine {
+  width: var(--dpc-plate-w, min(100%, 760px));
+  max-width: 100%;
+  align-items: stretch;
+}
+
+/* Undo, the one chip — the attach control's own quiet dress, as a pill. */
+.dpc-refine__chips { display: flex; gap: 6px; }
+
+.dpc-refine__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
+  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
+  color: var(--onScrim);
+  opacity: 0.8;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  letter-spacing: normal;
+  cursor: pointer;
+  transition: opacity 120ms ease, border-color 120ms ease;
+}
+
+.dpc-refine__chip:hover:not(:disabled) {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--onScrim) 44%, transparent);
+}
+
+.dpc-refine__chip:disabled { opacity: 0.3; cursor: default; }
 
 .dpc-refine__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 

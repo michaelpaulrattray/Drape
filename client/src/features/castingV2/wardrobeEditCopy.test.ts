@@ -50,66 +50,38 @@ function withoutProse(source: string): string {
   return withoutComments(source);
 }
 
-describe("the ask box says what it can do, and it is one sentence", () => {
+describe("the ask box says no sentence about what it can do (card 2533)", () => {
   /*
+    ⚠ **THE CAPABILITY LINE IS GONE, ON HIS APPROVED DESIGN** (#2533, 2026-10-15:
+    the composer carries no hint lines). This describe used to pin that the
+    one sentence — *"Anything about them — not their clothes or the room"* —
+    stood unconditionally. It now pins the opposite, and the reason this file
+    still matters is unchanged: whatever the box says about clothes, it must
+    never say it can reach them.
+
     THE POSITIVE CONTROL. Every arm below asserts an absence, and an absence
-    arm on a file that no longer draws a meta line passes for the wrong reason.
+    arm on a file that no longer draws an ask box passes for the wrong reason.
   */
-  it("still tells somebody what the box can do, before they type", async () => {
+  it("still draws the ask box, with its placeholder and its priced button", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    expect(panel).toContain("not their clothes or the room");
+    expect(panel).toContain('placeholder="Change something about them…"');
+    expect(panel).toContain('className="dpc-refine__field"');
   });
 
-  /*
-    ⚠ THE SENTENCE IS UNCONDITIONAL NOW. This is the arm that would have caught
-    the naive sweep: with the path clause deleted and the gate left in place,
-    the source still contains today's sentence — it is just no longer what
-    everybody gets. Pinning the STRING is not enough; the branch must be gone.
-  */
-  it("does not make the claim conditional on anything", async () => {
+  it("carries neither hint line any more", async () => {
     const panel = withoutProse(await readFile(PANEL, "utf8"));
-    /* ⚠ The WHOLE element, opening tag included — the first shape of this arm
-       sliced from the sentence, which begins AFTER a ternary's `?`, so it
-       stayed green through the exact sabotage it was written for. */
-    const open = panel.lastIndexOf('<p className="dpc-refine__note">', panel.indexOf("not their clothes or the room"));
-    const element = panel.slice(open, panel.indexOf("</p>", open));
-    expect(element).not.toContain("?");
-    expect(element).not.toContain("&&");
+    expect(panel).not.toContain("not their clothes or the room");
+    expect(panel).not.toContain("take something back");
   });
 
-  /*
-    ⚠ **THE ARM ABOVE MET ITS FIRST FALSE POSITIVE IN #1727, AND THIS IS THE
-    OTHER HALF OF THE ANSWER.**
-
-    The price is now `null` until the sheet's settings answer, so its clause has
-    to be able to stand down — and written inline that is a `?` inside the
-    element, which the arm above bans. The ban is RIGHT about its subject (the
-    retired garment cell was a ternary over this exact sentence) and blunt about
-    this one, so the component computes the suffix above the JSX and
-    interpolates a plain value. The capability sentence is a literal with no
-    branch over it, exactly as before.
-
-    **That road is only safe while the suffix can say nothing but the price**,
-    which is what this arm holds. Without it, "compute it above" is a way to
-    move any sentence out of the arm's sight — the shape of the sabotage the
-    arm above was widened to catch, one indirection further out.
-  */
-  it("the price is on the Refine button, and the sentence carries none (card 1952)", async () => {
+  it("the price is on the Refine button, and only there (card 1952)", async () => {
     /*
-      #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its price.
-      The note's old `· N credits each` suffix (`refinePriceClause`, #1727)
-      stated the same price a second time beside the button that now carries
-      it, so it went (the relay's finding on PR #2031). This arm holds both
-      halves: the button prices itself from the served figure and stands down
-      to plain `Refine` while it is unread, and the capability sentence
-      interpolates nothing at all.
+      #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its price,
+      and stands down to plain `Refine` while the price is unread.
     */
     const panel = withoutProse(await readFile(PANEL, "utf8"));
     expect(panel).toContain("`Refine · ${formatCredits(displayPrice(priceCredits))} credits`");
     expect(panel).toMatch(/priceCredits === null\s*\?\s*"Refine"/);
-    const open = panel.lastIndexOf('<p className="dpc-refine__note">', panel.indexOf("not their clothes or the room"));
-    const element = panel.slice(open, panel.indexOf("</p>", open));
-    expect(element, "the capability sentence carries a price (or anything else) again").not.toContain("{");
     expect(panel).not.toContain("credits each");
   });
 

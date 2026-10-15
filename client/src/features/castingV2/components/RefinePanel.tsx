@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
-import { Plus, RotateCw, X } from "lucide-react";
+import { Plus, RotateCw, Undo2, X } from "lucide-react";
 
 import type { InkProvenance } from "@shared/inkProvenance";
 import { REFINE_INSTRUCTION_MAX_LENGTH } from "@shared/refineLimits";
@@ -22,6 +22,16 @@ import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
 import { waitExceeds } from "../waitNotice";
+
+/**
+ * The word the Undo chip sends — the same bare word a person could type, which
+ * the server answers as free navigation back to the version before, never a
+ * render (`server/castingV2/refineDelta.ts`'s bare-undo kind).
+ */
+const UNDO_WORD = "undo";
+
+/** How tall the ask box may grow before it scrolls, in lines. */
+const FIELD_MAX_LINES = 3;
 
 /**
  * Refining one face — the panel under the expanded picture (M8).
@@ -482,6 +492,41 @@ export function RefinePanel({
   */
   const pictureUnclaimed = picture !== null && picture.referenceId === null;
   /*
+    ONE SEND, TWO KEYS ONTO IT — the button and Enter in the box (#2533). The
+    box is a textarea now so a long sentence can be read back whole, and a
+    textarea does not submit its form on Enter, so both call this.
+  */
+  const submitAsk = () => {
+    if (!trimmed || busy || pictureUnclaimed) return;
+    /* The handle rides with the sentence, and only when there is one:
+       `undefined` rather than null, because the wire has no field for
+       "no reference". */
+    onRefine(trimmed, undefined, undefined, picture?.referenceId ?? undefined);
+    setInstruction("");
+  };
+  /*
+    THE BOX GROWS WITH THE SENTENCE, up to three lines, and scrolls past that.
+    Read off the field's own scroll height, so the line height lives in the
+    stylesheet and nowhere here.
+  */
+  const fieldRef = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const field = fieldRef.current;
+    if (!field) return;
+    /* Empty, the stylesheet's one line stands — measuring an empty box before
+       the type has loaded read a default line height and drew it too tall. */
+    if (!instruction) {
+      field.style.height = "";
+      field.style.overflowY = "";
+      return;
+    }
+    field.style.height = "auto";
+    const lineHeight = parseFloat(getComputedStyle(field).lineHeight) || 18;
+    const ceiling = lineHeight * FIELD_MAX_LINES;
+    field.style.height = `${Math.min(field.scrollHeight, ceiling)}px`;
+    field.style.overflowY = field.scrollHeight > ceiling ? "auto" : "hidden";
+  }, [instruction]);
+  /*
     ARE THEY ABOUT TO BUY THE SAME EDIT TWICE? (D-161)
 
     This is exactly what happened: a slow "copper hair", a closed sheet, no
@@ -867,18 +912,79 @@ export function RefinePanel({
         </div>
       ) : null}
 
+      {/*
+        UNDO, AND IT IS THE ONLY CHIP (#2533, his approved design: *"the only
+        chip is Undo, shown after an edit, and it reads 'Undo · free'"*).
+
+        It replaces the line under the box that told people they could TYPE
+        "undo" — a capability somebody had to read about, learn the word for,
+        and trust was free. Now it is one press, and the price is on it.
+
+        It is the typed path, not a second one: it sends the bare word `undo`
+        through the same `onRefine` the box sends through, which the server
+        answers as free navigation and never as a render. Shown only on a
+        version that was made by an edit — on the original there is nothing to
+        take back, and a control that can never apply is not drawn.
+      */}
+      {selectedVariantId !== null ? (
+        <div className="dpc-refine__chips">
+          <button
+            type="button"
+            className="dpc-refine__chip"
+            disabled={busy}
+            onClick={() => onRefine(UNDO_WORD)}
+          >
+            <Undo2 size={13} strokeWidth={1.8} aria-hidden="true" />
+            Undo · free
+          </button>
+        </div>
+      ) : null}
+
       <form
         className="dpc-refine__ask"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!trimmed || busy || pictureUnclaimed) return;
-          /* The handle rides with the sentence, and only when there is one:
-             `undefined` rather than null, because the wire has no field for
-             "no reference". */
-          onRefine(trimmed, undefined, undefined, picture?.referenceId ?? undefined);
-          setInstruction("");
+          submitAsk();
         }}
       >
+        {/*
+          ONE BOX, THE PICTURE'S WIDTH (#2533). The field's own material is the
+          box now — the same fill, border and radius `.dpc-refine__field` always
+          had — and the `+` and the priced button sit inside it on one bar, so
+          the composer is a single thing under the picture rather than a field
+          with controls hung either side of it.
+        */}
+        <div className="dpc-refine__box">
+        <textarea
+          ref={fieldRef}
+          className="dpc-refine__field"
+          rows={1}
+          value={instruction}
+          onChange={(event) => setInstruction(event.target.value)}
+          /* Enter sends, as it did when this was a one-line input; the box only
+             grows to show a long sentence, never to take a second paragraph. */
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              submitAsk();
+            }
+          }}
+          /* Door 1 of #2525's three. Reaching for the box is edit intent, and
+             it is the earliest of the three doors by several seconds. */
+          onFocus={onEditIntent}
+          placeholder="Change something about them…"
+          /*
+            THE ROUTER'S OWN NUMBER, not a copy of it (law 4, ruled fable-1613).
+            A tapped row prefills this field rather than riding along invisibly,
+            so what the browser counts is exactly what the wire carries — which
+            is why this one needs no allowance arithmetic and the region
+            popover's does.
+          */
+          maxLength={REFINE_INSTRUCTION_MAX_LENGTH}
+          disabled={busy}
+          aria-label="What to change about this person"
+        />
+        <div className="dpc-refine__bar">
         {/*
           THE ONE ATTACH AFFORDANCE — a `+` at the left of the box's own row,
           where a stylist's hands already are (design §6).
@@ -928,25 +1034,7 @@ export function RefinePanel({
             </button>
           </>
         ) : null}
-        <input
-          className="dpc-refine__field"
-          value={instruction}
-          onChange={(event) => setInstruction(event.target.value)}
-          /* Door 1 of #2525's three. Reaching for the box is edit intent, and
-             it is the earliest of the three doors by several seconds. */
-          onFocus={onEditIntent}
-          placeholder="Change something about them…"
-          /*
-            THE ROUTER'S OWN NUMBER, not a copy of it (law 4, ruled fable-1613).
-            A tapped row prefills this field rather than riding along invisibly,
-            so what the browser counts is exactly what the wire carries — which
-            is why this one needs no allowance arithmetic and the region
-            popover's does.
-          */
-          maxLength={REFINE_INSTRUCTION_MAX_LENGTH}
-          disabled={busy}
-          aria-label="What to change about this person"
-        />
+        <span className="dpc-refine__barEnd">
         <Button type="submit" size="small" disabled={!trimmed || busy || pictureUnclaimed}>
           {/* #1952 item 1, his *"yes"* 2026-10-08: every paid button shows its
               served price — `Refine · {served} credits`; plain `Refine` while
@@ -1012,6 +1100,9 @@ export function RefinePanel({
             Regenerate
           </Button>
         ) : null}
+        </span>
+        </div>
+        </div>
       </form>
 
       {/*
@@ -1081,45 +1172,18 @@ export function RefinePanel({
       ) : null}
 
       {/*
-        It says what the box can do BEFORE someone types something it cannot,
-        which is worth more than a refusal after the fact — and taking something
-        back belongs here, because Remove has no other home (D-163). Undoing is
-        free and the line says so, or nobody types it.
-      */}
-      {/*
-        ⚠ **THERE IS ONE SENTENCE AGAIN — THE GARMENT CELL IS RETIRED** (#203
-        slice 2 step c).
+        ⚠ **NO HINT LINES UNDER THE BOX ANY MORE — #2533, his approved design
+        (*"there is no tooltip and no suggestion chips"*, and no hint lines).**
 
-        It said the opposite about clothes — *"including what they're wearing"* —
-        on a cast born on the WARDROBE path, for an account on the repaint road.
-        The path half is gone with the paths, and it was the ONLY thing holding
-        that sentence shut: the repaint gate stands at `all` on production, so
-        dropping the dead clause and keeping the live-looking one would have
-        turned the claim ON for every customer, the day it shipped. And it would
-        have been FALSE — the wardrobe subject is served to no branch at all
-        (`SERVED_SUBJECTS`), so an outfit ask meets the generic wall for
-        everybody.
-
-        So the cell went rather than half of its condition. Whether a garment
-        ask should instead become a real capability for everyone is **#1148**,
-        which is his: a retirement that quietly widens something is the same
-        mistake as one that quietly narrows it.
+        Two sentences stood here: what a refine may ask for (*"Anything about
+        them — not their clothes or the room"*), and that typing "undo" takes
+        something back for free. The second became the Undo chip above the box,
+        which says the same thing by being pressable. The first is gone with
+        nothing in its place, and that is a real trade, named rather than
+        hidden: an outfit ask is now learned at the server's own refusal, which
+        says what was refused and what to do, instead of being warned about in
+        advance. Whether garments become a real capability is still #1148.
       */}
-      {/*
-        ⚠ **NO PRICE ON THIS LINE ANY MORE — #1952 item 1, his *"yes"*
-        2026-10-08: every paid button shows its price.** The Refine button
-        carries `Refine · {served} credits`, so a `· N credits each` suffix
-        here stated one price twice, an inch apart (the relay's finding on PR
-        #2031). The line keeps the half that is true whatever the price is:
-        what a refine may ask for. It is a literal with no branch over it,
-        which `wardrobeEditCopy.test.ts` holds.
-      */}
-      <p className="dpc-refine__note">
-        Anything about them — not their clothes or the room
-      </p>
-      <p className="dpc-refine__note">
-        Or take something back — "undo", "remove the earrings" · free when you already have it
-      </p>
     </div>
   );
 }
