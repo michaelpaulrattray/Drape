@@ -1,7 +1,7 @@
 {
-  "edition": 710,
-  "updatedAt": "2026-10-15T02:15:00.000Z",
-  "shift": "N3 IS OPEN, ON YOUR WORD — \"start on n3\". Voice is closed on your own test drive: Kiki's voices, and Change and Remove, both confirmed. The next rung is the one you passed over when you chose Voice: the refine era completes — the feature panel that finds what a character has and makes it editable, the picture-reference selector, the character settings, and the honest edges around them. The rulebook, the ladder on this page and both of the crew's guards moved together in one go, inside the hour, so no builder is held on a finished rung this time. Thirteen cards are on the rung. The first job is your own order from August: go through the paid edit road for leftover machinery from the old studio, the way the roll road was cleaned out in September. Your two cost cards ride with it — cutting what an edit costs us, and cutting what a face scan costs us. The panel and the selector need a design pass before they are built, and that comes to you before any of it is.",
+  "edition": 711,
+  "updatedAt": "2026-10-15T03:05:00.000Z",
+  "shift": "You asked what a Refine costs us. It is about six cents, and it earns about sixty-five — so the cost was never what was holding the price where it is. The count is five checks, not seven, and cutting it to three saves about two cents while reopening three faults we already fixed. The fifteen-to-nineteen cents in the note looks like it priced a picture engine that is switched off for every account. The whole working is on the card; my recommendation is on your desk, and it is to move the price if you want it moved and leave the checks alone. Nothing was spent to find this out — every figure came off records the product already writes. Nothing else on the rung has started.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -18,8 +18,8 @@
           "state": "waiting"
         },
         {
-          "title": "What an edit costs us — count the checks a Refine makes, keep the fewest it can safely keep, and report the cost per edit before any price changes (#1689)",
-          "state": "waiting"
+          "title": "What an edit costs us — COUNTED: five checks, not seven, and about six cents an edit against sixty-five of revenue. On your desk: cut the checks anyway, or move the price instead (#1689)",
+          "state": "blocked"
         },
         {
           "title": "What a face scan costs us — cut it as far as it goes without anyone noticing (#2191)",
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T00:50:41.004Z",
+      "readAt": "2026-10-15T02:41:00.761Z",
       "items": [
         {
           "issueNumber": 14,
@@ -221,12 +221,6 @@
           "title": "Takes — founder-endorsed design direction, not yet a build order",
           "kind": "design-unbuilt",
           "rung": "N4"
-        },
-        {
-          "issueNumber": 499,
-          "title": "N4b — Voice: the cast's voice package gets its own rung (his word, 4 Sep)",
-          "kind": "design-unbuilt",
-          "rung": "N4b"
         },
         {
           "issueNumber": 29,
@@ -3975,6 +3969,33 @@
       "state": "done",
       "filedAt": "2026-10-15T00:48:00.000Z",
       "issueNumber": 2523
+    },
+    {
+      "id": "refine-cost-1689",
+      "title": "What a Refine costs us — the number is in, and it argues against cutting the checks",
+      "productImpact": "You asked us to cut what a Refine costs so its price could come down. Here is the number.\n\nA Refine costs us about six cents. It earns about sixty-five. So the cost was never what was holding the price where it is — the margin is already nine to thirteen times.\n\nThe note said about seven checks and fifteen to nineteen cents. We read it off the records every edit already writes, rather than estimating: it is five checks, and together they cost just under four cents. The picture is the rest.\n\nWe also think we know where fifteen to nineteen came from. There are two picture engines in the edit road and only one of them runs. The other costs fifteen cents a picture and is switched off for every account. Fifteen plus the checks is almost exactly nineteen.\n\nCutting to three checks — the target in the note — saves about two cents. Each of the three we could drop was put there because something had gone wrong: one stops a face coming back with the hair worn differently from the picture it was made from, one was right forty times out of forty where the plain read was right thirty, and one stops the picture getting blurrier with every edit.",
+      "workedExample": "Say someone does a hundred edits this month. Today that costs us about six dollars. With two checks removed it would cost about four and a half — and some of those hundred come back with a fault we currently catch and they would not.\n\nIf you do want the number down, there is a bigger lever than the count. Nine tenths of what the checks cost is the SIZE of what we send to be read, not how many times we ask. Every one of the five goes to the same expensive reader today.",
+      "options": [
+        {
+          "key": "price",
+          "label": "Move the price and leave the checks alone",
+          "consequence": "We touch nothing in the edit road. You pick the new price and it ships as its own small change. The margin you asked about is already there."
+        },
+        {
+          "key": "cut",
+          "label": "Cut the checks to three anyway",
+          "consequence": "We test it on your own characters first and put the before-and-after pictures in front of you, and nothing ships until you have seen them. It saves about two cents an edit."
+        },
+        {
+          "key": "reader",
+          "label": "Go after what the checks cost instead of how many there are",
+          "consequence": "The bigger saving and the longer job: the simpler questions go to a cheaper reader. It has to be built before it can be tested, and your eye closes it."
+        }
+      ],
+      "recommendation": "Move the price if you want it moved, and leave the checks alone. Two cents is not worth reopening three faults we already fixed, and the margin you asked about is already nine to thirteen times.",
+      "state": "open",
+      "filedAt": "2026-10-15T03:05:00.000Z",
+      "issueNumber": 1689
     }
   ],
   "eyeItems": [
@@ -10793,7 +10814,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T00:50:41.004Z",
+    "readAt": "2026-10-15T02:41:00.759Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10812,7 +10833,11 @@
       {
         "issueNumber": 1689,
         "title": "N3: investigate cutting Refine's cost so its price can come down — count the ~7 Claude checks a Refine makes, court the fewest it can safely keep, report cost per Refine before any price change (his finance guy's note, 2026-10-01)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the number is in. A refine costs us about 6c and earns about 65c. Cutting checks saves 2c. RECOMMEND: move the price, keep the checks."
+        }
       },
       {
         "issueNumber": 1774,
