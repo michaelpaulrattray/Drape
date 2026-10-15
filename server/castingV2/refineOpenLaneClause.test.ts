@@ -1,39 +1,70 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it } from "vitest";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vitest";
 
 import type { TextEngine, TextRequest } from "../providers/types";
-import {
-  CASTING_OPEN_LANE_SCOPE_ENV,
-  captureCastingOpenLaneEnabled,
-  validateCastingOpenLaneEnvironment,
-} from "./castingV2Scope";
+import { declaredEnvNames, serverAndSharedSources } from "../../scripts/lib/declaredEnvNames.mts";
+import { cataloguedFlags, flagCatalogue, indexedFlags, lawText } from "../../scripts/lib/lawText.mts";
+import { PRODUCTION_FLAG_POSITIONS } from "../../scripts/lib/productionFlagPositions.mts";
 import { OPEN_KIND_SYSTEM } from "./openLaneKind";
 import { KIND_PROPERTY_SYSTEM } from "./openKindProperties";
 import { interpretRefinement, refineParseSystemPrompt } from "./refineInterpreter";
 
 /**
- * THE OPEN LANE'S OPENING SENTENCE, AND THE FLAG IT IS BEHIND.
+ * THE OPEN LANE IS WHAT THE INTERPRETER DOES, AND ITS FLAG IS RETIRED —
+ * #1577 slice D1.
  *
- * Three things are proven here and each answers something that went wrong once:
+ * `CASTING_OPEN_LANE_SCOPE` decided whether an ask nobody catalogued could name
+ * its own kind. Off, the prompt carried no last-resort clause, replies keyed
+ * onto the nearest closed subject, and the acceptance door was never consulted;
+ * on, the clause was in the prompt and the door decided. It reached `all` on
+ * production on 2026-09-24 (his Crew reply #205, *"Turn it on for everyone"*)
+ * and every flag above it was `all` too, so the OFF arm — two of the four
+ * interpreter prompts — was asked of nobody. **His word retiring it,
+ * 2026-10-15, verbatim and entire: _"yes approve the plan and switch off the six
+ * settings"_** (the ghost audit's row D1).
  *
- *  1. **The OFF prompt is byte-identical to the one that shipped before the
- *     clause existed.** The routing bench's "before" arm is this function with
- *     the flag off, so a drift of one character would turn the measurement into
- *     a comparison of two things neither of which ships. The fixture was
- *     captured from the code BEFORE the clause was written and is never
- *     regenerated — a control that re-records itself marks its own homework.
- *  2. **The clause's two halves both land when the flag is on**, including the
- *     swap. The addition alone is inert: the wall check sits above the
- *     acceptance door, so an ask still routed to the stage wall never reaches
- *     the lane.
- *  3. **The door is gated too, not just the prompt.** A reply may name an
- *     unknown subject key without being invited to, and the door shipped
- *     ungated in a product whose casting scope is `all`.
+ * # What this file proves, in three parts
+ *
+ *  1. **THE BAR.** The two SURVIVING prompts are sha256-identical to what the
+ *     flag's ON arm produced before the cut. That is #1495's rule in the shape
+ *     #203 slice 2 used, and it replaces what this suite used to hold — a
+ *     checked-in fixture of the OFF prompt, which died with the off road.
+ *  2. **The clause and the door, now unconditional.** The same arms as before,
+ *     with the flag's half of each REMOVED rather than inverted.
+ *  3. **It stays retired.** The resurrection shapes, on `framingTrimRetirement`
+ *     and slice 4b's pattern.
+ *
+ * # ⚠ THE BAR'S HASHES ARE RECORDED, NOT REGENERATED
+ *
+ * They were read from `origin/main` at `9622e69e` BEFORE the cut, through the
+ * real function, and pasted here. **A control that re-records itself marks its
+ * own homework** — which is what the retired fixture's own docblock said, and the
+ * reason that fixture was never regenerated either. If a prompt change is ever
+ * intended, these two lines are the ones to edit deliberately.
+ *
+ * # ⚠ IT DOES NOT ASSERT THE FLAG NAME IS ABSENT FROM THE TREE
+ *
+ * Deliberate, and the same floor slice 4b stated: the retirement record and the
+ * notes left at the cut sites both NAME the variable, because the next reader has
+ * to learn what died and why. So the arms below read the RESURRECTION SHAPES —
+ * the three ways a flag gets a reader in this repository — and a fourth shape
+ * would be invisible here.
+ *
+ * Every retirement arm is an ABSENCE, and an absence is green against a reader
+ * that finds nothing at all. So each reader is first made to find a flag that
+ * genuinely exists, in the same call, in the same shape. If a control reddens, no
+ * verdict in that part means anything.
  *
  * The interpreter arms are SCRIPTED, for law 3's reason: the behaviour that
- * matters is a reply naming an unknown key, and a real model will not produce
- * one on demand with the flag off.
+ * matters is a reply naming an unknown key, and a real model will not produce one
+ * on demand.
  */
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** An engine that answers from a script and records what it was asked. */
 function scripted(replies: string[]): TextEngine & { seen: TextRequest[] } {
@@ -67,116 +98,82 @@ const NAMES_A_NEW_KIND = JSON.stringify({ intent: "edit", free: { fangs: "vampir
 /** What the normalizer answers when asked what the THING is. */
 const NORMALIZED = JSON.stringify({ kind: "fangs" });
 
-describe("the OFF prompt is the prompt that shipped", () => {
+describe("THE BAR — the surviving prompts did not change by a character (#1495)", () => {
   /*
-    THE FIXTURE IS JSON-ENCODED, AND THAT IS NOT TIDINESS.
-
-    `core.autocrlf=true` with no `.gitattributes`: a plain-text fixture
-    committed with LF comes back as CRLF on the next checkout, so this control
-    would compare a CRLF file against an LF prompt and fail on every fresh
-    clone — a guard failing for a reason that has nothing to do with what it
-    guards. Inside a JSON string every newline is an escape on one physical
-    line, which line-ending translation cannot reach.
+    Read at `origin/main` 9622e69e, through `refineParseSystemPrompt(mode,
+    { openLane: true })`, before the flag came out. The lengths ride along
+    because they make a failure legible at a glance — but the HASH is the bar,
+    and that distinction was driven rather than assumed: sabotaging one
+    lowercase character moved both hashes and left both lengths unchanged.
   */
-  const fixture = (mode: "classify" | "edit"): string =>
-    JSON.parse(readFileSync(`server/castingV2/__fixtures__/refinePrompt.${mode}.before.json`, "utf8")) as string;
+  const BEFORE = {
+    classify: { sha: "5166fdbcbef357f66191aae5029ffd60d3da33339d5c7a06d78909000f794756", len: 12_990 },
+    edit: { sha: "d938853edbc22068b696eab704ad0ae80849457583b3a3a58e103b7420e9cb57", len: 10_547 },
+  } as const;
+
+  const sha = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
 
   for (const mode of ["classify", "edit"] as const) {
-    it(`is byte-identical for mode ${mode}`, () => {
-      const before = fixture(mode);
-      expect(before).not.toContain("\r");
-      expect(refineParseSystemPrompt(mode)).toBe(before);
-      expect(refineParseSystemPrompt(mode, { openLane: false })).toBe(before);
+    it(`${mode} is byte-identical to the ON prompt that shipped`, () => {
+      const prompt = refineParseSystemPrompt(mode === "classify" ? undefined : mode);
+      expect(prompt.length, "length (the hash is the bar; this just reads better)").toBe(BEFORE[mode].len);
+      expect(sha(prompt)).toBe(BEFORE[mode].sha);
     });
   }
 
-  it("and the fixture is not vacuous — the ON prompt differs from it", () => {
-    /* Without this the arms above would pass against an empty file, or against
-       a prompt the flag never changes. The control is the whole point. */
-    const before = fixture("classify");
-    expect(before.length).toBeGreaterThan(5_000);
-    expect(refineParseSystemPrompt("classify", { openLane: true })).not.toBe(before);
+  it("CONTROL — the reader is looking at two different, substantial prompts", () => {
+    /*
+      Without this, both arms above would pass against a function returning the
+      same string twice, or an empty one, so long as the recorded hashes happened
+      to be that string's. The modes differ by the removal vocabulary (D-163 rule
+      3), so they must not be equal.
+    */
+    const classify = refineParseSystemPrompt();
+    const edit = refineParseSystemPrompt("edit");
+    expect(classify.length).toBeGreaterThan(5_000);
+    expect(edit.length).toBeGreaterThan(5_000);
+    expect(classify).not.toBe(edit);
+    expect(BEFORE.classify.sha).not.toBe(BEFORE.edit.sha);
   });
 });
 
-describe("the clause lands in BOTH halves when the flag is on", () => {
-  const on = refineParseSystemPrompt("classify", { openLane: true });
-  const off = refineParseSystemPrompt("classify");
+describe("the clause is in the prompt, unconditionally", () => {
+  const prompt = refineParseSystemPrompt();
 
-  it("adds the last resort, and only when on", () => {
-    expect(on).toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
-    expect(on).toContain("THE KEY IS THE THING");
-    expect(off).not.toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
+  it("carries the last resort", () => {
+    expect(prompt).toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
+    expect(prompt).toContain("THE KEY IS THE THING");
   });
 
-  it("keeps the lane a FALLBACK rather than a peer — the sentence §2 turns on", () => {
-    expect(on).toContain("ALWAYS");
-    expect(on).toContain("wins and stays the answer");
+  it("keeps the lane a FALLBACK rather than a peer — the sentence the design turns on", () => {
+    expect(prompt).toContain("ALWAYS");
+    expect(prompt).toContain("wins and stays the answer");
   });
 
-  it("SWAPS the fantastical-anatomy routing away from the stage wall", () => {
+  it("routes fantastical anatomy to the last resort and NOT to the stage wall", () => {
     /*
-      The half that is not additive. With the lane shut this block sends horns
-      to the stage wall, and the wall check returns before the acceptance door —
-      so leaving it would make the addition above inert for exactly the
-      population the lane exists for.
+      The half of the clause that was never additive, and the reason the
+      stage-wall version of those four lines went WITH the flag rather than being
+      left as a branch nothing takes: the wall check at `runOnce` sits ABOVE the
+      acceptance door, so a reply claiming the stage wall returns before the open
+      lane is ever consulted. Restoring it would make the last resort inert for
+      exactly the population the lane exists for.
     */
-    expect(off).toContain('Reply {"wall": "stage", "asked": "<the thing, in their words>"}');
-    expect(on).not.toContain('Reply {"wall": "stage", "asked": "<the thing, in their words>"}');
-    expect(on).toContain("They take the LAST RESORT at the end of the free-lane rules");
+    expect(prompt).toContain("They take the LAST RESORT at the end of the free-lane rules");
+    expect(prompt).not.toContain('Reply {"wall": "stage", "asked": "<the thing, in their words>"}');
   });
 
   it("widens what may be NAMED and nothing else — wall (b) is restated, not relaxed", () => {
-    expect(on).toContain("garments, headwear, the backdrop, props and the scene are the stage wall");
+    expect(prompt).toContain("garments, headwear, the backdrop, props and the scene are the stage wall");
     /* The stage wall's own line is untouched by the clause. */
-    expect(on).toContain('stage: garments, headwear, the backdrop, props, the scene');
+    expect(prompt).toContain("stage: garments, headwear, the backdrop, props, the scene");
   });
 });
 
-describe("the acceptance door is behind the flag too, not only the prompt", () => {
-  it("files NOTHING for an unknown key when the lane is off — and never asks the normalizer", async () => {
-    /*
-      A reply naming an unknown key arrives with the flag OFF. Before this gate
-      the door would have run, spent a normalizer call and filed `open:fangs`
-      for every user of a product whose casting scope is `all`.
-
-      Counted by WHICH question was asked rather than by how many: an unread
-      delta is re-sampled, so the call count is three either way and would have
-      hidden the door running inside it.
-    */
+describe("the acceptance door runs, unconditionally", () => {
+  it("files the open kind", async () => {
     const engine = scripted([NAMES_A_NEW_KIND, NORMALIZED]);
     const parse = await interpretRefinement({ instruction: HIS, engine, ...FACE });
-    expect(parse.ok).toBe(false);
-    expect(engine.seen.some((request) => request.system === OPEN_KIND_SYSTEM)).toBe(false);
-  });
-
-  it("and §2's defect stays closed with the lane off — the facets beside it survive", async () => {
-    /*
-      The whole-delta null was the standing defect: one unknown noun discarded
-      every facet in the same instruction. Step 5a closed it at the live
-      boundary, and the gate must not reopen it — the subject is still RECORDED
-      and skipped, and the mark she also asked for still files.
-    */
-    const both = JSON.stringify({
-      intent: "edit",
-      free: { fangs: "vampire fangs", marks: ["a small scar on her cheek"] },
-    });
-    const engine = scripted([both, NORMALIZED]);
-    const parse = await interpretRefinement({
-      instruction: "give her vampire fangs and a small scar on her cheek",
-      engine,
-      ...FACE,
-    });
-    expect(parse.ok).toBe(true);
-    if (!parse.ok || !("delta" in parse)) throw new Error("expected a delta");
-    expect(parse.delta.free?.marks).toEqual(["a small scar on her cheek"]);
-    expect(parse.delta.open).toBeUndefined();
-    expect(engine.seen.some((request) => request.system === OPEN_KIND_SYSTEM)).toBe(false);
-  });
-
-  it("files the open kind when the lane is on", async () => {
-    const engine = scripted([NAMES_A_NEW_KIND, NORMALIZED]);
-    const parse = await interpretRefinement({ instruction: HIS, engine, openLane: true, ...FACE });
     expect(parse.ok).toBe(true);
     if (!parse.ok || !("delta" in parse)) throw new Error("expected a delta");
     expect(parse.delta.open?.fangs).toEqual({ noun: "fangs", words: "vampire fangs" });
@@ -198,84 +195,107 @@ describe("the acceptance door is behind the flag too, not only the prompt", () =
     expect(engine.seen[2]!.system).toBe(KIND_PROPERTY_SYSTEM);
   });
 
-  it("sends the clause on the wire when on, and never when off", async () => {
-    /* Assert at the wire: the flag's whole visible effect on a live call is the
-       system string, and a contract about what is SENT is proven on the request. */
-    const offEngine = scripted([NAMES_A_NEW_KIND, NORMALIZED]);
-    await interpretRefinement({ instruction: HIS, engine: offEngine, ...FACE });
-    expect(offEngine.seen[0]!.system).not.toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
+  it("keeps the whole-delta defect closed — the facets beside an open kind survive", async () => {
+    /*
+      The whole-delta null was the standing defect: one unknown noun discarded
+      every facet in the same instruction. Step 5a closed it at the live
+      boundary, and nothing here may reopen it — the mark she also asked for
+      still files beside the kind.
+    */
+    const both = JSON.stringify({
+      intent: "edit",
+      free: { fangs: "vampire fangs", marks: ["a small scar on her cheek"] },
+    });
+    const engine = scripted([both, NORMALIZED]);
+    const parse = await interpretRefinement({
+      instruction: "give her vampire fangs and a small scar on her cheek",
+      engine,
+      ...FACE,
+    });
+    expect(parse.ok).toBe(true);
+    if (!parse.ok || !("delta" in parse)) throw new Error("expected a delta");
+    expect(parse.delta.free?.marks).toEqual(["a small scar on her cheek"]);
+    expect(parse.delta.open?.fangs).toEqual({ noun: "fangs", words: "vampire fangs" });
+  });
 
-    const onEngine = scripted([NAMES_A_NEW_KIND, NORMALIZED]);
-    await interpretRefinement({ instruction: HIS, engine: onEngine, openLane: true, ...FACE });
-    expect(onEngine.seen[0]!.system).toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
+  it("sends the clause ON THE WIRE", async () => {
+    /* Assert at the wire: a contract about what gets SENT is proven on the
+       outgoing request, never on a constant near it (invariant 5). */
+    const engine = scripted([NAMES_A_NEW_KIND, NORMALIZED]);
+    await interpretRefinement({ instruction: HIS, engine, ...FACE });
+    expect(engine.seen[0]!.system).toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
   });
 });
 
-describe("CASTING_OPEN_LANE_SCOPE — the parent is the REFERENCE LIBRARY since #1577 slice 4a", () => {
-  const saved = { ...process.env };
-  afterEach(() => {
-    process.env[CASTING_OPEN_LANE_SCOPE_ENV] = saved[CASTING_OPEN_LANE_SCOPE_ENV];
-    process.env.CASTING_REPAINT_SCOPE = saved.CASTING_REPAINT_SCOPE;
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = saved.CASTING_REFERENCE_LIBRARY_SCOPE;
-    process.env.CASTING_V2_SCOPE = saved.CASTING_V2_SCOPE;
+describe("and it stays retired (#1577 slice D1)", () => {
+  /** The retired flag. */
+  const RETIRED = "CASTING_OPEN_LANE_SCOPE";
+  /** A flag that exists and cannot go — every control below finds this one. */
+  const LIVE = "CASTING_V2_SCOPE";
+  /** The retired flag's former parent, which is live and keeps its row. */
+  const PARENT = "CASTING_REFERENCE_LIBRARY_SCOPE";
+
+  const SOURCES = serverAndSharedSources(repoRoot);
+  const DECLARED = declaredEnvNames(SOURCES);
+  const TEXTS = SOURCES.map((file) => ({ file, text: readFileSync(file, "utf8") }));
+
+  it("shape 1 — no module DECLARES it as an env name any more", () => {
+    expect(DECLARED, "the control: the reader finds a flag that is really there").toContain(LIVE);
+    expect(DECLARED).toContain(PARENT);
+    expect(DECLARED).not.toContain(RETIRED);
   });
 
-  it("is off when unset, and off is always valid", () => {
-    expect(validateCastingOpenLaneEnvironment({ scope: undefined, referenceLibraryScope: undefined }).kind).toBe("off");
-    expect(validateCastingOpenLaneEnvironment({ scope: "off", referenceLibraryScope: "off" }).kind).toBe("off");
-  });
-
-  it("REFUSES TO BOOT when its parent is off, and names the parent in the error", () => {
+  it("shape 2 — nothing reads it bare off `process.env`", () => {
     /*
-      ⚠ THE PARENT MOVED IN #1577 SLICE 4a — it was `CASTING_REPAINT_SCOPE`, and
-      it is now the repaint's own parent, the reference library, because the paste
-      road's flag is retired by the audit's slice 4b.
+      The second shape, and the one a constant-only arm cannot see: slice 4b
+      found a bare read on the refine road that no `…_ENV` declaration would
+      have shown.
 
-      The finding that bought this flag is still why it exists and is kept here:
-      the paste road composed its prompt from `readDelta(variant.deltas)`, which
-      drops `open` by construction, so a paste-road user armed here would have
-      been charged for a render whose prompt never mentioned their ask.
+      ⚠ **ITS CONTROL IS A DIFFERENT FLAG FROM THE OTHER ARMS' AND THAT IS A
+      FINDING, NOT A CONVENIENCE.** `CASTING_V2_SCOPE` was the control here
+      first and it REDDENED: in production source that flag is never read bare
+      — it is reached through `CASTING_V2_SCOPE_ENV`, and its 44 bare reads are
+      every one of them in a `.test.ts` file, which this population excludes by
+      construction (`sourceFiles` skips them). Measured across `server` and
+      `shared`: exactly TWO flags in the whole tree are read bare in production
+      source, because the house style is the declared constant. So a control
+      that shares shape 1's flag cannot prove this reader works, and a reader
+      that cannot be proven to work makes the absence below worthless.
     */
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1", referenceLibraryScope: "off" }))
-      .toThrow(/CASTING_REFERENCE_LIBRARY_SCOPE is off/);
+    const BARE_LIVE = "ENABLE_FINAL_MODEL_DELETE";
+
+    const bare = (name: string) => TEXTS
+      .filter(({ text }) => text.includes(`process.env.${name}`) || text.includes(`process.env["${name}"]`))
+      .map(({ file }) => path.relative(repoRoot, file));
+
+    expect(bare(BARE_LIVE), "the control: a bare read of a live flag is findable")
+      .toContain(path.join("server", "routes", "models.ts"));
+    expect(bare(RETIRED)).toEqual([]);
   });
 
-  it("refuses a user the reference library does not carry", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:1,7", referenceLibraryScope: "users:1" }))
-      .toThrow(/names users outside CASTING_REFERENCE_LIBRARY_SCOPE: 7/);
+  it("shape 3 — it has no production position, and its former parent keeps its own", () => {
+    expect(PRODUCTION_FLAG_POSITIONS[LIVE], "the control").toBeDefined();
+    expect(PRODUCTION_FLAG_POSITIONS[PARENT], "the parent is live and keeps its row").toBeDefined();
+    expect(PRODUCTION_FLAG_POSITIONS[RETIRED]).toBeUndefined();
   });
 
-  it("refuses `all` over a limited parent, and admits a covered user", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "all", referenceLibraryScope: "users:1" }))
-      .toThrow(/cannot be "all"/);
-    expect(validateCastingOpenLaneEnvironment({ scope: "users:1", referenceLibraryScope: "users:1" }).kind).toBe("users");
-  });
+  it("and the law still NAMES it, retired, rather than quietly dropping it", () => {
+    /*
+      The opposite failure to the three above, and the one this repository has
+      actually paid for: a flag removed from the code AND from the record leaves
+      the next shift no way to learn it ever existed, which is the
+      path-one/path-three confusion CLAUDE.md's own list has been bitten by. So
+      the catalogue and the index must still name it, and say retired.
+    */
+    const LAW = lawText(repoRoot);
+    const CATALOGUE = flagCatalogue(repoRoot);
 
-  it("refuses a scope it cannot parse", () => {
-    expect(() => validateCastingOpenLaneEnvironment({ scope: "users:", referenceLibraryScope: "all" }))
-      .toThrow(/must be "off", "all", or "users:"/);
-  });
+    expect(indexedFlags(LAW), "the control: the index lists live flags").toContain(LIVE);
+    expect(cataloguedFlags(CATALOGUE), "the control: the catalogue lists live flags").toContain(LIVE);
 
-  it("ANDs the whole chain where it is USED, not only at boot", () => {
-    /* A boot check nobody invoked is the second way a flag pair goes wrong, so
-       the runtime predicate re-asks the parent rather than trusting startup. */
-    process.env.CASTING_V2_SCOPE = "all";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
-    process.env.CASTING_REPAINT_SCOPE = "users:1";
-    process.env[CASTING_OPEN_LANE_SCOPE_ENV] = "users:1,2";
-    expect(captureCastingOpenLaneEnabled(1)).toBe(true);
-    /* User 2 is named here and NOT in the reference library — the runtime AND is
-       what stops them, and this is the arm that would go quiet if it were dropped. */
-    expect(captureCastingOpenLaneEnabled(2)).toBe(false);
-
-    /* ⚠ And the repaint no longer gates it (#1577 slice 4a): driving that flag
-       dark leaves user 1 enabled, which is the only behaviour the re-parent
-       changed and the one an arm re-pointed from repaint to library cannot see. */
-    process.env.CASTING_REPAINT_SCOPE = "off";
-    expect(captureCastingOpenLaneEnabled(1), "the repaint must not gate the open lane").toBe(true);
-    process.env.CASTING_REPAINT_SCOPE = "users:1";
-
-    process.env[CASTING_OPEN_LANE_SCOPE_ENV] = "off";
-    expect(captureCastingOpenLaneEnabled(1)).toBe(false);
+    expect(LAW).toContain(RETIRED);
+    expect(CATALOGUE).toContain(RETIRED);
+    const entry = CATALOGUE.slice(CATALOGUE.indexOf(RETIRED), CATALOGUE.indexOf(RETIRED) + 4_000);
+    expect(entry).toMatch(/RETIRED/);
   });
 });

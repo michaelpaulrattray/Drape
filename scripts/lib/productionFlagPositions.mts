@@ -225,18 +225,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "the door that takes her picture at all; parent of the two reference lanes",
   },
-  CASTING_OPEN_LANE_SCOPE: {
-    position: "all",
-    why:
-      "the open lane — an ask naming its own kind. WIDENED to `all` 2026-09-24 on his Crew "
-      + "reply #205 (card switch-05-open-lane), verbatim and entire: \"Turn it on for "
-      + "everyone\". " + "HIS SWITCH SITTING, 2026-09-24 (#1132) — he went down the whole list in one go, as he "
-      + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
-      + "down the list in one go\"). "
-      + "Evidence he was shown: 18 demand rows on production (tail, ornaments, orb), last "
-      + "5 Sep, one served and the rest answered in words. Its parent CASTING_REPAINT_SCOPE "
-      + "was already `all`, so it had no chain above it",
-  },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",
     why:

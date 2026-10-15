@@ -281,7 +281,6 @@ import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referen
 import { capitalize, pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
-  captureCastingOpenLaneEnabled,
   captureCastingRefineDispatchEnabled,
   captureCastingRepaintEnabled,
   captureCastingSidePhrasingEnabled,
@@ -799,15 +798,6 @@ export type RefineServiceDependencies = {
    * hides (opus-469, on fable-625 §3's enumeration).
    */
   sidePhrasingEnabled?: (userId: number) => boolean;
-  /**
-   * Whether an out-of-vocabulary ask may name its own kind — the open lane.
-   *
-   * A predicate for the same reason as its three siblings, and it reaches the
-   * interpreter rather than the painter: it decides the SYSTEM PROMPT the
-   * customer's sentence is read with, and whether the acceptance door is
-   * consulted at all.
-   */
-  openLaneEnabled?: (userId: number) => boolean;
   /**
    * THE TATTOO TAKE, injectable so its court runs without a transport.
    *
@@ -1877,13 +1867,6 @@ async function refineCandidateCounted(
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
-      /*
-        WHETHER AN ASK NOBODY CATALOGUED MAY NAME ITS OWN KIND —
-        `CASTING_OPEN_LANE_SCOPE`, read here rather than inside the interpreter
-        so the decision is made once, from `input.userId`, in the same place the
-        repaint road's admission is decided.
-      */
-      openLane: (dependencies.openLaneEnabled ?? captureCastingOpenLaneEnabled)(input.userId),
       /*
         A PICTURE RIDES THIS ASK — the entrance to the reference road
         (fable-1104 §2).

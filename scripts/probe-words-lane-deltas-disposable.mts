@@ -44,7 +44,10 @@ const before = await readOpenRouterBalance().catch(() => null);
 for (const instruction of SENTENCES) {
   const parse = await interpretRefinement({
     instruction,
-    openLane: false,
+    /* `openLane: false` stood here and is removed with the flag (#1577 slice D1).
+       Neither this probe nor the lane it measures was ever about the open lane —
+       the line pinned the position production shipped at the time, and there is
+       one interpreter prompt now, so a re-run reads the same sentence it did. */
     prior: {},
     lastColourFacet: null,
     currentEyeColour: null,
