@@ -533,7 +533,9 @@ describe("the panel's copy, classified", () => {
     cannot quietly put the scan back on the glance. A design law nobody can run
     is a design law that lasts one refactor.
   */
-  describe("the face scan waits for edit intent (#2525)", () => {
+  /* The card number lives in the block above, not in this title: the token
+     guard reads a bare #2525 as a hex literal and strips comments. */
+  describe("the face scan waits for edit intent", () => {
     it("fires the scan only once this face is armed", async () => {
       const sheet = withoutProse(await readFile(SHEET, "utf8"));
       const query = sheet.slice(sheet.indexOf("trpc.castingV2.faceScan.useQuery"));
