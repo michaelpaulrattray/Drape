@@ -250,12 +250,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "widened WITH face-scan as one pair (the boot guard requires it; his "
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
-  CASTING_SIDE_PHRASING_SCOPE: {
-    position: "all",
-    why:
-      "founder ruling 2026-08-25 on the Desk (register card #2): measured "
-      + "p≈0.09, never once worse, free per render; parent repaint is all",
-  },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
     why:

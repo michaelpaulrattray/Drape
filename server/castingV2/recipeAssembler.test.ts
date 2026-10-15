@@ -1300,37 +1300,34 @@ describe("a presentation clause is said and filed nowhere", () => {
 });
 
 /**
- * SAYING THE SIDE BOTH WAYS — dark behind `CASTING_SIDE_PHRASING`.
+ * SAYING THE SIDE BOTH WAYS — on every render, unconditionally.
  *
  * A court of twelve renders put a per-side eye edit on the named eye 6/6 when
  * the side was her LEFT (the image's right) and 3/6 when it was her RIGHT (the
  * image's left), the misses all landing on the image's right half whatever the
  * recipe named. That reads as a positional bias rather than a naming confusion,
- * so the experiment is to say the side both ways and let the anatomy and the
- * half of the picture agree.
+ * so the clause says the side both ways and lets the anatomy and the half of
+ * the picture agree.
  *
- * Off — which is every environment until its own court runs — not one character
- * of the sentence moves.
+ * ⚠ **IT RODE `CASTING_SIDE_PHRASING_SCOPE`, AND THE ARM THAT SAID NOTHING
+ * EXTRA IS GONE WITH THE FLAG (#1577 slice D2).** This docblock said *"dark
+ * behind `CASTING_SIDE_PHRASING`"* and *"off — which is every environment until
+ * its own court runs"* for seven weeks after it stopped being true: the founder
+ * widened the flag to every account on 2026-08-25 on that court's own numbers
+ * (*"measured p≈0.09, never once worse, free per render"*), and it stood at
+ * `all` on the service until the retirement.
+ *
+ * **These arms are the BAR the retirement had to meet** — the three sentences
+ * below are the ones production was already sending, pinned literally, so a
+ * change to the clause has to move a string a reader can read. The flag-off
+ * sentence is deliberately NOT kept as a fourth arm: nothing can produce it any
+ * more, and an arm asserting a road that cannot be reached is the thing slice 4b
+ * found 134 of. `sidePhrasingClause.test.ts` holds the retirement's own arms.
  */
 describe("where that side is in the picture", () => {
-  /* The flag is the CALLER's, not this function's — `placeSides` arrives the
-     same way `pronouns` does, so the arms set it rather than an environment. */
-
-  it("says nothing extra while it is dark", () => {
+  it("names her side and the half of the picture it lives on", () => {
     const recipe = assembleRecipe({
       master: MASTER, pronouns: SHE,
-      library: [],
-      asks: [{ slot: "eye@right", noun: "right eye", words: "fiery red" }],
-    });
-
-    expect(recipe.ok).toBe(true);
-    if (!recipe.ok) return;
-    expect(recipe.ask).toBe("Change only her right eye: fiery red.");
-  });
-
-  it("ARMED — names her side and the half of the picture it lives on", () => {
-    const recipe = assembleRecipe({
-      master: MASTER, pronouns: SHE, placeSides: true,
       library: [],
       asks: [{ slot: "eye@right", noun: "right eye", words: "fiery red" }],
     });
@@ -1342,9 +1339,9 @@ describe("where that side is in the picture", () => {
     );
   });
 
-  it("ARMED — and the mirrored half, because her left is the viewer's right", () => {
+  it("and the mirrored half, because her left is the viewer's right", () => {
     const recipe = assembleRecipe({
-      master: MASTER, pronouns: SHE, placeSides: true,
+      master: MASTER, pronouns: SHE,
       library: [],
       asks: [{ slot: "eye@left", noun: "left eye", words: "fiery red" }],
     });
@@ -1356,9 +1353,9 @@ describe("where that side is in the picture", () => {
     );
   });
 
-  it("ARMED — a feature with one instance is left alone", () => {
+  it("a feature with one instance is left alone", () => {
     const recipe = assembleRecipe({
-      master: MASTER, pronouns: SHE, placeSides: true,
+      master: MASTER, pronouns: SHE,
       library: [],
       asks: [{ slot: "hair", noun: "hair", words: "copper" }],
     });
@@ -1366,6 +1363,40 @@ describe("where that side is in the picture", () => {
     expect(recipe.ok).toBe(true);
     if (!recipe.ok) return;
     expect(recipe.ask).toBe("Change only her hair: copper.");
+  });
+
+  /*
+    AND A SLOT THE CATALOGUE HAS NEVER HELD IS ALSO LEFT ALONE, which is NOT
+    the same fact as the one above and was found by hashing the clause's whole
+    output rather than reasoned: `whereItIs` returns nothing when
+    `slotDefinition` answers `null`, so a sided ask on an uncatalogued slot
+    says no half. `cufflink@right` is the specimen the assembler's own suite
+    already uses elsewhere, and `earring@left` is the control — an item-tier
+    slot that IS catalogued and does get its half named.
+
+    Unchanged by the retirement in either direction; pinned because a reader
+    meeting the sentence would otherwise read it as a bug in the clause.
+  */
+  it("a slot the catalogue has never held says no half — with a catalogued control", () => {
+    const uncatalogued = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "cufflink@right", noun: "right cufflink", words: "brushed steel" }],
+    });
+    expect(uncatalogued.ok).toBe(true);
+    if (!uncatalogued.ok) return;
+    expect(uncatalogued.ask).toBe("Change only her right cufflink: brushed steel.");
+
+    const catalogued = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [],
+      asks: [{ slot: "earring@left", noun: "left earring", words: "a thin gold hoop" }],
+    });
+    expect(catalogued.ok).toBe(true);
+    if (!catalogued.ok) return;
+    expect(catalogued.ask, "the control: a catalogued sided slot still names its half").toBe(
+      "Change only her left earring (on the right of the picture as you look at it): a thin gold hoop.",
+    );
   });
 });
 

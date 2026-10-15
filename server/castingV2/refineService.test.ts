@@ -4442,33 +4442,24 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     The enumeration of scope-flag branch points on this road found three, and
     two of them already took an injected predicate. This one read the flag
-    directly, so the clause could be proven inside the assembler (which takes
-    `placeSides` as an input) and inside the boot guard — and NOWHERE in
-    between. A per-user flag hides exactly that gap: the wiring is invisible to
-    every suite whose machine has the flag off, which is every machine that has
-    not gone looking for the founder's road.
+    directly, so the clause could be proven inside the assembler and inside the
+    boot guard — and NOWHERE in between. A per-user flag hides exactly that gap:
+    the wiring is invisible to every suite whose machine has the flag off, which
+    is every machine that has not gone looking for the founder's road.
 
-    Both sides, on one dispatched prompt each, because a clause that is present
-    when armed proves nothing unless it is absent when it is not.
+    ⚠ **THE FLAG IS RETIRED (#1577 slice D2) AND THE INJECTED PREDICATE IS GONE
+    WITH IT — but the WIRE assertion is the whole point of this pair and stays.**
+    What changed is the control. There used to be an off arm, flag false, proving
+    the clause absent; nothing can produce that prompt now, and an arm asserting
+    an unreachable road is what slice 4b found 134 of. So the two arms below are
+    each other's control: the SAME road, the SAME dispatch, opposite anatomy,
+    and each asserts the other's half is not the one that went out. That is a
+    sharper reader than the dead arm was — it fails on a clause frozen to one
+    half, which the old pair could not see.
   */
-  it("says WHERE the side is when this account is inside the phrasing scope", async () => {
+  it("says WHERE the side is, on the prompt that actually goes out", async () => {
     await refineCandidate({
       ...repainting,
-      sidePhrasingEnabled: () => true,
-      interpret: async () => ({
-        ok: true as const,
-        delta: { free: { eyeColourFree: "her right eye fiery red" } },
-      }),
-    } as never, { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
-
-    expect(painted.at(-1)?.prompt, "the recipe that actually went out")
-      .toContain("on the left of the picture as you look at it");
-  });
-
-  it("CONTROL — and says nothing about the picture's halves when it is not", async () => {
-    await refineCandidate({
-      ...repainting,
-      sidePhrasingEnabled: () => false,
       interpret: async () => ({
         ok: true as const,
         delta: { free: { eyeColourFree: "her right eye fiery red" } },
@@ -4477,8 +4468,27 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     const prompt = painted.at(-1)?.prompt ?? "";
     expect(prompt, "her own side is still named").toContain("right eye");
-    expect(prompt, "and the flag is genuinely off at the wire")
-      .not.toContain("as you look at it");
+    expect(prompt, "the recipe that actually went out")
+      .toContain("on the left of the picture as you look at it");
+    expect(prompt, "and not the other half — the clause is derived, not a constant")
+      .not.toContain("on the right of the picture as you look at it");
+  });
+
+  it("and the mirrored half at the wire too, which is the other arm's control", async () => {
+    await refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "her left eye fiery red" } },
+      }),
+    } as never, { ...input, instruction: "her left eye fiery red", scope: "eye@left" });
+
+    const prompt = painted.at(-1)?.prompt ?? "";
+    expect(prompt, "her own side is still named").toContain("left eye");
+    expect(prompt, "her left is the viewer's right")
+      .toContain("on the right of the picture as you look at it");
+    expect(prompt, "and not the other half")
+      .not.toContain("on the left of the picture as you look at it");
   });
 
   /*
