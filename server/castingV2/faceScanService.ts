@@ -282,11 +282,12 @@ function defaultDescriber(): ((input: { bytes: Buffer; contentType: string }) =>
  * delivered picture the customer paid for, where here it is a panel row. One
  * flag that moved both would be the widening nobody meant.
  *
- * ⚠ **Not on `OPTIONAL_VARS`, for `GEMINI_API_KEY`'s reason**: every entry
- * there earns a boot WARNING, and absence here switches no capability off — it
- * is today's answer, bought the way it has always been bought. And compared
- * against `"true"` exactly, never truthiness: a Railway variable created with
- * no value holds the empty string.
+ * ⚠ **Not on `OPTIONAL_VARS`, for the reason the retired image key is on
+ * neither list**: every entry there earns a boot WARNING, which is right for a
+ * variable whose absence switches a capability OFF and wrong here — absent,
+ * this is today's answer, bought the way it has always been bought. And
+ * compared against `"true"` exactly, never truthiness: a Railway variable
+ * created with no value holds the empty string, and `??` does not catch it.
  */
 export const PAIR_ONE_READ_ENV = "ENABLE_CASTING_PAIR_ONE_READ";
 
