@@ -1,7 +1,7 @@
 {
-  "edition": 715,
-  "updatedAt": "2026-10-15T09:20:00.000Z",
-  "shift": "Your word this morning approved clearing out the old machinery on the paid edit road, and tonight I started at the top of that list. Nothing in the app looks or behaves any differently, and nothing on the service was switched.\n\nThe first piece is done and live. It was genuinely one small function that nothing has called since September — but deleting it turned up the thing a deletion always has to be asked, which is what the dying code was the only record of. Its notes held a measured incident from a real walk through the studio: a character's freckles were meant to be carried across as a picture and were asked for in words as well, so the engine painted them again and lost them, twice, on pictures that had been paid for. That is why the function existed at all. The road it belonged to is retired now, so I moved that fact into the clean-out record rather than let it go with the code.\n\nThe second is a question for you, and I have written it down rather than put it on your desk, because nothing is waiting on it and what the product does today is one of the three possible answers. If you refine a character using your own photograph — you attach a picture and take the hair from it — and then ask for more characters like that one, the new ones do not carry the hair the photograph showed. They go back to the hair the character was born with. It is not a fault anybody introduced; a feature stopped applying to new work as the road underneath it changed. Making it work is a new capability rather than a repair, so it belongs in this rung's design and not in a clean-out, which is why it is filed and not on your desk.\n\nThe third piece is in review now, and it is the step that has to come before the old paste machinery can be taken out at all: four settings hang off it, and they have to be moved onto the setting above it first, or the service refuses to start. The written plan said three settings. There are four — the fourth belongs to the tattoo studio you retired in September, whose start-up safety check outlived the feature itself, which is exactly why nobody had counted it. I found it by listing every piece of code that reads that setting before changing anything, rather than trusting the count. Because this is the kind of change that can stop the site from starting, I rehearsed the start-up with your real settings before shipping it — and the rehearsal was wrong three times before I trusted it, once in the worst way, where it reported a pass over a check that had never actually run.\n\nNone of tonight's work of mine is visible, so one thing that IS: the drawer you approved this evening was built and went live while I was working, by another of the agents on this rung, and so did the bigger edit box. Neither is mine and both are on their own cards — I mention them only so this page does not read as though nothing changed in the app tonight.",
+  "edition": 716,
+  "updatedAt": "2026-10-15T12:20:00.000Z",
+  "shift": "Tonight was the next piece off the clean-out list you approved this morning, on the paid edit road. Nothing in the app looks or behaves any differently, nothing on the service was switched, and no money was spent.\n\nWhat came out is the last of the machinery from the two old “how is this character dressed” paths you retired in September. It had stopped being reachable, but it was still sitting in the one place that answers “what is this person wearing” — and that answer is shared. The edit road asks it, the signing step asks it, and the tattoo rules ask it twice. So the careful part of tonight was not the deleting; it was re-answering each of those questions in writing before anything was cut.\n\nThe plan listed four places to re-answer. There are five, and the one it missed is the one that decided whether this was safe at all: the reader that looks up what a FINISHED character was wearing, off the record stored when it was signed. If that reader stopped recognising the old wording, finished characters somebody paid for could start being treated differently. So I read the real rows in both worlds before touching anything. On production there is no such record — none, ever. In our test world there are four. Their behaviour does not change either, and the reason is better than the count: everything downstream of that reader only ever asked one question of it, and the retired wording and no wording at all were always the same answer to that question. The counts just agree with it.\n\nTwo things I found and deliberately wrote down rather than fixed. Neither is something a customer can run into, and neither is on your desk, because nothing is waiting on you.\n\nThe first is a small tally. When somebody asks for a tattoo on a part of the body their clothes cover, we meant to count it — a refusal nobody counts is a request thrown away. That tally has never had a single row, in either world, and now nothing can write to it at all: the only way in needed a kind of outfit change the product does not offer anyone. It was already unreachable before tonight; what changed is that it is now shut by design instead of by luck. My recommendation on the card is to leave it exactly where it is, written down, because it starts working by itself the day outfit changes exist.\n\nThe second is smaller and stranger. Our own default outfit — the plain grey tee, trousers and plain shoes — is written down as one sentence, and that sentence is too long to be saved as an outfit change. Twelve characters too long. Worse, going over the limit throws away the whole change rather than just that part, so it would look like the product quietly forgetting rather than refusing. It cannot bite today, for the same reason as above: nobody can ask for an outfit change. It is written down so that whoever builds that meets it first.\n\nOne thing worth telling you about the testing, because it is the kind of mistake that hides. Moving these tests across, one of them went green while silently testing nothing at all — the thing it was built to check never ran. It looked exactly like a pass. It now proves the check actually happened before it claims anything, which makes it a better test than the one it replaced. I have written that warning onto the card, because the next few pieces of this clean-out are the same shape and will offer the same trap.\n\nThe work is in review now rather than live: it touches a file on the money list, so it waits for a review by hand rather than merging on the automatic checks. Those checks have all passed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -148,18 +148,12 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T08:37:12.001Z",
+      "readAt": "2026-10-15T12:07:42.538Z",
       "items": [
         {
           "issueNumber": 14,
           "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
           "kind": "rung",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 15,
-          "title": "Cast settings modal, second pass: the two 'coming' styles become real (polish, after brief 10; Style is the only setting, his #535 ruling)",
-          "kind": "roadmap",
           "rung": "N3"
         },
         {
@@ -205,6 +199,18 @@
           "rung": "N3"
         },
         {
+          "issueNumber": 2551,
+          "title": "N3: the ink-form demand table has no reachable writer — zero rows in both worlds, all time (ghost audit, found at slice 2)",
+          "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2552,
+          "title": "N3: the product's own wardrobe sentence is too long to store as an edit — 132 characters against a 120 cap, and the whole edit is dropped (found at #1577 slice 2)",
+          "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
           "issueNumber": 18,
           "title": "Takes — founder-endorsed design direction, not yet a build order",
           "kind": "design-unbuilt",
@@ -215,6 +221,12 @@
           "title": "Retirement + cleanup — roadmap item 7, and its missing tool now exists",
           "kind": "rung",
           "rung": "N8"
+        },
+        {
+          "issueNumber": 15,
+          "title": "Cast settings modal, second pass: the two 'coming' styles become real (polish, after brief 10; Style is the only setting, his #535 ruling)",
+          "kind": "parked",
+          "rung": null
         },
         {
           "issueNumber": 706,
@@ -10430,9 +10442,16 @@
     {
       "id": "ghost-audit-slice4a-1577",
       "title": "Four settings move off the old paste machinery so it can be taken out (#1577)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2541,
       "note": "The plan said three settings; there are four. Nothing on the service changes."
+    },
+    {
+      "id": "ghost-audit-slice2-1577",
+      "title": "The old “how is this character dressed” machinery comes off the paid edit road (#1577)",
+      "status": "in-review",
+      "prNumber": 2550,
+      "note": "Held for a review by hand — it touches a file on the money list. Automatic checks all green. Nothing a customer sees changes. Two findings filed rather than folded in (#2551, #2552)."
     }
   ],
   "problems": [
@@ -10894,12 +10913,15 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T08:37:12.000Z",
+    "readAt": "2026-10-15T12:07:42.537Z",
     "items": [
       {
         "issueNumber": 801,
         "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked"
+        }
       },
       {
         "issueNumber": 1577,
@@ -10958,17 +10980,18 @@
         "urgent": false
       },
       {
-        "issueNumber": 2533,
-        "title": "N3: the edit panel slides out like a drawer when you mean to edit, and fills in feature by feature — looking mode is just the picture (his word 2026-10-15)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "his desk card `n3-drawer-2533` is open"
-        }
-      },
-      {
         "issueNumber": 2535,
         "title": "N3 plan",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2544,
+        "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2545,
+        "title": "N3: every cast keeps one current description, rewritten naturally after each edit — and everything downstream reads it (his word 2026-10-15)",
         "urgent": false
       }
     ]
