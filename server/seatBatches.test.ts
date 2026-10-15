@@ -1191,8 +1191,19 @@ describe("the milestone comes from the ladder he declared, not the top of his ba
        position, and the order then tells him the truth: he chose N4b over two
        rungs still queued above it. **This pin moves only on his word. The next
        flip is N4b → whatever he names, on N4b's completion card and his word —
-       never on the four build cards merely closing.** */
-    expect(focusRungFromLadder(ladder)).toBe("N4b");
+       never on the four build cards merely closing.**
+
+       ⚠ **MOVED N4b → N3 ON 2026-10-15, ON HIS WORD IN CHAT, VERBATIM AND
+       ENTIRE: *"start on n3"*** — recorded on N4b's completion card **#2523** at
+       02:02:31Z in the comment that closed it, after his test drive confirmed
+       Kiki's voices and Change and Remove. N3 had been the recommendation on
+       #2523 and the rung he passed over when he chose Voice; this time he took
+       it. **No new key, again**: `N3` has been on the ladder since the
+       rebaseline was signed, so only its `state` moved and N4b went `done`.
+       **This pin moves only on his word. The next flip is N3 → whatever he
+       names, on N3's completion card and his word — never on its cards merely
+       closing.** */
+    expect(focusRungFromLadder(ladder)).toBe("N3");
   });
 
   describe("tonight's two measured shapes, driven through the ordered gate", () => {

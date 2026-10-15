@@ -289,12 +289,18 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        `N4` on purpose: the reading is by state, never by position, and the
        order then shows him that he chose N4b over two rungs still queued above
        it. **The next flip is N4b → whatever he names, on N4b's completion card
-       and his word, never on the four build cards merely closing.** */
+       and his word, never on the four build cards merely closing.**
+
+       ⚠ **N4b → N3 on 2026-10-15, his word in chat, verbatim and entire:
+       *"start on n3"*** — recorded on N4b's completion card #2523 at 02:02:31Z
+       in the comment that closed it. Written into both artifacts in ONE commit,
+       inside the hour, which is the whole of what this arm can buy. **The next
+       flip is N3 → whatever he names, on N3's completion card and his word.** */
     const declared = focusRungFromRulebook(read(RULEBOOK));
-    expect(declared).toMatchObject({ kind: "rung", rung: "N4b" });
+    expect(declared).toMatchObject({ kind: "rung", rung: "N3" });
   });
 
-  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N4b", () => {
+  it("⚠ PROVEN ABLE TO FAIL — the ladder's current rung doctored while the rulebook holds N3", () => {
     /*
       #1840's exact state, driven: the briefing left behind while his word has
       reached the rulebook. The card asks for this one by name.
@@ -311,7 +317,8 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        ⚠ **AND THE ANCHOR MUST NAME THE RUNG THAT IS CURRENT, which is why it
        moved from `P2` to `N2b` on 2026-10-08, from `N2b` to `N2c` on
        2026-10-11, from `N2c` to `N2d` on 2026-10-12, from `N2d` to `BH`
-       later the same day, and from `BH` to `N4b` on 2026-10-13.** Doctoring a rung
+       later the same day, from `BH` to `N4b` on 2026-10-13, and from `N4b`
+       to `N3` on 2026-10-15.** Doctoring a rung
        that is `done` leaves the ladder's one `current` rung untouched, the two
        artifacts still AGREE, and this control passes while proving nothing —
        the inert-sabotage shape the comment above is already about, one rung
@@ -333,15 +340,16 @@ describe("⚠ THE DERIVED ARM — the two real artifacts, held equal", () => {
        the ladder as a `queued` row, so the `"key": "N4b",` line this anchor now
        names existed — and went on existing — right through the flip. An anchor
        that merely EXISTS proves nothing; it must name the rung that is
-       `current`. */
-    const stale = real.replace('"key": "N4b",', '"key": "N4bx",');
+       `current`. The 2026-10-15 N3 flip is the same shape a FOURTH time: a
+       queued `N3` row was there all along, and a `done` N4b keeps its line. */
+    const stale = real.replace('"key": "N3",', '"key": "N3x",');
     expect(stale, "the doctored copy must differ, or this control proves nothing").not.toBe(real);
-    /* BH is `done` and N4b is now `N4bx`, so the ladder's one `current` rung
-       is `N4bx` — a rung the rulebook does not declare. */
+    /* N4b is `done` and N3 is now `N3x`, so the ladder's one `current` rung
+       is `N3x` — a rung the rulebook does not declare. */
     const verdict = agree(rulebook, stale);
     expect(verdict.ok, "a disagreeing pair MUST fail, or the arm above is decoration").toBe(false);
     expect(verdict.why).toContain("TWO SOURCES OF TRUTH");
-    expect(verdict.why).toContain("N4bx");
+    expect(verdict.why).toContain("N3x");
   });
 
   it("⚠ PROVEN ABLE TO FAIL — a ladder with NO current rung, which is #1541's shape", () => {

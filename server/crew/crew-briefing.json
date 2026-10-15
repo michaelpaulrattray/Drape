@@ -1,49 +1,45 @@
 {
-  "edition": 709,
-  "updatedAt": "2026-10-15T00:52:00.000Z",
-  "shift": "YOUR CHARACTERS CAN SPEAK, AND THE VOICE RUNG IS DONE — TEN CARDS, TWO DAYS. Open a signed character and three voices made from their own written words are already there, each with play and a waveform; keep the one that sounds right and that character's own audition plays there from then on. Change it or remove it whenever you like. Nothing on any screen names the company making the sound, and a test reads every string on that card to keep it that way. The last card closed on your own ear tonight — you answered three voice cards in two and a half minutes and the fourth was waiting on the same two sentences. ONE THING IS WORTH YOUR HANDS: keeping a voice costs 100 credits, and our records show no paid keep has ever happened on the live site. The dates explain it rather than contradict you — the card went live on your account at 09:15 and the price only went in at 13:33, so a keep you made in between was free and left no line in your history. It is step 2 of your test drive. Voice is on for your account and nobody else's; widening it is your word, and has one number to choose first. Your test drive and the one word on what comes next are on card #2523.",
+  "edition": 710,
+  "updatedAt": "2026-10-15T02:15:00.000Z",
+  "shift": "N3 IS OPEN, ON YOUR WORD — \"start on n3\". Voice is closed on your own test drive: Kiki's voices, and Change and Remove, both confirmed. The next rung is the one you passed over when you chose Voice: the refine era completes — the feature panel that finds what a character has and makes it editable, the picture-reference selector, the character settings, and the honest edges around them. The rulebook, the ladder on this page and both of the crew's guards moved together in one go, inside the hour, so no builder is held on a finished rung this time. Thirteen cards are on the rung. The first job is your own order from August: go through the paid edit road for leftover machinery from the old studio, the way the roll road was cleaned out in September. Your two cost cards ride with it — cutting what an edit costs us, and cutting what a face scan costs us. The panel and the selector need a design pass before they are built, and that comes to you before any of it is.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
-      "state": "none",
-      "title": "Voice is finished and the focus is clear. Every signed character's written voice line is now a voice you can hear: three made from their own words when the card opens, free every time, and keeping one gives that character their own audition for good. Changing and removing a kept voice came with it, and so did voices that sound like the character rather than like the sentence. It is live on your account only — widening it is your word, and there is one number to choose first. Your six-step test drive and the one word on what comes next are on card #2523. Nothing new starts until you name it.",
-      "quote": null,
-      "quotedAt": null
+      "state": "confirmed",
+      "title": "The refine era completes. The feature panel finds what a character has — reading it from the picture rather than from a fixed list — draws a box round each thing and makes it editable, and says honestly when something is not there. Beside it: the Pinterest-style selector for reference pictures, the character settings' second pass, outfit-card thumbnails, and the honest sentence when a tattoo is sold from words alone. The first job is the leftover old-studio machinery on the paid edit road, your own order. Your two cost cards ride with it: what an edit costs us, and what a face scan costs us. The panel and selector designs come to you before they are built.",
+      "quote": "start on n3",
+      "quotedAt": "2026-10-15T02:02:31Z"
     },
     "milestone": {
-      "title": "Voice — a cast's written voice line becomes a voice you can actually hear, make again, and keep. Built on your account first, and nothing on screen names the company making the sound.",
+      "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "The design, written and merged — one engine for creatures and people alike, settled by your ear on six pairs, and the Voice card surface you had already approved",
-          "state": "done"
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act (#1577)",
+          "state": "waiting"
         },
         {
-          "title": "Making a voice and keeping it, with no screen yet — a voice made from the written line, saved, and a reading of it stored beside it, measured at 1½ to 2¼ minutes depending on the voice — not the flat 90 seconds the design guessed (#2469)",
-          "state": "done"
+          "title": "What an edit costs us — count the checks a Refine makes, keep the fewest it can safely keep, and report the cost per edit before any price changes (#1689)",
+          "state": "waiting"
         },
         {
-          "title": "Listen and pick, on the cast's Voice card — a few voices made from the text, play each one, keep the one that sounds right (#2470)",
-          "state": "done"
+          "title": "What a face scan costs us — cut it as far as it goes without anyone noticing (#2191)",
+          "state": "waiting"
         },
         {
-          "title": "Voices that sound like the character, not like the written line — a second description written for the voice designer from your words and the character's picture, which you never see. The piece your listening test chose. Built, reviewed and live; your ear on the result is the last word (#2498)",
-          "state": "done"
+          "title": "The edit engine re-asked on your own characters — today's road against the newer engines, measured, your eye deciding (#801)",
+          "state": "waiting"
         },
         {
-          "title": "Changing or removing a voice you have kept — your own report that there was no way to do either. Change voice makes three new ones from the line as it reads now and keeping one replaces the old; Remove clears it and asks first. Built, reviewed and live; your hands on it are the last word (#2497)",
-          "state": "done"
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest empty state when something is not there (#30)",
+          "state": "waiting"
         },
         {
-          "title": "Ready to widen — the real prices are on the buttons, the free voices are bounded, and the staff dashboard now shows how much voice the company has left this month, live, with honest words when it cannot be read: keeps, slots, and (new tonight) the shared monthly speech budget that the free voices actually spend. The plan document that still called Voice unbuilt is corrected (#2471, #2509)",
-          "state": "done"
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14), the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "state": "waiting"
         },
         {
-          "title": "Re-making a voice when the slots are full — your ear closed its court, and it is now built, live and driven against the real voice service: a voice that gave up its place came back from its own stored recording, spoke, and cost one unit of the month’s allowance. A voice already in place costs nothing to use (#2472)",
-          "state": "done"
-        },
-        {
-          "title": "The design now describes your voice account as it actually is, and the rung as built — the correction it was owed is merged (#2474)",
-          "state": "done"
+          "title": "The smaller debts the rung carries — the hair road's owed checks (#62), the compositor diagnostics (#64), the edit's 200-character limit (#26), and the checks that do not travel with the new road yet (#1125)",
+          "state": "waiting"
         }
       ]
     },
@@ -91,7 +87,7 @@
       {
         "key": "N3",
         "title": "The refine era completes — feature panel, loader, studio surfaces",
-        "state": "queued"
+        "state": "current"
       },
       {
         "key": "N4",
@@ -100,8 +96,8 @@
       },
       {
         "key": "N4b",
-        "title": "Voice — the cast gets a voice you can hear, make again and keep, on your word: \"give voice its own rung its very important\"",
-        "state": "current"
+        "title": "Voice — built, driven and live on your account: three voices from the character's own words, keep the one that sounds right, change or remove it. Your test drive confirmed it",
+        "state": "done"
       },
       {
         "key": "N5",
@@ -3976,7 +3972,7 @@
         }
       ],
       "recommendation": "N3. It is next on your ladder, it is the rung you passed over when you chose Voice, and both of its first cards are yours — they cut what we pay on every Refine and every face scan.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-15T00:48:00.000Z",
       "issueNumber": 2523
     }
