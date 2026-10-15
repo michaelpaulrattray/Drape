@@ -549,6 +549,85 @@ export function createFalRegionReader(input: {
     return asked;
   };
 
+  /**
+   * THE QUESTION A SCAN ASKS TWICE, PAID FOR ONCE (#2191).
+   *
+   * A face scan asks SAM 3 for `face` twice on the same frame, and the cost
+   * model has recorded both as facts since #2184 — *"the face asked twice: once
+   * for the midline the pairs are split on, once for the head the build row is
+   * cut under"*. Two of the floor's nineteen reads, on every scan, in every
+   * outcome; measured at the wire again on 2026-10-15 and the prompt table says
+   * `face = 2` under all three answer policies.
+   *
+   * They are the SAME REQUEST: same endpoint, same prompt, same bytes, same
+   * address. fal bills SAM 3 per request, so the second one is half a cent for
+   * an answer already in hand — and the founder's goal on this card is to cut
+   * what a scan costs without the customer noticing. This is the whole of that
+   * sentence: nothing the panel draws can move, because both callers still
+   * apply their own `keep` to the same answer.
+   *
+   * # Why this prompt and no other
+   *
+   * ⚠ **A general memo would silently swallow the scan's deliberate re-asks.**
+   * An empty anatomy read is asked once more on purpose (fable-468 ruling 1)
+   * and a half-answered pair gets one more look (fable-749 §3a) — both of them
+   * the same prompt on the same bytes, both of them wanted. `face` is safe
+   * because **nothing in the scan's plan asks it**: the catalogue's questions
+   * are `hair`, `eyes`, `face skin`, and so on, and the only two askers of the
+   * bare noun are `axisOf` below and the composed head read in `faceScan.ts`,
+   * neither of which ever asks twice. That is not left to prose —
+   * `server/faceScanSharedFaceRead.test.ts` holds it against
+   * `catalogueSlots()`, so the day a slot asks `face` the suite reddens here
+   * rather than a re-ask quietly disappearing.
+   *
+   * # And only for a caller with no deadline of its own
+   *
+   * The shared-read rule this file already applies to `axes` and `referenced`:
+   * a memoised promise may not carry one caller's abort into another caller's
+   * await. Both of today's askers pass no per-call signal, so both share; a
+   * future caller that brings a deadline asks fresh rather than having it
+   * dropped. A rejection is forgotten, so the next ask re-asks rather than
+   * inheriting one bad minute.
+   *
+   * # And the key is the PROMPT and the frame, not the frame alone
+   *
+   * ⚠ **Keyed on the picture alone this is a wrong-answer bug and not a saving,
+   * and that was driven rather than reasoned.** Seven of the scan's questions
+   * are asked of the SAME buffer — `hair`, `facial hair`, `nose`, `lips`, the
+   * teeth, `face skin`, `glasses` — so a frame-only key makes whichever of them
+   * asks first the answer to all the others. Measured by widening the filter to
+   * every prompt: all seven vanished from the wire table and would have been
+   * served the FACE mask, the floor reading a flattering 11 instead of 18. The
+   * narrow filter made that unreachable, which is exactly the kind of
+   * correctness that stops being true the day somebody widens one condition.
+   *
+   * So the pair is the key. Widening the filter can then only ever swallow a
+   * deliberate re-ask — one failure mode instead of two — and that one is held
+   * by `faceScanSharedFaceRead.test.ts`'s negative control.
+   */
+  const SHARED_PROMPT = "face";
+  const sharedUrls = new Map<Buffer, Map<string, Promise<readonly string[]>>>();
+
+  /** The POST, and the mask addresses it answered with — `keep` is the
+   *  caller's business, so a shared answer cannot impose one reading on the
+   *  other caller. */
+  const askRegionUrls = async (
+    image: Buffer,
+    prompt: string,
+    imageUrl?: string,
+    theirs?: AbortSignal,
+  ): Promise<readonly string[]> => {
+    const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
+    const json = await post(apiKey, SAM3, {
+      image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
+      output_format: "png",
+    }, theirs);
+    const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
+    return masks
+      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+      .filter((url): url is string => typeof url === "string" && url.length > 0);
+  };
+
   const askRegion = async (
     image: Buffer,
     prompt: string,
@@ -562,15 +641,24 @@ export function createFalRegionReader(input: {
     callSignal?: AbortSignal,
   ): Promise<Mask | null> => {
     const theirs = signalFor(callSignal);
-    const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
-    const json = await post(apiKey, SAM3, {
-      image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
-      output_format: "png",
-    }, theirs);
-    const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
-    const urls = masks
-      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
-      .filter((url): url is string => typeof url === "string" && url.length > 0);
+    let urls: readonly string[];
+    if (prompt === SHARED_PROMPT && callSignal === undefined) {
+      let byPrompt = sharedUrls.get(image);
+      if (byPrompt === undefined) {
+        byPrompt = new Map();
+        sharedUrls.set(image, byPrompt);
+      }
+      const held = byPrompt.get(prompt);
+      if (held) urls = await held;
+      else {
+        const asked = askRegionUrls(image, prompt, imageUrl, theirs);
+        byPrompt.set(prompt, asked);
+        asked.catch(() => byPrompt.delete(prompt));
+        urls = await asked;
+      }
+    } else {
+      urls = await askRegionUrls(image, prompt, imageUrl, theirs);
+    }
     if (urls.length === 0) return null;
     if (keep === "first") return fetchMask(urls[0], theirs);
     const every = await Promise.all(urls.map((url) => fetchMask(url, theirs)));

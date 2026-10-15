@@ -388,9 +388,29 @@ export async function scanFace(input: {
     difference between a panel that fills while she looks at the face and one
     that arrives after she has stopped waiting for it.
   */
-  /** How many empty anatomy reads were asked again, and how many the second
-   *  read rescued — the instrument the ruling asks for (fable-468 ruling 1). */
-  const reasked = { asked: 0, rescued: 0 };
+  /**
+   * WHICH empty anatomy reads were asked again, and what the second read
+   * found — the instrument the ruling asks for (fable-468 ruling 1), BY
+   * QUESTION since #2191.
+   *
+   * ⚠ **It was two counters, and a rate cannot answer the question the next
+   * cost lever turns on.** `reasked: 5, rescued: 5` says a scan re-asked five
+   * questions; it does not say WHICH, so it cannot say whether the second look
+   * at `all the teeth` ever finds teeth. That matters because a closed mouth has
+   * none to find, a closed mouth is the common face, and the re-ask is half a
+   * cent of fal's money on every one of them (#2191's lever 1). The same
+   * question is open for `face skin`, `hair`, `nose` and `the lips`.
+   *
+   * So the outcome is recorded against the question, and the two counts are
+   * DERIVED from it rather than tallied beside it (working law 4) — a reading
+   * and its summary cannot then disagree. The pair heal already logs per
+   * question and needed nothing.
+   *
+   * It costs one small map per scan and no calls, and the rate arrives free
+   * from his own ordinary use rather than from a bought sitting — which is the
+   * same bargain the half-answered-pair log struck.
+   */
+  const reasks = new Map<string, "rescued" | "empty" | "failed">();
 
   await Promise.all(plan.map(async (region) => {
     const bilateral = region.slots.some((slot) => slot.instance !== null);
@@ -588,12 +608,15 @@ export async function scanFace(input: {
       if (first === "empty" || first === "capability") empty.push(region.question);
       return;
     }
-    reasked.asked += 1;
     const second = await read();
-    if (second === "filed") {
-      reasked.rescued += 1;
-      return;
-    }
+    /* Recorded before the early return, so a rescued question is in the map
+       exactly as an unrescued one is — a record that only keeps its failures
+       cannot produce a rate. */
+    reasks.set(
+      region.question,
+      second === "filed" ? "rescued" : second === "failed" ? "failed" : "empty",
+    );
+    if (second === "filed") return;
     if (second !== "failed") empty.push(region.question);
   }));
 
@@ -668,9 +691,15 @@ export async function scanFace(input: {
          description is a different failure from a scan with neither. */
       described: descriptions.size,
       describable: wordsPlan().length,
-      /* The re-ask, as a rate rather than an anecdote (fable-468 ruling 1). */
-      reasked: reasked.asked,
-      rescued: reasked.rescued,
+      /* The re-ask, as a rate rather than an anecdote (fable-468 ruling 1) —
+         and BY QUESTION since #2191, because which question was asked twice is
+         what the next cost lever turns on. `all the teeth:empty` repeating
+         across faces is the finding; `reasked: 5` could never have shown it.
+         Both counts are derived from the same map, so they cannot drift from
+         the detail printed beside them. */
+      reasked: reasks.size,
+      rescued: Array.from(reasks.values()).filter((outcome) => outcome === "rescued").length,
+      reaskedBy: Array.from(reasks).map(([question, outcome]) => `${question}:${outcome}`).join(" "),
     },
     "[faceScan] read a face",
   );

@@ -91,12 +91,12 @@ export const FAL_LOW_BALANCE_USD = 20;
  * do, with its source, and the suite holds it inside the derived pair.
  *
  * Where the two derived figures come from, as the wire counted them on
- * 2026-10-10 (13 SAM 3 prompts):
+ * 2026-10-15 (13 SAM 3 prompts):
  *
- *   fewest 19  one per whole-frame question (7), two per pair — one per side —
- *              (5 pairs, 10), and the face asked twice: once for the midline the
- *              pairs are split on, once for the head the build row is cut under
- *   most   40  an anatomy question asked twice (lips, teeth, nose, hair, skin:
+ *   fewest 18  one per whole-frame question (7), two per pair — one per side —
+ *              (5 pairs, 10), and the face asked ONCE: the midline the pairs are
+ *              split on and the head the build row is cut under are one answer
+ *   most   39  an anatomy question asked twice (lips, teeth, nose, hair, skin:
  *              +5); an anatomy pair asked again AND healed inside that second
  *              look (eyes, brows, ears: 6 each, +12); a worn pair healed once
  *              (horns, earrings: 4 each, +4); worn whole-frame questions are
@@ -104,17 +104,38 @@ export const FAL_LOW_BALANCE_USD = 20;
  *
  * The cutout is never asked twice and never by a re-ask; neither is the
  * describer.
+ *
+ * ⚠ **BOTH DERIVED FIGURES CAME DOWN BY ONE ON 2026-10-15 (#2191), AND THE
+ * MEASURED BAND BELOW DELIBERATELY DID NOT MOVE WITH THEM.** They read 19 and
+ * 40, and this docblock recorded the reason as a fact — *"the face asked twice:
+ * once for the midline the pairs are split on, once for the head the build row
+ * is cut under"*. Those two were the same request (same endpoint, same prompt,
+ * same bytes) and fal bills SAM 3 per request, so one of them was half a cent
+ * for an answer already in hand; the reader now shares it
+ * (`falRegionReader.ts`, `SHARED_PROMPT`) and the wire count fell to 18 and 39
+ * under all three answer policies.
+ *
+ * So a real face asks ONE FEWER READ than #2183 measured, and the band below is
+ * therefore expected at **20–26** on the next production reading. It is NOT
+ * written here, because `measured` is a bought reading against fal's own usage
+ * report and moving it by arithmetic would turn a measurement into a claim
+ * (working law 1). It stays at #2183's figure — which is now half a cent high
+ * per scan, which is the safe direction for a cost number — until somebody
+ * re-measures it the way #2183 did. That re-measurement is the one thing #2191
+ * still owes.
  */
 export const FACE_SCAN_FAL_CALLS = {
   sam3: {
-    fewest: 19,
-    most: 40,
+    fewest: 18,
+    most: 39,
     measured: {
       low: 21,
       high: 27,
       source: "#2183 (2026-10-10): 8 production casts scanned through the real scannedFace, "
         + "183 SAM 3 calls matched fal's usage report; production history agrees at 20.9–24.6 "
-        + "reads per paid scan (fal hourly usage / casting.scan_miss audit rows)",
+        + "reads per paid scan (fal hourly usage / casting.scan_miss audit rows). "
+        + "⚠ TAKEN BEFORE #2191, which removed one read from every scan — a re-measurement "
+        + "is expected at 20–26 and is not written here by arithmetic",
     },
   },
   /** The whole-subject matte the build row is composed from — one per scan. */
