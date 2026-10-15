@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute, useSearch } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { ArrowLeft } from "lucide-react";
@@ -1778,13 +1778,66 @@ export default function CastingSheet() {
     trip. Idempotent per (candidate, version) on the server, so the retries and
     refocus refetches TanStack does for free cost nothing.
   */
+  /*
+    THE SCAN IS BOUGHT AT THE EDIT DOORS, NOT AT A GLANCE (#2525, his word
+    2026-10-15: *"what if someone had to deliberatly hit edit or refine before
+    it scans the face"*, then *"yes"* to the shape below).
+
+    A face scan is about twelve cents of fal's money and it fired the moment a
+    refinable face appeared in the viewer. The arrow keys step straight to the
+    next face, so walking a set of eight bought eight scans whether anybody
+    stopped to edit or not.
+
+    So it is armed by the FIRST SIGN OF EDIT INTENT instead, and the doors are
+    the three the ASK DRAFT already has (the "ONE DRAFT, THREE DOORS" block
+    below): focus in the ask box, a row tapped in the panel, a feature clicked
+    on the picture. The customer is still typing their ask for five or ten
+    seconds while the read takes a few, so by the time they press Refine the
+    precise boxes have landed.
+
+    ⚠ **Keyed on the candidate rather than a boolean**, so stepping to the next
+    face disarms by construction — the fable-465 scope, and the same reason the
+    ask box itself is keyed by the face. A `true` here would arm the whole walk
+    the moment one face was edited, which is this card's own defect wearing a
+    different hat.
+
+    ⚠ **It is declared HERE, above the query, and not beside the draft it
+    belongs with**: a `const` is not hoisted, so reading it from the query
+    thirty lines earlier is a render-time `ReferenceError` rather than a
+    mistake anybody would see in review. The draft's block points back at this
+    one.
+
+    **What a customer sees is unchanged**: the panel still opens instantly on
+    the library's general rows and the precise rows still swap in when the read
+    lands. There is no Scan button and no scan wording — the
+    disappearing-technology law's line is that the panel simply gets sharper.
+
+    **A scan already kept costs nothing and is unaffected by the gate** — a
+    version read earlier in the sitting is still in the browser's cache, and a
+    disabled query reads its cache exactly as an enabled one does. What the gate
+    does change, and it is named rather than discovered: a face scanned on
+    ANOTHER day has its rows in the server's own table, and they now arrive on
+    the first edit door rather than on the glance. That read spends nothing at
+    fal; it costs one round trip, at the moment the customer has started typing.
+  */
+  const [scanArmedFor, setScanArmedFor] = useState<string | null>(null);
+  const faceScanArmed = viewerCandidateId !== null && scanArmedFor === viewerCandidateId;
+  /* Idempotent on purpose: every door calls it, a face can be entered by more
+     than one of them, and arming twice is the same state. */
+  const armFaceScan = useCallback(() => {
+    setScanArmedFor(viewerCandidateId);
+  }, [viewerCandidateId]);
   const faceScan = trpc.castingV2.faceScan.useQuery(
     {
       candidateId: viewerCandidateId ?? "",
       variantId: shownVariantId,
     },
     {
-      enabled: viewerRefinable && Boolean(viewerCandidateId) && Boolean(face.data?.scanning),
+      /* `faceScanArmed` is the #2525 gate and its reasoning is just above.
+         Everything else here is unchanged: outside the scope the server still
+         answers dark, and a face that is not refinable still buys nothing. */
+      enabled: viewerRefinable && Boolean(viewerCandidateId)
+        && Boolean(face.data?.scanning) && faceScanArmed,
       /* It never changes for a version — a new version is a new key. */
       staleTime: Infinity,
       /*
@@ -1847,7 +1900,23 @@ export default function CastingSheet() {
     holding a placeholder means what is on screen was read of a different frame,
     and the working line is exactly the sentence for that.
   */
-  const faceScanWorking = (Boolean(face.data?.scanning) && faceScan.isPending)
+  /*
+    ⚠ `isLoading`, NOT `isPending` — AND #2525 IS WHY (the gate above).
+
+    `FacePanel`'s own `working` docblock promises that this line *"can never
+    outlive its work"*, because the caller derives it from the scan query's
+    pending state. That held while the query always fired: pending meant a read
+    was on its way. **A query that is not enabled is pending for ever**, so the
+    moment the scan was gated on edit intent, `isPending` would have drawn
+    *"Reading their features…"* over every face somebody merely looked at — a
+    working state outliving work that had not even started, which is the exact
+    failure that docblock names.
+
+    `isLoading` is `isPending && isFetching`: no answer yet AND a request
+    actually in flight. On the armed road it reads identically to the old
+    expression; while the gate is shut it is false, which is the truth.
+  */
+  const faceScanWorking = (Boolean(face.data?.scanning) && faceScan.isLoading)
     || face.isPlaceholderData
     || faceScan.isPlaceholderData
     /*
@@ -1886,7 +1955,11 @@ export default function CastingSheet() {
     gutter — and it would have reopened fable-491 besides.
   */
   const facePanelPossible = Boolean(facePanelData)
-    || (Boolean(face.data?.scanning) && faceScan.isPending)
+    /* `isLoading` for the same reason as the working line above: a gated query
+       is pending for ever, and this clause reserves a COLUMN — so on
+       `isPending` it would hold one open on a face nobody is reading, which is
+       the fable-491 blank column it was written to avoid. */
+    || (Boolean(face.data?.scanning) && faceScan.isLoading)
     || face.isPlaceholderData
     || faceScan.isPlaceholderData;
   /*
@@ -1920,6 +1993,11 @@ export default function CastingSheet() {
     panel beside it, and the feature clicked on the picture itself all write the
     same sentence — so the sentence is held here, where all three can reach it,
     rather than inside whichever component happened to own the field.
+
+    ⚠ **AND THOSE SAME THREE DOORS ARM THE FACE SCAN (#2525)** — the gate and
+    the reason are up at `scanArmedFor`, declared above the query that reads it
+    because a `const` is not hoisted. If you add a FOURTH door to this draft,
+    it arms the scan too, or it is a door that edits without the precise boxes.
   */
   const [askDraft, setAskDraft] = useState("");
   /*
@@ -3622,7 +3700,14 @@ export default function CastingSheet() {
               rows={faceRows}
               selection={faceSelection}
               busy={viewerBusy}
-              onAsk={askRefine}
+              /* Door 3 of #2525: the rectangles only exist once a read has
+                 landed, so arming here is for the case where they came from a
+                 scan kept on an earlier day — and it costs nothing to be
+                 complete about a door the draft already has. */
+              onAsk={(instruction, scope) => {
+                armFaceScan();
+                askRefine(instruction, scope);
+              }}
             />
           ) : null}
           /*
@@ -3707,7 +3792,13 @@ export default function CastingSheet() {
               */
               carried={face.isPlaceholderData || faceScan.isPlaceholderData}
               selection={faceSelection}
-              onScope={setAskDraft}
+              /* Door 2 of #2525 — tapping a row IS edit intent, and it is the
+                 door that exists before any read has landed, because these
+                 rows come from the library rather than from the scan. */
+              onScope={(prefill) => {
+                armFaceScan();
+                setAskDraft(prefill);
+              }}
             />
           ) : null}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
@@ -3849,6 +3940,9 @@ export default function CastingSheet() {
               /* The one sentence all three doors write into. */
               draft={askDraft}
               onDraft={setAskDraft}
+              /* Door 1 of #2525: reaching for the ask box arms the face scan,
+                 seconds before the ask is finished being typed. */
+              onEditIntent={armFaceScan}
               /* Drawn in the rail beside the picture whenever the three-column
                  shape is on — the same component, not a second stack. */
               stackHoisted={Boolean(facePanelData)}
