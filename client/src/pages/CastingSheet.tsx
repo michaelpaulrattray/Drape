@@ -1827,6 +1827,29 @@ export default function CastingSheet() {
   const armFaceScan = useCallback(() => {
     setScanArmedFor(viewerCandidateId);
   }, [viewerCandidateId]);
+  /*
+    THE DRAWER OPENS ON THE SAME INTENT THAT BUYS THE READ (#2533, his approval
+    2026-10-15 of `drawer-real-v2`).
+
+    Looking is just the picture. Reaching for the ask box slides the panel out,
+    and that reach is door 1 of the three above — so the drawer and the read
+    start together, and the rows fill in while the ask is still being typed.
+
+    ⚠ **Keyed on the candidate, exactly like the arming, and for the same
+    reason**: a `true` here would carry an open drawer onto the next face as the
+    arrows walk the set — and the drawer's opening IS an intent signal, so an
+    open drawer that followed the walk would be one step from arming every face
+    it passed. Stepping shuts it by construction.
+
+    Closing it (its ×, or Escape) never disarms: a read already started is paid
+    for, and reopening shows it full rather than buying it twice.
+  */
+  const [drawerOpenFor, setDrawerOpenFor] = useState<string | null>(null);
+  const drawerOpen = viewerCandidateId !== null && drawerOpenFor === viewerCandidateId;
+  const openDrawer = useCallback(() => {
+    setScanArmedFor(viewerCandidateId);
+    setDrawerOpenFor(viewerCandidateId);
+  }, [viewerCandidateId]);
   const faceScan = trpc.castingV2.faceScan.useQuery(
     {
       candidateId: viewerCandidateId ?? "",
@@ -3801,6 +3824,9 @@ export default function CastingSheet() {
               }}
             />
           ) : null}
+          /* The panel slides out on intent and shuts on its own × or Escape
+             (#2533) — `openDrawer` above is where it opens and why. */
+          drawer={{ open: drawerOpen, onClose: () => setDrawerOpenFor(null) }}
           onIndexChange={(next) => setViewerCandidateId(viewerFrames[next]?.candidateId ?? null)}
           onClose={() => setViewerCandidateId(null)}
           /*
@@ -3942,7 +3968,7 @@ export default function CastingSheet() {
               onDraft={setAskDraft}
               /* Door 1 of #2525: reaching for the ask box arms the face scan,
                  seconds before the ask is finished being typed. */
-              onEditIntent={armFaceScan}
+              onEditIntent={openDrawer}
               /* Drawn in the rail beside the picture whenever the three-column
                  shape is on — the same component, not a second stack. */
               stackHoisted={Boolean(facePanelData)}

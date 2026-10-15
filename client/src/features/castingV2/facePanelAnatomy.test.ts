@@ -564,7 +564,11 @@ describe("the panel's copy, classified", () => {
       ]);
       /* Door 1 — the ask box takes focus, which is the earliest of the three. */
       expect(refine).toContain("onFocus={onEditIntent}");
-      expect(sheet).toContain("onEditIntent={armFaceScan}");
+      /* Since the drawer (card 2533) the box's focus opens the drawer, and the
+         opener arms the scan in the same breath — so door 1 still arms. */
+      expect(sheet).toContain("onEditIntent={openDrawer}");
+      const opener = sheet.slice(sheet.indexOf("const openDrawer = useCallback("));
+      expect(opener.slice(0, opener.indexOf("}, ["))).toContain("setScanArmedFor(viewerCandidateId)");
       /* Doors 2 and 3 — a row tapped in the panel, a feature clicked on the
          picture. Both already write the draft; both now arm as well. */
       const onScope = sheet.slice(sheet.indexOf("onScope={"));
