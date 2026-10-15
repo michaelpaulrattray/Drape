@@ -13957,27 +13957,48 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
   });
 
-  it("⚠ THE OFFER DERIVES — an upper CHEST is not offered a road that shuts one ask later", async () => {
+  it("⚠ THE OFFER DERIVES — it is made where the road serves the placement", async () => {
     /*
-      fable-1339 §2's condition, and it is census 4(b)'s own lesson arriving in
-      a new sentence. *"I can put a new one on instead"* is true only where the
-      WORDS ROAD serves that placement; the upper chest is not served (the mint
-      cannot crop it under a crew neck), so offering it here would send her
-      straight into `gate_ink_uncarried` one ask later.
+      fable-1339 §2's condition, and census 4(b)'s lesson in a new sentence.
+      *"I can put a new one on instead"* is true only where the WORDS ROAD
+      serves that placement, so the offer is DERIVED from the same list the
+      road is rather than promised in a sentence.
 
-      The chest branch gets the honest close and NO offer; the arm below proves
-      the offer is not simply missing everywhere.
+      ⚠ **THIS ARM ASSERTED THE OPPOSITE UNTIL #1577 SLICE D3, AND IT WAS
+      TESTING A STATE NO ACCOUNT WAS IN.** It read *"the upper chest is not
+      served (the mint cannot crop it under a crew neck)"* and expected NO offer
+      for a chest. The chest joined the road on 2026-08-23 (the Basics chest
+      court — the first court had measured a GARMENT and been read as measuring
+      a PLACEMENT), and `CASTING_INK_WORDS_SCOPE` stood at `all` on the
+      service; this suite's environment never set that variable, so the arm read
+      the narrow road while production ran the open one and the stale premise
+      survived in a passing test.
+
+      ⚠ **AND THE DEFECT IT WAS WATCHING FOR IS REAL AND IS FILED AS #2558,
+      rather than papered over here.** On a cast whose outfit COVERS the chest
+      the offer is now made and the next ask refuses at
+      `gate_ink_uncarried` — census 4(b)'s dead end, live on the one account
+      that can reach this door (`CASTING_INK_TRANSFORM_SCOPE` is `users:1`,
+      read at the service). The repair is to ask the OUTFIT as well as the road,
+      which the servedAndBare reader already answers; it is #2558's work and not this
+      slice's, on his 2026-09-24 ruling that a capability found during a
+      retirement is its own card.
+
+      So what this arm holds now is the rule that is actually true: the offer
+      follows the ROAD's served list, and both placements on it are offered.
     */
     inkedBranch();
     const chest = await refineCandidate(
       transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
       { ...input, instruction: "make his chest tattoo bigger" },
     );
-    expect(chest.note).not.toContain("put a new one on");
+    expect(chest.note, "the chest is served by the road, so the offer is made").toContain(
+      "put a new one on",
+    );
 
-    /* A NECK piece — served by the words road on every account — is offered
-       the road that really works. The two notes must DIFFER, or a derivation
-       that ignored its argument would satisfy both halves (fable-1333 §2). */
+    /* A NECK piece is offered too — and the two notes must still DIFFER, or a
+       derivation that ignored its argument would satisfy both halves
+       (fable-1333 §2). */
     inkedBranch({ "ink:neck": NECK_CROP });
     const neck = await refineCandidate(
       transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),

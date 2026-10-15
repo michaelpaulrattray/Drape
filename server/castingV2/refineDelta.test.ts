@@ -667,13 +667,19 @@ describe("ink renders only where the anchor is the document", () => {
     }
   });
 
-  it("⚠ still walls a measured placement the words road does not serve yet", () => {
-    /* The arm: measured, and the flag that would serve it is off here. */
-    const arm = "a band tattoo on her left upper arm";
-    const c = check(arm);
-    expect(readDelta({ free: { ink: arm } }, c)).toBeNull();
-    expect(c.wall?.reason).toBe("gate_ink_document");
-  });
+  /*
+    ⚠ AN ARM STOOD HERE AND IS RETIRED WITH ITS PREMISE — #1577 slice D3.
+
+    It was *"still walls a measured placement the words road does not serve
+    yet"*, and its subject was an upper arm: *"measured, and the flag that would
+    serve it is off here"*. **There is no such placement.** The upper arm joined
+    the road on 2026-08-23 and `CASTING_INK_WORDS_SCOPE` stood at `all` on the
+    service, so the arm only ever passed because this suite's environment never
+    set the variable — it was asserting a refusal no account could receive. The
+    live claim it looks like it was making, that an UNMEASURED placement is
+    refused, is asserted in `inkWordsRoad.test.ts` over a sleeve, a back piece
+    and a thigh, which are really unserved.
+  */
 
   it("⚠ AND WALLS THE CHEST — by her OUTFIT once the road serves it", () => {
     /*
@@ -684,26 +690,21 @@ describe("ink renders only where the anchor is the document", () => {
       coverage owner's verdict.
 
       The chest is now served at the road's most open, so that loop has no
-      population and a closed account's chest ask falls to the derived document
-      message. **That is not the frozen apology this file's header warns about**:
-      `inkNeedsDocumentMessage` is composed from THIS account's own served list,
-      so a closed account is told *"a neck tattoo is the one I can do"* — true,
-      actionable, and naming what works.
+      population.
 
-      The interesting arm is the OPEN one below it, which is every production
-      account (the words road serves all three placements; its flag retired in
-      #1577 slice D3): the chest reaches the coverage
-      gate, and her OUTFIT decides.
+      ⚠ **THE CLOSED HALF OF THIS ARM IS RETIRED WITH THE FLAG (#1577 slice
+      D3).** It asserted that a closed account's chest ask falls to the derived
+      document message — true of a configuration the service never held, since
+      `CASTING_INK_WORDS_SCOPE` stood at `all`. What is left is the half this
+      arm's own comment already called *"the interesting"* one, and it is every
+      production account: the chest reaches the coverage gate and the OUTFIT
+      decides.
     */
     const ask = "a swallow tattoo on her upper chest";
-    const closedAccount = check(ask);
-    expect(readDelta({ free: { ink: ask } }, closedAccount)).toBeNull();
-    expect(closedAccount.wall?.reason).toBe("gate_ink_document");
-
-    /* OPEN — and UNPATHED, which is every cast in both worlds. The house crew
-       tee covers the chest, so the wall is the wardrobe's and the sentence names
-       her top. **Byte-identical to what this arm asserted before the widening**,
-       which is what makes that change a dark landing in production. */
+    /* UNPATHED, which is every cast in both worlds. The house crew tee covers
+       the chest, so the wall is the wardrobe's and the sentence names the top.
+       **Byte-identical to what this arm asserted before the 2026-08-23
+       widening**, which is what made that change a dark landing in production. */
     const open: FreeLaneCheck = { instruction: ask };
     expect(readDelta({ free: { ink: ask } }, open)).toBeNull();
     expect(open.wall?.reason).toBe("gate_ink_uncarried");

@@ -112,6 +112,33 @@ export type PointerReading = {
  * instead of a mystery.
  */
 export const DELIBERATELY_ABSENT: Record<string, { readonly why: string }> = {
+  "inkWordsScope.test.ts": {
+    why:
+      "Deleted with the flag it drove (#1577 slice D3, 2026-10-15, on his word 'yes approve " +
+      "the plan and switch off the six settings'). It held \`CASTING_INK_WORDS_SCOPE\` to a " +
+      "ladder, a boot guard and BOTH SIDES of its gate, and none of those three has a subject " +
+      "any more: the fence, the parse and the capture are gone, and there is no second side to " +
+      "assert because the narrow placement list that was the off arm is gone too. " +
+      "⚠ THE POINTER THAT NAMES IT IS IN ITS REPLACEMENT, \`inkWordsRoad.test.ts\`, AND THAT " +
+      "IS DELIBERATE, for the reason the entry below this one states: a deletion that only " +
+      "removes arms leaves the product less guarded than the day before, so the replacement's " +
+      "docblock has to say what coverage went and what took its place. " +
+      "⚠ AND ITS ARMS WERE CHECKED FOR THE ONES THAT WERE NOT COVERAGE OF THE FLAG — slice " +
+      "D2's finding, that a retirement can orphan an arm aimed at something else entirely. SIX " +
+      "were not about the flag at all and are carried into the replacement: all three measured " +
+      "placements served; the chest refused by the OUTFIT rather than by the road; an " +
+      "unmeasured surface refused, so the road reaches the vocabulary and never past it; the " +
+      "two refusals told apart; visibility beating the vocabulary (a nape is a neck word and " +
+      "is refused); and the mark lane untouched with the face still retired on the ink lane. " +
+      "⚠ ONE arm could not be carried and is REPLACED rather than dropped: it asserted that " +
+      "the open and closed refusal sentences DIFFER, which caught a sentence that ignored its " +
+      "argument (census finding 4(c), where a hard-coded line told accounts the product was " +
+      "smaller than it is). With one road there is one sentence. The replacement holds the " +
+      "sentence and the road to the same list placement by placement, and its limit is stated " +
+      "in the suite: a constant frozen to today's list is observationally identical and " +
+      "survives that arm — what it catches is the pair DISAGREEING, driven by a sabotage that " +
+      "freezes the sentence and shrinks the list together.",
+  },
   "viewRetryFreeOnce.test.ts": {
     why:
       "Deleted with the free Try again it drove (#1903 slice 3, 2026-10-07, on his ruling 'i " +
