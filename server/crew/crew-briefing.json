@@ -1,7 +1,7 @@
 {
-  "edition": 720,
-  "updatedAt": "2026-10-16T05:20:00.000Z",
-  "shift": "Tonight took the third of the five switch retirements off the clean-out list you approved yesterday morning. Nothing in the app looks or behaves any differently, no money was spent, and nothing on the service was switched tonight — though one setting comes off it when this lands, as part of the same act rather than a separate errand.\n\nWhat came out is the SWITCH behind where a typed tattoo is allowed to go. Ask the studio for a tattoo in words and it can put one on a neck, an upper arm or an upper chest — and behind that there was a second, narrower list holding just the neck, with a switch choosing between them. You opened it to everybody in August, so the narrow list has been serving nobody since. It is gone now, along with the start-up check that policed it, and the one surviving list is simply what the road does.\n\nWhat a customer gets has not changed and that was the whole job. Before touching anything I took a fingerprint of the studio's full answer across 256 different asks — every place in both the words a person uses and the words the reader uses, places nobody has measured, hidden places, several places in one sentence, both lanes, and seven different outfits — and re-took it afterwards. Identical. Then I checked the fingerprint reader itself by pointing it at the narrow list: it moved, so the reader can tell the two apart.\n\nThree things worth your minute, and the third is one I would want told about me.\n\nFirst, the lesson the last of these left behind turned out to run the other way, which is exactly why it was written down. That one found its switch was read in two places and warned the next four not to stop at the obvious one. Here I did the same thing — deleted the setting from the shape the code passes around and let the compiler list everything that broke — and it named four places. Then I searched by hand anyway, and found three more it could not see: places where the setting was being handed to something in a form the compiler does not inspect. A green compiler is not a finished sweep. Both checks, in that order, from now on.\n\nSecond, the full test run found nine checks that had been quietly testing the narrow list — the one no customer was on. Our test environment never set this switch, so those checks had been reading the narrow answer while the real product gave the open one. They were not wrong when they were written; the product moved and they did not. That is the same thing we found last week on the old picture-making road, arriving from the opposite direction, and it is only the full run that sees it.\n\nAnd one of those nine turned out to be a real fault rather than a stale test, so I have written it up on its own card instead of folding it into tonight's clean-out. On your account — only yours today — if you ask to change a chest tattoo the studio has no artwork for, it answers honestly and then offers to put a new one on instead. Say yes, and it refuses, because the character is wearing a shirt and it cannot put a tattoo on a covered chest. Nothing is charged at either step, so no money is at stake, but the offer sent you one step down a road that was already shut. The check written to prevent exactly that had been passing because it was reading the narrow list. The fix is small and it is on the card.\n\nThird, my own tooling misled me and I only caught it by doing the job twice. I wrote a check that this setting cannot quietly come back, then tried to break it eight ways to see whether the check would notice. My first attempt reported that all of them were caught — and that result was worthless: the way I was running the tests used an option the test runner no longer supports, so every attempt failed on that option rather than on the check. Run properly, seven of the eight are caught, each by the exact check it should trip. The eighth is not, and it cannot be: if somebody replaced the sentence a customer reads with a frozen copy of today's wording, nothing outside that file could tell the difference. That limit is now written into the check itself rather than left for somebody to discover. A test of a test needs its own control, and this is the second time in three nights that has been true.\n\nOne good thing from the last of these: the flaw I reported on the previous night's check — reading the rulebook and the detailed catalogue as one lump of text, so one could satisfy a claim about the other — is not in the older check of the same family. I looked rather than assumed, and the two readers there are kept properly apart.\n\nThe work is in review rather than live: it touches a file on the money list, so it waits for a review by hand. Every automatic check passed, the full suite is green end to end, and the one red I did hit was the expected one and happened exactly where the last night's notes said it would.",
+  "edition": 721,
+  "updatedAt": "2026-10-16T06:30:00.000Z",
+  "shift": "Tonight was meant to take the fourth of the five switch retirements off the clean-out list you approved. It did not come off, and finding out why was worth more than the retirement would have been. Then, with nothing left on that list I could safely start, I fixed a real fault in the studio instead.\n\nFIRST, THE SWITCH THAT CANNOT COME OFF YET.\n\nIt decides when a paid edit answers you. Press an edit today and the studio takes the money, starts the work and hands you back a \"this is running\" straight away; your picture arrives a moment later. That is right for a person at a screen and none of it is changing. The switch's other setting makes the studio sit and wait until the picture is finished before it answers at all — and no customer is on that setting, which is why it was on the list to go.\n\nBut one of our own measuring tools is on it, and it has to be. A script has nothing to look at while it waits: handed a \"this is running\", it reaches the end of its work and stops, and the picture it paid for is left half-drawn. The tool that depends on this is the one measuring the two edit engines for you — the card with round 2's frames on it, waiting for your eye. It also times how long an edit takes, counted from the moment the studio answers. On the other setting that number would be the time to say \"running\" — a fraction of a second — instead of the time to draw the picture. So round 3 would not be comparable with round 2, on a measurement you are in the middle of judging.\n\nSo I stopped rather than pushing through it. Taking the switch off needs one honest new piece first: a way for a script to say \"I cannot take a receipt, finish the work before you answer me\". That is a small, sensible thing to build and it is now its own job on the board. What I did not do is quietly change the measuring tool to make the retirement possible — that would have moved the goalposts under a measurement you have not finished reading.\n\nAND THE FIFTH SWITCH IS NOT ONE SWITCH EITHER. The clean-out list says it goes last because two other switches hang off it. Reading the code, six things hang off it, and three of them survive — including two live features: the automatic face reading, and attaching your own photograph. So that one is not a deletion at all; those have to be moved onto a different parent first. Both corrections are written down on the job, with the exact lines, so nobody starts either one and finds this out the hard way.\n\nSECOND, THE FAULT I FIXED.\n\nThe studio could offer to put a new tattoo somewhere it would then refuse to put it. Ask it to change a chest tattoo it has no artwork for and it answered honestly — it kept no copy, so it cannot change it — and then added \"I can put a new one on instead\". Say what you would like, and the next answer refused: the character is wearing the house t-shirt, and a tattoo cannot go on a covered chest. Nothing was charged at either step, so no money was ever at stake. What was wrong is that the offer sent you one ask down a road that was already shut.\n\nThere are two questions behind a tattoo asked for in words — can we do this place at all, and does this character's outfit leave it showing — and the offer was only asking the first. The chest became an allowed place back in August, so from that day the offer started being made, while the thing that really stops it is the t-shirt. It now asks both, and the second answer comes from the same reader that already decides which places we recommend instead — so the offer and the suggestion cannot disagree, which is the part that was actually missing.\n\nThe check written to prevent exactly this had been passing for seven weeks. It was asserting the right answer for the wrong reason: it only ever asked the first question too, and it was reading a setting no account has been on since August. That is the second time this week a check has quietly been measuring a version of the product nobody uses, and it is worth knowing about. It now fixes the road at what every account really has and changes the OUTFIT instead: a covered chest gets no offer, a neck under the same shirt does, and the very same chest ask on a bare-chested character gets one. I broke the fix four different ways and each time the right one of those three went red.\n\nOne more of the same kind turned up while I was looking and is written up rather than bundled in: when the studio refuses and then tells you where a tattoo CAN go, that list does not look at the outfit either — so it can name the chest to a character in a t-shirt. Same mistake, one door over, its own wording and its own checks.\n\nNothing was spent, no setting on the service was touched, and nothing that reaches a customer changed except the offer no longer being made where it was never true.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T19:05:52.822Z",
+      "readAt": "2026-10-15T20:21:41.229Z",
       "items": [
         {
           "issueNumber": 14,
@@ -208,6 +208,12 @@
           "issueNumber": 2552,
           "title": "N3: the product's own wardrobe sentence is too long to store as an edit — 132 characters against a 120 cap, and the whole edit is dropped (found at #1577 slice 2)",
           "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2560,
+          "title": "A script cannot wait for a paid refine to finish without borrowing a customer switch that is being retired (blocks #1577 slice D4)",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -10486,6 +10492,13 @@
       "status": "in-review",
       "prNumber": 2559,
       "note": "Held for a review by hand — it touches a file on the money list. All checks green and the full suite is green. What a customer gets is unchanged, proven by a fingerprint over 256 asks before and after. One real fault came out of it and is its own card (#2558)."
+    },
+    {
+      "id": "ink-offer-asks-outfit-2558",
+      "title": "The studio stops offering a tattoo where it would then refuse it (#2558)",
+      "status": "in-review",
+      "prNumber": 2561,
+      "note": "Gate green 11/11. An ordinary change by all three of the checks that classify it, but it waits for the typed-tattoo switch retirement to land first, because that one asserts the opposite and would go red out of order."
     }
   ],
   "problems": [
@@ -10947,7 +10960,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T19:05:52.820Z",
+    "readAt": "2026-10-15T20:21:41.229Z",
     "items": [
       {
         "issueNumber": 801,
@@ -10961,7 +10974,11 @@
       {
         "issueNumber": 1577,
         "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2560 (the seam D4 needs) plus PRs #2550 #2555 #2556 #2557 #2559 merging before D5, the chain root. Not your word."
+        }
       },
       {
         "issueNumber": 1598,
