@@ -1127,7 +1127,7 @@ export const PERSONALITY_BEING_WRITTEN = "Writing who they are…";
 export const PERSONA_LANDING_GRACE_MS = 30_000;
 
 /** Is this line on its way, rather than absent? The one reading both cards use. */
-export function personaLinePending(
+export function personaFieldPending(
   line: PersonaField | null | undefined,
   moment: { building: boolean; landing: boolean },
 ): boolean {
@@ -1321,7 +1321,7 @@ export function CastPersonalityCard({
   /** The cast's recorded pronouns, for the reads header (#2238). */
   pronouns?: PersonaPronouns | null;
   /**
-   * The line is on its way (#2521, {@link personaLinePending}): with no line,
+   * The line is on its way (#2521, {@link personaFieldPending}): with no line,
    * the card draws its label and the wait instead of nothing. Ignored once
    * there is a line.
    */

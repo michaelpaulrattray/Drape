@@ -49,7 +49,7 @@ import {
   PersonaLabel,
   PERSONA_LANDING_GRACE_MS,
   personaLandingPoll,
-  personaLinePending,
+  personaFieldPending,
   PERSONA_OWN_WORDS_SHUT,
   armUnsavedLeaveGuard,
   personaLeaveBody,
@@ -423,7 +423,7 @@ export default function CastingRoom() {
   /* #2521 — the voice line is on its way. One reading, used by the line and by
      the studio under it, so the two cannot disagree about it. */
   const voiceLinePending = data
-    ? personaLinePending(data.persona?.voice, { building: data.status === "building", landing: awaitingLines })
+    ? personaFieldPending(data.persona?.voice, { building: data.status === "building", landing: awaitingLines })
     : false;
 
   /**
@@ -1424,7 +1424,7 @@ export default function CastingRoom() {
                   pronouns={data.pronouns}
                   /* #2521: while the product is still writing it, the card
                      draws its label and the wait instead of nothing. */
-                  pending={personaLinePending(data.persona?.personality, {
+                  pending={personaFieldPending(data.persona?.personality, {
                     building: data.status === "building",
                     landing: awaitingLines,
                   })}

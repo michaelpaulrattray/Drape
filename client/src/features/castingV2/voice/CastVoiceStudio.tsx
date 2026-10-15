@@ -599,7 +599,7 @@ export function CastVoiceStudio({
   name: string | null;
   /** Whether the room holds a written voice line for this cast (#2521). */
   lineWritten?: boolean;
-  /** Whether the product is still writing it (#2521, `personaLinePending`). */
+  /** Whether the product is still writing it (#2521, `personaFieldPending`). */
   lineExpected?: boolean;
 }) {
   const utils = trpc.useUtils();

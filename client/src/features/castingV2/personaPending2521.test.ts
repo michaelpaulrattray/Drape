@@ -11,7 +11,7 @@ import {
   CastVoiceLine,
   PERSONALITY_BEING_WRITTEN,
   personaLandingPoll,
-  personaLinePending,
+  personaFieldPending,
 } from "./components/CastPersonaCards";
 import {
   CastVoiceStudioPanel,
@@ -99,21 +99,21 @@ const escaped = (text: string) => text.replace(/'/g, "&#x27;");
 
 describe("a line is pending only while it is genuinely on its way", () => {
   it("is pending while the Sign builds and there is no line yet", () => {
-    expect(personaLinePending(null, BUILDING)).toBe(true);
+    expect(personaFieldPending(null, BUILDING)).toBe(true);
   });
 
   it("is pending in the moment after the build when the room watched it finish", () => {
-    expect(personaLinePending(null, LANDING)).toBe(true);
+    expect(personaFieldPending(null, LANDING)).toBe(true);
   });
 
   it("⚠ IS NOT PENDING ON A SETTLED CAST WITH NO LINE — the read-failed and pre-N2b road stands", () => {
-    expect(personaLinePending(null, SETTLED)).toBe(false);
-    expect(personaLinePending(undefined, SETTLED)).toBe(false);
+    expect(personaFieldPending(null, SETTLED)).toBe(false);
+    expect(personaFieldPending(undefined, SETTLED)).toBe(false);
   });
 
   it("is never pending once there is a line, even mid-build", () => {
-    expect(personaLinePending(LINE, BUILDING)).toBe(false);
-    expect(personaLinePending(LINE, LANDING)).toBe(false);
+    expect(personaFieldPending(LINE, BUILDING)).toBe(false);
+    expect(personaFieldPending(LINE, LANDING)).toBe(false);
   });
 });
 
@@ -248,7 +248,7 @@ describe("the wired card and the room call these readings (source arms)", () => 
     expect(room).toContain("lineWritten={Boolean(data.persona?.voice)}");
     expect(room).toContain("lineExpected={voiceLinePending}");
     expect(room).toContain("pending={voiceLinePending}");
-    expect(room).toContain("pending={personaLinePending(data.persona?.personality, {");
+    expect(room).toContain("pending={personaFieldPending(data.persona?.personality, {");
   });
 
   it("⚠ THE ROOM'S POLL READS THE LANDING, so the lines arrive without a reload", () => {
