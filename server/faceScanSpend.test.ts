@@ -320,6 +320,25 @@ describe("what one scan asks of fal on the pair-in-one-read road", () => {
     expect(most).toBeGreaterThan(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
     expect(most).toBeLessThan(FACE_SCAN_FAL_CALLS.sam3.most);
   }, 120_000);
+
+  it("holds what real faces measured on this road inside what the code can do", () => {
+    /* The same relationship the crop road's band has with its own derived pair:
+       a measurement outside what the code can do is a measurement of some other
+       code. Both roads' bands came out of ONE sitting on the same three casts,
+       so the pair of them is also the saving, measured rather than derived. */
+    const { fewest, most, measured } = FACE_SCAN_FAL_CALLS.sam3.pairInOneRead;
+    expect(measured.low).toBeGreaterThanOrEqual(fewest);
+    expect(measured.high).toBeLessThanOrEqual(most);
+    expect(measured.low).toBeLessThanOrEqual(measured.high);
+    /* The crop road's reading from that same sitting sits inside ITS derived
+       pair too — the control that says the two bands were taken the same way
+       and are therefore comparable at all. */
+    expect(measured.cropRoadLow).toBeGreaterThanOrEqual(FACE_SCAN_FAL_CALLS.sam3.fewest);
+    expect(measured.cropRoadHigh).toBeLessThanOrEqual(FACE_SCAN_FAL_CALLS.sam3.most);
+    /* And it is cheaper on every face it was measured on, at both ends. */
+    expect(measured.low).toBeLessThan(measured.cropRoadLow);
+    expect(measured.high).toBeLessThan(measured.cropRoadHigh);
+  });
 });
 
 describe("the measured band, against what the code can do", () => {
