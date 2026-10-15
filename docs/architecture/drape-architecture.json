@@ -12927,6 +12927,10 @@
       "path": "client/src/features/castingV2/personaOwnWords2197.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/personaPending2521.test.ts",
+      "path": "client/src/features/castingV2/personaPending2521.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/personaReads2196.test.ts",
       "path": "client/src/features/castingV2/personaReads2196.test.ts"
     },
@@ -20708,6 +20712,11 @@
     {
       "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/CastPersonaCards.tsx",
+      "to": "module:shared/voiceCardCopy.ts",
       "kind": "imports"
     },
     {
