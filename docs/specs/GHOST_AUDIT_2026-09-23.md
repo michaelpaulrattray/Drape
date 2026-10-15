@@ -627,7 +627,7 @@ proposal; nothing here is decided.
 | **A1** | the dice record read for PRONOUNS: `readResolvedIdentity(source.internalPrompt)` → `pronounsForSex` (`refineService.ts:1344-1345`) | **live**, but it answers `null` for every cast rolled since 2026-08-26: the author road marks its dice `unsent: true` and `readResolvedIdentity` (`rollService.ts:155`) refuses them, so `pronounsForSex` answers `they` | **keep** (read path) | the 220 of 306 legacy production sheets (counted 2026-09-26, above) still hold honest house-road dice. ⚠ Whether a refine sentence should gender anyone at all on those legacy casts is a product question for him, not this audit |
 | **A2** | the dice record as *"the composed identity so far"*: `currentIdentity` (`:1438`), read for relative asks (*"lighter"*, *"shorter"*) and the removal record check (`:3315-3318`, `:7713`, `:8616`) | **live**, same null on every author-road cast | **keep** (read path) | same reason as A1. On an author-road cast each degrades to *no recorded value*, the honest null road the reader was built for |
 | **A3** | the dice record as `priorItems` for a stated subject (`:1515`) | **live**, same null | **keep** (read path) | same |
-| **A4** | the variant landing's identity WRITE: `resolved: baseIdentity ? applyDelta(baseIdentity, filed, picturedCaptions) : null` (`:9875`, `:9891`) | **live code, inert data on every author-road cast**: `baseIdentity` is `null` there, so `resolved` is written `null` and the caption hybrid's filing (fable-1434, `:8680-8700`, whose own docblock names *a follow* as its one consumer) never lands | ⚠ **neither: a finding to card** | not a deletion, because 220 legacy sheets still carry it. But the feature it serves is silent for every cast rolled since 2026-08-26. Whether picture-taken captions get a home on the author road, or the filing retires, is a design question. **Read at the code, not driven** |
+| **A4** | the variant landing's identity WRITE: `resolved: baseIdentity ? applyDelta(baseIdentity, filed, picturedCaptions) : null` (`:9875`, `:9891`) | **live code, inert data on every author-road cast**: `baseIdentity` is `null` there, so `resolved` is written `null` and the caption hybrid's filing (fable-1434, `:8680-8700`, whose own docblock names *a follow* as its one consumer) never lands | ✅ **CARDED — #2537** | not a deletion, because 220 legacy sheets still carry it. But the feature it serves is silent for every cast rolled since 2026-08-26. Whether picture-taken captions get a home on the author road, or the filing retires, is a design question. **Read at the code, not driven**. ⚠ **AND THIS ROW FOUND ONE OF THE TWO DEAD ENDS — corrected at the card, 2026-10-15.** It reads as though repairing the write would revive the feature. It would not: the one consumer, `honestFollowSource` (`rollService.ts:204`), **refuses the whole record when the parent roll was composed on the author road** (`if (rollComposedOnAuthorRoad(…)) return { identity: null, … }`), deliberately, because #176's unsent dice fiction put *"keep South Asian heritage"* into a family clause about a man who is not. **So the filing is dead at the WRITE and dead again at the READ**, and the fix is a capability (a picture carried into a roll) rather than a repair — which is why #2537 is a design card under N3 and not a slice here |
 | **B1** | the two-paths half of the wardrobe resolution on refine: `rollPath` threaded into `currentWardrobeLine` (`refineService.ts:1862`, `:9751`; selected at `db/castingV2.ts:865`, `:964`), the `incoherent` kind (`wardrobeLine.ts:94`, `:168`) and the `"born"` source (`:62`, `:165`) | **reachable by no production branch**: `rollService.ts:698` writes the path as a constant `null`, and the thirteen pathed rolls production holds have **zero candidates** (measured 2026-09-23, `TWO_PATHS_PREDICATES_2026-09-24.md`), and a refine needs a candidate | **retire** | a branch only a row with no candidate could take. ⚠ The resolution is SHARED: Sign reads it (`signService.ts:319`, `:335`), and so do the ink coverage owner (`inkSurfaceCoverage.ts:402`) and the ink-form demand counter (`refineService.ts:2531`, `source !== "brief"`). The #203 warning above holds: every question that reads it is re-answered in writing. **The `path` column stays** (#203's ruling) |
 | **B2** | `unpathed`: no path and no line, answered as *"the house crew tee"* (`wardrobeLine.ts:167`, `refineInterpreter.ts:818`) | **live**: every cast whose brief named no outfit | **keep** | current machinery under an old-lane name. A rename is cosmetic and not proposed |
 | **B3** | two stale docblocks on the wardrobe hand-off (`refineService.ts:1915-1930`): *"a roll cast before the paths has both columns NULL … every roll in production answers exactly what it answered"*, and *"the BRANCH'S edited line is not threaded yet"* | none (prose) | **correct in B1's slice** | false since #1222 (a pathless line is now the brief's own outfit) and item 8 (the edited line IS threaded, `:1867`) |
@@ -654,8 +654,8 @@ proposal; nothing here is decided.
 which **11 wait on his word** because they retire a production flag (C1-C6 are
 one act with `CASTING_REPAINT_SCOPE`; D1-D5 are one flag each), and **2 need no
 flag** (B1, F). **Nine are kept as current machinery** (A1-A3, B2, E, G, H, I,
-J: the read path for the 220 legacy sheets, and live work). **A4 is a finding
-to card, B3 is a docblock correction riding B1, and K is filed for the roll
+J: the read path for the 220 legacy sheets, and live work). **A4 is carded as
+#2537, B3 is a docblock correction riding B1, and K is filed for the roll
 road.**
 
 ## THE PROPOSED SLICES
@@ -683,8 +683,15 @@ any of them (his rule on #1398).
    rows first (still zero candidates?) and re-answers in writing each of the
    four questions that read the resolution: refine's door, Sign, the ink
    coverage owner, the demand counter. The `path` column stays.
-3. **Card A4**: the caption hybrid's filing lands `null` on every author-road
-   cast. A design card for him, not a deletion.
+3. ✅ **FILED — #2537** (item A4): the caption hybrid's filing lands `null` on
+   every author-road cast. A design card, not a deletion. ⚠ **Reading the
+   follow road to write it turned up the second dead end this section had
+   missed** — the consumer refuses the record on the author road on purpose, so
+   the write is not the thing holding the feature shut. The card carries both
+   ends, the three answers and the code's own sentence on the hole; **its
+   recommendation is that N3's design pass answers it**, and it is deliberately
+   NOT held on him, because nothing waits on it and today's behaviour is one of
+   the three answers.
 4. **His question, asked once: retire `CASTING_REPAINT_SCOPE`?** If yes:
    - 4a re-parents the three children (side phrasing, open lane, reference
      attach) onto `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1
