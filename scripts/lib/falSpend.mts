@@ -141,6 +141,36 @@ export const FACE_SCAN_FAL_CALLS = {
   sam3: {
     fewest: 18,
     most: 38,
+    /**
+     * WHAT THE SAME DRIVE COUNTS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that
+     * is BUILT AND OFF, so these are not what production does (#2191).
+     *
+     * A bilateral region costs two reads above, one per half-frame. On this
+     * road one whole-frame read answers both sides and `splitAtMidline` cuts
+     * them apart, so the five pairs cost five reads instead of ten:
+     * **13 instead of 18 at the floor, and 25 instead of 38 at the ceiling.**
+     *
+     * Both are DERIVED by the same drive and the same three policies as the two
+     * figures above (`server/faceScanSpend.test.ts`, which is why they live in
+     * that suite and not beside the road's behaviour arms) — each policy given
+     * a pair answer that takes the same number of LOOKS as its half-frame one,
+     * so the two ceilings differ in reads per look and in nothing else.
+     *
+     * The ceiling falls proportionally further than the floor, which is worth
+     * reading rather than skipping: every re-ask the code has is a re-ask of a
+     * PAIR at half the price. Where the ceiling is reached by whole-frame
+     * questions it does not move at all — 11 of these 25 are those, plus the
+     * one shared `face` read, with 9 on three anatomy pairs and 4 on two worn
+     * ones. ⚠ Arrived at twice, by the drive and by that arithmetic, because
+     * the first number written here was neither.
+     *
+     * ⚠ **Off on the service, so `faceScanUsd()` and `faceScanFalFloorUsd()`
+     * deliberately do NOT read these** — a cost reader quoting a road nobody is
+     * on would under-report every real scan. They move into the figures above
+     * on the day the flag is flipped, with the re-measurement that flip earns.
+     * The flag's own entry is in `docs/architecture/FEATURE_FLAGS.md`.
+     */
+    pairInOneRead: { fewest: 13, most: 25 },
     measured: {
       low: 21,
       high: 27,

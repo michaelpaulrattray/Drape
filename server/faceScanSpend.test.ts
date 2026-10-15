@@ -38,6 +38,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { scanFace } from "./castingV2/faceScan";
 import { createFalRegionReader } from "./castingV2/falRegionReader";
+import { catalogueSlots } from "./castingV2/referenceSlotCatalogue";
 import {
   FACE_SCAN_FAL_CALLS,
   FACE_SCAN_PART_USD,
@@ -79,6 +80,17 @@ async function blob(width: number, height: number, share: number): Promise<strin
   return `data:image/png;base64,${png.toString("base64")}`;
 }
 
+/** A mask covering one x band over the middle third of the height — a pair
+ *  answer that sits wholly on one side of her midline. */
+async function band(width: number, height: number, x0: number, x1: number): Promise<string> {
+  const data = Buffer.alloc(width * height, 0);
+  for (let y = Math.floor(height / 3); y < Math.floor((height * 2) / 3); y += 1) {
+    data.fill(255, y * width + x0, y * width + x1);
+  }
+  const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+
 /**
  * How the fake segmenter answers.
  *
@@ -88,6 +100,19 @@ async function blob(width: number, height: number, share: number): Promise<strin
 type Policy = {
   whole: (n: number) => boolean;
   side: (n: number, side: "left" | "right") => boolean;
+  /**
+   * A PAIR ASKED OF THE WHOLE FRAME — the `pairInOneRead` road only (#2191).
+   *
+   * On that road a bilateral region is one request about the whole picture, so
+   * `side` is never consulted for it and `whole` cannot say the one thing that
+   * matters: whether the answer covers BOTH sides of her midline or one. This
+   * says which, and the fake draws the mask to match.
+   *
+   * Absent, a pair answers by `whole` like any other whole-frame question —
+   * which on this fake is a centred rectangle, i.e. `"both"`. That default is
+   * why the two old policies below need no `pair` entry.
+   */
+  pair?: (n: number) => "both" | "one" | "none";
 };
 
 const FINDS_EVERYTHING: Policy = { whole: () => true, side: () => true };
@@ -97,6 +122,14 @@ const FINDS_EVERYTHING: Policy = { whole: () => true, side: () => true };
 const BOTH_EMPTY_THEN_HALF: Policy = {
   whole: (n) => n > 1,
   side: (n, side) => (n === 1 ? false : n === 2 ? side === "right" : true),
+  /*
+    The `pairInOneRead` reading of this same policy, and it is spelled out for
+    the reason the comparison turns on: it must take the same number of LOOKS
+    as the `side` line above, so that the two ceilings differ in reads per look
+    and in nothing else. Empty, then half, then found — three looks, which is
+    the empty-anatomy re-ask with the half-pair heal firing inside it.
+  */
+  pair: (n) => (n === 1 ? "none" : n === 2 ? "one" : "both"),
 };
 
 /** One side only first time; then found. Fires the half-pair heal on a pair
@@ -104,11 +137,25 @@ const BOTH_EMPTY_THEN_HALF: Policy = {
 const HALF_THEN_FOUND: Policy = {
   whole: (n) => n > 1,
   side: (n, side) => n > 1 || side === "right",
+  /* The `pairInOneRead` reading of this same policy: one side first, both on
+     the look after. It is spelled out rather than left to the default because
+     the default answers `"both"` first time, which fires no heal at all — and
+     a ceiling derived without the heal would be a cost figure that is too
+     low, which is the direction that matters. */
+  pair: (n) => (n > 1 ? "both" : "one"),
 };
+
+/** Every question the scan reads a side at a time — the catalogue's own fact,
+ *  so a new pair joins the pair-road arms below by itself. */
+const PAIR_QUESTIONS = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.frame === "ownSide" && definition.question !== null)
+    .map((definition) => definition.question as string),
+);
 
 type Wire = { sam3ByPrompt: Map<string, number>; birefnet: number; other: string[] };
 
-async function drive(policy: Policy): Promise<Wire & { describer: number }> {
+async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { describer: number }> {
   const wire: Wire = { sam3ByPrompt: new Map(), birefnet: 0, other: [] };
   const asked = new Map<string, number>();
 
@@ -150,6 +197,21 @@ async function drive(policy: Policy): Promise<Wire & { describer: number }> {
     const n = (asked.get(key) ?? 0) + 1;
     asked.set(key, n);
 
+    /*
+      A PAIR ASKED OF THE WHOLE FRAME is the `pairInOneRead` road, and the fake
+      answers it with a mask the reader's own cut can come apart — `"both"` is a
+      rectangle across her midline, `"one"` sits wholly on one side of it. The
+      reader is what splits them, so this stays a statement about the WIRE.
+    */
+    if (pairInOneRead && whole && PAIR_QUESTIONS.has(prompt)) {
+      const shape = (policy.pair ?? ((ask: number) => (policy.whole(ask) ? "both" : "none")))(n);
+      if (shape === "none") return reply({ masks: [] });
+      const url = shape === "both"
+        ? await blob(width, height, 0.5)
+        : await band(width, height, Math.floor(width * 0.6), Math.floor(width * 0.9));
+      return reply({ masks: [{ url }] });
+    }
+
     /* The face is always found: it is the midline and the head, and an empty
        one would only take the composed row away, never add a call. */
     const found = prompt === "face"
@@ -161,7 +223,7 @@ async function drive(policy: Policy): Promise<Wire & { describer: number }> {
   const bytes = await frame();
   await scanFace({
     frame: { bytes, width: WIDTH, height: HEIGHT },
-    reader: createFalRegionReader({ apiKey: "test-key" }),
+    reader: createFalRegionReader({ apiKey: "test-key", pairInOneRead }),
     describe: async () => {
       describer += 1;
       return { build: null, skin: null, teeth: null };
@@ -208,6 +270,55 @@ describe("what one scan asks of fal, counted at the wire", () => {
     /* And the re-asks are real: a fake that fired none would make the ceiling
        equal the floor and this suite would prove nothing about them. */
     expect(most).toBeGreaterThan(FACE_SCAN_FAL_CALLS.sam3.fewest);
+  }, 120_000);
+});
+
+/**
+ * THE SAME TWO NUMBERS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that is built
+ * and OFF, so these are not what production does (#2191).
+ *
+ * Derived by the same drive and the same policies as the two arms above, which
+ * is the whole reason they live in this file rather than beside the pair road's
+ * own behaviour arms (`server/faceScanPairOneRead.test.ts`): a second harness
+ * counting the same wire is a second source of truth about one fact, and the
+ * two would disagree the first time either was touched.
+ */
+describe("what one scan asks of fal on the pair-in-one-read road", () => {
+  it("brings the floor down by one read per pair, and nothing else moves", async () => {
+    const wire = await drive(FINDS_EVERYTHING, true);
+    expect(wire.other, "only the two fal endpoints a scan is known to call").toEqual([]);
+    expect(total(wire.sam3ByPrompt)).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
+    /* The saving is exactly the pairs — five regions, one read each instead of
+       two — which is this card's claim stated as arithmetic the wire proves. */
+    expect(FACE_SCAN_FAL_CALLS.sam3.fewest - FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest)
+      .toBe(PAIR_QUESTIONS.size);
+    for (const question of PAIR_QUESTIONS) {
+      expect(wire.sam3ByPrompt.get(question), `${question} asked once`).toBe(1);
+    }
+    /* The midline is still bought, and still once: it is shared across all five
+       pairs and the build row, so this road saves the second SIDE read only. */
+    expect(wire.sam3ByPrompt.get("face")).toBe(1);
+    expect(wire.birefnet).toBe(FACE_SCAN_FAL_CALLS.cutouts);
+    expect(wire.describer).toBe(FACE_SCAN_FAL_CALLS.describer);
+  }, 60_000);
+
+  it("brings the ceiling down too, by less, because every re-ask still fires", async () => {
+    const runs = [
+      await drive(FINDS_EVERYTHING, true),
+      await drive(BOTH_EMPTY_THEN_HALF, true),
+      await drive(HALF_THEN_FOUND, true),
+    ];
+    const prompts = new Set(runs.flatMap((run) => [...run.sam3ByPrompt.keys()]));
+    let most = 0;
+    for (const prompt of prompts) {
+      most += Math.max(...runs.map((run) => run.sam3ByPrompt.get(prompt) ?? 0));
+    }
+    expect(most).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.most);
+    /* Both controls, and the second is the one that could hide a cost: a
+       ceiling equal to the floor would mean no re-ask fired, and a ceiling that
+       did not fall would mean the road saved nothing on a real face. */
+    expect(most).toBeGreaterThan(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
+    expect(most).toBeLessThan(FACE_SCAN_FAL_CALLS.sam3.most);
   }, 120_000);
 });
 

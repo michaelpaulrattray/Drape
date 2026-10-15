@@ -264,9 +264,41 @@ function defaultDescriber(): ((input: { bytes: Buffer; contentType: string }) =>
   return interpreterEngine() === null ? null : describeFace;
 }
 
+/**
+ * ASK A PAIR ONCE INSTEAD OF TWICE — `ENABLE_CASTING_PAIR_ONE_READ`, off unless it is
+ * exactly `"true"` (#2191, his goal of 2026-10-10: *"our goal would be to
+ * reduce this cost by as much as possible"*).
+ *
+ * A face scan's five bilateral regions cost two segmenter reads each, one per
+ * half-frame. #2532's arm 1 measured that one whole-frame read can answer both
+ * sides: **the derived floor falls 18 → 13, about 2.5¢ off a 12¢ scan.** The
+ * road and its geometry are `falRegionReader`'s (`pairInOneRead`,
+ * `splitAtMidline`); what is decided HERE is only that the SCAN takes it, which
+ * is why it is read in this module and passed in rather than read down there.
+ *
+ * ⚠ **The REFINE deliberately does not get it**, and that is this flag's whole
+ * shape rather than an omission: `refineService` builds its own reader and a
+ * masked refine PAINTS on the mask it is handed, so a wrong side there is a
+ * delivered picture the customer paid for, where here it is a panel row. One
+ * flag that moved both would be the widening nobody meant.
+ *
+ * ⚠ **Not on `OPTIONAL_VARS`, for `GEMINI_API_KEY`'s reason**: every entry
+ * there earns a boot WARNING, and absence here switches no capability off — it
+ * is today's answer, bought the way it has always been bought. And compared
+ * against `"true"` exactly, never truthiness: a Railway variable created with
+ * no value holds the empty string.
+ */
+export const PAIR_ONE_READ_ENV = "ENABLE_CASTING_PAIR_ONE_READ";
+
+/** Exported for its own arms: the predicate is the whole of the flag, and a
+ *  reader of it that nothing drives is a position nobody has checked. */
+export function pairInOneReadEnabled(): boolean {
+  return process.env[PAIR_ONE_READ_ENV] === "true";
+}
+
 function defaultRegionReader(): RegionReader | null {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey }) : null;
+  return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
 }
 
 export type FaceScanDependencies = {

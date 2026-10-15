@@ -11236,6 +11236,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
+      "valueRecorded": false
+    },
+    {
       "id": "env:ENABLE_EVIDENCE_CANDIDATE_WORKER",
       "name": "ENABLE_EVIDENCE_CANDIDATE_WORKER",
       "valueRecorded": false
@@ -11616,6 +11621,11 @@
       "id": "flag:CREW_TAB_SCOPE",
       "name": "CREW_TAB_SCOPE",
       "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
+      "grammar": "true|false"
     },
     {
       "id": "flag:ENABLE_EVIDENCE_CANDIDATE_WORKER",
@@ -15921,6 +15931,10 @@
     {
       "id": "test:server/faceScanCapRepeatLooks.test.ts",
       "path": "server/faceScanCapRepeatLooks.test.ts"
+    },
+    {
+      "id": "test:server/faceScanPairOneRead.test.ts",
+      "path": "server/faceScanPairOneRead.test.ts"
     },
     {
       "id": "test:server/faceScanSharedFaceRead.test.ts",
