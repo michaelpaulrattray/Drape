@@ -131,8 +131,13 @@ describe("his price for a redo", () => {
     expect(displayPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS))
       .toBeGreaterThan(displayPrice(CASTING_V2_VIEW_RETRY_PRICE_CREDITS));
     /* And it is no longer the Refine's twin either — the card's prose said so
-       when both were 350. */
-    expect(displayPrice(CASTING_V2_REFINE_PRICE_CREDITS)).toBe(350);
+       when both were 350. ⚠ THIS ARM PINNED THE LITERAL 350 UNTIL #2526 TOOK
+       THE REFINE TO 100 ON HIS WORD, which made a suite about the REDO's price
+       red over a price it does not own. The claim was never the figure: it is
+       that the two are not one number, so it is asserted as the relation and
+       this file stops being a second place the refine price is written down. */
+    expect(displayPrice(CASTING_V2_REFINE_PRICE_CREDITS))
+      .not.toBe(displayPrice(CASTING_V2_PACKAGE_REDO_PRICE_CREDITS));
   });
 });
 

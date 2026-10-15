@@ -230,7 +230,7 @@ export function RefinePanel({
    * ⚠ **`null` IS "NOT READ YET", NEVER "FREE" — #1727.** The sheet's settings
    * query races the roll query on mount and can fail outright, so this arrives
    * unread; under `?? 0` the rail's note read **`0 credits each`** beside a box
-   * that spends 1,750 a go. Since #1952 the price is on the Refine button
+   * that spends 500 credits a go. Since #1952 the price is on the Refine button
    * alone, and the button reads plain `Refine` while this is `null`.
    */
   priceCredits: number | null;

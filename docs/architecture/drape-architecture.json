@@ -11954,7 +11954,7 @@
       "id": "cost:server/casting/castingCreditCosts.ts:CASTING_V2_REFINE_PRICE_CREDITS",
       "name": "CASTING_V2_REFINE_PRICE_CREDITS",
       "constant": "CASTING_V2_REFINE_PRICE_CREDITS",
-      "credits": 1750,
+      "credits": 500,
       "file": "server/casting/castingCreditCosts.ts"
     },
     {
@@ -12067,7 +12067,7 @@
       "id": "cost:server/castingV2/castViewPackage.ts:CASTING_V2_ONE_CHARACTER_CREDITS",
       "name": "CASTING_V2_ONE_CHARACTER_CREDITS",
       "constant": "CASTING_V2_ONE_CHARACTER_CREDITS",
-      "credits": 6600,
+      "credits": 5350,
       "derivedFrom": "CASTING_V2_ROLL_PRICE_CREDITS + CASTING_V2_REFINE_PRICE_CREDITS + CASTING_V2_SIGN_PRICE_CREDITS",
       "file": "server/castingV2/castViewPackage.ts"
     },

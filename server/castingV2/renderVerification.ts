@@ -29,6 +29,23 @@
  * of the face. D-114 inverted the same way for the same reason. So an outage
  * delivers, loudly.
  *
+ * # ⚠ AND IT ONLY ACTS ON THE CATASTROPHIC CASE — his ruling, 2026-10-15 (#2526)
+ *
+ * > *"my issue is we dont want to over check things as we know sometimes the
+ * > checker can be unreliable we learned this with the views checker"*
+ *
+ * The views checker's own ruling (#1903, `viewConformance.ts`) took two axes of
+ * opinion away and left three catastrophes. Here there is one axis and it stays,
+ * narrowed the same way: a reading declines a delivery only where the reader was
+ * asked *is the thing in the picture at all* and answered no
+ * ({@link isRefusableMiss}). A quibble about how it was done never did; a
+ * `present:false` that will not say which kind no longer does either.
+ *
+ * **Everything is still READ and still RECORDED** — the checks land on the row,
+ * {@link advisoryMisses} watches the facet classes that disagree, and the
+ * reliability report classifies them itself. What narrowed is what the verdict
+ * SPENDS, and by #2526 that is one thing: the house's own free re-render.
+ *
  * # And the reader is fallible, which is why retry comes before refusal
  *
  * The same reader misread pink-through-glasses irises as "deep brown" in D-183.
@@ -36,6 +53,13 @@
  * and only a second failure spends the user's refusal. Repeated verify-failures
  * on a facet class whose renders look correct are a READER defect to surface,
  * not a render defect to refund — which is what the stored verdicts are for.
+ *
+ * ⚠ **THE SECOND HALF OF THAT PARAGRAPH IS HISTORY AND IS KEPT AS THE REASON
+ * THE FIRST HALF EXISTS.** No refine failure has spent a refusal since
+ * fable-721: `facts_missing` is not in `REFUSES_AFTER_RENDER`
+ * (`server/providers/types.ts`), so a second failure DELIVERS AND CHARGES with
+ * the verdict riding the row as telemetry. The free re-render is the whole of
+ * what this net moves.
  *
  * # AND THE LINE THAT GOVERNS THE WHOLE MODULE (fable-911 §2 (3), verbatim)
  *
@@ -271,6 +295,16 @@ export type FacetCheck = {
    * objection is to how it was done"** and stop the refusal. Undefined changes
    * nothing, so no old row and no quiet reader moves, and the only new
    * behaviour is a quibble losing its teeth.
+   *
+   * ⚠ **AND THE POLARITY TURNED BACK OVER ON 2026-10-15 (#2526), FOR A REASON
+   * THAT DID NOT EXIST WHEN THE PARAGRAPH ABOVE WAS WRITTEN.** `absent: true`
+   * is now the PERMISSION: a silence acts on nothing. The eleven tests that
+   * argument was made against were protecting a REFUND, and this verdict has
+   * not touched a refund since fable-721 — what a silence can spend today is
+   * the house's free re-render, whose second attempt is the frame the customer
+   * is handed, so acting on a silence risks replacing a right picture rather
+   * than keeping somebody's money. The paragraphs above are kept because they
+   * are why the field exists and why it is ASKED rather than sniffed.
    */
   absent?: boolean;
   /**
@@ -346,23 +380,60 @@ export function isMiss(check: FacetCheck): boolean {
 }
 
 /**
- * A miss that may spend the user's refusal — the gate D-246 class (c) names.
+ * A miss this checker may ACT on — and since #2526 that is the catastrophic
+ * case and nothing else.
  *
- * Binding says *this program defines the value and can hold a reader to it*.
- * That was the whole gate until 2026-08-12 and it is still most of it. What is
- * new is the one way OUT: a reader that says the asked-for thing is in the
- * picture and it is merely not how she pictured it (`absent: false`) does not
- * get to spend her refusal. That exemption is what let the presence set widen
- * past accessories without re-opening D-187 — a quibble cannot refund anybody
- * on any facet, however loudly, while silence still refuses exactly as before.
+ * ⚠ **HIS RULING, 2026-10-15, chat, said of this reader after the views
+ * checker's:** *"my issue is we dont want to over check things as we know
+ * sometimes the checker can be unreliable we learned this with the views
+ * checker"*, on the recommendation he then approved — *"your reccomendation is
+ * good"* — which was to give Refine's checker the views treatment (#1903).
  *
- * A fact whose success criterion IS an absence overrides the exemption; see
- * `absenceIsTheAsk`.
+ * # What changed, in one clause
+ *
+ * The last line read `check.absent !== false`, so **silence acted**: a reader
+ * answering `present:false` without saying which kind of not-present it meant
+ * declined the delivery exactly as a catastrophe did. Now only the reader's own
+ * catastrophic answer does — *I cannot find the asked-for thing in the
+ * photograph AT ALL* — plus a fact whose success criterion IS an absence, where
+ * a miss is the catastrophe reached from the other side (`absenceIsTheAsk`).
+ *
+ * # Why the old polarity was right then and is not now
+ *
+ * `absent` was an EXEMPTION rather than a permission, and its own comment says
+ * why: *"a NEGATIVE without evidence stays a miss"*, because making it
+ * symmetric *"would have delivered and CHARGED for a render the reader believed
+ * was non-compliant"*. That argument is about MONEY, and the money left this
+ * verdict on fable-721 — `facts_missing` is not in `REFUSES_AFTER_RENDER`, so a
+ * disputed refine is delivered and charged whatever this predicate says. What
+ * is left for it to spend is the house's own free re-render, and spending that
+ * on a silence has a cost that runs the OTHER way: the second attempt is the
+ * frame the customer is handed, so a false *"it didn't work"* throws away a
+ * picture that was right and gives them a different one.
+ *
+ * # Nothing is thrown away, exactly as with the views checker
+ *
+ * Every reading still lands on the row, {@link advisoryMisses} still watches
+ * the facet classes that disagree, and the reliability report still reads them
+ * as `delivered_absent` / `delivered_noncompliant` — it classifies stored
+ * checks itself and never asks this question, so no certification number moves.
+ * The verdict stopped being a cashier on fable-721; this is where it stops
+ * being a re-render too.
+ *
+ * ⚠ **STATED AS THE ALTERNATIVE THAT WAS DECLINED** (the fidelity law's rule):
+ * the card asked for the whole-frame reading to be DELETED and the magnified
+ * crop kept in its place. It is refused with its reason on #2526 — the crop is
+ * cut from the masked road's harvest (`verificationDetail.detailForVerification`
+ * returns null without `masterRegions`), `repaintOnce` returns
+ * `evidence: undefined`, and `CASTING_REPAINT_SCOPE` is `all` on the service, so
+ * production has no crop to keep and deleting the frame read would delete the
+ * checker itself. Narrowing what the reading may ACT on is the same ruling
+ * applied to the reading production actually has.
  */
 export function isRefusableMiss(check: FacetCheck): boolean {
   if (!isMiss(check) || !check.binding) return false;
   if (check.absenceIsTheAsk === true) return true;
-  return check.absent !== false;
+  return check.absent === true;
 }
 
 export type RenderVerdict = {
@@ -534,8 +605,9 @@ const CLOSE_PROMPT = [
 ].join("\n");
 
 /**
- * Only a READ, BINDING, ABSENT miss spends the user's refusal. An unread check
- * is silence: it never refuses, and it never passes either.
+ * Only a READ, BINDING miss the reader calls an outright ABSENCE declines the
+ * delivery (#2526). An unread check is silence, and so now is a `present:false`
+ * that would not say which kind: neither acts, and neither passes either.
  */
 export function okOf(checks: ReadonlyArray<FacetCheck>): boolean {
   return checks.every((check) => !isRefusableMiss(check));
@@ -918,12 +990,22 @@ export async function confirmVerdict(
   reread: () => Promise<RenderVerdict>,
 ): Promise<RenderVerdict> {
   const original = new Map(first.checks.map((check) => [keyOf(check), check]));
-  const bindingMisses = first.checks.filter((c) => isMiss(c) && c.binding);
+  /*
+    ⚠ **A SECOND READING IS BOUGHT ONLY FOR A MISS THAT CAN STILL ACT (#2526).**
+
+    This filter was `isMiss(c) && c.binding`, which is wider than the gate it
+    confirms: since the absence exemption landed (D-246, 2026-08-12) a quibble
+    could never decline a delivery, and since #2526 neither can a silence — so
+    both were paying for a confirming vision call whose verdict had nowhere to
+    go. Confirming exactly what {@link isRefusableMiss} admits keeps one rule in
+    one place and takes the paid reading off the renders it cannot change.
+  */
+  const actingMisses = first.checks.filter(isRefusableMiss);
   /* (b) The delivery-path half: an affirmative on a facet with a rap sheet. */
   const suspectPasses = first.checks.filter(
     (c) => c.read && c.verified && hasUnreliabilityPrior(c),
   );
-  if ((bindingMisses.length === 0 && suspectPasses.length === 0) || first.unavailable) {
+  if ((actingMisses.length === 0 && suspectPasses.length === 0) || first.unavailable) {
     return { ...first, readings: 1 };
   }
 
@@ -970,9 +1052,10 @@ export async function confirmVerdict(
       her nothing — and only a second failure reaches the refund. The user's
       money is never spent on a single unconfirmed reading in either direction.
     */
-    const wordedAbsence = first.checks.filter((check) =>
-      isMiss(check) && check.binding
-      && (check.absent === true || check.absenceIsTheAsk === true));
+    /* The hand-written population here WAS the gate's, clause for clause, and
+       since #2526 the gate says exactly this — so it asks the gate rather than
+       restating it (working law 4: the second list always drifts). */
+    const wordedAbsence = first.checks.filter(isRefusableMiss);
     if (wordedAbsence.length === 0) {
       /* No second opinion, and nothing evidenced to act on. As it always was. */
       log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
@@ -998,6 +1081,17 @@ export async function confirmVerdict(
     other way. Where the facet is advisory this costs nothing but an honest
     record; where it is binding the demoted check still has to survive the
     majority of three below before it spends anybody's refusal.
+
+    ⚠ **AND THE SECOND READING'S OWN ABSENCE ANSWER RIDES WITH ITS VERDICT
+    (#2526).** This used to replace `verified` and `saw` and keep the FIRST
+    check's `absent` — which was undefined, because the first reading was an
+    affirmative and the field only exists beside a negative. Under the
+    catastrophic gate that would have quietly ended the sentence above: a
+    demoted check with no absence answer can never be an acting miss, so it
+    could not have survived a majority of three because it would never have
+    reached one. Carrying `other.absent` keeps the demotion exactly as strong as
+    it was, and it is the honest merge in any case — the fields of a check are
+    the reading that produced them.
   */
   let checks = first.checks.map((check) => {
     if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
@@ -1007,11 +1101,16 @@ export async function confirmVerdict(
       { facet: subjectKey(check.subject), asked: check.asked, saw: other.saw },
       "[renderVerification] affirmation withdrawn on re-read — recorded as a miss, not a pass",
     );
-    return { ...check, verified: false, saw: other.saw };
+    return {
+      ...check,
+      verified: false,
+      saw: other.saw,
+      ...(other.absent === undefined ? {} : { absent: other.absent }),
+    };
   });
 
-  const contested = checks.filter((c) => isMiss(c) && c.binding);
-  /* Two readings that AGREE are what a refusal is made of; a split needs a third. */
+  const contested = checks.filter(isRefusableMiss);
+  /* Two readings that AGREE are what an ACT is made of; a split needs a third. */
   const split = contested.some((check) => {
     const other = secondBy.get(keyOf(check));
     if (!other || !other.read) return true;
@@ -1028,7 +1127,7 @@ export async function confirmVerdict(
   /* Majority of three, per fact, voting the FIRST reading rather than the
      demoted one — otherwise the second reading would be counted twice. */
   checks = checks.map((check) => {
-    if (!(isMiss(check) && check.binding)) return check;
+    if (!isRefusableMiss(check)) return check;
     const key = keyOf(check);
     const votes = [original.get(key), secondBy.get(key), thirdBy.get(key)]
       .filter(Boolean)

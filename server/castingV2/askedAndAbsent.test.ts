@@ -136,14 +136,29 @@ describe("the gate: a miss refuses unless the reader says the thing is there", (
     expect(shortfalls({ ok: false, checks: [check] })).toEqual(["without hair down"]);
   });
 
-  it("refuses it even if the reader never answers the absence question", () => {
+  it("does NOT act when the reader never answers the absence question — #2526", () => {
     /*
-      D-235's asymmetry, and the reason the field is an EXEMPTION rather than a
+      ⚠ THIS ARM SAID "refuses it even if the reader never answers the absence
+      question" UNTIL 2026-10-15, AND HIS RULING TURNED IT OVER (#2526).
+
+      Its original reasoning, kept because it is why the field is asked at all:
+      *D-235's asymmetry, and the reason the field is an EXEMPTION rather than a
       permission: a silent reader must never buy the house a free pass. The
       first cut of this fix required `absent === true` and broke eleven tests
-      saying exactly that.
+      saying exactly that.* Every one of those eleven was protecting a REFUND,
+      and this verdict stopped moving money on fable-721 — `facts_missing` is
+      not in `REFUSES_AFTER_RENDER`, so the free pass the asymmetry was guarding
+      is what the product now gives on purpose, and all the gate can still spend
+      is the house's own re-render.
+
+      So the specimen above is unchanged and still refuses: run 1's hair-down
+      miss carries `absent: true`, which is what a reader following the live
+      prompt sends for *"the hair is not down"*. What no longer acts is the
+      reading that will not say which kind of not-present it means.
     */
-    expect(isRefusableMiss(hairDownMiss(true))).toBe(true);
+    expect(isRefusableMiss(hairDownMiss(true))).toBe(false);
+    /* And it is still a recorded miss on the watch list, never a pass. */
+    expect(advisoryMisses({ ok: true, checks: [hairDownMiss(true)] })).toHaveLength(1);
   });
 
   it("DOES NOT refuse run-10's hoops — the tripwire, and it must never fire", () => {

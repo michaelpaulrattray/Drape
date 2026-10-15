@@ -101,6 +101,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { CASTING_V2_REFINE_PRICE_CREDITS } from "./casting/castingCreditCosts";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { readListedSource } from "./testing/listedSource";
 import { withoutComments } from "./testing/withoutComments";
@@ -199,8 +200,8 @@ function priceVocabulary(): { values: ReadonlySet<number>; constants: readonly s
  */
 const FIGURES_THE_PRICE_LIST_HAS_CARRIED: ReadonlySet<number> = new Set([
   0, 0.5, 5, 8, 10, 20, 25, 50, 100, 125, 150, 160, 200, 250, 300, 350, 450,
-  500, 900, 1000, 1200, 1600, 1750, 1850, 3250, 3500, 5000, 6600, 8500, 11850,
-  25000,
+  500, 900, 1000, 1200, 1600, 1750, 1850, 3250, 3500, 5000, 5350, 6600, 8500,
+  11850, 25000,
 ]);
 
 /** What enrols a module: a figure that is a price now, or ever was one here. */
@@ -446,6 +447,43 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "chosen so the arithmetic reads at a glance. Nothing is priced at 5 or 25; "
       + "changing them to real prices would make the example harder to follow and "
       + "no truer.",
+  },
+  {
+    file: "server/casting/castingCreditCosts.ts",
+    credits: 1750,
+    quote: "It was 1,750 (350 display) from 2026-10-01 to 2026-10-15",
+    why:
+      "WHAT A REFINE COST BEFORE HIS LAUNCH PRICE, in the docblock of the "
+      + "constant that moved (#2526, his word: *\"launch at 100\"*). The "
+      + "paragraph exists to date the change — 25 from 2026-08-03, 1,750 from "
+      + "#1601, 500 from 2026-10-15 — and rewriting the middle figure to the "
+      + "current one would leave a sentence saying the price was 500 between two "
+      + "dates when it was not.",
+  },
+  {
+    file: "server/casting/castingCreditCosts.ts",
+    credits: 1750,
+    quote: "a per-SLOT price, five of which made 1,750 ledger",
+    why:
+      "THE PACKAGE REDO'S OLD SHAPE, not a refine price at all — five views at "
+      + "350 display each, which his word of 2026-10-08 replaced with one flat "
+      + "3,250 charge. The figure is named because the arithmetic is the "
+      + "argument (a per-slice price is what made a per-slice refund look "
+      + "right), and the sentence it sits in opens *\"IT WAS 350 PER VIEW UNTIL "
+      + "THIS COMMIT\"*. It coincides with the retired refine price and is "
+      + "unrelated to it.",
+  },
+  {
+    file: "server/castingV2/packageRedoService.ts",
+    credits: 1750,
+    quote: "the unit that is charged: 1,750 ledger = 5 × 350, each view its own",
+    why:
+      "A SUPERSEDED SENTENCE QUOTED VERBATIM, under its own heading *\"THIS "
+      + "SECTION DESCRIBED THE OPPOSITE UNTIL 2026-10-09, and the shape it "
+      + "described is the one to resist\"*. It is the per-slice redo price, not "
+      + "a refine, and the quotation is the evidence for why a per-slot refund "
+      + "branch stayed wired after it could be reached. Rewriting a quotation "
+      + "falsifies the record this file's own rule protects.",
   },
   {
     file: "server/casting/castingCreditCosts.ts",
@@ -1374,9 +1412,14 @@ describe("the price vocabulary comes from the Atlas, not from this file", () => 
     expect(stale).toHaveLength(1);
     expect(values.has(stale[0]!.credits), "25 must not be a current price").toBe(false);
 
-    const current = priceFiguresInProse("/** Refine one face — one paid edit, 1,750 credits. */\n");
+    /* ⚠ THE CURRENT HALF IS READ FROM THE CONSTANT, NOT TYPED (#2526). It was
+       the literal `1,750`, which stopped being a price the day his word moved
+       the Refine to 500 — so this arm went red on a repricing it was not
+       about. The price it narrates is the one thing here that can move, so it
+       comes from where it is declared. */
+    const current = priceFiguresInProse(`/** Refine one face — one paid edit, ${CASTING_V2_REFINE_PRICE_CREDITS} credits. */\n`);
     expect(current).toHaveLength(1);
-    expect(values.has(current[0]!.credits), "1,750 must be a current price").toBe(true);
+    expect(values.has(current[0]!.credits), "the declared refine price must be current").toBe(true);
   });
 });
 
@@ -1572,14 +1615,24 @@ describe("the second reader — a figure with no \"credits\" word (#2110)", () =
       .toEqual([]);
     expect(staleFigures(SCOPE_BEFORE_2110, values).map((figure) => [figure.line, figure.credits]))
       .toEqual([[3, 8500], [3, 3500], [3, 1000]]);
+    /* ⚠ `[8500]` UNTIL 2026-10-15: the same specimen now yields its 1,750 as
+       well, because his word took the Refine to 500 (#2526) and this reader sees
+       a retired figure the moment it retires. That is the reader working, and it
+       is the cheapest demonstration of it in the file. */
     expect(staleFigures(COSTS_BEFORE_2110, values).map((figure) => figure.credits))
-      .toEqual([8500]);
+      .toEqual([8500, 1750]);
   });
 
   it("⚠ NEGATIVE CONTROL — a current price, a never-price, code and copy are not findings", () => {
     const { values } = priceVocabulary();
-    /* 1,750 is a current price; 5,250 and 1,137 were never prices. */
-    expect(staleFigures(COSTS_BEFORE_2110.replace("8,500", "3,250"), values)).toEqual([]);
+    /* Both figures in the line are made current — the Sign's 3,250, and since
+       #2526 the Refine's 500 where 1,750 used to be; 5,250 and 1,137 were never
+       prices. The mutation is the whole point of this control: a line every one
+       of whose figures is a live price is not a finding. */
+    expect(staleFigures(
+      COSTS_BEFORE_2110.replace("8,500", "3,250").replace("1,750", "500"),
+      values,
+    )).toEqual([]);
     expect(staleFigures("// longest brief 1,137 characters, total 5,250\n", values)).toEqual([]);
     /* The bare reader leaves a "credits" figure to the first reader, so one
        figure is never reported twice. */

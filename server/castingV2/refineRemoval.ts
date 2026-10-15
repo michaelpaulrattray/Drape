@@ -390,7 +390,7 @@ export function fingerprintDelta(delta: RefineDelta): string {
 
       Sorted because "hoops, glasses" and "glasses, hoops" are the same recipe,
       and rule 4 says an existing recipe is SELECTED free — a fingerprint that
-      disagreed on order would charge 1,750 credits for a picture they already
+      disagreed on order would charge 500 credits for a picture they already
       have. Sorted HERE ONLY: the prompt keeps their own order, because
       reordering somebody's words to suit a comparison is the record drifting
       from the person.

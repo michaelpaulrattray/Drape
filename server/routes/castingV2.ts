@@ -1569,7 +1569,7 @@ export const castingV2Router = router({
     }),
 
   /**
-   * Refine one face — one paid edit, 1,750 credits (M8, D-121).
+   * Refine one face — one paid edit, 500 credits (M8, D-121).
    *
    * Rate-limited on the generation bucket like every other paid surface. The
    * instruction is capped at 200 characters because it is ONE adjustment, not a

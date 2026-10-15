@@ -2374,7 +2374,23 @@ describe("the render is checked against the record before it is delivered", () =
     also pins the base's presentation (D-186), and counting its call as a
     verdict made the retry test pass for the wrong reason.
   */
-  const verifierSaying = (...verdicts: boolean[]) => {
+  /*
+    ⚠ **A "no" FROM THIS FAKE NOW SAYS WHICH KIND OF NOT-PRESENT IT IS, AND
+    THAT IS THE FAKE BECOMING FAITHFUL RATHER THAN THE ARMS BEING LOOSENED
+    (#2526).** The live prompt requires it — *"WHEN SOMETHING IS NOT PRESENT,
+    SAY WHICH KIND OF NOT-PRESENT IT IS"* — and from his ruling of 2026-10-15
+    the gate acts on the outright answer alone. A fake that omits the field is
+    driving a shape the reader is told not to send, and every arm below about
+    the free re-render would have been asserting a road no compliant reading can
+    reach. `absent` is the parameter rather than a constant because the arm
+    after them drives the OTHER answer, where nothing re-renders.
+  */
+  const verifierSaying = (...verdicts: boolean[]) => verifierAnswering({ absent: true }, verdicts);
+
+  const verifierAnswering = (
+    shape: { absent?: boolean },
+    verdicts: boolean[],
+  ) => {
     let call = 0;
     return {
       id: "verifier",
@@ -2389,7 +2405,14 @@ describe("the render is checked against the record before it is delivered", () =
           /* `saw` on BOTH answers (D-235). An affirmative that names nothing is
              not a reading, so a fake that omits it here is reproducing the
              empty yes rather than a pass. */
-          text: JSON.stringify({ results: [{ id: 1, present, saw: present ? "green irises" : "brown" }] }),
+          text: JSON.stringify({
+            results: [{
+              id: 1,
+              present,
+              saw: present ? "green irises" : "brown",
+              ...(present || shape.absent === undefined ? {} : { absent: shape.absent }),
+            }],
+          }),
           truncated: false,
           latencyMs: 1,
         };
@@ -2409,6 +2432,38 @@ describe("the render is checked against the record before it is delivered", () =
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
     /* Two renders, ONE charge — the retry is absorbed. */
     expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(ledger.charges).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  /*
+    ⚠ **AND THE CHECKER NO LONGER STEPS IN FOR ANYTHING BUT AN OUTRIGHT ABSENCE
+    — his ruling, 2026-10-15 (#2526), driven at the service rather than at the
+    predicate.**
+
+    *"my issue is we dont want to over check things as we know sometimes the
+    checker can be unreliable we learned this with the views checker"*. The two
+    arms here are the same reader on the same frame answering the two kinds of
+    *"no"*, and the difference between them is a render the house pays for and a
+    picture the customer is handed: the second attempt is the frame they get, so
+    a false *"it didn't work"* replaces a right picture with a different one.
+  */
+  it("does not re-render when the reader will not call the miss an absence", async () => {
+    await refineCandidate(
+      { ...greenEyes, verifier: verifierAnswering({}, [false, false, false]) },
+      input,
+    );
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(ledger.charges).toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("does not re-render when the reader says the thing is there and quibbles", async () => {
+    await refineCandidate(
+      { ...greenEyes, verifier: verifierAnswering({ absent: false }, [false, false, false]) },
+      input,
+    );
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
     expect(ledger.charges).toHaveLength(1);
     expect(ledger.refunds).toHaveLength(0);
   });
