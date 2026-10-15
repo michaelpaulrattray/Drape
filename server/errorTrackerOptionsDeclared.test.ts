@@ -47,10 +47,20 @@ import { createRequire } from "node:module";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildTrackerOptions } from "./monitoring/errorTracker";
 import { buildClientTrackerOptions } from "../client/src/monitoring/errorTracker";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* ⚠ OFF THE 5 s DEFAULT BY THE SWEEP, NOT BY A RED (#2529).
+   `productEventOptionsDeclared.test.ts` timed out under contention on exactly
+   this shape — a walk over an installed SDK's shipped code, read whole — and
+   this is the suite it was copied from. Its first arm reads two Sentry packages
+   and measured ~245 ms alone, twice the sibling that went red. It reads
+   `node_modules`, not the source tree, so `contendedTestTimeouts.test.ts`'s
+   derived population cannot see it — that suite pins this declaration by name. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 type SdkPackage = "@sentry/node" | "@sentry/browser";
 

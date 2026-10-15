@@ -41,9 +41,20 @@ import { createRequire } from "node:module";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildProductEventOptions } from "./monitoring/productEvents";
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
+
+/* ⚠ OFF THE 5 s DEFAULT, AND OUTSIDE THE GUARD THAT WOULD HAVE ASKED (#2529).
+   The first arm walks every shipped JavaScript file of two installed packages
+   and reads them all into one string. Alone that is ~120 ms; inside
+   `pnpm preflight`, beside every other suite on the machine, "finds a real body
+   of code" hit `Test timed out in 5000ms` on #2526's branch and passed 7 of 7
+   alone. It reads `node_modules`, not the source tree, so
+   `contendedTestTimeouts.test.ts`'s derived population cannot see it — that
+   suite pins this declaration by name instead. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * The root of an installed package, resolved THROUGH the package rather than by

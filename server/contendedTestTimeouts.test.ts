@@ -320,7 +320,7 @@ describe("the hop, and the population it was widened for (#2289)", () => {
   });
 });
 
-describe("a suite the derived signal cannot see, pinned by name (#2518)", () => {
+describe("suites the derived signal cannot see, pinned by name (#2518, #2529)", () => {
   /*
     ⚠ **THE POPULATION ABOVE IS SUITES THAT WALK THE TREE, AND A SUITE CAN BE
     SLOW ENOUGH TO REDDEN A DEPLOY WITHOUT WALKING IT.**
@@ -330,34 +330,53 @@ describe("a suite the derived signal cannot see, pinned by name (#2518)", () => 
 
     The card chose to declare the floor on this one file rather than widen the
     signal on one instance (the `readdirSync` widening was measured to indict 54
-    innocent files to catch 9). So this is a pin, and it says so: a list of one,
+    innocent files to catch 9). So this is a pin, and it says so: a short list,
     held here because the deriver cannot hold it.
+
+    ⚠ **#2529 IS THE SAME CLASS'S THIRD SHAPE, AND IT JOINED THE LIST RATHER
+    THAN WIDENING THE SIGNAL, FOR THE SAME REASON.**
+    `productEventOptionsDeclared.test.ts` reads every shipped JavaScript file of
+    two installed PostHog packages — `node_modules`, not the source tree — and
+    hit `Test timed out in 5000ms` inside `pnpm preflight` on #2526's branch
+    while passing 7 of 7 alone. `errorTrackerOptionsDeclared.test.ts` is the
+    suite it was copied from and does the same walk over two Sentry packages
+    (~245 ms alone against the PostHog walk's ~120 ms), so it is pinned by the
+    sweep rather than by a red of its own.
   */
-  const FILE = "server/architectureExpressSurfaces.test.ts";
+  const PINNED = [
+    { file: "server/architectureExpressSurfaces.test.ts", card: "#2518" },
+    { file: "server/productEventOptionsDeclared.test.ts", card: "#2529" },
+    { file: "server/errorTrackerOptionsDeclared.test.ts", card: "#2529" },
+  ] as const;
+  const derived = sourceSweepSuites(ROOT).map((row) => row.file);
 
-  it("declares the class's timeout", () => {
-    expect(
-      declaresTheFloor(readFileSync(join(ROOT, FILE), "utf8")),
-      `${FILE} is back on vitest's 5 s default and will time out inside the deploy rite (#2518)`,
-    ).toBe(true);
-  });
+  for (const { file, card } of PINNED) {
+    describe(file, () => {
+      it("declares the class's timeout", () => {
+        expect(
+          declaresTheFloor(readFileSync(join(ROOT, file), "utf8")),
+          `${file} is back on vitest's 5 s default and will time out under contention (${card})`,
+        ).toBe(true);
+      });
 
-  it("CONTROL — the same file without its declaration reads as undeclared", () => {
-    /* The reader must be able to say no about THIS file's real source, not
-       only about the synthetic one-liners above. */
-    const stripped = readFileSync(join(ROOT, FILE), "utf8").replace(
-      /vi\s*\.\s*setConfig\s*\(\s*\{[^}]*\}\s*\)\s*;?/g,
-      "",
-    );
-    expect(declaresTheFloor(stripped)).toBe(false);
-  });
+      it("CONTROL — the same file without its declaration reads as undeclared", () => {
+        /* The reader must be able to say no about THIS file's real source, not
+           only about the synthetic one-liners above. */
+        const stripped = readFileSync(join(ROOT, file), "utf8").replace(
+          /vi\s*\.\s*setConfig\s*\(\s*\{[^}]*\}\s*\)\s*;?/g,
+          "",
+        );
+        expect(declaresTheFloor(stripped)).toBe(false);
+      });
 
-  it("is still outside the derived population — when it joins, delete this block", () => {
-    /* If the signal is ever widened to see it, the arm above is redundant with
-       "every one of them declares it", and this says so rather than letting a
-       hand-kept pin outlive its reason. */
-    expect(sourceSweepSuites(ROOT).map((row) => row.file)).not.toContain(FILE);
-  });
+      it("is still outside the derived population — when it joins, delete its pin", () => {
+        /* If the signal is ever widened to see it, the arm above is redundant
+           with "every one of them declares it", and this says so rather than
+           letting a hand-kept pin outlive its reason. */
+        expect(derived).not.toContain(file);
+      });
+    });
+  }
 });
 
 describe("the constant itself", () => {
