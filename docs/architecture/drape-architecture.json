@@ -15919,6 +15919,10 @@
       "path": "server/faceScanCapRepeatLooks.test.ts"
     },
     {
+      "id": "test:server/faceScanSharedFaceRead.test.ts",
+      "path": "server/faceScanSharedFaceRead.test.ts"
+    },
+    {
       "id": "test:server/faceScanSpend.test.ts",
       "path": "server/faceScanSpend.test.ts"
     },
