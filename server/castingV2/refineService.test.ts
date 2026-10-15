@@ -30,7 +30,7 @@ import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { pictureHalfPhrase } from "./sidePhrasing";
-import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import { basicsWardrobeLine, HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 import { wardrobePieces } from "./wardrobeCards";
 import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
@@ -13957,34 +13957,89 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
   });
 
-  it("⚠ THE OFFER DERIVES — an upper CHEST is not offered a road that shuts one ask later", async () => {
+  it("⚠ THE OFFER ASKS BOTH QUESTIONS — the road AND this cast's outfit (#2558)", async () => {
     /*
-      fable-1339 §2's condition, and it is census 4(b)'s own lesson arriving in
-      a new sentence. *"I can put a new one on instead"* is true only where the
-      WORDS ROAD serves that placement; the upper chest is not served (the mint
-      cannot crop it under a crew neck), so offering it here would send her
-      straight into `gate_ink_uncarried` one ask later.
+      fable-1339 §2's condition, and census 4(b)'s own lesson arriving in a new
+      sentence. *"I can put a new one on instead"* is true only where a words
+      render would actually land — so the offer is DERIVED from the two things
+      that decide that, rather than promised in a sentence.
 
-      The chest branch gets the honest close and NO offer; the arm below proves
-      the offer is not simply missing everywhere.
+      ⚠ **THIS ARM ASSERTED THE RIGHT ANSWER FOR THE WRONG REASON AND WAS
+      THEREFORE WATCHING THE WRONG CONDITION — #2558.** It read *"the upper
+      chest is not served (the mint cannot crop it under a crew neck)"* and
+      proved it by asking only the ROAD. The two halves of that sentence are
+      different facts: the chest JOINED the road on 2026-08-23 (the Basics chest
+      court), and what the parenthetical actually describes — *under a crew
+      neck* — is the OUTFIT. So the road said yes from that day, the offer
+      started being made, and `gate_ink_uncarried` shut it one ask later.
+
+      ⚠ **And it kept passing because the suite was on a road no account was
+      on.** Nothing here set `CASTING_INK_WORDS_SCOPE`, so the service read the
+      CLOSED list — `neck` alone — while production stood at `all`. The arm
+      measured a configuration that did not exist, which is why it could watch
+      for this dead end for seven weeks and never see it.
+
+      **So this arm now injects the road OPEN — production's own position — and
+      varies the OUTFIT.** That is the whole repair: with the road fixed at what
+      every account really has, the only thing moving between the first case and
+      the last is what the cast is wearing, and the answer has to move with it.
     */
+    /* Production's road position, stated rather than inherited from an unset
+       variable. It is an injection today and simply the only road once
+       `CASTING_INK_WORDS_SCOPE` retires (#1577 slice D3). */
+    const roadOpen = {
+      inkWordsEnabled: () => true,
+      listInkDeliveryCrops: deliveredCropRows([]),
+    };
+
+    /* 1 · A COVERED chest. The road serves it and the house crew tee covers it,
+       so there is nothing to offer and the answer closes honestly. */
     inkedBranch();
-    const chest = await refineCandidate(
-      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+    const covered = await refineCandidate(
+      transformRoad(roadOpen),
       { ...input, instruction: "make his chest tattoo bigger" },
     );
-    expect(chest.note).not.toContain("put a new one on");
+    expect(covered.note, "it still agrees with her eyes about the tattoo").toContain(
+      "didn't keep a copy of the artwork",
+    );
+    expect(
+      covered.note,
+      "the tee covers the chest, so offering a new one here is the dead end 4(b) names",
+    ).not.toContain("put a new one on");
 
-    /* A NECK piece — served by the words road on every account — is offered
-       the road that really works. The two notes must DIFFER, or a derivation
-       that ignored its argument would satisfy both halves (fable-1333 §2). */
+    /* 2 · A NECK piece under the same tee — on the road and left showing — is
+       offered the road that really works. Proves the offer is not simply
+       missing everywhere, which is the control the covered case needs. */
     inkedBranch({ "ink:neck": NECK_CROP });
     const neck = await refineCandidate(
-      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+      transformRoad(roadOpen),
       { ...input, instruction: "make his neck tattoo bigger" },
     );
-    expect(neck.note).toContain("put a new one on");
-    expect(neck.note).not.toBe(chest.note);
+    expect(neck.note, "a neck is served and bare, so the offer stands").toContain(
+      "put a new one on",
+    );
+    expect(neck.note).not.toBe(covered.note);
+
+    /* 3 · ⚠ THE SAME CHEST ASK, THE SAME ROAD, A BARE CHEST — and the answer
+       flips. A Basics-stamped roll leaves the chest showing, so for this cast
+       the offer is TRUE and is made. One variable moved between case 1 and this
+       one, and it is the one the fix reads: a pass here with case 1 also
+       passing is the only shape that cannot be satisfied by withholding the
+       offer everywhere. */
+    rollPath = "basics";
+    rollWardrobeLine = basicsWardrobeLine("male");
+    inkedBranch();
+    const bare = await refineCandidate(
+      transformRoad(roadOpen),
+      { ...input, instruction: "make his chest tattoo bigger" },
+    );
+    expect(bare.note, "a bare chest is served and showing, so the offer is made").toContain(
+      "put a new one on",
+    );
+    expect(
+      bare.note,
+      "same ask, same road, different outfit — the answer must differ",
+    ).not.toBe(covered.note);
   });
 
   it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
