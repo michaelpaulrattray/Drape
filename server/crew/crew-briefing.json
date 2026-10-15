@@ -1,7 +1,7 @@
 {
-  "edition": 713,
-  "updatedAt": "2026-10-15T06:05:00.000Z",
-  "shift": "You asked whether there is a cheaper and better way to read a face. There is, and both halves of it\nmeasured well tonight — though nothing is built and nothing in the app has changed.\n\nFirst: we have been paying twice for every pair. Left eye, right eye — two separate reads, because a\nmeasurement back in August found the engine would only ever hand back one. That was true of the way we\nwere asking it. There is a setting on that engine we have never once switched on, and with it a single\nread comes back with both. Five reads off every face, about two and a half cents. I pushed hardest on\nthe part that could have gone wrong: asked for something that is simply not in the picture, it still\nanswers nothing rather than inventing it — which is what the whole scan rests on.\n\nSecond, and this is the bigger one: one read of the whole face, with no list at all, named everything on\nthree of your characters. On the elder alien that included its third eye, its pointed ears and the\nmachinery in its jaw — none of which our list has a question for, so today we are blind to all three. It\ninvented nothing: I checked every name it gave against the picture myself, including a studded collar and\nthe tattooing on your cyberpunk operative's neck, and both are really there. It also says plainly what it\ncannot see rather than guessing — on the hooded figure it named five things as hidden. It costs nine\ntenths of a cent, read off the provider's own bill, against the nine to nineteen cents a face scan costs\nus now.\n\nWhat is still missing before any of this becomes a design for you to approve: whether a scan can be\ncarried across versions after an edit, and whether the boxes that read draws are accurate enough to cut\nfrom. Both are written up on the card.",
+  "edition": 714,
+  "updatedAt": "2026-10-15T07:22:37.318Z",
+  "shift": "Two questions were left open on your desk last night about reading a face, and both are answered tonight. Nothing is built and nothing in the app has changed.\n\nThe first was whether the rough boxes that single read draws are accurate enough to cut from. They are not, and not by a little: of the twelve I measured against where each thing actually is, exactly one box even contained the middle of the thing it was pointing at. I checked my own arithmetic two different ways before saying that, because getting it wrong would have blamed the read for my own mistake. So that half of the idea is dead, and the design is simpler without it — the read's job is to NAME what is on the face, which it does beautifully, and the exact shapes come from the existing engine at the moment you touch something, which is what the plan said all along.\n\nThe step underneath is where the real problem is, and it is the one that matters. Asked to cut out the elder alien's third eye, or the machinery in its jaw, the shape engine gives back nothing at all, whatever words I use. Those are exactly the two things this whole idea exists to find. And it can plainly see the jaw hardware — when I asked it for a pair of brass goggles the creature does not have, it cut out the jaw hardware and called it goggles. So it is not blind; it is unreliable about what it has been asked for. Finding an engine that cuts out what was named is the next measurement, and the design now rests on it.\n\nOne thing in it is yours to decide rather than ours to measure. Today every row in the panel shows a small cut-out of that feature, because that is the look you chose. A read that only names things has no cut-out to show, so a panel that filled itself in as you touched things would start as a plain list of names. That comes to you with the finished design, not before it.\n\nSeparately, and at no cost at all: what a face scan costs us is now measured on a hundred and one of your real scans instead of estimated, and it lands exactly where we had said it would. Both of today's savings are confirmed working on your own account. It also turned up something nobody had priced — when a part of a face reads as empty we pay to look a second time, and across those hundred and one scans we bought a hundred and forty second looks and found something twice.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -22,7 +22,7 @@
           "state": "done"
         },
         {
-          "title": "What a face scan costs us — three cuts made, all invisible: the same question was being asked twice, teeth were being looked for twice on a closed mouth, and every face you arrowed past was being read. The last one waits on a review (#2191, #2525)",
+          "title": "What a face scan costs us — three cuts made, all invisible, and all three now live on your account: the same question was being asked twice, teeth were being looked for twice on a closed mouth, and every face you arrowed past was being read. What a scan costs is now measured on 101 of your real scans rather than estimated, and one further saving is measured and written up on the card (#2191, #2525)",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T05:55:11.622Z",
+      "readAt": "2026-10-15T07:23:35.032Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10892,7 +10892,7 @@
     293
   ],
   "nextUp": {
-    "readAt": "2026-10-15T05:55:11.621Z",
+    "readAt": "2026-10-15T07:23:35.032Z",
     "items": [
       {
         "issueNumber": 1598,
@@ -10941,16 +10941,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 2525,
-        "title": "Two ways to make a face scan cheaper, and both are changes you would notice (out of #2191)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2526,
-        "title": "Refine: the checker steps in only when nothing changed at all, and the price drops to 100 credits (his word, 2026-10-15)",
-        "urgent": false
-      },
-      {
         "issueNumber": 2532,
         "title": "N3: a better way to read a face — cheaper, carried across versions, and able to find features that are not on the list (investigation, his word 2026-10-15)",
         "urgent": false
@@ -10958,7 +10948,11 @@
       {
         "issueNumber": 2533,
         "title": "N3: the edit panel slides out like a drawer when you mean to edit, and fills in feature by feature — looking mode is just the picture (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU - yes or no on the drawer frames, now on your Desk (eye gallery, edition 713)."
+        }
       }
     ]
   }
