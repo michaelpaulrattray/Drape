@@ -316,7 +316,6 @@ function identityDocumentsFor(source: SignableCandidate): {
     everything downstream that compares the fingerprint.
   */
   const wardrobe = currentWardrobeLine({
-    rollPath: source.roll.path,
     rollLine: source.roll.wardrobeLine,
     editedLine: editedWardrobeLine(readStoredDelta(source.face.deltas)),
   });
@@ -328,13 +327,26 @@ function identityDocumentsFor(source: SignableCandidate): {
     /*
       Both facts, kept as the resolution's own shape rather than flattened to a
       string: a reader needs to tell "this Cast wears the house line" from
-      "this Cast predates the paths", and a bare string cannot say the second.
+      "this Cast has no line recorded", and a bare string cannot say the second.
+
+      ⚠ **`path` IS WRITTEN A CONSTANT `null` SINCE #1577 SLICE 2, AND THE KEY
+      IS KEPT ON PURPOSE.** The resolution stopped carrying a path with item B1,
+      so there is nothing left to write here — but this is a stored JSON blob
+      read back by three services across several eras, and dropping a key from
+      what it writes is a shape change nobody asked for. Measured before the
+      change: of the signed casts production holds, the `wardrobe.path` key is
+      absent on 56 and `null` on 18, and **no row anywhere holds a non-null
+      one** — so writing `null` forever is byte-identical to what this already
+      wrote for every row it has ever written. Nothing reads the key
+      (`castWardrobeLine` and `castWardrobeSource` read `line` and `source`
+      alone); it stays because an unread key costs nothing and a changed shape
+      might.
+
+      The `incoherent` arm stood between these two and is gone with the kind.
     */
     wardrobe: wardrobe.kind === "line"
-      ? { path: wardrobe.path, line: wardrobe.line, source: wardrobe.source }
-      : wardrobe.kind === "incoherent"
-        ? { path: wardrobe.path, line: null, source: null }
-        : { path: null, line: null, source: null },
+      ? { path: null, line: wardrobe.line, source: wardrobe.source }
+      : { path: null, line: null, source: null },
   };
   const preferences = {
     briefText: source.roll.briefText,

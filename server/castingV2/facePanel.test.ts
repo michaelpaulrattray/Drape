@@ -1250,6 +1250,11 @@ describe("an open kind — a thing the catalogue has no word for", () => {
  * and still say their words.
  */
 describe("no row says which world its picture came from", () => {
+  /* ⚠ BOTH `source: "born"` AND `path` ARE RETIRED SHAPES SINCE #1577 SLICE 2,
+     and that makes this fixture MORE of what it already was rather than stale:
+     it exists to smuggle a field the panel no longer admits and prove nothing
+     reads it. Kept verbatim on purpose — the arm must run the fixture that once
+     produced two labels, not a tidier one. */
   const dressed = { kind: "line", line: "a plain grey crew-neck t-shirt, dark straight jeans", source: "born", path: "wardrobe" } as const;
 
   /* The fixture that USED to produce two labels, resolution and all — the arm
