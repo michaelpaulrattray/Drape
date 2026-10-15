@@ -163,6 +163,14 @@ export type CastVoiceStudioPanelProps = {
   available: boolean;
   /** Whether there is a written voice line to make voices from. */
   hasLine: boolean;
+  /**
+   * The line is on its way rather than absent (#2521): the product is still
+   * writing it, or the room already holds it and this card's own read has not
+   * caught up. The no-line card then rests WITHOUT telling the customer to
+   * write it themselves. Optional so a caller with no room behind it draws
+   * exactly the card it drew before.
+   */
+  lineArriving?: boolean;
   /** The cast's name, or null. Never used to gender anything. */
   name: string | null;
   kept: { clipPath: string } | null;
@@ -217,6 +225,7 @@ export const KEPT_STRIP_KEY = "kept";
 export function CastVoiceStudioPanel({
   available,
   hasLine,
+  lineArriving = false,
   name,
   kept,
   stage,
@@ -321,14 +330,16 @@ export function CastVoiceStudioPanel({
   }
 
   /* No line to make voices from: the card points at the door above it rather
-     than offering a press that cannot work. */
+     than offering a press that cannot work — unless the line is on its way
+     (#2521), when "write how they sound first" would tell the customer to do
+     the product's job. The wait itself is drawn by the line above the strip. */
   if (!hasLine) {
     return (
       <>
         <VoiceStrip label="" state={stripFor(KEPT_STRIP_KEY)} />
         <div className="dpc-voice__foot">
           <span className="dpc-voice__name">{VOICE_NONE_YET}</span>
-          <span className="dpc-rcard__hint">{VOICE_NEEDS_A_LINE}</span>
+          {lineArriving ? null : <span className="dpc-rcard__hint">{VOICE_NEEDS_A_LINE}</span>}
         </div>
       </>
     );
@@ -525,10 +536,85 @@ export function isShortOfCredits(error: unknown): boolean {
  */
 const designedThisSession = new Set<string>();
 
+/**
+ * SHOULD THE FIRST THREE BE MADE NOW? — the automatic design's whole rule, as a
+ * function of what the card knows, so the arrival of a line can be driven as a
+ * sequence (#2521) rather than believed.
+ */
+export function voiceAutoDesignDue(card: {
+  available: boolean;
+  hasLine: boolean;
+  kept: boolean;
+  choices: number;
+  /** `undefined` until the status lands; only `false` holds the design back. */
+  canKeep: boolean | undefined;
+  designedAlready: boolean;
+}): boolean {
+  if (!card.available || !card.hasLine || card.kept || card.choices > 0) return false;
+  /*
+    ⚠ **NOTHING IS DESIGNED WHEN NOTHING COULD BE KEPT** (#2470's finding,
+    item 5). `canKeep` is the server's cached, fail-open read of the house
+    allowance: with no slot and no operation left, three voices would be made
+    on house money and then refused at the press, so the card simply waits and
+    offers Make. The Keep's own live read is still the gate that protects the
+    spend.
+  */
+  if (card.canKeep === false) return false;
+  return !card.designedAlready;
+}
+
+/**
+ * MUST THE CARD READ ITS STATUS AGAIN? — #2521's second defect.
+ *
+ * The status is read once, on mount, and straight after a Sign that mount
+ * happens while the product is still writing the line: the answer is
+ * `hasLine: false`. Nothing re-read it when the room's own poll brought the
+ * line in, so the card stayed on "write how they sound first" and the free
+ * first three never fired. The room's line appearing or going is the event,
+ * and its presence (not its text — an edit changes nothing the status says)
+ * is what is compared.
+ */
+export function voiceStatusStaleAfter(lineWasWritten: boolean, lineIsWritten: boolean): boolean {
+  return lineWasWritten !== lineIsWritten;
+}
+
+/**
+ * IS THE LINE ON ITS WAY, FROM THIS CARD'S SIDE? The room says the product is
+ * still writing it, or the room already holds it while this card's read says
+ * there is none — the moment between the poll and the re-read above.
+ */
+export function voiceLineArriving(room: { lineExpected: boolean; lineWritten: boolean }, hasLine: boolean): boolean {
+  if (hasLine) return false;
+  return room.lineExpected || room.lineWritten;
+}
+
 /** The panel, wired. `castId` is the cast's public Klieg ID. */
-export function CastVoiceStudio({ castId, name }: { castId: string; name: string | null }) {
+export function CastVoiceStudio({
+  castId,
+  name,
+  lineWritten = false,
+  lineExpected = false,
+}: {
+  castId: string;
+  name: string | null;
+  /** Whether the room holds a written voice line for this cast (#2521). */
+  lineWritten?: boolean;
+  /** Whether the product is still writing it (#2521, `personaLinePending`). */
+  lineExpected?: boolean;
+}) {
   const utils = trpc.useUtils();
   const status = trpc.castingV2.voice.status.useQuery({ castId }, { enabled: Boolean(castId) });
+  /*
+    THE LINE ARRIVING IS A REASON TO ASK AGAIN (#2521). Compared against the
+    last value this card saw rather than the first, so the line going (it never
+    does today) is read the same way as it coming.
+  */
+  const lineSeen = useRef(lineWritten);
+  useEffect(() => {
+    const stale = voiceStatusStaleAfter(lineSeen.current, lineWritten);
+    lineSeen.current = lineWritten;
+    if (stale) void utils.castingV2.voice.status.invalidate({ castId });
+  }, [castId, lineWritten, utils]);
   const design = trpc.castingV2.voice.design.useMutation();
   const keep = trpc.castingV2.voice.keep.useMutation();
   const remove = trpc.castingV2.voice.remove.useMutation();
@@ -801,17 +887,14 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
   /* THE FIRST THREE ARRIVE WITHOUT A PRESS (design §1), once per cast per page
      session — see `designedThisSession` for why that is not per mount. */
   useEffect(() => {
-    if (!available || !hasLine || kept || choices.length > 0) return;
-    /*
-      ⚠ **NOTHING IS DESIGNED WHEN NOTHING COULD BE KEPT** (#2470's finding,
-      item 5). `canKeep` is the server's cached, fail-open read of the house
-      allowance: with no slot and no operation left, three voices would be made
-      on house money and then refused at the press, so the card simply waits and
-      offers Make. The Keep's own live read is still the gate that protects the
-      spend.
-    */
-    if (canKeep === false) return;
-    if (designedThisSession.has(castId)) return;
+    if (!voiceAutoDesignDue({
+      available,
+      hasLine,
+      kept: Boolean(kept),
+      choices: choices.length,
+      canKeep,
+      designedAlready: designedThisSession.has(castId),
+    })) return;
     designedThisSession.add(castId);
     void make(true);
   }, [available, hasLine, kept, canKeep, choices.length, castId, make]);
@@ -951,6 +1034,7 @@ export function CastVoiceStudio({ castId, name }: { castId: string; name: string
       <CastVoiceStudioPanel
         available={available}
         hasLine={hasLine}
+        lineArriving={voiceLineArriving({ lineExpected, lineWritten }, hasLine)}
         name={name}
         kept={kept}
         stage={stage}

@@ -47,6 +47,9 @@ import {
   CastVoiceLine,
   PersonaEditButton,
   PersonaLabel,
+  PERSONA_LANDING_GRACE_MS,
+  personaLandingPoll,
+  personaLinePending,
   PERSONA_OWN_WORDS_SHUT,
   armUnsavedLeaveGuard,
   personaLeaveBody,
@@ -366,6 +369,16 @@ export default function CastingRoom() {
     // server-side cannot silently fail to reach the handler that needs it.
     NonNullable<typeof cast.data>["siblings"][number] | null
   >(null);
+  /*
+    THE LINES LAND JUST AFTER THE SEAL (#2521). The drafts are written by the
+    Sign's last act, behind the seal, so a poll can read the finished Cast a
+    moment before its lines exist — and that read used to end the poll, leaving
+    the room on "no line" until a reload. A room that WATCHED the build finish
+    keeps reading for a short grace while both lines are still missing; a room
+    opened on an already-settled Cast never waits (it never saw a build).
+  */
+  const [awaitingLines, setAwaitingLines] = useState(false);
+  const lastStatus = useRef<string | null>(null);
   const cast = trpc.castingV2.getCast.useQuery(
     { castId },
     {
@@ -381,15 +394,37 @@ export default function CastingRoom() {
         the new picture arrived on a manual reload, which is exactly what *"it
         looks like it stopped generating"* looked like from the outside.
       */
-      refetchInterval: (query) => (castRoomIsWorking(query.state.data) ? POLL_MS : false),
+      refetchInterval: (query) => {
+        if (castRoomIsWorking(query.state.data)) return POLL_MS;
+        return personaLandingPoll(query.state.data?.persona, awaitingLines) ? POLL_MS : false;
+      },
     },
   );
+
+  const castStatus = cast.data?.status ?? null;
+  useEffect(() => {
+    const was = lastStatus.current;
+    lastStatus.current = castStatus;
+    if (castStatus === "building") {
+      setAwaitingLines(false);
+      return;
+    }
+    if (was !== "building" || castStatus === null) return;
+    setAwaitingLines(true);
+    const grace = window.setTimeout(() => setAwaitingLines(false), PERSONA_LANDING_GRACE_MS);
+    return () => window.clearTimeout(grace);
+  }, [castStatus]);
 
   useEffect(() => {
     if (config.data && config.data.enabled === false) navigate("/app/casting");
   }, [config.data, navigate]);
 
   const data = cast.data;
+  /* #2521 — the voice line is on its way. One reading, used by the line and by
+     the studio under it, so the two cannot disagree about it. */
+  const voiceLinePending = data
+    ? personaLinePending(data.persona?.voice, { building: data.status === "building", landing: awaitingLines })
+    : false;
 
   /**
    * Ask for all her views again.
@@ -1387,6 +1422,12 @@ export default function CastingRoom() {
                   /* The reads header says "carry himself / herself /
                      themselves" off the Cast's own record (#2238). */
                   pronouns={data.pronouns}
+                  /* #2521: while the product is still writing it, the card
+                     draws its label and the wait instead of nothing. */
+                  pending={personaLinePending(data.persona?.personality, {
+                    building: data.status === "building",
+                    landing: awaitingLines,
+                  })}
                 />
                 {/* VOICE — the drawn card with its player skeleton at rest. */}
                 <section className="dpc-rcard" style={{ gap: 13 }}>
@@ -1425,6 +1466,7 @@ export default function CastingRoom() {
                   */}
                   <CastVoiceLine
                     voice={data.persona?.voice ?? null}
+                    pending={voiceLinePending}
                     onSave={savePersonaField}
                     savingLine={savingPersonaField}
                     /* #2139's helper names the cast twice — "and Pigman's
@@ -1452,7 +1494,13 @@ export default function CastingRoom() {
                       rather than two that drift (working law 4), which is also
                       why `WAVE` moved there as `VOICE_RESTING_WAVE`.
                     */
-                    <CastVoiceStudio castId={data.castId} name={data.name ?? null} />
+                    <CastVoiceStudio castId={data.castId}
+                      name={data.name ?? null}
+                      /* #2521: the line arriving re-reads the card's status, so
+                         the free first three follow it without a reload. */
+                      lineWritten={Boolean(data.persona?.voice)}
+                      lineExpected={voiceLinePending}
+                    />
                   ) : null}
                 </section>
 
