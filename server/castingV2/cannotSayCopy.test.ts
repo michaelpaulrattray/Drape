@@ -340,10 +340,20 @@ describe("the ink sentences carry the cast's own places, never a frozen three", 
 
       ⚠ **None of the three claims to have READ the outfit.** An empty list
       means every served surface is covered OR unreadable, and those are
-      different facts — `gate_ink_document`'s own empty sentence asserts the
-      first (*"this outfit covers every place that works"*), which is true today
-      because no writer of an unreadable line exists yet. These three say what is
-      true of both, so they stay true the day one does.
+      different facts. These three say what is true of both.
+
+      ⚠ **AND THE FOURTH DOOR DID ASSERT THE FIRST — FIXED #2601.**
+      `gate_ink_document`'s own empty sentence said *"this outfit covers every
+      place that works"*. This block called that *"true today, because no
+      writer of an unreadable line exists yet"*, and the measurement runs the
+      other way: over every resolution shape the type can express, **`covered`
+      alone cannot empty that list at all** — the one `covered` answer in
+      either table is the house chest, and the house table leaves the neck and
+      the upper arm `bare`, so any line the reader recognises leaves at least
+      two surfaces showing. The reason is therefore ALWAYS the unreadable one,
+      and that sentence was wrong whenever it was shown rather than wrong only
+      once a writer existed. All four doors carry one phrase now; the reasons
+      are driven in `inkWordsRoad.test.ts`.
     */
     expect(said("unplacedInk", [])).toBe(
       "I can put a tattoo on her, but there's nowhere showing to put one right now. "

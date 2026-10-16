@@ -54,7 +54,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:629"
+          "server/castingV2/cannotSayCopy.ts:637"
         ]
       },
       {
@@ -270,7 +270,7 @@
           "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:378"
+          "server/castingV2/cannotSayCopy.ts:386"
         ]
       },
       {
@@ -281,7 +281,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:573"
+          "server/castingV2/cannotSayCopy.ts:581"
         ]
       },
       {
@@ -292,7 +292,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:600"
+          "server/castingV2/cannotSayCopy.ts:608"
         ]
       },
       {
@@ -314,7 +314,7 @@
           "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:439"
+          "server/castingV2/cannotSayCopy.ts:447"
         ]
       },
       {
@@ -342,7 +342,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:644"
+          "server/castingV2/cannotSayCopy.ts:652"
         ]
       },
       {
@@ -356,7 +356,7 @@
           "server/castingV2/viewFeatureWords.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:639"
+          "server/castingV2/cannotSayCopy.ts:647"
         ]
       },
       {
@@ -618,7 +618,7 @@
         ],
         "sites": [
           "server/castingV2/repaintAsks.ts:665",
-          "server/castingV2/cannotSayCopy.ts:606"
+          "server/castingV2/cannotSayCopy.ts:614"
         ]
       },
       {
@@ -841,7 +841,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:580"
+          "server/castingV2/cannotSayCopy.ts:588"
         ]
       }
     ],
