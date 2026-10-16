@@ -240,7 +240,7 @@ export type FollowBriefResult =
 /**
  * A REWRITE THAT LOST MOST OF THE BRIEF IS REFUSED (the reviewer's risk the
  * relay verified on #2576): the failure that matters is a brief carrying scene
- * and style — "a rain-soaked neon alley, low angle, cinematic" — coming back
+ * and style — "a rain-soaked alley at night, low angle, cinematic" — coming back
  * as a person-only paragraph, which loses the look of the whole family. The
  * prompt forbids it; this is the backstop a model cannot rescue (law 3). Edits
  * swap a phrase for a phrase, so a reply much shorter than the brief dropped
