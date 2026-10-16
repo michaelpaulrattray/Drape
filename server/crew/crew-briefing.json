@@ -1,7 +1,7 @@
 {
-  "edition": 727,
-  "updatedAt": "2026-10-16T04:25:00.000Z",
-  "shift": "Two things in this edition, written minutes after the last one because your answers arrived while it was deploying.\n\nFIRST: your six test-drive confirmations on Voice (steps 1 through 6, all matched) are seen and recorded. Voice was already closed on your word; these confirm the drive formally and nothing further is owed on it.\n\nSECOND: your word to switch on the cheaper face scan — Yes, Turn it on — is SEEN and is deliberately shown as still waiting one more step: switching a production setting is an act, not an acknowledgement, and this session was an escalated one locked to a single job (writing the face-reader design, which is now on your desk). The very next working session executes your switch as its first act — the setting goes on, the record of positions moves with it in the same act, and the card closes with the receipt. Expected within the hour; nothing is needed from you.\n\nThe face-reader design itself is unchanged from the last edition and is waiting on your one word: approve, or what to change.",
+  "edition": 728,
+  "updatedAt": "2026-10-16T05:05:00.000Z",
+  "shift": "The cheaper face scan is ON. You said \"Yes, Turn it on\" and it is live for every account — not just yours.\n\nWHAT CHANGED. When the studio reads a character's face it asks our picture service one question per feature, and a face has two of most things. It was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings, twice for horns. It now asks once and gets both sides back together. That is about two and a half cents off a twelve cent scan, and it is FASTER on every character in every run we measured. Scans are free to customers, so the whole saving is ours.\n\nWHAT YOU WOULD NOTICE. The panel fills sooner. Nothing else.\n\nIT IS ACTUALLY LIVE, not merged-and-hopefully-deployed: the setting reads correctly on the service, and the site is serving the build that carries it on a twelve-second uptime, which means a genuinely new process rather than the old one still answering.\n\nONE HONEST GAP. The saving is a measurement from three of your characters, not yet a reading off real traffic. That reading can only be taken now the road is on, and it has not been taken. I have said so on the card rather than rounding it up.\n\nTHE REST OF THE COST WORK is not lost. Five of the six ideas on that card moved into the face-reader design you approved this morning — the one that also sees outfits and things that are not on our list. That is card 2566 and it is the bigger saving.\n\nALSO DONE: a review finding that had been sitting on one of the edit-road clean-up pull requests is repaired and pushed. While fixing it I found a comment the fix would have made untrue and corrected that too.\n\nONE THING THAT IS NOT MINE TO FIX. Three of the edit-road clean-up pull requests now clash with each other in the same files, because two of them retire different switches in the same places. A clashing pull request runs no checks at all, so they are stuck until someone untangles them by hand. I stopped rather than guess, because a wrong untangle there changes what a paid edit renders with nothing going red. Nothing on this waits on you.\n\nNOTHING NEW NEEDS YOU TONIGHT.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -22,8 +22,8 @@
           "state": "done"
         },
         {
-          "title": "What a face scan costs us — three cuts made, all invisible, and all three live on your account. A fourth is built, measured and WAITING ON YOU: the studio was asking twice for everything a face has two of, and it can ask once — two and a half cents off, and faster on every character in every run. The pictures are on your page because the shapes it draws change. And the biggest saving is measured: after an edit the reading can be CARRIED from the previous version instead of bought again, 87 to 97 per cent off (#2191, #2525, #2532)",
-          "state": "waiting"
+          "title": "What a face scan costs us — FOUR cuts made now, all invisible to a customer, and all four live. The fourth is yours: the studio was asking our picture service twice for everything a face has two of, and you switched it to asking once — about two and a half cents off a twelve cent scan and faster on every character we measured. The before-and-after on real traffic is still to be read. And the biggest saving is measured but not built: after an edit the reading can be CARRIED from the previous version instead of bought again, 87 to 97 per cent off, which is part of the face reader you approved (#2191 closed, #2525, #2532 closed, #2566)",
+          "state": "done"
         },
         {
           "title": "The edit engine re-asked on your own characters — today's road against the newer engines, measured, your eye deciding (#801)",
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T03:37:51.757Z",
+      "readAt": "2026-10-16T04:48:52.287Z",
       "items": [
         {
           "issueNumber": 14,
@@ -4054,7 +4054,7 @@
         }
       ],
       "recommendation": "Yes. The shapes look better and they match what you said this morning about an eye cut-out being the whole eye rather than the iris — but that sentence is a reading of your words, not your eye on the picture, which is why it is on your page.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-16T03:15:00.000Z",
       "issueNumber": 2191
     },
@@ -4076,7 +4076,7 @@
         }
       ],
       "recommendation": "Approve. Every choice in it stands on a measurement, the four pictures it rests on are in Pictures for your eye, and the things not yet measured are named in the design rather than assumed.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-16T04:05:00.000Z",
       "issueNumber": 2532
     }
@@ -7382,7 +7382,7 @@
       "id": "pair-one-read-2191",
       "title": "A cheaper, faster face scan — switch it on, or leave it as it is",
       "question": "THIS IS A DECISION, AND IT IS THE ONLY ONE ON YOUR PAGE TONIGHT.\n\nWhen the studio reads a character's face it asks our picture service one question per feature. A face has two of most things, so it was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings. It can ask for both sides in one go. That is built, measured on three of your own characters, and switched OFF until you say.\n\nWHAT IT BUYS. About two and a half cents off a twelve-cent scan. And it came back faster on every character in every run — around thirteen seconds against twenty to thirty-three today. Nothing about it is visible to a customer.\n\nWHAT YOU ARE ACTUALLY JUDGING. The rows the panel draws are the same. The SHAPES it draws them around are not, and on one character they are very different. That is what these three pictures show, zoomed in on the part that differs. TODAY is on the left, THE NEW ROAD on the right, labelled on the picture.\n\nFRAME 1 — the elder alien, and this is the one that matters. Today marks a sliver of each lower eye. The new road marks the whole eye. Your own words this morning were that an eye cut-out should be the whole eye as a person means it — lids, lashes, iris — never the iris on its own. This is exactly that difference, arriving from somewhere else.\n\nFRAME 2 — the hooded figure. The new road finds an eyebrow today's road misses completely: seven rows where today draws six.\n\nFRAME 3 — the human. Near enough identical, which is the reassuring one.\n\nMY READ, AND IT IS A READ RATHER THAN A RECOMMENDATION: the new shapes look better to me and they match what you said this morning. But a shape on a face is your call, which is why these are pictures and not a paragraph.\n\nIf you say yes it goes on for your account first, as everything does. If you say no it stays off and nothing changes.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-16T03:15:00.000Z",
       "issueNumber": 2191,
       "cardId": "pair-one-read-flip-2191",
@@ -7408,7 +7408,7 @@
       "id": "face-reader-design-eye-2532",
       "title": "The four pictures the face-reader design stands on",
       "question": "WHAT YOU ARE LOOKING AT — the four judgements the recommended design rests on, one picture each, all on your own characters. If these four read right to your eye, the design's choices are sound; if any reads wrong, say which on the card and the design moves.",
-      "state": "waiting",
+      "state": "done",
       "filedAt": "2026-10-16T04:05:00.000Z",
       "issueNumber": 2532,
       "cardId": "face-reader-design-2532",
@@ -7440,9 +7440,9 @@
     {
       "id": "ghost-audit-slice4b-1577",
       "title": "The old way of making an edited picture comes off the paid edit road, with its switch (#1577)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2555,
-      "note": "Held up: another change landed first and this one no longer fits onto main as it stands. Somebody has to bring main into its branch before it can land — nothing is wrong with the work itself."
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all, so nothing can even look at it. The review finding that was sitting on this one is repaired and pushed. What is left is the clash: this change and another one that already landed switch off different settings in the same four files, so untangling them is a judgement about what both were doing, not a mechanical step. I stopped rather than guess, because a wrong untangle changes what a paid edit renders with nothing going red. Nothing here waits on you."
     },
     {
       "id": "voice-card-writer-2498",
@@ -10576,23 +10576,23 @@
     {
       "id": "ghost-audit-sliced1-1577",
       "title": "The switch behind the open lane comes off, with the two older instructions it hid (#1577)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2556,
-      "note": "Held up: another change landed first and this one no longer fits onto main as it stands. Somebody has to bring main into its branch before it can land — nothing is wrong with the work itself."
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
     },
     {
       "id": "ghost-audit-sliced2-1577",
       "title": "The switch behind the “which half of the picture” wording comes off (#1577)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2557,
-      "note": "Held up: another change landed first and this one no longer fits onto main as it stands. Somebody has to bring main into its branch before it can land — nothing is wrong with the work itself."
+      "note": "Landed."
     },
     {
       "id": "ghost-audit-sliceD3-1577",
       "title": "The switch behind where a typed tattoo may go comes off (#1577)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2559,
-      "note": "Held up: another change landed first and this one no longer fits onto main as it stands. Somebody has to bring main into its branch before it can land — nothing is wrong with the work itself."
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
     },
     {
       "id": "ink-offer-asks-outfit-2558",
@@ -11059,6 +11059,7 @@
     291,
     292,
     293,
+    294,
     295,
     296,
     297,
@@ -11067,7 +11068,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T03:37:51.757Z",
+    "readAt": "2026-10-16T04:48:52.286Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11117,15 +11118,6 @@
         "held": {
           "state": "blocked",
           "because": "a job-card receipt surface that does not exist yet. It is the only unbuilt line left on this card, and nothing here needs your word."
-        }
-      },
-      {
-        "issueNumber": 2191,
-        "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — a cheaper face scan is built and switched OFF. Three labelled pictures are on your page. Flip it on, or leave it as it is."
         }
       },
       {
