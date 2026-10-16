@@ -3533,6 +3533,27 @@ async function refineCandidateCounted(
         renders it, at Refine's own price. Nothing about the walls, the prices or
         the refund paths moved, and the thing still has to be ON them — the brief,
         the recipe or the segmenter — to reach this line at all.
+
+        ⚠ **AND `openLane` WAS ONE MEMBER OF A SET OF NINE, WHICH IS #2584 —
+        READ IT BEFORE ADDING OR REMOVING ANYTHING IN THE CALL BELOW.** Measured
+        on the relay's finding on PR #2569: the main read at `:1840` is handed
+        FOURTEEN facts and this re-read is handed eight, seven of them shared, so
+        **seven facts the main read knows are absent here and every one of them is
+        read as `false` or null** — `referenceAttached`, `inkReferenceEnabled`
+        (`CASTING_INK_REFERENCE_SCOPE`, still a live flag), `wardrobe`,
+        `inkDocumentedByDelivery`, `memory`, `lastColourFacet`,
+        `scopedColourFacet`. `inkWordsRoadOpen` was the eighth and `openLane` the
+        ninth; both are moot only because their flags retired.
+
+        Two of the nine have now been found one at a time, by two readers, three
+        weeks apart, each by grepping a NAME after the compiler had called the
+        sweep finished — because an optional boolean read as `=== true` is silent
+        when absent, so `tsc` has nothing to say and either call site reads
+        perfectly well on its own. **Withholding the removal vocabulary is this
+        re-read's whole purpose and is right; nothing here has ever said why the
+        other seven are withheld.** #2584 asks for a verdict on each and a derived
+        guard over the pair, so a fact added to the main read cannot silently skip
+        this one.
       */
       const asEdit = await (dependencies.interpret ?? interpretRefinement)({
         instruction,

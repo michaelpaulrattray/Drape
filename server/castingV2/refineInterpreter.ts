@@ -1849,8 +1849,36 @@ async function containReply(call: {
     With the flag off the interpreter was not told it may name a kind outside
     the vocabulary, so its replies keyed onto the nearest closed subject — which
     is what §2 measured, and why the whole-delta null was latent rather than
-    live. That off road ran for nobody from 2026-09-24 (`all`, his Crew reply
-    #205) and is retired on his word of 2026-10-15.
+    live.
+
+    ⚠ **THIS PARAGRAPH SAID THAT OFF ROAD *"ran for nobody"* FROM 2026-09-24,
+    AND IT WAS FALSE OF EXACTLY ONE ROAD — AND OF THIS DOOR ABOVE ALL OTHERS**
+    (the relay's finding on PR #2556, read at the bytes; corrected here on its
+    finding on PR #2569). The removal path's RULE 3 re-read was the only
+    production caller of `interpretRefinement` that never passed `openLane`, and
+    absent meant off — so on a product whose flag stood at `all` for everybody,
+    that one re-read was asked the CLOSED prompt **and skipped the very door this
+    comment sits above.** The flag was read twice on purpose, as the paragraph
+    above explains; a caller that passed NEITHER gate is therefore the one caller
+    both sweeps could miss, and both did.
+
+    So the honest sentence is the other way round: the off road ran for one road
+    and this door is where it ran. It is retired on his word of 2026-10-15, which
+    put that re-read on the same prompt as the main read of the same words. The
+    measurement is the ghost audit's D1 row (two independent readings, agreeing);
+    the live road is commented at its call site in `refineService.ts` (RULE 3);
+    the guard is `refineService.test.ts` › *"the RULE 3 re-read takes the open
+    lane"*. **What it costs is stated rather than glossed**: an uncatalogued
+    creature feature asked to come off used to refuse FREE there — `wall_unbacked`,
+    nothing charged — and now files the absence in the customer's own words and
+    renders it, at Refine's own price.
+
+    ⚠ **AND THIS COPY IS WHY A CORRECTION IS SWEPT BY READING AND NOT BY ITS OWN
+    WORDING.** PR #2569 corrected five copies of this claim and missed this one,
+    because the five said *"asked of nobody"* and this said *"ran for nobody"* —
+    a grep for the sentence that was being corrected could never reach it. A
+    correction tracks READERSHIP, so the sweep's population is every place that
+    states the fact, in whatever words.
   */
   const opened = await acceptOpenKind({
     instruction,
