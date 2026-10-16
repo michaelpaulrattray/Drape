@@ -241,6 +241,12 @@ import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shar
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
    of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
 import { wordsRoadServes } from "./inkPlacement";
+/* AND WHETHER THIS CAST'S OUTFIT LEAVES THAT SURFACE SHOWING (#2558).
+   The road is one of the two questions a words render asks; the covering is the
+   other, and the offer below asks both. Read from the SAME owner `bareSurfaces`
+   reads — `bareSurfaces` IS this predicate over the vocabulary — so the offer
+   and the alternatives every ink refusal names cannot answer differently. */
+import { wardrobeCoversSurface } from "./inkSurfaceCoverage";
 import { currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
@@ -4025,18 +4031,44 @@ async function refineCandidateCounted(
             `gate_ink_uncarried` shuts one ask later, which is census 4(b)'s own
             dead-end wearing a different sentence. Where it is not served the
             answer simply closes, honestly, with no offer at all.
+
+            ⚠ **AND THE ROAD WAS ONLY ONE OF THE TWO QUESTIONS, WHICH IS #2558
+            — the dead end this block was written to close, open for seven weeks
+            by the paragraph above being exactly half right.** The upper chest
+            JOINED the road on 2026-08-23 (the Basics chest court), so from that
+            day `wordsRoadServes` answered yes for it and the offer started
+            being made. What actually stops a chest render is not the road, it
+            is the OUTFIT: the house crew tee covers the chest, and the covering
+            is read one door later. So the sentence above named the right
+            failure, the right door and the right placement, and guarded
+            against the wrong one of the two conditions.
+
+            The offer now asks what the render asks, in the render's own order:
+            does this road serve the placement, AND does this cast's outfit
+            leave it showing. `wardrobeCoversSurface` is the SAME reader
+            `bareSurfaces` is built from, and `bareSurfaces` is what derives the
+            alternatives every ink refusal names — so the offer and the list of
+            surfaces we then recommend cannot disagree, which is the property
+            that was missing rather than a second opinion about covering.
+
+            ⚠ `"unknown"` withholds the offer, deliberately and consistently:
+            `bareSurfaces` already drops an unknown surface (an `incoherent`
+            branch names nothing), so an offer made on a covering we cannot read
+            would be this same dead end wearing a third sentence. Not knowing is
+            not a reason to promise.
           */
           /* `placement` is a STRING here on purpose — an open placement is her
              own word for a surface nothing has measured — so it is narrowed
              through the vocabulary's own guard rather than cast. An unmeasured
              surface is served by nothing, which is the right answer. */
-          const serves = place !== null
+          const canPutOneHere = place !== null
             && isInkPlacement(place.placement)
-            && wordsRoadServes(place.placement, (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId));
+            && wordsRoadServes(place.placement, (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId))
+            && wardrobeCoversSurface(wardrobeNow, place.placement) === "bare";
           return answeredFree(
             "inkNotKept",
             names[0] ?? null,
-            serves ? "I can put a new one on instead — say what you'd like." : null,
+            canPutOneHere ? "I can put a new one on instead — say what you'd like." : null,
           );
         }
         if (address !== null && changingCrop !== undefined) {

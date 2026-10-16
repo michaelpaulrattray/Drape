@@ -11236,6 +11236,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
+      "valueRecorded": false
+    },
+    {
       "id": "env:ENABLE_EVIDENCE_CANDIDATE_WORKER",
       "name": "ENABLE_EVIDENCE_CANDIDATE_WORKER",
       "valueRecorded": false
@@ -11616,6 +11621,11 @@
       "id": "flag:CREW_TAB_SCOPE",
       "name": "CREW_TAB_SCOPE",
       "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
+      "grammar": "true|false"
     },
     {
       "id": "flag:ENABLE_EVIDENCE_CANDIDATE_WORKER",
@@ -15571,6 +15581,10 @@
       "path": "server/crewCloseShippedPullRequest.test.ts"
     },
     {
+      "id": "test:server/crewClosingDevServers.test.ts",
+      "path": "server/crewClosingDevServers.test.ts"
+    },
+    {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
     },
@@ -15921,6 +15935,10 @@
     {
       "id": "test:server/faceScanCapRepeatLooks.test.ts",
       "path": "server/faceScanCapRepeatLooks.test.ts"
+    },
+    {
+      "id": "test:server/faceScanPairOneRead.test.ts",
+      "path": "server/faceScanPairOneRead.test.ts"
     },
     {
       "id": "test:server/faceScanSharedFaceRead.test.ts",
@@ -32168,6 +32186,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/inkSurfaceCoverage.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/invisibleRemoval.ts",
       "kind": "imports"
     },
@@ -42435,17 +42458,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:754",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:760",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:754",
+      "subject": "server/castingV2/refineService.ts:760",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:930",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:936",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:930",
+      "subject": "server/castingV2/refineService.ts:936",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
