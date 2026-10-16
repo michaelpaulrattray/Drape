@@ -253,15 +253,35 @@ export const FOLLOW_BRIEF_DEADLINE_MS = 16_500;
  * reason.
  */
 export const ONE_PERSON_SPECIFICS = {
-  scar: "scar",
-  mole: "mole",
-  freckle: "freckle",
-  tattoo: "tattoo",
+  scar: { word: "scar", alsoWritten: ["scars", "scarred", "scarring"] },
+  mole: { word: "mole", alsoWritten: ["moles"] },
+  freckle: { word: "freckle", alsoWritten: ["freckles", "freckled", "freckling"] },
+  tattoo: { word: "tattoo", alsoWritten: ["tattoos", "tattooed", "tattooing"] },
 } as const;
 
-/** `scars`, `freckled`, `tattooed` are the same fact as the stem. */
-function mentionsSpecific(text: string, stem: string): boolean {
-  return new RegExp(`\\b${stem}`, "i").test(text);
+type OnePersonSpecific = (typeof ONE_PERSON_SPECIFICS)[keyof typeof ONE_PERSON_SPECIFICS];
+
+/**
+ * Does this text state the feature, in any of the ways English writes it?
+ *
+ * ⚠ **EVERY WRITING OF THE WORD IS NAMED, BECAUSE THE STEM ALONE MATCHED WORDS
+ * THAT ARE NOT THE FEATURE** (the relay's finding on PR #2586). This was a
+ * boundary at the FRONT of the stem and nothing at the back — so **`scar`
+ * matched *a red scarf* and *a scarlet coat*, and `mole` matched *molecule*
+ * and *molehill***. A correct edit folded into a rewrite was then refused as an
+ * invented scar, and the Follow went out silently on the box's words: the one
+ * failure direction that costs a customer the feature they just asked for.
+ *
+ * ⚠ **The forms are WRITTEN DOWN rather than derived from the stem.** An
+ * inflection rule would have to know that *scar* doubles its r and *freckle*
+ * drops its e, and a fifth feature whose rule it guessed wrong would silently
+ * stop being checked — where a list that is missing a form can at least be
+ * read. `alsoWritten` never repeats `word`, and the suite holds every entry's forms to
+ * beginning with its own word.
+ */
+function mentionsSpecific(text: string, specific: OnePersonSpecific): boolean {
+  const forms = [specific.word, ...specific.alsoWritten].join("|");
+  return new RegExp(`\\b(?:${forms})\\b`, "i").test(text);
 }
 
 /**
@@ -296,8 +316,8 @@ export function statesAnEyeColour(text: string): boolean {
  * because the customer wrote it and it is the family's own direction.
  */
 export function introducedOnePersonSpecific(brief: string, reply: string): string | null {
-  for (const stem of Object.values(ONE_PERSON_SPECIFICS)) {
-    if (mentionsSpecific(reply, stem) && !mentionsSpecific(brief, stem)) return stem;
+  for (const specific of Object.values(ONE_PERSON_SPECIFICS)) {
+    if (mentionsSpecific(reply, specific) && !mentionsSpecific(brief, specific)) return specific.word;
   }
   if (statesAnEyeColour(reply) && !statesAnEyeColour(brief)) return "eye colour";
   return null;
@@ -311,7 +331,7 @@ export const FOLLOW_BRIEF_SYSTEM = [
   "- Keep the brief's own voice, register, person and roughly its length. It must read as if the customer had always written it this way, never as a list of edits.",
   "- Never use the words now, changed, edited, updated, added, removed, new, no longer, instead or anymore, and never describe the edits themselves.",
   "- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette.",
-  `- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact ${ONE_PERSON_SPECIFICS.scar}, a single ${ONE_PERSON_SPECIFICS.mole} or ${ONE_PERSON_SPECIFICS.freckle}, one particular ${ONE_PERSON_SPECIFICS.tattoo} or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.`,
+  `- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact ${ONE_PERSON_SPECIFICS.scar.word}, a single ${ONE_PERSON_SPECIFICS.mole.word} or ${ONE_PERSON_SPECIFICS.freckle.word}, one particular ${ONE_PERSON_SPECIFICS.tattoo.word} or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.`,
   "- Where an edit contradicts the brief (dark hair in the brief, platinum blonde after the edit), keep only the edited direction.",
   "- The edits only ever change the PERSON. Everything in the brief that is not the person (the setting, the light, the camera and framing, the picture style and the mood) is the look of the whole casting: keep every one of those phrases word for word.",
   "- Keep everything else the brief says that the edits do not touch, in its own words where you can.",
@@ -369,11 +389,28 @@ export type FollowBriefResult =
  *     floor is satisfied, with the alley, the angle and the light gone.
  *
  * **What replaced it is the card's own sentence made mechanical: edits swap a
- * phrase for a phrase.** So the question is not length, it is BALANCE — a
- * rewrite may rewrite as many of the brief's clauses as the edits touch, and it
- * may not drop more clauses than it puts back. {@link clauseBalance} counts
- * them; a brief clause survives if its words appear verbatim ANYWHERE in the
- * reply, so re-punctuating or merging two kept phrases is not a loss.
+ * phrase for a phrase.** So the question is not length, it is how many of the
+ * brief's clauses went missing — and the allowance is the number of edits
+ * being folded in, because one edit swaps at most one phrase.
+ * {@link clauseBalance} counts them; a brief clause survives if its words
+ * appear verbatim ANYWHERE in the reply, so re-punctuating or merging two kept
+ * phrases is not a loss.
+ *
+ * ⚠ **IT READ `dropped > added`, AND ADDED CLAUSES PAID FOR DROPPED ONES**
+ * (the relay's finding on PR #2586). A rewrite that lost the brief's scene and
+ * put back two person clauses had dropped 1 and added 2, so it PASSED — which
+ * is the exact collapse this check replaced the length floor to catch, with the
+ * rewrite handed a way to buy its way out. **What came back cannot pay for what
+ * went missing**: the reply's own clauses are counted for the log and decide
+ * nothing. {@link droppedClauseBudget} is the allowance, and it is read from the
+ * edits rather than from the reply.
+ *
+ * ⚠ **WHAT THIS STILL DOES NOT CATCH, named rather than left to be found:**
+ * the budget cannot tell WHICH clause an edit was entitled to swap, so a cast
+ * carrying six edits may lose six clauses and they may be the wrong six. Telling
+ * a scene clause from a person clause needs a vocabulary of scene words, and
+ * that is the one thing this check may not have (below). A tighter rule is his
+ * call, not a guess.
  *
  * ⚠ **It needs no vocabulary of its own, and that is deliberate** — his N3
  * ruling (*"we really cannot be working from fixed lists in a fluid editing
@@ -402,10 +439,25 @@ export function briefClauses(text: string): readonly string[] {
 }
 
 /**
+ * HOW MANY OF THE BRIEF'S CLAUSES THIS REWRITE IS ALLOWED TO LOSE.
+ *
+ * One edit swaps one phrase, so the edits already applied to the followed
+ * version are the allowance — and a version with no asks recorded (edited
+ * before the flag, or whose instructions did not survive) still gets one, so a
+ * single legitimate swap is never refused.
+ */
+export function droppedClauseBudget(asks: readonly string[]): number {
+  return Math.max(1, asks.filter((ask) => ask.trim() !== "").length);
+}
+
+/**
  * How many of the brief's clauses the reply dropped, and how many it brought.
  *
  * `dropped` is a clause whose words appear nowhere in the reply; `added` is a
- * clause of the reply that was not in the brief. A swap moves one of each.
+ * clause of the reply that was not in the brief. ⚠ **`added` is REPORTED and
+ * decides nothing** — it gated the refusal until PR #2586's finding, where new
+ * person clauses were found paying for a lost scene. It stays because the two
+ * numbers side by side are what a diagnosis starts from.
  */
 export function clauseBalance(brief: string, reply: string): { dropped: number; added: number } {
   const replyText = normaliseForClauses(reply);
@@ -480,9 +532,15 @@ export async function writeFollowBrief(
     if (!/\n/.test(input.brief.trim()) && looksLikeAnEditList(text)) {
       return { ok: false, reason: "edit_list", latencyMs };
     }
-    /* The brief's other clauses must come back — a swap moves one for one. */
+    /* The brief's other clauses must come back — a swap moves one for one, and
+       what the reply ADDED never pays for what it dropped. */
     const balance = clauseBalance(input.brief, text);
-    if (balance.dropped > balance.added) {
+    const budget = droppedClauseBudget(input.asks);
+    if (balance.dropped > budget) {
+      log.warn(
+        { dropped: balance.dropped, added: balance.added, budget, latencyMs },
+        "[currentDescription] the rewrite dropped more of the brief than the edits allow — this follow sends the box's words",
+      );
       return { ok: false, reason: "dropped_clauses", latencyMs };
     }
     /* And it may not hand a whole casting call one face's scar. */

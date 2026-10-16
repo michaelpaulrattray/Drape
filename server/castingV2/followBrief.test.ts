@@ -16,6 +16,7 @@ import {
   FOLLOW_BRIEF_SYSTEM,
   FOLLOW_BRIEF_TIMEOUT_MS,
   ONE_PERSON_SPECIFICS,
+  droppedClauseBudget,
   followBriefUserTurn,
   statesAnEyeColour,
   writeFollowBrief,
@@ -201,6 +202,54 @@ describe("the follow brief writer", () => {
       expect(refused).toMatchObject({ ok: false, reason: "dropped_clauses" });
     });
 
+    /*
+      ⚠ WHAT THE REPLY ADDED NEVER PAYS FOR WHAT IT DROPPED (the relay's finding
+      on PR #2586). The refusal read `dropped > added`, so a rewrite that lost
+      the brief's scene and put back person clauses in its place satisfied it —
+      the exact collapse the length floor was replaced to catch, now with a way
+      to buy out of it. The allowance is the EDITS, and nothing the reply says
+      can raise it.
+    */
+    it("⚠ added person clauses cannot pay for a dropped scene", async () => {
+      const brief = "A cyberpunk operative with dark undercut hair, a rain-soaked neon alley at night, low angle";
+      const collapsed = "A cyberpunk operative with a platinum blonde undercut, a chrome collar, heavy boots";
+      /* Three dropped and three added — `dropped > added` is false, so this is
+         the shape that passed. */
+      const refused = await writeFollowBrief(
+        engineSaying(collapsed),
+        { brief, description: "A cyberpunk operative.", asks: ["platinum blonde undercut"] },
+        4000,
+      );
+      expect(refused).toMatchObject({ ok: false, reason: "dropped_clauses" });
+    });
+
+    it("the allowance is the edits, and a version with none recorded still gets one", () => {
+      expect(droppedClauseBudget([])).toBe(1);
+      expect(droppedClauseBudget(["   ", ""])).toBe(1);
+      expect(droppedClauseBudget(["shave their head"])).toBe(1);
+      expect(droppedClauseBudget(["shave their head", "green eyes", "a leather jacket"])).toBe(3);
+    });
+
+    it("⚠ three edits may swap three of the brief's phrases", async () => {
+      /*
+        The mirror, and the direction that costs a customer their work: an
+        allowance of one would refuse this and the Follow would go out on the
+        box's words with none of the three changes in it.
+      */
+      const brief = "A courier with long red hair, a canvas satchel, brown eyes, on a wet street at dawn";
+      const rewrite = "A courier with a shaved head, a leather satchel, green eyes, on a wet street at dawn";
+      const kept = await writeFollowBrief(
+        engineSaying(rewrite),
+        {
+          brief,
+          description: "A courier with a shaved head, a leather satchel and green eyes.",
+          asks: ["shave their head", "a leather satchel", "green eyes"],
+        },
+        4000,
+      );
+      expect(kept).toMatchObject({ ok: true, brief: rewrite });
+    });
+
     it("re-punctuating or merging kept phrases is not a loss", async () => {
       /* The words survive; only the commas moved. A clause-shaped comparison
          that demanded whole clauses would refuse this correct rewrite. */
@@ -282,8 +331,62 @@ describe("the follow brief writer", () => {
       */
       const line = FOLLOW_BRIEF_SYSTEM.split("\n").find((l) => l.includes("ONE-PERSON SPECIFICS"));
       expect(line).toBeDefined();
-      for (const word of Object.values(ONE_PERSON_SPECIFICS)) {
-        expect(line, `the prompt must name ${word}`).toContain(word);
+      for (const specific of Object.values(ONE_PERSON_SPECIFICS)) {
+        expect(line, `the prompt must name ${specific.word}`).toContain(specific.word);
+        /* And every other writing of it is an inflection OF that word, never a
+           repeat: a forms list that drifted off its own stem would be checking
+           a feature the prompt never forbids, and read correctly either way. */
+        for (const form of specific.alsoWritten) {
+          expect(form, `${form} must be a writing of ${specific.word}`)
+            .toMatch(new RegExp(`^${specific.word.slice(0, -1)}`));
+          expect(form).not.toBe(specific.word);
+        }
+      }
+    });
+
+    /*
+      ⚠ A WORD THAT MERELY STARTS WITH THE FEATURE IS NOT THE FEATURE (the
+      relay's finding on PR #2586). The check was a boundary at the front of the
+      stem and nothing at the back, so *a red scarf* and *a scarlet coat* read
+      as an invented scar and *molecule* as a mole — and the Follow then went
+      out silently on the box's words, losing the edit the customer had just
+      made. These three are CORRECT rewrites.
+    */
+    it("⚠ CONTROL — scarf, scarlet and molecule are not a scar or a mole", async () => {
+      const brief = "A courier in a long black coat, standing in a rain-soaked alley at night, cinematic";
+      for (const rewrite of [
+        "A courier in a long black coat and a red scarf, standing in a rain-soaked alley at night, cinematic",
+        "A courier in a scarlet coat, standing in a rain-soaked alley at night, cinematic",
+        "A courier in a long black coat with molecule-print gloves, standing in a rain-soaked alley at night, cinematic",
+      ]) {
+        const kept = await writeFollowBrief(
+          engineSaying(rewrite),
+          { brief, description: "A courier in a red scarf.", asks: ["put them in a red scarf"] },
+          4000,
+        );
+        expect(kept, rewrite).toMatchObject({ ok: true, brief: rewrite });
+      }
+    });
+
+    it("and every writing of the word is still caught", async () => {
+      const brief = "A courier in a long black coat, standing in a rain-soaked alley at night, cinematic";
+      for (const invented of [
+        "two scars",
+        "a scarred cheek",
+        "scattered freckles",
+        "a freckled nose",
+        "tattooed forearms",
+        "three moles",
+      ]) {
+        const rewrite = brief.replace("a long black coat", `a long black coat and ${invented}`);
+        expect(
+          await writeFollowBrief(
+            engineSaying(rewrite),
+            { brief, description: "A courier.", asks: ["give them a long black coat"] },
+            4000,
+          ),
+          invented,
+        ).toMatchObject({ ok: false, reason: "one_person_specific" });
       }
     });
   });
