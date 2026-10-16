@@ -539,6 +539,114 @@ export function launchDirectoryIsGone(state: LaunchDirectoryState): boolean {
 }
 
 /**
+ * ⚠ IS THE WATCHER STILL KEEPING A SERVER, OR ONLY WATCHING — THE FACT
+ * `"between restarts"` WAS GUESSING AT (#2563).
+ *
+ * Everything above answers *whose tree is this*. This answers the question a
+ * finder actually has in hand: **is anything being served?** The listing could
+ * already say *yes* (it holds a port) and *its source is gone* (the limb above).
+ * For a watched tree with a live source and no port it said
+ * `"(no port — between restarts)"`, and that sentence is a CAUSE this reader
+ * cannot observe — a guess, worded like a reading, and worded reassuringly.
+ *
+ * **Measured on this machine 2026-10-16, which is why this exists:** seven
+ * `pnpm dev` trees were resident across four shift worktrees, and five of them
+ * printed `"(no port — between restarts)"`. They had been printing it for
+ * **one and two days**. Every process in all five carried the watch verb and
+ * nothing in any of them was running `server/_core/index.ts` without it — so
+ * there was no server to come back between, and no restart was in progress or
+ * pending. The two the listing DID flag were flagged on the source-is-gone limb
+ * and were swept; the five it called *between restarts* were left, by #1481's
+ * sweep seventeen days earlier and by #2563's sighting both. **A reader that
+ * cannot name a population is why that population recurs.**
+ *
+ * The distinction is already in the table and costs nothing to read:
+ * `isDevServerChild` is the process that RUNS the entrypoint, and
+ * `isDevServerRoot` is the one that watches it. A tree holding none of the
+ * first is a watcher with nothing under it.
+ *
+ * ⚠ **AND `idle` IS A FACT, NOT A LICENCE — it does not say "safe to kill",
+ * deliberately.** `launchDirectoryIsGone` earns that sentence because a removed
+ * tree cannot be anybody's live work; this cannot, because a watcher whose
+ * server died is exactly what a live session that has just broken its own build
+ * also has. What `idle` establishes is that **nothing is being served and
+ * nothing will be until a file in that tree changes** — which is what a finder
+ * needs to know, and what the old sentence denied them. Whose tree it is stays
+ * TIME's question (`rootsStartedAfter`), as it has been since the header.
+ *
+ * ⚠ **A SECOND SAMPLE WAS CONSIDERED AND IS NOT NEEDED, so nobody adds one.**
+ * The ambiguity `idle` leaves is the respawn window — the moment between
+ * `tsx watch` killing a child and starting the next. Measured on the same
+ * machine: a cold `pnpm dev` is listening **inside 25 s**, and a respawn is
+ * warmer than that; against which the five specimens had been childless for
+ * **1-2 days**. A sampling loop would guard a sub-second window at the cost of
+ * making a listing command wait, and the exit code already tells a caller the
+ * answer was interesting.
+ *
+ * ⚠ **AND ONE DISCRIMINATOR THAT LOOKS BETTER THAN THIS ONE WAS DRIVEN AND IS
+ * WORTHLESS — it is recorded so nobody builds it (working law 2).** *"The
+ * session that launched it has exited"* is decidable from the same table: walk
+ * the ancestry and see whether the parent of the outermost shell is still
+ * there. It was true of all seven specimens, which is exactly how convincing a
+ * dead hypothesis looks. **A control killed it: a `pnpm dev` started on this
+ * machine the way a shift starts one was LISTENING on `:3000` twenty-five
+ * seconds later with its ancestry ALREADY BROKEN** — the launching shell exits
+ * the moment it has spawned the stack. So that limb would have called every
+ * live dev server on the machine abandoned, the founder's included, in the one
+ * direction this reader must never fail in.
+ */
+export type ServingState = "serving" | "booting" | "idle";
+
+/**
+ * The pids in this tree that are running the server itself rather than watching
+ * it. Empty for a watcher with nothing under it.
+ *
+ * ⚠ It asks the ROWS and not `childPids`, because `childPids` is pids and the
+ * discriminator is a command line. An unwatched tree's ROOT is itself a server
+ * process, so the root is in the population — the same reason `portsOfTree`
+ * includes it, and the same case that printed `(no port)` over a live `:3000`.
+ */
+export function serverPidsOfTree(
+  tree: DevServerTree,
+  rows: readonly ProcessRow[],
+): number[] {
+  const inTree = new Set<number>([tree.rootPid, ...tree.childPids]);
+  return rows.filter((row) => inTree.has(row.pid) && isDevServerChild(row)).map((row) => row.pid);
+}
+
+/**
+ * What this tree is doing, read rather than inferred.
+ *
+ * `serving` holds a port. `booting` has a server process that holds none yet —
+ * a real restart, or a bind that failed. `idle` has no server process at all.
+ */
+export function servingState(
+  tree: DevServerTree,
+  rows: readonly ProcessRow[],
+  ports: ReadonlyMap<number, readonly number[]>,
+): ServingState {
+  if (portsOfTree(tree, ports).length > 0) return "serving";
+  return serverPidsOfTree(tree, rows).length === 0 ? "idle" : "booting";
+}
+
+/**
+ * The line the listing prints for a tree that holds no port, worded here so the
+ * caller holds no second copy of the decision (the rule `launchDirectoryState`
+ * set).
+ *
+ * ⚠ The `watched` split is load-bearing both ways. An UNWATCHED tree is never
+ * `idle` in the sense above — nothing restarts it, so there is no watcher left
+ * waiting and #783's wording is already right. A WATCHED one is the case this
+ * function was added for.
+ */
+export function noPortLine(state: ServingState, watched: boolean): string {
+  if (!watched) return "(no port — nothing is being served)";
+  return state === "idle"
+    ? "(no port — its server has EXITED; the watcher is idle)"
+    : "(no port — between restarts)";
+}
+
+/**
  * ⚠ THE BACKSTOP, AND IT IS THE PART OF #783 THAT OUTLIVES #783.
  *
  * Everything above classifies command lines, and a classifier has exactly one

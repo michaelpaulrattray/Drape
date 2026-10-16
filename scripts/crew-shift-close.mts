@@ -125,6 +125,10 @@ import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mt
 import { refreshQueueCountsQuietly } from "./lib/crewQueueCount.mts";
 import { readClosingCardState } from "./lib/crewClosingCardState.mts";
 import { readClosingPullRequest } from "./lib/crewClosingPullRequest.mts";
+import {
+  closingDevServerFinding,
+  readClosingDevServers,
+} from "./lib/crewClosingDevServers.mts";
 import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 
 const TABLE = "crew_shift_runs";
@@ -520,6 +524,28 @@ try {
     });
     if (prFinding !== null) findings.push(`\n${prFinding}`);
   }
+
+  /*
+    ⚠ DID THIS SHIFT LEAVE ITS OWN DEV SERVER RUNNING? (#2563)
+
+    The reasoning, the refusal to kill anything, and why this is the only place
+    on the path that holds the cutoff are `crewClosingDevServers.mts`'s own
+    docblock. What belongs here is the ordering, and it is this script's
+    standing rule, the same one the pull-request read above follows: the read
+    happens AFTER the UPDATE, every road it can take comes back as a reading
+    rather than a throw, and an unreadable process table prints its reason and
+    carries no exit code.
+
+    ⚠ The cutoff is `row.startedAt` and NOT `target.startedAt`, though they are
+    the same row — `row` is the post-UPDATE re-read, so the stamp is the one the
+    record will keep.
+  */
+  const devServers = readClosingDevServers(
+    new Date(row.startedAt),
+    (line) => console.error(line),
+  );
+  const devServerFinding = closingDevServerFinding({ runId: Number(row.id), reading: devServers });
+  if (devServerFinding !== null) findings.push(devServerFinding);
 
   /*
     THE HEARTBEAT FINDING (#295).

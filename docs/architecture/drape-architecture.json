@@ -15571,6 +15571,10 @@
       "path": "server/crewCloseShippedPullRequest.test.ts"
     },
     {
+      "id": "test:server/crewClosingDevServers.test.ts",
+      "path": "server/crewClosingDevServers.test.ts"
+    },
+    {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
     },
