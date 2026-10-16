@@ -259,7 +259,7 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
 
       ⚠ The string is compared EXACTLY, never for truthiness
       (`pairInOneReadEnabled()`, `server/castingV2/faceScanService.ts`), so this
-      row's token and the service's value must both be the five characters
+      row's token and the service's value must both be exactly the four characters
       `true`. A Railway variable created with no value holds the empty string,
       which is the shape that would read as off while looking set.
 
