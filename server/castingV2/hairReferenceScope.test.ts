@@ -27,7 +27,6 @@ import {
 const KEYS = [
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   "CASTING_REFERENCE_ATTACH_SCOPE",
-  "CASTING_REPAINT_SCOPE",
   "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_V2_SCOPE",
 ] as const;
@@ -97,7 +96,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
   it("is closed for everyone while the flag is absent", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
-      CASTING_REPAINT_SCOPE: "users:1",
       CASTING_REFERENCE_ATTACH_SCOPE: "users:1",
     });
     expect(captureCastingHairReferenceEnabled(1)).toBe(false);
@@ -113,7 +111,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
       CASTING_REFERENCE_LIBRARY_SCOPE: "all",
-      CASTING_REPAINT_SCOPE: "users:1,2",
       CASTING_REFERENCE_ATTACH_SCOPE: "users:1",
       CASTING_HAIR_REFERENCE_SCOPE: "users:1,2",
     });
@@ -125,7 +122,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
       CASTING_REFERENCE_LIBRARY_SCOPE: "all",
-      CASTING_REPAINT_SCOPE: "all",
       CASTING_REFERENCE_ATTACH_SCOPE: "all",
       CASTING_HAIR_REFERENCE_SCOPE: "users:1",
     });

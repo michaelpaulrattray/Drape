@@ -2063,9 +2063,10 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
         "Change only his neck tattoo: a small geometric skeleton design."
 
-    That is a LIVE lane — `CASTING_REPAINT_SCOPE` is `all` in production
-    (⚠ this said `users:1` until 2026-08-24, which was true when the defect was
-    found and stopped being true at fable-1253's widening) and D-137's words road
+    That is a LIVE lane — the repaint is the only render road there is since
+    #1577 slice 4b retired the paste road and its flag with it (⚠ this named that
+    flag at `users:1` until 2026-08-24 and at `all` until the retirement) and
+    D-137's words road
     documents ink at her neck there — so it was a paid render told to draw a
     tattoo and told nothing about what one is. Countersigned fable-1190 §1.
 

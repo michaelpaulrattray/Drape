@@ -73,10 +73,11 @@ export type SubjectCard = {
    *
    * ⚠ **AND REPAINT HAS WIDENED, SO THE SAFETY ARGUMENT THAT USED TO SIT HERE
    * IS GONE — read this before promoting anything.** This paragraph said *"a
-   * promoted subject IS live behaviour, and `CASTING_REPAINT_SCOPE` is `users:1`
+   * promoted subject IS live behaviour, and the repaint flag is `users:1`
    * today, so the deploy changes nothing for anyone but the founder"*, which was
    * the standing autonomy law satisfied by the flag's position rather than by
-   * the promotion. **The flag is `all` in production** (widened fable-1253), so
+   * the promotion. **That flag went to `all` (fable-1253) and is now retired
+   * outright with the paste road (#1577 slice 4b)**, so
    * the first half of that sentence is now the whole of it: **a promotion is
    * live behaviour for every account on the deploy that ships it.** Nothing here
    * is broken and no promoted subject is wrong — what changed is that

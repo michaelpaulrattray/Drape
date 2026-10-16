@@ -1372,7 +1372,8 @@ describe("a distributed open kind is carried by its two per-side crops", () => {
  * The paid refine composes an edit prompt three times on one request, and the
  * PRE-CLAIM door checks the first of them (`missingFromPrompt` over
  * `composeRenderPrompt`'s preview). On the repaint road — which is every real
- * customer, `CASTING_REPAINT_SCOPE=all` — the string that actually renders is
+ * customer, and since #1577 slice 4b the only road there is — the string that
+ * actually renders is
  * built later and elsewhere, by {@link repaintAsksFor} from `editDelta`. So
  * #1303 asked the only question that decides whether that matters: **does this
  * builder have a completeness property of its own, or could a filed fact go

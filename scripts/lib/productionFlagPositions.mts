@@ -110,10 +110,22 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "all",
     why: "the program's own door; open to every account since the V2 rollout",
   },
-  CASTING_REPAINT_SCOPE: {
-    position: "all",
-    why: "the compositor swap (D-241), widened past users:1 — fable-1253",
-  },
+  /* ⚠ CASTING_REPAINT_SCOPE'S ROW STOOD HERE AND IS GONE — #1577 slice 4b,
+     2026-10-15, on his word (*"yes approve the plan and switch off the six
+     settings"*). It read `all` since fable-1253 widened the compositor swap past
+     `users:1`, and the ghost audit found the whole OLD paste road still standing
+     behind it as the flag's off arm. The code stops reading the variable in this
+     commit and the variable leaves the service in the same act as the merge —
+     in that order, and the other order is the expensive one: with the old build
+     still serving, an absent variable parses as `off`, which would put every
+     customer back on the paste road.
+
+     The row is REMOVED rather than moved to `off`, which is the framing trim's
+     precedent (#11) and what `productionFlagPositions.test.ts` enforces from
+     both directions: a row for a variable nothing declares can never disagree
+     with anything, and a governed variable with no row is reported by
+     `comparePositions`. So the two have to move together — and between the merge
+     and the deletion the rite reports exactly that mismatch, by design. */
   CASTING_REFERENCE_LIBRARY_SCOPE: {
     position: "all",
     why: "the repaint's parent; a repaint carries features by crop and needs it",
@@ -234,7 +246,8 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "said he would (\"One sitting — prepare every switch with its evidence and I'll go "
       + "down the list in one go\"). "
       + "Evidence he was shown: 18 demand rows on production (tail, ornaments, orb), last "
-      + "5 Sep, one served and the rest answered in words. Its parent CASTING_REPAINT_SCOPE "
+      + "5 Sep, one served and the rest answered in words. Its parent (the repaint, "
+      + "retired in #1577 slice 4b and re-parented onto the reference library in 4a) "
       + "was already `all`, so it had no chain above it",
   },
   CASTING_FACE_SCAN_SCOPE: {

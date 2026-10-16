@@ -739,8 +739,9 @@ function detach(run: () => Promise<void>): void {
  * ruled fable-1308). `WORDS_ROAD_PLACEMENTS` serves `neck` with
  * `CASTING_INK_WORDS_SCOPE` **off**, D-137's gate passes a neck ask on its first
  * answer, and the delivery mint deliberately has no flag of its own — so any
- * account inside `CASTING_V2_SCOPE=all` + `CASTING_REPAINT_SCOPE=all` can mint a
- * crop and reach this code. Measured at the production rows the day it shipped:
+ * account inside `CASTING_V2_SCOPE=all` can mint a crop and reach this code —
+ * the repaint flag this sentence also named was retired with the paste road
+ * (#1577 slice 4b), which widens the population rather than narrowing it. Measured at the production rows the day it shipped:
  * two crops, one Cast, one owner, none signed. **That is EMPTY, not FENCED, and
  * a population being empty is a fact about who has walked a road rather than
  * about a door.**

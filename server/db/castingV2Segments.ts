@@ -16,8 +16,8 @@
  * segments on production and zero on dev, all time, with 4 and 7 users as the
  * positive control. The store was *structurally* unwritable on the live road —
  * its only writer refused without `image.evidence`, and `repaintOnce` (the road
- * every production render takes under `CASTING_REPAINT_SCOPE=all`) declares
- * that field `undefined`. So this purge has always collected an empty set, and
+ * every render takes, and since #1577 slice 4b the only one) declares that field
+ * `undefined`. So this purge has always collected an empty set, and
  * keeping it is about the table's existence rather than about any object anyone
  * expects to find.
  *

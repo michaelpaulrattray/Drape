@@ -456,7 +456,6 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "history_predates_undo", reason: "answers an undo against a chain older than typed removal — legacy-era state", becomesReachable: "pinned by its C5 service arm" },
   { id: "history_unreadable", reason: "answers a chain whose stored steps fail to parse — corrupt-state, not sentence", becomesReachable: "pinned by its C5 service arm" },
   { id: "step_moved", reason: "answers a chip removal whose index went stale mid-click — a race no scripted sentence makes", becomesReachable: "pinned by its C5 service arm" },
-  { id: "kind_unserved", reason: "answers an open-kind render the engine table cannot serve — engine-config state", becomesReachable: "pinned by its C5 service arm" },
   { id: "scope_mismatch", reason: "answers a scope naming nothing the instruction writes — needs a tap+sentence disagreement the interpreter usually resolves; the deterministic form is its C5 arm", becomesReachable: "pinned by its C5 service arm" },
   { id: "removal_reread_unmatched",
     reason: "needs the ambiguity re-read to produce a removal whose noun then matches no step — a two-model-disagreement state that cannot be scripted through the real interpreter deterministically",
