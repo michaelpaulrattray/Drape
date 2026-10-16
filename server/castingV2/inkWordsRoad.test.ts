@@ -82,8 +82,11 @@ import type { WardrobeResolution } from "./wardrobeLine";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const born = (castingPath: "wardrobe" | "basics", line: string): WardrobeResolution =>
-  ({ kind: "line", line, source: "born", path: castingPath });
+/* `source: "born"` with a path was #1577 slice 2's retired shape; the one
+   source that still reads a line's coverage is `edited`, so that is what a
+   bare outfit is written as here (inkCoverageDemandReach.test.ts's shape). */
+const born = (_path: "wardrobe" | "basics", line: string): WardrobeResolution =>
+  ({ kind: "line", line, source: "edited" });
 
 /** Every roll in both worlds: no line recorded, which answers the house tee. */
 const UNPATHED: WardrobeResolution = { kind: "unpathed" };
