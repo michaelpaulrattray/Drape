@@ -1,7 +1,7 @@
 {
-  "edition": 729,
-  "updatedAt": "2026-10-16T06:45:00.000Z",
-  "shift": "The feature panel can now read a character instead of working from a list — built, switched off, waiting on a review.\n\nWHAT IT IS. Today the panel asks the same twelve questions of every character: has it got hair, has it got a beard, has it got horns. So it pays for a beard question on every clean-shaven face, and it can never find the things that are not on the list — this character's third eye, its jaw hardware, its jacket. The reader you approved this morning turns that round: one look at the picture first, naming what is actually there, and then it only asks about those. Cheaper and wider at the same time.\n\nWHAT I MEASURED BEFORE BUILDING IT, because your design said to. The question left open was whether one look at the whole picture is enough. It is not, and the answer is interesting: looking at the whole picture finds the clothes — the sash, the robe, the coat, the shoulder plates, things a head-and-shoulders crop simply cannot see — but it starts missing small things on the face. On your cyberpunk character it stopped naming the nose. I checked that at the picture rather than believing the reader: the nose is plainly there. So it takes two looks, one close and one wide, which is exactly the fallback your design named. About two cents instead of one.\n\nTHE OTHER THING THAT RUN SETTLED is how it names things. Every name came back as one or two plain words — 'jaw hardware', not 'mechanical jaw brackets with tube-like extensions along cheeks and chin'. That matters more than it sounds: the long version makes the cutter that draws the box return nothing at all, every time. Sixty-nine names out of sixty-nine came back in the short form.\n\nIT IS OFF. Nothing about your panel has changed and will not until you have looked at real panels. It also fails safe in every direction I could find — if the reader is slow, broken, or gets cut off mid-sentence, the panel just asks everything the way it does today. A customer never sees a feature disappear because a service had a bad minute.\n\nWHAT IS LEFT of this reader: the panel showing one row per actual thing found rather than fixed slots, the cutter for things that are not on the list, and carrying a reading across an edit. Those are the next two pieces, and they are named on the card rather than quietly assumed.\n\nNOTHING WAITS ON YOU tonight.",
+  "edition": 730,
+  "updatedAt": "2026-10-16T07:18:28.000Z",
+  "shift": "Outfit changes in a paid edit — read properly before building, and it needs a decision from the design side first.\n\nWHAT YOU ASKED FOR. On 15 October you said yes to letting people change what a character is wearing inside a paid edit. I took that card tonight and read the product rather than the card.\n\nWHY I DID NOT BUILD IT. Two of the three worries written on the card have already gone away. It said to test two engines and pick one — there is only one engine on that road now, as of this morning, so there is nothing to pick. It also looked as though clothing would need the studio to cut a shape around the garment before it could change it; it does not, because a paid edit already repaints the whole picture. So the picture side is cheaper than anyone thought.\n\nThe real obstacle is a different one and it is not technical. Clothing is already fully described in the studio's own vocabulary, and it is switched off for everybody by a single line. Turning that line on is the thing the code itself calls a product decision — and you have now made it, so the decision is not what is missing. What is missing is a design: what it costs a customer, what happens when the engine refuses, and how it reads on a character who was never dressed that way. You have an older card that says exactly this, and nobody had linked the two. I have linked them.\n\nThere is also a money question nobody has answered: whether changing an outfit is simply another kind of edit, riding the price you already pay for an edit, or its own thing with its own price and its own refund when it fails. That changes what gets built, so it gets settled first.\n\nWHAT I DID. I wrote all of that onto the card with the evidence behind each claim, corrected the two instructions that had gone stale so the next session does not chase them, and handed it to a design session, which runs next. I built nothing, on purpose.\n\nONE THING FREED UP ALONG THE WAY. A real bug was sitting marked \"waiting for something else\" when the thing it waited for had already landed this morning — the studio can offer to put a tattoo on someone's chest while they are wearing a t-shirt. The wait broke nothing, but nobody could pick the bug up. It is free now, and I checked the fault is still really there before saying so.\n\nNOTHING WAITS ON YOU tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -31,6 +31,10 @@
         },
         {
           "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. The READER is built and switched off (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see the things that were never on the list. Measured first, on your own three characters: it takes two looks, one close and one wide, because the wide one finds the clothes and starts missing the nose. Still to come: one panel row per thing found, the cutter for off-list things, and carrying a reading across an edit",
+          "state": "waiting"
+        },
+        {
+          "title": "Outfit changes inside a paid edit — you asked for this on 15 October. The picture side turned out to be the easy half: there is only one edit engine now, so nothing has to be chosen, and a paid edit already repaints the whole picture, so nothing has to be cut out round a garment. What is missing is a design — what it costs a customer, what happens when the engine says no, and whether an outfit change is simply another kind of edit or its own thing with its own price. Handed to a design session rather than built (#2544)",
           "state": "waiting"
         },
         {
@@ -148,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T06:15:28.186Z",
+      "readAt": "2026-10-16T07:17:08.153Z",
       "items": [
         {
           "issueNumber": 14,
@@ -11075,7 +11079,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T06:15:28.186Z",
+    "readAt": "2026-10-16T07:17:08.152Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11083,7 +11087,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2560 (the seam D4 needs) plus PRs #2550 #2555 #2556 #2557 #2559 merging before D5, the chain root. Not your word."
+          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
         }
       },
       {
@@ -11130,7 +11134,11 @@
       {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "FABLE — a design decision: this is #1161 option B, and whether an outfit edit rides the refine's existing price or needs its own operation."
+        }
       },
       {
         "issueNumber": 2545,
