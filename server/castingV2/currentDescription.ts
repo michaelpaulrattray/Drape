@@ -51,6 +51,8 @@ export const CURRENT_DESCRIPTION_SYSTEM = [
   "- Keep every fact from the previous description that the change does not touch, in its own words where you can.",
   "- When the change takes something away (glasses, a scar, horns), leave it out of the description and add one plain clause stating its absence, such as \"They wear no glasses.\"",
   "- When the change contradicts an earlier fact (a new eye colour, a shorter beard), keep only the new fact.",
+  "- The description is read beside their ORIGINAL photograph. A change worded as a comparison (deeper, darker, shorter, heavier, neater) stays a comparison against how they first looked, such as \"scales a deeper emerald than their original colouring\" — never a plain \"deep emerald\", which the original photograph already satisfies.",
+  "- Hair on the head and facial hair are separate features: a change to their hair never changes their beard, and a change to their beard never changes their hair.",
   "- Describe only the person: face, features, hair, skin, markings, accessories and clothing. Never the setting, background, lighting, camera, pose or picture style.",
   "- Do not invent anything the previous description and the change do not say.",
   "- Reply with the description paragraph and nothing else.",

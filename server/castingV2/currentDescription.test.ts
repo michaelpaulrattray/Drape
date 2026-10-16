@@ -51,6 +51,10 @@ describe("the description writer", () => {
     /* The previous description is the memory: the brief is NOT re-sent beside it. */
     expect(sent[0]!.user).not.toContain("north Atlantic");
     expect(sent[0]!.system).toMatch(/never as a list of edits/);
+    /* The two rules the court bought (round b): a comparison stays a comparison
+       against the original photograph, and hair is not the beard. */
+    expect(sent[0]!.system).toMatch(/stays a comparison against how they first looked/);
+    expect(sent[0]!.system).toMatch(/Hair on the head and facial hair are separate features/);
   });
 
   it("seeds from the brief and the asks already applied when the previous version has no description", () => {
