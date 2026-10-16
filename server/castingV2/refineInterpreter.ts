@@ -1876,7 +1876,7 @@ async function containReply(call: {
     ⚠ **AND THIS COPY IS WHY A CORRECTION IS SWEPT BY READING AND NOT BY ITS OWN
     WORDING.** PR #2569 corrected five copies of this claim and missed this one,
     because the five said *"asked of nobody"* and this said *"ran for nobody"* —
-    a grep for the sentence that was being corrected could never reach it. A
+    a text search for the sentence being corrected could never reach it. A
     correction tracks READERSHIP, so the sweep's population is every place that
     states the fact, in whatever words.
   */

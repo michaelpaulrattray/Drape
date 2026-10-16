@@ -277,8 +277,8 @@ expectRefusal(
   two `expectPass` arms driving `CASTING_REPAINT_SCOPE` `off` and absent — IS
   REMOVED, AND IT IS THE THIRD ARM OF THIS FILE TO DIE OF ITS OWN SUBJECT
   RETIRING.** `CASTING_REPAINT_SCOPE` went with the paste road in slice 4b: it is
-  out of `PRODUCTION_FLAG_POSITIONS` (that row's own stamp says so at
-  `productionFlagPositions.mts:121`) and out of the server, which mentions it only
+  out of `PRODUCTION_FLAG_POSITIONS` (the stamp where that row
+  stood says so, in `productionFlagPositions.mts`) and out of the server, which mentions it only
   in three historical comments. So no fence reads it and no parse sees it.
 
   ⚠ **DRIVEN, NOT REASONED, AND THE PROBE CARRIED A POSITIVE CONTROL** — the gate

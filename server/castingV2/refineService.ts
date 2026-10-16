@@ -3536,7 +3536,8 @@ async function refineCandidateCounted(
 
         ⚠ **AND `openLane` WAS ONE MEMBER OF A SET OF NINE, WHICH IS #2584 —
         READ IT BEFORE ADDING OR REMOVING ANYTHING IN THE CALL BELOW.** Measured
-        on the relay's finding on PR #2569: the main read at `:1840` is handed
+        on the relay's finding on PR #2569: the main read — the
+        `interpretRefinement` call that passes `referenceAttached` — is handed
         FOURTEEN facts and this re-read is handed eight, seven of them shared, so
         **seven facts the main read knows are absent here and every one of them is
         read as `false` or null** — `referenceAttached`, `inkReferenceEnabled`
