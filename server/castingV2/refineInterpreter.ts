@@ -107,9 +107,21 @@ function firstObject(text: string): string {
  * prompt that shipped before the open lane's last-resort clause existed, held
  * byte-identical to a checked-in fixture. The flag stood at `all` on production
  * from 2026-09-24 (his Crew reply #205, *"Turn it on for everyone"*) and every
- * flag in the chain above it was `all` too, so that off prompt was asked of
- * nobody — the ghost audit's row D1, retired on his word of 2026-10-15,
- * verbatim: *"yes approve the plan and switch off the six settings"*.
+ * flag in the chain above it was `all` too — the ghost audit's row D1, retired on
+ * his word of 2026-10-15, verbatim: *"yes approve the plan and switch off the six
+ * settings"*.
+ *
+ * ⚠ **ONE ROAD STILL ASKED THE OFF PROMPT, AND THIS DOCBLOCK SAID IT WAS *"asked
+ * of nobody"*.** `openLane` was read off the CALLER, and the removal path's RULE 3
+ * re-read (`refineService.ts`, the `mode: "edit"` call on the non-departable branch)
+ * is the only production caller that never passed it — and absent meant off. So that
+ * road got the closed prompt and skipped the acceptance door on a product whose flag
+ * was `all`, and this collapse moved it onto the prompt everybody else was already
+ * being read with. Found by the relay on PR #2556 and declared on the D1 row, which
+ * carries the measurement; the call site says what it costs.
+ *
+ * **The lesson for the next option removed from this type: the compiler names every
+ * caller that PASSES one, and says nothing at all about the caller that never did.**
  *
  * ⚠ **THE SURVIVING PROMPT DID NOT CHANGE BY A CHARACTER, and that is the bar
  * this collapse was held to rather than a hope** — #1495's rule, in the shape

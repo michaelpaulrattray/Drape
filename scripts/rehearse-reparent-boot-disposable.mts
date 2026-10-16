@@ -188,8 +188,13 @@ const SIBLINGS = {
   /* ⚠ `CASTING_SIDE_PHRASING_SCOPE: "off"` stood here and is removed with the flag
      (#1577 slice D2). The paragraph above keeps it as the SPECIMEN because the
      lesson is the instrument's, not the flag's — but there is no fence left for it
-     to fire from, so silencing it would describe a refusal that cannot happen. */
-  CASTING_OPEN_LANE_SCOPE: "off",
+     to fire from, so silencing it would describe a refusal that cannot happen.
+     ⚠ `CASTING_OPEN_LANE_SCOPE: "off"` left the same way in slice D1, and it had to
+     be found TWICE: the slice itself missed it, the relay's finding on PR #2556 missed
+     it, and the sweep that caught it was a grep for the NAME after the compiler had
+     already said it was finished. Nothing in this file is a type -- the flag was a key
+     in a string table and a string argument -- so `tsc` was always going to be silent
+     about it. */
   CASTING_REFERENCE_ATTACH_SCOPE: "off",
   /* ⚠ The reference library ALREADY had children of its own before slice 4a —
      the face scan and, under it, the kept-scan table — and the face scan stands
@@ -217,14 +222,19 @@ const NARROWED = {
   re-pointed, and that is the honest act: with the fence gone the arm would have
   found no refusal and reported it as a FAILURE of slice 4a, which is a red about
   nothing — and the opposite mistake, loosening the arm until it passed, would
-  have left a rehearsal that cannot fail. **Two arms remain and the rehearsal's
-  verdict still means what it says.**
+  have left a rehearsal that cannot fail.
+
+  ⚠ **AND THE OPEN-LANE ARM WENT THE SAME WAY IN SLICE D1, WHICH LEAVES EXACTLY ONE.
+  This paragraph said *"two arms remain"*, and for one day it was true.** The flag's
+  boot fence (`validateCastingOpenLaneEnvironment`) was deleted with the flag, so the
+  arm that asserted it refuses BY NAME found no refusal -- and the thing it printed
+  was not a quiet pass, it was `REHEARSAL RED -- Do NOT ship slice 4a`, two days after
+  slice 4a shipped. **That is this paragraph's own prediction arriving, and it was
+  driven rather than reasoned**: the arm was run on `67fed3a5` and read
+  *"it ADMITTED the configuration -- the fence is inert"*. Removed rather than
+  re-pointed or loosened, for the reason above. **One negative control remains and the
+  rehearsal's verdict still means what it says.**
 */
-expectRefusal(
-  "an open-lane user outside the reference library",
-  { ...NARROWED, CASTING_OPEN_LANE_SCOPE: "users:1,7" },
-  "CASTING_OPEN_LANE_SCOPE",
-);
 expectRefusal(
   "a reference-attach user outside the reference library",
   { ...NARROWED, CASTING_REFERENCE_ATTACH_SCOPE: "users:1,9" },

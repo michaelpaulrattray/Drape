@@ -3504,6 +3504,27 @@ async function refineCandidateCounted(
         RULE 3 — THE FACE SECOND. The record says it IS there, so this is an
         ordinary content edit. Re-read with the removal vocabulary withheld, or
         the same sentence classifies as a removal forever.
+
+        ⚠ **THIS CALL IS THE ONE LIVE ROAD #1577 SLICE D1 CHANGED, and it is said
+        HERE because this is where the next person to touch it will be** (the
+        relay's finding on PR #2556; the declaration and the measurement are the
+        ghost audit's D1 row, and the guard is `refineService.test.ts` ›
+        *"the RULE 3 re-read takes the open lane"*).
+
+        It was the ONLY `interpretRefinement` call in the product that never
+        passed `openLane`, and that option meant *off* when absent — so while the
+        flag stood at `all` for everybody, this one re-read was still being asked
+        the CLOSED prompt and still skipping the acceptance door. Retiring the
+        flag put it on the same prompt as the main read, which is the behaviour it
+        should always have had: the main read of these very words had the lane and
+        only its re-read did not.
+
+        **What it costs, stated rather than glossed:** an uncatalogued creature
+        feature asked to come off used to refuse here for FREE (`wall_unbacked`,
+        nothing charged) and now files the absence in the customer's own words and
+        renders it, at Refine's own price. Nothing about the walls, the prices or
+        the refund paths moved, and the thing still has to be ON them — the brief,
+        the recipe or the segmenter — to reach this line at all.
       */
       const asEdit = await (dependencies.interpret ?? interpretRefinement)({
         instruction,
