@@ -107,9 +107,21 @@ function firstObject(text: string): string {
  * prompt that shipped before the open lane's last-resort clause existed, held
  * byte-identical to a checked-in fixture. The flag stood at `all` on production
  * from 2026-09-24 (his Crew reply #205, *"Turn it on for everyone"*) and every
- * flag in the chain above it was `all` too, so that off prompt was asked of
- * nobody — the ghost audit's row D1, retired on his word of 2026-10-15,
- * verbatim: *"yes approve the plan and switch off the six settings"*.
+ * flag in the chain above it was `all` too — the ghost audit's row D1, retired on
+ * his word of 2026-10-15, verbatim: *"yes approve the plan and switch off the six
+ * settings"*.
+ *
+ * ⚠ **ONE ROAD STILL ASKED THE OFF PROMPT, AND THIS DOCBLOCK SAID IT WAS *"asked
+ * of nobody"*.** `openLane` was read off the CALLER, and the removal path's RULE 3
+ * re-read (`refineService.ts`, the `mode: "edit"` call on the non-departable branch)
+ * is the only production caller that never passed it — and absent meant off. So that
+ * road got the closed prompt and skipped the acceptance door on a product whose flag
+ * was `all`, and this collapse moved it onto the prompt everybody else was already
+ * being read with. Found by the relay on PR #2556 and declared on the D1 row, which
+ * carries the measurement; the call site says what it costs.
+ *
+ * **The lesson for the next option removed from this type: the compiler names every
+ * caller that PASSES one, and says nothing at all about the caller that never did.**
  *
  * ⚠ **THE SURVIVING PROMPT DID NOT CHANGE BY A CHARACTER, and that is the bar
  * this collapse was held to rather than a hope** — #1495's rule, in the shape
@@ -1837,8 +1849,36 @@ async function containReply(call: {
     With the flag off the interpreter was not told it may name a kind outside
     the vocabulary, so its replies keyed onto the nearest closed subject — which
     is what §2 measured, and why the whole-delta null was latent rather than
-    live. That off road ran for nobody from 2026-09-24 (`all`, his Crew reply
-    #205) and is retired on his word of 2026-10-15.
+    live.
+
+    ⚠ **THIS PARAGRAPH SAID THAT OFF ROAD *"ran for nobody"* FROM 2026-09-24,
+    AND IT WAS FALSE OF EXACTLY ONE ROAD — AND OF THIS DOOR ABOVE ALL OTHERS**
+    (the relay's finding on PR #2556, read at the bytes; corrected here on its
+    finding on PR #2569). The removal path's RULE 3 re-read was the only
+    production caller of `interpretRefinement` that never passed `openLane`, and
+    absent meant off — so on a product whose flag stood at `all` for everybody,
+    that one re-read was asked the CLOSED prompt **and skipped the very door this
+    comment sits above.** The flag was read twice on purpose, as the paragraph
+    above explains; a caller that passed NEITHER gate is therefore the one caller
+    both sweeps could miss, and both did.
+
+    So the honest sentence is the other way round: the off road ran for one road
+    and this door is where it ran. It is retired on his word of 2026-10-15, which
+    put that re-read on the same prompt as the main read of the same words. The
+    measurement is the ghost audit's D1 row (two independent readings, agreeing);
+    the live road is commented at its call site in `refineService.ts` (RULE 3);
+    the guard is `refineService.test.ts` › *"the RULE 3 re-read takes the open
+    lane"*. **What it costs is stated rather than glossed**: an uncatalogued
+    creature feature asked to come off used to refuse FREE there — `wall_unbacked`,
+    nothing charged — and now files the absence in the customer's own words and
+    renders it, at Refine's own price.
+
+    ⚠ **AND THIS COPY IS WHY A CORRECTION IS SWEPT BY READING AND NOT BY ITS OWN
+    WORDING.** PR #2569 corrected five copies of this claim and missed this one,
+    because the five said *"asked of nobody"* and this said *"ran for nobody"* —
+    a text search for the sentence being corrected could never reach it. A
+    correction tracks READERSHIP, so the sweep's population is every place that
+    states the fact, in whatever words.
   */
   const opened = await acceptOpenKind({
     instruction,
