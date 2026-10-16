@@ -810,20 +810,25 @@ export type OwnedCandidateFace = {
   thumbKey: string | null;
   internalPrompt: unknown;
   /**
-   * WHAT THE ROLL THIS FACE CAME FROM WAS CAST ON, and what it was born wearing
-   * (item 7a).
+   * WHAT THE ROLL THIS FACE CAME FROM WAS BORN WEARING (item 7a).
    *
    * Joined here rather than read a second time, and joined THROUGH the owned
    * candidate so the roll is reached only by somebody who already owns the face
    * — the same shape the compiled brief's join uses, for the same reason.
    *
-   * `null` on both is the honest state of every roll cast before the paths, and
-   * `currentWardrobeLine` reads that pair as `unpathed`: paint what you always
-   * painted. They travel as the ROW'S OWN two fields rather than as a resolved
-   * line, because a caller needs to tell *"this cast wears the house line"* from
-   * *"this cast predates the paths"* and a bare string cannot say the second.
+   * `null` is the honest state of a roll with no line recorded, and
+   * `currentWardrobeLine` reads it as `unpathed`: paint what you always
+   * painted. It travels as the ROW'S OWN field rather than as a resolved line,
+   * because a caller needs to tell *"this cast wears the house line"* from
+   * *"this cast has no line recorded"* and a bare string cannot say the second.
+   *
+   * ⚠ **`rollPath` TRAVELLED BESIDE IT AND IS NO LONGER SELECTED — #1577
+   * slice 2 (the ghost audit's item B1).** Both of refine's call sites threaded
+   * it into `currentWardrobeLine`, which stopped reading it, so this projection
+   * and the one below were the last places it was carried for no reader.
+   * **`casting_rolls.path` the COLUMN is untouched** (#203's ruling) — what
+   * went is the two SELECTs of it into this read path.
    */
-  rollPath: string | null;
   rollWardrobeLine: string | null;
 };
 
@@ -862,7 +867,6 @@ export async function getOwnedCandidateWithSelectedFace(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
-      rollPath: castingRolls.path,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -887,10 +891,10 @@ export async function getOwnedCandidateWithSelectedFace(
   if (!row) return null;
   /* All of the face or none of it — never a variant's image with the
      original's record, which is the mix that makes a record lie. */
-  /* The roll's two fields belong to the CANDIDATE and not to whichever face is
-     selected, so they are the same either way — written once rather than in
-     both branches, where a copy would be free to drift. */
-  const roll = { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine };
+  /* The roll's line belongs to the CANDIDATE and not to whichever face is
+     selected, so it is the same either way — written once rather than in both
+     branches, where a copy would be free to drift. */
+  const roll = { rollWardrobeLine: row.rollWardrobeLine };
   return row.variantId
     ? {
       candidate: row.candidate,
@@ -961,7 +965,6 @@ export async function getOwnedCandidateOnVersion(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
-      rollPath: castingRolls.path,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -1001,7 +1004,7 @@ export async function getOwnedCandidateOnVersion(
      never the original — both would be an answer about somebody else's
      picture. */
   if (variantPublicId !== null && !row.variantId) return { found: false, missing: "version" };
-  const roll = { rollPath: row.rollPath, rollWardrobeLine: row.rollWardrobeLine };
+  const roll = { rollWardrobeLine: row.rollWardrobeLine };
   /* All of the face or none of it — never a variant's image with the
      original's record, which is the mix that makes a record lie. */
   return {
@@ -1095,10 +1098,13 @@ export async function getBriefForOwnedCandidate(
  * the answer.
  *
  * ⚠ WHAT IS NOT LOST: `getOwnedCandidateWithSelectedFace` below still returns
- * `rollPath` and `rollWardrobeLine`, and the refine and Sign roads still resolve
- * them through `currentWardrobeLine`. The COLUMNS are kept — they are the
- * evidence of which rolls predate the author road — and reading a stored
- * sentence outlives composing a new one.
+ * `rollWardrobeLine`, and the refine and Sign roads still resolve it through
+ * `currentWardrobeLine`. The COLUMNS are kept — they are the evidence of which
+ * rolls predate the author road — and reading a stored sentence outlives
+ * composing a new one. ⚠ **This sentence named `rollPath` too until #1577
+ * slice 2, which stopped SELECTING it: the resolution no longer reads a path,
+ * so carrying it here served no reader. The column stays; the projection does
+ * not.**
  *
  * ⚠ **THIS ENDED *"`briefCompiler`'s own `inheritedWardrobe` input also stays,
  * because `deterministicBriefCompiler` still hands it on and that compiler's fate

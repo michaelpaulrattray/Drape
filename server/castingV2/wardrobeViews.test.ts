@@ -162,7 +162,16 @@ describe("the package's wardrobe sentence", () => {
  * product always has. The alternative dresses a Cast in an outfit nobody chose.
  */
 describe("castWardrobeLine", () => {
-  it("reads the line Sign stored", () => {
+  it("reads the line Sign stored, including from a retired era's snapshot", () => {
+    /*
+      ⚠ **THIS BLOB IS A SHAPE SIGN NO LONGER WRITES, AND THAT IS WHY IT IS THE
+      RIGHT FIXTURE.** `source: "born"` and a non-null `path` both went with
+      #1577 slice 2 (the ghost audit's item B1), and this reader's whole contract
+      is that a stored row is read whatever era wrote it — so the arm proves the
+      LINE still comes back off a pre-slice snapshot. Production holds no such
+      row (measured: zero), dev holds four, and both read identically here
+      because this function looks only at `line`.
+    */
     expect(castWardrobeLine({ wardrobe: { path: "wardrobe", line: "a red apron", source: "born" } }))
       .toBe("a red apron");
   });
@@ -178,7 +187,11 @@ describe("castWardrobeLine", () => {
       { subject: {}, cohortKey: "photoreal_human" },
       /* The unpathed snapshot this Sign writes today. */
       { wardrobe: { path: null, line: null, source: null } },
-      /* An incoherent roll — a path with no line. Refused, never guessed. */
+      /* ⚠ A SHAPE NOTHING CAN WRITE ANY MORE — a path beside no line. It was
+         the `incoherent` resolution's snapshot until #1577 slice 2 retired that
+         kind, and the arm is KEPT because this reader's whole contract is that
+         an unrecognised blob answers `null` rather than guessing: a stored row
+         is read whatever era wrote it. */
       { wardrobe: { path: "basics", line: null, source: null } },
       { wardrobe: "a red apron" },
       { wardrobe: { line: "   " } },

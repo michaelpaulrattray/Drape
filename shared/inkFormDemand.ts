@@ -76,6 +76,29 @@
  * The migration file is deliberately NOT edited: it has been applied in both
  * worlds and the file is the record of what was run. The correction lives where
  * somebody changing this vocabulary is standing, which is here.
+ *
+ * # ⚠ AND A SECOND LAYER, 2026-10-15: NEITHER VALUE IS REACHABLE NOW
+ *
+ * The correction above narrowed migration 0052's *"BOTH VALUES ARE REACHABLE"*
+ * to *`basics` becomes reachable the day `upperChest` joins the served set*.
+ * **#1577 slice 2 closed the other half too**: the wardrobe resolution stopped
+ * carrying a path (the ghost audit's item B1), `wardrobeNow.path` was the
+ * column's only source, and the writer no longer passes it. **So
+ * `pathAtRefusal` is `null` on every row anything can write from now on.**
+ *
+ * ⚠ **And the sharper fact, measured while that slice re-pointed the arms:
+ * the whole TABLE has no reachable writer.** The counter fires only on a
+ * non-`brief` wardrobe source; the one survivor is `edited`, which needs the
+ * `wardrobe` free subject, and `refineSubjects.ts` says it *"is served to
+ * nobody"*. Even granting an edit, `surfaceCovered` needs a line whose surface
+ * a known outfit COVERS, and the only such line is `HOUSE_WARDROBE_LINE` at 132
+ * characters against `MAX_FREE_LENGTH`'s 120 — which rejects the whole delta.
+ * **`casting_ink_form_demand` holds zero rows in both worlds, all time**, which
+ * is every one of those facts agreeing.
+ *
+ * **Nothing here is deleted on that reading** — the vocabulary, the column and
+ * the writer all stay, and the deadness is filed as its own finding. A reader
+ * who came here to add a kind should know the table is not currently fed.
  */
 export const INK_FORM_DEMAND_KINDS = [
   "torsoNonbinary",

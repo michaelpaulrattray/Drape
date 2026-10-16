@@ -383,15 +383,23 @@ export function coverageOfWardrobeLine(
  * GATE, which reads the branch before any money moves.
  *
  * `unpathed` (and absent, which is the same silence) is the house table: the
- * roll predates the paths and wears what every roll has always worn.
+ * roll has no stored line and wears what every roll has always worn.
  *
- * ⚠ **`incoherent` is `unknown`, and this is the whole reason the gate takes a
- * RESOLUTION rather than a line.** A roll that claims a path and cannot say what
- * it is wearing has told us nothing about its chest; flattened to a string it
- * would arrive here as `null` and read as the crew tee, which would put a crew
- * neck's answers on a cast that might be Basics. Reporting it as a COVERING
- * would be the lie ruling 1 forbids; reading it as the house tee is the quieter
- * version of the same lie.
+ * ⚠ **IT HAD A THIRD ARM, `incoherent` → `unknown`, AND IT IS RETIRED WITH
+ * THE PATHS — #1577 slice 2 (item B1), 2026-10-15.** A roll that claimed a path
+ * and could not say what it was wearing had told us nothing about its chest, so
+ * answering the house crew tee would have put a crew neck's answers on a cast
+ * that might be Basics — the quieter version of the lie ruling 1 forbids. That
+ * arm is unreachable now because the resolution can no longer express the
+ * state: the path is not threaded into it at all.
+ *
+ * ⚠ **THE GATE STILL TAKES A RESOLUTION RATHER THAN A LINE, AND THE REASON
+ * MOVED RATHER THAN DYING — which is the sentence a later reader needs, because
+ * this docblock used to say `incoherent` WAS that reason.** What a bare string
+ * still cannot say is which of the two remaining sources the line came from, and
+ * the arm below turns on exactly that: a `brief` line keeps the house prior
+ * while an `edited` one is read. Flatten this to a string and every
+ * stated-outfit cast silently changes coverage.
  */
 export function wardrobeCoversSurface(
   resolution: WardrobeResolution | undefined,
@@ -399,7 +407,6 @@ export function wardrobeCoversSurface(
 ): SurfaceCoverage {
   if (resolution === undefined) return HOUSE_COVERAGE[placement];
   if (resolution.kind === "unpathed") return HOUSE_COVERAGE[placement];
-  if (resolution.kind === "incoherent") return "unknown";
   /*
     ⚠ A `brief`-SOURCED LINE KEEPS THE HOUSE PRIOR, DECLARED RATHER THAN
     SILENT (#1222). Since #1222 the author road records the outfit the brief

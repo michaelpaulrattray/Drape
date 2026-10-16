@@ -250,6 +250,18 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "widened WITH face-scan as one pair (the boot guard requires it; his "
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
+  ENABLE_CASTING_PAIR_ONE_READ: {
+    position: UNSET,
+    why:
+      "#2191: a pair answered by ONE segmenter read instead of two — the floor "
+      + "falls 18 to 13, about 2.5c off a 12c scan. UNSET because the crop road "
+      + "it replaces was itself a measured ruling (asking a pair of a whole "
+      + "frame once delivered 'she has no eyebrows' over a frame whose brows "
+      + "measure 1429px, while one side to a picture read 12 of 12), and #2532 "
+      + "arm 1's 15 cells on three casts is enough to build the road and not "
+      + "enough to move every customer onto it. Its flip is HIS, with his eye "
+      + "on the panel — the card's own done-when",
+  },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
     why:
