@@ -228,7 +228,7 @@ export function inkAddressPhrase(address: InkAskAddress): string {
   const surface = isInkPlacement(address.placement)
     ? inkPlacementBareNoun(address.placement)
     : address.placement;
-  if (address.side !== "left" && address.side !== "right") return `her ${surface}`;
+  if (address.side !== "left" && address.side !== "right") return `their ${surface}`;
   /*
     AND HER SIDE WORD IS NEVER SAID TWICE (the class, killed 2026-08-20; ruled
     fable-1163 §3).
@@ -247,7 +247,7 @@ export function inkAddressPhrase(address: InkAskAddress): string {
     if the phrase already opens with her word, it is not added again.
   */
   const alreadySaid = new RegExp(`^${address.side}\\b`, "i").test(surface.trim());
-  return alreadySaid ? `her ${surface}` : `her ${address.side} ${surface}`;
+  return alreadySaid ? `their ${surface}` : `their ${address.side} ${surface}`;
 }
 
 /**
@@ -435,7 +435,7 @@ function conflict(count: number, place: string): InkDesignForAsk {
     count,
     say: `You've got ${count} designs for ${place} already, and this picture isn't one `
       + "of them. Remove the one you don't want and send this again, or put this one "
-      + "somewhere she's got room. Nothing was charged.",
+      + "somewhere they've got room. Nothing was charged.",
   };
 }
 
@@ -451,7 +451,7 @@ function unstatedSide(place: string): InkDesignForAsk {
   return {
     kind: "sideUnstated",
     say: `I've got the design from your picture for ${place}, but I need to know which `
-      + "one — her left or her right. Say which and I'll put it there. Nothing was charged.",
+      + "one — their left or their right. Say which and I'll put it there. Nothing was charged.",
   };
 }
 
@@ -477,7 +477,7 @@ function unstatedSide(place: string): InkDesignForAsk {
  */
 function mintable(address: InkAskAddress, place: string): InkDesignForAsk {
   if (!isInkPlacement(address.placement)) {
-    const served = INK_PLACEMENTS.map((key) => `her ${inkPlacementBareNoun(key)}`);
+    const served = INK_PLACEMENTS.map((key) => `their ${inkPlacementBareNoun(key)}`);
     const list = `${served.slice(0, -1).join(", ")} or ${served[served.length - 1]}`;
     return {
       kind: "placementUnserved",

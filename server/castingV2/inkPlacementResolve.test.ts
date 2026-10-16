@@ -9,6 +9,7 @@ import {
   resolveInkPlacement,
 } from "./inkPlacementResolve";
 import { INK_PLACEMENTS, inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
+import { classifyInkPlacement } from "./inkPlacement";
 
 describe("the measured surfaces are found however she spells them", () => {
   /*
@@ -319,15 +320,12 @@ describe("a determiner is not a surface (#2572)", () => {
       .toEqual({ kind: "measured", placement: "upperArm" });
   });
 
-  it("⚠ A SPATIAL QUALIFIER IS NOT A DETERMINER — it keeps her phrase and stays open", () => {
-    /* Merging these would speak back "her neck" and render the neck wherever
-       the engine likes, dropping what she asked for without saying so. That is
-       #2572's open half and it is a question for him, not a strip. */
-    for (const phrase of [
-      "side of the neck", "side of her neck", "front of the neck", "left side of the neck",
-      "top of the upper arm",
-    ]) {
-      expect(resolveInkPlacement(phrase), `"${phrase}" must keep her words`)
+  it("⚠ A SPATIAL QUALIFIER HE DID NOT RULE ON keeps the customer's phrase and stays open", () => {
+    /* `side of` and `front of` were ruled (option A, the describe below);
+       `top of` was not, and the classifier reading the upper arm in it is not a
+       licence to read it here. */
+    for (const phrase of ["top of the upper arm", "below the neck", "around the neck"]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" must keep the customer's words`)
         .toEqual({ kind: "open", phrase });
     }
   });
@@ -367,5 +365,104 @@ describe("a determiner is not a surface (#2572)", () => {
     /* Whole word, at the FRONT, once. Anything else is the meaning judgement. */
     expect(resolveInkPlacement("theatre mask on the neck"))
       .toEqual({ kind: "open", phrase: "theatre mask on the neck" });
+  });
+});
+
+/**
+ * "SIDE OF THE NECK" IS THE NECK — the founder's option A on #2572, verbatim:
+ * *"A less friction if someone says side of the next the image engine can
+ * reliably decide that itself"*.
+ *
+ * Every phrase is driven through BOTH readers of the question — this resolver
+ * and `classifyInkPlacement`, the ink gate one module over — because two
+ * readers of one question disagreeing is exactly what the card measured.
+ */
+describe("a side or front of a measured surface is that surface (#2572, option A)", () => {
+  const RULED_NECK = [
+    "side of the neck", "side of her neck", "side of his neck", "side of their neck",
+    "side of my neck", "side of neck", "the side of the neck", "the side of their neck",
+    "front of the neck", "front of their neck", "the front of the neck",
+    "left side of the neck", "right side of the neck", "left side of their neck",
+    "the left side of the neck", "Side Of  The Neck",
+  ];
+
+  it("every ruled neck phrasing resolves to the neck in one step — and the classifier agrees", () => {
+    for (const phrase of RULED_NECK) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" is the neck`)
+        .toEqual({ kind: "measured", placement: "neck" });
+      expect(classifyInkPlacement(phrase, "ink"), `the ink gate reads "${phrase}" as the neck too`)
+        .toEqual({ kind: "in_frame", place: "neck" });
+    }
+  });
+
+  it("composes with the side the customer stated, which is still the only side it consumes", () => {
+    expect(resolveInkPlacement("left side of the neck", "left"))
+      .toEqual({ kind: "measured", placement: "neck" });
+    expect(resolveInkPlacement("side of the upper arm"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+    expect(resolveInkPlacement("left side of the upper arm", "left"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+  });
+
+  it("CONTROL — a side word on a PAIRED surface is never consumed unless the customer stated it", () => {
+    /* `upperArm` comes in pairs: reading "right side of the upper arm" with no
+       stated side as the upper arm would let a strip pick an arm, which is the
+       side machinery's job (fable-1115 §3). */
+    expect(resolveInkPlacement("right side of the upper arm"))
+      .toEqual({ kind: "open", phrase: "right side of the upper arm" });
+    expect(resolveInkPlacement("right side of the upper arm", "left"))
+      .toEqual({ kind: "open", phrase: "right side of the upper arm" });
+  });
+
+  it("REFUSAL ARM — back and nape stay refused by both readers", () => {
+    for (const phrase of [
+      "back of the neck", "back of her neck", "the back of the neck", "nape of the neck",
+      "side of the nape", "front of the back of the neck", "side of the back of the neck",
+    ]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" is hidden`).toEqual({ kind: "open", phrase });
+      expect(classifyInkPlacement(phrase, "ink"), `the ink gate still refuses "${phrase}"`)
+        .toEqual({ kind: "needs_document" });
+    }
+  });
+
+  it("CONTROL — a qualifier in front of something unmeasured is never made measured", () => {
+    for (const phrase of ["side of the throat", "front of the wrist", "side of the sleeve", "side of", "side of the"]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" names nothing measured`)
+        .toEqual({ kind: "open", phrase });
+    }
+  });
+
+  it("CONTROL — the qualifier is read at the FRONT only, never anywhere in the phrase", () => {
+    expect(resolveInkPlacement("a rose by the side of the neck"))
+      .toEqual({ kind: "open", phrase: "a rose by the side of the neck" });
+  });
+
+  it("CONTROL — every phrase this resolver measures, the classifier reads on the same surface", () => {
+    /* The one-direction agreement the construction promises, over the whole
+       grid: a resolver that measured a place the gate reads differently is the
+       card's defect run backwards. */
+    const qualifiers = ["side of", "front of", "left side of", "right side of", "top of", "back of"];
+    const determiners = ["", "the ", "their ", "her "];
+    let measuredCount = 0;
+    for (const key of INK_PLACEMENTS) {
+      const bare = inkPlacementEntry(key).noun.replace(/^her\s+/, "");
+      for (const qualifier of qualifiers) {
+        for (const determiner of determiners) {
+          const phrase = `${qualifier} ${determiner}${bare}`;
+          const resolved = resolveInkPlacement(phrase);
+          if (resolved.kind !== "measured") continue;
+          const gate = classifyInkPlacement(phrase, "ink");
+          const gateSurface = gate.kind === "in_frame"
+            ? INK_PLACEMENTS.find((one) => inkPlacementEntry(one).readerWord === gate.place) ?? null
+            : "surface" in gate ? gate.surface : null;
+          expect(gateSurface, `the ink gate reads "${phrase}" (${gate.kind}) on another surface`)
+            .toBe(resolved.placement);
+          measuredCount += 1;
+        }
+      }
+    }
+    /* Positive control: the grid is not vacuous — side/front of each surface
+       (with each determiner) measures, and the one-direction check ran on it. */
+    expect(measuredCount).toBeGreaterThanOrEqual(INK_PLACEMENTS.length * 2 * 4);
   });
 });
