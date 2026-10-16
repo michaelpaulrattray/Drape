@@ -795,8 +795,8 @@ describe("the replace offer names what it would destroy", () => {
       reader's opinion between her and her own design (law 9) — so what it names
       is the place, which is the thing she can check.
     */
-    expect(offer().question).toContain("Her left upper arm");
-    expect(offer({ placement: "neck", side: "centre" }).question).toContain("Her neck");
+    expect(offer().question).toContain("Their left upper arm");
+    expect(offer({ placement: "neck", side: "centre" }).question).toContain("Their neck");
     /* And it says the place ONCE — the "her left left" class, killed 2026-08-20. */
     expect(offer().question.match(/left/gi)).toHaveLength(1);
   });

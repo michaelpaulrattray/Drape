@@ -61,12 +61,12 @@ describe("the placement is resolved, never believed", () => {
       .toEqual({ kind: "measured", placement: "upperArm" });
   });
 
-  it("⚠ and a SPATIAL qualifier still keeps her words (#2572's open half)", () => {
-    /* Merging this would speak back "her neck" and render the neck wherever the
-       engine likes, dropping what she asked for without saying so — the meaning
-       judgement this module reserves to a person. */
+  it("reads the side or front of the neck as the neck — the founder's option A (#2572)", () => {
     const take = readInkReferenceTake(reply("side of the neck", null), "a sparrow on the side of the neck");
-    expect(take?.placement).toEqual({ kind: "open", phrase: "side of the neck" });
+    expect(take?.placement).toEqual({ kind: "measured", placement: "neck" });
+    expect(take?.side).toBe("centre");
+    const back = readInkReferenceTake(reply("back of the neck", null), "a sparrow on the back of the neck");
+    expect(back?.placement).toEqual({ kind: "open", phrase: "back of the neck" });
   });
 
   it("names no place at all as ABSENT, which is a question and not a refusal", () => {
@@ -236,28 +236,28 @@ describe("what she is told", () => {
 
   it("names her own word for the place, and the side when she gave one", () => {
     expect(note("sleeve", "left", "use this on my left sleeve"))
-      .toContain("for her left sleeve");
+      .toContain("for their left sleeve");
   });
 
   it("names the vocabulary's noun for a measured surface", () => {
-    expect(note("upper arm", "right", "on her right upper arm")).toContain("for her right upper arm");
-    expect(note("neck", null, "on her neck")).toContain("for her neck");
+    expect(note("upper arm", "right", "on her right upper arm")).toContain("for their right upper arm");
+    expect(note("neck", null, "on her neck")).toContain("for their neck");
   });
 
   it("names no side when she named none — never an invented arm", () => {
     const said = note("sleeve", null, "use this on my sleeve");
-    expect(said).toContain("for her sleeve");
+    expect(said).toContain("for their sleeve");
     expect(said).not.toMatch(/\b(left|right)\b/);
   });
 
   it("says the picture landed even when the place did not", () => {
     const said = note("", null, "use this tattoo design");
     expect(said).toContain("I've got the design from your picture");
-    expect(said).not.toContain("for her");
+    expect(said).not.toContain("for their");
   });
 
   it("says so plainly when the sentence could not be read at all", () => {
-    expect(inkReferenceNote(null)).toContain("couldn't tell where on her you meant");
+    expect(inkReferenceNote(null)).toContain("couldn't tell where on them you meant");
   });
 
   /*
@@ -275,7 +275,7 @@ describe("what she is told", () => {
     ];
     for (const said of every) {
       expect(said).toContain("Nothing was charged.");
-      expect(said).toMatch(/can't put it on her yet/);
+      expect(said).toMatch(/can't put it on them yet/);
       /* And never the sentence the old wall says to somebody holding one. */
       expect(said).not.toContain("needs a design document");
     }
