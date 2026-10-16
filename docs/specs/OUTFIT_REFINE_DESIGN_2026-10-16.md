@@ -31,10 +31,25 @@ What an outfit ask can be, all through the one box, all in words:
   for an undressed person meets the content wall exactly as it does today.
 - **Colour and fabric** — *"the same dress in emerald silk"*.
 
-What never moves: the person, the pose, the light, the set. The subject's own qualifier
-pins it in the prompt — *"as clothing this person is wearing in the same studio frame — the
-same person, the same pose, the same light, with nothing about the set, the backdrop or the
-props changed"* (`subjectCards.ts:821`).
+What never moves: the person, the pose, the light, the set. ⚠ **AND THE SENTENCE THAT STOOD
+HERE NAMED THE WRONG MECHANISM FOR THAT — corrected 2026-10-17 by slice 0's court, which read
+the dispatched prompt rather than reasoning about it.** It said *"The subject's own qualifier
+pins it in the prompt"*, quoting `subjectCards.ts:821`. **That clause reaches no dispatched
+prompt.** A wardrobe delta leaves `presentationOf` as a presentation clause, and
+`askSentence`'s presentation branch (`recipeAssembler.ts:1058`) pushes
+`${possessive} ${noun}: ${words}` with **no qualifier**; `refineService.test.ts:3980` already
+pinned that bare shape. The real dispatched string, read at the wire during the court:
+
+> Reference 1 is the photograph of this person — reproduce them exactly: same face, same pose,
+> same lighting, same framing, same background. Change only their wardrobe: a tailored
+> charcoal suit jacket over a white shirt.
+
+**So what holds the set still is the repaint recipe's own identity clause** — *same lighting,
+same framing, same background* — and the court measured it holding: **the backdrop was intact
+on 21 of 21 renders, both arms.** ⚠ The design's conclusion is unaffected and the capability
+is unaffected; what was wrong is which sentence to thank for it, which matters the next time
+somebody edits either one. One level up, that the qualifier table reaches no prompt at all for
+any of its 29 subjects is **#2596**, filed on its own rather than folded in here.
 
 ## 2 · The four questions #1161 said this design must answer
 

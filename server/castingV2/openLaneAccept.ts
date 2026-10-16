@@ -146,6 +146,17 @@ export async function acceptOpenKind(input: {
   unowned: ReadonlyArray<{ subject: string; value: unknown }>;
   engine?: TextEngine | null;
   signal?: AbortSignal;
+  /**
+   * WHETHER THIS ACCOUNT IS SERVED THE WARDROBE SUBJECT — #2544 slice 1.
+   *
+   * The same derived bit `readDelta` is given, handed over by the interpreter
+   * from the one place it is read. It licenses the GARMENT half of the stage
+   * lexicon at the two sites below and nothing else; the scenery half refuses
+   * here under every flag.
+   *
+   * Absent means today, which is every caller that has never heard of it.
+   */
+  outfitEditServed?: boolean;
 }): Promise<OpenLaneAcceptance | null> {
   if (input.unowned.length === 0) return null;
   if (input.unowned.length > 1) {
@@ -228,7 +239,24 @@ export async function acceptOpenKind(input: {
         Asked of the noun and of the words, exactly as wall (b) is asked below —
         one question, two call sites, deliberately the same shape.
       */
-      const stage = stageWordIn(reading.noun) ?? stageWordIn(reading.kind);
+      /*
+        ⚠ AND SERVED, A GARMENT COLLISION IS THE COLLISION GUARD'S ANSWER AGAIN
+        — #2544 slice 1, site 4 of the design's five.
+
+        The paragraph above is why a garment collision gets the stage's answer
+        today: with the subject served to nobody, *"put her in a red coat"* is
+        the most ordinary refusal this lane makes, and calling it a routing bug
+        would have fired a `warn` on every account. Once the subject IS served
+        that reasoning inverts exactly: the closed interpreter should have filed
+        it under `wardrobe`, so arriving here IS a routing miss and is worth the
+        `warn` the next guard raises. The outcome is `refused` either way — what
+        moves is the REASON and the log, which is what the design's table says.
+
+        ⚠ The scenery half is outside the licence, so *"against a red backdrop"*
+        keeps the stage's own answer and its own sentence, served or not.
+      */
+      const stage = stageWordIn(reading.noun, { garmentLicensed: input.outfitEditServed === true })
+        ?? stageWordIn(reading.kind, { garmentLicensed: input.outfitEditServed === true });
       if (stage !== null) {
         log.info(
           { kind: reading.kind, word: stage, subject: reading.subject },
@@ -280,7 +308,22 @@ export async function acceptOpenKind(input: {
     key. The accessory carve-out travels with the lexicon, so *"wearing small
     gold hoops"* is unaffected.
   */
-  const scenery = stageWordIn(reading.noun) ?? stageWordIn(scrubbed);
+  /*
+    ⚠ SITE 5, AND THE LICENCE HERE IS NARROWER THAN IT LOOKS — #2544 slice 1.
+
+    A garment reaching THIS line has already passed the collision guard, which
+    means its noun is not one the closed lane owns — so with the subject served
+    the honest reading is the one the design gives: the garment half defers to
+    the collision answer above, and anything still arriving here with a garment
+    word in an UNOWNED noun is a kind the wardrobe subject's nouns do not list.
+    Served, that is a wardrobe ask the interpreter misrouted rather than scenery.
+
+    ⚠ The scenery half is untouched, which is this block's whole subject: an
+    open lane that accepts *"horns"* must still refuse *"put her in a red coat
+    against a red backdrop"*, and it does — on `backdrop`, under every flag.
+  */
+  const scenery = stageWordIn(reading.noun, { garmentLicensed: input.outfitEditServed === true })
+    ?? stageWordIn(scrubbed, { garmentLicensed: input.outfitEditServed === true });
   if (scenery !== null) {
     log.info(
       { kind: reading.kind, word: scenery },
