@@ -21,7 +21,6 @@
  */
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNull, isNotNull, lt, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
 
 import type { CastingPath } from "../../shared/castingPaths";
 import { CASTING_SESSION_IDLE_MS } from "../../shared/castingRetention";
@@ -1080,83 +1079,6 @@ export async function getBriefForOwnedCandidate(
     compiledBrief: row.compiledBrief,
     lockContract: row.lockContract,
     briefText: typeof row.briefText === "string" ? row.briefText : "",
-  };
-}
-
-/**
- * WHAT A FOLLOWED FACE DESCENDS FROM — the seed for its FIRST description
- * (#2565 slice 1, the relay's finding on PR #2571).
- *
- * `getBriefForOwnedCandidate` above returns `casting_rolls.briefText`, which is
- * always the CUSTOMER'S OWN WORDS — and on a Follow of an edited version that is
- * the sentence the ORIGINAL was rolled from. A Follow compiles from those words
- * exactly as every Follow does (his word, 2026-10-16: *"follow doesnt need a
- * description shouldnt it just work like the other follows?"*), and the face
- * inherits the edit through the ANCHOR PHOTO — so the words are right for the
- * box and wrong for a seed: a child of a green-eyed version, refined for the
- * first time, would be described from "brown eyes" and ask the render to revert
- * the eyes.
- *
- * So this reader answers the only question the seed has: which version does this
- * sheet descend from, what did that version look like, and did the customer type
- * something of their own into the box before rolling it. The caller folds those
- * three into one seed; the decision is not made here.
- *
- * ⚠ **IT IS READ, NEVER DERIVED FROM TODAY'S FLAG.** Whether the followed
- * version carries a description is a fact about the past, and
- * `CASTING_CURRENT_DESCRIPTION_SCOPE` can move under it — so the evidence is the
- * lineage plus the description that lineage points at, both of them rows.
- *
- * Owner-scoped on every table it touches (invariant 1), and the parent ids are
- * re-anchored to this owner's own candidate in the same statement that reads
- * them (invariant 2) rather than being trusted because a caller passed them.
- */
-export type FollowedDescriptionSeed = {
-  /** This sheet's own recorded brief — the customer's words, always. */
-  briefText: string;
-  /** The followed version's description, or null when there is no such version. */
-  parentDescription: string | null;
-  /** The parent roll's brief, so a caller can tell a kept box from a typed one. */
-  parentBriefText: string | null;
-};
-
-export async function getFollowedDescriptionSeed(
-  userId: number,
-  candidatePublicId: string,
-): Promise<FollowedDescriptionSeed | null> {
-  assertPositiveId(userId, "userId");
-  const db = await requireDb();
-  const parentRoll = alias(castingRolls, "parentRoll");
-  const parentVariant = alias(castingCandidateVariants, "parentVariant");
-  const [row] = await db
-    .select({
-      briefText: castingRolls.briefText,
-      parentDescription: parentVariant.currentDescription,
-      parentBriefText: parentRoll.briefText,
-    })
-    .from(castingCandidates)
-    .innerJoin(castingRolls, and(
-      eq(castingRolls.id, castingCandidates.rollId),
-      eq(castingRolls.userId, userId),
-    ))
-    .leftJoin(parentVariant, and(
-      eq(parentVariant.id, castingRolls.parentVariantId),
-      eq(parentVariant.userId, userId),
-    ))
-    .leftJoin(parentRoll, and(
-      eq(parentRoll.id, castingRolls.parentRollId),
-      eq(parentRoll.userId, userId),
-    ))
-    .where(and(
-      eq(castingCandidates.publicId, candidatePublicId),
-      eq(castingCandidates.userId, userId),
-    ))
-    .limit(1);
-  if (!row) return null;
-  return {
-    briefText: typeof row.briefText === "string" ? row.briefText : "",
-    parentDescription: row.parentDescription ?? null,
-    parentBriefText: typeof row.parentBriefText === "string" ? row.parentBriefText : null,
   };
 }
 

@@ -15332,20 +15332,6 @@ describe("one current description rides the paid refine", () => {
   const asked: Array<{ about?: string; user: string }> = [];
   let writer: "answers" | "throws" = "answers";
   const DESCRIPTION = "A woman in her thirties with long dark hair, worn down over her shoulders.";
-  const PARENT_BRIEF = "A woman in her thirties with long dark hair.";
-  /*
-    WHAT THIS SHEET WAS COMPILED FROM (#2565 slice 1, the relay's finding on
-    PR #2571). The default is a sheet that follows nothing: its own brief and no
-    parent, which is the original arms' world unchanged. The Follow arms below
-    set a parent description: the followed version's, which its faces inherited
-    through the anchor photo while their roll's brief stayed the original words.
-  */
-  let followedSeed: { briefText: string; parentDescription: string | null; parentBriefText: string | null } = {
-    briefText: PARENT_BRIEF,
-    parentDescription: null,
-    parentBriefText: null,
-  };
-
   const describing = {
     repaintEngine: () => ({
       id: "test:repaint",
@@ -15371,7 +15357,6 @@ describe("one current description rides the paid refine", () => {
       lockContract: null,
       briefText: "A woman in her thirties with long dark hair.",
     }),
-    readFollowedSeed: async () => followedSeed,
     describeEngine: () => ({
       id: "test:describe",
       complete: async (request: { about?: string; user: string }) => {
@@ -15391,7 +15376,6 @@ describe("one current description rides the paid refine", () => {
     painted.length = 0;
     asked.length = 0;
     writer = "answers";
-    followedSeed = { briefText: PARENT_BRIEF, parentDescription: null, parentBriefText: null };
     process.env.CASTING_V2_SCOPE = "users:1";
     process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
   });
@@ -15496,76 +15480,42 @@ describe("one current description rides the paid refine", () => {
   });
 
   /*
-    THE FIRST EDIT OF A FOLLOWED FACE — the relay's finding on PR #2571, and the
-    one arm neither half of the original slice had.
+    THE FIRST EDIT OF A FOLLOW CHILD — his ruling, 2026-10-16, verbatim:
+    *"following a cast is meant to show cousins of that direction of cast not
+    exact replicas of the same person you followed"*.
 
-    The two halves were each tested alone: `rollService` compiles a Follow of an
-    edited version from that version's description, and the refine seeds from
-    the roll's brief where no predecessor description exists. Put together they
-    REVERT the edit: the roll ROW records the customer's words, which are the
-    ORIGINAL's brief, so the child's first description was written from "long
-    dark hair" while the picture beside it had a short crop, and the render was
-    asked to put the long hair back. These arms drive the two together.
+    The chain he rules on: the parent's eyes are refined green, the parent is
+    Followed, and a child's hair is refined. The child is a cousin rolled from
+    its own brief, so its first description is seeded from THAT brief and the
+    parent's green eyes are not carried onto it. The dev chain on PR #2571
+    measured the other seed turning a brown-eyed child's eyes green on a hair
+    edit nobody asked for.
+
+    `readFollowedSeed` below is the road a regression would take — the lineage
+    read that offered the followed version's description, retired in this card —
+    supplied here so that re-adding it reddens this arm rather than passing on a
+    fixture with no parent to leak.
   */
-  /* Refine the eyes, Follow, then refine a child's hair: the child must keep the eyes. */
-  const FOLLOWED = "A woman in her thirties with long dark hair and bright green eyes.";
-
-  it("eyes refined, then Followed, then the child's hair refined — the child's first description keeps the inherited green eyes", async () => {
-    /* The parent was refined to bright green eyes and followed; the faces
-       inherited them through the photo, and the box was left holding the
-       parent's brief — which is still the brown-eyed original's words. */
-    followedSeed = { briefText: PARENT_BRIEF, parentDescription: FOLLOWED, parentBriefText: PARENT_BRIEF };
-
-    await refineCandidate(describing as never, ask);
-
-    expect(asked).toHaveLength(1);
-    /* The inherited edit is what the writer was handed ... */
-    expect(asked[0]!.user).toContain(`How they were first described:
-${FOLLOWED}`);
-    /* ... and the original's words, which would revert it, are NOT. */
-    expect(asked[0]!.user, "seeding from casting_rolls.briefText reverts the inherited edit").not.toContain(PARENT_BRIEF);
-    expect(asked[0]!.user).toContain("bright green eyes");
-    expect(asked[0]!.user).toContain("wear her hair down");
-    /* Nothing was typed into the box, so there is no change to fold in. */
-    expect(asked[0]!.user).not.toContain("Changes already made since");
-  });
-
-  it("keeps the customer's OWN words for the follow too, as the first change since", async () => {
-    /* The same followed version, but this time they typed something of their
-       own into the box before rolling it, and their sentence WAS compiled into
-       the sheet - so dropping it would trade one loss for another. */
-    followedSeed = { briefText: "give her a leather jacket", parentDescription: FOLLOWED, parentBriefText: PARENT_BRIEF };
-
-    await refineCandidate(describing as never, ask);
-
-    expect(asked).toHaveLength(1);
-    expect(asked[0]!.user).toContain(`How they were first described:
-${FOLLOWED}`);
-    expect(asked[0]!.user).toContain("Changes already made since, in order");
-    expect(asked[0]!.user).toContain("- give her a leather jacket");
-  });
-
-  it("CONTROL - a sheet that follows nothing is still seeded from its own brief", async () => {
-    followedSeed = { briefText: PARENT_BRIEF, parentDescription: null, parentBriefText: null };
-    await refineCandidate(describing as never, ask);
-    expect(asked).toHaveLength(1);
-    expect(asked[0]!.user).toContain(`How they were first described:
-${PARENT_BRIEF}`);
-  });
-
-  it("CONTROL - a lineage read that throws leaves the render on today's prompt, never on a wrong seed", async () => {
-    const throwing = {
+  it("eyes refined, Followed, then a child's hair refined — the child's first description comes from its OWN brief and does not turn its eyes green", async () => {
+    const CHILD_BRIEF = "A street casting, mid 20s.";
+    const PARENT_DESCRIPTION = "A street casting, mid 20s, with bright green eyes.";
+    const child = {
       ...describing,
-      readFollowedSeed: async () => { throw new Error("the lineage read fell over"); },
+      readBaseWorn: async () => ({ compiledBrief: null, lockContract: null, briefText: CHILD_BRIEF }),
+      readFollowedSeed: async () => ({
+        briefText: CHILD_BRIEF, parentDescription: PARENT_DESCRIPTION, parentBriefText: CHILD_BRIEF,
+      }),
     };
-    await refineCandidate(throwing as never, ask);
-    /* No seed, so nothing was asked and nothing was filed: the render is
-       today's, at the same price. Never a guess at the brief. */
-    expect(asked).toHaveLength(0);
-    expect(painted.length).toBeGreaterThan(0);
-    for (const prompt of painted) expect(prompt).toContain("Change only");
-    expect(landedVariant).not.toHaveProperty("currentDescription");
-    expect(ledger.refunds).toHaveLength(0);
+    await refineCandidate(child as never, ask);
+
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toBe(`How they were first described:
+${CHILD_BRIEF}
+
+The change:
+wear her hair down`);
+    expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
+
 });
 

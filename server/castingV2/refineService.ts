@@ -82,7 +82,7 @@ import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
 import { cutRefineFigure } from "./refineFigure";
-import { getBriefForOwnedCandidate, getFollowedDescriptionSeed, getOwnedCandidateOnVersion, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
+import { getBriefForOwnedCandidate, getOwnedCandidateOnVersion, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
 import {
@@ -728,10 +728,6 @@ export type RefineServiceDependencies = {
   countInkCoverageDemand?: typeof recordInkFormDemand;
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
-  /** What a followed face descends from (#2565 slice 1) — the
-   *  seed for the FIRST description of a followed face, and a seam so a suite
-   *  can drive a Follow of an edited version with no database. */
-  readFollowedSeed?: typeof getFollowedDescriptionSeed;
   /** The description writer's engine (#2565 slice 1) — the interpreter's own
    *  OpenRouter engine and queue by default; a seam so a suite can answer,
    *  refuse and throw with no transport. */
@@ -6489,51 +6485,27 @@ async function refineCandidateCounted(
         const earlierAsks = repeatsThisVersion ? priorInstructions.slice(0, -1) : priorInstructions;
         const previous = from?.currentDescription ?? null;
         let brief = "";
-        let seedAsks: readonly string[] = earlierAsks;
-        let inheritedSeed = false;
         if (previous === null) {
           /*
-            ⚠ THE SEED OF A FOLLOWED FACE IS THE VERSION IT DESCENDS FROM, NOT
-            THE ORIGINAL BRIEF — the relay's finding on PR #2571.
+            THE SEED IS THIS FACE'S OWN ROLL BRIEF — on a Follow child too.
 
-            `casting_rolls.briefText` is always the customer's own words, and on
-            a Follow of an edited version those words describe the ORIGINAL. The
-            Follow compiles from those words as every Follow does, and its faces
-            inherit the edit through the ANCHOR PHOTO — so seeding
-            from the brief here would describe a green-eyed child as brown-eyed
-            and ask the render to REVERT the inherited edit, on the first edit of
-            every child of every edited Follow.
-
-            Read, never derived from today's flag: whether the followed version
-            carries a description is a fact about the past, and the scope
-            can move under it, so the evidence is the lineage row and the
-            description it points at.
-
-            ⚠ AND THE CUSTOMER'S OWN WORDS ARE NOT TRADED AWAY FOR IT. A Follow
-            whose box was left holding the parent's brief says nothing new, so
-            the description alone is the whole seed. A customer who TYPED
-            something for this Follow asked for it, and their sentence was
-            what this sheet was compiled from — so it is folded in as the first change
-            made since, ahead of this version's own asks, rather than dropped.
+            His ruling, 2026-10-16, verbatim: *"following a cast is meant to show
+            cousins of that direction of cast not exact replicas of the same
+            person you followed"*, after *"follow doesnt need a description
+            shouldnt it just work like the other follows?"*. A Follow child is a
+            cousin rolled from the box's words beside the anchor photo, so its
+            first description starts from ITS OWN roll's brief and never from the
+            followed version's description: the dev chain on PR #2571 measured
+            the opposite seed turning a brown-eyed child's eyes green on a hair
+            edit, an edit nobody asked for on that face.
           */
-          let seed: Awaited<ReturnType<typeof getFollowedDescriptionSeed>> = null;
           try {
-            seed = await (dependencies.readFollowedSeed ?? getFollowedDescriptionSeed)(
+            brief = (await (dependencies.readBaseWorn ?? getBriefForOwnedCandidate)(
               input.userId,
               input.candidatePublicId,
-            );
+            ))?.briefText ?? "";
           } catch {
-            seed = null;
-          }
-          const inherited = seed?.parentDescription?.trim() ?? "";
-          if (inherited !== "") {
-            brief = inherited;
-            inheritedSeed = true;
-            const typed = seed?.briefText.trim() ?? "";
-            const keptBox = seed?.parentBriefText?.trim() ?? "";
-            if (typed !== "" && typed !== keptBox) seedAsks = [typed, ...earlierAsks];
-          } else {
-            brief = seed?.briefText ?? "";
+            brief = "";
           }
           if (brief.trim() === "") {
             log.warn(
@@ -6545,7 +6517,7 @@ async function refineCandidateCounted(
         }
         const written = await writeCurrentDescription(
           (dependencies.describeEngine ?? interpreterEngine)(),
-          { previous, seed: { brief, earlierAsks: seedAsks }, change: instruction },
+          { previous, seed: { brief, earlierAsks }, change: instruction },
         );
         if (!written.ok) {
           log.warn(
@@ -6563,8 +6535,6 @@ async function refineCandidateCounted(
             tokens: written.tokens ?? null,
             model: written.model,
             seeded: previous === null,
-            /* Which seed it was — a brief, or the version this sheet follows. */
-            inheritedSeed,
           },
           "[refineService] one current description written for this edit",
         );

@@ -2701,8 +2701,8 @@ export function validateCastingVoiceEnvironment(input: {
  * read naturally into the description not as an edit list"*) — in place of the
  * "Change only …" clause. A Follow is untouched by it — his word, 2026-10-16:
  * *"follow doesnt need a description shouldnt it just work like the other
- * follows?"* — and only a followed face's FIRST refine reads the description of
- * the version it was followed from, as its seed.
+ * follows?"* — and a Follow child's first refine is seeded from its own roll's
+ * brief like any face without a description: his ruling, 2026-10-16, verbatim: *"following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed"*.
  *
  * Off, and absent means off: no description is written, none is read, and the
  * refine prompt is byte-identical to today's.
