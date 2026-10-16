@@ -4129,3 +4129,63 @@ writes: **dev only**, port 52008 asserted before every statement.
 7. **#2155 (37 worktrees, 23 holding live `node_modules` junctions) is still
    `blocked` on three decisions none of which is a seat's**, re-read this run. It is
    the reason `registered worktrees` keeps climbing, and no patrol may clear it.
+
+## Between runs — seven dev-server stacks swept, and the reader that could not name five of them is fixed (seat1-20261016-101001, not a patrol — card #2563; the clock had not fired)
+
+**Not a patrol run and deliberately not a `## Run` heading** — `patrol-clocks.mts`
+reads `/^##\s+Run\b/` and the newest such date, so a run heading here would have
+pushed the seat's real clock out. Run 15 stands as the newest run.
+
+The count the next run starts from, and the trend this seat exists to see:
+
+| | run 14 (11 Oct) | run 15 (14 Oct, 09:55Z) | this sweep (16 Oct, 10:20Z) |
+|---|---|---|---|
+| dev-server stacks | — | **0** | **7** |
+| dev-server processes killed | 5 | 0 | **35** |
+| live listening dev servers | 0 | 0 | **0** |
+| worktrees holding a stack | — | 0 | **4** |
+
+⚠ **Run 15 is not contradicted.** It read at 2026-10-14 09:55Z and the oldest of
+these stacks was born at **13:00:28Z the same day** — three hours after it looked.
+All seven accumulated inside **45 hours**, which is the number worth carrying:
+this class does not drift upward slowly, it arrives in pairs within a single day's
+work (two trees took two stacks each, three minutes apart — a seat starting
+`pnpm dev` again when the first did not come up).
+
+**Where they were, and whose:** `drape-shift-voicemoney` 2 (PR #2499, merged
+13:33:38Z — stacks started 13:00:28Z and 13:03:03Z), `drape-shift-2471-ration` 2
+(PR #2508, merged 16:38:12Z — started 16:25:20Z and 16:30:13Z),
+`drape-shift-seat-1-20261015-131401` 1 (run #744, closed `shipped`; PR #2528
+merged 2026-10-15T04:22:13Z), `drape-shift-relay-2547` 2 (worktree deleted — an
+empty shell, unregistered). Every holder proven at an artifact before any kill.
+
+**Two of the card's facts were wrong and the corrections matter to this ledger's
+arithmetic.** A stack is **5 processes, not 3** (`sh.exe` → `cmd.exe` →
+`cross-env` → `cmd.exe` → `tsx`), so the population was 35 and not 21 — a count
+anchored on three layers under-reports by 40%. And **no dev-database connection
+was held**: zero established connections and zero listeners across all 35 pids,
+so the cost of this class is a file watcher over a checkout and nothing else.
+
+**Why run 15's successor would have found them and still left them**, which is
+the part that is now repaired rather than swept: `dev-servers.mts` could call a
+tree finished two ways — no port, or its source directory gone — and five of
+these had a live, registered, populated source. So the listing printed
+`(no port — between restarts)` over them, for one and two days. That is a CAUSE
+the reader cannot observe, and it reads as live. It is why #1481 swept two and
+left the class, and why #2563 measured seven and declined to touch five.
+
+Every process in all five carried the watch verb, so there was no server to come
+back between. `servingState` reads that now (`serving` / `booting` / `idle`), the
+listing names an idle watcher with its directory, and the exit code carries it.
+`idle` never says *safe to kill* — whose a tree is stays TIME's question.
+
+**And the source, which #1481 filed as a separate question:** `dev-servers.mts`
+had no mechanical caller, so a shift's close now names any dev-server tree born
+at or after its own row opened, with each launch directory. It names and never
+kills — up to four seats run in one pass and a start-time comparison cannot tell
+a lane-mate's live tree from litter.
+
+**Next run should read:** whether the close-path finding has cut the arrival rate
+(this entry's 45-hour figure is the baseline), and whether any stack appears whose
+launch directory is a tree with no merged PR behind it — that would be a live
+seat's and a different question.
