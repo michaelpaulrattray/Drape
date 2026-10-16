@@ -54,7 +54,7 @@ function chipAt(state: {
   });
 }
 
-describe("the FOLLOWING chip names the face just pressed (#2587)", () => {
+describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
   it("following 07, then 04, says 04 from the press onward", () => {
     const pressed = lineageForDispatch({
       mode: "follow",
