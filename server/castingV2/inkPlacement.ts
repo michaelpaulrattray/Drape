@@ -494,10 +494,33 @@ export function classifyInkPlacement(
 function servedAndBare(
   wardrobe?: WardrobeResolution,
 ): readonly string[] {
-  const bare = new Set(bareSurfaces(wardrobe));
-  return WORDS_ROAD_PLACEMENTS_OPEN
-    .filter((key) => bare.has(key))
+  return servedAndBarePlacements(wardrobe)
     .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
+}
+
+/**
+ * THE SAME ANSWER AS ITS NOUNS, AS THE VOCABULARY'S OWN KEYS (#2580).
+ *
+ * The set is derived HERE and nowhere else; {@link servedAndBare} is now one
+ * reading of it and this is the other. Three sentences in `cannotSayCopy.ts`
+ * need the second shape rather than the first, because they put the places into
+ * a customer's sentence with an article that depends on whether the surface is
+ * one a person has TWO of — *"an upper arm"* against *"their neck"* — and
+ * `sidesForInkPlacement` is the one owner of that fact. A noun list cannot be
+ * asked it, so handing those sentences nouns would have made the copy layer
+ * re-match prose against a vocabulary it had already been given.
+ *
+ * ⚠ **Two shapes of one derivation, never two derivations.** The coverage read
+ * and the filter live in THIS function and nowhere else; a caller wanting the
+ * words asks {@link servedAndBare}, which is composed from this one and cannot
+ * disagree with it. A second `bareSurfaces` read anywhere else is the drift
+ * working law 4 is about, and the whole class #2562 and this card belong to.
+ */
+export function servedAndBarePlacements(
+  wardrobe?: WardrobeResolution,
+): readonly InkPlacementKey[] {
+  const bare = new Set(bareSurfaces(wardrobe));
+  return WORDS_ROAD_PLACEMENTS_OPEN.filter((key) => bare.has(key));
 }
 
 /**

@@ -1,7 +1,7 @@
 {
-  "edition": 735,
-  "updatedAt": "2026-10-16T17:30:00.000Z",
-  "shift": "One job tonight, and it is the measurement that had to happen before clothing can be edited. There are three pictures for you to look at.\n\nWHAT I SET OUT TO ANSWER. You said on the 15th that outfit changes should work in Refine — type “put them in a long black coat” and get it, the same way you already change eyes or hair. The design for that was written and you said GO. Its first step is not code: it is finding out whether the picture engine can actually dress somebody well, before anyone builds a door to it. That is what tonight was.\n\nWHAT CAME BACK. I asked four kinds of clothing change — swap the whole outfit, add a jacket over what is there, take the outer layer off, and change one garment's colour and cloth — on three of your characters: the fisherman, the street casting, and the lizard. Twenty-four pictures, about 57 cents of our own money, no credits of yours and nothing touched in the product.\n\nIt works, and it works better than I expected. The fisherman turns up in a charcoal suit and he is unmistakably the same man. A denim jacket goes on over his knit sweater and the yellow overalls stay exactly as they were underneath. The lizard loses his leather jerkin and the chest strap with it, and keeps the shirt beneath — still clothed, still him, tail and scales untouched. Three pictures are on your page.\n\nAND THE THING I WAS MOST WORRIED ABOUT DID NOT HAPPEN ONCE. The fear with clothing is that asking for a coat gets you a new room as well — a different backdrop, a different light. I measured the backdrop on every single picture: it did not move on any of them, twenty-one out of twenty-one.\n\nONE REAL PROBLEM, AND IT IS WORTH KNOWING EARLY. Asking to take the fisherman's overalls OFF came back refused by the picture service, on the grounds that the words looked like undressing — even though the ask named the sweater that stays. The same kind of ask worked on the lizard, so it is not a hard rule, but it tells the build exactly how to word a removal: say what the person IS wearing afterwards, never what is coming off. That costs nothing to do and it is now written into the job.\n\nONE THING I GOT WRONG AND AM TELLING YOU ABOUT. My own measurement called three of the pictures “nothing changed”, and then I looked at them and all three are correct — the burgundy sweater, the oxblood jerkin, the green vest. My number was built for a whole-outfit swap and it under-reads a colour change. The pictures are right; the number was not. That is why you get pictures and not a score.\n\nSEPARATELY, ONE THING I FOUND IN THE CODE AND DID NOT FIX. Every kind of edit carries a short promise on the end of the instruction we send the engine — roughly “and this change must actually appear, or the picture has failed”. We wrote 29 of those, one per kind of edit, after measuring that freckles were turning up only a third of the time without one. They are no longer being sent. A road change about two months ago left them composing into a sentence that gets saved and handed to nobody. Nothing visible has been reported, so I have not touched it — I filed it, with the measurement it needs, rather than guessing.\n\nNOTHING ELSE IS WAITING ON YOU TONIGHT. The clothing job can carry on building without you; only switching it on for your account needs your eye on those three pictures first.\n\nTHE QUEUE TONIGHT. 59 jobs open, 13 of them ones you ordered. Two are waiting on you — the three pictures above, and the lawyer-and-provider job from N2d you parked. Three are finished and waiting on a review. 12 have not been touched in a week — the same 12 as last night, so that number is not moving.",
+  "edition": 736,
+  "updatedAt": "2026-10-16T19:50:00.000Z",
+  "shift": "CLOTHING NOW WORKS IN A PAID EDIT, BUILT AND SWITCHED OFF. You asked for it on 15 October and priced it on the 16th, and tonight it is built. Where it is switched on, somebody types “put them in a long black coat” into the same box they already use and it works the way “give them green eyes” works — one edit, the same price, the same Try again, the same money back if it fails. Nothing new appears on screen: no picker, no setting, no extra decision in front of the button. It is switched on for NOBODY tonight, including you, and that is deliberate — the only thing it waits on is your eye on the three strips of pictures already on your desk.\n\nTHE THING I WAS MOST CAREFUL ABOUT. Clothes and scenery were one list in the code: a coat and a backdrop refused for the same reason. Opening clothing means splitting that list, and if the scenery half slips through with it, a paid edit could repaint the room behind somebody. So the list is split in MEANING and not in membership — the words and their order are untouched — and the longest part of the new checks is the one that proves, with clothing switched ON, that a backdrop, a set, a prop, a chair and anything being held still refuse in all five places they are asked about. Asking for a coat against a red backdrop still refuses, on the backdrop.\n\nAND THE REFUSAL STOPS LYING. Until tonight, asking for clothes got “that is a garment, a prop or the set, which comes after Sign”. For an account that can change clothes, that sentence is false twice over, so it now says what still refuses and what works — and the old words stay, exactly, for everybody it is still true of.\n\nONE THING I DID NOT DO, AND WHY. The picture test found one real failure: asking to take a layer off can come back refused by the picture engine, because it reads the taking-off as an undressing. The note from that test said the fix was free. I read the code and it is not: the words we send have to be words the person actually typed, and “take the jacket off” does not contain the sweater that stays. Making it say what IS worn needs a real decision about where those words come from. So I filed it with the reading, rather than half-building it. Nobody can reach it today, and it should be settled before clothing is switched on beyond your own account.\n\nI ALSO BROKE MY OWN CHECKS ON PURPOSE, FIVE WAYS, TO SEE IF THEY NOTICE. All five were caught — and the first one caught a weakness in the CHECKS rather than in the code: one of them was quietly looking at the wrong list, so moving “backdrop” into the clothing half slipped past it. Fixed and re-run: four complaints before, seven after.\n\nNOTHING ELSE IS WAITING ON YOU TONIGHT. Four jobs are finished and waiting on a review, this one among them — it touches the file that checks our settings at start-up, which this workshop counts as money-and-login code, so a shift does not merge it. The queue is 61 open, 13 of them ones you ordered; 12 untouched for a week, the same 12 as the last two nights.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -34,7 +34,7 @@
           "state": "waiting"
         },
         {
-          "title": "Outfit changes inside a paid edit — you asked for this on 15 October and priced it on the 16th (an ordinary edit, your word). THE DESIGN IS WRITTEN and on your desk (#2544, PR #2575): same box, same price, the set still refuses, a picture test on three of your characters before anything switches on. It waits on your GO, and the build starts after the keep-what-you-chose work's first piece.",
+          "title": "Outfit changes inside a paid edit — you asked for this on 15 October, priced it on the 16th (an ordinary edit, your word) and said GO the same day. THE FIRST BUILD IS DONE AND IN REVIEW (#2544, PR #2600), switched off for everybody: same box, same price, nothing new on screen, and the set still refuses — proven with clothing switched on, in all five places the code asks. The picture test is run and its three strips are on your desk (#2597). What is left after your eye: switch it on for your account, read what it does to unrelated edits, then everyone on your word.",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T17:21:15.488Z",
+      "readAt": "2026-10-16T19:09:07.995Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10701,6 +10701,13 @@
       "status": "merged",
       "prNumber": 2594,
       "note": "Landed on a green gate; the last fix before the description flag can flip."
+    },
+    {
+      "id": "outfit-serve-2544",
+      "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
+      "status": "in-review",
+      "prNumber": 2600,
+      "note": "Held for a review: it touches the start-up settings check, which counts as money-and-login code."
     }
   ],
   "problems": [
@@ -11176,7 +11183,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T17:21:15.488Z",
+    "readAt": "2026-10-16T19:09:07.995Z",
     "items": [
       {
         "issueNumber": 1577,
