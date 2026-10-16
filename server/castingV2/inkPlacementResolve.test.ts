@@ -268,3 +268,104 @@ describe("her own side word inside the place name", () => {
     }
   });
 });
+
+/**
+ * HER DETERMINER, AND THE LINE IT DOES NOT CROSS (#2572).
+ *
+ * The vocabulary's noun hard-codes ONE possessive, so the neck was recognised
+ * as `neck` and `her neck` and filed as an open phantom as *"their neck"* —
+ * which is the phrasing this product uses itself, under the standing order that
+ * nothing it writes is gender-specific about anybody. The founder's own court on
+ * #2565 met it: the ask was asked WHERE, answered *"their neck"*, and the
+ * answer was not understood.
+ *
+ * Driven over 25 phrasings before the fix: 13 read `open` here while
+ * `classifyInkPlacement` called the same words `in_frame` on the measured
+ * surface. These arms pin the 8 the fix moves AND the ones it deliberately
+ * leaves alone, because a determiner strip that kept going would be the
+ * meaning judgement the module's header reserves to a person.
+ */
+describe("a determiner is not a surface (#2572)", () => {
+  const DETERMINERS = ["the", "her", "his", "their", "its", "my", "our", "your"];
+
+  it("every determiner in front of every measured surface resolves to that surface", () => {
+    for (const key of INK_PLACEMENTS) {
+      const entry = inkPlacementEntry(key);
+      /* The bare noun, so the possessive under test is the only one present:
+         `entry.noun` already carries "her". */
+      const bare = entry.noun.replace(/^her\s+/, "");
+      for (const determiner of DETERMINERS) {
+        expect(
+          resolveInkPlacement(`${determiner} ${bare}`),
+          `"${determiner} ${bare}" is ${key}, and reading it as an unmeasured phrase files a false demand row`,
+        ).toEqual({ kind: "measured", placement: key });
+      }
+    }
+  });
+
+  it("the product's own word for a person is read — \"their neck\", the court's phrase", () => {
+    expect(resolveInkPlacement("their neck")).toEqual({ kind: "measured", placement: "neck" });
+    expect(resolveInkPlacement("their upper arm")).toEqual({ kind: "measured", placement: "upperArm" });
+    expect(resolveInkPlacement("their upper chest")).toEqual({ kind: "measured", placement: "upperChest" });
+  });
+
+  it("a determiner AND the side she stated both come off, composed", () => {
+    /* `withoutStatedSide` anchors at the ends, so it cannot see `left` with
+       `their` in front of it — the two strips have to compose or the most
+       natural phrasing of a per-side surface stays open. */
+    expect(resolveInkPlacement("their left upper arm", "left"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+    expect(resolveInkPlacement("the right upper arm", "right"))
+      .toEqual({ kind: "measured", placement: "upperArm" });
+  });
+
+  it("⚠ A SPATIAL QUALIFIER IS NOT A DETERMINER — it keeps her phrase and stays open", () => {
+    /* Merging these would speak back "her neck" and render the neck wherever
+       the engine likes, dropping what she asked for without saying so. That is
+       #2572's open half and it is a question for him, not a strip. */
+    for (const phrase of [
+      "side of the neck", "side of her neck", "front of the neck", "left side of the neck",
+      "top of the upper arm",
+    ]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" must keep her words`)
+        .toEqual({ kind: "open", phrase });
+    }
+  });
+
+  it("CONTROL — an unmeasured surface stays open with every determiner, and is never merged", () => {
+    /* `sleeve` and `throat` are the header's own examples of words this
+       vocabulary has not measured. A determiner strip must not turn either into
+       a measured surface, and must not edit the phrase on the way out. */
+    for (const phrase of ["the sleeve", "their throat", "my inner forearm", "the wrist"]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" names nothing measured`)
+        .toEqual({ kind: "open", phrase });
+    }
+  });
+
+  it("CONTROL — a determiner ALONE is not stripped into nothing", () => {
+    /* `stripped === ""` is why the guard is there: "the" on its own must stay
+       her phrase rather than becoming an empty match attempt. */
+    expect(resolveInkPlacement("the")).toEqual({ kind: "open", phrase: "the" });
+    expect(resolveInkPlacement("their")).toEqual({ kind: "open", phrase: "their" });
+  });
+
+  it("CONTROL — ONLY a determiner comes off, never just any leading word", () => {
+    /* The discriminating shape: a two-word phrase whose first word is NOT a
+       determiner and whose remainder IS measured. A strip of `^\S+\s+` would
+       read every one of these as the bare surface — driven, it does — and the
+       header's own example is why that is wrong: *"a full sleeve and a half
+       sleeve are different pieces of work"*, so `full neck` is not `neck` by
+       machine either. The other arms here did not catch this (the over-reach
+       was caught by the side-word arm instead), which is why it has its own. */
+    for (const phrase of ["full neck", "entire neck", "whole upper arm", "half upper arm"]) {
+      expect(resolveInkPlacement(phrase), `"${phrase}" is not a determiner in front of a surface`)
+        .toEqual({ kind: "open", phrase });
+    }
+  });
+
+  it("CONTROL — a determiner INSIDE the phrase is left where it is", () => {
+    /* Whole word, at the FRONT, once. Anything else is the meaning judgement. */
+    expect(resolveInkPlacement("theatre mask on the neck"))
+      .toEqual({ kind: "open", phrase: "theatre mask on the neck" });
+  });
+});
