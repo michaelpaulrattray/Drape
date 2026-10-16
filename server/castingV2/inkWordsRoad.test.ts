@@ -66,7 +66,9 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { INK_PLACEMENTS, inkPlacementEntry } from "../../shared/inkPlacementVocabulary";
+import {
+  INK_PLACEMENTS, inkPlacementBareNoun, inkPlacementEntry,
+} from "../../shared/inkPlacementVocabulary";
 import { declaredEnvNames, serverAndSharedSources } from "../../scripts/lib/declaredEnvNames.mts";
 import {
   FLAG_CATALOGUE,
@@ -79,9 +81,13 @@ import { PRODUCTION_FLAG_POSITIONS } from "../../scripts/lib/productionFlagPosit
 import {
   classifyInkPlacement,
   inkNeedsDocumentMessage,
+  servedAndBarePlacements,
   wordsRoadServes,
   type InkPlacement,
 } from "./inkPlacement";
+/* The three sentences #2562's sweep filed as #2580 — read through the real
+   derivation here, where an outfit exists to move them. */
+import { cannotSaySentence } from "./cannotSayCopy";
 import { basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
 
@@ -330,6 +336,111 @@ describe("⚠ the sentence names only what THIS cast's outfit leaves showing (#2
        noun. */
     expect(said).not.toMatch(/—\s+tattoo/);
     expect(said).not.toMatch(/ {2}/);
+  });
+});
+
+/**
+ * ⚠ AND THE SAME CLAIM FOR THE THREE SENTENCES THAT ASKED NEITHER QUESTION
+ * (#2580 — the law-7 siblings #2562's own sweep filed).
+ *
+ * `gate_ink_document` above at least DERIVED its list, from the road, and
+ * missed only the outfit. These three — `unplacedInk`, `inkBeyondToday` and
+ * `noInkToChange`'s unscoped branch — were frozen prose naming all three
+ * surfaces, so they would have gone on saying *"her upper chest"* even if a
+ * placement left the road entirely. The house crew tee covers the chest, which
+ * makes the wrong sentence the one the DEFAULT cast reads.
+ *
+ * These arms compose the sentence the way the product does — derive against an
+ * outfit, then say it — because `cannotSayCopy.test.ts` can only prove the copy
+ * says what it is handed, and the claim that matters is that what it is handed
+ * came from the OUTFIT.
+ */
+describe("⚠ the three frozen ink sentences read the outfit too (#2580)", () => {
+  const INK_SENTENCES = ["unplacedInk", "inkBeyondToday", "noInkToChange"] as const;
+
+  /** The sentence each of the three earns on this cast, through the real derivation. */
+  const sentence = (reason: typeof INK_SENTENCES[number], wardrobe?: WardrobeResolution) =>
+    cannotSaySentence(reason, {
+      words: null,
+      facet: "ink",
+      scopeNoun: null,
+      moneySafe: true,
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      /* THE PRODUCT'S OWN CALL, not a typed list — both `refineService` call
+         sites pass exactly this expression against the same `wardrobeNow` the
+         ink gate is asked with. */
+      inkPlaces: servedAndBarePlacements(wardrobe),
+    });
+
+  it("one ask, three outfits, three sentences — on each of the three doors", () => {
+    for (const reason of INK_SENTENCES) {
+      const tee = sentence(reason, UNPATHED);
+      expect(tee, `${reason}: the tee covers the chest, so it is not offered`)
+        .not.toContain("upper chest");
+      expect(tee, `${reason}: the two that work are still named`).toContain("neck");
+      expect(tee, `${reason}: the two that work are still named`).toContain("upper arm");
+
+      const bare = sentence(reason, BARE);
+      expect(bare, `${reason}: a bare chest is a real place`).toContain("upper chest");
+
+      /* ⚠ THE CONTROL: the reason and the pronouns are byte-identical across
+         the pair, so the only thing that moved is the OUTFIT. Without it the
+         two arms above are satisfied by a sentence that ignores its argument
+         and has merely shrunk — census 4(c)'s own lesson. */
+      expect(bare, `${reason}: the outfit moved nothing`).not.toBe(tee);
+
+      const covered = sentence(reason, COVERED);
+      expect(covered, `${reason}: a jumper leaves nowhere, and it says so`)
+        .toContain("nowhere showing");
+      expect(covered, `${reason}: and it names what moves it`).toContain("Change what she's wearing");
+      for (const key of INK_PLACEMENTS) {
+        expect(covered, `${reason}: offers ${key} under a roll-neck jumper`)
+          .not.toContain(inkPlacementBareNoun(key));
+      }
+      /* The gap this is here to prevent, at the shape rather than the words: no
+         dangling dash with nothing after it, and no doubled space where a list
+         used to be. */
+      expect(covered, `${reason}: a dangling list`).not.toMatch(/— {0,1}\.|— {0,1},/);
+      expect(covered, `${reason}: a collapsed list`).not.toMatch(/ {2}/);
+    }
+  });
+
+  it("⚠ and all three name the SAME set as the two doors #2562 and #2558 fixed", () => {
+    /*
+      Five doors a customer can meet one ask apart, on one cast. The claim is
+      the SET, not "the chest is absent": `gate_ink_document`'s sentence and
+      these three are reached by asks a few words apart, and before this they
+      were kept in step by two different accidents — one derivation that forgot
+      the outfit, and two copies of frozen prose.
+    */
+    for (const wardrobe of [UNPATHED, BARE]) {
+      const fromTheGate = offered(ink("a rose tattoo on her thigh", wardrobe));
+      expect(fromTheGate.length, "the premise of this arm").toBeGreaterThan(0);
+      for (const reason of INK_SENTENCES) {
+        const said = sentence(reason, wardrobe);
+        const named = INK_PLACEMENTS
+          .filter((key) => said.includes(inkPlacementBareNoun(key)))
+          .map((key) => inkPlacementBareNoun(key));
+        expect(named, `${reason} and the document gate disagree`).toEqual([...fromTheGate]);
+      }
+    }
+  });
+
+  it("⚠ CONTROL — the derivation's two shapes cannot disagree", () => {
+    /*
+      `servedAndBare` (the nouns the four refusals carry) and
+      `servedAndBarePlacements` (the keys these three sentences carry) are one
+      filter read two ways since #2580. If they ever became two filters, the
+      document gate and these doors would drift again and every arm above would
+      still pass — each reading its own half. So they are held equal here, on
+      every outfit, through the only public road to the first one.
+    */
+    for (const wardrobe of [UNPATHED, BARE, COVERED]) {
+      expect(
+        servedAndBarePlacements(wardrobe).map((key) => inkPlacementBareNoun(key)),
+        "the keys and the nouns are the same set",
+      ).toEqual([...offered(ink("a rose tattoo on her thigh", wardrobe))]);
+    }
   });
 });
 

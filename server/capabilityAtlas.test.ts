@@ -28,6 +28,7 @@ import {
 } from "../scripts/capability-atlas-roads.mts";
 import { CORPUS, KNOWN_DEBTS, UNREACHABLE_DOORS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
+import type { InkPlacement } from "../shared/inkPlacementVocabulary";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
 
@@ -1050,8 +1051,47 @@ describe("free answers are matched back to the member that wrote them", () => {
     const said = cannotSaySentence("noInkToChange", {
       words: null, facet: "ink", scopeNoun: null, moneySafe: true,
       pronouns: { subject: "he", object: "him", possessive: "his", plural: false },
+      /* ⚠ AND AN OUTFIT'S OWN PLACES (#2580) — see the arm below for why one
+         population is not enough. */
+      inkPlaces: ["neck", "upperArm"],
     });
     expect(reasonOfNote(said, { facet: "ink", scopeNoun: null })).toEqual("noInkToChange");
+  });
+  it("⚠ POSITIVE CONTROL — and it round-trips at EVERY outfit's population (#2580)", () => {
+    /*
+      THE READER'S OWN STATED FAILURE MODE, one dimension on from the pronoun
+      one its docblock describes: a matcher that knew a single set would file
+      the others as `unmatched`, which is *"a real finding and would here be an
+      artifact of the reader"*.
+
+      Since #2580 three members compose a list of placements and one has a
+      separate branch for the empty case, so `reasonOfNote` renders every
+      population. **Measured with it narrowed back to one: 6 of 27 (3 pronoun
+      sets × 3 outfits × 3 doors) read `unmatched`, all six `unplacedInk`** —
+      the other two survive on the second pass's 45-character common run, which
+      `unplacedInk`'s shorter sentence cannot reach. That is why this arm drives
+      the SHORT one too rather than trusting the longest-run fallback.
+    */
+    const populations: readonly (readonly InkPlacement[])[] = [
+      [], ["neck"], ["neck", "upperArm"], ["neck", "upperArm", "upperChest"],
+    ];
+    for (const pronouns of [
+      { subject: "she", object: "her", possessive: "her", plural: false },
+      { subject: "he", object: "him", possessive: "his", plural: false },
+      { subject: "they", object: "them", possessive: "their", plural: true },
+    ] as const) {
+      for (const inkPlaces of populations) {
+        for (const reason of ["unplacedInk", "inkBeyondToday", "noInkToChange"] as const) {
+          const sentence = cannotSaySentence(reason, {
+            words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns, inkPlaces,
+          });
+          expect(
+            reasonOfNote(sentence, { facet: "ink", scopeNoun: null }),
+            `${reason} · ${pronouns.subject} · [${inkPlaces.join(",")}]`,
+          ).toEqual(reason);
+        }
+      }
+    }
   });
   it("NEGATIVE CONTROL — a sentence the table never wrote is unmatched", () => {
     expect(reasonOfNote("The weather is lovely today and nothing here was charged.", { facet: null, scopeNoun: null })).toEqual("unmatched");

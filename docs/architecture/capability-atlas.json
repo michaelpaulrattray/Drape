@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2640"
+          "server/castingV2/refineService.ts:2642"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1280"
+          "server/castingV2/refineService.ts:1282"
         ]
       },
       {
@@ -54,7 +54,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:464"
+          "server/castingV2/cannotSayCopy.ts:629"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4938",
+          "server/castingV2/refineService.ts:4953",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1262"
+          "server/castingV2/refineService.ts:1264"
         ]
       },
       {
@@ -159,7 +159,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:210"
+          "server/castingV2/cannotSayCopy.ts:290"
         ]
       },
       {
@@ -190,7 +190,7 @@
           "server/castingV2/refineDelta.ts:613",
           "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineDelta.ts:1586",
-          "server/castingV2/refineService.ts:2489"
+          "server/castingV2/refineService.ts:2491"
         ]
       },
       {
@@ -222,8 +222,8 @@
           "server/castingV2/refineDelta.ts:586",
           "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineDelta.ts:1563",
-          "server/castingV2/refineService.ts:2488",
-          "server/castingV2/refineService.ts:2500"
+          "server/castingV2/refineService.ts:2490",
+          "server/castingV2/refineService.ts:2502"
         ]
       },
       {
@@ -247,7 +247,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2995"
+          "server/castingV2/refineService.ts:2997"
         ]
       },
       {
@@ -257,7 +257,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3698"
+          "server/castingV2/refineService.ts:3700"
         ]
       },
       {
@@ -266,10 +266,11 @@
         "charge": "free",
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
-          "server/castingV2/inkBeyondTodayAsk.test.ts"
+          "server/castingV2/inkBeyondTodayAsk.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:272"
+          "server/castingV2/cannotSayCopy.ts:378"
         ]
       },
       {
@@ -280,7 +281,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:408"
+          "server/castingV2/cannotSayCopy.ts:573"
         ]
       },
       {
@@ -291,7 +292,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:435"
+          "server/castingV2/cannotSayCopy.ts:600"
         ]
       },
       {
@@ -301,7 +302,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1269"
+          "server/castingV2/refineService.ts:1271"
         ]
       },
       {
@@ -309,10 +310,11 @@
         "kind": "cannot-say",
         "charge": "free",
         "pinnedBy": [
-          "server/castingV2/cannotSayCopy.test.ts"
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:300"
+          "server/castingV2/cannotSayCopy.ts:439"
         ]
       },
       {
@@ -328,7 +330,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:141"
+          "server/castingV2/cannotSayCopy.ts:221"
         ]
       },
       {
@@ -340,7 +342,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:479"
+          "server/castingV2/cannotSayCopy.ts:644"
         ]
       },
       {
@@ -354,7 +356,7 @@
           "server/castingV2/viewFeatureWords.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:474"
+          "server/castingV2/cannotSayCopy.ts:639"
         ]
       },
       {
@@ -366,7 +368,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:195"
+          "server/castingV2/cannotSayCopy.ts:275"
         ]
       },
       {
@@ -400,7 +402,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4421"
+          "server/castingV2/refineService.ts:4430"
         ]
       },
       {
@@ -412,8 +414,8 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:1102",
-          "server/castingV2/cannotSayCopy.ts:205"
+          "server/castingV2/repaintAsks.ts:1128",
+          "server/castingV2/cannotSayCopy.ts:285"
         ]
       },
       {
@@ -423,7 +425,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3466"
+          "server/castingV2/refineService.ts:3468"
         ]
       },
       {
@@ -433,7 +435,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3447"
+          "server/castingV2/refineService.ts:3449"
         ]
       },
       {
@@ -443,7 +445,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3542"
+          "server/castingV2/refineService.ts:3544"
         ]
       },
       {
@@ -453,8 +455,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3224",
-          "server/castingV2/refineService.ts:3241"
+          "server/castingV2/refineService.ts:3226",
+          "server/castingV2/refineService.ts:3243"
         ]
       },
       {
@@ -464,7 +466,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4391"
+          "server/castingV2/refineService.ts:4400"
         ]
       },
       {
@@ -474,7 +476,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3038"
+          "server/castingV2/refineService.ts:3040"
         ]
       },
       {
@@ -540,7 +542,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4917"
+          "server/castingV2/refineService.ts:4926"
         ]
       },
       {
@@ -550,8 +552,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1350",
-          "server/castingV2/refineService.ts:1388"
+          "server/castingV2/refineService.ts:1352",
+          "server/castingV2/refineService.ts:1390"
         ]
       },
       {
@@ -593,7 +595,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:180"
+          "server/castingV2/cannotSayCopy.ts:260"
         ]
       },
       {
@@ -603,7 +605,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2686"
+          "server/castingV2/refineService.ts:2688"
         ]
       },
       {
@@ -615,8 +617,8 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:639",
-          "server/castingV2/cannotSayCopy.ts:441"
+          "server/castingV2/repaintAsks.ts:665",
+          "server/castingV2/cannotSayCopy.ts:606"
         ]
       },
       {
@@ -629,7 +631,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:220"
+          "server/castingV2/cannotSayCopy.ts:300"
         ]
       },
       {
@@ -639,10 +641,11 @@
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
           "server/castingV2/inkBeyondTodayAsk.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts",
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:248"
+          "server/castingV2/cannotSayCopy.ts:336"
         ]
       },
       {
@@ -736,8 +739,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1256",
-          "server/castingV2/refineService.ts:2612"
+          "server/castingV2/refineService.ts:1258",
+          "server/castingV2/refineService.ts:2614"
         ]
       },
       {
@@ -838,7 +841,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:415"
+          "server/castingV2/cannotSayCopy.ts:580"
         ]
       }
     ],
