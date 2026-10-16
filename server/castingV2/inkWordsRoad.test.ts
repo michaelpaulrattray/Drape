@@ -76,7 +76,12 @@ import {
   indexedFlags,
 } from "../../scripts/lib/lawText.mts";
 import { PRODUCTION_FLAG_POSITIONS } from "../../scripts/lib/productionFlagPositions.mts";
-import { classifyInkPlacement, inkNeedsDocumentMessage, wordsRoadServes } from "./inkPlacement";
+import {
+  classifyInkPlacement,
+  inkNeedsDocumentMessage,
+  wordsRoadServes,
+  type InkPlacement,
+} from "./inkPlacement";
 import { basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
 
@@ -95,6 +100,24 @@ const BARE = born("basics", basicsWardrobeLine("male"));
 
 const ink = (said: string, wardrobe?: WardrobeResolution) =>
   classifyInkPlacement(said, "ink", wardrobe);
+
+/** An outfit that covers all three — the empty case has a real sentence (#2562). */
+const COVERED = born("basics", "a charcoal roll-neck jumper");
+
+/**
+ * THE PLACES A REFUSAL CARRIES, read off the classifier rather than retyped.
+ *
+ * #2562: the sentence no longer derives its own list, so the arms below compose
+ * it exactly the way the product does — classify an ask against an outfit, then
+ * say what that classification handed over. A test that typed the list itself
+ * would pass while the two readers disagreed, which is the whole defect.
+ */
+const offered = (placement: InkPlacement): readonly string[] =>
+  ("alternatives" in placement ? placement.alternatives : []);
+
+/** The refusal sentence an ask with no measured place earns on this outfit. */
+const saidFor = (wardrobe?: WardrobeResolution) =>
+  inkNeedsDocumentMessage(offered(ink("a rose tattoo on her thigh", wardrobe)));
 
 describe("the words road serves every measured placement, with no flag to ask", () => {
   it("all three land on an outfit that leaves them showing", () => {
@@ -164,7 +187,7 @@ describe("the words road serves every measured placement, with no flag to ask", 
         process.env[name] = value;
         expect(ink("a band tattoo on her left upper arm", BARE).kind, value).toBe("in_frame");
         expect(ink("a swallow tattoo on her upper chest", BARE).kind, value).toBe("in_frame");
-        expect(inkNeedsDocumentMessage(), value).toContain("upper arm");
+        expect(saidFor(BARE), value).toContain("upper arm");
       }
     } finally {
       if (before === undefined) delete process.env[name];
@@ -175,7 +198,11 @@ describe("the words road serves every measured placement, with no flag to ask", 
 
 describe("the refusal sentence comes off the same list the road does", () => {
   it("names every served placement, and its articles agree", () => {
-    const said = inkNeedsDocumentMessage();
+    /* ⚠ ON A CAST WHOSE OUTFIT LEAVES ALL THREE SHOWING — #2562. The sentence
+       asks both questions now, so the population it names is the road's list
+       intersected with this outfit's bare surfaces; `BARE` is the fixture where
+       those two are the same set, which is what keeps this arm about the ROAD. */
+    const said = saidFor(BARE);
     expect(said).toContain("Tell me where");
     expect(said).toContain("neck");
     expect(said).toContain("upper arm");
@@ -206,7 +233,7 @@ describe("the refusal sentence comes off the same list the road does", () => {
       leaves this green; freezing it and shrinking the list reddens this arm by
       name.
     */
-    const said = inkNeedsDocumentMessage();
+    const said = saidFor(BARE);
     expect(INK_PLACEMENTS.length, "the vocabulary is a real population").toBeGreaterThan(0);
     let served = 0;
     for (const key of INK_PLACEMENTS) {
@@ -226,7 +253,83 @@ describe("the refusal sentence comes off the same list the road does", () => {
     /* It said "face and neck ink works today" for as long as this road existed
        and the face half was never true — the sentence is what the 2026-08-21
        retirement was FOR, so a future edit putting it back goes red here. */
-    expect(inkNeedsDocumentMessage().toLowerCase()).not.toContain("face");
+    expect(saidFor(BARE).toLowerCase()).not.toContain("face");
+  });
+});
+
+/**
+ * ⚠ AND IT COMES OFF THE OUTFIT TOO, WHICH IT DID NOT UNTIL #2562.
+ *
+ * The sentence was derived from the road and from nothing else, so from the day
+ * the upper chest joined `WORDS_ROAD_PLACEMENTS_OPEN` (2026-08-23) it offered an
+ * upper chest to a cast in the house crew tee — and `gate_ink_uncarried`, the
+ * door one ask later, refuses exactly that chest. Three places named, one of
+ * them shut.
+ *
+ * The arms come in PAIRS on the same ask, because an arm that only watches the
+ * chest DISAPPEAR is satisfied by a sentence that has simply shrunk — census
+ * 4(c)'s own lesson, where a frozen *"a neck tattoo"* passed every assertion
+ * anybody had written about it. One ask, three outfits, three sentences.
+ */
+describe("⚠ the sentence names only what THIS cast's outfit leaves showing (#2562)", () => {
+  it("drops the chest under the house tee, and keeps it on a bare one", () => {
+    /* THE DEFECT, and it is one ask read against two outfits. `UNPATHED` is
+       every roll in both worlds; `BARE` is a cast whose own line leaves all
+       three showing. */
+    const tee = saidFor(UNPATHED);
+    expect(tee, "the tee covers the chest, so the chest is not on offer")
+      .not.toContain("upper chest");
+    expect(tee, "and the two that do work are still named").toContain("neck");
+    expect(tee).toContain("upper arm");
+
+    const bare = saidFor(BARE);
+    expect(bare, "a bare chest is a real place, so it is offered").toContain("upper chest");
+
+    /* ⚠ THE CONTROL: the ask is byte-identical in both, so the only thing that
+       moved is the outfit. Without this an arm pair above is satisfied by a
+       sentence that ignores its argument. */
+    expect(bare).not.toBe(tee);
+  });
+
+  it("⚠ and the places it names are the SAME set the covering door offers", () => {
+    /*
+      The two sentences a customer can meet one ask apart must describe one
+      product. `gate_ink_uncarried` already carried `servedAndBare`'s answer;
+      this door derived its own, and that is how they came to disagree. So the
+      claim is not "the chest is absent" — it is that both doors, on the same
+      cast, offer the same places.
+    */
+    const covered = ink("a swallow tattoo on her upper chest", UNPATHED);
+    expect(covered.kind, "the covering door, on the cast the tee answers").toBe("not_carried");
+    const nowhere = ink("a rose tattoo on her thigh", UNPATHED);
+    expect(nowhere.kind).toBe("needs_document");
+    expect(offered(nowhere), "one derivation, two doors").toEqual(offered(covered));
+    expect(offered(nowhere).length, "and it is a real population").toBeGreaterThan(0);
+  });
+
+  it("⚠ an outfit that covers everything gets an honest sentence, not a gap", () => {
+    /*
+      A roll-neck jumper leaves none of the three showing, and the old sentence
+      would have read *"Tell me where it goes —  from a description alone"*: a
+      refusal that names nothing and reads as broken. `elsewhereClause` answers
+      this case for the three sibling gates and says *"nowhere ELSE"*, which is
+      wrong at this door — it is reached by an ask that named no place at all.
+    */
+    expect(offered(ink("a rose tattoo on her thigh", COVERED)), "the premise of this arm")
+      .toEqual([]);
+    const said = saidFor(COVERED);
+    expect(said).toContain("covers every place that works");
+    expect(said, "it says what moves it — D-180's every-answer-acts rule")
+      .toContain("Change the outfit first");
+    expect(said).toContain("work from a design instead");
+    expect(said).toContain("Nothing was charged");
+    /* And it does NOT ask where, because telling us where would not help. */
+    expect(said).not.toContain("Tell me where");
+    /* The gap this is here to prevent, pinned at the shape rather than the
+       words: no dangling article and no empty list between the dash and the
+       noun. */
+    expect(said).not.toMatch(/—\s+tattoo/);
+    expect(said).not.toMatch(/ {2}/);
   });
 });
 

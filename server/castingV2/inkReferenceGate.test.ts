@@ -37,6 +37,18 @@ function check(extra: Partial<FreeLaneCheck> = {}): FreeLaneCheck {
   };
 }
 
+/**
+ * THE WHOLE WALL, AND IT CARRIES A LIST NOW (#2562).
+ *
+ * `check` hands `readDelta` no wardrobe — which is every roll in production and
+ * answers the house crew tee — and the tee covers the upper chest. So the places
+ * this refusal may offer are the neck and an upper arm, and the sentence it
+ * reaches names exactly those. Written once here because six arms below assert
+ * the whole object rather than only the reason, which is how they now also prove
+ * the list rides out of the gate on every one of those six roads.
+ */
+const DOCUMENT_WALL = { reason: "gate_ink_document", alternatives: ["neck", "upper arm"] };
+
 /** The shape the interpreter returns for a free-lane ink ask. */
 function inkReply(value = "a snake tattoo on her left sleeve") {
   return { ok: true, intent: "edit", free: { ink: value } };
@@ -51,7 +63,7 @@ describe("without a picture, the gate is exactly what it was", () => {
   it("walls a sleeve asked in words alone", () => {
     const seen = check();
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 
   it("still lets the anchor's own surfaces through — face and neck", () => {
@@ -67,7 +79,7 @@ describe("without a picture, the gate is exactly what it was", () => {
        would kill his never-refused ruling at a subject boundary. */
     const seen = check({ instruction: "give her a small star on her left sleeve" });
     readDelta(markReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 });
 
@@ -138,7 +150,7 @@ describe("⚠ AND A TATTOO THIS PRODUCT ALREADY PAINTED IS THE THIRD DOCUMENT", 
        not both driven is a gate nobody has measured. */
     const seen = check({ instruction: "make his fine-line swallow chest piece bigger" });
     readDelta(inkReply("a bigger fine-line swallow chest piece"), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 
   it("walls when the bit is explicitly false, exactly as when it is absent", () => {
@@ -147,7 +159,7 @@ describe("⚠ AND A TATTOO THIS PRODUCT ALREADY PAINTED IS THE THIRD DOCUMENT", 
       inkDocumentedByDelivery: false,
     });
     readDelta(inkReply("a bigger fine-line swallow chest piece"), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 
   it("opens ONLY this gate — the likeness wall still stands behind it", () => {
@@ -193,12 +205,12 @@ describe("the flag and the pointing are BOTH required — proven separately", ()
   it("walls when the bit is absent", () => {
     const seen = check();
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 
   it("walls when the bit is explicitly false", () => {
     const seen = check({ inkDocumentedByReference: false });
     readDelta(inkReply(), seen);
-    expect(seen.wall).toEqual({ reason: "gate_ink_document" });
+    expect(seen.wall).toEqual(DOCUMENT_WALL);
   });
 });
