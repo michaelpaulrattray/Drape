@@ -295,8 +295,11 @@ export const SERVED_SUBJECTS: readonly FreeSubject[] =
  * program's own measurement is that prompt context is not additive: a SUBSET of
  * context raised the stage wall twice as often as its superset. So the wardrobe
  * subject reaches the prompt only where a branch may be served it, and the
- * flag-off prompt stays byte-identical to the one that shipped
- * (`refineOpenLaneClause.test.ts` pins that, and it caught this addition).
+ * surviving prompt stays byte-identical to the one that shipped
+ * (`refineOpenLaneClause.test.ts` pins that by sha256, and it caught this
+ * addition). ⚠ It was the FLAG-OFF prompt that was pinned until #1577 slice D1
+ * retired `CASTING_OPEN_LANE_SCOPE`; the pin did not weaken, it moved onto the
+ * prompt that actually ships.
  *
  * ⚠ **AND THE DEFAULT IS `SERVED_SUBJECTS`, NOT EVERY KEY** (#203 slice 2). It
  * was `FREE_SUBJECT_KEYS` while a wardrobe branch existed to be served them

@@ -3057,6 +3057,87 @@ describe("her hair going is a haircut, read from her sentence", () => {
   });
 });
 
+/**
+ * ⚠ THE RULE 3 RE-READ NOW TAKES THE OPEN LANE — the one live road #1577
+ * slice D1 changes, DECLARED rather than discovered (the relay's held finding
+ * on PR #2556).
+ *
+ * The removal path's RULE 3 re-read (`const asEdit = await (dependencies.interpret
+ * ?? interpretRefinement)({ instruction, mode: "edit", … })`) was the ONE
+ * direct interpret call that never passed `openLane`. Absent meant off, so on
+ * production it read with the CLOSED edit prompt and the acceptance door was
+ * never consulted. With the flag retired the open prompt and `acceptOpenKind`
+ * are what every read gets, this one included — so a removal of a thing that
+ * cannot depart, re-read as an edit naming a kind nobody catalogued, can now
+ * file an `open` delta and RENDER, where before it refused for free.
+ *
+ * MEASURED, not supposed — the real interpreter, text calls only, two runs
+ * each, 2026-10-16 (closed = origin/main's re-read; open = this branch):
+ *
+ *     "take off his tail"     closed: wall_unbacked (free)   open: open.tail  "no tail"
+ *     "get rid of her wings"  closed: wall_unbacked (free)   open: open.wings "no wings"
+ *     "remove her horns"      closed: free.horns "no horns"  open: the same
+ *     "remove the antlers"    closed: free.horns "no antlers" open: the same, one run unreadable (free)
+ *
+ * No kind was invented — each open noun is the one she named — and the words
+ * are the same state phrase the closed lane already files for horns and
+ * renders today ("her horns: no horns"). So the change is the main read's own
+ * behaviour reaching the one caller that bypassed its seam: a free refusal
+ * becomes a charged render of exactly the removal she asked for.
+ *
+ * Scripted below for law 3's reason (a real model will not name an unknown
+ * key on demand); the drive above is the measurement behind the script.
+ */
+describe("the RULE 3 re-read takes the open lane (#1577 slice D1, declared)", () => {
+  it("a removal of a thing that cannot leave, re-read as an edit naming a new kind, renders and charges", async () => {
+    briefWorn = ["a long fox tail"];
+    const seen: string[] = [];
+    let call = 0;
+    const engine = {
+      id: "scripted",
+      async complete(request: { system?: string }) {
+        seen.push(request.system ?? "");
+        const reply = seen.length === 1
+          ? JSON.stringify({ intent: "edit", free: { tail: "no tail" } })
+          : JSON.stringify({ kind: "tail" });
+        return { text: reply, provenance: { provider: "openrouter" as const, model: "scripted" }, latencyMs: 0 };
+      },
+    } as unknown as TextEngine;
+    const modes: unknown[] = [];
+    const result = await refineCandidate({
+        regions: {
+          region: async () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 }),
+          subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+          landmark: async () => [],
+        },
+        interpret: (async (args: Parameters<typeof interpretRefinement>[0]) => {
+          call += 1;
+          modes.push(args.mode);
+          /* First read: a removal of a thing with no departure road. */
+          if (call === 1) {
+            return { ok: true as const, intent: "remove" as const, subject: null, match: "tail" };
+          }
+          /* RULE 3's re-read, through the REAL interpreter. */
+          return interpretRefinement({ ...args, engine });
+        }) as never,
+      },
+      { ...input, instruction: "take off his tail" },
+    );
+
+    expect(modes, "two reads: the removal, then RULE 3's edit re-read").toHaveLength(2);
+    expect(modes[1]).toBe("edit");
+    /* AT THE WIRE: the re-read was sent the OPEN clause — before D1 it was not. */
+    expect(seen[0], "the re-read's system prompt").toContain("WHEN NO SUBJECT ABOVE IS ABOUT IT");
+    /* And the acceptance door ran: a second call, the normalizer. */
+    expect(seen.length, "the acceptance door was consulted").toBeGreaterThanOrEqual(2);
+    /* THE OUTCOME THAT CHANGED: it rendered and was charged, where the closed
+       re-read refused for free (wall_unbacked, measured above). */
+    expect(result.variantId).toBeTruthy();
+    expect(ledger.charges, "a paid render of the removal she asked for").toHaveLength(1);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+});
+
 describe("a removal with no removal word is re-read as an edit", () => {
   const misreads = (asEdit: unknown) => {
     let call = 0;

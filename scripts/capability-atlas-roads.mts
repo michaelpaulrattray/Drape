@@ -169,7 +169,11 @@ export const ROADS: readonly Road[] = [
       "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
       "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
-    flags: ["CASTING_OPEN_LANE_SCOPE"],
+    /* CASTING_OPEN_LANE_SCOPE stood first here and is RETIRED (#1577 slice D1,
+       his word of 2026-10-15): the open lane is what the interpreter does, so
+       it is no longer a flag this road runs under. Side phrasing (D2) and ink
+       words (D3) retired before it, so this road runs under no flag. */
+    flags: [],
     notes: [
       "wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.",
       "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",

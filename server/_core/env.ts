@@ -32,7 +32,6 @@ import {
   CASTING_INK_TRANSFORM_SCOPE_ENV,
   CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
-  CASTING_OPEN_LANE_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
@@ -61,7 +60,6 @@ import {
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
-  validateCastingOpenLaneEnvironment,
   validateCastingReferenceLibraryEnvironment,
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
@@ -422,23 +420,22 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    Whether an ask nobody catalogued may name its own kind.
+    ⚠ WHETHER AN ASK NOBODY CATALOGUED MAY NAME ITS OWN KIND IS NO LONGER A
+    BOOT QUESTION — `CASTING_OPEN_LANE_SCOPE` is retired (#1577 slice D1, his
+    word of 2026-10-15). It is simply what the interpreter does.
 
-    The finding that bought this flag was a paste-road one: that road composed
-    its prompt from wall (d)'s re-read, which drops `open` by construction, so a
-    paste-road user would have been charged for a render whose prompt never said
-    what they asked for. That road is being retired, which is why the parent
-    below moved — the finding is kept because it is why the flag exists at all.
+    The fence that stood here refused a scope reaching past its parent. There is
+    nothing left to fence: the flag had been `all` since 2026-09-24 with every
+    flag above it `all` too, so its off arm — the two closed-lane prompts — was
+    asked of nobody, and both are gone with it.
 
-    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
-    when the paste road's own flag was retired (#1577 slice 4a). It used to be
-    the REPAINT scope, and that gate ended in the library's anyway, so no
-    position production holds changes.
+    ⚠ **The Railway variable is removed only AFTER this build is serving**, and
+    the order is not reversible: an absent variable parsed as `off`, so dropping
+    it under the old build would have put every account back on the closed lane.
+    Between the merge and the removal a deploy rite reports one flag-position
+    mismatch naming the variable — by design, and it costs the rite's `OK`
+    rather than the deploy.
   */
-  validateCastingOpenLaneEnvironment({
-    scope: process.env[CASTING_OPEN_LANE_SCOPE_ENV],
-    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  });
   /*
     The ink studio's door — RETIRED on his word of 2026-09-24 (*"It retires with
     N2"*, #1158) and unset on the service, so this check returns at its own off
