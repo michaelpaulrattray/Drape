@@ -13,6 +13,9 @@
  * `startedAt`. These arms hold the two halves that matter — the finding says
  * enough to act on, and **no road through it can cost a shift its close**.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -109,5 +112,67 @@ describe("⚠ the close names a shift's own dev servers, and never kills one (#2
     /* And a tree from before the row is not this shift's — the founder's own
        server is the case that protects. */
     expect(rootsStartedAfter(rows, new Date("2026-10-16T13:00:01.000Z"))).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ AND THE CALLER, BECAUSE A CONTROL THAT IS NOT INVOKED DOES NOT EXIST
+ * (invariant 7).
+ *
+ * This is the whole point of the card: `dev-servers.mts` could do the job from
+ * #783 onward and nothing called it. So the arms below are about the CALL SITE,
+ * in the sibling convention `crewCloseShippedPullRequest.test.ts` set for the
+ * pull-request reading — same three rules, same reasons.
+ */
+const CLOSE = "scripts/crew-shift-close.mts";
+const read = (relative: string) =>
+  readFileSync(path.join(process.cwd(), relative), "utf8");
+
+describe("⚠ the close actually asks (#2563)", () => {
+  const consultsTheRule = (source: string): boolean => source.includes("readClosingDevServers(")
+    && source.includes("closingDevServerFinding({");
+
+  it("the close reads the process table and asks the rule", () => {
+    expect(
+      consultsTheRule(read(CLOSE)),
+      "the close does not consult the rule — and a reader with no caller is exactly what left"
+      + " seven of these resident across four worktrees",
+    ).toBe(true);
+  });
+
+  it("POSITIVE CONTROL — that reading goes red on a copy carrying each defect", () => {
+    const real = read(CLOSE);
+    expect(consultsTheRule(real.replace(/readClosingDevServers\(/g, "somethingElse("))).toBe(false);
+    expect(consultsTheRule(real.replace(/closingDevServerFinding\(\{/g, "somethingElse({"))).toBe(false);
+  });
+
+  it("the finding is collected AFTER the row is stamped, and never refuses or exits", () => {
+    const source = read(CLOSE);
+    const update = source.indexOf("SET endedAt = UTC_TIMESTAMP()");
+    const site = source.indexOf("readClosingDevServers(");
+    expect(update, "the close no longer writes — this arm is reading the wrong file").toBeGreaterThan(0);
+    expect(site, "the reading must come AFTER the row is stamped").toBeGreaterThan(update);
+    /* ⚠ SLICED to the block, not the whole file — a `not.toContain` over the
+       file would be satisfied by any `refuse(` anywhere in it, and the file has
+       several (memory: a guard arm satisfied by a sibling). The bound is the
+       guard ON the slice: this arm is worthless the moment the slice quietly
+       becomes the rest of the file, which is how the sibling arm caught this
+       card's first draft inserting itself between ITS two anchors. */
+    const block = source.slice(site, source.indexOf("if (findings.length > 0) {", site));
+    expect(block.length, "the slice must be the block, not the rest of the file").toBeLessThan(700);
+    expect(block).not.toContain("refuse(");
+    expect(block).not.toContain("process.exit");
+    expect(block).toContain("findings.push(");
+  });
+
+  it("the cutoff is the row's own stamp, never a number this script invents", () => {
+    /* `--since` exists because a process table cannot say whose a server is and
+       an operator must state when their shift began. The close is the one
+       caller that already holds that answer — if it passed anything else, the
+       finding would be about an arbitrary window. */
+    const source = read(CLOSE);
+    const site = source.indexOf("readClosingDevServers(");
+    const block = source.slice(site, site + 200);
+    expect(block).toContain("new Date(row.startedAt)");
   });
 });
