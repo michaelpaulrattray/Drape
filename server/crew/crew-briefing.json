@@ -1,7 +1,7 @@
 {
-  "edition": 733,
-  "updatedAt": "2026-10-16T13:20:00.000Z",
-  "shift": "A fix of mine broke the whole test suite twenty minutes after I shipped it, and I caught it the same hour. Here is the night.\n\nWHAT WENT LIVE. The studio used to tell a customer a tattoo could go on the upper chest of a character who is wearing a t-shirt — and then refuse it one step later for being under a top. It now reads what the character is actually wearing before it offers anywhere, and a character covered head to toe gets a sentence of its own instead of a gap (#2562).\n\nTHEN IT BROKE THE TESTS. Twenty minutes after that went in, every test run in the product was failing on one check. Two pieces of work had landed an hour and a half apart; each one passed everything on its own, and neither was ever tested against the other. Nothing a customer touches was wrong — both changes are good and both stayed — but one test was still expecting the old shape of an answer. I found it, fixed it, and ran the entire suite twice to be sure: 20,666 checks, nothing failing (#2589).\n\nWHY THAT COULD HAPPEN AT ALL, AND WHAT I HAVE NOT DONE ABOUT IT. Our own merging tool asks GitHub whether a job is safe to land, and GitHub only ever answers about the TEXT of the files. Two jobs can agree perfectly on the text and still disagree about what the product does — which is exactly what happened. I have written that up with three ways to close it and a recommendation, and deliberately built none of them: the right choice depends on how often this happens, which is a number nobody has read yet (#2590).\n\nA REPAIR I OWED. The reviewer had found two real faults in yesterday's work on the new one-description feature, and those came before anything new. The first is the better story: the check meant to stop the studio inventing a scar on a face was reading the word \"scarf\" as a scar — so asking for a red scarf would have been silently thrown away and your Follow would have gone out with none of your changes in it. \"Scarlet\" too, and \"molecule\" as a mole. Both are repaired, and I proved the new checks can actually fail by breaking them on purpose three times (#2582).\n\nAND TWO JOBS THAT COULD NOT MOVE. Two pieces of work had drifted out of step with the product and could no longer be tested at all — they looked fine on screen while nothing was running. Both are caught up and back in the queue.",
+  "edition": 734,
+  "updatedAt": "2026-10-16T16:20:00.000Z",
+  "shift": "Four jobs landed tonight and the last one clears the way for a feature you asked to try. Here is the night.\n\nTHE BOARD WAS JAMMED, AND IT IS NOT NOW. Six jobs were sitting finished and waiting, and four other jobs were held up purely because those were still open — nothing was wrong with any of them, they were just queued behind each other. Two were ready to land, so I landed them, and both are live.\n\nWHAT WENT LIVE FIRST. Press Follow on the fourth face of a sheet and the studio now says FOLLOWING 04 while the next sheet gets ready — it used to keep showing the number of the face you pressed last time, which made it look like it had followed the wrong person (#2587). And the Follow rewrite that carries your edits forward stopped being able to lose your words: a request you press twice now counts as the same request, a Follow that is going to be refused for free no longer waits on a rewrite first, and the check that stops the studio inventing a scar no longer reads the word \"scarf\" as a scar (#2582).\n\nTHEN I BUILT THE LAST THING STANDING IN FRONT OF A FEATURE YOU WANTED. You asked, on the 16th, for the one-description feature to be switched on for your account once two fixes were in. The first was the Follow one above. The second is this: when a character keeps one description of who they are now, the studio was quietly losing the exact wording of the edit you asked for. Ask to take a character's earrings off and the description came back saying \"They wear no earrings\" — true, but it had thrown away WHERE, which is the part the picture needs. It now keeps the full wording. The other half is a guard I did not want to need: the description is the paragraph that later feeds your signed pictures, the personality, the voice and the creation record, so it must describe the PERSON and never the photograph. If the studio ever writes \"on the left of the picture as you look at it\" into it, that answer is thrown away rather than filed (#2578).\n\nSO BOTH FIXES ARE DONE AND THE SWITCH IS YOURS. Nothing has changed for you yet — the feature is still off — and turning it on is your call or the relay's, not the crew's.\n\nONE JOB I TOOK OFF YOUR DESK. A job at the very top of the queue was asking for a measurement you have already seen and ruled on: Follow returning eight near-identical people. You looked at it, you said keep Follow as it is for now, and only the redesign is parked — but the job was never labelled as parked, so every night the crew was being offered a question you had closed. It is labelled now, with your words at the top, and nothing about Follow is re-asked.\n\nAND ONE THING I CHECKED RATHER THAN ASSUMED. The two jobs I landed were tested separately and never against each other, which is exactly how the whole test suite broke yesterday. So I ran all 20,701 checks on the combined result before going near anything else — nothing failing. Two checks did go red on my own machine, and neither was ours: leftover scratch files from another night's work are sitting in the project and two of our checks read them. The product is fine; the mess is on a job we already have open.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T13:13:10.222Z",
+      "readAt": "2026-10-16T16:15:32.754Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10632,6 +10632,27 @@
       "status": "merged",
       "prNumber": 2573,
       "note": "Landed on a green gate."
+    },
+    {
+      "id": "follow-chip-2587",
+      "title": "Following a face says the face you just pressed, not the last one (#2587)",
+      "status": "merged",
+      "prNumber": 2588,
+      "note": "Landed on a green gate with the relay's pass verdict."
+    },
+    {
+      "id": "description-flag-mustfix-2582",
+      "title": "The Follow rewrite stops losing your words before the flag widens (#2582)",
+      "status": "merged",
+      "prNumber": 2586,
+      "note": "Landed on his word to finish and merge it."
+    },
+    {
+      "id": "fact-clause-2578",
+      "title": "The description keeps the exact wording of your edit, and never describes the photograph (#2578)",
+      "status": "merged",
+      "prNumber": 2594,
+      "note": "Landed on a green gate; the last fix before the description flag can flip."
     }
   ],
   "problems": [
@@ -11107,7 +11128,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T13:13:10.221Z",
+    "readAt": "2026-10-16T16:15:32.754Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11162,11 +11183,7 @@
       {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — the design is written (PR #2575, `docs/specs/OUTFIT_REFINE_DESIGN_2026-10-16.md`). Say GO, or name any change. Recommendation: GO."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2545,
@@ -11180,7 +11197,11 @@
       {
         "issueNumber": 2565,
         "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "its own slices 2–5 — only slice 1 has merged (#2571). Claimed and being built. Not his word."
+        }
       },
       {
         "issueNumber": 2566,
@@ -11193,7 +11214,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2582 and #2578, the two must-fixes before this flag widens — then its own done-when drive and frames. Not his word."
+          "because": "its own done-when drive and frames — a seat, not his word. ~~#2582 and #2578, the two must-fixes before this flag widens~~ are BOTH CLOSED (2026-10-16, `forema…"
         }
       },
       {
