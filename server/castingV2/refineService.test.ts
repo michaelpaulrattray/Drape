@@ -15494,7 +15494,13 @@ describe("one current description rides the paid refine", () => {
     expect(asked).toHaveLength(1);
     expect(asked[0]!.about).toBe("refine.describe");
     expect(asked[0]!.user).toContain("A woman in her thirties with long dark hair.");
-    expect(asked[0]!.user).toContain("wear her hair down");
+    /* THE WRITER IS HANDED THE EDIT AS FACTS, NOT THE RAW SENTENCE (#2578 §2).
+       This arm read `toContain("wear her hair down")` until that card: the raw
+       sentence is what lost the removal's site phrase and the sided fact. */
+    expect(asked[0]!.user).toContain("Change only her hair: hair down.");
+    /* And the PAINTER's half never reaches the writer — the whole point of
+       rendering the clause twice. */
+    expect(asked[0]!.user).not.toContain("as you look at it");
   });
 
   it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {
@@ -15604,11 +15610,14 @@ describe("one current description rides the paid refine", () => {
     await refineCandidate(child as never, ask);
 
     expect(asked).toHaveLength(1);
+    /* The change reads as the assembled FACT clause since #2578 §2, not the
+       customer's raw sentence; the SEED half is what this arm is about and it
+       is unchanged. */
     expect(asked[0]!.user).toBe(`How they were first described:
 ${CHILD_BRIEF}
 
 The change:
-wear her hair down`);
+Change only her hair: hair down.`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
 

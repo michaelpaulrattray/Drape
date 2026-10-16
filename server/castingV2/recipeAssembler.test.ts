@@ -1194,6 +1194,136 @@ describe("two empty lobes are one sentence", () => {
     expect(recipe.ask).not.toContain("her eyes:");
   });
 
+  describe("the two renderings of one edit, and the painter's half (#2578)", () => {
+    const DESCRIPTION = "A woman in her thirties with a fiery red right iris.";
+
+    it("the writer's rendering drops the picture half; the painter's keeps it", () => {
+      /*
+        §2's whole claim, read at the two strings the one builder returns. The
+        parenthetical is an instruction to the PAINTER about the frame — it
+        states no fact about the person — and it leaked into the stored
+        description 2 of 3 times when the writer was handed the clause whole.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.ask).toContain("on the left of the picture as you look at it");
+      expect(recipe.changeFacts).toBe("Change only her right eye: a fiery red iris.");
+      expect(recipe.changeFacts, "the painter's half must never reach the writer")
+        .not.toContain("as you look at it");
+      /* It is the SAME clause otherwise — same noun, same words, same frame. */
+      expect(recipe.changeFacts).toContain("her right eye");
+      expect(recipe.changeFacts).toContain("a fiery red iris");
+    });
+
+    it("CONTROL — an UNSIDED edit renders identically both ways, which is most edits", () => {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "hair", noun: "hair", words: "a platinum undercut" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      /* Nothing to omit, so the two strings are the same string. Without this
+         arm the one above would pass over a facts rendering that dropped
+         something it should have kept. */
+      expect(recipe.changeFacts).toBe(recipe.ask);
+      expect(recipe.ask).not.toContain("as you look at it");
+    });
+
+    it("a REMOVAL's site phrase survives into the writer's rendering — the loss this card was filed for", () => {
+      /*
+        Asked "take her earrings off", the writer wrote "She wears no earrings."
+        3 of 3 times: the absence, never the SITE. The vacancy phrase names the
+        site, and a pair vacancy carries no parenthetical, so both renderings
+        are byte-identical here — which is why the measured arm reproduced 3/3
+        unchanged.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [
+          { slot: "earring@left", noun: "left earring", vacate: { says: PAIR } },
+          { slot: "earring@right", noun: "right earring", vacate: { says: PAIR } },
+        ],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.changeFacts).toContain(PAIR);
+      expect(recipe.changeFacts).toBe(recipe.ask);
+    });
+
+    it("flag ON, a sided edit: the painter is still told which half of the frame it is in (§3)", () => {
+      /*
+        The description stands where the change clause stood, and the clause is
+        where the mapping lived — so without this line it would simply stop
+        being said. V4 measured it 4-of-12 wrong eyes → 0, never once worse,
+        free per render; this card's court saw no separation at n=6 and says so
+        itself. An underpowered null does not retire a free protection.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).toContain("Her right eye is on the left of the picture as you look at it.");
+      /* AND THE ONE-AUTHOR PIN IS UNTOUCHED — this line states no change, it
+         locates a feature. Two sources saying WHAT the edit is was the defect. */
+      expect(recipe.prompt).not.toContain("Change only");
+      expect(recipe.prompt).toContain(`This is how she looks now: ${DESCRIPTION}`);
+    });
+
+    it("flag ON, an UNSIDED edit: no painter line at all", () => {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [{ slot: "hair", noun: "hair", words: "a platinum undercut" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).not.toContain("as you look at it");
+      expect(recipe.prompt).not.toContain("Change only");
+    });
+
+    it("flag ON, a COLLAPSED PAIR names no side — there is no half to point at when the answer is both", () => {
+      /* Through `pairCollapse` rather than a second judgement about what a pair
+         is: the clause skips `whereItIs` for a collapsed pair and so does this. */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [
+          { slot: "eye@left", noun: "left eye", words: "a fiery red iris" },
+          { slot: "eye@right", noun: "right eye", words: "a fiery red iris" },
+        ],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).not.toContain("as you look at it");
+    });
+
+    it("flag OFF, a sided edit: the parenthetical says it and no second line does", () => {
+      /* The off road must be byte-identical to what it sent before this card —
+         the mapping is in the clause, said once. */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).toContain("Change only her right eye (on the left of the picture as you look at it): a fiery red iris.");
+      expect(recipe.prompt).not.toContain("Her right eye is on the left");
+      /* Said ONCE, not twice — the count is the claim. */
+      expect(recipe.prompt.split("as you look at it").length - 1).toBe(1);
+    });
+  });
+
   it("says a vacate ONCE in the change clause, however many slots the kind vacates", () => {
     /*
       The duplication as it shipped: a pair vacates two slots and each ask

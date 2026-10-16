@@ -6472,7 +6472,28 @@ async function refineCandidateCounted(
       DOES hold it.
     */
     let describedNow: Promise<string | undefined> | null = null;
-    const describeThisEdit = (): Promise<string | undefined> => {
+    /*
+      `changeFacts` IS THE EDIT AS FACTS ABOUT THE PERSON (#2578 §2) — the
+      assembled change clause with the picture-half parentheticals omitted,
+      built by the assembler's own clause builder in the pass above.
+
+      It replaces the customer's raw sentence as the writer's `change`, which
+      is the whole of this card: asked *"take her earrings off"*, the writer
+      wrote *"She wears no earrings."* 3 of 3 times — the absence, never the
+      SITE. Handed the vacancy phrase instead (*"no earrings — both earlobes
+      bare, nothing hanging from either ear"*) the site survives 3/3.
+
+      Absent only when the first pass REFUSED, and then today's raw sentence is
+      not used either — the caller passes nothing and this render is about to
+      fail on that refusal anyway.
+
+      ⚠ MEMOISED, so the first call's value is the one that counts. That is the
+      existing contract (*"written ONCE per refine, however many times
+      `repaintOnce` runs"*) and not something this parameter changes — but it
+      does mean a later caller cannot correct the wording, so there is exactly
+      one call site and it is the one holding the assembled pass.
+    */
+    const describeThisEdit = (changeFacts?: string): Promise<string | undefined> => {
       if (describedNow) return describedNow;
       describedNow = (async () => {
         if (!captureCastingCurrentDescriptionEnabled(input.userId)) return undefined;
@@ -6517,7 +6538,14 @@ async function refineCandidateCounted(
         }
         const written = await writeCurrentDescription(
           (dependencies.describeEngine ?? interpreterEngine)(),
-          { previous, seed: { brief, earlierAsks }, change: instruction },
+          {
+            previous,
+            seed: { brief, earlierAsks },
+            /* The measured wording where the assembler produced one; the
+               customer's own sentence otherwise, which is what every render
+               before this card used. */
+            change: changeFacts !== undefined && changeFacts.trim() !== "" ? changeFacts : instruction,
+          },
         );
         if (!written.ok) {
           log.warn(
@@ -7063,11 +7091,28 @@ async function refineCandidateCounted(
           "[refineService] her own designs ride a render that is not about them",
         );
       }
-      const currentDescription = await describeThisEdit();
-      const recipe = assembleRecipe({
-        /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
-           and the prompt is today's byte for byte. */
-        ...(currentDescription !== undefined ? { currentDescription } : {}),
+      /*
+        THE RECIPE IS ASSEMBLED TWICE ON THE DESCRIPTION ROAD, AND THAT IS THE
+        SEAM #2578 §2 ASKED FOR.
+
+        The writer must be handed the edit's FACT wording — the removal's site
+        phrase above all — and that wording is built by the assembler's own
+        clause builder from `wordStacks`, which only exists inside an assembly.
+        But the description has to be IN the prompt, so it must be written
+        before the assembly that sends it. Hence: one pass with no description
+        to read `changeFacts` off, then the real pass with the paragraph.
+
+        The input is built ONCE and spread, so there is no second copy of it to
+        drift (law 4), and `assembleRecipe` is pure — no logging, no I/O, no
+        clock — so the first pass costs string building and nothing else.
+
+        ⚠ FLAG OFF, THE FIRST PASS *IS* THE RECIPE and is reused rather than
+        recomputed: its input is byte-identical to what this call site passed
+        before this change, so the off road assembles exactly once and sends
+        exactly the bytes it sent yesterday. The flag-off byte pins are what
+        hold that true rather than this comment.
+      */
+      const recipeInput = {
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base
            inside the statement that proved the parent, so this cannot be got
@@ -7254,7 +7299,19 @@ async function refineCandidateCounted(
             };
           })()
           : {}),
-      });
+      };
+      const withoutDescription = assembleRecipe(recipeInput);
+      /* A refusal carries no `changeFacts`, and the writer is simply not run
+         on one: the render is about to fail on the same refusal below, so
+         spending a text call on it would buy nothing. */
+      const currentDescription = await describeThisEdit(
+        withoutDescription.ok ? withoutDescription.changeFacts : undefined,
+      );
+      /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
+         and the prompt is the first pass, byte for byte. */
+      const recipe = currentDescription === undefined
+        ? withoutDescription
+        : assembleRecipe({ ...recipeInput, currentDescription });
       if (!recipe.ok) {
         log.error(
           { operationId, variant: variant.publicId, reason: recipe.reason, slot: recipe.slot },

@@ -11,10 +11,13 @@ import {
   CURRENT_DESCRIPTION_RETRIES,
   CURRENT_DESCRIPTION_TIMEOUT_MS,
   currentDescriptionUserTurn,
+  CURRENT_DESCRIPTION_SYSTEM,
   describedNowSentence,
   looksLikeAnEditList,
+  mentionsThePicture,
   writeCurrentDescription,
 } from "./currentDescription";
+import { pictureHalfPhrase } from "./sidePhrasing";
 
 function engineSaying(text: string, sink: TextRequest[] = []): TextEngine {
   return {
@@ -119,6 +122,52 @@ describe("the description writer", () => {
     expect(looksLikeAnEditList("1. beard shorter")).toBe(true);
     /* Several lines with no bullet are the list shape too — a description is one paragraph. */
     expect(looksLikeAnEditList("A fisherman with a short beard.\nThey wear no glasses.")).toBe(true);
+  });
+
+  it("REFUSES a reply that talks about the PICTURE, driven directly with a poisoned answer (#2578 §4)", async () => {
+    /*
+      LAW 3: the guard is driven with the exact shape it exists to stop, not
+      through a model that usually behaves. The leak this prevents was measured
+      on #2578 — handed the picture-half parenthetical, the writer wrote it into
+      the stored paragraph 2 of 3 times — and that paragraph is what #2545 hands
+      to the signed views, the persona, the voice and the creation record.
+    */
+    const leaked = "A fisherman of sixty with a right eye (on the left of the picture as you look at it) of emerald green.";
+    await expect(writeCurrentDescription(engineSaying(leaked), { previous: null, seed, change: "x" }))
+      .resolves.toMatchObject({ ok: false, reason: "picture_talk" });
+
+    /*
+      ⚠ THE CONTROL THAT MATTERS IS THE NEGATIVE ONE: an ANATOMICAL side is the
+      whole point of a description and must pass. A guard keyed on "left" and
+      "right" would refuse nearly every sided description there is, and would
+      have read as working.
+    */
+    const anatomical = "A fisherman of sixty whose right eye is emerald green and whose left shoulder carries an anchor tattoo.";
+    await expect(writeCurrentDescription(engineSaying(anatomical), { previous: null, seed, change: "x" }))
+      .resolves.toMatchObject({ ok: true, description: anatomical });
+
+    /* The phrase family, each form driven rather than reasoned about. */
+    expect(mentionsThePicture("their eye is on the left of the picture as you look at it")).toBe(true);
+    expect(mentionsThePicture("the scar sits on the right of the image")).toBe(true);
+    expect(mentionsThePicture("a mole on the picture's left")).toBe(true);
+    expect(mentionsThePicture("turned toward the left side of the frame")).toBe(true);
+    expect(mentionsThePicture("as you look at it, the light is warm")).toBe(true);
+    /* And the sentences that are about the PERSON stay allowed. */
+    expect(mentionsThePicture("their right eye is emerald green")).toBe(false);
+    expect(mentionsThePicture("a long scar down the left side of their face")).toBe(false);
+    expect(mentionsThePicture("they wear a ring on their left hand")).toBe(false);
+    expect(mentionsThePicture("a picture of calm, with weathered skin")).toBe(false);
+  });
+
+  it("the writer is TOLD not to describe the picture, and the instruction and the wall are one rule (#2578 §4)", () => {
+    /* Both arms of §4: the instruction is half the control and the refusal is
+       the other half, so the instruction is pinned rather than assumed. */
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("Describe the person, never the picture.");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("as you look at it");
+    /* The spelling the wall refuses on comes from `sidePhrasing`'s own owner,
+       so a drift in that phrase moves both halves together. */
+    expect(mentionsThePicture(`a feature ${pictureHalfPhrase("left")}`)).toBe(true);
+    expect(mentionsThePicture(`a feature ${pictureHalfPhrase("right")}`)).toBe(true);
   });
 
   it("refuses an empty reply and a runaway one", async () => {
