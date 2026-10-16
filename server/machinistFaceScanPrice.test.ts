@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   FACE_SCAN_FAL_CALLS,
+  faceScanSam3Reads,
   faceScanSpendWords,
   faceScanUsd,
 } from "../scripts/lib/falSpend.mts";
@@ -36,7 +37,7 @@ function sectionE(): string {
 describe("faceScanSpendWords — the scan's price, read off the measured constants", () => {
   it("prints the measured read range and every part of a scan", () => {
     const words = faceScanSpendWords(10);
-    const { low, high } = FACE_SCAN_FAL_CALLS.sam3.measured;
+    const { low, high } = faceScanSam3Reads().measured;
     expect(words).toContain(`${low}–${high} segmenter reads`);
     expect(words).toContain(`${FACE_SCAN_FAL_CALLS.cutouts} cutout`);
     expect(words).toContain(`${FACE_SCAN_FAL_CALLS.describer} describer call`);
@@ -46,7 +47,7 @@ describe("faceScanSpendWords — the scan's price, read off the measured constan
     const { total } = faceScanUsd();
     const words = faceScanSpendWords(10);
     expect(words).toContain(`$${total.low.toFixed(3)}–$${total.high.toFixed(3)} each`);
-    expect(words).toContain(`= $${(10 * total.low).toFixed(2)}–$${(10 * total.high).toFixed(2)}`);
+    expect(words).toContain(`= $${(10 * total.low).toFixed(3)}–$${(10 * total.high).toFixed(3)}`);
     /* The band is real: a range collapsed to one number is the old shape back. */
     expect(total.high).toBeGreaterThan(total.low);
   });
@@ -55,8 +56,35 @@ describe("faceScanSpendWords — the scan's price, read off the measured constan
     const words = faceScanSpendWords(10);
     expect(words).not.toMatch(/\b20 reads\b/);
     expect(words).not.toContain("$0.10 each");
-    /* Ten scans at the old price was exactly $1.00; the measured band is above it. */
+    /* Ten scans at the retired flat price was exactly $1.00, and what rules it
+       out is that the words are a RANGE at all — never that the band happens to
+       sit above it. ⚠ On the crop road it did sit above ($1.21–$1.57); on the
+       pair-in-one-read road the live band straddles it ($0.76–$1.07), so a
+       comment claiming the band is above $1.00 would have gone quietly wrong
+       the hour the flag flipped while this arm kept passing (#2577). */
     expect(words).not.toContain("= $1.00");
+  });
+
+  it("prints each range at ONE precision, both ends alike", () => {
+    /* `$0.763–$1.07` is what a per-value precision rule produces once a band
+       straddles a dollar, and the cheaper scan road made that reachable at ten
+       scans (#2577). Driven across magnitudes so the arm covers both the cents
+       end and the whole-dollar end rather than today's one figure. */
+    for (const looks of [1, 10, 100, 1000]) {
+      const words = faceScanSpendWords(looks);
+      const ranges = [...words.matchAll(/\$\d+\.(\d+)–\$\d+\.(\d+)/g)];
+      expect(ranges, `${looks} looks: the per-scan band and the total`).toHaveLength(2);
+      for (const range of ranges) {
+        expect(range[2].length, `${range[0]} at one precision`).toBe(range[1].length);
+      }
+    }
+  });
+
+  it("keeps a scan's own price in cents, where it can be checked", () => {
+    /* The reason the three-place end is the one kept: a scan is about a dime,
+       and two places round the measured band to `$0.08–$0.11`, which cannot be
+       compared against fal's own $0.005 a read. */
+    expect(faceScanSpendWords(1)).toMatch(/\$0\.\d{3}–\$0\.\d{3} each/);
   });
 });
 

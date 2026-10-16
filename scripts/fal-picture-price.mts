@@ -206,9 +206,18 @@ if (cleanCount === 0) console.log("  none");
    whatever the window spent beyond that was the renders or less.
 
    ⚠ This was a typed `0.10` until #2184 — 20 reads at $0.005, where the 20 had
-   folded the cutout in as a SAM-3 read. A real face averages 21–27 reads, so
-   the floor stays the DERIVED fewest on purpose: an overestimate here would
-   subtract more than the scans cost and hide part of a render's price.
+   folded the cutout in as a SAM-3 read. A real face averages 14–17 reads on the
+   road production is on, so the floor stays the DERIVED fewest on purpose: an
+   overestimate here would subtract more than the scans cost and hide part of a
+   render's price.
+
+   ⚠ **And that is exactly what it did for part of 2026-10-16 (#2577).** The
+   figure here read 21–27 and the floor read 18, both the CROP road's, while
+   every account had been on the pair-in-one-read road since his *"Yes, Turn it
+   on"* — so this reading was charging each scan 2½¢ more than a scan can cost
+   and hiding that much of every render beside it. `faceScanFalFloorUsd()`
+   answers for the live road now (`faceScanSam3Reads()`), which is why this
+   comment names the road rather than a number of its own.
 
    This is the half of the reading that has an n. The clean windows above are
    exact and rare; these are inexact and many, and they must agree.
