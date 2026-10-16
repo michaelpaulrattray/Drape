@@ -10205,8 +10205,9 @@ describe("a later confirmation rescues a refused carrier", () => {
     ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
     : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" });
   const onTheRepaintRoad = {
-    repaintEnabled: () => true,
-    /* The mint runs behind the library's own flag; the road needs both. */
+    /* The mint runs behind the library's own flag. (The repaint arg that
+       used to sit above this went with the paste road in #1577 slice 4b —
+       every refine repaints now, so there is no second flag to need.) */
     referenceLibraryEnabled: () => true,
     repaintEngine,
     readBytes,
@@ -11274,7 +11275,6 @@ describe("the picture she attached becomes the carrier that rides", () => {
   const minted: Array<{ userId: number; bytes: Buffer }> = [];
 
   const carrierRoad = (over: Record<string, unknown> = {}) => ({
-    repaintEnabled: () => true,
     /*
       THE HAIR ROAD IS OPEN FOR THIS ACCOUNT — supplied here from 2026-08-20,
       when the lane gained its own reader of the hair flag (fable-1163 §2).
@@ -14588,7 +14588,6 @@ describe("a regenerate re-sends the picture, and none of the replaced take", () 
   const HAIR_CARRY_KEY = "casting-v2/library/hair-from-the-take-being-replaced.png";
 
   const road = () => ({
-    repaintEnabled: () => true,
     /* The hair road is open for this account — the lane gained its own reader
        of the hair flag on 2026-08-20 (fable-1163 §2), and this arm is about what
        a REGENERATE re-cuts rather than about who is on the road. */
