@@ -30,7 +30,7 @@ import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { pictureHalfPhrase } from "./sidePhrasing";
-import { basicsWardrobeLine, HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 import { wardrobePieces } from "./wardrobeCards";
 import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
@@ -14020,26 +14020,18 @@ describe("the picture she attached becomes the carrier that rides", () => {
     );
     expect(neck.note).not.toBe(covered.note);
 
-    /* 3 · ⚠ THE SAME CHEST ASK, THE SAME ROAD, A BARE CHEST — and the answer
-       flips. A Basics-stamped roll leaves the chest showing, so for this cast
-       the offer is TRUE and is made. One variable moved between case 1 and this
-       one, and it is the one the fix reads: a pass here with case 1 also
-       passing is the only shape that cannot be satisfied by withholding the
-       offer everywhere. */
-    rollPath = "basics";
-    rollWardrobeLine = basicsWardrobeLine("male");
-    inkedBranch();
-    const bare = await refineCandidate(
-      transformRoad(roadOpen),
-      { ...input, instruction: "make his chest tattoo bigger" },
-    );
-    expect(bare.note, "a bare chest is served and showing, so the offer is made").toContain(
-      "put a new one on",
-    );
-    expect(
-      bare.note,
-      "same ask, same road, different outfit — the answer must differ",
-    ).not.toBe(covered.note);
+    /* 3 · ⚠ THE BARE-CHEST CASE THAT STOOD HERE IS UNREACHABLE SINCE #1577
+       SLICE 2, AND IS REMOVED IN THE MERGE THAT MET IT (relay, 2026-10-16).
+       It set `rollPath = "basics"` with a Basics line to make the chest show.
+       Slice 2 stopped reading the path: every stored line now resolves as
+       `brief`, and `wardrobeCoversSurface` answers a `brief` line with the
+       house prior, so NO roll line can make the chest bare any more. The
+       outfit-varies-the-answer property it pinned therefore has no reachable
+       input; the one road that could still vary it is an edited wardrobe
+       line, served to nobody (`refineSubjects.ts`). Case 2 (the neck under
+       the same tee is offered) stays the control that the offer is not simply
+       withheld everywhere. When a reader of an arbitrary outfit line lands
+       (7a-bis), this case comes back with a real bare-chested line. */
   });
 
   it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
