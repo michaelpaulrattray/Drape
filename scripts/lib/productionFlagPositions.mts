@@ -251,16 +251,41 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
   ENABLE_CASTING_PAIR_ONE_READ: {
-    position: UNSET,
+    /*
+      `"true"` since 2026-10-16, on his word and nothing else. The row read
+      `UNSET` from the day the road was built (PR #2553, dark) until he answered
+      the Desk card `pair-one-read-flip-2191` — Desk reply #294,
+      2026-10-16 03:35:17Z, verbatim and entire: "Yes, Turn it on".
+
+      ⚠ The string is compared EXACTLY, never for truthiness
+      (`pairInOneReadEnabled()`, `server/castingV2/faceScanService.ts`), so this
+      row's token and the service's value must both be exactly the four characters
+      `true`. A Railway variable created with no value holds the empty string,
+      which is the shape that would read as off while looking set.
+
+      ⚠ The REFINE deliberately does not move with it, and that is the flag's
+      whole shape rather than an omission: a masked refine PAINTS on the mask it
+      is handed, so a wrong side there is a delivered picture the customer paid
+      for, where here it is a panel row. One variable that moved both would be
+      the widening nobody meant.
+    */
+    position: "true",
     why:
-      "#2191: a pair answered by ONE segmenter read instead of two — the floor "
-      + "falls 18 to 13, about 2.5c off a 12c scan. UNSET because the crop road "
-      + "it replaces was itself a measured ruling (asking a pair of a whole "
-      + "frame once delivered 'she has no eyebrows' over a frame whose brows "
-      + "measure 1429px, while one side to a picture read 12 of 12), and #2532 "
-      + "arm 1's 15 cells on three casts is enough to build the road and not "
-      + "enough to move every customer onto it. Its flip is HIS, with his eye "
-      + "on the panel — the card's own done-when",
+      "ON FOR EVERY ACCOUNT 2026-10-16, on his Desk reply #294, verbatim and "
+      + "entire: \"Yes, Turn it on\". #2191: a pair answered by ONE segmenter "
+      + "read instead of two — the derived floor falls 18 to 13, about 2.5c off a "
+      + "12c scan, and the customer is charged for none of it, so the whole cut "
+      + "comes off house cost. HELD UNSET until his eye because the crop road it "
+      + "replaces was itself a measured ruling (asking a pair of a whole frame "
+      + "once delivered 'she has no eyebrows' over a frame whose brows measure "
+      + "1429px, while one side to a picture read 12 of 12), and #2532 arm 1's 15 "
+      + "cells on three casts was enough to build the road and not enough to move "
+      + "every customer onto it. What discharged that hold is a PICTURE and not a "
+      + "column: three labelled strips, zoomed on the rows that disagree, went to "
+      + "his page as eye item `pair-one-read-2191` (row counts human 14/14, alien "
+      + "9/9, hooded figure 6 today to 7 on the new road), and he answered them. "
+      + "Set on the service with --skip-deploys so the position commit's own "
+      + "deploy was the single restart",
   },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
