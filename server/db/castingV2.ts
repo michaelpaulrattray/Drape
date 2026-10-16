@@ -917,6 +917,69 @@ export async function getOwnedCandidateWithSelectedFace(
 }
 
 /**
+ * WHAT A FOLLOW'S BRIEF IS REWRITTEN FROM — #2576.
+ *
+ * The followed face's own roll brief, and the SELECTED version's description
+ * and ask chain — the same face `getOwnedCandidateWithSelectedFace` above hands
+ * the follow as its anchor photograph, joined the same way, so the words and
+ * the picture the cousins are cast from describe one version. A face whose
+ * selection is the original (no ready selected variant) answers `edited: false`
+ * and its Follow is untouched.
+ *
+ * Owner-scoped on every table in the one statement (invariant 1). A projection
+ * of three fields, never a row: the description and the asks are the cast's
+ * recipe family and leave this function only for the follow writer.
+ */
+export type FollowBriefSource = {
+  rollBrief: string;
+  edited: boolean;
+  description: string | null;
+  asks: string[];
+};
+
+export async function getFollowBriefSource(
+  userId: number,
+  candidatePublicId: string,
+): Promise<FollowBriefSource | null> {
+  assertPositiveId(userId, "userId");
+  const db = await requireDb();
+  const [row] = await db
+    .select({
+      rollBrief: castingRolls.briefText,
+      variantId: castingCandidateVariants.id,
+      description: castingCandidateVariants.currentDescription,
+      instructions: castingCandidateVariants.instructions,
+    })
+    .from(castingCandidates)
+    .innerJoin(castingRolls, and(
+      eq(castingRolls.id, castingCandidates.rollId),
+      eq(castingRolls.userId, userId),
+    ))
+    .leftJoin(castingCandidateVariants, and(
+      eq(castingCandidateVariants.id, castingCandidates.selectedVariantId),
+      eq(castingCandidateVariants.userId, userId),
+      eq(castingCandidateVariants.candidateId, castingCandidates.id),
+      eq(castingCandidateVariants.status, "ready"),
+    ))
+    .where(and(
+      eq(castingCandidates.publicId, candidatePublicId),
+      eq(castingCandidates.userId, userId),
+      eq(castingCandidates.status, "ready"),
+    ))
+    .limit(1);
+  if (!row) return null;
+  const asks = Array.isArray(row.instructions)
+    ? row.instructions.filter((entry): entry is string => typeof entry === "string")
+    : [];
+  return {
+    rollBrief: typeof row.rollBrief === "string" ? row.rollBrief : "",
+    edited: row.variantId !== null && row.variantId !== undefined,
+    description: typeof row.description === "string" && row.description.trim() !== "" ? row.description : null,
+    asks,
+  };
+}
+
+/**
  * THE VERSION THE ASK NAMED, RESOLVED THROUGH THE OWNED CANDIDATE (#1499).
  *
  * Its sibling above answers *which face is SELECTED* — the server's own

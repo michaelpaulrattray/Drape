@@ -2699,9 +2699,11 @@ export function validateCastingVoiceEnvironment(input: {
  * the cast as they are now — written by a text model from the previous version's
  * description plus this edit, never an edit list (his words on #2545: *"it must
  * read naturally into the description not as an edit list"*) — in place of the
- * "Change only …" clause. A Follow is untouched by it — his word, 2026-10-16:
- * *"follow doesnt need a description shouldnt it just work like the other
- * follows?"* — and a Follow child's first refine is seeded from its own roll's
+ * "Change only …" clause. And (#2576, his word 2026-10-16: *"build it"*) a
+ * Follow pressed on an EDITED version sends the face's roll brief rewritten to
+ * carry the direction the edits took, chosen before the claim
+ * (`followBrief.ts`); a never-edited face's Follow is untouched. A Follow
+ * child's first refine is seeded from its own roll's
  * brief like any face without a description: his ruling, 2026-10-16, verbatim: *"following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed"*.
  *
  * Off, and absent means off: no description is written, none is read, and the
