@@ -107,6 +107,7 @@ import {
   refuseNoUnitShards,
   refuseUnknownJobName,
   unitShardJobNames,
+  gateRunIdOf,
   readMainGained,
   sharesFiles,
   sharesDirectory,
@@ -431,6 +432,45 @@ function readWorktrees(): Map<string, string> {
 
 // ---- what main gained since the gate ran -----------------------------------
 /**
+ * THE BASE THE GATE ACTUALLY TESTED — read off the gate's own workflow run
+ * (#2590, repaired on the relay's finding).
+ *
+ * `gate.yml` runs on `pull_request`, so the run tested the head merged onto main
+ * **as main stood when the run was created**, and GitHub records that base on
+ * the run: `pull_requests[0].base.sha`. Driven before it was trusted — five
+ * runs' recorded bases were compared against the times the corresponding main
+ * commits actually landed, and all five agreed, so the field is frozen at
+ * run-creation time rather than refreshed.
+ *
+ * ⚠ **IT IS ONLY THERE WHILE THE PULL REQUEST IS OPEN.** GitHub empties
+ * `pull_requests` once a PR closes — measured on #2581's own merged head, where
+ * both runs report an empty array. That costs this tool nothing, because it only
+ * ever reads OPEN pull requests; it is written down because it is the reason the
+ * historical population had to be measured another way, and the reason a future
+ * reader must not expect this road to work on a merged PR.
+ *
+ * ⚠ **EVERY FAILURE IS `null`, INCLUDING A THROW.** `api` raises on anything but
+ * a rate limit, and a tool that MERGES must not die because one extra read
+ * failed — nor refuse on the strength of it. `null` leaves `decideMergeAction`
+ * behaving exactly as it did before this card.
+ */
+const gateBaseOf = (rollup: Rollup[]): string | null => {
+  const runId = gateRunIdOf(rollup, GATE_JOB_NAME);
+  if (runId === null) return null;
+  try {
+    /* `:owner/:repo` is resolved by `gh` from the working directory, the same
+       road `OWNER_LOGIN` above takes — so there is no second place where this
+       repository's name is written down. */
+    const run = api<{ pull_requests?: Array<{ base?: { sha?: string } }> }>(
+      `repos/:owner/:repo/actions/runs/${runId}`,
+    );
+    return run.pull_requests?.[0]?.base?.sha ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * THE STALENESS READING, BOUND TO THIS REPOSITORY (#2590).
  *
  * The reading itself is `readMainGained` in `lib/prMergeOrder.mts`, so it can be
@@ -439,8 +479,8 @@ function readWorktrees(): Map<string, string> {
  * one shape this tool cannot afford, because its answer now decides whether a
  * merge happens. All this does is bind the working directory.
  */
-const gainedSinceGateOf = (headOid: string, headRefName: string): MainGained =>
-  readMainGained((args) => git(REPO_ROOT, [...args]), headOid, headRefName);
+const gainedSinceGateOf = (gateBase: string | null): MainGained =>
+  readMainGained((args) => git(REPO_ROOT, [...args]), gateBase);
 
 // ---- readings --------------------------------------------------------------
 /*
@@ -634,7 +674,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     verdictCount,
     acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
     worktreePath: worktrees.get(view.headRefName) ?? null,
-    gainedSinceGate: gainedSinceGateOf(view.headRefOid, view.headRefName),
+    gainedSinceGate: gainedSinceGateOf(gateBaseOf(view.statusCheckRollup ?? [])),
   };
 }
 

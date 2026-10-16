@@ -1957,3 +1957,53 @@ describe("what a customer sees is read twice — #1328", () => {
     expect(owed("docs/features/admin/notes.md")).toBe(false);
   });
 });
+
+/**
+ * ⚠ THE STALENESS READING'S OWN CONTRACT AT THE WIRE (#2590, repaired on the
+ * relay's finding of 2026-10-16) — and this block exists because the defect it
+ * guards was NOT in the reader. The reader was driven, by eight arms, against
+ * real repositories with real remotes. It was asked the wrong question.
+ *
+ * `gate.yml` runs on `pull_request`, so a run tests the head merged onto main
+ * AS MAIN STOOD WHEN THE RUN WAS CREATED. The held version compared main's tip
+ * against the HEAD's own history instead, which over-refused 16 of the last 50
+ * merges. No arm inside `server/prMergeStaleness.test.ts` could catch that,
+ * because that suite passes the reader its argument — so what the CLI PASSES is
+ * the thing left to pin, and it is pinned on the bytes of the call.
+ */
+describe("the staleness reading is fed the base the GATE tested, not the head", () => {
+  const source = readFileSync(join(process.cwd(), "scripts", "pr-merge-in-order.mts"), "utf8");
+
+  it("passes `gateBaseOf(...)` and never a head ref or oid", () => {
+    const call = source.match(/gainedSinceGate: gainedSinceGateOf\([^)]*\)+,/);
+    expect(call, "the PR reading must still wire the staleness field").not.toBeNull();
+    expect(call?.[0]).toContain("gateBaseOf(");
+    /* The two names the held version passed. Either one reappearing here is the
+       regression, whatever the reader below it does. */
+    expect(call?.[0]).not.toContain("headRefOid");
+    expect(call?.[0]).not.toContain("headRefName");
+  });
+
+  it("takes that base from the gate RUN's recorded pull-request base", () => {
+    /* GitHub freezes `pull_requests[].base.sha` on the run at creation time —
+       driven before it was trusted, against the times the corresponding main
+       commits actually landed. Anything else here is a different fact. */
+    const reader = source.match(/const gateBaseOf = [\s\S]*?\n};/);
+    expect(reader).not.toBeNull();
+    expect(reader?.[0]).toContain("actions/runs/");
+    expect(reader?.[0]).toContain("pull_requests");
+    expect(reader?.[0]).toContain("base?.sha");
+    /* And it reads the run behind the SAME check the green is read from. */
+    expect(reader?.[0]).toContain("gateRunIdOf");
+    expect(reader?.[0]).toContain("GATE_JOB_NAME");
+  });
+
+  it("⚠ cannot throw — an extra API read must never kill the tool that merges", () => {
+    /* `api` raises on anything but a rate limit. A tool mid-order that dies on
+       a transient read has done the one thing worse than reading nothing, and a
+       refusal built on a failed read is the other. Both roads are `null`. */
+    const reader = source.match(/const gateBaseOf = [\s\S]*?\n};/);
+    expect(reader?.[0]).toMatch(/catch\s*{\s*return null;\s*}/);
+    expect(reader?.[0]).toContain("if (runId === null) return null;");
+  });
+});
