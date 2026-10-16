@@ -12053,6 +12053,63 @@ describe("the picture she attached becomes the carrier that rides", () => {
     kept. When that road opens, this arm should go red — deliberately — and be
     rewritten to whatever the new answer is.
   */
+  /*
+    THE DETERMINER, THROUGH THE REAL DOOR (#2572) — and this arm drives the REAL
+    `resolveInkReferenceTake` with a fake transport rather than stubbing the
+    take, because the defect was inside the take's own resolver and a stubbed
+    take cannot see it. Everything from the model's reply onward is production
+    code: `readInkReferenceTake`, `resolveInkPlacement`, `inkAskAddressOf`, and
+    this road's pre-claim door.
+
+    The failure it closes was measured through the real entrance on the #2565
+    court: *"a small sparrow tattoo on the side of the neck"* was asked WHERE,
+    answered *"their neck"*, and the answer was not understood — so an ordinary
+    tattoo ask could not be completed in words at all. `their` is also the word
+    this product uses for a person by standing order, and the vocabulary's noun
+    hard-codes `her`.
+  */
+  const sayingTake = (placement: string) => async (args: { instruction: string; lane?: "reference" | "words" }) =>
+    resolveInkReferenceTake({
+      ...args,
+      engine: { complete: async () => ({ text: JSON.stringify({ placement, side: null }) }) } as never,
+    });
+
+  it("RENDERS a neck tattoo placed as \"their neck\" — the court's own answer, read (#2572)", async () => {
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on their neck" } },
+      }),
+      inkTake: sayingTake("their neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on their neck" });
+
+    expect(result.kind, "the answer to the where question was not understood").toBe("rendered");
+    expect(painted.length).toBeGreaterThan(0);
+  });
+
+  it("CONTROL — an unmeasured surface still answers before the claim, nothing spent", async () => {
+    /* The determiner strip must not have opened the road to a place the
+       vocabulary never measured: `sleeve` is the header's own example, and the
+       answer is still free and pre-claim. */
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on their sleeve" } },
+      }),
+      inkTake: sayingTake("their sleeve"),
+    }), { ...input, instruction: "a small sparrow tattoo on their sleeve" });
+
+    expect(result.kind).toBe("selected");
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges, "it is answered above the claim, so there is nothing to give back").toHaveLength(0);
+  });
+
   it("⚠ REFUSES a face ask with the WRONG sentence — the carve-out is a dead promise", async () => {
     painted.length = 0;
     ledger.charges.length = 0;

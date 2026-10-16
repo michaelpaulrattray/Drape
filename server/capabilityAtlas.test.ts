@@ -21,11 +21,12 @@ import {
   CAPABILITY_MD, CASTING_ENTRANCE, bareDoorId, declaredReferenceRefusals, declaredUploadRefusals, type Finding,
   importedModules, narrowSharedBareIdPins, rollRaiseSitesIn, sharedBareDoorIds, type DeclaredId,
   declaredSourceNames, roadProseNames, roadProseSymbolFindings, type ProseName,
+  staleCoverageEntryFindings,
 } from "../scripts/lib/capabilityAtlas.mts";
 import {
   LAWS, ROADS, UNDECLARED_PROSE_NAMES, UNMAPPED_ENTRANCES, type Road,
 } from "../scripts/capability-atlas-roads.mts";
-import { CORPUS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
+import { CORPUS, KNOWN_DEBTS, UNREACHABLE_DOORS, type CorpusRow } from "../scripts/capability-atlas-corpus.mts";
 import { cannotSaySentence } from "./castingV2/cannotSayCopy";
 import { CONCEPT_DESCRIBE_COPY } from "./castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "./castingV2/briefRefusalCopy";
@@ -1868,5 +1869,104 @@ describe("a road's reachability clause CITES the Atlas and states nothing (#2285
         `${road.id}: the live clause still says the client half is coming`,
       ).toBe(false);
     }
+  });
+});
+
+/**
+ * THE COVERAGE LISTS ARE READ IN BOTH DIRECTIONS (#2568) — an entry naming a
+ * door the source no longer declares is an ERROR, and these arms are the proof
+ * the check can produce one.
+ *
+ * The rot it closes was measured rather than imagined: `kind_unserved` was
+ * deleted outright by #1577 slice 4b, and afterwards `UNREACHABLE_DOORS` still
+ * carried *"pinned by its C5 service arm"* — a live exemption for a door that
+ * was gone — while the roads map in the same instrument called the same id *"A
+ * DOOR THAT IS DEAD"*. `pnpm capability:check` was green the whole time, and a
+ * human reading the diff found it.
+ *
+ * ⚠ THE NEGATIVE CONTROL IS THE REAL LISTS AND IT IS THE ARM THAT MATTERS, not
+ * the fabricated ones: a stale-entry check that over-fires reddens the whole
+ * map and gets reverted, which is worse than the hole it closed.
+ */
+describe("a coverage entry cannot outlive its door (#2568)", () => {
+  const built = buildStaticAtlas();
+  const declaredIds = new Set(built.declared.map((door) => door.id));
+
+  it("NEGATIVE CONTROL — every real entry in both lists names a door the source declares", () => {
+    expect(declaredIds.size, "the declared set must be real, or every arm here is vacuous")
+      .toBeGreaterThan(50);
+    expect(
+      staleCoverageEntryFindings({
+        documented: UNREACHABLE_DOORS.map((entry) => entry.id),
+        debts: KNOWN_DEBTS,
+        declaredDoorIds: declaredIds,
+      }),
+      "a real entry read as stale: either a door was deleted without its line, or this check over-fires",
+    ).toEqual([]);
+  });
+
+  it("POSITIVE CONTROL — a fabricated UNREACHABLE_DOORS entry is an error that names the id", () => {
+    const findings = staleCoverageEntryFindings({
+      documented: [...UNREACHABLE_DOORS.map((entry) => entry.id), "no_such_door_2568"],
+      debts: KNOWN_DEBTS,
+      declaredDoorIds: declaredIds,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.severity, "an exemption nobody can audit is not a warning").toBe("error");
+    expect(findings[0]!.kind).toBe("stale-coverage-entry");
+    expect(findings[0]!.subject).toBe("no_such_door_2568");
+    expect(findings[0]!.message).toContain("UNREACHABLE_DOORS");
+    /* It must say what to DO, not only what is wrong. */
+    expect(findings[0]!.message).toContain("delete the line");
+  });
+
+  it("POSITIVE CONTROL — a fabricated KNOWN_DEBTS entry is an error that names the id", () => {
+    const findings = staleCoverageEntryFindings({
+      documented: UNREACHABLE_DOORS.map((entry) => entry.id),
+      debts: [...KNOWN_DEBTS, "dead_debt_2568"],
+      declaredDoorIds: declaredIds,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]!.severity).toBe("error");
+    expect(findings[0]!.kind).toBe("stale-coverage-entry");
+    expect(findings[0]!.subject).toBe("dead_debt_2568");
+    expect(findings[0]!.message).toContain("KNOWN_DEBTS");
+    expect(findings[0]!.message).toContain("the list only shrinks");
+  });
+
+  /*
+    ⚠ THE WIRE IS DRIVEN, NOT ASSUMED — and this arm exists because the three
+    above DID NOT CATCH AN UNWIRED CHECK. Measured while writing them: deleting
+    the `staleCoverageEntryFindings` call out of `buildStaticAtlas` left all
+    three passing, because nothing in the real lists is stale, so an unwired
+    check and a working one are indistinguishable from outside. A reader nothing
+    calls is invariant 7's defect, in the instrument whose job is to catch it.
+
+    So the fabricated entry goes through the BUILD rather than through the
+    reader, which is why `buildStaticAtlas` takes a `coverage` parameter at all.
+  */
+  it("the BUILD raises it, not merely the reader — the wire itself", () => {
+    const wired = buildStaticAtlas(CORPUS, { documented: ["unwired_probe_2568"] });
+    const stale = wired.findings.filter((one) => one.kind === "stale-coverage-entry");
+    expect(stale, "the build does not call the stale-entry check — the reader is exported and dead")
+      .toHaveLength(1);
+    expect(stale[0]!.subject).toBe("unwired_probe_2568");
+    expect(stale[0]!.severity).toBe("error");
+  });
+
+  it("the debts half is wired too, and separately", () => {
+    const wired = buildStaticAtlas(CORPUS, { debts: ["unwired_debt_2568"] });
+    const stale = wired.findings.filter((one) => one.kind === "stale-coverage-entry");
+    expect(stale.map((one) => one.subject)).toEqual(["unwired_debt_2568"]);
+    expect(stale[0]!.message).toContain("KNOWN_DEBTS");
+  });
+
+  it("CONTROL — the real build is clean, and the measured specimen stays absent", () => {
+    expect(built.findings.filter((one) => one.kind === "stale-coverage-entry")).toEqual([]);
+    expect(declaredIds.has("kind_unserved"), "#1577 slice 4b deleted this door").toBe(false);
+    expect(
+      UNREACHABLE_DOORS.some((entry) => entry.id === "kind_unserved"),
+      "its exemption was deleted with it — the specimen must stay absent, or this suite is its own subject",
+    ).toBe(false);
   });
 });

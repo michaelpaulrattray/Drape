@@ -126,6 +126,7 @@ export type Finding = {
     | "duplicate-door-id"         // two declared sources claiming one id — see #192
     | "shared-bare-door-id"       // two declared doors claiming one BARE id — see #1506
     | "stale-unreachable-doc"     // a drive PRODUCED an id documented as unreachable
+    | "stale-coverage-entry"      // an UNREACHABLE_DOORS or KNOWN_DEBTS line naming a door the source no longer declares — see #2568
     | "road-cites-unknown-door"   // the roads map names a door the source does not declare
     | "road-cites-unknown-procedure" // a road names a procedure the entrance does not expose
     | "road-cites-undeclared-symbol"  // a road backticks an identifier the tree does not declare — see #1821
@@ -1607,7 +1608,88 @@ export function narrowSharedBareIdPins(
   };
 }
 
-export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticAtlas {
+/**
+ * AN ENUMERATED COVERAGE ENTRY FOR A DOOR THAT NO LONGER EXISTS (#2568) — the
+ * direction `UNREACHABLE_DOORS` and `KNOWN_DEBTS` could not be read in.
+ *
+ * Every other check in the coverage contract walks the DECLARED doors and asks
+ * what accounts for each one, so an entry whose door has been deleted is
+ * consulted by nothing and reddens nothing: it sits in the file reading as a
+ * live exemption for machinery that is gone. Measured instance: `kind_unserved`
+ * was deleted outright by #1577 slice 4b, and afterwards the corpus still said
+ * *"pinned by its C5 service arm"* while the ROADS map in the same instrument
+ * called it *"A DOOR THAT IS DEAD"* — two files of one map disagreeing about one
+ * id (working law 4), with `pnpm capability:check` green throughout. A human
+ * reading the diff found it, which is the work this instrument exists to make
+ * unnecessary.
+ *
+ * It matters more than one stale line because `UNREACHABLE_DOORS` is the map's
+ * NAMED REMAINDER and the founder law on it is that it only shrinks. A list
+ * that cannot see its own dead entries shrinks when somebody remembers, not
+ * when the code changes. The sibling list one file over
+ * (`UNDECLARED_PROSE_NAMES`) has had both directions since #1821 and says so in
+ * its own docblock; this is that pattern applied to the list that lacked it.
+ *
+ * ⚠ `KNOWN_DEBTS` IS ASKED THE SAME QUESTION, AND ONLY THIS ONE: a debt is
+ * already forced out of the list when it becomes reached or documented (both
+ * checked by `buildStaticAtlas` below), so the only way one could rot unnoticed
+ * was its door being DELETED — which under the shrink-only law reads as
+ * outstanding work on something nobody can work.
+ *
+ * ⚠ AND `UNDECLARED_PROSE_NAMES` IS DELIBERATELY NOT GIVEN THIS CHECK, because
+ * it is the opposite kind of list: its entries exist PRECISELY BECAUSE the tree
+ * declares no such name, so "names nothing the tree declares" is its entry
+ * condition rather than its rot. Asking it this question would redden every
+ * line it has. Its own two directions are `stale-undeclared-prose-name`.
+ *
+ * It takes its three inputs rather than reading the constants, so a suite can
+ * drive it with a fabricated entry: a checker that cannot be made to fail is
+ * not a checker (working law 2), and the real lists are its negative control.
+ */
+export function staleCoverageEntryFindings(input: {
+  documented: readonly string[];
+  debts: readonly string[];
+  declaredDoorIds: ReadonlySet<string>;
+}): Finding[] {
+  const findings: Finding[] = [];
+  for (const id of input.documented) {
+    if (input.declaredDoorIds.has(id)) continue;
+    findings.push({
+      id: `stale-unreachable:${id}`, severity: "error", kind: "stale-coverage-entry", subject: id,
+      message:
+        `UNREACHABLE_DOORS carries a reason for "${id}" and the source declares no such door any `
+        + "more — delete the line in the commit that removed the door; an exemption for machinery "
+        + "that is gone reads as live and can be audited by nobody",
+    });
+  }
+  for (const id of input.debts) {
+    if (input.declaredDoorIds.has(id)) continue;
+    findings.push({
+      id: `stale-debt:${id}`, severity: "error", kind: "stale-coverage-entry", subject: id,
+      message:
+        `KNOWN_DEBTS owes a row for "${id}" and the source declares no such door any more — `
+        + "delete the line; the list only shrinks, and a debt against a deleted door can never be paid",
+    });
+  }
+  return findings;
+}
+
+/**
+ * ⚠ `coverage` IS INJECTABLE FOR ONE REASON AND IT IS NOT CONVENIENCE (#2568):
+ * so a suite can prove the stale-entry check is WIRED HERE, not merely
+ * exported. Driven when it was added: with `staleCoverageEntryFindings` called
+ * and with its call deleted, the suite's own arms over the reader passed
+ * IDENTICALLY — because nothing in the real lists is stale, so an unwired check
+ * and a working one look the same from outside. That is invariant 7 exactly, in
+ * the instrument whose job is to catch it. The arm that closes it hands this
+ * parameter a fabricated entry and asserts the finding comes out of the BUILD.
+ *
+ * It defaults to the real constants, so every caller but that arm is unchanged.
+ */
+export function buildStaticAtlas(
+  corpus: readonly CorpusRow[] = CORPUS,
+  coverage: { documented?: readonly string[]; debts?: readonly string[] } = {},
+): StaticAtlas {
   const service = declaredServiceRefusals();
   const interpreter = declaredInterpreterRefusals().filter((id) => !service.includes(id));
   const cannot = Object.keys(CANNOT_SAY_COPY).sort() as CannotSayReason[];
@@ -1698,11 +1780,18 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     documentation — both are error-severity, checked here and in drivenFindings.
   */
   const documented = new Map(UNREACHABLE_DOORS.map((d) => [d.id, d]));
+  /*
+    DECLAREDNESS IS READ HERE RATHER THAN BELOW because the coverage contract's
+    two enumerated lists need it (#2568). It was computed after this block, for
+    the roads map alone, which is the whole reason neither list could be walked
+    in the other direction.
+  */
+  const declaredDoorIds = new Set(declared.map((d) => d.id));
   const expectedIds = new Set(corpus.map((row) => outcomeId(row.expect)).filter((x): x is string => x !== null));
   /* Reaching the claim IS reaching `busy` — every would-render row ends at the
      admit door; with the census's shut claim that is the door that answers. */
   if (corpus.some((row) => row.expect === "would-render")) expectedIds.add("busy");
-  for (const [id, doc] of documented) {
+  for (const id of documented.keys()) {
     if (expectedIds.has(id)) {
       findings.push({
         id: `contradiction:${id}`, severity: "error", kind: "coverage-contradiction", subject: id,
@@ -1711,6 +1800,11 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     }
   }
   const knownDebts = new Set(KNOWN_DEBTS);
+  findings.push(...staleCoverageEntryFindings({
+    documented: coverage.documented ?? [...documented.keys()],
+    debts: coverage.debts ?? [...knownDebts],
+    declaredDoorIds,
+  }));
   for (const entry of declared) {
     if (expectedIds.has(entry.id)) {
       /* A debt that got reached must leave the list — shrink-only, enforced. */
@@ -1771,7 +1865,8 @@ export function buildStaticAtlas(corpus: readonly CorpusRow[] = CORPUS): StaticA
     a flag that does not exist, or an entrance file that is not on disk is an
     ERROR — the map is refused rather than allowed to tell a story.
   */
-  const declaredIds = new Set(declared.map((d) => d.id));
+  /* The same set the coverage contract above reads — one reader, not two. */
+  const declaredIds = declaredDoorIds;
   const flagSet = new Set(declaredFlags());
   for (const road of ROADS) {
     for (const door of road.doors) {

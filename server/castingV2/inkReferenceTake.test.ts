@@ -48,6 +48,27 @@ describe("the placement is resolved, never believed", () => {
     expect(full?.placement).toEqual({ kind: "open", phrase: "full sleeve" });
   });
 
+  it("reads a determiner off a measured surface — the product's own word included (#2572)", () => {
+    /* The vocabulary's noun hard-codes ONE possessive, so this reader knew
+       `her neck` and not `their neck` — which is the phrasing the product uses
+       itself. The founder's own court on #2565 asked WHERE, was answered
+       *"their neck"*, and did not understand the answer. */
+    for (const said of ["their neck", "the neck", "his neck", "my neck"]) {
+      const take = readInkReferenceTake(reply(said, null), `a small sparrow tattoo on ${said}`);
+      expect(take?.placement, `"${said}" is the neck`).toEqual({ kind: "measured", placement: "neck" });
+    }
+    expect(readInkReferenceTake(reply("their upper arm", null), "on their upper arm")?.placement)
+      .toEqual({ kind: "measured", placement: "upperArm" });
+  });
+
+  it("⚠ and a SPATIAL qualifier still keeps her words (#2572's open half)", () => {
+    /* Merging this would speak back "her neck" and render the neck wherever the
+       engine likes, dropping what she asked for without saying so — the meaning
+       judgement this module reserves to a person. */
+    const take = readInkReferenceTake(reply("side of the neck", null), "a sparrow on the side of the neck");
+    expect(take?.placement).toEqual({ kind: "open", phrase: "side of the neck" });
+  });
+
   it("names no place at all as ABSENT, which is a question and not a refusal", () => {
     const take = readInkReferenceTake(reply("", null), "use this tattoo design");
     expect(take?.placement).toEqual({ kind: "absent" });
