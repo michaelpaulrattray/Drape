@@ -660,7 +660,23 @@ export type ReadPurpose =
    * bucket would make "what does a cast's voice card cost us" unanswerable —
    * the question the disappearing-technology law's third clause obliges.
    */
-  | "voice.card";
+  | "voice.card"
+  /**
+   * ONE OPEN READ OF A FRAME, NAMING WHAT IS ACTUALLY ON A CHARACTER — the face
+   * reader's discovery step (#2566, the design approved on #2532).
+   *
+   * Its own word on `persona`'s argument, and here the question it has to be
+   * able to answer out loud is the one the whole rung turns on: **what does
+   * reading a cast cost us now, against the fixed list it replaces.** Today's
+   * scan is priced entirely per segmenter call; this road moves part of that
+   * spend onto the TEXT transport, and folded into `describe` — which is the
+   * face scan's OTHER text read, of the same frame, in the same second —
+   * neither half could ever be separated again.
+   *
+   * Not `classify` either: that is a kind or key decision from a closed set,
+   * and the whole point of this read is that its answers are not from a set.
+   */
+  | "discover";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -682,6 +698,7 @@ export const READ_PURPOSES = Object.freeze([
   "reads",
   "persona.translate",
   "voice.card",
+  "discover",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

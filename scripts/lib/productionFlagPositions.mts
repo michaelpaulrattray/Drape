@@ -264,6 +264,15 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "widened WITH face-scan as one pair (the boot guard requires it; his "
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
+  CASTING_FACE_DISCOVERY_SCOPE: {
+    position: "UNSET",
+    why:
+      "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
+      + "approved on #2532). It has never been on for any account. It changes "
+      + "what the panel draws as well as what a reading costs, so the flip is "
+      + "his eye on real panels — judged beside #2565's twelve-edit chains, "
+      + "which is the design's own section 8 step 4",
+  },
   ENABLE_CASTING_PAIR_ONE_READ: {
     /*
       `"true"` since 2026-10-16, on his word and nothing else. The row read

@@ -60,14 +60,15 @@ import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { withCallCensus, type CallCensus } from "./callCensus";
 import { storagePublicUrl, storageReadBytes } from "../storage";
 import { describeFace, type FaceDescriptions } from "./faceDescribe";
-import { scanFace, scanPlan, type FaceScan } from "./faceScan";
+import { plannedQuestions, scanFace, scanPlan, type FaceScan } from "./faceScan";
 import { interpreterEngine } from "./interpreter";
 import { createFalRegionReader } from "./falRegionReader";
 import type { PanelBox, PanelScan } from "./facePanel";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
-import { captureCastingScanTableEnabled } from "./castingV2Scope";
+import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
+import { discoverFeatures, discoveryCropsOf, type FaceDiscovery } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
@@ -124,12 +125,21 @@ export type ScannedFace = {
 /**
  * The laterality summary, derived from the plan the scan actually ran.
  *
- * From `scanPlan()` rather than from the slots that came back, so a feature
- * that answered NOTHING still prints `--` — an absence is only legible beside
- * the question that produced it.
+ * From the plan rather than from the slots that came back, so a feature that
+ * answered NOTHING still prints `--` — an absence is only legible beside the
+ * question that produced it.
+ *
+ * ⚠ **It takes the plan rather than calling `scanPlan()` itself, and that is
+ * #2566's doing.** A question the discovery gated out was never asked, so
+ * printing `horns:--` for it would say we looked and found nothing when we
+ * never looked — the same sentence meaning two different things, which is the
+ * one thing this summary exists to keep straight.
  */
-function sidesOf(slots: ReadonlyMap<FeatureSlot, unknown>): string {
-  return scanPlan()
+function sidesOf(
+  slots: ReadonlyMap<FeatureSlot, unknown>,
+  plan: ReturnType<typeof plannedQuestions>,
+): string {
+  return plan
     .filter((region) => region.slots.some((slot) => slot.instance !== null))
     .map((region) => {
       const found = (instance: string) =>
@@ -225,7 +235,11 @@ async function stencilOf(mask: Mask, box: PanelBox): Promise<Buffer> {
  * lifecycle, and minting sixteen objects per face-version to draw eight
  * thumbnails is the manifest-and-purge machinery 4a exists to avoid.
  */
-async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace> {
+async function displayOf(
+  scan: FaceScan,
+  frameUrl: string,
+  plan: ReturnType<typeof plannedQuestions>,
+): Promise<ScannedFace> {
   const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
   let stencilBytes = 0;
   for (const [slot, box] of Array.from(scan.boxes.entries())) {
@@ -250,7 +264,7 @@ async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace>
     empty: scan.empty,
     failed: scan.failed,
     stencilBytes,
-    sides: sidesOf(slots),
+    sides: sidesOf(slots, plan),
   };
 }
 
@@ -302,11 +316,52 @@ function defaultRegionReader(): RegionReader | null {
   return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
 }
 
+/**
+ * ASK THE PICTURE BEFORE ASKING THE LIST — `CASTING_FACE_DISCOVERY_SCOPE`
+ * (#2566, the design approved on #2532).
+ *
+ * Decided HERE, for the reason the pair-one-read flag is: `scanFace` takes what
+ * it is given and never reaches for a paid transport of its own, so what this
+ * module owns is whether a discovery is bought at all.
+ *
+ * ⚠ **Three separate roads lead to "ask the whole catalogue", and all three are
+ * silent.** The flag is off for this user; there is no text transport
+ * configured; or the read itself failed, timed out or came back unparseable.
+ * The scan behaves identically in every one of them and the customer sees
+ * today's panel — a discovery is a courtesy on top of a courtesy, and it is not
+ * allowed to be the thing that takes a feature off somebody's panel.
+ *
+ * ⚠ **Exported for its own arms, on `pairInOneReadEnabled`'s own reasoning, and
+ * that export was bought by a sabotage rather than chosen.** Driven through a
+ * scan, replacing the flag check here with a constant left the whole suite
+ * green — because the next line finds no transport, or the read fails, and
+ * both of those fall open to exactly the answer a correctly-gated scan gives.
+ * **The three silent roads that make this road safe are the same three that
+ * make it untestable from the outside**, so the decision is driven where it is
+ * made: a flag nothing can be shown to consult is a feature on for everyone.
+ */
+export function defaultDiscoverer(
+  userId: number,
+): ((frame: { bytes: Buffer; width: number; height: number }) => Promise<FaceDiscovery>) | null {
+  if (!captureCastingFaceDiscoveryEnabled(userId)) return null;
+  const engine = interpreterEngine();
+  if (engine === null) return null;
+  return async (frame) => discoverFeatures({ crops: await discoveryCropsOf(frame), engine });
+}
+
 export type FaceScanDependencies = {
   reader?: RegionReader | null;
   describe?: ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null;
   readBytes?: typeof storageReadBytes;
   publicUrl?: (key: string) => string;
+  /**
+   * THE DISCOVERY READ, or nothing — handed the frame, answering what is on it.
+   *
+   * A seam like `reader` and `describe`: `undefined` means "the live one if the
+   * flag names this user", and an explicit `null` means "do not discover",
+   * which is what every existing suite gets without changing a line.
+   */
+  discover?: ((frame: { bytes: Buffer; width: number; height: number }) => Promise<FaceDiscovery>) | null;
 };
 
 /**
@@ -541,9 +596,37 @@ export async function scannedFace(input: {
     const metadata = await sharp(frame.bytes).metadata();
     if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
     const url = publicUrl(input.imageKey);
+    /*
+      THE DISCOVERY, BEFORE THE QUESTIONS — because its whole job is to decide
+      which of them get bought, so it cannot ride alongside them the way the
+      describer does (#2566).
+
+      That ordering is the one real cost of this road and it is stated rather
+      than buried: about 12 seconds in front of a panel somebody is watching,
+      before the first segmenter call goes out. What it buys back is the reads
+      it cancels and — from slice 2 — the features no catalogue question covers.
+
+      It cannot throw. `discoverFeatures` turns every failure into a reading
+      that gates nothing, and a discoverer that is absent does the same.
+    */
+    const discover = input.dependencies?.discover === undefined
+      ? defaultDiscoverer(input.userId)
+      : input.dependencies.discover;
+    const discovery = discover === null
+      ? null
+      : await discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height });
+    /*
+      The questions this reading will buy. `scanFace` narrows its own plan from
+      the same discovery through the same function, so these cannot disagree —
+      what is needed HERE is the count and the laterality for the PARTIAL, which
+      is written while the scan is still running and has no returned scan to
+      read them off.
+    */
+    const planRan = plannedQuestions(discovery);
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
+      discovery,
       contentType: frame.contentType,
       describe: input.dependencies?.describe === undefined
         ? defaultDescriber()
@@ -568,12 +651,12 @@ export async function scannedFace(input: {
               frameUrl: url,
               slots,
               words: entry.partial?.words ?? new Map(),
-              asked: scanPlan().length,
+              asked: planRan.length,
               found: slots.size,
               empty: [],
               failed: [],
               stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
-              sides: sidesOf(slots),
+              sides: sidesOf(slots, planRan),
             };
           }
         })().catch(() => {
@@ -582,7 +665,7 @@ export async function scannedFace(input: {
         });
       },
     });
-    return await displayOf(scan, url);
+    return await displayOf(scan, url, planRan);
     });
     spent = census;
     return value;

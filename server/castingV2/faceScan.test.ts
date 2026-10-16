@@ -6,6 +6,7 @@ import { armedBornWornClasses } from "./bornWornDetector";
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
+import type { FaceDiscovery } from "./faceDiscovery";
 
 /**
  * THE AUTO-SCAN, driven directly — never through a model that usually behaves.
@@ -802,5 +803,97 @@ describe("a pair that answered on one side only gets one more look", () => {
 
     expect(scan.boxes.has("eye@left")).toBe(false);
     expect(scan.boxes.has("eye@right")).toBe(false);
+  });
+});
+
+/*
+  THE DISCOVERY GATE, AT THE WIRE (#2566).
+
+  `faceDiscovery.test.ts` drives the gate as a pure function. These arms prove
+  the other half — that `scanFace` actually asks fewer questions, and that the
+  numbers it reports about itself move with them. Invariant 5's shape: the
+  contract is proven on what went OUT to the reader, not on a constant near it.
+*/
+describe("the discovery gate", () => {
+  const found = (...names: string[]): FaceDiscovery => ({
+    ok: true,
+    features: names.map((name) => ({ name, count: 1, about: "" })),
+    cannotSee: [],
+    crops: ["head", "full"],
+  });
+
+  it("never asks about a feature the discovery did not find", async () => {
+    const r = reader({});
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: r,
+      describe: null,
+      discovery: found("hair", "eyes", "nose"),
+    });
+
+    const everythingAsked = [...r.asked, ...r.sideAsked];
+    /* The three it found. */
+    expect(everythingAsked).toContain("hair");
+    expect(everythingAsked).toContain("eyes");
+    expect(everythingAsked).toContain("nose");
+    /* And nothing else from the catalogue — this is the saving. */
+    expect(everythingAsked).not.toContain("facial hair");
+    expect(everythingAsked).not.toContain("glasses");
+    expect(everythingAsked).not.toContain("earring");
+    expect(everythingAsked).not.toContain("all the teeth");
+    /* A gated-out feature has no box, and it is NOT reported empty either —
+       `empty` means "asked and answered nothing", and a question nobody asked
+       must not borrow that sentence. */
+    expect(scan.boxes.has("glasses")).toBe(false);
+    expect(scan.empty).not.toContain("glasses");
+  });
+
+  it("reports the questions it ASKED, not the ones it might have", async () => {
+    /* The panel's "is this a face or a broken reader" line rests on
+       asked/found. A scan that asked three and said twelve would read as a
+       catastrophically bad reader rather than a narrow one. */
+    const whole = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
+    const gated = await scanFace({
+      frame: FRAME,
+      reader: reader({}),
+      describe: null,
+      discovery: found("hair", "eyes", "nose"),
+    });
+    expect(gated.asked).toBe(3);
+    expect(gated.asked).toBeLessThan(whole.asked);
+    expect(whole.asked).toBe(scanPlan().length);
+  });
+
+  it("asks EVERYTHING when the discovery failed — the fail-open direction", async () => {
+    const r = reader({});
+    const scan = await scanFace({
+      frame: FRAME,
+      reader: r,
+      describe: null,
+      discovery: { ok: false, why: "the provider timed out" },
+    });
+    expect(scan.asked).toBe(scanPlan().length);
+    expect([...r.asked, ...r.sideAsked]).toContain("glasses");
+  });
+
+  it("asks EVERYTHING when no discovery was handed in — every caller today", async () => {
+    const r = reader({});
+    const scan = await scanFace({ frame: FRAME, reader: r, describe: null });
+    expect(scan.asked).toBe(scanPlan().length);
+    expect([...r.asked, ...r.sideAsked]).toContain("glasses");
+  });
+
+  it("still composes her build, which no catalogue question gates", async () => {
+    /* The composed region is not in `scanPlan()` at all, so the gate must not
+       be able to reach it — her build is arithmetic on two reads the scan
+       makes anyway. */
+    const r = reader({});
+    await scanFace({
+      frame: FRAME,
+      reader: r,
+      describe: null,
+      discovery: found("hair"),
+    });
+    expect(r.subjectAsked.length).toBeGreaterThan(0);
   });
 });
