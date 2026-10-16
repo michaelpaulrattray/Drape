@@ -5,7 +5,8 @@
 -- the edits already made is one natural description of the cast as they are
 -- now — "it must read naturally into the description not as an edit list" —
 -- rewritten after each edit lands, stored on the version, and read back by the
--- next refine of that version and by a Follow of it.
+-- next refine of that version (and, for a face from a Follow of it, by that
+-- face's first refine). A Follow itself compiles from the box, as before.
 --
 -- PURELY ADDITIVE: one nullable column on an existing table. No row is read,
 -- rewritten or backfilled; every existing version reads NULL, which is the

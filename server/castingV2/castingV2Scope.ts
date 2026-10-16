@@ -2699,11 +2699,13 @@ export function validateCastingVoiceEnvironment(input: {
  * the cast as they are now — written by a text model from the previous version's
  * description plus this edit, never an edit list (his words on #2545: *"it must
  * read naturally into the description not as an edit list"*) — in place of the
- * "Change only …" clause, and whether a Follow of an edited version sends that
- * description beside the anchor photograph in place of the parent roll's brief.
+ * "Change only …" clause. A Follow is untouched by it — his word, 2026-10-16:
+ * *"follow doesnt need a description shouldnt it just work like the other
+ * follows?"* — and only a followed face's FIRST refine reads the description of
+ * the version it was followed from, as its seed.
  *
  * Off, and absent means off: no description is written, none is read, and the
- * refine prompt and the follow compile are byte-identical to today's.
+ * refine prompt is byte-identical to today's.
  *
  * Its parent is `CASTING_V2_SCOPE` alone — a description is of a cast, and the
  * repaint (the one render road since #1577 slice 4b) is every refine there is.

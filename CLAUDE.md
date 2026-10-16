@@ -670,7 +670,7 @@ the live service on every push.
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
 | `CASTING_CREATION_RECORD_SCOPE` | the signed, independently timestamped record behind each Klieg ID (N2d-1) — needs `CREATION_RECORD_PRIVATE_KEY` |
 | `CASTING_VOICE_SCOPE` | a signed cast's written voice line becoming a voice you can hear, make again and keep (N4b-1) — needs `ELEVENLABS_API_KEY` |
-| `CASTING_CURRENT_DESCRIPTION_SCOPE` | one natural current description of the cast, carried by each paid refine and by a Follow of an edited version (#2565 slice 1) |
+| `CASTING_CURRENT_DESCRIPTION_SCOPE` | one natural current description of the cast, carried by each paid refine in place of the change clause (#2565 slice 1) |
 | `CASTING_DIAGNOSTIC_CAPTURE_SCOPE` | keeping the frame from a refused render, and the words of a refused roll, for diagnosis |
 | `ENABLE_CASTING_PAIR_ONE_READ` | whether a face scan answers a left-and-right pair with ONE segmenter read instead of two — a boolean, the scan only, never the refine (#2191) |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader rollout |

@@ -294,8 +294,8 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "BUILT DARK 2026-10-16 (#2565 slice 1, #2545 folded in; his word closing the #801 "
       + "court: \"okay cool im happy with the build\"). A paid refine renders from the "
       + "pristine master with ONE natural description of who the cast is now in place of "
-      + "the change clause (round 2's A4 arm), and a Follow of an edited version sends that "
-      + "description in place of the original brief. UNSET until his eye on the court "
+      + "the change clause (round 2's A4 arm). A Follow compiles exactly as before (his word: "
+      + "\"follow doesnt need a description\"). UNSET until his eye on the court "
       + "strips; the flip is his",
   },
   CASTING_REFINE_DISPATCH_SCOPE: {

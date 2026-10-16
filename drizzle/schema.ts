@@ -2757,10 +2757,12 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    * WHO THEY ARE NOW, IN ONE NATURAL PARAGRAPH (#2565 slice 1, #2545 folded;
    * migration 0086). Written when this version LANDS, by a text model, from the
    * previous version's description plus the edit that landed — prose, never an
-   * edit list. Where there is no previous description the seed is the words the
-   * sheet was COMPILED from: the roll's brief, or, on a Follow of an edited
-   * version, that version's own description, plus the earlier asks. The next
-   * refine of this version and a Follow of it read it back. NULL on every
+   * edit list. Where there is no previous description the seed is the roll's
+   * brief plus the earlier asks — or, on a face from a Follow of an edited
+   * version, that followed version's own description, because the face
+   * inherited the edit through the anchor photo while its roll's brief is still
+   * the original words. The next refine of this version reads it back. A Follow
+   * itself compiles from the box, exactly as before. NULL on every
    * version made with `CASTING_CURRENT_DESCRIPTION_SCOPE` off, and on any
    * version whose writer did not answer (the render then rode today's prompt).
    *

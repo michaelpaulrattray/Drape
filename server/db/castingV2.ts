@@ -811,12 +811,6 @@ export type OwnedCandidateFace = {
   thumbKey: string | null;
   internalPrompt: unknown;
   /**
-   * WHO THIS FACE IS NOW, in one paragraph (#2565 slice 1) — the selected
-   * version's own `currentDescription`, and null for the original (whose words
-   * are the brief) and for any version written without one.
-   */
-  currentDescription: string | null;
-  /**
    * WHAT THE ROLL THIS FACE CAME FROM WAS BORN WEARING (item 7a).
    *
    * Joined here rather than read a second time, and joined THROUGH the owned
@@ -874,7 +868,6 @@ export async function getOwnedCandidateWithSelectedFace(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
-      variantCurrentDescription: castingCandidateVariants.currentDescription,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -911,7 +904,6 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.variantImageKey,
       thumbKey: row.variantThumbKey,
       internalPrompt: row.variantInternalPrompt,
-      currentDescription: row.variantCurrentDescription ?? null,
       ...roll,
     }
     : {
@@ -921,7 +913,6 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.candidate.imageKey,
       thumbKey: row.candidate.thumbKey,
       internalPrompt: row.candidate.internalPrompt,
-      currentDescription: null,
       ...roll,
     };
 }
@@ -975,7 +966,6 @@ export async function getOwnedCandidateOnVersion(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
-      variantCurrentDescription: castingCandidateVariants.currentDescription,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -1028,7 +1018,6 @@ export async function getOwnedCandidateOnVersion(
         imageKey: row.variantImageKey,
         thumbKey: row.variantThumbKey,
         internalPrompt: row.variantInternalPrompt,
-        currentDescription: row.variantCurrentDescription ?? null,
         ...roll,
       }
       : {
@@ -1038,7 +1027,6 @@ export async function getOwnedCandidateOnVersion(
         imageKey: row.candidate.imageKey,
         thumbKey: row.candidate.thumbKey,
         internalPrompt: row.candidate.internalPrompt,
-        currentDescription: null,
         ...roll,
       },
   };
@@ -1096,16 +1084,16 @@ export async function getBriefForOwnedCandidate(
 }
 
 /**
- * WHAT A FOLLOW'S SHEET WAS ACTUALLY COMPILED FROM — the seed for the FIRST
- * description of a followed face (#2565 slice 1, the relay's finding on
- * PR #2571).
+ * WHAT A FOLLOWED FACE DESCENDS FROM — the seed for its FIRST description
+ * (#2565 slice 1, the relay's finding on PR #2571).
  *
  * `getBriefForOwnedCandidate` above returns `casting_rolls.briefText`, which is
  * always the CUSTOMER'S OWN WORDS — and on a Follow of an edited version that is
- * the sentence the ORIGINAL was rolled from, not what this sheet was drawn to.
- * `createRoll` hands the compiler the followed version's `currentDescription`
- * instead and still records the customer's words on the row, which is right for
- * the box and wrong for a seed: a child of a green-eyed version, refined for the
+ * the sentence the ORIGINAL was rolled from. A Follow compiles from those words
+ * exactly as every Follow does (his word, 2026-10-16: *"follow doesnt need a
+ * description shouldnt it just work like the other follows?"*), and the face
+ * inherits the edit through the ANCHOR PHOTO — so the words are right for the
+ * box and wrong for a seed: a child of a green-eyed version, refined for the
  * first time, would be described from "brown eyes" and ask the render to revert
  * the eyes.
  *
@@ -1114,8 +1102,8 @@ export async function getBriefForOwnedCandidate(
  * something of their own into the box before rolling it. The caller folds those
  * three into one seed; the decision is not made here.
  *
- * ⚠ **IT IS READ, NEVER DERIVED FROM TODAY'S FLAG.** Whether a given sheet was
- * compiled from a description is a fact about the past, and
+ * ⚠ **IT IS READ, NEVER DERIVED FROM TODAY'S FLAG.** Whether the followed
+ * version carries a description is a fact about the past, and
  * `CASTING_CURRENT_DESCRIPTION_SCOPE` can move under it — so the evidence is the
  * lineage plus the description that lineage points at, both of them rows.
  *

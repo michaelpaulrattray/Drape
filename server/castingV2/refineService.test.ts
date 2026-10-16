@@ -15337,7 +15337,8 @@ describe("one current description rides the paid refine", () => {
     WHAT THIS SHEET WAS COMPILED FROM (#2565 slice 1, the relay's finding on
     PR #2571). The default is a sheet that follows nothing: its own brief and no
     parent, which is the original arms' world unchanged. The Follow arms below
-    set a parent description, which is what `createRoll` actually compiled from.
+    set a parent description: the followed version's, which its faces inherited
+    through the anchor photo while their roll's brief stayed the original words.
   */
   let followedSeed: { briefText: string; parentDescription: string | null; parentBriefText: string | null } = {
     briefText: PARENT_BRIEF,
@@ -15506,11 +15507,13 @@ describe("one current description rides the paid refine", () => {
     dark hair" while the picture beside it had a short crop, and the render was
     asked to put the long hair back. These arms drive the two together.
   */
-  const FOLLOWED = "A woman in her thirties with a short dark crop.";
+  /* Refine the eyes, Follow, then refine a child's hair: the child must keep the eyes. */
+  const FOLLOWED = "A woman in her thirties with long dark hair and bright green eyes.";
 
-  it("seeds a followed face from the VERSION it descends from, never from the original brief", async () => {
-    /* The parent was refined to a short crop; this sheet was compiled from that
-       description, and the box was left holding the parent roll's own brief. */
+  it("eyes refined, then Followed, then the child's hair refined — the child's first description keeps the inherited green eyes", async () => {
+    /* The parent was refined to bright green eyes and followed; the faces
+       inherited them through the photo, and the box was left holding the
+       parent's brief — which is still the brown-eyed original's words. */
     followedSeed = { briefText: PARENT_BRIEF, parentDescription: FOLLOWED, parentBriefText: PARENT_BRIEF };
 
     await refineCandidate(describing as never, ask);
@@ -15521,6 +15524,7 @@ describe("one current description rides the paid refine", () => {
 ${FOLLOWED}`);
     /* ... and the original's words, which would revert it, are NOT. */
     expect(asked[0]!.user, "seeding from casting_rolls.briefText reverts the inherited edit").not.toContain(PARENT_BRIEF);
+    expect(asked[0]!.user).toContain("bright green eyes");
     expect(asked[0]!.user).toContain("wear her hair down");
     /* Nothing was typed into the box, so there is no change to fold in. */
     expect(asked[0]!.user).not.toContain("Changes already made since");

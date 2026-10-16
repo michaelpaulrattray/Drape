@@ -1981,59 +1981,6 @@ describe("the ROW A follow (#177) — on the author road the photo rides, or the
     return { seen, result };
   }
 
-
-  /*
-    ONE CURRENT DESCRIPTION, ON A FOLLOW (#2565 slice 1). A follow of an EDITED
-    version sends that version's description to the compiler in place of the
-    parent roll's brief — while the box still holds that brief — and the
-    customer's own words when they typed something new. Asserted on what the
-    compiler was handed, which is what reaches the eight prompts.
-  */
-  describe("a follow of an edited version carries its current description", () => {
-    const DESCRIPTION = "A wiry cyclist in their 20s, freckled and mid-laugh, with a short cropped haircut.";
-    /* In afterEach, so a red arm cannot leak its flag into the control. */
-    afterEach(() => { vi.unstubAllEnvs(); });
-    const editedParent = async () => {
-      const castingDb = await import("../db/castingV2");
-      (castingDb.getOwnedCandidateWithSelectedFace as any).mockResolvedValueOnce({
-        candidate: { id: 1, publicId: FOLLOW_PARENT, position: 3, imageKey: "casting-v2/candidates/parent-MASTER.png" },
-        internalPrompt: null,
-        imageKey: PARENT_FRAME,
-        currentDescription: DESCRIPTION,
-      });
-      (castingDb.getBriefForOwnedCandidate as any).mockResolvedValueOnce({
-        compiledBrief: {}, lockContract: {}, briefText: INPUT.briefText,
-      });
-    };
-
-    it("compiles from the followed version's description when the box holds the parent's brief", async () => {
-      vi.stubEnv("CASTING_V2_SCOPE", "all");
-      vi.stubEnv("CASTING_CURRENT_DESCRIPTION_SCOPE", "users:7");
-      await editedParent();
-      const { seen, result } = await followRoll();
-      await result;
-      expect(seen[0]?.briefText).toBe(DESCRIPTION);
-      expect(seen[0]?.anchorImageAttached, "the photograph still rides beside it").toBe(true);
-    });
-
-    it("keeps the customer's own words when they typed something new for this follow", async () => {
-      vi.stubEnv("CASTING_V2_SCOPE", "all");
-      vi.stubEnv("CASTING_CURRENT_DESCRIPTION_SCOPE", "users:7");
-      await editedParent();
-      const { seen, result } = await followRoll({ briefText: "the same cyclist, but as a mountain climber" });
-      await result;
-      expect(seen[0]?.briefText).toBe("the same cyclist, but as a mountain climber");
-    });
-
-    it("CONTROL — with the flag off the box's words go to the compiler, exactly as today", async () => {
-      vi.stubEnv("CASTING_V2_SCOPE", "all");
-      await editedParent();
-      const { seen, result } = await followRoll();
-      await result;
-      expect(seen[0]?.briefText).toBe(INPUT.briefText);
-    });
-  });
-
   it("reads the anchor's bytes BEFORE the claim and hands them to all eight renders; the compiler is told the photo rides", async () => {
     const { seen, result } = await followRoll();
     await result;

@@ -728,7 +728,7 @@ export type RefineServiceDependencies = {
   countInkCoverageDemand?: typeof recordInkFormDemand;
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
-  /** What a followed sheet was actually compiled from (#2565 slice 1) — the
+  /** What a followed face descends from (#2565 slice 1) — the
    *  seed for the FIRST description of a followed face, and a seam so a suite
    *  can drive a Follow of an edited version with no database. */
   readFollowedSeed?: typeof getFollowedDescriptionSeed;
@@ -6498,14 +6498,14 @@ async function refineCandidateCounted(
 
             `casting_rolls.briefText` is always the customer's own words, and on
             a Follow of an edited version those words describe the ORIGINAL. The
-            sheet itself was compiled from that version's `currentDescription`
-            (`createRoll`), and every face on it was drawn to it — so seeding
+            Follow compiles from those words as every Follow does, and its faces
+            inherit the edit through the ANCHOR PHOTO — so seeding
             from the brief here would describe a green-eyed child as brown-eyed
             and ask the render to REVERT the inherited edit, on the first edit of
             every child of every edited Follow.
 
-            Read, never derived from today's flag: whether this sheet was
-            compiled from a description is a fact about the past, and the scope
+            Read, never derived from today's flag: whether the followed version
+            carries a description is a fact about the past, and the scope
             can move under it, so the evidence is the lineage row and the
             description it points at.
 
@@ -6513,7 +6513,7 @@ async function refineCandidateCounted(
             whose box was left holding the parent's brief says nothing new, so
             the description alone is the whole seed. A customer who TYPED
             something for this Follow asked for it, and their sentence was
-            compiled into the sheet — so it is folded in as the first change
+            what this sheet was compiled from — so it is folded in as the first change
             made since, ahead of this version's own asks, rather than dropped.
           */
           let seed: Awaited<ReturnType<typeof getFollowedDescriptionSeed>> = null;
