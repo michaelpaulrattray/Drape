@@ -11,16 +11,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TextEngine, TextRequest } from "../providers/types";
 import type { FollowBriefSource } from "../db/castingV2";
 import {
+  FOLLOW_BRIEF_DEADLINE_MS,
   FOLLOW_BRIEF_RETRIES,
   FOLLOW_BRIEF_SYSTEM,
   FOLLOW_BRIEF_TIMEOUT_MS,
+  ONE_PERSON_SPECIFICS,
   followBriefUserTurn,
+  statesAnEyeColour,
   writeFollowBrief,
 } from "./currentDescription";
 import { resolveFollowBrief } from "./followBrief";
 
 const wire = vi.hoisted(() => ({
-  createRollInputs: [] as Array<{ briefText: string }>,
+  createRollInputs: [] as Array<{ briefText: string; followCandidatePublicId?: string | null }>,
   source: null as FollowBriefSource | null,
   engine: null as TextEngine | null,
 }));
@@ -29,7 +32,7 @@ vi.mock("./rollService", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./rollService")>();
   return {
     ...actual,
-    createRoll: vi.fn(async (_deps: unknown, input: { briefText: string }) => {
+    createRoll: vi.fn(async (_deps: unknown, input: { briefText: string; followCandidatePublicId?: string | null }) => {
       wire.createRollInputs.push(input);
       /* Stop here: what is being proven is what reached the roll. */
       throw new Error("wire-stop");
@@ -152,7 +155,189 @@ describe("the follow brief writer", () => {
       input,
       4000,
     );
-    expect(personOnly).toMatchObject({ ok: false, reason: "shrunk" });
+    expect(personOnly).toMatchObject({ ok: false, reason: "dropped_clauses" });
+  });
+
+  /*
+    ⚠ THE CHECK THAT GUARDS THAT WAS A LENGTH FLOOR AND WAS WEAK IN BOTH
+    DIRECTIONS (#2582 item 2). Both directions are driven here, because a
+    replacement that fixed one and not the other would pass a single arm.
+  */
+  describe("the brief's other clauses must come back — length never answered this", () => {
+    it("⚠ a REMOVAL on a short brief is kept, where the 70% floor refused it", async () => {
+      /*
+        The card's own example. "shaved head" is 56% of the brief's length, so
+        the floor threw away the edit's whole direction and sent the box's
+        words — the one thing the customer could see was that Follow ignored
+        what they had just changed.
+      */
+      const brief = "long curly red hair down to her waist";
+      const rewrite = "a shaved head";
+      expect(rewrite.length / brief.length).toBeLessThan(0.7); // the floor would have refused
+      const kept = await writeFollowBrief(
+        engineSaying(rewrite),
+        { brief, description: "A woman with a shaved head.", asks: [] },
+        4000,
+      );
+      expect(kept).toMatchObject({ ok: true, brief: rewrite });
+    });
+
+    it("⚠ a scene clause under 30% of the brief cannot be dropped, where the floor passed it", async () => {
+      /*
+        The mirror, and the failure that matters: the floor asks how much text
+        came back, so a long person paragraph with a short scene clause could
+        lose the scene entirely and still clear 70%.
+      */
+      const brief = "A weathered north-Atlantic fisherman in his sixties with a heavy salt-stained oilskin coat, "
+        + "deep-set eyes and a grey stubbled jaw, on a wet harbour wall at dawn";
+      const personOnly = "A weathered north-Atlantic fisherman in his sixties with a heavy salt-stained oilskin coat, "
+        + "a shaved head and a grey stubbled jaw";
+      expect(personOnly.length / brief.length).toBeGreaterThan(0.7); // the floor would have passed
+      const refused = await writeFollowBrief(
+        engineSaying(personOnly),
+        { brief, description: "A weathered fisherman with a shaved head.", asks: [] },
+        4000,
+      );
+      expect(refused).toMatchObject({ ok: false, reason: "dropped_clauses" });
+    });
+
+    it("re-punctuating or merging kept phrases is not a loss", async () => {
+      /* The words survive; only the commas moved. A clause-shaped comparison
+         that demanded whole clauses would refuse this correct rewrite. */
+      const brief = "A courier, standing in a rain-soaked alley at night, low angle, cinematic";
+      const merged = "A bicycle courier standing in a rain-soaked alley at night low angle cinematic";
+      const kept = await writeFollowBrief(
+        engineSaying(merged),
+        { brief, description: "A bicycle courier.", asks: [] },
+        4000,
+      );
+      expect(kept).toMatchObject({ ok: true });
+    });
+  });
+
+  /*
+    ⚠ ONE-PERSON SPECIFICS ARE REFUSED ON THE WAY OUT, NOT ONLY FORBIDDEN IN THE
+    PROMPT (#2582 item 5). His ruling is the bar: *"cousins of that direction of
+    cast not exact replicas"* — a scar in the brief re-locks every cousin onto
+    one face.
+  */
+  describe("a feature of one face that the brief never stated", () => {
+    it("⚠ refuses the scar-bearing description handed back as the brief", async () => {
+      /*
+        The card's own sabotage: the writer returns the VERSION DESCRIPTION,
+        which legitimately carries "a thin scar through the left eyebrow",
+        as though it were the rewritten brief. Every cousin would wear it.
+      */
+      const source = editedSource();
+      const refused = await writeFollowBrief(
+        engineSaying(source.description!),
+        { brief: BRIEF, description: source.description, asks: source.asks },
+        4000,
+      );
+      expect(refused).toMatchObject({ ok: false, reason: "one_person_specific" });
+      expect(source.description).toMatch(/scar/);
+      expect(BRIEF).not.toMatch(/scar/);
+    });
+
+    it("refuses an EYE COLOUR the brief never stated, and keeps one it did", async () => {
+      const withEyes = `${BRIEF.replace(/\.$/, "")}, with emerald green eyes.`;
+      /* Invented: the brief says nothing about anyone's eyes. */
+      expect(await writeFollowBrief(
+        engineSaying(withEyes),
+        { brief: BRIEF, description: "A cyberpunk operative.", asks: [] },
+        4000,
+      )).toMatchObject({ ok: false, reason: "one_person_specific" });
+
+      /* The customer's own: a brief that states green eyes may keep them —
+         it is the family's direction because they wrote it. */
+      const briefWithEyes = "A cyberpunk operative with green eyes and dark undercut hair, chrome jaw implants and a long black coat.";
+      const rewritten = briefWithEyes.replace("dark undercut hair", "platinum blonde undercut hair");
+      expect(await writeFollowBrief(
+        engineSaying(rewritten),
+        { brief: briefWithEyes, description: "A cyberpunk operative with green eyes.", asks: [] },
+        4000,
+      )).toMatchObject({ ok: true, brief: rewritten });
+    });
+
+    it("⚠ CONTROL — a scene colour is not an eye colour", () => {
+      /*
+        `grey` is in `EYE_COLOURS` and is also the colour of weather, a coat and
+        a jaw. A check that matched the colour word alone would refuse most
+        correct rewrites, which is the failure direction that costs a customer
+        their feature silently.
+      */
+      expect(statesAnEyeColour("moody teal and magenta light, a grey stubbled jaw, grey skies")).toBe(false);
+      expect(statesAnEyeColour("deep-set eyes and a grey stubbled jaw")).toBe(false);
+      expect(statesAnEyeColour("with grey eyes")).toBe(true);
+      expect(statesAnEyeColour("a grey-eyed courier")).toBe(true);
+      expect(statesAnEyeColour("her eyes are near-black")).toBe(true);
+    });
+
+    it("⚠ the prompt's own sentence is BUILT from the same words the check uses", () => {
+      /*
+        Working law 4 in the one place its drift would be invisible: a prompt
+        that forbids one list while the backstop refuses another still READS
+        correctly. The sentence is interpolated from `ONE_PERSON_SPECIFICS`, so
+        this holds the two equal rather than hoping.
+      */
+      const line = FOLLOW_BRIEF_SYSTEM.split("\n").find((l) => l.includes("ONE-PERSON SPECIFICS"));
+      expect(line).toBeDefined();
+      for (const word of Object.values(ONE_PERSON_SPECIFICS)) {
+        expect(line, `the prompt must name ${word}`).toContain(word);
+      }
+    });
+  });
+
+  /*
+    ⚠ ONE DEADLINE FROM THE PRESS, AND IT COVERS THE QUEUE WAIT (#2582 item 4).
+    `timeoutMs` is per ATTEMPT and begins only once `openrouter-text` has a
+    slot, and `ProviderQueue.run` takes no signal — so before this the roll
+    could be held for as long as four interpreter calls of up to 120 s took.
+  */
+  describe("the deadline", () => {
+    it("⚠ sends the box's words when the press's own deadline passes, queue wait included", async () => {
+      vi.useFakeTimers();
+      try {
+        /* An engine that never answers — the queue holding the slot, which is
+           the shape no per-attempt timeout can see. */
+        const neverAnswers: TextEngine = {
+          id: "test:follow-queued",
+          complete: () => new Promise(() => undefined),
+        };
+        const pending = writeFollowBrief(neverAnswers, { brief: BRIEF, description: "A cyberpunk operative.", asks: [] }, 4000);
+        await vi.advanceTimersByTimeAsync(FOLLOW_BRIEF_DEADLINE_MS + 1);
+        expect(await pending).toMatchObject({ ok: false, reason: "deadline" });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("⚠ CONTROL — it does NOT fire before the deadline, and the budget is the attempts' own", async () => {
+      vi.useFakeTimers();
+      try {
+        const neverAnswers: TextEngine = { id: "test:follow-queued", complete: () => new Promise(() => undefined) };
+        let settled = false;
+        const pending = writeFollowBrief(neverAnswers, { brief: BRIEF, description: "A cyberpunk operative.", asks: [] }, 4000)
+          .then((result) => { settled = true; return result; });
+        await vi.advanceTimersByTimeAsync(FOLLOW_BRIEF_DEADLINE_MS - 100);
+        expect(settled, "it gave up early").toBe(false);
+        await vi.advanceTimersByTimeAsync(200);
+        expect(await pending).toMatchObject({ ok: false, reason: "deadline" });
+      } finally {
+        vi.useRealTimers();
+      }
+      /* The number is the attempt budget the design already accepted — two
+         attempts and the retry's own backoff — so the ceiling did not grow,
+         it started covering the wait it already claimed to bound. */
+      expect(FOLLOW_BRIEF_DEADLINE_MS).toBe(FOLLOW_BRIEF_TIMEOUT_MS * (FOLLOW_BRIEF_RETRIES + 1) + 500);
+    });
+
+    it("the deadline reaches the engine as a signal too, so a retry cannot dispatch after it", async () => {
+      const sent: TextRequest[] = [];
+      await writeFollowBrief(engineSaying(REWRITTEN, sent), { brief: BRIEF, description: "A cyberpunk operative.", asks: [] }, 4000);
+      expect(sent[0]!.signal).toBeInstanceOf(AbortSignal);
+      expect(sent[0]!.signal!.aborted).toBe(false);
+    });
   });
 
   it("falls back to the ask chain when the version has no description", () => {
@@ -252,7 +437,10 @@ describe("the follow procedure's wire — what reaches createRoll", () => {
     }
   });
 
-  async function pressFollow(userId: number, briefText: string): Promise<string> {
+  async function pressFollow(
+    userId: number,
+    briefText: string,
+  ): Promise<{ briefText: string; followCandidatePublicId?: string | null }> {
     const { appRouter } = await import("../routers");
     const user = {
       id: userId, openId: `follow-${userId}`, email: "f@example.com", name: "F", role: "user",
@@ -272,28 +460,47 @@ describe("the follow procedure's wire — what reaches createRoll", () => {
       briefText,
     })).rejects.toThrow("wire-stop");
     expect(wire.createRollInputs).toHaveLength(1);
-    return wire.createRollInputs[0]!.briefText;
+    const handed = wire.createRollInputs[0]!;
+    wire.createRollInputs.length = 0;
+    return handed;
   }
 
-  it("a never-edited face's Follow reaches the roll byte-identical, and asks no writer", async () => {
+  /*
+    ⚠ **WHAT THIS BLOCK PROVES MOVED WITH THE REWRITE (#2582 items 1 and 3).**
+    These arms used to assert that the rewritten brief reached `createRoll`,
+    because the route chose it. It does not any more: the route hands over the
+    CUSTOMER'S OWN WORDS and `createRoll` decides what to cast from, below its
+    free refusals and beside the claim that must not be keyed on a
+    nondeterministic string.
+
+    So the contract proven here is the route's half — the box's words and the
+    followed candidate, at the wire (law 5) — and the half that moved is proven
+    where it now lives, in `rollService.test.ts` › *"a Follow's rewritten
+    brief"*: the claim keyed on the box, two presses of one id claiming
+    identically, no text call on a free refusal, and the rewrite reaching the
+    compile and the roll row. Asserting the old sentence here would have been a
+    green arm over a defect.
+  */
+  it("hands over the customer's own words, and the followed candidate beside them", async () => {
     const sent: TextRequest[] = [];
-    wire.source = editedSource({ edited: false });
+    wire.source = editedSource();
     wire.engine = engineSaying(REWRITTEN, sent);
-    expect(await pressFollow(5101, BRIEF)).toBe(BRIEF);
+    const handed = await pressFollow(5102, BRIEF);
+    expect(handed.briefText).toBe(BRIEF);
+    expect(handed.followCandidatePublicId).toBe("22222222-2222-4222-8222-222222222222");
+    /* And the route itself asks no writer — the rewrite is not its act now. */
     expect(sent).toHaveLength(0);
   });
 
-  it("an edited version's Follow reaches the roll with the rewritten brief", async () => {
+  it("⚠ the route does not read the flag either — one place decides, and it is not here", async () => {
+    /*
+      Driven on both sides of the flag with everything else held equal: the
+      route's own output must not move, because a second reader of this flag at
+      the route is how the two halves of one request come to disagree.
+    */
     wire.source = editedSource();
     wire.engine = engineSaying(REWRITTEN);
-    expect(await pressFollow(5102, BRIEF)).toBe(REWRITTEN);
-  });
-
-  it("outside the flag, the same edited version's Follow is untouched", async () => {
-    const sent: TextRequest[] = [];
-    wire.source = editedSource();
-    wire.engine = engineSaying(REWRITTEN, sent);
-    expect(await pressFollow(5999, BRIEF)).toBe(BRIEF);
-    expect(sent).toHaveLength(0);
+    expect((await pressFollow(5103, BRIEF)).briefText).toBe(BRIEF);
+    expect((await pressFollow(5999, BRIEF)).briefText).toBe(BRIEF);
   });
 });

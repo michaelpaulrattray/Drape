@@ -112,6 +112,7 @@ import {
 import type { FollowAnchor } from "./cohortPhotorealHuman";
 import { rollComposedOnAuthorRoad } from "./rollProjection";
 import { briefTooLong } from "./briefLength";
+import { resolveFollowBrief } from "./followBrief";
 import type { ResolvedIdentity } from "./castingIntent";
 import { admitRoll, castingCreativeEngine, type AdmissionDecision } from "./rollEngine";
 import {
@@ -277,6 +278,12 @@ export type RollServiceDependencies = {
   ) => Promise<{ key: string }>;
   /** Keeps the words behind a refusal (#129). A seam so a test can see what was handed over. */
   captureWords?: typeof captureRollWords;
+  /**
+   * THE BRIEF A FOLLOW CASTS FROM (#2576), asked HERE rather than at the route
+   * (#2582 items 1 and 3). A seam so a test can drive the rewrite, the refusal
+   * and the ordering without a transport.
+   */
+  resolveFollowBrief?: typeof resolveFollowBrief;
 };
 
 export type CreateRollInput = {
@@ -786,10 +793,41 @@ export async function createRoll(
     }
   };
 
+  /*
+    ⚠ **THE FOLLOW'S REWRITE HAPPENS HERE, AND THE POSITION IS THE WHOLE POINT
+    (#2582 items 1 and 3, both must-fixes before the flag widens).** It ran in
+    the `follow` procedure, above `createRoll`, which put it AHEAD of every free
+    refusal this function makes in milliseconds — a foreign sheet, an expired
+    one, a follow whose photograph will not load, a brief over the bound. So a
+    Follow that was going to be refused for free still waited on a text call and
+    still spent one. Below the stamp and above the compile, it waits only for a
+    roll that is actually going to happen, and the sheet already says it is
+    casting while it does.
+
+    **`input.briefText` stays the words the CUSTOMER sent, and that is what the
+    claim is keyed on below.** The rewrite is nondeterministic, so a claim hashed
+    over its output could never match on replay: the same `clientRequestId`
+    pressed twice got different words and answered CONFLICT — *"That request id
+    was already used for a different action"* — instead of the roll it had
+    already created. Latent only because the client mints a fresh id per press.
+    The identity of a request is what the customer asked for; the rewrite is what
+    we chose to do about it.
+  */
+  let briefText = input.briefText;
   let compiled: CompiledRollBrief;
   try {
+    /* Inside this try so the casting stamp clears on any road out, including
+       one `resolveFollowBrief`'s own docblock says it will never take. */
+    const followed = input.followCandidatePublicId ?? null;
+    if (followed !== null) {
+      briefText = (await (dependencies.resolveFollowBrief ?? resolveFollowBrief)({
+        userId: input.userId,
+        candidatePublicId: followed,
+        boxText: input.briefText,
+      })).briefText;
+    }
     compiled = await compile({
-      briefText: input.briefText,
+      briefText,
       candidateCount,
       // The client request id: a replay recompiles to the identical sheet,
       // while a genuine second roll of the same sentence casts eight new
@@ -899,7 +937,10 @@ export async function createRoll(
       userId: input.userId,
       sessionPublicId: input.sessionPublicId,
       operationId: gate.operationId,
-      briefText: input.briefText,
+      /* What was CAST, so the new sheet shows the brief its people came from
+         (#2576). The claim above is keyed on the customer's own words instead —
+         see the rewrite's own block for why the two differ. */
+      briefText,
       /*
         THE SLICE, CARRIED RATHER THAN RE-DECIDED (#1601 item 2). The database
         layer used to write both `priceCredits` and every candidate's
