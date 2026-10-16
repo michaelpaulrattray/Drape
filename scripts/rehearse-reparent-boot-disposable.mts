@@ -185,7 +185,10 @@ console.log(
   testing. Only the child under test is left armed.
 */
 const SIBLINGS = {
-  CASTING_SIDE_PHRASING_SCOPE: "off",
+  /* ⚠ `CASTING_SIDE_PHRASING_SCOPE: "off"` stood here and is removed with the flag
+     (#1577 slice D2). The paragraph above keeps it as the SPECIMEN because the
+     lesson is the instrument's, not the flag's — but there is no fence left for it
+     to fire from, so silencing it would describe a refusal that cannot happen. */
   CASTING_OPEN_LANE_SCOPE: "off",
   CASTING_REFERENCE_ATTACH_SCOPE: "off",
   /* ⚠ The reference library ALREADY had children of its own before slice 4a —
@@ -208,11 +211,15 @@ const NARROWED = {
   ...SIBLINGS,
 };
 
-expectRefusal(
-  "a side-phrasing `all` over a narrowed reference library",
-  { ...NARROWED, CASTING_SIDE_PHRASING_SCOPE: "all" },
-  "CASTING_SIDE_PHRASING_SCOPE",
-);
+/*
+  ⚠ THE FIRST NEGATIVE CONTROL WAS A SIDE-PHRASING `all` OVER A NARROWED LIBRARY,
+  AND IT IS REMOVED WITH THE FLAG (#1577 slice D2). It is removed rather than
+  re-pointed, and that is the honest act: with the fence gone the arm would have
+  found no refusal and reported it as a FAILURE of slice 4a, which is a red about
+  nothing — and the opposite mistake, loosening the arm until it passed, would
+  have left a rehearsal that cannot fail. **Two arms remain and the rehearsal's
+  verdict still means what it says.**
+*/
 expectRefusal(
   "an open-lane user outside the reference library",
   { ...NARROWED, CASTING_OPEN_LANE_SCOPE: "users:1,7" },

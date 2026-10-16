@@ -20,10 +20,14 @@
  * sentence exists to remove. So both callers come through this function, and
  * neither spells the phrase.
  *
- * **The flag governs the REPAINT lane only.** `CASTING_SIDE_PHRASING_SCOPE` is
- * about whether a paid refine's recipe carries the clause; the view lane carries
- * it unconditionally, because the view clause is house prose on a new road with
- * no installed behaviour to protect. Two lanes, one sentence, one gate each.
+ * ⚠ **BOTH LANES CARRY IT UNCONDITIONALLY NOW — THERE IS NO GATE LEFT ON
+ * EITHER.** This said *"the flag governs the REPAINT lane only"*, and that flag,
+ * `CASTING_SIDE_PHRASING_SCOPE`, is retired (#1577 slice D2) — it stood at `all`
+ * on the service from the founder's 2026-08-25 widening until it came out, so the
+ * refine lane was already saying the clause on every render. The view lane never
+ * had a gate, because the view clause is house prose on a new road with no
+ * installed behaviour to protect. **Two lanes, one sentence, no gate** — which
+ * makes the one-owner rule above the whole of the safety rather than half of it.
  */
 import type { Instance } from "./referenceSlots";
 

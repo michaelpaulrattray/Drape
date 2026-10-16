@@ -162,6 +162,41 @@ async function changeInside(childBytes: Buffer, mask: Mask): Promise<number> {
 }
 
 const { refineCandidate } = await import("../server/castingV2/refineService.js");
+/*
+  ⚠ THIS COURT IS A RECORD AND NO LONGER RUNS — #1577 slice D2, 2026-10-15.
+
+  Its whole design is one colour asked BOTH ways, with the side clause as the
+  only difference between the two arms. `CASTING_SIDE_PHRASING_SCOPE` is retired,
+  the clause is unconditional, and so the `plain` arm cannot be produced: a re-run
+  would render two identical asks, read them as a pair, and report a difference of
+  zero as a finding. **That is worse than not running**, because it spends real
+  credits to manufacture a null result nobody would question.
+
+  It refuses before the first render rather than after, and it names the flag so
+  the reader knows this is a retirement and not a broken fixture. Its verdict and
+  its numbers are in the record (`docs/specs/V4_SIDE_INFERENCE_COURT.md`) and in
+  the founder's own widening of 2026-08-25, which is what it bought.
+
+  ⚠ **IT REFUSES ON A READ RATHER THAN ON AN UNCONDITIONAL `throw`, AND THE
+  REASON IS A TYPE FINDING WORTH KEEPING.** A bare top-level `throw` here made
+  everything below it UNREACHABLE, and TypeScript abandons control-flow narrowing
+  in unreachable code — so `check:scripts` went red on three lines that had been
+  fine for weeks (`error` back to `unknown` in a catch, `eyes` back to possibly
+  `null` after its own guard). The guard was right and the mechanism was wrong.
+  The escape hatch is named in the message rather than hidden: an operator who
+  genuinely wants two identical renders can have them, knowing that is what they
+  are paying for.
+*/
+if (process.env.RUN_RETIRED_SIDE_PHRASING_COURT !== "both-arms-are-now-identical") {
+  throw new Error(
+    "this court cannot measure anything: CASTING_SIDE_PHRASING_SCOPE is retired "
+    + "(#1577 slice D2), so its `plain` arm and its `placed` arm are the same render. "
+    + "It is kept as the record of the measurement that widened the clause to every "
+    + "account. Set RUN_RETIRED_SIDE_PHRASING_COURT=both-arms-are-now-identical to "
+    + "render the pairs anyway at full price.",
+  );
+}
+
 const results: Array<Record<string, unknown>> = [];
 
 for (const arm of ARMS) {
@@ -173,8 +208,11 @@ for (const arm of ARMS) {
     await conn.execute(`UPDATE casting_candidates SET selectedVariantId = ? WHERE id = ?`,
       [parent.id, cast.id]);
 
-    /* THE ONLY DIFFERENCE BETWEEN A PAIR. */
-    process.env.CASTING_SIDE_PHRASING_SCOPE = arm.arm === "placed" ? `users:${outsider.id}` : "off";
+    /* ⚠ THE ONLY DIFFERENCE BETWEEN A PAIR WAS THIS LINE, AND IT CANNOT EXIST
+       ANY MORE — `CASTING_SIDE_PHRASING_SCOPE` is retired (#1577 slice D2), so
+       both arms would now render the PLACED sentence and the pairing would
+       compare a thing with itself at full price. The refusal above is why this
+       is a record rather than a runnable instrument. */
     const ask = arm.ask(colour);
     const before = await balance();
     let kind = "";

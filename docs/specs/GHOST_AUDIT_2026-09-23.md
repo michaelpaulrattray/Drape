@@ -617,6 +617,17 @@ BOOT PARENT of three other flags (`captureCastingSidePhrasingEnabled`,
 captureCastingRepaintEnabled(userId)`), so the children are re-parented before
 the parent can go.
 
+⚠ **TWO OF THOSE THREE CHILDREN ARE THEMSELVES RETIRED NOW — the open lane in
+slice D1 and the side phrasing in slice D2 — so the only LIVE child still
+proving slice 4a's re-parent is `captureCastingReferenceAttachEnabled`, whose
+arm is in `referenceAttachScope.test.ts`.** The side-phrasing re-parent arm in
+`castingV2Scope.test.ts` drove the retired flag and was removed with it rather
+than re-pointed: an arm with no subject left is what slice 4b found 134 of. The
+fourth re-parented site, `validateCastingInkStudioEnvironment`, belongs to a
+feature already retired (#1158). **Nothing is orphaned by either deletion** —
+written down because a reader counting arms after the fact would find one where
+there were two.
+
 ## THE TABLE
 
 *Readers* are production readers at `origin/main@6fcb8a652`. *Fate* is a
@@ -638,7 +649,7 @@ proposal; nothing here is decided.
 | **C5** | the `kind_unserved` door, *"I can't do that to them yet. Nothing was charged."*, for `REPAINT_ONLY_SUBJECTS` (`refineService.ts:2755-2770`) | **none in production**: it fires only when repaint is off | **retire with C1** | a capability-atlas door, so its slice moves the door's map entry in the same commit |
 | **C6** | six repaint-or-paste ternaries and guards around it (`:4386`, `:4599`, `:6270`, `:6398`, `:7898`, `:9592`) | the paste half of each: none | **collapse with C1** | each keeps its repaint half |
 | **D1** | `CASTING_OPEN_LANE_SCOPE` (`all`): the off arm is the two closed-lane prompts, `BASE_PROMPT` and `SYSTEM_PROMPT` (`refineInterpreter.ts:383`, `:431`, chosen at `:481`), read through `refineService.ts:1886` | the off arm: none | **retire with its flag, on his word** | two of the four interpreter prompts no account is asked. The bar is #1495's: the surviving prompts sha256-identical before and after |
-| **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | **retire with its flag, on his word** | |
+| **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | ✅ **RETIRED — slice D2, 2026-10-16** | the clause naming which half of the picture a side is on. **The bar was #1495's and it was MET**: the assembled instruction hashed across twelve shapes before and after the cut, every one byte-identical, rollup `883b5ab0…` — and ⚠ **the hash is the bar and the LENGTH is not**, driven rather than assumed: one changed letter moved a hash and left its length at 84. Out with the flag: the parse, two error classes, `captureCastingSidePhrasingEnabled`, the boot fence, the `sidePhrasingEnabled` service seam, and the `placeSides` option on the assembler — the compiler named every reader the moment the option came off `AssembleInput`. **`sidePhrasing.ts` and `imageHalfClause` STAY**: the signed-Cast view lane says the same sentence through the same owner. ⚠ **This row's `all` hid a stale belief, not a live arm** — `recipeAssembler.ts` still called the clause *"dark until its own court runs"* seven weeks after he widened it. The Railway variable comes off AFTER the deploy |
 | **D3** | `CASTING_INK_WORDS_SCOPE` (`all`): *"her neck alone"* is the off arm (`:1912`, `:4010`) | the off arm: none | **retire with its flag, on his word** | |
 | **D4** | `CASTING_REFINE_DISPATCH_SCOPE` (`all`): the arm that HOLDS the request until the render lands (`refineService.ts:1076`) | the off arm: none | **retire with its flag, on his word** | money-adjacent (it decides when a paid request returns), so its slice is a held review |
 | **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent (`castingV2Scope.ts:356`), read at `routes/castingV2.ts:2722`, `:2822` | the off arm: none | **retire last, on his word** | it is the root of the chain C and D1-D2 hang from, so it goes after them or not at all |

@@ -82,8 +82,11 @@ process.env.CASTING_REPAINT_SCOPE = `users:${outsider.id}`;
 process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${outsider.id}`;
 process.env.ENABLE_STORAGE_CLEANUP_WORKER = "true";
 process.env.CASTING_SIDE_INFERENCE = "on";
-/* THE THING UNDER TEST. */
-process.env.CASTING_SIDE_PHRASING_SCOPE = `users:${outsider.id}`;
+/* ⚠ THE THING UNDER TEST USED TO BE ARMED HERE AND IS NOW UNCONDITIONAL —
+   `CASTING_SIDE_PHRASING_SCOPE` is retired (#1577 slice D2), so the clause this
+   court measured is what every render carries. **The court still runs and still
+   measures the same thing**: its two arms are her RIGHT and her LEFT, not clause
+   and no clause, so a re-run is the PLACED arm on both sides exactly as before. */
 
 const FAL_KEY = process.env.FAL_KEY;
 if (!FAL_KEY) throw new Error("FAL_KEY is required — the judge reads regions");

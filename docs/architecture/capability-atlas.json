@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2696"
+          "server/castingV2/refineService.ts:2684"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1322"
+          "server/castingV2/refineService.ts:1310"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5026",
+          "server/castingV2/refineService.ts:5014",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1304"
+          "server/castingV2/refineService.ts:1292"
         ]
       },
       {
@@ -190,7 +190,7 @@
           "server/castingV2/refineDelta.ts:596",
           "server/castingV2/refineDelta.ts:1590",
           "server/castingV2/refineDelta.ts:1590",
-          "server/castingV2/refineService.ts:2545"
+          "server/castingV2/refineService.ts:2533"
         ]
       },
       {
@@ -221,8 +221,8 @@
           "server/castingV2/refineDelta.ts:569",
           "server/castingV2/refineDelta.ts:1567",
           "server/castingV2/refineDelta.ts:1567",
-          "server/castingV2/refineService.ts:2544",
-          "server/castingV2/refineService.ts:2556"
+          "server/castingV2/refineService.ts:2532",
+          "server/castingV2/refineService.ts:2544"
         ]
       },
       {
@@ -246,7 +246,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3062"
+          "server/castingV2/refineService.ts:3050"
         ]
       },
       {
@@ -256,7 +256,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3765"
+          "server/castingV2/refineService.ts:3753"
         ]
       },
       {
@@ -300,7 +300,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2796"
+          "server/castingV2/refineService.ts:2784"
         ]
       },
       {
@@ -310,7 +310,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1311"
+          "server/castingV2/refineService.ts:1299"
         ]
       },
       {
@@ -409,7 +409,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4485"
+          "server/castingV2/refineService.ts:4473"
         ]
       },
       {
@@ -432,7 +432,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3533"
+          "server/castingV2/refineService.ts:3521"
         ]
       },
       {
@@ -442,7 +442,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3514"
+          "server/castingV2/refineService.ts:3502"
         ]
       },
       {
@@ -452,7 +452,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3609"
+          "server/castingV2/refineService.ts:3597"
         ]
       },
       {
@@ -462,8 +462,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3291",
-          "server/castingV2/refineService.ts:3308"
+          "server/castingV2/refineService.ts:3279",
+          "server/castingV2/refineService.ts:3296"
         ]
       },
       {
@@ -473,7 +473,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4455"
+          "server/castingV2/refineService.ts:4443"
         ]
       },
       {
@@ -483,7 +483,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3105"
+          "server/castingV2/refineService.ts:3093"
         ]
       },
       {
@@ -549,7 +549,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5005"
+          "server/castingV2/refineService.ts:4993"
         ]
       },
       {
@@ -559,8 +559,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1392",
-          "server/castingV2/refineService.ts:1430"
+          "server/castingV2/refineService.ts:1380",
+          "server/castingV2/refineService.ts:1418"
         ]
       },
       {
@@ -612,7 +612,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2742"
+          "server/castingV2/refineService.ts:2730"
         ]
       },
       {
@@ -745,8 +745,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1298",
-          "server/castingV2/refineService.ts:2668"
+          "server/castingV2/refineService.ts:1286",
+          "server/castingV2/refineService.ts:2656"
         ]
       },
       {
@@ -872,7 +872,6 @@
       "CASTING_RETRY_SCOPE",
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
-      "CASTING_SIDE_PHRASING_SCOPE",
       "CASTING_V2_SCOPE",
       "CASTING_VOICE_SCOPE"
     ],
@@ -1151,7 +1150,7 @@
         "verb": "change",
         "state": "master",
         "expect": "would-render",
-        "why": "per-side ask; side phrasing rides (CASTING_SIDE_PHRASING_SCOPE)"
+        "why": "per-side ask; the clause naming the picture's half rides it unconditionally since #1577 slice D2"
       },
       {
         "id": "eye.shape.fox",
@@ -1622,7 +1621,6 @@
         ],
         "flags": [
           "CASTING_OPEN_LANE_SCOPE",
-          "CASTING_SIDE_PHRASING_SCOPE",
           "CASTING_INK_WORDS_SCOPE"
         ],
         "notes": [
