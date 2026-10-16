@@ -1,7 +1,7 @@
 {
-  "edition": 728,
-  "updatedAt": "2026-10-16T05:05:00.000Z",
-  "shift": "The cheaper face scan is ON. You said \"Yes, Turn it on\" and it is live for every account — not just yours.\n\nWHAT CHANGED. When the studio reads a character's face it asks our picture service one question per feature, and a face has two of most things. It was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings, twice for horns. It now asks once and gets both sides back together. That is about two and a half cents off a twelve cent scan, and it is FASTER on every character in every run we measured. Scans are free to customers, so the whole saving is ours.\n\nWHAT YOU WOULD NOTICE. The panel fills sooner. Nothing else.\n\nIT IS ACTUALLY LIVE, not merged-and-hopefully-deployed: the setting reads correctly on the service, and the site is serving the build that carries it on a twelve-second uptime, which means a genuinely new process rather than the old one still answering.\n\nONE HONEST GAP. The saving is a measurement from three of your characters, not yet a reading off real traffic. That reading can only be taken now the road is on, and it has not been taken. I have said so on the card rather than rounding it up.\n\nTHE REST OF THE COST WORK is not lost. Five of the six ideas on that card moved into the face-reader design you approved this morning — the one that also sees outfits and things that are not on our list. That is card 2566 and it is the bigger saving.\n\nALSO DONE: a review finding that had been sitting on one of the edit-road clean-up pull requests is repaired and pushed. While fixing it I found a comment the fix would have made untrue and corrected that too.\n\nONE THING THAT IS NOT MINE TO FIX. Three of the edit-road clean-up pull requests now clash with each other in the same files, because two of them retire different switches in the same places. A clashing pull request runs no checks at all, so they are stuck until someone untangles them by hand. I stopped rather than guess, because a wrong untangle there changes what a paid edit renders with nothing going red. Nothing on this waits on you.\n\nNOTHING NEW NEEDS YOU TONIGHT.",
+  "edition": 729,
+  "updatedAt": "2026-10-16T06:45:00.000Z",
+  "shift": "The feature panel can now read a character instead of working from a list — built, switched off, waiting on a review.\n\nWHAT IT IS. Today the panel asks the same twelve questions of every character: has it got hair, has it got a beard, has it got horns. So it pays for a beard question on every clean-shaven face, and it can never find the things that are not on the list — this character's third eye, its jaw hardware, its jacket. The reader you approved this morning turns that round: one look at the picture first, naming what is actually there, and then it only asks about those. Cheaper and wider at the same time.\n\nWHAT I MEASURED BEFORE BUILDING IT, because your design said to. The question left open was whether one look at the whole picture is enough. It is not, and the answer is interesting: looking at the whole picture finds the clothes — the sash, the robe, the coat, the shoulder plates, things a head-and-shoulders crop simply cannot see — but it starts missing small things on the face. On your cyberpunk character it stopped naming the nose. I checked that at the picture rather than believing the reader: the nose is plainly there. So it takes two looks, one close and one wide, which is exactly the fallback your design named. About two cents instead of one.\n\nTHE OTHER THING THAT RUN SETTLED is how it names things. Every name came back as one or two plain words — 'jaw hardware', not 'mechanical jaw brackets with tube-like extensions along cheeks and chin'. That matters more than it sounds: the long version makes the cutter that draws the box return nothing at all, every time. Sixty-nine names out of sixty-nine came back in the short form.\n\nIT IS OFF. Nothing about your panel has changed and will not until you have looked at real panels. It also fails safe in every direction I could find — if the reader is slow, broken, or gets cut off mid-sentence, the panel just asks everything the way it does today. A customer never sees a feature disappear because a service had a bad minute.\n\nWHAT IS LEFT of this reader: the panel showing one row per actual thing found rather than fixed slots, the cutter for things that are not on the list, and carrying a reading across an edit. Those are the next two pieces, and they are named on the card rather than quietly assumed.\n\nNOTHING WAITS ON YOU tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -30,7 +30,7 @@
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest empty state when something is not there (#30) — its DESIGN is written and on your desk (#2532): one cheap look names what the character has, only real things become picture rows, and after an edit only the edited area is re-read. Your approval cuts the build cards.",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. The READER is built and switched off (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see the things that were never on the list. Measured first, on your own three characters: it takes two looks, one close and one wide, because the wide one finds the clothes and starts missing the nose. Still to come: one panel row per thing found, the cutter for off-list things, and carrying a reading across an edit",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T04:48:52.287Z",
+      "readAt": "2026-10-16T06:15:28.186Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7438,11 +7438,18 @@
   ],
   "pipeline": [
     {
+      "id": "face-reader-slice1-2566",
+      "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
+      "status": "in-review",
+      "prNumber": 2570,
+      "note": "Built and switched off. Held for the relay's hand because the boot-check file it touches is on the money/auth list."
+    },
+    {
       "id": "ghost-audit-slice4b-1577",
       "title": "The old way of making an edited picture comes off the paid edit road, with its switch (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2555,
-      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all, so nothing can even look at it. The review finding that was sitting on this one is repaired and pushed. What is left is the clash: this change and another one that already landed switch off different settings in the same four files, so untangling them is a judgement about what both were doing, not a mechanical step. I stopped rather than guess, because a wrong untangle changes what a paid edit renders with nothing going red. Nothing here waits on you."
+      "note": "Merged. The clash with the other switch retirement was untangled and it landed."
     },
     {
       "id": "voice-card-writer-2498",
@@ -10576,9 +10583,9 @@
     {
       "id": "ghost-audit-sliced1-1577",
       "title": "The switch behind the open lane comes off, with the two older instructions it hid (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2556,
-      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
+      "note": "Merged."
     },
     {
       "id": "ghost-audit-sliced2-1577",
@@ -10590,7 +10597,7 @@
     {
       "id": "ghost-audit-sliceD3-1577",
       "title": "The switch behind where a typed tattoo may go comes off (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2559,
       "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
     },
@@ -11068,7 +11075,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T04:48:52.286Z",
+    "readAt": "2026-10-16T06:15:28.186Z",
     "items": [
       {
         "issueNumber": 1577,
