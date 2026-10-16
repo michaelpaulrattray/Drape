@@ -124,6 +124,37 @@ describe("the follow brief writer", () => {
     expect(FOLLOW_BRIEF_SYSTEM).toMatch(/never as a list of edits/);
   });
 
+  /*
+    THE NON-PERSON DIRECTION SURVIVES (the reviewer's risk the relay verified):
+    setting, light, camera and framing, style and mood are the look of the whole
+    family. The prompt rule is pinned, the brief reaches the writer verbatim, and
+    a reply that collapses the brief to a person-only paragraph is REFUSED by a
+    check no model can talk its way past — the box's own words go instead.
+  */
+  it("keeps a brief's scene and style direction, and refuses a rewrite that drops it", async () => {
+    expect(FOLLOW_BRIEF_SYSTEM).toMatch(/the setting, the light, the camera and framing, the picture style and the mood/);
+    expect(FOLLOW_BRIEF_SYSTEM).toMatch(/keep every one of those phrases word for word/);
+    const scene = "A cyberpunk operative with dark undercut hair and chrome jaw implants, standing in a rain-soaked neon alley at night, shot from a low angle, cinematic, moody teal and magenta light.";
+    const scenePhrases = ["rain-soaked neon alley", "low angle", "cinematic", "teal and magenta light"];
+    const input = { brief: scene, description: "A cyberpunk operative with a platinum blonde undercut and chrome jaw implants.", asks: [] };
+
+    const sent: TextRequest[] = [];
+    const kept = scene.replace("dark undercut hair", "a platinum blonde undercut");
+    const good = await writeFollowBrief(engineSaying(kept, sent), input, 4000);
+    expect(good).toMatchObject({ ok: true, brief: kept });
+    for (const phrase of scenePhrases) {
+      expect(sent[0]!.user).toContain(phrase);
+      expect(good.ok && good.brief).toContain(phrase);
+    }
+
+    const personOnly = await writeFollowBrief(
+      engineSaying("A cyberpunk operative with a platinum blonde undercut and chrome jaw implants."),
+      input,
+      4000,
+    );
+    expect(personOnly).toMatchObject({ ok: false, reason: "shrunk" });
+  });
+
   it("falls back to the ask chain when the version has no description", () => {
     const turn = followBriefUserTurn({ brief: BRIEF, description: null, asks: ["make the hair platinum blonde", "add a nose ring"] });
     expect(turn).toContain("- make the hair platinum blonde\n- add a nose ring");

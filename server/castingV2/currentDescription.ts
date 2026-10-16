@@ -218,7 +218,8 @@ export const FOLLOW_BRIEF_SYSTEM = [
   "- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette.",
   "- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact scar, a single mole or freckle, one particular tattoo or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.",
   "- Where an edit contradicts the brief (dark hair in the brief, platinum blonde after the edit), keep only the edited direction.",
-  "- Keep everything else the brief says that the edits do not touch, in its own words where you can, including any setting, mood or picture style it states.",
+  "- The edits only ever change the PERSON. Everything in the brief that is not the person (the setting, the light, the camera and framing, the picture style and the mood) is the look of the whole casting: keep every one of those phrases word for word.",
+  "- Keep everything else the brief says that the edits do not touch, in its own words where you can.",
   "- Do not invent anything the brief and the edited cast do not say.",
   "- Reply with the rewritten brief and nothing else.",
 ].join("\n");
@@ -234,7 +235,18 @@ export type FollowBriefInput = {
 
 export type FollowBriefResult =
   | { ok: true; brief: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "no_edits" | "failed" | "blank" | "too_long" | "edit_list"; latencyMs: number };
+  | { ok: false; reason: "no_engine" | "no_edits" | "failed" | "blank" | "too_long" | "edit_list" | "shrunk"; latencyMs: number };
+
+/**
+ * A REWRITE THAT LOST MOST OF THE BRIEF IS REFUSED (the reviewer's risk the
+ * relay verified on #2576): the failure that matters is a brief carrying scene
+ * and style — "a rain-soaked neon alley, low angle, cinematic" — coming back
+ * as a person-only paragraph, which loses the look of the whole family. The
+ * prompt forbids it; this is the backstop a model cannot rescue (law 3). Edits
+ * swap a phrase for a phrase, so a reply much shorter than the brief dropped
+ * something, and the box's own words are sent instead.
+ */
+export const FOLLOW_BRIEF_MIN_LENGTH_RATIO = 0.7;
 
 /** The user turn, built in one place so a test reads exactly what was asked. */
 export function followBriefUserTurn(input: FollowBriefInput): string {
@@ -273,6 +285,9 @@ export async function writeFollowBrief(
        edit list. A brief the customer wrote on several lines may keep them. */
     if (!/\n/.test(input.brief.trim()) && looksLikeAnEditList(text)) {
       return { ok: false, reason: "edit_list", latencyMs };
+    }
+    if (text.length < input.brief.trim().length * FOLLOW_BRIEF_MIN_LENGTH_RATIO) {
+      return { ok: false, reason: "shrunk", latencyMs };
     }
     return {
       ok: true,
