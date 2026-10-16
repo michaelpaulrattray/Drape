@@ -145,8 +145,10 @@ export function inkPlacementPhrase(input: {
     The clause stays — it is the right sentence, it costs nothing per render,
     and it is what the other lane measured. It is unconditional here because the
     view clause is house prose on a new road with no installed behaviour to
-    protect — `CASTING_SIDE_PHRASING_SCOPE` governs the REPAINT recipe, which is
-    a different lane with a different history.
+    protect. ⚠ **This sentence used to end by naming
+    `CASTING_SIDE_PHRASING_SCOPE` as the OTHER lane's gate; that flag is retired
+    (#1577 slice D2) and the refine recipe says the clause unconditionally too.**
+    So the two lanes now differ only in their history, not in their behaviour.
 
     Through the one owner rather than spelled here: a second copy of this phrase
     would drift at exactly the point it exists to hold still.

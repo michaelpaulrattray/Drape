@@ -286,7 +286,6 @@ import {
   captureCastingReferenceLibraryEnabled,
   captureCastingOpenLaneEnabled,
   captureCastingRefineDispatchEnabled,
-  captureCastingSidePhrasingEnabled,
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
   captureCastingInkTransformEnabled,
@@ -772,17 +771,6 @@ export type RefineServiceDependencies = {
    * untangled under a paid path.
    */
   repaintEngine?: () => RepaintEngine;
-  /**
-   * Whether the recipe also says WHERE a named side is.
-   *
-   * The third scope flag this service branches on, and the only one that had no
-   * seam — so the clause could be proven inside the assembler (which takes
-   * `placeSides` as an input) and inside the boot guard, and NOWHERE at the
-   * wire between them. That gap is how a suite ends up asserting one road while
-   * the founder is on another: the wiring is exactly the part a per-user flag
-   * hides (opus-469, on fable-625 §3's enumeration).
-   */
-  sidePhrasingEnabled?: (userId: number) => boolean;
   /**
    * Whether an out-of-vocabulary ask may name its own kind — the open lane.
    *
@@ -7015,15 +7003,10 @@ async function refineCandidateCounted(
         /* Never assumed: `segmentsOnFace` shipped "hers" onto a male
            candidate's face before pronouns were passed rather than guessed. */
         pronouns: pronounsForSex(currentIdentity?.sex),
-        /*
-          AND WHERE A SIDE IS, when this account is inside the phrasing scope.
-          Read here rather than inside the assembler for the same reason the
-          pronouns are: the flag is per user and the assembler knows nothing
-          about users.
-        */
-        placeSides: (dependencies.sidePhrasingEnabled ?? captureCastingSidePhrasingEnabled)(
-          input.userId,
-        ),
+        /* AND WHERE A SIDE IS — said on every render now, so nothing is passed
+           for it. `placeSides` and its per-user seam stood here until #1577
+           slice D2 retired `CASTING_SIDE_PHRASING_SCOPE`, which had been `all`
+           on the service since the founder widened it on 2026-08-25. */
         library,
         asks: asks.asks,
         /*

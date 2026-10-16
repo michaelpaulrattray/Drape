@@ -319,111 +319,6 @@ export function validateCastingReferenceLibraryEnvironment(input: {
 /* ---------------------------------------------- the auto-scan sub-flag */
 
 /**
- * SAYING WHICH SIDE TWICE — her anatomy, and the half of the picture it is on.
- *
- * Off, a per-side ask is named once, exactly as it is today: *"Change only her
- * right eye: fiery red."* On, the clause also says where that side appears —
- * *"her right eye (on the left of the picture as you look at it)"*.
- *
- * It exists because a court found the engine paints by POSITION rather than by
- * anatomy. Twelve renders each way on her right eye: four painted the OTHER eye
- * without the clause, none with it (p≈0.09 — suggestive rather than proven,
- * never once worse, and free per render; `V4_SIDE_INFERENCE_COURT.md` §3b).
- *
- * The parent is the REPAINT scope rather than the library's, because the clause
- * is written by the repaint recipe and nothing else says it: a user named here
- * and not there would be armed for a sentence they cannot reach.
- *
- * Inert without it in the strongest sense — one parenthesis, in one clause, of
- * one sentence; every other byte of the prompt is identical.
- */
-export const CASTING_SIDE_PHRASING_SCOPE_ENV = "CASTING_SIDE_PHRASING_SCOPE";
-
-export class CastingSidePhrasingScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_SIDE_PHRASING_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingSidePhrasingScopeConfigurationError";
-  }
-}
-
-export class CastingSidePhrasingCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_SIDE_PHRASING_SCOPE_ENV} ${detail}`);
-    this.name = "CastingSidePhrasingCoverageError";
-  }
-}
-
-export function parseCastingSidePhrasingScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingSidePhrasingScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's per-side asks say where the side is.
- *
- * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
- * reason: the boot check already refuses a scope that reaches past its parent,
- * and this is the same rule enforced again where it is used, because a boot
- * check that was never invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingSidePhrasingEnabled(userId: number): boolean {
-  const child = parseCastingSidePhrasingScope(process.env[CASTING_SIDE_PHRASING_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
-}
-
-export function validateCastingSidePhrasingEnvironment(input: {
-  scope: string | undefined;
-  referenceLibraryScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingSidePhrasingScope(input.scope);
-  if (child.kind === "off") return child;
-
-  /*
-    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
-    re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag were then retired by the ghost audit's
-    slice 4b, and a child naming a missing parent refuses boot.
-
-    It changes nothing at the positions production actually holds: both
-    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
-    and the repaint's own gate ENDED in this very call
-    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
-    so every user inside the repaint was already inside the library.
-
-    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
-    its own parent, and that is stated rather than glossed: a child at `all`
-    under a `users:1` repaint used to be refused here and would now pass.
-    Slice 4b has landed and there is no narrower flag to track any more,
-    because the repaint flag does not exist.
-  */
-  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
-  if (parent.kind === "off") {
-    throw new CastingSidePhrasingCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
-      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
-      + "nothing below an off parent is reachable",
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingSidePhrasingCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingSidePhrasingCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
-
-/**
  * THE AUTO-SCAN — reading a face nobody has edited, on its own switch.
  *
  * Off, the face panel is exactly what it is today: rows from the catalogue,
@@ -721,10 +616,12 @@ function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
 /**
  * Whether this user's out-of-vocabulary asks may name a kind.
  *
- * An AND of the whole chain, for `captureCastingSidePhrasingEnabled`'s reason:
- * the boot check already refuses a scope reaching past its parent, and this is
- * that same rule enforced where it is used, because a boot check nobody invoked
- * is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
+ * reason: the boot check already refuses a scope reaching past its parent, and
+ * this is that same rule enforced where it is used, because a boot check nobody
+ * invoked is the second way a flag pair goes wrong. (It cited
+ * `captureCastingSidePhrasingEnabled` until #1577 slice D2 retired that flag;
+ * the hop is removed rather than re-pointed at another sibling.)
  */
 export function captureCastingOpenLaneEnabled(userId: number): boolean {
   const child = parseCastingOpenLaneScope(process.env[CASTING_OPEN_LANE_SCOPE_ENV]);

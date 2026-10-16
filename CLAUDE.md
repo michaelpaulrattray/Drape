@@ -648,7 +648,7 @@ the live service on every push.
 | `CASTING_SEGMENTS_DELIVERED_SCOPE` | cutting a segment from the delivered frame's own extent rather than the master's — ✅ RETIRED with its parent (#1160) |
 | `CASTING_REFERENCE_LIBRARY_SCOPE` | the compositor swap's reference library |
 | `CASTING_REPAINT_SCOPE` | the compositor swap itself — ✅ RETIRED (#1577 slice 4b); every refine repaints, and the variable leaves the service with that merge |
-| `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is |
+| `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is — ✅ RETIRED (#1577 slice D2); every ask says it now |
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
 | `CASTING_SCAN_TABLE_SCOPE` | whether a finished scan is kept |
 | `CASTING_OPEN_LANE_SCOPE` | the open lane — an ask naming its own kind |

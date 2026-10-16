@@ -131,7 +131,7 @@ export const CORPUS: readonly CorpusRow[] = [
   { id: "eye.colour", ask: "her eyes — green", subject: "eyeColour", verb: "change", state: "master",
     expect: "would-render", why: "the panel's own prefill shape" },
   { id: "eye.colour.side", ask: "make her right eye fiery red", subject: "eyeColour", verb: "change", state: "master",
-    expect: "would-render", why: "per-side ask; side phrasing rides (CASTING_SIDE_PHRASING_SCOPE)" },
+    expect: "would-render", why: "per-side ask; the clause naming the picture's half rides it unconditionally since #1577 slice D2" },
   { id: "eye.shape.fox", ask: "give her fox eyes", subject: "eyeShape", verb: "change", state: "master",
     expect: "would-render", why: "the fox-eyes verdict was annulled; the class delivers" },
   { id: "eye.scoped.left", ask: "make it green", scope: "eye@left", subject: "eyeColour", verb: "change", state: "master",

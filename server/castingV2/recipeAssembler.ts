@@ -344,15 +344,6 @@ export type AssembleInput = {
    * price. What arrives here is the answer, never the question.
    */
   carriedInk?: readonly CarriedInkDesign[];
-  /**
-   * SAY WHERE A SIDE IS, as well as whose it is (`CASTING_SIDE_PHRASING_SCOPE`).
-   *
-   * Decided by the caller because the flag is per user and this function knows
-   * nothing about users — the same reason `pronouns` arrives rather than being
-   * looked up. Absent is off, which is the sentence this assembler has always
-   * written.
-   */
-  placeSides?: boolean;
 };
 
 /**
@@ -771,25 +762,30 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * the delta alone — because that is what D-244 line 2 regenerates from.
  */
 /**
- * WHERE THAT SIDE IS IN THE PICTURE — behind `CASTING_SIDE_PHRASING_SCOPE`,
- * decided by the caller, which is the only side that knows whose render this is.
+ * WHERE THAT SIDE IS IN THE PICTURE — said on every render, unconditionally.
  *
- * Her right eye is on the LEFT of the photograph, and the engine appears to
- * paint by position rather than by anatomy: a court of twelve renders put a
- * per-side eye edit on the named eye 6/6 when the named side was her LEFT (the
- * image's right) and 3/6 when it was her RIGHT (the image's left) — the misses
- * all landing on the image's right half, whatever the recipe named
- * (`V4_SIDE_INFERENCE_COURT.md`).
+ * A named side is said BOTH ways, so the anatomy the customer means and the
+ * half of the picture it lives in cannot disagree. The engine appears to paint
+ * by position rather than by anatomy: a court of twelve renders put a per-side
+ * eye edit on the named eye 6/6 when the named side was her LEFT (the image's
+ * right) and 3/6 when it was her RIGHT (the image's left) — the misses all
+ * landing on the image's right half, whatever the recipe named
+ * (`V4_SIDE_INFERENCE_COURT.md`). That is a positional bias rather than a
+ * naming confusion, which is why naming the half is the lever.
  *
- * That is a positional bias rather than a naming confusion, and it suggests one
- * cheap lever: say the side BOTH ways, so the anatomy the customer means and the
- * half of the picture it lives in cannot disagree. It is an experiment, it is
- * dark until its own court runs on the failing arm, and it says nothing this
- * product does not already know — the sides come from the same catalogue the
- * panel draws its boxes from.
+ * ⚠ **IT RODE `CASTING_SIDE_PHRASING_SCOPE` AND THAT FLAG IS RETIRED (#1577
+ * slice D2).** It was never an experiment waiting on a court, whatever the
+ * docblock here said for seven weeks: the founder widened it to every account
+ * on 2026-08-25 (*"measured p≈0.09, never once worse, free per render"*) and it
+ * stood at `all` on the service until the flag came out — so the arm that said
+ * nothing extra was asked of nobody, and the clause below is simply what the
+ * assembler says. It says nothing this product does not already know: the sides
+ * come from the same catalogue the panel draws its boxes from.
+ *
+ * It is still a SHAPE rather than a fact — both halves are derived, the flip in
+ * `imageHalfOf` and the words in `pictureHalfPhrase`.
  */
-function whereItIs(slot: FeatureSlot, placeSides: boolean): string {
-  if (!placeSides) return "";
+function whereItIs(slot: FeatureSlot): string {
   const definition = slotDefinition(slot);
   if (definition === null || definition.instance === null) return "";
   /* Through the shared owner rather than spelled here: the view-reference lane
@@ -913,7 +909,6 @@ function askSentence(
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
   presentation: readonly PresentationClause[],
-  placeSides: boolean,
 ): string | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
   const collapsed = pairCollapse(asks, wordStacks);
@@ -973,7 +968,7 @@ function askSentence(
       continue;
     }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
-    clauses.push(`${named}${whereItIs(ask.slot, placeSides)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+    clauses.push(`${named}${whereItIs(ask.slot)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -2042,10 +2037,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     )),
   ];
 
-  const ask = askSentence(
-    input.asks, bySlot, wordStacks, possessive, input.presentation ?? [],
-    input.placeSides === true,
-  );
+  const ask = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
   if (typeof ask !== "string" && "saysNothing" in ask) {
     return {
       ok: false, reason: "presentationSaysNothing", slot: null,
