@@ -180,7 +180,8 @@ async function run(face: Face, text: string, attached: boolean): Promise<Cell> {
     const parse = await interpretRefinement({
       instruction: text,
       referenceAttached: attached,
-      openLane: true,
+      /* `openLane: true` stood here until #1577 slice D1 retired the option;
+         the open prompt is the only prompt now. */
       currentEyeColour: face.currentEyeColour,
       currentEyeShape: face.currentEyeShape,
       currentHairStyle: face.currentHairStyle,
