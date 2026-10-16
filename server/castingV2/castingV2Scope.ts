@@ -656,129 +656,29 @@ export function validateCastingScanTableEnvironment(input: {
   return table;
 }
 
-/* --------------------------------------------- the open-lane sub-flag */
+/* ------------------------- the open-lane sub-flag, RETIRED (#1577 slice D1)
 
-/**
- * THE OPEN LANE'S OWN SWITCH — the one flag this lane never had.
- *
- * Off, the interpreter is not told it may name a kind outside its vocabulary,
- * so its replies key onto the nearest closed subject and the acceptance door at
- * `refineInterpreter` is not consulted at all. On, the prompt carries the
- * last-resort clause and the door decides.
- *
- * # It was found missing, and the finding is the reason it exists
- *
- * The door (`openLaneAccept`, step 5a) shipped ungated, dark only because no
- * reply ever emitted an unknown subject key. With `CASTING_V2_SCOPE=all` in
- * production that made the clause a one-line prompt edit away from opening this
- * lane for every user of the product in a single deploy — and it also left the
- * door reachable, rarely, by a reply that named an unknown key of its own
- * accord. This closes both: the prompt AND the door are behind it.
- *
- * # Why the parent is the REPAINT scope and not the casting scope
- *
- * Because the two roads do not both carry an open kind, and the difference is
- * measured rather than assumed:
- *
- *  - the repaint road builds its recipe from the ask (`repaintAsksFor` reads
- *    `delta.open` and the composed state's), so the kind reaches the paint;
- *  - the paste road composes its prompt from `readDelta(variant.deltas)` —
- *    wall (d) — and that reader DROPS `open` by construction, because it is the
- *    strict reader guarding the boundary where a model's reply enters the
- *    record. A paste-road user would be charged for a render whose prompt never
- *    mentioned the thing they asked for.
- *
- * So a user armed here and not on the repaint road is armed for a lane that
- * cannot deliver their ask. Strictly stronger than the casting scope, which is
- * this one's grandparent by way of the library.
- */
-export const CASTING_OPEN_LANE_SCOPE_ENV = "CASTING_OPEN_LANE_SCOPE";
+   `CASTING_OPEN_LANE_SCOPE` stood here with its parse, its two error classes,
+   `captureCastingOpenLaneEnabled` and `validateCastingOpenLaneEnvironment`. It
+   is retired on his word of 2026-10-15 (*"yes approve the plan and switch off
+   the six settings"*), the ghost audit's row D1: it had stood at `all` since
+   2026-09-24 and every flag above it was `all` too, so its off arm -- the two
+   closed-lane interpreter prompts -- was asked of nobody.
 
-class CastingOpenLaneScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_OPEN_LANE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingOpenLaneScopeConfigurationError";
-  }
-}
+   WHAT THE BLOCK ARGUED, kept because the next sub-flag here will face it:
 
-class CastingOpenLaneCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_OPEN_LANE_SCOPE_ENV} ${detail}`);
-    this.name = "CastingOpenLaneCoverageError";
-  }
-}
+    - it gated the prompt AND the acceptance door, deliberately, because the
+      door shipped ungated and a reply can name an unknown key without being
+      invited to. A flag that gates only the prompt is not a gate.
+    - its parent was the reference library (re-parented from the repaint by
+      slice 4a), on the measured ground that the paste road's `readDelta` DROPS
+      `delta.open` by construction, so a user armed for the lane on that road
+      would have been charged for a render whose prompt never mentioned what
+      they asked for. The paste road and its flag went with slice 4b; the open
+      lane is now simply what the interpreter does.
 
-function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingOpenLaneScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's out-of-vocabulary asks may name a kind.
- *
- * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
- * reason: the boot check already refuses a scope reaching past its parent, and
- * this is that same rule enforced where it is used, because a boot check nobody
- * invoked is the second way a flag pair goes wrong. (It cited
- * `captureCastingSidePhrasingEnabled` until #1577 slice D2 retired that flag;
- * the hop is removed rather than re-pointed at another sibling.)
- */
-export function captureCastingOpenLaneEnabled(userId: number): boolean {
-  const child = parseCastingOpenLaneScope(process.env[CASTING_OPEN_LANE_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
-}
-
-export function validateCastingOpenLaneEnvironment(input: {
-  scope: string | undefined;
-  referenceLibraryScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingOpenLaneScope(input.scope);
-  if (child.kind === "off") return child;
-
-  /*
-    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
-    re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag were then retired by the ghost audit's
-    slice 4b, and a child naming a missing parent refuses boot.
-
-    It changes nothing at the positions production actually holds: both
-    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
-    and the repaint's own gate ENDED in this very call
-    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
-    so every user inside the repaint was already inside the library.
-
-    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
-    its own parent, and that is stated rather than glossed: a child at `all`
-    under a `users:1` repaint used to be refused here and would now pass.
-    Slice 4b has landed and there is no narrower flag to track any more,
-    because the repaint flag does not exist.
-  */
-  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
-  if (parent.kind === "off") {
-    throw new CastingOpenLaneCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
-      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
-      + "nothing below an off parent is reachable",
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingOpenLaneCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingOpenLaneCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
+   The lane itself is LIVE and is not what retired -- `openLaneKind`,
+   `openLaneAccept`, `openKindProperties` and the demand table are untouched. */
 
 /**
  * THE INK STUDIO — whether a customer may attach a tattoo design to a Cast.

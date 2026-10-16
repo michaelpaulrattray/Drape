@@ -101,20 +101,28 @@ function firstObject(text: string): string {
  * demonstrate it understood reads as a bug rather than as a boundary.
  */
 /**
- * THE PROMPT, AS A FUNCTION OF ONE FLAG — `CASTING_OPEN_LANE_SCOPE`.
+ * THE PROMPT. ONE OF IT — `CASTING_OPEN_LANE_SCOPE` IS RETIRED (#1577 slice D1).
  *
- * `openLane` false must be byte-identical to the prompt that shipped before the
- * clause existed, and that is a checked-in fixture rather than a promise
- * (`refineOpenLaneClause.test.ts`). The routing bench's "before" arm IS this
- * function with the flag off, so a drift of one character there would silently
- * turn the measurement into a comparison of two things neither of which ships.
+ * It was a function of that flag until 2026-10-16: `openLane` false produced the
+ * prompt that shipped before the open lane's last-resort clause existed, held
+ * byte-identical to a checked-in fixture. The flag stood at `all` on production
+ * from 2026-09-24 (his Crew reply #205, *"Turn it on for everyone"*) and every
+ * flag in the chain above it was `all` too, so that off prompt was asked of
+ * nobody — the ghost audit's row D1, retired on his word of 2026-10-15,
+ * verbatim: *"yes approve the plan and switch off the six settings"*.
  *
- * Two edits, and the second is why the clause was never additive: the walls
- * block currently routes fantastical anatomy to the stage wall, and the wall
- * check sits ABOVE the acceptance door — so without the swap the addition is
- * inert for the whole population the lane exists for.
+ * ⚠ **THE SURVIVING PROMPT DID NOT CHANGE BY A CHARACTER, and that is the bar
+ * this collapse was held to rather than a hope** — #1495's rule, in the shape
+ * #203 slice 2 used on the four-prompt collapse: hashed before and after, and
+ * the two sha256s are asserted on every run by `refineOpenLaneClause.test.ts`
+ * and recorded in `docs/specs/GHOST_AUDIT_2026-09-23.md`.
+ *
+ * The clause was never additive, and its second half is why the walls block
+ * below reads as it does: fantastical anatomy routes to the LAST RESORT and not
+ * to the stage wall, because the wall check sits ABOVE the acceptance door, so
+ * stage routing would return before the lane was ever consulted.
  */
-const basePromptLines = (openLane: boolean) => [
+const basePromptLines = () => [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -225,21 +233,17 @@ const basePromptLines = (openLane: boolean) => [
      - *"widens what may be NAMED and nothing else"* — §2 property 3, the
        sentence wall (b) nearly fell through on the step-5a build.
   */
-  ...(openLane
-    ? [
-      "  - WHEN NO SUBJECT ABOVE IS ABOUT IT — and only then — key the free lane with your own",
-      '    noun for the thing:  free: { "fangs": "vampire fangs" }',
-      "    Work the list first. A listed subject that is genuinely about what they named ALWAYS",
-      "    wins and stays the answer. This is the last resort, never a shortcut past a near fit.",
-      '    THE KEY IS THE THING — never where it goes, never the change. "Scales across her',
-      '    cheeks" keys scales, not cheeks. "Longer horns" keys horns, not length. One plain',
-      "    lowercase noun, no adjectives: their describing words go in the value, in their own",
-      "    words, under every rule above.",
-      "    It must be part of the PERSON. This widens what may be NAMED and nothing else —",
-      "    garments, headwear, the backdrop, props and the scene are the stage wall exactly as",
-      "    they were, and so are a judgement, an age, a heritage and a sex.",
-    ]
-    : []),
+  "  - WHEN NO SUBJECT ABOVE IS ABOUT IT — and only then — key the free lane with your own",
+  '    noun for the thing:  free: { "fangs": "vampire fangs" }',
+  "    Work the list first. A listed subject that is genuinely about what they named ALWAYS",
+  "    wins and stays the answer. This is the last resort, never a shortcut past a near fit.",
+  '    THE KEY IS THE THING — never where it goes, never the change. "Scales across her',
+  '    cheeks" keys scales, not cheeks. "Longer horns" keys horns, not length. One plain',
+  "    lowercase noun, no adjectives: their describing words go in the value, in their own",
+  "    words, under every rule above.",
+  "    It must be part of the PERSON. This widens what may be NAMED and nothing else —",
+  "    garments, headwear, the backdrop, props and the scene are the stage wall exactly as",
+  "    they were, and so are a judgement, an age, a heritage and a sex.",
   "",
   "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
   "glasses, a chain, a wedding ring, any piercing — things worn ON them — are ordinary refinements",
@@ -273,33 +277,27 @@ const basePromptLines = (openLane: boolean) => [
     sentence, which is code and does not depend on the model obeying this.
   */
   /*
-    AND THE SWAP THE CLAUSE MAKES HERE, which is the half that is not additive.
+    AND THIS IS THE SWAP THE CLAUSE MADE, which was the half that was not
+    additive — kept as the reason these four lines read as they do.
 
-    With the lane shut, this block routes fantastical anatomy to the STAGE wall,
+    With the lane shut this block routed fantastical anatomy to the STAGE wall,
     where the code turns it into the honest "cannot name this yet" sentence —
-    the repair measured 3/3 on the real transport six days ago, replacing a
-    CONTENT wall that told the user it could never be rendered.
+    a repair measured 3/3 on the real transport, replacing a CONTENT wall that
+    told the user the thing could never be rendered.
 
     With the lane open that destination is wrong in a new way: the product CAN
-    name it now, through the last resort above. And the swap is not optional —
+    name it, through the last resort above. And the swap was never optional —
     the wall check at `runOnce` sits ABOVE the acceptance door, so a reply
     claiming the stage wall returns before the open lane is ever consulted.
-    Leaving this line as it is would make the clause inert for exactly the
-    population it was written for.
+    ⚠ **So the stage-wall version of these lines is not an alternative that was
+    dropped for tidiness: restoring it would make the last resort inert for
+    exactly the population the lane exists for**, which is why it went with the
+    flag (#1577 slice D1) rather than being left as a branch nothing takes.
   */
-  ...(openLane
-    ? [
-      "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
-      "    those are things on the PERSON, not unsafe ones, and they have no subject of their",
-      "    own. They take the LAST RESORT at the end of the free-lane rules: key the free lane",
-      "    with the plain noun. Sending them here tells the user it can never be rendered.",
-    ]
-    : [
-      "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
-      "    those are things on the PERSON that this simply cannot name yet, not unsafe ones.",
-      '    Reply {"wall": "stage", "asked": "<the thing, in their words>"} and the code says the',
-      "    honest sentence. Sending them here tells the user it can never be rendered.",
-    ]),
+  "    NOR IS FANTASTICAL ANATOMY. Horns, antlers, wings, a tail, scales, pointed ears —",
+  "    those are things on the PERSON, not unsafe ones, and they have no subject of their",
+  "    own. They take the LAST RESORT at the end of the free-lane rules: key the free lane",
+  "    with the plain noun. Sending them here tells the user it can never be rendered.",
   "",
   "SUBJECTIVE asks are a wall too — prettier, hotter, better looking, more attractive. They name",
   'a judgement rather than a feature, so reply {"wall": "stage", "asked": "how attractive they look"}.',
@@ -376,13 +374,13 @@ const basePromptLines = (openLane: boolean) => [
   'If the instruction is empty or you genuinely cannot tell what is wanted, reply {"unclear": true}.',
 ];
 
-/* The one separator every prompt in this file is joined on, named so the four
-   precomputed constants and the composed one cannot differ by a character. */
+/* The one separator every prompt in this file is joined on, named so the
+   precomputed constants and the composed one cannot differ by a character.
+   ⚠ It said FOUR constants until #1577 slice D1; the open lane's pair went with
+   its flag, so there are TWO. */
 const NEWLINE = "\n";
 
-const BASE_PROMPT = basePromptLines(false).join(NEWLINE);
-/** The same prompt with the open lane's last resort in it — `CASTING_OPEN_LANE_SCOPE`. */
-const BASE_PROMPT_OPEN = basePromptLines(true).join(NEWLINE);
+const BASE_PROMPT = basePromptLines().join(NEWLINE);
 
 /*
   THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
@@ -429,7 +427,6 @@ const REMOVAL_PROMPT = [
 ].join("\n");
 
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
-const SYSTEM_PROMPT_OPEN = BASE_PROMPT_OPEN + REMOVAL_PROMPT;
 
 /**
  * THE PARSER'S TOKEN CEILING — and why it is no longer 600.
@@ -457,13 +454,11 @@ export const REFINE_PARSE_MAX_TOKENS = 4000;
 /** Test seam: the bench measures the REAL prompt, or it measures nothing. A
  *  small hand-written prompt does not make this model reason, and a driver that
  *  cannot reproduce the failure cannot measure the fix. */
-export function refineParseSystemPrompt(
-  mode?: "classify" | "edit",
-  options?: { openLane?: boolean },
-): string {
+export function refineParseSystemPrompt(mode?: "classify" | "edit"): string {
   /*
-    ⚠ FOUR PROMPTS, AND THERE IS NO FIFTH — the composed one is retired (#203
-    slice 2).
+    ⚠ TWO PROMPTS, AND THERE IS NO THIRD. This said FOUR until #1577 slice D1
+    took `CASTING_OPEN_LANE_SCOPE`'s pair with the flag, and FIVE before #203
+    slice 2 retired the composed one.
 
     It existed for a branch born on the Wardrobe path, which was the only branch
     served the whole vocabulary; everything else — a Basics branch and an
@@ -473,12 +468,11 @@ export function refineParseSystemPrompt(
     reachable on an old roll either. A prompt nothing can ask for is not a
     prompt, and leaving the join standing would say the subject list still moves.
 
-    ⚠ **The four constants did not change by a character**, which is the bar
-    this collapse was held to rather than a hope: they were hashed before and
-    after and the four sha256s are recorded in
-    `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`.
+    ⚠ **Neither collapse changed a surviving prompt by a character**, which is
+    the bar each was held to rather than a hope. #203 slice 2 hashed its four and
+    recorded them in `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md`; D1 hashed
+    these two, and `refineOpenLaneClause.test.ts` re-asserts them every run.
   */
-  if (options?.openLane) return mode === "edit" ? BASE_PROMPT_OPEN : SYSTEM_PROMPT_OPEN;
   return mode === "edit" ? BASE_PROMPT : SYSTEM_PROMPT;
 }
 
@@ -724,20 +718,6 @@ export type RefineInterpretInput = {
    * way forever and rule 3 becomes "that didn't come through clearly".
    */
   mode?: "classify" | "edit";
-  /**
-   * WHETHER THIS USER'S OUT-OF-VOCABULARY ASK MAY NAME A KIND —
-   * `CASTING_OPEN_LANE_SCOPE`, decided by the caller from `input.userId`.
-   *
-   * It gates BOTH halves, and both are needed. The prompt gains the last-resort
-   * clause (and loses the stage-wall routing for fantastical anatomy), and the
-   * acceptance door below is consulted at all. Gating only the prompt would
-   * leave the door reachable by a reply that named an unknown key of its own
-   * accord — rare, and the difference between "dark" and "nearly always dark".
-   *
-   * Absent means off. A caller that has never heard of this flag — every test,
-   * every bench, every legacy path — gets exactly today's behaviour.
-   */
-  openLane?: boolean;
   /** What each subject already held — containment's second source (D-171). */
   prior?: Partial<Record<string, string[]>>;
   /**
@@ -1440,9 +1420,7 @@ async function runOnce(
   try {
     const reply = await engine.complete({
       about: purpose,
-      system: refineParseSystemPrompt(input.mode, {
-        openLane: input.openLane === true,
-      })
+      system: refineParseSystemPrompt(input.mode)
         + (input.referenceAttached ? REFERENCE_CONSTRAINT : "")
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
@@ -1848,21 +1826,21 @@ async function containReply(call: {
     The wall check moved ABOVE this deliberately: a wall is an answer about
     something the customer said, and it outranks a fallback.
 
-    **IT IS BEHIND `CASTING_OPEN_LANE_SCOPE`, AND SO IS THE CLAUSE THAT FEEDS
-    IT.** With the flag off the interpreter is not told it may name a kind
-    outside the vocabulary, so its replies key onto the nearest closed subject —
-    which is what §2 measured and why the whole-delta null was latent rather
-    than live. The clause is its own step behind its own measurement, for the
-    reason `context-is-not-additive` names: a sentence added to this prompt
-    moves routing for asks with nothing to do with this lane.
+    ⚠ **IT WAS BEHIND `CASTING_OPEN_LANE_SCOPE` UNTIL #1577 SLICE D1, AND SO
+    WAS THE CLAUSE THAT FEEDS IT — BOTH GATES ARE GONE AND THE REASON THERE WERE
+    TWO IS WORTH KEEPING.** Gating the prompt alone would have left this door
+    reachable, rarely, by a reply that named an unknown key of its own accord,
+    for every user of a product whose casting scope is `all`. So the flag was
+    read twice on purpose, and a later gate added here must be added at the
+    prompt as well or it is not a gate.
 
-    The FLAG is checked here as well as at the prompt, and that is not belt and
-    braces. A reply may name an unknown key without being invited to; gating the
-    prompt alone would leave this door reachable, rarely, for every user of a
-    product whose casting scope is `all`. Off, the unowned subject is still
-    RECORDED and skipped — §2's defect stays closed — and nothing is filed.
+    With the flag off the interpreter was not told it may name a kind outside
+    the vocabulary, so its replies keyed onto the nearest closed subject — which
+    is what §2 measured, and why the whole-delta null was latent rather than
+    live. That off road ran for nobody from 2026-09-24 (`all`, his Crew reply
+    #205) and is retired on his word of 2026-10-15.
   */
-  const opened = input.openLane !== true ? null : await acceptOpenKind({
+  const opened = await acceptOpenKind({
     instruction,
     unowned: check.unowned ?? [],
     ...(engine ? { engine } : {}),
@@ -1985,11 +1963,14 @@ async function containReply(call: {
  * at all. If the rest of her ask survived, the render happens and is charged,
  * and she is owed a sentence about the half that did not arrive.
  *
- * ⚠ **IT DOES NOT DEPEND ON `CASTING_OPEN_LANE_SCOPE`, and that is the point.**
- * With the flag off the open lane never runs, every unowned subject is recorded
- * and skipped, and the closed half renders exactly as before — which is the
- * SAME harm, on every account rather than on one. A disclosure gated to the
- * flag would be honest only for the founder.
+ * ⚠ **IT IS UNCONDITIONAL, AND THAT WAS THE POINT WHILE THERE WAS A FLAG TO BE
+ * UNCONDITIONAL OF.** `CASTING_OPEN_LANE_SCOPE` is retired (#1577 slice D1);
+ * while it stood, the disclosure deliberately did not read it — with the lane
+ * off every unowned subject was recorded and skipped and the closed half
+ * rendered exactly as before, which is the SAME harm, on every account rather
+ * than on one, so a disclosure gated to the flag would have been honest only
+ * for the founder. The sentence is kept because it is the standing argument
+ * against gating a disclosure to whatever flag comes next.
  *
  * Keys only. The values are model-authored text and this list is read to write
  * a sentence a customer sees.

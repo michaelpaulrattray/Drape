@@ -173,7 +173,7 @@ export const CORPUS: readonly CorpusRow[] = [
     expect: "refused:unreadable", why: "the refine box's own placeholder" },
   /* ───────────────────────────── open lane ──────────────────────────────── */
   { id: "open.wings", ask: "give her wings", subject: "open", verb: "add", state: "master",
-    expect: "would-render", why: "an out-of-vocabulary kind names itself (CASTING_OPEN_LANE_SCOPE)" },
+    expect: "would-render", why: "an out-of-vocabulary kind names itself — what the interpreter does, since #1577 slice D1 retired the flag it was behind" },
   { id: "open.horns", ask: "give her small horns", subject: "open", verb: "add", state: "master",
     expect: "would-render", why: "the catalogue already held horns@left/right" },
   /* ───────────────────────────── makeup ─────────────────────────────────── */

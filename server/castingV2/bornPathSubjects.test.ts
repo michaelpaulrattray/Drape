@@ -242,17 +242,24 @@ describe("the recipe says the outfit only when the photograph disagrees with it"
   });
 });
 
-describe("⚠ there are FOUR interpreter prompts and none of them names a withheld subject", () => {
+describe("⚠ there are TWO interpreter prompts and neither of them names a withheld subject", () => {
   /**
-   * The whole reachable output of `refineParseSystemPrompt`: two modes by two
-   * lane states. A fifth existed — composed on the spot for a branch born on
-   * the Wardrobe path — and it is retired with the paths (#203 slice 2).
+   * The whole reachable output of `refineParseSystemPrompt`: one per mode.
+   *
+   * ⚠ **IT SAID FOUR UNTIL #1577 SLICE D1, AND THE POPULATION SHRANK BECAUSE
+   * THE FUNCTION'S REACHABLE OUTPUT DID** — not because this arm lowered its
+   * floor. The second axis was `CASTING_OPEN_LANE_SCOPE`, retired on his word of
+   * 2026-10-15 with the two closed-lane prompts that were its off arm, so the
+   * lane state is no longer a thing a prompt can differ by. A fifth existed
+   * before that — composed on the spot for a branch born on the Wardrobe path —
+   * and retired with the paths (#203 slice 2).
+   *
+   * It is still derived from the real function rather than a list, so the day a
+   * third prompt becomes reachable this is the arm that has to be edited.
    */
-  const FOUR = [
-    { name: "classify · closed", prompt: refineParseSystemPrompt() },
-    { name: "classify · open", prompt: refineParseSystemPrompt(undefined, { openLane: true }) },
-    { name: "edit · closed", prompt: refineParseSystemPrompt("edit") },
-    { name: "edit · open", prompt: refineParseSystemPrompt("edit", { openLane: true }) },
+  const BOTH = [
+    { name: "classify", prompt: refineParseSystemPrompt() },
+    { name: "edit", prompt: refineParseSystemPrompt("edit") },
   ];
 
   it("⚠ no prompt offers the model a subject nothing serves", () => {
@@ -264,7 +271,7 @@ describe("⚠ there are FOUR interpreter prompts and none of them names a withhe
     */
     const withheld = FREE_SUBJECT_KEYS.filter((key) => !SERVED_SUBJECTS.includes(key));
     expect(withheld, "the population this arm is about").toEqual(["wardrobe"]);
-    for (const { name, prompt } of FOUR) {
+    for (const { name, prompt } of BOTH) {
       for (const key of withheld) expect(prompt, `${name} / ${key}`).not.toContain(`, ${key}`);
     }
   });
@@ -276,20 +283,20 @@ describe("⚠ there are FOUR interpreter prompts and none of them names a withhe
       SERVED subject must be findable by the same `, <key>` spelling the
       negative arm uses.
     */
-    for (const { name, prompt } of FOUR) {
+    for (const { name, prompt } of BOTH) {
       for (const key of SERVED_SUBJECTS.slice(1)) {
         expect(prompt, `${name} / ${key}`).toContain(`, ${key}`);
       }
     }
   });
 
-  it("the mode and the open lane are the only two things that move it", () => {
-    const seen = new Set(FOUR.map((one) => one.prompt));
-    expect(seen.size, "four prompts, four distinct strings").toBe(4);
-    /* The open lane ADDS its clause rather than replacing the prompt: the two
-       axes are independent and a variant that dropped the other would be
-       silent. */
-    expect(FOUR[1]!.prompt.length).toBeGreaterThan(FOUR[0]!.prompt.length);
-    expect(FOUR[3]!.prompt.length).toBeGreaterThan(FOUR[2]!.prompt.length);
+  it("the MODE is the only thing left that moves it", () => {
+    const seen = new Set(BOTH.map((one) => one.prompt));
+    expect(seen.size, "two prompts, two distinct strings").toBe(2);
+    /* `classify` is the base plus the removal vocabulary and `edit` withholds
+       it (D-163 rule 3), so the one surviving axis ADDS rather than replaces —
+       and asserting the direction is what keeps this from passing on two
+       strings that merely differ. */
+    expect(BOTH[0]!.prompt.length).toBeGreaterThan(BOTH[1]!.prompt.length);
   });
 });
