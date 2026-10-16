@@ -56,6 +56,7 @@ import {
   unitShardJobNames,
   reviewAbsenceClause,
   sharesFiles,
+  sharesDirectory,
   supplyChainStateOf,
   touchesMoney,
   touchesCustomerSurface,
@@ -134,6 +135,10 @@ const pr = (over: Partial<PrReading> = {}): PrReading => ({
   verdictCount: 0,
   acknowledgedAtVerdictCount: null,
   worktreePath: "C:/Users/Admin/drape-shift-551-thing",
+  /* The default is a CURRENT head: the gate's verdict is about the tree this
+     would land on. A stale head is the arms' own business (#2590), and a
+     default of `null` would make every existing arm silent about it. */
+  gainedSinceGate: { commits: [], files: [] },
   ...over,
 });
 
@@ -278,6 +283,73 @@ describe("shared files predict the sync", () => {
   it("catches the generated map, which is the real-world case", () => {
     const map = "docs/architecture/drape-architecture.json";
     expect(sharesFiles([map, "a.ts"], [map, "b.ts"])).toEqual([map]);
+  });
+});
+
+/*
+  THE LOCALITY TEST, AND ITS SPECIMEN IS THE REAL PAIR (#2590, the class behind
+  #2589).
+
+  The first arm is the one that decides whether this test is worth having: the
+  two pull requests that turned `main` red share NO path, so `sharesFiles` —
+  and therefore the option the card recommended — is silent about them. Their
+  real file lists are pasted here from `git show` on the merged commits rather
+  than invented, because a fixture that invents the overlap proves the test
+  against itself.
+*/
+describe("sharesDirectory — the locality test behind the staleness refusal", () => {
+  /** PR #2581's own diff, gated head `ec3ee1260`. */
+  const PR_2581 = [
+    "docs/architecture/capability-atlas.json",
+    "docs/architecture/capability-atlas.md",
+    "server/castingV2/inkPlacement.ts",
+    "server/castingV2/inkReferenceGate.test.ts",
+    "server/castingV2/refineDelta.ts",
+  ];
+  /** PR #2585's squash `6df095528`, which landed while #2581 sat gated. */
+  const PR_2585 = [
+    "server/castingV2/inkDesignForAsk.ts",
+    "server/castingV2/inkPlacementResolve.ts",
+    "server/castingV2/inkReferenceTake.ts",
+    "server/castingV2/refineService.test.ts",
+  ];
+
+  it("catches #2581 against #2585, which no file test can", () => {
+    expect(sharesFiles(PR_2581, PR_2585), "they share no path at all").toEqual([]);
+    expect(sharesDirectory(PR_2581, PR_2585)).toEqual(["server/castingV2"]);
+  });
+
+  it("is empty for work in different directories", () => {
+    expect(sharesDirectory(["server/db/billing.ts"], ["client/src/pages/Login.tsx"])).toEqual([]);
+  });
+
+  it("ignores the generated maps, or it would fire on nearly every pair", () => {
+    /* Both branches carry the regenerated maps (#501), so leaving `docs/` in
+       would make `docs/architecture` a shared directory almost always and turn
+       this into "refuse whenever behind" wearing a locality test's clothes. */
+    const maps = ["docs/architecture/drape-architecture.json", "docs/architecture/capability-atlas.md"];
+    expect(sharesDirectory([...maps, "server/db/a.ts"], [...maps, "client/src/b.tsx"])).toEqual([]);
+  });
+
+  it("ignores prose, which cannot make a suite red", () => {
+    expect(sharesDirectory(["docs/specs/X.md"], ["docs/specs/Y.md"])).toEqual([]);
+    expect(sharesDirectory(["server/a.md"], ["server/b.md"])).toEqual([]);
+  });
+
+  it("reads a repository-root file as its own directory, not as everything", () => {
+    /* `"".split("/")` would make every root file share a directory with every
+       other — and with nothing else, which is the half worth pinning. */
+    expect(sharesDirectory(["package.json"], ["tsconfig.json"])).toEqual([""]);
+    expect(sharesDirectory(["package.json"], ["server/a.ts"])).toEqual([]);
+  });
+
+  it("names each shared directory once, sorted", () => {
+    expect(
+      sharesDirectory(
+        ["server/a.ts", "server/b.ts", "client/src/c.tsx"],
+        ["server/d.ts", "client/src/e.tsx", "client/src/f.tsx"],
+      ),
+    ).toEqual(["client/src", "server"]);
   });
 });
 
@@ -759,6 +831,92 @@ describe("decideMergeAction — the branch order is the contract", () => {
 
   it("syncs a BEHIND branch too", () => {
     expect(decideMergeAction(pr({ mergeStateStatus: "BEHIND" }), ctx).kind).toBe("sync-main");
+  });
+
+  /*
+    ⚠ THE STALE HEAD GITHUB CALLS `CLEAN` (#2590). Every arm above leans on
+    GitHub to say `BEHIND`, and it only says so where the base branch requires
+    branches to be up to date — `main` does not. So the commonest stale head
+    reaches this tool reading `MERGEABLE/CLEAN`, which is a true statement
+    about TEXT and is not the question the gate's green is trusted to answer:
+    32 of the last 50 merges were of a head main had already moved past.
+  */
+  it("refuses a CLEAN head main has moved past, when the work meets", () => {
+    const a = decideMergeAction(
+      pr({
+        files: ["server/castingV2/inkPlacement.ts"],
+        gainedSinceGate: {
+          commits: ["6df0955"],
+          files: ["server/castingV2/inkPlacementResolve.ts"],
+        },
+      }),
+      ctx,
+    );
+    /* The sync IS the remedy, so it reaches the same road a conflict does —
+       and the reason has to name the one command and why CLEAN did not help. */
+    expect(a.kind).toBe("sync-main");
+    expect(a.kind === "sync-main" && a.reason).toMatch(/gate never saw/);
+    expect(a.kind === "sync-main" && a.reason).toMatch(/server\/castingV2/);
+    expect(a.kind === "sync-main" && a.reason).toMatch(/CLEAN/);
+  });
+
+  it("merges a stale head whose work does NOT meet, and SAYS it is stale", () => {
+    /* Option 1 — refuse every stale head — measured at a seven-minute re-gate
+       on 32 of 50 merges, so this road merges. What it must never do is merge
+       it in silence: 64% of receipts would otherwise read as though the gate
+       had seen the tree. */
+    const a = decideMergeAction(
+      pr({
+        files: ["client/src/pages/Login.tsx"],
+        gainedSinceGate: { commits: ["6df0955", "c46b533"], files: ["server/db/billing.ts"] },
+      }),
+      ctx,
+    );
+    expect(a.kind).toBe("merge");
+    expect(a.kind === "merge" && a.notice).toMatch(/gained 2 commit\(s\)/);
+    expect(a.kind === "merge" && a.notice).toMatch(/no directory this PR touches/);
+  });
+
+  it("is silent when the head already contains main — the negative control", () => {
+    /* The fixture's default. Without this arm the two above would pass on a
+       reader that reported staleness for every PR. */
+    expect(decideMergeAction(pr(), ctx)).toEqual({ kind: "merge", notice: null });
+  });
+
+  it("FAILS TOWARD TODAY when the reading could not be taken", () => {
+    /* `null` is "git could not tell me" — an unfetched head, a stale remote
+       ref. A tool that cannot see the facts must not refuse merges on the
+       strength of not seeing them, and must not claim staleness either. */
+    expect(decideMergeAction(pr({ gainedSinceGate: null }), ctx)).toEqual({
+      kind: "merge",
+      notice: null,
+    });
+  });
+
+  it("holds the stale-head refusal BELOW the gate and the review", () => {
+    /* Order is the contract in this function, and a stale head is the cheapest
+       thing to discover and the least urgent to report: a red gate or an
+       unacknowledged verdict is about this diff and must be said first. */
+    const stale = {
+      files: ["server/castingV2/a.ts"],
+      gainedSinceGate: { commits: ["6df0955"], files: ["server/castingV2/b.ts"] },
+    };
+    expect(decideMergeAction(pr({ ...stale, gate: "red" }), ctx).kind).toBe("stop");
+    expect(decideMergeAction(pr({ ...stale, review: "finding" }), ctx).kind).toBe("stop");
+    expect(decideMergeAction(pr({ ...stale, isDraft: true }), ctx).kind).toBe("stop");
+  });
+
+  it("STOPS rather than syncing a stale head with no worktree", () => {
+    const a = decideMergeAction(
+      pr({
+        worktreePath: null,
+        files: ["server/castingV2/a.ts"],
+        gainedSinceGate: { commits: ["6df0955"], files: ["server/castingV2/b.ts"] },
+      }),
+      ctx,
+    );
+    expect(a.kind).toBe("stop");
+    expect(a.kind === "stop" && a.reason).toMatch(/shift-worktree\.mts add 551-thing/);
   });
 
   it("STOPS instead of syncing when no worktree holds the branch — it never cuts one", () => {

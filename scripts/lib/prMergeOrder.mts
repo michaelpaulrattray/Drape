@@ -248,6 +248,23 @@ export type PrReading = {
    * worktree it did not cut is not one it should take down.
    */
   worktreePath: string | null;
+  /**
+   * WHAT MAIN HAS GAINED SINCE THE GATE RAN ON THIS HEAD — the fact `CLEAN`
+   * does not carry (#2590), read with git rather than asked of GitHub.
+   *
+   * ⚠ **`mergeStateStatus` CANNOT ANSWER THIS AND THAT IS THE WHOLE CARD.**
+   * `BEHIND` is reported only where the base branch REQUIRES branches to be up
+   * to date; `main` does not, so a head cut hours before the main it lands on
+   * reads `MERGEABLE/CLEAN` — a statement about TEXT, which is true and is not
+   * the question. Measured over the last 50 merges, **32 of 50 (64%)** were of
+   * a head main had moved past, and the gate had seen none of what it moved by.
+   *
+   * `null` means the reading could not be taken (the head or `origin/main` not
+   * fetched, a detached or unreadable repository). It FAILS TOWARD TODAY'S
+   * BEHAVIOUR — no refusal, no warning — because a tool that cannot see the
+   * facts must not start refusing merges on the strength of not seeing them.
+   */
+  gainedSinceGate: MainGained;
 };
 
 export type MergeAction =
@@ -704,6 +721,132 @@ export function sharesFiles(a: readonly string[], b: readonly string[]): string[
   return b.filter((f) => set.has(f)).sort();
 }
 
+/**
+ * WHAT MAIN GAINED SINCE THE GATE RAN ON THIS HEAD — `null` when it could not
+ * be read, which is NOT a refusal (#2590).
+ *
+ * `commits` empty means the gated head already contains everything on main, so
+ * the gate's green is a verdict about the tree this PR is about to become.
+ */
+export type MainGained = {
+  /** Short shas main holds that the gated head does not, newest first. */
+  readonly commits: readonly string[];
+  /** Every path those commits changed. */
+  readonly files: readonly string[];
+} | null;
+
+/**
+ * ONE GIT INVOCATION, as the caller performs it — `{ code, out }` from an
+ * argv, with the working directory already bound.
+ *
+ * It is a parameter rather than an import so the reader below can be driven
+ * against a REAL temporary repository with a real remote
+ * (`server/prMergeStaleness.test.ts`), which is the only way a git reading gets
+ * proven rather than asserted. The CLI binds it to its own repository root.
+ */
+export type GitRun = (args: readonly string[]) => { code: number; out: string };
+
+/**
+ * WHAT MAIN HAS GAINED SINCE THE GATE RAN ON THIS HEAD — the reading
+ * `mergeStateStatus` cannot give (#2590).
+ *
+ * `main` does not require branches to be up to date, so a head cut hours
+ * before the main it lands on reads `MERGEABLE/CLEAN`. That is a true
+ * statement about TEXT and it is not the question the gate's green is being
+ * trusted to answer. Measured over the last 50 merges (2026-10-14 →
+ * 2026-10-16): **32 of 50 were of a head main had already moved past**, and
+ * the gate had seen none of what it moved by.
+ *
+ * ⚠ **EVERY ROAD THAT CANNOT SEE BOTH COMMITS RETURNS `null`, AND `null`
+ * CHANGES NOTHING.** A tool that cannot see the facts must not begin refusing
+ * merges on the strength of not seeing them, and must not claim staleness
+ * either — so an unfetched head, an unreadable remote ref or a failed walk all
+ * leave `decideMergeAction` behaving exactly as it did before this card.
+ *
+ * ⚠ **`main`'s fetch is the ONE road that may not fail quietly.** A comparison
+ * against an `origin/main` that is minutes old would call a current head stale
+ * and send a shift to re-gate for nothing — the warning's credibility is worth
+ * more than the reading. The HEAD's own fetch is best-effort: a PR whose branch
+ * lives only on another machine has no local copy, and the presence check below
+ * is the real precondition either way.
+ */
+export function readMainGained(git: GitRun, headOid: string, headRefName: string): MainGained {
+  if (git(["fetch", "--quiet", "origin", "main"]).code !== 0) return null;
+  git(["fetch", "--quiet", "origin", headRefName]);
+  const has = (sha: string) => git(["cat-file", "-e", `${sha}^{commit}`]).code === 0;
+  const mainTip = git(["rev-parse", "origin/main"]);
+  if (mainTip.code !== 0 || !has(headOid)) return null;
+  const tip = mainTip.out.trim();
+  if (!has(tip)) return null;
+  /* Already contains main's tip: the gate's verdict IS about the tree this
+     would land on, which is the whole question.
+
+     ⚠ A SHORT-CIRCUIT AND NOT THE CONTROL — said plainly because sabotaging it
+     away left `server/prMergeStaleness.test.ts` entirely GREEN, which is the
+     honest reading of it: the walk below reaches the same answer for a current
+     head (`rev-list head..tip` is empty exactly when `tip` is an ancestor of
+     `head`). What this buys is two fewer git processes per PR on the commonest
+     road, and a comment claiming it decided anything would have sent a future
+     reader looking for a guard that is really a saving. */
+  if (git(["merge-base", "--is-ancestor", tip, headOid]).code === 0) {
+    return { commits: [], files: [] };
+  }
+  const base = git(["merge-base", headOid, tip]);
+  if (base.code !== 0) return null;
+  const commits = git(["rev-list", "--first-parent", "--abbrev-commit", `${headOid}..${tip}`]);
+  /* The gained FILES are taken from the common base rather than per commit:
+     this repository squash-merges, so the gained commits are not ancestors of
+     the head and one diff answers for all of them. */
+  const files = git(["diff", "--name-only", base.out.trim(), tip]);
+  if (commits.code !== 0 || files.code !== 0) return null;
+  const lines = (out: string) => out.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  return { commits: lines(commits.out), files: lines(files.out) };
+}
+
+/**
+ * THE DIRECTORIES TWO CHANGE SETS HAVE IN COMMON — the locality test behind the
+ * staleness refusal, and the ONE place that decides what counts as a collision
+ * risk (#2590).
+ *
+ * # Why a directory and not a file
+ *
+ * `sharesFiles` above answers a different question and answers it exactly: will
+ * git have anything to object to. **A behavioural collision needs no shared
+ * file at all**, which is the whole of #2589: PR #2581 changed
+ * `server/castingV2/inkPlacement.ts`, PR #2585 changed
+ * `server/castingV2/inkPlacementResolve.ts`, they share NO path, `main` went
+ * red one minute after the second merge. Measured over the last 50 merges
+ * (2026-10-14 → 2026-10-16), an exact-file test would have refused **4** of
+ * them and **would NOT have refused #2581** — the instance the card was filed
+ * about. The same-directory test refuses **18** and does catch it.
+ *
+ * A directory in this tree is a feature's own folder, so two change sets inside
+ * one are the realistic *"same behaviour through different lines"* population.
+ * It is a PROXY and says so: it cannot see a collision across directories, and
+ * a clean answer is a floor rather than a promise.
+ *
+ * # DOCS AND MARKDOWN ARE OUT, and that is load-bearing rather than tidy
+ *
+ * The pre-commit hook regenerates both maps on any commit touching a path they
+ * are built from (#501), so two concurrent branches nearly always both carry
+ * `docs/architecture/…` — the trap `sharesFiles`' own docblock names one level
+ * up. Left in, `docs/architecture` would be a shared directory on nearly every
+ * pair and this test would collapse into *"refuse whenever behind"* wearing a
+ * locality test's clothes. Neither a generated map nor a paragraph can make
+ * `main`'s suite red, which is the fault being prevented.
+ *
+ * ⚠ Measured both ways before choosing: excluding the four generated map files
+ * BY NAME and excluding `docs/` plus `*.md` wholesale give the SAME 18 of 50,
+ * so the generated maps were the only `docs/` overlap in that window — the
+ * wider rule costs nothing and needs no list of generated filenames to drift.
+ */
+export function sharesDirectory(a: readonly string[], b: readonly string[]): string[] {
+  const carriesBehaviour = (file: string) => !file.startsWith("docs/") && !file.endsWith(".md");
+  const dirOf = (file: string) => file.split("/").slice(0, -1).join("/");
+  const mine = new Set(a.filter(carriesBehaviour).map(dirOf));
+  return [...new Set(b.filter(carriesBehaviour).map(dirOf).filter((d) => mine.has(d)))].sort();
+}
+
 export type MergeContext = {
   /** From `extractMoneyPattern`, so the money rule cannot drift. */
   moneyPattern: string;
@@ -750,9 +893,26 @@ export type MergeContext = {
  */
 export function mergeNotice(pr: PrReading): string | null {
   // `absent` was the one state that carried a notice, and it is retired with
-  // the action reviewer (#1065): nothing can fail to be created any more. Kept
-  // as a function because the CLI prints it and an arm pins it silent.
-  void pr;
+  // the action reviewer (#1065): nothing can fail to be created any more.
+  /*
+    ⚠ MERGING A STALE HEAD IS SAID OUT LOUD (#2590). Step 5.2 refuses a stale
+    head whose change set meets what main gained; everything else merges, and
+    **this is the only place that fact reaches the receipt.** 32 of the last 50
+    merges were of a stale head, so a silence here would read as "the gate saw
+    this tree" 64% of the time. It is a notice and not a refusal because the
+    alternative measured at a seven-minute re-gate on two merges in three.
+  */
+  const gained = pr.gainedSinceGate;
+  if (gained !== null && gained.commits.length > 0) {
+    return (
+      `main has gained ${gained.commits.length} commit(s) since the gate ran on this head ` +
+      `(${gained.commits.slice(0, 3).join(", ")}${gained.commits.length > 3 ? ", …" : ""}). ` +
+      "They touch no directory this PR touches, so this merges — but the green gate is a " +
+      "verdict about a tree that is not quite the one this lands on (#2590). " +
+      "`git merge origin/main` in the worktree and a re-gate is the sound answer if main goes " +
+      "red after this."
+    );
+  }
   return null;
 }
 
@@ -1054,6 +1214,48 @@ export function decideMergeAction(pr: PrReading, ctx: MergeContext): MergeAction
   }
   if (pr.mergeStateStatus === "BEHIND") {
     return syncOrStop(pr, "it is BEHIND main and the branch must be updated before it merges");
+  }
+  /*
+    5.2 · ⚠ **A GREEN GATE ON A STALE HEAD IS A VERDICT ABOUT A TREE THAT NO
+    LONGER EXISTS — AND `CLEAN` NEVER SAID OTHERWISE** (#2590, the class behind
+    #2589).
+
+    The clause above trusts GitHub to say `BEHIND`. It only says so when the
+    base branch requires branches to be up to date, and `main` here does not —
+    so the commonest stale head reads `MERGEABLE/CLEAN`, which is a statement
+    about TEXT and is perfectly true. Driven on the pair that produced #2589:
+    #2581's gated head was cut at 09:32Z, #2585 merged at 11:13Z,
+    `git merge-base --is-ancestor` says the gate never saw it, #2581 merged at
+    12:44Z on a `CLEAN` reading, and `main` was red a minute later.
+
+    ⚠ **IT REFUSES ON LOCALITY AND WARNS OTHERWISE, AND THE POPULATION IS WHY —
+    the card asked for this number before any option was built.** Over the last
+    50 merges: **32 were of a stale head**, so refusing every one of them is a
+    seven-minute re-gate on two merges in three; the same-directory test refuses
+    **18** and catches #2589's own pair. The exact-FILE test the card
+    recommended refuses only 4 and **misses that pair entirely** —
+    `inkPlacement.ts` and `inkPlacementResolve.ts` share a prefix and no path —
+    so it is measured out rather than argued out.
+
+    Below the refusal the merge still happens, with the staleness NAMED in the
+    notice: a stale head whose change sets do not meet is a real risk this tool
+    is choosing not to pay seven minutes for, and that choice belongs in the
+    receipt rather than in a silence.
+  */
+  const gained = pr.gainedSinceGate;
+  if (gained !== null && gained.commits.length > 0) {
+    const dirs = sharesDirectory(pr.files, gained.files);
+    if (dirs.length > 0) {
+      return syncOrStop(
+        pr,
+        `main has gained ${gained.commits.length} commit(s) the gate never saw ` +
+          `(${gained.commits.slice(0, 3).join(", ")}${gained.commits.length > 3 ? ", …" : ""}) ` +
+          `and they touch ${dirs.length === 1 ? "the directory" : "directories"} this PR touches ` +
+          `(${dirs.join(", ")}) — so this head's green gate is a verdict about a tree that is not ` +
+          "the one it would land on. GitHub says CLEAN, which only means git found no text " +
+          "conflict (#2590)",
+      );
+    }
   }
 
   /*
