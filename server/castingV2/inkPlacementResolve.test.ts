@@ -420,8 +420,18 @@ describe("a side or front of a measured surface is that surface (#2572, option A
       "side of the nape", "front of the back of the neck", "side of the back of the neck",
     ]) {
       expect(resolveInkPlacement(phrase), `"${phrase}" is hidden`).toEqual({ kind: "open", phrase });
-      expect(classifyInkPlacement(phrase, "ink"), `the ink gate still refuses "${phrase}"`)
-        .toEqual({ kind: "needs_document" });
+      /*
+       ⚠ THE KIND IS THIS ARM'S WHOLE CLAIM, AND IT IS READ ON ITS OWN. It
+       was a whole-object `toEqual`, which went red the hour #2562 shipped
+       (PR #2581): that card gave every `needs_document` an `alternatives`
+       list, so an arm about REFUSAL started failing over a field it never
+       asked about. Where that list goes is pinned by the card that owns it,
+       in `inkWordsRoad.test.ts` and `refineRefusals.test.ts`, against the
+       cast's outfit — re-pinning it here would be a second copy of someone
+       else's claim, drifting the moment the outfit reader moves.
+      */
+      expect(classifyInkPlacement(phrase, "ink").kind, `the ink gate still refuses "${phrase}"`)
+        .toBe("needs_document");
     }
   });
 
