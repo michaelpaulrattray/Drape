@@ -1,7 +1,7 @@
 {
-  "edition": 730,
-  "updatedAt": "2026-10-16T07:18:28.000Z",
-  "shift": "Outfit changes in a paid edit — read properly before building, and it needs a decision from the design side first.\n\nWHAT YOU ASKED FOR. On 15 October you said yes to letting people change what a character is wearing inside a paid edit. I took that card tonight and read the product rather than the card.\n\nWHY I DID NOT BUILD IT. Two of the three worries written on the card have already gone away. It said to test two engines and pick one — there is only one engine on that road now, as of this morning, so there is nothing to pick. It also looked as though clothing would need the studio to cut a shape around the garment before it could change it; it does not, because a paid edit already repaints the whole picture. So the picture side is cheaper than anyone thought.\n\nThe real obstacle is a different one and it is not technical. Clothing is already fully described in the studio's own vocabulary, and it is switched off for everybody by a single line. Turning that line on is the thing the code itself calls a product decision — and you have now made it, so the decision is not what is missing. What is missing is a design: what it costs a customer, what happens when the engine refuses, and how it reads on a character who was never dressed that way. You have an older card that says exactly this, and nobody had linked the two. I have linked them.\n\nThere is also a money question nobody has answered: whether changing an outfit is simply another kind of edit, riding the price you already pay for an edit, or its own thing with its own price and its own refund when it fails. That changes what gets built, so it gets settled first.\n\nWHAT I DID. I wrote all of that onto the card with the evidence behind each claim, corrected the two instructions that had gone stale so the next session does not chase them, and handed it to a design session, which runs next. I built nothing, on purpose.\n\nONE THING FREED UP ALONG THE WAY. A real bug was sitting marked \"waiting for something else\" when the thing it waited for had already landed this morning — the studio can offer to put a tattoo on someone's chest while they are wearing a t-shirt. The wait broke nothing, but nobody could pick the bug up. It is free now, and I checked the fault is still really there before saying so.\n\nNOTHING WAITS ON YOU tonight.",
+  "edition": 731,
+  "updatedAt": "2026-10-16T08:36:19.000Z",
+  "shift": "Outfit changes in a paid edit — the design is written and on your desk (Fable, the design session the last shift handed this to).\n\nWHAT YOU ASKED FOR. You said yes to outfit changes on 15 October, and this morning you answered the money question: an outfit change is an ordinary edit, same price, same refund. That settled the one thing the design had to know first.\n\nWHAT I DID. I wrote the design (merged as a document — PR #2575; nothing in the product moved). In short: you type what you want in the same box you already use — change a garment, add a layer, take one off, name a fabric and colour — and it costs what every edit costs. The set, props and backgrounds still refuse, free, and the design's most important test is that they keep refusing. A sentence that today wrongly tells customers clothing comes later gets corrected. Before anything switches on, a small test run (under a dollar of our own money) puts before-and-after pictures of outfit changes on three of your characters in front of your eye.\n\nTHE ORDER OF EVENTS. First the picture test and your eye. The build itself starts only after the keep-what-you-chose work lands its first piece, exactly as you sequenced — so a new outfit stays put across later edits instead of fighting them. It goes to your account first, with a measurement that the change does not make unrelated edits refuse more often, then to everyone on your word.\n\nONE THING WAITS ON YOU: card #2544 — say GO on the design, or name any change. Recommendation: GO.\n\nSEEN ON THE WAY, NOT MINE TO FIX: the face-reader's first piece (PR #2570, another seat's, held for the relay's hand) can no longer be merged as it stands — somebody has to bring the main line into its branch before its review can finish. Its row below says so.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -34,7 +34,7 @@
           "state": "waiting"
         },
         {
-          "title": "Outfit changes inside a paid edit — you asked for this on 15 October. The picture side turned out to be the easy half: there is only one edit engine now, so nothing has to be chosen, and a paid edit already repaints the whole picture, so nothing has to be cut out round a garment. What is missing is a design — what it costs a customer, what happens when the engine says no, and whether an outfit change is simply another kind of edit or its own thing with its own price. Handed to a design session rather than built (#2544)",
+          "title": "Outfit changes inside a paid edit — you asked for this on 15 October and priced it on the 16th (an ordinary edit, your word). THE DESIGN IS WRITTEN and on your desk (#2544, PR #2575): same box, same price, the set still refuses, a picture test on three of your characters before anything switches on. It waits on your GO, and the build starts after the keep-what-you-chose work's first piece.",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T07:17:08.153Z",
+      "readAt": "2026-10-16T08:35:05.753Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7442,11 +7442,18 @@
   ],
   "pipeline": [
     {
+      "id": "outfit-design-2544",
+      "title": "Outfit changes in Refine — the design document (#2544)",
+      "status": "merged",
+      "prNumber": 2575,
+      "note": "Design only; nothing in the product moved. The build waits on his GO and on #2565 slice 1."
+    },
+    {
       "id": "face-reader-slice1-2566",
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
       "status": "in-review",
       "prNumber": 2570,
-      "note": "Built and switched off. Held for the relay's hand because the boot-check file it touches is on the money/auth list."
+      "note": "Built and switched off, held for the relay's hand (money/auth file). ⚠ It can no longer be merged as it stands — the main line moved under it; somebody has to merge main into its branch before the review can land it."
     },
     {
       "id": "ghost-audit-slice4b-1577",
@@ -11079,7 +11086,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T07:17:08.152Z",
+    "readAt": "2026-10-16T08:35:05.752Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11136,8 +11143,8 @@
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
         "urgent": false,
         "held": {
-          "state": "fable",
-          "because": "FABLE — a design decision: this is #1161 option B, and whether an outfit edit rides the refine's existing price or needs its own operation."
+          "state": "blocked",
+          "because": "YOU — the design is written (PR #2575, `docs/specs/OUTFIT_REFINE_DESIGN_2026-10-16.md`). Say GO, or name any change. Recommendation: GO."
         }
       },
       {
