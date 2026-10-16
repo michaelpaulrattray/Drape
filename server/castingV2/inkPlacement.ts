@@ -361,18 +361,22 @@ export function classifyInkPlacement(
    * WHAT THIS CAST IS WEARING — the second half of *can a tattoo go there*
    * (item 7a).
    *
-   * ⚠ **THE RESOLUTION AND NOT THE LINE**, because the three cases do not
-   * flatten. `unpathed` is *cast before the paths* and answers the house crew
-   * tee — today's answers, byte for byte, for all 206 production rolls.
-   * `incoherent` is *this roll claims a path and cannot say what it is wearing*,
-   * and reading THAT as the house tee would put a crew neck's answers on a cast
-   * that might be Basics. A bare string cannot tell the two apart, which is
-   * `WardrobeResolution`'s own reason for existing.
+   * ⚠ **THE RESOLUTION AND NOT THE LINE**, and the reason MOVED with #1577
+   * slice 2 rather than dying with the case it used to name. It said: the three
+   * cases do not flatten, because `incoherent` — *this roll claims a path and
+   * cannot say what it is wearing* — must not read as the house crew tee on a
+   * cast that might be Basics. **That kind is retired with the paths** (the
+   * ghost audit's item B1), so there are two cases now.
    *
-   * Optional where `lane` and `wordsRoadOpen` are required, and the asymmetry is
-   * deliberate rather than lazy: those two are CAPABILITY facts a caller could
-   * get wrong in either direction, while absent here is silence and silence is
-   * `unpathed` (`WardrobeBranch.rollPath`'s own rule: absent is not a claim).
+   * What a bare string still cannot say is which SOURCE the line came from, and
+   * the coverage owner turns on exactly that: a `brief` line keeps the house
+   * prior while an `edited` one is read. So `WardrobeResolution`'s reason for
+   * existing is intact and is a different sentence.
+   *
+   * Optional where `lane` is required, and the asymmetry is deliberate rather
+   * than lazy: `lane` is a CAPABILITY fact a caller could get wrong in either
+   * direction (`wordsRoadOpen` was the second, until #1577 slice D3 retired it), while absent here is silence and silence is
+   * `unpathed`.
    */
   wardrobe?: WardrobeResolution,
 ): InkPlacement {

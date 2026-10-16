@@ -916,12 +916,16 @@ export type FreeLaneCheck = {
    * WHAT THIS CAST IS WEARING — the branch's resolution, from the one owner
    * (`currentWardrobeLine`), resolved by the service (item 7a).
    *
-   * The RESOLUTION and not the line, because the three cases do not flatten:
-   * absent and `unpathed` are *cast before the paths* and answer the house crew
-   * tee — today's answer for all 206 production rolls, which is what makes this
-   * landing dark — while `incoherent` is *this roll claims a path and cannot say
-   * what it is wearing*, which must not read as a crew neck on a cast that might
-   * be Basics.
+   * The RESOLUTION and not the line, and the reason MOVED with #1577 slice 2
+   * rather than dying. It was that the three cases do not flatten: absent and
+   * `unpathed` answer the house crew tee, while `incoherent` — *this roll claims
+   * a path and cannot say what it is wearing* — must not read as a crew neck on
+   * a cast that might be Basics. **That kind is retired with the paths** (the
+   * ghost audit's item B1).
+   *
+   * What does not flatten now is the SOURCE: absent and `unpathed` answer the
+   * house tee, a `brief` line keeps the house prior, and only an `edited` line
+   * is read on its own terms. A bare string cannot say which of those it is.
    */
   wardrobe?: WardrobeResolution;
   /** Set when the value hit a wall, so the caller can name which one. */

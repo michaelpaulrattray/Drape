@@ -1615,11 +1615,16 @@ describe("no roll is born on a path", () => {
 
   it("never writes one column without the other", async () => {
     /*
-      The `incoherent` case's structural guard. It is satisfied trivially today
-      — both are null — and that is said out loud rather than dressed up: what
-      it is here to catch is a future writer that resolves a line without a
-      path, or a path without a line, which is the shape that would put a grey
-      tee on a bare chest.
+      A WRITE-SIDE guard on the two columns, satisfied trivially today — both
+      are null on this fixture — and that is said out loud rather than dressed
+      up: what it is here to catch is a future writer that stamps one column
+      without the other.
+
+      ⚠ **It was *"the `incoherent` case's structural guard"* until #1577 slice
+      2 retired that resolution kind** (the ghost audit's item B1). The read side
+      can no longer express *claims a path, cannot say what it wears*, so this
+      guard no longer has a resolution to protect — it is a torn-write check on
+      the columns themselves, which is a narrower and still real thing.
     */
     const written = await roll();
     expect((written.path === null) === (written.wardrobeLine === null)).toBe(true);

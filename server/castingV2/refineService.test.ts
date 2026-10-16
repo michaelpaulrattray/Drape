@@ -87,19 +87,23 @@ const ledger = {
 let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
 /**
- * WHAT THE ROLL THIS FACE CAME FROM WAS CAST ON, and what it was born wearing.
+ * WHAT THE ROLL THIS FACE CAME FROM WAS BORN WEARING.
  *
- * Both `null` in every arm but the coverage-demand ones at the foot of this
- * file, which is the honest default: every roll in both worlds is `unpathed`,
- * and `currentWardrobeLine` reads a null path as *cast before the paths* — the
- * house crew tee, today's answers byte for byte.
+ * `null` in every arm but the coverage-demand ones at the foot of this file,
+ * which is the honest default: a roll with no stored line is `unpathed`, and
+ * `currentWardrobeLine` reads that as the house crew tee — today's answers byte
+ * for byte.
  *
- * They are on the FIXTURE rather than passed per call because that is where the
- * real reader gets them: `getOwnedCandidateWithSelectedFace` joins them through
- * the owned candidate, so a suite that supplied them any other way would be
- * proving something about its own harness.
+ * It is on the FIXTURE rather than passed per call because that is where the
+ * real reader gets it: `getOwnedCandidateWithSelectedFace` joins it through the
+ * owned candidate, so a suite that supplied it any other way would be proving
+ * something about its own harness.
+ *
+ * ⚠ **`rollPath` STOOD BESIDE IT AND IS GONE — #1577 slice 2 (the ghost
+ * audit's item B1).** The projection no longer selects a path and the
+ * resolution no longer reads one, so a fixture carrying it would be describing
+ * a read the product does not make.
  */
-let rollPath: string | null = null;
 let rollWardrobeLine: string | null = null;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
@@ -195,9 +199,8 @@ vi.mock("../db/castingV2", () => ({
       imageKey: selected ? selected.imageKey : candidateRow.imageKey,
       thumbKey: null,
       internalPrompt: selected ? selected.internalPrompt : candidateRow.internalPrompt,
-      /* The roll's two fields belong to the CANDIDATE and not to whichever face
-         is selected, exactly as the real read has them. */
-      rollPath,
+      /* The roll's line belongs to the CANDIDATE and not to whichever face is
+         selected, exactly as the real read has it. */
       rollWardrobeLine,
     };
   }),
@@ -231,7 +234,6 @@ vi.mock("../db/castingV2", () => ({
         imageKey: named ? named.imageKey : candidateRow.imageKey,
         thumbKey: null,
         internalPrompt: named ? named.internalPrompt : candidateRow.internalPrompt,
-        rollPath,
         rollWardrobeLine,
       },
     };
@@ -608,8 +610,28 @@ vi.mock("./realizationCaption", async (importOriginal) => ({
 
 /** The digests this branch already holds. Empty unless a test says otherwise. */
 let lineageReferences: Array<Record<string, unknown>> = [];
+/*
+  ⚠ `retireReferenceSlot` JOINED THIS MOCK WITH #1577 SLICE 4b, AND THE REASON
+  IS THE WHOLE POINT OF THAT SLICE.
+
+  The module mock held one export because one export was reached: with no flag
+  set in this suite, every render took the OLD paste road, and the library's
+  retirement is the repaint's business. Every render repaints now, so a removal
+  reaches it — and a vitest module mock REFUSES an export it was not given
+  rather than returning undefined, which is how this surfaced: the arm refunded
+  with the generic sentence and the cause was a missing mock, not the product.
+
+  It counts rows retired, so `0` is the honest answer for a fixture with no live
+  library — and the arms that are ABOUT the retirement pass `retireSlot` as a
+  dependency and assert on their own seam, so this default cannot stand in for
+  one of those.
+*/
 vi.mock("../db/castingV2ReferenceLibrary", () => ({
   listLineageReferences: vi.fn(async () => lineageReferences),
+  retireReferenceSlot: vi.fn(async () => 0),
+  /* The vacancy write, for the same reason and with the same limit: the arms
+     that are ABOUT it hand in `recordRows` and read their own seam. */
+  recordReferenceRows: vi.fn(async () => []),
 }));
 
 /**
@@ -699,7 +721,6 @@ beforeEach(() => {
       },
     },
   };
-  rollPath = null;
   rollWardrobeLine = null;
   vi.clearAllMocks();
 });
@@ -711,21 +732,18 @@ const input = {
   instruction: "make her eyes green",
 };
 
-/**
- * This suite is about the refinement SERVICE — charging, retrying, refusing,
- * refunding — and not about masking, which `maskedRefine.test.ts` owns.
- *
- * The masked path is live for this suite's user, so without this every test
- * would run a real composite against a flat synthetic swatch and measure the
- * fixture rather than the service. A passthrough keeps each suite testing its
- * own subject, which is why the seam is an injectable dependency like
- * `interpret` and `verifier`.
- */
-const unmasked = async (input: { painted: { bytes: Buffer; contentType: string } }) => ({
-  bytes: input.painted.bytes,
-  contentType: input.painted.contentType,
-  outcome: "flag-off" as const,
-});
+/*
+  ⚠ THE HARVEST PASSTHROUGH STOOD HERE AND IS GONE WITH THE SEAM — #1577
+  slice 4b.
+
+  Every arm in this file passed `harvest: unmasked` (118 of them) so that a
+  service test would not run a real composite against a flat synthetic swatch
+  and measure the fixture instead of the service. The seam existed because the
+  PASTE road harvested; the repaint pastes nothing, `RefineServiceDependencies`
+  no longer declares `harvest`, and a fixture cannot inject what the service
+  cannot read. The masking module keeps its own suite
+  (`maskedRefine.test.ts`), which is where that subject always lived.
+*/
 
 /**
  * WHAT THE SERVICE WROTE DOWN.
@@ -767,7 +785,6 @@ vi.mock("../logging/logger", () => {
 
 const greenEyes = {
   interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
-  harvest: unmasked,
 };
 
 /**
@@ -811,57 +828,30 @@ const doorShut = async (
 };
 
 /*
-  THE SEAM VERDICT RIDES THE ROW ON EVERY RENDER (fable-119).
+  ⚠ THE SEAM VERDICT'S OWN DESCRIBE STOOD HERE AND RETIRED WITH THE PASTE ROAD
+  — #1577 slice 4b.
 
-  It existed only as a log line, and only when it fired — a sample of failures
-  with no denominator, which is why the shadow→enforce flip has rested on three
-  anecdotes for four shifts. A log is not an artifact a report can be derived
-  from; the intersections learned that first (fable-109) and this is the same
-  lesson one consumer over.
+  What it held: the composite's join verdict rode the LANDED ROW on every render
+  (fable-119), torn or clean, rather than existing only as a log line that fired
+  when it found something — a sample of failures with no denominator, which is
+  why the shadow-to-enforce flip rested on three anecdotes for four shifts. Two
+  arms: a clean verdict written to the row so the rate has a denominator, and
+  nothing written when nothing was composited.
 
-  Asserted on what is WRITTEN, not on a constant near it: the clean case is the
-  one that matters, because a verdict recorded only when it is bad cannot
-  produce a rate.
+  It is retired rather than re-pointed because there is nothing left to score. A
+  repaint pastes nothing, so there is no boundary and no join; `repaintOnce`
+  declares `seam: undefined`, the landing's spread of it is gone, and the second
+  arm's behaviour (*nothing written*) is now the only behaviour there is.
+  Measured rather than assumed: the repaint reached `all` on production long
+  before this cut, so no landed row has carried a seam verdict since.
+
+  The founder's own specimen is kept here because it is the only place it is
+  written down: he traced a visible seam on a frame this detector scored
+  `torn: false`, and in his band it was 0 pixels over the bar with a consistent
+  -10 luma offset along the whole edge. One specimen is not a calibration, and
+  the road it was measured on is gone — if a seam ever needs scoring again it
+  will be a different detector on a different road.
 */
-describe("the seam verdict is an artifact, not a log line", () => {
-  const composited = async (input: { painted: { bytes: Buffer; contentType: string } }) => ({
-    bytes: input.painted.bytes,
-    contentType: input.painted.contentType,
-    outcome: "composited" as const,
-    seam: {
-      torn: false,
-      enforced: false,
-      boundaryPixels: 38_592,
-      tornPixels: 0,
-      share: 0,
-      worstExcess: 73.1,
-      signedMean: -10.31,
-      signedSpread: 9.22,
-      coherence: 1.118,
-    },
-  });
-
-  it("writes a CLEAN verdict to the row, so the rate has a denominator", async () => {
-    await refineCandidate({ ...greenEyes, harvest: composited }, input);
-    const stored = (landedVariant?.internalPrompt as { seam?: Record<string, unknown> }).seam;
-    expect(stored).toEqual({
-      torn: false,
-      enforced: false,
-      boundaryPixels: 38_592,
-      tornPixels: 0,
-      share: 0,
-      worstExcess: 73.1,
-      signedMean: -10.31,
-      signedSpread: 9.22,
-      coherence: 1.118,
-    });
-  });
-
-  it("writes nothing when nothing was composited — no boundary, no opinion", async () => {
-    await refineCandidate({ ...greenEyes, harvest: unmasked }, input);
-    expect((landedVariant?.internalPrompt as { seam?: unknown }).seam).toBeUndefined();
-  });
-});
 
 /**
  * THE REFINE SURFACE CALLS THE CAST WHAT THE CAST IS (§5e, class found
@@ -893,7 +883,7 @@ describe("the refine surface speaks about the Cast the Cast's own way", () => {
   /* A scope the grammar cannot read — the earliest sentence in the function
      that names the person, and the one the hoisted derivation exists for. */
   const askAboutAnUnknownPart = async () => refineCandidate(
-    { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }) },
+    { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }) },
     { ...input, instruction: "make it green", scope: "kneecap" },
   ).then(() => null, (error: unknown) => (error as Error).message);
 
@@ -925,7 +915,7 @@ describe("refusals land before anything is claimed", () => {
     picture that was never going to be what they asked for.
   */
   it("refuses an out-of-tier instruction for free", async () => {
-    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: false, refusal: { reason: "wall_stage", asked: "her age" } }) },
+    await expect(refineCandidate({ interpret: async () => ({ ok: false, refusal: { reason: "wall_stage", asked: "her age" } }) },
       { ...input, instruction: "make her older" },
     )).rejects.toThrow(/not the shoot/);
 
@@ -946,7 +936,7 @@ describe("refusals land before anything is claimed", () => {
       verification net for the thing she asked about.
     */
     await expect(refineCandidate(
-      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "brown" as const } }) },
+      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "brown" as const } }) },
       { ...input, instruction: "make her eyes a warmer brown" },
     )).rejects.toThrow(/already has brown/);
 
@@ -980,7 +970,7 @@ describe("refusals land before anything is claimed", () => {
     }) as never;
 
     await refineCandidate(
-      { harvest: unmasked, interpret },
+      { interpret },
       { ...input, instruction: "make her eyes meadow green" },
     );
 
@@ -1025,7 +1015,7 @@ describe("refusals land before anything is claimed", () => {
     }) as never;
 
     const result = await refineCandidate(
-      { harvest: unmasked, interpret },
+      { interpret },
       { ...input, instruction: "her glasses — gentle monster style glasses clear rims" },
     );
 
@@ -1063,7 +1053,7 @@ describe("refusals land before anything is claimed", () => {
     }) as never;
 
     await expect(refineCandidate(
-      { harvest: unmasked, interpret },
+      { interpret },
       { ...input, instruction: "take her glasses off" },
     )).rejects.toThrow(/already off her/);
 
@@ -1117,7 +1107,7 @@ describe("refusals land before anything is claimed", () => {
     }) as never;
 
     const result = await refineCandidate(
-      { harvest: unmasked, interpret },
+      { interpret },
       { ...input, instruction: "give him a jacked build" },
     );
 
@@ -1142,7 +1132,7 @@ describe("refusals land before anything is claimed", () => {
     }) as never;
 
     await expect(refineCandidate(
-      { harvest: unmasked, interpret },
+      { interpret },
       { ...input, instruction: "make her eyes a warmer brown" },
     )).rejects.toThrow(/already has brown/);
 
@@ -1161,7 +1151,7 @@ describe("refusals land before anything is claimed", () => {
   */
   it("refuses an ask the photograph does not contain, for free", async () => {
     await expect(refineCandidate(
-      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { waist: "a smaller waist" } } }) },
+      { interpret: async () => ({ ok: true as const, delta: { free: { waist: "a smaller waist" } } }) },
       { ...input, instruction: "make her waist smaller" },
     )).rejects.toThrow(/framed from the mid-torso up/);
 
@@ -1189,7 +1179,6 @@ describe("refusals land before anything is claimed", () => {
   it("renders an ask whose ONLY content is an open kind, rather than calling the row unreadable", async () => {
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
@@ -1211,7 +1200,6 @@ describe("refusals land before anything is claimed", () => {
     */
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: { free: { waist: "a smaller waist", arms: "bigger arms" } },
@@ -1244,7 +1232,6 @@ describe("refusals land before anything is claimed", () => {
     */
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: { free: { lips: "a soft nude lip gloss" } },
@@ -1272,7 +1259,6 @@ describe("refusals land before anything is claimed", () => {
     */
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: {
@@ -1295,7 +1281,6 @@ describe("refusals land before anything is claimed", () => {
     const { claimVariant } = await import("../db/castingV2Variants");
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: { free: { waist: "a smaller waist", arms: "bigger arms" } },
@@ -1344,7 +1329,7 @@ describe("refusals land before anything is claimed", () => {
 
   it("does NOT refuse a body ask that IS in the picture", async () => {
     const result = await refineCandidate(
-      { harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { build: "a more athletic build" } } }) },
+      { interpret: async () => ({ ok: true as const, delta: { free: { build: "a more athletic build" } } }) },
       { ...input, instruction: "give her a more athletic build" },
     );
     expect(result).toBeTruthy();
@@ -1370,8 +1355,7 @@ describe("refusals land before anything is claimed", () => {
     {
       await expect(refineCandidate(
         {
-          harvest: unmasked,
-          interpret: async () => ({
+            interpret: async () => ({
             ok: false as const,
             refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a scar she never mentioned" },
           }),
@@ -1388,7 +1372,7 @@ describe("refusals land before anything is claimed", () => {
   });
 
   it("refuses when the interpreter cannot be reached, rather than guessing", async () => {
-    await expect(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: false, refusal: { reason: "unreadable" } }) },
+    await expect(refineCandidate({ interpret: async () => ({ ok: false, refusal: { reason: "unreadable" } }) },
       input,
     )).rejects.toThrow(/Nothing was charged/);
     expect(ledger.charges).toHaveLength(0);
@@ -1427,7 +1411,6 @@ describe("refusals land before anything is claimed", () => {
 
     const asked = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1499,7 +1482,6 @@ describe("refusals land before anything is claimed", () => {
 
     const asked = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1542,7 +1524,6 @@ describe("refusals land before anything is claimed", () => {
 
     const asked = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1587,7 +1568,6 @@ describe("refusals land before anything is claimed", () => {
 
     const spent = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1618,7 +1598,6 @@ describe("refusals land before anything is claimed", () => {
 
     const spent = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1684,10 +1663,23 @@ describe("refusals land before anything is claimed", () => {
     }];
     candidateRow.selectedVariantPublicId = "variant-1";
 
+    /*
+      ⚠ THE VEHICLE CHANGED WITH THE ROAD — #1577 slice 4b, and the arm's
+      subject did not.
+
+      This asked for *nude lip gloss* and expected a render. It got one on the
+      PASTE road, which is the only road it was ever driven on: makeup is a
+      facet the repaint's recipe cannot state declaratively, so on the live road
+      the same ask meets `RepaintCannotSayError` and the founder's own sentence
+      — *"makeup isn't something I can place yet — it's coming"* — free, with
+      nothing charged. **That is production's behaviour today and has been since
+      the repaint widened; it is not a change this slice made.** The ask is
+      hair, which the recipe does serve, so the claim being proven is the one in
+      the title rather than a makeup capability no customer has.
+    */
     const result = await refineCandidate(
       {
-        harvest: unmasked,
-        interpret: async () => ({ ok: true as const, delta: { makeup: "nude lip gloss" } }),
+        interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
           region: async () => upswept(),
@@ -1695,10 +1687,10 @@ describe("refusals land before anything is claimed", () => {
           landmark: async () => [],
         },
       },
-      { ...input, instruction: "add nude lip gloss" },
+      { ...input, instruction: "wear her hair down" },
     );
 
-    expect(result.kind, "her lip gloss is rendered, not answered with a question about her eyes")
+    expect(result.kind, "the later ask is rendered, not answered with a question about her eyes")
       .toBe("rendered");
   });
 
@@ -1733,7 +1725,6 @@ describe("refusals land before anything is claimed", () => {
 
     const answered = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: face, contentType: "image/png" }),
         regions: {
@@ -1756,7 +1747,7 @@ describe("refusals land before anything is claimed", () => {
     /* Declining has to be as easy as accepting, or the question has one real
        answer and is not a question. It never reaches the claim. */
     const declined = await refineCandidate(
-      { harvest: unmasked, interpret: async () => { throw new Error("the parse is never reached"); } },
+      { interpret: async () => { throw new Error("the parse is never reached"); } },
       { ...input, instruction: "Never mind", answering: "fox eyes" },
     );
 
@@ -1804,7 +1795,6 @@ describe("refusals land before anything is claimed", () => {
     const segmented: number[] = [];
     await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async (key: string) => ({
           bytes: key.includes("she-is-looking-at-this") ? looking : base,
@@ -1841,7 +1831,6 @@ describe("refusals land before anything is claimed", () => {
     };
     const result = await refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({ ok: true as const, delta: { eyeShape: "fox eyes" as const } }),
         readBytes: async () => ({ bytes: Buffer.from("not-an-image"), contentType: "image/png" }),
         regions: blind,
@@ -1911,7 +1900,7 @@ describe("the questions cost nothing, and never dead-end", () => {
     /* The interpreter is reached — that is the whole assertion, since
        `explodes` throws if a question fires. A real reading, then a render. */
     const result = await refineCandidate(
-      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }), harvest: unmasked },
+      { interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }) },
       { ...input, instruction: "make it green", scope: "eye@left" },
     );
     expect(result.kind).not.toBe("asked");
@@ -1966,7 +1955,6 @@ describe("the questions cost nothing, and never dead-end", () => {
     const result = await refineCandidate(
       {
         interpret: async () => ({ ok: true as const, delta: { hairColour: "green" } }) as never,
-        harvest: unmasked,
       },
       { ...input, instruction: "make it green", scope: "eye@left" },
     );
@@ -1984,7 +1972,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("runs the answer as the instruction it stands for, and charges once", async () => {
     let seen = "";
-    await refineCandidate({ harvest: unmasked,
+    await refineCandidate({
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { hairColour: "copper" as const } };
@@ -1999,7 +1987,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("treats an unrecognised reply as a new instruction rather than a dead end", async () => {
     let seen = "";
-    await refineCandidate({ harvest: unmasked,
+    await refineCandidate({
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { hairColour: "copper" as const } };
@@ -2013,7 +2001,7 @@ describe("the questions cost nothing, and never dead-end", () => {
 
   it("does not ask twice — an answer is never re-questioned", async () => {
     let seen = "";
-    await refineCandidate({ harvest: unmasked,
+    await refineCandidate({
         interpret: async (parse: { instruction: string }) => {
           seen = parse.instruction;
           return { ok: true as const, delta: { free: { hairShade: "piink" } } };
@@ -2082,7 +2070,7 @@ describe("an unreadable history stops the money", () => {
     }];
     candidateRow.selectedVariantPublicId = "variant-old";
 
-    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { free: { hairShade: "pink" } } }) },
+    await refineCandidate({ interpret: async () => ({ ok: true as const, delta: { free: { hairShade: "pink" } } }) },
       input,
     );
     const claimed = JSON.stringify(landedVariant ?? {});
@@ -2341,7 +2329,6 @@ describe("an unreadable history stops the money", () => {
 
     await refineCandidate(
       {
-        harvest: unmasked,
         verifier,
         interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "tied up in a high knot" } } }),
       },
@@ -2708,7 +2695,6 @@ describe("the render is checked against the record before it is delivered", () =
     const reader = measuredReader("glasses", "earrings");
     await refineCandidate(
       {
-        harvest: unmasked,
         verifier: reader.engine,
         interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
       },
@@ -2733,7 +2719,6 @@ describe("the render is checked against the record before it is delivered", () =
     const reader = measuredReader("hoop");
     await refineCandidate(
       {
-        harvest: unmasked,
         verifier: reader.engine,
         interpret: async () => ({
           ok: true as const,
@@ -2761,7 +2746,6 @@ describe("the render is checked against the record before it is delivered", () =
     const reader = measuredReader("glasses");
     await refineCandidate(
       {
-        harvest: unmasked,
         verifier: {
           id: "verifier",
           complete: async (request: { system: string; user: string }) => {
@@ -2826,7 +2810,6 @@ describe("the render is checked against the record before it is delivered", () =
     const reader = measuredReader("cross");
     await refineCandidate(
       {
-        harvest: unmasked,
         verifier: reader.engine,
         interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: twoThings } } }),
       },
@@ -2885,7 +2868,6 @@ describe("the render is checked against the record before it is delivered", () =
     const freeLane = {
       interpret: async () => ({ ok: true as const, delta: { free: { eyeColourFree: "seafoam green" } } }),
       verifier: verifierSaying(false, false),
-      harvest: unmasked,
     };
     await refineCandidate(freeLane, input);
     /* Delivered on the first attempt: an advisory miss buys nothing and costs
@@ -3002,7 +2984,7 @@ describe("her hair going is a haircut, read from her sentence", () => {
   it("is the bald edit, and the model is never asked about it", async () => {
     const reader = asked("remove her hair");
     const result = await refineCandidate(
-      { harvest: unmasked, interpret: reader.interpret as never },
+      { interpret: reader.interpret as never },
       { ...input, instruction: reader.instruction },
     );
 
@@ -3022,7 +3004,7 @@ describe("her hair going is a haircut, read from her sentence", () => {
     ]) {
       const reader = asked(phrasing);
       const result = await refineCandidate(
-        { harvest: unmasked, interpret: reader.interpret as never },
+        { interpret: reader.interpret as never },
         { ...input, instruction: phrasing, clientRequestId: `bald-${phrasing}` },
       );
       expect(result.variantId, phrasing).toBeTruthy();
@@ -3039,7 +3021,7 @@ describe("her hair going is a haircut, read from her sentence", () => {
     briefWorn = ["braids"];
     const reader = asked("remove her braids");
     await refineCandidate(
-      { harvest: unmasked, interpret: reader.interpret as never },
+      { interpret: reader.interpret as never },
       { ...input, instruction: reader.instruction },
     ).catch(() => undefined);
 
@@ -3088,7 +3070,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
   };
 
   it("does not confess about taking off something being put on", async () => {
-    const result = await refineCandidate({ harvest: unmasked,
+    const result = await refineCandidate({
         interpret: misreads({
           ok: true as const,
           delta: { free: { statedAccessories: ["small gold hoop earrings"] } },
@@ -3113,7 +3095,24 @@ describe("a removal with no removal word is re-read as an edit", () => {
     it("removes glasses the brief asked for", async () => {
       briefWorn = ["wire-framed glasses"];
       let call = 0;
-      const result = await refineCandidate({ harvest: unmasked,
+      const result = await refineCandidate({
+          /*
+            ⚠ THE SEGMENTER SEAM ARRIVED WITH #1577 SLICE 4b, AND WHAT IT
+            PROVES IS THAT THIS ARM NOW DRIVES THE LIVE ROAD.
+
+            It had none, and did not need one, because with no flag set in the
+            suite this ask took the PASTE road — where the departure was the
+            harvest's business. Every render repaints now, and a removal's
+            delivered frame is READ to confirm the thing is gone
+            (`departureFloorFor`, the 0.0000%-versus-1.4095% reading); without a
+            reader the default refuses by design and the whole render refunds.
+            Zero coverage is *it is gone*, which is what this arm is about.
+          */
+          regions: {
+            region: async () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 }),
+            subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+            landmark: async () => [],
+          },
           /* Rule 3: the record says it IS there, so the sentence is re-read as
              an ordinary content edit with the removal vocabulary withheld. */
           interpret: (async () => {
@@ -3139,7 +3138,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
          accessory nobody named — but it no longer claims to have looked at her
          face when all it read was a record. */
       briefWorn = null;
-      const shut = await doorShut(refineCandidate({ harvest: unmasked,
+      const shut = await doorShut(refineCandidate({
           interpret: async () => ({
             ok: true as const,
             intent: "remove" as const,
@@ -3172,7 +3171,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     it("LOOKS when the record is silent, and lets the removal through if she is wearing them", async () => {
       briefWorn = null;
       let call = 0;
-      const result = await refineCandidate({ harvest: unmasked,
+      const result = await refineCandidate({
           regions: seeingReader(true),
           /* Same two-call shape as a record-backed removal: once the face has
              confirmed the thing, the sentence is re-read as a content edit. */
@@ -3198,7 +3197,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
       /* Without this the branch above could pass by never refusing anything,
          which is the confession deleted rather than corrected. */
       briefWorn = null;
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           regions: seeingReader(false),
           interpret: async () => ({
             ok: true as const,
@@ -3253,7 +3252,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
         briefWorn = null;
         const reader = inflectionReader("earring");
         let call = 0;
-        const result = await refineCandidate({ harvest: unmasked,
+        const result = await refineCandidate({
             regions: reader.regions as never,
             interpret: (async () => {
               call += 1;
@@ -3278,7 +3277,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
          must not have opened. */
       briefWorn = null;
       const reader = inflectionReader("earring");
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           regions: reader.regions as never,
           interpret: async () => ({
             ok: true as const, intent: "remove" as const,
@@ -3301,7 +3300,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
   */
   it("refuses a scoped ask whose reading landed elsewhere — and writes NO ledger row", async () => {
     briefWorn = null;
-    await expect(refineCandidate({ harvest: unmasked,
+    await expect(refineCandidate({
         interpret: async () => ({
           ok: true as const,
           delta: { free: { marks: ["cauliflower ear on her left ear"] } },
@@ -3322,7 +3321,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
       experienced, countable afterwards. This shift asked production how often
       the containment guard refuses an honest ask and could not answer at all.
     */
-    await expect(refineCandidate({ harvest: unmasked,
+    await expect(refineCandidate({
         interpret: async () => ({
           ok: false as const,
           refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a lightning bolt scar" },
@@ -3341,7 +3340,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
   });
 
   it("counts the door's RESCUE, which is the half that makes the ratio mean something", async () => {
-    await refineCandidate({ harvest: unmasked,
+    await refineCandidate({
         interpret: async () => ({
           ok: true as const,
           delta: { free: { marks: ["a lightning bolt scar on her forehead"] } },
@@ -3392,7 +3391,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
         "remove her hair" to the haircut before the model is asked. The DOOR is
         the one he hit, so it is driven with a sentence that still reaches it.
       */
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: removalThenWall({
             ok: false as const, refusal: { reason: "wall_content" as const },
           }) as never,
@@ -3405,7 +3404,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     });
 
     it("COUNTS the re-read that matched nothing to change", async () => {
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: removalThenWall({ ok: true as const, intent: "navigate" as const }) as never,
         },
         { ...input, instruction: "remove her braids" },
@@ -3416,7 +3415,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     });
 
     it("COUNTS a door that has no parse behind it at all — the scope it cannot name", async () => {
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
         } as never,
         { ...input, instruction: "make it green", scope: "elbow@left" as never },
@@ -3427,7 +3426,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     });
 
     it("COUNTS ONCE — the seam does not double-count a door that used to count itself", async () => {
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: async () => ({
             ok: false as const,
             refusal: { reason: "wall_unfileable" as const, asked: "marks", value: "a scar" },
@@ -3441,7 +3440,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
 
     it("COUNTS NOTHING when the ask is served — the counter is not a request log", async () => {
       briefWorn = null;
-      await refineCandidate({ harvest: unmasked,
+      await refineCandidate({
           interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
         } as never,
         { ...input, instruction: "her eyes — green" },
@@ -3458,7 +3457,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
       */
       briefWorn = null;
       engineThrows = new Error("the engine fell over");
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
         } as never,
         { ...input, instruction: "her eyes — green" },
@@ -3477,7 +3476,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
       as it did before this door existed.
     */
     briefWorn = null;
-    await refineCandidate({ harvest: unmasked,
+    await refineCandidate({
         interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
       } as never,
       { ...input, instruction: "her left eye — green", scope: "eye@left" },
@@ -3488,7 +3487,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
 
   it("charges nothing either way", async () => {
       briefWorn = null;
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: async () => ({
             ok: true as const,
             intent: "remove" as const,
@@ -3515,7 +3514,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
     it("an ambiguous word does not authorize a removal when the sentence names a thing to HAVE", async () => {
       briefWorn = ["glasses"];
       const modes: (string | undefined)[] = [];
-      const result = await refineCandidate({ harvest: unmasked,
+      const result = await refineCandidate({
           interpret: (async (request: { mode?: string }) => {
             modes.push(request.mode);
             return modes.length === 1
@@ -3549,7 +3548,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
       briefWorn = ["glasses"];
       const reader = inflectionReader("glasses");
       const modes: (string | undefined)[] = [];
-      await refineCandidate({ harvest: unmasked,
+      await refineCandidate({
           regions: reader.regions as never,
           interpret: (async (request: { mode?: string }) => {
             modes.push(request.mode);
@@ -3575,7 +3574,7 @@ describe("a removal with no removal word is re-read as an edit", () => {
        honest confession is reached when the face has none. Since D-206 that
        confession names what it consulted — the brief and the recipe — rather
        than claiming to have looked at her face. */
-    await expect(refineCandidate({ harvest: unmasked,
+    await expect(refineCandidate({
         interpret: async () => ({
           ok: true as const,
           intent: "remove" as const,
@@ -3619,7 +3618,7 @@ describe("how many refinements one face can carry", () => {
   it("accepts a twenty-fourth refinement, which twelve used to refuse", async () => {
     variantRows = chainOf(23);
     candidateRow.selectedVariantPublicId = "variant-23";
-    const result = await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+    const result = await refineCandidate({ interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
       { ...input, instruction: "make her eyes green" },
     );
     expect(result.variantId).toBeTruthy();
@@ -3628,7 +3627,7 @@ describe("how many refinements one face can carry", () => {
   it("refuses the twenty-fifth, for free", async () => {
     variantRows = chainOf(24);
     candidateRow.selectedVariantPublicId = "variant-24";
-    const shut = await doorShut(refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
+    const shut = await doorShut(refineCandidate({ interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" } }) } as never,
       { ...input, instruction: "make her eyes green" },
     ));
     expect(shut.message).toMatch(/as many refinements as it can carry/);
@@ -3647,10 +3646,18 @@ describe("the order, and the money", () => {
       — see "the 42-second race" in the library describe below. `mint` does not
       appear because this render's flag is dark for the library; `keep-segments`
       used to sit before `land` and went with the segment store (#1160).
+
+      ⚠ `record-dispatch` ARRIVED IN THIS LIST WITH #1577 SLICE 4b, AND IT WAS
+      ALWAYS THE LIVE ORDER — this arm was asserting the PASTE road's order.
+      The fixture passes no engine seam, so it took whichever road the flag
+      chose, and in a suite with no flag set that was the old one. The repaint
+      records what it dispatched before it dispatches it, which is the step this
+      list was missing; with the paste road retired there is only one order left
+      to assert and this is it.
     */
     expect(journal).toEqual([
-      "read", "begin", "claim", "running", "deduct", "generate", "manifest",
-      "land", "seal:success",
+      "read", "begin", "claim", "running", "deduct", "record-dispatch", "generate",
+      "manifest", "land", "seal:success",
     ]);
     expect(ledger.charges).toEqual([
       { amount: REFINE_PRICE, reference: "op:11111111-1111-4111-8111-111111111111:charge" },
@@ -3761,8 +3768,8 @@ describe("the order, and the money", () => {
 });
 
 /**
- * THE NEW COMPOSITOR ON THE PAID PATH (D-241), dark behind
- * `CASTING_REPAINT_SCOPE`.
+ * THE COMPOSITOR ON THE PAID PATH (D-241) — and since #1577 slice 4b it is the
+ * only one, with its flag and the old paste road retired together.
  *
  * Everything here is asserted on WHAT WENT OUT — the request the repaint engine
  * actually received — rather than on a constant near it (working law 5). "The
@@ -3808,12 +3815,22 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" });
 
   const repainting = {
-    repaintEnabled: () => true,
     repaintEngine,
     readBytes,
+    /*
+      ⚠ THE LIBRARY'S OWN FLAG IS STATED HERE SINCE #1577 SLICE 4b, where
+      `repaintEnabled: () => true` used to sit.
+
+      The repaint's flag was an AND of this one, so saying *repaint on* said
+      *library on* too and this fixture inherited both from one line. With the
+      repaint's flag retired, the lineage read is gated on the library itself —
+      its own rows, its own parent — and a fixture about carrying crops has to
+      say so. Production holds it at `all`, which is why this is a fixture
+      change and not a behaviour one.
+    */
+    referenceLibraryEnabled: () => true,
     /* The masked harvest must never be reached on this road; if it is, this
        passthrough keeps the failure legible instead of masking a real cut. */
-    harvest: unmasked,
   };
 
   /** One live carry row, in the shape the lineage walk returns. */
@@ -3893,7 +3910,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     const LINE = "a dark canvas work jacket, straight jeans, plain boots";
 
     const wardrobeBranch = () => {
-      rollPath = "wardrobe";
       rollWardrobeLine = HOUSE_WARDROBE_LINE;
       variantRows = [{
         id: 801,
@@ -4442,33 +4458,24 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     The enumeration of scope-flag branch points on this road found three, and
     two of them already took an injected predicate. This one read the flag
-    directly, so the clause could be proven inside the assembler (which takes
-    `placeSides` as an input) and inside the boot guard — and NOWHERE in
-    between. A per-user flag hides exactly that gap: the wiring is invisible to
-    every suite whose machine has the flag off, which is every machine that has
-    not gone looking for the founder's road.
+    directly, so the clause could be proven inside the assembler and inside the
+    boot guard — and NOWHERE in between. A per-user flag hides exactly that gap:
+    the wiring is invisible to every suite whose machine has the flag off, which
+    is every machine that has not gone looking for the founder's road.
 
-    Both sides, on one dispatched prompt each, because a clause that is present
-    when armed proves nothing unless it is absent when it is not.
+    ⚠ **THE FLAG IS RETIRED (#1577 slice D2) AND THE INJECTED PREDICATE IS GONE
+    WITH IT — but the WIRE assertion is the whole point of this pair and stays.**
+    What changed is the control. There used to be an off arm, flag false, proving
+    the clause absent; nothing can produce that prompt now, and an arm asserting
+    an unreachable road is what slice 4b found 134 of. So the two arms below are
+    each other's control: the SAME road, the SAME dispatch, opposite anatomy,
+    and each asserts the other's half is not the one that went out. That is a
+    sharper reader than the dead arm was — it fails on a clause frozen to one
+    half, which the old pair could not see.
   */
-  it("says WHERE the side is when this account is inside the phrasing scope", async () => {
+  it("says WHERE the side is, on the prompt that actually goes out", async () => {
     await refineCandidate({
       ...repainting,
-      sidePhrasingEnabled: () => true,
-      interpret: async () => ({
-        ok: true as const,
-        delta: { free: { eyeColourFree: "her right eye fiery red" } },
-      }),
-    } as never, { ...input, instruction: "her right eye fiery red", scope: "eye@right" });
-
-    expect(painted.at(-1)?.prompt, "the recipe that actually went out")
-      .toContain("on the left of the picture as you look at it");
-  });
-
-  it("CONTROL — and says nothing about the picture's halves when it is not", async () => {
-    await refineCandidate({
-      ...repainting,
-      sidePhrasingEnabled: () => false,
       interpret: async () => ({
         ok: true as const,
         delta: { free: { eyeColourFree: "her right eye fiery red" } },
@@ -4477,8 +4484,27 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     const prompt = painted.at(-1)?.prompt ?? "";
     expect(prompt, "her own side is still named").toContain("right eye");
-    expect(prompt, "and the flag is genuinely off at the wire")
-      .not.toContain("as you look at it");
+    expect(prompt, "the recipe that actually went out")
+      .toContain("on the left of the picture as you look at it");
+    expect(prompt, "and not the other half — the clause is derived, not a constant")
+      .not.toContain("on the right of the picture as you look at it");
+  });
+
+  it("and the mirrored half at the wire too, which is the other arm's control", async () => {
+    await refineCandidate({
+      ...repainting,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { eyeColourFree: "her left eye fiery red" } },
+      }),
+    } as never, { ...input, instruction: "her left eye fiery red", scope: "eye@left" });
+
+    const prompt = painted.at(-1)?.prompt ?? "";
+    expect(prompt, "her own side is still named").toContain("left eye");
+    expect(prompt, "her left is the viewer's right")
+      .toContain("on the right of the picture as you look at it");
+    expect(prompt, "and not the other half")
+      .not.toContain("on the left of the picture as you look at it");
   });
 
   /*
@@ -4829,35 +4855,25 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(request.prompt).toContain("Reference 2 is the exact lips she has");
   });
 
-  /**
-   * A harvest that DOES hand back the compositor's working.
-   *
-   * Both assertions below are about an ABSENCE — no evidence, no `applied` —
-   * and an absence is only evidence if the fixture could have produced a
-   * presence. The suite's own passthrough returns neither on either road, so
-   * without this control the two tests would pass identically with the repaint
-   * branch deleted, which is the checker that cannot fail.
-   */
-  const composite = {
-    applied: { width: 32, height: 48, data: Buffer.alloc(32 * 48) },
-    masterRegions: new Map<string, never>(),
-  };
-  const compositing = async (ask: { painted: { bytes: Buffer; contentType: string } }) => ({
-    bytes: ask.painted.bytes,
-    contentType: ask.painted.contentType,
-    outcome: "composited" as const,
-    evidence: composite,
-  });
-
   /*
-    ⚠ RE-POINTED BY #1160, AND THE RULE IS UNCHANGED. These two proved *a
-    repaint produces no harvest evidence, and the old road does* — a fact about
-    the LIVE repaint branch, which merely happened to be observed at the retired
-    segment store. The surviving reader of that same evidence is the library
-    mint (`applied: image.evidence?.applied ?? null`), so the pair now reads
-    there. The control is the point and is kept exactly: without it both arms
-    would pass with the repaint branch deleted.
+    ⚠ THE COMPOSITING DOUBLE AND ITS PASTE-ROAD CONTROL WENT WITH THE ROAD —
+    #1577 slice 4b — AND THE ARM BELOW IS STRENGTHENED RATHER THAN LEFT ALONE.
+
+    The double handed back a harvest WITH working (`applied`, `masterRegions`),
+    and the control drove the same ask on the paste road to prove the absence
+    the arm below asserts was an absence and not an empty fixture. Its own
+    docblock said exactly what the loss would cost: *"without it both arms would
+    pass with the repaint branch deleted."*
+
+    With one road there is no second answer to compare against, so the arm's
+    non-vacuity has to come from INSIDE its own call: it asserts the mint was
+    handed a real ask — slots to file and the ground reader this road brings
+    instead of a map — in the same breath as the null. An empty or missing ask
+    now fails it, which is the property the control was there for.
   */
+  /* The library's own fixture: the reader SEES the hair, which is what earns a
+     slot, so the mint has something to file. Kept from the retired compositing
+     block, where it happened to live. */
   const mintingHair = {
     referenceLibraryEnabled: () => true,
     verifier: {
@@ -4874,23 +4890,21 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("hands on no harvest evidence, because nothing was pasted", async () => {
     captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingHair, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingHair },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks).toHaveLength(1);
+    /* FIRST, that the ask is a real one — see the note above: with the paste
+       road's control gone, this is what stops the null below from passing on an
+       ask nobody built. */
+    expect(mintAsks[0]!.slots.length, "the mint was handed slots to file").toBeGreaterThan(0);
+    expect(mintAsks[0]!.readGround, "and the reader this road brings instead of a map")
+      .toBeTypeOf("function");
     /* NULL rather than a mask — a repaint paints the whole frame and scopes
        nothing, so there is no `applied` region to hand on. */
     expect(mintAsks[0]!.applied).toBeNull();
   });
 
-  it("CONTROL — the same ask on the old road hands on its masks", async () => {
-    captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingHair, repaintEnabled: () => false, harvest: compositing },
-      { ...input, instruction: "wear her hair down" });
-
-    expect(mintAsks).toHaveLength(1);
-    expect(mintAsks[0]!.applied).toEqual(composite.applied);
-  });
 
   /**
    * ⚠ WHAT SHE PAYS FOR IS THE EDITED FRAME, NOT THE ONE SHE STARTED WITH
@@ -4911,61 +4925,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * master nor the engine, so the arm separates three outcomes rather than two —
    * `base.bytes` and `painted.bytes` are both wrong and both are named.
    */
-  it("⚠ DELIVERS THE HARVEST on the paste road — never the untouched master", async () => {
-    const HARVESTED = Buffer.from("harvested-composite");
-    const stored: Buffer[] = [];
-    await refineCandidate({
-      ...hairDown,
-      repaintEnabled: () => false,
-      /* Distinguishable from BOTH the master and the engine's own frame, so a
-         pass cannot mean "the fixture happened to agree". */
-      harvest: async () => ({
-        bytes: HARVESTED,
-        contentType: "image/png",
-        outcome: "composited" as const,
-        evidence: composite,
-      }),
-      storeImage: async (ask: { key: string; bytes: Buffer; contentType: string }) => {
-        stored.push(ask.bytes);
-        return { key: ask.key, url: `https://cdn.example/${ask.key}` };
-      },
-    } as never, { ...input, instruction: "wear her hair down" });
 
-    /* Positive control: the road was travelled and something really was
-       written. An empty capture would satisfy every "not the master" assertion
-       below by writing nothing at all. */
-    expect(stored.length, "nothing was written — the paste road was not travelled").toBeGreaterThan(0);
-    expect(journal, "the old road was not taken").toContain("generate");
-
-    expect(stored[0], "the frame she paid for is not the composited one").toEqual(HARVESTED);
-    expect(stored[0], "she was handed back the picture she started with").not.toEqual(TINY_MASTER_PNG);
-    expect(stored[0], "the raw engine frame was delivered — the paste never landed")
-      .not.toEqual(Buffer.from("refined"));
-  });
-
-  it("CONTROL — with the passthrough harvest the delivered frame IS the engine's", async () => {
-    /*
-      The arm above says the bytes are the harvest's. On its own that could be
-      true because the delivery ignores the harvest and the fixture coincided,
-      so this one moves the harvest's answer and shows the delivery follows it:
-      the passthrough hands back the engine's frame and the engine's frame is
-      what is written. One reader, two different answers, both tracked.
-    */
-    const stored: Buffer[] = [];
-    await refineCandidate({
-      ...hairDown,
-      repaintEnabled: () => false,
-      harvest: unmasked,
-      storeImage: async (ask: { key: string; bytes: Buffer; contentType: string }) => {
-        stored.push(ask.bytes);
-        return { key: ask.key, url: `https://cdn.example/${ask.key}` };
-      },
-    } as never, { ...input, instruction: "wear her hair down" });
-
-    expect(stored.length).toBeGreaterThan(0);
-    expect(stored[0]).toEqual(Buffer.from("refined"));
-    expect(stored[0]).not.toEqual(TINY_MASTER_PNG);
-  });
 
   /**
    * A PROMOTED KIND IS ADMITTED ONLY WHERE IT WAS MEASURED (fable-525 §3c).
@@ -5799,28 +5759,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(reader.asked.join("\n")).toContain("FANGS: longer curved fangs");
     });
 
-    it("CONTROL — the road that never says it does not ask about it either", async () => {
-      /*
-        The aim of the gate, driven. `delta.open` reaches the painter through
-        the repaint recipe and nothing else, so asking a reader about fangs the
-        paste road never mentioned would manufacture a miss on every frame and
-        file it against the kind. A gate that asked on both roads would pass
-        every test above.
-      */
-      carryingFangs();
-      const reader = blindReader();
-
-      await refineCandidate(
-        { ...hairDown, repaintEnabled: () => false, harvest: compositing, verifier: reader.engine },
-        { ...input, instruction: "wear her hair down" },
-      );
-
-      expect(reader.asked.join("\n")).not.toContain("FANGS");
-      expect(storedChecks().some((check) => check.asked === "vampire fangs")).toBe(false);
-      /* And the closed lane is untouched on that road — the negative control
-         for the gate's AIM, which is how the misaimed guard was caught twice. */
-      expect(reader.asked.join("\n")).toContain("HAIR WORN");
-    });
   });
 
   /**
@@ -6210,34 +6148,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(ledger.charges).toHaveLength(0);
     });
 
-    it("CONTROL — the paste road is untouched by all of it", async () => {
-      /*
-        The door is the REPAINT road's, because only the repaint road asks for a
-        slot. Refusing on the paste road would take away a removal that works
-        there today, so the condition is driven rather than asserted at the line.
-      */
-      branchWearing(
-        { free: { ink: ["a small swallow tattoo on his upper arm"] } },
-        "give him a small swallow tattoo on his upper arm",
-      );
-
-      const result = await refineCandidate(
-        {
-          ...repainting,
-          repaintEnabled: () => false,
-          harvest: compositing,
-          regions: blindBase,
-          interpret: removing({
-            subject: "ink",
-            match: "swallow tattoo",
-            items: ["a small swallow tattoo on his upper arm"],
-          }),
-        },
-        { ...input, instruction: "take the swallow off" },
-      );
-
-      expect(result.imageUrl, "the paste road still renders it").toBeTruthy();
-    });
   });
 
   /**
@@ -6377,14 +6287,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       interpret: async () => ({ ok: true as const, delta: { free: { horns: "curved ram horns" } } }),
     };
 
-    it("refuses on the OLD road, free, before anything is claimed", async () => {
-      const shut = await doorShut(refineCandidate(
-        { ...horns, repaintEnabled: () => false, harvest: compositing },
-        { ...input, instruction: "give her curved ram horns" },
-      ));
-      expect(shut.message).toMatch(/can't do that to her yet/i);
-      expect(shut.reason).toBe("kind_unserved");
-    });
 
     it("is served on the repaint road — the arm that matters", async () => {
       const result = await refineCandidate(horns,
@@ -6395,25 +6297,26 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(painted.length).toBeGreaterThan(0);
     });
 
-    it("CONTROL — an ordinary subject is untouched on the old road", async () => {
-      /* The negative control for the guard's AIM. A gate that refused every
-         free-lane ask on the old road would pass both tests above and break
-         every customer not in the repaint scope — the misaimed-guard class,
-         which has cost this program twice. */
-      const result = await refineCandidate(
-        { ...hairDown, repaintEnabled: () => false, harvest: compositing },
-        { ...input, instruction: "wear her hair down" },
-      );
-      expect(result.imageUrl).toBeTruthy();
-    });
+    /*
+      ⚠ THE OLD ROAD'S NEGATIVE CONTROL STOOD HERE AND RETIRED WITH THE ROAD —
+      #1577 slice 4b.
+
+      It drove an ordinary free-lane ask with the repaint DARK and asserted it
+      was untouched, because a gate that refused every free-lane ask on the old
+      road would have passed the two arms above and broken every customer
+      outside the repaint scope — the misaimed-guard class, which has cost this
+      program twice. There is no second road to be untouched on: every customer
+      is on this one, and the arms above drive it.
+    */
   });
 
   /*
     THE OPEN LANE'S FIRST PAID STEP, ON THE ROAD THE ONLY ARMED USER IS ON.
 
-    `CASTING_OPEN_LANE_SCOPE=users:1` went on 2026-08-17 and its parent is
-    `CASTING_REPAINT_SCOPE`, so the one person who can produce a `delta.open`
-    is on the REPAINT road and nowhere else. Everything proven about the open
+    `CASTING_OPEN_LANE_SCOPE=users:1` went on 2026-08-17 and its parent was the
+    repaint's own flag, so the one person who could produce a `delta.open` was
+    on the REPAINT road and nowhere else. Every render is on that road now
+    (#1577 slice 4b) and the lane's parent is the reference library. Everything proven about the open
     lane before this arm stopped at the interpreter: the routing bench measured
     which lane an ask lands in, `repaintAsks.test.ts` measures the ask, and the
     wall-(d) arm proves the row survives being re-read. **None of them puts the
@@ -6514,7 +6417,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("tells the library the whole frame was painted", async () => {
     captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks).toHaveLength(1);
@@ -6549,7 +6452,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       same way as another, which on novel anatomy is the ordinary case.
     */
     captionsRead = {};
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks).toHaveLength(1);
@@ -6575,7 +6478,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       hand-written library would prove the assembler and not the seam.
     */
     captionsRead = {};
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks, "step 1 reached the mint").toHaveLength(1);
@@ -6605,7 +6508,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } },
       }),
     };
-    await refineCandidate({ ...lipsAsk, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...lipsAsk, ...mintingLibrary },
       { ...input, instruction: "give her a fuller cupid's bow" });
 
     const record = dispatchRecords[0]!.repaint as {
@@ -6625,27 +6528,13 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        ask and never reads a caption at all — which would quietly replace every
        read-back in the product with the request that produced it. */
     captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     const filed = mintAsks[0]!.slots.find((slot) => slot.slot === "hair");
     expect(filed!.words).toContain("worn long and loose");
   });
 
-  it("CONTROL — the same ask on the old road hands the mint the paste's own mask", async () => {
-    captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({
-      ...hairDown, ...mintingLibrary, repaintEnabled: () => false, harvest: compositing,
-    }, { ...input, instruction: "wear her hair down" });
-
-    expect(mintAsks).toHaveLength(1);
-    expect(mintAsks[0]!.applied).toEqual(composite.applied);
-    /* And it is never handed a ground reader, so the live road cannot start
-       paying for a vision call it never asked for. Gated on the FLAG, not on
-       the absence of evidence — the old road can arrive here with no evidence
-       too, and inferring the need from that would spend her credits. */
-    expect(mintAsks[0]!.readGround).toBeUndefined();
-  });
 
   it("hands the mint the two reads her BUILD is composed from, on both roads", async () => {
     /*
@@ -6671,7 +6560,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     };
     captionsRead = { hairWorn: "worn long and loose" };
     await refineCandidate(
-      { ...hairDown, ...mintingLibrary, harvest: compositing, regions: reader as never },
+      { ...hairDown, ...mintingLibrary, regions: reader as never },
       { ...input, instruction: "wear her hair down" },
     );
 
@@ -6682,17 +6571,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(asked).toEqual(["face", "(subject matte)"]);
   });
 
-  it("CONTROL — the old road is handed the composer too", async () => {
-    /* The composer is the library's, not the repaint's. A build lost under
-       words is lost on whichever road delivered the render. */
-    captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({
-      ...hairDown, ...mintingLibrary, repaintEnabled: () => false, harvest: compositing,
-    }, { ...input, instruction: "wear her hair down" });
-
-    expect(mintAsks[0]!.derivedGround).toBeDefined();
-    expect(mintAsks[0]!.readGround).toBeUndefined();
-  });
 
   it("hands the mint THE FRAME THIS RENDER WAS PAINTED FROM, so a ruler has two ends", async () => {
     /*
@@ -6708,7 +6586,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     */
     captionsRead = { hairWorn: "worn long and loose" };
     await refineCandidate({
-      ...hairDown, ...mintingLibrary, harvest: compositing,
+      ...hairDown, ...mintingLibrary,
     }, { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks[0]!.anchorFrame).toBeDefined();
@@ -6736,7 +6614,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     */
     lineageReferences = [carryRow({ slot: "build", tier: "anatomy", noun: "build", words: [] })];
     captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks).toHaveLength(1);
@@ -6749,7 +6627,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
        by the pristine master every render anchors on. */
     lineageReferences = [];
     captionsRead = { hairWorn: "worn long and loose" };
-    await refineCandidate({ ...hairDown, ...mintingLibrary, harvest: compositing },
+    await refineCandidate({ ...hairDown, ...mintingLibrary },
       { ...input, instruction: "wear her hair down" });
 
     expect(mintAsks).toHaveLength(1);
@@ -6820,7 +6698,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate({
       ...hairDown,
       ...mintingLibrary,
-      harvest: compositing,
       verifier: readerDisputesOnly("build", "loose grey t-shirt hides build; frame appears average, not jacked"),
     }, { ...input, instruction: "wear her hair down" });
 
@@ -6871,7 +6748,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate({
       ...hairDown,
       ...mintingLibrary,
-      harvest: compositing,
       verifier: readerDisputesOnly("nothing-matches-this", "unused"),
     }, { ...input, instruction: "wear her hair down" });
 
@@ -6890,7 +6766,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate({
       ...hairDown,
       ...mintingLibrary,
-      harvest: compositing,
       verifier: readerDisputesOnly("build", "loose grey t-shirt hides build"),
     }, { ...input, instruction: "wear her hair down" });
 
@@ -6913,7 +6788,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       money, and a refusal that charges is the defect wearing a refusal's coat.
     */
     const chargesBefore = ledger.charges.length;
-    await expect(refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked },
+    await expect(refineCandidate({ ...repainting, ...greenEyes },
       { ...input, scope: "her left eyebrow-ish" }))
       .rejects.toThrow(/which part of her/i);
     expect(ledger.charges).toHaveLength(chargesBefore);
@@ -6927,7 +6802,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       recipe the painter receives names `eye@left` and never `eye@right`. That
       absence is the whole feature (fable-444, ruling C).
     */
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked },
+    await refineCandidate({ ...repainting, ...greenEyes },
       { ...input, scope: "eye@left" });
 
     expect(painted).toHaveLength(1);
@@ -6969,7 +6844,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("asks the reader about ONE eye when the ask was scoped to one", async () => {
     askedLines.length = 0;
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier },
+    await refineCandidate({ ...repainting, ...greenEyes, verifier: watchingVerifier },
       { ...input, scope: "eye@left" });
 
     expect(askedLines).toHaveLength(1);
@@ -6983,7 +6858,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* The inert half, and the discriminator: make the narrowing unconditional
        and this goes red rather than the feature going quietly wrong. */
     askedLines.length = 0;
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier }, input);
+    await refineCandidate({ ...repainting, ...greenEyes, verifier: watchingVerifier }, input);
 
     expect(askedLines).toHaveLength(1);
     expect(askedLines[0]).not.toContain("ONLY");
@@ -7006,7 +6881,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("logs the per-side read and what it answered", async () => {
     logged.length = 0;
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier },
+    await refineCandidate({ ...repainting, ...greenEyes, verifier: watchingVerifier },
       { ...input, scope: "eye@left" });
 
     const lines = narrowedLines();
@@ -7043,7 +6918,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* Written before the delivery rather than before the refusal now — the line
        is about what the READ said, and fable-721 changed only what the read
        costs her. */
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: disputing },
+    await refineCandidate({ ...repainting, ...greenEyes, verifier: disputing },
       { ...input, scope: "eye@left" });
 
     const lines = narrowedLines();
@@ -7057,7 +6932,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* A denominator that counts whole-face renders would drown the thing being
        watched. Make the line unconditional and this goes red. */
     logged.length = 0;
-    await refineCandidate({ ...repainting, ...greenEyes, harvest: unmasked, verifier: watchingVerifier }, input);
+    await refineCandidate({ ...repainting, ...greenEyes, verifier: watchingVerifier }, input);
 
     expect(narrowedLines()).toHaveLength(0);
   });
@@ -7112,7 +6987,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate(
       {
         ...repainting,
-        harvest: unmasked,
         verifier: watchingVerifier,
         interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
       },
@@ -7155,7 +7029,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate(
       {
         ...repainting,
-        harvest: unmasked,
         verifier: watchingVerifier,
         interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
       },
@@ -7181,7 +7054,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       `mintedSlotsForRender` cannot see.
     */
     captionsRead = { "eye.colour": "A clear green iris" };
-    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary, harvest: unmasked },
+    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary },
       { ...input, scope: "eye@left" });
 
     expect(mintAsks).toHaveLength(1);
@@ -7190,7 +7063,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
   it("CONTROL — the same ask unscoped files both eyes", async () => {
     captionsRead = { "eye.colour": "A clear green iris" };
-    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary, harvest: unmasked }, input);
+    await refineCandidate({ ...repainting, ...greenEyes, ...mintingLibrary }, input);
 
     expect(mintAsks).toHaveLength(1);
     expect(mintAsks[0]!.slots.map((slot) => slot.slot)).toEqual(["eye@left", "eye@right"]);
@@ -7250,7 +7123,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     await refineCandidate({
       ...repainting,
-      harvest: unmasked,
       interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
     }, { ...input, instruction: "make her smile" });
 
@@ -7291,7 +7163,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     await refineCandidate({
       ...repainting,
-      harvest: unmasked,
       verifier: watching,
       interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
     }, { ...input, instruction: "make her smile" });
@@ -7325,7 +7196,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     await refineCandidate({
       ...repainting,
-      harvest: unmasked,
       verifier: disputing,
       interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
     }, { ...input, instruction: "make her smile" });
@@ -7345,7 +7215,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     await refineCandidate({
       ...repainting,
       ...mintingLibrary,
-      harvest: unmasked,
       interpret: async () => ({ ok: true as const, delta: { free: { expression: "a soft, closed-mouth smile" } } }),
     }, { ...input, instruction: "make her smile" });
 
@@ -7738,54 +7607,8 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(record.prompt).toContain("Change only her hair");
   });
 
-  it("CONTROL — the OLD road writes no dispatch record either, so the key means one road", async () => {
-    lineageReferences = [carryRow()];
-    engineThrows = new Error("the provider fell over");
 
-    await expect(refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
-      { ...input, instruction: "wear her hair down" })).rejects.toThrow();
 
-    expect(dispatchRecords).toHaveLength(0);
-    /* And the run really did reach an engine and fail there, rather than
-       stopping somewhere earlier where nothing would have been written anyway. */
-    expect(journal).toContain("generate");
-    expect(ledger.refunds).toHaveLength(1);
-  });
-
-  it("CONTROL — the same ask on the old road leaves no repaint record at all", async () => {
-    /*
-      The mark is only worth reading if its ABSENCE means something, and an
-      absence is evidence only where the fixture could have produced a presence
-      — this is the same ask, the same library row, and the same landing, with
-      the flag off.
-    */
-    lineageReferences = [carryRow()];
-
-    await refineCandidate({ ...hairDown, repaintEnabled: () => false, harvest: compositing },
-      { ...input, instruction: "wear her hair down" });
-
-    expect((landedVariant?.internalPrompt as { repaint?: unknown }).repaint).toBeUndefined();
-    /* And this run is not simply empty: a row DID land, from a render that DID
-       happen, on the other road. Without these two lines the assertion above
-       would pass just as well against a fixture that never reached the landing
-       at all — which is the shape of a control that cannot fail. */
-    expect((landedVariant?.internalPrompt as { prompt?: string }).prompt).toBeTruthy();
-    expect(journal).toContain("generate");
-    expect(painted).toHaveLength(0);
-  });
-
-  it("does not exist for anyone the flag has not named", async () => {
-    /* The dark control, driven rather than assumed: with the predicate false
-       the same ask travels the old road, and the repaint engine is never
-       constructed, let alone dispatched to. */
-    await refineCandidate({
-      ...hairDown,
-      repaintEnabled: () => false,
-    }, { ...input, instruction: "wear her hair down" });
-
-    expect(painted).toHaveLength(0);
-    expect(journal).toContain("generate");
-  });
 
   /*
     A REMOVAL, BOTH ARMS, DRIVEN DIRECTLY (chunk 3,
@@ -8423,7 +8246,7 @@ describe("the record and the picture come from the same place", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
 
     const { claimVariant } = await import("../db/castingV2Variants");
-    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
+    await refineCandidate({ interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
       { ...input, instruction: "hood her eyes a little" },
     );
     const claimed = vi.mocked(claimVariant).mock.results[0].value as Promise<Record<string, unknown>>;
@@ -8447,7 +8270,7 @@ describe("the record and the picture come from the same place", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
 
     const { claimVariant } = await import("../db/castingV2Variants");
-    await refineCandidate({ harvest: unmasked, interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
+    await refineCandidate({ interpret: async () => ({ ok: true as const, delta: { eyeShape: "hooded" as const } }) },
       { ...input, instruction: "hood her eyes a little" },
     );
     const call = vi.mocked(claimVariant).mock.calls[0][0];
@@ -8623,7 +8446,6 @@ describe("a throw from the success finalizer never reaches the compensating catc
 
     await expect(refineCandidate(
       {
-        harvest: unmasked,
         interpret: async () => ({
           ok: true as const,
           delta: { open: { fangs: { noun: "fangs", words: "vampire fangs" } } },
@@ -8747,24 +8569,41 @@ describe("the prompt is composed from the persisted row", () => {
  * adjudicate forever.
  */
 describe("removal is typed, and most of it is free", () => {
+  /*
+    ⚠ BOTH STEPS ARE SLOTTED SUBJECTS SINCE #1577 SLICE 4b, AND THE REASON IS
+    A MEASURED FACT ABOUT THE LIVE ROAD RATHER THAN A FIXTURE PREFERENCE.
+
+    Step one was `makeup: "a smokey eye"`. Makeup is `notASlot` by the founder's
+    own ruling (`facetCards.ts`: it is worn STATE on the anatomy slots it sits
+    on), so the repaint cannot state it declaratively — a prune of that step
+    meets `removal_unnameable` and the whole ask refuses FREE, before the claim.
+    These arms rendered and charged for years because with no flag set in this
+    suite every render took the PASTE road, which never asked for a slot, and
+    the paste road has served no customer since the repaint widened.
+
+    So the fixture carries a hair step and an accessories step — both sayable —
+    and the arms below now prove *a mid-chain prune renders the shortened chain
+    and charges once* ON THE ROAD EVERY CUSTOMER IS ON. The makeup answer is not
+    lost: it is pinned as the free refusal it really is, in its own arm below.
+  */
   const twoStep = () => {
     variantRows = [
       {
         id: 501,
         publicId: "variant-1",
         imageKey: "casting-v2/variants/one.png",
-        instructions: ["a smokey eye"],
-        stepDeltas: [{ makeup: "a smokey eye" }],
-        deltas: { makeup: "a smokey eye" },
+        instructions: ["wear her hair down"],
+        stepDeltas: [{ free: { hairWorn: "hair down" } }],
+        deltas: { free: { hairWorn: "hair down" } },
         internalPrompt: {},
       },
       {
         id: 502,
         publicId: "variant-2",
         imageKey: "casting-v2/variants/two.png",
-        instructions: ["a smokey eye", "small gold hoops"],
-        stepDeltas: [{ makeup: "a smokey eye" }, { free: { statedAccessories: "small gold hoops" } }],
-        deltas: { makeup: "a smokey eye", free: { statedAccessories: "small gold hoops" } },
+        instructions: ["wear her hair down", "small gold hoops"],
+        stepDeltas: [{ free: { hairWorn: "hair down" } }, { free: { statedAccessories: "small gold hoops" } }],
+        deltas: { free: { hairWorn: "hair down", statedAccessories: "small gold hoops" } },
         internalPrompt: {},
       },
     ];
@@ -8784,7 +8623,6 @@ describe("removal is typed, and most of it is free", () => {
 
   const asks = (parse: Record<string, unknown>) => ({
     interpret: async () => parse as never,
-    harvest: unmasked,
   });
 
   /*
@@ -8892,7 +8730,6 @@ describe("removal is typed, and most of it is free", () => {
     let call = 0;
     return {
       interpret: async () => (call++ === 0 ? first : second) as never,
-      harvest: unmasked,
     };
   };
 
@@ -9053,8 +8890,15 @@ describe("removal is typed, and most of it is free", () => {
     expect((call.deltas as { absent?: Record<string, unknown> }).absent)
       .toEqual({ statedAccessories: ["glasses"] });
     expect(call.instructions)
-      .toEqual(["a smokey eye", "small gold hoops", "remove her glasses"]);
+      .toEqual(["wear her hair down", "small gold hoops", "remove her glasses"]);
     expect(ledger.charges[0]?.amount, "a render is a render").toBe(REFINE_PRICE);
+    /*
+      ⚠ AND THIS ARM IS THE ONE THAT NARROWS THE DEBT RECORDED ABOVE: a
+      DEPARTURE is sayable on the live road for a slotted subject — the glasses
+      leave, the recipe records it, and the render is charged once, all on the
+      repaint. What the retired `marks` arm hit is specific to that subject, not
+      a hole under the departure road itself.
+    */
   });
 
   /*
@@ -9300,13 +9144,13 @@ describe("removal is typed, and most of it is free", () => {
     twoStep();
     const result = await refineCandidate(
       {
-        ...asks({ ok: true, intent: "remove", subject: "makeup", match: "makeup", whole: true }),
+        ...asks({ ok: true, intent: "remove", subject: "hairWorn", match: "hair", whole: true }),
         ...seesInBase(false),
       },
-      { ...input, instruction: "remove the makeup" },
+      { ...input, instruction: "put her hair back" },
     );
-    /* Both the smokey eye and the hoops? No — only makeup matches, so the
-       remaining chain is the hoops alone, which is not an existing variant. */
+    /* Both steps? No — only the hair matches, so the remaining chain is the
+       hoops alone, which is not an existing variant. */
     expect(result.kind).toBe("rendered");
     expect(ledger.charges[0]?.amount).toBe(REFINE_PRICE);
   });
@@ -9329,8 +9173,15 @@ describe("removal is typed, and most of it is free", () => {
         there" is exactly what deletes a step somebody paid for. The fixture now
         says what it means — her original wore no smokey eye.
       */
-      { ...asks({ ok: true, intent: "remove", subject: "makeup", match: "smokey" }), ...seesInBase("absent") },
-      { ...input, instruction: "get rid of the smokey eye" },
+      /*
+        ⚠ THE PRUNE IS THE FIRST STEP, NOT THE LAST, AND THAT IS LOAD-BEARING:
+        dropping the LAST step leaves a chain this cast already has a variant
+        for, so the ask NAVIGATES for free and claims nothing. The shortened
+        recipe this arm is about only exists when the remaining combination is
+        new — which is why the original fixture pruned its first step too.
+      */
+      { ...asks({ ok: true, intent: "remove", subject: "hairWorn", match: "hair" }), ...seesInBase("absent") },
+      { ...input, instruction: "put her hair back up" },
     );
     const call = vi.mocked(claimVariant).mock.calls[0]![0];
     expect(call.instructions).toEqual(["small gold hoops"]);
@@ -9340,7 +9191,7 @@ describe("removal is typed, and most of it is free", () => {
     expect(call.deltas).toEqual({ free: { statedAccessories: ["small gold hoops"] } });
     /* What they TYPED is kept apart from the recipe, or the in-flight chip
        would name the last surviving sentence instead (D-161). */
-    expect(call.requestText).toBe("get rid of the smokey eye");
+    expect(call.requestText).toBe("put her hair back up");
     expect(ledger.charges[0]?.amount).toBe(REFINE_PRICE);
   });
 
@@ -9355,47 +9206,31 @@ describe("removal is typed, and most of it is free", () => {
     recorded nothing about the departure at all — so the render never asked for
     it and her next ask started again from the original.
   */
-  it("records a departure when the FACE has it but the recipe does not", async () => {
-    twoStep();
-    /*
-      D-167: rule 3 only fires when the thing actually exists. Freckles from
-      the dice live at `realized.skinCharacter`, so the selected face has to
-      carry them or the honest answer is the confession below, not an edit.
-    */
-    variantRows[1]!.internalPrompt = {
-      resolved: {
-        /* readResolvedIdentity requires these four, or it discards the whole
-           identity — so a partial fixture would silently mean "no record". */
-        sex: "female",
-        ageBand: "30s",
-        energy: "warm",
-        heritage: [{ heritage: "Nordic", pct: 100 }],
-        realized: { skinCharacter: "freckled" },
-      },
-    };
-    const modes: Array<string | undefined> = [];
-    const result = await refineCandidate({ harvest: unmasked,
-        interpret: async (request: { mode?: string }) => {
-          modes.push(request.mode);
-          return modes.length === 1
-            ? { ok: true, intent: "remove", subject: "marks", match: "freckles" } as never
-            : { ok: true, delta: { free: { marks: "no freckles" } } } as never;
-        },
-      },
-      { ...input, instruction: "remove her freckles" },
-    );
-    /* ONE reading, not two. The code owns what a removal means, so there is
-       nothing left for a second sampling to get wrong. */
-    expect(modes).toEqual([undefined]);
-    expect(result.kind).toBe("rendered");
-    const call = vi.mocked(claimVariant).mock.calls[0]![0];
-    /* Appended like any other edit — the chain GREW. */
-    expect(call.instructions).toEqual(["a smokey eye", "small gold hoops", "remove her freckles"]);
-    /* And the departure is in the recipe, so every later render still asks. */
-    expect((call.deltas as { absent?: Record<string, unknown> }).absent)
-      .toEqual({ marks: ["freckles"] });
-    expect((call.stepDeltas as unknown[]).at(-1)).toEqual({ absent: { marks: ["freckles"] } });
-  });
+
+  /*
+    ⚠ THE DEPARTURE ARM STOOD HERE AND CANNOT BE PROVEN ON THE LIVE ROAD —
+    #1577 slice 4b, and this is a DEBT rather than a retirement.
+
+    It held rule 3 (D-238): a thing the FACE has and the recipe does not is
+    base-worn, so there is no step to prune and the removal becomes a fact the
+    recipe carries — `absent: { marks: ["freckles"] }` on the row, appended like
+    any other edit, so every later render still asks for it. It drove that
+    through `refineCandidate` with no flag set, which means it drove the PASTE
+    road, and the paste road has served no customer since the repaint widened.
+
+    Driven on the live road, with a region reader supplied, the same ask refuses:
+    *"That's a part of her I can't work on yet. Nothing was charged."* —
+    `RepaintCannotSayError`, free, before the charge. The arm is removed rather
+    than inverted, because an arm asserting the opposite of its own title is
+    worse than no arm; and it is NOT replaced with a refusal arm here, because
+    whether a `marks` departure SHOULD refuse on the only road the product has
+    is a product question with a customer on the other end of it (*"remove her
+    freckles"*). **It is filed as #2554 with this reading attached.**
+
+    What is NOT in doubt: the departure's write path is still exercised — the
+    `absent` recipe field has arms in `refineDelta` and the removal describe's
+    free-refusal arms below are untouched.
+  */
 
   /*
     THE HONEST THIRD STEP (D-167). Absent from the recipe AND from the record,
@@ -9473,7 +9308,6 @@ describe("removal is typed, and most of it is free", () => {
 describe("a render files in the library only the facets its own reading earned", () => {
   const freckles = {
     referenceLibraryEnabled: () => true,
-    harvest: unmasked,
     interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }),
   };
   /** Earned = filed and unmarked. Disputed rides the same list marked. */
@@ -9755,65 +9589,91 @@ describe("a render files in the library only the facets its own reading earned",
  * both benches passed the whole time.
  */
 describe("the service says where an accessory lives, from the words in the ask", () => {
-  const capturingHarvest = () => {
-    const overrides: Array<Record<string, string> | undefined> = [];
-    const described: Array<string | undefined> = [];
-    return {
-      overrides,
-      described,
-      harvest: async (input: {
-        painted: { bytes: Buffer; contentType: string };
-        regionOverrides?: Record<string, string>;
-        described?: string;
-      }) => {
-        overrides.push(input.regionOverrides);
-        described.push(input.described);
-        return {
-          bytes: input.painted.bytes,
-          contentType: input.painted.contentType,
-          outcome: "flag-off" as const,
-        };
-      },
-    };
-  };
+  /*
+    ⚠ THE WIRE MOVED WITH THE ROAD AND THE CLAIM DID NOT — #1577 slice 4b.
+
+    Three arms here asserted on `regionOverrides`, the facet-to-region map the
+    service handed the PASTE road's mask cutter: an earring ask had to arrive as
+    `statedAccessories: "earring"` and a glasses ask as `"glasses"`, because
+    `statedAccessories` has no region of its own — the region depends on the
+    described OBJECT, an earring at the lobe and glasses at the eyes. Without it
+    the cutter filed nothing and every delivered earring was re-rolled from
+    words on the next render, which is how one gold hoop moved ears between
+    v#156 and v#157.
+
+    The cutter and that map are gone. **The derivation is not**: the kind is read
+    once from the ask's own words and handed to `mintedSlotsForRender` and
+    `slotsForFacet`, which is what keeps the placement, the library's lookup and
+    the painter's clause naming one object. So these arms are re-pointed at the
+    consequence rather than retired, and the consequence is stronger than the
+    old assertion was: the SLOTS the mint is asked to file. An earring ask files
+    `earring@left` and `earring@right` — a pair, because an earring is one of two
+    — and a glasses ask files the single `glasses` slot at the eyes. The id
+    getting this wrong is how one gold hoop moved ears between v#156 and v#157,
+    and a wrong id now names the wrong slot, which these arms read at the wire.
+  */
+  /* The mint runs only when the render has something to file, so these three
+     arms carry the same reader the library describe uses: it SEES what was
+     asked for, which is what earns a slot. */
+  const sawIt = (saw: string) => ({
+    id: "verifier",
+    complete: async () => ({
+      text: JSON.stringify({ results: [{ id: 1, present: true, saw }] }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never);
 
   it("sends the earring corridor's name for an earring ask", async () => {
-    const capture = capturingHarvest();
+    captionsRead = { statedAccessories: "Small gold hoops, one in each lobe" };
     await refineCandidate(
       {
-        harvest: capture.harvest as never,
-        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: ["small gold hoops"] } } }),
+        referenceLibraryEnabled: () => true,
+        verifier: sawIt("small gold hoops at both lobes"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["small gold hoops"] } },
+        }),
       },
       { ...input, instruction: "give her small gold hoops" },
     );
 
-    expect(capture.overrides[0]?.statedAccessories).toBe("earring");
-    /* And the SAME words placed it — one derivation, or the corridor and its
-       name come from two readings of one sentence and drift apart. */
-    expect(capture.described[0]).toContain("small gold hoops");
+    expect(mintAsks, "the mint was asked at all").toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((one) => one.slot))
+      .toEqual(["earring@left", "earring@right"]);
   });
 
   it("sends the glasses corridor's name for a glasses ask — never the earring one", async () => {
-    const capture = capturingHarvest();
+    captionsRead = { statedAccessories: "Round tortoiseshell glasses" };
     await refineCandidate(
       {
-        harvest: capture.harvest as never,
-        interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: ["round tortoiseshell glasses"] } } }),
+        referenceLibraryEnabled: () => true,
+        verifier: sawIt("round tortoiseshell glasses"),
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { statedAccessories: ["round tortoiseshell glasses"] } },
+        }),
       },
       { ...input, instruction: "put her in round tortoiseshell glasses" },
     );
 
-    expect(capture.overrides[0]?.statedAccessories).toBe("glasses");
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((one) => one.slot)).toEqual(["glasses"]);
   });
 
-  it("CONTROL — an eye-colour ask sends no accessory placement at all", async () => {
-    /* The instrument has to be able to say nothing. An override present on every
-       render would file a slab of her ear as jewellery on an edit that never
+  it("CONTROL — an eye-colour ask names no accessory at all", async () => {
+    /* The instrument has to be able to say nothing. A kind present on every
+       render would file a slab of an ear as jewellery on an edit that never
        mentioned any. */
-    const capture = capturingHarvest();
-    await refineCandidate({ ...greenEyes, harvest: capture.harvest as never }, input);
+    captionsRead = { eyeColour: "Green eyes" };
+    await refineCandidate(
+      { ...greenEyes, referenceLibraryEnabled: () => true, verifier: sawIt("green eyes") },
+      input,
+    );
 
-    expect(capture.overrides[0]?.statedAccessories).toBeUndefined();
+    expect(mintAsks).toHaveLength(1);
+    expect(mintAsks[0]!.slots.map((one) => one.slot), "no accessory slot on an eye ask")
+      .not.toContain("earring@left");
   });
 });
 
@@ -9851,7 +9711,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -9877,7 +9736,22 @@ describe("the render tells the library what it made of her", () => {
    * whether this service passes one to the other, which is the gap that let two
    * green benches sit over an inert segment store for a week.
    */
-  it("passes the harvest's per-side reads on, and a guard that can ask about a side", async () => {
+  /*
+    ⚠ HALF OF THIS ARM RETIRED WITH THE HARVEST AND HALF OF IT IS LIVE — #1577
+    slice 4b, and the split is worth stating.
+
+    It asserted TWO things. First, that the harvest's per-side maps were handed
+    ON to the mint, so a per-side slot filed a crop instead of words — those
+    maps were the paste road's, the repaint pastes nothing and declares them
+    `null`, and the mint's own answer on this road is its GROUND reader. That
+    half has no subject left. Second, that the guard's reader, asked about a
+    SIDE, goes to the side reader and returns that side rather than the union —
+    that reader is handed by this road too, and it is kept and driven below.
+
+    The null assertion is not decoration: it is what stops the surviving half
+    from passing on a mint ask that was never built.
+  */
+  it("hands the guard a reader that can ask about ONE side, and no paste-side maps", async () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     const sides = { left: "her left" as unknown, right: "her right" as unknown };
     const sideAsks: Array<string | undefined> = [];
@@ -9885,18 +9759,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        /* A harvest that carries the split, as the real one now does. */
-        harvest: (async (harvestInput: { painted: { bytes: Buffer; contentType: string } }) => ({
-          bytes: harvestInput.painted.bytes,
-          contentType: harvestInput.painted.contentType,
-          outcome: "flag-off" as const,
-          evidence: {
-            applied: { data: Buffer.alloc(1), width: 1, height: 1 },
-            masterRegions: new Map(),
-            masterSideRegions: new Map([["earring", sides]]),
-            deliveredSideRegions: new Map([["earring", sides]]),
-          },
-        })) as never,
         regions: {
           region: async () => ({ data: Buffer.alloc(1), width: 1, height: 1 }),
           regionSides: async ({ name }: { name: string }) => {
@@ -9916,8 +9778,10 @@ describe("the render tells the library what it made of her", () => {
     );
 
     expect(mintAsks).toHaveLength(1);
-    expect(mintAsks[0].masterSideRegions?.get("earring")).toBe(sides);
-    expect(mintAsks[0].deliveredSideRegions?.get("earring")).toBe(sides);
+    /* The paste road's split, gone with the paste: this road brings no maps and
+       the mint reads the delivered frame instead. */
+    expect(mintAsks[0].masterSideRegions ?? null).toBeNull();
+    expect(mintAsks[0].deliveredSideRegions ?? null).toBeNull();
 
     /* And the guard's reader, driven rather than trusted: asked about a side it
        goes to the side reader and returns THAT side, never the union. */
@@ -9936,7 +9800,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         /* Production's reader before today, and any stub that has not opted in. */
         regions: {
           region: async () => union,
@@ -9962,10 +9825,32 @@ describe("the render tells the library what it made of her", () => {
 
   it("hands the mint the digests this branch already holds", async () => {
     captionsRead = { statedAccessories: "Thin gold wire-frame glasses" };
+    /*
+      ⚠ THE ROW IS WHOLE SINCE #1577 SLICE 4b, AND THE PARTIAL ONE IS WHY.
+
+      It carried six fields, because nothing ever read the rest: the library is
+      the REPAINT's input and this suite left the repaint's flag unset, so every
+      render here took the paste road and the recipe assembler was never
+      reached. Driven on the live road, the assembler reads `entry.words` and a
+      partial row crashes it — which refunded the render and hid this arm's own
+      subject behind a generic failure. A fixture row is now the row the reader
+      is handed.
+    */
     lineageReferences = [{
       id: 1,
+      publicId: "ref-glasses",
+      candidateId: 1,
+      variantId: null,
       slot: "glasses",
       role: "carry",
+      tier: "accessories",
+      noun: "glasses",
+      words: ["thin gold wire frames"],
+      storageKey: "casting-v2/library/glasses.png",
+      maskKey: null,
+      geometry: null,
+      guard: null,
+      refusal: null,
       version: 2,
       digest: "deadbeef",
       retiredAt: null,
@@ -9975,7 +9860,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("thin gold wire frames"),
         interpret: async () => ({
           ok: true as const,
@@ -9997,7 +9881,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10037,7 +9920,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerDisputes("lips appear natural, slim, no pronounced fuller cupid's bow visible"),
         interpret: async () => ({
           ok: true as const,
@@ -10073,7 +9955,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("a fuller, more defined cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -10096,7 +9977,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         /* No `referenceLibraryEnabled` — production's shape today. */
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10150,7 +10030,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10166,12 +10045,28 @@ describe("the render tells the library what it made of her", () => {
 
   it("a library failure never takes back the picture she is already looking at", async () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
-    vi.mocked(listLineageReferences).mockRejectedValueOnce(new Error("the database said no"));
+    /*
+      ⚠ THE SECOND READ IS THE ONE THAT MUST FAIL — #1577 slice 4b.
+
+      There are TWO lineage reads on this road and this arm is about the second:
+      the recipe reads the rows BEFORE the paint (it carries crops into the
+      instruction) and the MINT reads them again after, to know what the library
+      already keeps. Failing the first one fails a render nobody has seen, which
+      is the gentler failure the service's own comment names and is correct —
+      there is no picture to take back yet. Failing the second is this arm's
+      subject: the engine has painted, the customer is looking at the frame, and
+      a bookkeeping throw must not refund it out from under them.
+
+      `mockRejectedValueOnce` alone used to land on the mint's read, because with
+      the repaint's flag unset in this suite the first read never happened.
+    */
+    vi.mocked(listLineageReferences)
+      .mockImplementationOnce(async () => lineageReferences as never)
+      .mockRejectedValueOnce(new Error("the database said no"));
 
     const result = await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10214,7 +10109,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10251,7 +10145,6 @@ describe("the render tells the library what it made of her", () => {
     await refineCandidate(
       {
         /* No `referenceLibraryEnabled` — production's shape today. */
-        harvest: unmasked,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10322,12 +10215,12 @@ describe("a later confirmation rescues a refused carrier", () => {
     ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
     : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" });
   const onTheRepaintRoad = {
-    repaintEnabled: () => true,
-    /* The mint runs behind the library's own flag; the road needs both. */
+    /* The mint runs behind the library's own flag. (The repaint arg that
+       used to sit above this went with the paste road in #1577 slice 4b —
+       every refine repaints now, so there is no second flag to need.) */
     referenceLibraryEnabled: () => true,
     repaintEngine,
     readBytes,
-    harvest: unmasked,
   };
 
   /** Everything the net asks about is there — the later render's own reading. */
@@ -10488,7 +10381,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("a fuller cupid's bow, and dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10532,7 +10424,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
     await refineCandidate(
       {
         ...onFlag,
-        harvest: unmasked,
         verifier: readerSees("a fuller cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -10614,7 +10505,7 @@ describe("an open kind is never scopable — the door, at the wire", () => {
       "the open branch does not exist yet — this arm is the build's definition of done",
     ).not.toBeNull();
 
-    await expect(refineCandidate({ harvest: unmasked,
+    await expect(refineCandidate({
         interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
       } as never,
       { ...input, instruction: "make them longer", scope: "open:horns" as never },
@@ -10658,7 +10549,7 @@ describe("an ink design IS scopable — the door, at the wire", () => {
       upper arm tattoo* cannot be produced by a door that failed to resolve the
       key — the assertion is the resolution, not a proxy for it.
     */
-    const refused = await refineCandidate({ harvest: unmasked,
+    const refused = await refineCandidate({
         interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
       } as never,
       { ...input, instruction: "make it bigger", scope: "ink:upperArm@left" as never },
@@ -10702,7 +10593,7 @@ describe("an ink design IS scopable — the door, at the wire", () => {
       that admits the namespace admits it THROUGH `slotDefinition`.
     */
     for (const scope of ["ink:neck@left", "ink:upperArm", "ink:"]) {
-      await expect(refineCandidate({ harvest: unmasked,
+      await expect(refineCandidate({
           interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
         } as never,
         { ...input, instruction: "make it bigger", scope: scope as never },
@@ -10910,6 +10801,20 @@ describe("the provenance a refine writes", () => {
   /* Minted with the SAME secret the service will verify under, read off the
      module rather than retyped — a token signed with a constant that has since
      drifted would fail for a reason nobody could see. */
+  /*
+    ⚠ THE INTENT IS A SAYABLE FACET SINCE #1577 SLICE 4b, AND IT HAD TO MOVE.
+
+    These arms rode `makeup`, which the repaint's recipe cannot state
+    declaratively (`facetCards.ts` decides it: makeup is worn state on the
+    anatomy slots it sits on), so on the live road the same ask refuses free with
+    the founder's own sentence before anything is filed. They passed for years
+    because with no flag set this suite took the PASTE road — which no customer
+    has been on since the repaint widened. The subject here is PROVENANCE, not
+    makeup, so the vehicle is a HAIR ask — the only other intent the read token
+    knows (`REFERENCE_READ_INTENTS` is `makeup` and `hair`), and one the recipe
+    can state. The filing is the same code on either, and now it is proven on
+    the road every customer is on.
+  */
   async function mint(over: Record<string, unknown> = {}) {
     const { issueReadToken } = await import("./referenceProvenance");
     const { ENV } = await import("../_core/env");
@@ -10918,8 +10823,8 @@ describe("the provenance a refine writes", () => {
       userId: 1,
       /* The candidate ROW id the harness serves, which is what the read seals. */
       candidateId: 1,
-      intent: "makeup",
-      sentence: "soft brown smoky shadow",
+      intent: "hair",
+      sentence: "worn long and loose",
       issuedAt: Date.now(),
       ...over,
     } as Parameters<typeof issueReadToken>[0]);
@@ -10927,8 +10832,8 @@ describe("the provenance a refine writes", () => {
 
   it("files VERBATIM when she spent the sentence the reader wrote", async () => {
     const result = await refineCandidate(
-      { ...deps, interpret: async () => ({ ok: true as const, delta: { makeup: "soft brown smoky shadow" } }) },
-      { ...input, instruction: "soft brown smoky shadow", provenanceToken: await mint() },
+      { ...deps, interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "worn long and loose" } } }) },
+      { ...input, instruction: "worn long and loose", provenanceToken: await mint() },
     );
     expect(result.kind).not.toBe("refused");
 
@@ -10937,15 +10842,15 @@ describe("the provenance a refine writes", () => {
       .toHaveLength(claimed.instructions.length);
     expect(claimed.stepProvenance.at(-1)).toEqual({
       source: "referenceRead",
-      intent: "makeup",
+      intent: "hair",
       adopted: "verbatim",
     });
   });
 
   it("files EDITED when she reworked it — the common case, and still a fact", async () => {
     const result = await refineCandidate(
-      { ...deps, interpret: async () => ({ ok: true as const, delta: { makeup: "soft brown shadow, glossy lip" } }) },
-      { ...input, instruction: "soft brown shadow, glossy lip", provenanceToken: await mint() },
+      { ...deps, interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "worn long and a touch looser" } } }) },
+      { ...input, instruction: "worn long and a touch looser", provenanceToken: await mint() },
     );
     expect(result.kind).not.toBe("refused");
     expect((await claimedPayload()).stepProvenance.at(-1)).toMatchObject({ adopted: "edited" });
@@ -11028,7 +10933,7 @@ describe("the picture she attached reaches the ask", () => {
       path and not merely that a function returns something different.
     */
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
-    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
@@ -11047,7 +10952,7 @@ describe("the picture she attached reaches the ask", () => {
       safety of the lane and they run before anything is charged.
     */
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
-    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
@@ -11074,7 +10979,7 @@ describe("the picture she attached reaches the ask", () => {
   */
   it("⚠ WRITES THE HANDLE ONTO THE ROW, so Use can bring her picture back", () => {
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
-    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
@@ -11087,7 +10992,7 @@ describe("the picture she attached reaches the ask", () => {
     /* The discriminator for the arm above: make the write unconditional and
        this goes red, rather than every typed ask quietly acquiring a handle to
        a picture that was never attached to it. */
-    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes }, {
       ...input, instruction: "green eyes",
     }).then(() => {
       expect((landedVariant?.internalPrompt as { askReference?: unknown }).askReference)
@@ -11097,7 +11002,7 @@ describe("the picture she attached reaches the ask", () => {
   });
 
   it("does not resolve anything when no picture is attached", () => {
-    return refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    return refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
     }).then(() => {
@@ -11112,7 +11017,7 @@ describe("the picture she attached reaches the ask", () => {
   */
   it("refuses free when the handle resolves to nothing", async () => {
     resolveAskReferenceMock.mockResolvedValue(null);
-    const result = await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    const result = await refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
@@ -11125,7 +11030,7 @@ describe("the picture she attached reaches the ask", () => {
 
   it("scopes the resolve to this account and this Cast", async () => {
     resolveAskReferenceMock.mockResolvedValue(REFERENCE);
-    await refineCandidate({ ...greenEyes, harvest: unmasked }, {
+    await refineCandidate({ ...greenEyes }, {
       ...input,
       instruction: "copy hair from reference",
       referenceId: "ref-public",
@@ -11192,7 +11097,6 @@ describe("a words take is answered with a sentence to adopt, free", () => {
   const road = (over: Record<string, unknown> = {}) => ({
     ...greenEyes,
     interpret: pointedAtThePicture,
-    harvest: unmasked,
     readBytes: async () => ({ bytes: Buffer.from("her picture"), contentType: "image/png" }),
     readWords,
     /* The words lane is the hair road's other form (D-142's split), so it asks
@@ -11381,7 +11285,6 @@ describe("the picture she attached becomes the carrier that rides", () => {
   const minted: Array<{ userId: number; bytes: Buffer }> = [];
 
   const carrierRoad = (over: Record<string, unknown> = {}) => ({
-    repaintEnabled: () => true,
     /*
       THE HAIR ROAD IS OPEN FOR THIS ACCOUNT — supplied here from 2026-08-20,
       when the lane gained its own reader of the hair flag (fable-1163 §2).
@@ -11434,7 +11337,6 @@ describe("the picture she attached becomes the carrier that rides", () => {
     },
     regions: reader(),
     interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }),
-    harvest: unmasked,
     /* Clause (a)'s mint at its own seam — see `deliveryCropsMinted`. */
     mintInkDeliveryCrop: async (request: {
       variantPublicId: string;
@@ -13957,55 +13859,80 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
   });
 
-  it("⚠ THE OFFER DERIVES — it is made where the road serves the placement", async () => {
+  it("⚠ THE OFFER ASKS BOTH QUESTIONS — the road AND this cast's outfit (#2558)", async () => {
     /*
-      fable-1339 §2's condition, and census 4(b)'s lesson in a new sentence.
-      *"I can put a new one on instead"* is true only where the WORDS ROAD
-      serves that placement, so the offer is DERIVED from the same list the
-      road is rather than promised in a sentence.
+      fable-1339 §2's condition, and census 4(b)'s own lesson arriving in a new
+      sentence. *"I can put a new one on instead"* is true only where a words
+      render would actually land — so the offer is DERIVED from the two things
+      that decide that, rather than promised in a sentence.
 
-      ⚠ **THIS ARM ASSERTED THE OPPOSITE UNTIL #1577 SLICE D3, AND IT WAS
-      TESTING A STATE NO ACCOUNT WAS IN.** It read *"the upper chest is not
-      served (the mint cannot crop it under a crew neck)"* and expected NO offer
-      for a chest. The chest joined the road on 2026-08-23 (the Basics chest
-      court — the first court had measured a GARMENT and been read as measuring
-      a PLACEMENT), and `CASTING_INK_WORDS_SCOPE` stood at `all` on the
-      service; this suite's environment never set that variable, so the arm read
-      the narrow road while production ran the open one and the stale premise
-      survived in a passing test.
+      ⚠ **THIS ARM ASSERTED THE RIGHT ANSWER FOR THE WRONG REASON AND WAS
+      THEREFORE WATCHING THE WRONG CONDITION — #2558.** It read *"the upper
+      chest is not served (the mint cannot crop it under a crew neck)"* and
+      proved it by asking only the ROAD. The two halves of that sentence are
+      different facts: the chest JOINED the road on 2026-08-23 (the Basics chest
+      court), and what the parenthetical actually describes — *under a crew
+      neck* — is the OUTFIT. So the road said yes from that day, the offer
+      started being made, and `gate_ink_uncarried` shut it one ask later.
 
-      ⚠ **AND THE DEFECT IT WAS WATCHING FOR IS REAL AND IS FILED AS #2558,
-      rather than papered over here.** On a cast whose outfit COVERS the chest
-      the offer is now made and the next ask refuses at
-      `gate_ink_uncarried` — census 4(b)'s dead end, live on the one account
-      that can reach this door (`CASTING_INK_TRANSFORM_SCOPE` is `users:1`,
-      read at the service). The repair is to ask the OUTFIT as well as the road,
-      which the servedAndBare reader already answers; it is #2558's work and not this
-      slice's, on his 2026-09-24 ruling that a capability found during a
-      retirement is its own card.
+      ⚠ **And it kept passing because the suite was on a road no account was
+      on.** Nothing here set `CASTING_INK_WORDS_SCOPE`, so the service read the
+      CLOSED list — `neck` alone — while production stood at `all`. The arm
+      measured a configuration that did not exist, which is why it could watch
+      for this dead end for seven weeks and never see it.
 
-      So what this arm holds now is the rule that is actually true: the offer
-      follows the ROAD's served list, and both placements on it are offered.
+      **So this arm holds the road OPEN — production's own position, and since
+      #1577 slice D3 the only road there is — and varies the OUTFIT.** That is
+      the whole repair: with the road fixed at what every account really has, the only thing moving between the first case and
+      the last is what the cast is wearing, and the answer has to move with it.
     */
+    /* The words road is simply open: `CASTING_INK_WORDS_SCOPE` is retired
+       (#1577 slice D3), so there is no road position left to inject, and the
+       outfit is the only thing that moves between the cases below. */
+    const roadOpen = {
+      listInkDeliveryCrops: deliveredCropRows([]),
+    };
+
+    /* 1 · A COVERED chest. The road serves it and the house crew tee covers it,
+       so there is nothing to offer and the answer closes honestly. */
     inkedBranch();
-    const chest = await refineCandidate(
-      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+    const covered = await refineCandidate(
+      transformRoad(roadOpen),
       { ...input, instruction: "make his chest tattoo bigger" },
     );
-    expect(chest.note, "the chest is served by the road, so the offer is made").toContain(
-      "put a new one on",
+    expect(covered.note, "it still agrees with her eyes about the tattoo").toContain(
+      "didn't keep a copy of the artwork",
     );
+    expect(
+      covered.note,
+      "the tee covers the chest, so offering a new one here is the dead end 4(b) names",
+    ).not.toContain("put a new one on");
 
-    /* A NECK piece is offered too — and the two notes must still DIFFER, or a
-       derivation that ignored its argument would satisfy both halves
-       (fable-1333 §2). */
+    /* 2 · A NECK piece under the same tee — on the road and left showing — is
+       offered the road that really works. Proves the offer is not simply
+       missing everywhere, which is the control the covered case needs. */
     inkedBranch({ "ink:neck": NECK_CROP });
     const neck = await refineCandidate(
-      transformRoad({ listInkDeliveryCrops: deliveredCropRows([]) }),
+      transformRoad(roadOpen),
       { ...input, instruction: "make his neck tattoo bigger" },
     );
-    expect(neck.note).toContain("put a new one on");
-    expect(neck.note).not.toBe(chest.note);
+    expect(neck.note, "a neck is served and bare, so the offer stands").toContain(
+      "put a new one on",
+    );
+    expect(neck.note).not.toBe(covered.note);
+
+    /* 3 · ⚠ THE BARE-CHEST CASE THAT STOOD HERE IS UNREACHABLE SINCE #1577
+       SLICE 2, AND IS REMOVED IN THE MERGE THAT MET IT (relay, 2026-10-16).
+       It set `rollPath = "basics"` with a Basics line to make the chest show.
+       Slice 2 stopped reading the path: every stored line now resolves as
+       `brief`, and `wardrobeCoversSurface` answers a `brief` line with the
+       house prior, so NO roll line can make the chest bare any more. The
+       outfit-varies-the-answer property it pinned therefore has no reachable
+       input; the one road that could still vary it is an edited wardrobe
+       line, served to nobody (`refineSubjects.ts`). Case 2 (the neck under
+       the same tee is offered) stays the control that the offer is not simply
+       withheld everywhere. When a reader of an arbitrary outfit line lands
+       (7a-bis), this case comes back with a real bare-chested line. */
   });
 
   it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
@@ -14369,11 +14296,12 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     Off the repaint road the strip is disarmed by construction (`inkAlreadyWorn`
     is empty), because the ink CARRY lives inside `repaintOnce` and the paste
-    road has none — withholding a carried tattoo's words there would stop it
-    being drawn at all rather than stop it being redrawn. That cost 50 dev
+    road had none — withholding a carried tattoo's words there would have stopped
+    it being drawn at all rather than stopping it being redrawn. That cost 50 dev
     credits to find: the court's after-half kept both crops in the record and
-    came back with the neck BARE, because that dev process was outside
-    `CASTING_REPAINT_SCOPE` while production is `all`.
+    came back with the neck BARE, because that dev process was outside the
+    repaint's flag while production was `all`. The paste road is retired (#1577
+    slice 4b), so there is no second road to withhold anything from.
 
     An arm for it belongs at this service and is not here: the paste-road
     fixtures (the compositing harvest) live in another block, and lifting them
@@ -14669,7 +14597,6 @@ describe("a regenerate re-sends the picture, and none of the replaced take", () 
   const HAIR_CARRY_KEY = "casting-v2/library/hair-from-the-take-being-replaced.png";
 
   const road = () => ({
-    repaintEnabled: () => true,
     /* The hair road is open for this account — the lane gained its own reader
        of the hair flag on 2026-08-20 (fable-1163 §2), and this arm is about what
        a REGENERATE re-cuts rather than about who is on the road. */
@@ -14719,7 +14646,6 @@ describe("a regenerate re-sends the picture, and none of the replaced take", () 
       landmark: async () => { throw new Error("no landmark on this road"); },
     },
     interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "a mid-length wavy cut" } } }),
-    harvest: unmasked,
   });
 
   beforeEach(() => {
@@ -14876,7 +14802,7 @@ describe("the doors nobody had proven can shut", () => {
     variantRows = [];
     candidateRow.selectedVariantPublicId = null;
     const shut = await doorShut(refineCandidate(
-      { interpret: async () => ({ ok: true, intent: "navigate" }) as never, harvest: unmasked },
+      { interpret: async () => ({ ok: true, intent: "navigate" }) as never },
       { ...input, instruction: "undo" },
     ));
     expect(shut.reason).toBe("already_original");
@@ -14910,7 +14836,7 @@ describe("the doors nobody had proven can shut", () => {
     candidateRow.selectedVariantPublicId = "variant-1";
 
     const shut = await doorShut(refineCandidate(
-      { interpret: async () => ({ ok: true, intent: "navigate" }) as never, harvest: unmasked },
+      { interpret: async () => ({ ok: true, intent: "navigate" }) as never },
       { ...input, instruction: "undo" },
     ));
     expect(shut.reason).toBe("version_missing");
@@ -14960,7 +14886,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
   const withCounter = () => {
     counted = [];
     return {
-      harvest: unmasked,
       /*
         ⚠ THE WORDS ROAD IS OPEN HERE — and since #1577 slice D3 it is open by
         construction rather than by this seam (2026-08-23, the Basics chest
@@ -15019,6 +14944,58 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     })
   ) as never;
 
+  /**
+   * A BRANCH WEARING AN EDITED LINE — THE COUNTER'S ONE SURVIVING ROAD.
+   *
+   * ⚠ **These arms set `rollPath = "wardrobe"` and a born line until #1577
+   * slice 2.** The counter's guard was `source !== "brief"`, which `born`
+   * satisfied; `born` is retired with the paths, so the guard is now
+   * `source === "edited"` and an edit is the only thing that reaches it.
+   *
+   * **The coverage answers are unchanged, which is what makes this a re-point
+   * and not a rewrite**: `born` and `edited` always took the SAME door
+   * (`coverageOfWardrobeLine` reads the line), while `brief` keeps the house
+   * prior. So every assertion below is about the same reading it was before.
+   *
+   * ⚠ **AND THE ROAD IS UNREACHABLE IN THE PRODUCT, WHICH WAS ALSO TRUE
+   * BEFORE THIS SLICE — measured, not assumed.** A wardrobe edit needs the
+   * `wardrobe` free subject, and `refineSubjects.ts` says in as many words
+   * that it *"is served to nobody"*; the `born` road needed one of the
+   * thirteen pathed rolls, and every one of them holds zero candidates.
+   * `casting_ink_form_demand` holds **zero rows in both worlds**, all time,
+   * which is the two facts agreeing. What this slice changed is only HOW the
+   * road is shut: by a member nothing can produce rather than by rows that
+   * happen not to exist. It is filed rather than retired here, because
+   * folding a second retirement into this slice is the thing his 2026-09-24
+   * ruling forbids.
+   *
+   * ⚠ **AND ONE OF THE TWO KINDS CANNOT BE DRIVEN THIS WAY AT ALL, which
+   * is a fact about the CAP rather than about this slice.** `surfaceCovered`
+   * needs a surface a known outfit COVERS, and `coverageOfWardrobeLine`
+   * recognises exactly two families: `HOUSE_WARDROBE_LINE`, whose upper chest
+   * is `covered`, and the Basics lines, which are bare everywhere. The house
+   * sentence is **132 characters** and `MAX_FREE_LENGTH` is **120** — and an
+   * over-long free value makes the strict reader reject the WHOLE delta, not
+   * just that key, so it comes back `null` and the branch reads `unpathed`.
+   * **So the product's own canonical outfit cannot be stored as an edit**, and
+   * the only drivable kind here is `surfaceCoverageUnread`. That is measured at
+   * the reader, and it is filed with the rest rather than fixed here.
+   */
+  const wearingEdited = (line: string) => {
+    variantRows = [{
+      id: 911,
+      publicId: "variant-wardrobe-edit",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/wardrobe-edit.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["their outfit — " + line],
+      deltas: { free: { wardrobe: line } },
+      stepDeltas: [{ free: { wardrobe: line } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-wardrobe-edit";
+  };
+
   it("⚠ HER TOP COVERS IT on the Wardrobe path — one `surfaceCovered` row", async () => {
     /*
       §4 case (c): a Wardrobe-path brief that names no outfit falls back to the
@@ -15027,32 +15004,39 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       so the ask is refused free and the demand is real: this person wanted a
       chest piece and our own outfit is what stopped them.
     */
-    rollPath = "wardrobe";
+    /* ⚠ THE HOUSE LINE AS A BORN LINE, NOT AN EDIT, AND THE HELPER SAYS WHY:
+       at 132 characters it is over `MAX_FREE_LENGTH`, so it cannot be stored
+       as one. A born line is `brief`-sourced, so this arm now records that
+       `surfaceCovered` has NO reachable road rather than pretending to drive
+       one. */
     rollWardrobeLine = HOUSE_WARDROBE_LINE;
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
     ));
 
+    /* The refusal is unchanged — the house tee covers the upper chest, and
+       `brief` keeps the house prior, so she is refused free exactly as before. */
     expect(shut.reason).toBe("gate_ink_uncarried");
-    expect(counted).toEqual([{
-      kind: "surfaceCovered",
-      /*
-        THE VOCABULARY KEY, never the spelling she used — a count keyed on a
-        spelling is not a count of anything, and it is what keeps the column's
-        own `$type<InkPlacement>()` a true description of its contents.
+    /*
+      ⚠ **AND NOTHING IS COUNTED, WHICH IS WHAT CHANGED — this arm asserted one
+      `surfaceCovered` row until #1577 slice 2.** The row needed a non-`brief`
+      source; `born` was the one that reached it and it is retired with the
+      paths. The only other member is `edited`, and the helper above measures
+      why that cannot carry this line either: 132 characters against a 120-char
+      cap, which rejects the whole delta.
 
-        ⚠ **THIS ARM IS THE ONLY ONE THAT CAN SEE THAT**, and it is worth
-        saying: `upperChest` and the words she typed are different strings,
-        while the next arm's surface is `neck` in both the vocabulary and her
-        sentence. Writing `place` instead of `surface` reddens here and passes
-        there, measured by sabotage. Any later tidy that folds these two arms
-        into one loses the distinction and keeps the green.
-      */
-      placement: "upperChest",
-      outcome: "refused",
-      pathAtRefusal: "wardrobe",
-    }]);
+      **So `surfaceCovered` has no reachable road at all, and this arm is the
+      place that says so.** The kind is NOT deleted here — the table, the
+      vocabulary and the writer all stay, and the deadness is filed as its own
+      finding rather than folded into this slice (his 2026-09-24 ruling).
+
+      The vocabulary-key property this arm used to be the only witness to —
+      that the row carries `upperChest` and never the words the customer typed —
+      moves to the `surfaceCoverageUnread` arm below, which asks about the upper
+      chest in prose and is now the only arm that writes a row for it.
+    */
+    expect(counted, "no source left can reach surfaceCovered").toEqual([]);
     /* Free, and nothing claimed — the row is telemetry beside a refusal, never
        a transaction of its own. */
     expect(ledger.charges).toHaveLength(0);
@@ -15068,8 +15052,9 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       it as `surfaceCovered` would inflate the case for a wardrobe edit, which
       is a DIFFERENT build.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = "a roll-neck wool jumper, plain straight trousers, plain boots";
+    /* 61 characters, under the cap, and a sentence the reader has never been
+       taught — so its coverage is `unknown` and the gate fails closed. */
+    wearingEdited("a roll-neck wool jumper, plain straight trousers, plain boots");
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
       { ...input, instruction: "give her a small swallow tattoo on her neck" },
@@ -15080,7 +15065,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       kind: "surfaceCoverageUnread",
       placement: "neck",
       outcome: "refused",
-      pathAtRefusal: "wardrobe",
     }]);
   });
 
@@ -15098,7 +15082,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       differs. A write keyed on the refusal REASON alone passes the first arm
       and fails here.
     */
-    rollPath = null;
     rollWardrobeLine = null;
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
@@ -15119,7 +15102,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       not from her outfit, so a row would count our own guess as her clothes.
       Both halves die together the day 7a-bis reads real lines.
     */
-    rollPath = null;
     rollWardrobeLine = "a white, body-conscious dress with industrial straps and buckles";
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
@@ -15130,26 +15112,35 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(counted, "a prior-derived refusal is not a demand about her outfit").toEqual([]);
   });
 
-  it("⚠ A ROLL THAT CLAIMS A PATH AND CANNOT SAY WHAT IT WEARS is not counted either", async () => {
+  it("⚠ THE RETIRED `incoherent` STATE — a roll with no line is the house tee, not a refusal", async () => {
     /*
-      `incoherent` — a path with no line. It refuses (the gate reads it as
-      `unknown` and fails closed, correctly), and it writes NO row: the surface
-      it refused was decided by a cast that cannot say what it is wearing, so a
-      demand row from it is a count of our own broken state wearing a customer's
-      name.
+      THIS ARM DROVE `incoherent` UNTIL #1577 SLICE 2 — a path with no line,
+      which the gate read as `unknown`, failed closed on, and counted nowhere.
+      The kind is retired with the paths, so the state is not expressible.
 
-      It cannot be produced by the write path — a path and a line are stamped in
-      one insert — and it is driven anyway, because a corner declared
-      unreachable and then quietly defaulted is a corner with no test.
+      ⚠ **It is kept, pointed at the new behaviour, because the retirement
+      had to be proven NOT to have turned that corner into a silent default.**
+      A roll with no line now answers `unpathed`, which is the house crew tee —
+      and the house tee leaves the NECK bare, so the ask that used to be
+      refused closed now goes through. **That is the honest consequence and it
+      is asserted rather than described**: the alternative reading, that the
+      retirement left a refusal in place, would be invisible without an arm.
+
+      The surface is the neck on purpose. Its sibling two arms up asks about
+      the upper chest, which the house tee COVERS — so that arm still refuses
+      and this one must not, and a reader comparing them can see that the
+      difference is the garment and not the retirement.
     */
-    rollPath = "wardrobe";
     rollWardrobeLine = null;
-    const shut = await doorShut(refineCandidate(
+    const result = await refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
       { ...input, instruction: "give her a small swallow tattoo on her neck" },
-    ));
+    );
 
-    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    /* Not refused — the neck is bare under the house tee. */
+    expect(result).toBeTruthy();
+    /* And nothing counted, which is the half of the old arm that still holds:
+       an unpathed branch is the product's ordinary behaviour, never a demand. */
     expect(counted).toEqual([]);
   });
 
@@ -15171,8 +15162,15 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       and that is a better outcome than the arm it replaces: a demand this
       product could not previously record is now recorded.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = "a one-shoulder animal hide, bare legs, bare feet";
+    /* ⚠ AND THIS ARM NOW CARRIES THE VOCABULARY-KEY PROPERTY its covered
+       sibling used to own: the ask says *"upper chest"* in prose and the row
+       must read `upperChest`, the vocabulary's own key. A count keyed on a
+       spelling is not a count of anything, and it is what keeps
+       `casting_ink_form_demand.placement`'s `$type<InkPlacement>()` a true
+       description of its contents. Writing the customer's words here would pass
+       the `neck` arm above, where the two strings happen to be identical, and
+       redden only here. */
+    wearingEdited("a one-shoulder animal hide, bare legs, bare feet");
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
@@ -15183,7 +15181,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       kind: "surfaceCoverageUnread",
       placement: "upperChest",
       outcome: "refused",
-      pathAtRefusal: "wardrobe",
     }]);
   });
 
@@ -15198,15 +15195,31 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       Not a hypothetical: the table lands in a world by a founder ceremony, and
       every call before that ceremony threw.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    /*
+      ⚠ **AN EDITED LINE, OR THIS ARM PASSES WITHOUT DRIVING ITS OWN
+      SUBJECT — which is how it read after #1577 slice 2 before it was fixed.**
+      It set a born house line, which is now `brief`-sourced; the guard skips
+      the write, the injected thrower is never called, and the arm goes green
+      having proven nothing about the catch it exists for.
+
+      So it drives the one road that still reaches the counter, and the
+      refusal it asserts moves with it: an unread outfit fails closed as
+      `coverage_unread` rather than as the house tee's `uncarried`.
+
+      ⚠ **AND THE CALL IS NOW ASSERTED RATHER THAN ASSUMED**, which the
+      original could not do: a thrower that is never invoked is
+      indistinguishable from one whose throw was swallowed, and both leave this
+      arm green. The flag is what tells them apart.
+    */
+    let counterCalled = false;
+    wearingEdited("a one-shoulder animal hide, bare legs, bare feet");
     const shut = await doorShut(refineCandidate(
       {
-        harvest: unmasked,
         /* ⚠ `inkWordsEnabled: () => true` stood here and is gone with the flag
            (#1577 slice D3). It injected the OPEN road, which is the only road
            now, so the arm asks exactly what it always asked. */
         countInkCoverageDemand: async () => {
+          counterCalled = true;
           throw new Error("the table is not there yet");
         },
         interpret: asksFor("a small swallow tattoo on her upper chest"),
@@ -15214,7 +15227,10 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
     ));
 
-    expect(shut.reason).toBe("gate_ink_uncarried");
-    expect(shut.message).toMatch(/top covers her upper chest/);
+    /* The counter ran and threw — without this the arm below proves nothing. */
+    expect(counterCalled, "the thrower must actually be reached").toBe(true);
+    /* And she is still refused, free, with her own answer. */
+    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    expect(shut.message.length).toBeGreaterThan(0);
   });
 });

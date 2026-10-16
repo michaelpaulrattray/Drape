@@ -17,7 +17,6 @@ import {
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   parseCastingReferenceLibraryScope,
   validateCastingReferenceLibraryEnvironment,
-  CASTING_REPAINT_SCOPE_ENV,
   CastingFaceScanCoverageError,
   CastingFaceScanScopeConfigurationError,
   CASTING_FACE_SCAN_SCOPE_ENV,
@@ -31,16 +30,6 @@ import {
   castingScanTableArmed,
   parseCastingScanTableScope,
   validateCastingScanTableEnvironment,
-  CastingRepaintCoverageError,
-  CastingSidePhrasingCoverageError,
-  CastingSidePhrasingScopeConfigurationError,
-  captureCastingSidePhrasingEnabled,
-  parseCastingSidePhrasingScope,
-  validateCastingSidePhrasingEnvironment,
-  CastingRepaintScopeConfigurationError,
-  captureCastingRepaintEnabled,
-  parseCastingRepaintScope,
-  validateCastingRepaintEnvironment,
   CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
   CASTING_ROLL_ENGINE_SCOPE_ENV,
@@ -289,82 +278,26 @@ describe("the reference-library sub-flag", () => {
   });
 });
 
-describe("the compositor-swap sub-flag", () => {
-  const previous = { ...process.env };
+/*
+  ⚠ THE COMPOSITOR-SWAP SUB-FLAG'S FIVE ARMS STOOD HERE AND WENT WITH THE FLAG
+  — #1577 slice 4b, on his word (*"switch off the six settings"*).
 
-  afterEach(() => {
-    process.env = { ...previous };
-  });
+  They held the grammar (`off` by default, and a refusal for anything it could
+  not read exactly), the boot fence against its PARENT the reference library
+  (*a repaint carries features by crop and the crops are the library's, so a
+  repaint user with no library is a paid render that forgets features*), the
+  acceptance of a scope the parent already covered, and the point-of-use AND
+  over the whole chain.
 
-  it("is off by default and refuses anything it cannot read exactly", () => {
-    expect(parseCastingRepaintScope(undefined)).toEqual({ kind: "off" });
-    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
-      expect(() => parseCastingRepaintScope(raw), raw)
-        .toThrow(CastingRepaintScopeConfigurationError);
-    }
-  });
-
-  it("asserts nothing while absent", () => {
-    expect(validateCastingRepaintEnvironment({
-      scope: undefined,
-      libraryScope: undefined,
-    })).toEqual({ kind: "off" });
-  });
-
-  it("refuses to repaint for a user who keeps no library", () => {
-    /*
-      The whole reason this flag hangs off the library rather than off the
-      casting scope. A repaint pastes nothing back: a feature survives because
-      the library holds a crop and the recipe carries it. Armed without one,
-      every paid refine quietly forgets her features.
-    */
-    expect(() => validateCastingRepaintEnvironment({
-      scope: "users:1",
-      libraryScope: undefined,
-    })).toThrow(CastingRepaintCoverageError);
-    expect(() => validateCastingRepaintEnvironment({
-      scope: "all",
-      libraryScope: "users:1",
-    })).toThrow(CastingRepaintCoverageError);
-    expect(() => validateCastingRepaintEnvironment({
-      scope: "users:1,2",
-      libraryScope: "users:1",
-    })).toThrow(/names users outside/);
-  });
-
-  it("accepts a scope its parent already covers", () => {
-    expect(validateCastingRepaintEnvironment({
-      scope: "users:1",
-      libraryScope: "users:1,2",
-    })).toEqual({ kind: "users", userIds: [1] });
-    expect(validateCastingRepaintEnvironment({
-      scope: "users:1",
-      libraryScope: "all",
-    })).toEqual({ kind: "users", userIds: [1] });
-  });
-
-  it("is enabled only when the WHOLE chain names the user", () => {
-    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REPAINT_SCOPE_ENV] = "users:1";
-    expect(captureCastingRepaintEnabled(1)).toBe(true);
-    expect(captureCastingRepaintEnabled(2)).toBe(false);
-
-    /* Point-of-use, each link driven on its own: a boot check that was never
-       invoked is the second way a flag pair goes wrong, and here there are
-       three links rather than two. */
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
-    expect(captureCastingRepaintEnabled(1)).toBe(false);
-
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
-    process.env[CASTING_V2_SCOPE_ENV] = "off";
-    expect(captureCastingRepaintEnabled(1)).toBe(false);
-
-    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
-    delete process.env[CASTING_REPAINT_SCOPE_ENV];
-    expect(captureCastingRepaintEnabled(1)).toBe(false);
-  });
-});
+  Every one of those properties now belongs to a flag that does not exist. What
+  SURVIVES of the reasoning is the library's own fence, which is arm-for-arm the
+  same shape one describe up, and the four children slice 4a re-parented onto
+  it — each with its own arms in this file, and each with an arm that reddens if
+  the re-parent is undone. The retirement itself is held by
+  `server/castingV2/repaintFlagRetirement.test.ts`: no declaration, no law row
+  that calls it live, no production position, and a second reader over the raw
+  server tree.
+*/
 
 describe("the auto-scan sub-flag", () => {
   const previous = { ...process.env };
@@ -436,110 +369,6 @@ describe("the auto-scan sub-flag", () => {
     process.env[CASTING_V2_SCOPE_ENV] = "users:1";
     delete process.env[CASTING_FACE_SCAN_SCOPE_ENV];
     expect(captureCastingFaceScanEnabled(1)).toBe(false);
-  });
-});
-
-/**
- * SAYING WHICH SIDE TWICE — the clause that names her side AND the half of the
- * picture it appears in (`V4_SIDE_INFERENCE_COURT.md` §3b).
- *
- * Every arm is driven directly rather than through a caller: a guard proved
- * only through the thing that uses it is a guard nobody has tested.
- */
-describe("the side-phrasing scope", () => {
-  const previous = { ...process.env };
-  afterEach(() => {
-    process.env = { ...previous };
-  });
-
-  it("is off by default and refuses anything it cannot read exactly", () => {
-    expect(parseCastingSidePhrasingScope(undefined)).toEqual({ kind: "off" });
-    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "on"]) {
-      expect(() => parseCastingSidePhrasingScope(raw), raw)
-        .toThrow(CastingSidePhrasingScopeConfigurationError);
-    }
-  });
-
-  it("asserts nothing while absent", () => {
-    expect(validateCastingSidePhrasingEnvironment({
-      scope: undefined,
-      referenceLibraryScope: undefined,
-    })).toEqual({ kind: "off" });
-  });
-
-  it("refuses to place a side for a user outside the reference library", () => {
-    /*
-      ⚠ THE PARENT HERE WAS `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a and is
-      now the repaint's own parent, the reference library — the paste road's flag
-      is retired by the audit's slice 4b, and a child naming a missing parent
-      refuses boot. The fence itself is unchanged in shape: a user named here and
-      not covered above would be armed for a sentence they cannot reach, which is
-      an arming that changes nothing and is indistinguishable from a mistake.
-    */
-    expect(() => validateCastingSidePhrasingEnvironment({
-      scope: "users:1",
-      referenceLibraryScope: undefined,
-    })).toThrow(CastingSidePhrasingCoverageError);
-    expect(() => validateCastingSidePhrasingEnvironment({
-      scope: "all",
-      referenceLibraryScope: "users:1",
-    })).toThrow(CastingSidePhrasingCoverageError);
-    expect(() => validateCastingSidePhrasingEnvironment({
-      scope: "users:1,2",
-      referenceLibraryScope: "users:1",
-    })).toThrow(/names users outside/);
-  });
-
-  it("accepts a scope its parent already covers", () => {
-    expect(validateCastingSidePhrasingEnvironment({
-      scope: "users:1",
-      referenceLibraryScope: "users:1,2",
-    })).toEqual({ kind: "users", userIds: [1] });
-  });
-
-  it("is an AND of the whole chain where it is USED, not only at boot", () => {
-    /* The boot check can only see the variables; this one sees the user, and a
-       boot check that was never invoked is the second way a flag pair fails. */
-    process.env.CASTING_SIDE_PHRASING_SCOPE = "users:1";
-    process.env.CASTING_REPAINT_SCOPE = "users:1";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
-    process.env.CASTING_V2_SCOPE = "all";
-    expect(captureCastingSidePhrasingEnabled(1)).toBe(true);
-    expect(captureCastingSidePhrasingEnabled(2)).toBe(false);
-
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
-    expect(captureCastingSidePhrasingEnabled(1), "the parent going dark takes the child with it").toBe(false);
-  });
-
-  /*
-    ⚠ AND THE OTHER DIRECTION, WHICH IS THE ONLY THING #1577 SLICE 4a ACTUALLY
-    CHANGED — without this arm the re-parent is untested where it matters.
-
-    Re-pointing the arms above would pass just as well if the child were still
-    gated on the repaint, because production holds both flags at `all`. So this
-    drives the repaint DARK and asserts the child survives it: the three children
-    no longer hang off a flag the audit's slice 4b is about to delete.
-  */
-  it("is no longer gated on the repaint flag — the point of the re-parent", () => {
-    process.env.CASTING_SIDE_PHRASING_SCOPE = "users:1";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
-    process.env.CASTING_V2_SCOPE = "all";
-
-    process.env.CASTING_REPAINT_SCOPE = "off";
-    expect(
-      captureCastingSidePhrasingEnabled(1),
-      "the repaint going dark must NOT take the child with it any more",
-    ).toBe(true);
-    delete process.env.CASTING_REPAINT_SCOPE;
-    expect(captureCastingSidePhrasingEnabled(1), "nor its absence").toBe(true);
-
-    /* And the boot fence agrees: a child `all` over an off repaint is admitted,
-       where it used to be refused — proven at the validator, not only at the
-       runtime predicate, because they are two separate readings of the parent. */
-    expect(validateCastingSidePhrasingEnvironment({
-      scope: "all",
-      referenceLibraryScope: "all",
-    })).toEqual({ kind: "all" });
   });
 });
 

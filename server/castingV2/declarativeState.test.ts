@@ -158,8 +158,10 @@ describe("the door the fix is for", () => {
  *
  * The interpreter's output is not the repaint's private property — it is stored
  * on the delta and composed into the OLD road's prompt, which is what production
- * runs while `CASTING_REPAINT_SCOPE` is absent. So the fix changes a live
+ * ran while the repaint's own flag was still dark. So the fix changed a live
  * behaviour, and the size of that change is measured here rather than assumed.
+ * (That road and its flag are retired — #1577 slice 4b — and the measurement is
+ * kept because it is what the sentence cost when it was live.)
  *
  * Driven on the founder's five asks (`COMPOSITOR_SWAP_FIVE_ASK_PROOF_PLAN.md`),
  * before and after. Four of the five never move: they are already states, which

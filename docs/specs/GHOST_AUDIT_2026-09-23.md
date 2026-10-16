@@ -617,6 +617,17 @@ BOOT PARENT of three other flags (`captureCastingSidePhrasingEnabled`,
 captureCastingRepaintEnabled(userId)`), so the children are re-parented before
 the parent can go.
 
+⚠ **TWO OF THOSE THREE CHILDREN ARE THEMSELVES RETIRED NOW — the open lane in
+slice D1 and the side phrasing in slice D2 — so the only LIVE child still
+proving slice 4a's re-parent is `captureCastingReferenceAttachEnabled`, whose
+arm is in `referenceAttachScope.test.ts`.** The side-phrasing re-parent arm in
+`castingV2Scope.test.ts` drove the retired flag and was removed with it rather
+than re-pointed: an arm with no subject left is what slice 4b found 134 of. The
+fourth re-parented site, `validateCastingInkStudioEnvironment`, belongs to a
+feature already retired (#1158). **Nothing is orphaned by either deletion** —
+written down because a reader counting arms after the fact would find one where
+there were two.
+
 ## THE TABLE
 
 *Readers* are production readers at `origin/main@6fcb8a652`. *Fate* is a
@@ -628,9 +639,9 @@ proposal; nothing here is decided.
 | **A2** | the dice record as *"the composed identity so far"*: `currentIdentity` (`:1438`), read for relative asks (*"lighter"*, *"shorter"*) and the removal record check (`:3315-3318`, `:7713`, `:8616`) | **live**, same null on every author-road cast | **keep** (read path) | same reason as A1. On an author-road cast each degrades to *no recorded value*, the honest null road the reader was built for |
 | **A3** | the dice record as `priorItems` for a stated subject (`:1515`) | **live**, same null | **keep** (read path) | same |
 | **A4** | the variant landing's identity WRITE: `resolved: baseIdentity ? applyDelta(baseIdentity, filed, picturedCaptions) : null` (`:9875`, `:9891`) | **live code, inert data on every author-road cast**: `baseIdentity` is `null` there, so `resolved` is written `null` and the caption hybrid's filing (fable-1434, `:8680-8700`, whose own docblock names *a follow* as its one consumer) never lands | ✅ **CARDED — #2537** | not a deletion, because 220 legacy sheets still carry it. But the feature it serves is silent for every cast rolled since 2026-08-26. Whether picture-taken captions get a home on the author road, or the filing retires, is a design question. **Read at the code, not driven**. ⚠ **AND THIS ROW FOUND ONE OF THE TWO DEAD ENDS — corrected at the card, 2026-10-15.** It reads as though repairing the write would revive the feature. It would not: the one consumer, `honestFollowSource` (`rollService.ts:204`), **refuses the whole record when the parent roll was composed on the author road** (`if (rollComposedOnAuthorRoad(…)) return { identity: null, … }`), deliberately, because #176's unsent dice fiction put *"keep South Asian heritage"* into a family clause about a man who is not. **So the filing is dead at the WRITE and dead again at the READ**, and the fix is a capability (a picture carried into a roll) rather than a repair — which is why #2537 is a design card under N3 and not a slice here |
-| **B1** | the two-paths half of the wardrobe resolution on refine: `rollPath` threaded into `currentWardrobeLine` (`refineService.ts:1862`, `:9751`; selected at `db/castingV2.ts:865`, `:964`), the `incoherent` kind (`wardrobeLine.ts:94`, `:168`) and the `"born"` source (`:62`, `:165`) | **reachable by no production branch**: `rollService.ts:698` writes the path as a constant `null`, and the thirteen pathed rolls production holds have **zero candidates** (measured 2026-09-23, `TWO_PATHS_PREDICATES_2026-09-24.md`), and a refine needs a candidate | **retire** | a branch only a row with no candidate could take. ⚠ The resolution is SHARED: Sign reads it (`signService.ts:319`, `:335`), and so do the ink coverage owner (`inkSurfaceCoverage.ts:402`) and the ink-form demand counter (`refineService.ts:2531`, `source !== "brief"`). The #203 warning above holds: every question that reads it is re-answered in writing. **The `path` column stays** (#203's ruling) |
+| **B1** | the two-paths half of the wardrobe resolution on refine: `rollPath` threaded into `currentWardrobeLine` (`refineService.ts:1862`, `:9751`; selected at `db/castingV2.ts:865`, `:964`), the `incoherent` kind (`wardrobeLine.ts:94`, `:168`) and the `"born"` source (`:62`, `:165`) | **reachable by no production branch**: `rollService.ts:698` writes the path as a constant `null`, and the thirteen pathed rolls production holds have **zero candidates** (measured 2026-09-23, `TWO_PATHS_PREDICATES_2026-09-24.md`), and a refine needs a candidate | ✅ **RETIRED — slice 2, 2026-10-15** | a branch only a row with no candidate could take. ⚠ The resolution is SHARED: Sign reads it (`signService.ts:319`, `:335`), and so do the ink coverage owner (`inkSurfaceCoverage.ts:402`) and the ink-form demand counter (`refineService.ts:2531`, `source !== "brief"`). The #203 warning above holds: every question that reads it is re-answered in writing. **The `path` column stays** (#203's ruling). ✅ **DONE. All four questions re-answered, and the row's own count was one short.** **(a) Refine's door** — stops threading the path; `wardrobeNow` is the stored line or `unpathed`. **(b) Sign** — stops threading it, its `incoherent` arm goes, and the snapshot still writes `path: null` on purpose (a stored blob three services read back; no row in either world has ever held a non-null one, so the shape is byte-identical to what it already wrote). **(c) The ink coverage owner** — its `incoherent` → `unknown` arm goes, and its docblock's claim that `incoherent` was *the whole reason the gate takes a resolution* is CORRECTED: the reason moved rather than dying, because a bare string still cannot say whether a line is the brief's or an edit, and the surviving arm turns on exactly that. **(d) The demand counter** — the guard is now `source === "edited"` (written positive, because the negative silently widens the day a member is added) and `pathAtRefusal` is no longer passed. ⚠ **THE READER THIS ROW DID NOT NAME IS THE ONE THAT DECIDED WHETHER `born` COULD GO AT ALL: `castWardrobeSource`, which reads the SIGNED SNAPSHOT back** (three callers — `signService.ts:643`, `packageRedoService.ts:580`, `viewRetryService.ts:547`). Measured in both worlds first: **production holds zero snapshots with `source: "born"` and zero with a non-null `wardrobe.path`; dev holds four** (the verify-bot fixtures). ⚠ **And neither reading moves, which is a property of the consumers rather than of the counts** — the whole snapshot chain is typed `string | null` and branches on `"brief"` ALONE (`coverageOfSnapshotWardrobe`, reached through `placementRideCoverage`, whose docblock already says *"Absent means not brief"*), so `born`, `edited`, `null` and absent were always one answer there. That is the argument; the row counts are its second witness. **Also measured: zero of the thirteen pathed rolls are in the `incoherent` shape** — every one carries a line — so that kind was unreachable from the DATA as well as from the code. **Three dead imports of `CastingPath` fell out with it** and were removed |
 | **B2** | `unpathed`: no path and no line, answered as *"the house crew tee"* (`wardrobeLine.ts:167`, `refineInterpreter.ts:818`) | **live**: every cast whose brief named no outfit | **keep** | current machinery under an old-lane name. A rename is cosmetic and not proposed |
-| **B3** | two stale docblocks on the wardrobe hand-off (`refineService.ts:1915-1930`): *"a roll cast before the paths has both columns NULL … every roll in production answers exactly what it answered"*, and *"the BRANCH'S edited line is not threaded yet"* | none (prose) | **correct in B1's slice** | false since #1222 (a pathless line is now the brief's own outfit) and item 8 (the edited line IS threaded, `:1867`) |
+| **B3** | two stale docblocks on the wardrobe hand-off (`refineService.ts:1915-1930`): *"a roll cast before the paths has both columns NULL … every roll in production answers exactly what it answered"*, and *"the BRANCH'S edited line is not threaded yet"* | none (prose) | ✅ **CORRECTED — slice 2, 2026-10-15** | false since #1222 (a pathless line is now the brief's own outfit) and item 8 (the edited line IS threaded, `:1867`). ⚠ **There were THREE false sentences there, not two.** The third was the middle paragraph — *the resolution rides WHOLE because `incoherent` must not read as the house crew tee* — and this slice is what made it false, by retiring the kind. All three are replaced with what is true, and the reason the resolution still rides whole is stated rather than left implied |
 | **C1** | **the paste road**: `renderOnce` below `if (repaintEnabled) return repaintOnce();` (`refineService.ts:7536-7667`) | **none in production**: `CASTING_REPAINT_SCOPE=all` | **retire, with the flag, on his word** | D-241 called it retired; the code kept it as the flag's off arm |
 | **C2** | `castingIdentityEngine` on refine, the Nano Banana Pro plain edit at `1K` (`refineService.ts:338`, built `:6242`, used only `:7557`) | **none in production** (paste arm only) | **retire with C1** | CLAUDE.md's `FAL_KEY` locator is corrected in the same slice. At this tree nothing else calls `signEngine.ts:94`'s factory, so it goes too unless the slice's re-count finds a reader |
 | **C3** | `harvestRefinement` (`maskedRefine.ts:1022`) | **one** production caller, `refineService.ts:7564`, on the paste arm | **retire with C1** | the module STAYS: `RegionReader` has 13 production importers, and `refusingRegionReader`, `regionNameOf`, `additionDestination` and `maskedEditingEnabledFor` all have live readers off this road |
@@ -638,7 +649,7 @@ proposal; nothing here is decided.
 | **C5** | the `kind_unserved` door, *"I can't do that to them yet. Nothing was charged."*, for `REPAINT_ONLY_SUBJECTS` (`refineService.ts:2755-2770`) | **none in production**: it fires only when repaint is off | **retire with C1** | a capability-atlas door, so its slice moves the door's map entry in the same commit |
 | **C6** | six repaint-or-paste ternaries and guards around it (`:4386`, `:4599`, `:6270`, `:6398`, `:7898`, `:9592`) | the paste half of each: none | **collapse with C1** | each keeps its repaint half |
 | **D1** | `CASTING_OPEN_LANE_SCOPE` (`all`): the off arm is the two closed-lane prompts, `BASE_PROMPT` and `SYSTEM_PROMPT` (`refineInterpreter.ts:383`, `:431`, chosen at `:481`), read through `refineService.ts:1886` | the off arm: none | **retire with its flag, on his word** | two of the four interpreter prompts no account is asked. The bar is #1495's: the surviving prompts sha256-identical before and after |
-| **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | **retire with its flag, on his word** | |
+| **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | ✅ **RETIRED — slice D2, 2026-10-16** | the clause naming which half of the picture a side is on. **The bar was #1495's and it was MET**: the assembled instruction hashed across twelve shapes before and after the cut, every one byte-identical, rollup `883b5ab0…` — and ⚠ **the hash is the bar and the LENGTH is not**, driven rather than assumed: one changed letter moved a hash and left its length at 84. Out with the flag: the parse, two error classes, `captureCastingSidePhrasingEnabled`, the boot fence, the `sidePhrasingEnabled` service seam, and the `placeSides` option on the assembler — the compiler named every reader the moment the option came off `AssembleInput`. **`sidePhrasing.ts` and `imageHalfClause` STAY**: the signed-Cast view lane says the same sentence through the same owner. ⚠ **This row's `all` hid a stale belief, not a live arm** — `recipeAssembler.ts` still called the clause *"dark until its own court runs"* seven weeks after he widened it. The Railway variable comes off AFTER the deploy |
 | **D3** | `CASTING_INK_WORDS_SCOPE` (`all`): *"the neck alone"* is the off arm (`:1912`, `:4010`) | the off arm: none | ✅ **RETIRED — PR for slice D3, 2026-10-15.** Both off-arm sites confirmed at the code before the cut | the flag chose between two placement lists rather than flipping a boolean, so the cut was five choice sites and the parameter they rode on. ⚠ **The compiler named FOUR readers and a grep afterwards found THREE MORE** — an injected dependency and two object-literal fields that survived the typecheck because their literals are inferred or spread, where excess-property checking never runs. D2's slice found the opposite (*"a grep afterwards added nothing"*), which is why each slice establishes its own count. The bar: the classifier's verdict over 256 shapes, rollup identical, the reader proven able to fail on the closed arm |
 | **D4** | `CASTING_REFINE_DISPATCH_SCOPE` (`all`): the arm that HOLDS the request until the render lands (`refineService.ts:1076`) | the off arm: none | **retire with its flag, on his word** | money-adjacent (it decides when a paid request returns), so its slice is a held review |
 | **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent (`castingV2Scope.ts:356`), read at `routes/castingV2.ts:2722`, `:2822` | the off arm: none | **retire last, on his word** | it is the root of the chain C and D1-D2 hang from, so it goes after them or not at all |
@@ -678,11 +689,47 @@ any of them (his rule on #1398).
    The reasoning the ink filter's docblock borrowed from it — facet
    granularity cannot serve one-tattoo-at-a-time — is **kept at that
    docblock** and reworded so it no longer points at a function that is gone.
-2. **The two-paths half of the wardrobe resolution comes out of refine** (B1,
-   with B3's docblocks). No flag. It re-reads the thirteen pathed production
-   rows first (still zero candidates?) and re-answers in writing each of the
-   four questions that read the resolution: refine's door, Sign, the ink
-   coverage owner, the demand counter. The `path` column stays.
+2. ✅ **SHIPPED — the two-paths half of the wardrobe resolution is out of
+   refine** (B1, with B3's docblocks). No flag, no production variable, no
+   customer-visible change. The thirteen pathed rows were re-read first and
+   still hold **zero candidates**, and all four questions are re-answered in
+   writing at the B1 row above. The `path` column stays.
+
+   ⚠ **The row's list of readers was one short, and the missing one is the
+   one that decided whether `born` could go at all**: `castWardrobeSource`
+   reads the SIGNED SNAPSHOT back, with three callers. Both worlds were
+   measured before anything was cut (production zero `born` snapshots, dev
+   four), and the reading provably cannot move in either, because the whole
+   snapshot chain branches on `"brief"` alone.
+
+   ⚠ **TWO FINDINGS CAME OUT OF THE RE-POINTING AND NEITHER IS FIXED HERE**,
+   on his 2026-09-24 ruling that a capability or a second retirement is never
+   folded into a cleanup. Both are filed:
+
+   - **The ink-form demand counter has no reachable road at all now.** Its
+     guard wants a non-`brief` source; `born` was the one that reached it, and
+     the survivor `edited` needs the `wardrobe` free subject, which
+     `refineSubjects.ts` says *"is served to nobody"*. **It was already
+     unreachable before this slice** — a `born` branch needs a pathed roll with
+     a candidate — and `casting_ink_form_demand` holds **zero rows in both
+     worlds, all time**. What changed is only HOW it is shut: by a member
+     nothing can produce rather than by rows that happen not to exist.
+   - **`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit**: 132
+     characters against `MAX_FREE_LENGTH`'s 120, and an over-long free value
+     makes the strict reader reject the WHOLE delta rather than that key, so
+     the branch reads `unpathed`. It is the only line whose upper chest reads
+     `covered`, so the demand table's `surfaceCovered` kind has no road either.
+     Found by driving the arms rather than by reading them.
+
+   **The suites were re-pointed and not relaxed**: seven files, and the arms
+   that guarded the retired members were replaced with arms that assert the
+   members cannot come BACK — over values, since a type stops saying so the
+   moment somebody widens the union. One of them had to be repaired after the
+   first re-point, and it is the lesson of this slice: the counter's
+   throws-and-is-caught arm **passed without calling the counter at all** once
+   its fixture became `brief`-sourced, so it now records the call and asserts
+   it. ⚠ **A re-pointed arm must be checked for whether it still reaches its
+   own subject, not merely for whether it is green.**
 3. ✅ **FILED — #2537** (item A4): the caption hybrid's filing lands `null` on
    every author-road cast. A design card, not a deletion. ⚠ **Reading the
    follow road to write it turned up the second dead end this section had
@@ -737,9 +784,107 @@ any of them (his rule on #1398).
      and of the face scan and the kept-scan table under it — so the four moved
      onto a flag with children of its own rather than onto a leaf. The flag
      catalogue's four parent claims are stamped in the same commit;
-   - 4b takes the paste road out (C1-C6) with the flag, corrects CLAUDE.md's
-     `FAL_KEY` locator and the capability atlas's `kind_unserved` door in the
-     same commit, and drives the off arm BEFORE deleting it.
+   - 4b ⚠ **SHIPPED — the paste road is out (C1-C6), the flag with it, and the
+     slice measured four things the audit could not see from the import graph.**
+
+     What went: the `renderOnce` fork and everything below it; the
+     `harvestRefinement` CALL; refine's reach to `castingIdentityEngine`; the
+     masked branch inside the paste arm; the `kind_unserved` door; the six
+     repaint-or-paste guards; `regionOverrides`; three dependency seams
+     (`engine`, `harvest`, `maskedEdit`) and the `repaintEnabled` predicate seam;
+     `CASTING_REPAINT_SCOPE`'s constant, parse, two errors, capture and boot
+     fence; its row in `productionFlagPositions.mts`; a DEAD IMPORT of
+     `captureCastingRepaintEnabled` in `routes/castingV2.ts` (zero call sites,
+     read at the bytes); the flag from the capability atlas's `refine-money`
+     road, with `kind_unserved` moved to `UNDECLARED_PROSE_NAMES` because the
+     door's DEATH is now the sentence's content. CLAUDE.md's `FAL_KEY` locator
+     is corrected and both law surfaces stamp the flag RETIRED.
+
+     **The off arm was driven before anything was cut**, which is the slice's
+     own stated bar, and it is the first of the four findings:
+
+     1. ⚠ **134 of the refine suite's 433 arms were driving the DEAD road.**
+        Measured by sabotage — a throw at the top of the paste half reddened
+        exactly 134 — and the suite's DEFAULT was that road, because with no
+        flag set in a unit test `captureCastingRepaintEnabled` answers false.
+        **Only 20 of them break when every render goes through the repaint**,
+        which is what made this one slice rather than a programme: the empty
+        library repaint is the degenerate case the paste road's single-reference
+        edit resembled. 13 arms retired with the road, 8 were re-pointed onto
+        the live one, and the ones that were re-pointed are the valuable half —
+        they now prove on the only road the product has what they used to prove
+        on a road no customer was ever on.
+     2. ⚠ **TWO CAPABILITIES WERE ALREADY DEAD, AND ONLY ONE OF THEM IS A
+        FINDING — the distinction is the honest half of this row.** Both were
+        fed by the harvest and both are `undefined` on a repaint, and the
+        COMPILER named them the moment the fork came out: `rendered.evidence`
+        narrowed to `undefined` and its readers to `never`.
+        **The magnified verification crop was already recorded**, in
+        `renderVerification.ts`'s own #2526 note — *"the crop is cut from the
+        masked road's harvest … `repaintOnce` returns `evidence: undefined` …
+        so production has no crop to keep"* — so this slice CONFIRMS a written
+        fact rather than discovering one, and what it adds is that the call now
+        passes the honest constant instead of reading a field that cannot
+        exist. It still costs what the marks court measured: that reader sees
+        freckles 8/8 on a 2x face crop against 6/8 unanimous at portrait size.
+        **The SEAM VERDICT was not recorded anywhere**, and that half is new:
+        the repaint pastes nothing, so there is no join to score and the tear
+        rate has had no denominator since the repaint widened — a flip decision
+        that had rested on three anecdotes for four shifts, waiting on a
+        denominator that had already stopped being collected.
+     3. ⚠ **`castingIdentityEngine` IS NOT DELETED, and the re-count is why.**
+        C2 said *"nothing else calls `signEngine.ts:94`'s factory, so it goes
+        too unless the slice's re-count finds a reader"* — the re-count found
+        one: `scripts/calibration/accessory-instance-cell.mts`, TRACKED, which
+        builds it. Refine's reach is gone; the factory stays. Same shape as 4a's
+        fourth child: a retirement slice re-counts before it cuts, and it has
+        now paid for itself twice in two slices.
+     4. ⚠ **ONE CONTROL WAS SAVED FROM THIS SLICE BY READING ITS ARM.** The
+        lineage read (`branchRows`) was gated on the repaint, and the repaint was
+        an AND of its parent — so *repaint on* and *library on* were the same
+        answer. Collapsing it to unconditional made the library's own
+        *"a dark deploy must not pay for a database round trip"* arm fail, and
+        that arm had been passing for the WRONG REASON (what silenced the query
+        was the suite leaving the REPAINT flag unset). It is gated on
+        `CASTING_REFERENCE_LIBRARY_SCOPE` now — the same condition it always
+        had, named at its real parent.
+
+     **What is left standing and is named rather than cut**, because each is its
+     own change with its own suites: `harvestRefinement` itself (~965 lines
+     inside a 2,120-line module whose other exports are live, and whose two
+     suites are tests OF the function rather than of the paste road);
+     `REPAINT_ONLY_SUBJECTS` and the `admittedOn` field it derives from, now read
+     by nothing; `makeupRegionFor`, which lost its only caller with
+     `regionOverrides`; and the mint's harvest-side machinery, which its only
+     caller now reaches with constants. A dead input is not licence to cut a
+     module this slice does not own.
+
+     ⚠ **AND ONE ARM COULD NOT BE RE-POINTED AND IS A DEBT RATHER THAN A
+     RETIREMENT:** *records a departure when the FACE has it but the recipe does
+     not* (rule 3, D-238) drove `marks`/freckles, and on the live road that ask
+     refuses — *"That's a part of her I can't work on yet. Nothing was charged."*
+     It is filed as **#2554** with the reading attached. The departure road
+     itself is NOT in doubt: the founder's-walk arm one block down does the same
+     thing with `statedAccessories`, renders, charges once and files
+     `absent: { statedAccessories: ["glasses"] }` — on the repaint. So what is
+     unproven is that subject, not the road.
+
+     ⚠ **THE VARIABLE'S DELETION FROM THE SERVICE IS THE MERGE'S OWN ACT, AND
+     THE ORDER CANNOT BE REVERSED.** An absent variable parses as `off`, so
+     deleting it while the old build is still serving puts every customer back on
+     the paste road — the one direction of this retirement that could hurt
+     somebody. Code first, variable second, and between the merge and the
+     deletion the rite reports a flag-position mismatch naming
+     `CASTING_REPAINT_SCOPE`, by design: `comparePositions` reports a governed
+     variable with no row, and the row had to go in the same commit as the
+     declaration (`productionFlagPositions.test.ts` reddens otherwise).
+
+     The retirement is held by `server/castingV2/repaintFlagRetirement.test.ts`
+     — no declaration, no read in any of the three shapes this repository uses,
+     no production row, both law surfaces stamped RETIRED, and the paste road's
+     members absent from the service's CODE with comments stripped (the first run
+     of that arm found the road quoted in its own obituary). Proven able to fail
+     by five sabotages, one per arm.
 5. **One flag at a time after that, each on his word**: open lane (D1, with the
    prompt-hash bar), side phrasing (D2), ink words (D3), refine dispatch (D4,
    held review), and the reference library last (D5).

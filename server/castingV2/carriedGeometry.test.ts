@@ -429,9 +429,13 @@ describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () 
       once have read — was deleted at item 7a for exactly this reason: a fact
       about one outfit wearing the shape of a fact about a placement.
     */
+    /* ⚠ THESE FIXTURES READ `source: "born"` WITH A PATH UNTIL #1577 SLICE 2.
+       `born` is retired with the paths; `edited` is the source that READS the
+       line, which is the reading every arm here is about, so the answers are
+       unchanged. (`brief` deliberately keeps the house prior instead.) */
     const basics = carriedInkSlotsForGeometry({
       delivered: { "ink:upperChest": "c3" },
-      wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
+      wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "edited" },
     });
     expect(basics[0]!.coveredWhenEmpty).toBe(false);
 
@@ -439,7 +443,7 @@ describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () 
        the shape of the call. */
     const house = carriedInkSlotsForGeometry({
       delivered: { "ink:upperChest": "c3" },
-      wardrobe: { kind: "line", line: HOUSE_WARDROBE_LINE, source: "born", path: "wardrobe" },
+      wardrobe: { kind: "line", line: HOUSE_WARDROBE_LINE, source: "edited" },
     });
     expect(house[0]!.coveredWhenEmpty).toBe(true);
   });
@@ -453,7 +457,7 @@ describe("the tattoo row's box, which drifts the same way (fable-1448 §4)", () 
     */
     const slots = carriedInkSlotsForGeometry({
       delivered: { "ink:upperChest": "c3" },
-      wardrobe: { kind: "line", line: "a heavy roll-neck jumper", source: "born", path: "wardrobe" },
+      wardrobe: { kind: "line", line: "a heavy roll-neck jumper", source: "edited" },
     });
     expect(slots[0]!.coveredWhenEmpty).toBe(false);
   });

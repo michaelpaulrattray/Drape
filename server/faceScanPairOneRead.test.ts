@@ -1,0 +1,401 @@
+/**
+ * A PAIR ASKED ONCE INSTEAD OF TWICE — driven at the wire, both flag positions
+ * (#2191, his goal of 2026-10-10: *"our goal would be to reduce this cost by as
+ * much as possible"*).
+ *
+ * A face scan's five bilateral regions are read one half-frame at a time, so
+ * each costs TWO segmenter reads — ten of the floor's eighteen. #2532's arm 1
+ * measured that one whole-frame read can answer both sides, because fal's
+ * `return_multiple_masks` had never been sent and *"SAM 3 returns exactly one
+ * instance for a bilateral noun"* was therefore a fact about our REQUEST.
+ * `ENABLE_CASTING_PAIR_ONE_READ` is that road, off by default.
+ *
+ * # What this suite holds, and the first arm is the one that matters most
+ *
+ * The saving is arithmetic and easy; the risk is all in WHAT COMES BACK. So:
+ *
+ *   1. **Off is today, byte for byte** — two reads per pair and the new fields
+ *      on NO request. The road is dark until a caller asks for it, and a suite
+ *      that only tested the new road would not notice it leaking.
+ *   2. **On costs one read** and sends exactly the two fields fal publishes.
+ *   3. **Both mask shapes come apart correctly.** Arm 1 measured two: `ear` and
+ *      `earring` answer as two clean per-side masks, `eyes` and `eyebrows`
+ *      usually as ONE mask spanning the midline. A reader that handled only one
+ *      of those would silently halve three nouns, so both are driven.
+ *   4. **A one-sided answer stays one-sided here**, and the half-answered-pair
+ *      heal in `faceScan.ts` still sees it and still buys its second look — the
+ *      measured control must not be the thing this saving breaks.
+ *   5. **An empty answer is empty at ONE read**, which is what `absentIsAnswer`
+ *      rests on.
+ *   6. **The shared `face` read refuses the setting outright** — driven
+ *      directly, because it shattered into two masks on the elder alien and it
+ *      is where every midline and the build row's head box come from.
+ *
+ * The floor and ceiling are DERIVED by the same drive `faceScanSpend.test.ts`
+ * uses and pinned to `FACE_SCAN_FAL_CALLS.sam3.pairInOneRead`, so the constant
+ * cannot drift from the wire.
+ */
+import sharp from "sharp";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { scanFace } from "./castingV2/faceScan";
+import { createFalRegionReader } from "./castingV2/falRegionReader";
+import { catalogueSlots } from "./castingV2/referenceSlotCatalogue";
+import { PAIR_ONE_READ_ENV, pairInOneReadEnabled } from "./castingV2/faceScanService";
+import { FACE_SCAN_FAL_CALLS } from "../scripts/lib/falSpend.mts";
+
+const SAM3 = "fal-ai/sam-3/image";
+const BIREFNET = "fal-ai/birefnet/v2";
+
+const WIDTH = 400;
+const HEIGHT = 600;
+
+/** Every question the scan reads a side at a time — the catalogue's own fact,
+ *  read rather than typed, so a new pair joins these arms by itself. */
+const PAIR_QUESTIONS = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.frame === "ownSide" && definition.question !== null)
+    .map((definition) => definition.question as string),
+);
+
+/* The halves are different colours so a fake can tell which side of the midline
+   a half-frame question is about from the picture alone — the reader never says
+   so in the request. Same device as `faceScanSpend.test.ts`. */
+const LEFT = { r: 200, g: 40, b: 40 };
+const RIGHT = { r: 40, g: 40, b: 200 };
+
+async function frame(): Promise<Buffer> {
+  const half = WIDTH / 2;
+  const left = await sharp({ create: { width: half, height: HEIGHT, channels: 3, background: LEFT } }).png().toBuffer();
+  const right = await sharp({ create: { width: half, height: HEIGHT, channels: 3, background: RIGHT } }).png().toBuffer();
+  return sharp({ create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 0, g: 0, b: 0 } } })
+    .composite([{ input: left, left: 0, top: 0 }, { input: right, left: half, top: 0 }])
+    .png()
+    .toBuffer();
+}
+
+/** A mask covering the given x bands over the middle third of the height. */
+async function bands(width: number, height: number, xs: Array<[number, number]>): Promise<string> {
+  const data = Buffer.alloc(width * height, 0);
+  for (let y = Math.floor(height / 3); y < Math.floor((height * 2) / 3); y += 1) {
+    for (const [from, to] of xs) {
+      data.fill(255, y * width + Math.floor(width * from), y * width + Math.floor(width * to));
+    }
+  }
+  const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+
+/** A centred rectangle covering `share` of each axis — the whole-frame answer. */
+async function blob(width: number, height: number, share: number): Promise<string> {
+  const x0 = Math.floor(width * (0.5 - share / 2));
+  const x1 = Math.floor(width * (0.5 + share / 2));
+  return bands(width, height, [[x0 / width, x1 / width]]);
+}
+
+const coverage = (mask: { data: Buffer }): number => mask.data.reduce((n, byte) => n + (byte === 0 ? 0 : 1), 0);
+
+/**
+ * The shape a pair answer comes back in — arm 1 measured the first two on real
+ * frames, and the last two are the readings the scan's own controls rest on.
+ */
+type Shape = "spanning" | "perSide" | "oneSided" | "none";
+
+const BANDS: Record<Exclude<Shape, "none">, Array<[number, number]>> = {
+  /* One mask across her midline covering both — `eyes`, `eyebrows`. */
+  spanning: [[0.2, 0.8]],
+  /* Two masks, one per side — `ear`, `earring`. Returned as two entries. */
+  perSide: [[0.05, 0.3], [0.7, 0.95]],
+  /* Everything on one side of the midline: a head turned away. */
+  oneSided: [[0.6, 0.9]],
+};
+
+type Wire = {
+  sam3ByPrompt: Map<string, number>;
+  multipleAsked: string[];
+  maxMasks: number[];
+  halfFrameAsks: number;
+  birefnet: number;
+};
+
+/**
+ * A fake fal that answers every question and records what it was asked.
+ *
+ * A pair arriving as a WHOLE frame is the new road (and the fake asserts the
+ * fields are what makes it so, by reading them); a pair arriving as a half
+ * frame is today's. `shape` decides what a pair read answers with; everything
+ * else is always found, because this suite is about the pair road and an empty
+ * answer anywhere else only adds re-asks that `faceScanSpend.test.ts` already
+ * derives.
+ */
+function stubFal(shape: Shape): Wire {
+  const wire: Wire = {
+    sam3ByPrompt: new Map(), multipleAsked: [], maxMasks: [], halfFrameAsks: 0, birefnet: 0,
+  };
+  vi.stubGlobal("fetch", async (url: unknown, init?: { body?: unknown }) => {
+    const address = String(url);
+    const reply = (json: unknown) => new Response(JSON.stringify(json), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+    if (!address.startsWith("https://fal.run/")) return new Response("not served by this fake", { status: 404 });
+    const endpoint = address.slice("https://fal.run/".length);
+    const body = JSON.parse(String(init?.body ?? "{}"));
+    const image = Buffer.from(String(body.image_url).split(",")[1], "base64");
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+
+    if (endpoint === BIREFNET) {
+      wire.birefnet += 1;
+      return reply({ mask_image: { url: await blob(width, height, 0.9) } });
+    }
+    if (endpoint !== SAM3) return reply({});
+
+    const prompt = String(body.prompt);
+    wire.sam3ByPrompt.set(prompt, (wire.sam3ByPrompt.get(prompt) ?? 0) + 1);
+    if (body.return_multiple_masks === true) {
+      wire.multipleAsked.push(prompt);
+      wire.maxMasks.push(Number(body.max_masks));
+    }
+    if (width !== WIDTH) wire.halfFrameAsks += 1;
+
+    /* The face is always one mask: it is the midline and the head box. */
+    if (prompt === "face") return reply({ masks: [{ url: await blob(width, height, 0.5) }] });
+
+    if (PAIR_QUESTIONS.has(prompt) && width === WIDTH) {
+      if (shape === "none") return reply({ masks: [] });
+      /* `perSide` comes back as TWO entries, which is the half of arm 1's
+         reading that a reader picking instances apart would have got right and
+         the spanning half it would have got wrong. */
+      const xs = BANDS[shape];
+      const masks = shape === "perSide"
+        ? await Promise.all(xs.map(async (band) => ({ url: await bands(width, height, [band]) })))
+        : [{ url: await bands(width, height, xs) }];
+      return reply({ masks });
+    }
+    return reply({ masks: [{ url: await blob(width, height, width === WIDTH ? 0.5 : 0.6) }] });
+  });
+  return wire;
+}
+
+/** One pair read through the real reader, on the road the flag names. */
+async function readPair(options: { pairInOneRead: boolean; shape: Shape; name?: string }) {
+  const wire = stubFal(options.shape);
+  const reader = createFalRegionReader({ apiKey: "test-key", pairInOneRead: options.pairInOneRead });
+  const sides = await reader.regionSides?.({
+    image: await frame(), name: options.name ?? "eyes", absentIsAnswer: true,
+  });
+  return { wire, sides };
+}
+
+/** A whole scan through the real `scanFace`, counting what reached fal. */
+async function driveScan(pairInOneRead: boolean, shape: Shape): Promise<Wire> {
+  const wire = stubFal(shape);
+  await scanFace({
+    frame: { bytes: await frame(), width: WIDTH, height: HEIGHT },
+    reader: createFalRegionReader({ apiKey: "test-key", pairInOneRead }),
+    describe: async () => ({ build: null, skin: null, teeth: null }),
+  });
+  return wire;
+}
+
+const total = (byPrompt: Map<string, number>) => [...byPrompt.values()].reduce((sum, n) => sum + n, 0);
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("the road is dark until a caller asks for it", () => {
+  it("leaves a pair on two half-frame reads, and sends the new fields on nothing", async () => {
+    const { wire, sides } = await readPair({ pairInOneRead: false, shape: "spanning" });
+    expect(wire.halfFrameAsks, "two half frames, one per side").toBe(2);
+    expect(wire.multipleAsked, "no request asks for several instances").toEqual([]);
+    expect(coverage(sides!.left)).toBeGreaterThan(0);
+    expect(coverage(sides!.right)).toBeGreaterThan(0);
+  });
+
+  it("is off for a reader built the way the refine builds one", async () => {
+    /*
+      `refineService` and the two ink roads call `createFalRegionReader({ apiKey })`
+      with no option, and a masked refine PAINTS on the mask it gets back — so a
+      wrong side there is a delivered picture somebody paid for, where in the
+      scan it is a panel row. This arm is the whole of that boundary: the option
+      has to be asked for.
+    */
+    const wire = stubFal("spanning");
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    await reader.regionSides?.({ image: await frame(), name: "ear", absentIsAnswer: true });
+    expect(wire.halfFrameAsks).toBe(2);
+    expect(wire.multipleAsked).toEqual([]);
+  });
+});
+
+describe("one request for both sides", () => {
+  it("asks the pair once, of the whole frame, with the two fields fal publishes", async () => {
+    const { wire } = await readPair({ pairInOneRead: true, shape: "spanning" });
+    expect(wire.halfFrameAsks, "no half frame is cut or asked about").toBe(0);
+    expect(wire.sam3ByPrompt.get("eyes"), "the pair asked exactly once").toBe(1);
+    expect(wire.multipleAsked, "and the setting rides that one request only").toEqual(["eyes"]);
+    expect(wire.maxMasks).toEqual([4]);
+    /* The midline is still bought, and still once: it is shared across every
+       pair and the build row, so this road saves the SECOND side read and
+       nothing else. */
+    expect(wire.sam3ByPrompt.get("face")).toBe(1);
+  });
+
+  it("cuts ONE mask spanning her midline into both sides", async () => {
+    const { sides } = await readPair({ pairInOneRead: true, shape: "spanning" });
+    expect(coverage(sides!.left), "her left holds pixels").toBeGreaterThan(0);
+    expect(coverage(sides!.right), "and so does her right").toBeGreaterThan(0);
+  });
+
+  it("unions TWO per-side masks and cuts them apart just the same", async () => {
+    const { sides, wire } = await readPair({ pairInOneRead: true, shape: "perSide", name: "ear" });
+    expect(wire.sam3ByPrompt.get("ear")).toBe(1);
+    expect(coverage(sides!.left)).toBeGreaterThan(0);
+    expect(coverage(sides!.right)).toBeGreaterThan(0);
+  });
+
+  it("puts each side's pixels on its own side of the cut, and nowhere else", async () => {
+    /*
+      The reading that makes this a saving rather than a swap: a side's mask has
+      to be a picture of THAT side. A cut taken at the wrong place, or a side
+      handed the whole union, scores perfectly against coverage and would mask
+      half a symmetrical feature — `placeInFrame`'s own warning.
+    */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "perSide", name: "ear" });
+    const midline = WIDTH / 2;
+    const sideOfCut = (mask: { data: Buffer; width: number; height: number }) => {
+      let left = 0;
+      let right = 0;
+      for (let y = 0; y < mask.height; y += 1) {
+        for (let x = 0; x < mask.width; x += 1) {
+          if (mask.data[y * mask.width + x] === 0) continue;
+          if (x < midline) left += 1;
+          else right += 1;
+        }
+      }
+      return { left, right };
+    };
+    /* `left` is HER left, which is the IMAGE's right half — the reader relabels
+       once, in `regionSides`, and this arm is also the only thing holding that
+       mapping down on this road. */
+    expect(sideOfCut(sides!.left), "her left is the image's right half, and only that")
+      .toEqual({ left: 0, right: expect.any(Number) });
+    expect(sideOfCut(sides!.left).right).toBeGreaterThan(0);
+    expect(sideOfCut(sides!.right), "and her right is the image's left half")
+      .toEqual({ left: expect.any(Number), right: 0 });
+    expect(sideOfCut(sides!.right).left).toBeGreaterThan(0);
+  });
+});
+
+describe("the readings the scan's own controls rest on", () => {
+  it("leaves a one-sided answer one-sided, and the heal above still buys its second look", async () => {
+    const { sides, wire } = await readPair({ pairInOneRead: true, shape: "oneSided" });
+    expect(wire.sam3ByPrompt.get("eyes")).toBe(1);
+    const found = [sides!.left, sides!.right].filter((mask) => coverage(mask) > 0);
+    expect(found, "exactly one side holds anything").toHaveLength(1);
+
+    /*
+      And the heal is REACHED, which is the half of this that a reader-level
+      rescue would have broken: `faceScan.ts` looks again when exactly one side
+      is at literal zero, so a whole scan on this shape asks each pair TWICE —
+      one read, then one more — and never three.
+    */
+    const scan = await driveScan(true, "oneSided");
+    for (const question of PAIR_QUESTIONS) {
+      expect(scan.sam3ByPrompt.get(question), `${question} asked once, then healed once`).toBe(2);
+    }
+  });
+
+  it("reads an empty pair as empty, at one read instead of two", async () => {
+    const { sides, wire } = await readPair({ pairInOneRead: true, shape: "none" });
+    expect(wire.sam3ByPrompt.get("eyes")).toBe(1);
+    expect(coverage(sides!.left)).toBe(0);
+    expect(coverage(sides!.right)).toBe(0);
+  });
+
+  it("refuses to ask the shared face read for several instances", async () => {
+    /*
+      Driven through the real interface rather than a test-only export: an open
+      kind arrives with `declaredTwoSided` set by a classifier, so a name the
+      catalogue never listed CAN reach the pair road — and `face` is the one
+      name that must not. Under the setting it came back as TWO masks on the
+      elder alien, and that read is the midline under all five pairs and the
+      head box under the build row at once (#2532 arm 1's refusing control).
+    */
+    const wire = stubFal("spanning");
+    const reader = createFalRegionReader({ apiKey: "test-key", pairInOneRead: true });
+    await expect(reader.regionSides?.({
+      image: await frame(), name: "face", absentIsAnswer: true, declaredTwoSided: true,
+    })).rejects.toThrow(/may not ask for several instances/);
+    /* The refusal is the ASK's, not the answer's: fal was asked for the
+       midline the ordinary way and never once with the field. */
+    expect(wire.multipleAsked).toEqual([]);
+  });
+
+  it("still reads a face the ordinary way on the same reader", async () => {
+    /* The positive control the arm above needs: the refusal is about the
+       field, not about the word, so the shared read itself still works. */
+    stubFal("spanning");
+    const reader = createFalRegionReader({ apiKey: "test-key", pairInOneRead: true });
+    const mask = await reader.region({ image: await frame(), name: "face", absentIsAnswer: true });
+    expect(coverage(mask)).toBeGreaterThan(0);
+  });
+});
+
+describe("the flag the scan reads", () => {
+  /*
+    The predicate is the whole of the flag, so its positions are driven rather
+    than read. ⚠ The empty string is the arm that earns its place: a Railway
+    variable created with no value holds `""`, and a truthiness test would read
+    that blank variable as ON — the cheapest possible way to put every customer
+    on a road nobody has flipped.
+  */
+  const positions: Array<[string | undefined, boolean]> = [
+    [undefined, false],
+    ["", false],
+    ["true", true],
+    ["false", false],
+    ["TRUE", false],
+    ["1", false],
+  ];
+
+  afterEach(() => {
+    delete process.env[PAIR_ONE_READ_ENV];
+  });
+
+  for (const [value, expected] of positions) {
+    it(`reads ${value === undefined ? "an unset variable" : `"${value}"`} as ${expected ? "on" : "off"}`, () => {
+      if (value === undefined) delete process.env[PAIR_ONE_READ_ENV];
+      else process.env[PAIR_ONE_READ_ENV] = value;
+      expect(pairInOneReadEnabled()).toBe(expected);
+    });
+  }
+
+  it("is the name the catalogue and the cost model both carry", () => {
+    /* A flag whose name drifts from its entry is a flag nobody can find — and
+       the position on the service is read from neither file but from
+       `scripts/lib/productionFlagPositions.mts`. */
+    expect(PAIR_ONE_READ_ENV).toBe("ENABLE_CASTING_PAIR_ONE_READ");
+  });
+});
+
+describe("what a whole scan draws on this road", () => {
+  it("files every pair's rows on a spanning answer, the way two reads did", async () => {
+    /*
+      The FLOOR and the CEILING are derived in `faceScanSpend.test.ts`, beside
+      the two arms they mirror and off the same drive — one harness for one
+      wire. What this arm holds is the other half of the card's done-when: the
+      panel gets the same rows. Both sides of all five pairs land, so no row is
+      lost to the saving.
+    */
+    const wire = await driveScan(true, "spanning");
+    for (const question of PAIR_QUESTIONS) {
+      expect(wire.sam3ByPrompt.get(question), `${question} asked once`).toBe(1);
+    }
+    expect(total(wire.sam3ByPrompt)).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
+    expect(wire.halfFrameAsks, "and no half frame is cut on the whole scan").toBe(0);
+    expect(wire.birefnet, "the cutout is untouched").toBe(FACE_SCAN_FAL_CALLS.cutouts);
+  });
+});

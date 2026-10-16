@@ -11166,11 +11166,6 @@
       "valueRecorded": false
     },
     {
-      "id": "env:CASTING_REPAINT_SCOPE",
-      "name": "CASTING_REPAINT_SCOPE",
-      "valueRecorded": false
-    },
-    {
       "id": "env:CASTING_RETRY_SCOPE",
       "name": "CASTING_RETRY_SCOPE",
       "valueRecorded": false
@@ -11193,11 +11188,6 @@
     {
       "id": "env:CASTING_SIDE_INFERENCE",
       "name": "CASTING_SIDE_INFERENCE",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:CASTING_SIDE_PHRASING_SCOPE",
-      "name": "CASTING_SIDE_PHRASING_SCOPE",
       "valueRecorded": false
     },
     {
@@ -11228,6 +11218,11 @@
     {
       "id": "env:DATABASE_URL",
       "name": "DATABASE_URL",
+      "valueRecorded": false
+    },
+    {
+      "id": "env:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
       "valueRecorded": false
     },
     {
@@ -11568,11 +11563,6 @@
       "grammar": "off|all|users:<ids>"
     },
     {
-      "id": "flag:CASTING_REPAINT_SCOPE",
-      "name": "CASTING_REPAINT_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
       "id": "flag:CASTING_RETRY_SCOPE",
       "name": "CASTING_RETRY_SCOPE",
       "grammar": "off|all|users:<ids>"
@@ -11585,11 +11575,6 @@
     {
       "id": "flag:CASTING_SCAN_TABLE_SCOPE",
       "name": "CASTING_SCAN_TABLE_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
-      "id": "flag:CASTING_SIDE_PHRASING_SCOPE",
-      "name": "CASTING_SIDE_PHRASING_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -11606,6 +11591,11 @@
       "id": "flag:CREW_TAB_SCOPE",
       "name": "CREW_TAB_SCOPE",
       "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:ENABLE_CASTING_PAIR_ONE_READ",
+      "name": "ENABLE_CASTING_PAIR_ONE_READ",
+      "grammar": "true|false"
     },
     {
       "id": "flag:ENABLE_EVIDENCE_CANDIDATE_WORKER",
@@ -15057,6 +15047,10 @@
       "path": "server/castingV2/repaintAsks.test.ts"
     },
     {
+      "id": "test:server/castingV2/repaintFlagRetirement.test.ts",
+      "path": "server/castingV2/repaintFlagRetirement.test.ts"
+    },
+    {
       "id": "test:server/castingV2/repaintRender.test.ts",
       "path": "server/castingV2/repaintRender.test.ts"
     },
@@ -15135,6 +15129,10 @@
     {
       "id": "test:server/castingV2/sheetPreview.test.ts",
       "path": "server/castingV2/sheetPreview.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/sidePhrasingClause.test.ts",
+      "path": "server/castingV2/sidePhrasingClause.test.ts"
     },
     {
       "id": "test:server/castingV2/signFeatureWords.test.ts",
@@ -15561,6 +15559,10 @@
       "path": "server/crewCloseShippedPullRequest.test.ts"
     },
     {
+      "id": "test:server/crewClosingDevServers.test.ts",
+      "path": "server/crewClosingDevServers.test.ts"
+    },
+    {
       "id": "test:server/crewHeartbeat.test.ts",
       "path": "server/crewHeartbeat.test.ts"
     },
@@ -15911,6 +15913,10 @@
     {
       "id": "test:server/faceScanCapRepeatLooks.test.ts",
       "path": "server/faceScanCapRepeatLooks.test.ts"
+    },
+    {
+      "id": "test:server/faceScanPairOneRead.test.ts",
+      "path": "server/faceScanPairOneRead.test.ts"
     },
     {
       "id": "test:server/faceScanSharedFaceRead.test.ts",
@@ -32158,12 +32164,12 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/invisibleRemoval.ts",
+      "to": "module:server/castingV2/inkSurfaceCoverage.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/makeupPlacement.ts",
+      "to": "module:server/castingV2/invisibleRemoval.ts",
       "kind": "imports"
     },
     {
@@ -32383,11 +32389,6 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/signEngine.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/slotWordShape.ts",
       "kind": "imports"
     },
@@ -32514,11 +32515,6 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/storage.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -34057,11 +34053,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/wardrobeLine.ts",
-      "to": "module:shared/castingPaths.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/zoneScope.ts",
       "to": "module:server/castingV2/facetCards.ts",
       "kind": "imports"
@@ -34884,11 +34875,6 @@
     {
       "from": "module:server/db/castingV2Sign.ts",
       "to": "module:shared/boardTypes.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2Sign.ts",
-      "to": "module:shared/castingPaths.ts",
       "kind": "imports"
     },
     {
@@ -42440,17 +42426,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:754",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:741",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:754",
+      "subject": "server/castingV2/refineService.ts:741",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:924",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:896",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:924",
+      "subject": "server/castingV2/refineService.ts:896",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

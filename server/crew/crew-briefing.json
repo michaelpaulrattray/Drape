@@ -1,7 +1,7 @@
 {
-  "edition": 719,
-  "updatedAt": "2026-10-16T03:20:00.000Z",
-  "shift": "Tonight took the next piece off the clean-out list you approved yesterday morning — the second of five. Nothing in the app looks or behaves any differently, no money was spent, and nothing on the service was switched tonight, though one setting comes off it when this lands, as part of the same act rather than a separate errand.\n\nWhat came out is the SWITCH behind a small piece of wording. When somebody asks you to change one side of a pair — her right eye, his left ear — the product does not only say whose side it is, it also says which half of the picture that side is on: \"her right eye (on the left of the picture as you look at it)\". That exists because the picture engine paints by position rather than by anatomy, and a test of twelve pictures found the clause fixed the side it was getting wrong. You turned it on for everybody on 25 August. The switch stayed behind it, doing nothing, and it is gone now along with the start-up check that policed it.\n\nThe wording itself has not changed and that was the whole job. I took a fingerprint of the sentence the product actually sends — twelve different shapes of ask, one sided feature each way, both of a pair, several asks at once — before touching anything, and re-took it afterwards. All twelve match exactly. Then I tested the fingerprint reader by changing one letter from lower case to capital: the fingerprint moved and the length did not, which is why measuring the length alone would have proved nothing.\n\nThree things worth your minute, and the third is the one I would want to know about.\n\nFirst, the warning the last of these left behind paid off backwards. That one found its switch was read in TWO places, and warned the next four that stopping at the obvious one is not finishing. This switch was read in exactly ONE — and the way I established that rather than hoped it was to delete the setting from the shape the code passes around and let the compiler list everything that broke. It named two places in the product, three test files and six helper scripts, and a hand search afterwards added nothing. The method is what carries forward, not the number.\n\nSecond, taking a thing out can quietly remove a check that was watching something else. The tests for this switch happened to contain the ONLY check covering a change made three days ago — moving four settings off the old picture-making road so that road could be deleted. Deleting the block would have taken that check with it and nothing would have gone red. I checked the other three settings first: two are themselves retired now, one is dead already, and the surviving one keeps its own real check. So nothing was lost — and the written record now says so, because somebody counting the checks afterwards would have found one where there used to be two.\n\nThird, I wrote a check to make sure this setting cannot quietly come back, and then I tried to break it five ways. Four of the five worked. The fifth did not: I deleted the setting's row out of the main rulebook — the one thing that check exists to protect — and the check stayed green. It was reading the rulebook and the detailed catalogue as one lump of text, so the catalogue entry was quietly satisfying it on the rulebook's behalf. It is fixed, re-broken to prove the fix, and the same flaw is in the equivalent check from the last of these, which is now in review: I have written it up on that one rather than reaching into work that is waiting for a review.\n\nOne piece of housekeeping on the way through. The engine test on your own characters shows on the board as waiting for you, which is right — round two's pictures are on it — but the sentence saying so had been struck out when you answered round one, so the board was showing a hold with nothing readable underneath it. It now says what it waits for, in one line taken from the card's own latest note. Nothing else about that card moved and nobody has taken it.\n\nThe work is in review rather than live: it touches a file on the money list, so it waits for a review by hand. Every automatic check passed — and one of them caught me out, correctly, in a way worth repeating: my first attempt at making a now-pointless test refuse to run was a plain stop at the top of the file, and that made everything below it unreachable, which made the type checker forget what it knew about three unrelated lines and go red. The check was right and my method was wrong.",
+  "edition": 728,
+  "updatedAt": "2026-10-16T05:05:00.000Z",
+  "shift": "The cheaper face scan is ON. You said \"Yes, Turn it on\" and it is live for every account — not just yours.\n\nWHAT CHANGED. When the studio reads a character's face it asks our picture service one question per feature, and a face has two of most things. It was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings, twice for horns. It now asks once and gets both sides back together. That is about two and a half cents off a twelve cent scan, and it is FASTER on every character in every run we measured. Scans are free to customers, so the whole saving is ours.\n\nWHAT YOU WOULD NOTICE. The panel fills sooner. Nothing else.\n\nIT IS ACTUALLY LIVE, not merged-and-hopefully-deployed: the setting reads correctly on the service, and the site is serving the build that carries it on a twelve-second uptime, which means a genuinely new process rather than the old one still answering.\n\nONE HONEST GAP. The saving is a measurement from three of your characters, not yet a reading off real traffic. That reading can only be taken now the road is on, and it has not been taken. I have said so on the card rather than rounding it up.\n\nTHE REST OF THE COST WORK is not lost. Five of the six ideas on that card moved into the face-reader design you approved this morning — the one that also sees outfits and things that are not on our list. That is card 2566 and it is the bigger saving.\n\nALSO DONE: a review finding that had been sitting on one of the edit-road clean-up pull requests is repaired and pushed. While fixing it I found a comment the fix would have made untrue and corrected that too.\n\nONE THING THAT IS NOT MINE TO FIX. Three of the edit-road clean-up pull requests now clash with each other in the same files, because two of them retire different switches in the same places. A clashing pull request runs no checks at all, so they are stuck until someone untangles them by hand. I stopped rather than guess, because a wrong untangle there changes what a paid edit renders with nothing going red. Nothing on this waits on you.\n\nNOTHING NEW NEEDS YOU TONIGHT.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire): one is done and live, and the two biggest — the old dressing answer and the whole old picture-making road with its switch — are in review. two of the five switch retirements are in review and three are left (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire): one is done and live, and the two biggest — the old dressing answer and the whole old picture-making road with its switch — are in review. three of the five switch retirements are in review and two are left (#1577)",
           "state": "waiting"
         },
         {
@@ -22,15 +22,15 @@
           "state": "done"
         },
         {
-          "title": "What a face scan costs us — three cuts made, all invisible, and all three now live on your account: the same question was being asked twice, teeth were being looked for twice on a closed mouth, and every face you arrowed past was being read. What a scan costs is now measured on 101 of your real scans rather than estimated, and one further saving is measured and written up on the card (#2191, #2525)",
-          "state": "waiting"
+          "title": "What a face scan costs us — FOUR cuts made now, all invisible to a customer, and all four live. The fourth is yours: the studio was asking our picture service twice for everything a face has two of, and you switched it to asking once — about two and a half cents off a twelve cent scan and faster on every character we measured. The before-and-after on real traffic is still to be read. And the biggest saving is measured but not built: after an edit the reading can be CARRIED from the previous version instead of bought again, 87 to 97 per cent off, which is part of the face reader you approved (#2191 closed, #2525, #2532 closed, #2566)",
+          "state": "done"
         },
         {
           "title": "The edit engine re-asked on your own characters — today's road against the newer engines, measured, your eye deciding (#801)",
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest empty state when something is not there (#30)",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest empty state when something is not there (#30) — its DESIGN is written and on your desk (#2532): one cheap look names what the character has, only real things become picture rows, and after an edit only the edited area is re-read. Your approval cuts the build cards.",
           "state": "waiting"
         },
         {
@@ -148,7 +148,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-15T17:02:28.715Z",
+      "readAt": "2026-10-16T04:48:52.287Z",
       "items": [
         {
           "issueNumber": 14,
@@ -208,6 +208,12 @@
           "issueNumber": 2552,
           "title": "N3: the product's own wardrobe sentence is too long to store as an edit — 132 characters against a 120 cap, and the whole edit is dropped (found at #1577 slice 2)",
           "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2560,
+          "title": "A script cannot wait for a paid refine to finish without borrowing a customer switch that is being retired (blocks #1577 slice D4)",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -4026,9 +4032,53 @@
         }
       ],
       "recommendation": "Build it as drawn. It is your own idea, it removes a loading state instead of decorating one, and the looking mode is calmer than what is there today.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-15T06:10:00.000Z",
       "issueNumber": 2533
+    },
+    {
+      "id": "pair-one-read-flip-2191",
+      "title": "Switch on the cheaper face scan — or leave it off",
+      "productImpact": "Reading a character's face costs us about twelve cents and takes twenty to thirty-three seconds. It was asking our picture service twice for everything a face has two of — eyes, brows, ears, earrings. It can ask for both at once.\n\nBuilt on Wednesday, measured on three of your own characters, switched off ever since because the decision turns on a picture and there was no picture on your page. There is now: three of them, in Pictures for your eye.\n\nIt saves about two and a half cents a scan and it is FASTER on every character in every run — around thirteen seconds against twenty to thirty-three. A customer sees nothing different except a panel that fills sooner.\n\nThe catch, and it is why this is yours: the rows are the same but the shapes are not. On the elder alien today marks a sliver of each eye and the new road marks the whole eye. On the hooded figure the new road finds an eyebrow today misses. On the human they are the same.",
+      "workedExample": "Look at frame 1 on your page — the elder alien, today on the left, the new road on the right. If the right-hand shapes look right to you, say yes and it goes on for your account. If they look wrong, say no and nothing changes.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "Switch it on for my account",
+          "consequence": "Face scans ask once for each pair instead of twice: about two and a half cents cheaper and around ten seconds faster, with the shapes you see in frame 1."
+        },
+        {
+          "key": "no",
+          "label": "Leave it off",
+          "consequence": "Nothing changes. Scans stay as they are and the saving is not taken."
+        }
+      ],
+      "recommendation": "Yes. The shapes look better and they match what you said this morning about an eye cut-out being the whole eye rather than the iris — but that sentence is a reading of your words, not your eye on the picture, which is why it is on your page.",
+      "state": "done",
+      "filedAt": "2026-10-16T03:15:00.000Z",
+      "issueNumber": 2191
+    },
+    {
+      "id": "face-reader-design-2532",
+      "title": "Approve the new way the studio reads a face — the design is ready",
+      "productImpact": "Today the studio reads a character's face from a fixed list of questions, pays for every question whether the feature exists or not, and re-reads the whole face after every edit — about twelve cents a time, and it cannot see anything the list does not ask about. The design on card #2532 changes the reading, not the screen: the same panel, nothing new to learn, but it is filled from the character itself. One cheap look names what is actually there — a third eye, jaw hardware, the jacket and the sash — and only real things get cut out and shown as picture rows. After an edit, only the edited area is re-read and the rest is carried. The first look costs about what today costs and sees far more; every look after an edit costs about a tenth of today, which turns an edit from break-even into one that pays. Every choice in it was measured on your own characters over the last two days, and it arranges itself around the build you approved this morning rather than re-deciding any of it.",
+      "workedExample": "The elder alien: today the panel cannot show its third eye, because no list question asks about one. Under this design, one cheap look names the third eye, the jaw hardware and the robe; each is cut out and appears as a picture row. Then you edit: “make the nose less human”. Only the nose area is re-read — about half a cent — and everything else carries. On this exact character we measured why that is also the SAFER road: the full re-scan after that edit lost both real eyes, while the carried reading was fine.",
+      "options": [
+        {
+          "key": "approve",
+          "label": "Approve the design",
+          "consequence": "The build cards are cut in the design's order. Everything is built dark and nothing reaches your account until your eye passes it on the same twelve-edit chains the engine is judged on."
+        },
+        {
+          "key": "change",
+          "label": "Change something first",
+          "consequence": "Say what reads wrong on the card and the design is revised before any card is cut."
+        }
+      ],
+      "recommendation": "Approve. Every choice in it stands on a measurement, the four pictures it rests on are in Pictures for your eye, and the things not yet measured are named in the design rather than assumed.",
+      "state": "done",
+      "filedAt": "2026-10-16T04:05:00.000Z",
+      "issueNumber": 2532
     }
   ],
   "eyeItems": [
@@ -7279,9 +7329,9 @@
     },
     {
       "id": "n3-drawer-frames-2533",
-      "title": "The edit panel as a drawer — four moments, both themes, for your yes or no",
-      "question": "THIS IS A MOCK-UP, NOT THE PRODUCT. Nothing has been built and nothing in the app has changed. These were drawn with the app's own colours, type and spacing so you can judge the idea before anyone writes it.\n\nYou asked how to handle this: now that a face is only read once you mean to edit it, the panel used to sit there half-filled and look stuck. Your own suggestion was a drawer that slides out once it is activated, and this is that, in four moments.\n\nThe one thing to watch for is the FILLING frame. Features arrive one at a time, about two thirds of a second apart, and each one lights up on the face as it lands. The arrival IS the loading — there is no spinner and nothing anywhere says \"scanning\". The question is whether that reads as alive or as unfinished to you.\n\nOne real question inside it: in looking mode there are no per-feature outlines yet, because nothing has been read. So hovering lights the whole picture rather than individual features, and a click anywhere opens the drawer. That is a genuine difference from today and it is worth your eye.\n\nPlaceholders, not product copy: the name \"Ash\", \"3 of 8\", and each feature's words were written for the mock. The headings, the ask-box hint and \"Refine · 100 credits\" are the product's real current wording.\n\nTo see it moving rather than still, the relay can play you the animation — it loops looking, opening, typing while features land, done.",
-      "state": "open",
+      "title": "Answered — the edit panel as a drawer: your word was “it's fine for now”",
+      "question": "✅ YOUR WORD, 2026-10-15, in chat: “its fine for now after we finish all the tech in n3 ill probably circle back and polish it”. Card #2533 closed on that sentence, and nothing here is waiting on you.\n\nThe pictures are kept below because the polish pass you describe should start from the mock-up you actually approved rather than from a fresh drawing of it.\n\nTHIS IS A MOCK-UP, NOT THE PRODUCT. Nothing has been built and nothing in the app has changed. These were drawn with the app's own colours, type and spacing so you can judge the idea before anyone writes it.\n\nYou asked how to handle this: now that a face is only read once you mean to edit it, the panel used to sit there half-filled and look stuck. Your own suggestion was a drawer that slides out once it is activated, and this is that, in four moments.\n\nThe one thing to watch for is the FILLING frame. Features arrive one at a time, about two thirds of a second apart, and each one lights up on the face as it lands. The arrival IS the loading — there is no spinner and nothing anywhere says \"scanning\". The question is whether that reads as alive or as unfinished to you.\n\nOne real question inside it: in looking mode there are no per-feature outlines yet, because nothing has been read. So hovering lights the whole picture rather than individual features, and a click anywhere opens the drawer. That is a genuine difference from today and it is worth your eye.\n\nPlaceholders, not product copy: the name \"Ash\", \"3 of 8\", and each feature's words were written for the mock. The headings, the ask-box hint and \"Refine · 100 credits\" are the product's real current wording.\n\nTo see it moving rather than still, the relay can play you the animation — it loops looking, opening, typing while features land, done.",
+      "state": "done",
       "filedAt": "2026-10-15T06:10:00.000Z",
       "issueNumber": 2533,
       "cardId": "n3-drawer-2533",
@@ -7327,15 +7377,72 @@
           "caption": "DONE (dark) — the finished state in dark."
         }
       ]
+    },
+    {
+      "id": "pair-one-read-2191",
+      "title": "A cheaper, faster face scan — switch it on, or leave it as it is",
+      "question": "THIS IS A DECISION, AND IT IS THE ONLY ONE ON YOUR PAGE TONIGHT.\n\nWhen the studio reads a character's face it asks our picture service one question per feature. A face has two of most things, so it was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings. It can ask for both sides in one go. That is built, measured on three of your own characters, and switched OFF until you say.\n\nWHAT IT BUYS. About two and a half cents off a twelve-cent scan. And it came back faster on every character in every run — around thirteen seconds against twenty to thirty-three today. Nothing about it is visible to a customer.\n\nWHAT YOU ARE ACTUALLY JUDGING. The rows the panel draws are the same. The SHAPES it draws them around are not, and on one character they are very different. That is what these three pictures show, zoomed in on the part that differs. TODAY is on the left, THE NEW ROAD on the right, labelled on the picture.\n\nFRAME 1 — the elder alien, and this is the one that matters. Today marks a sliver of each lower eye. The new road marks the whole eye. Your own words this morning were that an eye cut-out should be the whole eye as a person means it — lids, lashes, iris — never the iris on its own. This is exactly that difference, arriving from somewhere else.\n\nFRAME 2 — the hooded figure. The new road finds an eyebrow today's road misses completely: seven rows where today draws six.\n\nFRAME 3 — the human. Near enough identical, which is the reassuring one.\n\nMY READ, AND IT IS A READ RATHER THAN A RECOMMENDATION: the new shapes look better to me and they match what you said this morning. But a shape on a face is your call, which is why these are pictures and not a paragraph.\n\nIf you say yes it goes on for your account first, as everything does. If you say no it stays off and nothing changes.",
+      "state": "done",
+      "filedAt": "2026-10-16T03:15:00.000Z",
+      "issueNumber": 2191,
+      "cardId": "pair-one-read-flip-2191",
+      "frames": [
+        {
+          "key": "crew-eye/fd534e1c-0172-4365-86cc-7e506c03ac4a.png",
+          "arm": null,
+          "caption": "FRAME 1 — the elder alien. TODAY (left) marks a sliver of each lower eye; THE NEW ROAD (right) marks the whole eye. The forehead eye is unmarked on both and is a separate known thing."
+        },
+        {
+          "key": "crew-eye/4331586d-8c39-431b-bd81-94db02f801e6.png",
+          "arm": null,
+          "caption": "FRAME 2 — the hooded figure. THE NEW ROAD (right) finds an eyebrow TODAY (left) misses completely — seven rows against six."
+        },
+        {
+          "key": "crew-eye/52c5330c-d9a9-4c0a-8b73-5fa01a269eed.png",
+          "arm": null,
+          "caption": "FRAME 3 — the human. The two roads agree closely here: brows and eyes marked almost identically."
+        }
+      ]
+    },
+    {
+      "id": "face-reader-design-eye-2532",
+      "title": "The four pictures the face-reader design stands on",
+      "question": "WHAT YOU ARE LOOKING AT — the four judgements the recommended design rests on, one picture each, all on your own characters. If these four read right to your eye, the design's choices are sound; if any reads wrong, say which on the card and the design moves.",
+      "state": "done",
+      "filedAt": "2026-10-16T04:05:00.000Z",
+      "issueNumber": 2532,
+      "cardId": "face-reader-design-2532",
+      "frames": [
+        {
+          "key": "crew-eye/fcc6ab51-44e2-402d-ae59-da665978c3c6.png",
+          "arm": null,
+          "caption": "FRAME 1 — the feature no list knows. Asked in words, the cutter returns nothing for the third eye; POINTED at it, it cuts it tightly (the small boxes on the forehead eye). This is the road the design uses for anything unusual a character has."
+        },
+        {
+          "key": "crew-eye/40d0eea2-20a6-4a44-aa92-85253284e200.png",
+          "arm": null,
+          "caption": "FRAME 2 — why the design points with a box, not a dot. The yellow box takes the WHOLE jaw hardware; each green box takes one tube. The box way cut the whole feature 7 times in 10 against 4, at the same price and speed."
+        },
+        {
+          "key": "crew-eye/7e469a45-d412-4a6d-96eb-a94863ae670d.png",
+          "arm": null,
+          "caption": "FRAME 3 — clothing, which your approved build needs the studio to keep. The wrap top under the open coat: plain words find nothing (left), the dot a sliver (middle), the box road cuts the whole garment (right, painted). Clothing rows are reachable."
+        },
+        {
+          "key": "crew-eye/7fba4974-7bf2-48af-8974-8490ad921432.png",
+          "arm": null,
+          "caption": "FRAME 4 — why the design CARRIES a reading instead of re-reading everything. After an edit that only changed the nose, a fresh full re-scan put an eye row on the forehead eye (solid) and lost the real eyes; the earlier reading (dashed) was fine. The design re-reads only the edited area, so one bad read can never break the rest."
+        }
+      ]
     }
   ],
   "pipeline": [
     {
       "id": "ghost-audit-slice4b-1577",
       "title": "The old way of making an edited picture comes off the paid edit road, with its switch (#1577)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2555,
-      "note": "Held for a review by hand — it touches a file on the money list. Automatic checks green. Nothing a customer sees changes; the setting comes off the service in the same act as the merge, and in that order. One question filed for the design pass (#2554)."
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all, so nothing can even look at it. The review finding that was sitting on this one is repaired and pushed. What is left is the clash: this change and another one that already landed switch off different settings in the same four files, so untangling them is a judgement about what both were doing, not a mechanical step. I stopped rather than guess, because a wrong untangle changes what a paid edit renders with nothing going red. Nothing here waits on you."
     },
     {
       "id": "voice-card-writer-2498",
@@ -10462,23 +10569,37 @@
     {
       "id": "ghost-audit-slice2-1577",
       "title": "The old “how is this character dressed” machinery comes off the paid edit road (#1577)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2550,
       "note": "Held for a review by hand — it touches a file on the money list. Automatic checks all green. Nothing a customer sees changes. Two findings filed rather than folded in (#2551, #2552)."
     },
     {
       "id": "ghost-audit-sliced1-1577",
       "title": "The switch behind the open lane comes off, with the two older instructions it hid (#1577)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2556,
-      "note": "Held for a review by hand — it touches a file on the money list. All checks green. The instruction every customer gets is unchanged, proven by a fingerprint taken before and after."
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
     },
     {
       "id": "ghost-audit-sliced2-1577",
       "title": "The switch behind the “which half of the picture” wording comes off (#1577)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2557,
-      "note": "Held for a review by hand — it touches a file on the money list. All 11 checks green. The wording every customer gets is unchanged, proven by a fingerprint over twelve shapes of ask, before and after."
+      "note": "Landed."
+    },
+    {
+      "id": "ghost-audit-sliceD3-1577",
+      "title": "The switch behind where a typed tattoo may go comes off (#1577)",
+      "status": "blocked",
+      "prNumber": 2559,
+      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
+    },
+    {
+      "id": "ink-offer-asks-outfit-2558",
+      "title": "The studio stops offering a tattoo where it would then refuse it (#2558)",
+      "status": "merged",
+      "prNumber": 2561,
+      "note": "Gate green 11/11. An ordinary change by all three of the checks that classify it, but it waits for the typed-tattoo switch retirement to land first, because that one asserts the opposite and would go red out of order."
     }
   ],
   "problems": [
@@ -10937,24 +11058,26 @@
     290,
     291,
     292,
-    293
+    293,
+    294,
+    295,
+    296,
+    297,
+    298,
+    299,
+    300
   ],
   "nextUp": {
-    "readAt": "2026-10-15T17:02:28.714Z",
+    "readAt": "2026-10-16T04:48:52.286Z",
     "items": [
-      {
-        "issueNumber": 801,
-        "title": "N3: the refine engine re-asked — GPT Image 2.5 (Flare, Sunburst) vs today's anti-drift road, measured on his casts (his word, 11 Sep: waits at N3)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — round 2's frames are on this card. Say whether A keeps its edits well enough to ship."
-        }
-      },
       {
         "issueNumber": 1577,
         "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2560 (the seam D4 needs) plus PRs #2550 #2555 #2556 #2557 #2559 merging before D5, the chain root. Not your word."
+        }
       },
       {
         "issueNumber": 1598,
@@ -10998,16 +11121,6 @@
         }
       },
       {
-        "issueNumber": 2191,
-        "title": "Cut the cost of a face scan as far as it will go without the customer noticing (his goal, 2026-10-10)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2532,
-        "title": "N3: a better way to read a face — cheaper, carried across versions, and able to find features that are not on the list (investigation, his word 2026-10-15)",
-        "urgent": false
-      },
-      {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
         "urgent": false
@@ -11015,6 +11128,16 @@
       {
         "issueNumber": 2545,
         "title": "N3: every cast keeps one current description, rewritten naturally after each edit — and everything downstream reads it (his word 2026-10-15)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2565,
+        "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2566,
+        "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
         "urgent": false
       }
     ]

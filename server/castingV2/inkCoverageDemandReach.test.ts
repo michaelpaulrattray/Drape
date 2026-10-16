@@ -86,6 +86,27 @@
  * branch — and §7.2 refuses a wardrobe edit on that path. So the value stays
  * unreachable by construction rather than by a routing accident, which is a
  * stronger statement than the one it replaces.
+ *
+ * ⚠ **AND NOW NEITHER VALUE IS REACHABLE, BECAUSE THE COLUMN HAS NO SOURCE
+ * LEFT — #1577 slice 2 (the ghost audit's item B1), 2026-10-15.** The whole of
+ * the reasoning above is about which PATH a refusal would record. The
+ * resolution no longer carries a path at all: `rollPath` is not threaded into
+ * `currentWardrobeLine`, `wardrobeNow.path` is gone, and the writer has
+ * stopped passing `pathAtRefusal`. **So this file's subject is now the
+ * ROUTING alone** — which asks reach which coverage verdict — and the enum
+ * member it was written about can no longer be written by anything.
+ *
+ * **The column is kept** (a written table, and dropping one is a destructive
+ * migration and his hand), and `casting_ink_form_demand` holds zero rows in
+ * both worlds all time, so nothing is orphaned. **The arms below are kept and
+ * re-pointed rather than deleted**, because what they actually measure —
+ * which ask meets which wall on which outfit — is live product behaviour that
+ * nothing else in the tree reads in one place.
+ *
+ * ⚠ **The fixture below says `edited` where it said `born`, and that is not
+ * a behaviour change**: both sources always took the same door
+ * (`coverageOfWardrobeLine` reads the line), while `brief` keeps the house
+ * prior and still does. Every verdict asserted here is the one it was before.
  */
 import { describe, expect, it } from "vitest";
 
@@ -94,8 +115,17 @@ import { classifyInkPlacement } from "./inkPlacement";
 import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
 
-const born = (path: "wardrobe" | "basics", line: string): WardrobeResolution =>
-  ({ kind: "line", line, source: "born", path });
+/**
+ * A branch wearing a line the coverage owner READS — `edited` is the source
+ * that does, since #1577 slice 2 retired `born` with the paths. The `path`
+ * argument is kept in the SIGNATURE and ignored, so the arms below still say
+ * out loud which path they are reasoning about even though the resolution can
+ * no longer carry one. **That is deliberate**: the reasoning in this file's
+ * header is entirely about Wardrobe versus Basics, and a fixture that silently
+ * dropped the distinction would make those paragraphs unreadable.
+ */
+const born = (_path: "wardrobe" | "basics", line: string): WardrobeResolution =>
+  ({ kind: "line", line, source: "edited" });
 
 /** A picked outfit nobody has read the coverage of — `unknown` on every
  *  surface, which is every customer-named and every engine-picked line. */
@@ -157,7 +187,7 @@ describe("the two counted refusals, and where they can actually come from", () =
       views. The declared approximation lives in `wardrobeCoversSurface`; it
       dies the day 7a-bis reads real lines.
     */
-    const brief: WardrobeResolution = { kind: "line", line: UNREAD, source: "brief", path: null };
+    const brief: WardrobeResolution = { kind: "line", line: UNREAD, source: "brief" };
     /* The neck passes, as it always has for these casts… */
     expect(classifyInkPlacement(ASK.neck, "ink", brief).kind).toBe("in_frame");
     /* …and the chest refuses as COVERED (the prior), never as unread. */

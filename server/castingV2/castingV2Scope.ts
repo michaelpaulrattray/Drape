@@ -283,213 +283,40 @@ export function validateCastingReferenceLibraryEnvironment(input: {
   return library;
 }
 
-/* ------------------------------------------ the compositor-swap sub-flag */
+/* ------------- the compositor-swap sub-flag, RETIRED (#1577 slice 4b) -------- */
 
-/**
- * THE REPAINT — the new compositor, on its own switch (D-241, fable-277 §2).
- *
- * Off, this user's refines paint through the old road: full-frame engine call,
- * masked harvest, segments pasted back, seam blended. On, the same ask assembles
- * a recipe (`recipeAssembler`) and repaints the whole frame from the pristine
- * master plus a cropped reference of every delivered feature (`repaintRender`),
- * and the engine's own frame is the delivered frame — nothing is pasted.
- *
- * # Its parent is the LIBRARY scope, and that is the load-bearing choice
- *
- * Under the old road a feature survives the next render because the compositor
- * PASTES its kept segment back. Under the repaint nothing is pasted: a feature
- * survives because the library holds a crop of it and the recipe carries that
- * crop. So a user repainting without a library is a user whose face silently
- * loses every feature the paste was preserving, on the paid path — the exact
- * class D-244 exists to close, arriving through the flag pair instead of
- * through the code.
- *
- * An EMPTY library is a different thing entirely and is fine: that is the
- * degenerate case (fable-171 condition 1), the road every new cast travels, and
- * it assembles to the master alone plus words. Empty is not disabled.
- *
- * The transport is inherited rather than re-asserted here: the repaint engine is
- * the same fal-backed one the masked path already uses, and `CASTING_V2_SCOPE`
- * — which every scope below it must sit inside — already refuses to arm without
- * `FAL_KEY`.
- */
-export const CASTING_REPAINT_SCOPE_ENV = "CASTING_REPAINT_SCOPE";
+/*
+ ⚠ THE REPAINT'S OWN FLAG STOOD HERE AND IS GONE — the variable, its parse,
+ its two errors, its capture and its boot fence, all in one act.
 
-export class CastingRepaintScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_REPAINT_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingRepaintScopeConfigurationError";
-  }
-}
+ It was `CASTING_REPAINT_SCOPE` (D-241, fable-277 §2): off, a refine painted
+ through the old road — full-frame engine call, masked harvest, segments pasted
+ back, seam blended; on, the same ask assembled a recipe and repainted the whole
+ frame from the pristine master plus a cropped reference of every delivered
+ feature, with the engine's own frame delivered and nothing pasted. It reached
+ `all` on production at fable-1253, so the old road ran for nobody, and #1577's
+ refine-road audit found the whole paste compositor still standing behind it.
+ **His word retiring it, 2026-10-15, verbatim and entire: _"yes approve the plan
+ and switch off the six settings"_.** The code went first and the variable was
+ deleted from the service after it deployed — that order is not stylistic: with
+ the old code still serving, an absent variable parses as `off` and would have
+ put every customer back on the paste road.
 
-/**
- * A repaint carries features by crop, and the crops are the library's. A repaint
- * scope reaching past the library scope is not merely inert — it is a paid path
- * that forgets features — so it refuses rather than arming (invariant 7).
- */
-export class CastingRepaintCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_REPAINT_SCOPE_ENV} ${detail}`);
-    this.name = "CastingRepaintCoverageError";
-  }
-}
+ Its PARENT was the reference library, and that parenthood is the one thing to
+ carry forward rather than forget: a repaint carries features by crop and the
+ crops are the library's, so a repaint without a library is a paid render that
+ silently loses every feature a paste used to preserve (D-244). With the flag
+ gone there is no pair to keep covered — every refine repaints, and
+ `CASTING_REFERENCE_LIBRARY_SCOPE` is what decides whether it has crops to carry.
+ Slice 4a had already re-parented the four children that named this flag onto
+ that scope for exactly this reason, which is why nothing else moved tonight.
 
-export function parseCastingRepaintScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingRepaintScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's refines go through the new compositor.
- *
- * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
- * reason: the boot check already refuses a scope that reaches past its parent,
- * and this is the same rule enforced again where it is used, because a boot
- * check that was never invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingRepaintEnabled(userId: number): boolean {
-  const repaint = parseCastingRepaintScope(process.env[CASTING_REPAINT_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(repaint, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
-}
-
-export function validateCastingRepaintEnvironment(input: {
-  scope: string | undefined;
-  libraryScope: string | undefined;
-}): CastingV2Scope {
-  const repaint = parseCastingRepaintScope(input.scope);
-  if (repaint.kind === "off") return repaint;
-
-  const library = parseCastingReferenceLibraryScope(input.libraryScope);
-  if (library.kind === "off") {
-    throw new CastingRepaintCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — a repaint carries features by crop, and without a library there are no crops to carry`,
-    );
-  }
-  if (library.kind === "all") return repaint;
-  if (repaint.kind === "all") {
-    throw new CastingRepaintCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = repaint.userIds.filter((userId) => !library.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingRepaintCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return repaint;
-}
+ An EMPTY library remains the degenerate case and remains fine (fable-171
+ condition 1): the road every new cast travels, assembling to the master alone
+ plus words. Empty is not disabled.
+*/
 
 /* ---------------------------------------------- the auto-scan sub-flag */
-
-/**
- * SAYING WHICH SIDE TWICE — her anatomy, and the half of the picture it is on.
- *
- * Off, a per-side ask is named once, exactly as it is today: *"Change only her
- * right eye: fiery red."* On, the clause also says where that side appears —
- * *"her right eye (on the left of the picture as you look at it)"*.
- *
- * It exists because a court found the engine paints by POSITION rather than by
- * anatomy. Twelve renders each way on her right eye: four painted the OTHER eye
- * without the clause, none with it (p≈0.09 — suggestive rather than proven,
- * never once worse, and free per render; `V4_SIDE_INFERENCE_COURT.md` §3b).
- *
- * The parent is the REPAINT scope rather than the library's, because the clause
- * is written by the repaint recipe and nothing else says it: a user named here
- * and not there would be armed for a sentence they cannot reach.
- *
- * Inert without it in the strongest sense — one parenthesis, in one clause, of
- * one sentence; every other byte of the prompt is identical.
- */
-export const CASTING_SIDE_PHRASING_SCOPE_ENV = "CASTING_SIDE_PHRASING_SCOPE";
-
-export class CastingSidePhrasingScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_SIDE_PHRASING_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingSidePhrasingScopeConfigurationError";
-  }
-}
-
-export class CastingSidePhrasingCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_SIDE_PHRASING_SCOPE_ENV} ${detail}`);
-    this.name = "CastingSidePhrasingCoverageError";
-  }
-}
-
-export function parseCastingSidePhrasingScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingSidePhrasingScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's per-side asks say where the side is.
- *
- * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
- * reason: the boot check already refuses a scope that reaches past its parent,
- * and this is the same rule enforced again where it is used, because a boot
- * check that was never invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingSidePhrasingEnabled(userId: number): boolean {
-  const child = parseCastingSidePhrasingScope(process.env[CASTING_SIDE_PHRASING_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
-}
-
-export function validateCastingSidePhrasingEnvironment(input: {
-  scope: string | undefined;
-  referenceLibraryScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingSidePhrasingScope(input.scope);
-  if (child.kind === "off") return child;
-
-  /*
-    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
-    re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag are retired by the ghost audit's
-    slice 4b, and a child naming a missing parent refuses boot.
-
-    It changes nothing at the positions production actually holds: both
-    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
-    and the repaint's own gate ENDED in this very call
-    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
-    so every user inside the repaint was already inside the library.
-
-    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
-    its own parent, and that is stated rather than glossed: a child at `all`
-    under a `users:1` repaint used to be refused here and would now pass.
-    After slice 4b there is no narrower flag to track, because the repaint
-    flag will not exist.
-  */
-  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
-  if (parent.kind === "off") {
-    throw new CastingSidePhrasingCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
-      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
-      + "nothing below an off parent is reachable",
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingSidePhrasingCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingSidePhrasingCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
 
 /**
  * THE AUTO-SCAN — reading a face nobody has edited, on its own switch.
@@ -789,10 +616,12 @@ function parseCastingOpenLaneScope(raw: string | undefined): CastingV2Scope {
 /**
  * Whether this user's out-of-vocabulary asks may name a kind.
  *
- * An AND of the whole chain, for `captureCastingSidePhrasingEnabled`'s reason:
- * the boot check already refuses a scope reaching past its parent, and this is
- * that same rule enforced where it is used, because a boot check nobody invoked
- * is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
+ * reason: the boot check already refuses a scope reaching past its parent, and
+ * this is that same rule enforced where it is used, because a boot check nobody
+ * invoked is the second way a flag pair goes wrong. (It cited
+ * `captureCastingSidePhrasingEnabled` until #1577 slice D2 retired that flag;
+ * the hop is removed rather than re-pointed at another sibling.)
  */
 export function captureCastingOpenLaneEnabled(userId: number): boolean {
   const child = parseCastingOpenLaneScope(process.env[CASTING_OPEN_LANE_SCOPE_ENV]);
@@ -810,7 +639,7 @@ export function validateCastingOpenLaneEnvironment(input: {
   /*
     ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
     re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag are retired by the ghost audit's
+    because the paste road and its flag were then retired by the ghost audit's
     slice 4b, and a child naming a missing parent refuses boot.
 
     It changes nothing at the positions production actually holds: both
@@ -822,8 +651,8 @@ export function validateCastingOpenLaneEnvironment(input: {
     ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
     its own parent, and that is stated rather than glossed: a child at `all`
     under a `users:1` repaint used to be refused here and would now pass.
-    After slice 4b there is no narrower flag to track, because the repaint
-    flag will not exist.
+    Slice 4b has landed and there is no narrower flag to track any more,
+    because the repaint flag does not exist.
   */
   const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
@@ -970,7 +799,7 @@ export function validateCastingInkStudioEnvironment(input: {
   /*
     ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
     re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag are retired by the ghost audit's
+    because the paste road and its flag were then retired by the ghost audit's
     slice 4b, and a child naming a missing parent refuses boot.
 
     It changes nothing at the positions production actually holds: both
@@ -982,8 +811,8 @@ export function validateCastingInkStudioEnvironment(input: {
     ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
     its own parent, and that is stated rather than glossed: a child at `all`
     under a `users:1` repaint used to be refused here and would now pass.
-    After slice 4b there is no narrower flag to track, because the repaint
-    flag will not exist.
+    Slice 4b has landed and there is no narrower flag to track any more,
+    because the repaint flag does not exist.
   */
   const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
@@ -1124,7 +953,7 @@ export function validateCastingReferenceAttachEnvironment(input: {
   /*
     ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
     re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag are retired by the ghost audit's
+    because the paste road and its flag were then retired by the ghost audit's
     slice 4b, and a child naming a missing parent refuses boot.
 
     It changes nothing at the positions production actually holds: both
@@ -1136,8 +965,8 @@ export function validateCastingReferenceAttachEnvironment(input: {
     ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
     its own parent, and that is stated rather than glossed: a child at `all`
     under a `users:1` repaint used to be refused here and would now pass.
-    After slice 4b there is no narrower flag to track, because the repaint
-    flag will not exist.
+    Slice 4b has landed and there is no narrower flag to track any more,
+    because the repaint flag does not exist.
   */
   const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
   if (parent.kind === "off") {
@@ -1668,8 +1497,10 @@ export function validateCastingInkReferenceEnvironment(input: {
  *
  * A `FAL_KEY` check was written here for exactly that reason and then **deleted,
  * because it could never fire**. The parent chain is
- * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` → `CASTING_REPAINT_SCOPE`
- * → `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE`, and the last of
+ * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` →
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` (the repaint's own
+ * flag sat between the studio and the library until #1577 slice 4b retired it),
+ * and the last of
  * those refuses to boot without the transport
  * (`CastingV2TransportConfigurationError`). So no configuration exists in which
  * this flag is armed and the key is missing.

@@ -19,7 +19,6 @@ import {
   CASTING_INK_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
-  CASTING_REPAINT_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
 } from "./castingV2Scope";
 
@@ -158,7 +157,6 @@ describe("the shipped gate is the OR of the roads that can act on a picture", ()
   const ENV = [
     CASTING_V2_SCOPE_ENV,
     CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
-    CASTING_REPAINT_SCOPE_ENV,
     CASTING_REFERENCE_ATTACH_SCOPE_ENV,
     CASTING_HAIR_REFERENCE_SCOPE_ENV,
     CASTING_INK_REFERENCE_SCOPE_ENV,
@@ -170,7 +168,8 @@ describe("the shipped gate is the OR of the roads that can act on a picture", ()
     /* The chain both roads hang from, so the arms below differ in ONE flag. */
     process.env[CASTING_V2_SCOPE_ENV] = "all";
     process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:5";
-    process.env[CASTING_REPAINT_SCOPE_ENV] = "users:5";
+    /* The repaint's own flag was set here too, and it is retired with the paste
+       road (#1577 slice 4b). The attach road's parent is the LIBRARY, above. */
     process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV] = "users:5";
     delete process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV];
     delete process.env[CASTING_INK_REFERENCE_SCOPE_ENV];
