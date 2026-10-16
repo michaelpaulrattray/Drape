@@ -659,7 +659,7 @@ the live service on every push.
 | `CASTING_HAIR_REFERENCE_SCOPE` | taking her hair from an attached picture |
 | `CASTING_INK_REFERENCE_SCOPE` | whether an attached picture may be the document for a tattoo |
 | `CASTING_INK_TRANSFORM_SCOPE` | whether she may change a tattoo she already has |
-| `CASTING_INK_WORDS_SCOPE` | where a tattoo invented from words may land |
+| `CASTING_INK_WORDS_SCOPE` | where a tattoo invented from words may land — ✅ RETIRED (#1577 slice D3); every measured placement is served; the variable comes off with the deploy |
 | `CASTING_BORN_INK_SCOPE` | whether a cast may be born with tattoos the product knows about |
 | `CASTING_BRIEF_FIDELITY_SCOPE` | whether a customer's own words are rationed on the way into her sheet |
 | `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road — ✅ RETIRED with the old lane (#1443); every roll takes it |

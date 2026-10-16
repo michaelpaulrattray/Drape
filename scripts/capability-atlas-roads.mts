@@ -169,7 +169,7 @@ export const ROADS: readonly Road[] = [
       "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
       "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
-    flags: ["CASTING_OPEN_LANE_SCOPE", "CASTING_INK_WORDS_SCOPE"],
+    flags: ["CASTING_OPEN_LANE_SCOPE"],
     notes: [
       "wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.",
       "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
@@ -196,7 +196,7 @@ export const ROADS: readonly Road[] = [
       "removal_absent", "removal_unnamed", "removal_not_in_brief", "removal_uncheckable", "removal_reread_unmatched",
       "removal_unnameable", "already_original",
     ],
-    flags: ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_TRANSFORM_SCOPE", "CASTING_INK_WORDS_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"],
+    flags: ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_TRANSFORM_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"],
     notes: [
       "THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).",
       "free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.",

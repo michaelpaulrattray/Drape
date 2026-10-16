@@ -190,7 +190,7 @@ const DISPOSITIONS: Record<string, {
   },
   "server/castingV2/inkDeliveryMint.ts": {
     sites: 2,
-    live: "CASTING_INK_WORDS_SCOPE = all (neck and upper arm)",
+    live: "the words road serves every measured placement (CASTING_INK_WORDS_SCOPE retired, #1577 D3)",
     floor: "no coverage floor; the mask is checked for the frame's SPACE, not for plausibility",
     exposure: "Mints the delivered tattoo crop that documents the design for every later edit. A substituted mask mints the wrong pixels as her tattoo, durably",
     verdict: "REACHED",

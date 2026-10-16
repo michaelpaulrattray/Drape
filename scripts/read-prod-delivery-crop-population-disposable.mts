@@ -7,7 +7,8 @@
  * are all `users:1`.
  *
  * That premise is doubted at the code: `WORDS_ROAD_PLACEMENTS` serves `neck`
- * with `CASTING_INK_WORDS_SCOPE` OFF, and the words ink road's parent is
+ * with `CASTING_INK_WORDS_SCOPE` OFF (a state that no longer exists — the flag
+ * is retired, #1577 slice D3), and the words ink road's parent is
  * `CASTING_V2_SCOPE` — which is `all`. So a words-born neck tattoo may be
  * reachable by any account, and every delivering render mints a crop.
  *

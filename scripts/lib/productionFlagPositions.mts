@@ -34,6 +34,14 @@
  *                            `all` went through HIS OWN HAND (fable-1400) — the
  *                            first capability this program has taken from
  *                            `users:1` to `all`.
+ *                            ✅ RETIRED (#1577 slice D3, 2026-10-15): its ROW is
+ *                            gone from the table below because the flag is gone
+ *                            from the code. The lesson is kept — it is what this
+ *                            file is for — and the row's absence is now itself
+ *                            the live fact: until the variable comes off the
+ *                            service, `comparePositions` reports it as set and
+ *                            absent from this table, which is the intended
+ *                            one-mismatch window and not a fault.
  *
  * A third seat reading `CLAUDE.md` today would have concluded that production
  * was misconfigured in two places. Both rulings landed in a mailbox message and
@@ -129,13 +137,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   CASTING_REFERENCE_LIBRARY_SCOPE: {
     position: "all",
     why: "the repaint's parent; a repaint carries features by crop and needs it",
-  },
-  CASTING_INK_WORDS_SCOPE: {
-    position: "all",
-    why:
-      "his own hand, fable-1400, after the court (opus-960 / fable-1301) and his "
-      + "verdicts on the frames and the thirteen styles (fable-1398). The FIRST "
-      + "capability this program took from users:1 to all",
   },
   CASTING_INK_STUDIO_SCOPE: {
     position: "off",

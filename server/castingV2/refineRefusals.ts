@@ -167,9 +167,7 @@ export const REFINE_REFUSALS = {
     /* The places the road serves THIS account, off the refusal's own bit —
        census 4(c): this sentence said "a neck tattoo" to accounts whose upper
        arm was open too. */
-    say: (refusal) => inkNeedsDocumentMessage(
-      "wordsRoadOpen" in refusal && refusal.wordsRoadOpen === true,
-    ),
+    say: () => inkNeedsDocumentMessage(),
     charge: "free",
     report: "gate",
   },

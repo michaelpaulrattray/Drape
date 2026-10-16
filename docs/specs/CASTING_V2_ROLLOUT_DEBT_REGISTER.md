@@ -54,7 +54,7 @@ does its condition still exist?**
 | `CASTING_V2_SCOPE` | the casting studio itself |
 | `CASTING_REPAINT_SCOPE` | the compositor swap (D-241) |
 | `CASTING_REFERENCE_LIBRARY_SCOPE` | the feature library the repaint carries |
-| `CASTING_INK_WORDS_SCOPE` | a tattoo typed into a refine — **the first capability this program took from `users:1` to `all`**, ratchet run end to end |
+| ~~`CASTING_INK_WORDS_SCOPE`~~ | a tattoo typed into a refine — **the first capability this program took from `users:1` to `all`**, ratchet run end to end. ✅ **RETIRED #1577 slice D3, 2026-10-15**: the capability stays and the FLAG is gone, so this row is history. A page headed as a census of flags at `all` cannot list one that no longer exists |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader |
 | `ENABLE_STORAGE_CLEANUP_WORKER` · `ENABLE_EVIDENCE_CANDIDATE_WORKER` · `ENABLE_FINAL_MODEL_DELETE` | booleans, not scopes; the first is a prerequisite of nine other flags, the second is inert while the composer is off, the third opens permanent Cast deletion to every account |
 

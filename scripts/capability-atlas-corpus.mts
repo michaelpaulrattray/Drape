@@ -86,7 +86,7 @@ export const CORPUS: readonly CorpusRow[] = [
   { id: "ink.words.neck", ask: "give him a small swallow tattoo on his neck", subject: "ink", verb: "add", state: "master",
     expect: "would-render", why: "the words road's proven placement (crop #1)" },
   { id: "ink.words.arm", ask: "give him a small swallow tattoo on his left upper arm", subject: "ink", verb: "add", state: "master",
-    expect: "would-render", why: "opened by the words-road court (fable-1301) behind CASTING_INK_WORDS_SCOPE" },
+    expect: "would-render", why: "opened by the words-road court (fable-1301); its flag is retired (#1577 slice D3) and the placement is simply served" },
   { id: "ink.words.chest", ask: "give him a small swallow tattoo on his upper chest", subject: "ink", verb: "add", state: "master",
     expect: "refused:gate_ink_uncarried", why: "a covered chest cannot be cropped, so it walls with its own sentence (1301)" },
   { id: "ink.words.face", ask: "give her a small star tattoo on her cheek", subject: "ink", verb: "add", state: "master",

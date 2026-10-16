@@ -25,7 +25,8 @@
  * An arm that only proved a file was gone would pass just as well if the ink
  * roads had been deleted wholesale, and wholesale is exactly what his ruling
  * does NOT say: he retired the studio, HELD the take from an attached picture
- * (Crew reply #213, moved to N3), and `CASTING_INK_WORDS_SCOPE` stands at `all`.
+ * (Crew reply #213, moved to N3), and the words road serves every measured
+ * placement (`CASTING_INK_WORDS_SCOPE` stood at `all` and is retired, #1577 D3).
  *
  * # THE TWO EXPORTS THAT STAYED, AND WHY THEY ARE ASSERTED AS IDENTITIES
  *

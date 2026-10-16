@@ -736,8 +736,10 @@ function detach(run: () => Promise<void>): void {
  *
  * ⚠ **IT IS NOT *"the ink flags fence this to one account"*, WHICH IS WHAT THE
  * COUNTERSIGN FIRST ACCEPTED AND THREE OF US REPEATED** (corrected opus-964 §2,
- * ruled fable-1308). `WORDS_ROAD_PLACEMENTS` serves `neck` with
- * `CASTING_INK_WORDS_SCOPE` **off**, D-137's gate passes a neck ask on its first
+ * ruled fable-1308). The words road has always served `neck` — with
+ * `CASTING_INK_WORDS_SCOPE` **off** when there was such a flag, and
+ * unconditionally since #1577 slice D3 retired it — D-137's gate passes a neck
+ * ask on its first
  * answer, and the delivery mint deliberately has no flag of its own — so any
  * account inside `CASTING_V2_SCOPE=all` can mint a crop and reach this code —
  * the repaint flag this sentence also named was retired with the paste road
