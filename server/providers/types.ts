@@ -660,7 +660,14 @@ export type ReadPurpose =
    * bucket would make "what does a cast's voice card cost us" unanswerable —
    * the question the disappearing-technology law's third clause obliges.
    */
-  | "voice.card";
+  | "voice.card"
+  /**
+   * ONE CURRENT DESCRIPTION REWRITTEN FOR A PAID REFINE — card #2565 slice 1.
+   * Its own bucket on the same argument: it prices a paragraph per EDIT, paid
+   * by the house, and "what does the description writer cost per refine" is a
+   * question clause 3 of the disappearing-technology law obliges an answer to.
+   */
+  | "refine.describe";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -682,6 +689,7 @@ export const READ_PURPOSES = Object.freeze([
   "reads",
   "persona.translate",
   "voice.card",
+  "refine.describe",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

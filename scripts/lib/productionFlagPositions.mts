@@ -288,6 +288,16 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "Set on the service with --skip-deploys so the position commit's own "
       + "deploy was the single restart",
   },
+  CASTING_CURRENT_DESCRIPTION_SCOPE: {
+    position: UNSET,
+    why:
+      "BUILT DARK 2026-10-16 (#2565 slice 1, #2545 folded in; his word closing the #801 "
+      + "court: \"okay cool im happy with the build\"). A paid refine renders from the "
+      + "pristine master with ONE natural description of who the cast is now in place of "
+      + "the change clause (round 2's A4 arm). A Follow compiles exactly as before (his word: "
+      + "\"follow doesnt need a description\"). UNSET until his eye on the court "
+      + "strips; the flip is his",
+  },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
     why:

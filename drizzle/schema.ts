@@ -2753,6 +2753,29 @@ export const castingCandidateVariants = mysqlTable("casting_candidate_variants",
    * moved.
    */
   requestText: varchar("requestText", { length: 2400 }),
+  /**
+   * WHO THEY ARE NOW, IN ONE NATURAL PARAGRAPH (#2565 slice 1, #2545 folded;
+   * migration 0086). Written when this version LANDS, by a text model, from the
+   * previous version's description plus the edit that landed — prose, never an
+   * edit list. Where there is no previous description the seed is this face's
+   * own roll brief plus the earlier asks — a Follow child's too, because a
+   * Follow rolls cousins rather than replicas (his ruling, 2026-10-16). The next
+   * refine of this version reads it back. NULL on every
+   * version made with `CASTING_CURRENT_DESCRIPTION_SCOPE` off, and on any
+   * version whose writer did not answer (the render then rode today's prompt).
+   *
+   * INTERNAL and the recipe's family: derived from the customer's own brief and
+   * asks, so owner-only like `internalPrompt`, never in a staff projection,
+   * never logged, and on `REFUSING_KEYS`. It has no life of its own: it goes
+   * wherever this row goes, and no deletion path needed a new statement for it.
+   * ⚠ Read at the code rather than assumed (the relay's finding on PR #2571,
+   * which this sentence got wrong): the rows are DELETED by the account purge
+   * and by the retention purge, both through `deleteVariantRowsIn`. A single
+   * Cast's deletion deletes no variant row — `castLineagePurge` moves the
+   * candidate rows to `expired` and RELEASES them to that retention feed,
+   * because by D-107 the sheet outlives one Cast signed from it.
+   */
+  currentDescription: text("currentDescription"),
   // INTERNAL — the composed instruction and the FULL resolved identity of this
   // variant. Sign reads its identity documents from here when it is selected,
   // which is why it must be written from the same deltas the prompt was.

@@ -1,0 +1,28 @@
+-- ONE CURRENT DESCRIPTION PER VERSION — card #2565 slice 1 (#2545 folded in;
+-- his word 2026-10-16, verbatim: "okay cool im happy with the build").
+--
+-- Every paid refine renders from the cast's untouched original. What carries
+-- the edits already made is one natural description of the cast as they are
+-- now — "it must read naturally into the description not as an edit list" —
+-- rewritten after each edit lands, stored on the version, and read back by the
+-- next refine of that version. A Follow never reads it: it rolls cousins from
+-- the box's words, as every Follow does.
+--
+-- PURELY ADDITIVE: one nullable column on an existing table. No row is read,
+-- rewritten or backfilled; every existing version reads NULL, which is the
+-- honest "no description was written for this version" and is exactly what the
+-- code does with the flag off. Nothing is dropped, renamed or narrowed.
+--
+-- SENSITIVITY: derived from the customer's brief and asks, so the recipe's
+-- family — owner-only, in no staff projection, never logged, on REFUSING_KEYS.
+-- It lives on `casting_candidate_variants`, so it goes wherever that row goes
+-- and no deletion path needs a new statement. Read at the code rather than
+-- assumed: the rows are DELETED by the account purge (`accountCastingPurge.ts`
+-- -> `deleteVariantRowsIn`) and by the retention purge
+-- (`candidateRetention.ts`, the same helper). A single Cast's deletion deletes
+-- no variant row at all -- `finalCastDeletion.ts` -> `castLineagePurge.ts`
+-- moves the candidate rows to `expired` and RELEASES them to that same
+-- retention feed, by the D-107 ruling that a sheet outlives one Cast signed
+-- from it. Either way the column has no life of its own.
+ALTER TABLE `casting_candidate_variants`
+	ADD COLUMN `currentDescription` text;
