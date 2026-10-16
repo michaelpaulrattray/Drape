@@ -39,7 +39,6 @@ import {
   CASTING_ROLL_ENGINE_SCOPE_ENV,
   CASTING_ROLL_ENGINE_MODEL_ENV,
   CASTING_REPAINT_SCOPE_ENV,
-  CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
@@ -71,7 +70,6 @@ import {
   validateCastingRetryEnvironment,
   validateCastingRollEngineEnvironment,
   validateCastingRepaintEnvironment,
-  validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
   validateCastingV2Environment,
 } from "../castingV2/castingV2Scope";
@@ -396,17 +394,13 @@ export function validateEnv(): void {
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
   /*
-    Saying which side twice — her anatomy and the half of the picture it is on.
-
-    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
-    when the paste road's own flag was retired (#1577 slice 4a). It used to be
-    the REPAINT scope, and that gate ended in the library's anyway, so no
-    position production holds changes.
+    ⚠ SAYING WHICH SIDE TWICE WAS CHECKED HERE AND HAS NO FENCE ANY MORE —
+    `CASTING_SIDE_PHRASING_SCOPE` is retired (#1577 slice D2), so there is no
+    scope to refuse and no parent to check it against. The clause itself is
+    unchanged and is now said on every render; the flag stood at `all` on the
+    service from the founder's 2026-08-25 widening until it came out, so the
+    fence had nothing left to refuse either.
   */
-  validateCastingSidePhrasingEnvironment({
-    scope: process.env[CASTING_SIDE_PHRASING_SCOPE_ENV],
-    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  });
   /*
     The auto-scan: reading a face nobody has edited so the panel is not a
     column of empty slots. Checked against the LIBRARY scope because the panel

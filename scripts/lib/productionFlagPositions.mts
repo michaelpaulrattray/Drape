@@ -262,12 +262,6 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "enough to move every customer onto it. Its flip is HIS, with his eye "
       + "on the panel — the card's own done-when",
   },
-  CASTING_SIDE_PHRASING_SCOPE: {
-    position: "all",
-    why:
-      "founder ruling 2026-08-25 on the Desk (register card #2): measured "
-      + "p≈0.09, never once worse, free per render; parent repaint is all",
-  },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
     why:

@@ -188,11 +188,14 @@ const ASK = {
   noun: "right eye",
   words: "A vivid emerald-green iris with a dark pupil and a bright catchlight",
 };
+/* `placeSides: true` stood on both calls and is removed with the flag (#1577
+   slice D2): the clause is unconditional now, so these two recipes carry exactly
+   the sentence they carried when this matrix was measured. */
 const carried = assembleRecipe({
-  master: { key: candidate.imageKey }, pronouns, library: libraryFor(true), asks: [ASK], placeSides: true,
+  master: { key: candidate.imageKey }, pronouns, library: libraryFor(true), asks: [ASK],
 }) as any;
 const wordsOnly = assembleRecipe({
-  master: { key: candidate.imageKey }, pronouns, library: libraryFor(false), asks: [ASK], placeSides: true,
+  master: { key: candidate.imageKey }, pronouns, library: libraryFor(false), asks: [ASK],
 }) as any;
 if (!carried.ok || !wordsOnly.ok) throw new Error("a recipe was refused");
 
