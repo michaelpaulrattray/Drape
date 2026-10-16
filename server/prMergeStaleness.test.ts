@@ -34,17 +34,20 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { type GitRun, readMainGained } from "../scripts/lib/prMergeOrder.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /*
-  ⚠ DECLARED AT FILE LEVEL, and that is a guard's requirement rather than a
-  style (`contendedTestTimeouts`): a suite that spawns processes is slow under
-  a loaded machine, and an arm with no timeout of its own fails on contention
-  while looking like a defect in the subject.
+  ⚠ EVERY ARM HERE SPAWNS REAL `git` PROCESSES — dozens of them — so the
+  class's own timeout is declared rather than vitest's 5s default, which would
+  go red under load on somebody's machine and never in CI (#548).
+  `server/childProcessTestTimeouts.test.ts` derives this suite into its
+  population from the `execFileSync` in it and said so on the first preflight,
+  which is the guard doing exactly its job.
 */
-const CONTENDED_TEST_TIMEOUT_MS = 120_000;
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -131,7 +134,7 @@ function branchWith(work: string, name: string, files: Record<string, string>): 
   return must(work, "rev-parse", "HEAD");
 }
 
-describe("readMainGained — against a real repository", { timeout: CONTENDED_TEST_TIMEOUT_MS }, () => {
+describe("readMainGained — against a real repository", () => {
   it("says nothing was gained when the head already contains main", () => {
     const { work } = world();
     const head = branchWith(work, "team/current", { "server/castingV2/a.ts": "export const a = 1;\n" });
