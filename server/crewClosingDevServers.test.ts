@@ -16,13 +16,25 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import {
   closingDevServerFinding,
   type ClosingDevServerReading,
 } from "../scripts/lib/crewClosingDevServers.mts";
 import { rootsStartedAfter, type ProcessRow } from "../scripts/lib/devServerTrees.mts";
+
+/* ⚠ #548's class, and this suite is in its population for a reason worth
+   stating: nothing here spawns anything — every arm drives the PURE half
+   (`closingDevServerFinding`) or `rootsStartedAfter` over a fixture. But
+   `crewClosingDevServers.mts` holds an `execFileSync`, and the guard's
+   population is derived from what a suite can REACH rather than from what its
+   arms happen to do today. That is the conservative direction and the right
+   one: the day somebody adds an arm that drives `readClosingDevServers` for
+   real, the floor is already here instead of going red on one machine under
+   load. */
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const tree = (rootPid: number, from: string | null, hhmm: string) => ({
   rootPid,
