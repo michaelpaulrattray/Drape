@@ -15332,6 +15332,18 @@ describe("one current description rides the paid refine", () => {
   const asked: Array<{ about?: string; user: string }> = [];
   let writer: "answers" | "throws" = "answers";
   const DESCRIPTION = "A woman in her thirties with long dark hair, worn down over her shoulders.";
+  const PARENT_BRIEF = "A woman in her thirties with long dark hair.";
+  /*
+    WHAT THIS SHEET WAS COMPILED FROM (#2565 slice 1, the relay's finding on
+    PR #2571). The default is a sheet that follows nothing: its own brief and no
+    parent, which is the original arms' world unchanged. The Follow arms below
+    set a parent description, which is what `createRoll` actually compiled from.
+  */
+  let followedSeed: { briefText: string; parentDescription: string | null; parentBriefText: string | null } = {
+    briefText: PARENT_BRIEF,
+    parentDescription: null,
+    parentBriefText: null,
+  };
 
   const describing = {
     repaintEngine: () => ({
@@ -15358,6 +15370,7 @@ describe("one current description rides the paid refine", () => {
       lockContract: null,
       briefText: "A woman in her thirties with long dark hair.",
     }),
+    readFollowedSeed: async () => followedSeed,
     describeEngine: () => ({
       id: "test:describe",
       complete: async (request: { about?: string; user: string }) => {
@@ -15377,6 +15390,7 @@ describe("one current description rides the paid refine", () => {
     painted.length = 0;
     asked.length = 0;
     writer = "answers";
+    followedSeed = { briefText: PARENT_BRIEF, parentDescription: null, parentBriefText: null };
     process.env.CASTING_V2_SCOPE = "users:1";
     process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
   });
@@ -15425,15 +15439,38 @@ describe("one current description rides the paid refine", () => {
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("CONTROL — with the flag off nothing is asked and the prompt is today's", async () => {
+  /*
+    THE FLAG-OFF PROMPT IS PINNED AT ITS BYTES, NOT DESCRIBED — the relay's
+    tightening on PR #2571, which read the old arm's `toContain` /
+    `not.toContain` for what it is: a pair of claims about two substrings, which
+    cannot see a space, a reorder, or a clause that moved.
+
+    ⚠ THE GOLDEN IS NOT THIS BRANCH'S OUTPUT WRITTEN DOWN. It was captured from
+    the PRE-#2565 TREE (`67fed3a5f`, the commit this PR is cut from) by driving
+    this same fixture there, and the two were compared as bytes: one prompt
+    each, sha256 `95d303c48830ab94…` both sides, identical. Pinning a branch's
+    own output would prove only that the branch is self-consistent, which is
+    what every green golden says and is not the question the flag asks.
+  */
+  const TODAYS_PROMPT = "Reference 1 is the photograph of this person — reproduce her exactly: "
+    + "same face, same pose, same lighting, same framing, same background. "
+    + "Change only her hair: hair down.";
+
+  it("CONTROL — with the flag off nothing is asked and the prompt is today's, byte for byte", async () => {
     delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
     await refineCandidate(describing as never, ask);
     expect(asked).toHaveLength(0);
-    expect(painted.length).toBeGreaterThan(0);
-    for (const prompt of painted) {
-      expect(prompt).toContain("Change only");
-      expect(prompt).not.toContain("This is how");
-    }
+    expect(painted).toEqual([TODAYS_PROMPT]);
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+  });
+
+  it("CONTROL — a writer that fails lands on that SAME prompt, byte for byte", async () => {
+    /* The failure fallback and the flag-off road must be one road: two ways of
+       saying "today's prompt" that drift apart is the defect this pins. */
+    writer = "throws";
+    await refineCandidate(describing as never, ask);
+    expect(asked, "the writer was asked and failed").toHaveLength(1);
+    expect(painted).toEqual([TODAYS_PROMPT]);
     expect(landedVariant).not.toHaveProperty("currentDescription");
   });
 
@@ -15456,4 +15493,75 @@ describe("one current description rides the paid refine", () => {
     expect(asked[0]!.user).toContain("How they looked before this change:\nA woman in her thirties with long dark hair, in a dark canvas work jacket.");
     expect(asked[0]!.user).not.toContain("How they were first described");
   });
+
+  /*
+    THE FIRST EDIT OF A FOLLOWED FACE — the relay's finding on PR #2571, and the
+    one arm neither half of the original slice had.
+
+    The two halves were each tested alone: `rollService` compiles a Follow of an
+    edited version from that version's description, and the refine seeds from
+    the roll's brief where no predecessor description exists. Put together they
+    REVERT the edit: the roll ROW records the customer's words, which are the
+    ORIGINAL's brief, so the child's first description was written from "long
+    dark hair" while the picture beside it had a short crop, and the render was
+    asked to put the long hair back. These arms drive the two together.
+  */
+  const FOLLOWED = "A woman in her thirties with a short dark crop.";
+
+  it("seeds a followed face from the VERSION it descends from, never from the original brief", async () => {
+    /* The parent was refined to a short crop; this sheet was compiled from that
+       description, and the box was left holding the parent roll's own brief. */
+    followedSeed = { briefText: PARENT_BRIEF, parentDescription: FOLLOWED, parentBriefText: PARENT_BRIEF };
+
+    await refineCandidate(describing as never, ask);
+
+    expect(asked).toHaveLength(1);
+    /* The inherited edit is what the writer was handed ... */
+    expect(asked[0]!.user).toContain(`How they were first described:
+${FOLLOWED}`);
+    /* ... and the original's words, which would revert it, are NOT. */
+    expect(asked[0]!.user, "seeding from casting_rolls.briefText reverts the inherited edit").not.toContain(PARENT_BRIEF);
+    expect(asked[0]!.user).toContain("wear her hair down");
+    /* Nothing was typed into the box, so there is no change to fold in. */
+    expect(asked[0]!.user).not.toContain("Changes already made since");
+  });
+
+  it("keeps the customer's OWN words for the follow too, as the first change since", async () => {
+    /* The same followed version, but this time they typed something of their
+       own into the box before rolling it, and their sentence WAS compiled into
+       the sheet - so dropping it would trade one loss for another. */
+    followedSeed = { briefText: "give her a leather jacket", parentDescription: FOLLOWED, parentBriefText: PARENT_BRIEF };
+
+    await refineCandidate(describing as never, ask);
+
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toContain(`How they were first described:
+${FOLLOWED}`);
+    expect(asked[0]!.user).toContain("Changes already made since, in order");
+    expect(asked[0]!.user).toContain("- give her a leather jacket");
+  });
+
+  it("CONTROL - a sheet that follows nothing is still seeded from its own brief", async () => {
+    followedSeed = { briefText: PARENT_BRIEF, parentDescription: null, parentBriefText: null };
+    await refineCandidate(describing as never, ask);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toContain(`How they were first described:
+${PARENT_BRIEF}`);
+  });
+
+  it("CONTROL - a lineage read that throws leaves the render on today's prompt, never on a wrong seed", async () => {
+    const throwing = {
+      ...describing,
+      readFollowedSeed: async () => { throw new Error("the lineage read fell over"); },
+    };
+    await refineCandidate(throwing as never, ask);
+    /* No seed, so nothing was asked and nothing was filed: the render is
+       today's, at the same price. Never a guess at the brief. */
+    expect(asked).toHaveLength(0);
+    expect(painted.length).toBeGreaterThan(0);
+    for (const prompt of painted) expect(prompt).toContain("Change only");
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+    expect(ledger.refunds).toHaveLength(0);
+  });
 });
+

@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 import type { TextEngine, TextRequest } from "../providers/types";
 import { pronounsForSex } from "./castPronouns";
 import {
+  CURRENT_DESCRIPTION_RETRIES,
+  CURRENT_DESCRIPTION_TIMEOUT_MS,
   currentDescriptionUserTurn,
   describedNowSentence,
   looksLikeAnEditList,
@@ -55,6 +57,35 @@ describe("the description writer", () => {
        against the original photograph, and hair is not the beard. */
     expect(sent[0]!.system).toMatch(/stays a comparison against how they first looked/);
     expect(sent[0]!.system).toMatch(/Hair on the head and facial hair are separate features/);
+  });
+
+  /*
+    THE DEADLINE AND THE RETRY BUDGET, ASSERTED ON THE OUTGOING REQUEST (working
+    law 5) - the relay's finding on PR #2571.
+
+    `timeoutMs` is per ATTEMPT and sits INSIDE the transport's retry loop, so a
+    deadline with no retry budget beside it is only a third of the real wait: at
+    45 s and the transport's default of 2 retries, a paid render waited up to
+    135 s on a decoration whose failure is free. The court measured the work at
+    1.46-3.16 s over 31 calls, so both numbers are asserted here rather than
+    left to a docblock adjective - a constant nobody reads is how "short" came
+    to mean 135 s.
+  */
+  it("asks with a deadline AND a retry budget, both sized from the measured work", async () => {
+    const sent: TextRequest[] = [];
+    await writeCurrentDescription(
+      engineSaying("A weathered fisherman of sixty.", sent),
+      { previous: null, seed, change: "the eyes grey-green" },
+    );
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.timeoutMs).toBe(CURRENT_DESCRIPTION_TIMEOUT_MS);
+    expect(sent[0]!.retries).toBe(CURRENT_DESCRIPTION_RETRIES);
+    /* The two together are what the customer waits for, so the arm holds the
+       PRODUCT rather than either number alone: anything past a minute is a
+       decoration outstaying the render it precedes. */
+    expect(CURRENT_DESCRIPTION_TIMEOUT_MS * (CURRENT_DESCRIPTION_RETRIES + 1)).toBeLessThanOrEqual(60_000);
+    /* And a budget must actually be sent - `undefined` is the default of 2. */
+    expect(sent[0]!.retries, "an absent budget is the transport's default of 2").not.toBeUndefined();
   });
 
   it("seeds from the brief and the asks already applied when the previous version has no description", () => {

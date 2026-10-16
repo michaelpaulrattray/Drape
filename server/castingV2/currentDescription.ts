@@ -38,8 +38,31 @@ const log = createModuleLogger("castingV2/currentDescription");
 /** A description longer than this is not a description, it is a runaway. */
 export const CURRENT_DESCRIPTION_MAX_LENGTH = 2400;
 
-/** The writer's own deadline — a paid render waits on it, so it is short. */
-export const CURRENT_DESCRIPTION_TIMEOUT_MS = 45_000;
+/**
+ * THE WRITER'S OWN DEADLINE AND RETRY BUDGET — a paid render waits on both, so
+ * both are sized from what the work actually takes (the relay's finding on
+ * PR #2571, which read the docblock's *"short"* against the code).
+ *
+ * MEASURED on the slice-1 court, 31 calls: median **1.6 s**, range
+ * **1.46–3.16 s**, against renders of 70–166 s. So the engine's 45 s default
+ * was fourteen times the worst reading — and `timeoutMs` is per ATTEMPT inside
+ * the retry loop, so passing no `retries` (the transport's default of 2) held
+ * the customer for up to **135 s** before the render even started, over a
+ * decoration whose failure is free.
+ *
+ * 20 s is six times the measured worst case, which is headroom for a slow day
+ * rather than for a hung provider; one retry absorbs a single transport blip,
+ * which is worth having because a lost description is not merely a slower
+ * render — the next edit re-seeds and this version stores nothing. Worst case
+ * is therefore 2 × 20 s, down from 3 × 45 s.
+ *
+ * ⚠ THE QUEUE WAIT SITS OUTSIDE BOTH NUMBERS and is not bounded by them: this
+ * call shares `openrouter-text` (concurrency 4) with 120 s interpreter calls,
+ * so a busy queue can still hold it. What these two bound is this call's own
+ * share of the wait, and that is all they claim.
+ */
+export const CURRENT_DESCRIPTION_TIMEOUT_MS = 20_000;
+export const CURRENT_DESCRIPTION_RETRIES = 1;
 
 export const CURRENT_DESCRIPTION_SYSTEM = [
   "You keep one description of a character for a casting studio: who they are and how they look right now.",
@@ -111,6 +134,7 @@ export async function writeCurrentDescription(
       about: "refine.describe",
       maxOutputTokens: 2000,
       timeoutMs: CURRENT_DESCRIPTION_TIMEOUT_MS,
+      retries: CURRENT_DESCRIPTION_RETRIES,
     });
     const text = result.text.trim().replace(/^"([\s\S]*)"$/, "$1").trim();
     const latencyMs = result.latencyMs ?? Date.now() - started;

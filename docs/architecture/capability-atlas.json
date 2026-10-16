@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2640"
+          "server/castingV2/refineService.ts:2644"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1280"
+          "server/castingV2/refineService.ts:1284"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4938",
+          "server/castingV2/refineService.ts:4942",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1262"
+          "server/castingV2/refineService.ts:1266"
         ]
       },
       {
@@ -190,7 +190,7 @@
           "server/castingV2/refineDelta.ts:604",
           "server/castingV2/refineDelta.ts:1577",
           "server/castingV2/refineDelta.ts:1577",
-          "server/castingV2/refineService.ts:2489"
+          "server/castingV2/refineService.ts:2493"
         ]
       },
       {
@@ -221,8 +221,8 @@
           "server/castingV2/refineDelta.ts:577",
           "server/castingV2/refineDelta.ts:1554",
           "server/castingV2/refineDelta.ts:1554",
-          "server/castingV2/refineService.ts:2488",
-          "server/castingV2/refineService.ts:2500"
+          "server/castingV2/refineService.ts:2492",
+          "server/castingV2/refineService.ts:2504"
         ]
       },
       {
@@ -246,7 +246,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2995"
+          "server/castingV2/refineService.ts:2999"
         ]
       },
       {
@@ -256,7 +256,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3698"
+          "server/castingV2/refineService.ts:3702"
         ]
       },
       {
@@ -300,7 +300,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1269"
+          "server/castingV2/refineService.ts:1273"
         ]
       },
       {
@@ -399,7 +399,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4421"
+          "server/castingV2/refineService.ts:4425"
         ]
       },
       {
@@ -422,7 +422,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3466"
+          "server/castingV2/refineService.ts:3470"
         ]
       },
       {
@@ -432,7 +432,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3447"
+          "server/castingV2/refineService.ts:3451"
         ]
       },
       {
@@ -442,7 +442,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3542"
+          "server/castingV2/refineService.ts:3546"
         ]
       },
       {
@@ -452,8 +452,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3224",
-          "server/castingV2/refineService.ts:3241"
+          "server/castingV2/refineService.ts:3228",
+          "server/castingV2/refineService.ts:3245"
         ]
       },
       {
@@ -463,7 +463,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4391"
+          "server/castingV2/refineService.ts:4395"
         ]
       },
       {
@@ -473,7 +473,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3038"
+          "server/castingV2/refineService.ts:3042"
         ]
       },
       {
@@ -539,7 +539,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4917"
+          "server/castingV2/refineService.ts:4921"
         ]
       },
       {
@@ -549,8 +549,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1350",
-          "server/castingV2/refineService.ts:1388"
+          "server/castingV2/refineService.ts:1354",
+          "server/castingV2/refineService.ts:1392"
         ]
       },
       {
@@ -602,7 +602,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2686"
+          "server/castingV2/refineService.ts:2690"
         ]
       },
       {
@@ -735,8 +735,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1256",
-          "server/castingV2/refineService.ts:2612"
+          "server/castingV2/refineService.ts:1260",
+          "server/castingV2/refineService.ts:2616"
         ]
       },
       {
@@ -1574,7 +1574,7 @@
           "CASTING_CURRENT_DESCRIPTION_SCOPE"
         ],
         "notes": [
-          "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row).",
+          "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). The FIRST description of a face is seeded from the words its sheet was COMPILED from, read off the lineage rows (`getFollowedDescriptionSeed`, db/castingV2.ts) rather than from `casting_rolls.briefText`, which is always the customer's own words: on a Follow of an edited version that brief describes the ORIGINAL, so seeding from it asked the render to revert the edit the child had inherited (the relay's finding on PR #2571).",
           "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
           "`refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.",
           "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.",

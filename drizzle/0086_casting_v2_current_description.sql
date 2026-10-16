@@ -14,7 +14,14 @@
 --
 -- SENSITIVITY: derived from the customer's brief and asks, so the recipe's
 -- family — owner-only, in no staff projection, never logged, on REFUSING_KEYS.
--- It lives on `casting_candidate_variants`, whose rows both deletion roads
--- already delete, so no deletion path needs a new statement.
+-- It lives on `casting_candidate_variants`, so it goes wherever that row goes
+-- and no deletion path needs a new statement. Read at the code rather than
+-- assumed: the rows are DELETED by the account purge (`accountCastingPurge.ts`
+-- -> `deleteVariantRowsIn`) and by the retention purge
+-- (`candidateRetention.ts`, the same helper). A single Cast's deletion deletes
+-- no variant row at all -- `finalCastDeletion.ts` -> `castLineagePurge.ts`
+-- moves the candidate rows to `expired` and RELEASES them to that same
+-- retention feed, by the D-107 ruling that a sheet outlives one Cast signed
+-- from it. Either way the column has no life of its own.
 ALTER TABLE `casting_candidate_variants`
 	ADD COLUMN `currentDescription` text;
