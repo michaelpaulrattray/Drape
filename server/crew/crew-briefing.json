@@ -1,7 +1,7 @@
 {
-  "edition": 734,
-  "updatedAt": "2026-10-16T16:20:00.000Z",
-  "shift": "Four jobs landed tonight and the last one clears the way for a feature you asked to try. Here is the night.\n\nTHE BOARD WAS JAMMED, AND IT IS NOT NOW. Six jobs were sitting finished and waiting, and four other jobs were held up purely because those were still open — nothing was wrong with any of them, they were just queued behind each other. Two were ready to land, so I landed them, and both are live.\n\nWHAT WENT LIVE FIRST. Press Follow on the fourth face of a sheet and the studio now says FOLLOWING 04 while the next sheet gets ready — it used to keep showing the number of the face you pressed last time, which made it look like it had followed the wrong person (#2587). And the Follow rewrite that carries your edits forward stopped being able to lose your words: a request you press twice now counts as the same request, a Follow that is going to be refused for free no longer waits on a rewrite first, and the check that stops the studio inventing a scar no longer reads the word \"scarf\" as a scar (#2582).\n\nTHEN I BUILT THE LAST THING STANDING IN FRONT OF A FEATURE YOU WANTED. You asked, on the 16th, for the one-description feature to be switched on for your account once two fixes were in. The first was the Follow one above. The second is this: when a character keeps one description of who they are now, the studio was quietly losing the exact wording of the edit you asked for. Ask to take a character's earrings off and the description came back saying \"They wear no earrings\" — true, but it had thrown away WHERE, which is the part the picture needs. It now keeps the full wording. The other half is a guard I did not want to need: the description is the paragraph that later feeds your signed pictures, the personality, the voice and the creation record, so it must describe the PERSON and never the photograph. If the studio ever writes \"on the left of the picture as you look at it\" into it, that answer is thrown away rather than filed (#2578).\n\nSO BOTH FIXES ARE DONE AND THE SWITCH IS YOURS. Nothing has changed for you yet — the feature is still off — and turning it on is your call or the relay's, not the crew's.\n\nONE JOB I TOOK OFF YOUR DESK. A job at the very top of the queue was asking for a measurement you have already seen and ruled on: Follow returning eight near-identical people. You looked at it, you said keep Follow as it is for now, and only the redesign is parked — but the job was never labelled as parked, so every night the crew was being offered a question you had closed. It is labelled now, with your words at the top, and nothing about Follow is re-asked.\n\nAND ONE THING I CHECKED RATHER THAN ASSUMED. The two jobs I landed were tested separately and never against each other, which is exactly how the whole test suite broke yesterday. So I ran all 20,701 checks on the combined result before going near anything else — nothing failing. Two checks did go red on my own machine, and neither was ours: leftover scratch files from another night's work are sitting in the project and two of our checks read them. The product is fine; the mess is on a job we already have open.",
+  "edition": 735,
+  "updatedAt": "2026-10-16T17:30:00.000Z",
+  "shift": "One job tonight, and it is the measurement that had to happen before clothing can be edited. There are three pictures for you to look at.\n\nWHAT I SET OUT TO ANSWER. You said on the 15th that outfit changes should work in Refine — type “put them in a long black coat” and get it, the same way you already change eyes or hair. The design for that was written and you said GO. Its first step is not code: it is finding out whether the picture engine can actually dress somebody well, before anyone builds a door to it. That is what tonight was.\n\nWHAT CAME BACK. I asked four kinds of clothing change — swap the whole outfit, add a jacket over what is there, take the outer layer off, and change one garment's colour and cloth — on three of your characters: the fisherman, the street casting, and the lizard. Twenty-four pictures, about 57 cents of our own money, no credits of yours and nothing touched in the product.\n\nIt works, and it works better than I expected. The fisherman turns up in a charcoal suit and he is unmistakably the same man. A denim jacket goes on over his knit sweater and the yellow overalls stay exactly as they were underneath. The lizard loses his leather jerkin and the chest strap with it, and keeps the shirt beneath — still clothed, still him, tail and scales untouched. Three pictures are on your page.\n\nAND THE THING I WAS MOST WORRIED ABOUT DID NOT HAPPEN ONCE. The fear with clothing is that asking for a coat gets you a new room as well — a different backdrop, a different light. I measured the backdrop on every single picture: it did not move on any of them, twenty-one out of twenty-one.\n\nONE REAL PROBLEM, AND IT IS WORTH KNOWING EARLY. Asking to take the fisherman's overalls OFF came back refused by the picture service, on the grounds that the words looked like undressing — even though the ask named the sweater that stays. The same kind of ask worked on the lizard, so it is not a hard rule, but it tells the build exactly how to word a removal: say what the person IS wearing afterwards, never what is coming off. That costs nothing to do and it is now written into the job.\n\nONE THING I GOT WRONG AND AM TELLING YOU ABOUT. My own measurement called three of the pictures “nothing changed”, and then I looked at them and all three are correct — the burgundy sweater, the oxblood jerkin, the green vest. My number was built for a whole-outfit swap and it under-reads a colour change. The pictures are right; the number was not. That is why you get pictures and not a score.\n\nSEPARATELY, ONE THING I FOUND IN THE CODE AND DID NOT FIX. Every kind of edit carries a short promise on the end of the instruction we send the engine — roughly “and this change must actually appear, or the picture has failed”. We wrote 29 of those, one per kind of edit, after measuring that freckles were turning up only a third of the time without one. They are no longer being sent. A road change about two months ago left them composing into a sentence that gets saved and handed to nobody. Nothing visible has been reported, so I have not touched it — I filed it, with the measurement it needs, rather than guessing.\n\nNOTHING ELSE IS WAITING ON YOU TONIGHT. The clothing job can carry on building without you; only switching it on for your account needs your eye on those three pictures first.\n\nTHE QUEUE TONIGHT. 59 jobs open, 13 of them ones you ordered. Two are waiting on you — the three pictures above, and the lawyer-and-provider job from N2d you parked. Three are finished and waiting on a review. 12 have not been touched in a week — the same 12 as last night, so that number is not moving.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T16:15:32.754Z",
+      "readAt": "2026-10-16T17:21:15.488Z",
       "items": [
         {
           "issueNumber": 14,
@@ -326,6 +326,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "outfit-court-2544",
+      "title": "Clothing changes in Refine — look at three pictures and tell me if they read right",
+      "productImpact": "⚠ **#2544 keeps building while this sits here.** This question gates switching clothing edits ON, not the build — the build ships switched off and needs nothing from you. That is why it is its own card (#2597) rather than a hold on #2544.\n\nYou said on the 15th that outfit changes should work in Refine: type “put them in a long black coat” and get it, the same way you already change eyes or hair. The design is written and you said GO.\n\nIts first step is not code. Before building the door, the question is whether the picture engine can dress somebody well at all — same person, same pose, same light, same room. I ran that tonight on three of your characters, four kinds of clothing change each: swap the outfit, add a jacket over what is there, take the outer layer off, change one garment's colour and cloth.\n\nTwenty-four pictures, about 57 cents of our own money. No credits of yours, nothing touched in the product, nothing switched on.\n\nIt works. And the thing I was most worried about — asking for a coat and getting a new room with it — did not happen once: the backdrop held on all twenty-one pictures that came back.\n\nTwo things worth knowing. One ask came back REFUSED by the picture service: taking the fisherman's overalls off read to them as undressing, even though the ask named the sweater that stays. That tells the build to word a removal as what the person IS wearing afterwards, and it costs nothing. And my own measurement called three pictures “nothing changed” when all three are correct — it was built for a whole-outfit swap and under-reads a colour change. Which is exactly why you are being shown pictures and not a score.",
+      "workedExample": "The lizard is the hardest of the three and the clearest result. Ask to take his leather jerkin off and the jerkin and its chest strap both go, leaving the shirt underneath — still clothed, still him, scales and ridges and tail untouched, the same grey backdrop behind him. Ask instead for a denim jacket over it and the jerkin stays visible under the open jacket. Same character, four different outfits, one studio.",
+      "options": [
+        {
+          "key": "read-right",
+          "label": "They read right — carry on",
+          "consequence": "The build carries on: clothing becomes an editable subject, switched off for everyone. Turning it on for your account is a separate ask that comes back to you later."
+        },
+        {
+          "key": "something-wrong",
+          "label": "Something reads wrong",
+          "consequence": "Say which picture and what is wrong with it — a face that drifted, a light that changed, a garment that looks stuck on. That becomes the thing the build has to solve before anything is switched on."
+        }
+      ],
+      "recommendation": "Carry on. I looked at every picture at full size before writing this, including the faces side by side at full resolution, and I could not find a drift — but your eye is the one that decides, and the pictures are in Pictures for your eye.",
+      "state": "open",
+      "filedAt": "2026-10-16T17:30:00.000Z",
+      "issueNumber": 2597
+    },
     {
       "id": "voice-sounds-right-2498",
       "title": "Your voices come out the right way round now — one listen",
@@ -7438,6 +7460,32 @@
           "caption": "FRAME 4 — why the design CARRIES a reading instead of re-reading everything. After an edit that only changed the nose, a fresh full re-scan put an eye row on the forehead eye (solid) and lost the real eyes; the earlier reading (dashed) was fine. The design re-reads only the edited area, so one bad read can never break the rest."
         }
       ]
+    },
+    {
+      "id": "outfit-court-eye-2544",
+      "title": "Clothing changes in Refine — three characters, four kinds of change, your eye on the pictures",
+      "question": "WHAT YOU ARE LOOKING AT — the measurement that comes before any of this gets built, on three of your own characters.\n\nYou said outfit changes should work in Refine. Before building the door, the question was whether the picture engine can dress somebody well at all: does the person stay the same person, does the pose hold, does the light hold, and does the room stay where it was.\n\nEach strip is one character: as they are, then each kind of clothing change. Nothing here is live and nothing of yours was spent — these are house-money test pictures.\n\nWHAT I AM ASKING: do these read right to you? If they do, the build carries on and the switch comes to you later. If any of them reads wrong — a face that drifted, a light that changed, a garment that looks pasted on — say which on the card and that becomes the thing the build has to solve first.",
+      "state": "open",
+      "filedAt": "2026-10-16T17:30:00.000Z",
+      "issueNumber": 2597,
+      "cardId": "outfit-court-2544",
+      "frames": [
+        {
+          "key": "crew-eye/0f84717e-b0c4-48e8-9763-5dd9a698a8c8.png",
+          "arm": null,
+          "caption": "THE FISHERMAN. A charcoal suit, then a denim jacket over the knit and the yellow overalls (both kept underneath), then the same sweater in burgundy with the overalls and straps exactly as they were. The fourth ask — taking the overalls off — is the one the picture service refused on wording; the empty panel is that refusal, shown rather than hidden."
+        },
+        {
+          "key": "crew-eye/fa9a945c-1ea7-42bb-a6d4-9e6076bc92f2.png",
+          "arm": null,
+          "caption": "THE STREET CASTING. A suit jacket over a white shirt, a denim jacket over the vest, and the vest itself in emerald. There is no fourth here on purpose: this character wears one garment and nothing over it, so there is no layer to take off — the studio has no undressed state and is not getting one."
+        },
+        {
+          "key": "crew-eye/71c02163-1898-4262-8f2b-2d305d104dae.png",
+          "arm": null,
+          "caption": "THE LIZARD, which is the hardest of the three. A suit; a denim jacket over the jerkin with the chest strap still visible under it; the jerkin and strap taken off leaving the shirt beneath; and the jerkin in oxblood. The scales, the ridges and the tail are untouched in all four."
+        }
+      ]
     }
   ],
   "pipeline": [
@@ -11128,7 +11176,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T16:15:32.754Z",
+    "readAt": "2026-10-16T17:21:15.488Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11221,6 +11269,15 @@
         "issueNumber": 2583,
         "title": "Follow returns near-identical twins — it must return eight different people under the same look (his word 2026-10-16)",
         "urgent": false
+      },
+      {
+        "issueNumber": 2597,
+        "title": "Your eye on the outfit court — three strips, and whether clothing changes read right",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — look at three strips and say whether they read right. RECOMMENDATION: they do; carry on."
+        }
       }
     ]
   }
