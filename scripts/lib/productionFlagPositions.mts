@@ -34,6 +34,14 @@
  *                            `all` went through HIS OWN HAND (fable-1400) — the
  *                            first capability this program has taken from
  *                            `users:1` to `all`.
+ *                            ✅ RETIRED (#1577 slice D3, 2026-10-15): its ROW is
+ *                            gone from the table below because the flag is gone
+ *                            from the code. The lesson is kept — it is what this
+ *                            file is for — and the row's absence is now itself
+ *                            the live fact: until the variable comes off the
+ *                            service, `comparePositions` reports it as set and
+ *                            absent from this table, which is the intended
+ *                            one-mismatch window and not a fault.
  *
  * A third seat reading `CLAUDE.md` today would have concluded that production
  * was misconfigured in two places. Both rulings landed in a mailbox message and
@@ -110,20 +118,25 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "all",
     why: "the program's own door; open to every account since the V2 rollout",
   },
-  CASTING_REPAINT_SCOPE: {
-    position: "all",
-    why: "the compositor swap (D-241), widened past users:1 — fable-1253",
-  },
+  /* ⚠ CASTING_REPAINT_SCOPE'S ROW STOOD HERE AND IS GONE — #1577 slice 4b,
+     2026-10-15, on his word (*"yes approve the plan and switch off the six
+     settings"*). It read `all` since fable-1253 widened the compositor swap past
+     `users:1`, and the ghost audit found the whole OLD paste road still standing
+     behind it as the flag's off arm. The code stops reading the variable in this
+     commit and the variable leaves the service in the same act as the merge —
+     in that order, and the other order is the expensive one: with the old build
+     still serving, an absent variable parses as `off`, which would put every
+     customer back on the paste road.
+
+     The row is REMOVED rather than moved to `off`, which is the framing trim's
+     precedent (#11) and what `productionFlagPositions.test.ts` enforces from
+     both directions: a row for a variable nothing declares can never disagree
+     with anything, and a governed variable with no row is reported by
+     `comparePositions`. So the two have to move together — and between the merge
+     and the deletion the rite reports exactly that mismatch, by design. */
   CASTING_REFERENCE_LIBRARY_SCOPE: {
     position: "all",
     why: "the repaint's parent; a repaint carries features by crop and needs it",
-  },
-  CASTING_INK_WORDS_SCOPE: {
-    position: "all",
-    why:
-      "his own hand, fable-1400, after the court (opus-960 / fable-1301) and his "
-      + "verdicts on the frames and the thirteen styles (fable-1398). The FIRST "
-      + "capability this program took from users:1 to all",
   },
   CASTING_INK_STUDIO_SCOPE: {
     position: "off",
@@ -238,11 +251,42 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       "widened WITH face-scan as one pair (the boot guard requires it; his "
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
-  CASTING_SIDE_PHRASING_SCOPE: {
-    position: "all",
+  ENABLE_CASTING_PAIR_ONE_READ: {
+    /*
+      `"true"` since 2026-10-16, on his word and nothing else. The row read
+      `UNSET` from the day the road was built (PR #2553, dark) until he answered
+      the Desk card `pair-one-read-flip-2191` — Desk reply #294,
+      2026-10-16 03:35:17Z, verbatim and entire: "Yes, Turn it on".
+
+      ⚠ The string is compared EXACTLY, never for truthiness
+      (`pairInOneReadEnabled()`, `server/castingV2/faceScanService.ts`), so this
+      row's token and the service's value must both be exactly the four characters
+      `true`. A Railway variable created with no value holds the empty string,
+      which is the shape that would read as off while looking set.
+
+      ⚠ The REFINE deliberately does not move with it, and that is the flag's
+      whole shape rather than an omission: a masked refine PAINTS on the mask it
+      is handed, so a wrong side there is a delivered picture the customer paid
+      for, where here it is a panel row. One variable that moved both would be
+      the widening nobody meant.
+    */
+    position: "true",
     why:
-      "founder ruling 2026-08-25 on the Desk (register card #2): measured "
-      + "p≈0.09, never once worse, free per render; parent repaint is all",
+      "ON FOR EVERY ACCOUNT 2026-10-16, on his Desk reply #294, verbatim and "
+      + "entire: \"Yes, Turn it on\". #2191: a pair answered by ONE segmenter "
+      + "read instead of two — the derived floor falls 18 to 13, about 2.5c off a "
+      + "12c scan, and the customer is charged for none of it, so the whole cut "
+      + "comes off house cost. HELD UNSET until his eye because the crop road it "
+      + "replaces was itself a measured ruling (asking a pair of a whole frame "
+      + "once delivered 'she has no eyebrows' over a frame whose brows measure "
+      + "1429px, while one side to a picture read 12 of 12), and #2532 arm 1's 15 "
+      + "cells on three casts was enough to build the road and not enough to move "
+      + "every customer onto it. What discharged that hold is a PICTURE and not a "
+      + "column: three labelled strips, zoomed on the rows that disagree, went to "
+      + "his page as eye item `pair-one-read-2191` (row counts human 14/14, alien "
+      + "9/9, hooded figure 6 today to 7 on the new road), and he answered them. "
+      + "Set on the service with --skip-deploys so the position commit's own "
+      + "deploy was the single restart",
   },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",

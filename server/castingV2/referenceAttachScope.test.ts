@@ -25,7 +25,6 @@ import {
 
 const KEYS = [
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
-  "CASTING_REPAINT_SCOPE",
   "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_V2_SCOPE",
 ] as const;
@@ -103,7 +102,7 @@ describe("the boot guards refuse", () => {
 
 describe("the AND is taken at the point of use, not only at boot", () => {
   it("is closed for everyone while the flag is absent", () => {
-    setEnv({ CASTING_V2_SCOPE: "all", CASTING_REPAINT_SCOPE: "users:1" });
+    setEnv({ CASTING_V2_SCOPE: "all" });
     expect(captureCastingReferenceAttachEnabled(1)).toBe(false);
     expect(castingReferenceAttachArmed()).toBe(false);
   });
@@ -120,7 +119,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
       CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
-      CASTING_REPAINT_SCOPE: "users:1",
       [CASTING_REFERENCE_ATTACH_SCOPE_ENV]: "users:1,2",
     });
     expect(captureCastingReferenceAttachEnabled(1)).toBe(true);
@@ -151,7 +149,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
       CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
-      CASTING_REPAINT_SCOPE: "off",
       [CASTING_REFERENCE_ATTACH_SCOPE_ENV]: "users:1",
     });
     expect(

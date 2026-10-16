@@ -54,7 +54,7 @@ does its condition still exist?**
 | `CASTING_V2_SCOPE` | the casting studio itself |
 | `CASTING_REPAINT_SCOPE` | the compositor swap (D-241) |
 | `CASTING_REFERENCE_LIBRARY_SCOPE` | the feature library the repaint carries |
-| `CASTING_INK_WORDS_SCOPE` | a tattoo typed into a refine — **the first capability this program took from `users:1` to `all`**, ratchet run end to end |
+| ~~`CASTING_INK_WORDS_SCOPE`~~ | a tattoo typed into a refine — **the first capability this program took from `users:1` to `all`**, ratchet run end to end. ✅ **RETIRED #1577 slice D3, 2026-10-15**: the capability stays and the FLAG is gone, so this row is history. A page headed as a census of flags at `all` cannot list one that no longer exists |
 | `R7_SNAPSHOT_READ_SCOPE` | the R7-7B snapshot reader |
 | `ENABLE_STORAGE_CLEANUP_WORKER` · `ENABLE_EVIDENCE_CANDIDATE_WORKER` · `ENABLE_FINAL_MODEL_DELETE` | booleans, not scopes; the first is a prerequisite of nine other flags, the second is inert while the composer is off, the third opens permanent Cast deletion to every account |
 
@@ -88,7 +88,7 @@ does its condition still exist?**
 | `CASTING_SCAN_TABLE_SCOPE` | nothing. It makes a paid scan durable, which strictly reduces spend | 2026-08-16 | **WIDEN** — the cheapest win on this page |
 | `CASTING_SEGMENTS_SCOPE` | ~~nothing named~~ **nothing — he has ruled** | 2026-09-24 (his *"Retire both. The paste road is gone; nothing reads these"*, Crew reply #212) | ~~**HOLD**~~ ~~**RETIRE**~~ ✅ **RETIRED** — #1160, all three slices merged 2026-09-25. Slice 1 closed the refine entrance, slice 2 took every read path, route and panel, slice 3 took the flags, their boot checks and the store's db layer down to the purge. The variable left the service BEFORE the code that declared it, child first, rehearsed through the real `validateEnv()` with the parent-first case as a negative control. ⚠ The `casting_segments` TABLE is still there: a DROP is destructive and therefore his own act, so the purge path outlives the store on purpose |
 | `CASTING_SEGMENTS_DELIVERED_SCOPE` | its parent | 2026-09-24 | ~~**HOLD**~~ ~~**RETIRE**~~ ✅ **RETIRED** with its parent (#1160), and it left the service FIRST — a child fence refuses to boot for a user outside its parent, so the order was load-bearing rather than tidy |
-| `CASTING_SIDE_PHRASING_SCOPE` | nothing. Measured p≈0.09, never once worse, free per render | 2026-08-21 | **WIDEN** — the evidence is in and it costs nothing |
+| `CASTING_SIDE_PHRASING_SCOPE` | ~~nothing. Measured p≈0.09, never once worse, free per render~~ **nothing — he widened it, then it retired** | 2026-10-15 (#1577 slice D2) | ~~**WIDEN**~~ ✅ **WIDENED then RETIRED** — he widened it to `all` on 2026-08-25 on this row's own numbers, and the flag came out of the code on 2026-10-15 with the ghost audit's slice D2. The clause is said on every render now. **The instruction a customer gets did not change**, hashed across twelve shapes before and after. The Railway variable comes off after the deploy |
 
 ### The composer family — 4 flags, and this is where this week's rulings bite
 
@@ -132,6 +132,12 @@ does its condition still exist?**
    `CASTING_SIDE_PHRASING_SCOPE` (measured, free) and
    `CASTING_REFINE_DISPATCH_SCOPE` (fixes a defect customers meet at 1.7%).
    **That is the most actionable finding on this page.**
+   ✅ **ALL THREE WIDENED, and the middle one has since RETIRED** — he took the
+   whole switch list in one sitting on 2026-09-24 (#1132), and
+   `CASTING_SIDE_PHRASING_SCOPE` came out of the code on 2026-10-15 (#1577 slice
+   D2) because a flag at `all` with a dead off arm is a ghost rather than a
+   rollout. `CASTING_REFINE_DISPATCH_SCOPE` is the audit's slice D4 and is next
+   but one. **This item is discharged and is kept as what the page recommended.**
 2. **Six flags are `READ` — nobody knows whether they work at scale.** Not
    broken, not measured. They are the honest shape of "we built fast."
 3. **One flag is plausibly superseded** (`CASTING_TWO_PATHS_SCOPE`) and it is a

@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 
 import type { TextEngine, TextRequest } from "../providers/types";
 import { declaredEnvNames, serverAndSharedSources } from "../../scripts/lib/declaredEnvNames.mts";
-import { cataloguedFlags, flagCatalogue, indexedFlags, lawText } from "../../scripts/lib/lawText.mts";
+import {
+  cataloguedFlags, flagCatalogue, FLAG_CATALOGUE, indexedFlags, LAW_SURFACES,
+} from "../../scripts/lib/lawText.mts";
 import { PRODUCTION_FLAG_POSITIONS } from "../../scripts/lib/productionFlagPositions.mts";
 import { OPEN_KIND_SYSTEM } from "./openLaneKind";
 import { KIND_PROPERTY_SYSTEM } from "./openKindProperties";
@@ -285,17 +287,31 @@ describe("and it stays retired (#1577 slice D1)", () => {
       actually paid for: a flag removed from the code AND from the record leaves
       the next shift no way to learn it ever existed, which is the
       path-one/path-three confusion CLAUDE.md's own list has been bitten by. So
-      the catalogue and the index must still name it, and say retired.
+      the catalogue and the index must EACH still name it, and say retired.
+
+      ⚠ **"EACH" IS THE WHOLE POINT.** This arm was written against
+      `lawText(repoRoot)`, which JOINS CLAUDE.md and the catalogue, so deleting
+      the index row entirely left it GREEN, satisfied by the catalogue entry
+      (foreman-20261016-0240's finding on this PR, driven on slice D2's copy:
+      the row removed, 7 of 7 passed). Each surface is now read on its own,
+      through its own membership reader, with the index surface DERIVED from the
+      helper's constants rather than named here — slice D2's repaired shape.
     */
-    const LAW = lawText(repoRoot);
+    const indexSurfaces = LAW_SURFACES.filter((file) => file !== FLAG_CATALOGUE);
+    expect(indexSurfaces, "one law surface is the index and the other is the catalogue")
+      .toHaveLength(1);
+    const CLAUDE_MD = readFileSync(path.join(repoRoot, indexSurfaces[0]!), "utf8");
     const CATALOGUE = flagCatalogue(repoRoot);
 
-    expect(indexedFlags(LAW), "the control: the index lists live flags").toContain(LIVE);
+    expect(indexedFlags(CLAUDE_MD), "the control: the index lists live flags").toContain(LIVE);
     expect(cataloguedFlags(CATALOGUE), "the control: the catalogue lists live flags").toContain(LIVE);
 
-    expect(LAW).toContain(RETIRED);
-    expect(CATALOGUE).toContain(RETIRED);
-    const entry = CATALOGUE.slice(CATALOGUE.indexOf(RETIRED), CATALOGUE.indexOf(RETIRED) + 4_000);
-    expect(entry).toMatch(/RETIRED/);
+    expect(indexedFlags(CLAUDE_MD), "the index must still carry a row for it").toContain(RETIRED);
+    expect(cataloguedFlags(CATALOGUE), "and the catalogue must still carry its entry")
+      .toContain(RETIRED);
+
+    const bullet = CATALOGUE.indexOf(`- \`${RETIRED}\``);
+    expect(bullet, "the catalogue's own top-level entry for it").toBeGreaterThan(-1);
+    expect(CATALOGUE.slice(bullet, bullet + 6_000)).toMatch(/RETIRED/);
   });
 });

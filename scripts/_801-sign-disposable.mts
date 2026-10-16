@@ -18,7 +18,10 @@ process.env.CASTING_V2_SCOPE = "all";
 process.env.CASTING_REPAINT_SCOPE = "all";
 process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
 process.env.CASTING_OPEN_LANE_SCOPE = "all";
-process.env.CASTING_SIDE_PHRASING_SCOPE = "all";
+/* `CASTING_SIDE_PHRASING_SCOPE = "all"` stood here and is removed with the flag
+   (#1577 slice D2). It pinned the position production shipped at the time; the
+   clause it armed is said on every render now, so a re-run reads the same
+   sentence it did. */
 process.env.CASTING_FACE_SCAN_SCOPE = "all";
 process.env.CASTING_SCAN_TABLE_SCOPE = "all";
 process.env.CASTING_BRIEF_FIDELITY_SCOPE = "all";

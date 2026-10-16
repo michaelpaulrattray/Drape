@@ -783,16 +783,6 @@ export type RefineInterpretInput = {
    */
   inkDocumentedByDelivery?: boolean;
   /**
-   * `CASTING_INK_WORDS_SCOPE`, resolved by the service — how far the words road
-   * reaches on this account. Absent means her neck alone.
-   *
-   * ⚠ **It said *"which is today's product for everybody"* until 2026-08-24 and
-   * that is now the opposite of the truth**: the flag is `all` in production
-   * (fable-1400, his own hand), so every account's words road reaches her neck,
-   * an upper arm and her upper chest, and only the outfit narrows it.
-   */
-  inkWordsRoadOpen?: boolean;
-  /**
    * WHAT THIS CAST IS WEARING — the branch's resolution, from the one owner,
    * resolved by the service (item 7a). Absent is silence, which is `unpathed`:
    * every roll cast before the paths, answering the house crew tee — today's
@@ -1792,9 +1782,6 @@ async function containReply(call: {
       setting it.
     */
     ...(input.inkDocumentedByDelivery === true ? { inkDocumentedByDelivery: true } : {}),
-    /* AND HOW FAR THE WORDS ROAD REACHES — the same shape as its siblings:
-       present only when true, so absent and off are one state rather than two. */
-    ...(input.inkWordsRoadOpen === true ? { inkWordsRoadOpen: true } : {}),
     /* AND WHAT SHE IS WEARING. Unlike its siblings this is not a flag bit, so
        it rides whenever the service resolved one — and an absent resolution is
        the same answer as `unpathed`, which is what keeps the paths dark. */

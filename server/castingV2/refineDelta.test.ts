@@ -667,13 +667,19 @@ describe("ink renders only where the anchor is the document", () => {
     }
   });
 
-  it("⚠ still walls a measured placement the words road does not serve yet", () => {
-    /* The arm: measured, and the flag that would serve it is off here. */
-    const arm = "a band tattoo on her left upper arm";
-    const c = check(arm);
-    expect(readDelta({ free: { ink: arm } }, c)).toBeNull();
-    expect(c.wall?.reason).toBe("gate_ink_document");
-  });
+  /*
+    ⚠ AN ARM STOOD HERE AND IS RETIRED WITH ITS PREMISE — #1577 slice D3.
+
+    It was *"still walls a measured placement the words road does not serve
+    yet"*, and its subject was an upper arm: *"measured, and the flag that would
+    serve it is off here"*. **There is no such placement.** The upper arm joined
+    the road on 2026-08-23 and `CASTING_INK_WORDS_SCOPE` stood at `all` on the
+    service, so the arm only ever passed because this suite's environment never
+    set the variable — it was asserting a refusal no account could receive. The
+    live claim it looks like it was making, that an UNMEASURED placement is
+    refused, is asserted in `inkWordsRoad.test.ts` over a sleeve, a back piece
+    and a thigh, which are really unserved.
+  */
 
   it("⚠ AND WALLS THE CHEST — by her OUTFIT once the road serves it", () => {
     /*
@@ -684,26 +690,22 @@ describe("ink renders only where the anchor is the document", () => {
       coverage owner's verdict.
 
       The chest is now served at the road's most open, so that loop has no
-      population and a closed account's chest ask falls to the derived document
-      message. **That is not the frozen apology this file's header warns about**:
-      `inkNeedsDocumentMessage` is composed from THIS account's own served list,
-      so a closed account is told *"a neck tattoo is the one I can do"* — true,
-      actionable, and naming what works.
+      population.
 
-      The interesting arm is the OPEN one below it, which is every production
-      account (`CASTING_INK_WORDS_SCOPE=all`): the chest reaches the coverage
-      gate, and her OUTFIT decides.
+      ⚠ **THE CLOSED HALF OF THIS ARM IS RETIRED WITH THE FLAG (#1577 slice
+      D3).** It asserted that a closed account's chest ask falls to the derived
+      document message — true of a configuration the service never held, since
+      `CASTING_INK_WORDS_SCOPE` stood at `all`. What is left is the half this
+      arm's own comment already called *"the interesting"* one, and it is every
+      production account: the chest reaches the coverage gate and the OUTFIT
+      decides.
     */
     const ask = "a swallow tattoo on her upper chest";
-    const closedAccount = check(ask);
-    expect(readDelta({ free: { ink: ask } }, closedAccount)).toBeNull();
-    expect(closedAccount.wall?.reason).toBe("gate_ink_document");
-
-    /* OPEN — and UNPATHED, which is every cast in both worlds. The house crew
-       tee covers the chest, so the wall is the wardrobe's and the sentence names
-       her top. **Byte-identical to what this arm asserted before the widening**,
-       which is what makes that change a dark landing in production. */
-    const open: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true };
+    /* UNPATHED, which is every cast in both worlds. The house crew tee covers
+       the chest, so the wall is the wardrobe's and the sentence names the top.
+       **Byte-identical to what this arm asserted before the 2026-08-23
+       widening**, which is what made that change a dark landing in production. */
+    const open: FreeLaneCheck = { instruction: ask };
     expect(readDelta({ free: { ink: ask } }, open)).toBeNull();
     expect(open.wall?.reason).toBe("gate_ink_uncarried");
     expect(open.wall && "place" in open.wall ? open.wall.place : null).toContain("upper chest");
@@ -718,14 +720,16 @@ describe("ink renders only where the anchor is the document", () => {
     cast is wearing. That is the property under test.
   */
   describe("what she is wearing decides which wall she meets", () => {
-    /* The RESOLUTION, not a line: `unpathed` is *cast before the paths* and
-       `incoherent` is *claims a path, cannot say what it wears*, and only the
-       first may read as the house crew tee. */
+    /* The RESOLUTION, not a line: `unpathed` is *no line recorded* and reads
+       as the house crew tee, while a LINE is read on its own terms.
+       ⚠ `source: "born"` with a path stood here until #1577 slice 2, which
+       retired both; `edited` is the source that READS the line, so every answer
+       below is the one this helper always produced. */
     const wearing = (instruction: string, line: string | null): FreeLaneCheck => ({
       instruction,
       wardrobe: line === null
         ? { kind: "unpathed" }
-        : { kind: "line", line, source: "born", path: "wardrobe" },
+        : { kind: "line", line, source: "edited" },
     });
 
     it("⚠ A BASICS CAST'S BARE CHEST NOW RENDERS — the path's whole reason", () => {
@@ -753,15 +757,15 @@ describe("ink renders only where the anchor is the document", () => {
       const ask = "a swallow tattoo on her upper chest";
       const c: FreeLaneCheck = {
         instruction: ask,
-        inkWordsRoadOpen: true,
-        wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
+        wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "edited" },
       };
       expect(readDelta({ free: { ink: ask } }, c)?.free?.ink).toBeTruthy();
       expect(c.wall, "her chest is bare and the road can keep it").toBeUndefined();
 
-      /* CONTROL — the SAME ask, the same flag, on the house crew tee: refused,
-         and by the wardrobe. The variable is the outfit and nothing else. */
-      const tee: FreeLaneCheck = { instruction: ask, inkWordsRoadOpen: true, wardrobe: { kind: "unpathed" } };
+      /* CONTROL — the SAME ask on the house crew tee: refused, and by the
+         wardrobe. The variable is the outfit and nothing else — which is now
+         true by construction rather than by holding a flag still (#1577 D3). */
+      const tee: FreeLaneCheck = { instruction: ask, wardrobe: { kind: "unpathed" } };
       expect(readDelta({ free: { ink: ask } }, tee)).toBeNull();
       expect(tee.wall?.reason).toBe("gate_ink_uncarried");
     });
@@ -839,7 +843,10 @@ describe("ink renders only where the anchor is the document", () => {
          message instead of the wardrobe's wall. The property under test is that
          HER OWN item is gated at all — not which wall — and the wardrobe's wall
          is the one that says something true about a cast in a crew tee. */
-      const c = { ...withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]), inkWordsRoadOpen: true };
+      /* ⚠ `inkWordsRoadOpen: true` rode this spread until #1577 slice D3 and
+       survived the typecheck because a spread literal is inferred, not
+       annotated. The open road is the only road. */
+    const c = { ...withPrior("give him another swallow on his upper chest", ["a fine-line swallow on his upper chest"]) };
       expect(readDelta({ free: { ink: ["another swallow on his upper chest"] } }, c)).toBeNull();
       expect(c.wall?.reason).toBe("gate_ink_uncarried");
     });
@@ -861,7 +868,6 @@ describe("ink renders only where the anchor is the document", () => {
          thing that may differ between them is the PRIOR. */
       const c: FreeLaneCheck = {
         instruction: "give him a small swallow tattoo on his neck",
-        inkWordsRoadOpen: true,
       };
       expect(readDelta(
         { free: { ink: ["a small swallow tattoo on his neck", "a fine-line swallow on his upper chest"] } },
@@ -985,16 +991,27 @@ describe("ink renders only where the anchor is the document", () => {
 
   it("names what DOES work, so the refusal points somewhere", () => {
     /* It INVITES the missing fact rather than only closing a door (D-137 as
-       amended): the user's next move is to say where. */
-    expect(inkNeedsDocumentMessage(false)).toContain("Tell me where");
-    expect(inkNeedsDocumentMessage(false)).toContain("neck tattoo");
-    expect(inkNeedsDocumentMessage(false)).toContain("body-art studio is coming");
-    expect(inkNeedsDocumentMessage(false)).toContain("Nothing was charged");
+       amended): the user's next move is to say where.
+
+       ⚠ **THESE FIVE ARMS WERE DRIVING THE CLOSED ROAD AND ARE NOW DRIVING THE
+       ONLY ONE (#1577 slice D3).** They read `inkNeedsDocumentMessage(false)`
+       and asserted the narrow sentence — *"a neck tattoo is the one I can do"* —
+       while `CASTING_INK_WORDS_SCOPE` stood at `all` on the service, so that
+       is a customer sentence NO ACCOUNT HAS EVER BEEN SHOWN. The live sentence
+       names all three served placements, and it is what is asserted here now.
+       Same class as slice 4b's 134 arms on the dead paste road. */
+    const said = inkNeedsDocumentMessage();
+    expect(said).toContain("Tell me where");
+    expect(said, "every served placement is named, not just the neck").toContain("neck");
+    expect(said).toContain("upper arm");
+    expect(said).toContain("upper chest");
+    expect(said).toContain("body-art studio is coming");
+    expect(said).toContain("Nothing was charged");
     /* ⚠ AND IT NO LONGER CLAIMS FACE INK WORKS. It said "face and neck ink
        works today" for as long as this road existed, and the face half was
        never true — the sentence is the thing this retirement is FOR, so a
        future edit putting it back must go red here. */
-    expect(inkNeedsDocumentMessage(false).toLowerCase()).not.toContain("face");
+    expect(said.toLowerCase()).not.toContain("face");
   });
 });
 
@@ -1618,7 +1635,8 @@ describe("a tattoo she already wears is CARRIED, and its words are not said", ()
     So the neck tattoo was painted a SECOND time from the sentence rather than
     carried as a picture of the one she had — and the frames show a different
     swallow, on the other side of his neck. D-137's forbidden render, on a lane
-    where `CASTING_INK_WORDS_SCOPE` is `all`.
+    where the words road serves every measured placement (`CASTING_INK_WORDS_SCOPE`
+    said so until #1577 slice D3 retired it; nothing narrower replaced it).
 
     ⚠ The discriminator is SOURCE CONTAINMENT, not a placement lookup, and that
     is a repair rather than a preference: the first shape of this resolved each

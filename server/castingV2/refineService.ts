@@ -104,7 +104,6 @@ import { hairStyleByName } from "./hairStyles";
 import {
   FREE_SUBJECT_KEYS,
   FREE_SUBJECTS,
-  REPAINT_ONLY_SUBJECTS,
   isDepartableSubject,
   type FreeSubject,
 } from "./refineSubjects";
@@ -212,8 +211,7 @@ import {
   facetOfSubject,
   type Facet,
 } from "./refineFacets";
-import { harvestRefinement, maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
-import { makeupRegionFor } from "./makeupPlacement";
+import { maskedEditingEnabledFor, refusingRegionReader, type RegionReader } from "./maskedRefine";
 import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
@@ -241,8 +239,13 @@ import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shar
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
    of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
 import { wordsRoadServes } from "./inkPlacement";
+/* AND WHETHER THIS CAST'S OUTFIT LEAVES THAT SURFACE SHOWING (#2558).
+   The road is one of the two questions a words render asks; the covering is the
+   other, and the offer below asks both. Read from the SAME owner `bareSurfaces`
+   reads — `bareSurfaces` IS this predicate over the vocabulary — so the offer
+   and the alternatives every ink refusal names cannot answer differently. */
+import { wardrobeCoversSurface } from "./inkSurfaceCoverage";
 import { currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
-import type { CastingPath } from "../../shared/castingPaths";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
@@ -282,12 +285,9 @@ import { capitalize, pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
   captureCastingRefineDispatchEnabled,
-  captureCastingRepaintEnabled,
-  captureCastingSidePhrasingEnabled,
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
   captureCastingInkTransformEnabled,
-  captureCastingInkWordsEnabled,
 } from "./castingV2Scope";
 import { isUpsweptAsk, readCanthalTilt } from "./eyeShapeRouting";
 import { alreadyUpswept, wearsGlassesByPixels } from "./canthalTilt";
@@ -334,7 +334,6 @@ import {
   unconstrainedPresentationPins,
   PRESENTATION_FACETS,
 } from "./presentationState";
-import { castingIdentityEngine } from "./signEngine";
 import { assertNotFrozen } from "./spendGuards";
 import { chargeRefusal } from "../lib/chargeRefusal";
 
@@ -693,7 +692,6 @@ export type RefineServiceDependencies = {
   markRunning?: typeof markGenerationOperationRunning;
   deduct?: typeof deductCredits;
   refund?: typeof recordRefund;
-  engine?: () => ReturnType<typeof castingIdentityEngine>;
   interpret?: typeof interpretRefinement;
   /**
    * WHAT SHE IS TAKING FROM THE PICTURE SHE ATTACHED, and WHERE IT IS PUT.
@@ -735,21 +733,9 @@ export type RefineServiceDependencies = {
    *
    * The default is fal-backed; without a key it refuses rather than returning an
    * empty mask, because an empty mask composites to "nothing changed" and would
-   * charge her for the picture she already had.
+   * charge the customer for the picture they already had.
    */
   regions?: RegionReader;
-  /**
-   * The masked harvest itself, injectable like every other dependency here.
-   *
-   * Suites that are about CHARGING, RETRYING and REFUNDING pass a passthrough:
-   * they are not about masking, `maskedRefine.test.ts` is, and running the real
-   * composite against a flat synthetic swatch measures the fixture rather than
-   * the service. The seam is a dependency for the same reason `interpret` and
-   * `verifier` are.
-   */
-  harvest?: typeof harvestRefinement;
-  /** The engine the masked path renders with — GPT Image 2, at a pinned size. */
-  maskedEdit?: () => ReturnType<typeof createFalMaskedEditEngine>;
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
@@ -770,34 +756,19 @@ export type RefineServiceDependencies = {
    *  test drives the absence being recorded without a database. */
   recordRows?: typeof recordReferenceRows;
   /**
-   * The engine the REPAINT dispatches its one paint to.
+   * The engine the REPAINT dispatches its one paint to — and the only render
+   * seam on this service since #1577 slice 4b.
    *
-   * The same transport and the same factory as `maskedEdit` today — GPT Image 2
-   * at the master's exact pixels — and its own seam because the two are not the
-   * same decision. Routing is per class (the recipe class on GPT2, anatomical
-   * work on NBP), so the day the repaint routes differently is a day this is
-   * configured differently, and a shared field would have to be untangled under
-   * a paid path rather than named ahead of it.
+   * ⚠ It had a sibling, `maskedEdit`, which the paste road's masked branch
+   * rendered through: the same transport and the same factory, kept as its own
+   * seam because the two were not the same decision. The paste road is retired
+   * and that seam was read by nothing, so it went with it. The reasoning behind
+   * keeping them separate is still the right reasoning the day the repaint
+   * routes per class (the recipe class on one model, anatomical work on
+   * another) — what it needs then is a second seam, not a shared field
+   * untangled under a paid path.
    */
   repaintEngine?: () => RepaintEngine;
-  /**
-   * Whether this render goes through the NEW compositor — read ONCE per render.
-   *
-   * The predicate rather than a boolean, for `referenceLibraryEnabled`'s reason:
-   * the caller's decision and the flag's answer must never be two things.
-   */
-  repaintEnabled?: (userId: number) => boolean;
-  /**
-   * Whether the recipe also says WHERE a named side is.
-   *
-   * The third scope flag this service branches on, and the only one that had no
-   * seam — so the clause could be proven inside the assembler (which takes
-   * `placeSides` as an input) and inside the boot guard, and NOWHERE at the
-   * wire between them. That gap is how a suite ends up asserting one road while
-   * the founder is on another: the wiring is exactly the part a per-user flag
-   * hides (opus-469, on fable-625 §3's enumeration).
-   */
-  sidePhrasingEnabled?: (userId: number) => boolean;
   /**
    * THE TATTOO TAKE, injectable so its court runs without a transport.
    *
@@ -854,12 +825,6 @@ export type RefineServiceDependencies = {
    * so without setting a process-wide variable.
    */
   inkTransformEnabled?: (userId: number) => boolean;
-  /**
-   * `CASTING_INK_WORDS_SCOPE` — whether a words-born tattoo may land past her
-   * neck. Injectable for the same reason as its siblings, and for one more:
-   * its court has to drive both sides of the flag in one sitting.
-   */
-  inkWordsEnabled?: (userId: number) => boolean;
   /** Writes the sent recipe onto the variant at dispatch — see `recordVariantDispatch`. */
   recordDispatch?: typeof recordVariantDispatch;
   /**
@@ -1849,7 +1814,6 @@ async function refineCandidateCounted(
     thing (condition (v), §3.1a).
   */
   const wardrobeNow = currentWardrobeLine({
-    rollPath: source.rollPath as CastingPath | null,
     rollLine: source.rollWardrobeLine,
     /* THE BRANCH'S OWN EDIT, off its composed delta (item 8, fable-1455 Q2).
        `undefined` on every branch that has never had a wardrobe edit, which is
@@ -1887,32 +1851,33 @@ async function refineCandidateCounted(
       */
       inkReferenceEnabled: (dependencies.inkReferenceEnabled ?? captureCastingInkReferenceEnabled)(input.userId),
       /*
-        AND HOW FAR THE WORDS ROAD REACHES on this account — `neck` alone with
-        the flag off, which is today's product for everybody, and the whole
-        measured vocabulary with it on. It is a fact about the ACCOUNT and never
-        about the sentence, so it is resolved once here beside its siblings.
-      */
-      inkWordsRoadOpen: (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId),
-      /*
         AND WHAT THIS CAST IS WEARING — the second half of *can a tattoo go
         there* (item 7a).
 
-        Resolved through `currentWardrobeLine`, the one owner, off the two roll
-        columns the candidate load now joins. A roll cast before the paths has
-        both columns NULL, which resolves to `unpathed`, which the coverage owner
-        reads as the house crew tee — so every roll in production answers exactly
-        what it answered before this landed.
+        Resolved through `currentWardrobeLine`, the one owner, off the roll's
+        stored line that the candidate load joins.
 
-        The resolution rides WHOLE rather than flattened to a string, because
-        `incoherent` — a roll that claims a path and cannot say what it is
-        wearing — must not read as the house crew tee on a cast that might be
-        Basics, and a bare string cannot tell that from *cast before the paths*.
+        ⚠ **THREE SENTENCES STOOD HERE AND ALL THREE WERE FALSE — corrected in
+        #1577 slice 2 (the audit's item B3), which is the slice that made the
+        last of them false.**
 
-        The BRANCH'S edited line is not threaded yet and its absence is the
-        honest state rather than an omission: the WARDROBE subject that writes it
-        is the refine slice (item 8), and `currentWardrobeLine` already names
-        `editedLine` as the seam it will land on. Until then a wardrobe edit
-        cannot exist, so there is nothing for this to miss.
+        The first said *a roll cast before the paths has both columns NULL, which
+        resolves to `unpathed`, so every roll in production answers what it
+        answered before this landed*. **False since #1222**, which made the author
+        road record the brief's own stated outfit — a fresh roll's line is a LINE
+        on a null path, not `unpathed`, and it has been resolving that way for
+        every roll cast since.
+
+        The second said the resolution rides whole *because `incoherent` must not
+        read as the house crew tee*. **That kind no longer exists** (item B1). The
+        resolution still rides whole and the reason moved rather than dying: what
+        a bare string cannot say is whether the line is the BRIEF'S or an EDIT,
+        and the coverage owner turns on exactly that.
+
+        The third said *the branch's edited line is not threaded yet*. **It is**
+        — item 8 threaded it, and it is the `editedLine` argument immediately
+        below. A docblock describing a seam as empty while the seam beside it is
+        being filled is the shape law 7c exists for.
       */
       wardrobe: wardrobeNow,
       /*
@@ -2490,10 +2455,13 @@ async function refineCandidateCounted(
       below is what `kind === "line"` alone stopped meaning the day fresh
       rolls started carrying lines.
 
-      `incoherent` is not counted either, and that is deliberate rather than an
-      oversight: it carries a path and no line, so the surface it refused was
-      decided by a cast that cannot say what it is wearing. A demand row from
-      that is a count of our own broken state wearing a customer's name.
+      ⚠ **`incoherent` WAS A THIRD UNCOUNTED CASE AND THE KIND IS RETIRED**
+      (#1577 slice 2, item B1). It carried a path and no line, so the surface it
+      refused had been decided by a cast that could not say what it was wearing,
+      and a demand row from that would have been a count of our own broken state
+      wearing a customer's name. With the path no longer threaded into the
+      resolution the state is not expressible, so the guard below needs no arm
+      for it.
 
       # The two kinds are not one, for this table's own precedent
 
@@ -2512,7 +2480,13 @@ async function refineCandidateCounted(
       (parsed.refusal.reason === "gate_ink_uncarried"
         || parsed.refusal.reason === "gate_ink_coverage_unread")
       && wardrobeNow.kind === "line"
-      && wardrobeNow.source !== "brief"
+      /* ⚠ THIS READ `source !== "brief"` UNTIL #1577 SLICE 2, AND THE TWO ARE
+         NOW THE SAME TEST SAID TWO WAYS — the vocabulary lost `born`, so
+         `edited` is the only other member. It is written as the POSITIVE
+         because that is the sentence the paragraph above argues for (a line
+         THIS CUSTOMER chose), and because the negative form silently widens the
+         moment a member is added. */
+      && wardrobeNow.source === "edited"
     ) {
       await (dependencies.countInkCoverageDemand ?? recordInkFormDemand)({
         kind: parsed.refusal.reason === "gate_ink_uncarried"
@@ -2523,7 +2497,17 @@ async function refineCandidateCounted(
            `$type<InkPlacement>()`, which this is what keeps true. */
         placement: parsed.refusal.surface,
         outcome: "refused",
-        pathAtRefusal: wardrobeNow.path,
+        /* ⚠ `pathAtRefusal` IS NO LONGER PASSED, AND THE COLUMN STAYS — #1577
+           slice 2. `wardrobeNow.path` was its only source in the product and the
+           resolution no longer carries one, so the helper's own `?? null`
+           default is now the whole story. The column is kept rather than
+           dropped: it is on a written table, dropping one is a destructive
+           migration and his hand, and it is not this slice's. Read at the rows
+           on the way out — `casting_ink_form_demand` holds **zero rows in both
+           worlds**, so no history is being orphaned, and the two documents that
+           argued for the column (`db/castingV2InkFormDemand.ts`'s column-list
+           boundary and `shared/inkFormDemand.ts`'s correction to migration
+           0052) are stamped in this same commit. */
       }).catch(() => undefined);
     }
 
@@ -2717,40 +2701,29 @@ async function refineCandidateCounted(
     editDelta = redirectColourTo(editDelta, colourReferent);
   }
   /*
-    A KIND THE OLD ROAD HAS NEVER BEEN MEASURED ON REFUSES HERE — free, before
-    the claim and before the charge (fable-525 §3c).
+    ⚠ THE DOOR THAT STOOD HERE WENT WITH THE OLD ROAD — #1577 slice 4b.
 
-    Horns is the first subject promoted off measurement courts rather than off a
-    plan, and every one of those courts was run on the REPAINT road, because
-    that is the road that assembles a declarative recipe. Admitting it on the
-    old paste road would charge somebody for a kind nobody has ever measured
-    there — and the promotion's whole point was that a card's claims are backed.
+    It was `kind_unserved`: *"I can't do that to them yet. Nothing was
+    charged."*, refused free and before the claim whenever an ask named a
+    subject only the repaint road had been measured on
+    (`REPAINT_ONLY_SUBJECTS`, derived from the cards' `admittedOn`) and this
+    account was outside the repaint's own flag. Its whole condition was *not
+    on the repaint road*, and there is no other road: the flag stood at `all`
+    on production, so the door could not fire for anybody, and with the paste
+    render gone there is nothing for it to protect anyone from.
 
-    Asserted at the door rather than assumed, because "the old road cannot do it
-    anyway" is exactly the reasoning that has been wrong before: the interpreter
-    now KNOWS the word, so without this the ask would sail past the vocabulary
-    check that used to refuse it and land in a paste render that has never
-    grown a horn.
+    What it was protecting against is worth keeping in words, because the
+    reasoning outlives the door: a subject promoted off measurement courts is
+    promoted on the road those courts were RUN on, and admitting it on a road
+    nobody measured would charge somebody for a claim nothing backs. Every
+    court behind every promoted subject was run on the repaint road, which is
+    now the only one.
 
-    The list is derived from the cards (`admittedOn`), so when repaint widens,
-    the promoted kinds widen with it — one gate, not two lists that drift.
+    `REPAINT_ONLY_SUBJECTS` and the `admittedOn` field it derives from are left
+    standing and are now read by nothing — named in #1577's record as the next
+    slice rather than cut here, because retiring a field on every subject card
+    is its own change with its own suites.
   */
-  const repaintServesThisUser = (dependencies.repaintEnabled ?? captureCastingRepaintEnabled)(
-    input.userId,
-  );
-  if (!repaintServesThisUser && editDelta?.free) {
-    const unserved = REPAINT_ONLY_SUBJECTS.filter((subject) => editDelta?.free?.[subject]);
-    if (unserved.length > 0) {
-      log.info(
-        { userId: input.userId, candidate: input.candidatePublicId, instruction, unserved },
-        "[refineService] the ask names a kind only the repaint road serves — refusing before the charge",
-      );
-      throw refusal("kind_unserved", {
-        code: "BAD_REQUEST",
-        message: `I can't do that to ${pronouns.object} yet. Nothing was charged.`,
-      });
-    }
-  }
 
   /* A likeness comparison rode this ask and was set aside (D-181). */
   const droppedReference = "droppedReference" in parsed && parsed.droppedReference === true;
@@ -3983,18 +3956,44 @@ async function refineCandidateCounted(
             `gate_ink_uncarried` shuts one ask later, which is census 4(b)'s own
             dead-end wearing a different sentence. Where it is not served the
             answer simply closes, honestly, with no offer at all.
+
+            ⚠ **AND THE ROAD WAS ONLY ONE OF THE TWO QUESTIONS, WHICH IS #2558
+            — the dead end this block was written to close, open for seven weeks
+            by the paragraph above being exactly half right.** The upper chest
+            JOINED the road on 2026-08-23 (the Basics chest court), so from that
+            day `wordsRoadServes` answered yes for it and the offer started
+            being made. What actually stops a chest render is not the road, it
+            is the OUTFIT: the house crew tee covers the chest, and the covering
+            is read one door later. So the sentence above named the right
+            failure, the right door and the right placement, and guarded
+            against the wrong one of the two conditions.
+
+            The offer now asks what the render asks, in the render's own order:
+            does this road serve the placement, AND does this cast's outfit
+            leave it showing. `wardrobeCoversSurface` is the SAME reader
+            `bareSurfaces` is built from, and `bareSurfaces` is what derives the
+            alternatives every ink refusal names — so the offer and the list of
+            surfaces we then recommend cannot disagree, which is the property
+            that was missing rather than a second opinion about covering.
+
+            ⚠ `"unknown"` withholds the offer, deliberately and consistently:
+            `bareSurfaces` already drops an unknown surface (an `incoherent`
+            branch names nothing), so an offer made on a covering we cannot read
+            would be this same dead end wearing a third sentence. Not knowing is
+            not a reason to promise.
           */
           /* `placement` is a STRING here on purpose — an open placement is her
              own word for a surface nothing has measured — so it is narrowed
              through the vocabulary's own guard rather than cast. An unmeasured
              surface is served by nothing, which is the right answer. */
-          const serves = place !== null
+          const canPutOneHere = place !== null
             && isInkPlacement(place.placement)
-            && wordsRoadServes(place.placement, (dependencies.inkWordsEnabled ?? captureCastingInkWordsEnabled)(input.userId));
+            && wordsRoadServes(place.placement)
+            && wardrobeCoversSurface(wardrobeNow, place.placement) === "bare";
           return answeredFree(
             "inkNotKept",
             names[0] ?? null,
-            serves ? "I can put a new one on instead — say what you'd like." : null,
+            canPutOneHere ? "I can put a new one on instead — say what you'd like." : null,
           );
         }
         if (address !== null && changingCrop !== undefined) {
@@ -4359,14 +4358,17 @@ async function refineCandidateCounted(
     the table cannot name. **Free and before the claim is the whole point**; a
     refund is not an answer to a question, it is an apology for a charge.
 
-    THREE CONDITIONS, and each rules something out. Only a PRUNE
+    TWO CONDITIONS, and each rules something out. Only a PRUNE
     (`!editDelta` — an ordinary edit's asks come from its own delta). Only when
     it will actually RE-RENDER (this line is below the materialization check, so
-    a prune that navigates has already returned free and untouched). And only on
-    the REPAINT road, because the paste road never asks for a slot and refusing
-    there would take away a removal that works today.
+    a prune that navigates has already returned free and untouched).
+
+    ⚠ IT HAD A THIRD AND THE THIRD WENT WITH THE OLD ROAD — #1577 slice 4b. It
+    was *and only on the REPAINT road*, because the paste road never asked for a
+    slot and refusing there would have taken away a removal that worked. There
+    is one road now, and it is that one, so the condition is the identity.
   */
-  if (!editDelta && repaintServesThisUser && prunedRestateSlots().length === 0) {
+  if (!editDelta && prunedRestateSlots().length === 0) {
     log.info(
       {
         userId: input.userId,
@@ -4564,10 +4566,11 @@ async function refineCandidateCounted(
     studio carries on.
 
     What replaces it is not nothing: the REFERENCE LIBRARY carries a crop into
-    the repaint recipe (`CASTING_REFERENCE_LIBRARY_SCOPE`, `CASTING_REPAINT_SCOPE`,
-    both `all`), which is the mechanism actually keeping her earlier work today.
-    That is a different table and a different pair of flags and it is untouched
-    here.
+    the repaint recipe (`CASTING_REFERENCE_LIBRARY_SCOPE`, `all`), which is the
+    mechanism actually keeping a customer's earlier work today. That is a
+    different table and a different flag and it is untouched here — the
+    repaint's own flag was retired with the paste road in #1577 slice 4b, so the
+    pair this sentence named is now one.
   */
   /*
     THE TATTOOS SHE ALREADY WORE BEFORE THIS SENTENCE — derived once, two
@@ -4579,63 +4582,38 @@ async function refineCandidateCounted(
     Both pointer fields, because a picture-road tattoo and a words-road tattoo
     are recorded in different ones and both are things she is wearing.
   */
-  const inkAlreadyWorn = repaintServesThisUser
-    ? Array.from(new Set([
-      ...Object.keys(priorDelta.inkDelivered ?? {}),
-      ...Object.keys(priorDelta.inkApplied ?? {}),
-    ]))
-    /*
-      ⚠ EMPTY ON THE PASTE ROAD, AND THAT IS THE WHOLE OF WHY THIS IS A
-      CONDITION RATHER THAN A LIST (driven at the frames, 2026-08-24).
-
-      The clause is *a slot with a delivered crop CARRIES BY PICTURE and its
-      words are not said* — and the carry that makes the first half true lives
-      inside `repaintOnce`. The paste road has no ink carry at all: her other
-      tattoo survives there only because its WORDS are re-said, badly, which is
-      the reinvention this item is about.
-
-      So withholding those words off the repaint road does not stop a tattoo
-      being redrawn — it stops it being drawn AT ALL. Measured, on the second
-      half of the court: the record kept both crops and the frame came back
-      with the neck bare, because the dev process was not inside
-      `CASTING_REPAINT_SCOPE` while production is `all`.
-
-      The paste road therefore keeps exactly today's behaviour, which is worse
-      and is not a regression, and the fix serves the road every real customer
-      is on.
-    */
-    : [];
+  const inkAlreadyWorn = Array.from(new Set([
+    ...Object.keys(priorDelta.inkDelivered ?? {}),
+    ...Object.keys(priorDelta.inkApplied ?? {}),
+  ]));
   /*
     ⚠ AND THIS PARTICULAR CALL CANNOT CHANGE WHAT ANY RENDER SENDS. Recorded
     here rather than left to be re-derived (#1290), because deriving it means
     reading two ends of a six-thousand-line file and a reader who does not is
     entitled to believe a control is acting.
 
-    Both directions close it. OFF the repaint road `inkAlreadyWorn` is `[]` by
-    the condition directly above, and `withoutCarriedInkWords` returns its input
-    unchanged on an empty worn set (`refineDelta.ts`'s `wornSlots.length === 0`
-    early return) — so the strip is a no-op by construction. ON the repaint road
-    the strip is real here, but nothing dispatches what this value composes: the
-    paste road's prompt is composed AGAIN, from the persisted row (wall (d)),
-    and the repaint assembles its own recipe from `editDelta` with its own call
-    to this function. That third call is the armed one.
+    The strip is real here, and nothing dispatches what this value composes: the
+    repaint assembles its own recipe from `editDelta` with its own call to this
+    function, and that third call is the armed one.
 
     What `asked` is FOR is the three pre-claim doors below, and each of them
-    reads BOTH of its sides off this same value — `missingFromPrompt(asked, …)`,
-    `contradictedFacets(…, asked)`, `staleCaptions` against the captions this
-    composition carried — so they are self-consistent whether the strip ran or
+    reads BOTH of its sides off this same value - `missingFromPrompt(asked, ...)`,
+    `contradictedFacets(..., asked)`, `staleCaptions` against the captions this
+    composition carried - so they are self-consistent whether the strip ran or
     not. Driven rather than reasoned: this site and `askedFiled` below were both
     sabotaged to their unstripped form and 680 tests across `refineService`,
     `refineDelta`, `refineReask` and `inkApplied` stayed green, while the same
     sabotage at the repaint's call reddens an existing wire arm in 8ms.
 
-    ⚠ KEPT, NOT DELETED, and for one reason: the paste road still exists, and on
-    the day anything turns the repaint off this strip is the correct thing to be
-    doing — it is inert BECAUSE of a flag position, not because it is wrong. The
-    question it raises in passing — whether the pre-claim completeness check
-    ought to be verifying the string the REPAINT will send, rather than a
-    composition nobody on that road dispatches — is a wall (d) question about
-    what this door is for, and it is carded rather than answered here.
+    ⚠ ITS OTHER HALF WAS *KEPT BECAUSE THE PASTE ROAD STILL EXISTS* UNTIL
+    #1577 SLICE 4b, and the paste road does not exist any more. What that
+    paragraph argued - the strip is inert on the old road and would be correct
+    again the day anything turned the repaint off - has no referent now: there
+    is one road, the strip runs on it, and `inkAlreadyWorn` is read off the
+    prior delta unconditionally above. The question it raised in passing stands
+    and is still carded: whether the pre-claim completeness check ought to
+    verify the string the render will actually send rather than a composition
+    nobody dispatches is a wall (d) question about what this door is for.
   */
   const asked = withoutCarriedInkWords(composed, inkAlreadyWorn, instruction);
 
@@ -5381,12 +5359,12 @@ async function refineCandidateCounted(
     dinosaur skeleton tattoo ON HIS NECK"*, and whose FILED DELTA held those
     words verbatim. The product asked her for the one thing she had already
     said. ⚠ **This narrated the incident's own moment in the present tense and
-    went false underneath itself**: it read *"In production that is
-    `CASTING_REPAINT_SCOPE=users:1` — his own account — on every tattoo ask"*,
-    and the flag was widened to `all` (fable-1253). It was `users:1` when the
-    defect was found; it is `all` now, so the lane this defect sat on is every
-    account's. The file's own line ~800 above already says `all` — one file,
-    two answers about one flag, and the reader meets the older one first.
+    went false underneath itself twice over**: it named the repaint's flag at
+    `users:1` — his own account — on every tattoo ask, then the flag was widened
+    to `all` (fable-1253), and then the flag itself was RETIRED with the paste
+    road (#1577 slice 4b). The lane this defect sat on is every account's and
+    there is no second lane to compare it to; the flag's whole history is in the
+    retirement record rather than in this comment.
 
     # WHY THIS IS NOT THE INFERENCE fable-1115 §3 OUTLAWED
 
@@ -5971,11 +5949,12 @@ async function refineCandidateCounted(
         grouping climbs the same column.
 
         Nothing in production was ever exposed — the defect was closed while all
-        four scopes still named the founder alone, and ⚠ **two of those four are
-        `all` now** (`CASTING_REPAINT_SCOPE` and `CASTING_REFERENCE_LIBRARY_SCOPE`,
-        widened fable-1253), so the parenthetical that used to carry this
-        sentence has expired even though the sentence is still true. That is the
-        shape the warning below predicted: `CASTING_V2_SCOPE` was already `all`,
+        four scopes still named the founder alone, and ⚠ **that is no longer the
+        state**: the reference library is `all` (widened fable-1253) and the
+        repaint's own flag has been retired outright (#1577 slice 4b), so the
+        parenthetical that used to carry this sentence has expired even though
+        the sentence is still true. That is the shape the warning below
+        predicted: `CASTING_V2_SCOPE` was already `all`,
         so widening the repaint road by itself would have detonated it for
         everyone at once — and the repaint road has since widened.
 
@@ -6222,7 +6201,6 @@ async function refineCandidateCounted(
     */
     const filed = readStoredDelta(variant.deltas);
     if (!filed) throw new Error("the refinement was not recorded in a readable shape");
-    const engine = (dependencies.engine ?? castingIdentityEngine)();
     /*
       Composed from the PERSISTED row — wall (d) — with the SAME builder the
       pre-claim check used, so the check and the render can no longer disagree
@@ -6250,18 +6228,21 @@ async function refineCandidateCounted(
 
       The only thing this value reaches that leaves the process is `prompt`
       (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
-      one place: inside `renderOnce`, BELOW `if (repaintEnabled) return
-      repaintOnce()`. So it is dispatched only on the paste road — and on the
-      paste road `inkAlreadyWorn` is `[]`, which makes this call the identity.
-      On the repaint road the strip bites and the string is thrown away.
+      one place: inside `renderOnce` — which dispatched the OLD paste road and
+      dispatches nothing now that #1577 slice 4b has taken it out. The paint's
+      own string is assembled by the repaint from `editDelta`, with its own call
+      to this function, and that is the armed one.
 
       Its other two readers cannot see the strip at all: `regionOverrides` reads
       `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this
       function only ever edits `free.ink`, and only by removing ITEMS from it,
       never the facet.
 
-      Kept for the same reason as the other: correct for the paste road, inert
-      while production is `CASTING_REPAINT_SCOPE=all`.
+      ⚠ KEPT, AND THE REASON CHANGED WITH THE ROAD. It used to be *correct for
+      the paste road, inert while that road was dark*; the paste road is gone,
+      so what keeps this call here is `askedFiled`'s own three readers above —
+      the two that cannot see the strip, and `facetsAnsweredBy`, which this
+      function never moves.
     */
     const askedFiled = withoutCarriedInkWords(filed, inkAlreadyWorn, instruction);
     /*
@@ -6278,36 +6259,25 @@ async function refineCandidateCounted(
       segment against a mask that does not exist.
     */
     /*
-      WHAT THE INSTRUCTION SAID THE OBJECT IS — derived once, three consumers.
+      ⚠ `regionOverrides` STOOD HERE AND WENT WITH THE HARVEST — #1577 slice 4b.
 
-      It used to be computed inline at the harvest call. That was fine while the
-      harvest was the only thing that needed it; it is not, now that the corridor
-      it places has to be findable again by name. The placement, the segment
-      cutter's lookup and the painter's own clause all have to name the same
-      kind of object, and three inline derivations of one string is how they come
-      to disagree about whether an ask is about ears or eyes.
+      It was a facet-to-region map handed to the paste road's mask cutter, so the
+      crop it cut and the segment it filed were keyed by the same name: `makeup`
+      through `makeupRegionFor` (a lip gloss lives on lips, a foundation on the
+      whole complexion, and mapping both to `face skin` is what took freckles
+      somebody had paid for), and `statedAccessories` through `accessoryKindOf`,
+      which has no `REGION_OF_FACET` entry and cannot have one because the region
+      depends on the described OBJECT rather than the facet — an earring is at the
+      lobe, glasses are at the eyes. The cutter is gone, so the map has no reader.
+
+      **What it was FOR survives on this road under a different name, which is why
+      this is a deletion and not a loss**: `accessoryRegion` is still derived once,
+      a thousand lines above, and still travels to the mint as `accessoryKind` and
+      to `slotsForFacet` — so the placement, the library's lookup and the painter's
+      own clause still name one kind of object, which was the whole argument for
+      deriving it once. `makeupRegionFor` has no caller left in the product and is
+      named in #1577's record as the next slice rather than cut here.
     */
-    /* Hoisted to sit beside `composed`, its only input, because the prune's
-       pre-claim door needs the same answer a thousand lines earlier and a
-       second derivation of it is how two readers come to disagree. */
-    const regionOverrides: Partial<Record<Facet, string>> = {
-      ...(askedFiled.makeup ? { makeup: makeupRegionFor(askedFiled.makeup) } : {}),
-      /*
-        AND WHERE AN ACCESSORY LIVES (the accessory corridor, fable-120 half 1).
-
-        `statedAccessories` has no `REGION_OF_FACET` entry and cannot have one:
-        the region depends on the described OBJECT, not on the facet — an earring
-        is at the lobe and glasses are at the eyes. So the harvest builds the
-        corridor from the landmark table and now files it under this same kind
-        id, and this override is what points the segment cutter at it.
-
-        Without it `regionNameOf("statedAccessories")` is null, the cutter files
-        nothing, and every earring the product has ever delivered is re-rolled
-        from words on the next render — which is how one gold hoop moved from her
-        left ear to her right between v#156 and v#157.
-      */
-      ...(accessoryRegion ? { statedAccessories: accessoryRegion } : {}),
-    };
     const composedPrompt = composeRenderPrompt(askedFiled, EDIT_PROSE, carriedCaptions);
     const filedContradictions = contradictedFacets(composedPrompt, askedFiled);
     if (filedContradictions.length > 0) {
@@ -6320,15 +6290,16 @@ async function refineCandidateCounted(
     const prompt = composedPrompt.full;
 
     /*
-      THE NEW COMPOSITOR (D-241), dark behind `CASTING_REPAINT_SCOPE`.
+      THE COMPOSITOR (D-241) — AND SINCE #1577 SLICE 4b IT IS THE ONLY ONE.
 
-      The old road below renders, harvests a region, pastes the delivered pixels
-      onto the master and blends the join. This one has no join: it assembles a
-      recipe from the cast's own library — master plus a cropped reference of
-      every delivered feature, each named, with its full word stack — dispatches
-      ONE paint, and **the frame the engine returns is the delivered frame**.
-      Nothing is composited into it, so there is no seam to measure and no
-      composite fault to refuse on.
+      It shipped dark behind a flag of its own, beside an older road that
+      rendered, harvested a region with the segmenter, pasted the delivered
+      pixels onto the master and blended the join. That road and that flag are
+      retired: this one has no join, it assembles a recipe from the cast's own
+      library — master plus a cropped reference of every delivered feature, each
+      named, with its full word stack — dispatches ONE paint, and **the frame the
+      engine returns is the delivered frame**. Nothing is composited into it, so
+      there is no seam to measure and no composite fault to refuse on.
 
       # It REFUSES into the refund rather than painting something else
 
@@ -6353,10 +6324,6 @@ async function refineCandidateCounted(
       delivered-frame read that closes it lands before the flag is flipped for
       anybody (opus-227 §3, fable-281).
     */
-    /* Read once, at the admission door above, so the road that ADMITS the ask
-       and the road that PAINTS it can never be two different answers to the
-       same question inside one request. */
-    const repaintEnabled = repaintServesThisUser;
     /*
       THE BRANCH'S ROWS ARE READ BEFORE THE ASKS ARE BUILT (fable-318 R2).
 
@@ -6378,7 +6345,28 @@ async function refineCandidateCounted(
       the mint lands after the render is kept — so a per-attempt read could only
       ever return the same rows more slowly.
     */
-    const branchRows = repaintEnabled
+    /*
+      ⚠ GATED ON THE LIBRARY'S OWN FLAG SINCE #1577 SLICE 4b, AND THAT IS THE
+      SAME CONDITION IT ALWAYS HAD RATHER THAN A NEW ONE.
+
+      It read the repaint's flag, and that flag was an AND of its parent: the
+      repaint served a user only if the reference library did
+      (`captureCastingRepaintEnabled` ended in
+      `captureCastingReferenceLibraryEnabled`). So *repaint on* and *library on*
+      were the same answer here, and with the repaint's flag retired the parent
+      is what is left to read. Production holds the library at `all`, so this
+      round trip happens on every refine exactly as it did before.
+
+      It matters that it is still a CONDITION: these are the LIBRARY's rows, and
+      a deploy with the library dark must not pay for a database round trip to
+      read rows nobody could have written — which is what the arm titled *with
+      the flag dark it never speaks to the library at all* exists to hold. That
+      arm passed before this slice for the WRONG REASON: what silenced the query
+      was the suite leaving the repaint flag unset, not the library flag.
+    */
+    const branchRows = (dependencies.referenceLibraryEnabled ?? captureCastingReferenceLibraryEnabled)(
+      input.userId,
+    )
       ? await listLineageReferences({
         userId: input.userId,
         candidateId: variant.candidateId,
@@ -6984,15 +6972,10 @@ async function refineCandidateCounted(
         /* Never assumed: `segmentsOnFace` shipped "hers" onto a male
            candidate's face before pronouns were passed rather than guessed. */
         pronouns: pronounsForSex(currentIdentity?.sex),
-        /*
-          AND WHERE A SIDE IS, when this account is inside the phrasing scope.
-          Read here rather than inside the assembler for the same reason the
-          pronouns are: the flag is per user and the assembler knows nothing
-          about users.
-        */
-        placeSides: (dependencies.sidePhrasingEnabled ?? captureCastingSidePhrasingEnabled)(
-          input.userId,
-        ),
+        /* AND WHERE A SIDE IS — said on every render now, so nothing is passed
+           for it. `placeSides` and its per-user seam stood here until #1577
+           slice D2 retired `CASTING_SIDE_PHRASING_SCOPE`, which had been `all`
+           on the service since the founder widened it on 2026-08-25. */
         library,
         asks: asks.asks,
         /*
@@ -7485,169 +7468,34 @@ async function refineCandidateCounted(
     /* ONE definition of "render this", so a retry cannot quietly differ from
        the attempt it is retrying. */
     /*
-      THE MASKED SEAM (the masked-editing workstream, shipped dark).
+      ⚠ THERE IS ONE ROAD HERE NOW — #1577 slice 4b, and the flag went with it.
 
-      The engine call does not change — full-frame context with local harvest is
-      the standing rider, because the model needs the whole face to know what it
-      is editing. What changes is what we KEEP from its answer: only the pixels
-      inside the region that was asked about, composited into an otherwise
-      untouched master.
+      This used to be a FORK: `if (repaintEnabled) return repaintOnce()`, and
+      below it the old compositor — render the whole frame, cut the asked-about
+      region out with the segmenter, paste it onto an otherwise untouched
+      master, blend the seam. The repaint's flag stood at `all` on production
+      and its parent library scope with it, so that road ran for
+      NOBODY; the code's own comment here already called it retired rather than
+      configured (D-241). The flag, the fork and the paste are all gone, and
+      every refine on this product is a repaint.
 
-      `MASKED_EDITING_ENABLED` is false, so today this returns the engine's own
-      bytes byte-for-byte and does not even consult a segmenter. Everything below
-      — the fault detector, the verification net, the retry, the refund — is
-      untouched and does not know this exists.
+      What the paste road carried that nothing else does is in the retirement
+      record (`docs/specs/GHOST_AUDIT_2026-09-23.md`, the N3 section), including
+      the two engines it was the only live caller of: `castingIdentityEngine`'s
+      Nano Banana Pro plain edit at `1K`, and `harvestRefinement`'s mask cut.
     */
     const renderOnce = async () => {
       /*
         SECOND STAGE: the picture is about to go to the engine (#55).
 
-        Above the road split on purpose — both roads paint, and a stage word
-        that depended on which compositor was running would be naming the
-        machinery rather than what is happening to her picture. It re-fires on
-        the free re-render below, which is the honest reading: that render
-        really is starting again.
+        Outside the paint rather than inside it, which is what it was for when
+        there were two roads and is still the honest place for it: the stage
+        word names what is happening to the picture, never the machinery doing
+        it, and it re-fires on the free re-render below — that render really is
+        starting again.
       */
       await announce("rendering");
-      /*
-        THE SWAP, and it is a whole road rather than a step inside this one.
-        Everything below — the harvest, the carried-segment assembly, the seam —
-        is the old compositor's machinery, and D-241 retires it rather than
-        configuring it. Read once above, so a retry cannot cross roads.
-      */
-      if (repaintEnabled) return repaintOnce();
-      /*
-        THE ROUTING ROW THE FACE WALL ESTABLISHED, wired at last.
-
-        Every render on the wall came from GPT Image 2 — founder's eye, seat's
-        eye and the convergence arithmetic picked it independently for
-        face-region edits. The product path was still calling the incumbent
-        identity engine, so the wall was measuring one engine while production
-        ran another. That gap is what produced an 848x1264 answer to a 1024x1536
-        master: a resolution TIER instead of a size, and a cap the composite
-        cannot use.
-
-        Only the masked path routes here. Everyone else is on exactly the engine
-        they were on.
-      */
-      const painted = maskedEditingEnabledFor(input.userId)
-        ? await (dependencies.maskedEdit ?? defaultMaskedEditEngine)().edit({
-          prompt,
-          references: [{ bytes: base.bytes, contentType: base.contentType }],
-          /* The master's exact pixels — the composite has no use for a size class. */
-          ...(await masterSize()),
-        })
-        : await engine.editWithReferences({
-          prompt,
-          /* ONE reference, forever: the sharp original. */
-          references: [{ bytes: base.bytes, contentType: base.contentType }],
-          // 1K: a candidate's own resolution. The 2K tier belongs to signed views.
-          resolution: "1K",
-        });
-      const harvested = await (dependencies.harvest ?? harvestRefinement)({
-        master: { bytes: base.bytes, contentType: base.contentType },
-        painted: { bytes: painted.bytes, contentType: painted.contentType },
-        /*
-          THE ANSWERED FACETS, and the distinction is load-bearing here (D-238).
-
-          `facets` tells the mask-cutter what this render PUTS THERE: a facet
-          whose zone scope is "object" takes the addition path, which anchors a
-          landmark corridor from the described object. A departure has no
-          described object — nothing survives on the subject to describe — so
-          sending its facet here would ask for the landmark of nothing and refuse
-          a render the painter could have carried out perfectly.
-
-          A removal is not an addition of an absence. It travels in `departed`,
-          which has its own territory rule: the object is ON the master, so the
-          zone is its own footprint rather than a corridor. Two channels because
-          they are two different questions about the picture.
-        */
-        /* The facets the painter was actually ASKED for — the carried ones were
-           subtracted from the prompt above, and harvesting a region nobody was
-           asked to change would cut a patch out of untouched master. */
-        facets: Array.from(facetsAnsweredBy(askedFiled)),
-        regionOverrides,
-        reader: dependencies.regions ?? defaultRegionReader(),
-        /* Per user, not per deploy — the first flip goes to one account. */
-        userId: input.userId,
-        /* What the instruction said the thing IS. An earring hangs from a lobe
-           and glasses sit at the eyes, so the placement needs the words, not
-           just the slot they landed in. Derived once above, beside the region
-           override that has to name the same object. */
-        described: describedAccessories,
-        /* The thing that LEFT, which the pruned record cannot name. Without it
-           an object removal asks no question at all, and with only `described`
-           it asks about the SURVIVING accessory — a chain of earrings+glasses
-           minus the glasses would harvest at her earlobes, which is the exact
-           failure `LANDMARK_OF_ACCESSORY` was introduced to kill. */
-        departed: departedFromPicture,
-        operationId,
-      });
-      /*
-        The composite's own working, carried to the verification step rather
-        than re-derived there. What it proves is narrow and exact: outside
-        `applied`, this picture IS the master, byte for byte — so a facet whose
-        master region never meets `applied` has already been answered and does
-        not need a stochastic reader rolled against it again.
-      */
-
-      /*
-        The composite's own working, carried to the verification step rather
-        than re-derived there. What it proves is narrow and exact: outside
-        `applied`, this picture IS the master, byte for byte — so a facet whose
-        master region never meets `applied` has already been answered and does
-        not need a stochastic reader rolled against it again.
-      */
-      return {
-        ...painted,
-        /*
-          THE HARVEST ITSELF — which is exactly what the retired assembler
-          returned on every render this product has ever delivered.
-
-          `assembleWithCarriedSegments` opened by building an `unchanged` object
-          out of the harvest and returned it whenever the store was dark, held
-          no rows, or the render carried no evidence. Production's store has
-          held ZERO rows all time (read in both worlds, 2026-09-25), so that
-          branch is the only one that ever ran. These four fields are that
-          object, field for field.
-        */
-        bytes: harvested.bytes,
-        contentType: harvested.contentType,
-        evidence: harvested.evidence ?? null,
-        /*
-          `undefined`, not `[]` — the same value the repaint branch declares, so
-          the two roads now agree on shape. Identical downstream either way:
-          `new Set(image.carried ?? [])` and `rendered.carried ?? []` are the
-          only readers and both give the empty set. Typing it `[]` instead
-          narrowed the union to `never[]` and broke those readers at the
-          compiler rather than at runtime.
-        */
-        carried: undefined,
-        assembly: undefined,
-        /*
-          AND THE SEAM VERDICT, FOR THE SAME REASON, ON EVERY RENDER (fable-119).
-
-          The seam check has been running in SHADOW on edge-moving classes since
-          it shipped, and the shadow produced a log line that fired only when it
-          found something — a sample of failures with no denominator, which is
-          why the flip decision has spent four shifts resting on three
-          anecdotes. It rides the row now, torn or clean, enforced or shadow.
-
-          `coherence` beside it is the statistic the tear bar cannot express:
-          the founder traced a visible seam on a frame this detector scored
-          `torn: false`, and in his band it is 0 pixels over the bar with a
-          consistent -10 luma offset along the whole edge. Recorded and acted on
-          by nothing — one specimen is not a calibration.
-        */
-        seam: harvested.seam,
-        /*
-          NAMED, NOT OMITTED — the mirror of the four `undefined`s the repaint
-          branch declares above. A paste has no recipe, and saying so here is
-          what lets `image.repaint` be read at the landing without the union
-          type hiding one road's field from the other.
-        */
-        repaint: undefined,
-      };
+      return repaintOnce();
     };
 
     /*
@@ -7870,24 +7718,25 @@ async function refineCandidateCounted(
       direction for a non-binding record: the ask is broader than the mint's
       read-back, so a reader cannot miss on an adjective nobody typed.
 
-      # ONLY ON THE ROAD THAT SAYS THEM
+      # ON THE ROAD THAT SAYS THEM — AND IT IS THE ONLY ROAD NOW
 
-      `delta.open` reaches the painter through the repaint recipe and nothing
-      else — the paste road composes its prompt from words the recipe never
-      carries. Asking a reader about a halo the painter was never told about
-      would manufacture a miss on every frame and file it against the kind. The
-      control for this aim is driven beside the positive arm.
+      `delta.open` reaches the painter through the repaint recipe, which every
+      render is composed from since #1577 slice 4b took the paste road out. The
+      condition that stood here was *only on the repaint road*, because the
+      paste road composed its prompt from words the recipe never carried and
+      asking a reader about a halo the painter was never told about would
+      manufacture a miss on every frame and file it against the kind. With one
+      road the ask and the question cannot come apart that way. The control for
+      this aim is driven beside the positive arm.
     */
-    if (repaintEnabled) {
-      for (const [kind, said] of Object.entries(readOpenKinds(composed) ?? {})) {
-        facts.push({
-          /* Through `readOpenKinds`, which is strict about the key, so a slot
-             the catalogue would refuse cannot reach the constructor. */
-          subject: aboutOpenKind({ slot: openSlotKey(kind), noun: said.noun }),
-          asked: said.words,
-          binding: openKindPresenceBindsToday(),
-        });
-      }
+    for (const [kind, said] of Object.entries(readOpenKinds(composed) ?? {})) {
+      facts.push({
+        /* Through `readOpenKinds`, which is strict about the key, so a slot
+           the catalogue would refuse cannot reach the constructor. */
+        subject: aboutOpenKind({ slot: openSlotKey(kind), noun: said.noun }),
+        asked: said.words,
+        binding: openKindPresenceBindsToday(),
+      });
     }
 
     /*
@@ -8157,7 +8006,28 @@ async function refineCandidateCounted(
            frame's own size, which is where its question was always going to be
            answered. */
         facets: facts.flatMap((fact) => facetIn(fact.subject) ?? []),
-        masterRegions: rendered.evidence?.masterRegions,
+        /*
+          ⚠ ALWAYS NULL SINCE THE REPAINT WIDENED, AND #1577 SLICE 4b ONLY MADE
+          IT VISIBLE — CARDED, NOT REPAIRED HERE.
+
+          This read `rendered.evidence?.masterRegions`, and `evidence` is the
+          PASTE road's harvest map. The repaint declares `evidence: undefined`
+          by construction (it pastes nothing), so from the day
+          the repaint reached every account every production render has
+          arrived here with nothing — `detailForVerification` returns `null` on
+          its first line when this is falsy, so **no paid refine has had a
+          magnified crop since.** The compiler said so the moment the fork came
+          out: `rendered.evidence` narrowed to `undefined` and this expression
+          to `never`.
+
+          The capability is real and measured (`marks-reader-court.mts`: the
+          reader sees freckles 8/8 at 2x on the face crop against 6/8 unanimous
+          at portrait size), so restoring it on the repaint road is a card and a
+          cost — the repaint brings no region map, so the crop needs a
+          segmentation read of its own. Passing the honest constant here rather
+          than deleting the call, because the reader and its court stay.
+        */
+        masterRegions: null,
       });
       /*
         `settleCarriedChecks` used to wrap this (fable-120): a pasted fact the
@@ -9141,7 +9011,7 @@ async function refineCandidateCounted(
       THE SEGMENT STORE'S WRITE USED TO SIT HERE, and it never wrote a row.
 
       It refused without `image.evidence`, and `repaintOnce` — the road every
-      production render takes, `CASTING_REPAINT_SCOPE=all` — declares that field
+      render takes, and since #1577 slice 4b the only one — declares that field
       `undefined`. So the store was structurally unwritable on the live road,
       which is why `casting_segments` holds zero rows all time in BOTH worlds.
       `earned` is untouched and still feeds the reference library below, which
@@ -9501,18 +9371,27 @@ async function refineCandidateCounted(
             userId: input.userId,
             variantId: variant.id,
             frame: { bytes: image.bytes },
-            /* The composite's own working, kept rather than re-derived — the
-               same evidence the segment store cuts from, so a reference and a
-               segment of one render can never disagree about where the paint
-               was allowed to go. */
-            applied: image.evidence?.applied ?? null,
-            masterRegions: image.evidence?.masterRegions ?? new Map(),
-            deliveredRegions: image.evidence?.deliveredRegions ?? null,
-            /* The split the harvest already performed and used to throw away —
-               without it every per-side slot files words, which is what the
-               whole library did until today. */
-            masterSideRegions: image.evidence?.masterSideRegions ?? null,
-            deliveredSideRegions: image.evidence?.deliveredSideRegions ?? null,
+            /*
+              ⚠ THE HARVEST'S FIVE MAPS ARE THE PASTE ROAD'S AND THE PASTE ROAD
+              IS GONE — #1577 slice 4b. These read `image.evidence?.…` with
+              exactly these fallbacks, and `evidence` is `undefined` on every
+              repaint, so the fallbacks have been the live values for every
+              production render since the repaint reached every account.
+              Declared as the constants they already were rather than read off a
+              field that cannot exist: `readGround` below is what this road
+              actually hands the mint, and it is handed unconditionally now for
+              the same reason.
+
+              The mint's own harvest-side machinery is therefore reached with
+              nothing by its only caller. Collapsing THAT is its own slice
+              (#1577's record names it) — a dead input is not licence to cut a
+              module this one does not own.
+            */
+            applied: null,
+            masterRegions: new Map(),
+            deliveredRegions: null,
+            masterSideRegions: null,
+            deliveredSideRegions: null,
             slots,
             knownDigests: known,
             /*
@@ -9567,12 +9446,15 @@ async function refineCandidateCounted(
                 separately, so the mask that cut the crop is never the mask the
                 crop is scored against.
 
-                Gated on the FLAG rather than on the absence of evidence. The old
-                road can also arrive here with no evidence (the masked path off),
-                and inferring the need from that would start spending vision
-                calls on a live path that never asked for them.
+                ⚠ IT WAS GATED ON THE FLAG rather than on the absence of
+                evidence, because the old paste road could also arrive here with
+                no evidence (the masked path off) and inferring the need from
+                that would have started spending vision calls on a live path
+                that never asked for them. #1577 slice 4b removed that road and
+                its flag, so the gate's whole population is this road and the
+                reader is handed unconditionally.
               */
-              ...(repaintEnabled ? { readGround: read } : {}),
+              readGround: read,
               /*
                 THE COMPOSER'S TWO READS, ON THE FRAME THE USER IS LOOKING AT.
 
@@ -9731,7 +9613,6 @@ async function refineCandidateCounted(
         cannot drift; only the branch state they are asked about differs.
       */
       wardrobe: currentWardrobeLine({
-        rollPath: source.rollPath as CastingPath | null,
         rollLine: source.rollWardrobeLine,
         editedLine: editedWardrobeLine(claimedDeltas),
       }),
@@ -9979,17 +9860,21 @@ async function refineCandidateCounted(
         */
         ...(adjudications ? { adjudications } : {}),
         /*
-          WHAT THE COMPOSITE DID, so a carried fact can be adjudicated later
-          (fable-109). Absent when nothing was carried — an ordinary render has
-          no assembly to describe.
+          ⚠ TWO FIELDS CAME OFF THIS ROW WITH THE PASTE ROAD — #1577 slice 4b.
+
+          `assembly` was what the COMPOSITE did, so a carried fact could be
+          adjudicated later (fable-109), and `seam` was the join's verdict on
+          every composited render (fable-119) — torn or clean, so the tear rate
+          had a denominator. Both were the harvest's, both were spread
+          conditionally, and the repaint declares each `undefined` because it
+          pastes nothing: so neither has ridden a landed row since the repaint
+          reached every account, which is the whole population today. Removed
+          rather than left as two guards that cannot fire.
+
+          What they measured is not re-created on this road and is not meant to
+          be: there is no join to score. The record of what they were for is in
+          `docs/specs/GHOST_AUDIT_2026-09-23.md`'s N3 section.
         */
-        ...(image.assembly ? { assembly: image.assembly } : {}),
-        /*
-          THE SEAM VERDICT, ON EVERY LANDED RENDER (fable-119). Absent only when
-          nothing was composited — a flag-off or no-region render has no
-          boundary to have an opinion about.
-        */
-        ...(image.seam ? { seam: image.seam } : {}),
         /*
           AND THE RECIPE, ON A REPAINTED ROW ONLY — see `repaintOnce`. Absent on
           every other road, which is what makes its presence the mark of this

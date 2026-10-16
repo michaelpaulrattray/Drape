@@ -25,8 +25,9 @@ import {
  * boot looked like the honest posture.
  *
  * **The check could never fire.** The parent chain is
- * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` → `CASTING_REPAINT_SCOPE`
- * → `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE`, and the last of
+ * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` →
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` (the repaint's own
+ * flag sat in that chain until #1577 slice 4b retired it), and the last of
  * those already refuses to boot without the key. It was found by driving the
  * guard through `validateEnv()` and insisting the arm assert ITS OWN REASON —
  * the arm refused, on `CASTING_V2_SCOPE`'s message. A looser regex would have

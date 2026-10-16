@@ -293,7 +293,8 @@ export type RefineDelta = {
    *   from the sentence. A different swallow, on the other side of his neck.
    *
    * That is D-137's forbidden render — ink repainted from words — on a lane
-   * where `CASTING_INK_WORDS_SCOPE` is `all`.
+   * that serves every measured placement (`CASTING_INK_WORDS_SCOPE` is retired,
+   * #1577 slice D3; the lane did not narrow when it went).
    *
    * # What the key buys, and it is two things from one rule
    *
@@ -556,10 +557,17 @@ export type RefineRefusal =
    * too. A refusal that under-states what the product can do is the
    * inert-control failure with its sign flipped, one copy string along, and the
    * fix is the one this file uses everywhere: the sentence is DERIVED from the
-   * list that decides the road, so a placement joining `WORDS_ROAD_PLACEMENTS`
-   * cannot be left behind in prose that has outgrown it.
+   * list that decides the road, so a placement joining
+   * `WORDS_ROAD_PLACEMENTS_OPEN` cannot be left behind in prose that has
+   * outgrown it.
+   *
+   * ✅ **The `wordsRoadOpen` bit this member carried is GONE with
+   * `CASTING_INK_WORDS_SCOPE` (#1577 slice D3).** The sentence is still
+   * derived — from the one surviving list — so what the refusal says is
+   * unchanged for every account; what it no longer does is carry a
+   * per-account answer that was the same answer for everybody.
    */
-  | { reason: "gate_ink_document"; wordsRoadOpen: boolean }
+  | { reason: "gate_ink_document" }
   /**
    * A PLACE WE CAN SEE AND CANNOT KEEP — the words-road court's own answer
    * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
@@ -905,35 +913,19 @@ export type FreeLaneCheck = {
    */
   inkDocumentedByDelivery?: boolean;
   /**
-   * WHETHER THIS ACCOUNT'S WORDS ROAD REACHES PAST HER NECK —
-   * `CASTING_INK_WORDS_SCOPE`, resolved by the service.
-   *
-   * Absent means off: an ask naming an upper arm or an upper chest walls here,
-   * free, before the claim. On, those two join `neck` and the same ask renders
-   * and mints.
-   *
-   * ⚠ **AND ABSENT IS NO LONGER TODAY'S PRODUCT, WHICH IS WHAT THIS SAID UNTIL
-   * 2026-08-24.** `CASTING_INK_WORDS_SCOPE` is `all` in production — his own
-   * hand, fable-1400, the first capability this program took from `users:1` to
-   * `all` — so the service resolves this TRUE for every account and the off
-   * state is a test configuration rather than the shipped one. The file already
-   * says so ~600 lines above (*"on a lane where `CASTING_INK_WORDS_SCOPE` is
-   * `all`"*); this is the same file's older answer.
-   *
-   * It governs the INK lane only. The mark lane's list is not a capability
-   * question and no flag moves it.
-   */
-  inkWordsRoadOpen?: boolean;
-  /**
    * WHAT THIS CAST IS WEARING — the branch's resolution, from the one owner
    * (`currentWardrobeLine`), resolved by the service (item 7a).
    *
-   * The RESOLUTION and not the line, because the three cases do not flatten:
-   * absent and `unpathed` are *cast before the paths* and answer the house crew
-   * tee — today's answer for all 206 production rolls, which is what makes this
-   * landing dark — while `incoherent` is *this roll claims a path and cannot say
-   * what it is wearing*, which must not read as a crew neck on a cast that might
-   * be Basics.
+   * The RESOLUTION and not the line, and the reason MOVED with #1577 slice 2
+   * rather than dying. It was that the three cases do not flatten: absent and
+   * `unpathed` answer the house crew tee, while `incoherent` — *this roll claims
+   * a path and cannot say what it is wearing* — must not read as a crew neck on
+   * a cast that might be Basics. **That kind is retired with the paths** (the
+   * ghost audit's item B1).
+   *
+   * What does not flatten now is the SOURCE: absent and `unpathed` answer the
+   * house tee, a `brief` line keeps the house prior, and only an `edited` line
+   * is read on its own terms. A bare string cannot say which of those it is.
    */
   wardrobe?: WardrobeResolution;
   /** Set when the value hit a wall, so the caller can name which one. */
@@ -1552,7 +1544,6 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           const placement = classifyInkPlacement(
             scrubbed,
             subject === "ink" ? "ink" : "mark",
-            check.inkWordsRoadOpen === true,
             /* AND WHAT THIS CAST IS WEARING (item 7a). Absent is silence, which
                is `unpathed`: every roll cast before the paths, answering the
                house crew tee — today's product, byte for byte. */
@@ -1593,9 +1584,6 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           if (placement.kind !== "in_frame") {
             check.wall = {
               reason: "gate_ink_document",
-              /* The same bit the classifier above was handed, so the refusal
-                 and the routing cannot disagree about which road she is on. */
-              wordsRoadOpen: check.inkWordsRoadOpen === true,
             };
             return null;
           }

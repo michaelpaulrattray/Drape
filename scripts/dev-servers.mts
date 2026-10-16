@@ -34,6 +34,9 @@ import {
   rootsStartedAfter,
   pidsNamed,
   rootsToKill,
+  noPortLine,
+  servingState,
+  serverPidsOfTree,
   PROCESS_TABLE_QUERY,
   type ProcessRow,
 } from "./lib/devServerTrees.mts";
@@ -184,7 +187,15 @@ function registeredWorktrees(): { paths: Set<string>; readable: boolean } {
 
 const WORKTREES = registeredWorktrees();
 
-const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number[]> = ports) => {
+/* ⚠ `table` IS A PARAMETER FOR THE SAME REASON `held` IS — PR #784 review,
+   finding 2, one axis along. The serving state is read out of the PROCESS table,
+   so a post-kill listing handed only a fresh port map would word every surviving
+   tree from the table taken before the kill. Both tables travel together. */
+const describe = (
+  tree: (typeof trees)[number],
+  held: ReadonlyMap<number, number[]> = ports,
+  table: readonly ProcessRow[] = rows,
+) => {
   /* ⚠ `portsOfTree`, never `childPids` — PR #784 review, finding 1. An
      unwatched tree's ROOT can be the port holder, and the backstop below cannot
      see that case because the pid does belong to a tree. */
@@ -195,6 +206,10 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
      also words the line, so this file holds no second copy of the decision. */
   const state = launchDirectoryState(tree.launchedFrom, DISK, WORKTREES.paths);
   const gone = launchDirectoryIsGone(state);
+  /* ⚠ READ, NOT INFERRED (#2563). The branch below used to print "between
+     restarts" here — a cause this reader cannot observe — over five trees that
+     had held no server for two days. */
+  const serving = servingState(tree, table, held);
   return `  root ${String(tree.rootPid).padStart(6)}  started ${tree.startedAt.toLocaleString()}`
     + `  children [${tree.childPids.join(", ") || "none"}]`
     /* "between restarts" is a promise only a watcher can keep. An unwatched
@@ -206,8 +221,8 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
     + `  ${listening.length > 0
       ? listening.join(" ")
       : tree.watched
-        ? gone ? "(no port — its source is gone)" : "(no port — between restarts)"
-        : "(no port — nothing is being served)"}`
+        ? gone ? "(no port — its source is gone)" : noPortLine(serving, true)
+        : noPortLine(serving, false)}`
     + (tree.watched ? "" : "\n         ⚠ NO WATCHER — started off the entrypoint, so nothing restarts it")
     + (gone
       ? `\n         ⚠ ABANDONED — launched from ${tree.launchedFrom}, which ${state === "shell"
@@ -216,6 +231,19 @@ const describe = (tree: (typeof trees)[number], held: ReadonlyMap<number, number
           ? "git does not list as a worktree: that tree was removed and this process has been writing into what is left"
           : "no longer exists"}.`
         + " Nobody's live work; safe to kill."
+      : "")
+    /* ⚠ SAID ONLY WHEN `ABANDONED` HAS NOT ALREADY SAID MORE. A removed tree is
+       idle too, and two warnings about one tree make the stronger one look like
+       a restatement of the weaker. */
+    + (serving === "idle" && tree.watched && !gone
+      ? `
+         ⚠ IDLE — no process under this watcher is running the server.`
+        + ` Nothing is being served and nothing will be`
+        + `
+            until a file in ${tree.launchedFrom ?? "its tree"} changes.`
+        + ` Whose tree that is, this cannot say: use`
+        + `
+            --since <when your shift began>, or read the directory and kill the root by name.`
       : "")
     /* ⚠ NOT "no launch directory in its command lines", which is what this said
        until #1483 and is now false of half the population: a worktree launch
@@ -281,16 +309,56 @@ const sayTransportRepaired = () => {
 };
 
 /**
+ * ⚠ THE IDLE POPULATION, AND IT IS DERIVED FROM BOTH TABLES THE CALLER HOLDS
+ * (#2563) — never from the module-level pair, because the road after a kill
+ * holds fresher ones and the whole point is that the count falls to zero there.
+ *
+ * `gone` is excluded: a removed tree is idle as well, and `ABANDONED` already
+ * says strictly more about it.
+ */
+const idleRootsOf = (
+  treeList: readonly (typeof trees)[number][],
+  table: readonly ProcessRow[],
+  held: ReadonlyMap<number, number[]>,
+) => treeList
+  .filter((tree) => tree.watched
+    && servingState(tree, table, held) === "idle"
+    && !launchDirectoryIsGone(launchDirectoryState(tree.launchedFrom, DISK, WORKTREES.paths)))
+  .map((tree) => tree.rootPid);
+
+/**
+ * ⚠ SAY IT IN ONE PLACE AS WELL AS BESIDE EACH TREE, AND CARRY IT IN THE EXIT
+ * CODE (#2563).
+ *
+ * Five of these sat on this machine for two days under a reassuring sentence,
+ * through one sweep and one sighting. A per-tree line is what a reader sees; a
+ * count and a non-zero code are what a reader who is scrolling, or a script,
+ * sees. Both, for the same reason `sayUnplaced` exists.
+ */
+const sayIdle = (idleRoots: readonly number[]) => {
+  if (idleRoots.length === 0) return;
+  console.log(`
+⚠ ${idleRoots.length} watcher(s) above are IDLE — holding a file watcher over a checkout`);
+  console.log("  and serving nothing. They do not come back on their own; only a file change in their");
+  console.log("  own tree starts a server again. This is #2563's population, and #1481's before it.");
+  console.log(`  once you have read whose trees these are:  npx tsx scripts/dev-servers.mts --kill ${idleRoots.join(",")}`);
+};
+
+/**
  * Every road out says all three things and then carries the worst of them in
  * its exit code, so a caller that only reads codes still learns the answer was
  * incomplete. ⚠ It RETURNS the code rather than exiting: `scriptExitDiscipline`
  * wants a literal `process.exit(` as this file's last top-level statement.
  */
-const codeFor = (found: ReturnType<typeof listenersOutsideEveryTree>) => {
+const codeFor = (
+  found: ReturnType<typeof listenersOutsideEveryTree>,
+  idleRoots: readonly number[] = [],
+) => {
   sayUnplaced(found);
+  sayIdle(idleRoots);
   sayWorktreesUnread();
   sayTransportRepaired();
-  return found.length === 0 && !TRANSPORT_REPAIRED ? 0 : 2;
+  return found.length === 0 && idleRoots.length === 0 && !TRANSPORT_REPAIRED ? 0 : 2;
 };
 
 if (trees.length === 0) {
@@ -312,7 +380,7 @@ const since = ARGS.value("since");
 const kill = ARGS.value("kill");
 if (since === null && kill === null) {
   const found = listenersOutsideEveryTree(trees, ports);
-  process.exit(codeFor(found));
+  process.exit(codeFor(found, idleRootsOf(trees, rows, ports)));
 }
 
 let targets: number[];
@@ -327,7 +395,7 @@ if (since !== null) {
        reach it here too — "nothing to kill" is the same reassuring sentence in
        different words. */
     const found = listenersOutsideEveryTree(trees, ports);
-    process.exit(codeFor(found));
+    process.exit(codeFor(found, idleRootsOf(trees, rows, ports)));
   }
   targets = mine.map((tree) => tree.rootPid);
 } else {
@@ -371,6 +439,6 @@ const left = devServerTrees(leftRows);
    kill, under a comment claiming both tables were re-read. */
 const portsNow = portsByPid();
 console.log(`\n${left.length} dev server tree(s) left:`);
-for (const tree of left) console.log(describe(tree, portsNow));
+for (const tree of left) console.log(describe(tree, portsNow, leftRows));
 const stillListening = listenersOutsideEveryTree(left, portsNow);
-process.exit(codeFor(stillListening));
+process.exit(codeFor(stillListening, idleRootsOf(left, leftRows, portsNow)));

@@ -142,16 +142,21 @@ describe("an outfit ask is refused the same way on every branch", () => {
 
   it("⚠ and so does a BASICS branch — the one state that used to open the door", async () => {
     /*
-      THE ARM THE DELETION IS PROVEN BY. `basics` is the state §7.2 existed for,
+      THE ARM THE DELETION IS PROVEN BY. Basics is the state §7.2 existed for,
       and after the retirement it must be answered exactly like every other
-      branch. Thirteen pathed rolls survive on production and not one of them
-      holds a candidate, so no customer can reach this — the arm exists because
-      the TYPE still admits it and a future reader should not have to guess
-      whether the collapse covered it.
+      branch.
+
+      ⚠ **THIS SAID *"the arm exists because the TYPE still admits it"* and that
+      stopped being true at #1577 slice 2**, which took the `path` off the
+      resolution — so the type admits no path at all now. What it still admits,
+      and what this arm drives, is the basics SENTENCE: the thirteen pathed
+      rolls keep their stored lines on production, none of them holds a
+      candidate, and a line reading *bare chested* must meet the stage wall on
+      its words rather than on a column nobody reads.
     */
     const parse = await interpretRefinement({
       instruction: ASK, engine: claimsTheWall(), ...FACE,
-      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "born", path: "basics" },
+      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "edited" },
     });
     expect(parse.ok).toBe(false);
     expect(parse.ok === false && parse.refusal.reason).toBe("wall_stage");
@@ -160,7 +165,7 @@ describe("an outfit ask is refused the same way on every branch", () => {
   it("and the sentence she reads never names a path she can no longer buy", async () => {
     const parse = await interpretRefinement({
       instruction: ASK, engine: claimsTheWall(), ...FACE,
-      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "born", path: "basics" },
+      wardrobe: { kind: "line", line: "bare chested, in plain black shorts", source: "edited" },
     });
     const said = parse.ok === false ? refusalMessage(parse) : "";
     expect(said.length).toBeGreaterThan(0);
@@ -191,31 +196,33 @@ describe("the recipe says the outfit only when the photograph disagrees with it"
       and the preservation tail's "the same clothing" points AT that photograph.
     */
     const line = "a plain black tee, dark jeans, plain boots";
-    expect(said(recipeWith({ kind: "line", line, source: "edited", path: "wardrobe" })))
+    expect(said(recipeWith({ kind: "line", line, source: "edited" })))
       .toContain(line);
   });
 
-  it("⚠ says NOTHING for a BORN line — the photograph already carries it", () => {
+  it("⚠ says NOTHING for the BRIEF's own line — the photograph already carries it", () => {
     /*
       The arm that keeps this from being free-looking-and-not. Prompt context is
       not additive in this product, measured, so a sentence restating what the
       master already shows is a cost with no purchase.
+
+      ⚠ **IT DROVE A `born` LINE TOO UNTIL #1577 SLICE 2**, which retired that
+      source with the paths. Nothing is lost: `born` and `brief` were silent here
+      for the SAME reason and the surviving one still is. Only an EDIT is said,
+      because only an edit asks for something the picture does not show.
     */
     const line = "a rough hide wrap draped across one shoulder, bare feet";
-    expect(said(recipeWith({ kind: "line", line, source: "born", path: "wardrobe" })))
-      .not.toContain(line);
-    /* And the BRIEF's own line (#1222) is silent here for the same reason —
-       the master photograph is wearing it. Only an EDIT is said, because only
-       an edit asks for something the picture does not show. */
-    expect(said(recipeWith({ kind: "line", line, source: "brief", path: null })))
+    expect(said(recipeWith({ kind: "line", line, source: "brief" })))
       .not.toContain(line);
   });
 
-  it("⚠ says nothing for UNPATHED or INCOHERENT — which is every render in production", () => {
+  it("⚠ says nothing for UNPATHED or absent — which is every render in production", () => {
+    /* ⚠ `incoherent` was a third case here until #1577 slice 2 retired the
+       kind. Absent and `unpathed` are the two silences that remain, and they are
+       what every production render actually is. */
     for (const wardrobe of [
       undefined,
       { kind: "unpathed" } as const,
-      { kind: "incoherent", path: "basics" } as const,
     ]) {
       const sentences = said(recipeWith(wardrobe));
       expect(sentences, JSON.stringify(wardrobe)).not.toContain("is wearing");
@@ -228,7 +235,7 @@ describe("the recipe says the outfit only when the photograph disagrees with it"
        everywhere else. */
     const line = "a charcoal roll-neck jumper";
     const sentences = said(recipeWith(
-      { kind: "line", line, source: "edited", path: "wardrobe" }, true,
+      { kind: "line", line, source: "edited" }, true,
     ));
     expect(sentences).not.toContain(line);
     expect(sentences, "and the ask itself still rides").toContain("a plain black tee");

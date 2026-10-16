@@ -37,15 +37,11 @@ import {
   CASTING_RETRY_SCOPE_ENV,
   CASTING_ROLL_ENGINE_SCOPE_ENV,
   CASTING_ROLL_ENGINE_MODEL_ENV,
-  CASTING_REPAINT_SCOPE_ENV,
-  CASTING_SIDE_PHRASING_SCOPE_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
   validateCastingInkTransformEnvironment,
-  validateCastingInkWordsEnvironment,
-  CASTING_INK_WORDS_SCOPE_ENV,
   validateCastingBornInkEnvironment,
   CASTING_BORN_INK_SCOPE_ENV,
   CASTING_BRIEF_FIDELITY_SCOPE_ENV,
@@ -68,8 +64,6 @@ import {
   validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
   validateCastingRollEngineEnvironment,
-  validateCastingRepaintEnvironment,
-  validateCastingSidePhrasingEnvironment,
   validateCastingScanTableEnvironment,
   validateCastingV2Environment,
 } from "../castingV2/castingV2Scope";
@@ -383,28 +377,26 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    The compositor swap (D-241): checked against the LIBRARY scope rather than
-    the casting scope, and the difference matters. A repaint pastes nothing —
-    a feature survives the next render because the library holds a crop of it
-    and the recipe carries that crop. Armed without a library, the same switch
-    would quietly turn every paid refine into one that forgets her features.
+    ⚠ THE COMPOSITOR SWAP'S OWN FENCE STOOD HERE AND IS RETIRED WITH ITS FLAG
+    (#1577 slice 4b, on his word of 2026-10-15). It checked the repaint scope
+    against the LIBRARY scope rather than the casting scope, because a repaint
+    pastes nothing: a feature survives the next render only because the library
+    holds a crop of it and the recipe carries that crop, so arming the swap
+    without a library would have turned every paid refine into one that forgets
+    the cast's own features. With the paste road gone every refine repaints,
+    there is no switch to cover, and the library's own fence above is what
+    decides whether a render has crops to carry. The four children that used to
+    hang off the repaint were re-parented onto the library one slice earlier
+    (4a) for the same reason.
   */
-  validateCastingRepaintEnvironment({
-    scope: process.env[CASTING_REPAINT_SCOPE_ENV],
-    libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  });
   /*
-    Saying which side twice — her anatomy and the half of the picture it is on.
-
-    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
-    when the paste road's own flag was retired (#1577 slice 4a). It used to be
-    the REPAINT scope, and that gate ended in the library's anyway, so no
-    position production holds changes.
+    ⚠ SAYING WHICH SIDE TWICE WAS CHECKED HERE AND HAS NO FENCE ANY MORE —
+    `CASTING_SIDE_PHRASING_SCOPE` is retired (#1577 slice D2), so there is no
+    scope to refuse and no parent to check it against. The clause itself is
+    unchanged and is now said on every render; the flag stood at `all` on the
+    service from the founder's 2026-08-25 widening until it came out, so the
+    fence had nothing left to refuse either.
   */
-  validateCastingSidePhrasingEnvironment({
-    scope: process.env[CASTING_SIDE_PHRASING_SCOPE_ENV],
-    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  });
   /*
     The auto-scan: reading a face nobody has edited so the panel is not a
     column of empty slots. Checked against the LIBRARY scope because the panel
@@ -594,21 +586,26 @@ export function validateEnv(): void {
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
-    WHETHER A WORDS-BORN TATTOO MAY LAND BEYOND HER NECK. Its parent is
-    `CASTING_V2_SCOPE` and nothing narrower: this road needs no design row and
-    no uploaded picture — crop #1 is a delivery with `designId` NULL — so
-    hanging it off the studio door would gate a lane whose subject does not
-    require it.
+    ⚠ `validateCastingInkWordsEnvironment` STOOD HERE AND IS GONE — #1577
+    slice D3, on his word of 2026-10-15 (*"yes approve the plan and switch off
+    the six settings"*). It fenced `CASTING_INK_WORDS_SCOPE`, which decided
+    whether a words-born tattoo could land past the neck. The flag stood at
+    `all` on the service — read by name with a negative control before the cut
+    — so the narrow arm it fenced was a road nobody was on, and the one
+    surviving placement list is now read unconditionally.
+
+    ⚠ THE VARIABLE COMES OFF THE SERVICE ONLY AFTER THIS CODE DEPLOYS. Absent
+    parses as `off`, so unsetting it under the old build would have put every
+    account back on the neck-only list — which is the one ordering mistake this
+    retirement could still make.
   */
-  validateCastingInkWordsEnvironment({
-    scope: process.env[CASTING_INK_WORDS_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
   /*
     WHETHER A CAST MAY BE BORN WITH TATTOOS THE PRODUCT KNOWS ABOUT. Its parent
-    is `CASTING_V2_SCOPE` and nothing narrower for the same reason the words
-    road's is: the BRIEF is the document, so this lane needs no studio door, no
-    design row and no repaint. What it does need is a roll — the row is minted
+    is `CASTING_V2_SCOPE` and nothing narrower, and the reason is its own
+    rather than borrowed from the words road's fence above — which is retired,
+    so the citation that stood here would now point at a tombstone: the BRIEF
+    is the document, so this lane needs no studio door, no design row and no
+    repaint. What it does need is a roll — the row is minted
     when a candidate lands — and that is exactly what the casting scope gates.
   */
   validateCastingBornInkEnvironment({

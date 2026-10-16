@@ -60,7 +60,8 @@ const arms = [
 let wrong = 0;
 for (const arm of arms) {
   const parsed = await interpretRefinement({
-    instruction: arm.ask, prior: arm.prior, inkWordsRoadOpen: true, currentEyeColour: null, currentEyeShape: null,
+    /* `inkWordsRoadOpen: true` was here until #1577 slice D3 retired the flag. */
+    instruction: arm.ask, prior: arm.prior, currentEyeColour: null, currentEyeShape: null,
   } as Parameters<typeof interpretRefinement>[0]);
   const got = parsed.ok ? "served" : `refused:${(parsed as { refusal: { reason: string; place?: string } }).refusal.reason}`;
   const place = !parsed.ok ? (parsed as { refusal: { place?: string } }).refusal.place : undefined;

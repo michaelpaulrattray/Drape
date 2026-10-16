@@ -86,6 +86,27 @@
  * branch — and §7.2 refuses a wardrobe edit on that path. So the value stays
  * unreachable by construction rather than by a routing accident, which is a
  * stronger statement than the one it replaces.
+ *
+ * ⚠ **AND NOW NEITHER VALUE IS REACHABLE, BECAUSE THE COLUMN HAS NO SOURCE
+ * LEFT — #1577 slice 2 (the ghost audit's item B1), 2026-10-15.** The whole of
+ * the reasoning above is about which PATH a refusal would record. The
+ * resolution no longer carries a path at all: `rollPath` is not threaded into
+ * `currentWardrobeLine`, `wardrobeNow.path` is gone, and the writer has
+ * stopped passing `pathAtRefusal`. **So this file's subject is now the
+ * ROUTING alone** — which asks reach which coverage verdict — and the enum
+ * member it was written about can no longer be written by anything.
+ *
+ * **The column is kept** (a written table, and dropping one is a destructive
+ * migration and his hand), and `casting_ink_form_demand` holds zero rows in
+ * both worlds all time, so nothing is orphaned. **The arms below are kept and
+ * re-pointed rather than deleted**, because what they actually measure —
+ * which ask meets which wall on which outfit — is live product behaviour that
+ * nothing else in the tree reads in one place.
+ *
+ * ⚠ **The fixture below says `edited` where it said `born`, and that is not
+ * a behaviour change**: both sources always took the same door
+ * (`coverageOfWardrobeLine` reads the line), while `brief` keeps the house
+ * prior and still does. Every verdict asserted here is the one it was before.
  */
 import { describe, expect, it } from "vitest";
 
@@ -94,8 +115,17 @@ import { classifyInkPlacement } from "./inkPlacement";
 import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
 
-const born = (path: "wardrobe" | "basics", line: string): WardrobeResolution =>
-  ({ kind: "line", line, source: "born", path });
+/**
+ * A branch wearing a line the coverage owner READS — `edited` is the source
+ * that does, since #1577 slice 2 retired `born` with the paths. The `path`
+ * argument is kept in the SIGNATURE and ignored, so the arms below still say
+ * out loud which path they are reasoning about even though the resolution can
+ * no longer carry one. **That is deliberate**: the reasoning in this file's
+ * header is entirely about Wardrobe versus Basics, and a fixture that silently
+ * dropped the distinction would make those paragraphs unreadable.
+ */
+const born = (_path: "wardrobe" | "basics", line: string): WardrobeResolution =>
+  ({ kind: "line", line, source: "edited" });
 
 /** A picked outfit nobody has read the coverage of — `unknown` on every
  *  surface, which is every customer-named and every engine-picked line. */
@@ -108,10 +138,20 @@ const ASK = {
   arm: "a small swallow tattoo on her upper arm",
 } as const;
 
-/** Driven at BOTH settings of the words road, because a routing claim that is
- *  true at one and false at the other is not a routing claim. */
-const bothRoads = (text: string, wardrobe: WardrobeResolution) =>
-  [true, false].map((open) => classifyInkPlacement(text, "ink", open, wardrobe).kind);
+/**
+ * THE ROAD — one of them, since `CASTING_INK_WORDS_SCOPE` retired (#1577 slice
+ * D3, his word 2026-10-15).
+ *
+ * ⚠ This was `bothRoads`, driving `[true, false]` on the reasoning that *"a
+ * routing claim that is true at one and false at the other is not a routing
+ * claim"*. That reasoning was right and is why the pairs below are worth
+ * reading: where the two answers DIFFERED, the second was the narrow road, and
+ * the flag stood at `all` on the service, so no account was ever on it. Each
+ * retired expectation is named at its own call site rather than silently
+ * dropped — an arm asserting an unreachable road is what slice 4b found 134 of.
+ */
+const theRoad = (text: string, wardrobe: WardrobeResolution) =>
+  classifyInkPlacement(text, "ink", wardrobe).kind;
 
 describe("the two counted refusals, and where they can actually come from", () => {
   it("⚠ a WARDROBE cast in the house line is `not_carried` — the counted covering", () => {
@@ -119,22 +159,22 @@ describe("the two counted refusals, and where they can actually come from", () =
       §4 case (c): a Wardrobe brief naming no outfit falls back to the grey tee,
       whose upper chest is covered — measured, not assumed.
 
-      ⚠ **ON THE OPEN ROAD ONLY, since 2026-08-23.** With the flag closed the
-      chest is not served and the ask meets the derived document message instead;
-      the counted covering is a fact about accounts whose road reaches the chest,
-      and `CASTING_INK_WORDS_SCOPE` is `all`, so that is all of them.
+      ⚠ **ON THE OPEN ROAD ONLY, since 2026-08-23** — and since #1577 slice D3
+      that is the only road there is. The second arm here asserted
+      `needs_document` with the flag CLOSED, and it is removed with the flag
+      rather than kept: `CASTING_INK_WORDS_SCOPE` stood at `all` on the
+      service, so the narrow answer was one no account could receive.
     */
-    expect(classifyInkPlacement(ASK.chest, "ink", true, born("wardrobe", HOUSE_WARDROBE_LINE)).kind)
+    expect(classifyInkPlacement(ASK.chest, "ink", born("wardrobe", HOUSE_WARDROBE_LINE)).kind)
       .toBe("not_carried");
-    expect(classifyInkPlacement(ASK.chest, "ink", false, born("wardrobe", HOUSE_WARDROBE_LINE)).kind)
-      .toBe("needs_document");
   });
 
   it("⚠ a WARDROBE cast in an unread outfit is `coverage_unread` at the NECK", () => {
     /* The neck IS served, so an unread line reaches the coverage branch and
        fails closed — which is the demand for 7a-bis. */
-    expect(bothRoads(ASK.neck, born("wardrobe", UNREAD)))
-      .toEqual(["coverage_unread", "coverage_unread"]);
+    /* Both roads answered `coverage_unread` here, so retiring the narrow one
+       takes nothing away from this claim. */
+    expect(theRoad(ASK.neck, born("wardrobe", UNREAD))).toBe("coverage_unread");
   });
 
   it("⚠ a BRIEF-sourced line answers the HOUSE PRIOR — the ink gate does not move with #1222", () => {
@@ -147,11 +187,11 @@ describe("the two counted refusals, and where they can actually come from", () =
       views. The declared approximation lives in `wardrobeCoversSurface`; it
       dies the day 7a-bis reads real lines.
     */
-    const brief: WardrobeResolution = { kind: "line", line: UNREAD, source: "brief", path: null };
+    const brief: WardrobeResolution = { kind: "line", line: UNREAD, source: "brief" };
     /* The neck passes, as it always has for these casts… */
-    expect(classifyInkPlacement(ASK.neck, "ink", true, brief).kind).toBe("in_frame");
+    expect(classifyInkPlacement(ASK.neck, "ink", brief).kind).toBe("in_frame");
     /* …and the chest refuses as COVERED (the prior), never as unread. */
-    expect(classifyInkPlacement(ASK.chest, "ink", true, brief).kind).toBe("not_carried");
+    expect(classifyInkPlacement(ASK.chest, "ink", brief).kind).toBe("not_carried");
   });
 
   it("⚠ THE CORRECTION — a BASICS cast can reach NEITHER counted refusal, and now for a better reason", () => {
@@ -174,18 +214,25 @@ describe("the two counted refusals, and where they can actually come from", () =
     */
     for (const line of [basicsWardrobeLine("male"), basicsWardrobeLine(null)]) {
       const basics = born("basics", line);
-      expect(bothRoads(ASK.neck, basics)).toEqual(["in_frame", "in_frame"]);
-      expect(bothRoads(ASK.arm, basics)).toEqual(["in_frame", "needs_document"]);
-      expect(bothRoads(ASK.chest, basics)).toEqual(["in_frame", "needs_document"]);
+      /* ⚠ All three were pairs until #1577 slice D3. The neck answered
+         `in_frame` on both roads; the arm and the chest answered
+         `needs_document` on the NARROW road, which no account was ever on, and
+         those two expectations retire with the flag. The surviving answer is
+         the one every account has always received. */
+      expect(theRoad(ASK.neck, basics)).toBe("in_frame");
+      expect(theRoad(ASK.arm, basics)).toBe("in_frame");
+      expect(theRoad(ASK.chest, basics)).toBe("in_frame");
     }
   });
 
   it("⚠ and the reason is the SERVED SET, said where it can be checked", () => {
     /*
       THE MECHANISM, not a restatement of the outcome. The coverage branch is
-      only entered for a placement the words road serves; `upperChest` is the
-      one member of the vocabulary that is served at no setting, which is why a
-      chest ask never asks about her outfit at all.
+      only entered for a placement the words road serves. `upperChest` was
+      *"the one member of the vocabulary that is served at no setting"* when
+      this was written; the Basics chest court put it on the road and #1577
+      slice D3 retired the setting, so all three are served and a chest ask
+      reaches the coverage branch like any other.
 
       Driven at the classifier rather than read off `WORDS_ROAD_PLACEMENTS`:
       a constant is what somebody would change, and this is what would then be
@@ -199,14 +246,14 @@ describe("the two counted refusals, and where they can actually come from", () =
     */
     const bare = born("basics", basicsWardrobeLine("male"));
     for (const ask of [ASK.neck, ASK.arm, ASK.chest]) {
-      expect(classifyInkPlacement(ask, "ink", true, bare).kind, ask).toBe("in_frame");
+      expect(classifyInkPlacement(ask, "ink", bare).kind, ask).toBe("in_frame");
     }
     /* CONTROL — the same three asks on the house crew tee, where the chest is
        covered: the outfit is the only variable and it changes exactly one. */
     const tee = born("wardrobe", HOUSE_WARDROBE_LINE);
-    expect(classifyInkPlacement(ASK.neck, "ink", true, tee).kind).toBe("in_frame");
-    expect(classifyInkPlacement(ASK.arm, "ink", true, tee).kind).toBe("in_frame");
-    expect(classifyInkPlacement(ASK.chest, "ink", true, tee).kind).toBe("not_carried");
+    expect(classifyInkPlacement(ASK.neck, "ink", tee).kind).toBe("in_frame");
+    expect(classifyInkPlacement(ASK.arm, "ink", tee).kind).toBe("in_frame");
+    expect(classifyInkPlacement(ASK.chest, "ink", tee).kind).toBe("not_carried");
   });
 
   it("⚠ CONTROL — the same reader DOES produce a Basics-path refusal, of another kind", () => {
@@ -217,7 +264,7 @@ describe("the two counted refusals, and where they can actually come from", () =
       through a door that has nothing to do with her clothes.
     */
     const basics = born("basics", basicsWardrobeLine(null));
-    expect(classifyInkPlacement("a swallow behind her ear", "ink", true, basics).kind)
+    expect(classifyInkPlacement("a swallow behind her ear", "ink", basics).kind)
       .toBe("needs_document");
   });
 });

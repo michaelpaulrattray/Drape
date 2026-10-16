@@ -35,6 +35,9 @@ import {
   pidsNamed,
   rootsToKill,
   escapeControlCharactersInJsonStrings,
+  noPortLine,
+  servingState,
+  serverPidsOfTree,
   PROCESS_TABLE_QUERY,
   type ProcessRow,
 } from "../scripts/lib/devServerTrees.mts";
@@ -1244,5 +1247,134 @@ describe("⚠ the query that keeps the parse alive, asserted at the wire (#1671)
        character the table really held. Pinned so it is not re-added. */
     expect(PROCESS_TABLE_QUERY).not.toMatch(/x00/);
     expect(PROCESS_TABLE_QUERY).not.toMatch(/-replace/);
+  });
+});
+
+/**
+ * ⚠ "BETWEEN RESTARTS" WAS A GUESS, AND IT READ AS LIVE FOR TWO DAYS (#2563).
+ *
+ * The listing had three answers for a tree: it holds a port, its source is
+ * gone, or — for a watched tree with a live source and no port — *"(no port —
+ * between restarts)"*. The third is a CAUSE the reader cannot observe, and on
+ * 2026-10-16 it was printed over **five trees across three live worktrees that
+ * had held no server for one and two days**, through #1481's sweep seventeen
+ * days earlier and through #2563's own sighting. Neither finder dared clear
+ * them, and both were right not to: the sentence said they were coming back.
+ *
+ * ⚠ **THE POSITIVE CONTROL IS THE ARM THAT MATTERS AND IT IS THE FIRST ONE
+ * BELOW.** The fixture family is the real machine's: the two trees in `TABLE`
+ * are watcher-plus-server and must NEVER read `idle`, because a limb that calls
+ * a live dev server abandoned would take the founder's own. Driven on the
+ * machine the same way before any of this was written — a `pnpm dev` started
+ * here was listening on `:3000` in 25 s, and the reader left it alone while
+ * naming all five wedged ones.
+ */
+const at2563 = (hhmm: string) => new Date(`2026-10-16T${hhmm}:00.000Z`);
+
+/** The specimen: a watcher whose server exited, and nothing under it but shells. */
+const WEDGED: ProcessRow[] = [
+  {
+    pid: 21748,
+    parentPid: 36536,
+    name: "sh.exe",
+    startedAt: at2563("13:00"),
+    commandLine: String.raw`"C:\Program Files\Git\usr\bin\sh.exe" /c/Users/Admin/AppData/Roaming/npm/pnpm dev`,
+  },
+  {
+    pid: 40408,
+    parentPid: 45040,
+    name: "node.exe",
+    startedAt: at2563("13:00"),
+    commandLine: String.raw`node "C:\Users\Admin\drape-shift-voicemoney\node_modules\.bin\\..\cross-env\dist\bin\cross-env.js" NODE_ENV=development tsx watch server/_core/index.ts`,
+  },
+  {
+    pid: 40116,
+    parentPid: 40236,
+    name: "node.exe",
+    startedAt: at2563("13:00"),
+    commandLine: String.raw`node   "C:\Users\Admin\drape-shift-voicemoney\node_modules\.bin\\..\tsx\dist\cli.mjs" "watch" "server/_core/index.ts"`,
+  },
+  {
+    pid: 40236,
+    parentPid: 40408,
+    name: "cmd.exe",
+    startedAt: at2563("13:00"),
+    commandLine: String.raw`C:\Windows\system32\cmd.exe /d /s /c "tsx ^^^"watch^^^" ^^^"server/_core/index.ts^^^""`,
+  },
+  {
+    pid: 45040,
+    parentPid: 36256,
+    name: "cmd.exe",
+    startedAt: at2563("13:00"),
+    commandLine: String.raw`C:\Windows\system32\cmd.exe /d /s /c cross-env NODE_ENV=development tsx watch server/_core/index.ts`,
+  },
+];
+
+describe("⚠ a watcher with no server under it is IDLE, not between restarts (#2563)", () => {
+  const noPorts = new Map<number, readonly number[]>();
+
+  it("THE CONTROL — a watcher WITH a server child is never idle, port or no port", () => {
+    const live = devServerTrees(TABLE);
+    expect(live.length).toBe(2);
+    /* Holding a port: serving. This is the arm that must not move. */
+    const serving = new Map<number, readonly number[]>([[12316, [3000]]]);
+    expect(servingState(live[0], TABLE, serving)).toBe("serving");
+    /* ⚠ And with the port map EMPTY it is still not idle — a real restart, or a
+       bind that has not landed yet. The discriminator is the server PROCESS,
+       never the port, because a booting server holds no port either and
+       killing it is killing somebody's work. */
+    expect(servingState(live[0], TABLE, noPorts)).toBe("booting");
+    expect(servingState(live[1], TABLE, noPorts)).toBe("booting");
+  });
+
+  it("the specimen reads IDLE — every process in it carries the watch verb", () => {
+    const trees = devServerTrees(WEDGED);
+    expect(trees.length).toBe(1);
+    expect(trees[0].rootPid).toBe(40408);
+    expect(serverPidsOfTree(trees[0], WEDGED)).toEqual([]);
+    expect(servingState(trees[0], WEDGED, noPorts)).toBe("idle");
+  });
+
+  it("names the server pids of a live tree, and they are the ones netstat shows", () => {
+    const live = devServerTrees(TABLE);
+    expect(serverPidsOfTree(live[0], TABLE)).toEqual([12316]);
+    expect(serverPidsOfTree(live[1], TABLE)).toEqual([21752]);
+  });
+
+  it("⚠ an UNWATCHED tree's own ROOT counts as its server (the #784 case, one axis along)", () => {
+    /* A lone server with no watcher anywhere: its root IS the server process,
+       so asking `childPids` alone would answer "no server" over a live :3000 —
+       which is the defect `portsOfTree` exists to have fixed. */
+    const lone: ProcessRow[] = [{
+      pid: 45988,
+      parentPid: 7,
+      name: "node.exe",
+      startedAt: at2563("14:00"),
+      commandLine: String.raw`"C:\Program Files\nodejs\node.exe" --import file:///C:/Users/Admin/Drape/node_modules/.pnpm/tsx@4.20.6/node_modules/tsx/dist/loader.mjs server/_core/index.ts`,
+    }];
+    const trees = devServerTrees(lone);
+    expect(trees.length).toBe(1);
+    expect(trees[0].watched).toBe(false);
+    expect(serverPidsOfTree(trees[0], lone)).toEqual([45988]);
+    expect(servingState(trees[0], lone, noPorts)).not.toBe("idle");
+  });
+
+  it("the words say what was READ, and the unwatched wording is untouched (#783)", () => {
+    expect(noPortLine("idle", true)).toContain("its server has EXITED");
+    expect(noPortLine("idle", true)).toContain("watcher is idle");
+    expect(noPortLine("booting", true)).toBe("(no port — between restarts)");
+    /* ⚠ #783's sentence for a tree nothing restarts, held equal to itself. An
+       unwatched tree is not "idle" in this sense — there is no watcher left
+       waiting for a file change — so the state must not leak into its line. */
+    expect(noPortLine("idle", false)).toBe("(no port — nothing is being served)");
+    expect(noPortLine("booting", false)).toBe("(no port — nothing is being served)");
+    expect(noPortLine("serving", false)).toBe("(no port — nothing is being served)");
+  });
+
+  it("⚠ the idle wording never says safe to kill, which ABANDONED alone may say", () => {
+    /* `launchDirectoryIsGone` earns that sentence: a removed tree cannot be
+       anybody's live work. This cannot — a watcher whose server just died is
+       also what a live session that broke its own build has. */
+    expect(noPortLine("idle", true)).not.toMatch(/safe to kill/i);
   });
 });

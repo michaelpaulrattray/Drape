@@ -37,51 +37,51 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 Everything before the claim is FREE: ownership and state doors, the interpreter's walls and gates, and every cannot-say answer. The claim charges one refine at `CASTING_V2_REFINE_PRICE_CREDITS` — read it there and never here; this clause said "25 credits" until 2026-10-03, which P1 superseded — and dispatches; a failure after it refunds. The census drives with the claim door shut, so 'would-render' means the ask passed every free door and reached the money.
 
-_Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE`
+_Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE`
 
 _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1289 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1307 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4952<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4411 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1296 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1283<br>server/castingV2/refineService.ts:2620 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3717 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3014 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2694 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `kind_unserved` | service-refusal |  | server/castingV2/refineService.ts:2748 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1254 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1272 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4930<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4413 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1261 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1248<br>server/castingV2/refineService.ts:2604 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3690 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:2987 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2678 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - `busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.
 - `refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.
 - Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.
+- `kind_unserved` and the repaint flag left this road in #1577 slice 4b: the door refused a subject only the repaint had been measured on, to an account outside the repaint's flag, and both the flag and the old paste road it guarded are retired. Every refine repaints, so there is no un-measured road left to refuse into.
 
 ### Refine's reading — the interpreter, its walls, and its gates
 
 The customer's sentence is read by a text model whose OUTPUT is policed by code: values must appear in the customer's own words (source containment), facets resolve against the subject cards, and refusals carry their own names. Walls refuse the ASK's kind; gates refuse an ask the road cannot serve YET and say what would work. An unreadable or empty sentence refuses free — the product never guesses.
 
-_Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refineDelta.ts`  ·  _Flags:_ `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_INK_WORDS_SCOPE`
+_Entrances:_ `server/castingV2/refineInterpreter.ts` · `server/castingV2/refineDelta.ts`  ·  _Flags:_ —
 
 _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:626<br>server/castingV2/refineInterpreter.ts:878<br>(+1) | 4 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:634<br>server/castingV2/refineInterpreter.ts:868<br>(+1) | 4 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 7 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:625<br>server/castingV2/refineInterpreter.ts:892<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:498<br>server/castingV2/refineDelta.ts:1609<br>(+2) | 6 test(s) | guard.likeness |
-| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1625<br>(+1) | 6 test(s) | guard.content |
-| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:513<br>server/castingV2/refineDelta.ts:1619<br>(+2) | 9 test(s) | background.white |
-| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:537<br>server/castingV2/refineInterpreter.ts:1712<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:549<br>server/castingV2/refineDelta.ts:1338<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:562<br>server/castingV2/refineDelta.ts:562<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
-| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:569<br>(+4) | 3 test(s) | ink.words.chest |
-| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:588<br>server/castingV2/refineDelta.ts:588<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 3 test(s) | ink.words.chest.basics |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1377<br>server/castingV2/refineService.ts:1415 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4931 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:633<br>server/castingV2/refineInterpreter.ts:882<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:1597<br>(+2) | 6 test(s) | guard.likeness |
+| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:539<br>server/castingV2/refineInterpreter.ts:1615<br>(+1) | 6 test(s) | guard.content |
+| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:514<br>server/castingV2/refineDelta.ts:1607<br>(+2) | 9 test(s) | background.white |
+| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1702<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:550<br>server/castingV2/refineDelta.ts:1330<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:570<br>server/castingV2/refineDelta.ts:570<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
+| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:577<br>server/castingV2/refineDelta.ts:577<br>(+4) | 3 test(s) | ink.words.chest |
+| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:604<br>server/castingV2/refineDelta.ts:604<br>(+3) | 3 test(s) | ink.words.chest.basics |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1342<br>server/castingV2/refineService.ts:1380 | 1 test(s) | guard.scope.unknown |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4909 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
@@ -94,7 +94,7 @@ _Called as:_ `castingV2.refine`
 
 A delivered tattoo is remembered as a CROP row cut from the delivered frame by the placement's own reader word; that crop rides every later render as instruction material (upscaled to the legibility floor when small). Transforms ride the crop as the source; removals prune the step and recompose (navigate free when the survivor already exists, re-render when it does not); the record's names are believed only where a ROW backs them.
 
-_Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryMint.ts` · `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE`
+_Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryMint.ts` · `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE`
 
 _Called as:_ `castingV2.refine`
 
@@ -106,13 +106,13 @@ _Called as:_ `castingV2.refine`
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:408 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:272 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3485 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
-| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3057 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3466 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
-| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3243<br>server/castingV2/refineService.ts:3260 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3561 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4381 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2648 | 1 test(s) | guard.undo |
+| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3458 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
+| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3030 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3439 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
+| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3216<br>server/castingV2/refineService.ts:3233 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3534 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4383 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2632 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
 - free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.
@@ -455,7 +455,6 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | inkBeyondToday | cannot-say | free | cannotSayCopy.test.ts, inkBeyondTodayAsk.test.ts |
 | inkNotKept | cannot-say | free | cannotSayCopy.test.ts |
 | inkOneChangeAtATime | cannot-say | free | cannotSayCopy.test.ts |
-| kind_unserved | service-refusal |  | refineService.test.ts |
 | master_missing | service-refusal |  | refineService.test.ts |
 | noInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 | notASlot | cannot-say | free | cannotSayCopy.test.ts, carrySurvival.test.ts, mintedSlots.test.ts, openKindPolicy.test.ts, openLaneKind.test.ts, repaintAsks.test.ts |
@@ -499,11 +498,11 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
-## Flags (22)
+## Flags (19)
 
-`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_INK_WORDS_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_REPAINT_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_SIDE_PHRASING_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
+`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
 
-## Findings (56)
+## Findings (55)
 
 - **warn** `belief-mismatch` guard.typo — "give her a nose rign" — believed asked:did-you-mean, observed would-render
 - **info** `documented-unreachable` already_signed — no corpus row reaches it: answers a refine sent at a SIGNED cast — request state, not sentence content — a row could reach it via: a signed-cast fixture, if sign-state rows are ever wanted; pinned by its C5 service arm
@@ -519,7 +518,6 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 - **info** `documented-unreachable` history_predates_undo — no corpus row reaches it: answers an undo against a chain older than typed removal — legacy-era state — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` history_unreadable — no corpus row reaches it: answers a chain whose stored steps fail to parse — corrupt-state, not sentence — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` inkBeyondToday — no corpus row reaches it: needs a documented ask naming a placement beyond the measured vocabulary — the same states as unplacedInk with an off-vocabulary place word — a row could reach it via: the reference-attached fixture, asking for a sleeve
-- **info** `documented-unreachable` kind_unserved — no corpus row reaches it: answers an open-kind render the engine table cannot serve — engine-config state — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` master_missing — no corpus row reaches it: answers a cast whose master object is gone — storage state no fixture manufactures honestly — a row could reach it via: pinned by its C5 service arm
 - **info** `documented-unreachable` notASlot — no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it
 - **info** `documented-unreachable` reader_outage — no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it

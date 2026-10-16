@@ -316,7 +316,6 @@ function identityDocumentsFor(source: SignableCandidate): {
     everything downstream that compares the fingerprint.
   */
   const wardrobe = currentWardrobeLine({
-    rollPath: source.roll.path,
     rollLine: source.roll.wardrobeLine,
     editedLine: editedWardrobeLine(readStoredDelta(source.face.deltas)),
   });
@@ -328,13 +327,26 @@ function identityDocumentsFor(source: SignableCandidate): {
     /*
       Both facts, kept as the resolution's own shape rather than flattened to a
       string: a reader needs to tell "this Cast wears the house line" from
-      "this Cast predates the paths", and a bare string cannot say the second.
+      "this Cast has no line recorded", and a bare string cannot say the second.
+
+      ⚠ **`path` IS WRITTEN A CONSTANT `null` SINCE #1577 SLICE 2, AND THE KEY
+      IS KEPT ON PURPOSE.** The resolution stopped carrying a path with item B1,
+      so there is nothing left to write here — but this is a stored JSON blob
+      read back by three services across several eras, and dropping a key from
+      what it writes is a shape change nobody asked for. Measured before the
+      change: of the signed casts production holds, the `wardrobe.path` key is
+      absent on 56 and `null` on 18, and **no row anywhere holds a non-null
+      one** — so writing `null` forever is byte-identical to what this already
+      wrote for every row it has ever written. Nothing reads the key
+      (`castWardrobeLine` and `castWardrobeSource` read `line` and `source`
+      alone); it stays because an unread key costs nothing and a changed shape
+      might.
+
+      The `incoherent` arm stood between these two and is gone with the kind.
     */
     wardrobe: wardrobe.kind === "line"
-      ? { path: wardrobe.path, line: wardrobe.line, source: wardrobe.source }
-      : wardrobe.kind === "incoherent"
-        ? { path: wardrobe.path, line: null, source: null }
-        : { path: null, line: null, source: null },
+      ? { path: null, line: wardrobe.line, source: wardrobe.source }
+      : { path: null, line: null, source: null },
   };
   const preferences = {
     briefText: source.roll.briefText,
@@ -724,11 +736,14 @@ function detach(run: () => Promise<void>): void {
  *
  * ⚠ **IT IS NOT *"the ink flags fence this to one account"*, WHICH IS WHAT THE
  * COUNTERSIGN FIRST ACCEPTED AND THREE OF US REPEATED** (corrected opus-964 §2,
- * ruled fable-1308). `WORDS_ROAD_PLACEMENTS` serves `neck` with
- * `CASTING_INK_WORDS_SCOPE` **off**, D-137's gate passes a neck ask on its first
+ * ruled fable-1308). The words road has always served `neck` — with
+ * `CASTING_INK_WORDS_SCOPE` **off** when there was such a flag, and
+ * unconditionally since #1577 slice D3 retired it — D-137's gate passes a neck
+ * ask on its first
  * answer, and the delivery mint deliberately has no flag of its own — so any
- * account inside `CASTING_V2_SCOPE=all` + `CASTING_REPAINT_SCOPE=all` can mint a
- * crop and reach this code. Measured at the production rows the day it shipped:
+ * account inside `CASTING_V2_SCOPE=all` can mint a crop and reach this code —
+ * the repaint flag this sentence also named was retired with the paste road
+ * (#1577 slice 4b), which widens the population rather than narrowing it. Measured at the production rows the day it shipped:
  * two crops, one Cast, one owner, none signed. **That is EMPTY, not FENCED, and
  * a population being empty is a fact about who has walked a road rather than
  * about a door.**

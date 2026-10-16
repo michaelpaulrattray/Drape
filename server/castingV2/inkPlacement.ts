@@ -46,10 +46,22 @@
  * ⚠ **Both courts have now reported and this said they were waiting until
  * 2026-08-24**: `upperArm` on 2026-08-23 (opus-960, ratified fable-1301 §1) and
  * `upperChest` the same day on a second court (`131de797`), so
- * {@link WORDS_ROAD_PLACEMENTS_OPEN} holds all three and
- * `CASTING_INK_WORDS_SCOPE` is `all` in production. {@link WORDS_ROAD_PLACEMENTS}
- * — the CLOSED list — is still `neck` alone, which is what a caller outside the
- * flag sees and is the only sense in which the road has not been opened here.
+ * {@link WORDS_ROAD_PLACEMENTS_OPEN} holds all three.
+ *
+ * ✅ **AND THERE IS ONE LIST NOW — `CASTING_INK_WORDS_SCOPE` IS RETIRED
+ * (#1577 slice D3, his word 2026-10-15: *"yes approve the plan and switch off
+ * the six settings"*).** This paragraph ended by naming a CLOSED list, `neck`
+ * alone, as *"what a caller outside the flag sees"*. The flag stood at `all`
+ * on the service — read by name with a negative control before the cut — so
+ * there was no caller outside it, and the closed list was a road nobody was on.
+ * It and the per-account bit that chose between the two are gone, and every
+ * reader now reads the one list unconditionally.
+ *
+ * ⚠ **The name keeps the word OPEN on purpose rather than reclaiming the dead
+ * one.** Reusing `WORDS_ROAD_PLACEMENTS` for the survivor would make every
+ * `git log -S` on either name ambiguous between the list that died and the one
+ * that lived, which is a cost this repository has paid before. The word records
+ * that two courts opened this road; it no longer implies a live sibling.
  *
  * # ⚠ AND THE RETIREMENT IS PER LANE, WHICH THE SUITE HAD TO TEACH ME
  *
@@ -78,21 +90,6 @@ import {
 
 import { bareSurfaces, wardrobeCoversSurface } from "./inkSurfaceCoverage";
 import type { WardrobeResolution } from "./wardrobeLine";
-
-/**
- * WHICH MEASURED PLACEMENTS THE WORDS ROAD SERVES TODAY — the one line that
- * widens when the court in fable-1296 §3 reports.
- *
- * `neck` alone, and it is the only one of the three that was ever proven end to
- * end: crop #1, his cybersigilism, minted from a delivered frame with no design
- * row anywhere. `upperArm` and `upperChest` are measured SURFACES on masters and
- * that is a different claim from *the mint fires on what a words render
- * delivers there* — which is the court's question, not this file's assumption.
- *
- * Typed against the vocabulary so a placement that leaves it cannot be left
- * behind here.
- */
-const WORDS_ROAD_PLACEMENTS: readonly InkPlacementKey[] = ["neck"];
 
 /**
  * AND THE SET THE FLAG OPENS — measured, and PROVEN TO CARRY.
@@ -154,8 +151,8 @@ const WORDS_ROAD_PLACEMENTS_OPEN: readonly InkPlacementKey[] = ["neck", "upperAr
  * It walled in effect before this change too — the take could not resolve it and
  * the next door refused it — so nothing renders today that stops rendering now.
  */
-const inkLanePlaces = (open: boolean): readonly string[] => Array.from(new Set(
-  (open ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS).flatMap((key) => {
+const inkLanePlaces = (): readonly string[] => Array.from(new Set(
+  WORDS_ROAD_PLACEMENTS_OPEN.flatMap((key) => {
     const entry = inkPlacementEntry(key);
     return [entry.readerWord, entry.noun.replace(/^(?:her|his|their)\s+/, "")];
   }),
@@ -361,34 +358,25 @@ export function classifyInkPlacement(
   text: string,
   lane: InkPlacementLane,
   /**
-   * Whether this account's words road is open past her neck —
-   * `CASTING_INK_WORDS_SCOPE`, resolved by the service and passed in.
-   *
-   * REQUIRED, and not defaulted, for the reason `lane` is not: a default would
-   * let a future caller inherit whichever answer was convenient.
-   *
-   * ⚠ **`false` was described here as *"today's product for everybody"* until
-   * 2026-08-24 and it is `true` for everybody now**: the flag is `all` in
-   * production (fable-1400). A caller that inherits `false` is asking about a
-   * configuration production does not have, which is exactly why it is required.
-   */
-  wordsRoadOpen: boolean,
-  /**
    * WHAT THIS CAST IS WEARING — the second half of *can a tattoo go there*
    * (item 7a).
    *
-   * ⚠ **THE RESOLUTION AND NOT THE LINE**, because the three cases do not
-   * flatten. `unpathed` is *cast before the paths* and answers the house crew
-   * tee — today's answers, byte for byte, for all 206 production rolls.
-   * `incoherent` is *this roll claims a path and cannot say what it is wearing*,
-   * and reading THAT as the house tee would put a crew neck's answers on a cast
-   * that might be Basics. A bare string cannot tell the two apart, which is
-   * `WardrobeResolution`'s own reason for existing.
+   * ⚠ **THE RESOLUTION AND NOT THE LINE**, and the reason MOVED with #1577
+   * slice 2 rather than dying with the case it used to name. It said: the three
+   * cases do not flatten, because `incoherent` — *this roll claims a path and
+   * cannot say what it is wearing* — must not read as the house crew tee on a
+   * cast that might be Basics. **That kind is retired with the paths** (the
+   * ghost audit's item B1), so there are two cases now.
    *
-   * Optional where `lane` and `wordsRoadOpen` are required, and the asymmetry is
-   * deliberate rather than lazy: those two are CAPABILITY facts a caller could
-   * get wrong in either direction, while absent here is silence and silence is
-   * `unpathed` (`WardrobeBranch.rollPath`'s own rule: absent is not a claim).
+   * What a bare string still cannot say is which SOURCE the line came from, and
+   * the coverage owner turns on exactly that: a `brief` line keeps the house
+   * prior while an `edited` one is read. So `WardrobeResolution`'s reason for
+   * existing is intact and is a different sentence.
+   *
+   * Optional where `lane` is required, and the asymmetry is deliberate rather
+   * than lazy: `lane` is a CAPABILITY fact a caller could get wrong in either
+   * direction (`wordsRoadOpen` was the second, until #1577 slice D3 retired it), while absent here is silence and silence is
+   * `unpathed`.
    */
   wardrobe?: WardrobeResolution,
 ): InkPlacement {
@@ -402,7 +390,7 @@ export function classifyInkPlacement(
   for (const rule of HIDDEN_RULES) {
     if (rule.pattern.test(lowered)) return { kind: "needs_document" };
   }
-  for (const place of lane === "ink" ? inkLanePlaces(wordsRoadOpen) : MARK_LANE_PLACES) {
+  for (const place of lane === "ink" ? inkLanePlaces() : MARK_LANE_PLACES) {
     if (!new RegExp(`\\b${place}\\b`).test(lowered)) continue;
     /*
       ⚠ AND THE SECOND HALF: THE ROAD SERVES IT, BUT IS IT UNDER A GARMENT
@@ -428,7 +416,7 @@ export function classifyInkPlacement(
          rather than a `!` so that if that line ever changes, this reads as the
          bare surface it always meant rather than crashing on an assertion. */
       if (coverage !== "bare" && key !== null) {
-        const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
+        const alternatives = servedAndBare(wardrobe);
         return coverage === "covered"
           ? { kind: "not_carried", place, surface: key, alternatives }
           : { kind: "coverage_unread", place, surface: key, alternatives };
@@ -462,7 +450,7 @@ export function classifyInkPlacement(
       */
       const key = placementKeyOfWord(place);
       const covered = key !== null && wardrobeCoversSurface(wardrobe, key) === "covered";
-      const alternatives = servedAndBare(wordsRoadOpen, wardrobe);
+      const alternatives = servedAndBare(wardrobe);
       /* `covered` is only ever true with a key, so the narrowing is the same
          no-op it is above — and `road_cannot_keep` carries no surface because
          nothing counts it: it is a fact about OUR road rather than about her
@@ -492,11 +480,10 @@ export function classifyInkPlacement(
  * surfaces under a jumper.
  */
 function servedAndBare(
-  wordsRoadOpen: boolean,
   wardrobe?: WardrobeResolution,
 ): readonly string[] {
   const bare = new Set(bareSurfaces(wardrobe));
-  return (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS)
+  return WORDS_ROAD_PLACEMENTS_OPEN
     .filter((key) => bare.has(key))
     .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
 }
@@ -529,6 +516,14 @@ function servedAndBare(
  * looked like the *"neither true nor actionable"* refusal this file's header
  * warns about, so I made this function take `wordsRoadOpen` — served, and
  * seen-but-unkept, as two halves of one per-account partition.
+ *
+ * ⚠ **THAT CLOSED SIDE NO LONGER EXISTS — the flag is retired (#1577 slice D3)
+ * — so the paragraph below is now history rather than a live argument. It is
+ * KEPT, and not only out of sentiment: it is the reasoning that decided this
+ * function reads the road's own capability and never an admission gate, and
+ * that distinction is what the next measured surface will be judged against.
+ * What has changed is that there is no longer an account on the other side of
+ * the gate to be told the wrong sentence.**
  *
  * **It was an over-correction and the sentence a customer reads is what settled
  * it.** `inkNeedsDocumentMessage` is DERIVED from that same account's served
@@ -574,8 +569,8 @@ function uncarriedInkPlaces(): readonly string[] {
  * what a person says, and the possessive is stripped so the sentence can put
  * its own article in front.
  */
-export function inkNeedsDocumentMessage(wordsRoadOpen: boolean): string {
-  const places = (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS)
+export function inkNeedsDocumentMessage(): string {
+  const places = WORDS_ROAD_PLACEMENTS_OPEN
     .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
   /* "a neck tattoo" · "a neck or an upper arm tattoo" — the article agrees with
      the word after it, because "a upper arm" is the kind of sentence that makes
@@ -603,8 +598,8 @@ export function inkNeedsDocumentMessage(wordsRoadOpen: boolean): string {
  * and re-matching prose here would be a second answer to a question the slot
  * already holds.
  */
-export function wordsRoadServes(key: InkPlacementKey, wordsRoadOpen: boolean): boolean {
-  return (wordsRoadOpen ? WORDS_ROAD_PLACEMENTS_OPEN : WORDS_ROAD_PLACEMENTS).includes(key);
+export function wordsRoadServes(key: InkPlacementKey): boolean {
+  return WORDS_ROAD_PLACEMENTS_OPEN.includes(key);
 }
 
 /**

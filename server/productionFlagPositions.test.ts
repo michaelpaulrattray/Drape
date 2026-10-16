@@ -165,8 +165,25 @@ describe("the position table's population", () => {
        `CLAUDE.md`'s own index row move in the same commit instead of being
        rediscovered as stale in a month. The specimen is KEPT rather than
        re-pointed at some other flag: a position that has now been wrong in both
-       directions on one flag is a better specimen than a fresh one. */
-    expect(PRODUCTION_FLAG_POSITIONS.CASTING_INK_WORDS_SCOPE?.position).toBe("all");
+       directions on one flag is a better specimen than a fresh one.
+
+       ⚠ AND THE COUPLING HAS NOW FIRED A THIRD TIME, ON THE OTHER SPECIMEN
+       (2026-10-15, #1577 slice D3). `CASTING_INK_WORDS_SCOPE` is RETIRED — the
+       flag is out of the code on his word *"yes approve the plan and switch off
+       the six settings"* — so the right pin is no longer a POSITION but the
+       ABSENCE of a row, and this arm says so rather than being deleted. Deleting
+       it would have dropped the one assertion that makes the catalogue entry and
+       `CLAUDE.md`'s index row move in the same commit as the code, which is the
+       whole coupling this arm exists to be.
+
+       ⚠ The row's absence is asserted here and the flag's NAME is still
+       required in the law by the retirement guard — those are two different
+       claims and both are wanted: the table must stop governing a variable the
+       code no longer reads, and the record must still name what died. */
+    expect(
+      PRODUCTION_FLAG_POSITIONS.CASTING_INK_WORDS_SCOPE,
+      "a retired flag keeps no row — the table governs what the code reads",
+    ).toBeUndefined();
     expect(PRODUCTION_FLAG_POSITIONS.CASTING_INK_CUT_SCOPE?.position).toBe("off");
   });
 });
@@ -187,13 +204,19 @@ describe("the comparator, proven able to say no", () => {
   });
 
   it("reports a flag the service holds at a different position", () => {
+    /* ⚠ The subject was `CASTING_INK_WORDS_SCOPE` until #1577 slice D3 retired
+       it, at which point this arm asserted a mismatch on a row that no longer
+       exists and could only ever have found none. It is re-pointed at
+       `CASTING_V2_SCOPE` — the program's own door, the one flag on this table
+       that no retirement slice can take — rather than at another scope flag
+       whose own slice would move this arm again (D4 and D5 are queued). */
     const verdict = comparePositions(
       agreeing.map((reading) =>
-        reading.name === "CASTING_INK_WORDS_SCOPE" ? { ...reading, value: "users:1" } : reading,
+        reading.name === "CASTING_V2_SCOPE" ? { ...reading, value: "users:1" } : reading,
       ),
     );
     expect(verdict.mismatches).toHaveLength(1);
-    expect(verdict.mismatches[0]).toContain("CASTING_INK_WORDS_SCOPE");
+    expect(verdict.mismatches[0]).toContain("CASTING_V2_SCOPE");
     expect(verdict.mismatches[0], "the recorded position is quoted so the reader can judge").toContain(
       "`all`",
     );
@@ -327,9 +350,15 @@ describe("the flag catalogue and the table do not drift apart", () => {
       and the match ignores case, so neither a quotation nor a capital can
       decide this.
     */
+    /* ⚠ `CASTING_INK_WORDS_SCOPE` was the second pair here and came off with the
+       flag (#1577 slice D3). This arm compares a FORBIDDEN SENTENCE against a
+       position the table holds, and a retired flag has no position to hold — with
+       the row gone the guard clause read "still flipped" off `undefined` and
+       asked the question about nothing. The sentence it watched for is retired
+       prose either way; what replaced this arm's cover for that flag is the
+       retirement guard, which requires the law to go on naming it. */
     const retired = [
       ["CASTING_INK_CUT_SCOPE", "should not be flipped for anyone until 3a.2(b) lands"],
-      ["CASTING_INK_WORDS_SCOPE", "Do not widen this flag on the strength of this paragraph"],
     ] as const;
 
     const lowered = claude.toLowerCase();
