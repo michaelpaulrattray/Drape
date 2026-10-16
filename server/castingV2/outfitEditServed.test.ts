@@ -465,6 +465,56 @@ describe("4 · ⚠ SERVED, THE SCENERY HALF STILL REFUSES — ALL FIVE SITES", (
       }
     });
 
+    /*
+      ⚠ THE SWEEP'S OWN FINDING, ARMED — law 7 on the relay's #2600 site 5
+      finding (`foreman-20261017-0728`).
+
+      Site 5 was licensing a door whose precondition it could not meet. Asked of
+      the other three licence sites in the tree, two are sound and the third is
+      sound BY COINCIDENCE:
+
+        refineDelta:1731   `subject === "wardrobe" && outfitEditServed`   both terms
+        refineInterpreter  the raw sentence, no subject exists yet        can only
+                           buy the single re-look, never an acceptance    buy a re-look
+        openLaneAccept:258 (site 4) the ACCOUNT term alone                 <- this
+
+      Site 4 passes the licence without asking whether the colliding subject is
+      `wardrobe`. Measured over `SUBJECT_CARDS` the hour this was written:
+      **0 non-wardrobe subjects own a noun that answers a garment word** — all
+      eight hits are `wardrobe`'s own — so the missing term cannot be reached
+      today. That is a floor and not a guarantee, and the thing that would move
+      it is one noun on one other subject's list.
+
+      ⚠ It is armed rather than repaired, and the severity is why: BOTH of site
+      4's branches return `refused`, so a licence firing there on the wrong
+      subject moves the reason and the log and never the outcome. Adding a term
+      nothing can reach would be an unreachable guard; arming the coincidence
+      means whoever gives another subject a garment noun is told to look at site
+      4 on the day they do it, which is the cheaper and the honest half.
+    */
+    it("⚠ site 4's licence has only the account term — so no OTHER subject may own a garment noun", () => {
+      const answered = GARMENT_STAGE_WORDS.filter((word) => stageWordIn(word) !== null);
+      expect(answered.length, "a floor — this must not pass by reading no words")
+        .toBeGreaterThanOrEqual(4);
+
+      const offenders: string[] = [];
+      let wardrobeHits = 0;
+      for (const [subject, card] of Object.entries(SUBJECT_CARDS)) {
+        for (const noun of card.nouns as readonly string[]) {
+          const hit = stageWordIn(noun);
+          if (hit === null || !answered.includes(hit)) continue;
+          if (subject === "wardrobe") wardrobeHits += 1;
+          else offenders.push(`${subject}.${noun} answers ${hit}`);
+        }
+      }
+
+      /* THE POSITIVE CONTROL: the walk really does see garment nouns, so an
+         empty `offenders` cannot mean it read nothing. */
+      expect(wardrobeHits, "the walk reaches wardrobe's own garment nouns").toBeGreaterThanOrEqual(5);
+      expect(offenders, "a garment noun on another subject makes site 4's missing subject term reachable — read the comment above before widening this")
+        .toEqual([]);
+    });
+
     it("⚠ site 4 — served, a garment collision becomes the routing miss it now is", async () => {
       /*
         The design's table, exactly: the OUTCOME is `refused` either way and the
@@ -482,6 +532,86 @@ describe("4 · ⚠ SERVED, THE SCENERY HALF STILL REFUSES — ALL FIVE SITES", (
       expect(unserved?.ok).toBe(false);
       expect(unserved && unserved.ok === false && unserved.outcome).toBe("refused");
       expect(unserved && unserved.ok === false && unserved.reason).toBe("unfileable");
+    });
+
+    /*
+      ⚠ SITE 5 — THE ARM THIS BLOCK DID NOT HAVE, AND THE RELAY'S FINDING ON
+      PR #2600 WENT THROUGH THE HOLE WHERE IT SHOULD HAVE BEEN.
+
+      Site 4 had an arm from the day the slice was written; site 5 had none, so
+      the licence sat on a door whose refusal nothing asked about. What it cost,
+      driven at `acceptOpenKind` with the licence restored:
+
+        SERVED  trench coat     -> FILED  ok=true kind=trench-coat   words_only
+        SERVED  leather jacket  -> FILED  ok=true kind=leather-jacket words_only
+        SERVED  sun hat         -> FILED  ok=true kind=sun-hat        words_only
+        SERVED  silk scarf      -> FILED  ok=true kind=silk-scarf     words_only
+
+      Four, where the finding named two — `hat` and `scarf` joined the garment
+      half in this same slice, so they arrived able to be filed on their first
+      day. Clothing was being minted as an open-lane KIND: rendered as an
+      open-kind feature rather than through the wardrobe subject's qualifier,
+      and writing open-lane demand rows for garments.
+
+      ⚠ `reason` IS THE ASSERTION THAT PROVES THE ARM IS AT SITE 5 AT ALL, and
+      it is cheaper than reading the logs: served, a garment the closed lane
+      OWNS leaves site 4 as `collides` (the arm above). `unfileable` can only
+      have come from site 5, so one expectation carries both facts — it refused,
+      and it refused at the door under test.
+    */
+    it("⚠ site 5 — served, a garment the wardrobe nouns do not list is refused, never filed", async () => {
+      for (const noun of ["trench coat", "leather jacket", "sun hat", "silk scarf"]) {
+        const served = await openAsk(noun, `put them in a ${noun}`, true);
+        expect(served?.ok, noun).toBe(false);
+        expect(served && served.ok === false && served.outcome, noun).toBe("refused");
+        /* never `collides` — the closed lane does not own this noun, and saying
+           so would be a lie about it as well as the wrong door. */
+        expect(served && served.ok === false && served.reason, noun).toBe("unfileable");
+
+        const unserved = await openAsk(noun, `put them in a ${noun}`, false);
+        expect(unserved?.ok, noun).toBe(false);
+        expect(unserved && unserved.ok === false && unserved.reason, noun).toBe("unfileable");
+      }
+    });
+
+    /*
+      ⚠ THE CLASS ARM, AND ITS POPULATION IS ASKED OF THE READER RATHER THAN
+      TYPED — working law 4, and the reason is `wearing`.
+
+      `stageWordIn` skips every `ACCESSORY_ALLOWED` member whatever else is
+      true (D-160), so `wearing` is in the garment half and is a word this
+      function never answers for — a loop over `GARMENT_STAGE_WORDS` as written
+      would redden on it and the arm would get weakened to fit. That set is not
+      exported, and it should not have to be: the honest population is the
+      garment words the reader ACTUALLY answers for, which it will tell you.
+
+      So a garment word added to the lexicon tomorrow joins this arm on the day
+      it is written, and one that quietly leaves takes its row with it — while
+      the floor below keeps the population from shrinking to nothing and passing
+      by reading no words at all.
+    */
+    it("⚠ site 5 — EVERY garment word the lexicon answers for refuses here, served", async () => {
+      const answered = GARMENT_STAGE_WORDS.filter((word) => stageWordIn(word) !== null);
+      expect(answered, "the lexicon still answers for the finding's own two").toEqual(
+        expect.arrayContaining(["coat", "jacket"]),
+      );
+      expect(answered.length, "a population floor — this arm must not pass by reading nothing")
+        .toBeGreaterThanOrEqual(4);
+
+      for (const word of answered) {
+        /* An unowned two-word noun built from the word, so it clears the
+           collision guard and lands on the door under test. */
+        const noun = `velvet ${word}`;
+        const opened = await openAsk(noun, `put them in a ${noun}`, true);
+        expect(opened?.ok, noun).toBe(false);
+        expect(opened && opened.ok === false && opened.reason, noun).toBe("unfileable");
+      }
+
+      /* THE POSITIVE CONTROL ON THE SAME LOOP: the lane still files a kind that
+         names no garment, so none of the rows above passed against a door that
+         had simply stopped accepting anything. */
+      const control = await openAsk("velvet antlers", "give them velvet antlers", true);
+      expect(control?.ok, "an open kind naming no garment still files").toBe(true);
     });
   });
 });

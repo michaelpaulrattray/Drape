@@ -54,7 +54,7 @@ import {
 } from "./openLaneKind";
 import { facetOfSubject } from "./refineFacets";
 import { scrubBrands } from "./brandScrub";
-import { stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
+import { GARMENT_STAGE_WORDS, stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
 import type { TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/openLaneAccept");
@@ -309,26 +309,52 @@ export async function acceptOpenKind(input: {
     gold hoops"* is unaffected.
   */
   /*
-    ⚠ SITE 5, AND THE LICENCE HERE IS NARROWER THAN IT LOOKS — #2544 slice 1.
+    ⚠ SITE 5 TAKES NO LICENCE, AND THE COMMENT THAT USED TO SIT HERE ARGUED
+    FOR THAT WHILE THE CODE DID THE OPPOSITE — the relay's finding on PR #2600,
+    repaired by `foreman-20261017-0728`.
 
-    A garment reaching THIS line has already passed the collision guard, which
-    means its noun is not one the closed lane owns — so with the subject served
-    the honest reading is the one the design gives: the garment half defers to
-    the collision answer above, and anything still arriving here with a garment
-    word in an UNOWNED noun is a kind the wardrobe subject's nouns do not list.
-    Served, that is a wardrobe ask the interpreter misrouted rather than scenery.
+    It read *"the garment half defers to the collision answer above … served,
+    that is a wardrobe ask the interpreter misrouted rather than scenery"* — which
+    is the right reading — and then passed `garmentLicensed` anyway. Licensed, the
+    garment half returns null, `scenery` is null, and the acceptance CONTINUES: so
+    with the flag on, *"put them in a trench coat"* was FILED as `open:trench-coat`
+    rather than refused. It renders as an open-kind feature instead of through the
+    wardrobe subject's qualifier, and it writes open-lane demand rows for clothing.
 
-    ⚠ The scenery half is untouched, which is this block's whole subject: an
-    open lane that accepts *"horns"* must still refuse *"put her in a red coat
+    ⚠ **THE LICENCE'S OWN CONTRACT IS WHY, AND IT IS NOT A JUDGEMENT CALL.**
+    `stageWordIn`'s docblock says `garmentLicensed` is *"passed by a caller that
+    has already established BOTH halves of the licence: this ask is a wardrobe
+    ask, and this account is served the subject."* A garment reaching THIS line
+    has passed the collision guard, which means its noun is **not** one the closed
+    lane owns — so it is by construction not a wardrobe ask, and the first half of
+    the licence was never established. Site 4 is the opposite case and keeps its
+    licence: there the noun IS owned, and both of its branches return `refused`
+    either way, so what the licence moves there is the reason and the log.
+
+    ⚠ SO THE OUTCOME HERE IS IDENTICAL UNDER EVERY FLAG, AND ONLY THE LOG MOVES.
+    `reason` stays `unfileable`: `collides` would be a lie about a noun the closed
+    lane does not own. Served, a garment word is the routing miss the paragraph
+    above describes, so it earns the `warn` — which is what makes the gap in the
+    wardrobe subject's nouns findable instead of silent. Unserved, and for every
+    scenery word under every flag, the sentence is wall (b)'s own, unchanged.
+
+    ⚠ The scenery half was never in question, which is this block's whole subject:
+    an open lane that accepts *"horns"* must still refuse *"put her in a red coat
     against a red backdrop"*, and it does — on `backdrop`, under every flag.
   */
-  const scenery = stageWordIn(reading.noun, { garmentLicensed: input.outfitEditServed === true })
-    ?? stageWordIn(scrubbed, { garmentLicensed: input.outfitEditServed === true });
+  const scenery = stageWordIn(reading.noun) ?? stageWordIn(scrubbed);
   if (scenery !== null) {
-    log.info(
-      { kind: reading.kind, word: scenery },
-      "[openLaneAccept] an out-of-vocabulary ask names the stage — wall (b) holds, nothing filed",
-    );
+    if (input.outfitEditServed === true && GARMENT_STAGE_WORDS.includes(scenery)) {
+      log.warn(
+        { kind: reading.kind, noun: reading.noun, word: scenery },
+        "[openLaneAccept] a garment names a subject the wardrobe nouns do not list — refused as a routing miss, not filed",
+      );
+    } else {
+      log.info(
+        { kind: reading.kind, word: scenery },
+        "[openLaneAccept] an out-of-vocabulary ask names the stage — wall (b) holds, nothing filed",
+      );
+    }
     return { ok: false, reason: "unfileable", kind: reading.kind, outcome: "refused" };
   }
 
