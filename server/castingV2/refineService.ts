@@ -61,6 +61,10 @@ import {
   recoverCastingV2RefineOperation,
   type RefineRecoveryOutcome,
 } from "./refineRecovery";
+import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
+import { writeCurrentDescription } from "./currentDescription";
+import { interpreterEngine } from "./interpreter";
+import type { TextEngine } from "../providers/types";
 import {
   claimVariant,
   failVariant,
@@ -724,6 +728,10 @@ export type RefineServiceDependencies = {
   countInkCoverageDemand?: typeof recordInkFormDemand;
   /** The brief that knows what she was drawn wearing (D-206). */
   readBaseWorn?: typeof getBriefForOwnedCandidate;
+  /** The description writer's engine (#2565 slice 1) — the interpreter's own
+   *  OpenRouter engine and queue by default; a seam so a suite can answer,
+   *  refuse and throw with no transport. */
+  describeEngine?: () => TextEngine | null;
   readBytes?: typeof storageReadBytes;
   /** The words lane's reader — so the lane can answer, refuse and throw in a
    *  suite with no transport and no bucket. */
@@ -6463,6 +6471,98 @@ async function refineCandidateCounted(
       });
     };
 
+    /*
+      ONE CURRENT DESCRIPTION (#2565 slice 1, #2545 folded in) — his word,
+      2026-10-16: *"okay cool im happy with the build"*, on round 2's A4 arm:
+      the pristine master plus one natural description of who they are now.
+
+      Written ONCE per refine, however many times `repaintOnce` runs, and
+      written here — after the claim, before the render — because the render
+      must be asked with the description that INCLUDES this edit. The column is
+      only written when the version lands (`landVariant`), so a render that
+      fails leaves no description behind.
+
+      ⚠ A WRITER THAT DOES NOT ANSWER CHANGES NOTHING ABOUT MONEY OR OUTCOME:
+      `writeCurrentDescription` never throws, and on any failure this render
+      rides today's prompt exactly ("Change only …") and the version stores NO
+      description. That is the fallback on purpose rather than "the previous
+      description": the previous paragraph does not hold this edit, so a render
+      asked with it would not make the edit, and a version filed with it would
+      silently lose the edit from every later refine. With nothing stored, the
+      next edit rebuilds from the brief and this version's own ask chain, which
+      DOES hold it.
+    */
+    let describedNow: Promise<string | undefined> | null = null;
+    const describeThisEdit = (): Promise<string | undefined> => {
+      if (describedNow) return describedNow;
+      describedNow = (async () => {
+        if (!captureCastingCurrentDescriptionEnabled(input.userId)) return undefined;
+        /* A RE-TAKE OF THE SAME VERSION is the same description — nothing new
+           was said, so nothing is rewritten and nothing is spent. */
+        if (repeatsThisVersion && predecessor?.currentDescription) return predecessor.currentDescription;
+        const from = repeatsThisVersion
+          ? existing.find((row) => row.id === predecessor?.parentVariantId) ?? null
+          : predecessor;
+        const earlierAsks = repeatsThisVersion ? priorInstructions.slice(0, -1) : priorInstructions;
+        const previous = from?.currentDescription ?? null;
+        let brief = "";
+        if (previous === null) {
+          /*
+            THE SEED IS THIS FACE'S OWN ROLL BRIEF — on a Follow child too.
+
+            His ruling, 2026-10-16, verbatim: *"following a cast is meant to show
+            cousins of that direction of cast not exact replicas of the same
+            person you followed"*, after *"follow doesnt need a description
+            shouldnt it just work like the other follows?"*. A Follow child is a
+            cousin rolled from the box's words beside the anchor photo, so its
+            first description starts from ITS OWN roll's brief and never from the
+            followed version's description: the dev chain on PR #2571 measured
+            the opposite seed turning a brown-eyed child's eyes green on a hair
+            edit, an edit nobody asked for on that face.
+          */
+          try {
+            brief = (await (dependencies.readBaseWorn ?? getBriefForOwnedCandidate)(
+              input.userId,
+              input.candidatePublicId,
+            ))?.briefText ?? "";
+          } catch {
+            brief = "";
+          }
+          if (brief.trim() === "") {
+            log.warn(
+              { operationId, variant: variant.publicId },
+              "[refineService] no brief to seed a description from — this render rides today's prompt",
+            );
+            return undefined;
+          }
+        }
+        const written = await writeCurrentDescription(
+          (dependencies.describeEngine ?? interpreterEngine)(),
+          { previous, seed: { brief, earlierAsks }, change: instruction },
+        );
+        if (!written.ok) {
+          log.warn(
+            { operationId, variant: variant.publicId, reason: written.reason, latencyMs: written.latencyMs },
+            "[refineService] the description writer did not answer — this render rides today's prompt and the version stores no description",
+          );
+          return undefined;
+        }
+        /* Cost and time, never the words — the paragraph is the recipe's family. */
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            latencyMs: written.latencyMs,
+            tokens: written.tokens ?? null,
+            model: written.model,
+            seeded: previous === null,
+          },
+          "[refineService] one current description written for this edit",
+        );
+        return written.description;
+      })();
+      return describedNow;
+    };
     const repaintOnce = async () => {
       /*
         THE LIBRARY AS IT STANDS, READ BEFORE THE ASKS ARE BUILT.
@@ -6984,7 +7084,11 @@ async function refineCandidateCounted(
           "[refineService] her own designs ride a render that is not about them",
         );
       }
+      const currentDescription = await describeThisEdit();
       const recipe = assembleRecipe({
+        /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
+           and the prompt is today's byte for byte. */
+        ...(currentDescription !== undefined ? { currentDescription } : {}),
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base
            inside the statement that proved the parent, so this cannot be got
@@ -9758,7 +9862,11 @@ async function refineCandidateCounted(
     }
 
     const baseIdentity = readResolvedIdentity(variant.baseInternalPrompt);
+    /* The description this render was asked with, filed on the version that
+       landed (#2565). Settled already: the render awaited it. */
+    const landedDescription = describedNow ? await describedNow : undefined;
     await landVariant({
+      ...(landedDescription !== undefined ? { currentDescription: landedDescription } : {}),
       userId: input.userId,
       cleanupBatchId,
       // The sweep fence's subject: this landing only commits while the

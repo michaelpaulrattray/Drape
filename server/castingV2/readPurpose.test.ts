@@ -78,9 +78,12 @@ describe("the read stage's purpose vocabulary", () => {
   */
   /*
     SIXTEEN since #2498: `voice.card` prices a cast's hidden voice card per
-    design whose sources changed.
+    design whose sources changed. SEVENTEEN since #2565: `refine.describe`
+    prices the one current description rewritten per paid refine. EIGHTEEN
+    since #2576: `follow.brief` prices the brief rewritten per Follow of an
+    edited version.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate` and `voice.card`", () => {
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate`, `voice.card`, `refine.describe` and `follow.brief`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -98,6 +101,8 @@ describe("the read stage's purpose vocabulary", () => {
       "reads",
       "persona.translate",
       "voice.card",
+      "refine.describe",
+      "follow.brief",
     ]);
   });
 
