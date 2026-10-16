@@ -363,13 +363,13 @@ export function inkAskIntents(delta: RefineDelta | null | undefined): readonly R
  * a silent 500 credits.
  */
 export function inkReferenceNote(take: InkReferenceTake | null): string {
-  const cannot = "I can't put it on her yet — the step that cuts a design out of a photograph "
+  const cannot = "I can't put it on them yet — the step that cuts a design out of a photograph "
     + "isn't open. Nothing was charged.";
   if (take === null) {
     /* Unreadable is its own answer and never a guessed placement: she is told
        the picture landed and the sentence did not, which is the one thing she
        can act on. */
-    return `I've got the design from your picture, but I couldn't tell where on her you meant. ${cannot}`;
+    return `I've got the design from your picture, but I couldn't tell where on them you meant. ${cannot}`;
   }
   const place = placeIn(take);
   return place === null
@@ -387,7 +387,7 @@ export function inkReferenceNote(take: InkReferenceTake | null): string {
  */
 function placeIn(take: InkReferenceTake): string | null {
   const sided = (noun: string) => (
-    take.side === "left" || take.side === "right" ? `her ${take.side} ${noun}` : `her ${noun}`
+    take.side === "left" || take.side === "right" ? `their ${take.side} ${noun}` : `their ${noun}`
   );
   switch (take.placement.kind) {
     case "measured":

@@ -216,16 +216,52 @@ function withoutStatedSide(normalised: string, statedSide: InkSide | null): stri
  *
  * # THE LINE IT STILL WILL NOT CROSS
  *
- * A determiner only, as a WHOLE WORD at the FRONT. Nothing spatial: *"side of
- * the neck"* keeps its qualifier and stays open, because merging it would speak
- * back *"her neck"* and render the neck wherever the engine likes — dropping
- * what the customer asked for without saying so. That is a meaning judgement
- * and the header reserves it to a person; it is #2572's open half, with the
- * 25-phrase sweep on the card as its evidence.
+ * A determiner only, as a WHOLE WORD at the FRONT. The spatial qualifiers the
+ * founder ruled on (*"side of"*, *"front of"*) are a separate, named attempt —
+ * {@link withoutRegionQualifier} — and not a widening of this strip.
  */
 function withoutDeterminer(normalised: string): string | null {
   const stripped = normalised.replace(/^(?:the|a|an|her|his|their|its|my|our|your)\s+/, "");
   return stripped === normalised || stripped === "" ? null : stripped;
+}
+
+/**
+ * "SIDE OF" AND "FRONT OF" A MEASURED SURFACE ARE THAT SURFACE — the founder's
+ * ruling on #2572, option A, verbatim:
+ *
+ * > *"A less friction if someone says side of the next the image engine can
+ * > reliably decide that itself if no side m,iddle or anything is decided thats
+ * > the users fault for not being specific enough"*
+ *
+ * So *"a small sparrow tattoo on the side of the neck"* lands on the neck in one
+ * step, with no *where?* question. The qualifier is not thrown away: the
+ * customer's own sentence is what the render is asked for, and only the
+ * ADDRESS — which measured surface, for the slot and the crop — is the neck.
+ *
+ * # NARROW ON PURPOSE, AND NEVER WIDER THAN THE INK GATE
+ *
+ * Only `side of` and `front of`, optionally led by `left`/`right`, at the FRONT
+ * of the phrase — the qualifiers the ruling named — and what follows must be a
+ * measured spelling EXACTLY (a determiner allowed). So *"top of the upper
+ * arm"*, *"below the neck"* and *"a rose by the side of the neck"* are not ruled
+ * and stay open, and *"back of the neck"* / *"nape of the neck"* can never be
+ * measured through it: `back of` is not a qualifier here, and `nape` is not a
+ * measured spelling. Both stay refused by `classifyInkPlacement`'s hidden rules
+ * as before. `inkPlacementResolve.test.ts` drives every phrase it measures
+ * through that classifier too and requires the same surface, so the two
+ * readers of one question cannot drift apart (working law 4).
+ *
+ * A side word inside the qualifier is returned so the caller can refuse it on a
+ * PAIRED surface: *"left side of the upper arm"* names an arm, and picking one
+ * is the side machinery's job (fable-1115 §3), reached through the side she
+ * stated rather than through this strip.
+ */
+function withoutRegionQualifier(
+  normalised: string,
+): { readonly rest: string; readonly sideWord: string | null } | null {
+  const match = /^(?:(left|right)\s+)?(?:side|front)\s+of\s+(.+)$/.exec(normalised);
+  if (match === null) return null;
+  return { rest: match[2]!, sideWord: match[1] ?? null };
 }
 
 export function resolveInkPlacement(
@@ -269,6 +305,19 @@ export function resolveInkPlacement(
   for (const form of attempts) {
     const measured = measuredFor(form);
     if (measured !== null) return { kind: "measured", placement: measured };
+  }
+  /*
+    AND "SIDE OF" / "FRONT OF" A MEASURED SURFACE (#2572, his option A) — tried
+    last, over every form above. See `withoutRegionQualifier`.
+  */
+  for (const form of attempts) {
+    const qualified = withoutRegionQualifier(form);
+    if (qualified === null) continue;
+    const measured = measuredFor(qualified.rest)
+      ?? measuredFor(withoutDeterminer(qualified.rest) ?? qualified.rest);
+    if (measured === null) continue;
+    if (qualified.sideWord !== null && inkPlacementEntry(measured).sides !== "one") continue;
+    return { kind: "measured", placement: measured };
   }
 
   if (normalised.length > INK_PLACEMENT_MAX_LENGTH) {

@@ -12090,6 +12090,44 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted.length).toBeGreaterThan(0);
   });
 
+  it("RENDERS \"on the side of the neck\" in ONE step, the customer's words in the render (#2572, option A)", async () => {
+    /* His word: *"if someone says side of the next the image engine can
+       reliably decide that itself"*. So the address is the neck and the
+       qualifier is not flattened out of what the engine is asked for. */
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on the side of the neck" } },
+      }),
+      inkTake: sayingTake("side of the neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on the side of the neck" });
+
+    expect(result.kind, "the side of the neck was asked WHERE instead of placed").toBe("rendered");
+    expect(painted.length).toBeGreaterThan(0);
+    expect(painted.some((call) => call.prompt.includes("side of the neck")),
+      "the customer's own qualifier never reached the render").toBe(true);
+  });
+
+  it("CONTROL — the BACK of the neck still answers before the claim, nothing spent (#2572)", async () => {
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on the back of the neck" } },
+      }),
+      inkTake: sayingTake("back of the neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on the back of the neck" });
+
+    expect(result.kind).toBe("selected");
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges).toHaveLength(0);
+  });
+
   it("CONTROL — an unmeasured surface still answers before the claim, nothing spent", async () => {
     /* The determiner strip must not have opened the road to a place the
        vocabulary never measured: `sleeve` is the header's own example, and the
@@ -12264,7 +12302,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     /* The place she named is in front of her, which is what makes the take a
        live control rather than a dark one — and the answer names what she can
        DO about it rather than what we cannot do. */
-    expect(result.note).toContain("her left sleeve");
+    expect(result.note).toContain("their left sleeve");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12542,8 +12580,8 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(painted, "a resident design was painted for a picture it did not come from").toHaveLength(0);
     expect(inkMinted, "a picture was cut for an ask that was refused").toHaveLength(0);
-    expect(result.note).toContain("her left sleeve is more than I can place yet");
-    expect(result.note).toContain("her upper arm");
+    expect(result.note).toContain("their left sleeve is more than I can place yet");
+    expect(result.note).toContain("their upper arm");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12638,7 +12676,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.kind).toBe("asked");
     expect(result.reask?.kind).toBe("replace-design");
     /* THE RESIDENT IS NAMED IN THE SENTENCE — the offer's whole content. */
-    expect(result.reask?.question).toContain("Her left upper arm already has a design");
+    expect(result.reask?.question).toContain("Their left upper arm already has a design");
     expect(result.reask?.question).toContain("Nothing has been charged.");
     expect(result.reask?.options.map((one) => one.label))
       .toEqual(["Yes — replace it", "No, keep the one she has"]);
@@ -12794,7 +12832,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
     expect(ledger.charges).toHaveLength(0);
     expect(result.kind).toBe("selected");
-    expect(result.note).toContain("2 designs for her left upper arm");
+    expect(result.note).toContain("2 designs for their left upper arm");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12978,7 +13016,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
         .toBe(1);
       expect(result.kind, "the already-true door swallowed the second design").toBe("asked");
       expect(result.reask?.kind).toBe("replace-design");
-      expect(result.reask?.question).toContain("Her left upper arm already has a design");
+      expect(result.reask?.question).toContain("Their left upper arm already has a design");
       /* Free, and both rows standing, exactly as the offer's own arms have it. */
       expect(ledger.charges).toHaveLength(0);
       expect(painted).toHaveLength(0);
@@ -13575,9 +13613,9 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(painted).toHaveLength(0);
     expect(inkMinted, "an unservable placement was cut anyway").toHaveLength(0);
-    expect(result.note).toContain("her neck");
-    expect(result.note).toContain("her upper arm");
-    expect(result.note).toContain("her upper chest");
+    expect(result.note).toContain("their neck");
+    expect(result.note).toContain("their upper arm");
+    expect(result.note).toContain("their upper chest");
     expect(result.note).toContain("sleeve");
     expect(result.note).toContain("Nothing was charged.");
   });
@@ -13830,7 +13868,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     });
 
     expect(painted).toHaveLength(0);
-    expect(result.note).toContain("couldn't tell where on her you meant");
+    expect(result.note).toContain("couldn't tell where on them you meant");
   });
 
   /*
