@@ -36,6 +36,25 @@ const SAM3 = "fal-ai/sam-3/image";
 const BIREFNET = "fal-ai/birefnet/v2";
 const POINT = "fal-ai/moondream3-preview/point";
 
+/**
+ * HOW MANY INSTANCES ONE WHOLE-FRAME PAIR READ MAY COME BACK WITH — the
+ * `pairInOneRead` road only (#2191).
+ *
+ * A pair is two, and the headroom above two is deliberate rather than generous:
+ * a cast may genuinely wear three of a thing, and the crop road this replaces
+ * would have found the extra one — a third eye sitting on the midline lands in
+ * both halves, so both of today's reads see it. Four is the number #2532's arm
+ * 1 measured the setting at, including the run where the elder alien's `eyes`
+ * came back as four instances with the third eye as its own.
+ *
+ * ⚠ **The ceiling is not a filter and must not be read as one.** fal pads
+ * nothing: asked for a noun that is not in the picture, the setting returned
+ * NOTHING rather than junk up to this number, on 3 of 3 absent specimens —
+ * which is the control the whole scan rests on, because `absentIsAnswer` reads
+ * "no masks" as "it is not there".
+ */
+const PAIR_MAX_MASKS = 4;
+
 /*
   fal keeps generated objects for seven days by default; a mask we use once and
   discard has no business outliving the request — and since #2334 fal keeps no
@@ -415,6 +434,66 @@ async function placeInFrame(
 }
 
 /**
+ * ONE WHOLE-FRAME MASK CUT INTO THE TWO SIDES IT SPANS — the `pairInOneRead`
+ * road's geometry (#2191).
+ *
+ * # Why a cut and not "take mask 0 and mask 1"
+ *
+ * #2532's arm 1 measured what comes back when the pair is asked of the whole
+ * frame with `return_multiple_masks`, and it is not one shape: `ear` and
+ * `earring` answered as two clean per-side masks, while `eyes` and `eyebrows`
+ * usually answered as ONE mask spanning the midline and covering both. Picking
+ * instances apart would therefore work on two nouns and silently halve the
+ * other three. ⚠ And reading a side off a mask's CENTROID is worse than
+ * useless on exactly these shapes — a two-lobed brow mask centres between the
+ * lobes and reads as whichever side wins by a pixel, which is the error arm 1's
+ * own first run made.
+ *
+ * So the answer is unioned first (`keep: "all"`) and then CUT, at the same
+ * midline the crop road splits the picture on. Both shapes then give the same
+ * answer: two masks come apart at the cut, one spanning mask comes apart at the
+ * cut, and neither case needs to be told which it is.
+ *
+ * # It is the crop road's own arithmetic, reused rather than restated
+ *
+ * The two pieces are handed to `placeInFrame` with exactly the crops
+ * `bilateralHalves` would have extracted, so a side's mask comes back in the
+ * frame's pixels by the same code that places a half-frame read — including the
+ * resample for a provider that answers at its own resolution. The cut is taken
+ * as a FRACTION of the mask's own width for that reason: a mask returned at a
+ * different size than it was asked about still gets cut in the right place,
+ * where a cut at the frame's pixel index would land wherever the scaling put it.
+ *
+ * `null` for a side that holds nothing — the same reading the crop road returns
+ * for a half-frame that came back empty, and therefore fit to reach
+ * `absentIsAnswer` and the half-answered-pair heal above it.
+ */
+async function splitAtMidline(
+  whole: Mask,
+  midline: number,
+  width: number,
+  height: number,
+): Promise<{ atImageLeft: Mask | null; atImageRight: Mask | null }> {
+  const crops = [{ left: 0, width: midline }, { left: midline, width: width - midline }] as const;
+  const sides = await Promise.all(crops.map(async (crop) => {
+    const from = Math.round((crop.left / width) * whole.width);
+    const to = Math.round(((crop.left + crop.width) / width) * whole.width);
+    /* A cut that leaves one side nothing to hold is a real reading of a mask
+       entirely on the other side of her midline, not an error. */
+    if (to <= from) return null;
+    const sliceWidth = to - from;
+    const data = Buffer.alloc(sliceWidth * whole.height, 0);
+    for (let y = 0; y < whole.height; y += 1) {
+      const row = y * whole.width;
+      whole.data.copy(data, y * sliceWidth, row + from, row + to);
+    }
+    if (!data.some((byte) => byte !== 0)) return null;
+    return placeInFrame({ data, width: sliceWidth, height: whole.height }, crop, width, height);
+  }));
+  return { atImageLeft: sides[0] ?? null, atImageRight: sides[1] ?? null };
+}
+
+/**
  * THE WORDS SENT, WHICH ARE NOT THE REGION'S NAME (fable-492 §2a).
  *
  * A region's name is a KEY: catalogues, courts, floors, neighbour lists and
@@ -457,8 +536,40 @@ export function measuredPhrasings(): Array<{ region: string } & AskedAs> {
 export function createFalRegionReader(input: {
   apiKey: string;
   signal?: AbortSignal;
+  /**
+   * ASK A PAIR ONCE INSTEAD OF TWICE — off unless the caller says otherwise
+   * (#2191, his goal of 2026-10-10: *"our goal would be to reduce this cost by
+   * as much as possible"*).
+   *
+   * A bilateral region costs TWO segmenter reads today, one per half-frame, and
+   * #2532's arm 1 measured that one whole-frame read with
+   * `return_multiple_masks` can answer both sides: **five reads off a face
+   * scan's floor, about 2.5¢ a scan, 28% of the floor.** `bilateralHalves`
+   * carries the road and `splitAtMidline` its geometry.
+   *
+   * # Why the CALLER decides and not this module
+   *
+   * Two things reach the pair road and only one of them is this card's: the
+   * face SCAN, which buys the whole plan on every face, and a masked REFINE,
+   * which buys one region and then PAINTS on the mask it gets back. A wrong
+   * mask costs the scan a panel row and costs a refine a delivered picture the
+   * customer paid for — so the refine is left on the crop road by construction
+   * rather than by a flag somebody could widen, and this module goes on not
+   * deciding what to ask (see the header).
+   *
+   * # And why it is off by default
+   *
+   * The crop road is not an accident: `BILATERAL` above records that asking a
+   * pair of a whole frame once failed badly enough to deliver *"she has no
+   * eyebrows"* over a frame whose brows measure 1429px, and that **the same
+   * twelve features asked of a picture containing one side read 12 of 12.**
+   * Arm 1's reading is 15 cells on three casts against that, which is enough to
+   * build the road and not enough to move every customer onto it — so the
+   * default is today's answer and the flip is his, with his eye on the panel.
+   */
+  pairInOneRead?: boolean;
 }): RegionReader {
-  const { apiKey, signal } = input;
+  const { apiKey, signal, pairInOneRead = false } = input;
 
   /**
    * WHICH SIGNAL ONE CALL RUNS UNDER — the reader's own, the caller's, or both
@@ -616,11 +727,22 @@ export function createFalRegionReader(input: {
     prompt: string,
     imageUrl?: string,
     theirs?: AbortSignal,
+    /**
+     * SEVERAL INSTANCES OF THE ONE NOUN, for the `pairInOneRead` road only.
+     *
+     * fal's published schema carries `return_multiple_masks` (default FALSE)
+     * and `max_masks`, and this product had never sent either — so the August
+     * reading that *"SAM 3 returns exactly ONE instance for a bilateral noun"*
+     * was a fact about our REQUEST and not about the model (#2532 arm 1, law
+     * clause 4: read what the engine already gives you).
+     */
+    multiple = false,
   ): Promise<readonly string[]> => {
     const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
     const json = await post(apiKey, SAM3, {
       image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
       output_format: "png",
+      ...(multiple ? { return_multiple_masks: true, max_masks: PAIR_MAX_MASKS } : {}),
     }, theirs);
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     return masks
@@ -639,7 +761,32 @@ export function createFalRegionReader(input: {
        is awaiting. That is the shared-read rule, and it costs nothing — the
        check already bounds itself with `MASK_FETCH_TIMEOUT_MS`. */
     callSignal?: AbortSignal,
+    /** Several instances of the one noun — `askRegionUrls`' own field, and the
+     *  memo below is deliberately not keyed on it: the one asker that sets it
+     *  never asks the shared prompt, and the guard there says so. */
+    multiple = false,
   ): Promise<Mask | null> => {
+    /*
+      ⚠ THE SHARED `face` READ MAY NEVER ASK FOR SEVERAL INSTANCES — measured,
+      not feared, and refused HERE rather than one function down.
+
+      Under the setting, `face` on the elder alien came back as TWO masks where
+      it has always been one (#2532 arm 1's own refusing control). That read is
+      where every pair's midline comes from AND where the build row's head box
+      is cut, so a shattered face moves the cut under all five pairs and the box
+      under a row at once — the one failure on this road that would not look
+      like a failure.
+
+      It sits above the memo deliberately. Put in `askRegionUrls`, the memo
+      branch below would have reached fal WITHOUT the field and never tripped
+      it: a guard that cannot fire on the path its subject actually takes
+      (invariant 7). Above it, every ask of this prompt refuses, whatever
+      signal it carries — which is also what makes it honest to leave the memo
+      un-keyed on `multiple`, since the one prompt it holds can never have it.
+    */
+    if (multiple && prompt === SHARED_PROMPT) {
+      throw new MaskError(`the shared ${SHARED_PROMPT} read may not ask for several instances`);
+    }
     const theirs = signalFor(callSignal);
     let urls: readonly string[];
     if (prompt === SHARED_PROMPT && callSignal === undefined) {
@@ -657,7 +804,7 @@ export function createFalRegionReader(input: {
         urls = await asked;
       }
     } else {
-      urls = await askRegionUrls(image, prompt, imageUrl, theirs);
+      urls = await askRegionUrls(image, prompt, imageUrl, theirs, multiple);
     }
     if (urls.length === 0) return null;
     if (keep === "first") return fetchMask(urls[0], theirs);
@@ -769,6 +916,48 @@ export function createFalRegionReader(input: {
     /* Clamped so a face read that lands on an edge cannot ask for a zero-width
        crop — a degenerate half is a thrown sharp error in place of a reading. */
     const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));
+
+    /*
+      ONE REQUEST FOR BOTH SIDES, when the caller has asked for that road
+      (#2191). See `pairInOneRead` on the constructor for what it saves, why the
+      caller decides, and why it is off by default.
+
+      The midline is read FIRST and unconditionally, so this road costs one
+      request where the crop road costs two and neither saves the `face` read —
+      that read is shared across all five pairs and the build row already
+      (`SHARED_PROMPT`), so it is one read a scan either way.
+
+      ⚠ **A ONE-SIDED ANSWER IS LEFT ONE-SIDED HERE, ON PURPOSE.** It is
+      tempting to ask the missing half the old way and hand back a whole pair,
+      and that would be a control written at the wrong altitude: `faceScan.ts`
+      ALREADY looks again when exactly one side is at literal zero (fable-749
+      §3a, a heal bought on a measured production rate), and it keeps the second
+      reading only when it actually recovers the blind side. A rescue attempt in
+      here would fire first, spend the same read, and leave that heal looking at
+      a pair it can no longer tell was ever half-answered — so the measured
+      control would be the one that stopped working. The cost is the same either
+      way: one read, then one more only if a side is missing.
+    */
+    if (pairInOneRead) {
+      const whole = await askRegion(image, name, "all", imageUrl, callSignal, true);
+      /* No masks at all is the crop road's own both-halves-empty answer, at one
+         read instead of two — `absentIsAnswer` and the empty-anatomy re-ask
+         above decide what it means, exactly as they do today. */
+      const split = whole === null
+        ? { atImageLeft: null, atImageRight: null }
+        : await splitAtMidline(whole, midline, width, height);
+      log.debug(
+        {
+          name,
+          sides: [split.atImageLeft, split.atImageRight].filter((mask) => mask !== null).length,
+          midline,
+          byFace: axis !== null,
+          masked: whole !== null,
+        },
+        "[falRegionReader] bilateral read, one request for both sides",
+      );
+      return split;
+    }
 
     const crops = [{ left: 0, width: midline }, { left: midline, width: width - midline }] as const;
     const sides = await Promise.all(crops.map(async (crop) => {

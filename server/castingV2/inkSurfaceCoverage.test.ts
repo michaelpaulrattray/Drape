@@ -189,7 +189,6 @@ describe("what this cast's wardrobe leaves showing", () => {
       kind: "line",
       line: "a white, body-conscious dress with industrial straps and buckles",
       source: "brief",
-      path: null,
     } as const;
     expect(wardrobeCoversSurface(briefLine, "neck")).toBe("bare");
     expect(wardrobeCoversSurface(briefLine, "upperArm")).toBe("bare");
@@ -197,7 +196,7 @@ describe("what this cast's wardrobe leaves showing", () => {
     /* CONTROL — the SAME sentence from any other source still answers
        `unknown`, so this arm is about the source and not about the words. */
     expect(wardrobeCoversSurface(
-      { kind: "line", line: briefLine.line, source: "edited", path: null },
+      { kind: "line", line: briefLine.line, source: "edited" },
       "neck",
     )).toBe("unknown");
 
@@ -209,37 +208,48 @@ describe("what this cast's wardrobe leaves showing", () => {
     expect(coverageOfSnapshotWardrobe({ line: null, source: null }, "neck")).toBe("bare");
   });
 
-  it("⚠ `incoherent` is unknown and not covered", () => {
-    /* A roll that claims a path and cannot say what it is wearing has told us
-       nothing about its chest. Reporting that as a covering is the lie. */
-    const resolution = { kind: "incoherent", path: "wardrobe" } as const;
+  it("⚠ an UNREADABLE line is unknown and not covered — the `incoherent` arm's heir", () => {
+    /*
+      THIS ARM TESTED THE `incoherent` KIND UNTIL #1577 SLICE 2, which retired
+      it with the paths. What it was defending is unchanged and is why the arm
+      stays rather than being deleted: **a cast whose clothing we cannot read
+      must answer `unknown`, never a covering and never the house tee** — the
+      lie ruling 1 forbids, and its quieter version.
+
+      The road to that answer is now the LINE rather than the kind: an edited
+      sentence nobody has taught the reader resolves `unknown` per surface,
+      which is the fable-1368 ruling (never SELL a surface you cannot read).
+    */
+    const unreadable = { kind: "line", line: "a bespoke harness of unknown cut", source: "edited" } as const;
     for (const placement of INK_PLACEMENTS) {
-      expect(wardrobeCoversSurface(resolution, placement)).toBe("unknown");
+      expect(wardrobeCoversSurface(unreadable, placement), placement).toBe("unknown");
     }
   });
 
   it("a resolved line goes through the same door as a bare string", () => {
     const basics = basicsWardrobeLine("male");
     expect(wardrobeCoversSurface(
-      { kind: "line", line: basics, source: "born", path: "basics" },
+      { kind: "line", line: basics, source: "edited" },
       "upperArm",
     )).toBe("bare");
     /* The chest goes through the same door and comes back with the court's
        answer rather than the spec's — `bare` since the re-court read it 12 of
        12 and the founder closed the trade. */
     expect(wardrobeCoversSurface(
-      { kind: "line", line: basics, source: "born", path: "basics" },
+      { kind: "line", line: basics, source: "edited" },
       "upperChest",
     )).toBe("bare");
     expect(wardrobeCoversSurface(
-      { kind: "line", line: HOUSE_WARDROBE_LINE, source: "born", path: "wardrobe" },
+      { kind: "line", line: HOUSE_WARDROBE_LINE, source: "edited" },
       "upperChest",
     )).toBe("covered");
   });
 
   it("names the surfaces that work, for the sentences that must not be frozen", () => {
-    const worn = (line: string): { kind: "line"; line: string; source: "born"; path: "wardrobe" } =>
-      ({ kind: "line", line, source: "born", path: "wardrobe" });
+    /* `edited` is the source that READS the line — `brief` keeps the house
+       prior by design, and `born` is retired (#1577 slice 2). */
+    const worn = (line: string): { kind: "line"; line: string; source: "edited" } =>
+      ({ kind: "line", line, source: "edited" });
     /* Absent is silence, which is `unpathed`: the house crew tee. */
     expect(bareSurfaces(undefined)).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces({ kind: "unpathed" })).toEqual(["neck", "upperArm"]);
@@ -257,7 +267,9 @@ describe("what this cast's wardrobe leaves showing", () => {
        about the Basics line and not about the reader having stopped filtering. */
     expect(bareSurfaces(worn(HOUSE_WARDROBE_LINE))).toEqual(["neck", "upperArm"]);
     expect(bareSurfaces(worn("a charcoal roll-neck jumper"))).toEqual([]);
-    /* And an incoherent branch offers NOTHING rather than the crew tee's two. */
-    expect(bareSurfaces({ kind: "incoherent", path: "basics" })).toEqual([]);
+    /* And a branch whose line cannot be read offers NOTHING rather than the
+       crew tee's two — which is what the retired `incoherent` branch did, now
+       reached through the line instead of through the kind. */
+    expect(bareSurfaces(worn("a bespoke harness of unknown cut"))).toEqual([]);
   });
 });

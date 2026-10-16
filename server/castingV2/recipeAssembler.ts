@@ -305,10 +305,14 @@ export type AssembleInput = {
    * preservation tail's *"the same clothing"* would restore the outfit she took
    * off.
    *
-   * Absent, `unpathed` and `incoherent` all say nothing, which is every render
-   * in production and is what makes this landing dark. Stating a born line
-   * anyway would be free-looking and is not: prompt context is not additive in
-   * this product, measured.
+   * Absent and `unpathed` both say nothing, which is every render in production
+   * and is what makes this landing dark — and so does a `brief`-sourced line,
+   * because the master photograph is already wearing it. Only an EDIT is
+   * stated. Saying a stored line anyway would be free-looking and is not:
+   * prompt context is not additive in this product, measured.
+   *
+   * ⚠ This named `incoherent` as a third silence until #1577 slice 2 retired
+   * the kind with the paths.
    */
   wardrobe?: WardrobeResolution;
   /**

@@ -31,6 +31,23 @@
  * the same refusal on Basics argues for something else entirely — and a tally
  * that cannot tell them apart answers neither question.
  *
+ * ⚠ **AND THAT ARGUMENT IS SPENT: NOTHING CAN WRITE A VALUE INTO IT ANY MORE
+ * — #1577 slice 2, 2026-10-15.** The paragraph above is kept because it is why
+ * the column exists and because the privacy reasoning in it still holds for
+ * every row already written; what is no longer true is the premise. The
+ * resolution stopped carrying a path (the ghost audit's item B1), and
+ * `wardrobeNow.path` was this column's only source in the product — so
+ * `refineService.ts` has stopped passing `pathAtRefusal` and the `?? null`
+ * default below is now the whole story.
+ *
+ * **The column is KEPT and this is not a deletion**: it is on a written table,
+ * dropping one is a destructive migration and the founder's hand, and it was
+ * not in that slice's scope. Read at the rows on the way out — this table
+ * holds **zero rows in both worlds, all time** — so no history is orphaned by
+ * leaving it. ⚠ **A reader deciding whether to drop it should know the
+ * sharper fact: the whole TABLE has no reachable writer now**, which is filed
+ * as its own finding rather than acted on here.
+ *
  * That is why this is not `castingV2/refusalCounter.ts`, which would otherwise
  * be the obvious home and needs no migration at all: every row it writes
  * carries a `userId` and a candidate id, and this refusal is ABOUT A BUILD. An
