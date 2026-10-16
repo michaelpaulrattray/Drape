@@ -810,6 +810,12 @@ export type OwnedCandidateFace = {
   thumbKey: string | null;
   internalPrompt: unknown;
   /**
+   * WHO THIS FACE IS NOW, in one paragraph (#2565 slice 1) — the selected
+   * version's own `currentDescription`, and null for the original (whose words
+   * are the brief) and for any version written without one.
+   */
+  currentDescription: string | null;
+  /**
    * WHAT THE ROLL THIS FACE CAME FROM WAS BORN WEARING (item 7a).
    *
    * Joined here rather than read a second time, and joined THROUGH the owned
@@ -867,6 +873,7 @@ export async function getOwnedCandidateWithSelectedFace(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      variantCurrentDescription: castingCandidateVariants.currentDescription,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -903,6 +910,7 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.variantImageKey,
       thumbKey: row.variantThumbKey,
       internalPrompt: row.variantInternalPrompt,
+      currentDescription: row.variantCurrentDescription ?? null,
       ...roll,
     }
     : {
@@ -912,6 +920,7 @@ export async function getOwnedCandidateWithSelectedFace(
       imageKey: row.candidate.imageKey,
       thumbKey: row.candidate.thumbKey,
       internalPrompt: row.candidate.internalPrompt,
+      currentDescription: null,
       ...roll,
     };
 }
@@ -965,6 +974,7 @@ export async function getOwnedCandidateOnVersion(
       variantImageKey: castingCandidateVariants.imageKey,
       variantThumbKey: castingCandidateVariants.thumbKey,
       variantInternalPrompt: castingCandidateVariants.internalPrompt,
+      variantCurrentDescription: castingCandidateVariants.currentDescription,
       rollWardrobeLine: castingRolls.wardrobeLine,
     })
     .from(castingCandidates)
@@ -1017,6 +1027,7 @@ export async function getOwnedCandidateOnVersion(
         imageKey: row.variantImageKey,
         thumbKey: row.variantThumbKey,
         internalPrompt: row.variantInternalPrompt,
+        currentDescription: row.variantCurrentDescription ?? null,
         ...roll,
       }
       : {
@@ -1026,6 +1037,7 @@ export async function getOwnedCandidateOnVersion(
         imageKey: row.candidate.imageKey,
         thumbKey: row.candidate.thumbKey,
         internalPrompt: row.candidate.internalPrompt,
+        currentDescription: null,
         ...roll,
       },
   };

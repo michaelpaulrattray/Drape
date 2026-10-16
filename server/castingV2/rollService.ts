@@ -46,6 +46,7 @@ import {
   captureCastingBornInkEnabled,
   captureCastingBriefFidelityEnabled,
 } from "./castingV2Scope";
+import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
 import { mintBornInkRows } from "./bornInkMint";
 import { refusal } from "./refusalTag";
 import type { StatedInk } from "./castingIntent";
@@ -465,6 +466,13 @@ export async function createRoll(
   let followStatedAnchor: FollowAnchor | null = null;
   /** The SELECTED face's frame key (#177 Row A) — the picture the customer is pointing at, resolved through selection like everything a follow inherits. */
   let followAnchorImageKey: string | null = null;
+  /**
+   * WHAT THE COMPILER IS HANDED AS THE BRIEF — the customer's words, except on
+   * a Follow of an edited version under `CASTING_CURRENT_DESCRIPTION_SCOPE`
+   * (#2565 slice 1), where it is that version's one current description. The
+   * customer's own words are still what the roll row and the operation record.
+   */
+  let compileBriefText = input.briefText;
   /*
     ⚠ `inheritedWardrobe` STOOD HERE, AND SO DID THE READ THAT FILLED IT — #1443,
     slice 2. It carried the parent sheet's born outfit into the HOUSE compile, the
@@ -539,6 +547,31 @@ export async function createRoll(
     followIdentity = honest.identity;
     followStatedAnchor = honest.statedAnchor;
     followAnchorImageKey = parent.imageKey;
+    /*
+      THE FOLLOWED VERSION'S OWN DESCRIPTION, IN PLACE OF THE ORIGINAL BRIEF
+      (#2565 slice 1). Today a Follow of an edited face sends the edited picture
+      beside the brief the ORIGINAL was rolled from — so a cast refined to green
+      eyes is followed by eight cousins told, in words, about brown ones. The
+      version's description is who the picture shows now.
+
+      Taken only when the box still holds the parent roll's own brief: a
+      customer who typed something new for this Follow is asking for that, and
+      their words win. It is never the per-slice `resolved` record (#176): the
+      description was written from the brief and the asks that were actually
+      sent, never from the dice.
+    */
+    if (
+      parent.currentDescription
+      && parentBrief
+      && parentBrief.briefText.trim() === input.briefText.trim()
+      && captureCastingCurrentDescriptionEnabled(input.userId)
+    ) {
+      compileBriefText = parent.currentDescription;
+      log.info(
+        { parent: input.followCandidatePublicId },
+        "[rollService] a follow of an edited version is compiled from its current description",
+      );
+    }
   }
 
   /*
@@ -789,7 +822,7 @@ export async function createRoll(
   let compiled: CompiledRollBrief;
   try {
     compiled = await compile({
-      briefText: input.briefText,
+      briefText: compileBriefText,
       candidateCount,
       // The client request id: a replay recompiles to the identical sheet,
       // while a genuine second roll of the same sentence casts eight new

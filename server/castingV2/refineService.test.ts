@@ -15315,3 +15315,145 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(shut.message.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * ONE CURRENT DESCRIPTION ON THE PAID PATH (#2565 slice 1, #2545 folded in) —
+ * asserted at the WIRE, on the prompt the repaint engine actually received, and
+ * on the landing statement's own input (working law 5).
+ *
+ * His word, 2026-10-16: *"okay cool im happy with the build"*, on round 2's A4
+ * arm (the pristine master plus one natural description of who they are now).
+ * The arms that matter most are the FALLBACKS: a writer that throws must leave
+ * the money and the render exactly as today's, driven directly rather than
+ * through a model that usually behaves (law 3).
+ */
+describe("one current description rides the paid refine", () => {
+  const painted: string[] = [];
+  const asked: Array<{ about?: string; user: string }> = [];
+  let writer: "answers" | "throws" = "answers";
+  const DESCRIPTION = "A woman in her thirties with long dark hair, worn down over her shoulders.";
+
+  const describing = {
+    repaintEngine: () => ({
+      id: "test:repaint",
+      edit: async (request: { prompt: string; width: number; height: number }) => {
+        painted.push(request.prompt);
+        return {
+          bytes: Buffer.from("repainted"),
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 10,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+        };
+      },
+    }),
+    readBytes: async (key: string) => (key === "casting-v2/candidates/abc.png"
+      ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
+      : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" }),
+    referenceLibraryEnabled: () => true,
+    interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
+    readBaseWorn: async () => ({
+      compiledBrief: null,
+      lockContract: null,
+      briefText: "A woman in her thirties with long dark hair.",
+    }),
+    describeEngine: () => ({
+      id: "test:describe",
+      complete: async (request: { about?: string; user: string }) => {
+        asked.push(request);
+        if (writer === "throws") throw new Error("the writer fell over");
+        return {
+          text: DESCRIPTION,
+          latencyMs: 5,
+          provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+        };
+      },
+    }),
+  };
+  const ask = { ...input, instruction: "wear her hair down" };
+
+  beforeEach(() => {
+    painted.length = 0;
+    asked.length = 0;
+    writer = "answers";
+    process.env.CASTING_V2_SCOPE = "users:1";
+    process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
+  });
+  afterEach(() => {
+    delete process.env.CASTING_V2_SCOPE;
+    delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+  });
+
+  it("sends the description IN PLACE OF the change clause, and files it on the version that landed", async () => {
+    await refineCandidate(describing as never, ask);
+
+    expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
+    for (const prompt of painted) {
+      expect(prompt).toContain(`This is how she looks now: ${DESCRIPTION} Everything else about her stays exactly as in Reference 1.`);
+      /* In place of, never beside: two authors for one edit is the defect. */
+      expect(prompt).not.toContain("Change only");
+      expect(prompt.startsWith("Reference 1 is the photograph of this person")).toBe(true);
+    }
+    expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
+    /* Seeded from the brief — this version's predecessor is the original. */
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.about).toBe("refine.describe");
+    expect(asked[0]!.user).toContain("A woman in her thirties with long dark hair.");
+    expect(asked[0]!.user).toContain("wear her hair down");
+  });
+
+  it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {
+    await refineCandidate(describing as never, ask);
+    const chargedWhenAnswering = ledger.charges.map((one) => one.amount);
+    ledger.charges.length = 0;
+    painted.length = 0;
+    landedVariant = null;
+
+    writer = "throws";
+    await refineCandidate(describing as never, { ...ask, clientRequestId: "33333333-3333-4333-8333-333333333333" });
+
+    expect(asked.length, "the writer was asked and failed").toBe(2);
+    expect(painted.length).toBeGreaterThan(0);
+    for (const prompt of painted) {
+      expect(prompt).toContain("Change only");
+      expect(prompt).not.toContain("This is how");
+    }
+    expect(landedVariant, "the version still landed").not.toBeNull();
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+    expect(ledger.charges.map((one) => one.amount), "the same charge either way").toEqual(chargedWhenAnswering);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("CONTROL — with the flag off nothing is asked and the prompt is today's", async () => {
+    delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+    await refineCandidate(describing as never, ask);
+    expect(asked).toHaveLength(0);
+    expect(painted.length).toBeGreaterThan(0);
+    for (const prompt of painted) {
+      expect(prompt).toContain("Change only");
+      expect(prompt).not.toContain("This is how");
+    }
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+  });
+
+  it("reads the PREVIOUS version's description back as the memory, not the brief", async () => {
+    variantRows = [{
+      id: 801,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["put her in a dark canvas work jacket"],
+      stepDeltas: [{ free: { wardrobe: "a dark canvas work jacket" } }],
+      deltas: { free: { wardrobe: "a dark canvas work jacket" } },
+      internalPrompt: {},
+      status: "ready",
+      currentDescription: "A woman in her thirties with long dark hair, in a dark canvas work jacket.",
+    }];
+    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    candidateRow.selectedVariantPublicId = "variant-1";
+    await refineCandidate(describing as never, ask);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toContain("How they looked before this change:\nA woman in her thirties with long dark hair, in a dark canvas work jacket.");
+    expect(asked[0]!.user).not.toContain("How they were first described");
+  });
+});

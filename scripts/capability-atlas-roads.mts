@@ -143,8 +143,9 @@ export const ROADS: readonly Road[] = [
       "candidate_missing", "already_signed", "busy", "refine_limit", "master_missing", "version_missing",
       "history_unreadable", "history_predates_undo", "step_moved",
     ],
-    flags: ["CASTING_V2_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"],
+    flags: ["CASTING_V2_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE", "CASTING_CURRENT_DESCRIPTION_SCOPE"],
     notes: [
+      "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row).",
       "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
       "`refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.",
       "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.",
