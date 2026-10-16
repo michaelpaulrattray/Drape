@@ -33,6 +33,7 @@ import { EYE_COLOURS } from "../../shared/castingRealization";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 import type { CastPronouns } from "./castPronouns";
+import { pictureHalfPhrase } from "./sidePhrasing";
 
 const log = createModuleLogger("castingV2/currentDescription");
 
@@ -78,6 +79,7 @@ export const CURRENT_DESCRIPTION_SYSTEM = [
   "- The description is read beside their ORIGINAL photograph. A change worded as a comparison (deeper, darker, shorter, heavier, neater) stays a comparison against how they first looked, such as \"scales a deeper emerald than their original colouring\" — never a plain \"deep emerald\", which the original photograph already satisfies.",
   "- Hair on the head and facial hair are separate features: a change to their hair never changes their beard, and a change to their beard never changes their hair.",
   "- Describe only the person: face, features, hair, skin, markings, accessories and clothing. Never the setting, background, lighting, camera, pose or picture style.",
+  "- Describe the person, never the picture. Say which side of THEIR body a feature is on (their right eye, their left shoulder) and never which side of the image it appears on: no \"as you look at it\", no \"on the left of the picture\", no viewer, camera or frame talk of any kind.",
   "- Do not invent anything the previous description and the change do not say.",
   "- Reply with the description paragraph and nothing else.",
 ].join("\n");
@@ -96,7 +98,7 @@ export type CurrentDescriptionInput = {
 
 export type CurrentDescriptionResult =
   | { ok: true; description: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list"; latencyMs: number };
+  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk"; latencyMs: number };
 
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
@@ -109,6 +111,51 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
         : []),
     ].join("\n\n");
   return `${before}\n\nThe change:\n${input.change.trim()}`;
+}
+
+/**
+ * A REPLY THAT TALKS ABOUT THE PICTURE IS REFUSED — the wall on the stored
+ * paragraph (ruled fable-20261016-2030 on #2578 §4).
+ *
+ * The instruction above tells the writer to describe the person and never the
+ * frame. This is the backstop, and it exists because the downstream is
+ * CUSTOMER-VISIBLE: #2545 hands this paragraph to the signed views, the
+ * persona, the voice and the creation record. Measured on this card, a writer
+ * handed the picture-half parenthetical leaked *"a right eye (on the left of
+ * the picture as you look at it) of emerald green"* into the stored description
+ * 2 of 3 times. The input is fixed too (the facts rendering in
+ * `recipeAssembler`), so this is the second of two independent arms rather than
+ * the only one.
+ *
+ * # It is derived from the phrase's own owner, never respelled here
+ *
+ * `pictureHalfPhrase` writes the sentence both halves of the product say; a
+ * second spelling of it here would be the parallel copy that drifts at exactly
+ * the place the phrase exists to hold still (law 4). Both halves are matched
+ * because a writer paraphrases: the full phrase, and the frame-relative opener
+ * on its own.
+ *
+ * # What it must NOT refuse
+ *
+ * An anatomical side is the whole point of the description — *"their right eye
+ * is emerald green"* is a fact about the person and must pass. So this matches
+ * the PICTURE-relative family only, and `currentDescription.test.ts` keeps an
+ * anatomical arm beside every refusing one. That control is the reason the
+ * match is anchored on the picture nouns rather than on "left" and "right",
+ * which would refuse nearly every sided description there is.
+ */
+export function mentionsThePicture(text: string): boolean {
+  const said = text.toLowerCase();
+  /* The owner's own words for both halves, so the spelling cannot drift. */
+  if (said.includes("as you look at it")) return true;
+  for (const half of ["left", "right"] as const) {
+    if (said.includes(pictureHalfPhrase(half))) return true;
+  }
+  /* The paraphrases that are still the frame rather than the body. A noun of
+     the picture joined to a side is picture-talk however it is worded; "their
+     left" alone never is. */
+  return /\b(?:on|to|at|in|toward|towards)\s+the\s+(?:\w+\s+){0,2}?(?:left|right)\s+(?:side\s+)?of\s+the\s+(?:picture|image|photo|photograph|frame|shot)\b/.test(said)
+    || /\b(?:picture|image|photo|photograph|frame|viewer|camera)(?:'s)?\s+(?:left|right)\b/.test(said);
 }
 
 /**
@@ -142,6 +189,10 @@ export async function writeCurrentDescription(
     if (text === "" || result.truncated) return { ok: false, reason: "blank", latencyMs };
     if (text.length > CURRENT_DESCRIPTION_MAX_LENGTH) return { ok: false, reason: "too_long", latencyMs };
     if (looksLikeAnEditList(text)) return { ok: false, reason: "edit_list", latencyMs };
+    /* The render then rides today's prompt and stores nothing, which is the
+       designed free failure — never a repaired paragraph, because a stripped
+       sentence is a sentence nobody wrote. */
+    if (mentionsThePicture(text)) return { ok: false, reason: "picture_talk", latencyMs };
     return {
       ok: true,
       description: text,

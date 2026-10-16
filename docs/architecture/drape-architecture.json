@@ -29399,6 +29399,11 @@
     },
     {
       "from": "module:server/castingV2/currentDescription.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/currentDescription.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },

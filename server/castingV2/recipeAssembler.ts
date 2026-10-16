@@ -95,7 +95,7 @@ import {
    (fable-1313 §2) — one owner for every road that turns words into ink. */
 import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
-import { imageHalfClause } from "./sidePhrasing";
+import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 import { describedNowSentence } from "./currentDescription";
 
@@ -641,6 +641,20 @@ export type Recipe = {
    *  is asked (a pure carry render). */
   ask: string;
   /**
+   * THE SAME CHANGE, SAID AS FACTS ABOUT THE PERSON — what the current-
+   * description writer is handed (ruled fable-20261016-2030 on #2578 §2).
+   *
+   * `ask` with the picture-half parentheticals omitted, built in the same pass
+   * by the same clause builder. It is NEVER sent to an image engine and never
+   * appears in {@link Recipe.prompt}: it exists so the writer is given the
+   * edit's measured wording — the removal's site phrase above all — instead of
+   * the customer's raw sentence, which is what #2578 measured being lost.
+   *
+   * Identical to `ask` for every edit that names no side, which is most of
+   * them.
+   */
+  changeFacts: string;
+  /**
    * THE STACK ENTRIES THIS RECIPE REFUSED TO SAY — usually empty.
    *
    * A row already in the database whose prose is UNTRUE about its own slot. The
@@ -916,14 +930,56 @@ function pairCollapse(
   return collapsed;
 }
 
+/**
+ * THE TWO RENDERINGS OF ONE EDIT — the prompt's and the description writer's
+ * (ruled fable-20261016-2030 on #2578 §2).
+ *
+ * `prompt` is what the painter is told and is unchanged, parenthetical and all.
+ * `facts` is the same clause with the PICTURE-HALF spans omitted, and it is
+ * what the current-description writer is handed in place of the customer's raw
+ * sentence.
+ *
+ * # Why they are built in ONE pass rather than by a second call
+ *
+ * The ruling asked for "one owner, two renderings; never a second mirror of the
+ * asks" (law 4). Two calls through this function would satisfy the letter of
+ * that and still leave two walks of the ask list that a later edit could make
+ * disagree — and the one clause where they differ is the one clause that
+ * matters. Built side by side at each push, the only line that can diverge is
+ * the line that is MEANT to.
+ *
+ * # Why the writer must not see the parenthetical
+ *
+ * Measured on this card: handed the assembled clause whole, the writer leaked
+ * *"a right eye (on the left of the picture as you look at it) of emerald
+ * green"* into the STORED description 2 of 3 times — and that paragraph is what
+ * #2545 hands to the signed views, the persona, the voice and the creation
+ * record. The picture half is an instruction to the PAINTER about the frame; it
+ * states no fact about the person, so it has no place in prose about them. With
+ * it removed at the input it has nothing to leak: the sided fact survived 3/3
+ * with picture-talk 0/3.
+ *
+ * A pair vacancy and a collapsed pair carry no parenthetical to begin with, so
+ * both renderings are byte-identical for them — which is why the removal arm
+ * reproduced 3/3 unchanged.
+ */
+type AskRenderings = { prompt: string; facts: string };
+
 function askSentence(
   asks: readonly Ask[],
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
   presentation: readonly PresentationClause[],
-): string | { unnamed: FeatureSlot } | { saysNothing: string } {
+): AskRenderings | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
+  const factClauses: string[] = [];
+  /* Both renderings get every clause; `facts` differs only where a caller
+     passes a second string, which is the single `whereItIs` site below. */
+  const push = (prompt: string, facts: string = prompt): void => {
+    clauses.push(prompt);
+    factClauses.push(facts);
+  };
   const collapsed = pairCollapse(asks, wordStacks);
   for (const ask of asks) {
     /*
@@ -958,7 +1014,7 @@ function askSentence(
         the thing this assembler refuses everywhere else; the second copy adds
         no fact and is dropped rather than deduplicated downstream.
       */
-      if (!clauses.includes(ask.vacate.says)) clauses.push(ask.vacate.says);
+      if (!clauses.includes(ask.vacate.says)) push(ask.vacate.says);
       continue;
     }
     const entry = bySlot.get(ask.slot);
@@ -977,11 +1033,13 @@ function askSentence(
     if (pair !== undefined) {
       if (pair.second) continue;
       const named = entry?.tier === "item" ? `the ${pair.pairNoun}` : `${possessive} ${pair.pairNoun}`;
-      clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+      push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
       continue;
     }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
-    clauses.push(`${named}${whereItIs(ask.slot)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+    const words = (wordStacks.get(ask.slot) ?? []).join(", ");
+    /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
+    push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -1001,10 +1059,13 @@ function askSentence(
     const noun = clause.noun.trim();
     const words = clause.words.trim();
     if (noun === "" || words === "") return { saysNothing: noun === "" ? "(unnamed)" : noun };
-    clauses.push(`${possessive} ${noun}: ${words}`);
+    push(`${possessive} ${noun}: ${words}`);
   }
-  if (clauses.length === 0) return "";
-  return `Change only ${clauses.join("; ")}.`;
+  if (clauses.length === 0) return { prompt: "", facts: "" };
+  return {
+    prompt: `Change only ${clauses.join("; ")}.`,
+    facts: `Change only ${factClauses.join("; ")}.`,
+  };
 }
 
 /**
@@ -2050,19 +2111,20 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     )),
   ];
 
-  const ask = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
-  if (typeof ask !== "string" && "saysNothing" in ask) {
+  const rendered = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
+  if ("saysNothing" in rendered) {
     return {
       ok: false, reason: "presentationSaysNothing", slot: null,
-      detail: `the recipe was handed a presentation clause about ${ask.saysNothing} with nothing to say, so the render would be told to change it into nothing`,
+      detail: `the recipe was handed a presentation clause about ${rendered.saysNothing} with nothing to say, so the render would be told to change it into nothing`,
     };
   }
-  if (typeof ask !== "string") {
+  if ("unnamed" in rendered) {
     return {
-      ok: false, reason: "slotNotNamed", slot: ask.unnamed,
-      detail: `${ask.unnamed} has no library entry and the ask carries no noun, so the render cannot say what it is changing`,
+      ok: false, reason: "slotNotNamed", slot: rendered.unnamed,
+      detail: `${rendered.unnamed} has no library entry and the ask carries no noun, so the render cannot say what it is changing`,
     };
   }
+  const ask = rendered.prompt;
 
   /*
     ---- WHAT A TATTOO IS ON SKIN, FOR THE LANE THAT HAS NO PICTURE ----
@@ -2140,20 +2202,85 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       .join(" ")
     : "";
 
+  const describesNow = input.currentDescription !== undefined && input.currentDescription.trim() !== "";
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
+    changeFacts: rendered.facts,
     withheld,
     prompt: [
       ...sentences,
       ...standing.map((entry) => entry.sentence),
       /* The description stands where the change sentence stood — never beside
          it, which would be two authors for one edit. */
-      input.currentDescription !== undefined && input.currentDescription.trim() !== ""
-        ? describedNowSentence(input.currentDescription, pronouns)
+      describesNow
+        ? describedNowSentence(input.currentDescription!, pronouns)
         : ask,
+      /* AND THE PAINTER STILL GETS TOLD WHICH HALF OF THE FRAME IT IS IN —
+         only on the description road, because off it the parenthetical inside
+         `ask` already says it (#2578 §3). */
+      describesNow ? painterSideLines(input.asks, wordStacks, possessive) : "",
       inkWords,
     ]
       .filter((line) => line !== "")
       .join(" "),
   };
+}
+
+/**
+ * WHERE A SIDED FEATURE IS IN THE FRAME, SAID TO THE PAINTER — the half of the
+ * edit clause that must NOT reach the stored description (ruled
+ * fable-20261016-2030 on #2578 §3).
+ *
+ * Flag-on, the description stands where the change clause stood, and the clause
+ * is where `whereItIs` lived — so without this line the picture-half mapping
+ * would simply stop being said. V4 measured that mapping 4-of-12 wrong eyes
+ * → 0, *"never once worse"*, at no cost per render; this card's own court saw
+ * no separation at n=6 and says so in its own words (*"can only see a large
+ * effect and saw none"*). **An underpowered null does not retire a measured
+ * protection that costs nothing**, so it stays — and it is recorded as
+ * UNADJUDICATED at n=6 rather than as re-proven.
+ *
+ * # Why this is not the two-authors defect the one-author pin exists to stop
+ *
+ * That pin forbids two sources stating WHAT the edit is. This line states no
+ * change at all: it locates an existing feature in the frame, which is
+ * `imageHalfClause`'s whole job, moved to the only place it can live once the
+ * clause's prose is being stored. The `not.toContain("Change only")` pin is
+ * untouched.
+ *
+ * # What it deliberately does not say
+ *
+ * A COLLAPSED PAIR names no side — there is no half of the picture to point at
+ * when the answer is both — so it is skipped here exactly as `whereItIs` is
+ * skipped for it in the clause, and through the same `pairCollapse` rather than
+ * a second judgement about what a pair is. A taken-back slot contributes
+ * nothing for the same reason it contributes no clause. And the STANDING lane
+ * never carried the mapping (`whereItIs` is emitted only in the edit clause),
+ * so nothing here reaches it — whether it should is a question about a
+ * pre-existing state and its own card.
+ *
+ * Composed at assembly and never stored: it is prompt text, like the identity
+ * clause beside it.
+ */
+function painterSideLines(
+  asks: readonly Ask[],
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string {
+  const collapsed = pairCollapse(asks, wordStacks);
+  const lines: string[] = [];
+  for (const ask of asks) {
+    if (ask.restate) continue;
+    if (collapsed.has(ask.slot)) continue;
+    const definition = slotDefinition(ask.slot);
+    if (definition === null || definition.instance === null) continue;
+    /* Through the one owner of the flip and the one owner of the words — this
+       function spells neither (law 4, and the flip is the only part that can be
+       wrong). The noun already carries the side: "right eye". */
+    const where = pictureHalfPhrase(imageHalfOf(definition.instance));
+    const sentence = `${possessive} ${definition.noun} is ${where}.`;
+    const capitalised = `${sentence[0]!.toUpperCase()}${sentence.slice(1)}`;
+    if (!lines.includes(capitalised)) lines.push(capitalised);
+  }
+  return lines.join(" ");
 }
