@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 70
+      "moduleCount": 71
     },
     {
       "id": "domain:client-shared",
@@ -1539,6 +1539,12 @@
     {
       "id": "module:client/src/features/castingV2/failureCopy.ts",
       "path": "client/src/features/castingV2/failureCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/followLineage.ts",
+      "path": "client/src/features/castingV2/followLineage.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -12857,6 +12863,10 @@
     {
       "id": "test:client/src/features/castingV2/followHint1909.test.ts",
       "path": "client/src/features/castingV2/followHint1909.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/followLineage.test.ts",
+      "path": "client/src/features/castingV2/followLineage.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
@@ -24310,6 +24320,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/failureCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/followLineage.ts",
       "kind": "imports"
     },
     {
