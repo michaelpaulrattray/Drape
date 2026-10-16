@@ -566,8 +566,17 @@ export type RefineRefusal =
    * derived — from the one surviving list — so what the refusal says is
    * unchanged for every account; what it no longer does is carry a
    * per-account answer that was the same answer for everybody.
+   *
+   * ⚠ **AND THE LIST IT NOW CARRIES IS THE OTHER HALF OF THE SAME DEFECT
+   * (#2562).** Derived from the ROAD alone, the sentence named an upper chest
+   * to a cast in the house crew tee — refused by `gate_ink_uncarried` one ask
+   * later, which is the dead-end-offer class D-180 forbids. `alternatives` is
+   * the road's placements INTERSECTED with what this cast's outfit leaves
+   * showing, derived by the same `servedAndBare` its three sibling members
+   * already carry, in the one statement that has both facts in hand. Empty is a
+   * real answer and the copy has its own sentence for it.
    */
-  | { reason: "gate_ink_document" }
+  | { reason: "gate_ink_document"; alternatives: readonly string[] }
   /**
    * A PLACE WE CAN SEE AND CANNOT KEEP — the words-road court's own answer
    * (opus-960, ratified fable-1301 §1). `place` is the surface in her own kind
@@ -1584,6 +1593,14 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           if (placement.kind !== "in_frame") {
             check.wall = {
               reason: "gate_ink_document",
+              /* ⚠ THE PLACES THAT WOULD ACTUALLY WORK ON THIS CAST (#2562).
+                 The sentence this reaches names them, and it derived them from
+                 the road alone — so it offered an upper chest under a t-shirt.
+                 It rides from here for the same reason the three branches above
+                 carry it: this is the statement holding both the account's road
+                 and this cast's outfit, and a second derivation in the copy
+                 layer is how the two came to disagree in the first place. */
+              alternatives: placement.alternatives,
             };
             return null;
           }

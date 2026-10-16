@@ -122,6 +122,51 @@ describe("every refusal answers all three questions", () => {
       expect(sentence).toContain("nowhere else");
     });
 
+    it("⚠ and the document gate's sentence is the refusal's too, from #2562", () => {
+      /*
+        THE FOURTH MEMBER TO CARRY A LIST, and the last one that composed its
+        own. It read `WORDS_ROAD_PLACEMENTS_OPEN` directly, so a cast in the
+        house crew tee was told an upper chest works — the same frozen-promise
+        class as 4(c), one dimension over: the sentence was built to grow with
+        the ROAD and was never pointed at the OUTFIT.
+
+        Pinned VERBATIM because it is the sentence a customer reads, and because
+        these exact bytes are what `docs/architecture/capability-atlas.json`
+        records for all four of this door's corpus rows — driven on a fixture
+        cast whose top covers the chest, which is why its committed observation
+        has said two placements while the live code said three.
+      */
+      expect(said({ reason: "gate_ink_document", alternatives: ["neck", "upper arm"] })).toBe(
+        "Tell me where it goes — a neck or an upper arm tattoo is what I can do from a "
+        + "description alone. Anywhere else needs a design to work from first, and the "
+        + "body-art studio is coming. Nothing was charged.");
+      /* Hand it a different outfit's answer and the sentence must move — two
+         assertions about one string are satisfied by a string that ignores its
+         argument (fable-1333 §2). */
+      expect(said({ reason: "gate_ink_document", alternatives: ["neck", "upper arm", "upper chest"] }))
+        .toContain("an upper arm or an upper chest tattoo");
+      expect(said({ reason: "gate_ink_document", alternatives: ["neck"] }))
+        .toContain("a neck tattoo is the one I can do");
+    });
+
+    it("⚠ and with NOWHERE left it says so, rather than naming nothing", () => {
+      /*
+        An outfit that covers all three leaves this sentence with an empty list,
+        and the old one read *"Tell me where it goes —  from a description
+        alone"*. `elsewhereClause` answers the case for the three gates above
+        and says *"nowhere ELSE"*, which is wrong at a door reached by an ask
+        that named no place at all. Verbatim, because it is new copy.
+      */
+      expect(said({ reason: "gate_ink_document", alternatives: [] })).toBe(
+        "A tattoo from a description alone needs skin that's showing, and this outfit "
+        + "covers every place that works. Change the outfit first, or work from a design "
+        + "instead. The body-art studio is coming. Nothing was charged.");
+      /* And an absent list behaves exactly as an empty one, so the refusals
+         written before the field existed cannot read as a gap. */
+      expect(said({ reason: "gate_ink_document" } as RefineRefusal))
+        .toBe(said({ reason: "gate_ink_document", alternatives: [] }));
+    });
+
     it("⚠ CONTROL — the surfaces offered are the REFUSAL'S, not the sentence's", () => {
       /*
         The frozen-promise defect the census caught one file over
