@@ -1,7 +1,7 @@
 {
-  "edition": 732,
-  "updatedAt": "2026-10-16T09:42:16.000Z",
-  "shift": "Two finished jobs went live, and I measured a worry about the new one-description work before it can bite you.\n\nWHAT WENT LIVE. Two pieces of work from earlier shifts were sitting finished and passed, so I put them in: a tattoo asked for \"on the side of the neck\" is placed instead of refused (#2572), and our own map of the product can no longer keep an entry for a door that has been removed (#2568).\n\nWHAT I MEASURED, AND WHY IT MATTERED. The new work that gives every character one up-to-date description of themselves was found to be dropping some carefully-worded instructions on its way to the picture engine — and the worry was that edits would start landing on the wrong side of a face. It is switched off for everyone, so nobody was affected. I put it to the test: three versions of the instruction, 24 pictures of one of your characters, about fifty cents of our own money, and I looked at every one of them.\n\nTHE WORRY DOES NOT HOLD. Asking for one eye to change colour lands on the right eye just as often with the new wording as with the old — five times in six, both ways. The old wording misses once in six too, so the thing we were protecting was never as solid as the note claimed.\n\nONE REAL THING IS LOST, THOUGH. When you take something off a character, the studio used to say exactly where it came off — \"both earlobes bare, nothing hanging from either ear\" — and now it only says the earrings are gone. The obvious fix brings that wording back, but it also drags camera-talk into your character's written description: I measured it writing \"a right eye (on the left of the picture as you look at it) of emerald green\" two times in three. That description is kept and later read out to build a character's personality and voice, so that wording must not get in.\n\nSO I HAVE NOT GUESSED. The call — which words belong in a description of a person and which belong in an instruction to the picture engine — is a design decision on work you already approved, so it goes to the design seat with all the pictures and numbers attached, rather than an overnight shift picking one (#2578).\n\nONE TIDY-UP: the card about keeping one description per character (#2545) was reading as free for anyone to start, while its first piece had already been built yesterday under a different card. It would have had somebody rebuild finished work. It now says so and points at the card that owns it.",
+  "edition": 733,
+  "updatedAt": "2026-10-16T13:20:00.000Z",
+  "shift": "A fix of mine broke the whole test suite twenty minutes after I shipped it, and I caught it the same hour. Here is the night.\n\nWHAT WENT LIVE. The studio used to tell a customer a tattoo could go on the upper chest of a character who is wearing a t-shirt — and then refuse it one step later for being under a top. It now reads what the character is actually wearing before it offers anywhere, and a character covered head to toe gets a sentence of its own instead of a gap (#2562).\n\nTHEN IT BROKE THE TESTS. Twenty minutes after that went in, every test run in the product was failing on one check. Two pieces of work had landed an hour and a half apart; each one passed everything on its own, and neither was ever tested against the other. Nothing a customer touches was wrong — both changes are good and both stayed — but one test was still expecting the old shape of an answer. I found it, fixed it, and ran the entire suite twice to be sure: 20,666 checks, nothing failing (#2589).\n\nWHY THAT COULD HAPPEN AT ALL, AND WHAT I HAVE NOT DONE ABOUT IT. Our own merging tool asks GitHub whether a job is safe to land, and GitHub only ever answers about the TEXT of the files. Two jobs can agree perfectly on the text and still disagree about what the product does — which is exactly what happened. I have written that up with three ways to close it and a recommendation, and deliberately built none of them: the right choice depends on how often this happens, which is a number nobody has read yet (#2590).\n\nA REPAIR I OWED. The reviewer had found two real faults in yesterday's work on the new one-description feature, and those came before anything new. The first is the better story: the check meant to stop the studio inventing a scar on a face was reading the word \"scarf\" as a scar — so asking for a red scarf would have been silently thrown away and your Follow would have gone out with none of your changes in it. \"Scarlet\" too, and \"molecule\" as a mole. Both are repaired, and I proved the new checks can actually fail by breaking them on purpose three times (#2582).\n\nAND TWO JOBS THAT COULD NOT MOVE. Two pieces of work had drifted out of step with the product and could no longer be tested at all — they looked fine on screen while nothing was running. Both are caught up and back in the queue.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T08:35:05.753Z",
+      "readAt": "2026-10-16T13:13:10.222Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10636,6 +10636,13 @@
   ],
   "problems": [
     {
+      "id": "stale-head-merge-2590",
+      "severity": "warning",
+      "state": "open",
+      "title": "A job can land on a test run that never saw the job before it — and it reddened everything today (#2590)",
+      "detail": "Our merging tool asks GitHub whether a job is safe to land, and GitHub answers only about the TEXT of the files. Two jobs landed ninety minutes apart today, each tested on its own and never against the other, and the second one broke every test run in the product. No customer was affected and both jobs were correct; what it costs is the crew, because every branch cut afterwards inherits a broken suite. Three ways to close it are written up with a recommendation, and none is built — the right one depends on how often this happens, which is a number nobody has read."
+    },
+    {
       "id": "stale-run-row-2079",
       "severity": "warning",
       "state": "resolved",
@@ -11100,7 +11107,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T08:35:05.752Z",
+    "readAt": "2026-10-16T13:13:10.221Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11164,7 +11171,11 @@
       {
         "issueNumber": 2545,
         "title": "N3: every cast keeps one current description, rewritten naturally after each edit — and everything downstream reads it (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2565 — the writing half merged in its slice 1; the downstream readers are cut from its later slices."
+        }
       },
       {
         "issueNumber": 2565,
@@ -11174,6 +11185,20 @@
       {
         "issueNumber": 2566,
         "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2576,
+        "title": "Follow: the words in the box carry the direction the edits took — visible before you press it (his word 2026-10-16)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2582 and #2578, the two must-fixes before this flag widens — then its own done-when drive and frames. Not his word."
+        }
+      },
+      {
+        "issueNumber": 2583,
+        "title": "Follow returns near-identical twins — it must return eight different people under the same look (his word 2026-10-16)",
         "urgent": false
       }
     ]
