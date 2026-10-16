@@ -999,12 +999,30 @@ describe("ink renders only where the anchor is the document", () => {
        while `CASTING_INK_WORDS_SCOPE` stood at `all` on the service, so that
        is a customer sentence NO ACCOUNT HAS EVER BEEN SHOWN. The live sentence
        names all three served placements, and it is what is asserted here now.
-       Same class as slice 4b's 134 arms on the dead paste road. */
-    const said = inkNeedsDocumentMessage();
+       Same class as slice 4b's 134 arms on the dead paste road.
+
+       ⚠ **AND THEY ASSERTED ALL THREE ON A CAST WEARING A T-SHIRT — #2562.**
+       `check` carries no wardrobe, which is every roll in production and
+       answers the house crew tee, and the tee covers the upper chest: so
+       *"upper chest"* above was the sentence offering a place
+       `gate_ink_uncarried` refuses one ask later. The list now rides on the
+       refusal this very `readDelta` wrote, so the sentence and the wall come
+       from one statement — and the chest is the NEGATIVE here rather than the
+       assertion. A bare-chested cast gets it back one file over
+       (`inkWordsRoad.test.ts`), which is the half that proves this is the
+       outfit's answer and not a shrunken list. */
+    const c = check("give her a rose tattoo");
+    expect(readDelta({ free: { ink: "a rose tattoo" } }, c)).toBeNull();
+    expect(c.wall?.reason).toBe("gate_ink_document");
+    const carried = c.wall && "alternatives" in c.wall ? c.wall.alternatives : null;
+    expect(carried, "the wall carries the places that work on THIS cast")
+      .toEqual(["neck", "upper arm"]);
+    const said = inkNeedsDocumentMessage(carried ?? []);
     expect(said).toContain("Tell me where");
-    expect(said, "every served placement is named, not just the neck").toContain("neck");
+    expect(said, "every placement this outfit leaves showing is named").toContain("neck");
     expect(said).toContain("upper arm");
-    expect(said).toContain("upper chest");
+    expect(said, "the tee covers it, so offering it is the #2562 defect")
+      .not.toContain("upper chest");
     expect(said).toContain("body-art studio is coming");
     expect(said).toContain("Nothing was charged");
     /* ⚠ AND IT NO LONGER CLAIMS FACE INK WORKS. It said "face and neck ink
