@@ -241,8 +241,10 @@ import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesig
 import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
 import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shared/inkPlacementVocabulary";
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
-   of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
-import { wordsRoadServes } from "./inkPlacement";
+   of C4a's answer, off the same lists that decide the road (fable-1339 §2) —
+   and WHICH placements would actually work for this cast, which three refusal
+   sentences now carry instead of naming all three surfaces as prose (#2580). */
+import { servedAndBarePlacements, wordsRoadServes } from "./inkPlacement";
 /* AND WHETHER THIS CAST'S OUTFIT LEAVES THAT SURFACE SHOWING (#2558).
    The road is one of the two questions a words render asks; the covering is the
    other, and the offer below asks both. Read from the SAME owner `bareSurfaces`
@@ -3840,6 +3842,13 @@ async function refineCandidateCounted(
           kind: "selected" as const,
           note: cannotSaySentence(reason, {
             words, facet: "ink", scopeNoun, moneySafe: true, pronouns,
+            /* WHERE A NEW ONE WOULD ACTUALLY WORK ON THIS CAST (#2580) — the
+               account's road intersected with what this outfit leaves showing,
+               from the one derivation, read off the same `wardrobeNow` the ink
+               gate itself was asked with. `noInkToChange` offered all three
+               surfaces as prose before this and the house tee covers the
+               chest. */
+            inkPlaces: servedAndBarePlacements(wardrobeNow),
           }),
           variantId: source.variantPublicId,
           candidateId: input.candidatePublicId,
@@ -4924,6 +4933,12 @@ async function refineCandidateCounted(
           scopeNoun,
           /* Nothing has been claimed at this line — the whole point of it. */
           moneySafe: true,
+          /* `notASlot` names no placement, so this door reads nothing from the
+             list — it carries the real answer rather than an empty stand-in
+             because `CannotSayContext` has one truthful value for it here, and
+             a stand-in is how a field starts lying at the one door that later
+             grows a sentence (#2580). */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
         }),
       });
     }
@@ -5363,6 +5378,12 @@ async function refineCandidateCounted(
         "I can put a tattoo on her, but I need to know where it goes —
          her neck, an upper arm, her upper chest. Say where and I'll do it."
 
+    ⚠ **That sentence is QUOTED HISTORY and is no longer what the door says**
+    (#2580): it named all three surfaces as frozen prose, and the house crew tee
+    covers the chest, so it offered the default cast a place the next ask
+    refuses. The places are derived per cast now — see `cannotSayCopy.ts` — and
+    the quote above is kept because it is the specimen this paragraph is about.
+
     said to a customer whose own sentence was *"give him a small geometric
     dinosaur skeleton tattoo ON HIS NECK"*, and whose FILED DELTA held those
     words verbatim. The product asked her for the one thing she had already
@@ -5483,6 +5504,11 @@ async function refineCandidateCounted(
         kind: "selected",
         note: cannotSaySentence(beyondToday ? "inkBeyondToday" : "unplacedInk", {
           words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns,
+          /* BOTH SENTENCES CARRY THE SAME LIST (#2580), because both are this
+             one ask read two ways — `servedAndBarePlacements` is the single
+             statement that holds the road and this cast's outfit together, and
+             the copy layer composes rather than deriving a second answer. */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
         }),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
@@ -6764,6 +6790,12 @@ async function refineCandidateCounted(
             answering for everything is how the generic line stops being generic.
           */
           words: asks.facet === "makeup" ? editDelta?.makeup ?? null : null,
+          /* WHERE A TATTOO WOULD WORK ON THIS CAST, derived HERE because this is
+             where `wardrobeNow` is (#2580). `unplacedInk` is one of this error's
+             reasons: the pre-claim door answers it first and always should, but
+             the settlement writes the sentence from the error alone, so the list
+             has to travel with it. */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
           /* The part she pointed at, said the way the product speaks about it —
              the sentence's whole difference on a scoped ask (fable-471). */
           scopeNoun: (() => {
@@ -10576,6 +10608,9 @@ function failedFactsMessage(error: unknown): string | null {
       /* Carried on the error, because this function has the error and nothing
          else — see `RepaintCannotSayError.pronouns`. */
       pronouns: error.pronouns,
+      /* And the places, for exactly that reason (#2580) — derived at the throw
+         site, where the cast's outfit is in hand. */
+      inkPlaces: error.inkPlaces,
       /*
         HER BALANCE REALLY IS WHERE SHE LEFT IT, and the caller is what makes
         that true: this function is only consulted when `refund.recorded` is

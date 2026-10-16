@@ -43,6 +43,11 @@
  * is waiting on — the promise this paragraph is about is the one that rots
  * silently.)*
  */
+import {
+  inkPlacementBareNoun,
+  type InkPlacement,
+} from "../../shared/inkPlacementVocabulary";
+import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
 import type { RepaintAsksRefusal } from "./repaintAsks";
 import { capitalize, type CastPronouns } from "./castPronouns";
 
@@ -106,11 +111,86 @@ export type CannotSayContext = {
    * handed in, never re-decided per sentence.
    */
   pronouns: CastPronouns;
+  /**
+   * WHERE A TATTOO WOULD ACTUALLY WORK ON THIS CAST — the caller's answer, never
+   * this table's (#2580).
+   *
+   * Three sentences here named *"their neck, an upper arm, their upper chest"* as
+   * frozen prose, and the house crew tee covers the chest — so the default cast
+   * in this product was offered a surface the next ask refuses. They asked
+   * NEITHER question: not what this account's words road serves, and not what
+   * this cast is wearing. `servedAndBarePlacements` answers both in one
+   * statement where both facts are in hand, and this field carries the result.
+   *
+   * ⚠ **It is REQUIRED, and that is the control.** `gate_ink_document` had three
+   * siblings already carrying a list, so an absent one could safely read as
+   * empty there (`alternativesIn`). Here there is no such neighbour: an absent
+   * list read as empty would hand a new call site the *nowhere is showing*
+   * sentence, which is a confident false statement rather than a gap. A missing
+   * field is a type error instead, which is the only form of this that cannot
+   * ship quietly.
+   */
+  inkPlaces: readonly InkPlacement[];
 };
 
 const MONEY = (safe: boolean): string => (safe
   ? "Nothing was charged."
   : "Your credits have been returned.");
+
+/**
+ * *"she's wearing"* · *"they're wearing"* — the contraction the house voice uses
+ * (#2580). Three empty-case sentences point at the outfit as the way out, and
+ * *"what she is wearing"* beside *"there's"* and *"I'll"* reads like a different
+ * writer.
+ */
+const wearing = (of: CastPronouns): string =>
+  `${of.subject}${of.plural ? "'re" : "'s"} wearing`;
+
+/**
+ * THE PLACES, AS A CUSTOMER'S CLAUSE — *"their neck, an upper arm or their
+ * upper chest"* (#2580).
+ *
+ * # The article is DERIVED, because it is anatomy and not taste
+ *
+ * The frozen sentences this replaces read *"their neck, an upper arm, their
+ * upper chest"*, and the indefinite article on the middle one is not a slip:
+ * a person has two upper arms and one neck, so *"an upper arm"* is the true
+ * form and *"their upper arm"* would be asking which. `sidesForInkPlacement`
+ * already owns which surfaces come in pairs — `inkReferenceTake` reads it for
+ * exactly that fact — so this clause asks it rather than carrying a fourth
+ * hand-written list of what is paired. A surface measured later arrives with
+ * its own answer and this sentence is right about it on the first day.
+ *
+ * # One shape for all three doors
+ *
+ * Two of the three listed with commas and the third used *"or"* before the
+ * last. That is now one form — commas between, `or` before the last — which is
+ * `elsewhereClause`'s shape next door and reads correctly at one, two and
+ * three places. Three doors a customer can meet one ask apart must not sound
+ * like three products.
+ *
+ * ⚠ **There is no empty branch here on purpose.** Each caller has its own
+ * sentence for *nowhere is showing*, because what to say instead is different
+ * at each door — an ADD that has nowhere to go, an *inspired by* ask whose
+ * whole point is one design in one place, and a cast who has no tattoo at all.
+ * A clause that returned "" would compose three broken sentences instead.
+ */
+function placesClause(
+  places: readonly InkPlacement[],
+  of: CastPronouns,
+): string {
+  const said = places.map((key) => {
+    const noun = inkPlacementBareNoun(key);
+    /* A SURFACE THERE ARE TWO OF takes the indefinite article — the customer
+       has not said which, and this sentence is not the place to ask. */
+    if (sidesForInkPlacement(key).length > 1) {
+      return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
+    }
+    return `${of.possessive} ${noun}`;
+  });
+  if (said.length <= 1) return said.join("");
+  return `${said.slice(0, -1).join(", ")} or ${said[said.length - 1]!}`;
+}
 
 /** A leading noun, capitalised, or null when there is nothing to quote. */
 function lead(context: CannotSayContext): string | null {
@@ -245,12 +325,38 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     why this door should never be the one she meets — and why the sentence is
     written anyway rather than left to the fall-through nobody would read.
   */
+  /*
+    ⚠ AND THE PLACES ARE THE CALLER'S NOW (#2580). The three surfaces were
+    frozen prose here, derived from NEITHER question — not the road, not the
+    outfit — so the house crew tee's cast, which is every cast in this product
+    by default, was offered an upper chest that `gate_ink_uncarried` refuses one
+    ask later. `context.inkPlaces` is the intersection, derived once at the call
+    site; `placesClause` composes and claims nothing.
+  */
   unplacedInk: {
     charge: "refunded",
-    say: (context) => `I can put a tattoo on ${context.pronouns.object}, but I need to know where it goes — `
-      + `${context.pronouns.possessive} neck, `
-      + `an upper arm, ${context.pronouns.possessive} upper chest. Say where and I'll do it. `
-      + MONEY(context.moneySafe),
+    say: (context) => {
+      /*
+        NOWHERE SHOWING IS A REAL ANSWER AND IT GETS A REAL SENTENCE. With the
+        list empty the old shape would read *"I need to know where it goes — .
+        Say where and I'll do it."* — a question with no answers in it.
+
+        ⚠ **It says what is in the way WITHOUT claiming to have read the
+        outfit.** An empty list means every served surface is either covered or
+        unreadable, and those are different facts; *"this outfit covers every
+        place that works"* asserts the first. So the sentence states what is
+        true of both — nothing is showing — and names the one road out that
+        every account has.
+      */
+      if (context.inkPlaces.length === 0) {
+        return `I can put a tattoo on ${context.pronouns.object}, but there's nowhere showing `
+          + `to put one right now. Change what ${wearing(context.pronouns)} and tell me where. `
+          + MONEY(context.moneySafe);
+      }
+      return `I can put a tattoo on ${context.pronouns.object}, but I need to know where it goes — `
+        + `${placesClause(context.inkPlaces, context.pronouns)}. Say where and I'll do it. `
+        + MONEY(context.moneySafe);
+    },
   },
   /*
     AN INK ASK WHOSE SHAPE THIS ROAD CANNOT STATE YET — told, never asked
@@ -271,10 +377,39 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
   */
   inkBeyondToday: {
     charge: "free",
-    say: (context) => `Right now I can copy one design exactly, onto ${context.pronouns.possessive} neck, an upper arm `
-      + `or ${context.pronouns.possessive} upper chest — point me at one design and one of those places and I'll do it. `
-      + `Taking a whole sheet and working from the feel of it, across ${context.pronouns.object}, is being built and `
-      + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`,
+    /*
+      ⚠ AND ITS THREE SURFACES WERE FROZEN TOO (#2580) — the same prose, the
+      same default cast, the same chest under the same tee. This door's list is
+      the sibling's list, from the one derivation, because the two are reached by
+      the same ask read two ways and may not describe two products.
+    */
+    say: (context) => {
+      /*
+        NOWHERE SHOWING, AND THIS DOOR'S VERSION IS ITS OWN SENTENCE. The
+        sibling above can simply ask where; here the offer IS *one design, one
+        place*, so with no place to name the offer has to be stated and then
+        suspended rather than dropped — and the *"it's coming"* half is about a
+        whole sheet and stays true either way.
+      */
+      if (context.inkPlaces.length === 0) {
+        return "Right now I can copy one design exactly onto one place — but there's nowhere "
+          + `showing on ${context.pronouns.object} to put it. Change what ${wearing(context.pronouns)} `
+          + "and point me at one design. "
+          + `Taking a whole sheet and working from the feel of it, across ${context.pronouns.object}, is being built and `
+          + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`;
+      }
+      /*
+        ⚠ *"one of those places"* was the old tail and it cannot survive a
+        DERIVED list: a cast whose outfit leaves exactly one surface showing
+        would be offered *"one of those places"* with one place named. The tail
+        asks for a design and a place without counting either, so it is right at
+        one, two or three.
+      */
+      return `Right now I can copy one design exactly, onto ${placesClause(context.inkPlaces, context.pronouns)} `
+        + "— tell me which design and where, and I'll do it. "
+        + `Taking a whole sheet and working from the feel of it, across ${context.pronouns.object}, is being built and `
+        + `isn't ready yet — it's coming. ${MONEY(context.moneySafe)}`;
+    },
   },
   /*
     SHE ASKED ABOUT A TATTOO SHE DOES NOT HAVE — and ONE sentence serves both
@@ -290,9 +425,13 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
     two products.
 
     The order is the house order: what she CAN have first, so the reply is a
-    road rather than a wall, and the fact second. It hands her the same three
-    places `unplacedInk` does, because that IS the next move from here and the
-    two doors must not describe different products.
+    road rather than a wall, and the fact second. It hands over the same places
+    `unplacedInk` does, because that IS the next move from here and the two
+    doors must not describe different products. ⚠ **It said "the same THREE
+    places" until #2580, and the number was the defect** — both doors named all
+    three surfaces as frozen prose, so they agreed with each other and not with
+    the cast. They carry one derived list now, which is what that sentence was
+    always trying to promise.
 
     `free`, and it is arithmetic: this door is above the claim, so there is
     nothing to give back.
@@ -322,15 +461,41 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
       ends on the road out, because a refusal with no next move is the line this
       file's header names as the easiest one in a product to leave rotting.
     */
-    say: (context) => (context.scopeNoun
-      ? `I can't find ${context.scopeNoun} on this version, so there's nothing there to change `
-        + `or take off. Ask me about one that's there, or say where to put a new one and I'll `
-        + `do it. ${MONEY(context.moneySafe)}`
-      : `I can put a tattoo on ${context.pronouns.object} — ${context.pronouns.possessive} neck, an upper arm, `
-        + `${context.pronouns.possessive} upper chest. `
+    /*
+      ⚠ AND THE UNSCOPED BRANCH'S THREE SURFACES WERE FROZEN AS WELL (#2580).
+      The docblock above says this door hands over *"the same places
+      `unplacedInk` does, because that IS the next move from here and the two
+      doors must not describe different products"* — which was exactly right and
+      was being kept by two copies of the same prose. It is kept by the same
+      derivation now, so it holds when the road or the outfit moves.
+
+      The SCOPED branch names no place and is untouched: it speaks only about
+      the surface the customer pointed at.
+    */
+    say: (context) => {
+      if (context.scopeNoun) {
+        return `I can't find ${context.scopeNoun} on this version, so there's nothing there to change `
+          + `or take off. Ask me about one that's there, or say where to put a new one and I'll `
+          + `do it. ${MONEY(context.moneySafe)}`;
+      }
+      /*
+        NOWHERE SHOWING, AND HERE THERE ARE TWO FACTS TO SAY RATHER THAN ONE:
+        this cast has no tattoo AND there is nowhere to put one. The order is the
+        house order — the fact they can act on first — and the offer is dropped
+        rather than made, because an offer with no place in it is the dead-end
+        offer D-180 forbids.
+      */
+      if (context.inkPlaces.length === 0) {
+        return `${capitalize(context.pronouns.subject)} `
+          + `${context.pronouns.plural ? "haven't" : "hasn't"} got a tattoo yet, so there's nothing `
+          + "there to change or take off — and there's nowhere showing to put one on either. "
+          + `Change what ${wearing(context.pronouns)} and I'll put one on. ${MONEY(context.moneySafe)}`;
+      }
+      return `I can put a tattoo on ${placesClause(context.inkPlaces, context.pronouns)}. `
         + `${capitalize(context.pronouns.subject)} ${context.pronouns.plural ? "haven't" : "hasn't"} got one yet, though, `
         + "so there's nothing there to change or take off. "
-        + MONEY(context.moneySafe)),
+        + MONEY(context.moneySafe);
+    },
   },
   /*
     SHE ASKED FOR A TATTOO TO COME OFF, AND IT IS REALLY THERE (ruled

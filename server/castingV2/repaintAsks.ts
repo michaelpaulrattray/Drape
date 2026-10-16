@@ -56,6 +56,7 @@
  */
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
 import type { CastPronouns } from "./castPronouns";
+import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { HairColour } from "../../shared/castingVocabularies";
 
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
@@ -394,10 +395,31 @@ export class RepaintCannotSayError extends Error {
    * request already knew.
    */
   readonly pronouns: CastPronouns;
+  /**
+   * WHERE A TATTOO WOULD ACTUALLY WORK ON THIS CAST (#2580).
+   *
+   * It rides on the error for the third time the same reason does: the sentence
+   * is written at SETTLEMENT, in a function that holds the error and nothing
+   * else, so a list derived there would be derived from nothing — and `[]`
+   * would make the settlement say *"there's no skin showing"* about a cast
+   * standing in a t-shirt.
+   *
+   * ⚠ **`unplacedInk` is one of this error's reasons, and that is why this
+   * field exists on it rather than only at the pre-claim door.** That door
+   * answers first and should always answer first — its own entry in
+   * `cannotSayCopy.ts` says it *"should never be the one she meets"* — but
+   * *should* is not a channel, and the sentence is written for the day it is.
+   */
+  readonly inkPlaces: readonly InkPlacement[];
 
   constructor(
     refusal: RepaintAsksRefusal,
-    options: { words?: string | null; scopeNoun?: string | null; pronouns: CastPronouns },
+    options: {
+      words?: string | null;
+      scopeNoun?: string | null;
+      pronouns: CastPronouns;
+      inkPlaces: readonly InkPlacement[];
+    },
   ) {
     super(`the repaint cannot express this ask: ${refusal.detail}`);
     this.name = "RepaintCannotSayError";
@@ -406,6 +428,10 @@ export class RepaintCannotSayError extends Error {
     this.words = options.words ?? null;
     this.scopeNoun = options.scopeNoun ?? null;
     this.pronouns = options.pronouns;
+    /* REQUIRED, with no default, for `CannotSayContext.inkPlaces`' own reason:
+       an absent list read as empty is a confident false sentence, where a
+       missing argument is a type error. */
+    this.inkPlaces = options.inkPlaces;
   }
 }
 
