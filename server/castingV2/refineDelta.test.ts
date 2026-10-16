@@ -718,14 +718,16 @@ describe("ink renders only where the anchor is the document", () => {
     cast is wearing. That is the property under test.
   */
   describe("what she is wearing decides which wall she meets", () => {
-    /* The RESOLUTION, not a line: `unpathed` is *cast before the paths* and
-       `incoherent` is *claims a path, cannot say what it wears*, and only the
-       first may read as the house crew tee. */
+    /* The RESOLUTION, not a line: `unpathed` is *no line recorded* and reads
+       as the house crew tee, while a LINE is read on its own terms.
+       ⚠ `source: "born"` with a path stood here until #1577 slice 2, which
+       retired both; `edited` is the source that READS the line, so every answer
+       below is the one this helper always produced. */
     const wearing = (instruction: string, line: string | null): FreeLaneCheck => ({
       instruction,
       wardrobe: line === null
         ? { kind: "unpathed" }
-        : { kind: "line", line, source: "born", path: "wardrobe" },
+        : { kind: "line", line, source: "edited" },
     });
 
     it("⚠ A BASICS CAST'S BARE CHEST NOW RENDERS — the path's whole reason", () => {
@@ -754,7 +756,7 @@ describe("ink renders only where the anchor is the document", () => {
       const c: FreeLaneCheck = {
         instruction: ask,
         inkWordsRoadOpen: true,
-        wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "born", path: "basics" },
+        wardrobe: { kind: "line", line: basicsWardrobeLine("male"), source: "edited" },
       };
       expect(readDelta({ free: { ink: ask } }, c)?.free?.ink).toBeTruthy();
       expect(c.wall, "her chest is bare and the road can keep it").toBeUndefined();

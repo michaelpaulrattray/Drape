@@ -36,10 +36,10 @@ const ledger = {
 /** Every `buildPackage` call's argument object, in order. */
 const packageInputs: Record<string, unknown>[] = [];
 
-let rollWardrobe: { path: "wardrobe" | "basics" | null; line: string | null } = {
-  path: null,
-  line: null,
-};
+/* ⚠ THIS FIXTURE CARRIED A `path` UNTIL #1577 SLICE 2, which stopped Sign's
+   projection selecting one (the ghost audit's item B1). The stored LINE is the
+   whole of what Sign reads now. */
+let rollWardrobe: { line: string | null } = { line: null };
 
 /**
  * The roll's compiled brief, as the Sign gate reads it (#176). `{}` — no
@@ -186,9 +186,8 @@ vi.mock("../db/castingV2Sign", () => ({
         styleKey: null,
         styleProfile: null,
         createdAt: new Date("2026-08-02T10:00:00Z"),
-        /* The two paths. NULL on both is every Cast signed to date — the sheet
-           was cast before the paths existed. Overridden by the arms that care. */
-        path: rollWardrobe.path,
+        /* The sheet's born line. NULL is every Cast signed to date, and is
+           overridden by the arms that care. */
         wardrobeLine: rollWardrobe.line,
         /* The Sign gate's read (#176) — house-shaped unless an arm moves it. */
         compiledBrief: rollCompiledBrief,
@@ -455,7 +454,7 @@ beforeEach(() => {
   refundRecords = true;
   /* A stateful fixture re-establishes its state in front of every row it is
      asked about — the census corpus's own first law, arriving in a unit suite. */
-  rollWardrobe = { path: null, line: null };
+  rollWardrobe = { line: null };
   rollCompiledBrief = {};
   packageInputs.length = 0;
   copyThrows = false;
@@ -852,26 +851,42 @@ describe("the Cast's wardrobe snapshot", () => {
     expect(boundary.technicalSchema).toMatchObject({
       wardrobe: { path: null, line: null, source: null },
     });
+    /* ⚠ `path` IS A CONSTANT `null` IN THE SNAPSHOT SINCE #1577 SLICE 2 and the
+       key is deliberately still written — see the write site's own note: this
+       is a stored blob three services read back across several eras, and no row
+       in either world has ever held a non-null one, so writing `null` forever
+       is byte-identical to what it already wrote. */
   });
 
   it("carries the roll's born line and where it came from", async () => {
-    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    rollWardrobe = { line: "a red apron over a plain white tee" };
     await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
     expect(boundaryInputs.at(-1)!.technicalSchema).toMatchObject({
       wardrobe: {
-        path: "wardrobe",
+        path: null,
         line: "a red apron over a plain white tee",
-        source: "born",
+        source: "brief",
       },
     });
   });
 
-  it("carries the BASICS path, which is a different promise", async () => {
-    rollWardrobe = { path: "basics", line: "shirtless, in plain black fitted shorts, barefoot" };
+  it("⚠ THE RETIRED HALF — no stored line can snapshot a path or a `born` source", async () => {
+    /*
+      THIS ARM TESTED *"carries the BASICS path, which is a different promise"*
+      until #1577 slice 2. The promise it named is retired with the paths: Sign
+      does not read `casting_rolls.path`, so a snapshot cannot record one and
+      cannot call its line `born`.
+
+      It is kept, pointed the other way, because an arm that merely disappears
+      leaves nothing saying the old shape must not come back — and the snapshot
+      is where it would do the most damage, being read back by three services.
+    */
+    rollWardrobe = { line: "shirtless, in plain black fitted shorts, barefoot" };
     await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
-    expect(boundaryInputs.at(-1)!.technicalSchema).toMatchObject({
-      wardrobe: { path: "basics", source: "born" },
-    });
+    const snapshot = (boundaryInputs.at(-1)!.technicalSchema as { wardrobe: Record<string, unknown> }).wardrobe;
+    expect(snapshot.path).toBeNull();
+    expect(snapshot.source).toBe("brief");
+    expect(snapshot.line).toBe("shirtless, in plain black fitted shorts, barefoot");
   });
 
   it("⚠ AT THE WIRE — the package is BUILT from the line the Cast records", async () => {
@@ -883,7 +898,7 @@ describe("the Cast's wardrobe snapshot", () => {
       Cast's own — not re-resolved at the call site, where it could differ from
       the record by the time anyone compares them.
     */
-    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    rollWardrobe = { line: "a red apron over a plain white tee" };
     await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
     expect(packageInputs).toHaveLength(1);
     expect(packageInputs[0].wardrobeLine).toBe("a red apron over a plain white tee");
@@ -903,7 +918,7 @@ describe("the Cast's wardrobe snapshot", () => {
       clothes read as two different people to everything that compares the
       fingerprint.
     */
-    rollWardrobe = { path: "wardrobe", line: "a red apron over a plain white tee" };
+    rollWardrobe = { line: "a red apron over a plain white tee" };
     await signCandidate({ schedulePackage: awaitPackage, buildPackage: packageReturning({}) }, input);
     const boundary = boundaryInputs.at(-1)!;
     expect(boundary.identityText).not.toContain("apron");

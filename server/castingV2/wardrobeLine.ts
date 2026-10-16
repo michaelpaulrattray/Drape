@@ -46,52 +46,75 @@
  * `captureCastingTwoPathsEnabled`'s question, asked once at the write, and the
  * answer is already in the row by the time anything here runs.
  */
-import type { CastingPath } from "../../shared/castingPaths";
 
 /**
- * Where the answer came from. `edited` beats the other two — that IS condition
- * (v). `brief` is the author road's born line (#1222): the outfit the
- * customer's own brief stated, recorded on a roll that has no path because the
- * paths are retired (#203) — readable from the columns as *line without path*,
- * which since #1222 is the only shape a fresh roll's line can take.
+ * Where the answer came from. `edited` beats the other — that IS condition (v).
+ * `brief` is the line the customer's own brief stated (#1222), recorded on a
+ * roll that has no path because the paths are retired (#203).
  *
  * Exported with #1222 because the ink readers branch on it: a `brief` line
  * DRESSES AND JUDGES the five views and deliberately does NOT move ink
  * coverage — see `wardrobeCoversSurface`'s brief arm for the declared reason.
+ *
+ * ⚠ **IT HAD A THIRD MEMBER, `born`, AND IT IS RETIRED — #1577 slice 2 (item
+ * B1), 2026-10-15.** It meant *the outfit one of the two retired paths stamped
+ * on this roll*, and it was told apart from `brief` by the only thing that ever
+ * distinguished them: a non-null `path` column beside the line. With the path
+ * no longer read (see {@link WardrobeBranch}), this function cannot make that
+ * distinction and must not pretend to — so every stored line now resolves
+ * `brief`, which is what every line a fresh roll can write actually is.
+ *
+ * **Measured in both worlds before the member went, because the SNAPSHOT reader
+ * below hands this type back off a stored blob:** production holds **zero**
+ * signed casts whose `technicalSchema.wardrobe.source` is `born` (and zero with
+ * a non-null `wardrobe.path`); dev holds **four**, the verify-bot signed
+ * fixtures. ⚠ **And it changes the reading of neither, which is a property of
+ * the consumers rather than of the counts:** every snapshot-side reader is typed
+ * `string | null` and branches on `"brief"` ALONE —
+ * `coverageOfSnapshotWardrobe` through `placementRideCoverage`, whose own
+ * docblock already says *"Absent means not brief"* — so `born`, `edited`, `null`
+ * and absent were always one answer there. A row holding `born` reads `null`
+ * now and takes the same arm it took yesterday.
  */
-export type WardrobeLineSource = "edited" | "born" | "brief";
+export type WardrobeLineSource = "edited" | "brief";
 
 /**
- * ⚠ THREE CASES, AND WHICH ROWS TAKE EACH MOVED WITH #1222.
+ * TWO CASES, AND IT HELD THREE UNTIL #1577 SLICE 2.
  *
- * `line`       this person is wearing a known outfit. `path` is non-null only
- *              on the thirteen historical pathed rolls (`source: "born"`); a
- *              fresh roll's line is the brief's own stated outfit on a null
- *              path (`source: "brief"`), and an edit beats either
- *              (`source: "edited"`).
- * `unpathed`   no path AND no line: the roll predates the paths, was cast
- *              before #1222, or its brief named no outfit. **This is not an
- *              error and never becomes one** — a reader's correct response is
- *              to behave exactly as the product always has.
- * `incoherent` the roll IS on a path and carries no line.
+ * `line`     this person is wearing a known outfit — the brief's own stated
+ *            one (`source: "brief"`), or an edit, which beats it
+ *            (`source: "edited"`).
+ * `unpathed` no line at all: the roll predates the paths, was cast before
+ *            #1222, or its brief named no outfit. **This is not an error and
+ *            never becomes one** — a reader's correct response is to behave
+ *            exactly as the product always has. ⚠ The NAME is the retired
+ *            road's and is kept deliberately (the audit's item B2: *current
+ *            machinery under an old-lane name; a rename is cosmetic and not
+ *            proposed*).
  *
- * The third case cannot be produced by the write path — a path and a line are
- * stamped in one insert — and it is given a name anyway rather than folded into
- * `unpathed`, because the two demand opposite behaviour. `unpathed` says *paint
- * what you always painted*. `incoherent` says *this roll claims a path and
- * cannot say what it is wearing*, and on the Basics path painting the default
- * grey tee would put a shirt on a cast whose whole purpose is a bare chest —
- * silently, in the one place the customer would notice last.
+ * ⚠ **THE THIRD CASE WAS `incoherent` — *this roll claims a path and cannot say
+ * what it is wearing* — AND IT IS RETIRED WITH THE PATHS (#1577 slice 2, item
+ * B1, 2026-10-15).** It was never producible by the write path (a path and a
+ * line were stamped in one insert) and was given a name anyway, because it and
+ * `unpathed` demanded opposite behaviour: `unpathed` says *paint what you always
+ * painted*, while `incoherent` had to refuse rather than paint the default grey
+ * tee onto a cast whose whole purpose might be a bare chest.
  *
- * A branch that comes back `incoherent` is refused free, before the claim. It
- * is not folded in here for the same reason `INK_CUT_ROUTES` refuses to make
- * the absence a member: a corner declared unreachable and then quietly
- * defaulted is a corner with no test, and this campaign has paid for that one.
+ * **It is gone because its input is gone, not because it was judged
+ * unreachable** — with the `path` no longer read there is no claim left for a
+ * roll to make. Read at the rows on the way out: of the thirteen pathed rolls
+ * production holds, **zero** are in that shape (every one carries a line), and
+ * none of the thirteen holds a candidate, so no refine or Sign could have
+ * reached one anyway.
+ *
+ * ⚠ **The `path` FIELD went with it, and `casting_rolls.path` the COLUMN did
+ * not** — #203's ruling keeps the column as the record of which rolls predate
+ * the author road. What this slice retires is the THREADING of it into this
+ * resolution, which is the audit's item B1 exactly.
  */
 export type WardrobeResolution =
-  | { kind: "line"; line: string; source: WardrobeLineSource; path: CastingPath | null }
-  | { kind: "unpathed" }
-  | { kind: "incoherent"; path: CastingPath };
+  | { kind: "line"; line: string; source: WardrobeLineSource }
+  | { kind: "unpathed" };
 
 /**
  * The facts a resolution needs, all of them already on rows the caller has.
@@ -102,18 +125,19 @@ export type WardrobeResolution =
  */
 export type WardrobeBranch = {
   /**
-   * `casting_rolls.path` of the roll this branch descends from.
+   * `casting_rolls.wardrobeLine` — the stored outfit of the sheet.
    *
-   * ⚠ **ABSENT AND NULL MEAN THE SAME THING, and the type says so on purpose.**
-   * A caller assembling this from a partial row — a projection written before
-   * the columns existed, a test double, a JSON blob read back — hands
-   * `undefined`, and a strict `=== null` check would route that to
-   * `incoherent`: *this roll claims a path and cannot say what it is wearing*,
-   * which is refused free. An absent column is not a claim; it is silence, and
-   * silence is `unpathed`.
+   * ⚠ **THIS TYPE CARRIED `rollPath` BESIDE IT UNTIL #1577 SLICE 2 (item B1),
+   * and that field is what this slice retires.** It was `casting_rolls.path`,
+   * threaded in from refine's two call sites and Sign's, and it did exactly two
+   * jobs: it told a `born` line from a `brief` one, and it made `incoherent`
+   * expressible. Both are gone with it, and the reasoning is at
+   * {@link WardrobeLineSource} and {@link WardrobeResolution}.
+   *
+   * **The column is untouched** (#203's ruling), and so is the SELECT that
+   * reads `wardrobeLine` beside it; what went is the four places that carried
+   * the path into this function.
    */
-  rollPath: CastingPath | null | undefined;
-  /** `casting_rolls.wardrobeLine` — the BORN outfit of the sheet. */
   rollLine: string | null;
   /** This branch's own wardrobe edit, if one has been made. */
   editedLine?: string | null;
@@ -134,38 +158,37 @@ function stated(value: string | null | undefined): string | null {
  * documented at its own call site as well as in this file's header.
  */
 export function currentWardrobeLine(branch: WardrobeBranch): WardrobeResolution {
-  const path = branch.rollPath ?? null;
-  const born = stated(branch.rollLine);
+  const stored = stated(branch.rollLine);
   const edited = stated(branch.editedLine);
 
   /*
-    ⚠ A LINE WITHOUT A PATH WAS `unpathed` UNTIL #1222, AND THE REASONING
-    INVERTED WITH THE WRITER.
+    ⚠ A LINE WITHOUT A PATH WAS `unpathed` UNTIL #1222, THEN THE PATH STOPPED
+    BEING READ AT ALL — #1577 slice 2. The history is kept because the arm here
+    has now inverted twice, and the second inversion is this one.
 
-    The arm that stood here said a line nobody chose a path for is a
-    half-written row, because in the two-paths world the columns were stamped
-    together and line-without-path could only mean a torn write. #203 retired
-    the paths — the path column is a constant `null` on every fresh roll — and
-    #1222 made the author road record the brief's own stated outfit on exactly
-    that shape. So line-without-path is now the ONLY form a fresh roll's line
-    can take, and discarding it would throw away every line the product writes:
-    the `unpathed` arm was the reason his Sifr views could never have read the
-    dress even once the column held it.
+    The arm that first stood here DISCARDED a line nobody chose a path for, on
+    the grounds that in the two-paths world the columns were stamped together so
+    line-without-path could only mean a torn write. #203 retired the paths — the
+    column is a constant `null` on every fresh roll — and #1222 made the author
+    road record the brief's own stated outfit on exactly that shape. So
+    line-without-path became the ONLY form a fresh roll's line can take, and
+    that first arm was the reason his Sifr views could never have read the dress
+    even once the column held it.
 
-    The order is condition (v)'s: an EDIT is what she is wearing now and beats
-    what she was born in, on any path shape — a Cast signed after a wardrobe
-    edit judged against its born line is refunded slices, and that argument
-    never depended on the path column.
+    What this slice removes is the LAST READER of the column here. A stored line
+    is a stored line, and the one thing the path still decided — whether to call
+    it `born` or `brief` — is a distinction no reachable row can make: the
+    thirteen pathed rolls production holds carry no candidate, so neither a
+    refine nor a Sign can reach one.
+
+    The order is condition (v)'s and is untouched by any of that: an EDIT is
+    what this person is wearing now and beats what they were born in — a Cast
+    signed after a wardrobe edit judged against its born line is refunded
+    slices, and that argument never depended on the path column.
   */
-  if (edited !== null) return { kind: "line", line: edited, source: "edited", path };
-  if (born !== null) {
-    /* `brief` vs `born` is readable from the columns: only the retired paths
-       ever stamped a path beside their line, so a pathed line is the old
-       world's and a pathless one is the brief's own sentence (#1222). */
-    return { kind: "line", line: born, source: path === null ? "brief" : "born", path };
-  }
-  if (path === null) return { kind: "unpathed" };
-  return { kind: "incoherent", path };
+  if (edited !== null) return { kind: "line", line: edited, source: "edited" };
+  if (stored !== null) return { kind: "line", line: stored, source: "brief" };
+  return { kind: "unpathed" };
 }
 
 /**
@@ -238,7 +261,15 @@ export function castWardrobeSource(technicalSchema: unknown): WardrobeLineSource
   const wardrobe = (technicalSchema as { wardrobe?: unknown }).wardrobe;
   if (!wardrobe || typeof wardrobe !== "object") return null;
   const source = (wardrobe as { source?: unknown }).source;
-  return source === "edited" || source === "born" || source === "brief" ? source : null;
+  /* ⚠ `"born"` LEFT THIS SET WITH #1577 SLICE 2 AND THE READING DID NOT MOVE.
+     A stored `born` now answers `null`, and `null` takes the same arm `born`
+     took: every consumer of this value is typed `string | null` and branches on
+     `"brief"` alone (`coverageOfSnapshotWardrobe`, reached through
+     `placementRideCoverage`, whose docblock says *"Absent means not brief"*).
+     Measured before the member went — production holds zero such snapshots,
+     dev holds four — but the counts are the second reason and not the first:
+     the consumers make it a no-op whatever any row holds. */
+  return source === "edited" || source === "brief" ? source : null;
 }
 
 /**
@@ -451,4 +482,50 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
   - **`CASTING_PATHS` and the columns** — see `shared/castingPaths.ts`. The
     vocabulary is a PREREQUISITE of the retained columns, not a remnant of the
     retired road.
+
+  # AND THE READ SIDE'S OWN TWO-PATHS HALF WENT 2026-10-15 — #1577 SLICE 2
+
+  The audit's item B1. What this file lost, and each one is reasoned at its own
+  declaration above rather than only here: **`WardrobeBranch.rollPath`** (the
+  threading), **`WardrobeResolution`'s `path` field and its `incoherent`
+  arm**, and **`WardrobeLineSource`'s `born` member**. The four call sites that
+  carried the path — refine's door, refine's variant landing, Sign, and the
+  two db projections that selected it — carry it no longer.
+
+  **WHAT WAS MEASURED BEFORE ANY OF IT WAS CUT**, because a read path is the
+  one thing this file is not allowed to break:
+
+  - Production holds **13 pathed rolls and every one has ZERO candidates**, so
+    no refine and no Sign can reach a pathed branch. Re-read 2026-10-15; the
+    audit measured the same on 2026-09-23.
+  - **Zero of those thirteen are in the `incoherent` shape** — every one
+    carries a line — so the kind was unreachable from the DATA as well as
+    from the code.
+  - **Zero signed casts anywhere hold `wardrobe.source: "born"` on production**
+    (and zero hold a non-null `wardrobe.path`). **Dev holds four**, the
+    verify-bot fixtures.
+  - ⚠ **And those four do not change their reading, which is a property of
+    the CONSUMERS rather than of the counts** — the whole snapshot chain is
+    typed `string | null` and branches on `"brief"` ALONE, so `born`, `edited`,
+    `null` and absent were always one answer there. That is the argument that
+    made this safe; the row counts are its second witness.
+
+  ⚠ **TWO THINGS THE SLICE TURNED UP AND DELIBERATELY DID NOT FIX**, because
+  folding a second retirement into a retirement is the thing his 2026-09-24
+  ruling forbids. Both are filed:
+
+  1. **The ink-form demand counter now has no reachable road at all.** Its
+     guard wanted a non-`brief` source; `born` was the one that reached it, and
+     the only survivor is `edited`, which needs the `wardrobe` free subject —
+     and `refineSubjects.ts` says in as many words that it *"is served to
+     nobody"*. It was already unreachable before this slice (a `born` branch
+     needs a pathed roll with a candidate: none exists), and
+     `casting_ink_form_demand` holds **zero rows in both worlds, all time**.
+     What changed is only HOW it is shut.
+  2. **`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit.** It is 132
+     characters and `MAX_FREE_LENGTH` is 120, and an over-long free value makes
+     the strict reader reject the WHOLE delta rather than that one key — so
+     the branch reads `unpathed`. It is the only line whose upper chest reads
+     `covered`, which is why the demand table's `surfaceCovered` kind has no
+     road either. Measured at the reader while re-pointing the arms.
 */

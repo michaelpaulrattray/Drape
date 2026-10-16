@@ -8,8 +8,18 @@
  * longer wearing, fails the wardrobe axis on five paid views — which is not a
  * hypothetical, it is how the crew-neck chest design already cost money.
  *
- * So the arms are about the ORDER of precedence and about the third case the
- * design implies without naming, not about the plumbing.
+ * So the arms are about the ORDER of precedence, not about the plumbing.
+ *
+ * ⚠ **THIS FILE ONCE GUARDED A THIRD CASE AND A THIRD SOURCE, AND BOTH ARE
+ * RETIRED — #1577 slice 2 (the ghost audit's item B1), 2026-10-15.** The
+ * resolution no longer reads `casting_rolls.path`, so `incoherent` (*this roll
+ * claims a path and cannot say what it is wearing*) is not expressible and
+ * `born` (*the outfit one of the two retired paths stamped*) cannot be told
+ * from `brief`. The precedence arms are untouched, because condition (v) never
+ * depended on the path column. **What replaces the retired arms is not nothing**
+ * — the last describe in this file drives every input shape and asserts the two
+ * dead members cannot come back, which a type alone stops saying the moment
+ * somebody widens it.
  */
 import { describe, expect, it } from "vitest";
 
@@ -21,8 +31,8 @@ import {
 } from "./wardrobeLine";
 import { coverageOfWardrobeLine } from "./inkSurfaceCoverage";
 
-/** The only two facts a pre-paths roll has, which is every production roll today. */
-const UNPATHED = { rollPath: null, rollLine: null } as const;
+/** A roll with no stored line at all — the shape every roll had before #1222. */
+const UNPATHED = { rollLine: null } as const;
 
 describe("condition (v) — the edited line wins", () => {
   it("prefers this branch's edit over the sheet's born line", () => {
@@ -31,7 +41,6 @@ describe("condition (v) — the edited line wins", () => {
       this one sentence.
     */
     const resolved = currentWardrobeLine({
-      rollPath: "wardrobe",
       rollLine: "a dark canvas work jacket, straight jeans, plain boots",
       editedLine: "a cream linen shirt, straight jeans, plain boots",
     });
@@ -39,20 +48,17 @@ describe("condition (v) — the edited line wins", () => {
       kind: "line",
       line: "a cream linen shirt, straight jeans, plain boots",
       source: "edited",
-      path: "wardrobe",
     });
   });
 
-  it("falls to the born line when this branch has not been edited", () => {
+  it("falls to the sheet's stored line when this branch has not been edited", () => {
     const resolved = currentWardrobeLine({
-      rollPath: "wardrobe",
       rollLine: "a dark canvas work jacket, straight jeans, plain boots",
     });
     expect(resolved).toEqual<WardrobeResolution>({
       kind: "line",
       line: "a dark canvas work jacket, straight jeans, plain boots",
-      source: "born",
-      path: "wardrobe",
+      source: "brief",
     });
   });
 
@@ -65,31 +71,30 @@ describe("condition (v) — the edited line wins", () => {
       that question is the difference between eight strangers dressed in one
       person's mid-session change and eight strangers dressed as the sheet.
     */
-    const edited = currentWardrobeLine({ rollPath: "basics", rollLine: "a", editedLine: "b" });
-    const born = currentWardrobeLine({ rollPath: "basics", rollLine: "a" });
+    const edited = currentWardrobeLine({ rollLine: "a", editedLine: "b" });
+    const stored = currentWardrobeLine({ rollLine: "a" });
     expect(edited.kind === "line" && edited.source).toBe("edited");
-    expect(born.kind === "line" && born.source).toBe("born");
+    expect(stored.kind === "line" && stored.source).toBe("brief");
   });
 
   it("treats a blank or whitespace edit as no edit at all", () => {
     /*
       A stored empty string is what a half-written form produces, and "she is
       wearing nothing in particular" is not an outfit — it is the absence of
-      one wearing a value's clothes. The born line is the honest answer.
+      one wearing a value's clothes. The sheet's stored line is the honest
+      answer.
     */
     for (const blank of ["", "   ", "\n\t "]) {
       const resolved = currentWardrobeLine({
-        rollPath: "wardrobe",
         rollLine: "a grey tee, straight jeans, plain shoes",
         editedLine: blank,
       });
-      expect(resolved.kind === "line" && resolved.source, JSON.stringify(blank)).toBe("born");
+      expect(resolved.kind === "line" && resolved.source, JSON.stringify(blank)).toBe("brief");
     }
   });
 
   it("trims, so a stored line cannot differ from itself by whitespace", () => {
     const resolved = currentWardrobeLine({
-      rollPath: "wardrobe",
       rollLine: "  a grey tee, straight jeans, plain shoes\n",
     });
     expect(resolved.kind === "line" && resolved.line).toBe("a grey tee, straight jeans, plain shoes");
@@ -114,13 +119,12 @@ describe("⚠ the brief's own line — a fresh roll's only shape since #1222", (
     could never read the dress. The resolution now reports it as a line whose
     source is the BRIEF, and Sign snapshots that answer.
   */
-  it("resolves a pathless born line as the brief's own sentence", () => {
-    expect(currentWardrobeLine({ rollPath: null, rollLine: "a white, body-conscious dress with industrial straps, buckles and a worn graphic on the chest" }))
+  it("resolves a stored line as the brief's own sentence", () => {
+    expect(currentWardrobeLine({ rollLine: "a white, body-conscious dress with industrial straps, buckles and a worn graphic on the chest" }))
       .toEqual<WardrobeResolution>({
         kind: "line",
         line: "a white, body-conscious dress with industrial straps, buckles and a worn graphic on the chest",
         source: "brief",
-        path: null,
       });
   });
 
@@ -130,59 +134,78 @@ describe("⚠ the brief's own line — a fresh roll's only shape since #1222", (
       refunded slices; that argument is about the edit and the snapshot, not
       about which world wrote the born line.
     */
-    expect(currentWardrobeLine({ rollPath: null, rollLine: "a white dress", editedLine: "a cream linen shirt" }))
+    expect(currentWardrobeLine({ rollLine: "a white dress", editedLine: "a cream linen shirt" }))
       .toEqual<WardrobeResolution>({
         kind: "line",
         line: "a cream linen shirt",
         source: "edited",
-        path: null,
       });
-    /* And an edit on a roll with NO born line at all still speaks. */
-    expect(currentWardrobeLine({ rollPath: null, rollLine: null, editedLine: "a cream linen shirt" }))
+    /* And an edit on a roll with NO stored line at all still speaks. */
+    expect(currentWardrobeLine({ rollLine: null, editedLine: "a cream linen shirt" }))
       .toEqual<WardrobeResolution>({
         kind: "line",
         line: "a cream linen shirt",
         source: "edited",
-        path: null,
       });
   });
 
-  it("a pathed line still reads `born` — the two worlds stay tellable apart", () => {
-    const resolved = currentWardrobeLine({ rollPath: "wardrobe", rollLine: "a red apron" });
-    expect(resolved.kind === "line" && resolved.source).toBe("born");
+  it("⚠ EVERY stored line reads `brief` now — there is no second world to tell apart", () => {
+    /*
+      The arm here asserted the opposite until #1577 slice 2: *a pathed line
+      still reads `born`, so the two worlds stay tellable apart*. The path is
+      not read any more, so they are not tellable apart and the resolution
+      must not claim they are — a stored line is the brief's sentence, which
+      is what every line a fresh roll can write actually is.
+    */
+    const resolved = currentWardrobeLine({ rollLine: "a red apron" });
+    expect(resolved.kind === "line" && resolved.source).toBe("brief");
   });
 });
 
-describe("⚠ the incoherent roll — pathed, and unable to say what it is wearing", () => {
+describe("⚠ the retired members — `incoherent` and `born` cannot come back quietly", () => {
   /*
-    THIS CASE CANNOT BE PRODUCED BY THE WRITE PATH, and it is named anyway.
+    WHY THIS DESCRIBE EXISTS AT ALL, given the type no longer admits either.
 
-    A path and a line are stamped in one insert, so `basics` with no line is a
-    row nothing writes. It gets a name rather than being folded into `unpathed`
-    because the two demand OPPOSITE behaviour: `unpathed` means *paint what you
-    always painted*, and on the Basics path that would put a plain grey tee on
-    a cast whose entire purpose is a bare chest — silently, and in the one
-    place the customer would notice last.
+    The two members went in #1577 slice 2 because the resolution stopped
+    reading `casting_rolls.path`. A TYPE says that today and stops saying it
+    the moment somebody widens the union back — which is how a retired road
+    actually returns: not by a revert, but by a later card adding a member
+    "while we are in here". These arms are driven over VALUES, so they fail on
+    a re-introduction whatever the type says.
 
-    "Declared unreachable" is how a corner ends up with no test. This one has
-    two.
+    The old arms are not merely deleted. What they protected — *a cast that
+    cannot say what it is wearing must never silently resolve to the house crew
+    tee, because on the Basics path that puts a shirt on a bare chest* — is
+    preserved as the second arm below: the absence of a line still answers
+    `unpathed`, and `unpathed` carries no line for a reader to mistake for one.
+    The coverage owner is where that answer becomes the house table, and it has
+    its own arms for it.
   */
-  it("names itself rather than defaulting", () => {
-    expect(currentWardrobeLine({ rollPath: "basics", rollLine: null }))
-      .toEqual<WardrobeResolution>({ kind: "incoherent", path: "basics" });
-    expect(currentWardrobeLine({ rollPath: "wardrobe", rollLine: "  " }))
-      .toEqual<WardrobeResolution>({ kind: "incoherent", path: "wardrobe" });
+  it("answers only `line` or `unpathed`, over every input shape", () => {
+    const lines = [null, "", "   ", "a red apron"];
+    const edits = [undefined, null, "", "   ", "a cream linen shirt"];
+    let seen = 0;
+    for (const rollLine of lines) {
+      for (const editedLine of edits) {
+        const resolved = currentWardrobeLine({ rollLine, editedLine });
+        seen += 1;
+        const label = JSON.stringify({ rollLine, editedLine });
+        expect(["line", "unpathed"], label).toContain(resolved.kind);
+        /* No `path` key on any answer — the field the slice retired. */
+        expect(Object.keys(resolved), label).not.toContain("path");
+        if (resolved.kind === "line") {
+          expect(["edited", "brief"], label).toContain(resolved.source);
+        }
+      }
+    }
+    /* The population is asserted so a narrowed loop cannot pass as coverage. */
+    expect(seen).toBe(lines.length * edits.length);
   });
 
-  it("⚠ NEVER resolves to the house line — that is the silent wrong it exists to prevent", () => {
-    const resolved = currentWardrobeLine({ rollPath: "basics", rollLine: null });
-    expect(resolved.kind).not.toBe("line");
+  it("⚠ a roll with no line NEVER resolves to the house line — the silent wrong the dead arm prevented", () => {
+    const resolved = currentWardrobeLine({ rollLine: null });
+    expect(resolved.kind).toBe("unpathed");
     expect(JSON.stringify(resolved)).not.toContain("crew-neck");
-  });
-
-  it("carries the path, so a refusal can say which one it was", () => {
-    const resolved = currentWardrobeLine({ rollPath: "basics", rollLine: null });
-    expect(resolved.kind === "incoherent" && resolved.path).toBe("basics");
   });
 });
 

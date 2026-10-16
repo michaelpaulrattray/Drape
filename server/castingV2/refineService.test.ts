@@ -30,7 +30,7 @@ import type { StoredInkDesign } from "../db/castingV2InkDesigns";
 import { resolveInkReferenceTake } from "./inkReferenceTake";
 import { inkDesignImagePath } from "../../shared/inkDesignDelivery";
 import { pictureHalfPhrase } from "./sidePhrasing";
-import { basicsWardrobeLine, HOUSE_WARDROBE_LINE } from "./wardrobeLine";
+import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 import { wardrobePieces } from "./wardrobeCards";
 import type { TextEngine } from "../providers/types";
 import { interpretRefinement } from "./refineInterpreter";
@@ -87,19 +87,23 @@ const ledger = {
 let chargeSucceeds = true;
 let candidateRow: Record<string, unknown>;
 /**
- * WHAT THE ROLL THIS FACE CAME FROM WAS CAST ON, and what it was born wearing.
+ * WHAT THE ROLL THIS FACE CAME FROM WAS BORN WEARING.
  *
- * Both `null` in every arm but the coverage-demand ones at the foot of this
- * file, which is the honest default: every roll in both worlds is `unpathed`,
- * and `currentWardrobeLine` reads a null path as *cast before the paths* — the
- * house crew tee, today's answers byte for byte.
+ * `null` in every arm but the coverage-demand ones at the foot of this file,
+ * which is the honest default: a roll with no stored line is `unpathed`, and
+ * `currentWardrobeLine` reads that as the house crew tee — today's answers byte
+ * for byte.
  *
- * They are on the FIXTURE rather than passed per call because that is where the
- * real reader gets them: `getOwnedCandidateWithSelectedFace` joins them through
- * the owned candidate, so a suite that supplied them any other way would be
- * proving something about its own harness.
+ * It is on the FIXTURE rather than passed per call because that is where the
+ * real reader gets it: `getOwnedCandidateWithSelectedFace` joins it through the
+ * owned candidate, so a suite that supplied it any other way would be proving
+ * something about its own harness.
+ *
+ * ⚠ **`rollPath` STOOD BESIDE IT AND IS GONE — #1577 slice 2 (the ghost
+ * audit's item B1).** The projection no longer selects a path and the
+ * resolution no longer reads one, so a fixture carrying it would be describing
+ * a read the product does not make.
  */
-let rollPath: string | null = null;
 let rollWardrobeLine: string | null = null;
 let variantRows: Array<Record<string, unknown>>;
 let landedVariant: Record<string, unknown> | null = null;
@@ -195,9 +199,8 @@ vi.mock("../db/castingV2", () => ({
       imageKey: selected ? selected.imageKey : candidateRow.imageKey,
       thumbKey: null,
       internalPrompt: selected ? selected.internalPrompt : candidateRow.internalPrompt,
-      /* The roll's two fields belong to the CANDIDATE and not to whichever face
-         is selected, exactly as the real read has them. */
-      rollPath,
+      /* The roll's line belongs to the CANDIDATE and not to whichever face is
+         selected, exactly as the real read has it. */
       rollWardrobeLine,
     };
   }),
@@ -231,7 +234,6 @@ vi.mock("../db/castingV2", () => ({
         imageKey: named ? named.imageKey : candidateRow.imageKey,
         thumbKey: null,
         internalPrompt: named ? named.internalPrompt : candidateRow.internalPrompt,
-        rollPath,
         rollWardrobeLine,
       },
     };
@@ -699,7 +701,6 @@ beforeEach(() => {
       },
     },
   };
-  rollPath = null;
   rollWardrobeLine = null;
   vi.clearAllMocks();
 });
@@ -3893,7 +3894,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     const LINE = "a dark canvas work jacket, straight jeans, plain boots";
 
     const wardrobeBranch = () => {
-      rollPath = "wardrobe";
       rollWardrobeLine = HOUSE_WARDROBE_LINE;
       variantRows = [{
         id: 801,
@@ -14020,26 +14020,18 @@ describe("the picture she attached becomes the carrier that rides", () => {
     );
     expect(neck.note).not.toBe(covered.note);
 
-    /* 3 · ⚠ THE SAME CHEST ASK, THE SAME ROAD, A BARE CHEST — and the answer
-       flips. A Basics-stamped roll leaves the chest showing, so for this cast
-       the offer is TRUE and is made. One variable moved between case 1 and this
-       one, and it is the one the fix reads: a pass here with case 1 also
-       passing is the only shape that cannot be satisfied by withholding the
-       offer everywhere. */
-    rollPath = "basics";
-    rollWardrobeLine = basicsWardrobeLine("male");
-    inkedBranch();
-    const bare = await refineCandidate(
-      transformRoad(roadOpen),
-      { ...input, instruction: "make his chest tattoo bigger" },
-    );
-    expect(bare.note, "a bare chest is served and showing, so the offer is made").toContain(
-      "put a new one on",
-    );
-    expect(
-      bare.note,
-      "same ask, same road, different outfit — the answer must differ",
-    ).not.toBe(covered.note);
+    /* 3 · ⚠ THE BARE-CHEST CASE THAT STOOD HERE IS UNREACHABLE SINCE #1577
+       SLICE 2, AND IS REMOVED IN THE MERGE THAT MET IT (relay, 2026-10-16).
+       It set `rollPath = "basics"` with a Basics line to make the chest show.
+       Slice 2 stopped reading the path: every stored line now resolves as
+       `brief`, and `wardrobeCoversSurface` answers a `brief` line with the
+       house prior, so NO roll line can make the chest bare any more. The
+       outfit-varies-the-answer property it pinned therefore has no reachable
+       input; the one road that could still vary it is an edited wardrobe
+       line, served to nobody (`refineSubjects.ts`). Case 2 (the neck under
+       the same tee is offered) stays the control that the offer is not simply
+       withheld everywhere. When a reader of an arbitrary outfit line lands
+       (7a-bis), this case comes back with a real bare-chested line. */
   });
 
   it("⚠ AND THE FLAG REALLY IS A FLAG — off, the ask travels today's road", async () => {
@@ -15050,6 +15042,58 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     })
   ) as never;
 
+  /**
+   * A BRANCH WEARING AN EDITED LINE — THE COUNTER'S ONE SURVIVING ROAD.
+   *
+   * ⚠ **These arms set `rollPath = "wardrobe"` and a born line until #1577
+   * slice 2.** The counter's guard was `source !== "brief"`, which `born`
+   * satisfied; `born` is retired with the paths, so the guard is now
+   * `source === "edited"` and an edit is the only thing that reaches it.
+   *
+   * **The coverage answers are unchanged, which is what makes this a re-point
+   * and not a rewrite**: `born` and `edited` always took the SAME door
+   * (`coverageOfWardrobeLine` reads the line), while `brief` keeps the house
+   * prior. So every assertion below is about the same reading it was before.
+   *
+   * ⚠ **AND THE ROAD IS UNREACHABLE IN THE PRODUCT, WHICH WAS ALSO TRUE
+   * BEFORE THIS SLICE — measured, not assumed.** A wardrobe edit needs the
+   * `wardrobe` free subject, and `refineSubjects.ts` says in as many words
+   * that it *"is served to nobody"*; the `born` road needed one of the
+   * thirteen pathed rolls, and every one of them holds zero candidates.
+   * `casting_ink_form_demand` holds **zero rows in both worlds**, all time,
+   * which is the two facts agreeing. What this slice changed is only HOW the
+   * road is shut: by a member nothing can produce rather than by rows that
+   * happen not to exist. It is filed rather than retired here, because
+   * folding a second retirement into this slice is the thing his 2026-09-24
+   * ruling forbids.
+   *
+   * ⚠ **AND ONE OF THE TWO KINDS CANNOT BE DRIVEN THIS WAY AT ALL, which
+   * is a fact about the CAP rather than about this slice.** `surfaceCovered`
+   * needs a surface a known outfit COVERS, and `coverageOfWardrobeLine`
+   * recognises exactly two families: `HOUSE_WARDROBE_LINE`, whose upper chest
+   * is `covered`, and the Basics lines, which are bare everywhere. The house
+   * sentence is **132 characters** and `MAX_FREE_LENGTH` is **120** — and an
+   * over-long free value makes the strict reader reject the WHOLE delta, not
+   * just that key, so it comes back `null` and the branch reads `unpathed`.
+   * **So the product's own canonical outfit cannot be stored as an edit**, and
+   * the only drivable kind here is `surfaceCoverageUnread`. That is measured at
+   * the reader, and it is filed with the rest rather than fixed here.
+   */
+  const wearingEdited = (line: string) => {
+    variantRows = [{
+      id: 911,
+      publicId: "variant-wardrobe-edit",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/wardrobe-edit.png",
+      internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+      instructions: ["their outfit — " + line],
+      deltas: { free: { wardrobe: line } },
+      stepDeltas: [{ free: { wardrobe: line } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-wardrobe-edit";
+  };
+
   it("⚠ HER TOP COVERS IT on the Wardrobe path — one `surfaceCovered` row", async () => {
     /*
       §4 case (c): a Wardrobe-path brief that names no outfit falls back to the
@@ -15058,32 +15102,39 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       so the ask is refused free and the demand is real: this person wanted a
       chest piece and our own outfit is what stopped them.
     */
-    rollPath = "wardrobe";
+    /* ⚠ THE HOUSE LINE AS A BORN LINE, NOT AN EDIT, AND THE HELPER SAYS WHY:
+       at 132 characters it is over `MAX_FREE_LENGTH`, so it cannot be stored
+       as one. A born line is `brief`-sourced, so this arm now records that
+       `surfaceCovered` has NO reachable road rather than pretending to drive
+       one. */
     rollWardrobeLine = HOUSE_WARDROBE_LINE;
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
     ));
 
+    /* The refusal is unchanged — the house tee covers the upper chest, and
+       `brief` keeps the house prior, so she is refused free exactly as before. */
     expect(shut.reason).toBe("gate_ink_uncarried");
-    expect(counted).toEqual([{
-      kind: "surfaceCovered",
-      /*
-        THE VOCABULARY KEY, never the spelling she used — a count keyed on a
-        spelling is not a count of anything, and it is what keeps the column's
-        own `$type<InkPlacement>()` a true description of its contents.
+    /*
+      ⚠ **AND NOTHING IS COUNTED, WHICH IS WHAT CHANGED — this arm asserted one
+      `surfaceCovered` row until #1577 slice 2.** The row needed a non-`brief`
+      source; `born` was the one that reached it and it is retired with the
+      paths. The only other member is `edited`, and the helper above measures
+      why that cannot carry this line either: 132 characters against a 120-char
+      cap, which rejects the whole delta.
 
-        ⚠ **THIS ARM IS THE ONLY ONE THAT CAN SEE THAT**, and it is worth
-        saying: `upperChest` and the words she typed are different strings,
-        while the next arm's surface is `neck` in both the vocabulary and her
-        sentence. Writing `place` instead of `surface` reddens here and passes
-        there, measured by sabotage. Any later tidy that folds these two arms
-        into one loses the distinction and keeps the green.
-      */
-      placement: "upperChest",
-      outcome: "refused",
-      pathAtRefusal: "wardrobe",
-    }]);
+      **So `surfaceCovered` has no reachable road at all, and this arm is the
+      place that says so.** The kind is NOT deleted here — the table, the
+      vocabulary and the writer all stay, and the deadness is filed as its own
+      finding rather than folded into this slice (his 2026-09-24 ruling).
+
+      The vocabulary-key property this arm used to be the only witness to —
+      that the row carries `upperChest` and never the words the customer typed —
+      moves to the `surfaceCoverageUnread` arm below, which asks about the upper
+      chest in prose and is now the only arm that writes a row for it.
+    */
+    expect(counted, "no source left can reach surfaceCovered").toEqual([]);
     /* Free, and nothing claimed — the row is telemetry beside a refusal, never
        a transaction of its own. */
     expect(ledger.charges).toHaveLength(0);
@@ -15099,8 +15150,9 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       it as `surfaceCovered` would inflate the case for a wardrobe edit, which
       is a DIFFERENT build.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = "a roll-neck wool jumper, plain straight trousers, plain boots";
+    /* 61 characters, under the cap, and a sentence the reader has never been
+       taught — so its coverage is `unknown` and the gate fails closed. */
+    wearingEdited("a roll-neck wool jumper, plain straight trousers, plain boots");
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
       { ...input, instruction: "give her a small swallow tattoo on her neck" },
@@ -15111,7 +15163,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       kind: "surfaceCoverageUnread",
       placement: "neck",
       outcome: "refused",
-      pathAtRefusal: "wardrobe",
     }]);
   });
 
@@ -15129,7 +15180,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       differs. A write keyed on the refusal REASON alone passes the first arm
       and fails here.
     */
-    rollPath = null;
     rollWardrobeLine = null;
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
@@ -15150,7 +15200,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       not from her outfit, so a row would count our own guess as her clothes.
       Both halves die together the day 7a-bis reads real lines.
     */
-    rollPath = null;
     rollWardrobeLine = "a white, body-conscious dress with industrial straps and buckles";
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
@@ -15161,26 +15210,35 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(counted, "a prior-derived refusal is not a demand about her outfit").toEqual([]);
   });
 
-  it("⚠ A ROLL THAT CLAIMS A PATH AND CANNOT SAY WHAT IT WEARS is not counted either", async () => {
+  it("⚠ THE RETIRED `incoherent` STATE — a roll with no line is the house tee, not a refusal", async () => {
     /*
-      `incoherent` — a path with no line. It refuses (the gate reads it as
-      `unknown` and fails closed, correctly), and it writes NO row: the surface
-      it refused was decided by a cast that cannot say what it is wearing, so a
-      demand row from it is a count of our own broken state wearing a customer's
-      name.
+      THIS ARM DROVE `incoherent` UNTIL #1577 SLICE 2 — a path with no line,
+      which the gate read as `unknown`, failed closed on, and counted nowhere.
+      The kind is retired with the paths, so the state is not expressible.
 
-      It cannot be produced by the write path — a path and a line are stamped in
-      one insert — and it is driven anyway, because a corner declared
-      unreachable and then quietly defaulted is a corner with no test.
+      ⚠ **It is kept, pointed at the new behaviour, because the retirement
+      had to be proven NOT to have turned that corner into a silent default.**
+      A roll with no line now answers `unpathed`, which is the house crew tee —
+      and the house tee leaves the NECK bare, so the ask that used to be
+      refused closed now goes through. **That is the honest consequence and it
+      is asserted rather than described**: the alternative reading, that the
+      retirement left a refusal in place, would be invisible without an arm.
+
+      The surface is the neck on purpose. Its sibling two arms up asks about
+      the upper chest, which the house tee COVERS — so that arm still refuses
+      and this one must not, and a reader comparing them can see that the
+      difference is the garment and not the retirement.
     */
-    rollPath = "wardrobe";
     rollWardrobeLine = null;
-    const shut = await doorShut(refineCandidate(
+    const result = await refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her neck") },
       { ...input, instruction: "give her a small swallow tattoo on her neck" },
-    ));
+    );
 
-    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    /* Not refused — the neck is bare under the house tee. */
+    expect(result).toBeTruthy();
+    /* And nothing counted, which is the half of the old arm that still holds:
+       an unpathed branch is the product's ordinary behaviour, never a demand. */
     expect(counted).toEqual([]);
   });
 
@@ -15202,8 +15260,15 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       and that is a better outcome than the arm it replaces: a demand this
       product could not previously record is now recorded.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = "a one-shoulder animal hide, bare legs, bare feet";
+    /* ⚠ AND THIS ARM NOW CARRIES THE VOCABULARY-KEY PROPERTY its covered
+       sibling used to own: the ask says *"upper chest"* in prose and the row
+       must read `upperChest`, the vocabulary's own key. A count keyed on a
+       spelling is not a count of anything, and it is what keeps
+       `casting_ink_form_demand.placement`'s `$type<InkPlacement>()` a true
+       description of its contents. Writing the customer's words here would pass
+       the `neck` arm above, where the two strings happen to be identical, and
+       redden only here. */
+    wearingEdited("a one-shoulder animal hide, bare legs, bare feet");
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
@@ -15214,7 +15279,6 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       kind: "surfaceCoverageUnread",
       placement: "upperChest",
       outcome: "refused",
-      pathAtRefusal: "wardrobe",
     }]);
   });
 
@@ -15229,14 +15293,31 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       Not a hypothetical: the table lands in a world by a founder ceremony, and
       every call before that ceremony threw.
     */
-    rollPath = "wardrobe";
-    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    /*
+      ⚠ **AN EDITED LINE, OR THIS ARM PASSES WITHOUT DRIVING ITS OWN
+      SUBJECT — which is how it read after #1577 slice 2 before it was fixed.**
+      It set a born house line, which is now `brief`-sourced; the guard skips
+      the write, the injected thrower is never called, and the arm goes green
+      having proven nothing about the catch it exists for.
+
+      So it drives the one road that still reaches the counter, and the
+      refusal it asserts moves with it: an unread outfit fails closed as
+      `coverage_unread` rather than as the house tee's `uncarried`.
+
+      ⚠ **AND THE CALL IS NOW ASSERTED RATHER THAN ASSUMED**, which the
+      original could not do: a thrower that is never invoked is
+      indistinguishable from one whose throw was swallowed, and both leave this
+      arm green. The flag is what tells them apart.
+    */
+    let counterCalled = false;
+    wearingEdited("a one-shoulder animal hide, bare legs, bare feet");
     const shut = await doorShut(refineCandidate(
       {
         harvest: unmasked,
         /* Open, for `withCounter`'s reason — see its comment. */
         inkWordsEnabled: () => true,
         countInkCoverageDemand: async () => {
+          counterCalled = true;
           throw new Error("the table is not there yet");
         },
         interpret: asksFor("a small swallow tattoo on her upper chest"),
@@ -15244,7 +15325,10 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       { ...input, instruction: "give her a small swallow tattoo on her upper chest" },
     ));
 
-    expect(shut.reason).toBe("gate_ink_uncarried");
-    expect(shut.message).toMatch(/top covers her upper chest/);
+    /* The counter ran and threw — without this the arm below proves nothing. */
+    expect(counterCalled, "the thrower must actually be reached").toBe(true);
+    /* And she is still refused, free, with her own answer. */
+    expect(shut.reason).toBe("gate_ink_coverage_unread");
+    expect(shut.message.length).toBeGreaterThan(0);
   });
 });

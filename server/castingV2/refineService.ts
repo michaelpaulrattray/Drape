@@ -248,7 +248,6 @@ import { wordsRoadServes } from "./inkPlacement";
    and the alternatives every ink refusal names cannot answer differently. */
 import { wardrobeCoversSurface } from "./inkSurfaceCoverage";
 import { currentWardrobeLine, editedWardrobeLine } from "./wardrobeLine";
-import type { CastingPath } from "../../shared/castingPaths";
 import { mintInkDesignFromReference } from "./inkReferenceMint";
 import { listInkDesigns } from "../db/castingV2InkDesigns";
 import { listInkDeliveryCrops } from "../db/castingV2InkDeliveryCrops";
@@ -1865,7 +1864,6 @@ async function refineCandidateCounted(
     thing (condition (v), §3.1a).
   */
   const wardrobeNow = currentWardrobeLine({
-    rollPath: source.rollPath as CastingPath | null,
     rollLine: source.rollWardrobeLine,
     /* THE BRANCH'S OWN EDIT, off its composed delta (item 8, fable-1455 Q2).
        `undefined` on every branch that has never had a wardrobe edit, which is
@@ -1920,22 +1918,30 @@ async function refineCandidateCounted(
         AND WHAT THIS CAST IS WEARING — the second half of *can a tattoo go
         there* (item 7a).
 
-        Resolved through `currentWardrobeLine`, the one owner, off the two roll
-        columns the candidate load now joins. A roll cast before the paths has
-        both columns NULL, which resolves to `unpathed`, which the coverage owner
-        reads as the house crew tee — so every roll in production answers exactly
-        what it answered before this landed.
+        Resolved through `currentWardrobeLine`, the one owner, off the roll's
+        stored line that the candidate load joins.
 
-        The resolution rides WHOLE rather than flattened to a string, because
-        `incoherent` — a roll that claims a path and cannot say what it is
-        wearing — must not read as the house crew tee on a cast that might be
-        Basics, and a bare string cannot tell that from *cast before the paths*.
+        ⚠ **THREE SENTENCES STOOD HERE AND ALL THREE WERE FALSE — corrected in
+        #1577 slice 2 (the audit's item B3), which is the slice that made the
+        last of them false.**
 
-        The BRANCH'S edited line is not threaded yet and its absence is the
-        honest state rather than an omission: the WARDROBE subject that writes it
-        is the refine slice (item 8), and `currentWardrobeLine` already names
-        `editedLine` as the seam it will land on. Until then a wardrobe edit
-        cannot exist, so there is nothing for this to miss.
+        The first said *a roll cast before the paths has both columns NULL, which
+        resolves to `unpathed`, so every roll in production answers what it
+        answered before this landed*. **False since #1222**, which made the author
+        road record the brief's own stated outfit — a fresh roll's line is a LINE
+        on a null path, not `unpathed`, and it has been resolving that way for
+        every roll cast since.
+
+        The second said the resolution rides whole *because `incoherent` must not
+        read as the house crew tee*. **That kind no longer exists** (item B1). The
+        resolution still rides whole and the reason moved rather than dying: what
+        a bare string cannot say is whether the line is the BRIEF'S or an EDIT,
+        and the coverage owner turns on exactly that.
+
+        The third said *the branch's edited line is not threaded yet*. **It is**
+        — item 8 threaded it, and it is the `editedLine` argument immediately
+        below. A docblock describing a seam as empty while the seam beside it is
+        being filled is the shape law 7c exists for.
       */
       wardrobe: wardrobeNow,
       /*
@@ -2513,10 +2519,13 @@ async function refineCandidateCounted(
       below is what `kind === "line"` alone stopped meaning the day fresh
       rolls started carrying lines.
 
-      `incoherent` is not counted either, and that is deliberate rather than an
-      oversight: it carries a path and no line, so the surface it refused was
-      decided by a cast that cannot say what it is wearing. A demand row from
-      that is a count of our own broken state wearing a customer's name.
+      ⚠ **`incoherent` WAS A THIRD UNCOUNTED CASE AND THE KIND IS RETIRED**
+      (#1577 slice 2, item B1). It carried a path and no line, so the surface it
+      refused had been decided by a cast that could not say what it was wearing,
+      and a demand row from that would have been a count of our own broken state
+      wearing a customer's name. With the path no longer threaded into the
+      resolution the state is not expressible, so the guard below needs no arm
+      for it.
 
       # The two kinds are not one, for this table's own precedent
 
@@ -2535,7 +2544,13 @@ async function refineCandidateCounted(
       (parsed.refusal.reason === "gate_ink_uncarried"
         || parsed.refusal.reason === "gate_ink_coverage_unread")
       && wardrobeNow.kind === "line"
-      && wardrobeNow.source !== "brief"
+      /* ⚠ THIS READ `source !== "brief"` UNTIL #1577 SLICE 2, AND THE TWO ARE
+         NOW THE SAME TEST SAID TWO WAYS — the vocabulary lost `born`, so
+         `edited` is the only other member. It is written as the POSITIVE
+         because that is the sentence the paragraph above argues for (a line
+         THIS CUSTOMER chose), and because the negative form silently widens the
+         moment a member is added. */
+      && wardrobeNow.source === "edited"
     ) {
       await (dependencies.countInkCoverageDemand ?? recordInkFormDemand)({
         kind: parsed.refusal.reason === "gate_ink_uncarried"
@@ -2546,7 +2561,17 @@ async function refineCandidateCounted(
            `$type<InkPlacement>()`, which this is what keeps true. */
         placement: parsed.refusal.surface,
         outcome: "refused",
-        pathAtRefusal: wardrobeNow.path,
+        /* ⚠ `pathAtRefusal` IS NO LONGER PASSED, AND THE COLUMN STAYS — #1577
+           slice 2. `wardrobeNow.path` was its only source in the product and the
+           resolution no longer carries one, so the helper's own `?? null`
+           default is now the whole story. The column is kept rather than
+           dropped: it is on a written table, dropping one is a destructive
+           migration and his hand, and it is not this slice's. Read at the rows
+           on the way out — `casting_ink_form_demand` holds **zero rows in both
+           worlds**, so no history is being orphaned, and the two documents that
+           argued for the column (`db/castingV2InkFormDemand.ts`'s column-list
+           boundary and `shared/inkFormDemand.ts`'s correction to migration
+           0052) are stamped in this same commit. */
       }).catch(() => undefined);
     }
 
@@ -9780,7 +9805,6 @@ async function refineCandidateCounted(
         cannot drift; only the branch state they are asked about differs.
       */
       wardrobe: currentWardrobeLine({
-        rollPath: source.rollPath as CastingPath | null,
         rollLine: source.rollWardrobeLine,
         editedLine: editedWardrobeLine(claimedDeltas),
       }),

@@ -32,7 +32,6 @@
  * that only shows up on the day a write is a no-op, which is the worst day to
  * discover it.
  */
-import type { CastingPath } from "../../shared/castingPaths";
 import { createHash, randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, like, lt, ne, sql, type SQL } from "drizzle-orm";
 
@@ -210,18 +209,24 @@ export type SignableCandidate = {
     compiledBrief: unknown;
     createdAt: Date;
     /**
-     * THE TWO PATHS, arriving on a join this statement already makes (§3.1).
+     * WHAT THIS SHEET WAS BORN WEARING, arriving on a join this statement
+     * already makes (§3.1).
      *
-     * The design promised Sign would gain both *"with no new read"*, and this
-     * is that promise kept: the roll is already inner-joined here to re-anchor
-     * the candidate through its owner's own parents, so the two columns cost
-     * two more names in a `select` and nothing else.
+     * The design promised Sign would gain it *"with no new read"*, and this is
+     * that promise kept: the roll is already inner-joined here to re-anchor the
+     * candidate through its owner's own parents, so the column costs one more
+     * name in a `select` and nothing else.
      *
-     * NULL on both means the sheet was cast before the paths existed — which is
-     * every Cast signed to date, and the reason `currentWardrobeLine` answers
-     * `unpathed` rather than guessing.
+     * NULL means the sheet has no line recorded, and the reason
+     * `currentWardrobeLine` answers `unpathed` rather than guessing.
+     *
+     * ⚠ **`path` STOOD BESIDE IT AND IS NO LONGER SELECTED — #1577 slice 2
+     * (the ghost audit's item B1).** Sign threaded it into the resolution and
+     * the resolution stopped reading it, so this projection was the last place
+     * it was carried for no reader. **`casting_rolls.path` the COLUMN is
+     * untouched** (#203's ruling: it is the record of which rolls predate the
+     * author road) — what went is the SELECT of it into this read path.
      */
-    path: CastingPath | null;
     wardrobeLine: string | null;
   };
   session: { id: number; publicId: string };
@@ -274,7 +279,6 @@ export async function getSignableCandidate(
       styleProfile: castingRolls.styleProfile,
       rollCompiledBrief: castingRolls.compiledBrief,
       rollCreatedAt: castingRolls.createdAt,
-      rollPath: castingRolls.path,
       rollWardrobeLine: castingRolls.wardrobeLine,
       sessionId: castingSessions.id,
       sessionPublicId: castingSessions.publicId,
@@ -353,7 +357,6 @@ export async function getSignableCandidate(
       styleProfile: row.styleProfile,
       compiledBrief: row.rollCompiledBrief,
       createdAt: row.rollCreatedAt,
-      path: row.rollPath ?? null,
       wardrobeLine: row.rollWardrobeLine ?? null,
     },
     session: { id: row.sessionId, publicId: row.sessionPublicId },
