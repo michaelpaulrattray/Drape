@@ -173,3 +173,134 @@ export function describedNowSentence(description: string, pronouns: CastPronouns
   const ended = /[.!?]$/.test(body) ? body : `${body}.`;
   return `This is how ${subject} ${verb} now: ${ended} Everything else about ${pronouns.object} stays exactly as in Reference 1.`;
 }
+
+/* ======================================================================== */
+/*  THE FOLLOW BRIEF — #2576, his word 2026-10-16: "build it" (option 3).    */
+/* ======================================================================== */
+
+/**
+ * WHEN A FOLLOW IS PRESSED ON A VERSION THAT HAS EDITS, the brief the cousins
+ * are cast from is the roll's brief rewritten to carry the DIRECTION those edits
+ * took — server-side, in the same click, before the claim. The rewritten words
+ * become the new roll's recorded brief, so the new sheet shows exactly what the
+ * cousins were made from and the customer can change it for the next roll.
+ *
+ * His ruling it is bound by, verbatim: *"following a cast is meant to show
+ * cousins of that direction of cast not exact replicas of the same person you
+ * followed"*. So the split the prompt pins is the whole job: what a stylist
+ * would call the LOOK (hair, colour, style, augments, outfit direction, build)
+ * goes in; what belongs to ONE person (an exact scar, a single mole, a
+ * particular tattoo, eye colour the brief never asked for) stays out.
+ *
+ * Same engine, transport and failure contract as the description writer above:
+ * it NEVER throws, and every failure is a value the caller answers by sending
+ * the box's own words — a Follow must never fail, wait long, or cost
+ * differently over a rewrite.
+ */
+
+/**
+ * THE FOLLOW WAITS ON THIS ONE, SO IT IS SHORTER THAN THE REFINE'S 20 s. The
+ * description writer measured median 1.6 s, worst 3.16 s over 31 calls on the
+ * same engine; 8 s is two and a half times that worst case, and one retry
+ * absorbs a single transport blip. Worst case before the roll starts: 2 × 8 s.
+ * The queue wait sits outside both numbers, exactly as above.
+ */
+export const FOLLOW_BRIEF_TIMEOUT_MS = 8_000;
+export const FOLLOW_BRIEF_RETRIES = 1;
+
+export const FOLLOW_BRIEF_SYSTEM = [
+  "You rewrite a casting brief for a casting studio. The customer cast someone from this brief, edited that cast, and now wants more people like the edited version: new people in the same direction, cousins and never copies of one person.",
+  "You are given the brief and who the edited cast is now. Rewrite the brief so it naturally carries the direction their edits took.",
+  "",
+  "Rules:",
+  "- Keep the brief's own voice, register, person and roughly its length. It must read as if the customer had always written it this way, never as a list of edits.",
+  "- Never use the words now, changed, edited, updated, added, removed, new, no longer, instead or anymore, and never describe the edits themselves.",
+  "- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette.",
+  "- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact scar, a single mole or freckle, one particular tattoo or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.",
+  "- Where an edit contradicts the brief (dark hair in the brief, platinum blonde after the edit), keep only the edited direction.",
+  "- The edits only ever change the PERSON. Everything in the brief that is not the person (the setting, the light, the camera and framing, the picture style and the mood) is the look of the whole casting: keep every one of those phrases word for word.",
+  "- Keep everything else the brief says that the edits do not touch, in its own words where you can.",
+  "- Do not invent anything the brief and the edited cast do not say.",
+  "- Reply with the rewritten brief and nothing else.",
+].join("\n");
+
+export type FollowBriefInput = {
+  /** The followed face's own roll brief — the customer's words. */
+  brief: string;
+  /** That version's current description (#2565 slice 1), when it has one. */
+  description: string | null;
+  /** The version's asks in order — used only when there is no description. */
+  asks: readonly string[];
+};
+
+export type FollowBriefResult =
+  | { ok: true; brief: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
+  | { ok: false; reason: "no_engine" | "no_edits" | "failed" | "blank" | "too_long" | "edit_list" | "shrunk"; latencyMs: number };
+
+/**
+ * A REWRITE THAT LOST MOST OF THE BRIEF IS REFUSED (the reviewer's risk the
+ * relay verified on #2576): the failure that matters is a brief carrying scene
+ * and style — "a rain-soaked alley at night, low angle, cinematic" — coming back
+ * as a person-only paragraph, which loses the look of the whole family. The
+ * prompt forbids it; this is the backstop a model cannot rescue (law 3). Edits
+ * swap a phrase for a phrase, so a reply much shorter than the brief dropped
+ * something, and the box's own words are sent instead.
+ */
+export const FOLLOW_BRIEF_MIN_LENGTH_RATIO = 0.7;
+
+/** The user turn, built in one place so a test reads exactly what was asked. */
+export function followBriefUserTurn(input: FollowBriefInput): string {
+  const description = input.description?.trim() ?? "";
+  const after = description !== ""
+    ? `Who the edited cast is:\n${description}`
+    : `The edits they made to that cast, in order:\n${input.asks.map((ask) => `- ${ask.trim()}`).join("\n")}`;
+  return `The brief:\n${input.brief.trim()}\n\n${after}`;
+}
+
+export async function writeFollowBrief(
+  engine: TextEngine | null,
+  input: FollowBriefInput,
+  maxLength: number,
+): Promise<FollowBriefResult> {
+  const started = Date.now();
+  if (!engine) return { ok: false, reason: "no_engine", latencyMs: 0 };
+  const hasDescription = (input.description?.trim() ?? "") !== "";
+  if (!hasDescription && input.asks.filter((ask) => ask.trim() !== "").length === 0) {
+    return { ok: false, reason: "no_edits", latencyMs: 0 };
+  }
+  try {
+    const result = await engine.complete({
+      system: FOLLOW_BRIEF_SYSTEM,
+      user: followBriefUserTurn(input),
+      about: "follow.brief",
+      maxOutputTokens: 2000,
+      timeoutMs: FOLLOW_BRIEF_TIMEOUT_MS,
+      retries: FOLLOW_BRIEF_RETRIES,
+    });
+    const text = result.text.trim().replace(/^"([\s\S]*)"$/, "$1").trim();
+    const latencyMs = result.latencyMs ?? Date.now() - started;
+    if (text === "" || result.truncated) return { ok: false, reason: "blank", latencyMs };
+    if (text.length > maxLength) return { ok: false, reason: "too_long", latencyMs };
+    /* A one-paragraph brief that comes back as lines or bullets came back as an
+       edit list. A brief the customer wrote on several lines may keep them. */
+    if (!/\n/.test(input.brief.trim()) && looksLikeAnEditList(text)) {
+      return { ok: false, reason: "edit_list", latencyMs };
+    }
+    if (text.length < input.brief.trim().length * FOLLOW_BRIEF_MIN_LENGTH_RATIO) {
+      return { ok: false, reason: "shrunk", latencyMs };
+    }
+    return {
+      ok: true,
+      brief: text,
+      latencyMs,
+      ...(result.tokens ? { tokens: result.tokens } : {}),
+      model: result.provenance?.model ?? null,
+    };
+  } catch (error) {
+    log.warn(
+      { errorName: error instanceof Error ? error.name : typeof error },
+      "[currentDescription] the follow brief writer did not answer — this follow sends the box's words",
+    );
+    return { ok: false, reason: "failed", latencyMs: Date.now() - started };
+  }
+}

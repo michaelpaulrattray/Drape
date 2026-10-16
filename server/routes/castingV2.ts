@@ -114,6 +114,7 @@ import {
 /** `z.enum` wants a non-empty tuple; these three are derived key arrays. */
 const tuple = <T extends string>(values: readonly T[]) => values as unknown as [T, ...T[]];
 import { createRoll, cancelRoll } from "../castingV2/rollService";
+import { resolveFollowBrief } from "../castingV2/followBrief";
 import { CAST_VIEW_ANGLES } from "../../shared/boardTypes";
 import { retryCandidate } from "../castingV2/retryService";
 import { redoCastPackage } from "../castingV2/packageRedoService";
@@ -1406,11 +1407,24 @@ export const castingV2Router = router({
       requireCastingV2(ctx.user.id);
       assertClientRequestId(input.clientRequestId);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.generation);
+      /*
+        THE FOLLOW'S BRIEF CARRIES THE DIRECTION THE EDITS TOOK (#2576, his
+        word 2026-10-16: "build it"). Chosen here, BEFORE `createRoll` and so
+        before the claim — it only picks the string, and the price, the claim
+        and the refunds are `createRoll`'s exactly as before. On a never-edited
+        face, with the flag off, when the customer typed their own words, or
+        when the writer does not answer, it hands back `input.briefText` itself.
+      */
+      const { briefText } = await resolveFollowBrief({
+        userId: ctx.user.id,
+        candidatePublicId: input.candidateId,
+        boxText: input.briefText,
+      });
       const result = await createRoll({}, {
         userId: ctx.user.id,
         clientRequestId: input.clientRequestId,
         sessionPublicId: input.sessionId,
-        briefText: input.briefText,
+        briefText,
         unlock: input.unlock,
         overrides: input.overrides,
         // Re-anchored to this user's own candidates inside the roll

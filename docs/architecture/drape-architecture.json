@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 210
+      "moduleCount": 211
     },
     {
       "id": "domain:castingV2",
@@ -4149,6 +4149,12 @@
     {
       "id": "module:server/castingV2/familyClause.ts",
       "path": "server/castingV2/familyClause.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/followBrief.ts",
+      "path": "server/castingV2/followBrief.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -14475,6 +14481,10 @@
     {
       "id": "test:server/castingV2/followAnchor.test.ts",
       "path": "server/castingV2/followAnchor.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/followBrief.test.ts",
+      "path": "server/castingV2/followBrief.test.ts"
     },
     {
       "id": "test:server/castingV2/followDrift.test.ts",
@@ -29768,6 +29778,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/castingV2/castingV2Scope.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/castingV2/currentDescription.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/castingV2/interpreter.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/db/castingV2.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/logging/logger.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:server/providers/types.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/followBrief.ts",
+      "to": "module:shared/briefLength.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/hairColourFromReference.ts",
       "to": "module:server/castingV2/brandScrub.ts",
       "kind": "imports"
@@ -37590,6 +37635,11 @@
     {
       "from": "module:server/routes/castingV2.ts",
       "to": "module:server/castingV2/faceScanService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/routes/castingV2.ts",
+      "to": "module:server/castingV2/followBrief.ts",
       "kind": "imports"
     },
     {
