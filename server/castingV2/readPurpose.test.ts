@@ -78,16 +78,19 @@ describe("the read stage's purpose vocabulary", () => {
   */
   /*
     SIXTEEN since #2498: `voice.card` prices a cast's hidden voice card per
-    design whose sources changed.
+    design whose sources changed. SEVENTEEN since #2565: `refine.describe`
+    prices the one current description rewritten per paid refine. EIGHTEEN
+    since #2576: `follow.brief` prices the brief rewritten per Follow of an
+    edited version.
   */
   /*
-    SEVENTEEN since #2566: `discover` prices the face reader's open read of a
+    NINETEEN since #2566: `discover` prices the face reader's open read of a
     frame, which is the half of a first reading that does NOT go to the
     segmenter — the rung turns on what reading a cast costs us now against the
     fixed list it replaces, and that question cannot be asked of a bucket this
     shares with `describe`.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate`, `voice.card` and `discover`", () => {
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate`, `voice.card`, `refine.describe`, `follow.brief` and `discover`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -105,6 +108,8 @@ describe("the read stage's purpose vocabulary", () => {
       "reads",
       "persona.translate",
       "voice.card",
+      "refine.describe",
+      "follow.brief",
       "discover",
     ]);
   });

@@ -2790,3 +2790,89 @@ export function validateCastingVoiceEnvironment(input: {
   }
   return child;
 }
+
+/* ------------------------------------------- the current-description sub-flag */
+
+/**
+ * ONE CURRENT DESCRIPTION — `CASTING_CURRENT_DESCRIPTION_SCOPE` (#2565 slice 1,
+ * with #2545 folded in; his word 2026-10-16: *"okay cool im happy with the
+ * build"*, closing the #801 court on round 2's A4 arm).
+ *
+ * Whether a paid refine for this account carries ONE natural description of
+ * the cast as they are now — written by a text model from the previous version's
+ * description plus this edit, never an edit list (his words on #2545: *"it must
+ * read naturally into the description not as an edit list"*) — in place of the
+ * "Change only …" clause. And (#2576, his word 2026-10-16: *"build it"*) a
+ * Follow pressed on an EDITED version sends the face's roll brief rewritten to
+ * carry the direction the edits took, chosen before the claim
+ * (`followBrief.ts`); a never-edited face's Follow is untouched. A Follow
+ * child's first refine is seeded from its own roll's
+ * brief like any face without a description: his ruling, 2026-10-16, verbatim: *"following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed"*.
+ *
+ * Off, and absent means off: no description is written, none is read, and the
+ * refine prompt is byte-identical to today's.
+ *
+ * Its parent is `CASTING_V2_SCOPE` alone — a description is of a cast, and the
+ * repaint (the one render road since #1577 slice 4b) is every refine there is.
+ * It needs no key of its own: the writer rides the interpreter's OpenRouter
+ * engine and queue, and an absent engine is the writer's own fallback (today's
+ * prompt), never a refusal — so there is no transport to refuse boot over.
+ */
+export const CASTING_CURRENT_DESCRIPTION_SCOPE_ENV = "CASTING_CURRENT_DESCRIPTION_SCOPE";
+
+class CastingCurrentDescriptionScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_CURRENT_DESCRIPTION_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingCurrentDescriptionScopeConfigurationError";
+  }
+}
+
+class CastingCurrentDescriptionCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_CURRENT_DESCRIPTION_SCOPE_ENV} ${detail}`);
+    this.name = "CastingCurrentDescriptionCoverageError";
+  }
+}
+
+function parseCastingCurrentDescriptionScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingCurrentDescriptionScopeConfigurationError();
+  });
+}
+
+/** Captured at the point of use, the chain ANDed — its siblings' rule. */
+export function captureCastingCurrentDescriptionEnabled(userId: number): boolean {
+  const child = parseCastingCurrentDescriptionScope(process.env[CASTING_CURRENT_DESCRIPTION_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingCurrentDescriptionEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingCurrentDescriptionScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingCurrentDescriptionCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no cast to describe`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingCurrentDescriptionCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingCurrentDescriptionCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}

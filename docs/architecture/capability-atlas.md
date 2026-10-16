@@ -37,22 +37,23 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 Everything before the claim is FREE: ownership and state doors, the interpreter's walls and gates, and every cannot-say answer. The claim charges one refine at `CASTING_V2_REFINE_PRICE_CREDITS` — read it there and never here; this clause said "25 credits" until 2026-10-03, which P1 superseded — and dispatches; a failure after it refunds. The census drives with the claim door shut, so 'would-render' means the ask passed every free door and reached the money.
 
-_Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE`
+_Entrances:_ `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_V2_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_CURRENT_DESCRIPTION_SCOPE`
 
 _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1254 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1272 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4930<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4413 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1261 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1248<br>server/castingV2/refineService.ts:2604 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3690 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:2987 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2678 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1262 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1280 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:4938<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4421 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1269 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1256<br>server/castingV2/refineService.ts:2612 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3698 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:2995 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2686 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
+- ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). A FOLLOW OF AN EDITED VERSION carries the direction the edits took (#2576, his word 2026-10-16: 'build it', which supersedes 'follow doesnt need a description' for this one thing): in the `follow` procedure, BEFORE `createRoll` and so before the claim, `resolveFollowBrief` (followBrief.ts) has the same engine rewrite the face's roll brief from that version's description or ask chain (`writeFollowBrief`, purpose `follow.brief`, 8 s and one retry) — direction-level changes in (hair, style, augments, outfit direction, build), one-person specifics out (an exact scar, a single mole, eye colour the brief never stated), and everything that is not the person (setting, light, camera and framing, style, mood) kept word for word, with a reply shorter than 70% of the brief refused as a collapse (`FOLLOW_BRIEF_MIN_LENGTH_RATIO`) — and the rewritten words are the roll's recorded brief, so the new sheet shows them. It is NOT a door either: a never-edited face, the flag off, words the customer typed that differ from the face's brief, or a writer that does not answer all send the box's own string, and price, claim and refunds are createRoll's unchanged. A Follow child's FIRST description is seeded from its own roll's brief like any face without one: 'following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed'.
 - `busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.
 - `refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.
 - Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.
@@ -68,20 +69,20 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:634<br>server/castingV2/refineInterpreter.ts:868<br>(+1) | 4 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:643<br>server/castingV2/refineInterpreter.ts:868<br>(+1) | 4 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 7 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:633<br>server/castingV2/refineInterpreter.ts:882<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:1597<br>(+2) | 6 test(s) | guard.likeness |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:642<br>server/castingV2/refineInterpreter.ts:882<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:1614<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:539<br>server/castingV2/refineInterpreter.ts:1615<br>(+1) | 6 test(s) | guard.content |
-| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:514<br>server/castingV2/refineDelta.ts:1607<br>(+2) | 9 test(s) | background.white |
+| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:514<br>server/castingV2/refineDelta.ts:1624<br>(+2) | 9 test(s) | background.white |
 | `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:538<br>server/castingV2/refineInterpreter.ts:1702<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:550<br>server/castingV2/refineDelta.ts:1330<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:570<br>server/castingV2/refineDelta.ts:570<br>(+3) | 2 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
-| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:577<br>server/castingV2/refineDelta.ts:577<br>(+4) | 3 test(s) | ink.words.chest |
-| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:596<br>server/castingV2/refineDelta.ts:596<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:604<br>server/castingV2/refineDelta.ts:604<br>(+3) | 3 test(s) | ink.words.chest.basics |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1342<br>server/castingV2/refineService.ts:1380 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4909 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:550<br>server/castingV2/refineDelta.ts:1339<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:579<br>server/castingV2/refineDelta.ts:579<br>(+3) | 3 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
+| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:586<br>server/castingV2/refineDelta.ts:586<br>(+4) | 3 test(s) | ink.words.chest |
+| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:605<br>server/castingV2/refineDelta.ts:605<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:613<br>server/castingV2/refineDelta.ts:613<br>(+3) | 3 test(s) | ink.words.chest.basics |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1350<br>server/castingV2/refineService.ts:1388 | 1 test(s) | guard.scope.unknown |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4917 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
@@ -106,13 +107,13 @@ _Called as:_ `castingV2.refine`
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:408 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:272 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:248 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3458 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
-| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3030 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3439 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
-| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3216<br>server/castingV2/refineService.ts:3233 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3534 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4383 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2632 | 1 test(s) | guard.undo |
+| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3466 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
+| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3038 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3447 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
+| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3224<br>server/castingV2/refineService.ts:3241 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3542 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4391 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2640 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
 - free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.
@@ -447,7 +448,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
 | empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, readerOutageRefusal.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
-| gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts |
+| gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts, refineRefusals.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_unkeepable | interpreter-refusal |  | refineRefusals.test.ts |
 | history_predates_undo | service-refusal |  | refineService.test.ts |
@@ -498,9 +499,9 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
-## Flags (20)
+## Flags (21)
 
-`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_FACE_DISCOVERY_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
+`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_CURRENT_DESCRIPTION_SCOPE` · `CASTING_FACE_DISCOVERY_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
 
 ## Findings (55)
 

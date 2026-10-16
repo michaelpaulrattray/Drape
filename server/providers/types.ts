@@ -662,6 +662,21 @@ export type ReadPurpose =
    */
   | "voice.card"
   /**
+   * ONE CURRENT DESCRIPTION REWRITTEN FOR A PAID REFINE — card #2565 slice 1.
+   * Its own bucket on the same argument: it prices a paragraph per EDIT, paid
+   * by the house, and "what does the description writer cost per refine" is a
+   * question clause 3 of the disappearing-technology law obliges an answer to.
+   */
+  | "refine.describe"
+  /**
+   * ONE FOLLOW BRIEF REWRITTEN AT THE PRESS OF FOLLOW ON AN EDITED VERSION —
+   * card #2576. Its own bucket rather than `refine.describe`: that one prices a
+   * paragraph per EDIT and this one per FOLLOW, and folded together neither
+   * "what does a refine's description cost" nor "what does a follow's rewrite
+   * cost" could be said out loud (clause 3).
+   */
+  | "follow.brief"
+  /**
    * ONE OPEN READ OF A FRAME, NAMING WHAT IS ACTUALLY ON A CHARACTER — the face
    * reader's discovery step (#2566, the design approved on #2532).
    *
@@ -698,6 +713,8 @@ export const READ_PURPOSES = Object.freeze([
   "reads",
   "persona.translate",
   "voice.card",
+  "refine.describe",
+  "follow.brief",
   "discover",
 ] as const) satisfies readonly ReadPurpose[];
 

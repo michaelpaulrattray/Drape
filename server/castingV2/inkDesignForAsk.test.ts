@@ -146,7 +146,7 @@ describe("the side she said narrows, and the side she did not say does not", () 
       thing missing is the word she never typed.
     */
     expect(answer.kind).toBe("sideUnstated");
-    expect(answer.kind === "sideUnstated" && answer.say).toContain("her left or her right");
+    expect(answer.kind === "sideUnstated" && answer.say).toContain("their left or their right");
   });
 });
 
@@ -271,12 +271,12 @@ describe("something else already lives at the place she named", () => {
     if (answer.kind !== "conflict") return expect.unreachable("two residents must conflict");
     expect(answer.count).toBe(2);
     expect(answer.say).toContain("2 designs");
-    expect(answer.say).toContain("her neck");
+    expect(answer.say).toContain("their neck");
     /* The per-design delete is a move she can make right now rather than a wall
        being polite about itself. */
     expect(answer.say).toContain("Remove the one you");
     /* And the second move: somewhere she has room. */
-    expect(answer.say).toContain("somewhere she");
+    expect(answer.say).toContain("somewhere they");
     expect(answer.say).toContain("Nothing was charged.");
     expect(JSON.stringify(answer)).not.toContain("d-a");
     expect(JSON.stringify(answer)).not.toContain("d-b");
@@ -369,9 +369,9 @@ describe("nothing is at the place she named, so the picture becomes the design",
     const answer = inkDesignForAsk([], { placement: "sleeve", side: "left" }, SOURCE);
     expect(answer.kind).toBe("placementUnserved");
     const said = answer.kind === "placementUnserved" ? answer.say : "";
-    expect(said).toContain("her neck");
-    expect(said).toContain("her upper arm");
-    expect(said).toContain("her upper chest");
+    expect(said).toContain("their neck");
+    expect(said).toContain("their upper arm");
+    expect(said).toContain("their upper chest");
     expect(said).toContain("sleeve");
     expect(said).toContain("Nothing was charged.");
   });
@@ -388,7 +388,7 @@ describe("nothing is at the place she named, so the picture becomes the design",
     const answer = inkDesignForAsk([], { placement: "upperArm", side: null }, SOURCE);
     expect(answer.kind).toBe("sideUnstated");
     const said = answer.kind === "sideUnstated" ? answer.say : "";
-    expect(said).toContain("her left or her right");
+    expect(said).toContain("their left or their right");
     expect(said).toContain("Nothing was charged.");
   });
 
@@ -537,7 +537,7 @@ describe("the spoken-back place never repeats her side", () => {
     composes "her right left sleeve", which is a CONTRADICTION in her own ask
     rather than a repeat. That is left standing deliberately — see the sweep.
   */
-  const doubled = /\bher\s+(left|right)\s+\1\b/i;
+  const doubled = /\b(?:her|their)\s+(left|right)\s+\1\b/i;
 
   it("says an open phrase that already carries the side ONCE", () => {
     const answer = inkDesignForAsk(
@@ -547,7 +547,7 @@ describe("the spoken-back place never repeats her side", () => {
     );
     expect(answer.kind).toBe("placementUnserved");
     const said = "say" in answer ? answer.say : "";
-    expect(said).toContain("her left sleeve");
+    expect(said).toContain("their left sleeve");
     expect(said, `the sentence repeats her side word: ${said}`).not.toMatch(doubled);
   });
 
@@ -561,7 +561,7 @@ describe("the spoken-back place never repeats her side", () => {
       { digest: "a".repeat(64) },
     );
     const said = "say" in answer ? answer.say : "";
-    if (said) expect(said).toContain("her right upper arm");
+    if (said) expect(said).toContain("their right upper arm");
   });
 
   it("sweeps every sentence this module can compose, at every address", () => {

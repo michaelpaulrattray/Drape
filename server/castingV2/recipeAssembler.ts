@@ -97,6 +97,7 @@ import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
+import { describedNowSentence } from "./currentDescription";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -293,6 +294,18 @@ export type AssembleInput = {
    * honest cannot see it, which is the point rather than an omission.
    */
   presentation?: readonly PresentationClause[];
+  /**
+   * WHO THEY ARE NOW, IN ONE NATURAL PARAGRAPH (#2565 slice 1).
+   *
+   * Present only when `CASTING_CURRENT_DESCRIPTION_SCOPE` admits the account
+   * and the writer answered. It REPLACES the change sentence in the prompt —
+   * round 2 of the #801 court measured A4 (the master plus one current
+   * description) as the road that held to edit 6 — and changes nothing else:
+   * the asks are still built, checked and recorded, because the verification
+   * and the library read them, and the prompt is the only thing that moves.
+   * Absent, the prompt is byte-identical to today's.
+   */
+  currentDescription?: string;
   /**
    * WHAT THIS BRANCH IS WEARING — the resolution from the one owner
    * (`currentWardrobeLine`), item 8 §7.1 / §3.3's *"the refine recipe"* row.
@@ -2130,7 +2143,16 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
     withheld,
-    prompt: [...sentences, ...standing.map((entry) => entry.sentence), ask, inkWords]
+    prompt: [
+      ...sentences,
+      ...standing.map((entry) => entry.sentence),
+      /* The description stands where the change sentence stood — never beside
+         it, which would be two authors for one edit. */
+      input.currentDescription !== undefined && input.currentDescription.trim() !== ""
+        ? describedNowSentence(input.currentDescription, pronouns)
+        : ask,
+      inkWords,
+    ]
       .filter((line) => line !== "")
       .join(" "),
   };

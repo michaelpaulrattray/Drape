@@ -75,6 +75,17 @@ export const UNKNOWN_PRONOUNS: CastPronouns = pronounsForSex(null);
 const has = (of: CastPronouns): string => (of.plural ? "have" : "has");
 
 /**
+ * THE PLACES A REFUSAL CARRIES, narrowed once (#2562).
+ *
+ * FOUR members carry `alternatives` now and both readers of the field ask for
+ * it the same way, through one expression rather than two that could drift —
+ * the clause below, and `gate_ink_document`'s whole sentence. An absent list is
+ * empty, which is a real answer both readers have a real sentence for.
+ */
+const alternativesIn = (refusal: RefineRefusal): readonly string[] =>
+  ("alternatives" in refusal ? refusal.alternatives : []);
+
+/**
  * WHERE ELSE A TATTOO WOULD ACTUALLY WORK ON THIS CAST, as a clause.
  *
  * ⚠ The list is the REFUSAL'S, never this file's. `servedAndBare` derives it
@@ -91,7 +102,7 @@ const has = (of: CastPronouns): string => (of.plural ? "have" : "has");
  * anyway is the dead-end-offer class D-180 forbids.
  */
 const elsewhereClause = (refusal: RefineRefusal, of: CastPronouns): string => {
-  const places = "alternatives" in refusal ? refusal.alternatives : [];
+  const places = alternativesIn(refusal);
   if (places.length === 0) {
     return `There's nowhere else on ${of.object} I can put one from a description right now`;
   }
@@ -164,10 +175,19 @@ export const REFINE_REFUSALS = {
     report: "wall",
   },
   gate_ink_document: {
-    /* The places the road serves THIS account, off the refusal's own bit —
-       census 4(c): this sentence said "a neck tattoo" to accounts whose upper
-       arm was open too. */
-    say: () => inkNeedsDocumentMessage(),
+    /*
+      The places the road serves THIS account, off the refusal's own bit —
+      census 4(c): this sentence said "a neck tattoo" to accounts whose upper
+      arm was open too.
+
+      ⚠ **AND WHAT THIS CAST'S OUTFIT LEAVES SHOWING, which it did not ask
+      until #2562** — so it named an upper chest to a cast in the house crew
+      tee, and `gate_ink_uncarried` refused that same chest one ask later. The
+      list is the REFUSAL'S, exactly as it is for the three gates below: one
+      derivation (`servedAndBare`) where both facts are in hand, two readers,
+      and no second answer composed in the copy layer.
+    */
+    say: (refusal) => inkNeedsDocumentMessage(alternativesIn(refusal)),
     charge: "free",
     report: "gate",
   },

@@ -12053,6 +12053,101 @@ describe("the picture she attached becomes the carrier that rides", () => {
     kept. When that road opens, this arm should go red — deliberately — and be
     rewritten to whatever the new answer is.
   */
+  /*
+    THE DETERMINER, THROUGH THE REAL DOOR (#2572) — and this arm drives the REAL
+    `resolveInkReferenceTake` with a fake transport rather than stubbing the
+    take, because the defect was inside the take's own resolver and a stubbed
+    take cannot see it. Everything from the model's reply onward is production
+    code: `readInkReferenceTake`, `resolveInkPlacement`, `inkAskAddressOf`, and
+    this road's pre-claim door.
+
+    The failure it closes was measured through the real entrance on the #2565
+    court: *"a small sparrow tattoo on the side of the neck"* was asked WHERE,
+    answered *"their neck"*, and the answer was not understood — so an ordinary
+    tattoo ask could not be completed in words at all. `their` is also the word
+    this product uses for a person by standing order, and the vocabulary's noun
+    hard-codes `her`.
+  */
+  const sayingTake = (placement: string) => async (args: { instruction: string; lane?: "reference" | "words" }) =>
+    resolveInkReferenceTake({
+      ...args,
+      engine: { complete: async () => ({ text: JSON.stringify({ placement, side: null }) }) } as never,
+    });
+
+  it("RENDERS a neck tattoo placed as \"their neck\" — the court's own answer, read (#2572)", async () => {
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on their neck" } },
+      }),
+      inkTake: sayingTake("their neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on their neck" });
+
+    expect(result.kind, "the answer to the where question was not understood").toBe("rendered");
+    expect(painted.length).toBeGreaterThan(0);
+  });
+
+  it("RENDERS \"on the side of the neck\" in ONE step, the customer's words in the render (#2572, option A)", async () => {
+    /* His word: *"if someone says side of the next the image engine can
+       reliably decide that itself"*. So the address is the neck and the
+       qualifier is not flattened out of what the engine is asked for. */
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on the side of the neck" } },
+      }),
+      inkTake: sayingTake("side of the neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on the side of the neck" });
+
+    expect(result.kind, "the side of the neck was asked WHERE instead of placed").toBe("rendered");
+    expect(painted.length).toBeGreaterThan(0);
+    expect(painted.some((call) => call.prompt.includes("side of the neck")),
+      "the customer's own qualifier never reached the render").toBe(true);
+  });
+
+  it("CONTROL — the BACK of the neck still answers before the claim, nothing spent (#2572)", async () => {
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on the back of the neck" } },
+      }),
+      inkTake: sayingTake("back of the neck"),
+    }), { ...input, instruction: "a small sparrow tattoo on the back of the neck" });
+
+    expect(result.kind).toBe("selected");
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges).toHaveLength(0);
+  });
+
+  it("CONTROL — an unmeasured surface still answers before the claim, nothing spent", async () => {
+    /* The determiner strip must not have opened the road to a place the
+       vocabulary never measured: `sleeve` is the header's own example, and the
+       answer is still free and pre-claim. */
+    painted.length = 0;
+    ledger.charges.length = 0;
+    const result = await refineCandidate(wordsRoad({
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: false,
+        delta: { free: { ink: "a small sparrow tattoo on their sleeve" } },
+      }),
+      inkTake: sayingTake("their sleeve"),
+    }), { ...input, instruction: "a small sparrow tattoo on their sleeve" });
+
+    expect(result.kind).toBe("selected");
+    expect(painted).toHaveLength(0);
+    expect(ledger.charges, "it is answered above the claim, so there is nothing to give back").toHaveLength(0);
+  });
+
   it("⚠ REFUSES a face ask with the WRONG sentence — the carve-out is a dead promise", async () => {
     painted.length = 0;
     ledger.charges.length = 0;
@@ -12207,7 +12302,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     /* The place she named is in front of her, which is what makes the take a
        live control rather than a dark one — and the answer names what she can
        DO about it rather than what we cannot do. */
-    expect(result.note).toContain("her left sleeve");
+    expect(result.note).toContain("their left sleeve");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12485,8 +12580,8 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(painted, "a resident design was painted for a picture it did not come from").toHaveLength(0);
     expect(inkMinted, "a picture was cut for an ask that was refused").toHaveLength(0);
-    expect(result.note).toContain("her left sleeve is more than I can place yet");
-    expect(result.note).toContain("her upper arm");
+    expect(result.note).toContain("their left sleeve is more than I can place yet");
+    expect(result.note).toContain("their upper arm");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12581,7 +12676,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(result.kind).toBe("asked");
     expect(result.reask?.kind).toBe("replace-design");
     /* THE RESIDENT IS NAMED IN THE SENTENCE — the offer's whole content. */
-    expect(result.reask?.question).toContain("Her left upper arm already has a design");
+    expect(result.reask?.question).toContain("Their left upper arm already has a design");
     expect(result.reask?.question).toContain("Nothing has been charged.");
     expect(result.reask?.options.map((one) => one.label))
       .toEqual(["Yes — replace it", "No, keep the one she has"]);
@@ -12737,7 +12832,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(painted).toHaveLength(0);
     expect(ledger.charges).toHaveLength(0);
     expect(result.kind).toBe("selected");
-    expect(result.note).toContain("2 designs for her left upper arm");
+    expect(result.note).toContain("2 designs for their left upper arm");
     expect(result.note).toContain("Nothing was charged.");
   });
 
@@ -12921,7 +13016,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
         .toBe(1);
       expect(result.kind, "the already-true door swallowed the second design").toBe("asked");
       expect(result.reask?.kind).toBe("replace-design");
-      expect(result.reask?.question).toContain("Her left upper arm already has a design");
+      expect(result.reask?.question).toContain("Their left upper arm already has a design");
       /* Free, and both rows standing, exactly as the offer's own arms have it. */
       expect(ledger.charges).toHaveLength(0);
       expect(painted).toHaveLength(0);
@@ -13518,9 +13613,9 @@ describe("the picture she attached becomes the carrier that rides", () => {
 
     expect(painted).toHaveLength(0);
     expect(inkMinted, "an unservable placement was cut anyway").toHaveLength(0);
-    expect(result.note).toContain("her neck");
-    expect(result.note).toContain("her upper arm");
-    expect(result.note).toContain("her upper chest");
+    expect(result.note).toContain("their neck");
+    expect(result.note).toContain("their upper arm");
+    expect(result.note).toContain("their upper chest");
     expect(result.note).toContain("sleeve");
     expect(result.note).toContain("Nothing was charged.");
   });
@@ -13773,7 +13868,7 @@ describe("the picture she attached becomes the carrier that rides", () => {
     });
 
     expect(painted).toHaveLength(0);
-    expect(result.note).toContain("couldn't tell where on her you meant");
+    expect(result.note).toContain("couldn't tell where on them you meant");
   });
 
   /*
@@ -15315,3 +15410,207 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
     expect(shut.message.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * ONE CURRENT DESCRIPTION ON THE PAID PATH (#2565 slice 1, #2545 folded in) —
+ * asserted at the WIRE, on the prompt the repaint engine actually received, and
+ * on the landing statement's own input (working law 5).
+ *
+ * His word, 2026-10-16: *"okay cool im happy with the build"*, on round 2's A4
+ * arm (the pristine master plus one natural description of who they are now).
+ * The arms that matter most are the FALLBACKS: a writer that throws must leave
+ * the money and the render exactly as today's, driven directly rather than
+ * through a model that usually behaves (law 3).
+ */
+describe("one current description rides the paid refine", () => {
+  const painted: string[] = [];
+  const asked: Array<{ about?: string; user: string }> = [];
+  let writer: "answers" | "throws" = "answers";
+  const DESCRIPTION = "A woman in her thirties with long dark hair, worn down over her shoulders.";
+  const describing = {
+    repaintEngine: () => ({
+      id: "test:repaint",
+      edit: async (request: { prompt: string; width: number; height: number }) => {
+        painted.push(request.prompt);
+        return {
+          bytes: Buffer.from("repainted"),
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 10,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+        };
+      },
+    }),
+    readBytes: async (key: string) => (key === "casting-v2/candidates/abc.png"
+      ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
+      : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" }),
+    referenceLibraryEnabled: () => true,
+    interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
+    readBaseWorn: async () => ({
+      compiledBrief: null,
+      lockContract: null,
+      briefText: "A woman in her thirties with long dark hair.",
+    }),
+    describeEngine: () => ({
+      id: "test:describe",
+      complete: async (request: { about?: string; user: string }) => {
+        asked.push(request);
+        if (writer === "throws") throw new Error("the writer fell over");
+        return {
+          text: DESCRIPTION,
+          latencyMs: 5,
+          provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+        };
+      },
+    }),
+  };
+  const ask = { ...input, instruction: "wear her hair down" };
+
+  beforeEach(() => {
+    painted.length = 0;
+    asked.length = 0;
+    writer = "answers";
+    process.env.CASTING_V2_SCOPE = "users:1";
+    process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
+  });
+  afterEach(() => {
+    delete process.env.CASTING_V2_SCOPE;
+    delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+  });
+
+  it("sends the description IN PLACE OF the change clause, and files it on the version that landed", async () => {
+    await refineCandidate(describing as never, ask);
+
+    expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
+    for (const prompt of painted) {
+      expect(prompt).toContain(`This is how she looks now: ${DESCRIPTION} Everything else about her stays exactly as in Reference 1.`);
+      /* In place of, never beside: two authors for one edit is the defect. */
+      expect(prompt).not.toContain("Change only");
+      expect(prompt.startsWith("Reference 1 is the photograph of this person")).toBe(true);
+    }
+    expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
+    /* Seeded from the brief — this version's predecessor is the original. */
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.about).toBe("refine.describe");
+    expect(asked[0]!.user).toContain("A woman in her thirties with long dark hair.");
+    expect(asked[0]!.user).toContain("wear her hair down");
+  });
+
+  it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {
+    await refineCandidate(describing as never, ask);
+    const chargedWhenAnswering = ledger.charges.map((one) => one.amount);
+    ledger.charges.length = 0;
+    painted.length = 0;
+    landedVariant = null;
+
+    writer = "throws";
+    await refineCandidate(describing as never, { ...ask, clientRequestId: "33333333-3333-4333-8333-333333333333" });
+
+    expect(asked.length, "the writer was asked and failed").toBe(2);
+    expect(painted.length).toBeGreaterThan(0);
+    for (const prompt of painted) {
+      expect(prompt).toContain("Change only");
+      expect(prompt).not.toContain("This is how");
+    }
+    expect(landedVariant, "the version still landed").not.toBeNull();
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+    expect(ledger.charges.map((one) => one.amount), "the same charge either way").toEqual(chargedWhenAnswering);
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
+  /*
+    THE FLAG-OFF PROMPT IS PINNED AT ITS BYTES, NOT DESCRIBED — the relay's
+    tightening on PR #2571, which read the old arm's `toContain` /
+    `not.toContain` for what it is: a pair of claims about two substrings, which
+    cannot see a space, a reorder, or a clause that moved.
+
+    ⚠ THE GOLDEN IS NOT THIS BRANCH'S OUTPUT WRITTEN DOWN. It was captured from
+    the PRE-#2565 TREE (`67fed3a5f`, the commit this PR is cut from) by driving
+    this same fixture there, and the two were compared as bytes: one prompt
+    each, sha256 `95d303c48830ab94…` both sides, identical. Pinning a branch's
+    own output would prove only that the branch is self-consistent, which is
+    what every green golden says and is not the question the flag asks.
+  */
+  const TODAYS_PROMPT = "Reference 1 is the photograph of this person — reproduce her exactly: "
+    + "same face, same pose, same lighting, same framing, same background. "
+    + "Change only her hair: hair down.";
+
+  it("CONTROL — with the flag off nothing is asked and the prompt is today's, byte for byte", async () => {
+    delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+    await refineCandidate(describing as never, ask);
+    expect(asked).toHaveLength(0);
+    expect(painted).toEqual([TODAYS_PROMPT]);
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+  });
+
+  it("CONTROL — a writer that fails lands on that SAME prompt, byte for byte", async () => {
+    /* The failure fallback and the flag-off road must be one road: two ways of
+       saying "today's prompt" that drift apart is the defect this pins. */
+    writer = "throws";
+    await refineCandidate(describing as never, ask);
+    expect(asked, "the writer was asked and failed").toHaveLength(1);
+    expect(painted).toEqual([TODAYS_PROMPT]);
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+  });
+
+  it("reads the PREVIOUS version's description back as the memory, not the brief", async () => {
+    variantRows = [{
+      id: 801,
+      publicId: "variant-1",
+      imageKey: "casting-v2/variants/one.png",
+      instructions: ["put her in a dark canvas work jacket"],
+      stepDeltas: [{ free: { wardrobe: "a dark canvas work jacket" } }],
+      deltas: { free: { wardrobe: "a dark canvas work jacket" } },
+      internalPrompt: {},
+      status: "ready",
+      currentDescription: "A woman in her thirties with long dark hair, in a dark canvas work jacket.",
+    }];
+    rollWardrobeLine = HOUSE_WARDROBE_LINE;
+    candidateRow.selectedVariantPublicId = "variant-1";
+    await refineCandidate(describing as never, ask);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toContain("How they looked before this change:\nA woman in her thirties with long dark hair, in a dark canvas work jacket.");
+    expect(asked[0]!.user).not.toContain("How they were first described");
+  });
+
+  /*
+    THE FIRST EDIT OF A FOLLOW CHILD — his ruling, 2026-10-16, verbatim:
+    *"following a cast is meant to show cousins of that direction of cast not
+    exact replicas of the same person you followed"*.
+
+    The chain he rules on: the parent's eyes are refined green, the parent is
+    Followed, and a child's hair is refined. The child is a cousin rolled from
+    its own brief, so its first description is seeded from THAT brief and the
+    parent's green eyes are not carried onto it. The dev chain on PR #2571
+    measured the other seed turning a brown-eyed child's eyes green on a hair
+    edit nobody asked for.
+
+    `readFollowedSeed` below is the road a regression would take — the lineage
+    read that offered the followed version's description, retired in this card —
+    supplied here so that re-adding it reddens this arm rather than passing on a
+    fixture with no parent to leak.
+  */
+  it("eyes refined, Followed, then a child's hair refined — the child's first description comes from its OWN brief and does not turn its eyes green", async () => {
+    const CHILD_BRIEF = "A street casting, mid 20s.";
+    const PARENT_DESCRIPTION = "A street casting, mid 20s, with bright green eyes.";
+    const child = {
+      ...describing,
+      readBaseWorn: async () => ({ compiledBrief: null, lockContract: null, briefText: CHILD_BRIEF }),
+      readFollowedSeed: async () => ({
+        briefText: CHILD_BRIEF, parentDescription: PARENT_DESCRIPTION, parentBriefText: CHILD_BRIEF,
+      }),
+    };
+    await refineCandidate(child as never, ask);
+
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.user).toBe(`How they were first described:
+${CHILD_BRIEF}
+
+The change:
+wear her hair down`);
+    expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
+  });
+
+});
+

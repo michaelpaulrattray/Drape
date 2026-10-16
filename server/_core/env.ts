@@ -54,6 +54,8 @@ import {
   validateCastingCreationRecordEnvironment,
   CASTING_VOICE_SCOPE_ENV,
   validateCastingVoiceEnvironment,
+  CASTING_CURRENT_DESCRIPTION_SCOPE_ENV,
+  validateCastingCurrentDescriptionEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -508,6 +510,15 @@ export function validateEnv(): void {
   */
   validateCastingRetryEnvironment({
     scope: process.env[CASTING_RETRY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    ONE CURRENT DESCRIPTION (#2565 slice 1). Parent is the CASTING scope alone:
+    a description is of a cast. No transport to refuse over — a writer that
+    cannot answer falls back to today's prompt, by design.
+  */
+  validateCastingCurrentDescriptionEnvironment({
+    scope: process.env[CASTING_CURRENT_DESCRIPTION_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

@@ -180,6 +180,90 @@ function withoutStatedSide(normalised: string, statedSide: InkSide | null): stri
   return stripped === normalised || stripped === "" ? null : stripped;
 }
 
+/**
+ * HER DETERMINER, OUT OF THE WAY — *"their neck"* is the neck (#2572).
+ *
+ * The vocabulary's `noun` hard-codes ONE possessive (*"her neck"*), and
+ * {@link measuredFor} matched the three spellings whole — so the neck was
+ * recognised as *"neck"* and *"her neck"* and filed as an OPEN PHANTOM as
+ * *"the neck"*, *"his neck"*, *"their neck"* or *"my neck"*. Measured over 25
+ * phrasings before this was written: **13 of them** read `open` here while
+ * `classifyInkPlacement` — the other reader of the same question, one module
+ * over — called the same words `in_frame` on the measured surface. Two readers
+ * of one question disagreeing is working law 4, and the one that gates the
+ * money was the strict one.
+ *
+ * ⚠ **AND THE PRODUCT'S OWN WORD FOR A PERSON IS THE ONE IT COULD NOT READ.**
+ * The standing order is that nothing here is gender-specific about anybody, so
+ * *"their neck"* is the phrasing this product would use itself — and it was the
+ * phrasing that died. The founder's own court on #2565 met it: the ask was
+ * asked WHERE, answered *"their neck"*, and the answer was not understood.
+ *
+ * # WHY THIS IS NOT THE INFERENCE THE HEADER OUTLAWS
+ *
+ * That line — *strip "the" / "my" / "her" ← inference. Never.* — is about the
+ * NORMALISER, and it stays true of it: the normaliser is untouched, so an OPEN
+ * phrase still leaves this module exactly as the customer typed it, which is
+ * the tally's evidence and is never edited. This is a second MATCH ATTEMPT that
+ * can only ever produce `measured`, which is {@link withoutStatedSide}'s own
+ * shape and its ratified precedent (fable-1163 §3).
+ *
+ * The header's reason for the rule is the tally: *"a demand number that had
+ * already had a judgement applied to it by a machine"*. This runs the other
+ * way. A determiner names no surface, so `their neck` filed as an open phrase
+ * was a FALSE demand row — unmet demand recorded for a surface the product has
+ * measured and can serve. Recognising it makes the tally more honest, not less.
+ *
+ * # THE LINE IT STILL WILL NOT CROSS
+ *
+ * A determiner only, as a WHOLE WORD at the FRONT. The spatial qualifiers the
+ * founder ruled on (*"side of"*, *"front of"*) are a separate, named attempt —
+ * {@link withoutRegionQualifier} — and not a widening of this strip.
+ */
+function withoutDeterminer(normalised: string): string | null {
+  const stripped = normalised.replace(/^(?:the|a|an|her|his|their|its|my|our|your)\s+/, "");
+  return stripped === normalised || stripped === "" ? null : stripped;
+}
+
+/**
+ * "SIDE OF" AND "FRONT OF" A MEASURED SURFACE ARE THAT SURFACE — the founder's
+ * ruling on #2572, option A, verbatim:
+ *
+ * > *"A less friction if someone says side of the next the image engine can
+ * > reliably decide that itself if no side m,iddle or anything is decided thats
+ * > the users fault for not being specific enough"*
+ *
+ * So *"a small sparrow tattoo on the side of the neck"* lands on the neck in one
+ * step, with no *where?* question. The qualifier is not thrown away: the
+ * customer's own sentence is what the render is asked for, and only the
+ * ADDRESS — which measured surface, for the slot and the crop — is the neck.
+ *
+ * # NARROW ON PURPOSE, AND NEVER WIDER THAN THE INK GATE
+ *
+ * Only `side of` and `front of`, optionally led by `left`/`right`, at the FRONT
+ * of the phrase — the qualifiers the ruling named — and what follows must be a
+ * measured spelling EXACTLY (a determiner allowed). So *"top of the upper
+ * arm"*, *"below the neck"* and *"a rose by the side of the neck"* are not ruled
+ * and stay open, and *"back of the neck"* / *"nape of the neck"* can never be
+ * measured through it: `back of` is not a qualifier here, and `nape` is not a
+ * measured spelling. Both stay refused by `classifyInkPlacement`'s hidden rules
+ * as before. `inkPlacementResolve.test.ts` drives every phrase it measures
+ * through that classifier too and requires the same surface, so the two
+ * readers of one question cannot drift apart (working law 4).
+ *
+ * A side word inside the qualifier is returned so the caller can refuse it on a
+ * PAIRED surface: *"left side of the upper arm"* names an arm, and picking one
+ * is the side machinery's job (fable-1115 §3), reached through the side she
+ * stated rather than through this strip.
+ */
+function withoutRegionQualifier(
+  normalised: string,
+): { readonly rest: string; readonly sideWord: string | null } | null {
+  const match = /^(?:(left|right)\s+)?(?:side|front)\s+of\s+(.+)$/.exec(normalised);
+  if (match === null) return null;
+  return { rest: match[2]!, sideWord: match[1] ?? null };
+}
+
 export function resolveInkPlacement(
   raw: string,
   /**
@@ -199,15 +283,41 @@ export function resolveInkPlacement(
     the cap a gate on the vocabulary as well, which is a different rule than the
     one anybody agreed to.
   */
-  const measured = measuredFor(normalised);
-  if (measured !== null) return { kind: "measured", placement: measured };
+  /*
+    EVERY FORM THE CUSTOMER'S OWN PHRASE COULD BE A MEASURED SURFACE IN, tried
+    before it is called open — her words, with her determiner off, with the side
+    SHE STATED off, and with both (#2572 for the determiner, fable-1163 §3 for
+    the side). Composed rather than sequential because *"their left upper arm"*
+    needs both: the side strip anchors at the ends, so it cannot see `left` with
+    `their` in front of it.
 
-  /* Her own side word, out of the way, and only then asked again. See above for
-     why this is not an inference. */
-  const withoutSide = withoutStatedSide(normalised, statedSide);
-  if (withoutSide !== null) {
-    const decomposed = measuredFor(withoutSide);
-    if (decomposed !== null) return { kind: "measured", placement: decomposed };
+    ⚠ EVERY ATTEMPT CAN ONLY PRODUCE `measured`. Nothing here can reach the open
+    answer below, so a phrase this module calls open is still the customer's own,
+    character for character — the tally's evidence, never edited.
+  */
+  const attempts = [normalised];
+  const bare = withoutDeterminer(normalised);
+  if (bare !== null) attempts.push(bare);
+  for (const form of [...attempts]) {
+    const withoutSide = withoutStatedSide(form, statedSide);
+    if (withoutSide !== null) attempts.push(withoutSide);
+  }
+  for (const form of attempts) {
+    const measured = measuredFor(form);
+    if (measured !== null) return { kind: "measured", placement: measured };
+  }
+  /*
+    AND "SIDE OF" / "FRONT OF" A MEASURED SURFACE (#2572, his option A) — tried
+    last, over every form above. See `withoutRegionQualifier`.
+  */
+  for (const form of attempts) {
+    const qualified = withoutRegionQualifier(form);
+    if (qualified === null) continue;
+    const measured = measuredFor(qualified.rest)
+      ?? measuredFor(withoutDeterminer(qualified.rest) ?? qualified.rest);
+    if (measured === null) continue;
+    if (qualified.sideWord !== null && inkPlacementEntry(measured).sides !== "one") continue;
+    return { kind: "measured", placement: measured };
   }
 
   if (normalised.length > INK_PLACEMENT_MAX_LENGTH) {

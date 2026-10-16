@@ -524,6 +524,14 @@ export async function landVariant(input: {
   provider: string | null;
   providerModel: string | null;
   providerRef: string | null;
+  /**
+   * WHO THEY ARE NOW (#2565 slice 1) — written in the landing statement itself,
+   * so a version that did not land never carries a description and a landed one
+   * carries the one its render was asked with. Absent (the flag off, or the
+   * writer did not answer) leaves the column untouched, which is NULL on every
+   * row this statement can land.
+   */
+  currentDescription?: string;
 }): Promise<void> {
   assertPositiveId(input.userId, "userId");
   return withTransaction(async (tx) => {
@@ -569,6 +577,7 @@ export async function landVariant(input: {
         provider: input.provider,
         providerModel: input.providerModel,
         providerRef: input.providerRef,
+        ...(input.currentDescription !== undefined ? { currentDescription: input.currentDescription } : {}),
       })
       .where(and(
         eq(castingCandidateVariants.id, input.variantId),

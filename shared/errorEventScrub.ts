@@ -144,6 +144,11 @@ export const REFUSING_KEYS: readonly string[] = [
      echoing it is exactly the event this list refuses. */
   "voiceCard",
   "previewLine",
+  /* A version's one current description (#2565 slice 1,
+     `casting_candidate_variants.currentDescription`) — written from the brief
+     and the asks, so the recipe's family, and the text model's request body
+     carries it. */
+  "currentDescription",
 ];
 
 const REFUSING_KEY_SET = new Set(REFUSING_KEYS.map((key) => key.toLowerCase()));

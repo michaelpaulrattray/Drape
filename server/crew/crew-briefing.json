@@ -1,7 +1,7 @@
 {
-  "edition": 728,
-  "updatedAt": "2026-10-16T05:05:00.000Z",
-  "shift": "The cheaper face scan is ON. You said \"Yes, Turn it on\" and it is live for every account — not just yours.\n\nWHAT CHANGED. When the studio reads a character's face it asks our picture service one question per feature, and a face has two of most things. It was asking twice for every pair — twice for the eyes, twice for the brows, twice for the ears, twice for the earrings, twice for horns. It now asks once and gets both sides back together. That is about two and a half cents off a twelve cent scan, and it is FASTER on every character in every run we measured. Scans are free to customers, so the whole saving is ours.\n\nWHAT YOU WOULD NOTICE. The panel fills sooner. Nothing else.\n\nIT IS ACTUALLY LIVE, not merged-and-hopefully-deployed: the setting reads correctly on the service, and the site is serving the build that carries it on a twelve-second uptime, which means a genuinely new process rather than the old one still answering.\n\nONE HONEST GAP. The saving is a measurement from three of your characters, not yet a reading off real traffic. That reading can only be taken now the road is on, and it has not been taken. I have said so on the card rather than rounding it up.\n\nTHE REST OF THE COST WORK is not lost. Five of the six ideas on that card moved into the face-reader design you approved this morning — the one that also sees outfits and things that are not on our list. That is card 2566 and it is the bigger saving.\n\nALSO DONE: a review finding that had been sitting on one of the edit-road clean-up pull requests is repaired and pushed. While fixing it I found a comment the fix would have made untrue and corrected that too.\n\nONE THING THAT IS NOT MINE TO FIX. Three of the edit-road clean-up pull requests now clash with each other in the same files, because two of them retire different switches in the same places. A clashing pull request runs no checks at all, so they are stuck until someone untangles them by hand. I stopped rather than guess, because a wrong untangle there changes what a paid edit renders with nothing going red. Nothing on this waits on you.\n\nNOTHING NEW NEEDS YOU TONIGHT.",
+  "edition": 732,
+  "updatedAt": "2026-10-16T09:42:16.000Z",
+  "shift": "Two finished jobs went live, and I measured a worry about the new one-description work before it can bite you.\n\nWHAT WENT LIVE. Two pieces of work from earlier shifts were sitting finished and passed, so I put them in: a tattoo asked for \"on the side of the neck\" is placed instead of refused (#2572), and our own map of the product can no longer keep an entry for a door that has been removed (#2568).\n\nWHAT I MEASURED, AND WHY IT MATTERED. The new work that gives every character one up-to-date description of themselves was found to be dropping some carefully-worded instructions on its way to the picture engine — and the worry was that edits would start landing on the wrong side of a face. It is switched off for everyone, so nobody was affected. I put it to the test: three versions of the instruction, 24 pictures of one of your characters, about fifty cents of our own money, and I looked at every one of them.\n\nTHE WORRY DOES NOT HOLD. Asking for one eye to change colour lands on the right eye just as often with the new wording as with the old — five times in six, both ways. The old wording misses once in six too, so the thing we were protecting was never as solid as the note claimed.\n\nONE REAL THING IS LOST, THOUGH. When you take something off a character, the studio used to say exactly where it came off — \"both earlobes bare, nothing hanging from either ear\" — and now it only says the earrings are gone. The obvious fix brings that wording back, but it also drags camera-talk into your character's written description: I measured it writing \"a right eye (on the left of the picture as you look at it) of emerald green\" two times in three. That description is kept and later read out to build a character's personality and voice, so that wording must not get in.\n\nSO I HAVE NOT GUESSED. The call — which words belong in a description of a person and which belong in an instruction to the picture engine — is a design decision on work you already approved, so it goes to the design seat with all the pictures and numbers attached, rather than an overnight shift picking one (#2578).\n\nONE TIDY-UP: the card about keeping one description per character (#2545) was reading as free for anyone to start, while its first piece had already been built yesterday under a different card. It would have had somebody rebuild finished work. It now says so and points at the card that owns it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -30,7 +30,11 @@
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest empty state when something is not there (#30) — its DESIGN is written and on your desk (#2532): one cheap look names what the character has, only real things become picture rows, and after an edit only the edited area is re-read. Your approval cuts the build cards.",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. The READER is built and switched off (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see the things that were never on the list. Measured first, on your own three characters: it takes two looks, one close and one wide, because the wide one finds the clothes and starts missing the nose. Still to come: one panel row per thing found, the cutter for off-list things, and carrying a reading across an edit",
+          "state": "waiting"
+        },
+        {
+          "title": "Outfit changes inside a paid edit — you asked for this on 15 October and priced it on the 16th (an ordinary edit, your word). THE DESIGN IS WRITTEN and on your desk (#2544, PR #2575): same box, same price, the set still refuses, a picture test on three of your characters before anything switches on. It waits on your GO, and the build starts after the keep-what-you-chose work's first piece.",
           "state": "waiting"
         },
         {
@@ -148,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T04:48:52.287Z",
+      "readAt": "2026-10-16T08:35:05.753Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7438,11 +7442,25 @@
   ],
   "pipeline": [
     {
+      "id": "outfit-design-2544",
+      "title": "Outfit changes in Refine — the design document (#2544)",
+      "status": "merged",
+      "prNumber": 2575,
+      "note": "Design only; nothing in the product moved. The build waits on his GO and on #2565 slice 1."
+    },
+    {
+      "id": "face-reader-slice1-2566",
+      "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
+      "status": "in-review",
+      "prNumber": 2570,
+      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. It also clashes with the main line now, but nothing is owed for that: the merge tool brings the main line in itself once the review passes."
+    },
+    {
       "id": "ghost-audit-slice4b-1577",
       "title": "The old way of making an edited picture comes off the paid edit road, with its switch (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2555,
-      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all, so nothing can even look at it. The review finding that was sitting on this one is repaired and pushed. What is left is the clash: this change and another one that already landed switch off different settings in the same four files, so untangling them is a judgement about what both were doing, not a mechanical step. I stopped rather than guess, because a wrong untangle changes what a paid edit renders with nothing going red. Nothing here waits on you."
+      "note": "Merged. The clash with the other switch retirement was untangled and it landed."
     },
     {
       "id": "voice-card-writer-2498",
@@ -10576,9 +10594,9 @@
     {
       "id": "ghost-audit-sliced1-1577",
       "title": "The switch behind the open lane comes off, with the two older instructions it hid (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2556,
-      "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
+      "note": "Merged."
     },
     {
       "id": "ghost-audit-sliced2-1577",
@@ -10590,7 +10608,7 @@
     {
       "id": "ghost-audit-sliceD3-1577",
       "title": "The switch behind where a typed tattoo may go comes off (#1577)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2559,
       "note": "Held up, and it is not in review — a pull request that clashes with main runs no checks at all. Somebody has to bring main into its branch before it can land. Nothing is wrong with the work itself, and nothing here waits on you."
     },
@@ -10600,6 +10618,20 @@
       "status": "merged",
       "prNumber": 2561,
       "note": "Gate green 11/11. An ordinary change by all three of the checks that classify it, but it waits for the typed-tattoo switch retirement to land first, because that one asserts the opposite and would go red out of order."
+    },
+    {
+      "id": "ink-placement-wording-2572",
+      "title": "A tattoo asked for \"on the side of the neck\" is placed, not refused (#2572)",
+      "status": "merged",
+      "prNumber": 2574,
+      "note": "Landed on a green gate."
+    },
+    {
+      "id": "stale-unreachable-doors-2568",
+      "title": "Our map of the product cannot keep an entry for a door that has gone (#2568)",
+      "status": "merged",
+      "prNumber": 2573,
+      "note": "Landed on a green gate."
     }
   ],
   "problems": [
@@ -11068,7 +11100,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T04:48:52.286Z",
+    "readAt": "2026-10-16T08:35:05.752Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11076,7 +11108,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2560 (the seam D4 needs) plus PRs #2550 #2555 #2556 #2557 #2559 merging before D5, the chain root. Not your word."
+          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
         }
       },
       {
@@ -11123,7 +11155,11 @@
       {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the design is written (PR #2575, `docs/specs/OUTFIT_REFINE_DESIGN_2026-10-16.md`). Say GO, or name any change. Recommendation: GO."
+        }
       },
       {
         "issueNumber": 2545,

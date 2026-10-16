@@ -279,8 +279,18 @@ export type InkPlacement =
    * third time that rule has paid for itself on this one state.
    */
   | { kind: "coverage_unread"; place: string; surface: InkPlacementKey; alternatives: readonly string[] }
-  /** Needs a design document. Gated until the body-art studio ships (D-137). */
-  | { kind: "needs_document" };
+  /**
+   * Needs a design document. Gated until the body-art studio ships (D-137).
+   *
+   * ⚠ **`alternatives` ARRIVED HERE LAST (#2562), AND IT IS THE ONE MEMBER
+   * THAT HAD NO LIST WHILE ITS THREE SIBLINGS ABOVE ALL CARRIED ONE.** Its
+   * sentence names the places a tattoo CAN go, and it was composing that list
+   * from the road alone — so a cast in the house crew tee was offered an upper
+   * chest, which the covering door refuses one ask later. Same derivation as the
+   * three siblings, from the same `servedAndBare`, so the sentence a customer
+   * reads and the door that would refuse her cannot disagree.
+   */
+  | { kind: "needs_document"; alternatives: readonly string[] };
 
 /**
  * Placements that are NOT front-visible — checked FIRST, and they win.
@@ -388,7 +398,9 @@ export function classifyInkPlacement(
     in, which is D-158's finding and nothing here supersedes it.
   */
   for (const rule of HIDDEN_RULES) {
-    if (rule.pattern.test(lowered)) return { kind: "needs_document" };
+    if (rule.pattern.test(lowered)) {
+      return { kind: "needs_document", alternatives: servedAndBare(wardrobe) };
+    }
   }
   for (const place of lane === "ink" ? inkLanePlaces() : MARK_LANE_PLACES) {
     if (!new RegExp(`\\b${place}\\b`).test(lowered)) continue;
@@ -460,7 +472,7 @@ export function classifyInkPlacement(
         : { kind: "road_cannot_keep", place, alternatives };
     }
   }
-  return { kind: "needs_document" };
+  return { kind: "needs_document", alternatives: servedAndBare(wardrobe) };
 }
 
 /**
@@ -568,17 +580,54 @@ function uncarriedInkPlaces(): readonly string[] {
  * returns both spellings and the shorter one is the reader's — *"upper arm"* is
  * what a person says, and the possessive is stripped so the sentence can put
  * its own article in front.
+ *
+ * # ⚠ AND IT WAS DERIVED FROM ONE OF THE TWO QUESTIONS — FIXED #2562
+ *
+ * **The road, and never the covering.** It read `WORDS_ROAD_PLACEMENTS_OPEN`
+ * itself, so from the day the upper chest joined that list (2026-08-23, the
+ * Basics chest court) this sentence offered an upper chest to a cast in the
+ * house crew tee — a list of three places with one that does not work, refused
+ * by `gate_ink_uncarried` one ask later. The customer lost nothing but an ask;
+ * what they were handed was a product describing itself wrongly.
+ *
+ * **It is the same defect as 4(c), one dimension over**, which is why the
+ * paragraph above reads as though this were already fixed: the sentence was
+ * made to grow with the ROAD and was never pointed at the OUTFIT. The answer
+ * already existed in two places and this function called neither —
+ * `servedAndBare`, which the three sibling refusals carry, and `bareSurfaces`,
+ * whose own docblock names THIS function as the sentence it was written for.
+ *
+ * So the list is no longer derived here at all: it arrives on the refusal,
+ * derived once where both facts are in hand. This function is the copy and the
+ * classifier is the reader — still one derivation, still two readers, and the
+ * second one is now asking the same two questions the render will ask.
+ *
+ * # ⚠ EMPTY IS A REAL ANSWER AND IT GETS A REAL SENTENCE
+ *
+ * An outfit that covers all three leaves nowhere to name, and the sentence
+ * above would have read *"Tell me where it goes —  from a description alone"*.
+ * `elsewhereClause` already answers that case for the three siblings and its
+ * sentence is *"nowhere ELSE"*, which is wrong here: this door is reached by an
+ * ask that named no place at all, or one the anchor cannot see, so there is no
+ * first place for an "else" to point back at. Its own honest version says what
+ * is in the way and the two things that move it.
  */
-export function inkNeedsDocumentMessage(): string {
-  const places = WORDS_ROAD_PLACEMENTS_OPEN
-    .map((key) => inkPlacementEntry(key).noun.replace(/^(?:her|his|their)\s+/, ""));
+export function inkNeedsDocumentMessage(placements: readonly string[]): string {
+  /* THE LIST IS THE REFUSAL'S, never this function's — see the ⚠ above. A
+     default would put the old frozen promise back one forgotten call site
+     away, so there is none. */
+  if (placements.length === 0) {
+    return "A tattoo from a description alone needs skin that's showing, and this outfit "
+      + "covers every place that works. Change the outfit first, or work from a design "
+      + "instead. The body-art studio is coming. Nothing was charged.";
+  }
   /* "a neck tattoo" · "a neck or an upper arm tattoo" — the article agrees with
      the word after it, because "a upper arm" is the kind of sentence that makes
      a careful product look careless. */
   const article = (word: string) => (/^[aeiou]/i.test(word) ? "an" : "a");
-  const named = places.length === 1
-    ? `${article(places[0]!)} ${places[0]!} tattoo is the one I can do`
-    : `${places.map((place) => `${article(place)} ${place}`).join(" or ")} tattoo is what I can do`;
+  const named = placements.length === 1
+    ? `${article(placements[0]!)} ${placements[0]!} tattoo is the one I can do`
+    : `${placements.map((place) => `${article(place)} ${place}`).join(" or ")} tattoo is what I can do`;
   return `Tell me where it goes — ${named} from a description alone. `
     + "Anywhere else needs a design to work from first, and the body-art "
     + "studio is coming. Nothing was charged.";
