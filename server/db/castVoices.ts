@@ -322,7 +322,7 @@ export async function insertCastVoice(input: {
  * Walks `cause` the way `isDuplicateKey` does, because drizzle wraps the driver
  * error and a top-level read passes its own test and fails live.
  */
-export function isLostLockRace(error: unknown): boolean {
+function isLostLockRace(error: unknown): boolean {
   for (let link: unknown = error, depth = 0; link && depth < 5; depth += 1) {
     const { code, errno, cause } = link as { code?: string; errno?: number; cause?: unknown };
     if (code === "ER_LOCK_DEADLOCK" || errno === 1213) return true;

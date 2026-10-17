@@ -51,7 +51,7 @@ export type ReconciliationView = {
 };
 
 /** Sentence case for a machine label — `admin_add` and `castingRoll` both. */
-export function machineLabel(raw: string): string {
+function machineLabel(raw: string): string {
   const spaced = raw.replace(/_/g, " ").replace(/([A-Z])/g, " $1").trim().toLowerCase();
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

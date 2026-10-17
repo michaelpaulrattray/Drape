@@ -493,7 +493,7 @@ export function declaredRollRefusals(): string[] {
  * every consumer follows; it cannot be added to one reader and forgotten in
  * the other.
  */
-export const DOOR_ENTRANCE_PREFIXES = ["concept", "roll", "upload", "reference"] as const;
+const DOOR_ENTRANCE_PREFIXES = ["concept", "roll", "upload", "reference"] as const;
 
 /**
  * The member name a TEST quotes, from the id the MAP carries.

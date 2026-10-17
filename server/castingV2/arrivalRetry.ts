@@ -66,7 +66,7 @@ export const ARRIVAL_ATTEMPTS = 3;
  * Indexed by how many arrival failures have happened, so the second wait is
  * longer than the first.
  */
-export const ARRIVAL_BACKOFF_MS: readonly number[] = [1_500, 4_000];
+const ARRIVAL_BACKOFF_MS: readonly number[] = [1_500, 4_000];
 
 /**
  * How long to wait after `failures` arrival failures.

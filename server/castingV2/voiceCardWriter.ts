@@ -64,13 +64,13 @@ const log = createModuleLogger("castingV2/voiceCardWriter");
  * Changing it is a decision about voices, re-asked with a listening test
  * (the disappearing-technology law, clauses 1–2), never a version bump.
  */
-export const VOICE_CARD_WRITER_MODEL = "x-ai/grok-4.7";
+const VOICE_CARD_WRITER_MODEL = "x-ai/grok-4.7";
 
 /**
  * Bumped whenever the prompt or the composition below changes, so every kept
  * card is re-written on its next design (it is part of the source hash).
  */
-export const VOICE_CARD_WRITER_VERSION = 1;
+const VOICE_CARD_WRITER_VERSION = 1;
 
 /** Asked of the writer; the provider's floor is 100 and its ceiling 1000. */
 export const VOICE_PREVIEW_ASK = { min: 180, max: 350 } as const;
@@ -299,7 +299,7 @@ const DIALECT_WORDS = /\b(lilt|lilting|lilts|drawl|drawls|drawling|brogue|twang|
 
 /* ───────────────────────────────────────────────────── the writer ─────── */
 
-export function voiceCardSystemPrompt(): string {
+function voiceCardSystemPrompt(): string {
   return [
     "You are a voice director writing a Voice Design card for one character in a film studio.",
     "Write vividly and naturally — a casting note a sound designer would love, not a checklist.",

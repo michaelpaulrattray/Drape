@@ -203,7 +203,6 @@ const COILED_FEMALE_STYLES: StyleWeights = [
   [BUZZ, 6],
 ];
 
-export 
 /*
   NONBINARY COILED — blended, never inherited (founder ruling, section 6).
 

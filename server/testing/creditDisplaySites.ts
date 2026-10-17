@@ -142,7 +142,7 @@ export const DISPLAY_HELPERS = [
  * Add credits takes the customer's figure since #1986, so the same argument
  * reaches it, and it is a different card's surface. Named rather than implied.
  */
-export const MODERATOR_ROAD = [
+const MODERATOR_ROAD = [
   "client/src/features/moderator/",
   "client/src/pages/Moderator",
   "server/routes/moderator",
@@ -1209,7 +1209,7 @@ export function creditDisplaySites(repoRoot: string): CreditDisplayReading {
 }
 
 /** Is this file on the moderator road (#2027)? */
-export function onTheModeratorRoad(file: string): boolean {
+function onTheModeratorRoad(file: string): boolean {
   return MODERATOR_ROAD.some((road) => file.startsWith(road));
 }
 
