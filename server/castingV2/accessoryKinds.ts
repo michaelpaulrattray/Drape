@@ -142,7 +142,11 @@ export const LANDMARK_OF_ACCESSORY: {
     worn: { phrase: "glasses", possessed: "glasses", plural: true },
   },
   {
-    words: ["nose ring", "nose stud", "septum", "nostril"],
+    /* "nose piercing" and "nose hoop" are the customer's own words for this
+       (#2612: *"add nose piercing"*), and each is longer than every earring
+       word it contains or ties with ("hoop", "earring"), so the longest match
+       files a nose as a nose. */
+    words: ["nose ring", "nose stud", "nose piercing", "nose hoop", "septum", "nostril"],
     landmark: "nose",
     drops: false,
     region: "nose stud",

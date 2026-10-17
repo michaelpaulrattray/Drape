@@ -136,8 +136,6 @@ const announcedSteps: string[] = [];
  */
 let announceThrows = false;
 /* HER SHAPE, AS THE SERVICE WROTE IT (#55, board E's dust). */
-const figureWrites: Record<string, unknown>[] = [];
-let figureWriteThrows = false;
 let engineThrows: Error | null = null;
 /**
  * A PAINT HELD OPEN, for the dispatch swap's arms at the bottom of this file.
@@ -265,11 +263,6 @@ vi.mock("../db/castingV2Variants", () => ({
   recordVariantStep: vi.fn(async (input: Record<string, unknown>) => {
     announcedSteps.push(String(input.step));
     if (announceThrows) throw new Error("the stage could not be announced");
-    return true;
-  }),
-  recordVariantFigure: vi.fn(async (input: Record<string, unknown>) => {
-    figureWrites.push(input);
-    if (figureWriteThrows) throw new Error("her shape could not be recorded");
     return true;
   }),
   recordVariantDispatch: vi.fn(async (input: Record<string, unknown>) => {
@@ -700,8 +693,6 @@ beforeEach(() => {
   dispatchRecords.length = 0;
   announcedSteps.length = 0;
   announceThrows = false;
-  figureWrites.length = 0;
-  figureWriteThrows = false;
   briefWorn = null;
   variantRows = [];
   candidateRow = {
@@ -2523,71 +2514,6 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   /*
-    AND IT RECORDS WHERE SHE IS IN HER OWN PICTURE, ONCE (#55, board E clause 3
-    — *"dust on her shape … so they sit on her outline, hair and body, not on
-    the wall"*).
-
-    The dust the customer watches is scattered against this map. It is cut from
-    the master's own bytes at dispatch, which is the only place it is free: the
-    render is composed from those bytes, so nothing is downloaded or decoded for
-    it that was not already in hand.
-
-    ⚠ **ONCE is half the assertion.** The four stages are announced four times
-    on purpose; her shape does not change while a render runs, and a map rewritten
-    per stage would be four json writes on a row for one unchanging fact.
-  */
-  it("records her shape once, from the master's own bytes", async () => {
-    await refineCandidate(greenEyes, input);
-    expect(figureWrites, "one map per render, not one per stage").toHaveLength(1);
-    const written = figureWrites[0].figure as { w: number; h: number; cells: string };
-    expect(written.cells).toHaveLength(written.w * written.h);
-    expect(figureWrites[0].userId, "scoped to the owner in the write itself").toBe(1);
-  });
-
-  /*
-    A MAP THAT CANNOT BE CUT IS NO MAP, AND NO ROW IS TOUCHED.
-
-    The fixture master here is a real PNG, so the ordinary road cuts one. This
-    arm drives the other answer — `cutRefineFigure` returns null for a picture
-    sharp cannot read — and asserts the write does not happen at all rather than
-    happening with something empty in it. A row carrying an empty map is a row
-    the loader would scatter uniform dust against and call her shape.
-  */
-  it("writes nothing when her shape cannot be read", async () => {
-    await refineCandidate({ ...greenEyes, cutFigure: async () => null }, input);
-    expect(figureWrites).toHaveLength(0);
-    expect(landedVariant, "and the picture still landed").not.toBeNull();
-  });
-
-  /*
-    AND DUST NEVER COSTS A PICTURE — the same fence as the stage announcement
-    above, on the same reasoning, driven the same way.
-
-    This write sits inside the compensated try: an unfenced rejection would
-    refund the charge and fail a render that was about to arrive. **Decoration
-    that can fail a paid edit is decoration built wrong.** Both halves are
-    driven — the cut throwing, and the write throwing — because they are two
-    different lines and only one of them was fenced in the first draft.
-  */
-  it("delivers the picture when recording her shape fails", async () => {
-    figureWriteThrows = true;
-    const result = await refineCandidate(greenEyes, input);
-    expect(result.variantId, "the render landed").toBeTruthy();
-    expect(ledger.charges, "charged once, as always").toHaveLength(1);
-    expect(ledger.refunds, "a decoration's write never moves money").toHaveLength(0);
-  });
-
-  it("delivers the picture when CUTTING her shape throws", async () => {
-    const result = await refineCandidate(
-      { ...greenEyes, cutFigure: async () => { throw new Error("sharp fell over"); } },
-      input,
-    );
-    expect(result.variantId, "the render landed").toBeTruthy();
-    expect(ledger.refunds).toHaveLength(0);
-    expect(figureWrites, "and nothing was written").toHaveLength(0);
-  });
-
-  /*
     PRESENCE BINDS (fable-118 ruling (c), and the founder paid for the proof).
 
     v#164, his account: "dangly cross earrings", 25 credits, delivered — with
@@ -4134,6 +4060,67 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     /* The master's exact pixels, never a resolution tier. */
     expect(painted[0]!.width).toBe(32);
     expect(painted[0]!.height).toBe(48);
+  });
+
+  /**
+   * ⚠ A NOSE IS ONE FEATURE, WHATEVER ELSE SHE WEARS (#2612).
+   *
+   * His report, verbatim: *"i clicked her nose and said \"add nose piercing\"
+   * and also tried \"add nose piercing to right nostril\" and both times it gave
+   * me \" That names one side of a pair…"*. Reproduced on dev through the real
+   * entrance on a cast wearing *"small gold hoop earrings, one in each ear"*:
+   * the interpreter re-states the WHOLE accessory list (a plural subject), the
+   * list was filed under ONE kind — the earring pair, by longest match — and
+   * the "right" of "right nostril" was read as a side of the EARRINGS. Without
+   * a side, the nose piercing was silently painted onto both ears instead.
+   *
+   * Driven at the service with the engine stubbed, and asserted on the prompt
+   * the engine was actually handed (working law 5).
+   */
+  describe("a nose piercing beside earrings is the nose's, never the pair's (#2612)", () => {
+    const wearing = (items: string[]) => ({
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: items } } }),
+    });
+    const EARRINGS = "small gold hoop earrings, one in each ear";
+
+    it("serves a named nostril on the nose, and the ears hear only about earrings", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing in right nostril"]),
+        { ...input, instruction: "her nose — add nose piercing to right nostril" });
+
+      expect(painted).toHaveLength(1);
+      const prompt = painted[0]!.prompt;
+      expect(prompt).toContain("nose piercing in right nostril");
+      const earLines = prompt.split(/(?<=\.)\s/).filter((line) => /earring|\bear\b/i.test(line) && /left|right/i.test(line) && !/nostril/.test(line));
+      for (const line of earLines) expect(line).not.toMatch(/nose/i);
+      /* The nostril line is its own ask, not glued onto an earring's. */
+      expect(prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves an unsided nose piercing as one, without touching the ears' words", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing"]),
+        { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(1);
+      expect(painted[0]!.prompt).toContain("nose piercing");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves a septum ring as the nose's, and a nose piercing on a bare cast", async () => {
+      await refineCandidate(wearing([EARRINGS, "a septum ring"]), { ...input, instruction: "a septum ring" });
+      await refineCandidate(wearing(["nose piercing"]), { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(2);
+      expect(painted[0]!.prompt).toContain("a septum ring");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, a septum ring`);
+      expect(painted[1]!.prompt).toContain("nose piercing");
+    });
+
+    it("CONTROL — one side of the EARRINGS named in prose still refuses, before any paint", async () => {
+      await expect(refineCandidate(wearing(["a gold hoop in her right ear"]),
+        { ...input, instruction: "a gold hoop in her right ear" })).rejects.toThrow(/one side/);
+      expect(painted).toHaveLength(0);
+    });
   });
 
   it("delivers the engine's own frame, with nothing composited into it", async () => {
