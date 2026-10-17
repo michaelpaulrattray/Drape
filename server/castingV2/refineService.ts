@@ -6518,9 +6518,29 @@ async function refineCandidateCounted(
       SITE. Handed the vacancy phrase instead (*"no earrings — both earlobes
       bare, nothing hanging from either ear"*) the site survives 3/3.
 
-      Absent only when the first pass REFUSED, and then today's raw sentence is
-      not used either — the caller passes nothing and this render is about to
-      fail on that refusal anyway.
+      ⚠ **ABSENT MEANS THE FIRST PASS REFUSED, AND THE WRITER IS NOT RUN — AND
+      THAT WAS A COMMENT RATHER THAN A GUARD UNTIL #2598** (Squall's finding on
+      PR #2594). These three lines said today's raw sentence was not used
+      either; the line below read `changeFacts ?? instruction` in effect, so a
+      refused pass spent one house text call writing a description **from the
+      customer's raw sentence** for a render that was about to throw on that
+      same refusal. No money moved and nothing was ever shown — it was wasted
+      cost and code contradicting its own paragraph.
+
+      ⚠ **THE GUARD TELLS `undefined` AND `""` APART, AND THE DIFFERENCE IS A
+      REAL CASE RATHER THAN TIDINESS.** `undefined` is the refusal and returns
+      early. An EMPTY STRING is an `ok` pass: `recipeAssembler.ts:1064` answers
+      `{ prompt: "", facts: "" }` for a recipe with **zero clauses**, and
+      sending `change: ""` to the writer is worse than sending the sentence —
+      so the raw-sentence fallback below stays for exactly that case and for
+      nothing else.
+
+      ⚠ **AND IT SITS ABOVE THE MEMO, WHICH IS WHY IT IS NOT ONE LINE LOWER.**
+      Returning `undefined` from inside the async body would pin `undefined`
+      into `describedNow` for every later call. It cannot bite today —
+      `repaintOnce` has one call site, so this runs once per request — but a
+      retry road added later would silently lose the description for a pass
+      that SUCCEEDED, and the early return costs nothing.
 
       ⚠ MEMOISED, so the first call's value is the one that counts. That is the
       existing contract (*"written ONCE per refine, however many times
@@ -6529,6 +6549,9 @@ async function refineCandidateCounted(
       one call site and it is the one holding the assembled pass.
     */
     const describeThisEdit = (changeFacts?: string): Promise<string | undefined> => {
+      /* The refusal, before the memo — see the paragraph above for both halves
+         of why it is here and not one line down. */
+      if (changeFacts === undefined) return Promise.resolve(undefined);
       if (describedNow) return describedNow;
       describedNow = (async () => {
         if (!captureCastingCurrentDescriptionEnabled(input.userId)) return undefined;
@@ -6576,9 +6599,19 @@ async function refineCandidateCounted(
           {
             previous,
             seed: { brief, earlierAsks },
-            /* The measured wording where the assembler produced one; the
-               customer's own sentence otherwise, which is what every render
-               before this card used. */
+            /*
+              The measured wording where the assembler produced one; the
+              customer's own sentence otherwise, which is what every render
+              before this card used.
+
+              ⚠ `changeFacts` CANNOT BE `undefined` HERE SINCE #2598 — the
+              guard at the top returns before the memo. What is left is the
+              ZERO-CLAUSE recipe (`recipeAssembler.ts:1064` → `facts: ""`),
+              which is an `ok` pass with nothing assembled, and the sentence is
+              the better of the two things to hand the writer there. The
+              `!== undefined` half is kept because the parameter is still
+              optional and a reader should not have to walk up to know why.
+            */
             change: changeFacts !== undefined && changeFacts.trim() !== "" ? changeFacts : instruction,
           },
         );
@@ -7344,7 +7377,10 @@ async function refineCandidateCounted(
       const withoutDescription = assembleRecipe(recipeInput);
       /* A refusal carries no `changeFacts`, and the writer is simply not run
          on one: the render is about to fail on the same refusal below, so
-         spending a text call on it would buy nothing. */
+         spending a text call on it would buy nothing. ⚠ Enforced by
+         `describeThisEdit`'s own `undefined` guard since #2598 — this sentence
+         was true of the INTENT and false of the code, which spent the call and
+         wrote from the raw sentence. */
       const currentDescription = await describeThisEdit(
         withoutDescription.ok ? withoutDescription.changeFacts : undefined,
       );
