@@ -5020,12 +5020,95 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(request.references.map((reference) => reference.bytes)).toEqual([TINY_MASTER_PNG]);
     expect(request.prompt).not.toContain("Reference 2");
     /*
-      AND THE WORDS SURVIVED THE CROP BEING DROPPED. Without this the fix and
-      "drop the whole entry" are indistinguishable, and the second would silently
-      throw away everything ever said about her hair — the stack an edit
-      regenerates from.
+      ⚠ AND STACK WORDS THAT ARGUE WITH THE ASK DO NOT RIDE (#2650). This arm
+      used to require "tight curls piled into a high bun" beside "hair down" —
+      a bun stated as fact in the very edit that takes it down. The words that
+      survive a dropped crop are the ones that HOLD the chain's ask; the
+      positive control is the next test.
     */
-    expect(request.prompt).toContain("tight curls piled into a high bun");
+    expect(request.prompt).not.toContain("piled into a high bun");
+    expect(request.prompt).toContain("hair down");
+  });
+
+  it("KEEPS a carried slot's stack words when they hold the chain's ask — the control for the arm above (#2650)", async () => {
+    lineageReferences = [carryRow({
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["tight curls worn down past the shoulders"],
+      storageKey: "casting-v2/library/hair.png",
+    })];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.prompt).toContain("tight curls worn down past the shoulders");
+  });
+
+  /*
+    ⚠ THE #2650 SPECIMEN AT THE WIRE: an adopted bun crop beside a chain that
+    asks for a short crop, on a render about something else (freckles). The
+    dev re-drive of #2649 sent exactly this pair at step 5. Driven through the
+    real entrance; no reader is consulted by the rule under test.
+  */
+  const shortCropChain = () => {
+    variantRows = [{
+      id: 711,
+      publicId: "variant-short-crop",
+      candidateId: 1,
+      userId: 1,
+      imageKey: "casting-v2/variants/short-crop.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["cut the hair into a short crop"],
+      requestText: "cut the hair into a short crop",
+      deltas: { free: { hairCut: "short crop" } },
+      stepDeltas: [{ free: { hairCut: "short crop" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-short-crop";
+  };
+  const freckles = {
+    ...repainting,
+    interpret: async () => ({ ok: true as const, delta: { free: { marks: ["freckles across the nose and cheeks"] } } }),
+  };
+
+  it("⚠ SENDS NO crop and NO keep-line for a kept feature whose words contradict the chain's ask (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [carryRow({
+      variantId: 710,
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["Dark brown hair pulled into a high top bun with a center part"],
+      storageKey: "casting-v2/library/bun.png",
+      digest: "b0b0b0b0b0b0",
+    })];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).not.toContain("high top bun");
+    expect(prompt).not.toMatch(/Keep \w+ hair exactly/);
+    expect(prompt).not.toContain("exact hair");
+    expect(references).toHaveLength(1);
+    /* And the slot is said in the customer's words instead. */
+    expect(prompt).toContain("short crop");
+  });
+
+  it("⚠ CONTROL — a kept feature whose words hold the chain's ask still rides, crop and keep-line (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [carryRow({
+      variantId: 710,
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["Short dark brown hair, closely cropped at the sides"],
+      storageKey: "casting-v2/library/short.png",
+      digest: null,
+    })];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).toMatch(/Keep \w+ hair exactly: Short dark brown hair, closely cropped at the sides/);
+    expect(prompt).toContain("exact hair");
+    expect(references).toHaveLength(2);
   });
 
   it("and the OTHER slots' crops still carry — the over-correction, driven", async () => {
