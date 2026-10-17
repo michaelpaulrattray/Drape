@@ -1374,6 +1374,57 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const edited = input.asks.filter((ask) => !ask.restate).map((ask) => ask.slot);
   const editedSet = new Set(edited);
   /*
+    AN ASK ON AN OPEN KIND'S BARE SLOT IS AN ASK ON ITS SIDES (#2635, measured
+    on the fang court of 2026-10-17 and read at that court's own log).
+
+    `editedSet` answers *"is this exact slot edited"*, and almost every reader
+    below is asking the different question *"does this render change the feature
+    this row is about"*. For a named slot the two are the same question. For an
+    OPEN KIND they are not: the ask arrives on the bare slot and the library
+    keeps one row per side, so nothing matched and every reader below treated a
+    feature being repainted as a feature being held.
+
+    What it cost, from the court's own line — `edited:["open:fangs"]`,
+    `standing:["open:fangs@left","open:fangs@right"]` — is the prompt that went
+    out at full price on a "black fangs" ask:
+
+      Keep their fangs exactly: … white, pointed tip … .
+      Keep their fangs exactly: … white, pointed tip … .
+      Change only their fangs: … slightly pointed black fangs … .
+
+    Twice, because there are two sided rows and each said its own sentence; the
+    duplication the card reported is that, not a restatement. A kept clause for
+    the very slot being changed is a second author arguing with the ask, and it
+    pulls the render back toward the colour the customer just replaced.
+
+    THE RELATION IS OVERLAP, NOT EQUALITY, and it runs both ways: a bare ask
+    covers every side of its kind, and a sided ask overlaps the bare row, which
+    describes the whole feature including that side. Two DIFFERENT sides do not
+    overlap — "change the left fang" leaves the right fang's keep standing,
+    which is the one case here that must keep working.
+
+    Derived from the asks rather than accumulated anywhere: a second list beside
+    `editedSet` would have to agree with it (working law 4).
+  */
+  const askedBareKinds = new Set<string>();
+  const askedSidedKinds = new Set<string>();
+  for (const slot of edited) {
+    const open = openKindOfSlot(slot);
+    if (open === null) continue;
+    (open.side === null ? askedBareKinds : askedSidedKinds).add(open.kind);
+  }
+  /** Whether this render changes the feature `slot` is about — the exact slot,
+   *  or an overlapping instance of the same open kind. Named slots and the ink
+   *  namespace are unaffected: `openKindOfSlot` answers `null` for both, so the
+   *  predicate collapses to `editedSet` exactly as before. */
+  const editsFeatureAt = (slot: FeatureSlot): boolean => {
+    if (editedSet.has(slot)) return true;
+    const open = openKindOfSlot(slot);
+    if (open === null) return false;
+    if (askedBareKinds.has(open.kind)) return true;
+    return open.side === null && askedSidedKinds.has(open.kind);
+  };
+  /*
     A SOURCE BELONGS TO AN ASK, and the ask list is what says so.
 
     Checked against every ask INCLUDING a restate — a taken-back slot is not in
@@ -1671,7 +1722,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   */
   const sidedOpenCarries = new Map<string, FeatureSlot[]>();
   for (const entry of library) {
-    if (!entry.carry || editedSet.has(entry.slot)) continue;
+    if (!entry.carry || editsFeatureAt(entry.slot)) continue;
     const open = openKindOfSlot(entry.slot);
     if (open === null || open.side === null) continue;
     const held = sidedOpenCarries.get(open.kind) ?? [];
@@ -1722,6 +1773,23 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
         detail: `${entry.slot} is edited by this render and cannot also carry its own minted crop`,
       };
     }
+    /*
+      AN OVERLAPPING ROW'S CROP IS NOT SENT, AND IS NOT A REFUSAL EITHER (#2635).
+
+      Deliberately BELOW the refusal above rather than folded into it, and the
+      order is the whole decision. The refusal exists because a caller handing a
+      feature its own crop built something incoherent — a caller defect, so
+      nothing is painted. **This is not that.** The ask named the kind, the
+      library happens to keep sided rows from an earlier render, and both facts
+      are ordinary: refusing here would fail a legitimate edit on state the
+      customer cannot see or clear.
+
+      So the old crop simply does not ride. Were it attached, the picture half
+      would say what the words half was already corrected for — her previous
+      white fangs handed to the render that was told to make them black, and a
+      carried crop argues harder than a sentence.
+    */
+    if (editsFeatureAt(entry.slot)) continue;
     if (claimed.has(entry.slot)) {
       return {
         ok: false, reason: "slotTwiceReferenced", slot: entry.slot,
@@ -1890,7 +1958,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     attempts out of six, so a one-sided promise is not one the product can keep.
   */
   const vacantSlots = library
-    .filter((entry) => entry.vacant === true && !editedSet.has(entry.slot))
+    .filter((entry) => entry.vacant === true && !editsFeatureAt(entry.slot))
     .map((entry) => entry.slot);
   const pairFeature = (slot: FeatureSlot): string | null => {
     const at = slot.lastIndexOf("@");
@@ -1907,7 +1975,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const pairAlreadySaid = new Set<string>();
 
   for (const entry of library) {
-    if (editedSet.has(entry.slot)) continue;
+    if (editsFeatureAt(entry.slot)) continue;
     /*
       AN EMPTY SLOT SAYS SO, WHATEVER TIER IT IS.
 
@@ -2087,7 +2155,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   */
   const carried = [
     ...library
-      .filter((entry) => !editedSet.has(entry.slot))
+      .filter((entry) => !editsFeatureAt(entry.slot))
       /* A born-ink row is not carried, for the reason the standing loop skips
          it: this list is every slot the render PROMISES to hold, and a render
          that was never told about her tattoos promises nothing about them. */
