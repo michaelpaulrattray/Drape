@@ -13049,6 +13049,10 @@
       "path": "client/src/features/castingV2/viewerDrawer2533.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/viewerScrimScrollbars2615.test.ts",
+      "path": "client/src/features/castingV2/viewerScrimScrollbars2615.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/voice/CastVoiceStudio.test.ts",
       "path": "client/src/features/castingV2/voice/CastVoiceStudio.test.ts"
     },

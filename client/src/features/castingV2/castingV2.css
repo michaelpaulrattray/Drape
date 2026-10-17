@@ -1444,6 +1444,62 @@
 }
 
 /*
+  THE SCRIM'S OWN SCROLLBARS (#2615) — the rail, the dock and the drawer.
+
+  All three scroll, and all three stand on the SCRIM rather than on a surface,
+  so the document's scrollbar (`client/src/index.css`) is wrong for them twice
+  over. Its track is `var(--page)` — #FCFCFD in the light theme — which paints
+  a bright white stripe down the edge of a scrim that is DARK IN BOTH THEMES;
+  that is the unstyled browser control the relay read in PR #2614's frames.
+  And its thumb is `var(--dots)`, which flips with the theme while the scrim
+  does not, so the one surface that never inverts gets an inverting thumb.
+
+  Both are built from `--onScrim` instead, for exactly the reason the dock's
+  own text is a dozen lines above: it is white in BOTH themes, which is what
+  anything sitting on a scrim needs. The track goes transparent, which is
+  correct on any surface rather than correct on one.
+
+  Quiet always, stronger under the pointer — the `.dpc-sheetrow` grammar,
+  which answered this for a row on the PAGE. Its SHAPE is right to copy and
+  its COLOUR is not: `--dots` is a page token and this is not a page.
+
+  NOT hidden, though the card allowed it: the rail is how somebody reaches a
+  version that is off the bottom, so the bar is the only thing on screen
+  saying there are more.
+*/
+.dpc-viewer__dock,
+.dpc-viewer__drawer,
+.dpc-refine__stack[data-layout="column"] {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--onScrim) 28%, transparent) transparent;
+}
+
+.dpc-viewer__dock::-webkit-scrollbar,
+.dpc-viewer__drawer::-webkit-scrollbar,
+.dpc-refine__stack[data-layout="column"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dpc-viewer__dock::-webkit-scrollbar-track,
+.dpc-viewer__drawer::-webkit-scrollbar-track,
+.dpc-refine__stack[data-layout="column"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dpc-viewer__dock::-webkit-scrollbar-thumb,
+.dpc-viewer__drawer::-webkit-scrollbar-thumb,
+.dpc-refine__stack[data-layout="column"]::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--onScrim) 28%, transparent);
+  border-radius: var(--r-pill);
+}
+
+.dpc-viewer__dock:hover::-webkit-scrollbar-thumb,
+.dpc-viewer__drawer:hover::-webkit-scrollbar-thumb,
+.dpc-refine__stack[data-layout="column"]:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--onScrim) 48%, transparent);
+}
+
+/*
   THE DRAWER (#2533) — the same panel, out of the row, slid in on intent.
 
   Its container is the ask field's own material — the 8% fill and 24% border
