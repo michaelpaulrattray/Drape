@@ -194,6 +194,7 @@ import {
 } from "./refineReask";
 import {
   chainAfterRemoval,
+  struckPartOf,
   composeChain,
   facetOf,
   matchSteps,
@@ -2744,6 +2745,9 @@ async function refineCandidateCounted(
     all of them or it is deciding on the customer's behalf in silence.
   */
   let outOfFrameNote: string | null = null;
+  /* What the frame took out of this ask, for the description writer (#2645
+     follow-up): that half was never painted, so it must never be described. */
+  let notInShotForWriter: readonly string[] = [];
   /*
     AND THE THIRD MEMBER OF THAT CLASS: a subject she NAMED that reached no lane
     at all (ruled fable-1374 §2, noun ruled fable-1376).
@@ -3593,7 +3597,7 @@ async function refineCandidateCounted(
       }
     } else {
       for (const match of matched) {
-        for (const facet of Array.from(facetsWrittenBy(predecessorChain[match.index]!.delta))) {
+        for (const facet of Array.from(facetsWrittenBy(struckPartOf(predecessorChain[match.index]!, match)))) {
           removedFacets.add(facet);
         }
         /*
@@ -3604,7 +3608,7 @@ async function refineCandidateCounted(
           unchanged: this set is additive and empty on every prune of an
           ordinary facet.
         */
-        for (const slot of slotsOfPrunedStep(predecessorChain[match.index]!.delta)) {
+        for (const slot of slotsOfPrunedStep(struckPartOf(predecessorChain[match.index]!, match))) {
           removedSlots.add(slot);
         }
       }
@@ -3727,6 +3731,7 @@ async function refineCandidateCounted(
       );
       editDelta = inFrame;
       outOfFrameNote = partlyOutOfFrameNote(nameWhatIsMissing(notInShot));
+      notInShotForWriter = notInShot;
     }
   }
 
@@ -6637,6 +6642,10 @@ async function refineCandidateCounted(
             change: instruction,
             takenBack: edit.takenBack,
             absences: edit.absences,
+            /* The half of that sentence the photograph does not show was not
+               painted, so the writer is told so and its backstop refuses a
+               paragraph that writes it in (#2645 follow-up). */
+            notInShot: notInShotForWriter,
           },
         );
         if (!written.ok) {

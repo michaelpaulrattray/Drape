@@ -13,6 +13,7 @@ import {
   currentDescriptionUserTurn,
   CURRENT_DESCRIPTION_SYSTEM,
   describedNowSentence,
+  addsWhatIsNotInShot,
   keepsWhatWasTakenBack,
   looksLikeAnEditList,
   mentionsThePicture,
@@ -305,5 +306,62 @@ describe("removals and the customer's own words (#2645)", () => {
       absences: ["no earrings — both earlobes bare, nothing hanging from either ear"],
     });
     expect(vacancy).toContain("- no earrings — both earlobes bare, nothing hanging from either ear");
+  });
+});
+
+/*
+  #2645 FOLLOW-UP — THE HALF OF AN ASK THE PHOTOGRAPH CANNOT SHOW NEVER ENTERS
+  THE DESCRIPTION.
+
+  "A smaller waist and red lipstick" on a headshot serves only the lipstick: the
+  frame strip takes the waist out of the delta before anything is painted. But
+  the writer was handed the customer's whole sentence and nothing else, so it
+  filed "a smaller waist" as a fact about the cast, and every later render
+  painted from that paragraph. The sentence stays verbatim (his rule: never
+  reword); the unserved half is told to the writer as not done, and a reply that
+  writes it in anyway is refused.
+*/
+describe("what the photograph could not show (#2645 follow-up)", () => {
+  const BEFORE = "A woman in her thirties with long dark hair and a bare lip.";
+  const ask = { previous: BEFORE, seed: { brief: "", earlierAsks: [] }, change: "a smaller waist and red lipstick", notInShot: ["her waist"] };
+
+  it("the writer gets the sentence verbatim AND is told the waist was not done", async () => {
+    const sent: TextRequest[] = [];
+    await writeCurrentDescription(engineSaying("A woman in her thirties with long dark hair and red lipstick.", sent), ask);
+    const user = sent[0]!.user;
+    expect(user).toContain("The change, in the customer's own words:\na smaller waist and red lipstick");
+    expect(user).toContain("Part of this change was not made, because their photograph does not show it.");
+    /* The feature in the writer's they/their terms, never the possessive. */
+    expect(user).toContain("\n- waist");
+    expect(user).not.toContain("- her waist");
+  });
+
+  it("CONTROL — an ask the frame took nothing from carries no such block", () => {
+    expect(currentDescriptionUserTurn({ ...ask, notInShot: [] })).not.toContain("was not made");
+    expect(currentDescriptionUserTurn({ ...ask, notInShot: undefined })).not.toContain("was not made");
+  });
+
+  it("a reply that writes the waist in is REFUSED (law 3, a poisoned answer)", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A woman in her thirties with long dark hair, a smaller waist and red lipstick."),
+      ask,
+    )).resolves.toMatchObject({ ok: false, reason: "not_in_shot" });
+  });
+
+  it("CONTROL — the lipstick alone is filed", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A woman in her thirties with long dark hair and red lipstick."),
+      ask,
+    )).resolves.toMatchObject({ ok: true, description: "A woman in her thirties with long dark hair and red lipstick." });
+  });
+
+  it("CONTROL — a waist the description before already named may stay", () => {
+    expect(addsWhatIsNotInShot("They have a slim waist and red lipstick.", ["her waist"], "They have a slim waist.")).toBeNull();
+    expect(addsWhatIsNotInShot("They have a slim waist and red lipstick.", ["her waist"], "They have long hair.")).toBe("waist");
+    /* Judged against the brief when there is no previous description. */
+    return expect(writeCurrentDescription(
+      engineSaying("A dancer with a slim waist and red lipstick."),
+      { ...ask, previous: null, seed: { brief: "A dancer with a slim waist.", earlierAsks: [] } },
+    )).resolves.toMatchObject({ ok: true });
   });
 });
