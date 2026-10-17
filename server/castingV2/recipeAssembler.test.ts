@@ -18,6 +18,7 @@ import {
   type CarriedInkDesign,
   type LibraryEntry,
   type RecipeSource,
+  EDIT_CONSTRAINTS,
   TEETH_PARTING_NOTE,
 } from "./recipeAssembler";
 import {
@@ -2963,5 +2964,143 @@ describe("#2626 — a teeth edit is sent as typed, with one permission note besi
       expect(prompt).not.toContain("upper canines");
       expect(prompt).not.toContain("Draw the fangs");
     }
+  });
+});
+
+describe("his labelled layout on the description road (#2647)", () => {
+  /*
+    His rule, 2026-10-17: *"we shouldnt change how the image engine recieves its
+    instructions from the user just let the result be"*, and his yes on the
+    layout court's arm D1. Every arm reads the OUTGOING prompt.
+  */
+  const IDENT = "Reference 1 is the photograph of this person — reproduce her exactly: "
+    + "same face, same pose, same lighting, same framing, same background.";
+  const NOW = "A woman in her thirties with a short crop.";
+  const CONSTRAINTS = "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.";
+  const promptOf = (input: Parameters<typeof assembleRecipe>[0]): string => {
+    const recipe = assembleRecipe(input);
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+
+  it("the whole layout, byte for byte: framing, the customer's words verbatim, the description, the constraints", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "hair", noun: "hair", words: "standard crop" }],
+      editInstruction: { words: "cut the hair into a short crop", slots: ["hair"] },
+    });
+
+    expect(prompt).toBe(`${IDENT} Edit instruction: Change only her hair: cut the hair into a short crop. `
+      + `How she looks after this edit: ${NOW} ${CONSTRAINTS}`);
+    /* The studio's own word for it never reaches the painter on this road. */
+    expect(prompt).not.toContain("standard crop");
+    expect(prompt).not.toContain("This is how");
+    expect(EDIT_CONSTRAINTS).toBe(CONSTRAINTS);
+  });
+
+  it("the words are never reworded — punctuation the customer typed stands, a missing stop is the only addition", () => {
+    for (const [typed, said] of [
+      ["make the scales a deeper emerald", "make the scales a deeper emerald."],
+      ["Amber eyes, with slit pupils!", "Amber eyes, with slit pupils!"],
+      ["  a heavier brow.  ", "a heavier brow."],
+    ] as const) {
+      expect(promptOf({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+        asks: [{ slot: "hair", noun: "hair", words: "x" }],
+        editInstruction: { words: typed, slots: ["hair"] },
+      })).toContain(`Edit instruction: Change only her hair: ${said} How she looks after this edit:`);
+    }
+  });
+
+  it("names ONLY this edit's slots — a kind that is merely re-said is not on the edit line", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [
+        { slot: "open:scales", noun: "scales", words: "deeper emerald" },
+        { slot: "open:horns", noun: "horns", words: "a pair of short curved horns" },
+      ],
+      editInstruction: { words: "a pair of short curved horns", slots: ["open:horns"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her horns: a pair of short curved horns.");
+    expect(prompt).not.toContain("scales");
+  });
+
+  it("the side note stays beside the edit line, before the description", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      editInstruction: { words: "make her right eye fiery red", slots: ["eye@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her right eye: make her right eye fiery red. "
+      + "Her right eye is on the left of the picture as you look at it. How she looks after this edit:");
+  });
+
+  it("the teeth note stays beside the edit line, before the description", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has vampire fangs.",
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+      editInstruction: { words: "give her vampire fangs", slots: ["teeth"] },
+    });
+
+    expect(prompt).toBe(`${IDENT} Edit instruction: Change only her teeth: give her vampire fangs. `
+      + `${TEETH_PARTING_NOTE} How she looks after this edit: She has vampire fangs. ${CONSTRAINTS}`);
+  });
+
+  it("a REMOVAL has an edit line too — a taken-back pair is named by the pair's noun, once", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "A lizard woman with a heavy brow. They have no horns.",
+      asks: [
+        { slot: "horns@left", restate: { taken: "a pair of short curved horns" } },
+        { slot: "horns@right", restate: { taken: "a pair of short curved horns" } },
+      ],
+      editInstruction: { words: "take the horns off", slots: ["horns@left", "horns@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her horns: take the horns off. How she looks after this edit: "
+      + "A lizard woman with a heavy brow. They have no horns.");
+  });
+
+  it("a vacated born-worn pair is named the same way", () => {
+    const says = "no earrings — both earlobes bare, nothing hanging from either ear";
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She wears no earrings.",
+      asks: [
+        { slot: "earring@left", noun: "left earring", vacate: { says } },
+        { slot: "earring@right", noun: "right earring", vacate: { says } },
+      ],
+      editInstruction: { words: "take her earrings off", slots: ["earring@left", "earring@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her earrings: take her earrings off.");
+  });
+
+  it("a presentation ask is named by its noun", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She smiles softly.",
+      asks: [],
+      presentation: [{ noun: "expression", words: "a soft smile" }],
+      editInstruction: { words: "make her smile", slots: [], presentation: ["expression"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her expression: make her smile.");
+  });
+
+  it("CONTROL — flag OFF (no description), the edit instruction changes not one byte", () => {
+    const base = {
+      master: MASTER, pronouns: SHE, library: [] as LibraryEntry[],
+      asks: [{ slot: "hair" as const, noun: "hair", words: "standard crop" }],
+    };
+    const off = promptOf(base);
+    expect(off).toBe(`${IDENT} Change only her hair: standard crop.`);
+    expect(promptOf({ ...base, editInstruction: { words: "cut the hair into a short crop", slots: ["hair"] } })).toBe(off);
+  });
+
+  it("CONTROL — a description with no edit instruction is today's description prompt, byte for byte", () => {
+    expect(promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "hair", noun: "hair", words: "standard crop" }],
+    })).toBe(`${IDENT} This is how she looks now: ${NOW} Everything else about her stays exactly as in Reference 1.`);
   });
 });

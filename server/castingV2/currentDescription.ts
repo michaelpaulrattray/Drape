@@ -323,6 +323,19 @@ export function describedNowSentence(description: string, pronouns: CastPronouns
   return `This is how ${subject} ${verb} now: ${ended} Everything else about ${pronouns.object} stays exactly as in Reference 1.`;
 }
 
+/**
+ * THE DESCRIPTION'S LINE IN HIS LABELLED LAYOUT (#2647) — arm D1 of the layout
+ * court: *"How they look after this edit: <description>"*. It sits after the
+ * edit instruction, so it carries no "everything else stays" tail of its own:
+ * the constraints line that follows says that.
+ */
+export function afterThisEditSentence(description: string, pronouns: CastPronouns): string {
+  const verb = pronouns.plural ? "look" : "looks";
+  const body = description.trim().replace(/\s+/g, " ");
+  const ended = /[.!?]$/.test(body) ? body : `${body}.`;
+  return `How ${pronouns.subject} ${verb} after this edit: ${ended}`;
+}
+
 /* ======================================================================== */
 /*  THE FOLLOW BRIEF — #2576, his word 2026-10-16: "build it" (option 3).    */
 /* ======================================================================== */

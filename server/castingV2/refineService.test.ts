@@ -15636,10 +15636,18 @@ describe("one current description rides the paid refine", () => {
 
     expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
     for (const prompt of painted) {
-      expect(prompt).toContain(`This is how she looks now: ${DESCRIPTION} Everything else about her stays exactly as in Reference 1.`);
-      /* In place of, never beside: two authors for one edit is the defect. */
-      expect(prompt).not.toContain("Change only");
-      expect(prompt.startsWith("Reference 1 is the photograph of this person")).toBe(true);
+      /* HIS LABELLED LAYOUT (#2647), at the wire: the customer's sentence
+         verbatim on the edit line, the description after it, the constraints
+         last. */
+      expect(prompt).toBe("Reference 1 is the photograph of this person — reproduce her exactly: "
+        + "same face, same pose, same lighting, same framing, same background. "
+        + "Edit instruction: Change only her hair: wear her hair down. "
+        + `How she looks after this edit: ${DESCRIPTION} `
+        + "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.");
+      /* The studio's resolved clause never rides beside it: one author for
+         what the edit is, and it is the customer. */
+      expect(prompt).not.toContain("Change only her hair: hair down");
+      expect(prompt).not.toContain("This is how");
     }
     expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
     /* Seeded from the brief — this version's predecessor is the original. */
