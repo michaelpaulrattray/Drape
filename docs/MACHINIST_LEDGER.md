@@ -2847,6 +2847,19 @@ smallest. The fourth shard's decline is unchanged: `gate-checks` at 146 s is
 or runner-up** (run 6 to #1799, run 7 to #2164, run 8 to this). **That recurrence
 is the Retro's, not a Machinist card** — its clock fires 2026-10-18.
 
+⚠ **THE TWO-COLUMN TABLE ABOVE IS SUPERSEDED AND ITS *FLAT WORKER-SECONDS*
+READING IS WRONG — READ `### I. Addendum` AT THE FOOT OF THIS RUN BEFORE QUOTING
+ANY FIGURE FROM IT.** Re-driven at the same shard width on both sides (4 runs on
+2026-10-10 against 7 on 10-16/17, 33 shard logs): the suite's work rose
+**+24.7%**, not 0.3%; `tests` **rose** +21.2% rather than falling 75 s; and the
+per-file `import` toll **rose +15.0%** rather than holding at 0.509 s. The
+`import` = 621.9 s above is reproducible as **one run's total and the lowest of
+seven** — the spread is one-sided, so a median of five can sit at the fast end.
+**Nothing in the clause above about the levers moves** (lever 2 is still the
+smallest, the fourth shard's decline still stands); what moves is the mechanism
+and the arithmetic under it. The paragraph is left unaltered as the reading run 8
+actually took.
+
 ### J. The shift process — a third reading, and it is flat not falling
 
 | | run 6 | run 7 | run 8 | target |
@@ -2943,3 +2956,147 @@ minutes before the read is alive. Not closed, not touched, #2605 not taken.
 5. **`sunburst/edit` and `unrecorded-roll-engine` are still unpriced** for the
    third run. Until fal publishes, every fal total in this ledger is a floor and
    must say so.
+
+### I. Addendum — the `tests` half MEASURED, and run 8's §I table corrected (builder seat `seat1-20261017-155401`, 2026-10-17)
+
+Not patrol 8's own reading. Run 8 filed **#2609** naming two readings it wanted
+before anything was decided; four seats took those and closed the whole
+`import`-graph side (the isolation port at −2.8% of worker-seconds on this box,
+`import type` at **0 of 81** convertible, the barrel split at **~8
+worker-seconds over 60 modules**). The last release named the remaining half —
+*"`tests` seconds, 624.7 s of the 1,246.6 s, which no reading on this card has
+touched"* — and this is that reading. It could not be reported without
+correcting §I's table, so both are here. **Nothing was changed; the full working
+is on #2609.**
+
+#### I.A · Method — CI's own logs on BOTH sides, at one shard width
+
+§I compared a **two-shard** run of 2026-10-09 against a three-shard median of
+10-16. This reads **three shards on both sides**: **4 runs × 3 shards** on
+2026-10-10 06:37–07:50Z (after #2179, before #2211) against **7 runs × 3
+shards** 2026-10-16 14:13Z – 10-17 05:44Z — **33 shard logs**, plus job and step
+grain for **12 runs per window** from `actions/runs/<id>/jobs`.
+
+| control | result |
+|---|---|
+| **internal and exact** — the per-file sum against vitest's own printed `tests` total | **max drift 0.007% over all 33 logs** |
+| **POSITIVE** — one planted reporter line (7 tests, 1234ms) | files 398 → 399, sum 214.4 → 215.6 s, **and the drift control moves −0.007% → +0.569%** — so the reconciliation is proven able to fail on a single 1.2 s line |
+| **NEGATIVE** — `Duration` line stripped / all per-file lines stripped / a `gate-checks` log | REFUSES on each, naming which half is missing |
+| **population, second reader** — `git ls-tree` at each window's own `main`, filtered by **vitest's own `include` globs** | **1,082 / 1,221** against the logs' own `Test Files` totals of **1,082 / 1,220** |
+
+⚠ **Two traps this ledger should carry, because both fail silently.**
+`gh run view --log` writes the terminal escapes as a **literal caret-bracket,
+not `0x1b`** — read at `od -c`; a reader stripping only real ESC parses every
+line and finds nothing. And **a wholly-skipped file prints `↓ … (2 tests | 2
+skipped)` with no duration**, so the per-file reading sees 1,189 where 1,220
+were LOADED — the 32 are the `*-db.test.ts` suites, which pay their import and
+cost nothing in `tests`. **`import` is divided by the `Test Files` total,
+`tests` by what ran**; the other choice overstates the toll by 2.6%.
+
+#### I.B · The work is not flat — it rose a quarter
+
+| | BEFORE 10-10 (n=4) | NOW 10-16/17 (n=7) | change |
+|---|---|---|---|
+| files LOADED | 1,082 | 1,220 | **+12.8%** |
+| `import`, all shards | 545.6 s | **707.2 s** | **+29.6%** |
+| `tests`, all shards | 583.1 s | **706.7 s** | **+21.2%** |
+| `transform`, all shards | 50.1 s | 56.6 s | +12.8% |
+| **worker-seconds, all four** | **1,190.0 s** | **1,483.5 s** | **+24.7%** |
+| `import` per loaded file | 0.504 s | **0.580 s** | **+15.0%** |
+| job WALL median (n=12 each) | **199 s** | **230 s** | +15.6% |
+| per-job fixed cost | 31 s | 30 s | flat |
+
+**The wall rose because the work rose, and there is nothing else in it:**
+`fixed + slowest shard's step` reproduces the measured wall within 2 s on both
+sides. ⚠ **Two causes were tested first and BOTH are refuted** — parallelism is
+flat (2.68/2.46/2.70× → 2.66/2.51/2.72×) and imbalance did not worsen (median
+max/min 1.40× → 1.33×, n=12 each; a single run at 1.94× was an outlier the
+sample killed).
+
+#### I.C · The toll is not a constant, and the per-file model is what failed
+
+0.512 s (#2164, 10-09) → **0.504 s (10-10) → 0.580 s (now)**: the constant held
+across #2164's two readings and broke in the week #2609 measures. Of the
++161.7 s of `import`, **+69.6 s (43%) is more files at the old rate and +92.1 s
+(57%) is the rate itself rising.**
+
+`import` is a product of **two** growing terms, not `files × constant`: files
++12.8% × non-test `.ts` bytes +8.7% (15,052 → 16,362 kB, read with
+`git ls-tree -l` at both commits) predicts +22.6% against +29.6% measured. ⚠ **An
+independent reader in the same data agrees and is not part of that arithmetic:
+`transform` is +12.8% against all-`.ts` bytes +10.4%**, and transform is paid per
+unique byte loaded rather than per file. Both undershoot by about a fifth, so
+**something here is mildly super-linear and that is named as open rather than
+explained.**
+
+#### I.D · The `tests` half: 60% of its growth is files that already existed
+
+| | |
+|---|---|
+| 139 NEW test files | **+46.3 s — 40%** |
+| the fourteen heaviest EXISTING files | **+38.0 s — 33%** |
+| every other existing file | **+31.7 s — 27%** |
+
+And the 69.7 s on existing files is **net of a real win inside the window** —
+`moneySurfaceClassifier.test.ts` 21.9 → 5.1 s, which is #2211 landing after the
+before window. **The specimen is as clean as this instrument gets:
+`server/architectureAtlas.test.ts` is byte-identical across the two trees (the
+same blob, `32ee5bd2`), the same 26 arms, and went 39.2 → 60.3 s — +54% in seven
+days, with distributions that do not overlap** (32.4–43.0 against 52.5–62.1). It
+runs **eleven real `checkArchitecture()` collector passes**, and
+`scripts/generate-architecture.mts` grew 2,070 → 2,454 lines in the same week.
+`server/testing/withoutComments.test.ts` is the second: 24.1 → 31.1 s on the same
+22 arms **while its `readListedSource` passes went 4 → 1.**
+
+⚠ **So #2179's and #2211's wins are eroding, and not because they were wrong:
+the two files they made cheap are both back near the top.** The repairs cut
+repeated work; what regrew is the work itself, because these guards' cost is a
+function of the tree and the tree is what is growing. **The concentration is
+unchanged — the ten heaviest files are 39.6% of `tests` against 40.0% — so §I's
+shape is right even where its numbers are not.**
+
+#### I.E · What sets the WALL — the question §L and #2172 both said they could not reach
+
+**Shard 2 sets the wall in 6 of 7 runs**, and it is the **`import`**-heavy shard:
+
+| shard | `import` | `tests` | variable total | step wall | import/file |
+|---|---|---|---|---|---|
+| 1 | 211.7 | 212.5 | 447.8 | 168.2 | 0.520 |
+| **2 — the critical path** | **277.1** | 202.9 | **503.2** | **200.5** | **0.681** |
+| 3 | 218.5 | **291.2** | 532.5 | 195.6 | 0.538 |
+
+The shards carry equal file counts (407/407/406) and **shard 2's files pull 31%
+heavier import graphs than shard 1's.** ⚠ **That is the assumption §L.1's packing
+model made away** — it took *"import as 0.512 s × files, which needs no
+assumption beyond the average"* — so its ceiling could only redistribute
+`tests`, and the larger imbalance sits in the half it held uniform.
+
+**And §L's verdict on lever 2 still stands, for a reason it did not have:**
+perfect three-way packing of the variable cost is 1,483.5 / 3 = 494.5 per shard,
+at the mean 2.63× = 188 s against today's slowest step of 200 s — **a 13-second
+prize.** Not because the shards are balanced, but **because their imbalances are
+in opposite halves and cancel.**
+
+#### I.F · What is left, and what the next run should not re-derive
+
+- **The file-count levers are aimed at the smaller term.** Files +12.8%, work
+  +24.7%. `import type` (0 of 81) and the barrel split (~8 worker-seconds, 60
+  modules, fourteen of them money/auth code) stay closed and are unaffected.
+- ⚠ **The isolation port is the one lever never priced at CI grain, and the gap
+  matters**: it was read on a box whose `tests` is **1,255.9 s against CI's
+  706.7 s**, so its +22.1% `tests` penalty is measured where contention is ~3.5×
+  the gate's — and contention is what removing isolation adds to. On CI's own mix
+  a −66.5% cut to `import` is **−470 worker-seconds** against a penalty nobody
+  has measured there. ⚠ **That is arithmetic, NOT a reading, and must not be
+  quoted as one** — transferring a ratio across a 3.5× contention gap is exactly
+  what #1799 was bitten by. Pricing it needs a gate run with `isolate: false`,
+  which is **red by construction** (149 failing files), contaminates its own
+  `tests` figure, and spends a gate on the shared Actions budget.
+- **The guards are the one lever with a measured subject and the wrong address**:
+  eleven collector passes in a byte-identical 60.3 s file, growing ~3 s a day —
+  **but that file is on shard 3, which is not the critical path**, so its prize is
+  runner-seconds and not wall. §L's own after-reading landed in the same place.
+- **The only thing that moves the wall directly is the divisor**: it is
+  `fixed 30 s + shard 2's work / 2.51×`, and 2.51× is a property of a 4-vCPU
+  `ubuntu-latest`. A larger runner raises it on all three shards at once. **That
+  is money and an org setting — the relay's or his, named here and not proposed.**
