@@ -218,6 +218,7 @@ import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
+import { carriesHoldingTheirAsks, chainAsksBySlot } from "./askHeldByWords";
 import {
   deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences, priorWordsBySlot,
   supersededCarrySlots,
@@ -6707,7 +6708,33 @@ async function refineCandidateCounted(
         the per-instance memory below are asking a different question — what
         this face's rows SAY — and pruning an ask does not unsay it.
       */
-      const carried = carriesAfterPruning({ rows: branchRows, composed });
+      const pruned = carriesAfterPruning({ rows: branchRows, composed });
+      /*
+        ⚠ AND A KEPT FEATURE WHOSE WORDS DO NOT HOLD WHAT THE CHAIN ASKS FOR IT
+        STOPS RIDING (#2650) — no crop and no keep-line, whatever any reader
+        said and whenever the row was filed. Its slot joins the restore list
+        below, so the feature is said in the customer's own words instead. The
+        test is a fixed word comparison, not a reader (`askHeldByWords.ts`).
+      */
+      const held = carriesHoldingTheirAsks({ rows: pruned.rows, composed });
+      const carried = { rows: held.rows, dropped: pruned.dropped };
+      const contradictedSlots = held.contradictedSlots;
+      /* A slot whose older, matching crop rides again is NOT said in words —
+         a restored slot is an edited slot, and an edited slot's crop is
+         dropped below, which would throw the matching picture away. */
+      const reinstatedSlots = new Set(held.reinstated);
+      if (held.contradicted.length > 0 || reinstatedSlots.size > 0) {
+        log.warn(
+          {
+            operationId,
+            variant: variant.publicId,
+            setAside: held.contradicted.map((one) => one.slot),
+            wordsOnly: contradictedSlots,
+            olderMatchingCropRides: held.reinstated,
+          },
+          "[refineService] a kept feature's words do not hold what the chain asks for it — its crop and keep-line stay home, and the ask is said in words",
+        );
+      }
       if (carried.dropped.length > 0) {
         log.info(
           {
@@ -6790,7 +6817,13 @@ async function refineCandidateCounted(
             pixels, so on an ordinary face the list is empty and not one line of
             this changes the recipe.
           */
-          restore: { state: composed, slots: supersededCarrySlots(branchRows) },
+          restore: {
+            state: composed,
+            slots: Array.from(new Set([
+              ...supersededCarrySlots(branchRows).filter((slot) => !reinstatedSlots.has(slot)),
+              ...contradictedSlots,
+            ])),
+          },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
             does not come from a tapped row or a clicked rectangle — the panel
@@ -9684,7 +9717,15 @@ async function refineCandidateCounted(
             deliveredRegions: null,
             masterSideRegions: null,
             deliveredSideRegions: null,
-            slots,
+            /* What the chain asks of each slot rides beside it, so the mint
+               can refuse a crop whose own words do not hold it (#2650). */
+            slots: (() => {
+              const asks = chainAsksBySlot(composed);
+              return slots.map((one) => {
+                const asked = asks.get(one.slot);
+                return asked === undefined ? one : { ...one, asks: asked };
+              });
+            })(),
             knownDigests: known,
             /*
               EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
