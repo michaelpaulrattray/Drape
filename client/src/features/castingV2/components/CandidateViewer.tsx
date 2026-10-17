@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { decodeFrame } from "../frameDecodes";
 import { refineProgress } from "../refineProgress";
-import { RefineDust } from "./RefineDust";
-import type { RefineFigure } from "@shared/refineFigure";
 import type { RefineStep } from "@shared/refineSteps";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
@@ -115,19 +113,6 @@ export type ViewerWait = {
    * honest reading and is his rule — *a stage that does not fire is not shown*.
    */
   step?: RefineStep | null;
-  /**
-   * WHERE SHE IS IN HER OWN PICTURE — the dust's seed map (#55, board E clause
-   * 3), or null when the road has none for this row.
-   *
-   * Cut from the master by the server and passed straight through: the browser
-   * cannot read her pixels (the public bucket sends no CORS header), and opening
-   * the bucket to let it would let any origin read a customer's cast into a
-   * canvas. `shared/refineFigure.ts` carries the whole reading.
-   *
-   * Null is a real answer and is drawn as one: the ambient field that shipped
-   * before this, never a uniform scatter called her shape.
-   */
-  figure?: RefineFigure | null;
   /** How many are running, when more than one is (the picture narrates none). */
   extra?: number;
 };
@@ -869,29 +854,25 @@ export function CandidateViewer({
               {overlay}
               {wait ? (
                 <>
-                  {/* The dot field is the render's own texture — nothing is
-                      rendering, so nothing moves. */}
-                  {wait.stage === "settling" ? null : wait.figure ? (
-                    /*
-                      HER PICTURE AS DUST — board E, on the row that has her
-                      shape (#55). It is the same claim the dot field made and no
-                      more: a surface is laid over the picture until it is ready.
-                      What it adds is that the surface is HERS.
-                    */
-                    <RefineDust figure={wait.figure} />
-                  ) : (
-                    /*
-                      AND THE AMBIENT FIELD IS WHAT A ROW WITHOUT HER SHAPE GETS
-                      — a row claimed before the map shipped, or a master sharp
-                      could not read. Scattering a uniform cloud and calling it
-                      dust on her shape would be the fidelity law's violation
-                      rather than its shortcut; this field never claimed to be
-                      her, and still does not.
-                    */
-                    <span className="dpc-viewer__dots" aria-hidden="true" />
+                  {/*
+                    ONE LOADER, FROM THE PRESS TO THE PICTURE (#2613, his pick
+                    2026-10-17: *"go with B"* — B · One light).
+
+                    It used to be two in a row: the dot field while the row had
+                    no shape map yet, then the particle dust once it had one
+                    — a visible flip a few seconds into every
+                    refine, and the dust was, in his word, *"too busy"*. Now the
+                    softened picture carries one soft band of light across it,
+                    edge to edge, and the same element is here at every stage the
+                    render is live, so there is nothing to switch to.
+
+                    Nothing is rendering on a settling row, so nothing moves.
+                  */}
+                  {wait.stage === "settling" ? null : (
+                    <span className="dpc-viewer__light" aria-hidden="true" />
                   )}
-                  {/* The scrim stays either way: the sentence has to be
-                      readable over a photograph that is no longer softened. */}
+                  {/* The scrim stays at every stage: it is what lets the
+                      sentence read over the picture. */}
                   <span className="dpc-viewer__falloff" aria-hidden="true" />
                   <span className="dpc-viewer__wait" role="status">
                     {/*

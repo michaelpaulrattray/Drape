@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 71
+      "moduleCount": 69
     },
     {
       "id": "domain:client-shared",
@@ -1471,12 +1471,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "path": "client/src/features/castingV2/components/RefineDust.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "path": "client/src/features/castingV2/components/RefinePanel.tsx",
       "domain": "castingV2",
@@ -1611,12 +1605,6 @@
     {
       "id": "module:client/src/features/castingV2/refineBusy.ts",
       "path": "client/src/features/castingV2/refineBusy.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/refineDust.ts",
-      "path": "client/src/features/castingV2/refineDust.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -12965,8 +12953,8 @@
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/refineDust.test.ts",
-      "path": "client/src/features/castingV2/refineDust.test.ts"
+      "id": "test:client/src/features/castingV2/refineLoader2613.test.ts",
+      "path": "client/src/features/castingV2/refineLoader2613.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/refineOutcomeNote.test.ts",
@@ -20684,11 +20672,6 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
       "kind": "imports"
     },
@@ -20705,11 +20688,6 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:shared/brand.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -20903,16 +20881,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:client/src/features/castingV2/refineDust.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/VersionRail.tsx",
       "kind": "imports"
@@ -21074,17 +21042,7 @@
     },
     {
       "from": "module:client/src/features/castingV2/refineBusy.ts",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineBusy.ts",
       "to": "module:shared/refineSteps.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineDust.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
