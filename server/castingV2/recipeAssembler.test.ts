@@ -2801,3 +2801,139 @@ describe("#2626 — the fit sentence and the fang growth wording, at the wire", 
     expect(prompt).not.toContain(OWN_TEETH);
   });
 });
+
+/**
+ * # AN ASK ON AN OPEN KIND'S BARE SLOT SILENCES ITS SIDED ROWS (#2635)
+ *
+ * Measured, not supposed. The fang court of 2026-10-17 logged this line on a
+ * real paid render:
+ *
+ *     edited:  ["open:fangs"]
+ *     carried: ["open:fangs@left", "open:fangs@right"]
+ *     standing:["open:fangs@left", "open:fangs@right"]
+ *
+ * and the prompt it sent, on an ask whose words were "black fangs":
+ *
+ *     Keep their fangs exactly: … white, pointed tip … .
+ *     Keep their fangs exactly: … white, pointed tip … .
+ *     Change only their fangs: … slightly pointed black fangs … .
+ *
+ * The ask lands on the bare slot and the library keeps one row per side, so
+ * `editedSet.has(slot)` — an EQUALITY test — matched neither row. Twice over,
+ * because each sided row said its own sentence.
+ *
+ * The first arm is that specimen. The two after it are the arms that make the
+ * fix a rule rather than a special case: the relation is OVERLAP, so a sided
+ * ask reaches the bare row too, and two DIFFERENT sides do not overlap at all.
+ * That last one is a POSITIVE control in the direction that matters — a fix
+ * that silenced it would delete a keep the customer is entitled to.
+ */
+describe("a kept clause never argues with the ask riding beside it", () => {
+  const WHITE = "a single elongated canine, white, the tip past the lower lip";
+
+  const fangRows = (carry?: boolean): LibraryEntry[] => ([
+    {
+      slot: "open:fangs@left" as never, tier: "anatomy", noun: "fangs",
+      words: [WHITE], ...(carry === true ? { carry: { key: "lib/fangs-left.png" } } : {}),
+    },
+    {
+      slot: "open:fangs@right" as never, tier: "anatomy", noun: "fangs",
+      words: [WHITE], ...(carry === true ? { carry: { key: "lib/fangs-right.png" } } : {}),
+    },
+  ]);
+
+  it("drops BOTH sided keeps when the ask names the bare kind — the court's own specimen", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(),
+      asks: [{ slot: "open:fangs" as never, noun: "fangs", words: "black fangs" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The contradiction itself: not once, and not twice. */
+    expect(recipe.prompt).not.toContain("Keep her fangs exactly");
+    expect(recipe.prompt.match(/Keep her fangs exactly/g)).toBeNull();
+    /* The colour the customer replaced is nowhere in the prompt at all. */
+    expect(recipe.prompt).not.toContain(WHITE);
+    /* And the ask still rides — the arm would pass on an empty prompt without
+       this line, which is how a suppression test goes green for nothing. */
+    expect(recipe.prompt).toContain("black fangs");
+    /* The verification stops PROMISING to hold what it is repainting: both
+       sided rows left `carried`, which the court's log had them sitting in. */
+    expect(recipe.carried).not.toContain("open:fangs@left");
+    expect(recipe.carried).not.toContain("open:fangs@right");
+  });
+
+  it("reaches the bare row from a SIDED ask — the same overlap, read the other way", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "open:fangs" as never, tier: "anatomy", noun: "fangs", words: [WHITE],
+      }],
+      asks: [{ slot: "open:fangs@left" as never, noun: "fangs", words: "a black left fang" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The bare row describes the whole feature, the left fang included, so its
+       keep would be arguing about the very side being changed. */
+    expect(recipe.prompt).not.toContain("Keep her fangs exactly");
+    /* The ask still rides. Not the words verbatim: a fang ask is rewritten into
+       the cast's own canines by the description road (#2626), so this asserts
+       the colour reached the prompt rather than the phrasing surviving it. */
+    expect(recipe.prompt).toContain("black left fang");
+  });
+
+  it("LEAVES the other side's keep standing — one side changed is not both", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(),
+      asks: [{ slot: "open:fangs@left" as never, noun: "fangs", words: "a black left fang" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The right fang is untouched and the render must be told to keep it —
+       exactly ONCE, from the one row that still speaks. */
+    expect(recipe.prompt.match(/Keep her fangs exactly/g)).toHaveLength(1);
+    expect(recipe.prompt).toContain(WHITE);
+    expect(recipe.carried).toContain("open:fangs@right");
+    expect(recipe.carried).not.toContain("open:fangs@left");
+  });
+
+  it("leaves a NAMED slot's keep exactly where it was — the predicate is open-kind only", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{ slot: "hair", tier: "anatomy", noun: "hair", words: ["copper, to the shoulder"] }],
+      asks: [{ slot: "teeth", noun: "teeth", words: "black fangs" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* A named slot has no sides and no kind, so nothing about this change may
+       reach it: `openKindOfSlot` answers null and the predicate collapses to
+       the equality test it replaced. */
+    expect(recipe.prompt).toContain("Keep her hair exactly: copper, to the shoulder.");
+    expect(recipe.carried).toContain("hair");
+  });
+
+  it("holds back an overlapping row's CROP, and does not refuse the render for it", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(true),
+      asks: [{ slot: "open:fangs" as never, noun: "fangs", words: "black fangs" }],
+    });
+
+    /* The ordinary edit is still assembled — `carriesItsOwnEdit` is a caller
+       defect and this is ordinary library state, so a refusal here would fail
+       a legitimate ask on rows the customer cannot see or clear. */
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The master, and nothing else: her previous white fangs are not handed to
+       the render that was told to make them black. A carried crop argues
+       harder than a sentence, so this is the half worth pinning. */
+    expect(recipe.references.map((reference) => reference.role)).toEqual([{ kind: "master" }]);
+    expect(recipe.prompt).not.toContain(WHITE);
+  });
+});
