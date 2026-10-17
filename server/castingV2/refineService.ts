@@ -7420,10 +7420,21 @@ async function refineCandidateCounted(
           : undefined,
       );
       /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
-         and the prompt is the first pass, byte for byte. */
+         and the prompt is the first pass, byte for byte. And beside it, his
+         labelled layout (#2647): the customer's own sentence, verbatim — the
+         same `instruction` the description writer is handed — under the slots
+         THIS step asked for, never the ones only re-said. */
       const recipe = currentDescription === undefined
         ? withoutDescription
-        : assembleRecipe({ ...recipeInput, currentDescription });
+        : assembleRecipe({
+          ...recipeInput,
+          currentDescription,
+          editInstruction: {
+            words: instruction,
+            slots: asks.askedNow.slots,
+            presentation: asks.askedNow.presentation,
+          },
+        });
       if (!recipe.ok) {
         log.error(
           { operationId, variant: variant.publicId, reason: recipe.reason, slot: recipe.slot },

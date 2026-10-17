@@ -97,7 +97,7 @@ import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
-import { describedNowSentence } from "./currentDescription";
+import { afterThisEditSentence, describedNowSentence } from "./currentDescription";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -306,6 +306,27 @@ export type AssembleInput = {
    * Absent, the prompt is byte-identical to today's.
    */
   currentDescription?: string;
+  /**
+   * THIS EDIT, IN THE CUSTOMER'S OWN WORDS (#2647, his rule and his yes,
+   * 2026-10-17: *"i honestly think we shouldnt change how the image engine
+   * recieves its instructions from the user just let the result be"*, *"same
+   * goes for any other refinements made we are not rewriting or shaping their
+   * words right?"*, *"yes go for it"*).
+   *
+   * Read ONLY beside `currentDescription`: with both, the prompt takes his
+   * labelled layout (arm D1 of the layout court) — the Reference lines, then
+   * "Edit instruction: Change only their <slot>: <words>", then "How they look
+   * after this edit: <description>", then the constraints line. `words` is the
+   * sentence exactly as the customer typed it; `slots` and `presentation` are
+   * the ones THIS step asked for (`repaintAsksFor`'s `askedNow`), named through
+   * the same naming the change clause uses. Absent, nothing about the prompt
+   * moves — the description road without it is byte-identical to today's.
+   */
+  editInstruction?: {
+    words: string;
+    slots: readonly FeatureSlot[];
+    presentation?: readonly string[];
+  };
   /**
    * WHAT THIS BRANCH IS WEARING — the resolution from the one owner
    * (`currentWardrobeLine`), item 8 §7.1 / §3.3's *"the refine recipe"* row.
@@ -1032,11 +1053,11 @@ function askSentence(
     const pair = collapsed.get(ask.slot);
     if (pair !== undefined) {
       if (pair.second) continue;
-      const named = entry?.tier === "item" ? `the ${pair.pairNoun}` : `${possessive} ${pair.pairNoun}`;
+      const named = slotNamed(entry, pair.pairNoun, possessive);
       push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
       continue;
     }
-    const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
+    const named = slotNamed(entry, noun, possessive);
     const words = (wordStacks.get(ask.slot) ?? []).join(", ");
     /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
     push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
@@ -1110,6 +1131,74 @@ function askSentence(
  * its two honest ones, and there is no sentence anywhere to force agreement
  * onto either.
  */
+/**
+ * HOW THE CHANGE CLAUSE NAMES A SLOT — "the" for a worn item, the cast's
+ * possessive for a part of them. The one spelling, read by the change clause
+ * and by the labelled layout's edit line (#2647), so the two can never name
+ * one slot two ways (law 4).
+ */
+function slotNamed(entry: LibraryEntry | undefined, noun: string, possessive: string): string {
+  return entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
+}
+
+/**
+ * WHAT THIS EDIT CHANGES, NAMED THE WAY THE CHANGE CLAUSE NAMES IT (#2647).
+ *
+ * Only the slots this step asked for (`editInstruction.slots`), in the asks'
+ * own order. A pair whose BOTH sides are in this edit is one name — through
+ * `pairCollapse` for an ask with words, and for a taken-back or vacated pair
+ * (which `pairCollapse` skips because it has no words to compare) when both
+ * sides are the same kind of ask. A taken-back or vacated slot still has a
+ * noun here, because "take the horns off" is an edit about the horns even
+ * though the change clause says nothing for it. `null` when nothing can be
+ * named, and the line then carries the words alone.
+ */
+function editSubject(
+  asks: readonly Ask[],
+  edit: NonNullable<AssembleInput["editInstruction"]>,
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string | null {
+  const inEdit = asks.filter((ask) => edit.slots.includes(ask.slot));
+  const collapsed = pairCollapse(inEdit, wordStacks);
+  const wordless = (ask: Ask): boolean => ask.restate !== undefined || ask.vacate !== undefined;
+  const names: string[] = [];
+  const spoken = new Set<string>();
+  for (const ask of inEdit) {
+    const entry = bySlot.get(ask.slot);
+    const definition = slotDefinition(ask.slot);
+    let noun: string | undefined;
+    const pair = collapsed.get(ask.slot);
+    if (pair !== undefined) {
+      if (pair.second) continue;
+      noun = pair.pairNoun;
+    } else if (wordless(ask) && definition !== null && definition.instance !== null) {
+      const feature = ask.slot.slice(0, ask.slot.lastIndexOf("@"));
+      const sides = inEdit.filter((one) => one.slot.startsWith(`${feature}@`) && wordless(one));
+      if (sides.length === 2) {
+        if (spoken.has(feature)) continue;
+        spoken.add(feature);
+        noun = definition.pairNoun ?? definition.noun;
+      }
+    }
+    noun ??= entry?.noun ?? ask.noun ?? definition?.noun;
+    if (noun === undefined || noun.trim() === "") continue;
+    const named = slotNamed(entry, noun.trim(), possessive);
+    if (!names.includes(named)) names.push(named);
+  }
+  for (const noun of edit.presentation ?? []) {
+    const named = `${possessive} ${noun.trim()}`;
+    if (noun.trim() !== "" && !names.includes(named)) names.push(named);
+  }
+  if (names.length === 0) return null;
+  if (names.length === 1) return names[0]!;
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** The constraints line of his labelled layout (#2647), as the court sent it. */
+export const EDIT_CONSTRAINTS = "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.";
+
 function describe(entry: LibraryEntry): string {
   return `the same ${entry.noun}, unchanged`;
 }
@@ -2271,6 +2360,40 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     : "";
 
   const describesNow = input.currentDescription !== undefined && input.currentDescription.trim() !== "";
+  /*
+    HIS LABELLED LAYOUT (#2647) — only on the description road, and only when
+    the caller handed the customer's own sentence. The Reference lines stand as
+    they are; then the edit instruction, which is the customer's words exactly
+    as typed under the slot the change clause would name, with the side, teeth
+    and ink notes beside it where they apply; then the description; then the
+    constraints. Without `editInstruction` this is not reached and the
+    description road's prompt is the one it was.
+  */
+  const typed = input.editInstruction?.words.trim() ?? "";
+  if (describesNow && input.editInstruction !== undefined && typed !== "") {
+    const said = /[.!?]$/.test(typed) ? typed : `${typed}.`;
+    const subject = editSubject(input.asks, input.editInstruction, bySlot, wordStacks, possessive);
+    const instruction = subject === null
+      ? `Edit instruction: ${said}`
+      : `Edit instruction: Change only ${subject}: ${said}`;
+    return {
+      ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
+      changeFacts: rendered.facts,
+      withheld,
+      prompt: [
+        ...sentences,
+        ...standing.map((entry) => entry.sentence),
+        instruction,
+        teethPartingNote(input.asks, bySlot),
+        painterSideLines(input.asks, wordStacks, possessive),
+        inkWords,
+        afterThisEditSentence(input.currentDescription!, pronouns),
+        EDIT_CONSTRAINTS,
+      ]
+        .filter((line) => line !== "")
+        .join(" "),
+    };
+  }
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
     changeFacts: rendered.facts,
