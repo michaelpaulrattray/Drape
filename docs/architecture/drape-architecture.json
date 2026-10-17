@@ -117,7 +117,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:shared",
@@ -2187,6 +2187,12 @@
     {
       "id": "module:client/src/features/settings/usageWindow.ts",
       "path": "client/src/features/settings/usageWindow.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "path": "client/src/features/settings/useAccountSurfaces.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -12583,6 +12589,10 @@
       "path": "client/src/_core/hooks/useAuth.test.ts"
     },
     {
+      "id": "test:client/src/accountSurfacesLazy.test.ts",
+      "path": "client/src/accountSurfacesLazy.test.ts"
+    },
+    {
       "id": "test:client/src/appRoutes.test.ts",
       "path": "client/src/appRoutes.test.ts"
     },
@@ -17656,7 +17666,12 @@
     },
     {
       "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -21996,6 +22011,11 @@
     },
     {
       "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -22007,6 +22027,11 @@
     {
       "from": "module:client/src/features/settings/index.ts",
       "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -22277,6 +22302,11 @@
     {
       "from": "module:client/src/features/settings/usageWindow.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "to": "module:client/src/features/settings/SettingsModal.tsx",
       "kind": "imports"
     },
     {
