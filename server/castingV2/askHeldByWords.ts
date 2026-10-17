@@ -51,7 +51,7 @@ import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import type { FeatureSlot } from "./recipeAssembler";
 import { FACET_SLOTS, catalogueSlots } from "./referenceSlotCatalogue";
 import type { FreeSubject } from "./subjectCards";
-import type { StoredReference } from "./referenceLibrary";
+import { liveReferences, type StoredReference } from "./referenceLibrary";
 
 /**
  * Words that carry no claim about a feature. An ask of "freckles across the
@@ -152,15 +152,24 @@ export function carriesHoldingTheirAsks(input: {
   composed: RefineDelta;
 }): { rows: StoredReference[]; contradicted: StoredReference[] } {
   const asks = chainAsksBySlot(input.composed);
-  const rows: StoredReference[] = [];
+  /*
+    JUDGED ON THE ROW THAT WOULD RIDE, AND THE WHOLE SLOT GOES WITH IT.
+
+    Only the slot's live row (`liveReferences`: newest, never a disputed one)
+    is what the assembler would send, so it is the one judged. A disputed row
+    is never sent and is not judged. And when the live row fails, every row of
+    that slot stays home — dropping only the newest would hand the slot to an
+    OLDER crop, which is the state before the ask moved.
+  */
+  const failed = new Set<string>();
   const contradicted: StoredReference[] = [];
-  for (const row of input.rows) {
+  for (const row of liveReferences(input.rows)) {
     const asked = asks.get(row.slot);
-    if (row.role !== "carry" || asked === undefined || wordsHoldAsks(row.words, asked, row.noun)) {
-      rows.push(row);
-    } else {
-      contradicted.push(row);
-    }
+    if (row.role !== "carry" || asked === undefined) continue;
+    if (wordsHoldAsks(row.words, asked, row.noun)) continue;
+    failed.add(row.slot);
+    contradicted.push(row);
   }
+  const rows = input.rows.filter((row) => !(row.role === "carry" && failed.has(row.slot)));
   return { rows, contradicted };
 }

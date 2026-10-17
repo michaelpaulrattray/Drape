@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { chainAsksBySlot, wordsHoldAsks } from "./askHeldByWords";
+import { carriesHoldingTheirAsks, chainAsksBySlot, wordsHoldAsks } from "./askHeldByWords";
+import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
 
 describe("the fixed word test behind #2650", () => {
   it("holds an ask when every claim-bearing word appears, endings forgiven", () => {
@@ -21,5 +22,33 @@ describe("the fixed word test behind #2650", () => {
       free: { hairCut: "the hair in the attached picture" }, fromPicture: ["hairCut"],
     } as never);
     expect(pictured.has("hair")).toBe(false);
+  });
+});
+
+describe("the send side judges the row that would ride (#2650)", () => {
+  const base = {
+    publicId: "r", candidateId: 1, variantId: 5, role: "carry", slot: "hair", tier: "anatomy", noun: "hair",
+    maskKey: null, digest: null, geometry: null, guard: null, refusal: null, retiredAt: null, createdAt: new Date(0),
+  };
+  const composed = { free: { hairCut: "short crop" } } as never;
+
+  it("drops EVERY row of a slot whose live row contradicts — an older crop never resurfaces", () => {
+    const rows = [
+      { ...base, id: 1, version: 1, words: ["short hair, closely cropped"], storageKey: "old.png" },
+      { ...base, id: 2, version: 2, words: ["hair pulled into a high top bun"], storageKey: "bun.png" },
+    ] as never[];
+    const result = carriesHoldingTheirAsks({ rows, composed });
+    expect(result.rows).toHaveLength(0);
+    expect(result.contradicted.map((row: { id: number }) => row.id)).toEqual([2]);
+  });
+
+  it("does not judge a disputed row, which never rides", () => {
+    const rows = [{
+      ...base, id: 3, version: 3, words: ["hair in a high top knot"], storageKey: null,
+      refusal: { reason: REFUSAL_THAT_IS_EVIDENCE_ONLY, kind: "hair", coverage: 9900, contentKey: null, maskKey: null, geometry: null },
+    }] as never[];
+    const result = carriesHoldingTheirAsks({ rows, composed });
+    expect(result.contradicted).toHaveLength(0);
+    expect(result.rows).toHaveLength(1);
   });
 });
