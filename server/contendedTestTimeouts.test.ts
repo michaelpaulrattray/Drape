@@ -343,10 +343,29 @@ describe("suites the derived signal cannot see, pinned by name (#2518, #2529)", 
     (~245 ms alone against the PostHog walk's ~120 ms), so it is pinned by the
     sweep rather than by a red of its own.
   */
+  /*
+    ⚠ THE FOURTH PIN IS A DIFFERENT KIND OF REAL WORK, AND IT IS WHY THIS LIST
+    IS NOT A LIST OF TREE-WALKERS (#2584).
+
+    `followBrief.test.ts`'s wire arms boot the WHOLE tRPC router
+    (`await import("../routers")`) inside the worker. That is in-process work
+    the deriver cannot see by construction: `sourceSweepSuites` watches suites
+    that walk the SOURCE TREE, and this one walks a router graph.
+
+    Measured on #2584's branch rather than supposed — `followBrief` beside
+    `refineService` in one invocation, which is what `pnpm preflight` does:
+    **RED in 2 of 3 runs, 0 of 4 with the neighbouring arm removed.** And the
+    red is the shape this file's own docblock calls worse than a timeout: the
+    first wire arm is abandoned at 5 s, its in-flight `follow` lands in the
+    NEXT arm's recorder, and that arm fails
+    `expect(wire.createRollInputs).toHaveLength(1)` carrying somebody else's
+    `userId`. **It reads as a defect in the follow road.**
+  */
   const PINNED = [
     { file: "server/architectureExpressSurfaces.test.ts", card: "#2518" },
     { file: "server/productEventOptionsDeclared.test.ts", card: "#2529" },
     { file: "server/errorTrackerOptionsDeclared.test.ts", card: "#2529" },
+    { file: "server/castingV2/followBrief.test.ts", card: "#2584" },
   ] as const;
   const derived = sourceSweepSuites(ROOT).map((row) => row.file);
 

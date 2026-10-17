@@ -3065,6 +3065,126 @@ describe("the RULE 3 re-read takes the open lane (#1577 slice D1, declared)", ()
   });
 });
 
+/**
+ * ⚠ THE TWO READS ARE HANDED THE SAME FACTS — DERIVED, NEVER LISTED (#2584).
+ *
+ * The defect this closes is a CLASS, and it was found twice one member at a
+ * time before anybody looked at it as a set. RULE 3's re-read was sixteen
+ * hand-written lines passing eight of the main read's fourteen facts, and the
+ * six it left out did not arrive as *unknown* — an absent optional boolean is
+ * read as `=== true`, so each one arrived as **no**:
+ *
+ *   `openLane`           the relay's finding on PR #2556. A flag at `all` for
+ *                        everyone, and this road alone asked the CLOSED edit
+ *                        prompt, so an uncatalogued creature feature asked to
+ *                        come off refused FREE here where the main read of the
+ *                        same words filed the absence and rendered it
+ *   `inkWordsRoadOpen`   measured for #2584 at `da7644a18^`. This road alone
+ *                        ran with the neck-only placement list while
+ *                        `CASTING_INK_WORDS_SCOPE` stood at `all`
+ *
+ * **Neither is a type error and neither ever will be**, which is the whole
+ * reason this arm exists rather than a sixth flag-by-flag discovery: `tsc`
+ * cannot speak about an optional field a caller omits, and a reviewer reading
+ * either call site alone sees nothing wrong.
+ *
+ * So the assertion DERIVES the comparison: capture both reads' option objects
+ * at the wire and hold every key of the first to the second, with the only
+ * permitted difference being `mode` — the removal vocabulary, which is the one
+ * thing the re-read withholds on purpose. **Nothing here names a field**, so a
+ * fact added to the main read in future cannot skip the re-read, and a return
+ * to a hand-written literal reddens on the first fact it forgets.
+ */
+describe("RULE 3's re-read is handed the same facts as the main read (#2584)", () => {
+  it("differs from the first read in `mode` and in nothing else", async () => {
+    /* The D1 arm's fixture: a removal of a thing with no departure road, so the
+       subject is not departable and the RULE 3 branch is the one that runs. */
+    briefWorn = ["a long fox tail"];
+    const sent: Array<Record<string, unknown>> = [];
+    let call = 0;
+    await refineCandidate({
+        regions: {
+          region: async () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 }),
+          subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+          landmark: async () => [],
+        },
+        interpret: (async (args: Parameters<typeof interpretRefinement>[0]) => {
+          sent.push({ ...args });
+          call += 1;
+          /* First read: a removal whose subject cannot depart, so RULE 3's
+             branch is the one that runs. Second: that re-read, answered on a
+             CATALOGUED subject so the request finishes and this arm measures
+             the options rather than a composer refusal. */
+          return call === 1
+            ? { ok: true as const, intent: "remove" as const, subject: null, match: "tail" }
+            : { ok: true as const, delta: { free: { statedAccessories: ["small gold hoop earrings"] } } };
+        }) as never,
+      },
+      { ...input, instruction: "take off his tail" },
+    );
+
+    expect(sent, "two reads: the removal, then RULE 3's edit re-read").toHaveLength(2);
+    const [first, second] = sent as [Record<string, unknown>, Record<string, unknown>];
+    expect(second.mode, "the re-read withholds the removal vocabulary").toBe("edit");
+
+    /* EVERY fact the first read was handed, by the same value. The loop is the
+       point: naming them here would be the second list this card is about. */
+    for (const key of Object.keys(first)) {
+      expect(second[key], `the re-read was not handed \`${key}\``).toEqual(first[key]);
+    }
+    /* And the re-read adds NOTHING but `mode` — so a fact smuggled into one
+       read and not the other reddens in whichever direction it went. */
+    expect(Object.keys(second).filter((key) => !(key in first)).sort()).toEqual(["mode"]);
+
+    /*
+      ⚠ THE CONTROL THAT STOPS THIS PASSING ON AN EMPTY OBJECT. A reader that
+      sent `{ instruction }` alone would satisfy every assertion above, so the
+      population is held to the facts that were actually missing — by COUNT and
+      by the two whose values are non-trivial, not by re-listing the six.
+    */
+    expect(Object.keys(first).length, "the main read is handed more than a sentence")
+      .toBeGreaterThanOrEqual(13);
+    expect(first).toHaveProperty("wardrobe");
+    expect(first.wardrobe, "a real resolution, so a VALUE is proven to travel").not.toBeUndefined();
+    expect(first).toHaveProperty("referenceAttached");
+  });
+
+  it("reaches the interpreter from ONE place in the module, so a fifth copy cannot arrive", async () => {
+    /*
+      The arm above protects RULE 3's road and cannot see a NEW hand-written
+      literal somewhere else in these ten thousand lines — which is exactly how
+      the fourth copy arrived. This holds the shape instead: the interpreter is
+      dispatched once, inside `readInstruction`, and every caller asks it for
+      the difference it wants.
+
+      Comments are stripped before counting, because this module's prose
+      discusses the call it is counting at length — a reader that counted a
+      docblock's example would be red the day somebody explained the rule.
+    */
+    const source = await readFile(new URL("./refineService.ts", import.meta.url), "utf8");
+    const code = withoutComments(source);
+    const dispatches = code.split("(dependencies.interpret ?? interpretRefinement)(").length - 1;
+    expect(dispatches, "one dispatch, inside readInstruction").toBe(1);
+    /*
+      ⚠ TWO CONTROLS, because `toBe(1)` is satisfied by a dead anchor as easily
+      as by a correct module — an anchor that stopped matching would count ZERO
+      and a reader returning nothing would too, and neither is "no copies".
+
+      POSITIVE on the anchor: it is present in the raw source as well, so the
+      count is a reading and not a miss.
+
+      NEGATIVE on the reader: a sentence that exists ONLY inside a comment in
+      this module must be gone from the stripped text. Without it a
+      `withoutComments` that had quietly become the identity function would
+      leave every docblock's prose in the haystack, and this arm would then be
+      counting explanations.
+    */
+    expect(source).toContain("(dependencies.interpret ?? interpretRefinement)(");
+    expect(source, "the sentence the negative control rests on").toContain("ONE READING, ASKED FOUR WAYS");
+    expect(code, "comments really were stripped").not.toContain("ONE READING, ASKED FOUR WAYS");
+  });
+});
+
 describe("a removal with no removal word is re-read as an edit", () => {
   const misreads = (asEdit: unknown) => {
     let call = 0;
