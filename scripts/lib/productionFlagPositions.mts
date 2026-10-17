@@ -258,7 +258,11 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "approved on #2532). It has never been on for any account. It changes "
       + "what the panel draws as well as what a reading costs, so the flip is "
       + "his eye on real panels — judged beside #2565's twelve-edit chains, "
-      + "which is the design's own section 8 step 4",
+      + "which is the design's own section 8 step 4. AND IT DOES NOT GO ON "
+      + "ALONE: the relay drove it on dev and measured a reading 6-8 seconds "
+      + "slower for $0.00-0.01 saved, finding nothing new because the off-list "
+      + "features are slice 2's -- so slice 1's value only lands with the "
+      + "pointer road beside it (the finding on PR #2570)",
   },
   ENABLE_CASTING_PAIR_ONE_READ: {
     /*

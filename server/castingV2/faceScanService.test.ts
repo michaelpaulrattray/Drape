@@ -388,6 +388,7 @@ describe("the panel fills a feature at a time", () => {
       ok: true,
       features: [{ name: "hair", count: 1, about: "" }, { name: "eyes", count: 2, about: "" }],
       cannotSee: [],
+      unusable: [],
       crops: ["head", "full"],
     };
     const gated = plannedQuestions(discovery).length;
@@ -891,6 +892,41 @@ describe("the reading this face has already paid for", () => {
     expect(keptCalls.kept[0].frameKey).toBe(FACE.imageKey);
     expect(keptCalls.kept[0].candidateId).toBe(FACE.candidateId);
     expect(keptCalls.kept[0].scan.slots.size).toBeGreaterThan(0);
+  });
+
+  it("does NOT write a NARROWED reading down — a thin read must not become permanent", async () => {
+    /*
+      THE RELAY'S FIFTH FINDING ON PR #2570 (#2566). A kept reading is the END
+      of the asking: every later look at that version serves the row and never
+      pays again. So a discovery that overlooked an optional feature would
+      cancel its question AND then have that cancellation written down for
+      good — one reader's bad minute becoming a permanent panel, which is the
+      exact sentence the damaged-scan rule beside it exists to refuse.
+
+      The arm above is the positive control and the two differ in ONE thing:
+      whether a discovery narrowed the plan. Both run with the table flag on.
+    */
+    arm("all");
+    const { deps } = await dependencies(countingReader());
+    const narrowing: FaceDiscovery = {
+      ok: true,
+      features: [{ name: "hair", count: 1, about: "" }],
+      cannotSee: [],
+      unusable: [],
+      crops: ["head", "full"],
+    };
+    /* The fixture only means anything if the gate actually narrowed something. */
+    expect(plannedQuestions(narrowing).length).toBeLessThan(scanPlan().length);
+
+    const scan = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => narrowing },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(keptCalls.kept, "nothing was written down").toHaveLength(0);
+    expect(scan.asked, "and the customer still got the reading").toBeLessThan(scanPlan().length);
+    expect(scan.found).toBeGreaterThan(0);
   });
 
   /*

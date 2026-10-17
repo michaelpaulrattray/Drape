@@ -26,6 +26,7 @@ import {
   type FaceDiscovery,
 } from "./faceDiscovery";
 import { scanPlan } from "./faceScan";
+import { catalogueSlots } from "./referenceSlotCatalogue";
 import type { TextEngine, TextRequest, TextResult } from "../providers/types";
 
 /** An engine that says exactly what it is told to, once per call. */
@@ -105,11 +106,25 @@ describe("parseDiscovery", () => {
     /* Repairing a caption into a noun would be a guess that reaches a cutter;
        dropping it costs one row the pointer road can still find later. */
     expect(parsed?.features.map((f) => f.name)).toEqual(["hair"]);
+    /*
+      AND THE WORDS ARE KEPT WHERE NO CUTTER LOOKS — the relay's third finding
+      on PR #2570. Until this, a rejected name vanished entirely, so the FACT
+      that the reader saw something went with the unusable words and cancelled
+      the question: a parse rule became a deletion. `unusable` is read by the
+      gate alone, as a reason to ask.
+    */
+    expect(parsed?.unusable).toEqual(["mole on left cheek", "eyes (deep-set)"]);
   });
 
-  it("drops a name too long to be a noun at all", () => {
-    /* The length cap, driven on its own now that the arm above no longer
-       leans on it. */
+  it("drops a name too long to be a noun at all, and keeps NOTHING of it", () => {
+    /*
+      The length cap, driven on its own now that the arm above no longer leans
+      on it — and the line between the two rejections is deliberate: a caption
+      is a real feature named badly, so its words earn a place in `unusable`,
+      while prose past the cap is not an answer at all and earns none. A
+      40-character floor on what may keep a question alive is also what stops
+      `unusable` becoming a second, looser phrasebook.
+    */
     const parsed = parseDiscovery(JSON.stringify({
       features: [
         { name: "hair", count: 1, about: "" },
@@ -118,6 +133,7 @@ describe("parseDiscovery", () => {
       cannotSee: [],
     }));
     expect(parsed?.features.map((f) => f.name)).toEqual(["hair"]);
+    expect(parsed?.unusable).toEqual([]);
   });
 
   it("reads an answer the provider fenced", () => {
@@ -185,6 +201,29 @@ describe("mergeDiscoveries — the two crops", () => {
     expect(merged.cannotSee).toEqual([]);
     expect(merged.features.map((f) => f.name)).toEqual(["ears"]);
   });
+
+  it("unions the rejected names and does NOT net them off against the features", () => {
+    /*
+      They only ever make the gate ASK, so a name that is also a clean feature
+      on the other crop costs nothing, and de-duplicating one against
+      `features` could only ever make the gate cancel MORE — which is the
+      direction the relay's finding was about. Driven because the obvious tidy
+      shape (mirror the `cannotSee` rule above) is the wrong one here.
+    */
+    const merged = mergeDiscoveries([
+      { features: [], cannotSee: [], unusable: ["dangling gold earrings"] },
+      { features: [{ name: "earring", count: 2, about: "" }], cannotSee: [], unusable: ["long black hair"] },
+    ]);
+    expect([...merged.unusable].sort()).toEqual(["dangling gold earrings", "long black hair"]);
+  });
+
+  it("takes a crop that carries no rejected names at all", () => {
+    /* `unusable` is optional on the INPUT on purpose: every caller inside this
+       module passes it, and the field is young enough that a crop shape from
+       elsewhere should degrade to "nothing was rejected" rather than throw. */
+    expect(mergeDiscoveries([{ features: [{ name: "hair", count: 1, about: "" }], cannotSee: [] }]).unusable)
+      .toEqual([]);
+  });
 });
 
 describe("gateScanPlan — what the discovery is allowed to cancel", () => {
@@ -192,34 +231,112 @@ describe("gateScanPlan — what the discovery is allowed to cancel", () => {
     { feature: "hair" },
     { feature: "facial-hair" },
     { feature: "eye" },
+    { feature: "teeth" },
+    { feature: "ear" },
+    { feature: "skin" },
     { feature: "horns" },
+    { feature: "earring" },
+    { feature: "glasses" },
   ];
   const found = (...names: string[]): FaceDiscovery => ({
     ok: true,
     features: names.map((name) => ({ name, count: 1, about: "" })),
     cannotSee: [],
+    unusable: [],
     crops: ["head", "full"],
   });
 
-  it("drops the questions nothing on this character answers", () => {
-    const gated = gateScanPlan(plan, found("hair", "eyes"));
-    expect(gated.plan.map((r) => r.feature)).toEqual(["hair", "eye"]);
-    expect(gated.dropped.sort()).toEqual(["facial-hair", "horns"]);
+  it("drops only the optional features nothing on this character answers", () => {
+    const gated = gateScanPlan(plan, found("hair", "eyes", "horns"));
+    /* Horns were named; earrings and glasses were not, and nothing else here
+       is cancellable at all. */
+    expect(gated.dropped.sort()).toEqual(["earring", "glasses"]);
+    expect(gated.plan.map((r) => r.feature))
+      .toEqual(["hair", "facial-hair", "eye", "teeth", "ear", "skin", "horns"]);
   });
 
-  it("does NOT let 'hair' keep the beard question alive — the whole saving", () => {
-    /* A loose substring match would keep `facial-hair` on every clean-shaven
-       face, which is exactly the read this step exists to stop buying. */
+  it("CANNOT drop a feature every character has, whatever the reading says", () => {
+    /*
+      THE RELAY'S FIRST FINDING ON PR #2570, as an arm — driven on dev, read at
+      the frames: cast 812 lost TEETH in 3 of 3 readings with the teeth plainly
+      visible, and cast 772 lost BOTH EARS. A reading that did not mention the
+      teeth has missed them, never found them absent.
+    */
     const gated = gateScanPlan(plan, found("hair"));
-    expect(gated.dropped).toContain("facial-hair");
+    for (const feature of ["hair", "facial-hair", "eye", "teeth", "ear", "skin"]) {
+      expect(gated.plan.map((r) => r.feature)).toContain(feature);
+      expect(gated.dropped).not.toContain(feature);
+    }
   });
 
-  it("keeps the beard question when a beard is actually named", () => {
-    expect(gateScanPlan(plan, found("beard")).plan.map((r) => r.feature)).toContain("facial-hair");
+  it("CANNOT drop the two features the panel can state an absence for", () => {
+    /*
+      DERIVED FROM THE CATALOGUE, not from the pair of names above — `hair` and
+      `facial-hair` are the only slots carrying `whenAbsent` ("bald",
+      "clean-shaven"), and an absence is built from a question that was ASKED
+      and came back empty. Cancelling the question deletes the row, so the
+      saving's whole product would be the row it deleted (the relay's fifth
+      finding). A third `whenAbsent` member arriving cancellable reddens here.
+    */
+    const speaks = catalogueSlots()
+      .filter((definition) => definition.whenAbsent !== undefined)
+      .map((definition) => definition.feature);
+    expect(speaks.length).toBeGreaterThan(0);
+    for (const feature of speaks) expect(DISCOVERY_PHRASEBOOK[feature]).toBeUndefined();
   });
 
-  it("matches on whole words, so 'third eye' keeps the eye question", () => {
-    expect(gateScanPlan(plan, found("third eye")).plan.map((r) => r.feature)).toContain("eye");
+  it("keeps an optional question when the feature is actually named", () => {
+    expect(gateScanPlan(plan, found("earring")).plan.map((r) => r.feature)).toContain("earring");
+    expect(gateScanPlan(plan, found("goggles")).plan.map((r) => r.feature)).toContain("glasses");
+    expect(gateScanPlan(plan, found("antlers")).plan.map((r) => r.feature)).toContain("horns");
+  });
+
+  it("matches on whole words, so 'ears' does NOT keep the earring question alive", () => {
+    /* The saving's whole size, one entry over from where this argument started:
+       a loose substring match would have every character on the platform paying
+       for an earring read, because every character has ears. */
+    expect(gateScanPlan(plan, found("ears")).dropped).toContain("earring");
+    expect(gateScanPlan(plan, found("ear studs")).dropped).not.toContain("earring");
+  });
+
+  it("reads 'I cannot see it' as a reason to ASK, never as an absence", () => {
+    /*
+      THE RELAY'S FINDING AT ITS SHARPEST: cast 772's reading listed "ears"
+      under `cannotSee` and the ears were visible behind the strands, with
+      today's segmenter finding them. The same shape on an optional feature is
+      what this arm drives, because that is the only set the gate can still
+      touch.
+    */
+    const hidden: FaceDiscovery = {
+      ok: true,
+      features: [{ name: "hair", count: 1, about: "" }],
+      cannotSee: [{ name: "earrings", why: "behind the strands" }],
+      unusable: [],
+      crops: ["head", "full"],
+    };
+    expect(gateScanPlan(plan, hidden).dropped).not.toContain("earring");
+    expect(gateScanPlan(plan, hidden).dropped).toContain("glasses");
+  });
+
+  it("reads a REJECTED name as a reason to ask — a parse rule is not a deletion", () => {
+    /*
+      The relay's third finding. `cleanName` drops "dangling gold earrings"
+      because a cutter handed those words returns nothing — and until this the
+      rejection ALSO cancelled the earring question, so a caption became a
+      deletion. The words still never reach a cutter: they are in `unusable`,
+      which only ever makes the gate ask.
+    */
+    const captioned: FaceDiscovery = {
+      ok: true,
+      features: [{ name: "hair", count: 1, about: "" }],
+      cannotSee: [],
+      unusable: ["dangling gold earrings"],
+      crops: ["head", "full"],
+    };
+    expect(gateScanPlan(plan, captioned).dropped).not.toContain("earring");
+    /* And the negative control beside it: the rejection keeps its OWN question
+       alive and nothing else's. */
+    expect(gateScanPlan(plan, captioned).dropped).toContain("glasses");
   });
 
   it("asks a question the phrasebook has never heard of", () => {
@@ -240,16 +357,25 @@ describe("gateScanPlan — what the discovery is allowed to cancel", () => {
     expect(gateScanPlan(plan, undefined).plan).toHaveLength(plan.length);
   });
 
-  it("covers every question the real catalogue asks", () => {
-    /* DERIVED from `scanPlan()` rather than from a list typed here, so a new
-       catalogue question cannot arrive without a phrasebook entry and quietly
-       become un-droppable. A missing entry is safe (it is always asked) and it
-       is also a silent loss of the saving, which is why this is an arm and not
-       a comment. */
-    const missing = scanPlan()
-      .map((region) => region.feature)
-      .filter((feature) => DISCOVERY_PHRASEBOOK[feature] === undefined);
-    expect(missing).toEqual([]);
+  it("can cancel three of the real catalogue's twelve questions, and names them", () => {
+    /*
+      DERIVED from `scanPlan()` rather than typed here, and it pins BOTH sides
+      of the split so a new catalogue question has to be classified on purpose:
+      an entry arriving in the phrasebook makes a question cancellable, and the
+      arm above proves an absence-speaking one may never be.
+
+      The enumeration is the point, the way the catalogue's own `whenAbsent`
+      case is: this is the honest size of the saving — three of twelve — and a
+      fourth member arriving without an argument is what this makes visible.
+    */
+    const features = scanPlan().map((region) => region.feature);
+    const cancellable = features.filter((feature) => DISCOVERY_PHRASEBOOK[feature] !== undefined);
+    expect(cancellable).toEqual(["horns", "earring", "glasses"]);
+    expect(features.filter((feature) => DISCOVERY_PHRASEBOOK[feature] === undefined))
+      .toEqual(["hair", "facial-hair", "eye", "brow", "nose", "lips", "teeth", "ear", "skin"]);
+    /* And nothing in the phrasebook that the catalogue does not ask: a noun
+       list for a question nobody sends is dead data wearing a gate's clothes. */
+    expect(Object.keys(DISCOVERY_PHRASEBOOK).filter((key) => !features.includes(key))).toEqual([]);
   });
 });
 
@@ -285,11 +411,66 @@ describe("discoverFeatures — every road out of a bad provider minute", () => {
     expect(sent.jsonSchema?.schema).toBeDefined();
   });
 
-  it("survives one crop failing and answers from the other", async () => {
-    const engine = engineSaying(new Error("502 from the provider"), ONE_FEATURE);
-    const answer = await discoverFeatures({ crops, engine });
+  it("fails OPEN when one crop fails and the other answers", async () => {
+    /*
+      THE RELAY'S SECOND FINDING ON PR #2570, and it is the one arm here whose
+      expectation REVERSED. It read *"survives one crop failing and answers from
+      the other"*, which sounds like resilience and is a narrowing: the two
+      crops ask different questions (the head crop reads the face, the full
+      frame reads what they are wearing), and this module's own measurement
+      caught the full frame missing the NOSE on the human fixture. So a surviving
+      crop is not a cheaper version of both — it is one question wearing the
+      other one's authority, and it was allowed to cancel questions.
+
+      Both directions are driven, because the risk is not symmetric by chance:
+      whichever crop dies, the catalogue is asked whole.
+    */
+    const headDied = await discoverFeatures({
+      crops,
+      engine: engineSaying(new Error("502 from the provider"), ONE_FEATURE),
+    });
+    expect(headDied.ok).toBe(false);
+    const fullDied = await discoverFeatures({
+      crops,
+      engine: engineSaying(ONE_FEATURE, new Error("502 from the provider")),
+    });
+    expect(fullDied.ok).toBe(false);
+  });
+
+  it("a part-answer gates NOTHING — the consequence that matters", async () => {
+    const answer = await discoverFeatures({
+      crops,
+      engine: engineSaying(new Error("502 from the provider"), ONE_FEATURE),
+    });
+    const gated = gateScanPlan([{ feature: "earring" }, { feature: "glasses" }], answer);
+    expect(gated.plan).toHaveLength(2);
+    expect(gated.dropped).toEqual([]);
+  });
+
+  it("CONTROL — both crops answering still gates, so the arm above is not vacuous", async () => {
+    /* Working law 2: the arm above would pass on a gate that never cancels
+       anything at all. This is the positive control that says it can. */
+    const answer = await discoverFeatures({ crops, engine: engineSaying(ONE_FEATURE, ONE_FEATURE) });
     expect(answer.ok).toBe(true);
-    if (answer.ok) expect(answer.crops).toEqual(["full"]);
+    expect(gateScanPlan([{ feature: "earring" }], answer).dropped).toEqual(["earring"]);
+  });
+
+  it("asks with a deadline of its own and no retries", async () => {
+    /*
+      THE RELAY'S FOURTH FINDING, proven at the WIRE rather than at a constant
+      near it (invariant 5). It matters because of where this call sits: ahead
+      of every segmenter call in the scan and on the interpreter's shared text
+      queue, so the transport's defaults (45 s × 3) would hold a customer's
+      whole panel — and a paid roll's interpreter behind it — for over two
+      minutes on one hung provider.
+    */
+    const engine = engineSaying(ONE_FEATURE, ONE_FEATURE);
+    await discoverFeatures({ crops, engine });
+    expect(engine.calls).toHaveLength(2);
+    for (const sent of engine.calls) {
+      expect(sent.timeoutMs).toBe(15_000);
+      expect(sent.retries).toBe(0);
+    }
   });
 
   it("fails OPEN when both crops throw", async () => {
@@ -380,15 +561,38 @@ describe("discoveryCropsOf", () => {
     expect(head.height!).toBeLessThan(full.height!);
   });
 
-  it("asks a tiny frame whole, once", async () => {
+  it("asks a frame too small to head-crop NOTHING, rather than the full frame alone", async () => {
+    /*
+      This arm read *"asks a tiny frame whole, once"* and expected `["full"]`.
+      The reasoning behind it still holds — a 40px head crop is not a cheaper
+      reading, it is a wasted call — but the conclusion does not: since the
+      relay's second finding, `discoverFeatures` refuses to gate anything on a
+      part-answer, so that one call would have been paid for and then
+      discarded. Both or neither, which saves the call and closes the hole in
+      the same line.
+    */
     const bytes = await squareOf(80, 80);
-    const crops = await discoveryCropsOf({ bytes, width: 80, height: 80 });
-    /* A 40px head crop is not a cheaper reading, it is a wasted call. */
-    expect(crops.map((c) => c.kind)).toEqual(["full"]);
+    expect(await discoveryCropsOf({ bytes, width: 80, height: 80 })).toEqual([]);
+    /* And the positive control one pixel the other side of the line, so this
+       is not passing because `sharp` refused the frame. */
+    const big = await squareOf(1024, 1536);
+    expect((await discoveryCropsOf({ bytes: big, width: 1024, height: 1536 })).map((c) => c.kind))
+      .toEqual(["head", "full"]);
   });
 
   it("returns nothing rather than throwing on bytes sharp cannot read", async () => {
-    const crops = await discoveryCropsOf({ bytes: Buffer.from("not an image"), width: 100, height: 100 });
+    /*
+      ⚠ THE SIZE IS LOAD-BEARING AND IT WAS 100×100, WHICH IS UNDER THE
+      HEAD-CROP FLOOR — so once the both-or-neither rule landed this arm
+      returned `[]` before `sharp` was ever handed the bytes, and passed while
+      measuring the wrong branch entirely. A frame big enough to crop is the
+      only one that can reach the catch.
+    */
+    const crops = await discoveryCropsOf({
+      bytes: Buffer.from("not an image"),
+      width: 1024,
+      height: 1536,
+    });
     expect(crops).toEqual([]);
   });
 });

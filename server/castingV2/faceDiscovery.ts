@@ -77,6 +77,37 @@
  * a real answer and the caller reads it as *"ask everything"*. That is the one
  * property this module has to get right, and `faceDiscovery.test.ts` drives it
  * directly rather than through a scan.
+ *
+ * # ⚠ A SUCCESSFUL READING COULD TAKE FEATURES AWAY TOO, AND THAT WAS THE BUG
+ *
+ * The paragraph above guarded the failure road and left the success road open.
+ * The relay drove the flag on, on dev, against today's rows, and read every
+ * frame (the finding on PR #2570, law 9): **cast 812 lost its Teeth in 3 of 3
+ * readings with the teeth plainly visible, cast 772 lost both Ears, and the
+ * same frame gave a different panel on different readings.** Nothing had
+ * failed. The reading simply did not mention a feature, and
+ * {@link gateScanPlan} read silence as absence.
+ *
+ * Four repairs, each a road out of that one mistake:
+ *
+ *   **only optional features**   {@link DISCOVERY_PHRASEBOOK} now holds horns,
+ *                                earrings and glasses alone. Anatomy every
+ *                                character has — and the two features the panel
+ *                                is allowed to state an ABSENCE for — cannot be
+ *                                cancelled at all
+ *   **silence is not absence**   a `cannotSee` name and a name whose words were
+ *                                rejected both keep their question
+ *   **both crops or neither**    a part-answer gates nothing
+ *   **nothing thin is kept**     a narrowed reading is served and not persisted
+ *                                (`faceScanService`'s keep branch), so one bad
+ *                                minute cannot become a permanent panel
+ *
+ * **What the narrowing is worth after that: at most three questions of twelve.**
+ * That is the honest number and this module is not built on it — slice 1's
+ * product is the NAMES, which the pointer road cuts the features no catalogue
+ * question covers. The relay measured the flag 6–8 s SLOWER per reading for
+ * $0.00–0.01 saved, so **it stays dark until slice 2 lands beside it**; that is
+ * declared on `productionFlagPositions.mts`'s own row and on #2566.
  */
 import sharp from "sharp";
 
@@ -122,6 +153,16 @@ export type FaceDiscovery =
     ok: true;
     features: readonly DiscoveredFeature[];
     cannotSee: readonly UnseenFeature[];
+    /**
+     * THE NAMES `cleanName` REJECTED, kept as the reader wrote them.
+     *
+     * Not a diagnostic field. A caption such as *"long black hair"* is an
+     * unusable NAME and a perfectly good FACT, and until the relay's finding on
+     * PR #2570 the rejection cancelled the question — so a parse rule became a
+     * deletion. These never reach a cutter; {@link gateScanPlan} reads them as
+     * a reason to ask, and nothing else in the product reads them at all.
+     */
+    unusable: readonly string[];
     /** Which crops answered, so a half-answer is legible rather than mysterious. */
     crops: readonly ("head" | "full")[];
   }
@@ -138,8 +179,14 @@ export type DiscoveryCrop = { kind: "head" | "full"; bytes: Buffer; contentType:
 /**
  * Cut the two pictures a discovery asks about.
  *
- * A frame too small to crop sensibly is asked whole, once — a 1-pixel head
- * crop is not a cheaper reading, it is a wasted call and an invented answer.
+ * ⚠ **BOTH OR NEITHER, and that changed with the relay's finding on PR #2570.**
+ * It used to ask a frame too small to head-crop WHOLE, once, on the reasoning
+ * that a 1-pixel head crop is a wasted call. The reasoning held and the
+ * conclusion did not: the full frame alone is the crop measured missing the
+ * nose, and {@link discoverFeatures} now refuses to gate anything on a
+ * part-answer — so that single call would have been bought and then discarded.
+ * A frame too small for both is not asked about at all, which is one call saved
+ * and the hole closed in the same line.
  *
  * It never throws: a frame `sharp` cannot read returns no crops, and
  * {@link discoverFeatures} turns that into the fail-open answer.
@@ -167,16 +214,21 @@ export async function discoveryCropsOf(frame: {
   const crops: DiscoveryCrop[] = [];
   try {
     const headHeight = Math.round(frame.height * HEAD_FRACTION);
-    if (frame.width >= 64 && headHeight >= 64) {
-      crops.push(await bound(
-        await sharp(frame.bytes)
-          .extract({ left: 0, top: 0, width: frame.width, height: headHeight })
-          .resize({ width: ASK_WIDTH })
-          .png()
-          .toBuffer(),
-        "head",
-      ));
+    if (frame.width < 64 || headHeight < 64) {
+      log.warn(
+        { width: frame.width, height: frame.height },
+        "the frame is too small to cut a head crop — no discovery is asked",
+      );
+      return [];
     }
+    crops.push(await bound(
+      await sharp(frame.bytes)
+        .extract({ left: 0, top: 0, width: frame.width, height: headHeight })
+        .resize({ width: ASK_WIDTH })
+        .png()
+        .toBuffer(),
+      "head",
+    ));
     crops.push(await bound(
       await sharp(frame.bytes).resize({ width: ASK_WIDTH }).png().toBuffer(),
       "full",
@@ -280,12 +332,24 @@ export function isBareNoun(name: string): boolean {
   return trimmed.split(/\s+/).length <= 2;
 }
 
-/** A name a cutter could be handed: trimmed, lowercased, and bare. */
-function cleanName(raw: unknown): string | null {
+/**
+ * A name a cutter could be handed: trimmed, lowercased, and bare.
+ *
+ * Three answers rather than two, because the difference between them is a
+ * customer's panel row (the relay's finding on PR #2570):
+ *
+ *   `{ ok: true }`   usable — it becomes a feature and may become a cut
+ *   `{ ok: false }`  the reader named SOMETHING in words no cutter can use.
+ *                    The words are kept so {@link gateScanPlan} can still read
+ *                    them as a reason to ask
+ *   `null`           there is no name here at all — not a string, empty, or so
+ *                    long it is prose rather than an answer
+ */
+function cleanName(raw: unknown): { ok: boolean; name: string } | null {
   if (typeof raw !== "string") return null;
   const name = raw.trim().toLowerCase();
   if (name.length === 0 || name.length > 40) return null;
-  return isBareNoun(name) ? name : null;
+  return { ok: isBareNoun(name), name };
 }
 
 function cleanCount(raw: unknown): number {
@@ -301,7 +365,9 @@ function cleanCount(raw: unknown): number {
  * bare noun is DROPPED rather than repaired, because a repaired caption is a
  * guess wearing a noun's clothes and it would reach a cutter.
  */
-export function parseDiscovery(text: string): { features: DiscoveredFeature[]; cannotSee: UnseenFeature[] } | null {
+export function parseDiscovery(
+  text: string,
+): { features: DiscoveredFeature[]; cannotSee: UnseenFeature[]; unusable: string[] } | null {
   let parsed: unknown;
   const stripped = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try {
@@ -316,16 +382,25 @@ export function parseDiscovery(text: string): { features: DiscoveredFeature[]; c
   const body = parsed as { features?: unknown; cannotSee?: unknown };
 
   const features: DiscoveredFeature[] = [];
+  const unusable: string[] = [];
   const seen = new Set<string>();
   if (Array.isArray(body.features)) {
     for (const entry of body.features) {
       if (typeof entry !== "object" || entry === null) continue;
       const row = entry as { name?: unknown; count?: unknown; about?: unknown };
-      const name = cleanName(row.name);
-      if (name === null || seen.has(name)) continue;
-      seen.add(name);
+      const cleaned = cleanName(row.name);
+      if (cleaned === null || seen.has(cleaned.name)) continue;
+      seen.add(cleaned.name);
+      if (!cleaned.ok) {
+        /* THE WORDS ARE UNUSABLE AND THE FACT IS NOT — the relay's finding on
+           PR #2570. It never becomes a feature and never reaches a cutter; it
+           is kept only so that rejecting a caption cannot cancel a question
+           the panel would otherwise have asked. */
+        unusable.push(cleaned.name);
+        continue;
+      }
       features.push({
-        name,
+        name: cleaned.name,
         count: cleanCount(row.count),
         about: typeof row.about === "string" ? row.about.trim().slice(0, 400) : "",
       });
@@ -345,11 +420,12 @@ export function parseDiscovery(text: string): { features: DiscoveredFeature[]; c
     }
   }
 
-  /* An answer that parsed but named nothing at all is not a discovery — it is
-     a reader that said nothing, and treating it as "this face has no features"
-     would gate the whole scan to silence. */
+  /* An answer that parsed but named nothing USABLE at all is not a discovery —
+     it is a reader that said nothing, and treating it as "this face has no
+     features" would gate the whole scan to silence. A reply whose every name
+     was a caption lands here too, which is the fail-open direction. */
   if (features.length === 0) return null;
-  return { features, cannotSee };
+  return { features, cannotSee, unusable };
 }
 
 /**
@@ -362,8 +438,12 @@ export function parseDiscovery(text: string): { features: DiscoveredFeature[]; c
  * it better.
  */
 export function mergeDiscoveries(
-  answers: ReadonlyArray<{ features: readonly DiscoveredFeature[]; cannotSee: readonly UnseenFeature[] }>,
-): { features: DiscoveredFeature[]; cannotSee: UnseenFeature[] } {
+  answers: ReadonlyArray<{
+    features: readonly DiscoveredFeature[];
+    cannotSee: readonly UnseenFeature[];
+    unusable?: readonly string[];
+  }>,
+): { features: DiscoveredFeature[]; cannotSee: UnseenFeature[]; unusable: string[] } {
   const features = new Map<string, DiscoveredFeature>();
   for (const answer of answers) {
     for (const feature of answer.features) {
@@ -388,40 +468,73 @@ export function mergeDiscoveries(
       if (!unseen.has(row.name)) unseen.set(row.name, row);
     }
   }
-  return { features: Array.from(features.values()), cannotSee: Array.from(unseen.values()) };
+  /* The rejected names are the UNION and are not de-duplicated against
+     `features`: they only ever make the gate ask, so a name that is also a
+     clean feature costs nothing, and dropping one could only ever make the
+     gate cancel more. */
+  const unusable = new Set<string>();
+  for (const answer of answers) for (const name of answer.unusable ?? []) unusable.add(name);
+  return {
+    features: Array.from(features.values()),
+    cannotSee: Array.from(unseen.values()),
+    unusable: Array.from(unusable),
+  };
 }
 
 /**
- * THE PHRASEBOOK — what the catalogue's fixed list becomes once it stops being
- * the gate on what exists.
+ * THE PHRASEBOOK — and **membership in it is the whole licence to cancel a
+ * question.** A catalogue feature absent from this map is ALWAYS ASKED.
  *
  * The design's own sentence: *"the fixed list stops being the gate on what
  * exists and survives only as a phrasebook — proven plural nouns for the text
  * road."* This is that phrasebook read the other way round: for each question
- * the catalogue asks, the plain nouns a person (or the discovery read) would
- * use for the same thing.
+ * a discovery may cancel, the plain nouns a person (or the reader) would use
+ * for the same thing.
  *
- * ⚠ **IT IS NOT A LOOSE SUBSTRING MATCH, AND THE DIFFERENCE IS THE WHOLE
- * SAVING.** `"hair".includes` would match `facial hair`, so every clean-shaven
- * face would keep paying for a beard question — which is precisely the read
- * this step exists to stop buying. So `hair` is deliberately ABSENT from
- * `facial-hair`'s nouns, and matching is on whole words.
+ * ⚠ **IT HELD ALL TWELVE CATALOGUE QUESTIONS UNTIL THE RELAY DROVE IT, AND
+ * THAT WAS THE DEFECT — a successful discovery took rows off the panel that
+ * have pictures today** (the finding on PR #2570, read on dev as verify-bot
+ * 823 with every frame opened by eye — law 9):
  *
- * A catalogue feature with no entry here is ALWAYS ASKED. That is the fail-open
- * direction and it is the one that costs money rather than features;
- * `faceDiscovery.test.ts` holds this map to the real `scanPlan()` so a new
- * catalogue question cannot quietly arrive without one.
+ *   cast 812 lost TEETH in 3 of 3 readings, with its teeth plainly visible
+ *            between parted lips, and Skin in 1 of 3
+ *   cast 772 lost BOTH EARS, visible behind the strands — the reading listed
+ *            "ears" under `cannotSee` and today's segmenter finds them
+ *   and      the same frame gave a different panel on different readings
+ *
+ * So the rule now: **a question is cancellable only when the feature is
+ * OPTIONAL — a thing a character either has or has not got.** Horns, earrings
+ * and glasses are optional. Eyes, brows, a nose, lips, teeth, ears, hair and
+ * skin are not: every character this product casts has them, so a reading that
+ * did not mention one has MISSED it, never found it absent. They are absent
+ * from this map and are therefore asked on every scan, exactly as they are
+ * today.
+ *
+ * ⚠ **`facial-hair` IS NOT CANCELLABLE EITHER, AND IT IS THE ONE ENTRY WHOSE
+ * REASON IS NOT ANATOMY.** It is optional, and the saving the first shape of
+ * this map was built to buy was precisely the beard question on a clean-shaven
+ * face. But `hair` and `facial-hair` are the only two slots the catalogue lets
+ * state an absence (`whenAbsent` — "bald" and "clean-shaven", authored beside
+ * their controls on `referenceSlotCatalogue.ts`), and an absence is built from
+ * a question that was ASKED and came back empty. Cancelling the question
+ * therefore deletes the "clean-shaven" row a customer sees today — **the
+ * saving's whole product is the row it would delete.** `faceDiscovery.test.ts`
+ * derives the `whenAbsent` features from the catalogue and refuses either of
+ * them a place in this map, so a later widening cannot take that row away by
+ * accident.
+ *
+ * ⚠ **IT IS NOT A LOOSE SUBSTRING MATCH, AND THAT IS STILL LOAD-BEARING** —
+ * one entry over from where it started. `"earring".includes` is not the test,
+ * because `ears` must not keep the earring question alive: a loose match would
+ * have every character on the platform paying for an earring read. Matching is
+ * on whole words ({@link namesThe}).
+ *
+ * **What the narrowing is worth now, stated rather than implied: three
+ * questions of twelve, at most.** That is the honest size of it, and this
+ * module's value was never the saving — it is the NAMES, which are what the
+ * pointer road (slice 2) cuts features from that no catalogue question covers.
  */
 export const DISCOVERY_PHRASEBOOK: Readonly<Record<string, readonly string[]>> = {
-  hair: ["hair", "hairstyle", "bun", "braid", "braids", "ponytail", "locks", "dreadlocks", "fringe"],
-  "facial-hair": ["beard", "moustache", "mustache", "stubble", "goatee", "sideburns", "facial hair", "whiskers"],
-  eye: ["eye", "eyes"],
-  brow: ["brow", "brows", "eyebrow", "eyebrows"],
-  nose: ["nose", "snout", "muzzle"],
-  lips: ["lip", "lips", "mouth"],
-  teeth: ["teeth", "tooth", "fangs", "tusks"],
-  ear: ["ear", "ears"],
-  skin: ["skin", "complexion", "hide", "scales"],
   horns: ["horn", "horns", "antlers"],
   earring: ["earring", "earrings", "ear stud", "ear studs"],
   glasses: ["glasses", "spectacles", "eyewear", "goggles", "monocle", "visor"],
@@ -454,17 +567,35 @@ function namesThe(name: string, noun: string): boolean {
  * answer to find.
  *
  * ⚠ **IT FAILS OPEN, EVERYWHERE, AND THAT IS THE PROPERTY TO PROTECT.** A
- * reading that did not happen, could not be parsed, or covers a question this
- * phrasebook does not know leaves the plan exactly as it is today. The cost of
- * failing the other way is a feature vanishing from a customer's panel because
- * a provider had a bad minute, which is not a cost this is allowed to pay to
- * save half a cent.
+ * reading that did not happen, came back in part, could not be parsed, or
+ * covers a question this phrasebook does not know leaves the plan exactly as
+ * it is today. The cost of failing the other way is a feature vanishing from a
+ * customer's panel because a provider had a bad minute, which is not a cost
+ * this is allowed to pay to save half a cent.
  *
- * ⚠ **The honest risk, stated rather than discovered later: a feature the
- * discovery OVERLOOKS is dropped too.** That is what the second crop is for and
- * is why the design buys two — measured on the human fixture, the full frame
- * did not name the nose and the head crop did, so the merged reading keeps it.
- * A single-crop discovery would have dropped a real question there.
+ * ⚠ **THREE KINDS OF NAME KEEP A QUESTION ALIVE, NOT ONE, AND THE SECOND TWO
+ * WERE THE RELAY'S FINDING ON PR #2570.** A question survives when the reading
+ * named the feature, **and equally when the reading said it could not see it,
+ * and when it named it in words a cutter could not use**:
+ *
+ *   `features`   it is there — ask, and cut it
+ *   `cannotSee`  the reader declared it hidden, cut off or too small to be sure
+ *                of. That is a reason to ASK, never a finding of absence —
+ *                cast 772 lost both ears to exactly this, with the ears visible
+ *                behind the strands and today's segmenter finding them
+ *   `unusable`   the reader named it and `cleanName` rejected the words
+ *                (*"long black hair"*, *"dangling gold earrings"*). The NAME is
+ *                unusable and is never handed to a cutter; the FACT that
+ *                something is there is perfectly good, and letting a rejected
+ *                caption cancel a question turns a parse rule into a deletion
+ *
+ * ⚠ **The honest risk that remains, stated rather than discovered later: a
+ * feature the discovery OVERLOOKS is dropped too.** It is now bounded to the
+ * three optional features this phrasebook holds, and three things stand between
+ * it and a customer: both crops must have answered ({@link discoverFeatures}
+ * fails open on a part-answer), the reading must have said nothing about the
+ * feature in any of the three senses above, and nothing it could cancel is a
+ * row the panel can state an absence for.
  */
 export function gateScanPlan<T extends { feature: string }>(
   plan: readonly T[],
@@ -472,17 +603,26 @@ export function gateScanPlan<T extends { feature: string }>(
 ): { plan: T[]; dropped: string[] } {
   if (!discovery || !discovery.ok) return { plan: [...plan], dropped: [] };
 
+  /* Every name this reading produced that is a reason to ask — see the three
+     kinds above. Built once rather than per region. */
+  const reasonsToAsk = [
+    ...discovery.features.map((feature) => feature.name),
+    ...discovery.cannotSee.map((row) => row.name),
+    ...discovery.unusable,
+  ];
+
   const kept: T[] = [];
   const dropped: string[] = [];
   for (const region of plan) {
     const nouns = DISCOVERY_PHRASEBOOK[region.feature];
     if (nouns === undefined) {
-      /* A question this phrasebook has never heard of is always asked. */
+      /* Not cancellable: always-present anatomy, the two features the panel can
+         state an absence for, and any question this phrasebook has never heard
+         of. All three take the same road, which is to be asked. */
       kept.push(region);
       continue;
     }
-    const named = discovery.features.some((feature) =>
-      nouns.some((noun) => namesThe(feature.name, noun)));
+    const named = reasonsToAsk.some((name) => nouns.some((noun) => namesThe(name, noun)));
     if (named) kept.push(region);
     else dropped.push(region.feature);
   }
@@ -499,6 +639,15 @@ export function gateScanPlan<T extends { feature: string }>(
  * It never throws. A provider failure, a timeout, an unparseable answer and a
  * missing transport are all `{ ok: false }`, and the caller's behaviour is
  * identical in every one of those cases: ask the whole catalogue.
+ *
+ * ⚠ **A PART-ANSWER IS A FAILURE, NOT A READING — the relay's second finding on
+ * PR #2570.** This used to succeed whenever ANY crop answered, so a head crop
+ * that timed out left the gate running on the full frame alone — and the full
+ * frame is the crop this module's own measurement caught missing the NOSE on
+ * the human fixture. The two crops do not do each other's job (the head crop
+ * reads the face, the full frame reads what they are wearing), so one of them
+ * is not a cheaper version of both: it is a different question with the other
+ * one's authority. Both answered or the catalogue is asked whole.
  */
 export async function discoverFeatures(input: {
   crops: readonly DiscoveryCrop[];
@@ -514,6 +663,26 @@ export async function discoverFeatures(input: {
         images: [{ bytes: crop.bytes, contentType: crop.contentType }],
         jsonSchema: DISCOVERY_SCHEMA,
         about: "discover",
+        /*
+          A DEADLINE OF ITS OWN, AND NO RETRIES — the relay's fourth finding on
+          PR #2570, and the reason is where this call SITS rather than how long
+          it takes.
+
+          It stands AHEAD of every segmenter call in the scan (`faceScanService`
+          awaits it before the first question goes out) and it shares the
+          interpreter's text queue, whose concurrency is 4. On the transport's
+          defaults that is 45 s per attempt times three retries: a hung provider
+          would hold a customer's whole panel for over two minutes, and hold a
+          paid roll's interpreter behind it on the way.
+
+          15 s is above the 8–9 s the relay measured for a real read and far
+          below the damage. ⚠ **A deadline that fires here costs nothing**: the
+          reading comes back `{ ok: false }` and the scan asks the full
+          catalogue, which is the panel the customer gets today — so trading a
+          rare timeout for a bounded wait is the cheap side of this call.
+        */
+        timeoutMs: 15_000,
+        retries: 0,
       });
       /*
         A REPLY CUT OFF AT THE CEILING IS DISCARDED, NOT READ (#1272's class,
@@ -548,6 +717,14 @@ export async function discoverFeatures(input: {
 
   const got = answers.filter((answer) => answer !== null);
   if (got.length === 0) return { ok: false, why: "no crop produced a usable reading" };
+  if (got.length < input.crops.length) {
+    /* See the header: one crop is not a cheaper version of both. */
+    log.warn(
+      { answered: got.map((answer) => answer.crop), asked: input.crops.length },
+      "only part of the discovery read came back — the catalogue is asked whole",
+    );
+    return { ok: false, why: "only part of the reading came back" };
+  }
 
   const merged = mergeDiscoveries(got);
   log.info(
@@ -555,6 +732,10 @@ export async function discoverFeatures(input: {
       crops: got.map((answer) => answer.crop),
       named: merged.features.length,
       unseen: merged.cannotSee.length,
+      /* Counted, because a climbing number means the prompt's bare-noun
+         paragraph has stopped working and the saving is quietly going with
+         it — measured 0 of 69 on the fixtures the day this was written. */
+      unusable: merged.unusable.length,
       tokensIn: got.reduce((sum, answer) => sum + (answer.tokens?.in ?? 0), 0),
       tokensOut: got.reduce((sum, answer) => sum + (answer.tokens?.out ?? 0), 0),
     },
@@ -564,6 +745,7 @@ export async function discoverFeatures(input: {
     ok: true,
     features: merged.features,
     cannotSee: merged.cannotSee,
+    unusable: merged.unusable,
     crops: got.map((answer) => answer.crop),
   };
 }

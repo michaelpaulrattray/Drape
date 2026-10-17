@@ -819,10 +819,20 @@ describe("the discovery gate", () => {
     ok: true,
     features: names.map((name) => ({ name, count: 1, about: "" })),
     cannotSee: [],
+    unusable: [],
     crops: ["head", "full"],
   });
 
-  it("never asks about a feature the discovery did not find", async () => {
+  it("drops the OPTIONAL questions the discovery did not find, and nothing else", async () => {
+    /*
+      ⚠ THIS ARM EXPECTED THE OPPOSITE UNTIL THE RELAY'S FINDING ON PR #2570.
+      It read *"never asks about a feature the discovery did not find"* and
+      asserted that `facial hair` and `all the teeth` went unasked — which is
+      precisely the defect the relay measured on real casts (812 lost its teeth
+      in 3 of 3 readings with the teeth plainly visible). A reading that did not
+      mention the teeth has MISSED them; only an optional feature can be found
+      absent.
+    */
     const r = reader({});
     const scan = await scanFace({
       frame: FRAME,
@@ -836,11 +846,15 @@ describe("the discovery gate", () => {
     expect(everythingAsked).toContain("hair");
     expect(everythingAsked).toContain("eyes");
     expect(everythingAsked).toContain("nose");
-    /* And nothing else from the catalogue — this is the saving. */
-    expect(everythingAsked).not.toContain("facial hair");
+    /* And the anatomy it said nothing about, which is still asked. */
+    expect(everythingAsked).toContain("facial hair");
+    expect(everythingAsked).toContain("all the teeth");
+    expect(everythingAsked).toContain("ear");
+    expect(everythingAsked).toContain("face skin");
+    /* The saving, and its whole size: the three optional features. */
     expect(everythingAsked).not.toContain("glasses");
     expect(everythingAsked).not.toContain("earring");
-    expect(everythingAsked).not.toContain("all the teeth");
+    expect(everythingAsked).not.toContain("horns");
     /* A gated-out feature has no box, and it is NOT reported empty either —
        `empty` means "asked and answered nothing", and a question nobody asked
        must not borrow that sentence. */
@@ -850,7 +864,7 @@ describe("the discovery gate", () => {
 
   it("reports the questions it ASKED, not the ones it might have", async () => {
     /* The panel's "is this a face or a broken reader" line rests on
-       asked/found. A scan that asked three and said twelve would read as a
+       asked/found. A scan that asked nine and said twelve would read as a
        catastrophically bad reader rather than a narrow one. */
     const whole = await scanFace({ frame: FRAME, reader: reader({}), describe: null });
     const gated = await scanFace({
@@ -859,7 +873,10 @@ describe("the discovery gate", () => {
       describe: null,
       discovery: found("hair", "eyes", "nose"),
     });
-    expect(gated.asked).toBe(3);
+    /* DERIVED, not typed: three cancellable questions of the catalogue's own
+       count, so this moves with the catalogue and with the phrasebook rather
+       than pinning today's twelve. */
+    expect(gated.asked).toBe(scanPlan().length - 3);
     expect(gated.asked).toBeLessThan(whole.asked);
     expect(whole.asked).toBe(scanPlan().length);
   });
