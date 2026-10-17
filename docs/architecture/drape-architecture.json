@@ -16269,6 +16269,10 @@
       "path": "server/prMergeOrder.test.ts"
     },
     {
+      "id": "test:server/prMergeStaleness.test.ts",
+      "path": "server/prMergeStaleness.test.ts"
+    },
+    {
       "id": "test:server/preCommitGate.test.ts",
       "path": "server/preCommitGate.test.ts"
     },
