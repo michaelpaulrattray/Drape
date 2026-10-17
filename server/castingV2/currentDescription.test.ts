@@ -17,8 +17,10 @@ import {
   keepsWhatWasTakenBack,
   looksLikeAnEditList,
   mentionsThePicture,
+  notInShotForThisCall,
   writeCurrentDescription,
 } from "./currentDescription";
+import { everyFeatureOutOfFrame, outOfFrame } from "./castingFrame";
 import { pictureHalfPhrase } from "./sidePhrasing";
 
 function engineSaying(text: string, sink: TextRequest[] = []): TextEngine {
@@ -363,5 +365,83 @@ describe("what the photograph could not show (#2645 follow-up)", () => {
       engineSaying("A dancer with a slim waist and red lipstick."),
       { ...ask, previous: null, seed: { brief: "A dancer with a slim waist.", earlierAsks: [] } },
     )).resolves.toMatchObject({ ok: true });
+  });
+});
+
+/**
+ * WHAT THE PHOTOGRAPH HAS NEVER SHOWN, ON THE SEED ROAD (#2657).
+ *
+ * The seed road prints every earlier ask as raw prose, and nothing stored
+ * anywhere says which half of one the camera refused - the frame strip's
+ * `dropped` list is computed per render and written to no column. So a waist
+ * dropped three edits ago came back as a fact about the person: measured
+ * through the real writer on 10 real briefs, twice each, **20 of 20**. These
+ * arms drive the repair directly with an engine double (law 3).
+ */
+describe("what the photograph has never shown (#2657)", () => {
+  const SEEDED = {
+    previous: null,
+    seed: { brief: "A weathered fisherman of the north Atlantic, sixty.", earlierAsks: ["a smaller waist and red lipstick"] },
+    change: "give them green eyes",
+  };
+  const WAIST = outOfFrame("waist")!;
+
+  it("the seeded writer is told the frame has never shown the waist, with no out-of-frame half in THIS change", () => {
+    const user = currentDescriptionUserTurn(SEEDED);
+    expect(user).toContain("Their photograph does not show these, so no change above was made to them.");
+    /* The writer's they/their terms, never the possessive - same rule as the
+       current change's own block one describe up. */
+    expect(user).toContain("\n- waist");
+    expect(user).not.toContain("- her waist");
+  });
+
+  it("CONTROL - the previous road carries no such sentence", () => {
+    const user = currentDescriptionUserTurn({
+      ...SEEDED,
+      previous: "A weathered fisherman of sixty with grey-green eyes.",
+    });
+    expect(user).not.toContain("has never shown");
+    expect(user).not.toContain("does not show these");
+  });
+
+  it("a seeded reply that writes the waist in is REFUSED, though this change named nothing out of frame", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A weathered fisherman of sixty with a smaller waist and green eyes."),
+      SEEDED,
+    )).resolves.toMatchObject({ ok: false, reason: "not_in_shot" });
+  });
+
+  it("CONTROL - a seeded reply that leaves it alone is filed", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A weathered fisherman of sixty with red lips and green eyes."),
+      SEEDED,
+    )).resolves.toMatchObject({ ok: true });
+  });
+
+  it("CONTROL - a waist the BRIEF itself names may stay, because the roll made whatever it made", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A dancer with a slim waist and green eyes."),
+      { ...SEEDED, seed: { brief: "A dancer with a slim waist.", earlierAsks: ["red lipstick"] } },
+    )).resolves.toMatchObject({ ok: true });
+  });
+
+  it("the list is DERIVED from the casting frame and is not a second copy of it (working law 4)", () => {
+    expect(notInShotForThisCall(SEEDED)).toEqual(everyFeatureOutOfFrame());
+    expect(everyFeatureOutOfFrame()).toContain(WAIST);
+    /* On the previous road it is this change's own half and nothing else. */
+    expect(notInShotForThisCall({ ...SEEDED, previous: "Anything at all." })).toEqual([]);
+    expect(notInShotForThisCall({ ...SEEDED, previous: "Anything at all.", notInShot: [WAIST] })).toEqual([WAIST]);
+  });
+
+  it("ONE sentence, not two, when THIS change's own half is the out-of-frame feature", () => {
+    const user = currentDescriptionUserTurn({ ...SEEDED, notInShot: [WAIST] });
+    expect(user).toContain("Part of this change was not made");
+    expect(user).not.toContain("does not show these");
+    /* And the feature is listed once rather than once per sentence. */
+    expect(user.split("\n- waist").length - 1).toBe(1);
+  });
+
+  it("a blank previous description is the seed road too, not a short-circuit", () => {
+    expect(notInShotForThisCall({ ...SEEDED, previous: "   " })).toEqual(everyFeatureOutOfFrame());
   });
 });
