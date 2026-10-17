@@ -40,7 +40,6 @@ export type TileCandidate = {
 
 export function CandidateTile({
   candidate,
-  lineageLabel,
   rollWasCancelled,
   cancelling,
   windingDown,
@@ -71,8 +70,6 @@ export function CandidateTile({
    * forgets it fails to compile rather than shipping a dead picture.
    */
   onOpenViewer: () => void;
-  /** "FROM 03" — set when this whole roll followed a parent candidate. */
-  lineageLabel?: string | null;
   /** Changes what a refunded tile says: cancelled by them, or failed by us. */
   rollWasCancelled?: boolean;
   /**
@@ -417,8 +414,6 @@ export function CandidateTile({
           </button>
         ) : null}
 
-
-        {lineageLabel ? <span className="dpc-card__lineage">{lineageLabel}</span> : null}
 
         {/* Kept renders in place: inset ring + badge, on the tile itself. */}
         {candidate.kept ? (

@@ -53,12 +53,14 @@ import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { showingProvisionalRoll } from "@/features/castingV2/rollOnScreen";
 import {
   dispatchOnScreen as readDispatchOnScreen,
-  followingChipLabel,
+  followedFaceThumb,
+  followingChipFace,
   lineageForDispatch,
   lineageOnScreen,
   type SheetLineage,
 } from "@/features/castingV2/followLineage";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
+import { FollowingChip } from "@/features/castingV2/components/FollowingChip";
 import { carriedBriefState, readCarriedBrief, sheetBoxStart } from "@/features/castingV2/carriedBrief";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
@@ -2806,7 +2808,7 @@ export default function CastingSheet() {
 
 
   /*
-    "FROM 04" — the roll this one followed.
+    The roll this one followed.
 
     Resolved through the session's roll list rather than by arithmetic. The
     parent is whichever roll the followed candidate belonged to, which is not
@@ -2836,11 +2838,26 @@ export default function CastingSheet() {
     dispatched: dispatchedLineage,
     loaded: roll.data?.lineage,
   });
-  const followingChip = followingChipLabel({
+  const followingChip = followingChipFace({
     dispatchOnScreen,
     dispatched: dispatchedLineage,
     standingFollowId,
     loaded: roll.data?.lineage,
+  });
+  /*
+    THE CHIP DRAWS THE FACE, NOT ITS NUMBER (#2622). The picture is read off
+    the roll that face sits on. When that is the roll on screen this is the
+    sheet's own query (same key, same cache, no second request); on a follow of
+    a follow it is the previous sheet, read once — a finished face does not
+    change, so it is not polled.
+  */
+  const followedRoll = trpc.castingV2.getRoll.useQuery(
+    { rollId: followingChip?.rollId ?? "" },
+    { enabled: Boolean(followingChip?.rollId), staleTime: 5 * 60_000 },
+  );
+  const followingThumb = followedFaceThumb({
+    face: followingChip,
+    candidates: followedRoll.data?.candidates,
   });
 
   /*
@@ -2854,17 +2871,10 @@ export default function CastingSheet() {
     }
   }, [dispatchedLineage, awaitingNewRoll, roll.data, activeRollId]);
 
-  const lineageLabel = useMemo(() => {
-    const fromRollId = shownLineage?.fromRollId;
-    if (!fromRollId) return null;
-    const parent = rolls.find((entry) => entry.rollId === fromRollId);
-    return parent ? `FROM ${String(parent.rollIndex).padStart(2, "0")}` : null;
-  }, [shownLineage?.fromRollId, rolls]);
-
   /*
-    The same lineage, said in the echo's register rather than the pill's.
-    "FROM 02" is a mono tag on a tile; a sentence says "the roll before this
-    one". Both point at the same parent — they are not two facts.
+    The lineage, said in the echo's register. The per-tile "FROM 02" pill that
+    used to say it a second time is gone (#2622): every tile on a follow sheet
+    shares one parent, and the chip shows that face once.
   */
   const followLabel = useMemo(() => {
     const fromRollId = shownLineage?.fromRollId;
@@ -3146,23 +3156,11 @@ export default function CastingSheet() {
           and this is state — the same register as which roll you are reading.
         */}
         {followingChip ? (
-          <div className="dpc-following">
-            <span className="dpc-following__chip">
-              FOLLOWING {followingChip}
-              <button
-                type="button"
-                className="dpc-following__clear"
-                onClick={() => setFollowDismissed(true)}
-                aria-label="Stop following — the next roll casts openly"
-                title="Stop following — the next roll casts openly"
-              >
-                ×
-              </button>
-            </span>
-            <span className="dpc-following__note">
-              Roll again keeps this family. Clear it to cast openly.
-            </span>
-          </div>
+          <FollowingChip
+            faceId={followingChip.candidateId}
+            thumbUrl={followingThumb}
+            onClear={() => setFollowDismissed(true)}
+          />
         ) : null}
 
         {/*
@@ -3369,7 +3367,6 @@ export default function CastingSheet() {
                       ? "failed-refunded"
                       : candidate.status,
                   }}
-                  lineageLabel={lineageLabel}
                   rollWasCancelled={
                     rollWasCancelled || Boolean(optimisticCancelled[candidate.candidateId])
                   }
