@@ -98,8 +98,6 @@ import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 import { describedNowSentence } from "./currentDescription";
-/* #2626 — the fit sentence and the fang growth wording, one owner each. */
-import { CAST_FIT_SENTENCE, fangGrowthHeld, fangGrowthWords, isFangAsk } from "./castFit";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -983,7 +981,6 @@ function askSentence(
     factClauses.push(facts);
   };
   const collapsed = pairCollapse(asks, wordStacks);
-  const growthHeld = fangGrowthHeldIn(asks, bySlot, wordStacks);
   for (const ask of asks) {
     /*
       A TAKEN-BACK SLOT CONTRIBUTES NO CLAUSE — see `Ask.restate`.
@@ -1041,16 +1038,8 @@ function askSentence(
     }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
     const words = (wordStacks.get(ask.slot) ?? []).join(", ");
-    /*
-      A FANG ASK IS TOLD WHAT A FANG IS (#2626, P2). The painter gets the
-      courted growth description in place of the customer's words; the FACTS
-      rendering keeps their words, so the description writer and every record
-      still say what they said. Their colour or material, when named, rides
-      inside the growth sentence and the own-teeth clause is absent.
-    */
-    const painted = !growthHeld && isFangAsk(noun, words) ? fangGrowthWords(words, possessive) : words;
     /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
-    push(`${named}${whereItIs(ask.slot)}: ${painted}`, `${named}: ${words}`);
+    push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -2294,18 +2283,14 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       describesNow
         ? describedNowSentence(input.currentDescription!, pronouns)
         : ask,
+      /* A TEETH EDIT MAY OPEN THE MOUTH (#2626) — one permission note beside
+         the customer's words, on both roads, never rewording them. */
+      teethPartingNote(input.asks, bySlot),
       /* AND THE PAINTER STILL GETS TOLD WHICH HALF OF THE FRAME IT IS IN —
          only on the description road, because off it the parenthetical inside
          `ask` already says it (#2578 §3). */
       describesNow ? painterSideLines(input.asks, wordStacks, possessive) : "",
-      /* The fang growth wording on the description road (#2626, P2) — the
-         description is the customer's record and is sent as written, so how a
-         fang is drawn rides beside it, the way the side lines do. */
-      describesNow ? painterFangLines(input.asks, bySlot, wordStacks, possessive) : "",
       inkWords,
-      /* THE FIT SENTENCE (#2626, P1), last and once, on every prompt that
-         changes something — both roads. */
-      describesNow || ask !== "" ? CAST_FIT_SENTENCE : "",
     ]
       .filter((line) => line !== "")
       .join(" "),
@@ -2372,46 +2357,33 @@ function painterSideLines(
 }
 
 /**
- * Whether this render takes fangs away or shrinks them anywhere — see
- * `fangGrowthHeld`. Read once per render by both places the growth wording
- * can be sent, so neither can grow a slot while another shrinks it.
- */
-function fangGrowthHeldIn(
-  asks: readonly Ask[],
-  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
-  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
-): boolean {
-  return fangGrowthHeld(asks.filter((ask) => !ask.restate).map((ask) => ({
-    noun: bySlot.get(ask.slot)?.noun ?? ask.noun ?? "",
-    words: (wordStacks.get(ask.slot) ?? []).join(", "),
-    vacated: ask.vacate !== undefined,
-  })));
-}
-
-/**
- * HOW A FANG IS DRAWN, said to the painter on the description road (#2626, P2).
+ * THE ONE PERMISSION NOTE A TEETH EDIT CARRIES (#2626, his rulings 2026-10-17,
+ * verbatim: *"i honestly think we shouldnt change how the image engine recieves
+ * its instructions from the user just let the result be"*, *"i think the issue
+ * is closed mouths with fangs is what its fighting mostly?"*).
  *
- * Off that road the growth wording replaces the words inside the change clause.
- * On it, the stored description stands where the clause stood and is sent as
- * written — it is the customer's record — so the growth wording rides beside it
- * as one line per fang ask, the same way `painterSideLines` carries the side.
- * It names no new change: the description already says the fangs are there.
+ * A teeth ask on a closed-mouth master is an ask about something the frame
+ * does not show, and the fang courts saw parted mouths come out natural on any
+ * wording. So the painter is told only that it MAY part the lips. The
+ * customer's own words reach it exactly as typed: this is a sentence beside
+ * them, never a rewrite of them, and it names nothing about what the teeth
+ * become.
+ *
+ * Said once per render, and only when an ask in the change clause is about the
+ * teeth (the `teeth` slot, or an open kind whose noun names teeth, fangs or
+ * canines). A taken-back slot says no clause, so it gets no note either. No
+ * other slot is given it.
  */
-function painterFangLines(
+export const TEETH_PARTING_NOTE = "The lips may part slightly so the teeth show.";
+
+const TEETH_NOUN = /\b(?:teeth|tooth|fangs?|canines?)\b/i;
+
+function teethPartingNote(
   asks: readonly Ask[],
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
-  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
-  possessive: string,
 ): string {
-  if (fangGrowthHeldIn(asks, bySlot, wordStacks)) return "";
-  const lines: string[] = [];
-  for (const ask of asks) {
-    if (ask.restate || ask.vacate) continue;
-    const noun = bySlot.get(ask.slot)?.noun ?? ask.noun ?? "";
-    const words = (wordStacks.get(ask.slot) ?? []).join(", ");
-    if (!isFangAsk(noun, words)) continue;
-    const line = `Draw the fangs as ${fangGrowthWords(words, possessive)}.`;
-    if (!lines.includes(line)) lines.push(line);
-  }
-  return lines.join(" ");
+  const touchesTeeth = asks.some((ask) => (
+    !ask.restate && TEETH_NOUN.test(bySlot.get(ask.slot)?.noun ?? ask.noun ?? "")
+  ));
+  return touchesTeeth ? TEETH_PARTING_NOTE : "";
 }
