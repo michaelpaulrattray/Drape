@@ -210,16 +210,12 @@ export function editsFeatureAtSlot(
   if (edited.has(slot)) return true;
   const open = openKindOfSlot(slot);
   if (open === null) return false;
-  let bareAsked = false;
-  let sidedAsked = false;
-  for (const editedSlot of edited) {
-    const asked = openKindOfSlot(editedSlot);
-    if (asked === null || asked.kind !== open.kind) continue;
-    if (asked.side === null) bareAsked = true;
-    else sidedAsked = true;
-  }
-  if (bareAsked) return true;
-  return open.side === null && sidedAsked;
+  /* Asked by the grammar's own key builders rather than by re-parsing every
+     edited slot — the same shape as `openKindCarriedByCrops` above, and it
+     keeps the spelling of a key in the one place that owns it. */
+  if (edited.has(openSlotKey(open.kind))) return true;
+  return open.side === null
+    && INSTANCES.some((side) => edited.has(openSideSlotKey(open.kind, side)));
 }
 
 /* ------------------------------------------------------------------ *

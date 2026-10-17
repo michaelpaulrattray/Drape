@@ -327,9 +327,10 @@ describe("does a set of edited slots change the feature at a slot", () => {
     expect(editsFeatureAtSlot(edited, "open:fangs@right")).toBe(false);
   });
 
-  it("reads every edited slot, not just the first", () => {
-    /* A loop that returned on its first open slot would pass every arm above
-       and fail this one. */
+  it("is not thrown off by another kind sitting in the edited set", () => {
+    /* A reader that answered from one entry of the edited set, or that let a
+       different kind's side stand in for this one, passes every arm above and
+       fails this one. */
     const edited = new Set(["hair", "open:horns@left", "open:fangs"]);
     expect(editsFeatureAtSlot(edited, "open:fangs@right")).toBe(true);
     expect(editsFeatureAtSlot(edited, "open:horns")).toBe(true);
