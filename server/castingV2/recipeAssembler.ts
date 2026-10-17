@@ -95,7 +95,8 @@ import {
    (fable-1313 §2) — one owner for every road that turns words into ink. */
 import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
-import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
+import { imageHalfClause, imageHalfOf, personSideNamedIn, pictureHalfPhrase } from "./sidePhrasing";
+import type { Instance } from "./referenceSlots";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 import { describedNowSentence } from "./currentDescription";
 
@@ -812,6 +813,20 @@ const LEADING_DETERMINER = /^(?:a|an|the|her|his|their|its)\s+/i;
  * It is still a SHAPE rather than a fact — both halves are derived, the flip in
  * `imageHalfOf` and the words in `pictureHalfPhrase`.
  */
+/**
+ * THE PERSON'S SIDE NAMED IN A ONE-PIECE FEATURE'S WORDS (#2618), or null.
+ *
+ * Only for a slot with no instance of its own — a paired slot's side is the
+ * catalogue's and {@link whereItIs} already says it, so reading the words too
+ * would be a second source for one fact. The reading itself is
+ * `sidePhrasing.personSideNamedIn`, the one owner beside the clause it feeds.
+ */
+function wordsSideOf(slot: FeatureSlot, words: string): Instance | null {
+  const definition = slotDefinition(slot);
+  if (definition === null || definition.instance !== null) return null;
+  return personSideNamedIn(words);
+}
+
 function whereItIs(slot: FeatureSlot): string {
   const definition = slotDefinition(slot);
   if (definition === null || definition.instance === null) return "";
@@ -1038,8 +1053,17 @@ function askSentence(
     }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
     const words = (wordStacks.get(ask.slot) ?? []).join(", ");
-    /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
-    push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
+    /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2.
+       A one-piece feature whose words name a side (#2618) says the half AFTER
+       its words — "his nose stud: a ring in the right nostril (on the left of
+       the picture…)" — because the side belongs to the words, not the noun. */
+    const sideInWords = wordsSideOf(ask.slot, words);
+    push(
+      sideInWords === null
+        ? `${named}${whereItIs(ask.slot)}: ${words}`
+        : `${named}: ${words}${imageHalfClause(sideInWords)}`,
+      `${named}: ${words}`,
+    );
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -2273,12 +2297,21 @@ function painterSideLines(
     if (ask.restate) continue;
     if (collapsed.has(ask.slot)) continue;
     const definition = slotDefinition(ask.slot);
-    if (definition === null || definition.instance === null) continue;
+    if (definition === null) continue;
+    /* A ONE-PIECE FEATURE WHOSE WORDS NAME A SIDE (#2618): the description
+       carries "the right nostril" as prose, so the painter is told where that
+       side is exactly as it is for a paired slot. */
+    const wordsSide = definition.instance === null
+      ? wordsSideOf(ask.slot, (wordStacks.get(ask.slot) ?? []).join(", "))
+      : null;
+    if (definition.instance === null && wordsSide === null) continue;
     /* Through the one owner of the flip and the one owner of the words — this
        function spells neither (law 4, and the flip is the only part that can be
        wrong). The noun already carries the side: "right eye". */
-    const where = pictureHalfPhrase(imageHalfOf(definition.instance));
-    const sentence = `${possessive} ${definition.noun} is ${where}.`;
+    const where = pictureHalfPhrase(imageHalfOf(definition.instance ?? wordsSide!));
+    const sentence = definition.instance !== null
+      ? `${possessive} ${definition.noun} is ${where}.`
+      : `The ${wordsSide} side named for ${possessive} ${definition.noun} is ${where}.`;
     const capitalised = `${sentence[0]!.toUpperCase()}${sentence.slice(1)}`;
     if (!lines.includes(capitalised)) lines.push(capitalised);
   }

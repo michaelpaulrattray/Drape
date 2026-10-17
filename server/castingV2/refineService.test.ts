@@ -4195,6 +4195,28 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
         { ...input, instruction: "a gold hoop in her right ear" })).rejects.toThrow(/one side/);
       expect(painted).toHaveLength(0);
     });
+
+    /*
+      ⚠ AND THE SIDE IS THE PERSON'S, SAID AS THE PICTURE'S HALF (#2618). The
+      #2617 court put "the right nostril" on the person's LEFT — the right of
+      the picture — because a one-piece slot's side word went out raw.
+    */
+    it("tells the painter which half of the picture a named nostril is in — the person's right is the picture's left", async () => {
+      await refineCandidate(wearing(["nose piercing in the right nostril"]),
+        { ...input, instruction: "her nose — add a nose piercing to the right nostril" });
+      expect(painted[0]!.prompt).toContain("nose piercing in the right nostril (on the left of the picture as you look at it)");
+    });
+
+    it("and the person's left is the picture's right", async () => {
+      await refineCandidate(wearing(["a small stud in the left nostril"]),
+        { ...input, instruction: "a small stud in the left nostril" });
+      expect(painted[0]!.prompt).toContain("a small stud in the left nostril (on the right of the picture as you look at it)");
+    });
+
+    it("CONTROL — an unsided nose piercing gets no picture-half clause", async () => {
+      await refineCandidate(wearing(["nose piercing"]), { ...input, instruction: "add nose piercing" });
+      expect(painted[0]!.prompt).not.toContain("of the picture as you look at it");
+    });
   });
 
   it("delivers the engine's own frame, with nothing composited into it", async () => {

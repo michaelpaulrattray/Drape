@@ -146,3 +146,49 @@ export function pictureSideAskLines(): string[] {
     "  not a side: all over, at the roots, at the ends, at the fringe across both.",
   ];
 }
+
+/* ------------------------------------------------------------------ *
+ * WHICH SIDE OF THE PERSON A SENTENCE NAMES                           *
+ * ------------------------------------------------------------------ */
+
+/**
+ * WHICH SIDE A SENTENCE NAMES, or null when it names none or both.
+ *
+ * Moved here from `repaintAsks` (#2618) so the reading of a side word and the
+ * saying of a side live in one file; `repaintAsks` re-exports it unchanged.
+ *
+ * Both words means neither: *"her left and right earrings gold"* is a statement
+ * about the pair. Split into words rather than matched with boundaries, so
+ * "bright" can never read as "right".
+ */
+export function sideNamedIn(phrase: string): Instance | null {
+  const words = phrase.toLowerCase().split(/[^a-z]+/);
+  const left = words.includes("left");
+  const right = words.includes("right");
+  if (left === right) return null;
+  return left ? "left" : "right";
+}
+
+/**
+ * THE PERSON'S OWN SIDE, NAMED INSIDE A ONE-PIECE FEATURE'S WORDS (#2618).
+ *
+ * A nostril, a side of the lips, a cheek, the side of the neck: the slot is ONE
+ * slot, so no catalogue instance carries the side, and the side word reached
+ * the engine raw — *"nose piercing in the right nostril"* painted on the
+ * person's LEFT nostril, the right of the picture (the #2617 court). That is
+ * the positional bias the V4 side court measured on eyes, and the answer is the
+ * same clause, through {@link imageHalfClause}.
+ *
+ * Narrower than {@link sideNamedIn} on purpose, because this one ADDS words to
+ * a paid prompt rather than refusing: a sentence already speaking about the
+ * picture ("on the left as you look at it") is the customer's own mapping and
+ * is not flipped again, and "just right" is not a side.
+ */
+const NOT_A_SIDE = /\b(?:just|all|exactly|about|looks?)\s+right\b|\bright\s+(?:away|now|amount|size|shade|length)\b/;
+const ALREADY_PICTURE_RELATIVE = /\b(?:picture|photo|image|frame|viewer|camera|as you look|as i look|from the front|screen)\b/;
+export function personSideNamedIn(phrase: string): Instance | null {
+  const said = phrase.toLowerCase();
+  if (ALREADY_PICTURE_RELATIVE.test(said)) return null;
+  if (NOT_A_SIDE.test(said)) return null;
+  return sideNamedIn(said);
+}

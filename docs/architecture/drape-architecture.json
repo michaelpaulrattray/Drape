@@ -15161,6 +15161,10 @@
       "path": "server/castingV2/sheetPreview.test.ts"
     },
     {
+      "id": "test:server/castingV2/sidePhrasing.test.ts",
+      "path": "server/castingV2/sidePhrasing.test.ts"
+    },
+    {
       "id": "test:server/castingV2/sidePhrasingClause.test.ts",
       "path": "server/castingV2/sidePhrasingClause.test.ts"
     },
@@ -32865,6 +32869,11 @@
     {
       "from": "module:server/castingV2/repaintAsks.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/repaintAsks.ts",
+      "to": "module:server/castingV2/sidePhrasing.ts",
       "kind": "imports"
     },
     {

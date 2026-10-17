@@ -456,16 +456,8 @@ export class RepaintCannotSayError extends Error {
  * "right", and that near-miss is exactly the shape that would refuse a render
  * nobody asked to refuse.
  */
-export function sideNamedIn(phrase: string): "left" | "right" | null {
-  /* Split into words rather than matched with word boundaries, so "bright"
-     can never read as "right" — the near-miss that would refuse a render
-     nobody asked to refuse. */
-  const words = phrase.toLowerCase().split(/[^a-z]+/);
-  const left = words.includes("left");
-  const right = words.includes("right");
-  if (left === right) return null;
-  return left ? "left" : "right";
-}
+export { sideNamedIn } from "./sidePhrasing";
+import { sideNamedIn } from "./sidePhrasing";
 
 /**
  * A FAMILY FACET'S ITEMS, GROUPED BY THE KIND EACH ONE NAMES (#2612).
