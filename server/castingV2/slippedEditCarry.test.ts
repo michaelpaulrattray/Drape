@@ -3,7 +3,7 @@ import { mintedSlotsForRender } from "./mintedSlots";
 import { assembleRecipe, type LibraryEntry } from "./recipeAssembler";
 import { liveReferences, supersededCarrySlots, type StoredReference } from "./referenceLibrary";
 import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
-import { libraryReadingOf, type FacetCheck, type RenderVerdict } from "./renderVerification";
+import { confirmVerdict, libraryReadingOf, type FacetCheck, type RenderVerdict } from "./renderVerification";
 import { pronounsForSex } from "./castPronouns";
 import type { Facet } from "./refineFacets";
 
@@ -47,7 +47,8 @@ const falsePass = (readings: number): RenderVerdict => ({
   readings,
   checks: [
     check("hair.cut" as Facet, true, "short hair"),
-    check("hairWorn" as Facet, true, "worn as cut"),
+    /* A confirmed yes carries its own mark (#2650); the count alone never did. */
+    { ...check("hairWorn" as Facet, true, "worn as cut"), ...(readings >= 2 ? { confirmed: true as const } : {}) },
   ],
 });
 const WRITTEN = new Set<Facet>(["hair.cut" as Facet, "hairWorn" as Facet]);
@@ -164,5 +165,36 @@ describe("an edit the render lost is not carried forward as the truth (#2646)", 
     expect(recipe.prompt).toMatch(/Keep \w+ hair exactly: Dark brown hair swept up into a high bun/);
     expect(recipe.references.map((ref) => ref.image.key)).toContain("casting-v2/library/bun.png");
     expect(superseded).not.toContain("hair");
+  });
+
+  it("⚠ a re-read that comes back SILENT on the hair is not a confirmation — through the real confirmVerdict (#2650)", async () => {
+    /* The reviewer's shape: the second reading returned (readings: 2) but held
+       no check for hairWorn. Until #2650 the count alone made the yes count. */
+    const first: RenderVerdict = { ok: true, checks: [
+      check("hair.cut" as Facet, true, "short hair"),
+      check("hairWorn" as Facet, true, "worn as cut"),
+    ] };
+    const verdict = await confirmVerdict(first, async () => ({
+      ok: true, checks: [check("hair.cut" as Facet, true, "short hair")],
+    }));
+    expect(verdict.readings).toBe(2);
+    const { reading, recipe, superseded } = stepThreeThenFour(verdict);
+    expect(reading.unconfirmed.has("hairWorn" as Facet)).toBe(true);
+    expect(recipe.prompt).not.toMatch(/Keep \w+ hair exactly/);
+    expect(recipe.prompt).not.toContain("high bun");
+    expect(superseded).toContain("hair");
+  });
+
+  it("⚠ CONTROL — a re-read that READ the hair and agreed confirms it, through the same function", async () => {
+    const first: RenderVerdict = { ok: true, checks: [
+      check("hair.cut" as Facet, true, "short hair"),
+      check("hairWorn" as Facet, true, "worn as cut"),
+    ] };
+    const verdict = await confirmVerdict(first, async () => ({
+      ok: true, checks: [check("hair.cut" as Facet, true, "short hair"), check("hairWorn" as Facet, true, "worn as cut")],
+    }));
+    const { reading, recipe } = stepThreeThenFour(verdict);
+    expect(reading.unconfirmed.has("hairWorn" as Facet)).toBe(false);
+    expect(recipe.prompt).toMatch(/Keep \w+ hair exactly: Dark brown hair swept up into a high bun/);
   });
 });

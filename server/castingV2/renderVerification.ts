@@ -213,6 +213,16 @@ export type FacetCheck = {
   /** What the reader says it sees — required on every answer, either way. */
   saw?: string;
   /**
+   * ⚠ A SECOND READING READ THIS SAME FACT AND ALSO SAID YES (#2650).
+   *
+   * Set only by {@link confirmVerdict}, only on a rap-sheet affirmation, and
+   * only when the re-read held a check for this fact that was read and
+   * verified. The verdict's `readings` count cannot stand in for it: a re-read
+   * can come back and say nothing about `hairWorn` at all, and the count still
+   * reads 2. Absent means not confirmed.
+   */
+  confirmed?: true;
+  /**
    * Whether this fact is one the product may REFUSE over (D-187).
    *
    * A closed-vocabulary value has a shared meaning: "green" is a value this
@@ -667,9 +677,16 @@ export function facetsWithUnreliabilityPrior(): Facet[] {
 export function unconfirmedAffirmations(verdict: RenderVerdict): Set<Facet> {
   const unconfirmed = new Set<Facet>();
   if (verdict.unavailable) return unconfirmed;
-  if ((verdict.readings ?? 1) >= 2) return unconfirmed;
+  /*
+    PER CHECK, NEVER PER VERDICT (#2650). This read `readings >= 2` as the
+    confirmation until the reviewer of #2649 found the hole: a re-read that
+    came back but never answered THIS facet left `readings: 2` and the yes
+    believed. Only the check's own `confirmed` mark — a second reading that
+    read this fact and agreed — counts now.
+  */
   for (const check of verdict.checks) {
     if (!(check.read && check.verified && hasUnreliabilityPrior(check))) continue;
+    if (check.confirmed === true) continue;
     const facet = facetIn(check.subject);
     if (facet !== null) unconfirmed.add(facet);
   }
@@ -1167,7 +1184,10 @@ export async function confirmVerdict(
   let checks = first.checks.map((check) => {
     if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
     const other = secondBy.get(keyOf(check));
-    if (!other || !other.read || other.verified) return check;
+    /* Silent on this fact: no confirmation, and no withdrawal either (#2650). */
+    if (!other || !other.read) return check;
+    /* Read and agreed: THIS is the confirmation, marked on the check itself. */
+    if (other.verified) return { ...check, confirmed: true as const };
     log.warn(
       { facet: subjectKey(check.subject), asked: check.asked, saw: other.saw },
       "[renderVerification] affirmation withdrawn on re-read — recorded as a miss, not a pass",
