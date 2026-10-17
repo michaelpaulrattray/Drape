@@ -6709,10 +6709,20 @@ async function refineCandidateCounted(
       */
       const held = carriesHoldingTheirAsks({ rows: pruned.rows, composed });
       const carried = { rows: held.rows, dropped: pruned.dropped };
-      const contradictedSlots = held.contradicted.map((one) => one.slot);
-      if (contradictedSlots.length > 0) {
+      const contradictedSlots = held.contradictedSlots;
+      /* A slot whose older, matching crop rides again is NOT said in words —
+         a restored slot is an edited slot, and an edited slot's crop is
+         dropped below, which would throw the matching picture away. */
+      const reinstatedSlots = new Set(held.reinstated);
+      if (held.contradicted.length > 0 || reinstatedSlots.size > 0) {
         log.warn(
-          { operationId, variant: variant.publicId, contradicted: contradictedSlots },
+          {
+            operationId,
+            variant: variant.publicId,
+            setAside: held.contradicted.map((one) => one.slot),
+            wordsOnly: contradictedSlots,
+            olderMatchingCropRides: held.reinstated,
+          },
           "[refineService] a kept feature's words do not hold what the chain asks for it — its crop and keep-line stay home, and the ask is said in words",
         );
       }
@@ -6800,7 +6810,10 @@ async function refineCandidateCounted(
           */
           restore: {
             state: composed,
-            slots: Array.from(new Set([...supersededCarrySlots(branchRows), ...contradictedSlots])),
+            slots: Array.from(new Set([
+              ...supersededCarrySlots(branchRows).filter((slot) => !reinstatedSlots.has(slot)),
+              ...contradictedSlots,
+            ])),
           },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that

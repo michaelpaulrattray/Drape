@@ -52,6 +52,7 @@ import type { FeatureSlot } from "./recipeAssembler";
 import { FACET_SLOTS, catalogueSlots } from "./referenceSlotCatalogue";
 import type { FreeSubject } from "./subjectCards";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
+import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
 
 /**
  * Words that carry no claim about a feature. An ask of "freckles across the
@@ -138,38 +139,72 @@ export function chainAsksBySlot(composed: RefineDelta): Map<FeatureSlot, string[
 }
 
 /**
- * THE SEND-SIDE HALF: the carried rows whose words do not hold the chain's
- * current ask stop riding — no crop, no keep-line — and their slots are said
- * in words from the chain instead (the caller adds them to the restore list).
+ * THE SEND-SIDE HALF: for every slot the chain asks about, the row that rides
+ * is the NEWEST row whose own words hold the ask — never one that argues with
+ * it (#2650, repaired on the relay's HELD finding on PR #2653).
  *
- * This is the backstop that holds whatever any reader said and whenever the
- * row was filed, including rows adopted before #2650 existed. It reads the
- * row's own words, so it also catches a crop cut before the slot was asked to
- * change: those words describe the old state and cannot hold the new ask.
+ *   newest live row holds          nothing changes
+ *   an OLDER row holds             the rows that do not hold stay home, the
+ *                                  holding row rides with its keep-line; when
+ *                                  it has a crop the slot is `reinstated`, and
+ *                                  the caller takes it off the words-only list
+ *   no row holds                   every row of the slot stays home; the slot
+ *                                  is `contradicted` and said in words
+ *
+ * Why an older crop may come back: the short crop delivered at step 1 is the
+ * one picture that matches the ask after the bun slipped back at step 3.
+ * Words alone lose to the master's bun on every render (the relay's eye on
+ * the #2653 strip). A crop whose words do not hold the ask never rides.
+ *
+ * A disputed row never rides and is never chosen; dropping it from the list
+ * changes nothing the assembler sees.
  */
 export function carriesHoldingTheirAsks(input: {
   rows: readonly StoredReference[];
   composed: RefineDelta;
-}): { rows: StoredReference[]; contradicted: StoredReference[] } {
+}): {
+  rows: StoredReference[];
+  /** Rows set aside because their words do not hold the ask. */
+  contradicted: StoredReference[];
+  /** Slots with no holding row at all — said in words. */
+  contradictedSlots: FeatureSlot[];
+  /** Slots whose holding row carries a crop — must NOT be said in words. */
+  reinstated: FeatureSlot[];
+} {
   const asks = chainAsksBySlot(input.composed);
-  /*
-    JUDGED ON THE ROW THAT WOULD RIDE, AND THE WHOLE SLOT GOES WITH IT.
-
-    Only the slot's live row (`liveReferences`: newest, never a disputed one)
-    is what the assembler would send, so it is the one judged. A disputed row
-    is never sent and is not judged. And when the live row fails, every row of
-    that slot stays home — dropping only the newest would hand the slot to an
-    OLDER crop, which is the state before the ask moved.
-  */
-  const failed = new Set<string>();
   const contradicted: StoredReference[] = [];
-  for (const row of liveReferences(input.rows)) {
-    const asked = asks.get(row.slot);
-    if (row.role !== "carry" || asked === undefined) continue;
-    if (wordsHoldAsks(row.words, asked, row.noun)) continue;
-    failed.add(row.slot);
-    contradicted.push(row);
+  const contradictedSlots: FeatureSlot[] = [];
+  const reinstated: FeatureSlot[] = [];
+  const setAside = new Set<StoredReference>();
+  const bySlot = new Map<FeatureSlot, StoredReference[]>();
+  for (const row of input.rows) {
+    if (row.role !== "carry" || row.retiredAt !== null || !asks.has(row.slot)) continue;
+    bySlot.set(row.slot, [...(bySlot.get(row.slot) ?? []), row]);
   }
-  const rows = input.rows.filter((row) => !(row.role === "carry" && failed.has(row.slot)));
-  return { rows, contradicted };
+  for (const [slot, rows] of Array.from(bySlot.entries())) {
+    const asked = asks.get(slot)!;
+    const live = liveReferences(rows)[0];
+    const holding = rows
+      .filter((row) => row.refusal?.reason !== REFUSAL_THAT_IS_EVIDENCE_ONLY)
+      .filter((row) => wordsHoldAsks(row.words, asked, row.noun))
+      .sort((a, b) => b.version - a.version)[0];
+    const newest = rows.slice().sort((a, b) => b.version - a.version)[0]!;
+    /* The ordinary case: what would ride already holds, and nothing newer
+       took the slot to words. Untouched. */
+    if (live !== undefined && holding === live && newest === live) continue;
+    if (holding === undefined) {
+      for (const row of rows) setAside.add(row);
+      if (live !== undefined) contradicted.push(live);
+      contradictedSlots.push(slot);
+      continue;
+    }
+    for (const row of rows) {
+      if (row === holding) continue;
+      setAside.add(row);
+      if (row === live) contradicted.push(row);
+    }
+    if (holding.storageKey !== null) reinstated.push(slot);
+  }
+  const rows = input.rows.filter((row) => !setAside.has(row));
+  return { rows, contradicted, contradictedSlots, reinstated };
 }

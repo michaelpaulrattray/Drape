@@ -32,14 +32,27 @@ describe("the send side judges the row that would ride (#2650)", () => {
   };
   const composed = { free: { hairCut: "short crop" } } as never;
 
-  it("drops EVERY row of a slot whose live row contradicts — an older crop never resurfaces", () => {
+  it("sets aside only the rows that argue, and the NEWEST holding row rides again (the relay's finding on #2653)", () => {
     const rows = [
       { ...base, id: 1, version: 1, words: ["short hair, closely cropped"], storageKey: "old.png" },
       { ...base, id: 2, version: 2, words: ["hair pulled into a high top bun"], storageKey: "bun.png" },
     ] as never[];
     const result = carriesHoldingTheirAsks({ rows, composed });
-    expect(result.rows).toHaveLength(0);
+    expect(result.rows.map((row: { id: number }) => row.id)).toEqual([1]);
     expect(result.contradicted.map((row: { id: number }) => row.id)).toEqual([2]);
+    expect(result.reinstated).toEqual(["hair"]);
+    expect(result.contradictedSlots).toEqual([]);
+  });
+
+  it("with no holding row at all, every row stays home and the slot goes to words", () => {
+    const rows = [
+      { ...base, id: 4, version: 1, words: ["long hair worn down"], storageKey: "long.png" },
+      { ...base, id: 5, version: 2, words: ["hair pulled into a high top bun"], storageKey: "bun.png" },
+    ] as never[];
+    const result = carriesHoldingTheirAsks({ rows, composed });
+    expect(result.rows).toHaveLength(0);
+    expect(result.contradictedSlots).toEqual(["hair"]);
+    expect(result.reinstated).toEqual([]);
   });
 
   it("does not judge a disputed row, which never rides", () => {
@@ -49,6 +62,7 @@ describe("the send side judges the row that would ride (#2650)", () => {
     }] as never[];
     const result = carriesHoldingTheirAsks({ rows, composed });
     expect(result.contradicted).toHaveLength(0);
-    expect(result.rows).toHaveLength(1);
+    /* No row holds, so the slot is words — the disputed row was never sent. */
+    expect(result.contradictedSlots).toEqual(["hair"]);
   });
 });

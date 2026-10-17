@@ -5092,6 +5092,36 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(prompt).toContain("short crop");
   });
 
+  it("⚠ THE RELAY'S SEAM: short crop at step 1, the bun slips back at step 3, and step 4 carries the STEP-1 crop (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [
+      /* Step 1: the short crop, delivered and adopted. */
+      carryRow({
+        id: 1, publicId: "ref-1", variantId: 701, version: 1,
+        slot: "hair", tier: "anatomy", noun: "hair",
+        words: ["Short dark brown hair, closely cropped at the sides"],
+        storageKey: "casting-v2/library/short.png", digest: null,
+      }),
+      /* Step 3: the slip, disputed — kept for a person, no pixels. */
+      carryRow({
+        id: 2, publicId: "ref-2", variantId: 703, version: 2,
+        slot: "hair", tier: "anatomy", noun: "hair",
+        words: ["Dark brown hair pulled into a high top bun"],
+        storageKey: null, digest: null,
+        refusal: { reason: "disputedDelivery", kind: "hair", coverage: 9990 },
+      }),
+    ];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).toMatch(/Keep \w+ hair exactly: Short dark brown hair, closely cropped at the sides/);
+    expect(prompt).toContain("exact hair");
+    expect(prompt).not.toContain("bun");
+    expect(references).toHaveLength(2);
+  });
+
   it("⚠ CONTROL — a kept feature whose words hold the chain's ask still rides, crop and keep-line (#2650)", async () => {
     shortCropChain();
     lineageReferences = [carryRow({
