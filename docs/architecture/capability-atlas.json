@@ -414,7 +414,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:1128",
+          "server/castingV2/repaintAsks.ts:1201",
           "server/castingV2/cannotSayCopy.ts:285"
         ]
       },
@@ -617,7 +617,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:665",
+          "server/castingV2/repaintAsks.ts:700",
           "server/castingV2/cannotSayCopy.ts:606"
         ]
       },
