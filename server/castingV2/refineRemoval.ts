@@ -123,6 +123,20 @@ function wordsOfStep(step: ChainStep): Set<string> {
   for (const value of Object.values(step.delta.free ?? {})) {
     parts.push(...itemsOf(value));
   }
+  /*
+    THE OPEN LANE IS READ HERE TOO (#2638).
+
+    It was missed when that lane arrived, and the miss was HIDDEN: a step's own
+    sentence is the first thing in `parts`, and "give her vampire fangs"
+    happens to contain the noun — so an open kind looked findable while nothing
+    was reading the lane at all. This function's own argument applies to it
+    unchanged: "make them longer" stores a sentence that never names the
+    feature, and the kind's noun and filed words are the only place that word
+    lives.
+  */
+  for (const [kind, ask] of Object.entries(step.delta.open ?? {})) {
+    parts.push(kind, ask.noun, ask.words);
+  }
   return new Set(parts.join(" ").toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean).map(stem));
 }
 
@@ -234,10 +248,36 @@ export function matchSteps(
   }
 
   const facet = target.subject ? facetOf(target.subject) : null;
-  const byFacet = chain
-    .map((step, index) => ({ step, index }))
-    .filter(({ step }) => !facet || facetsOfStep(step).has(facet));
-  if (byFacet.length === 0) return [];
+  const indexed = chain.map((step, index) => ({ step, index }));
+  const byFacet = indexed.filter(({ step }) => !facet || facetsOfStep(step).has(facet));
+  /*
+    AN OPEN KIND HAS NO FACET, SO IT NEEDED ITS OWN WAY IN (#2638).
+
+    `refineDelta` says it out loud — *"an open kind has no facet, and that is
+    what makes it CARRY"* — and `facetsWrittenBy` reads the axes, the free lane
+    and `absent`, never `open`. That is deliberate and load-bearing: a facet is
+    what `composeDeltas` CLEARS, so giving an open kind one would stop it
+    surviving the next render.
+
+    The cost landed here. A removal that named any subject at all was filtered
+    down to that subject's facet, and every open-kind step was dropped before a
+    single word was compared — so fangs a refine had ADDED could not be taken
+    off by name. Found on dev through the live interpreter, which files
+    *"remove her fangs"* under the nearest closed subject it owns, `teeth`.
+
+    ⚠ **THEY JOIN THE WORD-NARROWED PATH ONLY, NEVER THE `whole` BRANCH**, and
+    the two branches below still read `byFacet` for exactly that reason. Width
+    is claimed against a SUBJECT, and an open kind sits outside every subject —
+    so admitting them to `whole` would make *"remove her teeth"* take her
+    horns, her wings and every other open kind on the face. That is run-7's
+    earrings rebuilt on a new lane, the one outcome this file exists to refuse.
+  */
+  const carriesOpenKind = (step: ChainStep) => Object.keys(step.delta.open ?? {}).length > 0;
+  const facetMatched = new Set(byFacet.map(({ index }) => index));
+  const narrowable = indexed.filter(
+    ({ step, index }) => facetMatched.has(index) || carriesOpenKind(step),
+  );
+  if (narrowable.length === 0) return [];
 
   const words = (target.match ?? "")
     .toLowerCase()
@@ -271,7 +311,37 @@ export function matchSteps(
     && isPluralSubject(subject);
 
   const matches: StepMatch[] = [];
-  for (const { step, index } of byFacet) {
+  for (const { step, index } of narrowable) {
+    /*
+      A STEP THE FACET FILTER DROPPED IS HERE ON ITS OPEN KINDS ALONE, so it is
+      judged on them and on nothing else (#2638).
+
+      Tested per KIND rather than across the step: a step carrying fangs and
+      horns must answer "fangs" with the fangs row, never because its neighbour
+      contributed the missing word. And it is delete-or-nothing — an open kind
+      is one ask per kind, so there are no items to prune.
+
+      ⚠ A step that IS facet-matched never enters here and keeps its existing
+      behaviour byte for byte, which is what makes this widening provably
+      non-regressive: the only steps this road can reach are the ones the old
+      filter discarded outright.
+    */
+    if (!facetMatched.has(index)) {
+      const named = Object.entries(step.delta.open ?? {}).some(([kind, ask]) => {
+        const have = new Set(
+          [kind, ask.noun, ask.words]
+            .join(" ")
+            .toLowerCase()
+            .replace(/['’]/g, "")
+            .split(/[^a-z0-9]+/)
+            .filter(Boolean)
+            .map(stem),
+        );
+        return words.every((word) => have.has(word));
+      });
+      if (named) matches.push({ index, keep: null });
+      continue;
+    }
     if (plural) {
       /*
         MATCHED ON ITEMS, NEVER ON THE SENTENCE (D-171).
