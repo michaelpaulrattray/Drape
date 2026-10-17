@@ -502,6 +502,43 @@ export function familyGroupsOf(
   return Array.from(byKind, ([kind, words]) => ({ kind, phrase: words.join(", ") }));
 }
 
+/**
+ * EVERY KIND A FAMILY FACET'S LIST NAMES, deduped, in the order they appear
+ * (#2616).
+ *
+ * The grouping half of {@link familyGroupsOf} answers *which words go with
+ * which kind*, which is what the paint ask needs. Its readers outside the
+ * painter — the mint, and the library's side lookup — need only the KINDS, and
+ * they used to get a single one: the caller asked `accessoryKindOf` about the
+ * whole list joined, so the longest match won and every other item resolved to
+ * the winner's slots. Measured at the real table, glasses beside earrings
+ * answers `earring`, so the glasses were filed on her earlobes and the
+ * `glasses` slot got no row — a feature the customer had just paid for, absent
+ * from the library and forgotten by the next render.
+ *
+ * It lives HERE rather than beside those readers for the reason `familyGroupsOf`
+ * does: one grouping, one answer. A list of kinds derived in the service would
+ * be free to disagree with the groups the painter was asked in, and the painter
+ * asking for one thing while the library files another is the disagreement this
+ * pair exists to end (working law 4).
+ *
+ * `fallbackKind` is the caller's single longest match, and it is still the
+ * answer when no item names a kind of its own — so a necklace beside earrings
+ * is filed exactly as it was before this existed.
+ */
+export function familyKindsOf(
+  facet: Facet,
+  delta: RefineDelta,
+  fallbackKind: string | null,
+): readonly string[] {
+  const groups = familyGroupsOf(facet, delta, fallbackKind);
+  if (groups === null) return fallbackKind === null ? [] : [fallbackKind];
+  const kinds = groups
+    .map((group) => group.kind)
+    .filter((kind): kind is string => kind !== null);
+  return kinds.filter((kind, at) => kinds.indexOf(kind) === at);
+}
+
 function statePhrase(
   facet: Facet,
   delta: RefineDelta,

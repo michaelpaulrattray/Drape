@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { scopedAskIsUnsayable, repaintAsksFor, repaintCannotRemove, type EditProse } from "./repaintAsks";
+import {
+  familyKindsOf, scopedAskIsUnsayable, repaintAsksFor, repaintCannotRemove, type EditProse,
+} from "./repaintAsks";
 import { FREE_SUBJECT_KEYS, isPluralSubject, SUBJECT_NOUNS } from "./refineSubjects";
 import { facetOfSubject } from "./refineFacets";
 import type { RefineDelta } from "./refineDelta";
@@ -1525,5 +1527,48 @@ describe("nothing a step writes can go quiet — it is said, or it is refused by
       .toContain("copper");
     expect(result.asks.find((ask) => ask.slot === "skin")?.words)
       .toBe("a scar on her cheek");
+  });
+});
+
+/*
+  THE KINDS A WORN LIST NAMES, for the readers that are not the painter (#2616).
+
+  `familyGroupsOf` already splits the list by kind for the paint ask. The mint
+  and the library's side lookup need the same split and were getting ONE kind —
+  the caller's longest match over the whole list joined — so every item that was
+  not the winner resolved to the winner's slots.
+*/
+describe("familyKindsOf — every kind in the worn list, for the mint and the library", () => {
+  const WORN = facetOfSubject("statedAccessories");
+  const wearing = (...items: string[]): RefineDelta =>
+    ({ free: { statedAccessories: items } } as unknown as RefineDelta);
+
+  it("names every kind in the list, in the order the items appear", () => {
+    expect(familyKindsOf(WORN, wearing("round tortoiseshell glasses", "small gold hoop earrings"), "earring"))
+      .toEqual(["glasses", "earring"]);
+    expect(familyKindsOf(WORN, wearing("a small gold hoop in her left ear", "a nose stud"), "nose stud"))
+      .toEqual(["earring", "nose stud"]);
+  });
+
+  it("is the fallback alone when no item names a kind of its own", () => {
+    /* THE CONTROL that keeps a necklace beside earrings filed exactly as it was
+       before this existed: the grouping declines, and the caller's single
+       longest match is still the whole answer. */
+    expect(familyKindsOf(WORN, wearing("a jewelled forehead chain"), "earring")).toEqual(["earring"]);
+    expect(familyKindsOf(WORN, wearing("a jewelled forehead chain"), null)).toEqual([]);
+  });
+
+  it("says a kind once however many items wear it", () => {
+    expect(familyKindsOf(WORN, wearing("a gold hoop earring", "a silver stud earring"), "earring"))
+      .toEqual(["earring"]);
+  });
+
+  it("answers nothing for a facet that is not a family", () => {
+    /* `familyGroupsOf` returns null for a non-family facet for a different
+       reason than it does for a kindless list, and both land on the fallback —
+       which is right here: a non-family facet never consults the kind at all,
+       so what this returns cannot change its slots. Driven so the two nulls
+       cannot quietly diverge. */
+    expect(familyKindsOf(facetOfSubject("marks"), wearing("freckles"), null)).toEqual([]);
   });
 });
