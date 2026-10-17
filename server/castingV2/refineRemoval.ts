@@ -155,11 +155,21 @@ function stem(word: string): string {
 }
 
 /**
- * Which steps a removal takes out — by facet, narrowed by content (D-163).
+ * Which steps a removal takes out — by facet, narrowed by content (D-163),
+ * and by NAME for a feature that has no facet (#2638).
  *
  * "Remove the makeup" names a facet and takes every step on it. "Remove the
  * smokey eye" names a facet AND particular words, and takes only the step those
  * words identify.
+ *
+ * ⚠ **A third road exists and this summary said "by facet" without it for as
+ * long as the open lane has.** An open kind deliberately carries no facet, so
+ * a removal that named any subject at all filtered every open-kind step out
+ * before comparing a single word — fangs a refine had ADDED could not be taken
+ * off. Those steps now join the WORD-NARROWED path, and only that path: width
+ * is claimed against a subject and an open kind sits outside every subject, so
+ * `whole` must never reach them. The branches below read `byFacet` for that
+ * reason, and a facet-matched step is untouched by any of it.
  *
  * **A content match that finds nothing returns nothing**, and that is the
  * ruling's letter: rule 3 fires on "no matching step", and words that match no
