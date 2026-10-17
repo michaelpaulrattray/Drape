@@ -27,11 +27,14 @@
  * never the per-slice `resolved` record, which is unsent dice fiction, #176)
  * and the asks already applied to this version, in order. That is how a
  * version made before the flag, or one whose writer failed, is folded in on the
- * next edit rather than lost.
+ * next edit rather than lost. ⚠ **And "applied" is the word doing the work and
+ * is not checked: an earlier ask arrives whole even where the camera served
+ * only part of it, which is #2657** — see `notInShot` below.
  */
 import { EYE_COLOURS } from "../../shared/castingRealization";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { everyFeatureOutOfFrame } from "./castingFrame";
 import type { CastPronouns } from "./castPronouns";
 import { pictureHalfPhrase } from "./sidePhrasing";
 
@@ -133,6 +136,25 @@ export type CurrentDescriptionInput = {
    * render then painted from. So the unserved half is said to the writer as
    * NOT done, and the backstop {@link addsWhatIsNotInShot} refuses a reply
    * that writes it in anyway.
+   *
+   * ⚠ **THIS FIELD IS THIS REQUEST'S HALF ONLY — THE SEED ROAD'S IS DERIVED,
+   * NOT PASSED (#2657).** What arrives here is the frame strip of the sentence
+   * being made now (`refineService.ts`'s `notInShotForWriter`), and **nothing
+   * stored anywhere says an EARLIER ask had an unserved half**: the strip's
+   * `dropped` list is computed per render and written to no column. So a seeded
+   * writer handed the earlier asks as prose stated a waist dropped three edits
+   * ago as fact — **20 of 20 on real briefs**, 2026-10-17.
+   *
+   * It is closed WITHOUT that record, by {@link notInShotForThisCall}, and the
+   * reason is an asymmetry: a facet the frame cannot show is stripped from every
+   * ask that names it, so no history can hold a served one. **Read that function
+   * rather than this field when asking what the writer was told** — on the seed
+   * road the two differ, deliberately.
+   *
+   * ⚠ **Its SIBLING is open and is #2658**: an earlier ask whose half reached no
+   * lane at all rides the same seed road, its vocabulary is open, and the
+   * asymmetry does not reach it. **That** one needs the per-step record — and
+   * never a word-match over the stored sentence (`refineSubjects.ts`).
    */
   notInShot?: readonly string[];
 };
@@ -141,10 +163,44 @@ export type CurrentDescriptionResult =
   | { ok: true; description: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
   | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk" | "kept_removed" | "not_in_shot"; latencyMs: number };
 
+/** Whether this call is seeding a description rather than rewriting one. */
+export function isSeedRoad(input: CurrentDescriptionInput): boolean {
+  return input.previous === null || input.previous.trim() === "";
+}
+
+/**
+ * WHAT THE WRITER MUST NOT WRITE IN ON THIS CALL - one derived list, read by
+ * both the prompt and the backstop (#2657).
+ *
+ * On the `previous` road it is this change's own unserved half and nothing
+ * else. On the SEED road the out-of-frame vocabulary joins it unconditionally,
+ * and the reason is an ASYMMETRY rather than a record of the past: a facet the
+ * casting frame cannot show is stripped from every ask that names it, on every
+ * render (`castingFrame.ts`), so no earlier ask in any history has ever changed
+ * one. Saying so needs no per-step storage and no guess at which earlier ask
+ * named what - which matters, because the only other road to that answer is a
+ * word-match over the stored sentence, and `refineSubjects.ts` is explicit that
+ * its noun table must never become a routing vocabulary.
+ *
+ * Measured before it was written, on 10 real briefs twice each: the seed road
+ * wrote the dropped half in as a fact **20 of 20** times; with it named to the
+ * writer, **0 of 20**; and on seeds whose asks never mentioned it, the backstop
+ * refused **0 of 20**, so it costs nothing where there is nothing to catch.
+ *
+ * TWO READERS OF THIS WOULD DRIFT (working law 4) and the drift would be
+ * silent: a prompt naming a feature the backstop did not would refuse nothing,
+ * and a backstop naming one the prompt did not would refuse a paragraph nobody
+ * was warned about. So it is computed here, once.
+ */
+export function notInShotForThisCall(input: CurrentDescriptionInput): readonly string[] {
+  const thisChange = input.notInShot ?? [];
+  return isSeedRoad(input) ? [...thisChange, ...everyFeatureOutOfFrame()] : thisChange;
+}
+
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
-  const before = input.previous !== null && input.previous.trim() !== ""
-    ? `How they looked before this change:\n${input.previous.trim()}`
+  const before = !isSeedRoad(input)
+    ? `How they looked before this change:\n${input.previous!.trim()}`
     : [
       `How they were first described:\n${input.seed.brief.trim()}`,
       ...(input.seed.earlierAsks.length > 0
@@ -154,6 +210,10 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
   const taken = (input.takenBack ?? []).map((one) => one.trim()).filter((one) => one !== "");
   const absences = (input.absences ?? []).map((one) => one.trim()).filter((one) => one !== "");
   const notInShot = featuresNotInShot(input.notInShot ?? []);
+  /* What the derived list adds beyond this change's own half - the seed road's
+     unconditional entries, which get their own sentence below because this
+     one's opening clause is false of them. */
+  const neverInShot = featuresNotInShot(notInShotForThisCall(input)).filter((one) => !notInShot.includes(one));
   return [
     before,
     `The change, in the customer's own words:\n${input.change.trim()}`,
@@ -165,6 +225,13 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
       : []),
     ...(notInShot.length > 0
       ? [`Part of this change was not made, because their photograph does not show it. Do not apply that part: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:\n${notInShot.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+    /* AND THE SEED ROAD SAYS IT OF THE EARLIER ASKS TOO (#2657), in its own
+       sentence: the one above opens "part of this change", which is false of a
+       feature no change has ever been able to touch, and the list it carries is
+       about the asks printed in `before` rather than about `change`. */
+    ...(neverInShot.length > 0
+      ? [`Their photograph does not show these, so no change above was made to them. Do not apply any part of a change that names one: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:\n${neverInShot.map((one) => `- ${one}`).join("\n")}`]
       : []),
   ].join("\n\n");
 }
@@ -350,8 +417,8 @@ export async function writeCurrentDescription(
     /* The half the photograph could not show was not painted, so a paragraph
        that states it would have every later render paint it. Judged against
        what the paragraph was written from: the previous one, or the brief. */
-    const before = input.previous !== null && input.previous.trim() !== "" ? input.previous : input.seed.brief;
-    if (addsWhatIsNotInShot(text, input.notInShot ?? [], before) !== null) return { ok: false, reason: "not_in_shot", latencyMs };
+    const before = isSeedRoad(input) ? input.seed.brief : input.previous!;
+    if (addsWhatIsNotInShot(text, notInShotForThisCall(input), before) !== null) return { ok: false, reason: "not_in_shot", latencyMs };
     return {
       ok: true,
       description: text,

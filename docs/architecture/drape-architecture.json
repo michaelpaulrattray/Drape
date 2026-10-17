@@ -29410,6 +29410,11 @@
     },
     {
       "from": "module:server/castingV2/currentDescription.ts",
+      "to": "module:server/castingV2/castingFrame.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/currentDescription.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
     },

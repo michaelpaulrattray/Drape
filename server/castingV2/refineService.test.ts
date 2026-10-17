@@ -15948,12 +15948,24 @@ describe("one current description rides the paid refine", () => {
     expect(asked).toHaveLength(1);
     /* The change reads as the assembled FACT clause since #2578 §2, not the
        customer's raw sentence; the SEED half is what this arm is about and it
-       is unchanged. */
+       is unchanged.
+
+       ⚠ THE WHOLE TURN IS PINNED ON PURPOSE and the last paragraph is #2657's:
+       the seed road now says, unconditionally, that the frame has never shown
+       the facets it cannot show, because a facet in that table is stripped from
+       every ask that names it and so no history can hold a served one. It is
+       written out rather than derived from the module's own constant — a test
+       that composes its expectation the way the subject does proves only that
+       the subject agrees with itself. Keeping `toBe` is the point: this arm's
+       floor is that NOTHING ELSE leaks into a seeded turn. */
     expect(asked[0]!.user).toBe(`How they were first described:
 ${CHILD_BRIEF}
 
 The change, in the customer's own words:
-wear her hair down`);
+wear her hair down
+
+Their photograph does not show these, so no change above was made to them. Do not apply any part of a change that names one: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:
+- waist`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
 
