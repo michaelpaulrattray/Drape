@@ -196,7 +196,7 @@ export type DiagnosticWriter = (input: {
 export const DIAGNOSTIC_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** The instant a capture's manifest stops holding itself. */
-export function diagnosticHeldUntil(now: Date = new Date()): Date {
+function diagnosticHeldUntil(now: Date = new Date()): Date {
   return new Date(now.getTime() + DIAGNOSTIC_RETENTION_MS);
 }
 

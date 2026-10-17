@@ -72,7 +72,7 @@ export { INK_DESIGNS_PER_CANDIDATE, INK_DESIGN_MAX_BYTES, INK_DESIGN_MIN_EDGE } 
    the top of this file, because the client's pickers offer the same list. */
 
 /** One prefix, so an operator can see every uploaded design in one place. */
-export const INK_KEY_PREFIX = "casting-v2/ink";
+const INK_KEY_PREFIX = "casting-v2/ink";
 
 type InkUploadRefusalCode =
   /*

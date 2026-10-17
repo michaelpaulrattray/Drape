@@ -69,7 +69,7 @@ export const REFINE_FIGURE_MAX_HEIGHT = 96;
  * scattered dust, and a digit string is legible in a log, cheap to validate,
  * and has no encoding to get wrong at either end.
  */
-export const REFINE_FIGURE_LEVELS = 10;
+const REFINE_FIGURE_LEVELS = 10;
 
 /**
  * HER SHAPE, COARSELY — a grid of weights and the grid's own dimensions.

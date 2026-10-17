@@ -348,7 +348,7 @@ export const withoutCommit = (memory: FailureMemory, sha: string): FailureMemory
  * a caller that wants to say so can; the rite does not, because a shift chasing
  * a refused push does not need to hear about a file it never asked for.
  */
-export const persistMemory = (
+const persistMemory = (
   path: string,
   directory: string,
   memory: FailureMemory,

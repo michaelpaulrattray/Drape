@@ -23,7 +23,7 @@ export const WAITLIST_STATS_RATE = {
  * The same class is closed on sign-in (#2376), sign-up (#2443),
  * resend-verification and the newsletter (#2446). No client read `position`.
  */
-export const WAITLIST_JOINED_ANSWER = { success: true } as const;
+const WAITLIST_JOINED_ANSWER = { success: true } as const;
 
 export const waitlistRouter = router({
   // Join the waitlist

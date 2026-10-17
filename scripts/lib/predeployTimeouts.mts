@@ -54,7 +54,7 @@
  * did not have.
  */
 
-export const PRE_DEPLOY_STEP = "PRE_DEPLOY_COMMAND";
+const PRE_DEPLOY_STEP = "PRE_DEPLOY_COMMAND";
 
 export type DeploymentEvent = {
   step: string;
@@ -83,7 +83,7 @@ export type Verdict =
   | { kind: "unread" };
 
 /** Railway's own wording: "Pre-deploy command timed out after 600 seconds". */
-export function isTimeoutSentence(error: string): boolean {
+function isTimeoutSentence(error: string): boolean {
   return /timed out/i.test(error);
 }
 

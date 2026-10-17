@@ -77,7 +77,7 @@ export type PurgeCandidateScope = {
  */
 export type PurgeCandidateSelector = readonly number[] | PurgeCandidateScope;
 
-export function purgeScopeOf(selector: PurgeCandidateSelector): PurgeCandidateScope {
+function purgeScopeOf(selector: PurgeCandidateSelector): PurgeCandidateScope {
   return Array.isArray(selector)
     ? { candidateIds: selector as readonly number[] }
     : (selector as PurgeCandidateScope);

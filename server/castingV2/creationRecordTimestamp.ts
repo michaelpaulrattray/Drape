@@ -66,7 +66,7 @@ export const TIMESTAMP_AUTHORITIES: readonly TimestampAuthority[] = [
 export const TIMESTAMP_REPLY_MAX_BYTES = 64 * 1024;
 
 /** Per-authority deadline. The measured worst case was 1.6 s cold. */
-export const TIMESTAMP_TIMEOUT_MS = 8_000;
+const TIMESTAMP_TIMEOUT_MS = 8_000;
 
 export type TimestampToken = {
   /** The TimeStampToken (a CMS ContentInfo), DER — what `openssl ts -token_in` reads. */
