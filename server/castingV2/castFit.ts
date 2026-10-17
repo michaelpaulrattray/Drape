@@ -61,10 +61,50 @@ const COLOUR_OR_MATERIAL = new Set([
   "grillz", "grill", "capped",
 ]);
 
-/** Whether this ask is a fang ask: an ask about the teeth whose words (or noun) say fangs. */
+/**
+ * Words that take fangs AWAY or make them LESS — a removal, a negation, a
+ * shrink, or a return to ordinary teeth (#2626 repair). The growth wording is
+ * an instruction to GROW canines, so an ask carrying any of these is never
+ * rewritten into it: "no fangs" (the house vacancy phrase), "remove the
+ * fangs", "without fangs", "normal human teeth", "shorter fangs", "smaller
+ * fangs", "less pointed", "blunt the fangs", "filed down". Inclusive on
+ * purpose: a false hit only sends the customer's own words to the painter
+ * unchanged (the behaviour before #2626), while a miss paints fangs onto a
+ * cast whose customer asked for them gone.
+ */
+const TAKES_AWAY_OR_SHRINKS =
+  /\b(?:no|not|none|nor|never|without|remove[sd]?|removing|removal|rid|delete[sd]?|erase[sd]?|lose|drop|take\s+(?:out|away|off)|get\s+rid|normal|ordinary|regular|human|shorter|shorten(?:ed)?|smaller|shrink|shrunk(?:en)?|reduce[sd]?|less|fewer|blunt(?:ed|er)?|filed|file\s+down|trim(?:med)?|duller)\b|n't\b/i;
+
+/** Whether the customer's words take fangs away or make them less — see `TAKES_AWAY_OR_SHRINKS`. */
+export function takesAwayOrShrinks(words: string): boolean {
+  return TAKES_AWAY_OR_SHRINKS.test(words);
+}
+
+/**
+ * Whether this ask is a fang GROWTH ask: an ask about the teeth whose words
+ * (or noun) say fangs, and whose words do not remove, negate or shrink them.
+ * Only a growth ask is rewritten into `fangGrowthWords`; every other ask about
+ * fangs reaches the painter in the customer's own words.
+ */
 export function isFangAsk(noun: string, words: string): boolean {
   if (!TEETH_NOUN.test(noun)) return false;
+  if (takesAwayOrShrinks(words)) return false;
   return FANG_WORD.test(words) || FANG_WORD.test(noun);
+}
+
+/**
+ * Whether anything in ONE render takes the fangs away or makes them less — a
+ * teeth or fang ask whose words remove, negate or shrink, or a vacancy of one.
+ * When it does, NO slot in that render is given the growth wording: a branch
+ * that already carries fangs re-says them in the same sentence as the new ask
+ * (no crop minted), and measured at the wire that sent "her fangs: … upper
+ * canines elongated …; her teeth: shorter vampire fangs" — grow and shrink in
+ * one breath.
+ */
+export function fangGrowthHeld(
+  asks: readonly { noun: string; words: string; vacated: boolean }[],
+): boolean {
+  return asks.some((ask) => TEETH_NOUN.test(ask.noun) && (ask.vacated || takesAwayOrShrinks(ask.words)));
 }
 
 /** Whether the customer's words name a colour or material for the fangs. */

@@ -438,7 +438,7 @@ describe("the follow brief writer", () => {
     });
 
     it("⚠ CONTROL — a plain eye colour and a tattoo on the lips are still one face's, and still refused", async () => {
-      for (const invented of ["amber eyes", "a pale blue-eyed stare", "a small tattoo on the lower lip"]) {
+      for (const invented of ["amber eyes", "a pale blue-eyed stare", "a small tattoo on the lower lip", "luminous hazel eyes"]) {
         const rewrite = brief.replace("a black velvet gown", `a black velvet gown and ${invented}`);
         expect(introducedOnePersonSpecific(brief, rewrite), invented).not.toBeNull();
         expect(

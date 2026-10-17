@@ -2791,6 +2791,88 @@ describe("#2626 — the fit sentence and the fang growth wording, at the wire", 
     expect(prompt).not.toContain("upper canines");
   });
 
+  /*
+    ⚠ A REMOVAL OR A SHRINK IS NEVER TOLD TO GROW (#2626 repair). The growth
+    wording is an instruction to elongate the canines, and the first build gave
+    it to every ask whose words said "fangs" — so "no fangs", "remove the fangs"
+    and "shorter fangs" all went out as an order to grow them.
+  */
+  const TAKES_AWAY = [
+    "no fangs", "without fangs", "fangs removed", "normal human teeth, no fangs", "ordinary human canines, not fangs",
+    "shorter fangs", "smaller fangs", "less pointed fangs", "blunt fangs", "fangs filed down",
+  ];
+  /* Imperatives ("remove the fangs") never reach this sentence: the assembler
+     refuses them as `wordsNotDeclarative` and the interpreter owes a state
+     phrase, so the list is the STATE phrases a removal or a shrink arrives as. */
+
+  it("⚠ a removal, a negation or a shrink keeps the customer's own words and is never told to grow — both slots", () => {
+    for (const words of TAKES_AWAY) {
+      for (const slot of ["teeth", "open:fangs"]) {
+        const prompt = promptFor({
+          master: MASTER, pronouns: SHE, library: [],
+          asks: [{ slot, noun: slot === "teeth" ? "teeth" : "fangs", words }],
+        });
+        expect(prompt, `${slot}: ${words}`).toContain(`: ${words}.`);
+        expect(prompt, `${slot}: ${words}`).not.toContain("upper canines");
+        expect(prompt, `${slot}: ${words}`).not.toContain("elongated");
+        expect(occurrences(prompt, FIT), `${slot}: ${words}`).toBe(1);
+      }
+    }
+  });
+
+  it("⚠ the description road adds no 'Draw the fangs' line for a removal or a shrink", () => {
+    for (const words of TAKES_AWAY) {
+      const prompt = promptFor({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: "She has ordinary teeth.",
+        asks: [{ slot: "teeth", noun: "teeth", words }],
+      });
+      expect(prompt, words).not.toContain("Draw the fangs");
+      expect(prompt, words).not.toContain("upper canines");
+    }
+  });
+
+  it("⚠ the vacancy road ('no fangs' said as an absence) carries no growth words either", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "open:fangs", noun: "fangs", vacate: { says: "no fangs — ordinary canines" } }],
+    });
+    expect(prompt).toContain("no fangs — ordinary canines");
+    expect(prompt).not.toContain("elongated");
+  });
+
+  it("⚠ a shrink on one slot holds growth on EVERY slot in the render — never grow and shrink in one breath", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
+        { slot: "teeth", noun: "teeth", words: "shorter vampire fangs" },
+      ],
+    });
+    expect(prompt).toContain("her fangs: vampire fangs; her teeth: shorter vampire fangs.");
+    expect(prompt).not.toContain("elongated");
+  });
+
+  it("CONTROL — two growth asks in one render both still grow", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
+        { slot: "hair", noun: "hair", words: "dark red" },
+      ],
+    });
+    expect(prompt).toContain("her upper canines elongated into slightly pointed fangs");
+    expect(prompt).toContain("dark red");
+  });
+
+  it("CONTROL — a growth ask beside the removal list still grows: 'long fangs', 'fangs', 'vampire fangs'", () => {
+    for (const words of ["long fangs", "fangs", "vampire fangs", "black fangs"]) {
+      const prompt = promptFor({
+        master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words }],
+      });
+      expect(prompt, words).toContain("her upper canines elongated into slightly pointed");
+    }
+  });
+
   it("the description road tells the painter how the fangs are drawn, beside the description it sends as written", () => {
     const prompt = promptFor({
       master: MASTER, pronouns: SHE, library: [], currentDescription: "She has black fangs.",

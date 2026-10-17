@@ -5683,6 +5683,55 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(painted[0]!.prompt).toContain("longer curved fangs");
     });
 
+    /*
+      ⚠ A REMOVAL OR A SHRINK OF THE FANGS IS NEVER SENT AS GROWTH (#2626
+      repair). Each interpreter answer below is the one the LIVE interpreter
+      gave for that sentence on 2026-10-17 (text calls only), so the arm drives
+      the road a real fang removal takes, not a shape guessed for it.
+    */
+    it("⚠ a live-shaped fang removal reaches no painter with growth words", async () => {
+      carryingFangs();
+      lineageReferences = [];
+
+      /* Live: the classify pass files a removal of "fangs" under the teeth, and
+         the edit-mode re-read (rule 3) answers `unreadable`. */
+      const outcome = await refineCandidate({
+        ...repainting,
+        interpret: async (request: { mode?: string }) => (request.mode === "edit"
+          ? { ok: false as const, refusal: { reason: "unreadable" } }
+          : { ok: true as const, intent: "remove" as const, subject: "teeth", match: "fangs", whole: false, items: ["vampire fangs"] }) as never,
+      } as never, { ...input, instruction: "remove her fangs" }).then(() => "rendered", (error: Error) => error.message);
+
+      /* The road today: refused before any paint, nothing charged — so no
+         growth words can reach a painter. If a later card makes this removal
+         render, the three lines below are what it must still satisfy. */
+      expect(outcome).toMatch(/Nothing was charged|couldn|didn/i);
+      for (const one of painted) {
+        expect(one.prompt).not.toContain("elongated");
+        expect(one.prompt).not.toContain("upper canines");
+        expect(one.prompt).not.toContain("Draw the fangs");
+      }
+    });
+
+    it("⚠ a live-shaped fang shrink sends the customer's own words, never growth", async () => {
+      carryingFangs();
+      lineageReferences = [];
+
+      await refineCandidate({
+        ...repainting,
+        interpret: async () => ({ ok: true as const, delta: { free: { teeth: "shorter vampire fangs" } } }) as never,
+      }, { ...input, instruction: "make her fangs shorter" });
+
+      expect(painted).toHaveLength(1);
+      expect(painted[0]!.prompt).toContain("her teeth: shorter vampire fangs");
+      /* The fangs the branch already carries are re-said in this same render
+         (no crop minted); a shrink anywhere in the render stops EVERY slot
+         being told to grow, or the painter gets "grow them" and "shorter" in
+         one sentence. */
+      expect(painted[0]!.prompt).not.toContain("elongated");
+      expect(painted[0]!.prompt).not.toContain("upper canines");
+    });
+
     it("CONTROL — with NO crop minted, the kind is still re-said in words", async () => {
       /*
         Line (c) of the ruling, and the arm that keeps the split from being a

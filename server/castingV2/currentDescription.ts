@@ -345,8 +345,15 @@ export const BODY_LOOK_ANATOMY = [
 /**
  * Words that make an eye colour part of an UNUSUAL EYE rather than one
  * person's natural colouring. Read immediately before the colour only.
+ *
+ * ⚠ **ONLY A WORD THAT MAKES THE EYE NON-NATURAL BELONGS HERE (#2621 repair).**
+ * The list first carried "luminous", which is how a writer flatters an
+ * ORDINARY eye — so "luminous hazel eyes", an invented natural eye colour,
+ * walked past the eye-colour backstop. Every member must describe an eye no
+ * person is born with: one that glows, a solid colour with no white or iris,
+ * no pupil, a reptile's or a cat's, a slit.
  */
-const UNUSUAL_EYE_MARKERS = ["glowing", "luminous", "solid", "pupilless", "pupil-less", "reptilian", "cat-like", "catlike"] as const;
+const UNUSUAL_EYE_MARKERS = ["glowing", "solid", "pupilless", "pupil-less", "reptilian", "cat-like", "catlike", "slit", "slit-pupil", "slit-pupilled"] as const;
 
 /**
  * Does this text state the feature, in any of the ways English writes it?
