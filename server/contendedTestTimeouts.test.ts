@@ -347,6 +347,7 @@ describe("suites the derived signal cannot see, pinned by name (#2518, #2529)", 
     { file: "server/architectureExpressSurfaces.test.ts", card: "#2518" },
     { file: "server/productEventOptionsDeclared.test.ts", card: "#2529" },
     { file: "server/errorTrackerOptionsDeclared.test.ts", card: "#2529" },
+    { file: "server/castingV2/followBrief.test.ts", card: "#2584" },
   ] as const;
   const derived = sourceSweepSuites(ROOT).map((row) => row.file);
 

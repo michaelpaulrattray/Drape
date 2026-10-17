@@ -15608,5 +15608,100 @@ Change only her hair: hair down.`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
 
+  /*
+    ⚠ A REFUSED FIRST PASS SPENDS NOTHING ON THE WRITER (#2598, Squall's
+    finding on PR #2594).
+
+    `describeThisEdit`'s own paragraph claimed it — *"absent only when the first
+    pass REFUSED, and then today's raw sentence is not used either"* — and the
+    call site's claimed it twice over. Neither was a guard: `describeThisEdit`
+    ran on `undefined` and fell through to `change: … : instruction`, so a
+    refused pass bought one house text call to write a description **from the
+    customer's raw sentence** for a render about to throw on that same refusal.
+    No money moved and nothing was shown, which is exactly why no arm and no
+    customer could ever have found it.
+
+    ⚠ **THE FIXTURE IS THE HARD PART AND IT IS WHY THIS AND NOT A UNIT ARM.**
+    `assembleRecipe` is imported rather than injected, so the refusal cannot be
+    faked through the `dependencies` seam — it has to be PROVOKED. The lever is
+    `wordsNotDeclarative` (`recipeAssembler.ts:1541`), which is the interpreter's
+    own output checked at the boundary it crosses: the delta's words are an
+    imperative where the assembler is owed a state phrase. That reaches the
+    first `assembleRecipe` with everything else in this block's fixture held
+    equal, and the only thing that moves between this arm and its neighbours
+    above is the shape of those words.
+  */
+  it("spends NOTHING on the writer when the first pass refused", async () => {
+    const refusing = {
+      ...describing,
+      /* A state phrase is owed; an imperative is what the assembler refuses. */
+      interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "make her hair down" } } }),
+    };
+
+    /* What the CUSTOMER gets: the refusal is thrown as an Error inside the
+       render and surfaces as the generic refunded sentence. That is today's
+       behaviour and this card does not touch it — the subject here is what was
+       SPENT on the way to it. */
+    await expect(refineCandidate(refusing as never, ask))
+      .rejects.toThrow("That refinement didn't come through. Your credits have been returned.");
+
+    expect(asked, "the description writer was not asked at all").toHaveLength(0);
+    expect(painted, "and nothing was painted either").toHaveLength(0);
+    /* Money is conserved in both directions — the charge is returned, which is
+       what makes this a COST finding and not a money one. */
+    expect(ledger.charges.length).toBeGreaterThan(0);
+    expect(ledger.refunds.reduce((sum, one) => sum + one.amount, 0))
+      .toBe(ledger.charges.reduce((sum, one) => sum + one.amount, 0));
+  });
+
+  it("CONTROL — the same fixture with declarative words DOES ask the writer", async () => {
+    /*
+      Working law 2, and it is load-bearing twice over: the arm above would pass
+      on a fixture that never reaches the writer for some unrelated reason, and
+      it would pass on a `describing` block whose engine was never wired. One
+      word of the delta separates the two arms.
+    */
+    await refineCandidate(describing as never, ask);
+    expect(asked, "the writer is reachable from this very fixture").toHaveLength(1);
+    expect(painted.length).toBeGreaterThan(0);
+  });
+
+  it("the guard tests `=== undefined` and NOT falsiness — pinned at the source, and here is why", async () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED, AND THAT IS THE HONEST
+      REASON RATHER THAN A STYLE PREFERENCE (#2598).
+
+      Driven: replacing `changeFacts === undefined` with `!changeFacts` left
+      **558 of 558 arms green** across this suite and `recipeAssembler`'s. The
+      two guards are not equivalent — `recipeAssembler.ts:1064` answers
+      `{ facts: "" }` for a recipe with ZERO clauses, which is an `ok` pass the
+      writer should still run on, handed the customer's sentence rather than an
+      empty change — but **nothing observes the difference today, because the
+      service cannot be driven into that state**: every delta it accepts
+      produces at least one clause, and a delta with none is refused upstream
+      before the assembler is reached (measured: `interpret` returning
+      `{ delta: {} }` never gets there).
+
+      So the distinction is a BACKSTOP for a state the assembler can produce and
+      this road currently cannot, which is why the `trim() === ""` fallback is
+      kept rather than deleted — and why it is pinned here at the source rather
+      than claimed by a behavioural arm that cannot fail. `recipeAssembler.test.ts`
+      › *"answers OK with an EMPTY `changeFacts`"* holds the other half, where
+      that state is real.
+
+      If the service ever CAN produce an empty assembled pass, the right repair
+      is a behavioural arm and the deletion of this one.
+    */
+    const source = await readFile(new URL("./refineService.ts", import.meta.url), "utf8");
+    const code = withoutComments(source);
+    expect(code, "the guard is on `undefined`, never on falsiness")
+      .toContain("if (changeFacts === undefined) return Promise.resolve(undefined);");
+    /* NEGATIVE CONTROL on the reader, in the arm that depends on it — a
+       `withoutComments` that had become the identity would leave every
+       docblock in the haystack and this arm would be reading prose. */
+    expect(source, "the sentence the control rests on").toContain("ABSENT MEANS THE FIRST PASS REFUSED");
+    expect(code, "comments really were stripped").not.toContain("ABSENT MEANS THE FIRST PASS REFUSED");
+  });
+
 });
 

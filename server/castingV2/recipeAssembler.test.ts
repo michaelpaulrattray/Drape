@@ -1427,6 +1427,39 @@ describe("a presentation clause is said and filed nowhere", () => {
     expect(withOut.prompt).toBe(empty.prompt);
     expect(withOut.ask).toBe("Change only her hair: a copper crop.");
   });
+
+  it("answers OK with an EMPTY `changeFacts` when there is no clause at all", () => {
+    /*
+      ⚠ PINNED FOR #2598, WHERE THIS BRANCH IS THE REASON A GUARD IS SPELLED
+      `=== undefined` RATHER THAN FALSY.
+
+      `refineService`'s description writer is not run when the first assembled
+      pass REFUSED, and `undefined` is how that refusal travels. The tempting
+      shorter guard is `if (!changeFacts)` — and this is the state that makes it
+      wrong: a recipe with nothing to change is `ok`, carries `changeFacts: ""`,
+      and the writer should still run there, handed the customer's own sentence
+      rather than an empty change. So `""` and `undefined` mean different
+      things on that road, and this arm is what says so about THIS module
+      instead of a comment one file away claiming it.
+
+      Nothing about the assembler changes in that card; this arm exists because
+      a branch another module's guard rests on should be asserted where it
+      lives.
+    */
+    const nothing = assembleRecipe({ master: MASTER, pronouns: SHE, library: [], asks: [] });
+
+    expect(nothing.ok).toBe(true);
+    if (!nothing.ok) return;
+    expect(nothing.changeFacts).toBe("");
+    expect(nothing.ask).toBe("");
+    /* And the positive control beside it, so "empty" is a reading of this
+       branch rather than of an assembler that answers empty for everything. */
+    const something = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+    expect(something.ok && something.changeFacts).toBe("Change only her hair: a copper crop.");
+  });
 });
 
 /**
