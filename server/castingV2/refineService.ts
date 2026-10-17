@@ -324,6 +324,7 @@ import {
   missingFacts,
   shortfalls,
   scopedToInstance,
+  libraryReadingOf,
   verifyRender,
   type FacetCheck,
   type RenderVerdict,
@@ -9180,24 +9181,20 @@ async function refineCandidateCounted(
       retire a crop.
     */
     const facetOfCheck = (check: FacetCheck): Facet | null => facetIn(check.subject);
-    const readChecks = verification.unavailable
-      ? []
-      : verification.checks.filter((check) => {
-        const facet = facetOfCheck(check);
-        /* `&& !carriedFacets.has(facet)` stood here: a fact the paste put in the
-           frame was not this render's own reading to claim. The paste road is
-           retired (#1160), the set was always empty, and the clause was
-           therefore always true. */
-        return facet !== null && check.read && writtenFacets.has(facet);
-      });
-    const missedFacets = new Set(
-      readChecks.filter((check) => !check.verified).flatMap((check) => facetOfCheck(check) ?? []),
-    );
-    const earned = Array.from(new Set(
-      readChecks
-        .filter((check) => check.verified && !missedFacets.has(facetOfCheck(check)!))
-        .flatMap((check) => facetOfCheck(check) ?? []),
-    ));
+    /*
+      ⚠ AND A YES THE CONFIRMATION COULD NOT REACH IS NOT A YES TO THE LIBRARY
+      (#2646) — see `libraryReadingOf`, which owns the derivation so the
+      outgoing-prompt arm can drive it without this function around it.
+
+      Delivering on one reading is right (D-194). ADOPTING on one reading was
+      the layout court's lock-in: the cut slipped back to the bun, the single
+      reading said "worn as cut", the re-read failed twice, and the library
+      filed a crop of the bun as the exact hair they have. An unconfirmed
+      affirmation on a written facet now files with the misses, so the slot is
+      disputed (evidence, never newest), its carry is superseded, and the next
+      render says the ASKED state in words.
+    */
+    const { missed: missedFacets, earned, unconfirmed } = libraryReadingOf(verification, writtenFacets);
     /*
       ⚠ AND THE CARRIED FACETS THIS RENDER'S READER SAID ARE GONE — the missing
       counterpart of `confirmed` (his own incident, fable-1242/1244).
@@ -9472,6 +9469,9 @@ async function refineCandidateCounted(
                    door, from `openAsks`, and never from a reader's affirmative. */
                 const facet = facetIn(check.subject);
                 if (facet === null) return [];
+                /* An unconfirmed yes on a rap-sheet facet confirms nothing
+                   (#2646) — the same rule the earned pass reads above. */
+                if (unconfirmed.has(facet)) return [];
                 return check.read && check.verified && !writtenFacets.has(facet) ? [facet] : [];
               }),
           )),

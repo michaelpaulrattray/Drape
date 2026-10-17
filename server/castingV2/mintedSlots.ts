@@ -480,6 +480,24 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       }
       for (const definition of definitions) {
         if (seen.has(definition.slot)) continue;
+        /*
+          ⚠ A SLOT WITH A DISPUTED FACET IS NOT EARNED BY ITS NEIGHBOUR (#2646).
+
+          This used to be the other way round, on the reasoning that marking the
+          slot disputed "would throw away a good reference over a disagreement
+          about a neighbouring facet". But one crop holds EVERY facet of its
+          slot — `hair` holds five — so a crop cut where one of them missed is a
+          picture of the miss, and adopting it files the miss as *"the exact
+          hair they have"*. That is the layout court's lock-in: the cut slipped
+          back to a bun, a sibling facet passed, and the bun rode every later
+          prompt with "Keep their hair exactly: … high bun" beside a
+          description saying short cropped hair.
+
+          So the earned pass leaves such a slot to the disputed pass below,
+          which files it as evidence (never newest): its carry is superseded and
+          the next render says the asked state in words.
+        */
+        if (!disputed && disputedFacetsOf(definition).length > 0) continue;
         const words = stackOf(definition);
         /*
           A SLOT WHOSE CARRIER IS ITS CROP IS NOT GATED ON ITS WORDS.
@@ -520,11 +538,11 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     EARNED FIRST, AND `seen` IS WHAT MAKES THAT A RULE RATHER THAN AN ORDERING.
 
     Two facets of one slot can come back with different verdicts — the ask wrote
-    both, the reader saw one land and not the other. The slot is then EARNED: a
-    crop of it is a picture of a feature the render did change and the guard can
-    certify, and marking it disputed would throw away a good reference over a
-    disagreement about a neighbouring facet. Running `earned` to completion
-    before `disputed` is looked at is the whole of that rule.
+    both, the reader saw one land and not the other. ⚠ This paragraph used to
+    say the slot is then EARNED; since #2646 it is DISPUTED, because the crop
+    holds the missed facet too (see the skip inside `collect`). What `seen`
+    still guarantees is that a slot earned outright is filed once, with its own
+    verdict, before the disputed pass looks at it.
   */
   collect(input.earned, false);
   collect(input.disputed ?? [], true);
