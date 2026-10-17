@@ -61,6 +61,7 @@
  * for, so it degrades to today's panel rather than to an error.
  */
 import { armedBornWornClasses, detectionFloorFor } from "./bornWornDetector";
+import { gateScanPlan, type FaceDiscovery } from "./faceDiscovery";
 import {
   assertEveryDescribedFeatureHasAnAsk,
   DESCRIBED_ASKS,
@@ -300,6 +301,27 @@ export function scanPlan(): { feature: string; question: string; slots: SlotDefi
  * with two uses, not two answers that drift (working law 4). It is why fable-428
  * §1 retired the torso probe — evidence for a road already ruled out.
  */
+/**
+ * THE QUESTIONS THIS READING ACTUALLY BUYS — `scanPlan()` narrowed by what the
+ * discovery found on this character (#2566).
+ *
+ * One named function rather than two call sites each doing the arithmetic,
+ * because three things downstream have to agree about it and they are computed
+ * at different moments: the asks themselves, the `asked` count the panel's
+ * "is this a face or a broken reader" line rests on, and the laterality summary
+ * — which is written for a PARTIAL before the scan has resolved and again when
+ * it has. A scan that asked nine questions and reported twelve would be lying
+ * in the flattering direction, and working law 4 says the cure is one source
+ * rather than care at each copy.
+ *
+ * With no discovery it is `scanPlan()` exactly, which is every caller today.
+ */
+export function plannedQuestions(
+  discovery?: FaceDiscovery | null,
+): { feature: string; question: string; slots: SlotDefinition[] }[] {
+  return gateScanPlan(scanPlan(), discovery).plan;
+}
+
 export function composedPlan(): SlotDefinition[] {
   return catalogueSlots().filter((definition) => isDerivedRegion(definition.question));
 }
@@ -371,6 +393,16 @@ export async function scanFace(input: {
    * is the caller's problem and must never cost the reading — it is caught.
    */
   onFiled?: (filed: ReadonlyArray<{ slot: FeatureSlot; box: ScanBox; mask: Mask }>) => void;
+  /**
+   * WHAT THIS CHARACTER ACTUALLY HAS, read once before any question is bought
+   * (#2566) — and `null`/absent is a real answer meaning "ask everything".
+   *
+   * Handed in rather than read here for the same reason `describe` is: this
+   * function takes what it is given and never reaches for a paid transport of
+   * its own. The caller owns whether the discovery happened, which is where the
+   * flag lives and where a failure is already allowed to be silent.
+   */
+  discovery?: FaceDiscovery | null;
 }): Promise<FaceScan> {
   const frame = { width: input.frame.width, height: input.frame.height };
   const boxes = new Map<FeatureSlot, ScanBox>();
@@ -383,7 +415,32 @@ export async function scanFace(input: {
   const empty: string[] = [];
   const failed: { question: string; why: string; retryable?: boolean }[] = [];
   const descriptions = new Map<FeatureSlot, string>();
-  const plan = scanPlan();
+  /*
+    THE DISCOVERY GATES THE QUESTIONS, and this is the only place it touches
+    anything (#2566).
+
+    `plan` is the choke point every later count reads — the asks below, `asked`,
+    and the derived empty-slot list — so narrowing it HERE keeps all three
+    telling the same story. A scan that asked nine questions must not report
+    twelve, or the panel's own "is this a face or a broken reader" line (the
+    `asked`/`found` pair) starts lying in the flattering direction.
+
+    With no discovery handed in this is `scanPlan()` and nothing about this
+    file has changed, which is what every existing caller and suite gets.
+  */
+  const plan = plannedQuestions(input.discovery);
+  if (plan.length < scanPlan().length) {
+    log.info(
+      {
+        asking: plan.length,
+        of: scanPlan().length,
+        dropped: scanPlan()
+          .filter((region) => !plan.some((kept) => kept.feature === region.feature))
+          .map((region) => region.feature),
+      },
+      "the discovery read gated the scan plan",
+    );
+  }
 
   /*
     THE WORDS READ RIDES ALONGSIDE, not after: it is one more independent
