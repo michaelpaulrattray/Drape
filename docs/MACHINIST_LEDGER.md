@@ -2541,3 +2541,405 @@ bound yet and the fourth shard's case is unchanged.
 | a measured decision on **growth** (the isolation port) | **REFUSED with its number** on PR #2175: `import` is 43% of worker-seconds and the port would take the three-shard wall 210 → 151 s, against the risk of a non-isolated suite passing for the *wrong* reason. Re-sized, not dismissed. |
 | a measured decision on **imbalance** (cost-weighted sharding) | **REFUSED on the prize**: perfect cost-weighting that no implementation can beat buys 28 s (9%) at two shards and 16 s at three, against the third shard's 89 s. |
 | the before/after **at job grain on an ordinary PR** | **this section** — 299 s → 197 s, n=9 and n=10, with the instrument's control taken first. |
+
+---
+
+## Run 8 — 2026-10-17 09:57–11:0x AEST (Machinist, patrol #8; weekly clock, 7 days overdue)
+
+Readers: `scripts/machinist-ledger-read.mts --days 14` (production,
+`hayabusa.proxy.rlwy.net:23768`, window to 2026-10-16T23:58:21Z);
+`scripts/predeploy-timeouts.mts --limit 500`; `pnpm machinist:bundle`,
+`scripts/bundle-budget.mts`, `scripts/after-paint-budget.mts`;
+`pnpm machinist:bench --only` x3; CI's own job clock and vitest reporter lines
+over 12 green `gate.yml` runs; `git ls-tree` as the second reader on suite
+growth; three read-only disposables named where they are quoted. **Spent:
+nothing** — no render, no credit, no text call, no paid arm, no production
+write, no variable, no flag. Every figure is off rows, logs and trees already
+paid for.
+
+⚠ **THE WORST NUMBER IS NOT ON THE PAID ROAD OR THE GATE THIS RUN — IT IS THE
+CLIENT, AND IT IS THE FIRST TIME THIS SEAT HAS HAD AN IMMINENT ONE.** The first
+download is **2.8 kB under the line that makes the merge tool refuse every
+merge**, climbing ~2 kB a day. Section H is this run's spine; the gate is the
+runner-up and its *cause* turns out not to be the one run 7 named.
+
+⚠ **Method note, inherited and obeyed:** run 7 lost sections A and B of the
+ledger read to a backgrounded shell. Every reader this run was captured with an
+explicit redirect to `output/machinist-run8/` and the file re-read from disk.
+All sections present.
+
+### A. Wall-clock per paid operation — 45 operations, 14d
+
+| kind | n | statuses | median | p95 | max | charged | refunded |
+|---|---|---|---|---|---|---|---|
+| `castingV2.packageRedo` | 25 | 20 succeeded · 5 failed | 58 s | 313 s | 314 s | 0 | 0 |
+| `castingV2.sign` | 8 | 7 succeeded · 1 partial | **65 s** | 67 s | 67 s | 41,750 | 0 |
+| `castingV2.roll` | 7 | 5 succeeded · 1 failed · 1 partial | 33 s | 68 s | 68 s | 9,600 | 400 |
+| `castingV2.packageRedoPress` | 5 | 4 succeeded · 1 failed | 62 s | 314 s | 314 s | 16,250 | 3,250 |
+
+⚠ **Every operation in this window post-dates #1612** (it closed
+2026-10-07T22:43:31Z; the earliest op here is 2026-10-08), so unlike run 7's
+table this one needs no split and blends nothing.
+
+- **The roll's median ROSE, 26 to 33 s, and the three-run fall streak is over**
+  (46 to 34 to 30 to 26 to 33). n=7 against run 7's n=14 on a partly overlapping
+  window, and the samples are `1, 26, 27, 33, 35, 46, 68` s — the `1` is the
+  `BAD_REQUEST` failure, so among the six that ran it is a median of **34 s**.
+  Reported as the small-n reading it is, not as a regression.
+- `castingV2.packageRedo`'s five failures are all `PRECONDITION_FAILED` with
+  **0 refunded** — run 7 section C read this road at the rows and found the money
+  conserved exactly; this window carries the same rows and nothing new.
+
+### B. RUN 7's PREDICTION CONFIRMED — the Sign's variance collapse is real, not an n=5 artifact
+
+Run 7 section B measured the Sign's wall falling ~145 s to 65 s across #1612 with
+its spread collapsing from **230 s to 4 s**, and said *"n=5, so it is recorded as
+the strong anecdote it is, and the next run has the population to confirm it."*
+It does.
+
+`machinist-ledger-read.mts` prints median/p95/max but **not the min**, so the
+spread cannot be closed from its output — read at the rows
+(`_98-sign-spread-disposable.mts`):
+
+| | run 7 (n=5) | run 8 (n=8) |
+|---|---|---|
+| every timed sample | 63, 65, 65, 66, 67 | **57, 62, 63, 65, 65, 65, 66, 67** |
+| median | 65 s | **65 s** |
+| spread (max − min) | 4 s | **10 s** |
+| before #1612, for scale | ~145 s median, **230 s** spread | — |
+
+**Three more samples moved the median not at all and the max not at all.** The
+spread widened 4 to 10 s because two faster runs arrived below the old floor,
+which is the harmless direction. **A 230-second spread is now a 10-second one at
+n=8** — the machine stopped waiting on something variable, and that is now a
+reading rather than an anecdote.
+
+### C. ⚠ THE REFINE ROAD HAS NO PRODUCTION ROWS, AND IT IS THE RUNG UNDER CONSTRUCTION
+
+**`castingV2.refine`: 0 rows in the 14-day window. Read a second way, all time:
+227 rows, newest 2026-10-01T09:30:16Z — sixteen days ago.** Stated at the rows
+because an absent kind and a kind with no *timed* rows look identical in section
+A's table, and an absence is never reported as a zero (doctrine entry 1).
+
+This is a fact about dogfooding, not a defect, and it is recorded because **three
+things downstream of it are now unexercised arithmetic rather than measurement**:
+
+- Run 7 reported *"`castingV2.refine` ran twice again, 53 s, 0 of 2 past the
+  ~305 s gateway wall"*. **A later run must not read this run's 0 as "the refine
+  got faster"** — there is nothing to compare.
+- **#2526** (his 2026-10-15 ruling: one `verify` read dropped, Refine to 100
+  display credits) has **never run on production**. #1689's own closing block
+  says the real figure *"arrives free off his next one rather than from a bought
+  sitting"* — that next one has not happened, so the 4.5–6c figure stays
+  labelled arithmetic, exactly as that card labelled it.
+- **N3 is the refine rung.** The road the current focus is rebuilding has had no
+  paid production exercise in sixteen days. Nothing for a shift to do about it —
+  it is his hand — but a reading taken after his next refine is worth more than
+  one taken before.
+
+The call census (*where a refine's seconds go*) was therefore **not run**: it has
+no population. That is the instrument correctly having nothing to say, not an
+instrument skipped.
+
+### D. Paid slices — a third clean fortnight
+
+**48 slices paid for · 46 arrived · 2 failed (4.2%) · 0 stranded mid-flight.**
+Both failures `content_policy`. Cross-checked on the money ledger: **2 refunds
+for 400 credits — AGREES.** The two absolute failures are run 7's same two rows;
+the rate reads higher only because the denominator halved with the window.
+**Both losses refused rather than lost, and both refunded.** #129 has not been
+this ledger's closing sentence for four runs.
+
+### E. Face scans · F. Provider books
+
+25 rows in window = **25 paid looks at $0.111–$0.157 each = $2.78–$3.93**, 0
+render-written. ⚠ **The cost model in this row is NOT run 7's** — run 7 quoted
+*"20 reads at $0.10"*; the reader now prices a scan at 21–27 segmenter reads plus
+1 cutout plus 1 describer call, which is #2183's measurement landing in the
+instrument. **Do not compare this run's per-scan dollars with run 7's.** All
+time: **376 rows over 374 faces** (run 7: 371/369), 0 holding carried geometry.
+
+OpenRouter, the provider's own books, **account-wide** (courts and product share
+one account): **$5.47 over 11 active days**, against run 7's $29.55 — the two
+courts that made run 7's figure are gone from the window. One spike, 2026-10-15
+at $1.84 / 240 req. ⚠ **A second model appears in these books for the first
+time: `x-ai/grok-4.7` on 2026-10-14**, beside `anthropic/claude-sonnet-5`.
+Recorded, not carded — this account is shared with his research team's work.
+
+fal, off our own rows: **$0.48 priced** (32 `sunburst/text-to-image` at the
+measured $0.015), and **two endpoints still UNPRICED for the third run running**
+— 16 `sunburst/edit` and 8 `unrecorded-roll-engine`. **$0.48 is a floor, not a
+total**, unchanged from runs 6 and 7.
+
+### G. The pre-deploy timeout reading (#2501) — first time on a patrol clock, and the answer is clean
+
+`scripts/predeploy-timeouts.mts --limit 500` — window **2026-10-03 09:51Z to
+2026-10-16 23:51Z, 500 deployments (13.6 days)**, 499 of which reached the
+pre-deploy step. ⚠ The limit was reached, so older deployments exist and were not
+read; 13.6 days covers this seat's seven-day clock with room, which is what the
+charter's `--limit` note asks for.
+
+**Pre-deploy TIMED OUT: 1.** `2026-10-14 15:04Z`, deployment `9b3ef98d`, commit
+`74dfca765`, held **611 s**. Its own log, all four lines, read rather than
+paraphrased:
+
+```
+Starting Container
+predeploy: mysql.railway.internal:3306/railway
+[db] mysql.railway.internal:3306/railway
+  nothing pending — the service holds everything the code declares
+```
+
+**This is exactly the shape the charter predicts**: the verdict was decided —
+*nothing pending* — and the container then held for the full 600 s anyway. The
+log did not age out, so unlike the 2026-09-09 instance this one's shape is on the
+record.
+
+⚠ **`armExitWatchdog`'s line is ABSENT from it, and that is CORRECT rather than a
+finding.** The charter says that line is the only thing that will ever name what
+held the process. It is not here because **it did not exist yet**: #2501's repair
+merged in PR #2505 at **2026-10-14T16:15:53Z — 71 minutes after this timeout**.
+Checked at the commit (`f65bb37ef`) rather than inferred from the card.
+
+**So the state of this item, stated so a later run does not misread a zero:**
+`armExitWatchdog` is wired (`scripts/predeploy-migrate.mts:85` on the verdict
+road and `:89` on the refusal road, both pinned by
+`server/predeployBoundedExit.test.ts:493,500`) and bounded at
+`EXIT_WATCHDOG_MS = 10_000`, armed before the verdict lines print. **It has had
+no timeout to act on since it landed** — roughly two and a quarter days of
+deploys — and timeouts arrive about one every two to three weeks. **The repair is
+unexercised on production, and this window is far too short to be evidence that
+it works.** The next instance is the first real test; its log will either carry
+the watchdog's line at ~10 s or it will not, and that is the reading to take.
+
+### H. THE WORST NUMBER — the first download is 2.8 kB from blocking every merge
+
+Run 7 could not read the client at all: `pnpm machinist:bundle` and
+`pnpm machinist:bench` both need the shared install, and **#2148's `cookie@1.0.2`
+skew was being repaired by a live seat throughout that shift**. **#2148 is closed
+and the install is correct** — read at the bytes, `node_modules/cookie` resolves
+to `.pnpm/cookie@2.0.1`, matching the lock's pin. So this run owes both readings
+and took both.
+
+| reading | 2026-09-10 (first ever) | now (2026-10-17) |
+|---|---|---|
+| JS shipped, gzip | 637.0 kB in **ONE** chunk | **736.8 kB in 34 chunks** |
+| CSS shipped, gzip | 67.4 kB | 49.4 kB |
+| largest single JS chunk, gzip | 637.0 kB | 287.4 kB |
+
+**The largest client finding this ledger ever carried is FIXED.** Its sentence
+was *"the bundle is ONE chunk, so every visitor downloads the admin panel, the
+canvas and the casting studio before anything renders"* (#744). There are 34
+chunks now; `AdminOverview`, `BoardPage`, `DrapeStudio`, `ModeratorDashboard`,
+`AdminCrew` and `jszip` are all lazy, and a visitor fetches **287 kB** to start
+rather than 637 kB. **#744, #1035, #1036, #1265 and #1421 all closed, and all of
+them worked.**
+
+**And that is what makes the live number the worst one on the board:**
+
+```
+bundle-budget: first-paint JS 287.4 kB gzip (level 9) against a budget of 290.0 kB — OK, headroom 2.6 kB
+after-paint-budget: customer JS after first paint 174.5 kB against 280.0 kB — OK, headroom 105.5 kB
+```
+
+**2.6 kB of room on a 290.0 kB line — under 1%.** CI's own job on the same
+subject reads **287.2 kB / headroom 2.8 kB**, agreeing with the local build to
+0.2 kB, so this is not a bench artifact.
+
+**The history, 14 points off the gate's own logs rather than two off a memory**
+(`_98-bundle-headroom-disposable.mts`; every `gate.yml` run prints this figure,
+so it was already recorded):
+
+| when | first-paint | headroom |
+|---|---|---|
+| 2026-10-16T23:54Z | **287.2 kB** | 2.8 kB |
+| 2026-10-16T13:10Z | 286.9 kB | 3.1 kB |
+| 2026-10-15T14:13Z | 286.9 kB | 3.1 kB |
+| 2026-10-15T04:32Z | 286.0 kB | 4.0 kB |
+| 2026-10-14T17:03Z | 285.5 kB | 4.5 kB |
+| 2026-10-14T08:45Z | 281.8 kB | 8.2 kB |
+| 2026-10-13T02:51Z | 281.9 kB | 8.1 kB |
+| 2026-10-12T12:26Z | 281.1 kB | 8.9 kB |
+| 2026-10-12T00:38Z | 277.4 kB | 12.6 kB |
+
+**+9.8 kB over 5.0 days = 1.97 kB/day, near-monotonic across 13 readings.** At
+that rate the room is gone in about **1.4 days**. ⚠ A straight line through two
+endpoints is not a trend — the rows are the reading, and what they show is a
+steady climb with no step change and no single culprit.
+
+**Why it is the worst number rather than merely a big one.** `bundle-budget` is a
+real `gate.yml` job (`.github/workflows/gate.yml:812`, running
+`scripts/bundle-budget.mts` at `:846`), it satisfies branch protection, and
+`scripts/pr-merge-in-order.mts:884` **refuses every merge on a red one** —
+verified at the bytes, not assumed. It is also a `pnpm preflight` step
+(`scripts/lib/preflight.mts:217`). So the hour it crosses, every PR's gate
+reddens and the board stops: **standing exception 2, which outranks the focus.**
+The gate wall below costs a shift 38 seconds; this costs the repository its
+ability to ship.
+
+**What is in there, as SHARES of pre-minification rendered bytes** (never
+quotable as sizes — `scripts/lib/bundleFold.mts` says why): `react-dom` 25.7%,
+`motion-dom` 11.7%, `app: features/castingV2` 9.3%, `app: pages` 8.3%,
+`@tanstack/query-core` 4.8%, `tailwind-merge` 4.1%, `framer-motion` 4.0%.
+**Nothing is in the entry chunk that obviously should not be** — no staff page,
+no `recharts`, no `jszip`, all three correctly lazy. So there is no revert
+available: the growth is `features/castingV2` (the rung under construction) plus
+ordinary framework weight.
+
+⚠ **The 290.0 line's PURPOSE decides the answer, and it is in its own docblock.**
+#1265 set it on a measured 260.3 kB with ~11% headroom, sized for *"ordinary work
+on a customer page"* and **deliberately not** for a staff page coming back eager,
+measured at **+103.5 kB**. **The designed headroom has been spent by exactly the
+ordinary work it was sized for.** The guard has not failed; it has arrived at the
+question it was built to force.
+
+⚠ **`FIRST_PAINT_JS_MEASURED_BYTES = 266_595` is NOT stale and must not be
+"tidied".** It records the reading the budget was *set against*, is pinned to it
+by `server/bundleBudget.test.ts:174`, and the live verdict's headroom is computed
+from the real build and not from it.
+
+**Carded as #2608**, with the three options priced and none chosen (make
+something lazy; move the line *with its reading* and a stated decision; split the
+vendor half out) — and with the warning that raising a budget to turn a red green
+is the shortcut the fidelity law names.
+
+### I. The gate — the runner-up, and run 7's stated CAUSE was wrong
+
+| | 2026-10-09/10 (#2164's AFTER, n=10) | now (n=12) | change |
+|---|---|---|---|
+| gate WALL (slowest unit shard) | **197 s** | **235 s** | **+19%** |
+| `unit-tests-1` / `-2` / `-3` median | 167 / 158 / 174 s | 188 / 228 / 230 s | — |
+| `gate-checks` median | 138 s | 146 s | +6% |
+
+**Second reader, not sharing a resolver** — `git ls-tree`: **1,071 to 1,221**
+`*.test.ts(x)` files, **+150 in seven days against +86 the week before, so the
+growth rate nearly doubled.**
+
+⚠ **#2164 named the cause as the crew's expensive tooling guards — *"the gate
+gets slower each time a shift fixes a tooling bug"* — and that is measurably not
+what drove this week.** Of the 151 files added, **6** spawn a child process or
+drive a real tool; **145 are ordinary in-process suites.**
+
+| | 2026-10-09 (#2164 section H, 2 shards) | now (3 shards, n=5) |
+|---|---|---|
+| `import`, all shards | 543.1 s | **621.9 s** |
+| `tests`, all shards | 700.2 s | 624.7 s |
+| **total worker-seconds** | **1,243.3 s** | **1,246.6 s** |
+| `import` share | 43.7% | **49.9%** |
+
+1. ⚠ **Total worker-seconds are FLAT while the wall rose 19%** — the suite is not
+   doing more total work. `tests` fell 75 s, but **#2179 cut ~110 s from
+   `capabilityAtlas.test.ts` inside that interval**, so net of that one fix
+   `tests` grew ~35 s while `import` grew ~79 s.
+2. **`import` per file is a constant: 0.512 s measured by #2164, 0.509 s today**
+   (621.9 s over 1,221 files). So **+150 files bought +77 worker-seconds by
+   arithmetic and CI measured +79 s** — two readers, one answer.
+
+**The loop is real but its damping point has moved: a cheap suite is no longer
+cheap, because every file pays ~0.51 s of import whatever it contains.** That
+re-points the levers #2164 priced — lever 1 (the isolation port) is now aimed at
+the only half still growing, at 49.9% rather than 43%, with its risk unchanged
+(*a non-isolated suite can pass for the WRONG reason*). Lever 2 is still the
+smallest. The fourth shard's decline is unchanged: `gate-checks` at 146 s is
+89 s below the wall, so that floor still does not bind.
+
+**Carded as #2609.** ⚠ **This is the THIRD consecutive run to name the gate worst
+or runner-up** (run 6 to #1799, run 7 to #2164, run 8 to this). **That recurrence
+is the Retro's, not a Machinist card** — its clock fires 2026-10-18.
+
+### J. The shift process — a third reading, and it is flat not falling
+
+| | run 6 | run 7 | run 8 | target |
+|---|---|---|---|---|
+| cards landed per landing session | 2.72 | 1.85 | **1.99** | 3 — MISS |
+| gate minutes per card | — | 8.49 | **5.94** | 10 — OK |
+| gate runs per card | — | 1.26 | **1.30** | 3.1 baseline — OK |
+
+247 closed sessions, 153 of them landed something, 304 cards, 396 gate runs /
+1,805.7 gate minutes. **Run 7 asked for a third reading on cards-per-session and
+this is it: 2.72 to 1.85 to 1.99.** It did not keep falling; it is flat around
+2.0 after giving back run 6's rise. Still recorded, **not** carded — the
+denominator is sessions-that-landed-something and the seat population moves
+across windows.
+
+**`gate minutes per card` fell 8.49 to 5.94 (−30%), which is #2164's third shard
+showing up in the process figures** — the one place the win has not been given
+back, because it is measured per card rather than per run.
+
+### K. The house commands — read for the first time since 2026-09-10
+
+`pnpm machinist:bench --only` x3, hyperfine 1.20.0, win32-x64, **this machine
+under this load** (never comparable with a CI runner):
+
+| command | 2026-09-10 | run 8 | why it is here |
+|---|---|---|---|
+| `pnpm check` | — | **18.58 s** | the gate's first red and every shift's preflight |
+| `pnpm architecture:check` | 9.36 s | **7.63 s** | the commit hook, the gate and the deploy rite |
+| `pnpm capability:check` | 1.52 s | **2.33 s** | the other half of the hook's ~9 s |
+
+**The commit hook's cost is 9.96 s, which is #501's measured ~9 s standing
+still** — architecture fell 1.7 s and capability rose 0.8 s. Nothing here is a
+finding.
+
+⚠ **`pnpm build` x3 and `pnpm test` x1 were deliberately NOT run, and the reason
+is not time.** A local `pnpm test` is inadmissible for the gate question section
+I answers — run 7 section L.1 measured this box at ~8.9x parallelism against the
+gate's ~2.5x, which is how #1799's local bench read a 42% rise as flat — so the
+figure would invite exactly the comparison it cannot support. `build` is read
+inside the two bundle readers above (7.1 s and 7.7 s for the client half) and did
+not need a third timing.
+
+### L. What was NOT read, so no absence here is a zero
+
+- **Interaction latency** (`pnpm machinist:latency`). **#1800, the missing dev
+  fixture that blocked runs 5–7, is CLOSED** — so this is unblocked for the first
+  time in a month. It was still not driven: the free half needs a dev server, a
+  minted session and a dev sheet with ready tiles, and memory
+  `dev-verify-bot-autofrozen` says bot 823 is auto-frozen by the discrepancy scan
+  and needs `users.frozenAt` cleared first — a shared dev-database write, which
+  the builder-seat rules make a declared act rather than a patrol's side effect.
+  **It is a session of its own, and a half-driven latency reading is worse than
+  none.** The gate still runs its `--controls` arm every run (`gate.yml:383`), so
+  the instrument itself is proven live.
+- **Page load and the canvas** — still unread by anything, as every run since #35
+  has said. The bundle figure is not a proxy for either.
+- **The delivery-rate report (D-236)** — not run; section D's slice arithmetic
+  answered the same question off the rows this fortnight.
+- **The call census** — no population (section C).
+
+### M. Close
+
+Seat: Machinist, patrol #8, one seat, shift `machinist-20261017-0957`, run row
+**#786**. Clock: run 7 was 2026-10-10, so this run is **7 days overdue** and the
+clock counts from today. Ledger appended. **Two cards filed — #2608 (the worst
+number) and #2609 (the gate, with run 7's cause corrected).** One of run 7's
+predictions **confirmed** (section B) and one of its stated causes **superseded**
+(section I). Three read-only disposables written, guarded and deleted. Readings
+taken from the main tree, read-only; **no worktree cut** (this patrol touched no
+product code), **no dev server started**. **Spent: nothing.**
+
+⚠ **A lane-mate was live throughout and was left alone.** Row **#785**
+(`seat1-20261017-094413`, on **#2605**) opened at 23:56:10Z, **two minutes before
+mine**; its `supersession` reads *not readable*, and a row that opened two
+minutes before the read is alive. Not closed, not touched, #2605 not taken.
+
+### N. What the next run reads first
+
+1. **#2608's answer, whatever it is.** If the line was moved, the new pair
+   (`FIRST_PAINT_JS_BUDGET_BYTES` plus `FIRST_PAINT_JS_MEASURED_BYTES`) is the
+   subject and the rate above is the thing to re-read against it; if something
+   was made lazy, both budgets have a before and an after. **Either way take the
+   14-point series again — it is one disposable and it is free.**
+2. **The next pre-deploy timeout, if one has happened.** It is the first real
+   test of #2501's watchdog and the only one that can ever name what holds the
+   container. ⚠ **Read it within thirty days or it ages out** — that is what
+   already happened to the 2026-09-09 instance.
+3. **The refine road.** If he has refined since 2026-10-01, section C's three
+   unexercised facts become measurable at once — #2526's real cost per refine off
+   its own census, the gateway-wall count, and a wall-clock median worth
+   comparing.
+4. **Interaction latency**, now that #1800 is closed — planned as its own session
+   with the fixture question answered first, not as a patrol tail.
+5. **`sunburst/edit` and `unrecorded-roll-engine` are still unpriced** for the
+   third run. Until fal publishes, every fal total in this ledger is a floor and
+   must say so.
