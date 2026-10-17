@@ -4,9 +4,10 @@
  *
  * # The blind spot this exists for
  *
- * Opening a casting sheet fires `castingV2.faceScan`, and a scan is 21–27
+ * Opening a casting sheet fires `castingV2.faceScan`, and a scan is 14–17
  * segmenter reads, one body cutout and one describer call per (candidate,
- * version) per server process (`FACE_SCAN_FAL_CALLS`, measured in #2183). **It mints nothing** — no row, no object, no manifest — which is the
+ * version) per server process (`faceScanSam3Reads()`, measured in #2191 — it
+ * was 21–27 on the crop road this one replaced, #2183). **It mints nothing** — no row, no object, no manifest — which is the
  * design (CLAUDE.md, `CASTING_FACE_SCAN_SCOPE`) and is exactly why no
  * instrument in this campaign could see it: the ledger counts credits, the
  * census counts what a refine persists, and a scan writes neither. Every
@@ -46,7 +47,7 @@
  * `facePanel` has answered `scanning: true`, which is a later tick than the
  * batch that carried `facePanel`.)
  */
-import { FACE_SCAN_FAL_CALLS, faceScanUsd } from "./falSpend.mts";
+import { FACE_SCAN_FAL_CALLS, faceScanSam3Reads, faceScanUsd } from "./falSpend.mts";
 
 /** The tRPC procedure that spends. `facePanel` beside it is free and is not
  *  counted — it reads what is already in memory and never asks a provider. */
@@ -211,14 +212,19 @@ export function createFaceScanMeter(): FaceScanMeter {
     line: () => {
       if (asks === 0) return null;
       const versions = deliveredVersions.size;
-      const { low, high } = FACE_SCAN_FAL_CALLS.sam3.measured;
+      const reads = faceScanSam3Reads();
+      const { low, high } = reads.measured;
+      /* The card the band was measured under, read off the figures rather than
+         typed beside them: this line said "(measured, #2183)" while printing
+         #2191's numbers for the hours between the flag's flip and #2577. */
+      const measuredUnder = reads.road === "pair-in-one-read" ? "#2191" : "#2183";
       const lines = [
         `face scan  ${asks} ask(s) at the wire · ${askedVersions.size} version(s) asked about`
         + ` · ${versions} reached the server`,
         `           HOUSE MONEY ≤ $${(versions * PER_VERSION_USD.high).toFixed(3)}`
         + ` (about $${(versions * PER_VERSION_USD.low).toFixed(3)}–$${(versions * PER_VERSION_USD.high).toFixed(3)})`
         + ` — per version: ${low}–${high} segmenter reads, ${FACE_SCAN_FAL_CALLS.cutouts} body cutout,`
-        + ` ${FACE_SCAN_FAL_CALLS.describer} describer call (measured, #2183)`,
+        + ` ${FACE_SCAN_FAL_CALLS.describer} describer call (measured, ${measuredUnder})`,
         "           a CEILING: the server reads a (candidate, version) once per process,"
         + " so a version already warm cost this walk nothing",
       ];
