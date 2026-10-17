@@ -37,8 +37,9 @@ import {
   isDerivedRegion,
   isAskable,
   DISPLAY_REGION_VOCABULARY,
+  slotsForFacet,
 } from "./referenceSlotCatalogue";
-import { allFacets, type Facet } from "./refineFacets";
+import { allFacets, facetOfSubject, type Facet } from "./refineFacets";
 
 const SHE = { subject: "she", object: "her", possessive: "her", plural: false } as const;
 
@@ -925,5 +926,59 @@ describe("no slot says what world its picture was read in", () => {
       expect(serialized, name).toContain("bald");
       expect(serialized.toLowerCase(), name).not.toContain("as dressed");
     }
+  });
+});
+
+/*
+  A FAMILY FACET ANSWERS FOR EVERY KIND IT IS ASKED ABOUT (#2616).
+
+  `statedAccessories` is one facet over everything a face can wear, so its
+  value is the whole worn list. Asked with a single kind this returned that
+  kind's slots and nothing else, which meant a caller holding a mixed list had
+  to pick one winner and resolve every other item to it.
+*/
+describe("a family facet, asked about several kinds at once", () => {
+  const WORN = facetOfSubject("statedAccessories");
+  const slotsOf = (kinds: string | readonly string[] | null) =>
+    slotsForFacet(WORN, { accessoryKind: kinds }).map((definition) => definition.slot);
+
+  it("unions the kinds, in the order it was given them", () => {
+    expect(slotsOf(["glasses", "earring"])).toEqual(["glasses", "earring@left", "earring@right"]);
+    /* Order is the caller's, not the catalogue's — the worn list's own order is
+       what the painter was asked in, so a record that reordered it would read
+       as a different list. */
+    expect(slotsOf(["earring", "glasses"])).toEqual(["earring@left", "earring@right", "glasses"]);
+  });
+
+  it("answers a one-kind list exactly as it answers the bare string", () => {
+    /* THE CONTROL: every caller before #2616 passed a string, so the repair is
+       only safe if the two shapes are indistinguishable. */
+    for (const kind of LANDMARK_OF_ACCESSORY.map((entry) => entry.region)) {
+      expect(slotsOf([kind]), kind).toEqual(slotsOf(kind));
+    }
+  });
+
+  it("files a slot once however many kinds name it", () => {
+    /*
+      ⚠ DRIVEN DIRECTLY BECAUSE NOTHING ELSE CAN REACH IT TODAY. Measured over
+      the real table: the three kinds own four slots between them and share
+      none, and both producers upstream dedupe by kind before they get here —
+      so this branch has no path through the product and would otherwise be an
+      undriven defence. It is kept rather than deleted because a kind sharing a
+      slot with another is an ordinary thing for the table to grow (a second
+      piercing at the nose), and a slot filed twice is the duplicate every
+      consumer's own ordering rule exists to prevent.
+    */
+    expect(slotsOf(["earring", "earring"])).toEqual(["earring@left", "earring@right"]);
+  });
+
+  it("treats an empty list, an empty string and null alike — no slots, no guess", () => {
+    expect(slotsOf([])).toEqual([]);
+    expect(slotsOf(null)).toEqual([]);
+    expect(slotsOf("")).toEqual([]);
+    /* A blank entry inside a real list is dropped rather than poisoning it:
+       `slotsForFeature("")` would answer for no feature and the kinds beside it
+       would be lost with it. */
+    expect(slotsOf(["", "earring"])).toEqual(["earring@left", "earring@right"]);
   });
 });
