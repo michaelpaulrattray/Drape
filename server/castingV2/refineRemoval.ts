@@ -30,7 +30,7 @@ import {
 import { readsAsNegation } from "./removalWords";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
 import { FREE_SUBJECT_KEYS, isPluralSubject, type FreeSubject } from "./refineSubjects";
-import { REFINABLE_AXES, type RefinableAxis } from "./refineDelta";
+import { REFINABLE_AXES, type OpenKindAsk, type RefinableAxis } from "./refineDelta";
 import type { StepProvenance } from "./referenceProvenance";
 
 /**
@@ -186,7 +186,71 @@ export type StepMatch = {
    * delete — the glasses were never named.
    */
   keep: string[] | null;
+  /**
+   * The OPEN KINDS this removal takes out of the step, when the step holds
+   * more than them (#2638 follow-up). Absent means the whole step goes (or
+   * `keep` prunes its items); present means only these kinds leave and the
+   * rest of the step (horns, makeup, anything else filed beside them) stays.
+   *
+   * "Remove the fangs" against one step that also added horns used to delete
+   * the whole step, so the horns went too. The matcher only ever names the
+   * kinds the customer's words named, and sets this only when something else
+   * would be left; a step holding nothing but the named kinds still goes whole.
+   */
+  dropOpen?: string[];
 };
+
+/**
+ * Does a step's delta still ask for anything? (#2638 follow-up.)
+ *
+ * Read over every lane that carries a request: the guaranteed axes, the free
+ * lane's items, the departures, the ink records and the open kinds.
+ * `fromPicture` is not a request — it says where a free value's words came
+ * from — so a delta holding only that holds nothing.
+ */
+export function deltaAsksForAnything(delta: RefineDelta): boolean {
+  for (const axis of REFINABLE_AXES) {
+    if (typeof delta[axis] === "string" && delta[axis] !== "") return true;
+  }
+  for (const value of Object.values(delta.free ?? {})) {
+    if (itemsOf(value).length > 0) return true;
+  }
+  for (const items of Object.values(delta.absent ?? {})) {
+    if ((items ?? []).length > 0) return true;
+  }
+  for (const ink of [delta.inkApplied, delta.inkDelivered, delta.inkAsked]) {
+    if (ink && Object.keys(ink).length > 0) return true;
+  }
+  return Object.keys(delta.open ?? {}).length > 0;
+}
+
+/** A step's delta with the named open kinds taken out of it. */
+function withoutOpenKinds(delta: RefineDelta, kinds: readonly string[]): RefineDelta {
+  const open = { ...(delta.open ?? {}) };
+  for (const kind of kinds) delete open[kind];
+  const next: RefineDelta = { ...delta, open };
+  if (Object.keys(open).length === 0) delete next.open;
+  return next;
+}
+
+/**
+ * WHAT A MATCH TAKES OUT OF ITS STEP, as a delta (#2638 follow-up).
+ *
+ * The caller reads the struck step's facets and slots to decide what the
+ * render is taking back. For a whole-step match that is the step itself; for
+ * an open-kind prune it is ONLY the named kinds, or the horns and the makeup
+ * beside the fangs would be told to the painter and the verifier as removed.
+ * An item prune (`keep`) keeps its existing behaviour: the whole step's delta.
+ */
+export function struckPartOf(step: ChainStep, match: StepMatch): RefineDelta {
+  if (!match.dropOpen) return step.delta;
+  const open: Record<string, OpenKindAsk> = {};
+  for (const kind of match.dropOpen) {
+    const ask = step.delta.open?.[kind];
+    if (ask) open[kind] = ask;
+  }
+  return { open };
+}
 
 export function matchSteps(
   chain: readonly ChainStep[],
@@ -323,21 +387,25 @@ export function matchSteps(
   const matches: StepMatch[] = [];
   for (const { step, index } of narrowable) {
     /*
-      A STEP THE FACET FILTER DROPPED IS HERE ON ITS OPEN KINDS ALONE, so it is
-      judged on them and on nothing else (#2638).
+      AN OPEN KIND IS JUDGED ON ITS OWN ROW, per KIND (#2638).
 
-      Tested per KIND rather than across the step: a step carrying fangs and
+      Tested per kind rather than across the step: a step carrying fangs and
       horns must answer "fangs" with the fangs row, never because its neighbour
-      contributed the missing word. And it is delete-or-nothing — an open kind
-      is one ask per kind, so there are no items to prune.
+      contributed the missing word.
 
-      ⚠ A step that IS facet-matched never enters here and keeps its existing
-      behaviour byte for byte, which is what makes this widening provably
-      non-regressive: the only steps this road can reach are the ones the old
-      filter discarded outright.
+      ONLY THE NAMED KINDS LEAVE (#2638 follow-up). One step can file fangs
+      beside horns, or beside a lip colour, and "remove the fangs" never named
+      those — deleting the step took them too. The step goes whole only when
+      the named kinds were all it asked for. This runs for a facet-matched step
+      as well: there, the word path below would have found the same kind in
+      `wordsOfStep` and deleted the whole step for it.
+
+      A step the FACET filter dropped is here on its open kinds alone, so when
+      none of them is named it is skipped — the widening reaches nothing the old
+      filter did not discard outright.
     */
-    if (!facetMatched.has(index)) {
-      const named = Object.entries(step.delta.open ?? {}).some(([kind, ask]) => {
+    const namedOpen = Object.entries(step.delta.open ?? {})
+      .filter(([kind, ask]) => {
         const have = new Set(
           [kind, ask.noun, ask.words]
             .join(" ")
@@ -348,10 +416,17 @@ export function matchSteps(
             .map(stem),
         );
         return words.every((word) => have.has(word));
-      });
-      if (named) matches.push({ index, keep: null });
+      })
+      .map(([kind]) => kind);
+    if (namedOpen.length > 0) {
+      matches.push(
+        deltaAsksForAnything(withoutOpenKinds(step.delta, namedOpen))
+          ? { index, keep: null, dropOpen: namedOpen }
+          : { index, keep: null },
+      );
       continue;
     }
+    if (!facetMatched.has(index)) continue;
     if (plural) {
       /*
         MATCHED ON ITEMS, NEVER ON THE SENTENCE (D-171).
@@ -428,6 +503,16 @@ export function chainAfterRemoval(
       next.push(step);
       return;
     }
+    if (match.dropOpen) {
+      /* Only the named open kinds leave; the sentence stays, as on an item
+         prune, because it is provenance (D-171). */
+      next.push({
+        instruction: step.instruction,
+        delta: withoutOpenKinds(step.delta, match.dropOpen),
+        provenance: step.provenance,
+      });
+      return;
+    }
     if (match.keep === null || !subject) return;
     next.push({
       instruction: step.instruction,
@@ -493,6 +578,18 @@ export function fingerprintDelta(delta: RefineDelta): string {
   for (const [subject, items] of Object.entries(delta.absent ?? {})) {
     if ((items ?? []).length === 0) continue;
     flat.push([`absent.${subject}`, JSON.stringify([...items].sort())]);
+  }
+  /*
+    AND THE OPEN KINDS (#2638 follow-up). Until a removal could take one kind
+    out of a step and leave the step's sentence standing, two chains with the
+    same sentences always had the same open kinds, so leaving them out cost
+    nothing. Now "remove the fangs" on a step that also added horns keeps that
+    step's sentence, and without this line the recipe minus the fangs
+    fingerprints the same as the picture WITH them — rule 4 would hand back the
+    fanged picture, free, as the answer to taking them off.
+  */
+  for (const [kind, ask] of Object.entries(delta.open ?? {})) {
+    flat.push([`open.${kind}`, JSON.stringify([ask.noun, ask.words])]);
   }
   flat.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return flat.map(([key, value]) => `${key}=${value}`).join("\u0001");

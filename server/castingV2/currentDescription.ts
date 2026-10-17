@@ -121,11 +121,25 @@ export type CurrentDescriptionInput = {
    * the rest of `changeFacts` no longer is.
    */
   absences?: readonly string[];
+  /**
+   * What the customer asked for that this photograph does not show, so this
+   * render did not make it (#2645 follow-up) — the out-of-frame strip's
+   * `dropped` list ("her waist").
+   *
+   * `change` stays the customer's whole sentence, verbatim, because the studio
+   * never rewords what they asked for. But "a smaller waist and red lipstick"
+   * on a headshot serves only the lipstick, and a writer handed that sentence
+   * alone filed "a smaller waist" as a fact about them — which every later
+   * render then painted from. So the unserved half is said to the writer as
+   * NOT done, and the backstop {@link addsWhatIsNotInShot} refuses a reply
+   * that writes it in anyway.
+   */
+  notInShot?: readonly string[];
 };
 
 export type CurrentDescriptionResult =
   | { ok: true; description: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk" | "kept_removed"; latencyMs: number };
+  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk" | "kept_removed" | "not_in_shot"; latencyMs: number };
 
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
@@ -139,6 +153,7 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
     ].join("\n\n");
   const taken = (input.takenBack ?? []).map((one) => one.trim()).filter((one) => one !== "");
   const absences = (input.absences ?? []).map((one) => one.trim()).filter((one) => one !== "");
+  const notInShot = featuresNotInShot(input.notInShot ?? []);
   return [
     before,
     `The change, in the customer's own words:\n${input.change.trim()}`,
@@ -148,7 +163,49 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
     ...(absences.length > 0
       ? [`How a taken-away feature leaves them, to say in its place:\n${absences.map((one) => `- ${one}`).join("\n")}`]
       : []),
+    ...(notInShot.length > 0
+      ? [`Part of this change was not made, because their photograph does not show it. Do not apply that part: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:\n${notInShot.map((one) => `- ${one}`).join("\n")}`]
+      : []),
   ].join("\n\n");
+}
+
+/**
+ * The out-of-frame list in the writer's terms: the feature without the
+ * possessive the customer-facing sentence carries ("her waist" → "waist"),
+ * since the writer describes the cast as they/their.
+ */
+function featuresNotInShot(dropped: readonly string[]): string[] {
+  return Array.from(new Set(dropped
+    .map((one) => one.toLowerCase().replace(/\s+/g, " ").trim().replace(LEADING_DETERMINERS, "").trim())
+    .filter((one) => one !== "")));
+}
+
+/**
+ * A REPLY THAT WRITES IN WHAT THE PHOTOGRAPH COULD NOT SHOW IS REFUSED (#2645
+ * follow-up) — the backstop a model cannot rescue (law 3).
+ *
+ * The render did not make that half of the ask, and the stored paragraph is
+ * what every later render paints from, so a paragraph that says "a smaller
+ * waist" pins an edit nobody saw onto the cast for good. A feature the
+ * description BEFORE this change already names is allowed — keeping an
+ * untouched fact is the writer's job — so this refuses only a feature that
+ * appears for the first time. What it does not catch, named: a reply that
+ * changes an existing mention ("a slim waist" → "a smaller waist") passes,
+ * because the word was already there. That is a miss, never a false refusal,
+ * and a refusal costs the description, never the render.
+ */
+export function addsWhatIsNotInShot(
+  text: string,
+  notInShot: readonly string[],
+  before: string,
+): string | null {
+  const said = text.toLowerCase();
+  const had = before.toLowerCase();
+  for (const feature of featuresNotInShot(notInShot)) {
+    const named = new RegExp(`\\b${escapeForPattern(feature)}\\b`);
+    if (named.test(said) && !named.test(had)) return feature;
+  }
+  return null;
 }
 
 /**
@@ -290,6 +347,11 @@ export async function writeCurrentDescription(
        renders from this paragraph — so it is refused, and this render rides
        today's prompt, whose recipe already leaves the feature out. */
     if (keepsWhatWasTakenBack(text, input.takenBack ?? []) !== null) return { ok: false, reason: "kept_removed", latencyMs };
+    /* The half the photograph could not show was not painted, so a paragraph
+       that states it would have every later render paint it. Judged against
+       what the paragraph was written from: the previous one, or the brief. */
+    const before = input.previous !== null && input.previous.trim() !== "" ? input.previous : input.seed.brief;
+    if (addsWhatIsNotInShot(text, input.notInShot ?? [], before) !== null) return { ok: false, reason: "not_in_shot", latencyMs };
     return {
       ok: true,
       description: text,
