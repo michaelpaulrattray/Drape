@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   dispatchOnScreen,
-  followingChipLabel,
+  followingChipFace,
   lineageForDispatch,
   lineageOnScreen,
   type SheetLineage,
@@ -46,12 +46,14 @@ function chipAt(state: {
     loadedRollId: state.loadedRollId,
     activeRollId: state.activeRollId,
   });
-  return followingChipLabel({
-    dispatchOnScreen: onScreen,
-    dispatched: state.pressed,
-    standingFollowId: state.loaded?.fromCandidateId ?? null,
-    loaded: state.loaded,
-  });
+  return (
+    followingChipFace({
+      dispatchOnScreen: onScreen,
+      dispatched: state.pressed,
+      standingFollowId: state.loaded?.fromCandidateId ?? null,
+      loaded: state.loaded,
+    })?.candidateId ?? null
+  );
 }
 
 describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
@@ -67,15 +69,15 @@ describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
     /* Before the press: the loaded sheet is the follow of 07, and says so. */
     expect(
       chipAt({ pressed: null, awaitingNewRoll: false, viewedRollId: null, loadedRollId: "roll-03", activeRollId: "roll-03", loaded: loadedFollowOf07 }),
-    ).toBe("07");
+    ).toBe("cand-07");
     /* The press: latch held, sheet 03 still loaded. This is his report's window. */
     expect(
       chipAt({ pressed, awaitingNewRoll: true, viewedRollId: null, loadedRollId: "roll-03", activeRollId: "roll-03", loaded: loadedFollowOf07 }),
-    ).toBe("04");
+    ).toBe("cand-04");
     /* The new row exists (latch settled) but its getRoll has not answered. */
     expect(
       chipAt({ pressed, awaitingNewRoll: false, viewedRollId: null, loadedRollId: null, activeRollId: "roll-04", loaded: null }),
-    ).toBe("04");
+    ).toBe("cand-04");
     /* The new roll is loaded: server truth takes over, and says the same face. */
     expect(
       chipAt({
@@ -86,7 +88,7 @@ describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
         activeRollId: "roll-04",
         loaded: { fromCandidateId: "cand-04", fromCandidateLabel: "04", fromRollId: "roll-03" },
       }),
-    ).toBe("04");
+    ).toBe("cand-04");
   });
 
   it("an open Roll again shows no stale chip while it prepares", () => {
@@ -94,7 +96,7 @@ describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
     const pressed = lineageForDispatch({ mode: "roll", standing: loadedFollowOf07, standingFollowId: null });
     expect(pressed).toEqual({});
     expect(lineageOnScreen({ dispatchOnScreen: true, dispatched: pressed, loaded: loadedFollowOf07 })).toEqual({});
-    expect(followingChipLabel({ dispatchOnScreen: true, dispatched: pressed, standingFollowId: null, loaded: loadedFollowOf07 })).toBeNull();
+    expect(followingChipFace({ dispatchOnScreen: true, dispatched: pressed, standingFollowId: null, loaded: loadedFollowOf07 })).toBeNull();
   });
 
   it("Roll again under a standing chip keeps the same family", () => {
@@ -105,12 +107,15 @@ describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
 
   it("outside the window the chip is the loaded roll's, exactly as before", () => {
     /* No press recorded. */
-    expect(followingChipLabel({ dispatchOnScreen: false, dispatched: null, standingFollowId: "cand-07", loaded: loadedFollowOf07 })).toBe("07");
+    expect(followingChipFace({ dispatchOnScreen: false, dispatched: null, standingFollowId: "cand-07", loaded: loadedFollowOf07 })).toEqual({
+      candidateId: "cand-07",
+      rollId: "roll-02",
+    });
     /* A press recorded, but the window is shut (the opposite of the arm above). */
     expect(
-      followingChipLabel({ dispatchOnScreen: false, dispatched: { fromCandidateLabel: "04" }, standingFollowId: "cand-07", loaded: loadedFollowOf07 }),
-    ).toBe("07");
-    expect(followingChipLabel({ dispatchOnScreen: false, dispatched: null, standingFollowId: null, loaded: loadedFollowOf07 })).toBeNull();
+      followingChipFace({ dispatchOnScreen: false, dispatched: { fromCandidateId: "cand-04" }, standingFollowId: "cand-07", loaded: loadedFollowOf07 })?.candidateId,
+    ).toBe("cand-07");
+    expect(followingChipFace({ dispatchOnScreen: false, dispatched: null, standingFollowId: null, loaded: loadedFollowOf07 })).toBeNull();
     expect(lineageOnScreen({ dispatchOnScreen: false, dispatched: { fromRollId: "x" }, loaded: loadedFollowOf07 })).toBe(loadedFollowOf07);
   });
 
@@ -126,10 +131,10 @@ describe("the FOLLOWING chip names the face just pressed (card 2587)", () => {
 });
 
 describe("the sheet reads its lineage words through the window, never the loaded roll raw", () => {
-  it("the chip, the echo sentence and the FROM pill all derive from it", async () => {
+  it("the chip and the echo sentence both derive from it", async () => {
     const source = await readFile(SHEET, "utf8");
-    expect(source).toContain("FOLLOWING {followingChip}");
-    expect(source).not.toContain("FOLLOWING {roll.data?.lineage.fromCandidateLabel");
+    expect(source).toContain("const followingChip = followingChipFace({");
+    expect(source).toContain("faceId={followingChip.candidateId}");
     /* The only raw lineage read left is the anchor Roll again sends — server truth on purpose. */
     expect(source).not.toMatch(/roll\.data\?\.lineage\.fromCandidateLabel/);
     expect(source).not.toMatch(/roll\.data\?\.lineage\.fromRollId/);

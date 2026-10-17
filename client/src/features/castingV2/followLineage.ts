@@ -101,16 +101,52 @@ export function lineageOnScreen(input: {
  * Outside the window the chip stands on `standingFollowId` exactly as before
  * (server truth, hidden while reading history or once dismissed). Inside it,
  * the chip names the face just pressed, and an open Roll again shows none.
+ *
+ * ⚠ THE CHIP SHOWS THE FACE, NEVER ITS NUMBER (#2622). His report, verbatim,
+ * 2026-10-17: *"casts say from 05 meaning from sheet 05 and the following
+ * sdays following 06 its kind of confusing dont you think is there a better
+ * design for this and the UX?"* — and on the proposal, *"sounds good"*. The
+ * chip read "FOLLOWING 06" (a face index) above eight tiles reading "FROM 05"
+ * (a sheet index): two numbers, two different things, side by side. So this
+ * answers WHICH face — its id and the roll it sits on — and the sheet draws
+ * that face's own picture beside the word "Following". The per-tile pill is
+ * gone: every tile on a follow sheet shares one parent, and the chip says it
+ * once.
  */
-export function followingChipLabel(input: {
+export type FollowedFace = { candidateId: string | null; rollId: string | null };
+
+export function followingChipFace(input: {
   dispatchOnScreen: boolean;
   dispatched: SheetLineage | null;
   standingFollowId: string | null;
   loaded: SheetLineage | null | undefined;
-}): string | null {
+}): FollowedFace | null {
   if (input.dispatchOnScreen && input.dispatched) {
-    return input.dispatched.fromCandidateLabel ?? null;
+    if (!input.dispatched.fromCandidateId) return null;
+    return {
+      candidateId: input.dispatched.fromCandidateId,
+      rollId: input.dispatched.fromRollId ?? null,
+    };
   }
   if (!input.standingFollowId) return null;
-  return input.loaded?.fromCandidateLabel ?? "—";
+  return { candidateId: input.standingFollowId, rollId: input.loaded?.fromRollId ?? null };
+}
+
+/**
+ * The followed face's picture, read off the roll it sits on.
+ *
+ * Null while that roll has not answered, or when the face is no longer there
+ * (a discarded parent can be purged while its roll survives): the chip then
+ * holds an empty frame of the same size rather than inventing a stand-in.
+ */
+export function followedFaceThumb(input: {
+  face: FollowedFace | null;
+  candidates:
+    | ReadonlyArray<{ candidateId: string; thumbUrl: string | null; imageUrl: string | null }>
+    | null
+    | undefined;
+}): string | null {
+  if (!input.face?.candidateId || !input.candidates) return null;
+  const entry = input.candidates.find((candidate) => candidate.candidateId === input.face?.candidateId);
+  return entry ? (entry.thumbUrl ?? entry.imageUrl ?? null) : null;
 }

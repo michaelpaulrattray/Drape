@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 69
+      "moduleCount": 70
     },
     {
       "id": "domain:client-shared",
@@ -1443,6 +1443,12 @@
     {
       "id": "module:client/src/features/castingV2/components/FaceRegions.tsx",
       "path": "client/src/features/castingV2/components/FaceRegions.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/components/FollowingChip.tsx",
+      "path": "client/src/features/castingV2/components/FollowingChip.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -12845,6 +12851,10 @@
       "path": "client/src/features/castingV2/followLineage.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/followingChip2622.test.ts",
+      "path": "client/src/features/castingV2/followingChip2622.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
       "path": "client/src/features/castingV2/frameDecodes.test.ts"
     },
@@ -24222,6 +24232,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/faceSelection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/FollowingChip.tsx",
       "kind": "imports"
     },
     {
