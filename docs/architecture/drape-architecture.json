@@ -32,12 +32,12 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 211
+      "moduleCount": 210
     },
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 71
+      "moduleCount": 69
     },
     {
       "id": "domain:client-shared",
@@ -122,7 +122,7 @@
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 93
+      "moduleCount": 92
     },
     {
       "id": "domain:staff",
@@ -1471,12 +1471,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "path": "client/src/features/castingV2/components/RefineDust.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "path": "client/src/features/castingV2/components/RefinePanel.tsx",
       "domain": "castingV2",
@@ -1611,12 +1605,6 @@
     {
       "id": "module:client/src/features/castingV2/refineBusy.ts",
       "path": "client/src/features/castingV2/refineBusy.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/refineDust.ts",
-      "path": "client/src/features/castingV2/refineDust.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -4639,12 +4627,6 @@
       "lifecycle": "active"
     },
     {
-      "id": "module:server/castingV2/refineFigure.ts",
-      "path": "server/castingV2/refineFigure.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
       "id": "module:server/castingV2/refineInterpreter.ts",
       "path": "server/castingV2/refineInterpreter.ts",
       "domain": "casting-v2",
@@ -6987,12 +6969,6 @@
     {
       "id": "module:shared/referralCodeFormat.ts",
       "path": "shared/referralCodeFormat.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:shared/refineFigure.ts",
-      "path": "shared/refineFigure.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12965,8 +12941,8 @@
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/refineDust.test.ts",
-      "path": "client/src/features/castingV2/refineDust.test.ts"
+      "id": "test:client/src/features/castingV2/refineLoader2613.test.ts",
+      "path": "client/src/features/castingV2/refineLoader2613.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/refineOutcomeNote.test.ts",
@@ -14987,10 +14963,6 @@
     {
       "id": "test:server/castingV2/refineFacets.test.ts",
       "path": "server/castingV2/refineFacets.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/refineFigure.test.ts",
-      "path": "server/castingV2/refineFigure.test.ts"
     },
     {
       "id": "test:server/castingV2/refineInterpreterCeiling.test.ts",
@@ -20684,11 +20656,6 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
       "kind": "imports"
     },
@@ -20705,11 +20672,6 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:shared/brand.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -20903,16 +20865,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:client/src/features/castingV2/refineDust.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/VersionRail.tsx",
       "kind": "imports"
@@ -21074,17 +21026,7 @@
     },
     {
       "from": "module:client/src/features/castingV2/refineBusy.ts",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineBusy.ts",
       "to": "module:shared/refineSteps.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineDust.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -31788,11 +31730,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/refineFigure.ts",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/castPronouns.ts",
       "kind": "imports"
@@ -32414,11 +32351,6 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineInterpreter.ts",
       "kind": "imports"
     },
@@ -32680,11 +32612,6 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:shared/referenceDelivery.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -35020,11 +34947,6 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:server/db/connection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2Variants.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -42556,17 +42478,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:750",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:747",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:750",
+      "subject": "server/castingV2/refineService.ts:747",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:896",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:884",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:896",
+      "subject": "server/castingV2/refineService.ts:884",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
