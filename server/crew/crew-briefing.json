@@ -1,7 +1,7 @@
 {
-  "edition": 737,
-  "updatedAt": "2026-10-16T21:05:00.000Z",
-  "shift": "THE STUDIO WAS OFFERING A TATTOO SOMEWHERE THE CHARACTER'S OWN T-SHIRT COVERS, AND IT WAS DOING IT TO ALMOST EVERY CHARACTER. Ask for a tattoo without saying where, and the studio answers with what it can do: \"I can put a tattoo on her, but I need to know where it goes — her neck, an upper arm, her upper chest. Say where and I'll do it.\" The upper chest in that sentence was not true. Every character is born in the house crew tee, which covers the chest, so a chest tattoo is refused one step later. Nobody was ever charged for it — both steps are free — but somebody would have typed \"on her chest\", been told no, and reasonably concluded the studio does not know what it is doing. It now names only the places that would actually work on THAT character: neck or upper arm for a character in the tee, all three for one whose top leaves the chest bare. And when a character is wearing something that covers everywhere — a roll-neck jumper — it says so plainly and tells you to change what they are wearing, instead of listing three places that are all shut. THREE SENTENCES WERE WRONG THE SAME WAY, and they are the last three. This was the third time in two days: one was fixed on the 15th, another yesterday, and the sweep that fixed yesterday's found these three and wrote them down rather than quietly folding them in. What is new tonight is that there is now a check across the WHOLE list of refusal sentences — seventeen of them — that fails if any one of them ever names a place it was not handed. So a fourth cannot be written without somebody noticing the same day. One more thing worth knowing, and it is the opposite of a problem: the way the fix was built made the computer refuse to compile if any sentence anywhere forgot to ask the question, and that caught two more places the search for them had missed. AND ONE REPAIR THAT WAS MY OWN DOING: landing tonight's change took the clothing-edit pull request out of step with the main code, which silently stops it being reviewable at all. It was put back in step straight away and is reviewable again. Nothing about it changed and it is still waiting on a review.",
+  "edition": 738,
+  "updatedAt": "2026-10-17T05:45:00.000Z",
+  "shift": "IF YOU ASKED A CHARACTER FOR FANGS AND THEN CHANGED YOUR MIND, \"REMOVE HER FANGS\" DID NOTHING. It came back refused, nothing was charged, and there was no wording that worked - so you could not take back something you had just paid to add. The same was true of horns, tusks, wings and anything else the studio had to invent a name for on the spot. That is fixed and the fix is in review. Why it happened is worth a sentence, because it was not a spelling problem: features the studio has no catalogue entry for are filed in a separate place from the ones it knows about, and the part of the code that works out WHICH edit you want to undo was only ever looking in the catalogue. It threw your fangs away before it had even read your words. The repair is deliberately narrow in one specific way - asking to remove your character's teeth must never also take their horns off - and there is a test that fails if anyone ever widens it that far. ALSO TONIGHT, AND THIS IS THE PART THAT MATTERS MORE THAN MY OWN FIX: six pieces of finished work cannot currently reach you, and two of them are things you asked for by name. When two people change the same file, the work waits until somebody puts it back in step with the main code - and while it waits, nothing can check it and nobody can review it. I measured all six rather than guessing. THREE of them clash on nothing but an automatically generated map, which means the repair is one command and no judgement at all - including the character-panel reader you approved yesterday. THREE have one genuine overlap each, in one file, and those need the person who wrote them. Every one of the six now carries its own measurement written on it, so whoever picks it up does not have to work it out again. I did not repair them myself: each belongs to another shift that had already claimed it, and quietly pushing to somebody else's work is how two people undo each other. TWO LINES ON THIS PAGE WERE TELLING YOU THE OPPOSITE - that the clothing edit was back in step and that nothing was owed on the character-panel reader. Both were true when they were written and both had stopped being true. They are corrected below. AND ONE THING I CHECKED RATHER THAN BUILT: the two fang problems left over from your rulings this morning. Your word was that the studio should stop rewording what you ask for, and one of those two cards asks for exactly the kind of extra sentence you told us to remove - so building it would have undone your ruling under a different name. The machinery behind it is already deleted. Both cards now say so on their face, neither is closed, and nothing is asked of you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -7490,6 +7490,13 @@
   ],
   "pipeline": [
     {
+      "id": "open-kind-removal-2638",
+      "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
+      "status": "in-review",
+      "prNumber": 2643,
+      "note": "Fangs, horns, tusks and anything else without a catalogue entry could be added and then never removed: the removal was refused and nothing was charged. Fixed, with the proof going all the way to the end - after the removal the character has no fangs and still has their horns. Narrow on purpose: asking to remove a character's teeth must never take their horns too, and a test fails if anyone widens it that far."
+    },
+    {
       "id": "outfit-design-2544",
       "title": "Outfit changes in Refine — the design document (#2544)",
       "status": "merged",
@@ -7501,7 +7508,7 @@
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
       "status": "in-review",
       "prNumber": 2570,
-      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. It also clashes with the main line now, but nothing is owed for that: the merge tool brings the main line in itself once the review passes."
+      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them."
     },
     {
       "id": "ghost-audit-slice4b-1577",
@@ -10707,7 +10714,7 @@
       "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
       "status": "in-review",
       "prNumber": 2600,
-      "note": "Held for a review: it touches the start-up settings check, which counts as money-and-login code. Put back in step with the main code tonight so the review can run."
+      "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this."
     },
     {
       "id": "ink-places-outfit-2580",
