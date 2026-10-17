@@ -6508,6 +6508,23 @@ async function refineCandidateCounted(
     */
     let describedNow: Promise<string | undefined> | null = null;
     /*
+      ⚠ **THE WRITER IS HANDED THE CUSTOMER'S OWN SENTENCE AGAIN, AND THE
+      PARAGRAPHS BELOW ABOUT `changeFacts` ARE HISTORY — #2645, 2026-10-17.**
+      `changeFacts` is the WHOLE recipe's change clause, not this edit's: every
+      render anchors on the master, so every earlier edit is re-said in it, in
+      the studio's resolved words. The layout court measured both halves on the
+      real entrance: on "take the horns off" the prune contributes no clause
+      (`Ask.restate`), so the writer saw only "their scales: deeper emerald",
+      wrote "deeper emerald still" and kept the horns, which the next edit then
+      painted back; and "cut the hair into a short crop" reached it as the house
+      style name "standard crop" for six edits. His rule, 2026-10-17: the studio
+      never rewords what the customer asked for. What #2578 §2 measured is kept
+      in the two pieces it was actually about: the removal's SITE phrase rides
+      as `absences` (the vacate asks' own `says`), and the picture-half
+      parenthetical cannot reach the writer because the customer's sentence
+      never had one. What THIS edit takes back rides as `takenBack`, which the
+      writer is told and its backstop refuses.
+
       `changeFacts` IS THE EDIT AS FACTS ABOUT THE PERSON (#2578 §2) — the
       assembled change clause with the picture-half parentheticals omitted,
       built by the assembler's own clause builder in the pass above.
@@ -6548,10 +6565,12 @@ async function refineCandidateCounted(
       does mean a later caller cannot correct the wording, so there is exactly
       one call site and it is the one holding the assembled pass.
     */
-    const describeThisEdit = (changeFacts?: string): Promise<string | undefined> => {
+    const describeThisEdit = (
+      edit?: { takenBack: readonly string[]; absences: readonly string[] },
+    ): Promise<string | undefined> => {
       /* The refusal, before the memo — see the paragraph above for both halves
          of why it is here and not one line down. */
-      if (changeFacts === undefined) return Promise.resolve(undefined);
+      if (edit === undefined) return Promise.resolve(undefined);
       if (describedNow) return describedNow;
       describedNow = (async () => {
         if (!captureCastingCurrentDescriptionEnabled(input.userId)) return undefined;
@@ -6612,7 +6631,11 @@ async function refineCandidateCounted(
               `!== undefined` half is kept because the parameter is still
               optional and a reader should not have to walk up to know why.
             */
-            change: changeFacts !== undefined && changeFacts.trim() !== "" ? changeFacts : instruction,
+            /* The customer's own sentence, verbatim (#2645) — see the
+               paragraph above `describeThisEdit`. */
+            change: instruction,
+            takenBack: edit.takenBack,
+            absences: edit.absences,
           },
         );
         if (!written.ok) {
@@ -7382,7 +7405,18 @@ async function refineCandidateCounted(
          was true of the INTENT and false of the code, which spent the call and
          wrote from the raw sentence. */
       const currentDescription = await describeThisEdit(
-        withoutDescription.ok ? withoutDescription.changeFacts : undefined,
+        withoutDescription.ok
+          ? {
+            /* Read off the asks this render was assembled from, so the writer
+               and the recipe can never disagree about what left (law 4). */
+            takenBack: Array.from(new Set(recipeInput.asks
+              .map((one) => one.restate?.taken.trim() ?? "")
+              .filter((one) => one !== ""))),
+            absences: Array.from(new Set(recipeInput.asks
+              .map((one) => one.vacate?.says.trim() ?? "")
+              .filter((one) => one !== ""))),
+          }
+          : undefined,
       );
       /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
          and the prompt is the first pass, byte for byte. */

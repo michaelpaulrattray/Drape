@@ -73,8 +73,9 @@ export const CURRENT_DESCRIPTION_SYSTEM = [
   "Rules:",
   "- One natural paragraph of plain prose in the present tense, written in the third person with they/their. It must read as a description of a person, never as a list of edits.",
   "- Never use the words now, changed, added, removed, new, no longer, instead or anymore, and never describe the change itself. Describe the result.",
-  "- Keep every fact from the previous description that the change does not touch, in its own words where you can.",
-  "- When the change takes something away (glasses, a scar, horns), leave it out of the description and add one plain clause stating its absence, such as \"They wear no glasses.\"",
+  "- The change is given in the customer's own words. Every word they use for a feature (a short crop, wire-frame glasses, short curved horns) goes into the description exactly as they wrote it: never a synonym, a fuller or more technical spelling, or a studio term in its place.",
+  "- Keep every fact from the previous description that the change does not touch, in its own words where you can. Never strengthen a comparison the previous description already makes (deeper, darker, shorter) unless the change itself asks for more of it.",
+  "- When the change takes something away (glasses, a scar, horns), remove every mention of it from the description, wherever it appeared and however it was worded, and add one plain clause stating its absence, such as \"They wear no glasses.\" A removal changes nothing else about them.",
   "- When the change contradicts an earlier fact (a new eye colour, a shorter beard), keep only the new fact.",
   "- The description is read beside their ORIGINAL photograph. A change worded as a comparison (deeper, darker, shorter, heavier, neater) stays a comparison against how they first looked, such as \"scales a deeper emerald than their original colouring\" — never a plain \"deep emerald\", which the original photograph already satisfies.",
   "- Hair on the head and facial hair are separate features: a change to their hair never changes their beard, and a change to their beard never changes their hair.",
@@ -92,13 +93,39 @@ export type CurrentDescriptionInput = {
    * `previous` is null: the roll's brief and the asks already applied.
    */
   seed: { brief: string; earlierAsks: readonly string[] };
-  /** The one edit being made, in the customer's own words. */
+  /**
+   * The one edit being made, in the customer's own words, VERBATIM (#2645).
+   *
+   * ⚠ It was the assembler's `changeFacts` from #2578 §2 until #2645, and that
+   * was two defects wearing one field. `changeFacts` is the WHOLE recipe's
+   * change clause — every render anchors on the pristine master, so every
+   * earlier edit is re-said in it — and its words are the studio's resolved
+   * vocabulary rather than the customer's. Measured on the layout court: a
+   * prune ("take the horns off") contributes NO clause there (`Ask.restate`),
+   * so the writer was handed only "their scales: deeper emerald", wrote the
+   * scales "deeper emerald still" and kept the horns; and "cut the hair into a
+   * short crop" reached it as the house style name "standard crop", which it
+   * copied for six edits. His rule (2026-10-17): the studio never rewords what
+   * the customer asked for.
+   */
   change: string;
+  /**
+   * What THIS edit takes back, in the words the chain filed it under (the
+   * prune's `restate.taken`). Said to the writer, and the backstop
+   * {@link keepsWhatWasTakenBack} refuses a reply that still carries it.
+   */
+  takenBack?: readonly string[];
+  /**
+   * The vacancy phrases this render paints (`vacate.says`) — the measured site
+   * wording #2578 §2 bought ("both earlobes bare"), handed on its own now that
+   * the rest of `changeFacts` no longer is.
+   */
+  absences?: readonly string[];
 };
 
 export type CurrentDescriptionResult =
   | { ok: true; description: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk"; latencyMs: number };
+  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk" | "kept_removed"; latencyMs: number };
 
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
@@ -110,7 +137,73 @@ export function currentDescriptionUserTurn(input: CurrentDescriptionInput): stri
         ? [`Changes already made since, in order (fold them into the description):\n${input.seed.earlierAsks.map((ask) => `- ${ask.trim()}`).join("\n")}`]
         : []),
     ].join("\n\n");
-  return `${before}\n\nThe change:\n${input.change.trim()}`;
+  const taken = (input.takenBack ?? []).map((one) => one.trim()).filter((one) => one !== "");
+  const absences = (input.absences ?? []).map((one) => one.trim()).filter((one) => one !== "");
+  return [
+    before,
+    `The change, in the customer's own words:\n${input.change.trim()}`,
+    ...(taken.length > 0
+      ? [`This change takes away, so it must not appear in the description except as its absence:\n${taken.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+    ...(absences.length > 0
+      ? [`How a taken-away feature leaves them, to say in its place:\n${absences.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+  ].join("\n\n");
+}
+
+/**
+ * WORDS THAT MAKE A CLAUSE ABOUT A FEATURE A STATEMENT OF ITS ABSENCE.
+ * Grammar, not a feature vocabulary: this decides nothing about what a customer
+ * may ask for, only whether a clause that names a feature says it is gone.
+ */
+const ABSENCE_WORDS = /\b(?:no|not|without|none|never|nor|bare|free of)\b/;
+/** Leading determiners and a counted pair, stripped before matching. */
+const LEADING_DETERMINERS = /^(?:(?:a|an|the|some|two|her|his|their|its)\s+)*(?:pair\s+of\s+)?/;
+/** A taken-back phrase holding one of these is a feature AT a place, so its last word is the place, never the feature. */
+const PLACE_WORDS = /\b(?:of|through|on|in|across|at|from|with|under|over|around|behind|along|above|below|between|into|onto|down|near)\b/;
+
+function escapeForPattern(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * A REPLY THAT STILL CARRIES WHAT THIS EDIT TOOK BACK IS REFUSED (#2645) — the
+ * backstop a model cannot rescue (law 3).
+ *
+ * The layout court measured it on both arms: "take the horns off" was rendered
+ * with the horns gone and the description filed beside it still said "with a
+ * pair of short curved horns" — so the NEXT edit, which renders from that
+ * paragraph, painted them back. A stored paragraph is the only memory the chain
+ * has, so a removal it forgot is a removal that un-happens.
+ *
+ * Answered with the taken-back phrase itself and, when the phrase is a plain
+ * noun phrase ("a pair of short curved horns"), its head noun ("horns"), so a
+ * rewording of the same feature is caught too. A clause naming it is allowed
+ * only when it states the absence ("They have no horns.").
+ *
+ * ⚠ WHAT IT DOES NOT CATCH, named: a feature at a place ("a scar through the
+ * left eyebrow") is matched on the whole phrase only, because its last word is
+ * the eyebrow, which stays; a writer that rewords such a phrase walks past. And
+ * a clause that states one absence and keeps the feature in the same breath
+ * ("no glasses and short curved horns") passes. Both are misses, never false
+ * refusals — and a refusal costs the description, never the render.
+ */
+export function keepsWhatWasTakenBack(text: string, takenBack: readonly string[]): string | null {
+  const clauses = text.toLowerCase().split(/[.;,!?]+/).map((clause) => clause.trim()).filter((clause) => clause !== "");
+  for (const taken of takenBack) {
+    const phrase = taken.toLowerCase().replace(/\s+/g, " ").trim().replace(LEADING_DETERMINERS, "").trim();
+    if (phrase === "") continue;
+    const needles = [phrase];
+    if (!PLACE_WORDS.test(phrase)) {
+      const head = phrase.split(" ").pop()!;
+      if (head.length >= 3 && head !== phrase) needles.push(head);
+    }
+    for (const needle of needles) {
+      const named = new RegExp(`\\b${escapeForPattern(needle)}\\b`);
+      if (clauses.some((clause) => named.test(clause) && !ABSENCE_WORDS.test(clause))) return taken;
+    }
+  }
+  return null;
 }
 
 /**
@@ -193,6 +286,10 @@ export async function writeCurrentDescription(
        designed free failure — never a repaired paragraph, because a stripped
        sentence is a sentence nobody wrote. */
     if (mentionsThePicture(text)) return { ok: false, reason: "picture_talk", latencyMs };
+    /* A removal the paragraph forgot would un-happen on the next edit, which
+       renders from this paragraph — so it is refused, and this render rides
+       today's prompt, whose recipe already leaves the feature out. */
+    if (keepsWhatWasTakenBack(text, input.takenBack ?? []) !== null) return { ok: false, reason: "kept_removed", latencyMs };
     return {
       ok: true,
       description: text,
