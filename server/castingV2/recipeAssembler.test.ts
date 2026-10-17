@@ -18,12 +18,12 @@ import {
   type CarriedInkDesign,
   type LibraryEntry,
   type RecipeSource,
+  TEETH_PARTING_NOTE,
 } from "./recipeAssembler";
 import {
   inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause,
 } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
-import { CAST_FIT_SENTENCE } from "./castFit";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
 const SHE = pronounsForSex("female");
@@ -513,9 +513,7 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.prompt).toBe(
       "Reference 1 is the photograph of this person — reproduce her exactly:" +
       " same face, same pose, same lighting, same framing, same background." +
-      " Change only her lips: a soft nude lip gloss." +
-      /* The fit sentence (#2626, P1), last on every repaint prompt. */
-      " Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
+      " Change only her lips: a soft nude lip gloss.",
     );
   });
 
@@ -540,9 +538,7 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
          than a bench appending it afterwards. */
       " Keep her hair exactly: worn down." +
       " Keep her skin exactly: an even golden tan." +
-      " Change only her lips: noticeably fuller." +
-      /* The fit sentence (#2626, P1), last on every repaint prompt. */
-      " Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
+      " Change only her lips: noticeably fuller.",
     );
   });
 
@@ -2723,200 +2719,6 @@ describe("a cast born with tattoos — the words the engine never sees", () => {
   });
 });
 
-/*
-  #2626 — EVERY EDIT MUST FIT THE CAST, asserted on the prompt that goes out
-  (working law 5). His rule, verbatim: *"every edit must fit to the cast
-  otherwise it just wouldnt make sense"*. Both pieces were courted first
-  (relay scratch `relay-fangs/fit.html`).
-*/
-describe("#2626 — the fit sentence and the fang growth wording, at the wire", () => {
-  const FIT = CAST_FIT_SENTENCE;
-  const OWN_TEETH = "the same colour and finish as";
-  const occurrences = (text: string, needle: string): number => text.split(needle).length - 1;
-  const promptFor = (input: Parameters<typeof assembleRecipe>[0]): string => {
-    const recipe = assembleRecipe(input);
-    expect(recipe.ok).toBe(true);
-    return recipe.ok ? recipe.prompt : "";
-  };
-
-  it("is the courted sentence, word for word", () => {
-    expect(FIT).toBe(
-      "Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
-    );
-  });
-
-  it("P1 rides EVERY repaint ask, once and last — horns, a scar, a piercing, hair, a tattoo, a removal", () => {
-    const asks = [
-      { slot: "open:horns", noun: "horns", words: "small curved horns" },
-      { slot: "brow@left", noun: "left brow", words: "a thin scar through the left eyebrow" },
-      { slot: "open:nose stud", noun: "nose stud", words: "a nose piercing" },
-      { slot: "hair", noun: "hair", words: "dark red" },
-      { slot: "ink:neck", noun: "neck tattoo", words: "a small tattoo on the side of the neck" },
-    ];
-    for (const ask of asks) {
-      const prompt = promptFor({ master: MASTER, pronouns: SHE, library: [], asks: [ask] });
-      expect(occurrences(prompt, FIT), ask.noun).toBe(1);
-      expect(prompt.endsWith(FIT), ask.noun).toBe(true);
-      /* Their existing clauses are untouched: the court showed P1 harmless to them. */
-      expect(prompt, ask.noun).toContain(ask.words);
-    }
-    const removal = promptFor({
-      master: MASTER, pronouns: SHE, library: [],
-      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: "no glasses — her face uncovered" } }],
-    });
-    expect(occurrences(removal, FIT)).toBe(1);
-  });
-
-  it("P1 rides the current-description road too, once", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has short dark hair.",
-      asks: [{ slot: "hair", noun: "hair", words: "short and dark" }],
-    });
-    expect(prompt).not.toContain("Change only");
-    expect(occurrences(prompt, FIT)).toBe(1);
-    expect(prompt.endsWith(FIT)).toBe(true);
-  });
-
-  it("a fang ask with no colour is grown from the cast's own canines, in the cast's own teeth colour — and 'vampire' is not sent", () => {
-    for (const slot of ["teeth", "open:fangs"]) {
-      const recipe = assembleRecipe({
-        master: MASTER, pronouns: SHE, library: [],
-        asks: [{ slot, noun: slot === "teeth" ? "teeth" : "fangs", words: "vampire fangs" }],
-      });
-      expect(recipe.ok).toBe(true);
-      if (!recipe.ok) return;
-      expect(recipe.prompt).toContain(
-        "her upper canines elongated into slightly pointed fangs, just beside the front teeth, short and subtle — the tips stop at the lower lip line, not over it; the same colour and finish as her own teeth; tapering naturally from the gum, coming down from under the upper lip, the lips parted slightly to show them",
-      );
-      expect(recipe.prompt.toLowerCase()).not.toContain("vampire");
-      /* The customer's own words stay in the records: the word stack, and the
-         change facts the description writer reads. */
-      expect(recipe.wordStacks.get(slot)).toEqual(["vampire fangs"]);
-      expect(recipe.changeFacts).toContain("vampire fangs");
-    }
-  });
-
-  it("the growth wording takes the cast's own pronoun", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: HE, library: [], asks: [{ slot: "teeth", noun: "teeth", words: "fangs" }],
-    });
-    expect(prompt).toContain("Change only his teeth: his upper canines elongated into slightly pointed fangs");
-    expect(prompt).toContain(`${OWN_TEETH} his own teeth`);
-  });
-
-  it("'black fangs' keeps BLACK and drops the own-teeth clause; so does a named material", () => {
-    for (const [words, kept] of [["black fangs", "slightly pointed black fangs"], ["gold fangs", "slightly pointed gold fangs"], ["crystal vampire fangs", "slightly pointed crystal fangs"]] as const) {
-      const prompt = promptFor({
-        master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words }],
-      });
-      expect(prompt, words).toContain(kept);
-      expect(prompt, words).not.toContain(OWN_TEETH);
-      expect(occurrences(prompt, FIT), words).toBe(1);
-    }
-  });
-
-  it("CONTROL — a teeth ask that is not about fangs keeps its own words, untouched", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [],
-      asks: [{ slot: "teeth", noun: "teeth", words: "a small gap between the front teeth" }],
-    });
-    expect(prompt).toContain("Change only her teeth: a small gap between the front teeth.");
-    expect(prompt).not.toContain("upper canines");
-  });
-
-  /*
-    ⚠ A REMOVAL OR A SHRINK IS NEVER TOLD TO GROW (#2626 repair). The growth
-    wording is an instruction to elongate the canines, and the first build gave
-    it to every ask whose words said "fangs" — so "no fangs", "remove the fangs"
-    and "shorter fangs" all went out as an order to grow them.
-  */
-  const TAKES_AWAY = [
-    "no fangs", "without fangs", "fangs removed", "normal human teeth, no fangs", "ordinary human canines, not fangs",
-    "shorter fangs", "smaller fangs", "less pointed fangs", "blunt fangs", "fangs filed down",
-  ];
-  /* Imperatives ("remove the fangs") never reach this sentence: the assembler
-     refuses them as `wordsNotDeclarative` and the interpreter owes a state
-     phrase, so the list is the STATE phrases a removal or a shrink arrives as. */
-
-  it("⚠ a removal, a negation or a shrink keeps the customer's own words and is never told to grow — both slots", () => {
-    for (const words of TAKES_AWAY) {
-      for (const slot of ["teeth", "open:fangs"]) {
-        const prompt = promptFor({
-          master: MASTER, pronouns: SHE, library: [],
-          asks: [{ slot, noun: slot === "teeth" ? "teeth" : "fangs", words }],
-        });
-        expect(prompt, `${slot}: ${words}`).toContain(`: ${words}.`);
-        expect(prompt, `${slot}: ${words}`).not.toContain("upper canines");
-        expect(prompt, `${slot}: ${words}`).not.toContain("elongated");
-        expect(occurrences(prompt, FIT), `${slot}: ${words}`).toBe(1);
-      }
-    }
-  });
-
-  it("⚠ the description road adds no 'Draw the fangs' line for a removal or a shrink", () => {
-    for (const words of TAKES_AWAY) {
-      const prompt = promptFor({
-        master: MASTER, pronouns: SHE, library: [], currentDescription: "She has ordinary teeth.",
-        asks: [{ slot: "teeth", noun: "teeth", words }],
-      });
-      expect(prompt, words).not.toContain("Draw the fangs");
-      expect(prompt, words).not.toContain("upper canines");
-    }
-  });
-
-  it("⚠ the vacancy road ('no fangs' said as an absence) carries no growth words either", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [],
-      asks: [{ slot: "open:fangs", noun: "fangs", vacate: { says: "no fangs — ordinary canines" } }],
-    });
-    expect(prompt).toContain("no fangs — ordinary canines");
-    expect(prompt).not.toContain("elongated");
-  });
-
-  it("⚠ a shrink on one slot holds growth on EVERY slot in the render — never grow and shrink in one breath", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [],
-      asks: [
-        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
-        { slot: "teeth", noun: "teeth", words: "shorter vampire fangs" },
-      ],
-    });
-    expect(prompt).toContain("her fangs: vampire fangs; her teeth: shorter vampire fangs.");
-    expect(prompt).not.toContain("elongated");
-  });
-
-  it("CONTROL — two growth asks in one render both still grow", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [],
-      asks: [
-        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
-        { slot: "hair", noun: "hair", words: "dark red" },
-      ],
-    });
-    expect(prompt).toContain("her upper canines elongated into slightly pointed fangs");
-    expect(prompt).toContain("dark red");
-  });
-
-  it("CONTROL — a growth ask beside the removal list still grows: 'long fangs', 'fangs', 'vampire fangs'", () => {
-    for (const words of ["long fangs", "fangs", "vampire fangs", "black fangs"]) {
-      const prompt = promptFor({
-        master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words }],
-      });
-      expect(prompt, words).toContain("her upper canines elongated into slightly pointed");
-    }
-  });
-
-  it("the description road tells the painter how the fangs are drawn, beside the description it sends as written", () => {
-    const prompt = promptFor({
-      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has black fangs.",
-      asks: [{ slot: "teeth", noun: "teeth", words: "black fangs" }],
-    });
-    expect(prompt).not.toContain("Change only");
-    expect(prompt).toContain("Draw the fangs as her upper canines elongated into slightly pointed black fangs");
-    expect(prompt).not.toContain(OWN_TEETH);
-  });
-});
-
 /**
  * # AN ASK ON AN OPEN KIND'S BARE SLOT SILENCES ITS SIDED ROWS (#2635)
  *
@@ -3050,5 +2852,116 @@ describe("a kept clause never argues with the ask riding beside it", () => {
        harder than a sentence, so this is the half worth pinning. */
     expect(recipe.references.map((reference) => reference.role)).toEqual([{ kind: "master" }]);
     expect(recipe.prompt).not.toContain(WHITE);
+  });
+});
+
+/*
+  #2626 — THE CUSTOMER'S TEETH WORDS GO AS TYPED, AND ONE NOTE RIDES BESIDE
+  THEM. His rulings, 2026-10-17, verbatim: *"i honestly think we shouldnt
+  change how the image engine recieves its instructions from the user just let
+  the result be"*; *"i think the issue is closed mouths with fangs is what its
+  fighting mostly?"*; *"yes i think thats a better fix and remove the general
+  color sentence or any other additional text around fangs"*.
+
+  Each PRE string below is the prompt main sent BEFORE #2634, byte for byte —
+  generated by that commit's own `assembleRecipe` (bcb2792ad^) on these exact
+  inputs, not retyped from memory.
+*/
+describe("#2626 — a teeth edit is sent as typed, with one permission note beside it", () => {
+  const NOTE = "The lips may part slightly so the teeth show.";
+  const HEAD = "Reference 1 is the photograph of this person — reproduce her exactly:"
+    + " same face, same pose, same lighting, same framing, same background.";
+  const promptFor = (input: Parameters<typeof assembleRecipe>[0]): string => {
+    const recipe = assembleRecipe(input);
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+  const occurrences = (text: string, needle: string): number => text.split(needle).length - 1;
+
+  it("the note is the ruled sentence, word for word", () => {
+    expect(TEETH_PARTING_NOTE).toBe(NOTE);
+  });
+
+  it("change-clause road: the pre-#2634 prompt, byte for byte, plus the note — teeth slot and open fangs", () => {
+    const PRE_TEETH = `${HEAD} Change only her teeth: vampire fangs.`;
+    const PRE_FANGS = `${HEAD} Change only her fangs: vampire fangs.`;
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+    })).toBe(`${PRE_TEETH} ${NOTE}`);
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "open:fangs", noun: "fangs", words: "vampire fangs" }],
+    })).toBe(`${PRE_FANGS} ${NOTE}`);
+  });
+
+  it("description road: the pre-#2634 prompt, byte for byte, plus the note", () => {
+    const PRE = `${HEAD} This is how she looks now: She has vampire fangs.`
+      + " Everything else about her stays exactly as in Reference 1.";
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has vampire fangs.",
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+    })).toBe(`${PRE} ${NOTE}`);
+  });
+
+  it("the customer's words are never reworded — colour, size and costume words all ride as typed", () => {
+    for (const words of ["black fangs", "long vampire fangs", "gold fangs", "fangs", "no fangs", "shorter fangs"]) {
+      expect(promptFor({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "teeth", noun: "teeth", words }],
+      }), words).toBe(`${HEAD} Change only her teeth: ${words}. ${NOTE}`);
+    }
+  });
+
+  it("said ONCE when two teeth asks share a render", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "teeth", noun: "teeth", words: "a small gap between the front teeth" },
+        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
+      ],
+    });
+    expect(occurrences(prompt, NOTE)).toBe(1);
+  });
+
+  it("CONTROL — no other slot gets it, and the pre-#2634 prompt is unchanged byte for byte", () => {
+    for (const ask of [
+      { slot: "hair", noun: "hair", words: "dark red" },
+      { slot: "lips", noun: "lips", words: "a soft nude lip gloss" },
+      { slot: "open:horns", noun: "horns", words: "small curved horns" },
+      { slot: "open:nose stud", noun: "nose stud", words: "a nose piercing" },
+    ]) {
+      expect(promptFor({ master: MASTER, pronouns: SHE, library: [], asks: [ask] }), ask.noun)
+        .toBe(`${HEAD} Change only her ${ask.noun}: ${ask.words}.`);
+    }
+    const removal = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: "no glasses — her face uncovered" } }],
+    });
+    expect(removal).not.toContain(NOTE);
+  });
+
+  it("CONTROL — a taken-back teeth slot says no clause, so it gets no note", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "teeth", noun: "teeth", restate: { taken: "vampire fangs" } },
+        { slot: "hair", noun: "hair", words: "dark red" },
+      ],
+    });
+    expect(prompt).not.toContain(NOTE);
+  });
+
+  it("the retired #2634 text is gone from every road — no fit sentence, no growth wording", () => {
+    for (const input of [
+      { master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }] },
+      { master: MASTER, pronouns: SHE, library: [], currentDescription: "She has fangs.", asks: [{ slot: "teeth", noun: "teeth", words: "fangs" }] },
+      { master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "brow@left", noun: "left brow", words: "a thin scar" }] },
+    ]) {
+      const prompt = promptFor(input);
+      expect(prompt).not.toContain("Every change is made");
+      expect(prompt).not.toContain("upper canines");
+      expect(prompt).not.toContain("Draw the fangs");
+    }
   });
 });
