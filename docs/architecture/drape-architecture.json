@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 210
+      "moduleCount": 211
     },
     {
       "id": "domain:castingV2",
@@ -3909,6 +3909,12 @@
     {
       "id": "module:server/castingV2/carriedGeometry.ts",
       "path": "server/castingV2/carriedGeometry.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/castFit.ts",
+      "path": "server/castingV2/castFit.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -31262,6 +31268,11 @@
     {
       "from": "module:server/castingV2/realizedAxes.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/recipeAssembler.ts",
+      "to": "module:server/castingV2/castFit.ts",
       "kind": "imports"
     },
     {
