@@ -346,3 +346,139 @@ describe("what the re-read named, and the lane it could not see", () => {
       .toBe(false);
   });
 });
+
+/**
+ * #2638 — A FEATURE THE OPEN LANE ADDED CAN BE TAKEN BACK BY NAME.
+ *
+ * Found by the #2637 drive on dev, through the live interpreter: fangs ADDED by
+ * a refine are filed under the open lane, and *"remove her fangs"* matched
+ * nothing and refused. So a customer could not take away what they had just
+ * paid to add.
+ *
+ * The cause is structural rather than a phrasing miss, and it is two blind
+ * spots in this file, both pointing at `delta.open`:
+ *
+ *  1. {@link wordsOfStep} read the guaranteed axes and the free lane. An
+ *     open-kind step's own noun and words were nowhere in the set, so the step
+ *     was WORDLESS to the matcher — no query could ever match it.
+ *  2. The candidate filter is by FACET, and `refineDelta` states that an open
+ *     kind deliberately has none (*"an open kind has no facet, and that is what
+ *     makes it CARRY"*) — `facetsWrittenBy` reads the axes, the free lane and
+ *     `absent`, never `open`. So a removal naming a subject dropped every
+ *     open-kind step before a single word was compared.
+ *
+ * The narrowing is what keeps this safe, and the controls below are the point:
+ * an open-kind step joins the candidates for the WORD-NARROWED path only, never
+ * the `whole` branch. "Remove her teeth" must not take her horns off.
+ */
+describe("#2638 — taking back a feature the open lane added", () => {
+  const chain = [
+    step("give her vampire fangs", { open: { fangs: { noun: "fangs", words: "long vampire fangs" } } }),
+    step("give her curled horns", { open: { horns: { noun: "horns", words: "curled ram horns" } } }),
+    step("a smokey eye", { makeup: "a smokey eye" }),
+  ];
+
+  it("takes the open-kind step when the words name it — the card's own case", () => {
+    /* The live interpreter files "remove her fangs" under the nearest closed
+       subject, `teeth`, because the open kind is not in its vocabulary. The
+       words are what identify the step, and they do. */
+    expect(matchSteps(chain, { subject: "teeth", match: "fangs" }))
+      .toEqual([{ index: 0, keep: null }]);
+  });
+
+  it("takes it when the removal named no closed subject at all", () => {
+    /* `readRemovalSubject` returns null for anything outside the code's own
+       vocabulary, which is what an open kind always is. */
+    expect(matchSteps(chain, { subject: null, match: "fangs" }))
+      .toEqual([{ index: 0, keep: null }]);
+  });
+
+  it("matches on the stored WORDS as well as the noun", () => {
+    expect(matchSteps(chain, { subject: null, match: "vampire" }))
+      .toEqual([{ index: 0, keep: null }]);
+  });
+
+  it("tolerates the ending the way every other lane does", () => {
+    /* "fang" against a kind filed as "fangs" — the same stemming source
+       containment already learned, and three regressions paid for. */
+    expect(matchSteps(chain, { subject: "teeth", match: "fang" }))
+      .toEqual([{ index: 0, keep: null }]);
+  });
+
+  it("finds an open kind whose own sentence never names it", () => {
+    /*
+      THE ARM FOR THE LANE ITSELF, and it is the one the first draft missed.
+
+      Every case above could be satisfied by the step's SENTENCE, because a
+      customer who asks for fangs usually says "fangs". Here they do not: the
+      noun and the state live only in the open-kind row. Before #2638 that row
+      was read by nothing, so a removal could reach an open kind only by the
+      accident of the sentence repeating it.
+
+      Both roads are asserted, and they are different code: with no subject
+      every step is a facet candidate, so the match can only come from
+      `wordsOfStep`; with `teeth` named, the facet filter drops the step and
+      the open-kind road is the only way back in.
+    */
+    const quiet = [
+      step("make them longer and sharper", {
+        open: { fangs: { noun: "fangs", words: "long sharp fangs" } },
+      }),
+    ];
+    expect(matchSteps(quiet, { subject: null, match: "fangs" }))
+      .toEqual([{ index: 0, keep: null }]);
+    expect(matchSteps(quiet, { subject: "teeth", match: "fangs" }))
+      .toEqual([{ index: 0, keep: null }]);
+  });
+
+  it("CONTROL — one open kind's words never take another's", () => {
+    expect(matchSteps(chain, { subject: null, match: "horns" }))
+      .toEqual([{ index: 1, keep: null }]);
+    expect(matchSteps(chain, { subject: null, match: "tusks" })).toEqual([]);
+  });
+
+  /*
+    THE OVER-DELETION CONTROL, AND IT IS THE REASON THE WIDENING IS NARROW.
+
+    Open kinds have no facet, so admitting them to the `whole` branch would make
+    "remove her teeth" delete her horns, her wings and every other open kind on
+    the face — run-7's earrings, rebuilt on a new lane. They are candidates for
+    the word-narrowed path only.
+  */
+  it("CONTROL — the WHOLE subject never reaches an open kind", () => {
+    expect(matchSteps(chain, { subject: "teeth", match: "teeth", whole: true })).toEqual([]);
+    expect(matchSteps(chain, { subject: "makeup", match: "makeup", whole: true }))
+      .toEqual([{ index: 2, keep: null }]);
+  });
+
+  it("CONTROL — no words and no claimed width still takes nothing", () => {
+    expect(matchSteps(chain, { subject: "teeth", match: null })).toEqual([]);
+    expect(matchSteps(chain, { subject: null, match: null })).toEqual([]);
+  });
+
+  /*
+    THE END OF THE ROAD, NOT THE MATCH — the arm that answers the card.
+
+    Matching is only half of it: the card asks that the fangs be GONE. So the
+    chain is pruned and recomposed the way the service does it, and the
+    composed delta is read. `chainAfterRemoval` drops a step whose `keep` is
+    null, and because an open kind lives in the step it was filed by, dropping
+    the step is what takes the feature off the cast.
+  */
+  it("leaves the cast without the fangs, and still wearing the horns", () => {
+    const matches = matchSteps(chain, { subject: "teeth", match: "fangs" });
+    const after = chainAfterRemoval(chain, matches, null);
+    const composed = composeChain(after);
+    expect(composed.open?.fangs).toBeUndefined();
+    expect(composed.open?.horns).toEqual({ noun: "horns", words: "curled ram horns" });
+    expect(composed.makeup).toBe("a smokey eye");
+    /* And the step itself is gone from the record, not merely emptied. */
+    expect(after.map((s) => s.instruction))
+      .toEqual(["give her curled horns", "a smokey eye"]);
+  });
+
+  it("CONTROL — a closed-lane step beside open kinds is untouched", () => {
+    expect(matchSteps(chain, { subject: "makeup", match: "smokey eye" }))
+      .toEqual([{ index: 2, keep: null }]);
+  });
+});
