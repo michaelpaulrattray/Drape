@@ -38,7 +38,6 @@ import { interpretRefinement } from "./refineInterpreter";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { withoutComments } from "../testing/withoutComments";
-import { CAST_FIT_SENTENCE } from "./castFit";
 
 
 /**
@@ -5803,55 +5802,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       expect(painted[0]!.prompt).toContain("longer curved fangs");
     });
 
-    /*
-      ⚠ A REMOVAL OR A SHRINK OF THE FANGS IS NEVER SENT AS GROWTH (#2626
-      repair). Each interpreter answer below is the one the LIVE interpreter
-      gave for that sentence on 2026-10-17 (text calls only), so the arm drives
-      the road a real fang removal takes, not a shape guessed for it.
-    */
-    it("⚠ a live-shaped fang removal reaches no painter with growth words", async () => {
-      carryingFangs();
-      lineageReferences = [];
-
-      /* Live: the classify pass files a removal of "fangs" under the teeth, and
-         the edit-mode re-read (rule 3) answers `unreadable`. */
-      const outcome = await refineCandidate({
-        ...repainting,
-        interpret: async (request: { mode?: string }) => (request.mode === "edit"
-          ? { ok: false as const, refusal: { reason: "unreadable" } }
-          : { ok: true as const, intent: "remove" as const, subject: "teeth", match: "fangs", whole: false, items: ["vampire fangs"] }) as never,
-      } as never, { ...input, instruction: "remove her fangs" }).then(() => "rendered", (error: Error) => error.message);
-
-      /* The road today: refused before any paint, nothing charged — so no
-         growth words can reach a painter. If a later card makes this removal
-         render, the three lines below are what it must still satisfy. */
-      expect(outcome).toMatch(/Nothing was charged|couldn|didn/i);
-      for (const one of painted) {
-        expect(one.prompt).not.toContain("elongated");
-        expect(one.prompt).not.toContain("upper canines");
-        expect(one.prompt).not.toContain("Draw the fangs");
-      }
-    });
-
-    it("⚠ a live-shaped fang shrink sends the customer's own words, never growth", async () => {
-      carryingFangs();
-      lineageReferences = [];
-
-      await refineCandidate({
-        ...repainting,
-        interpret: async () => ({ ok: true as const, delta: { free: { teeth: "shorter vampire fangs" } } }) as never,
-      }, { ...input, instruction: "make her fangs shorter" });
-
-      expect(painted).toHaveLength(1);
-      expect(painted[0]!.prompt).toContain("her teeth: shorter vampire fangs");
-      /* The fangs the branch already carries are re-said in this same render
-         (no crop minted); a shrink anywhere in the render stops EVERY slot
-         being told to grow, or the painter gets "grow them" and "shorter" in
-         one sentence. */
-      expect(painted[0]!.prompt).not.toContain("elongated");
-      expect(painted[0]!.prompt).not.toContain("upper canines");
-    });
-
     it("CONTROL — with NO crop minted, the kind is still re-said in words", async () => {
       /*
         Line (c) of the ruling, and the arm that keeps the split from being a
@@ -5867,10 +5817,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       /* Said as an edit, exactly as it was before crops existed — because words
          are the only carrier there is when there is no crop. */
       expect(dispatched().edited).toContain("open:fangs");
-      /* #2626: a fang ask reaches the painter as the courted growth wording,
-         never the costume word. */
-      expect(painted[0]!.prompt).toContain("upper canines elongated into slightly pointed fangs");
-      expect(painted[0]!.prompt).not.toContain("vampire");
+      expect(painted[0]!.prompt).toContain("vampire fangs");
     });
   });
 
@@ -6593,10 +6540,14 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       /* AND IT SAYS THE THING. A recipe that renders happily while never
          mentioning fangs is the failure this arm exists for: she is charged,
          she gets a picture, and nothing in it is what she asked for. */
-      /* #2626: it says fangs as the courted growth wording — what a fang IS on
-         this cast — and the costume word "vampire" is not sent. */
-      expect(record.prompt).toContain("upper canines elongated into slightly pointed fangs");
-      expect(record.prompt).not.toContain("vampire");
+      expect(record.prompt).toContain("vampire fangs");
+      /* #2626, his rulings 2026-10-17: the words go as typed, and the one
+         permission note rides beside them — never inside them. */
+      expect(record.prompt).toContain(
+        "Change only her fangs: vampire fangs. The lips may part slightly so the teeth show.",
+      );
+      expect(record.prompt).not.toContain("upper canines");
+      expect(record.prompt).not.toContain("Every change is made");
     });
 
     it("⚠ A PAIR IS ASKED FOR ONCE ON THE WIRE — the four-horns escalation", async () => {
@@ -15703,9 +15654,7 @@ describe("one current description rides the paid refine", () => {
   */
   const TODAYS_PROMPT = "Reference 1 is the photograph of this person — reproduce her exactly: "
     + "same face, same pose, same lighting, same framing, same background. "
-    + "Change only her hair: hair down. "
-    /* The fit sentence (#2626, P1), last on every repaint prompt. */
-    + CAST_FIT_SENTENCE;
+    + "Change only her hair: hair down.";
 
   it("CONTROL — with the flag off nothing is asked and the prompt is today's, byte for byte", async () => {
     delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
