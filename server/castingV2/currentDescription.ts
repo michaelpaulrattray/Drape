@@ -313,6 +313,42 @@ export const ONE_PERSON_SPECIFICS = {
 type OnePersonSpecific = (typeof ONE_PERSON_SPECIFICS)[keyof typeof ONE_PERSON_SPECIFICS];
 
 /**
+ * ⚠ **BODY-LOOK ANATOMY A WHOLE CASTING CALL COULD SHARE IS DIRECTION, AND IT
+ * WAS SAID NOWHERE (#2621).** His report, verbatim: *"her fangs i gave her or
+ * changed her teeth to sort of look a bit funny then when i follow her the
+ * fangs end up non existent or as tattoos on the lips of the new casts."* The
+ * direction-level rule named hair, style, augments, prosthetics, cybernetics,
+ * outfit, build and palette and nothing about teeth, horns or ears, while the
+ * one-person rule named *"a precise facial feature"*, the nearest home a writer
+ * finds for fangs. So the edit was left out of the words and survived only
+ * through the anchor picture, where it rendered as missing or as marks on the
+ * lips.
+ *
+ * A vampire family all have fangs; an elf family all have pointed ears. That is
+ * what makes these the LOOK of the call rather than one face, the opposite of a
+ * single scar. The prompt's sentence is BUILT from this list, and the suite
+ * drives every member through the one-person refusal, so the backstop can never
+ * refuse what the prompt asks for.
+ */
+export const BODY_LOOK_ANATOMY = [
+  { phrase: "fangs or the shape of the teeth", writtenAs: ["long vampire fangs", "sharp pointed teeth"] },
+  { phrase: "tusks", writtenAs: ["small lower tusks"] },
+  { phrase: "horns", writtenAs: ["curling ram horns"] },
+  { phrase: "pointed or elf ears", writtenAs: ["long pointed elf ears"] },
+  {
+    phrase: "unusual eyes such as slit pupils or glowing or solid-colour eyes",
+    writtenAs: ["slit-pupil eyes", "glowing amber eyes", "solid black eyes", "glowing pale blue eyes"],
+  },
+  { phrase: "skin texture such as scales", writtenAs: ["green scaled skin", "scales along the cheekbones"] },
+] as const;
+
+/**
+ * Words that make an eye colour part of an UNUSUAL EYE rather than one
+ * person's natural colouring. Read immediately before the colour only.
+ */
+const UNUSUAL_EYE_MARKERS = ["glowing", "luminous", "solid", "pupilless", "pupil-less", "reptilian", "cat-like", "catlike"] as const;
+
+/**
  * Does this text state the feature, in any of the ways English writes it?
  *
  * ⚠ **EVERY WRITING OF THE WORD IS NAMED, BECAUSE THE STEM ALONE MATCHED WORDS
@@ -354,8 +390,15 @@ export function statesAnEyeColour(text: string): boolean {
       weather, a coat and a jaw. Adjacency only, and the three ways English
       attaches a colour to eyes.
     */
-    return new RegExp(`${word}[-\\s]eyes?\\b`).test(normalised)
-      || new RegExp(`${word}[-\\s]eyed\\b`).test(normalised)
+    /*
+      An UNUSUAL eye (#2621) is body-look direction a whole call shares, not one
+      face's natural colouring: "glowing amber eyes" is a creature's eyes. A
+      marker word just before the colour (one word may sit between, so "glowing
+      pale blue eyes" reads the same) takes it out of this check.
+    */
+    const unusual = `(?<!\\b(?:${UNUSUAL_EYE_MARKERS.join("|")})[-\\s]+(?:[a-z]+[-\\s]+)?)`;
+    return new RegExp(`${unusual}\\b${word}[-\\s]eyes?\\b`).test(normalised)
+      || new RegExp(`${unusual}\\b${word}[-\\s]eyed\\b`).test(normalised)
       || new RegExp(`\\beyes?\\s+(?:are|is|of)\\s+(?:a\\s+)?${word}\\b`).test(normalised);
   });
 }
@@ -381,8 +424,8 @@ export const FOLLOW_BRIEF_SYSTEM = [
   "Rules:",
   "- Keep the brief's own voice, register, person and roughly its length. It must read as if the customer had always written it this way, never as a list of edits.",
   "- Never use the words now, changed, edited, updated, added, removed, new, no longer, instead or anymore, and never describe the edits themselves.",
-  "- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette.",
-  `- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact ${ONE_PERSON_SPECIFICS.scar.word}, a single ${ONE_PERSON_SPECIFICS.mole.word} or ${ONE_PERSON_SPECIFICS.freckle.word}, one particular ${ONE_PERSON_SPECIFICS.tattoo.word} or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.`,
+  `- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette, and body-look anatomy (${BODY_LOOK_ANATOMY.map((entry) => entry.phrase).join("; ")}). Body-look anatomy is part of the look the whole call shares: always write it into the brief, and never leave it to the picture.`,
+  `- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact ${ONE_PERSON_SPECIFICS.scar.word}, a single ${ONE_PERSON_SPECIFICS.mole.word} or ${ONE_PERSON_SPECIFICS.freckle.word}, one particular ${ONE_PERSON_SPECIFICS.tattoo.word} or its exact placement, the precise shape of one nose or jaw, and a natural eye colour unless the brief itself already states an eye colour.`,
   "- Where an edit contradicts the brief (dark hair in the brief, platinum blonde after the edit), keep only the edited direction.",
   "- The edits only ever change the PERSON. Everything in the brief that is not the person (the setting, the light, the camera and framing, the picture style and the mood) is the look of the whole casting: keep every one of those phrases word for word.",
   "- Keep everything else the brief says that the edits do not touch, in its own words where you can.",

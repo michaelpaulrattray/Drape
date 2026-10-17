@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TextEngine, TextRequest } from "../providers/types";
 import type { FollowBriefSource } from "../db/castingV2";
 import {
+  BODY_LOOK_ANATOMY,
   FOLLOW_BRIEF_DEADLINE_MS,
   FOLLOW_BRIEF_RETRIES,
   FOLLOW_BRIEF_SYSTEM,
@@ -18,6 +19,7 @@ import {
   ONE_PERSON_SPECIFICS,
   droppedClauseBudget,
   followBriefUserTurn,
+  introducedOnePersonSpecific,
   statesAnEyeColour,
   writeFollowBrief,
 } from "./currentDescription";
@@ -383,6 +385,66 @@ describe("the follow brief writer", () => {
           await writeFollowBrief(
             engineSaying(rewrite),
             { brief, description: "A courier.", asks: ["give them a long black coat"] },
+            4000,
+          ),
+          invented,
+        ).toMatchObject({ ok: false, reason: "one_person_specific" });
+      }
+    });
+  });
+
+  /*
+    ⚠ BODY-LOOK ANATOMY IS DIRECTION (#2621). His report: "her fangs i gave her
+    ... when i follow her the fangs end up non existent or as tattoos on the lips
+    of the new casts." Fangs, tusks, horns, pointed ears, unusual eyes and
+    scales are what a whole casting call shares, so the prompt must ASK for them
+    and the one-person refusal must never throw them away.
+  */
+  describe("body-look anatomy a whole casting call could share (#2621)", () => {
+    const brief = "A pale nightclub singer in a black velvet gown, standing under a red spotlight, cinematic";
+
+    it("is named in the DIRECTION-LEVEL rule and nowhere in the one-person rule", () => {
+      const lines = FOLLOW_BRIEF_SYSTEM.split("\n");
+      const direction = lines.find((line) => line.includes("DIRECTION-LEVEL"))!;
+      const specifics = lines.find((line) => line.includes("ONE-PERSON SPECIFICS"))!;
+      for (const entry of BODY_LOOK_ANATOMY) {
+        expect(direction, entry.phrase).toContain(entry.phrase);
+        expect(specifics, entry.phrase).not.toContain(entry.phrase);
+      }
+      for (const word of ["fangs", "tusks", "horns", "ears", "slit pupils", "scales"]) {
+        expect(direction).toContain(word);
+        expect(specifics).not.toContain(word);
+      }
+      expect(direction).toMatch(/never leave it to the picture/);
+      /* The vague phrase a writer filed fangs under is gone from the one-person rule. */
+      expect(specifics).not.toMatch(/a precise facial feature/);
+    });
+
+    it("every way it is written passes the one-person refusal and comes back as the brief", async () => {
+      for (const entry of BODY_LOOK_ANATOMY) {
+        for (const written of entry.writtenAs) {
+          const rewrite = brief.replace("a black velvet gown", `a black velvet gown and ${written}`);
+          expect(introducedOnePersonSpecific(brief, rewrite), written).toBeNull();
+          expect(
+            await writeFollowBrief(
+              engineSaying(rewrite),
+              { brief, description: `A pale nightclub singer with ${written}.`, asks: [`give them ${written}`] },
+              4000,
+            ),
+            written,
+          ).toMatchObject({ ok: true, brief: rewrite });
+        }
+      }
+    });
+
+    it("⚠ CONTROL — a plain eye colour and a tattoo on the lips are still one face's, and still refused", async () => {
+      for (const invented of ["amber eyes", "a pale blue-eyed stare", "a small tattoo on the lower lip"]) {
+        const rewrite = brief.replace("a black velvet gown", `a black velvet gown and ${invented}`);
+        expect(introducedOnePersonSpecific(brief, rewrite), invented).not.toBeNull();
+        expect(
+          await writeFollowBrief(
+            engineSaying(rewrite),
+            { brief, description: "A pale nightclub singer with vampire fangs.", asks: ["give them vampire fangs"] },
             4000,
           ),
           invented,
