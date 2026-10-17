@@ -1820,11 +1820,22 @@ async function refineCandidateCounted(
   });
 
   /*
-    ONE READING, ASKED THREE WAYS — the same face, the same sentence, the same
-    prior. Named here because there are three call sites (the first reading, the
-    removal re-read, and the restatement pass) and a fourth copy of this block
-    would be the drift law's own failure mode on the step that decides what gets
-    painted.
+    ONE READING, ASKED FOUR WAYS — the same face, the same sentence, the same
+    prior. Named here because there are four call sites (the first reading, the
+    no-removal-word re-read, RULE 3's re-read, and the restatement pass) and a
+    fifth copy of this block would be the drift law's own failure mode on the
+    step that decides what gets painted.
+
+    ⚠ **IT SAID THREE UNTIL #2584, AND THE FOURTH COPY WAS ALREADY THERE** —
+    RULE 3's re-read was sixteen hand-written lines passing eight of these
+    fourteen facts, with the other six arriving as `false` because an absent
+    optional boolean is read as `=== true`. Two members of that gap were found
+    one at a time by two different readers before anybody looked at it as a set
+    (`openLane` on PR #2556, `inkWordsRoadOpen` measured for #2584). The verdict
+    on each of the six, and why the drift was invisible to the compiler, is at
+    that call site; `refineService.test.ts` now derives the comparison between
+    the two option sets rather than listing them, which is the only arm shape
+    neither of those two members would have needed finding by hand.
   */
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
@@ -3502,18 +3513,59 @@ async function refineCandidateCounted(
         RULE 3 — THE FACE SECOND. The record says it IS there, so this is an
         ordinary content edit. Re-read with the removal vocabulary withheld, or
         the same sentence classifies as a removal forever.
+
+        ⚠ **THROUGH `readInstruction`, AND IT WAS A HAND-WRITTEN OBJECT UNTIL
+        #2584.** `readInstruction`'s own docblock warns that *"a fourth copy of
+        this block would be the drift law's own failure mode on the step that
+        decides what gets painted"* — and the fourth copy was these sixteen
+        lines. It passed EIGHT things where the main read passes fourteen, and
+        the six it left out were not unknown to the reader: an absent optional
+        boolean is read as `=== true`, so every one of them arrived as **no**.
+        `tsc` can never speak about that, and a reviewer reading either call
+        site alone sees nothing wrong.
+
+        **The class was found twice before it was looked at as a class**, one
+        member at a time, by two different readers: `openLane` (the relay's
+        finding on PR #2556 — a flag at `all` for everyone, and this road alone
+        asked the closed prompt, so an uncatalogued creature feature asked to
+        come off refused FREE here where the main read of the same words
+        rendered it) and `inkWordsRoadOpen` (measured for #2584 at
+        `da7644a18^` — this road alone ran with the neck-only placement list).
+        Both are moot, their flags retired. They are the evidence, not the fix.
+
+        **The six, each with its verdict, and all six are the same verdict —
+        they should always have been passed:**
+
+          `referenceAttached`        without it the interpreter has never heard
+                                     of the attachment, *"this photo"* reads as
+                                     a real person, and the sentence the crop
+                                     road exists for refuses at the likeness
+                                     wall — measured four for four
+          `inkReferenceEnabled`      a LIVE flag; withholding it means this one
+                                     road answers as if the account could never
+                                     use a picture as a tattoo document
+          `wardrobe`                 the second half of *can a tattoo go there*
+                                     (D-206); absent reads as `unpathed`
+          `inkDocumentedByDelivery`  without it the transform road is
+                                     unreachable from this re-read, so a change
+                                     to ink this product already delivered
+                                     walls here and not one line away
+          `lastColourFacet`          D-178's history; absent, *"make it pinker"*
+                                     after a hair edit loses the referent
+          `scopedColourFacet`        the part the customer TAPPED. Withholding a
+                                     tap is census card C2 inverted — the
+                                     prompt half saying nothing while the
+                                     backstop carries it
+
+        **Nothing is withheld on purpose except the removal vocabulary, and
+        that is what `mode: "edit"` is.** Its sibling re-read 670 lines above —
+        *"a removal with no plain removal word"* — has always been
+        `readInstruction({ mode: "edit" })`, which is what makes this the
+        outlier rather than the design. `refineService.test.ts` holds the two
+        option sets equal by DERIVING the comparison rather than listing the
+        fields, so a fact added to the main read in future cannot skip this one.
       */
-      const asEdit = await (dependencies.interpret ?? interpretRefinement)({
-        instruction,
-        mode: "edit",
-        prior: priorItems,
-        currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
-        currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
-        currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
-        currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
-        currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
-        currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
-      });
+      const asEdit = await readInstruction({ mode: "edit" });
       /*
         THE FOUNDER'S OWN DOOR (opus-465). "Remove her hair" came through here,
         was re-read as an edit, hit the content wall, and the refusal reached him

@@ -22,6 +22,33 @@ import {
   writeFollowBrief,
 } from "./currentDescription";
 import { resolveFollowBrief } from "./followBrief";
+import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
+
+/*
+  ⚠ THE CONTENDED FLOOR, AND THIS SUITE EARNED IT BY REDDENING RATHER THAN BY
+  SHAPE (#2584, pinned in `server/contendedTestTimeouts.test.ts`).
+
+  The wire arms boot the WHOLE tRPC router (`await import("../routers")`) inside
+  the vitest worker, which is real in-process work the derived population cannot
+  see — `sourceSweepSuites` watches suites that walk the SOURCE TREE, and this
+  one walks a router graph instead.
+
+  Measured on #2584's branch, `followBrief` beside `refineService` in one
+  invocation: **RED in 2 of 3 runs with an extra arm in the neighbour, 0 of 4
+  without it** — and the red is the shape `contendedTestTimeout.ts`'s own
+  docblock warns is the worst of this class, because it does not look like a
+  timeout at all. The first wire arm exceeds the 5 s default; vitest abandons
+  it and moves on; its in-flight `follow` then lands in the NEXT arm's
+  recorder, and that arm fails `expect(wire.createRollInputs).toHaveLength(1)`
+  with somebody else's `userId` in the array. Probed to be sure rather than
+  reasoned: the pushes read `user=5102 n=1` then `user=5103 n=2` with no reset
+  between them, which only happens if the first arm had already been
+  abandoned. **It reads exactly like a real defect in the follow road.**
+
+  File level, never per arm: a number typed onto one `it(…)` is not inherited
+  by its neighbour, and the neighbour is where this one lands.
+*/
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const wire = vi.hoisted(() => ({
   createRollInputs: [] as Array<{ briefText: string; followCandidatePublicId?: string | null }>,
