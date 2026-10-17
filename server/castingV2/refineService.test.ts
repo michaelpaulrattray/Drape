@@ -5959,7 +5959,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * so it now asserts what the pruned render actually does.
    */
   describe("a prune on the repaint road", () => {
-    const prunedEarrings = async () => {
+    const prunedEarrings = async (extra: Record<string, unknown> = {}) => {
       lineageReferences = [
         carryRow({
           id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
@@ -6004,6 +6004,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
               ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "gold hoop earrings" }
               : { ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } } };
           }) as never,
+          ...extra,
         },
         { ...input, instruction: "take the earrings off" },
       );
@@ -6031,6 +6032,43 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       await prunedEarrings();
       const recipe = (landedVariant?.internalPrompt as { repaint?: { restated?: string[] } })?.repaint;
       expect(recipe?.restated ?? []).toContain("earring@left");
+    });
+
+    /*
+      #2645 — THE DESCRIPTION WRITER IS TOLD WHAT THE PRUNE TOOK BACK, in the
+      customer's own sentence. The layout court measured the defect on the real
+      entrance: a prune contributes no clause to the assembled change
+      (`Ask.restate`), so the writer was handed only the chain's re-said edits
+      and filed "take the horns off" with the horns still in the paragraph,
+      which the next edit then painted back.
+    */
+    it("hands the description writer the customer's sentence and what was taken back (#2645)", async () => {
+      const castingScope = process.env.CASTING_V2_SCOPE;
+      process.env.CASTING_V2_SCOPE = "users:1";
+      process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
+      const asked: string[] = [];
+      try {
+        await prunedEarrings({
+          readBaseWorn: async () => ({ compiledBrief: null, lockContract: null, briefText: "A person in their thirties." }),
+          describeEngine: () => ({
+            id: "test:describe",
+            complete: async (request: { user: string }) => {
+              asked.push(request.user);
+              return { text: "A person in their thirties with a fuller cupid's bow. They wear no earrings.", latencyMs: 5 };
+            },
+          }),
+        });
+      } finally {
+        delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+        if (castingScope === undefined) delete process.env.CASTING_V2_SCOPE;
+        else process.env.CASTING_V2_SCOPE = castingScope;
+      }
+      expect(asked).toHaveLength(1);
+      expect(asked[0]).toContain("The change, in the customer's own words:\ntake the earrings off");
+      expect(asked[0]).toContain("must not appear in the description except as its absence:\n- gold hoop earrings");
+      /* The chain's re-said edit is not handed over as if it were this change. */
+      expect(asked[0]).not.toContain("Change only");
+      expect(landedVariant?.currentDescription).toBe("A person in their thirties with a fuller cupid's bow. They wear no earrings.");
     });
 
     it("CONTROL — a prune that names nothing still meets the old refusal", async () => {
@@ -15611,9 +15649,13 @@ describe("one current description rides the paid refine", () => {
     /* THE WRITER IS HANDED THE EDIT AS FACTS, NOT THE RAW SENTENCE (#2578 §2).
        This arm read `toContain("wear her hair down")` until that card: the raw
        sentence is what lost the removal's site phrase and the sided fact. */
-    expect(asked[0]!.user).toContain("Change only her hair: hair down.");
-    /* And the PAINTER's half never reaches the writer — the whole point of
-       rendering the clause twice. */
+    /* ⚠ AND SINCE #2645 IT IS THE CUSTOMER'S OWN SENTENCE AGAIN, VERBATIM:
+       the assembled clause was the whole recipe in the studio's words, which
+       is how "short crop" was filed as "standard crop" and a removal was
+       never written. */
+    expect(asked[0]!.user).toContain("The change, in the customer's own words:\nwear her hair down");
+    expect(asked[0]!.user).not.toContain("Change only");
+    /* And the PAINTER's half never reaches the writer. */
     expect(asked[0]!.user).not.toContain("as you look at it");
   });
 
@@ -15730,8 +15772,8 @@ describe("one current description rides the paid refine", () => {
     expect(asked[0]!.user).toBe(`How they were first described:
 ${CHILD_BRIEF}
 
-The change:
-Change only her hair: hair down.`);
+The change, in the customer's own words:
+wear her hair down`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
 
@@ -15791,43 +15833,6 @@ Change only her hair: hair down.`);
     await refineCandidate(describing as never, ask);
     expect(asked, "the writer is reachable from this very fixture").toHaveLength(1);
     expect(painted.length).toBeGreaterThan(0);
-  });
-
-  it("the guard tests `=== undefined` and NOT falsiness — pinned at the source, and here is why", async () => {
-    /*
-      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED, AND THAT IS THE HONEST
-      REASON RATHER THAN A STYLE PREFERENCE (#2598).
-
-      Driven: replacing `changeFacts === undefined` with `!changeFacts` left
-      **558 of 558 arms green** across this suite and `recipeAssembler`'s. The
-      two guards are not equivalent — `recipeAssembler.ts:1064` answers
-      `{ facts: "" }` for a recipe with ZERO clauses, which is an `ok` pass the
-      writer should still run on, handed the customer's sentence rather than an
-      empty change — but **nothing observes the difference today, because the
-      service cannot be driven into that state**: every delta it accepts
-      produces at least one clause, and a delta with none is refused upstream
-      before the assembler is reached (measured: `interpret` returning
-      `{ delta: {} }` never gets there).
-
-      So the distinction is a BACKSTOP for a state the assembler can produce and
-      this road currently cannot, which is why the `trim() === ""` fallback is
-      kept rather than deleted — and why it is pinned here at the source rather
-      than claimed by a behavioural arm that cannot fail. `recipeAssembler.test.ts`
-      › *"answers OK with an EMPTY `changeFacts`"* holds the other half, where
-      that state is real.
-
-      If the service ever CAN produce an empty assembled pass, the right repair
-      is a behavioural arm and the deletion of this one.
-    */
-    const source = await readFile(new URL("./refineService.ts", import.meta.url), "utf8");
-    const code = withoutComments(source);
-    expect(code, "the guard is on `undefined`, never on falsiness")
-      .toContain("if (changeFacts === undefined) return Promise.resolve(undefined);");
-    /* NEGATIVE CONTROL on the reader, in the arm that depends on it — a
-       `withoutComments` that had become the identity would leave every
-       docblock in the haystack and this arm would be reading prose. */
-    expect(source, "the sentence the control rests on").toContain("ABSENT MEANS THE FIRST PASS REFUSED");
-    expect(code, "comments really were stripped").not.toContain("ABSENT MEANS THE FIRST PASS REFUSED");
   });
 
 });

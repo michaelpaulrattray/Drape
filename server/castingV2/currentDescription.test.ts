@@ -13,6 +13,7 @@ import {
   currentDescriptionUserTurn,
   CURRENT_DESCRIPTION_SYSTEM,
   describedNowSentence,
+  keepsWhatWasTakenBack,
   looksLikeAnEditList,
   mentionsThePicture,
   writeCurrentDescription,
@@ -99,7 +100,7 @@ describe("the description writer", () => {
     });
     expect(turn).toContain("A street casting, mid 20s.");
     expect(turn).toContain("- cut the hair into a short crop\n- wire-frame glasses");
-    expect(turn).toContain("The change:\ntake the glasses off");
+    expect(turn).toContain("The change, in the customer's own words:\ntake the glasses off");
   });
 
   it("never throws — a throwing engine is a value the caller rides today's prompt on", async () => {
@@ -221,5 +222,88 @@ describe("CASTING_CURRENT_DESCRIPTION_SCOPE", () => {
       if (saved.child === undefined) delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
       else process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = saved.child;
     }
+  });
+});
+
+/*
+  #2645 — A REMOVAL IS WRITTEN AS A REMOVAL, AND THE CUSTOMER'S WORDS ARE KEPT.
+
+  Found by the layout court on the real `refineCandidate` entrance (dev, the
+  flag on for the bot): "take the horns off" filed a description that still
+  said "with a pair of short curved horns" on both arms, so the next edit
+  painted them back; and "cut the hair into a short crop" was filed as "a
+  standard crop" for six edits — the house style name the writer was handed
+  instead of the customer's sentence. His rule, 2026-10-17: the studio never
+  rewords what the customer asked for.
+*/
+describe("removals and the customer's own words (#2645)", () => {
+  const LIZARD = "A lizard man with scales a deeper emerald than their original coloring, a heavy brow and amber eyes, in his 40s, with a pair of short curved horns.";
+
+  it("a removal chain: the horns are TOLD to the writer as taken away, and a reply that keeps them is REFUSED (law 3, a poisoned answer)", async () => {
+    const sent: TextRequest[] = [];
+    /* The court's own edit-5 reply, word for word in its shape. */
+    const kept = "A lizard man with scales a deeper emerald than their original coloring, a heavy brow and amber eyes, in his 40s, with a pair of short curved horns.";
+    await expect(writeCurrentDescription(engineSaying(kept, sent), {
+      previous: LIZARD, seed, change: "take the horns off", takenBack: ["a pair of short curved horns"],
+    })).resolves.toMatchObject({ ok: false, reason: "kept_removed" });
+    expect(sent[0]!.user).toContain("The change, in the customer's own words:\ntake the horns off");
+    expect(sent[0]!.user).toContain("- a pair of short curved horns");
+    /* A REWORDING of the same feature is caught too — the head noun. */
+    await expect(writeCurrentDescription(engineSaying("A lizard man with emerald scales and two small curved horns, in his 40s."), {
+      previous: LIZARD, seed, change: "take the horns off", takenBack: ["a pair of short curved horns"],
+    })).resolves.toMatchObject({ ok: false, reason: "kept_removed" });
+  });
+
+  it("CONTROL — the same removal with the horns gone, or stated as absent, is filed", async () => {
+    const gone = "A lizard man with scales a deeper emerald than their original coloring, a heavy brow and amber eyes, in his 40s.";
+    await expect(writeCurrentDescription(engineSaying(gone), {
+      previous: LIZARD, seed, change: "take the horns off", takenBack: ["a pair of short curved horns"],
+    })).resolves.toMatchObject({ ok: true, description: gone });
+    const absent = `${gone} They have no horns.`;
+    await expect(writeCurrentDescription(engineSaying(absent), {
+      previous: LIZARD, seed, change: "take the horns off", takenBack: ["a pair of short curved horns"],
+    })).resolves.toMatchObject({ ok: true, description: absent });
+    /* And the edit AFTER the removal: nothing is taken back, so a paragraph
+       that never mentions horns is simply filed, and one that brings them back
+       is not this backstop's question (nothing was taken back this time). */
+    expect(keepsWhatWasTakenBack(gone, [])).toBeNull();
+  });
+
+  it("the backstop reads the feature, not the place — a scar through an eyebrow does not refuse the eyebrow", () => {
+    expect(keepsWhatWasTakenBack("A fisherman of sixty with a heavy left eyebrow.", ["a scar through the left eyebrow"])).toBeNull();
+    expect(keepsWhatWasTakenBack("A fisherman of sixty with a scar through the left eyebrow.", ["a scar through the left eyebrow"]))
+      .toBe("a scar through the left eyebrow");
+    expect(keepsWhatWasTakenBack("A fisherman of sixty. They bear no scar through the left eyebrow.", ["a scar through the left eyebrow"])).toBeNull();
+    /* `not` is a word, never a stem — "a notch" is not an absence. */
+    expect(keepsWhatWasTakenBack("A lizard man, a notch missing from the left ear, short curved horns.", ["a pair of short curved horns"]))
+      .toBe("a pair of short curved horns");
+  });
+
+  it("\"short crop\" is handed to the writer verbatim, and the writer is TOLD to keep the customer's words", async () => {
+    const sent: TextRequest[] = [];
+    await writeCurrentDescription(engineSaying("A street casting subject in their mid 20s, with hair cut into a short crop.", sent), {
+      previous: "A street casting subject in their mid 20s.", seed, change: "cut the hair into a short crop",
+    });
+    expect(sent[0]!.user).toContain("cut the hair into a short crop");
+    /* The house style name is never in what the writer sees. */
+    expect(sent[0]!.user).not.toContain("standard crop");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("goes into the description exactly as they wrote it");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("never a synonym");
+  });
+
+  it("an addition: nothing taken back, no absences — the turn is the previous description and the customer's sentence alone", () => {
+    const turn = currentDescriptionUserTurn({ previous: LIZARD, seed, change: "a notch missing from the left ear" });
+    expect(turn).toBe(`How they looked before this change:\n${LIZARD}\n\nThe change, in the customer's own words:\na notch missing from the left ear`);
+  });
+
+  it("a recolour: the comparison is not strengthened, and a vacancy site phrase rides beside a removal of something the photograph had", () => {
+    const recolour = currentDescriptionUserTurn({ previous: LIZARD, seed, change: "the eyes pale grey" });
+    expect(recolour).toContain("The change, in the customer's own words:\nthe eyes pale grey");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("Never strengthen a comparison the previous description already makes");
+    const vacancy = currentDescriptionUserTurn({
+      previous: "A woman of thirty with gold hoop earrings.", seed, change: "take her earrings off",
+      absences: ["no earrings — both earlobes bare, nothing hanging from either ear"],
+    });
+    expect(vacancy).toContain("- no earrings — both earlobes bare, nothing hanging from either ear");
   });
 });
