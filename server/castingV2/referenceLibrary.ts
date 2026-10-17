@@ -41,7 +41,7 @@ import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
 /* The panel's own divergence instrument, borrowed rather than re-stated: one
    definition of "this pair is two things now", read by the row that draws it
    and by the question that must not claim both (working law 4). */
-import { pairHasDiverged } from "./referenceSlots";
+import { editsFeatureAtSlot, pairHasDiverged } from "./referenceSlots";
 import type {
   FeatureSlot,
   FeatureTier,
@@ -291,13 +291,22 @@ function imageOf(row: StoredReference): ReferenceImage | undefined {
  *
  * The assembler's refusal stays where it is, as the backstop that says so if
  * this is ever removed.
+ *
+ * AND "EDITED" MEANS THE FEATURE, NOT THE EXACT KEY (#2641). An ask on an open
+ * kind lands on the bare slot while this library keeps one row per side, so
+ * slot equality handed the assembler crops of the very feature being
+ * repainted. `editsFeatureAtSlot` is the one spelling of that relation, shared
+ * with the assembler rather than restated here — #2635 fixed this question one
+ * layer up and the two layers then disagreed about it, which is what a second
+ * copy of a rule always does (working law 4).
  */
 export function libraryWithoutEditedCrops(
   library: readonly LibraryEntry[],
   editedSlots: ReadonlySet<FeatureSlot>,
 ): LibraryEntry[] {
   return library.map((entry) => {
-    if (!editedSlots.has(entry.slot) || entry.carry === undefined) return entry;
+    if (!editsFeatureAtSlot(editedSlots, entry.slot)) return entry;
+    if (entry.carry === undefined) return entry;
     const { carry: _dropped, ...kept } = entry;
     return kept;
   });

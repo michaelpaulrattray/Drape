@@ -86,7 +86,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
 /* The open lane's key grammar has ONE owner and this module reads it rather
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
-import { isBornInkSlot, isInkSlot, openKindOfSlot } from "./referenceSlots";
+import { editsFeatureAtSlot, isBornInkSlot, isInkSlot, openKindOfSlot } from "./referenceSlots";
 import {
   inkDeliveredCarrySentence, inkDeliveredTransformSentence, inkNotOnClothingClause,
   inkRealismClause,
@@ -1394,25 +1394,19 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
 
     Derived from the asks rather than accumulated anywhere: a second list beside
     `editedSet` would have to agree with it (working law 4).
+
+    AND IT IS SPELLED ONCE, IN THE GRAMMAR (#2641). This block used to compute
+    the relation inline, and `libraryWithoutEditedCrops` one layer down kept
+    answering the same question by equality — so the product held two answers
+    to one question and only this one was right. `editsFeatureAtSlot` lives
+    beside `openKindOfSlot`, which is the thing that knows a bare key from a
+    sided one, and both layers now derive from it.
   */
-  const askedBareKinds = new Set<string>();
-  const askedSidedKinds = new Set<string>();
-  for (const slot of edited) {
-    const open = openKindOfSlot(slot);
-    if (open === null) continue;
-    (open.side === null ? askedBareKinds : askedSidedKinds).add(open.kind);
-  }
   /** Whether this render changes the feature `slot` is about — the exact slot,
    *  or an overlapping instance of the same open kind. Named slots and the ink
    *  namespace are unaffected: `openKindOfSlot` answers `null` for both, so the
    *  predicate collapses to `editedSet` exactly as before. */
-  const editsFeatureAt = (slot: FeatureSlot): boolean => {
-    if (editedSet.has(slot)) return true;
-    const open = openKindOfSlot(slot);
-    if (open === null) return false;
-    if (askedBareKinds.has(open.kind)) return true;
-    return open.side === null && askedSidedKinds.has(open.kind);
-  };
+  const editsFeatureAt = (slot: FeatureSlot): boolean => editsFeatureAtSlot(editedSet, slot);
   /*
     A SOURCE BELONGS TO AN ASK, and the ask list is what says so.
 

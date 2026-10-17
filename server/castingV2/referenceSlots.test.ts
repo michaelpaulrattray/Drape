@@ -18,6 +18,7 @@ import {
   bornInkSlotKey,
   isBornInkSlot,
   INK_SLOT_PREFIX,
+  editsFeatureAtSlot,
   inkPlacementOfSlot,
   inkSideSlotKey,
   inkSlotKey,
@@ -287,5 +288,61 @@ describe("the born-ink namespace", () => {
     expect(inkPlacementOfSlot("bornInk:torso")).toBeNull();
     expect(openKindOfSlot("bornInk:torso")).toBeNull();
     expect(accessoryKindOfSlot("bornInk:torso"), "a described tattoo is not worn").toBeNull();
+  });
+});
+
+/*
+  THE OVERLAP RELATION — driven here because this is where it is spelled, and
+  because two layers reading it two ways is the whole of #2635 and #2641.
+*/
+describe("does a set of edited slots change the feature at a slot", () => {
+  it("collapses to equality for a named slot and for ink", () => {
+    /* The negative control that makes every arm below mean something: outside
+       the open namespace this must behave exactly as `edited.has(slot)` did. */
+    const edited = new Set(["hair", "ink:neck"]);
+    expect(editsFeatureAtSlot(edited, "hair")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "ink:neck")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "lips")).toBe(false);
+    expect(editsFeatureAtSlot(edited, "ink:forearm")).toBe(false);
+    expect(editsFeatureAtSlot(new Set(), "hair")).toBe(false);
+  });
+
+  it("a BARE ask covers the kind's sides", () => {
+    const edited = new Set(["open:fangs"]);
+    expect(editsFeatureAtSlot(edited, "open:fangs")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:fangs@left")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:fangs@right")).toBe(true);
+    /* ... and no further. A different kind is a different feature. */
+    expect(editsFeatureAtSlot(edited, "open:horns")).toBe(false);
+    expect(editsFeatureAtSlot(edited, "open:horns@left")).toBe(false);
+  });
+
+  it("a SIDED ask covers the bare row and NOT the other side", () => {
+    const edited = new Set(["open:fangs@left"]);
+    /* The bare row describes the whole feature, this side included. */
+    expect(editsFeatureAtSlot(edited, "open:fangs")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:fangs@left")).toBe(true);
+    /* The case that must keep working: "change the left fang" leaves the right
+       one alone. */
+    expect(editsFeatureAtSlot(edited, "open:fangs@right")).toBe(false);
+  });
+
+  it("reads every edited slot, not just the first", () => {
+    /* A loop that returned on its first open slot would pass every arm above
+       and fail this one. */
+    const edited = new Set(["hair", "open:horns@left", "open:fangs"]);
+    expect(editsFeatureAtSlot(edited, "open:fangs@right")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:horns")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:horns@right")).toBe(false);
+  });
+
+  it("an unparseable side is not a side", () => {
+    /* `openKindOfSlot` answers null for a key outside the grammar, so it can
+       never be taken for a bare key and widened over real sides. */
+    const edited = new Set(["open:fangs@middle"]);
+    expect(openKindOfSlot("open:fangs@middle")).toBeNull();
+    expect(editsFeatureAtSlot(edited, "open:fangs@middle")).toBe(true);
+    expect(editsFeatureAtSlot(edited, "open:fangs")).toBe(false);
+    expect(editsFeatureAtSlot(edited, "open:fangs@left")).toBe(false);
   });
 });
