@@ -117,6 +117,26 @@ describe("a scroller on the viewer's scrim does not wear the document's page-col
     expect(ruleBody(css, ".dpc-sheetrow::-webkit-scrollbar-thumb {")).toContain("background: var(--dots);");
   });
 
+  it("sits BELOW the column's layout rule, because a guard one file over slices from the first match", async () => {
+    const css = await readFile(CASTING_CSS, "utf8");
+    /*
+      #2611's arm in `viewerDrawer2533.test.ts` reads the column's
+      `justify-content` by slicing from the FIRST
+      `.dpc-refine__stack[data-layout="column"] {` in the sheet. Written ABOVE
+      the layout rule, this block's own selector list answers to that anchor
+      and that arm goes red against a rule which never had a
+      `justify-content` — measured, not supposed: it is how this file was
+      first written and what preflight caught.
+    */
+    const layout = css.indexOf('.dpc-refine__stack[data-layout="column"] {');
+    const dressed = css.indexOf(`${SCRIM_SCROLLERS[0]},`);
+    expect(layout).toBeGreaterThan(-1);
+    expect(dressed).toBeGreaterThan(-1);
+    expect(layout).toBeLessThan(dressed);
+    /* CONTROL — the rule that anchor selects really is the layout one. */
+    expect(css.slice(layout, css.indexOf("}", layout))).toContain("overflow-y: auto;");
+  });
+
   it("DERIVED — every scrolling viewer surface the stylesheet declares is covered, so a fourth cannot ship bare", async () => {
     const css = await readFile(CASTING_CSS, "utf8");
     /*
