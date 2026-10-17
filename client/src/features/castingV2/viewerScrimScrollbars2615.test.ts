@@ -96,6 +96,21 @@ describe("a scroller on the viewer's scrim does not wear the document's page-col
     expect(hovered).toContain("color-mix(in srgb, var(--onScrim) 48%, transparent)");
   });
 
+  it("writes the hover step in BOTH vocabularies, because Chromium reads only one of them", async () => {
+    const css = await readFile(CASTING_CSS, "utf8");
+    /*
+      Once `scrollbar-color` is set, Chromium ignores the `::-webkit-scrollbar`
+      rules for that element — so a hover step written only in webkit is a hover
+      step that never happens in the browser this product is used in.
+    */
+    anchorOnce(css, `${SCRIM_SCROLLERS[0]}:hover,`);
+    const standards = ruleBody(css, `${SCRIM_SCROLLERS[0]}:hover,`);
+    expect(standards).toContain("color-mix(in srgb, var(--onScrim) 48%, transparent)");
+    for (const selector of SCRIM_SCROLLERS) {
+      expect(css.slice(css.indexOf(`${SCRIM_SCROLLERS[0]}:hover,`)).slice(0, 220)).toContain(`${selector}:hover`);
+    }
+  });
+
   it("leaves the row on the PAGE alone — `--dots` is right there and this is not a sweep over every bar", async () => {
     const css = await readFile(CASTING_CSS, "utf8");
     anchorOnce(css, ".dpc-sheetrow::-webkit-scrollbar-thumb {");

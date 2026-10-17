@@ -1459,19 +1459,34 @@
   anything sitting on a scrim needs. The track goes transparent, which is
   correct on any surface rather than correct on one.
 
-  Quiet always, stronger under the pointer — the `.dpc-sheetrow` grammar,
-  which answered this for a row on the PAGE. Its SHAPE is right to copy and
-  its COLOUR is not: `--dots` is a page token and this is not a page.
+  Quiet, stronger under the pointer — the `.dpc-sheetrow` grammar, which
+  answered this for a row on the PAGE. Its SHAPE is right to copy and its
+  COLOUR is not: `--dots` is a page token and this is not a page.
 
-  NOT hidden, though the card allowed it: the rail is how somebody reaches a
-  version that is off the bottom, so the bar is the only thing on screen
-  saying there are more.
+  ⚠ TWO VOCABULARIES, AND IN CHROMIUM ONLY ONE OF THEM PAINTS. Once
+  `scrollbar-color` is set, Chromium ignores every `::-webkit-scrollbar`
+  rule for that element — so the standards pair is what paints here and the
+  webkit block below is for the engines without it. That is why the hover
+  step is written TWICE: a `:hover` `scrollbar-color` for Chromium, and the
+  webkit thumb for everything else. `.dpc-sheetrow` has the same shape.
+
+  The rail reserves no gutter for it (measured 0px in the running app), so
+  this is an OVERLAY bar: it shows while scrolling and under the pointer
+  rather than at rest. That is the first of the two the card offered — a
+  quiet bar on hover or scroll — and it is what the engine gives on this
+  surface rather than something chosen over the other.
 */
 .dpc-viewer__dock,
 .dpc-viewer__drawer,
 .dpc-refine__stack[data-layout="column"] {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--onScrim) 28%, transparent) transparent;
+}
+
+.dpc-viewer__dock:hover,
+.dpc-viewer__drawer:hover,
+.dpc-refine__stack[data-layout="column"]:hover {
+  scrollbar-color: color-mix(in srgb, var(--onScrim) 48%, transparent) transparent;
 }
 
 .dpc-viewer__dock::-webkit-scrollbar,
