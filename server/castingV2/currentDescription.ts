@@ -32,9 +32,9 @@
  * only part of it, which is #2657** — see `notInShot` below.
  */
 import { EYE_COLOURS } from "../../shared/castingRealization";
-import { everyFeatureOutOfFrame } from "./castingFrame";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { everyFeatureOutOfFrame } from "./castingFrame";
 import type { CastPronouns } from "./castPronouns";
 import { pictureHalfPhrase } from "./sidePhrasing";
 
@@ -137,17 +137,24 @@ export type CurrentDescriptionInput = {
    * NOT done, and the backstop {@link addsWhatIsNotInShot} refuses a reply
    * that writes it in anyway.
    *
-   * ⚠ **THIS IS THIS REQUEST'S HALF ONLY, AND THE SEED ROAD HAS NO EQUIVALENT
-   * — #2657.** The list comes from the frame strip of the sentence being made
-   * now (`refineService.ts`'s `notInShotForWriter`), and nothing stored says an
-   * EARLIER ask had an unserved half: the strip's `dropped` list is computed per
-   * render and is written to no column. So where `previous` is null the earlier
-   * asks below arrive as raw prose with no such line beside them, and a waist
-   * dropped three edits ago can still be folded in as fact. Bounded by the
-   * out-of-frame vocabulary being one facet — measured at 0 of 250 stored
-   * versions in both worlds, 2026-10-17 — and the repair is a per-step record
-   * of what each step actually made, not a word-match over the stored sentence
-   * (see `castingFrame.ts`).
+   * ⚠ **THIS FIELD IS THIS REQUEST'S HALF ONLY — THE SEED ROAD'S IS DERIVED,
+   * NOT PASSED (#2657).** What arrives here is the frame strip of the sentence
+   * being made now (`refineService.ts`'s `notInShotForWriter`), and **nothing
+   * stored anywhere says an EARLIER ask had an unserved half**: the strip's
+   * `dropped` list is computed per render and written to no column. So a seeded
+   * writer handed the earlier asks as prose stated a waist dropped three edits
+   * ago as fact — **20 of 20 on real briefs**, 2026-10-17.
+   *
+   * It is closed WITHOUT that record, by {@link notInShotForThisCall}, and the
+   * reason is an asymmetry: a facet the frame cannot show is stripped from every
+   * ask that names it, so no history can hold a served one. **Read that function
+   * rather than this field when asking what the writer was told** — on the seed
+   * road the two differ, deliberately.
+   *
+   * ⚠ **Its SIBLING is open and is #2658**: an earlier ask whose half reached no
+   * lane at all rides the same seed road, its vocabulary is open, and the
+   * asymmetry does not reach it. **That** one needs the per-step record — and
+   * never a word-match over the stored sentence (`refineSubjects.ts`).
    */
   notInShot?: readonly string[];
 };
@@ -192,8 +199,8 @@ export function notInShotForThisCall(input: CurrentDescriptionInput): readonly s
 
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
-  const before = input.previous !== null && input.previous.trim() !== ""
-    ? `How they looked before this change:\n${input.previous.trim()}`
+  const before = !isSeedRoad(input)
+    ? `How they looked before this change:\n${input.previous!.trim()}`
     : [
       `How they were first described:\n${input.seed.brief.trim()}`,
       ...(input.seed.earlierAsks.length > 0
