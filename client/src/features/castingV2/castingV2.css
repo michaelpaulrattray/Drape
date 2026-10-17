@@ -3799,34 +3799,6 @@
   align-items: stretch;
 }
 
-/* Undo, the one chip — the attach control's own quiet dress, as a pill. */
-.dpc-refine__chips { display: flex; gap: 6px; }
-
-.dpc-refine__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
-  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
-  color: var(--onScrim);
-  opacity: 0.8;
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  letter-spacing: normal;
-  cursor: pointer;
-  transition: opacity 120ms ease, border-color 120ms ease;
-}
-
-.dpc-refine__chip:hover:not(:disabled) {
-  opacity: 1;
-  border-color: color-mix(in srgb, var(--onScrim) 44%, transparent);
-}
-
-.dpc-refine__chip:disabled { opacity: 0.3; cursor: default; }
-
 .dpc-refine__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 
 /* The about-to-buy-it-twice warning (D-161) — it warns, it never blocks. */
@@ -4138,6 +4110,15 @@
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: center;
+  /*
+    THE FIRST VERSION AT THE TOP, never above it (#2611). The row's
+    `justify-content: center` was inherited here, and a centred column that
+    overflows spills out of BOTH ends — the first thumbnails sat above the
+    scroller's top where no scroll reaches them (measured: the original at
+    -87px with twelve versions). Start-aligned, the column overflows downward
+    only, which is the direction the scroll goes.
+  */
+  justify-content: flex-start;
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
@@ -4149,16 +4130,19 @@
   display: flex;
   min-height: 0;
   align-items: flex-start;
+  /* Level with the picture's top, measured in CandidateViewer (#2611). */
+  padding-top: var(--dpc-rail-inset, 0px);
 }
 
 @media (max-width: 1080px) {
   /* No room for three columns. The rail goes back to being a row above the
      picture rather than a column squeezed beside it. */
-  .dpc-viewer__rail { width: 100%; justify-content: center; }
+  .dpc-viewer__rail { width: 100%; justify-content: center; padding-top: 0; }
   .dpc-refine__stack[data-layout="column"] {
     flex-direction: row;
     flex-wrap: wrap;
     max-height: 26vh;
+    justify-content: center;
   }
 }
 

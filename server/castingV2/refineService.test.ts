@@ -4136,6 +4136,67 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(painted[0]!.height).toBe(48);
   });
 
+  /**
+   * ⚠ A NOSE IS ONE FEATURE, WHATEVER ELSE SHE WEARS (#2612).
+   *
+   * His report, verbatim: *"i clicked her nose and said \"add nose piercing\"
+   * and also tried \"add nose piercing to right nostril\" and both times it gave
+   * me \" That names one side of a pair…"*. Reproduced on dev through the real
+   * entrance on a cast wearing *"small gold hoop earrings, one in each ear"*:
+   * the interpreter re-states the WHOLE accessory list (a plural subject), the
+   * list was filed under ONE kind — the earring pair, by longest match — and
+   * the "right" of "right nostril" was read as a side of the EARRINGS. Without
+   * a side, the nose piercing was silently painted onto both ears instead.
+   *
+   * Driven at the service with the engine stubbed, and asserted on the prompt
+   * the engine was actually handed (working law 5).
+   */
+  describe("a nose piercing beside earrings is the nose's, never the pair's (#2612)", () => {
+    const wearing = (items: string[]) => ({
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: items } } }),
+    });
+    const EARRINGS = "small gold hoop earrings, one in each ear";
+
+    it("serves a named nostril on the nose, and the ears hear only about earrings", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing in right nostril"]),
+        { ...input, instruction: "her nose — add nose piercing to right nostril" });
+
+      expect(painted).toHaveLength(1);
+      const prompt = painted[0]!.prompt;
+      expect(prompt).toContain("nose piercing in right nostril");
+      const earLines = prompt.split(/(?<=\.)\s/).filter((line) => /earring|\bear\b/i.test(line) && /left|right/i.test(line) && !/nostril/.test(line));
+      for (const line of earLines) expect(line).not.toMatch(/nose/i);
+      /* The nostril line is its own ask, not glued onto an earring's. */
+      expect(prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves an unsided nose piercing as one, without touching the ears' words", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing"]),
+        { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(1);
+      expect(painted[0]!.prompt).toContain("nose piercing");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves a septum ring as the nose's, and a nose piercing on a bare cast", async () => {
+      await refineCandidate(wearing([EARRINGS, "a septum ring"]), { ...input, instruction: "a septum ring" });
+      await refineCandidate(wearing(["nose piercing"]), { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(2);
+      expect(painted[0]!.prompt).toContain("a septum ring");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, a septum ring`);
+      expect(painted[1]!.prompt).toContain("nose piercing");
+    });
+
+    it("CONTROL — one side of the EARRINGS named in prose still refuses, before any paint", async () => {
+      await expect(refineCandidate(wearing(["a gold hoop in her right ear"]),
+        { ...input, instruction: "a gold hoop in her right ear" })).rejects.toThrow(/one side/);
+      expect(painted).toHaveLength(0);
+    });
+  });
+
   it("delivers the engine's own frame, with nothing composited into it", async () => {
     const stored: Buffer[] = [];
     await refineCandidate({

@@ -175,6 +175,19 @@ const DRAWER_GAP_PX = 28;
 const DRAWER_EDGE_PX = 16;
 
 /**
+ * The measured box the drawer and the versions rail are placed against.
+ * `inset` is how far the PICTURE's top sits below the stage's top — the quiet
+ * counter above the picture is what puts it there (#2611).
+ */
+interface DrawerPlace {
+  top: number;
+  left: number;
+  height: number;
+  width: number;
+  inset: number;
+}
+
+/**
  * WHERE THE DRAWER STANDS — beside the PICTURE, top to bottom, and never in the
  * row the picture is centred in.
  *
@@ -189,13 +202,15 @@ function useDrawerPlacement(
   plate: React.RefObject<HTMLSpanElement | null>,
   drawer: React.RefObject<HTMLElement | null>,
   viewer: React.RefObject<HTMLDivElement | null>,
-): { top: number; left: number; height: number; width: number } | null {
-  const [place, setPlace] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
+  stage: React.RefObject<HTMLDivElement | null>,
+): DrawerPlace | null {
+  const [place, setPlace] = useState<DrawerPlace | null>(null);
   useLayoutEffect(() => {
     if (!enabled) return;
     const measure = () => {
       const p = plate.current?.getBoundingClientRect();
       const v = viewer.current?.getBoundingClientRect();
+      const s = stage.current?.getBoundingClientRect();
       const width = drawer.current?.offsetWidth ?? 0;
       if (!p || !v || p.width === 0) return;
       const left = Math.max(
@@ -207,10 +222,11 @@ function useDrawerPlacement(
         left: Math.round(left - v.left),
         height: Math.round(p.height),
         width: Math.round(p.width),
+        inset: s ? Math.max(0, Math.round(p.top - s.top)) : 0,
       };
       setPlace((was) => (
         was && was.top === next.top && was.left === next.left && was.height === next.height
-          && was.width === next.width ? was : next
+          && was.width === next.width && was.inset === next.inset ? was : next
       ));
     };
     measure();
@@ -221,7 +237,7 @@ function useDrawerPlacement(
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [enabled, plate, drawer, viewer]);
+  }, [enabled, plate, drawer, viewer, stage]);
   return place;
 }
 
@@ -524,7 +540,10 @@ export function CandidateViewer({
      moment the panel arrived. */
   const quietCounter = Boolean(drawer);
   const drawerOpen = asDrawer && Boolean(drawer?.open);
-  const drawerPlace = useDrawerPlacement(Boolean(below || asDrawer), plateRef, drawerRef, viewerRef);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const drawerPlace = useDrawerPlacement(
+    Boolean(below || asDrawer || before), plateRef, drawerRef, viewerRef, stageRef,
+  );
   const asked = frames[index] ?? frames[0];
   const { frame, preview, sizer } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
@@ -732,8 +751,29 @@ export function CandidateViewer({
         THE STAGE: the picture, and whatever stands beside it. One row, so the
         panel's own length can never be taken out of the photograph's height.
       */}
-      <div className="dpc-viewer__stage" data-beside={beside && !asDrawer ? "true" : "false"}>
-        {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
+      <div
+        ref={stageRef}
+        className="dpc-viewer__stage"
+        data-beside={beside && !asDrawer ? "true" : "false"}
+      >
+        {/*
+          THE VERSIONS START LEVEL WITH THE PICTURE, not with the row (#2611,
+          his report 2026-10-17: *"the first thumbnail is sitting higher than
+          the image box"*). With a drawer the quiet counter sits ABOVE the
+          picture, so the row's top is a caption line higher than the image's;
+          the rail is pushed down by the measured distance, never by a copied
+          number, so a changed caption cannot reopen the gap.
+        */}
+        {before ? (
+          <aside
+            className="dpc-viewer__rail"
+            style={drawerPlace
+              ? { ["--dpc-rail-inset" as string]: `${drawerPlace.inset}px` } as React.CSSProperties
+              : undefined}
+          >
+            {before}
+          </aside>
+        ) : null}
         <div
           className="dpc-viewer__column"
           /* THE PICTURE'S OWN WIDTH, for the composer under it (#2533). Measured
