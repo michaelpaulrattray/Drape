@@ -15749,10 +15749,18 @@ describe("one current description rides the paid refine", () => {
 
     expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
     for (const prompt of painted) {
-      expect(prompt).toContain(`This is how she looks now: ${DESCRIPTION} Everything else about her stays exactly as in Reference 1.`);
-      /* In place of, never beside: two authors for one edit is the defect. */
-      expect(prompt).not.toContain("Change only");
-      expect(prompt.startsWith("Reference 1 is the photograph of this person")).toBe(true);
+      /* HIS LABELLED LAYOUT (#2647), at the wire: the customer's sentence
+         verbatim on the edit line, the description after it, the constraints
+         last. */
+      expect(prompt).toBe("Reference 1 is the photograph of this person — reproduce her exactly: "
+        + "same face, same pose, same lighting, same framing, same background. "
+        + "Edit instruction: Change only her hair: wear her hair down. "
+        + `How she looks after this edit: ${DESCRIPTION} `
+        + "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.");
+      /* The studio's resolved clause never rides beside it: one author for
+         what the edit is, and it is the customer. */
+      expect(prompt).not.toContain("Change only her hair: hair down");
+      expect(prompt).not.toContain("This is how");
     }
     expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
     /* Seeded from the brief — this version's predecessor is the original. */
@@ -15770,6 +15778,65 @@ describe("one current description rides the paid refine", () => {
     expect(asked[0]!.user).not.toContain("Change only");
     /* And the PAINTER's half never reaches the writer. */
     expect(asked[0]!.user).not.toContain("as you look at it");
+  });
+
+  /*
+    #2645 FOLLOW-UP — THE HALF THE PHOTOGRAPH DOES NOT SHOW NEVER REACHES THE
+    WRITER AS SERVED. Driven through the real entrance: the frame strip takes
+    the waist out of the delta, and the writer must be told so beside the
+    customer's verbatim sentence, or "a smaller waist" is filed on the cast and
+    painted by every later render.
+  */
+  it("a half-served ask: the writer is told the waist was NOT done, and a paragraph that writes it in is not filed", async () => {
+    const mixed = {
+      ...describing,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { waist: "a smaller waist", lips: "red lipstick" } },
+      }),
+    };
+    await refineCandidate(mixed as never, { ...input, instruction: "a smaller waist and red lipstick" });
+    expect(asked).toHaveLength(1);
+    const user = asked[0]!.user;
+    /* The customer's words, verbatim — never reworded. */
+    expect(user).toContain("The change, in the customer's own words:\na smaller waist and red lipstick");
+    /* And the waist is said as NOT done. */
+    const notDone = user.slice(user.indexOf("Part of this change was not made"));
+    expect(user.indexOf("Part of this change was not made")).toBeGreaterThan(-1);
+    expect(notDone).toContain("\n- waist");
+    /* The only places "waist" appears are the sentence and that block. */
+    const before = user.slice(0, user.indexOf("The change, in the customer's own words:"));
+    expect(before).not.toMatch(/waist/);
+    expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
+
+    /* A writer that writes the waist in anyway is refused, and the render
+       rides today's prompt with no description filed — law 3, poisoned. */
+    painted.length = 0;
+    asked.length = 0;
+    landedVariant = null;
+    const poisoned = {
+      ...mixed,
+      describeEngine: () => ({
+        id: "test:describe",
+        complete: async (request: { about?: string; user: string }) => {
+          asked.push(request);
+          return {
+            text: "A woman in her thirties with long dark hair, a smaller waist and red lipstick.",
+            latencyMs: 5,
+            provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+          };
+        },
+      }),
+    };
+    await refineCandidate(poisoned as never, {
+      ...input,
+      instruction: "a smaller waist and red lipstick",
+      clientRequestId: "44444444-4444-4444-8444-444444444444",
+    });
+    expect(asked).toHaveLength(1);
+    expect(landedVariant, "the version still landed").not.toBeNull();
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+    for (const prompt of painted) expect(prompt).not.toContain("smaller waist");
   });
 
   it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {

@@ -10,6 +10,7 @@ import {
   readRemovalSubject,
   sameChain,
   stepLabel,
+  struckPartOf,
   type ChainStep,
 } from "./refineRemoval";
 
@@ -480,5 +481,77 @@ describe("#2638 — taking back a feature the open lane added", () => {
   it("CONTROL — a closed-lane step beside open kinds is untouched", () => {
     expect(matchSteps(chain, { subject: "makeup", match: "smokey eye" }))
       .toEqual([{ index: 2, keep: null }]);
+  });
+});
+
+/**
+ * #2638 FOLLOW-UP — A NAMED OPEN KIND LEAVES, AND NOTHING ELSE IN ITS STEP DOES.
+ *
+ * Found on the merged #2643: the open-kind road answered delete-or-nothing,
+ * so "remove the fangs" against ONE step that had also filed horns, or a lip
+ * colour, deleted the whole step and took those too. Every arm drives the
+ * matcher, the chain surgery and the recomposition the way the service does.
+ */
+describe("#2638 follow-up — only the named open kind leaves its step", () => {
+  const fangs = { noun: "fangs", words: "long vampire fangs" };
+  const horns = { noun: "horns", words: "curled ram horns" };
+
+  it("fangs and horns in one step: the fangs go, the horns stay", () => {
+    const chain = [step("give them vampire fangs and curled horns", { open: { fangs, horns } })];
+    const matches = matchSteps(chain, { subject: "teeth", match: "fangs" });
+    expect(matches).toEqual([{ index: 0, keep: null, dropOpen: ["fangs"] }]);
+    const after = chainAfterRemoval(chain, matches, null);
+    /* The step SURVIVES with its sentence, the way an item prune does. */
+    expect(after.map((s) => s.instruction)).toEqual(["give them vampire fangs and curled horns"]);
+    const composed = composeChain(after);
+    expect(composed.open?.fangs).toBeUndefined();
+    expect(composed.open?.horns).toEqual(horns);
+  });
+
+  it("fangs and makeup in one step: the fangs go, the makeup stays", () => {
+    const chain = [step("vampire fangs and a dark red lip", { makeup: "a dark red lip", open: { fangs } })];
+    const matches = matchSteps(chain, { subject: "teeth", match: "fangs" });
+    expect(matches).toEqual([{ index: 0, keep: null, dropOpen: ["fangs"] }]);
+    const composed = composeChain(chainAfterRemoval(chain, matches, null));
+    expect(composed.open).toBeUndefined();
+    expect(composed.makeup).toBe("a dark red lip");
+  });
+
+  it("with no subject named, the same: only the fangs leave", () => {
+    /* Facet null makes every step a facet candidate, which is the word path
+       that used to find "fangs" in `wordsOfStep` and delete the whole step. */
+    const chain = [step("vampire fangs and a dark red lip", { makeup: "a dark red lip", open: { fangs } })];
+    const composed = composeChain(chainAfterRemoval(chain, matchSteps(chain, { subject: null, match: "fangs" }), null));
+    expect(composed.open).toBeUndefined();
+    expect(composed.makeup).toBe("a dark red lip");
+  });
+
+  it("CONTROL — a step holding nothing but the fangs is still deleted whole", () => {
+    const chain = [step("give them vampire fangs", { open: { fangs } }), step("curled horns", { open: { horns } })];
+    const matches = matchSteps(chain, { subject: "teeth", match: "fangs" });
+    expect(matches).toEqual([{ index: 0, keep: null }]);
+    expect(chainAfterRemoval(chain, matches, null).map((s) => s.instruction)).toEqual(["curled horns"]);
+  });
+
+  it("the struck part is the fangs alone, so the render is not told the makeup left", () => {
+    const one = step("vampire fangs and a dark red lip", { makeup: "a dark red lip", open: { fangs } });
+    const [match] = matchSteps([one], { subject: "teeth", match: "fangs" });
+    expect(struckPartOf(one, match!)).toEqual({ open: { fangs } });
+    /* CONTROL — a whole-step match strikes the whole step. */
+    expect(struckPartOf(one, { index: 0, keep: null })).toBe(one.delta);
+  });
+
+  it("the recipe without the fangs is a DIFFERENT recipe, so the fanged picture is never handed back free", () => {
+    /* The pruned step keeps its sentence, so the instruction lists are equal;
+       only the fingerprint can tell the two recipes apart. */
+    const chain = [step("give them vampire fangs and curled horns", { open: { fangs, horns } })];
+    const before = { instructions: chain.map((s) => s.instruction), delta: composeChain(chain) };
+    const pruned = chainAfterRemoval(chain, matchSteps(chain, { subject: "teeth", match: "fangs" }), null);
+    const after = { instructions: pruned.map((s) => s.instruction), delta: composeChain(pruned) };
+    expect(after.instructions).toEqual(before.instructions);
+    expect(sameChain(after, before)).toBe(false);
+    /* CONTROL — the same recipe still matches itself. */
+    expect(sameChain(after, { instructions: [...after.instructions], delta: composeChain(pruned) })).toBe(true);
+    expect(fingerprintDelta(after.delta)).not.toBe(fingerprintDelta(before.delta));
   });
 });

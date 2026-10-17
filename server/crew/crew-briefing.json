@@ -1,7 +1,7 @@
 {
-  "edition": 738,
-  "updatedAt": "2026-10-17T05:45:00.000Z",
-  "shift": "IF YOU ASKED A CHARACTER FOR FANGS AND THEN CHANGED YOUR MIND, \"REMOVE HER FANGS\" DID NOTHING. It came back refused, nothing was charged, and there was no wording that worked - so you could not take back something you had just paid to add. The same was true of horns, tusks, wings and anything else the studio had to invent a name for on the spot. That is fixed and the fix is in review. Why it happened is worth a sentence, because it was not a spelling problem: features the studio has no catalogue entry for are filed in a separate place from the ones it knows about, and the part of the code that works out WHICH edit you want to undo was only ever looking in the catalogue. It threw your fangs away before it had even read your words. The repair is deliberately narrow in one specific way - asking to remove your character's teeth must never also take their horns off - and there is a test that fails if anyone ever widens it that far. ALSO TONIGHT, AND THIS IS THE PART THAT MATTERS MORE THAN MY OWN FIX: six pieces of finished work cannot currently reach you, and two of them are things you asked for by name. When two people change the same file, the work waits until somebody puts it back in step with the main code - and while it waits, nothing can check it and nobody can review it. I measured all six rather than guessing. THREE of them clash on nothing but an automatically generated map, which means the repair is one command and no judgement at all - including the character-panel reader you approved yesterday. THREE have one genuine overlap each, in one file, and those need the person who wrote them. Every one of the six now carries its own measurement written on it, so whoever picks it up does not have to work it out again. I did not repair them myself: each belongs to another shift that had already claimed it, and quietly pushing to somebody else's work is how two people undo each other. TWO LINES ON THIS PAGE WERE TELLING YOU THE OPPOSITE - that the clothing edit was back in step and that nothing was owed on the character-panel reader. Both were true when they were written and both had stopped being true. They are corrected below. AND ONE THING I CHECKED RATHER THAN BUILT: the two fang problems left over from your rulings this morning. Your word was that the studio should stop rewording what you ask for, and one of those two cards asks for exactly the kind of extra sentence you told us to remove - so building it would have undone your ruling under a different name. The machinery behind it is already deleted. Both cards now say so on their face, neither is closed, and nothing is asked of you.",
+  "edition": 739,
+  "updatedAt": "2026-10-17T06:45:00.000Z",
+  "shift": "TWO THINGS, AND NEITHER NEEDS ANYTHING FROM YOU. FIRST, A TIDY-UP THAT IS LIVE. When a paid edit repaints a feature, the studio must not also hand the painter an old picture of that same feature - otherwise it is told \"change this\" and \"keep this exactly\" in one breath. Yesterday that was fixed in one place. Tonight I found a second place, one layer below, still answering the same question the old way: it matched the name of the feature exactly, so an edit to \"fangs\" did not recognise the stored pictures filed as \"left fang\" and \"right fang\". Nothing you can see was wrong, because the layer above already caught it - but the product was carrying two answers to one question, and only one of them was right. There is now ONE answer that both layers ask for. Live on production, checked at the running service rather than taken from the merge. WORTH A SENTENCE, BECAUSE IT SAVED A DAY: the card said this fix needed a change to a file five open pieces of work are all touching, and said that was why it had been put off. I read the code first and that was not true - the information it needed was already there. So it landed as a small fix in one afternoon instead of a risky one later. SECOND, AND THIS IS THE USEFUL ONE: the machine that decides what the next shift works on was pointing every shift at your \"every edit must fit the cast\" card - and that card has nothing left to build. Its work is already done and live, including the three rulings you gave this morning; it is only being kept open until the two leftover fang problems are settled. A shift had written exactly that in a comment, but comments are not something the machinery can read, so every new shift was being sent to it and had to read three cards and a finished piece of work to discover there was nothing to do. I put a proper hold on it and checked the result: the next shift is now sent to real work instead. Your words on that card are untouched. AND TWO LINES ON THIS PAGE WERE STILL WRONG, so I corrected them. Both the character-panel reader and the clothing edit were shown as \"in review\" - but neither can be reviewed, because both are out of step with the main code and nothing can run checks on them until somebody puts them back in step. They now say held, which is the truth. Both belong to other shifts that claimed them, and quietly pushing into somebody else's work is how two people undo each other - so each one carries its own measurement, and the repair is one command for whoever picks it up. The character-panel reader is the one you approved yesterday, and it is the oldest of them.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T19:09:07.995Z",
+      "readAt": "2026-10-17T06:37:08.491Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7492,7 +7492,7 @@
     {
       "id": "open-kind-removal-2638",
       "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2643,
       "note": "Fangs, horns, tusks and anything else without a catalogue entry could be added and then never removed: the removal was refused and nothing was charged. Fixed, with the proof going all the way to the end - after the removal the character has no fangs and still has their horns. Narrow on purpose: asking to remove a character's teeth must never take their horns too, and a test fails if anyone widens it that far."
     },
@@ -7506,9 +7506,9 @@
     {
       "id": "face-reader-slice1-2566",
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2570,
-      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them."
+      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
     {
       "id": "ghost-audit-slice4b-1577",
@@ -10712,9 +10712,9 @@
     {
       "id": "outfit-serve-2544",
       "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2600,
-      "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this."
+      "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
     {
       "id": "ink-places-outfit-2580",
@@ -10722,6 +10722,13 @@
       "status": "merged",
       "prNumber": 2602,
       "note": "Three refusal sentences stopped naming the upper chest to a character in the house tee."
+    },
+    {
+      "id": "library-overlap-2641",
+      "title": "Two parts of the edit machinery gave different answers to one question, and only one was right (#2641)",
+      "status": "merged",
+      "prNumber": 2654,
+      "note": "Tidy-up with no change you can see: the two layers now ask one shared question instead of each answering it their own way."
     }
   ],
   "problems": [
@@ -11197,7 +11204,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T19:09:07.995Z",
+    "readAt": "2026-10-17T06:37:08.490Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11299,6 +11306,20 @@
           "state": "blocked",
           "because": "YOU — look at three strips and say whether they read right. RECOMMENDATION: they do; carry on."
         }
+      },
+      {
+        "issueNumber": 2626,
+        "title": "Every edit must fit the cast — an added feature belongs to that cast's own colouring, anatomy, light and style, never pasted on (his rule 2026-10-17)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "two cards — #2630 and #2631, the measured ways this rule still fails. Nothing is asked of you; it closes with them or on your word."
+        }
+      },
+      {
+        "issueNumber": 2647,
+        "title": "The refine prompt sends the customer's words verbatim as the edit instruction, with the description as context — his labelled layout (his yes 2026-10-17)",
+        "urgent": false
       }
     ]
   }

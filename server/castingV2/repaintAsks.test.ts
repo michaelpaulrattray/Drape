@@ -46,6 +46,7 @@ describe("one step's delta becomes the recipe's asks", () => {
     expect(result).toEqual({
       ok: true,
       asks: [{ slot: "hair", noun: "hair", words: "hair down" }],
+      askedNow: { slots: ["hair"], presentation: [] },
     });
   });
 
@@ -73,6 +74,7 @@ describe("one step's delta becomes the recipe's asks", () => {
     expect(result).toEqual({
       ok: true,
       asks: [{ slot: "hair", noun: "hair", words: "coloured colour prose for copper" }],
+      askedNow: { slots: ["hair"], presentation: [] },
     });
   });
 
@@ -892,6 +894,7 @@ describe("an uncatalogued kind rides its own synthesized slot", () => {
         noun: "cat ears",
         words: "soft grey cat ears set high on her head",
       }],
+      askedNow: { slots: ["open:cat-ears"], presentation: [] },
     });
   });
 
@@ -1525,5 +1528,89 @@ describe("nothing a step writes can go quiet — it is said, or it is refused by
       .toContain("copper");
     expect(result.asks.find((ask) => ask.slot === "skin")?.words)
       .toBe("a scar on her cheek");
+  });
+});
+
+describe("askedNow — the slots THIS step asked for, for the labelled layout's edit line (#2647)", () => {
+  const catEars = { noun: "cat ears", words: "soft grey cat ears set high on her head" };
+
+  it("names the slot this step wrote and NOT an open kind that is only re-said", () => {
+    /* The lizard chain's shape: scales asked three steps ago, re-said on every
+       render because no crop exists, and the step now asks for the hair. The
+       edit line must say the hair, never the scales. */
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", open: { "cat-ears": catEars } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toEqual(["open:cat-ears", "hair"]);
+    expect(result.askedNow).toEqual({ slots: ["hair"], presentation: [] });
+  });
+
+  it("POSITIVE — an open kind asked THIS step is named", () => {
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: { open: { "cat-ears": catEars } },
+      prose,
+      restore: { state: { open: { "cat-ears": catEars } }, slots: [] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.askedNow.slots).toEqual(["open:cat-ears"]);
+  });
+
+  it("a restore slot is re-said, never named as this edit", () => {
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: { eyeColour: "green" },
+      prose,
+      restore: { state: { eyeColour: "green", hairColour: "copper" }, slots: ["hair"] },
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.asks.map((ask) => ask.slot)).toContain("hair");
+    expect(result.askedNow.slots).not.toContain("hair");
+  });
+
+  it("a prune names the slots it takes back", () => {
+    const result = repaintAsksFor({
+      pronouns: her,
+      delta: {},
+      prose,
+      restate: [
+        { slot: "horns@left", taken: "a pair of short curved horns" },
+        { slot: "horns@right", taken: "a pair of short curved horns" },
+      ],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.askedNow.slots).toEqual(["horns@left", "horns@right"]);
+  });
+
+  it("a presentation fact is named only on the step that asks for it", () => {
+    const now = repaintAsksFor({
+      pronouns: her,
+      delta: { free: { expression: "a soft smile" } },
+      prose,
+      restore: { state: { free: { expression: "a soft smile" } }, slots: [] },
+    });
+    const later = repaintAsksFor({
+      pronouns: her,
+      delta: { hairColour: "copper" },
+      prose,
+      restore: { state: { hairColour: "copper", free: { expression: "a soft smile" } }, slots: [] },
+    });
+
+    expect(now.ok && later.ok).toBe(true);
+    if (!now.ok || !later.ok) return;
+    expect(now.askedNow.presentation).toEqual(["expression"]);
+    expect(later.askedNow.presentation).toEqual([]);
   });
 });
