@@ -23,6 +23,7 @@ import {
   inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause,
 } from "./inkRealism";
 import { inkTakeSentence } from "./inkReferenceTake";
+import { CAST_FIT_SENTENCE } from "./castFit";
 
 const MASTER = { key: "casting-v2/candidates/master.png", sha: "16bb85180e9e" };
 const SHE = pronounsForSex("female");
@@ -512,7 +513,9 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
     expect(recipe.prompt).toBe(
       "Reference 1 is the photograph of this person — reproduce her exactly:" +
       " same face, same pose, same lighting, same framing, same background." +
-      " Change only her lips: a soft nude lip gloss.",
+      " Change only her lips: a soft nude lip gloss." +
+      /* The fit sentence (#2626, P1), last on every repaint prompt. */
+      " Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
     );
   });
 
@@ -537,7 +540,9 @@ describe("THE PROMPT IS THE WIRE — the sentences and the array are one artifac
          than a bench appending it afterwards. */
       " Keep her hair exactly: worn down." +
       " Keep her skin exactly: an even golden tan." +
-      " Change only her lips: noticeably fuller.",
+      " Change only her lips: noticeably fuller." +
+      /* The fit sentence (#2626, P1), last on every repaint prompt. */
+      " Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
     );
   });
 
@@ -2682,5 +2687,117 @@ describe("a cast born with tattoos — the words the engine never sees", () => {
     /* CONTROL — an ordinary anatomy row on the same branch DOES carry, so this
        arm cannot pass by the assembler carrying nothing at all. */
     expect(recipe.carried).toContain("lips");
+  });
+});
+
+/*
+  #2626 — EVERY EDIT MUST FIT THE CAST, asserted on the prompt that goes out
+  (working law 5). His rule, verbatim: *"every edit must fit to the cast
+  otherwise it just wouldnt make sense"*. Both pieces were courted first
+  (relay scratch `relay-fangs/fit.html`).
+*/
+describe("#2626 — the fit sentence and the fang growth wording, at the wire", () => {
+  const FIT = CAST_FIT_SENTENCE;
+  const OWN_TEETH = "the same colour and finish as";
+  const occurrences = (text: string, needle: string): number => text.split(needle).length - 1;
+  const promptFor = (input: Parameters<typeof assembleRecipe>[0]): string => {
+    const recipe = assembleRecipe(input);
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+
+  it("is the courted sentence, word for word", () => {
+    expect(FIT).toBe(
+      "Every change is made to belong to this cast — their own colouring, finish and anatomy, in this frame's light, as if it had always been there; any colour or material named above is kept.",
+    );
+  });
+
+  it("P1 rides EVERY repaint ask, once and last — horns, a scar, a piercing, hair, a tattoo, a removal", () => {
+    const asks = [
+      { slot: "open:horns", noun: "horns", words: "small curved horns" },
+      { slot: "brow@left", noun: "left brow", words: "a thin scar through the left eyebrow" },
+      { slot: "open:nose stud", noun: "nose stud", words: "a nose piercing" },
+      { slot: "hair", noun: "hair", words: "dark red" },
+      { slot: "ink:neck", noun: "neck tattoo", words: "a small tattoo on the side of the neck" },
+    ];
+    for (const ask of asks) {
+      const prompt = promptFor({ master: MASTER, pronouns: SHE, library: [], asks: [ask] });
+      expect(occurrences(prompt, FIT), ask.noun).toBe(1);
+      expect(prompt.endsWith(FIT), ask.noun).toBe(true);
+      /* Their existing clauses are untouched: the court showed P1 harmless to them. */
+      expect(prompt, ask.noun).toContain(ask.words);
+    }
+    const removal = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: "no glasses — her face uncovered" } }],
+    });
+    expect(occurrences(removal, FIT)).toBe(1);
+  });
+
+  it("P1 rides the current-description road too, once", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has short dark hair.",
+      asks: [{ slot: "hair", noun: "hair", words: "short and dark" }],
+    });
+    expect(prompt).not.toContain("Change only");
+    expect(occurrences(prompt, FIT)).toBe(1);
+    expect(prompt.endsWith(FIT)).toBe(true);
+  });
+
+  it("a fang ask with no colour is grown from the cast's own canines, in the cast's own teeth colour — and 'vampire' is not sent", () => {
+    for (const slot of ["teeth", "open:fangs"]) {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot, noun: slot === "teeth" ? "teeth" : "fangs", words: "vampire fangs" }],
+      });
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).toContain(
+        "her upper canines elongated into slightly pointed fangs, just beside the front teeth, short and subtle — the tips stop at the lower lip line, not over it; the same colour and finish as her own teeth; tapering naturally from the gum, coming down from under the upper lip, the lips parted slightly to show them",
+      );
+      expect(recipe.prompt.toLowerCase()).not.toContain("vampire");
+      /* The customer's own words stay in the records: the word stack, and the
+         change facts the description writer reads. */
+      expect(recipe.wordStacks.get(slot)).toEqual(["vampire fangs"]);
+      expect(recipe.changeFacts).toContain("vampire fangs");
+    }
+  });
+
+  it("the growth wording takes the cast's own pronoun", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: HE, library: [], asks: [{ slot: "teeth", noun: "teeth", words: "fangs" }],
+    });
+    expect(prompt).toContain("Change only his teeth: his upper canines elongated into slightly pointed fangs");
+    expect(prompt).toContain(`${OWN_TEETH} his own teeth`);
+  });
+
+  it("'black fangs' keeps BLACK and drops the own-teeth clause; so does a named material", () => {
+    for (const [words, kept] of [["black fangs", "slightly pointed black fangs"], ["gold fangs", "slightly pointed gold fangs"], ["crystal vampire fangs", "slightly pointed crystal fangs"]] as const) {
+      const prompt = promptFor({
+        master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words }],
+      });
+      expect(prompt, words).toContain(kept);
+      expect(prompt, words).not.toContain(OWN_TEETH);
+      expect(occurrences(prompt, FIT), words).toBe(1);
+    }
+  });
+
+  it("CONTROL — a teeth ask that is not about fangs keeps its own words, untouched", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "teeth", noun: "teeth", words: "a small gap between the front teeth" }],
+    });
+    expect(prompt).toContain("Change only her teeth: a small gap between the front teeth.");
+    expect(prompt).not.toContain("upper canines");
+  });
+
+  it("the description road tells the painter how the fangs are drawn, beside the description it sends as written", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has black fangs.",
+      asks: [{ slot: "teeth", noun: "teeth", words: "black fangs" }],
+    });
+    expect(prompt).not.toContain("Change only");
+    expect(prompt).toContain("Draw the fangs as her upper canines elongated into slightly pointed black fangs");
+    expect(prompt).not.toContain(OWN_TEETH);
   });
 });

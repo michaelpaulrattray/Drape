@@ -38,6 +38,7 @@ import { interpretRefinement } from "./refineInterpreter";
 import { CASTING_V2_REFINE_PRICE_CREDITS } from "../casting/castingCreditCosts";
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { withoutComments } from "../testing/withoutComments";
+import { CAST_FIT_SENTENCE } from "./castFit";
 
 
 /**
@@ -5697,7 +5698,10 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       /* Said as an edit, exactly as it was before crops existed — because words
          are the only carrier there is when there is no crop. */
       expect(dispatched().edited).toContain("open:fangs");
-      expect(painted[0]!.prompt).toContain("vampire fangs");
+      /* #2626: a fang ask reaches the painter as the courted growth wording,
+         never the costume word. */
+      expect(painted[0]!.prompt).toContain("upper canines elongated into slightly pointed fangs");
+      expect(painted[0]!.prompt).not.toContain("vampire");
     });
   });
 
@@ -6420,7 +6424,10 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       /* AND IT SAYS THE THING. A recipe that renders happily while never
          mentioning fangs is the failure this arm exists for: she is charged,
          she gets a picture, and nothing in it is what she asked for. */
-      expect(record.prompt).toContain("vampire fangs");
+      /* #2626: it says fangs as the courted growth wording — what a fang IS on
+         this cast — and the costume word "vampire" is not sent. */
+      expect(record.prompt).toContain("upper canines elongated into slightly pointed fangs");
+      expect(record.prompt).not.toContain("vampire");
     });
 
     it("⚠ A PAIR IS ASKED FOR ONCE ON THE WIRE — the four-horns escalation", async () => {
@@ -15527,7 +15534,9 @@ describe("one current description rides the paid refine", () => {
   */
   const TODAYS_PROMPT = "Reference 1 is the photograph of this person — reproduce her exactly: "
     + "same face, same pose, same lighting, same framing, same background. "
-    + "Change only her hair: hair down.";
+    + "Change only her hair: hair down. "
+    /* The fit sentence (#2626, P1), last on every repaint prompt. */
+    + CAST_FIT_SENTENCE;
 
   it("CONTROL — with the flag off nothing is asked and the prompt is today's, byte for byte", async () => {
     delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;

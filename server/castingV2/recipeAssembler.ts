@@ -98,6 +98,8 @@ import type { InkTransform } from "../../shared/inkTransforms";
 import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 import { describedNowSentence } from "./currentDescription";
+/* #2626 — the fit sentence and the fang growth wording, one owner each. */
+import { CAST_FIT_SENTENCE, fangGrowthWords, isFangAsk } from "./castFit";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -1038,8 +1040,16 @@ function askSentence(
     }
     const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
     const words = (wordStacks.get(ask.slot) ?? []).join(", ");
+    /*
+      A FANG ASK IS TOLD WHAT A FANG IS (#2626, P2). The painter gets the
+      courted growth description in place of the customer's words; the FACTS
+      rendering keeps their words, so the description writer and every record
+      still say what they said. Their colour or material, when named, rides
+      inside the growth sentence and the own-teeth clause is absent.
+    */
+    const painted = isFangAsk(noun, words) ? fangGrowthWords(words, possessive) : words;
     /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
-    push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
+    push(`${named}${whereItIs(ask.slot)}: ${painted}`, `${named}: ${words}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -2219,7 +2229,14 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
          only on the description road, because off it the parenthetical inside
          `ask` already says it (#2578 §3). */
       describesNow ? painterSideLines(input.asks, wordStacks, possessive) : "",
+      /* The fang growth wording on the description road (#2626, P2) — the
+         description is the customer's record and is sent as written, so how a
+         fang is drawn rides beside it, the way the side lines do. */
+      describesNow ? painterFangLines(input.asks, bySlot, wordStacks, possessive) : "",
       inkWords,
+      /* THE FIT SENTENCE (#2626, P1), last and once, on every prompt that
+         changes something — both roads. */
+      describesNow || ask !== "" ? CAST_FIT_SENTENCE : "",
     ]
       .filter((line) => line !== "")
       .join(" "),
@@ -2281,6 +2298,33 @@ function painterSideLines(
     const sentence = `${possessive} ${definition.noun} is ${where}.`;
     const capitalised = `${sentence[0]!.toUpperCase()}${sentence.slice(1)}`;
     if (!lines.includes(capitalised)) lines.push(capitalised);
+  }
+  return lines.join(" ");
+}
+
+/**
+ * HOW A FANG IS DRAWN, said to the painter on the description road (#2626, P2).
+ *
+ * Off that road the growth wording replaces the words inside the change clause.
+ * On it, the stored description stands where the clause stood and is sent as
+ * written — it is the customer's record — so the growth wording rides beside it
+ * as one line per fang ask, the same way `painterSideLines` carries the side.
+ * It names no new change: the description already says the fangs are there.
+ */
+function painterFangLines(
+  asks: readonly Ask[],
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string {
+  const lines: string[] = [];
+  for (const ask of asks) {
+    if (ask.restate || ask.vacate) continue;
+    const noun = bySlot.get(ask.slot)?.noun ?? ask.noun ?? "";
+    const words = (wordStacks.get(ask.slot) ?? []).join(", ");
+    if (!isFangAsk(noun, words)) continue;
+    const line = `Draw the fangs as ${fangGrowthWords(words, possessive)}.`;
+    if (!lines.includes(line)) lines.push(line);
   }
   return lines.join(" ");
 }
