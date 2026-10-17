@@ -99,7 +99,7 @@ import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing"
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
 import { describedNowSentence } from "./currentDescription";
 /* #2626 — the fit sentence and the fang growth wording, one owner each. */
-import { CAST_FIT_SENTENCE, fangGrowthWords, isFangAsk } from "./castFit";
+import { CAST_FIT_SENTENCE, fangGrowthHeld, fangGrowthWords, isFangAsk } from "./castFit";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -983,6 +983,7 @@ function askSentence(
     factClauses.push(facts);
   };
   const collapsed = pairCollapse(asks, wordStacks);
+  const growthHeld = fangGrowthHeldIn(asks, bySlot, wordStacks);
   for (const ask of asks) {
     /*
       A TAKEN-BACK SLOT CONTRIBUTES NO CLAUSE — see `Ask.restate`.
@@ -1047,7 +1048,7 @@ function askSentence(
       still say what they said. Their colour or material, when named, rides
       inside the growth sentence and the own-teeth clause is absent.
     */
-    const painted = isFangAsk(noun, words) ? fangGrowthWords(words, possessive) : words;
+    const painted = !growthHeld && isFangAsk(noun, words) ? fangGrowthWords(words, possessive) : words;
     /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
     push(`${named}${whereItIs(ask.slot)}: ${painted}`, `${named}: ${words}`);
   }
@@ -2303,6 +2304,23 @@ function painterSideLines(
 }
 
 /**
+ * Whether this render takes fangs away or shrinks them anywhere — see
+ * `fangGrowthHeld`. Read once per render by both places the growth wording
+ * can be sent, so neither can grow a slot while another shrinks it.
+ */
+function fangGrowthHeldIn(
+  asks: readonly Ask[],
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+): boolean {
+  return fangGrowthHeld(asks.filter((ask) => !ask.restate).map((ask) => ({
+    noun: bySlot.get(ask.slot)?.noun ?? ask.noun ?? "",
+    words: (wordStacks.get(ask.slot) ?? []).join(", "),
+    vacated: ask.vacate !== undefined,
+  })));
+}
+
+/**
  * HOW A FANG IS DRAWN, said to the painter on the description road (#2626, P2).
  *
  * Off that road the growth wording replaces the words inside the change clause.
@@ -2317,6 +2335,7 @@ function painterFangLines(
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
 ): string {
+  if (fangGrowthHeldIn(asks, bySlot, wordStacks)) return "";
   const lines: string[] = [];
   for (const ask of asks) {
     if (ask.restate || ask.vacate) continue;
