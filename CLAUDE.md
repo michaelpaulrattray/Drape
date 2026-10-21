@@ -625,7 +625,7 @@ it off the list, with the reader's positive control beside it.
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 
-⚠ **THE THIRTY-EIGHT SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
+⚠ **THE THIRTY-NINE SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
 [`docs/architecture/FEATURE_FLAGS.md`](docs/architecture/FEATURE_FLAGS.md).**
 Their entries — 122,893 bytes, two thirds of this file as it stood — moved
 there on 2026-08-31 under the founder's own card (#330: *"why are simple code changes
@@ -651,6 +651,7 @@ the live service on every push.
 | `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is — ✅ RETIRED (#1577 slice D2); every ask says it now |
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
 | `CASTING_SCAN_TABLE_SCOPE` | whether a finished scan is kept |
+| `CASTING_FACE_DISCOVERY_SCOPE` | whether a first reading also asks the picture what is on this character, beside the catalogue's questions — it cancels none of them (#2570's second finding) |
 | `CASTING_OPEN_LANE_SCOPE` | the open lane — an ask naming its own kind — ✅ RETIRED (#1577 slice D1); the two closed-lane prompts went with it |
 | `CASTING_INK_STUDIO_SCOPE` | the ink studio's door — RETIRED on his *"It retires with N2"*; UNSET on the service since 2026-09-24 (#1158) |
 | `CASTING_INK_CUT_SCOPE` | whether an uploaded design is cut out of its picture before it is stored — RETIRED with the studio; UNSET 2026-09-24 (#1158) |

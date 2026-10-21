@@ -67,7 +67,8 @@ import type { PanelBox, PanelScan } from "./facePanel";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
-import { captureCastingScanTableEnabled } from "./castingV2Scope";
+import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
+import { discoverFeatures, discoveryCropsOf, type FaceDiscovery } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
@@ -127,6 +128,7 @@ export type ScannedFace = {
  * From `scanPlan()` rather than from the slots that came back, so a feature
  * that answered NOTHING still prints `--` — an absence is only legible beside
  * the question that produced it.
+
  */
 function sidesOf(slots: ReadonlyMap<FeatureSlot, unknown>): string {
   return scanPlan()
@@ -302,11 +304,61 @@ function defaultRegionReader(): RegionReader | null {
   return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
 }
 
+/**
+ * ASK THE PICTURE BEFORE ASKING THE LIST — `CASTING_FACE_DISCOVERY_SCOPE`
+ * (#2566, the design approved on #2532).
+ *
+ * Decided HERE, for the reason the pair-one-read flag is: `scanFace` takes what
+ * it is given and never reaches for a paid transport of its own, so what this
+ * module owns is whether a discovery is bought at all.
+ *
+ * ⚠ **Four separate roads lead to "ask the whole catalogue", and all four are
+ * silent.** The flag is off for this user; there is no text transport
+ * configured; the read itself failed, timed out or came back unparseable; or
+ * only one of its two crops answered. The scan behaves identically in every one
+ * of them and the customer sees today's panel — a discovery is a courtesy on
+ * top of a courtesy, and it is not allowed to be the thing that takes a feature
+ * off somebody's panel.
+ *
+ * ⚠ **AND THAT LAST SENTENCE WAS A CLAIM ABOUT THE FAILURE ROADS ONLY — IT IS
+ * NOW TRUE OF A SUCCESSFUL READING TOO.** The relay drove the flag on and
+ * measured features leaving real panels on readings where nothing had failed
+ * (the finding on PR #2570); `faceDiscovery.ts`'s header carries the repairs.
+ * The second finding closed the class rather than the instance: the discovery
+ * no longer cancels any question, so no reading it touches can be thinner than
+ * a flag-off one.
+ *
+ * ⚠ **Exported for its own arms, on `pairInOneReadEnabled`'s own reasoning, and
+ * that export was bought by a sabotage rather than chosen.** Driven through a
+ * scan, replacing the flag check here with a constant left the whole suite
+ * green — because the next line finds no transport, or the read fails, and
+ * both of those fall open to exactly the answer a correctly-gated scan gives.
+ * **The three silent roads that make this road safe are the same three that
+ * make it untestable from the outside**, so the decision is driven where it is
+ * made: a flag nothing can be shown to consult is a feature on for everyone.
+ */
+export function defaultDiscoverer(
+  userId: number,
+): ((frame: { bytes: Buffer; width: number; height: number }) => Promise<FaceDiscovery>) | null {
+  if (!captureCastingFaceDiscoveryEnabled(userId)) return null;
+  const engine = interpreterEngine();
+  if (engine === null) return null;
+  return async (frame) => discoverFeatures({ crops: await discoveryCropsOf(frame), engine });
+}
+
 export type FaceScanDependencies = {
   reader?: RegionReader | null;
   describe?: ((input: { bytes: Buffer; contentType: string }) => Promise<FaceDescriptions>) | null;
   readBytes?: typeof storageReadBytes;
   publicUrl?: (key: string) => string;
+  /**
+   * THE DISCOVERY READ, or nothing — handed the frame, answering what is on it.
+   *
+   * A seam like `reader` and `describe`: `undefined` means "the live one if the
+   * flag names this user", and an explicit `null` means "do not discover",
+   * which is what every existing suite gets without changing a line.
+   */
+  discover?: ((frame: { bytes: Buffer; width: number; height: number }) => Promise<FaceDiscovery>) | null;
 };
 
 /**
@@ -541,6 +593,29 @@ export async function scannedFace(input: {
     const metadata = await sharp(frame.bytes).metadata();
     if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
     const url = publicUrl(input.imageKey);
+    /*
+      THE DISCOVERY, BESIDE THE QUESTIONS AND NEVER IN FRONT OF THEM (#2566).
+
+      ⚠ It used to run FIRST and decide which questions got bought, and that is
+      gone on the relay's second HELD finding on PR #2570: a discovery that
+      missed a visible feature cancelled its question and took the row off the
+      panel (cast 812's Earrings, reading 2 of 3), and running first made a
+      flag-on reading 29 s against 20 s for a saving the measurement could not
+      see. The discovery may only ADD now, and what it adds is slice 2's. So
+      nothing here waits for it: it is started beside the scan, the scan asks
+      the whole catalogue exactly as it does with the flag off, and the read's
+      counts are logged by `discoverFeatures` itself.
+
+      It cannot throw. `discoverFeatures` turns every failure into `{ ok: false }`,
+      and a discoverer that is absent is no read at all.
+    */
+    const discover = input.dependencies?.discover === undefined
+      ? defaultDiscoverer(input.userId)
+      : input.dependencies.discover;
+    const discovering: Promise<unknown> = discover === null
+      ? Promise.resolve(null)
+      : discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height })
+        .catch(() => null);
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
@@ -582,6 +657,9 @@ export async function scannedFace(input: {
         });
       },
     });
+    /* Not awaited: the panel never waits on a read that changes nothing on it.
+       `discovering` already swallows its own failures. */
+    void discovering;
     return await displayOf(scan, url);
     });
     spent = census;
@@ -799,6 +877,7 @@ export function scanIsInHand(input: {
  * catalogue's decision (`whenAbsent`), authored per slot beside its reason, and
  * the panel is where the two meet — one place deciding what is true, another
  * deciding what may be said about it.
+
  */
 function absentSlotsOf(scan: ScannedFace): ReadonlySet<FeatureSlot> {
   if (scan.empty.length === 0) return new Set();
