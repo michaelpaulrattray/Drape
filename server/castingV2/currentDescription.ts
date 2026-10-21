@@ -27,11 +27,16 @@
  * never the per-slice `resolved` record, which is unsent dice fiction, #176)
  * and the asks already applied to this version, in order. That is how a
  * version made before the flag, or one whose writer failed, is folded in on the
- * next edit rather than lost.
+ * next edit rather than lost. ⚠ **And "applied" is the word doing the work and
+ * is not checked: an earlier ask arrives whole even where the camera served
+ * only part of it, which is #2657** — see `notInShot` below.
  */
+import { EYE_COLOURS } from "../../shared/castingRealization";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
+import { everyFeatureOutOfFrame } from "./castingFrame";
 import type { CastPronouns } from "./castPronouns";
+import { pictureHalfPhrase } from "./sidePhrasing";
 
 const log = createModuleLogger("castingV2/currentDescription");
 
@@ -71,12 +76,14 @@ export const CURRENT_DESCRIPTION_SYSTEM = [
   "Rules:",
   "- One natural paragraph of plain prose in the present tense, written in the third person with they/their. It must read as a description of a person, never as a list of edits.",
   "- Never use the words now, changed, added, removed, new, no longer, instead or anymore, and never describe the change itself. Describe the result.",
-  "- Keep every fact from the previous description that the change does not touch, in its own words where you can.",
-  "- When the change takes something away (glasses, a scar, horns), leave it out of the description and add one plain clause stating its absence, such as \"They wear no glasses.\"",
+  "- The change is given in the customer's own words. Every word they use for a feature (a short crop, wire-frame glasses, short curved horns) goes into the description exactly as they wrote it: never a synonym, a fuller or more technical spelling, or a studio term in its place.",
+  "- Keep every fact from the previous description that the change does not touch, in its own words where you can. Never strengthen a comparison the previous description already makes (deeper, darker, shorter) unless the change itself asks for more of it.",
+  "- When the change takes something away (glasses, a scar, horns), remove every mention of it from the description, wherever it appeared and however it was worded, and add one plain clause stating its absence, such as \"They wear no glasses.\" A removal changes nothing else about them.",
   "- When the change contradicts an earlier fact (a new eye colour, a shorter beard), keep only the new fact.",
   "- The description is read beside their ORIGINAL photograph. A change worded as a comparison (deeper, darker, shorter, heavier, neater) stays a comparison against how they first looked, such as \"scales a deeper emerald than their original colouring\" — never a plain \"deep emerald\", which the original photograph already satisfies.",
   "- Hair on the head and facial hair are separate features: a change to their hair never changes their beard, and a change to their beard never changes their hair.",
   "- Describe only the person: face, features, hair, skin, markings, accessories and clothing. Never the setting, background, lighting, camera, pose or picture style.",
+  "- Describe the person, never the picture. Say which side of THEIR body a feature is on (their right eye, their left shoulder) and never which side of the image it appears on: no \"as you look at it\", no \"on the left of the picture\", no viewer, camera or frame talk of any kind.",
   "- Do not invent anything the previous description and the change do not say.",
   "- Reply with the description paragraph and nothing else.",
 ].join("\n");
@@ -89,25 +96,283 @@ export type CurrentDescriptionInput = {
    * `previous` is null: the roll's brief and the asks already applied.
    */
   seed: { brief: string; earlierAsks: readonly string[] };
-  /** The one edit being made, in the customer's own words. */
+  /**
+   * The one edit being made, in the customer's own words, VERBATIM (#2645).
+   *
+   * ⚠ It was the assembler's `changeFacts` from #2578 §2 until #2645, and that
+   * was two defects wearing one field. `changeFacts` is the WHOLE recipe's
+   * change clause — every render anchors on the pristine master, so every
+   * earlier edit is re-said in it — and its words are the studio's resolved
+   * vocabulary rather than the customer's. Measured on the layout court: a
+   * prune ("take the horns off") contributes NO clause there (`Ask.restate`),
+   * so the writer was handed only "their scales: deeper emerald", wrote the
+   * scales "deeper emerald still" and kept the horns; and "cut the hair into a
+   * short crop" reached it as the house style name "standard crop", which it
+   * copied for six edits. His rule (2026-10-17): the studio never rewords what
+   * the customer asked for.
+   */
   change: string;
+  /**
+   * What THIS edit takes back, in the words the chain filed it under (the
+   * prune's `restate.taken`). Said to the writer, and the backstop
+   * {@link keepsWhatWasTakenBack} refuses a reply that still carries it.
+   */
+  takenBack?: readonly string[];
+  /**
+   * The vacancy phrases this render paints (`vacate.says`) — the measured site
+   * wording #2578 §2 bought ("both earlobes bare"), handed on its own now that
+   * the rest of `changeFacts` no longer is.
+   */
+  absences?: readonly string[];
+  /**
+   * What the customer asked for that this photograph does not show, so this
+   * render did not make it (#2645 follow-up) — the out-of-frame strip's
+   * `dropped` list ("her waist").
+   *
+   * `change` stays the customer's whole sentence, verbatim, because the studio
+   * never rewords what they asked for. But "a smaller waist and red lipstick"
+   * on a headshot serves only the lipstick, and a writer handed that sentence
+   * alone filed "a smaller waist" as a fact about them — which every later
+   * render then painted from. So the unserved half is said to the writer as
+   * NOT done, and the backstop {@link addsWhatIsNotInShot} refuses a reply
+   * that writes it in anyway.
+   *
+   * ⚠ **THIS FIELD IS THIS REQUEST'S HALF ONLY — THE SEED ROAD'S IS DERIVED,
+   * NOT PASSED (#2657).** What arrives here is the frame strip of the sentence
+   * being made now (`refineService.ts`'s `notInShotForWriter`), and **nothing
+   * stored anywhere says an EARLIER ask had an unserved half**: the strip's
+   * `dropped` list is computed per render and written to no column. So a seeded
+   * writer handed the earlier asks as prose stated a waist dropped three edits
+   * ago as fact — **20 of 20 on real briefs**, 2026-10-17.
+   *
+   * It is closed WITHOUT that record, by {@link notInShotForThisCall}, and the
+   * reason is an asymmetry: a facet the frame cannot show is stripped from every
+   * ask that names it, so no history can hold a served one. **Read that function
+   * rather than this field when asking what the writer was told** — on the seed
+   * road the two differ, deliberately.
+   *
+   * ⚠ **Its SIBLING is open and is #2658**: an earlier ask whose half reached no
+   * lane at all rides the same seed road, its vocabulary is open, and the
+   * asymmetry does not reach it. **That** one needs the per-step record — and
+   * never a word-match over the stored sentence (`refineSubjects.ts`).
+   */
+  notInShot?: readonly string[];
 };
 
 export type CurrentDescriptionResult =
   | { ok: true; description: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list"; latencyMs: number };
+  | { ok: false; reason: "no_engine" | "failed" | "blank" | "too_long" | "edit_list" | "picture_talk" | "kept_removed" | "not_in_shot"; latencyMs: number };
+
+/** Whether this call is seeding a description rather than rewriting one. */
+export function isSeedRoad(input: CurrentDescriptionInput): boolean {
+  return input.previous === null || input.previous.trim() === "";
+}
+
+/**
+ * WHAT THE WRITER MUST NOT WRITE IN ON THIS CALL - one derived list, read by
+ * both the prompt and the backstop (#2657).
+ *
+ * On the `previous` road it is this change's own unserved half and nothing
+ * else. On the SEED road the out-of-frame vocabulary joins it unconditionally,
+ * and the reason is an ASYMMETRY rather than a record of the past: a facet the
+ * casting frame cannot show is stripped from every ask that names it, on every
+ * render (`castingFrame.ts`), so no earlier ask in any history has ever changed
+ * one. Saying so needs no per-step storage and no guess at which earlier ask
+ * named what - which matters, because the only other road to that answer is a
+ * word-match over the stored sentence, and `refineSubjects.ts` is explicit that
+ * its noun table must never become a routing vocabulary.
+ *
+ * Measured before it was written, on 10 real briefs twice each: the seed road
+ * wrote the dropped half in as a fact **20 of 20** times; with it named to the
+ * writer, **0 of 20**; and on seeds whose asks never mentioned it, the backstop
+ * refused **0 of 20**, so it costs nothing where there is nothing to catch.
+ *
+ * TWO READERS OF THIS WOULD DRIFT (working law 4) and the drift would be
+ * silent: a prompt naming a feature the backstop did not would refuse nothing,
+ * and a backstop naming one the prompt did not would refuse a paragraph nobody
+ * was warned about. So it is computed here, once.
+ */
+export function notInShotForThisCall(input: CurrentDescriptionInput): readonly string[] {
+  const thisChange = input.notInShot ?? [];
+  return isSeedRoad(input) ? [...thisChange, ...everyFeatureOutOfFrame()] : thisChange;
+}
 
 /** The user turn, built in one place so a test can read exactly what was asked. */
 export function currentDescriptionUserTurn(input: CurrentDescriptionInput): string {
-  const before = input.previous !== null && input.previous.trim() !== ""
-    ? `How they looked before this change:\n${input.previous.trim()}`
+  const before = !isSeedRoad(input)
+    ? `How they looked before this change:\n${input.previous!.trim()}`
     : [
       `How they were first described:\n${input.seed.brief.trim()}`,
       ...(input.seed.earlierAsks.length > 0
         ? [`Changes already made since, in order (fold them into the description):\n${input.seed.earlierAsks.map((ask) => `- ${ask.trim()}`).join("\n")}`]
         : []),
     ].join("\n\n");
-  return `${before}\n\nThe change:\n${input.change.trim()}`;
+  const taken = (input.takenBack ?? []).map((one) => one.trim()).filter((one) => one !== "");
+  const absences = (input.absences ?? []).map((one) => one.trim()).filter((one) => one !== "");
+  const notInShot = featuresNotInShot(input.notInShot ?? []);
+  /* What the derived list adds beyond this change's own half - the seed road's
+     unconditional entries, which get their own sentence below because this
+     one's opening clause is false of them. */
+  const neverInShot = featuresNotInShot(notInShotForThisCall(input)).filter((one) => !notInShot.includes(one));
+  return [
+    before,
+    `The change, in the customer's own words:\n${input.change.trim()}`,
+    ...(taken.length > 0
+      ? [`This change takes away, so it must not appear in the description except as its absence:\n${taken.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+    ...(absences.length > 0
+      ? [`How a taken-away feature leaves them, to say in its place:\n${absences.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+    ...(notInShot.length > 0
+      ? [`Part of this change was not made, because their photograph does not show it. Do not apply that part: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:\n${notInShot.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+    /* AND THE SEED ROAD SAYS IT OF THE EARLIER ASKS TOO (#2657), in its own
+       sentence: the one above opens "part of this change", which is false of a
+       feature no change has ever been able to touch, and the list it carries is
+       about the asks printed in `before` rather than about `change`. */
+    ...(neverInShot.length > 0
+      ? [`Their photograph does not show these, so no change above was made to them. Do not apply any part of a change that names one: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:\n${neverInShot.map((one) => `- ${one}`).join("\n")}`]
+      : []),
+  ].join("\n\n");
+}
+
+/**
+ * The out-of-frame list in the writer's terms: the feature without the
+ * possessive the customer-facing sentence carries ("her waist" → "waist"),
+ * since the writer describes the cast as they/their.
+ */
+function featuresNotInShot(dropped: readonly string[]): string[] {
+  return Array.from(new Set(dropped
+    .map((one) => one.toLowerCase().replace(/\s+/g, " ").trim().replace(LEADING_DETERMINERS, "").trim())
+    .filter((one) => one !== "")));
+}
+
+/**
+ * A REPLY THAT WRITES IN WHAT THE PHOTOGRAPH COULD NOT SHOW IS REFUSED (#2645
+ * follow-up) — the backstop a model cannot rescue (law 3).
+ *
+ * The render did not make that half of the ask, and the stored paragraph is
+ * what every later render paints from, so a paragraph that says "a smaller
+ * waist" pins an edit nobody saw onto the cast for good. A feature the
+ * description BEFORE this change already names is allowed — keeping an
+ * untouched fact is the writer's job — so this refuses only a feature that
+ * appears for the first time. What it does not catch, named: a reply that
+ * changes an existing mention ("a slim waist" → "a smaller waist") passes,
+ * because the word was already there. That is a miss, never a false refusal,
+ * and a refusal costs the description, never the render.
+ */
+export function addsWhatIsNotInShot(
+  text: string,
+  notInShot: readonly string[],
+  before: string,
+): string | null {
+  const said = text.toLowerCase();
+  const had = before.toLowerCase();
+  for (const feature of featuresNotInShot(notInShot)) {
+    const named = new RegExp(`\\b${escapeForPattern(feature)}\\b`);
+    if (named.test(said) && !named.test(had)) return feature;
+  }
+  return null;
+}
+
+/**
+ * WORDS THAT MAKE A CLAUSE ABOUT A FEATURE A STATEMENT OF ITS ABSENCE.
+ * Grammar, not a feature vocabulary: this decides nothing about what a customer
+ * may ask for, only whether a clause that names a feature says it is gone.
+ */
+const ABSENCE_WORDS = /\b(?:no|not|without|none|never|nor|bare|free of)\b/;
+/** Leading determiners and a counted pair, stripped before matching. */
+const LEADING_DETERMINERS = /^(?:(?:a|an|the|some|two|her|his|their|its)\s+)*(?:pair\s+of\s+)?/;
+/** A taken-back phrase holding one of these is a feature AT a place, so its last word is the place, never the feature. */
+const PLACE_WORDS = /\b(?:of|through|on|in|across|at|from|with|under|over|around|behind|along|above|below|between|into|onto|down|near)\b/;
+
+function escapeForPattern(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * A REPLY THAT STILL CARRIES WHAT THIS EDIT TOOK BACK IS REFUSED (#2645) — the
+ * backstop a model cannot rescue (law 3).
+ *
+ * The layout court measured it on both arms: "take the horns off" was rendered
+ * with the horns gone and the description filed beside it still said "with a
+ * pair of short curved horns" — so the NEXT edit, which renders from that
+ * paragraph, painted them back. A stored paragraph is the only memory the chain
+ * has, so a removal it forgot is a removal that un-happens.
+ *
+ * Answered with the taken-back phrase itself and, when the phrase is a plain
+ * noun phrase ("a pair of short curved horns"), its head noun ("horns"), so a
+ * rewording of the same feature is caught too. A clause naming it is allowed
+ * only when it states the absence ("They have no horns.").
+ *
+ * ⚠ WHAT IT DOES NOT CATCH, named: a feature at a place ("a scar through the
+ * left eyebrow") is matched on the whole phrase only, because its last word is
+ * the eyebrow, which stays; a writer that rewords such a phrase walks past. And
+ * a clause that states one absence and keeps the feature in the same breath
+ * ("no glasses and short curved horns") passes. Both are misses, never false
+ * refusals — and a refusal costs the description, never the render.
+ */
+export function keepsWhatWasTakenBack(text: string, takenBack: readonly string[]): string | null {
+  const clauses = text.toLowerCase().split(/[.;,!?]+/).map((clause) => clause.trim()).filter((clause) => clause !== "");
+  for (const taken of takenBack) {
+    const phrase = taken.toLowerCase().replace(/\s+/g, " ").trim().replace(LEADING_DETERMINERS, "").trim();
+    if (phrase === "") continue;
+    const needles = [phrase];
+    if (!PLACE_WORDS.test(phrase)) {
+      const head = phrase.split(" ").pop()!;
+      if (head.length >= 3 && head !== phrase) needles.push(head);
+    }
+    for (const needle of needles) {
+      const named = new RegExp(`\\b${escapeForPattern(needle)}\\b`);
+      if (clauses.some((clause) => named.test(clause) && !ABSENCE_WORDS.test(clause))) return taken;
+    }
+  }
+  return null;
+}
+
+/**
+ * A REPLY THAT TALKS ABOUT THE PICTURE IS REFUSED — the wall on the stored
+ * paragraph (ruled fable-20261016-2030 on #2578 §4).
+ *
+ * The instruction above tells the writer to describe the person and never the
+ * frame. This is the backstop, and it exists because the downstream is
+ * CUSTOMER-VISIBLE: #2545 hands this paragraph to the signed views, the
+ * persona, the voice and the creation record. Measured on this card, a writer
+ * handed the picture-half parenthetical leaked *"a right eye (on the left of
+ * the picture as you look at it) of emerald green"* into the stored description
+ * 2 of 3 times. The input is fixed too (the facts rendering in
+ * `recipeAssembler`), so this is the second of two independent arms rather than
+ * the only one.
+ *
+ * # It is derived from the phrase's own owner, never respelled here
+ *
+ * `pictureHalfPhrase` writes the sentence both halves of the product say; a
+ * second spelling of it here would be the parallel copy that drifts at exactly
+ * the place the phrase exists to hold still (law 4). Both halves are matched
+ * because a writer paraphrases: the full phrase, and the frame-relative opener
+ * on its own.
+ *
+ * # What it must NOT refuse
+ *
+ * An anatomical side is the whole point of the description — *"their right eye
+ * is emerald green"* is a fact about the person and must pass. So this matches
+ * the PICTURE-relative family only, and `currentDescription.test.ts` keeps an
+ * anatomical arm beside every refusing one. That control is the reason the
+ * match is anchored on the picture nouns rather than on "left" and "right",
+ * which would refuse nearly every sided description there is.
+ */
+export function mentionsThePicture(text: string): boolean {
+  const said = text.toLowerCase();
+  /* The owner's own words for both halves, so the spelling cannot drift. */
+  if (said.includes("as you look at it")) return true;
+  for (const half of ["left", "right"] as const) {
+    if (said.includes(pictureHalfPhrase(half))) return true;
+  }
+  /* The paraphrases that are still the frame rather than the body. A noun of
+     the picture joined to a side is picture-talk however it is worded; "their
+     left" alone never is. */
+  return /\b(?:on|to|at|in|toward|towards)\s+the\s+(?:\w+\s+){0,2}?(?:left|right)\s+(?:side\s+)?of\s+the\s+(?:picture|image|photo|photograph|frame|shot)\b/.test(said)
+    || /\b(?:picture|image|photo|photograph|frame|viewer|camera)(?:'s)?\s+(?:left|right)\b/.test(said);
 }
 
 /**
@@ -141,6 +406,19 @@ export async function writeCurrentDescription(
     if (text === "" || result.truncated) return { ok: false, reason: "blank", latencyMs };
     if (text.length > CURRENT_DESCRIPTION_MAX_LENGTH) return { ok: false, reason: "too_long", latencyMs };
     if (looksLikeAnEditList(text)) return { ok: false, reason: "edit_list", latencyMs };
+    /* The render then rides today's prompt and stores nothing, which is the
+       designed free failure — never a repaired paragraph, because a stripped
+       sentence is a sentence nobody wrote. */
+    if (mentionsThePicture(text)) return { ok: false, reason: "picture_talk", latencyMs };
+    /* A removal the paragraph forgot would un-happen on the next edit, which
+       renders from this paragraph — so it is refused, and this render rides
+       today's prompt, whose recipe already leaves the feature out. */
+    if (keepsWhatWasTakenBack(text, input.takenBack ?? []) !== null) return { ok: false, reason: "kept_removed", latencyMs };
+    /* The half the photograph could not show was not painted, so a paragraph
+       that states it would have every later render paint it. Judged against
+       what the paragraph was written from: the previous one, or the brief. */
+    const before = isSeedRoad(input) ? input.seed.brief : input.previous!;
+    if (addsWhatIsNotInShot(text, notInShotForThisCall(input), before) !== null) return { ok: false, reason: "not_in_shot", latencyMs };
     return {
       ok: true,
       description: text,
@@ -174,6 +452,19 @@ export function describedNowSentence(description: string, pronouns: CastPronouns
   return `This is how ${subject} ${verb} now: ${ended} Everything else about ${pronouns.object} stays exactly as in Reference 1.`;
 }
 
+/**
+ * THE DESCRIPTION'S LINE IN HIS LABELLED LAYOUT (#2647) — arm D1 of the layout
+ * court: *"How they look after this edit: <description>"*. It sits after the
+ * edit instruction, so it carries no "everything else stays" tail of its own:
+ * the constraints line that follows says that.
+ */
+export function afterThisEditSentence(description: string, pronouns: CastPronouns): string {
+  const verb = pronouns.plural ? "look" : "looks";
+  const body = description.trim().replace(/\s+/g, " ");
+  const ended = /[.!?]$/.test(body) ? body : `${body}.`;
+  return `How ${pronouns.subject} ${verb} after this edit: ${ended}`;
+}
+
 /* ======================================================================== */
 /*  THE FOLLOW BRIEF — #2576, his word 2026-10-16: "build it" (option 3).    */
 /* ======================================================================== */
@@ -202,11 +493,175 @@ export function describedNowSentence(description: string, pronouns: CastPronouns
  * THE FOLLOW WAITS ON THIS ONE, SO IT IS SHORTER THAN THE REFINE'S 20 s. The
  * description writer measured median 1.6 s, worst 3.16 s over 31 calls on the
  * same engine; 8 s is two and a half times that worst case, and one retry
- * absorbs a single transport blip. Worst case before the roll starts: 2 × 8 s.
- * The queue wait sits outside both numbers, exactly as above.
+ * absorbs a single transport blip.
  */
 export const FOLLOW_BRIEF_TIMEOUT_MS = 8_000;
 export const FOLLOW_BRIEF_RETRIES = 1;
+
+/**
+ * ⚠ **ONE DEADLINE FROM THE PRESS, AND IT COVERS THE QUEUE (#2582 item 4, a
+ * must-fix before the flag widens).** This docblock ended *"Worst case before
+ * the roll starts: 2 × 8 s. The queue wait sits outside both numbers"* — and
+ * for the refine's own writer that sentence is an honest limit, because that
+ * call runs AFTER the claim and delays only a render the customer has already
+ * bought. **Here it was a promise the code could not keep**: a Follow waits on
+ * this before its claim, `timeoutMs` is per ATTEMPT inside the retry loop, and
+ * the attempt does not begin until `openrouter-text` has a slot — concurrency
+ * 4, depth 32, shared with interpreter calls of up to 120 s. `ProviderQueue.run`
+ * takes no signal, so the wait for a slot is bounded by nothing at all.
+ *
+ * **So the number does not grow — it starts covering what it already claimed.**
+ * 16.5 s is exactly the attempt budget the design already accepted (8 s + the
+ * retry's 500 ms backoff + 8 s), measured off `withRetry`'s own
+ * `baseDelayMs`; what changes is that the queue wait now sits INSIDE it instead
+ * of on top of it. At the deadline the box's own words are sent — the roll is
+ * never held past it, which is #2576's own *"never delays the roll beyond its
+ * short timeout"*.
+ *
+ * ⚠ **BOTH HALVES ARE NEEDED AND NEITHER IS SUFFICIENT.** The signal stops the
+ * retry loop dispatching again (`withRetry` checks `aborted` before each
+ * attempt) and aborts an in-flight request; the race stops the customer WAITING
+ * on a promise that is still queued behind four long interpreter calls, which
+ * no signal the queue ignores could ever do.
+ */
+export const FOLLOW_BRIEF_DEADLINE_MS = 16_500;
+
+/**
+ * THE SPECIFICS THAT BELONG TO ONE FACE, NAMED ONCE (#2582 item 5).
+ *
+ * His ruling is the reason this is a refusal and not only a prompt rule:
+ * *"cousins of that direction of cast not exact replicas"*. A rewrite that
+ * invents a scar, a mole, a freckle, a tattoo or an eye colour the brief never
+ * stated re-locks a whole casting call onto one face — so the brief goes out
+ * carrying a feature the customer never asked for, and every cousin wears it.
+ *
+ * ⚠ **The prompt's own sentence is BUILT from these words** rather than
+ * repeating them, because a backstop that forbids one list while the prompt
+ * names another is working law 4's exact failure — and the drift would be
+ * invisible, since the prompt would still read correctly. The eye-colour half
+ * derives from `EYE_COLOURS`, the product's own eye vocabulary, for the same
+ * reason.
+ */
+export const ONE_PERSON_SPECIFICS = {
+  scar: { word: "scar", alsoWritten: ["scars", "scarred", "scarring"] },
+  mole: { word: "mole", alsoWritten: ["moles"] },
+  freckle: { word: "freckle", alsoWritten: ["freckles", "freckled", "freckling"] },
+  tattoo: { word: "tattoo", alsoWritten: ["tattoos", "tattooed", "tattooing"] },
+} as const;
+
+type OnePersonSpecific = (typeof ONE_PERSON_SPECIFICS)[keyof typeof ONE_PERSON_SPECIFICS];
+
+/**
+ * ⚠ **BODY-LOOK ANATOMY A WHOLE CASTING CALL COULD SHARE IS DIRECTION, AND IT
+ * WAS SAID NOWHERE (#2621).** His report, verbatim: *"her fangs i gave her or
+ * changed her teeth to sort of look a bit funny then when i follow her the
+ * fangs end up non existent or as tattoos on the lips of the new casts."* The
+ * direction-level rule named hair, style, augments, prosthetics, cybernetics,
+ * outfit, build and palette and nothing about teeth, horns or ears, while the
+ * one-person rule named *"a precise facial feature"*, the nearest home a writer
+ * finds for fangs. So the edit was left out of the words and survived only
+ * through the anchor picture, where it rendered as missing or as marks on the
+ * lips.
+ *
+ * A vampire family all have fangs; an elf family all have pointed ears. That is
+ * what makes these the LOOK of the call rather than one face, the opposite of a
+ * single scar. The prompt's sentence is BUILT from this list, and the suite
+ * drives every member through the one-person refusal, so the backstop can never
+ * refuse what the prompt asks for.
+ */
+export const BODY_LOOK_ANATOMY = [
+  { phrase: "fangs or the shape of the teeth", writtenAs: ["long vampire fangs", "sharp pointed teeth"] },
+  { phrase: "tusks", writtenAs: ["small lower tusks"] },
+  { phrase: "horns", writtenAs: ["curling ram horns"] },
+  { phrase: "pointed or elf ears", writtenAs: ["long pointed elf ears"] },
+  {
+    phrase: "unusual eyes such as slit pupils or glowing or solid-colour eyes",
+    writtenAs: ["slit-pupil eyes", "glowing amber eyes", "solid black eyes", "glowing pale blue eyes"],
+  },
+  { phrase: "skin texture such as scales", writtenAs: ["green scaled skin", "scales along the cheekbones"] },
+] as const;
+
+/**
+ * Words that make an eye colour part of an UNUSUAL EYE rather than one
+ * person's natural colouring. Read immediately before the colour only.
+ *
+ * ⚠ **ONLY A WORD THAT MAKES THE EYE NON-NATURAL BELONGS HERE (#2621 repair).**
+ * The list first carried "luminous", which is how a writer flatters an
+ * ORDINARY eye — so "luminous hazel eyes", an invented natural eye colour,
+ * walked past the eye-colour backstop. Every member must describe an eye no
+ * person is born with: one that glows, a solid colour with no white or iris,
+ * no pupil, a reptile's or a cat's, a slit.
+ */
+const UNUSUAL_EYE_MARKERS = ["glowing", "solid", "pupilless", "pupil-less", "reptilian", "cat-like", "catlike", "slit", "slit-pupil", "slit-pupilled"] as const;
+
+/**
+ * Does this text state the feature, in any of the ways English writes it?
+ *
+ * ⚠ **EVERY WRITING OF THE WORD IS NAMED, BECAUSE THE STEM ALONE MATCHED WORDS
+ * THAT ARE NOT THE FEATURE** (the relay's finding on PR #2586). This was a
+ * boundary at the FRONT of the stem and nothing at the back — so **`scar`
+ * matched *a red scarf* and *a scarlet coat*, and `mole` matched *molecule*
+ * and *molehill***. A correct edit folded into a rewrite was then refused as an
+ * invented scar, and the Follow went out silently on the box's words: the one
+ * failure direction that costs a customer the feature they just asked for.
+ *
+ * ⚠ **The forms are WRITTEN DOWN rather than derived from the stem.** An
+ * inflection rule would have to know that *scar* doubles its r and *freckle*
+ * drops its e, and a fifth feature whose rule it guessed wrong would silently
+ * stop being checked — where a list that is missing a form can at least be
+ * read. `alsoWritten` never repeats `word`, and the suite holds every entry's forms to
+ * beginning with its own word.
+ */
+function mentionsSpecific(text: string, specific: OnePersonSpecific): boolean {
+  const forms = [specific.word, ...specific.alsoWritten].join("|");
+  return new RegExp(`\\b(?:${forms})\\b`, "i").test(text);
+}
+
+/**
+ * Does this text state an EYE COLOUR? The colour has to be next to the eyes:
+ * a brief may say "moody teal and magenta light" without saying anything about
+ * anyone's eyes, and `grey` is a colour of many things.
+ */
+export function statesAnEyeColour(text: string): boolean {
+  const normalised = normaliseForClauses(text);
+  return EYE_COLOURS.some((colour) => {
+    const word = colour.replace(/[-\s]/g, "[-\\s]");
+    /*
+      ⚠ **THE COLOUR HAS TO BE SAYING SOMETHING ABOUT THE EYES, AND A PROXIMITY
+      WINDOW IS NOT THAT — its own control caught this one.** The first version
+      also matched a colour within twenty characters of "eyes", and
+      *"deep-set eyes and a grey stubbled jaw"* read as an eye colour: it would
+      have refused a correct rewrite of the fisherman brief in this module's own
+      suite, silently, by sending the box's words. `grey` is the colour of
+      weather, a coat and a jaw. Adjacency only, and the three ways English
+      attaches a colour to eyes.
+    */
+    /*
+      An UNUSUAL eye (#2621) is body-look direction a whole call shares, not one
+      face's natural colouring: "glowing amber eyes" is a creature's eyes. A
+      marker word just before the colour (one word may sit between, so "glowing
+      pale blue eyes" reads the same) takes it out of this check.
+    */
+    const unusual = `(?<!\\b(?:${UNUSUAL_EYE_MARKERS.join("|")})[-\\s]+(?:[a-z]+[-\\s]+)?)`;
+    return new RegExp(`${unusual}\\b${word}[-\\s]eyes?\\b`).test(normalised)
+      || new RegExp(`${unusual}\\b${word}[-\\s]eyed\\b`).test(normalised)
+      || new RegExp(`\\beyes?\\s+(?:are|is|of)\\s+(?:a\\s+)?${word}\\b`).test(normalised);
+  });
+}
+
+/**
+ * The one-person specific a reply introduced that the brief never stated, or
+ * null. Checked against the BRIEF rather than against a vocabulary of allowed
+ * features: a brief that already says "a scar through one eyebrow" may keep it,
+ * because the customer wrote it and it is the family's own direction.
+ */
+export function introducedOnePersonSpecific(brief: string, reply: string): string | null {
+  for (const specific of Object.values(ONE_PERSON_SPECIFICS)) {
+    if (mentionsSpecific(reply, specific) && !mentionsSpecific(brief, specific)) return specific.word;
+  }
+  if (statesAnEyeColour(reply) && !statesAnEyeColour(brief)) return "eye colour";
+  return null;
+}
 
 export const FOLLOW_BRIEF_SYSTEM = [
   "You rewrite a casting brief for a casting studio. The customer cast someone from this brief, edited that cast, and now wants more people like the edited version: new people in the same direction, cousins and never copies of one person.",
@@ -215,8 +670,8 @@ export const FOLLOW_BRIEF_SYSTEM = [
   "Rules:",
   "- Keep the brief's own voice, register, person and roughly its length. It must read as if the customer had always written it this way, never as a list of edits.",
   "- Never use the words now, changed, edited, updated, added, removed, new, no longer, instead or anymore, and never describe the edits themselves.",
-  "- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette.",
-  "- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact scar, a single mole or freckle, one particular tattoo or its exact placement, a precise facial feature, and eye colour unless the brief itself already states an eye colour.",
+  `- Fold in DIRECTION-LEVEL changes, the kind a whole casting call could share: hair colour, hair cut and hairstyle, overall style and look, augments, prosthetics and cybernetics, outfit direction, build, overall palette, and body-look anatomy (${BODY_LOOK_ANATOMY.map((entry) => entry.phrase).join("; ")}). Body-look anatomy is part of the look the whole call shares: always write it into the brief, and never leave it to the picture.`,
+  `- Leave out ONE-PERSON SPECIFICS, the kind that belong to a single face: an exact ${ONE_PERSON_SPECIFICS.scar.word}, a single ${ONE_PERSON_SPECIFICS.mole.word} or ${ONE_PERSON_SPECIFICS.freckle.word}, one particular ${ONE_PERSON_SPECIFICS.tattoo.word} or its exact placement, the precise shape of one nose or jaw, and a natural eye colour unless the brief itself already states an eye colour.`,
   "- Where an edit contradicts the brief (dark hair in the brief, platinum blonde after the edit), keep only the edited direction.",
   "- The edits only ever change the PERSON. Everything in the brief that is not the person (the setting, the light, the camera and framing, the picture style and the mood) is the look of the whole casting: keep every one of those phrases word for word.",
   "- Keep everything else the brief says that the edits do not touch, in its own words where you can.",
@@ -235,18 +690,122 @@ export type FollowBriefInput = {
 
 export type FollowBriefResult =
   | { ok: true; brief: string; latencyMs: number; tokens?: { in: number; out: number }; model: string | null }
-  | { ok: false; reason: "no_engine" | "no_edits" | "failed" | "blank" | "too_long" | "edit_list" | "shrunk"; latencyMs: number };
+  | {
+    ok: false;
+    reason:
+      | "no_engine"
+      | "no_edits"
+      | "failed"
+      | "blank"
+      | "too_long"
+      | "edit_list"
+      /* The brief's other clauses did not come back — {@link clauseBalance}. */
+      | "dropped_clauses"
+      /* A feature of one face that the brief never stated — #2582 item 5. */
+      | "one_person_specific"
+      /* The deadline from the press passed, queue wait included — #2582 item 4. */
+      | "deadline";
+    latencyMs: number;
+  };
 
 /**
- * A REWRITE THAT LOST MOST OF THE BRIEF IS REFUSED (the reviewer's risk the
- * relay verified on #2576): the failure that matters is a brief carrying scene
- * and style — "a rain-soaked alley at night, low angle, cinematic" — coming back
- * as a person-only paragraph, which loses the look of the whole family. The
- * prompt forbids it; this is the backstop a model cannot rescue (law 3). Edits
- * swap a phrase for a phrase, so a reply much shorter than the brief dropped
- * something, and the box's own words are sent instead.
+ * A REWRITE THAT LOST THE BRIEF'S OTHER CLAUSES IS REFUSED (the reviewer's risk
+ * the relay verified on #2576): the failure that matters is a brief carrying
+ * scene and style — "a rain-soaked alley at night, low angle, cinematic" —
+ * coming back as a person-only paragraph, which loses the look of the whole
+ * family. The prompt forbids it; this is the backstop a model cannot rescue
+ * (law 3).
+ *
+ * ⚠ **IT WAS A LENGTH FLOOR — `FOLLOW_BRIEF_MIN_LENGTH_RATIO = 0.7` — AND IT
+ * WAS WEAK IN BOTH DIRECTIONS (#2582 item 2, a must-fix before the flag
+ * widens).** A ratio asks *how much text came back*, and that is not the
+ * question:
+ *
+ *   - **It refused a correct removal.** "long curly red hair down to her waist"
+ *     → "shaved head" is 56% of the length, so the edit's own direction was
+ *     silently dropped and the Follow went out on the box's words.
+ *   - **It passed the exact collapse it existed to catch.** A long brief whose
+ *     scene clause is under 30% of it comes back person-only at 71% and the
+ *     floor is satisfied, with the alley, the angle and the light gone.
+ *
+ * **What replaced it is the card's own sentence made mechanical: edits swap a
+ * phrase for a phrase.** So the question is not length, it is how many of the
+ * brief's clauses went missing — and the allowance is the number of edits
+ * being folded in, because one edit swaps at most one phrase.
+ * {@link clauseBalance} counts them; a brief clause survives if its words
+ * appear verbatim ANYWHERE in the reply, so re-punctuating or merging two kept
+ * phrases is not a loss.
+ *
+ * ⚠ **IT READ `dropped > added`, AND ADDED CLAUSES PAID FOR DROPPED ONES**
+ * (the relay's finding on PR #2586). A rewrite that lost the brief's scene and
+ * put back two person clauses had dropped 1 and added 2, so it PASSED — which
+ * is the exact collapse this check replaced the length floor to catch, with the
+ * rewrite handed a way to buy its way out. **What came back cannot pay for what
+ * went missing**: the reply's own clauses are counted for the log and decide
+ * nothing. {@link droppedClauseBudget} is the allowance, and it is read from the
+ * edits rather than from the reply.
+ *
+ * ⚠ **WHAT THIS STILL DOES NOT CATCH, named rather than left to be found:**
+ * the budget cannot tell WHICH clause an edit was entitled to swap, so a cast
+ * carrying six edits may lose six clauses and they may be the wrong six. Telling
+ * a scene clause from a person clause needs a vocabulary of scene words, and
+ * that is the one thing this check may not have (below). A tighter rule is his
+ * call, not a guess.
+ *
+ * ⚠ **It needs no vocabulary of its own, and that is deliberate** — his N3
+ * ruling (*"we really cannot be working from fixed lists in a fluid editing
+ * application"*) bites hardest here, because a list of scene words would decide
+ * what a customer is allowed to write a brief about. This asks only what the
+ * customer's own brief said and what came back.
+ *
+ * Both of the directions above are driven in `followBrief.test.ts`.
  */
-export const FOLLOW_BRIEF_MIN_LENGTH_RATIO = 0.7;
+/** Case, spacing and surrounding punctuation are never the question here. */
+function normaliseForClauses(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * THE BRIEF'S CLAUSES — what a customer separates with a comma, a semicolon, a
+ * full stop or a line. Single words count (`cinematic` is a whole style clause
+ * and the existing arm pins its survival); a fragment under three characters is
+ * punctuation noise rather than a clause.
+ */
+export function briefClauses(text: string): readonly string[] {
+  return normaliseForClauses(text)
+    .split(/[,;.!?\n\r]+/)
+    .map((clause) => clause.trim())
+    .filter((clause) => clause.length >= 3);
+}
+
+/**
+ * HOW MANY OF THE BRIEF'S CLAUSES THIS REWRITE IS ALLOWED TO LOSE.
+ *
+ * One edit swaps one phrase, so the edits already applied to the followed
+ * version are the allowance — and a version with no asks recorded (edited
+ * before the flag, or whose instructions did not survive) still gets one, so a
+ * single legitimate swap is never refused.
+ */
+export function droppedClauseBudget(asks: readonly string[]): number {
+  return Math.max(1, asks.filter((ask) => ask.trim() !== "").length);
+}
+
+/**
+ * How many of the brief's clauses the reply dropped, and how many it brought.
+ *
+ * `dropped` is a clause whose words appear nowhere in the reply; `added` is a
+ * clause of the reply that was not in the brief. ⚠ **`added` is REPORTED and
+ * decides nothing** — it gated the refusal until PR #2586's finding, where new
+ * person clauses were found paying for a lost scene. It stays because the two
+ * numbers side by side are what a diagnosis starts from.
+ */
+export function clauseBalance(brief: string, reply: string): { dropped: number; added: number } {
+  const replyText = normaliseForClauses(reply);
+  const briefText = normaliseForClauses(brief);
+  const dropped = briefClauses(brief).filter((clause) => !replyText.includes(clause)).length;
+  const added = briefClauses(reply).filter((clause) => !briefText.includes(clause)).length;
+  return { dropped, added };
+}
 
 /** The user turn, built in one place so a test reads exactly what was asked. */
 export function followBriefUserTurn(input: FollowBriefInput): string {
@@ -268,15 +827,42 @@ export async function writeFollowBrief(
   if (!hasDescription && input.asks.filter((ask) => ask.trim() !== "").length === 0) {
     return { ok: false, reason: "no_edits", latencyMs: 0 };
   }
+  /*
+    THE DEADLINE IS ARMED BEFORE THE CALL, SO THE QUEUE WAIT IS INSIDE IT
+    (#2582 item 4). The signal stops the retry loop dispatching again and aborts
+    an in-flight request; the race below stops the customer waiting on a promise
+    the queue has not started. A caller that hands its own signal keeps it — the
+    roll's own cancellation outranks this one.
+  */
+  /*
+    A CONTROLLER RATHER THAN `AbortSignal.timeout`, for two reasons that both
+    earn their line: the timer is CLEARED on every road out, so a follow that
+    answered in 1.6 s leaves nothing holding a handle for the remaining fifteen
+    seconds — and a suite's fake clock can drive it, where `AbortSignal.timeout`
+    runs on an internal timer no fake clock patches, which is how the first
+    version of this arm "passed" by timing the test out instead.
+  */
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), FOLLOW_BRIEF_DEADLINE_MS);
   try {
-    const result = await engine.complete({
-      system: FOLLOW_BRIEF_SYSTEM,
-      user: followBriefUserTurn(input),
-      about: "follow.brief",
-      maxOutputTokens: 2000,
-      timeoutMs: FOLLOW_BRIEF_TIMEOUT_MS,
-      retries: FOLLOW_BRIEF_RETRIES,
-    });
+    const answered = await Promise.race([
+      engine.complete({
+        system: FOLLOW_BRIEF_SYSTEM,
+        user: followBriefUserTurn(input),
+        about: "follow.brief",
+        maxOutputTokens: 2000,
+        timeoutMs: FOLLOW_BRIEF_TIMEOUT_MS,
+        retries: FOLLOW_BRIEF_RETRIES,
+        signal: deadline.signal,
+      }),
+      new Promise<"deadline">((resolve) => {
+        deadline.signal.addEventListener("abort", () => resolve("deadline"), { once: true });
+      }),
+    ]);
+    if (answered === "deadline") {
+      return { ok: false, reason: "deadline", latencyMs: Date.now() - started };
+    }
+    const result = answered;
     const text = result.text.trim().replace(/^"([\s\S]*)"$/, "$1").trim();
     const latencyMs = result.latencyMs ?? Date.now() - started;
     if (text === "" || result.truncated) return { ok: false, reason: "blank", latencyMs };
@@ -286,8 +872,25 @@ export async function writeFollowBrief(
     if (!/\n/.test(input.brief.trim()) && looksLikeAnEditList(text)) {
       return { ok: false, reason: "edit_list", latencyMs };
     }
-    if (text.length < input.brief.trim().length * FOLLOW_BRIEF_MIN_LENGTH_RATIO) {
-      return { ok: false, reason: "shrunk", latencyMs };
+    /* The brief's other clauses must come back — a swap moves one for one, and
+       what the reply ADDED never pays for what it dropped. */
+    const balance = clauseBalance(input.brief, text);
+    const budget = droppedClauseBudget(input.asks);
+    if (balance.dropped > budget) {
+      log.warn(
+        { dropped: balance.dropped, added: balance.added, budget, latencyMs },
+        "[currentDescription] the rewrite dropped more of the brief than the edits allow — this follow sends the box's words",
+      );
+      return { ok: false, reason: "dropped_clauses", latencyMs };
+    }
+    /* And it may not hand a whole casting call one face's scar. */
+    const specific = introducedOnePersonSpecific(input.brief, text);
+    if (specific !== null) {
+      log.warn(
+        { specific, latencyMs },
+        "[currentDescription] the rewrite introduced a one-person specific — this follow sends the box's words",
+      );
+      return { ok: false, reason: "one_person_specific", latencyMs };
     }
     return {
       ok: true,
@@ -302,5 +905,9 @@ export async function writeFollowBrief(
       "[currentDescription] the follow brief writer did not answer — this follow sends the box's words",
     );
     return { ok: false, reason: "failed", latencyMs: Date.now() - started };
+  } finally {
+    /* Every road out, including the deadline's own: a 16.5 s handle left behind
+       by a follow that answered in 1.6 s would hold a process from exiting. */
+    clearTimeout(timer);
   }
 }

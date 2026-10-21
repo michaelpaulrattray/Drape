@@ -86,7 +86,7 @@ import { slotDefinition } from "./referenceSlotCatalogue";
 /* The open lane's key grammar has ONE owner and this module reads it rather
    than splitting a string (fable-1001 §1). `referenceSlots` imports nothing, so
    there is no cycle to weigh here. */
-import { isBornInkSlot, isInkSlot, openKindOfSlot } from "./referenceSlots";
+import { editsFeatureAtSlot, isBornInkSlot, isInkSlot, openKindOfSlot } from "./referenceSlots";
 import {
   inkDeliveredCarrySentence, inkDeliveredTransformSentence, inkNotOnClothingClause,
   inkRealismClause,
@@ -95,9 +95,9 @@ import {
    (fable-1313 §2) — one owner for every road that turns words into ink. */
 import { inkStyleClause } from "./inkStyleGlossary";
 import type { InkTransform } from "../../shared/inkTransforms";
-import { imageHalfClause } from "./sidePhrasing";
+import { imageHalfClause, imageHalfOf, pictureHalfPhrase } from "./sidePhrasing";
 import { inkDesignWasExamined, type InkCutRoute } from "../../shared/inkCutRoute";
-import { describedNowSentence } from "./currentDescription";
+import { afterThisEditSentence, describedNowSentence } from "./currentDescription";
 
 /** A library key is a PANEL SLOT — the stylist's ontology, never `facet@region`
  *  (fable-173). Bilateral features are stored per instance and spoken as pairs
@@ -306,6 +306,27 @@ export type AssembleInput = {
    * Absent, the prompt is byte-identical to today's.
    */
   currentDescription?: string;
+  /**
+   * THIS EDIT, IN THE CUSTOMER'S OWN WORDS (#2647, his rule and his yes,
+   * 2026-10-17: *"i honestly think we shouldnt change how the image engine
+   * recieves its instructions from the user just let the result be"*, *"same
+   * goes for any other refinements made we are not rewriting or shaping their
+   * words right?"*, *"yes go for it"*).
+   *
+   * Read ONLY beside `currentDescription`: with both, the prompt takes his
+   * labelled layout (arm D1 of the layout court) — the Reference lines, then
+   * "Edit instruction: Change only their <slot>: <words>", then "How they look
+   * after this edit: <description>", then the constraints line. `words` is the
+   * sentence exactly as the customer typed it; `slots` and `presentation` are
+   * the ones THIS step asked for (`repaintAsksFor`'s `askedNow`), named through
+   * the same naming the change clause uses. Absent, nothing about the prompt
+   * moves — the description road without it is byte-identical to today's.
+   */
+  editInstruction?: {
+    words: string;
+    slots: readonly FeatureSlot[];
+    presentation?: readonly string[];
+  };
   /**
    * WHAT THIS BRANCH IS WEARING — the resolution from the one owner
    * (`currentWardrobeLine`), item 8 §7.1 / §3.3's *"the refine recipe"* row.
@@ -641,6 +662,20 @@ export type Recipe = {
    *  is asked (a pure carry render). */
   ask: string;
   /**
+   * THE SAME CHANGE, SAID AS FACTS ABOUT THE PERSON — what the current-
+   * description writer is handed (ruled fable-20261016-2030 on #2578 §2).
+   *
+   * `ask` with the picture-half parentheticals omitted, built in the same pass
+   * by the same clause builder. It is NEVER sent to an image engine and never
+   * appears in {@link Recipe.prompt}: it exists so the writer is given the
+   * edit's measured wording — the removal's site phrase above all — instead of
+   * the customer's raw sentence, which is what #2578 measured being lost.
+   *
+   * Identical to `ask` for every edit that names no side, which is most of
+   * them.
+   */
+  changeFacts: string;
+  /**
    * THE STACK ENTRIES THIS RECIPE REFUSED TO SAY — usually empty.
    *
    * A row already in the database whose prose is UNTRUE about its own slot. The
@@ -916,14 +951,56 @@ function pairCollapse(
   return collapsed;
 }
 
+/**
+ * THE TWO RENDERINGS OF ONE EDIT — the prompt's and the description writer's
+ * (ruled fable-20261016-2030 on #2578 §2).
+ *
+ * `prompt` is what the painter is told and is unchanged, parenthetical and all.
+ * `facts` is the same clause with the PICTURE-HALF spans omitted, and it is
+ * what the current-description writer is handed in place of the customer's raw
+ * sentence.
+ *
+ * # Why they are built in ONE pass rather than by a second call
+ *
+ * The ruling asked for "one owner, two renderings; never a second mirror of the
+ * asks" (law 4). Two calls through this function would satisfy the letter of
+ * that and still leave two walks of the ask list that a later edit could make
+ * disagree — and the one clause where they differ is the one clause that
+ * matters. Built side by side at each push, the only line that can diverge is
+ * the line that is MEANT to.
+ *
+ * # Why the writer must not see the parenthetical
+ *
+ * Measured on this card: handed the assembled clause whole, the writer leaked
+ * *"a right eye (on the left of the picture as you look at it) of emerald
+ * green"* into the STORED description 2 of 3 times — and that paragraph is what
+ * #2545 hands to the signed views, the persona, the voice and the creation
+ * record. The picture half is an instruction to the PAINTER about the frame; it
+ * states no fact about the person, so it has no place in prose about them. With
+ * it removed at the input it has nothing to leak: the sided fact survived 3/3
+ * with picture-talk 0/3.
+ *
+ * A pair vacancy and a collapsed pair carry no parenthetical to begin with, so
+ * both renderings are byte-identical for them — which is why the removal arm
+ * reproduced 3/3 unchanged.
+ */
+type AskRenderings = { prompt: string; facts: string };
+
 function askSentence(
   asks: readonly Ask[],
   bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
   wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
   possessive: string,
   presentation: readonly PresentationClause[],
-): string | { unnamed: FeatureSlot } | { saysNothing: string } {
+): AskRenderings | { unnamed: FeatureSlot } | { saysNothing: string } {
   const clauses: string[] = [];
+  const factClauses: string[] = [];
+  /* Both renderings get every clause; `facts` differs only where a caller
+     passes a second string, which is the single `whereItIs` site below. */
+  const push = (prompt: string, facts: string = prompt): void => {
+    clauses.push(prompt);
+    factClauses.push(facts);
+  };
   const collapsed = pairCollapse(asks, wordStacks);
   for (const ask of asks) {
     /*
@@ -958,7 +1035,7 @@ function askSentence(
         the thing this assembler refuses everywhere else; the second copy adds
         no fact and is dropped rather than deduplicated downstream.
       */
-      if (!clauses.includes(ask.vacate.says)) clauses.push(ask.vacate.says);
+      if (!clauses.includes(ask.vacate.says)) push(ask.vacate.says);
       continue;
     }
     const entry = bySlot.get(ask.slot);
@@ -976,12 +1053,14 @@ function askSentence(
     const pair = collapsed.get(ask.slot);
     if (pair !== undefined) {
       if (pair.second) continue;
-      const named = entry?.tier === "item" ? `the ${pair.pairNoun}` : `${possessive} ${pair.pairNoun}`;
-      clauses.push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+      const named = slotNamed(entry, pair.pairNoun, possessive);
+      push(`${named}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
       continue;
     }
-    const named = entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
-    clauses.push(`${named}${whereItIs(ask.slot)}: ${(wordStacks.get(ask.slot) ?? []).join(", ")}`);
+    const named = slotNamed(entry, noun, possessive);
+    const words = (wordStacks.get(ask.slot) ?? []).join(", ");
+    /* THE ONE LINE WHERE THE TWO RENDERINGS DIFFER, and the whole of #2578 §2. */
+    push(`${named}${whereItIs(ask.slot)}: ${words}`, `${named}: ${words}`);
   }
   /*
     AND THE PRESENTATION CLAUSES RIDE THE SAME SENTENCE.
@@ -1001,10 +1080,13 @@ function askSentence(
     const noun = clause.noun.trim();
     const words = clause.words.trim();
     if (noun === "" || words === "") return { saysNothing: noun === "" ? "(unnamed)" : noun };
-    clauses.push(`${possessive} ${noun}: ${words}`);
+    push(`${possessive} ${noun}: ${words}`);
   }
-  if (clauses.length === 0) return "";
-  return `Change only ${clauses.join("; ")}.`;
+  if (clauses.length === 0) return { prompt: "", facts: "" };
+  return {
+    prompt: `Change only ${clauses.join("; ")}.`,
+    facts: `Change only ${factClauses.join("; ")}.`,
+  };
 }
 
 /**
@@ -1049,6 +1131,74 @@ function askSentence(
  * its two honest ones, and there is no sentence anywhere to force agreement
  * onto either.
  */
+/**
+ * HOW THE CHANGE CLAUSE NAMES A SLOT — "the" for a worn item, the cast's
+ * possessive for a part of them. The one spelling, read by the change clause
+ * and by the labelled layout's edit line (#2647), so the two can never name
+ * one slot two ways (law 4).
+ */
+function slotNamed(entry: LibraryEntry | undefined, noun: string, possessive: string): string {
+  return entry?.tier === "item" ? `the ${noun}` : `${possessive} ${noun}`;
+}
+
+/**
+ * WHAT THIS EDIT CHANGES, NAMED THE WAY THE CHANGE CLAUSE NAMES IT (#2647).
+ *
+ * Only the slots this step asked for (`editInstruction.slots`), in the asks'
+ * own order. A pair whose BOTH sides are in this edit is one name — through
+ * `pairCollapse` for an ask with words, and for a taken-back or vacated pair
+ * (which `pairCollapse` skips because it has no words to compare) when both
+ * sides are the same kind of ask. A taken-back or vacated slot still has a
+ * noun here, because "take the horns off" is an edit about the horns even
+ * though the change clause says nothing for it. `null` when nothing can be
+ * named, and the line then carries the words alone.
+ */
+function editSubject(
+  asks: readonly Ask[],
+  edit: NonNullable<AssembleInput["editInstruction"]>,
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string | null {
+  const inEdit = asks.filter((ask) => edit.slots.includes(ask.slot));
+  const collapsed = pairCollapse(inEdit, wordStacks);
+  const wordless = (ask: Ask): boolean => ask.restate !== undefined || ask.vacate !== undefined;
+  const names: string[] = [];
+  const spoken = new Set<string>();
+  for (const ask of inEdit) {
+    const entry = bySlot.get(ask.slot);
+    const definition = slotDefinition(ask.slot);
+    let noun: string | undefined;
+    const pair = collapsed.get(ask.slot);
+    if (pair !== undefined) {
+      if (pair.second) continue;
+      noun = pair.pairNoun;
+    } else if (wordless(ask) && definition !== null && definition.instance !== null) {
+      const feature = ask.slot.slice(0, ask.slot.lastIndexOf("@"));
+      const sides = inEdit.filter((one) => one.slot.startsWith(`${feature}@`) && wordless(one));
+      if (sides.length === 2) {
+        if (spoken.has(feature)) continue;
+        spoken.add(feature);
+        noun = definition.pairNoun ?? definition.noun;
+      }
+    }
+    noun ??= entry?.noun ?? ask.noun ?? definition?.noun;
+    if (noun === undefined || noun.trim() === "") continue;
+    const named = slotNamed(entry, noun.trim(), possessive);
+    if (!names.includes(named)) names.push(named);
+  }
+  for (const noun of edit.presentation ?? []) {
+    const named = `${possessive} ${noun.trim()}`;
+    if (noun.trim() !== "" && !names.includes(named)) names.push(named);
+  }
+  if (names.length === 0) return null;
+  if (names.length === 1) return names[0]!;
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** The constraints line of his labelled layout (#2647), as the court sent it. */
+export const EDIT_CONSTRAINTS = "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.";
+
 function describe(entry: LibraryEntry): string {
   return `the same ${entry.noun}, unchanged`;
 }
@@ -1301,6 +1451,51 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
      `edited` is the DELIVERED column of the verification. */
   const edited = input.asks.filter((ask) => !ask.restate).map((ask) => ask.slot);
   const editedSet = new Set(edited);
+  /*
+    AN ASK ON AN OPEN KIND'S BARE SLOT IS AN ASK ON ITS SIDES (#2635, measured
+    on the fang court of 2026-10-17 and read at that court's own log).
+
+    `editedSet` answers *"is this exact slot edited"*, and almost every reader
+    below is asking the different question *"does this render change the feature
+    this row is about"*. For a named slot the two are the same question. For an
+    OPEN KIND they are not: the ask arrives on the bare slot and the library
+    keeps one row per side, so nothing matched and every reader below treated a
+    feature being repainted as a feature being held.
+
+    What it cost, from the court's own line — `edited:["open:fangs"]`,
+    `standing:["open:fangs@left","open:fangs@right"]` — is the prompt that went
+    out at full price on a "black fangs" ask:
+
+      Keep their fangs exactly: … white, pointed tip … .
+      Keep their fangs exactly: … white, pointed tip … .
+      Change only their fangs: … slightly pointed black fangs … .
+
+    Twice, because there are two sided rows and each said its own sentence; the
+    duplication the card reported is that, not a restatement. A kept clause for
+    the very slot being changed is a second author arguing with the ask, and it
+    pulls the render back toward the colour the customer just replaced.
+
+    THE RELATION IS OVERLAP, NOT EQUALITY, and it runs both ways: a bare ask
+    covers every side of its kind, and a sided ask overlaps the bare row, which
+    describes the whole feature including that side. Two DIFFERENT sides do not
+    overlap — "change the left fang" leaves the right fang's keep standing,
+    which is the one case here that must keep working.
+
+    Derived from the asks rather than accumulated anywhere: a second list beside
+    `editedSet` would have to agree with it (working law 4).
+
+    AND IT IS SPELLED ONCE, IN THE GRAMMAR (#2641). This block used to compute
+    the relation inline, and `libraryWithoutEditedCrops` one layer down kept
+    answering the same question by equality — so the product held two answers
+    to one question and only this one was right. `editsFeatureAtSlot` lives
+    beside `openKindOfSlot`, which is the thing that knows a bare key from a
+    sided one, and both layers now derive from it.
+  */
+  /** Whether this render changes the feature `slot` is about — the exact slot,
+   *  or an overlapping instance of the same open kind. Named slots and the ink
+   *  namespace are unaffected: `openKindOfSlot` answers `null` for both, so the
+   *  predicate collapses to `editedSet` exactly as before. */
+  const editsFeatureAt = (slot: FeatureSlot): boolean => editsFeatureAtSlot(editedSet, slot);
   /*
     A SOURCE BELONGS TO AN ASK, and the ask list is what says so.
 
@@ -1599,7 +1794,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   */
   const sidedOpenCarries = new Map<string, FeatureSlot[]>();
   for (const entry of library) {
-    if (!entry.carry || editedSet.has(entry.slot)) continue;
+    if (!entry.carry || editsFeatureAt(entry.slot)) continue;
     const open = openKindOfSlot(entry.slot);
     if (open === null || open.side === null) continue;
     const held = sidedOpenCarries.get(open.kind) ?? [];
@@ -1650,6 +1845,23 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
         detail: `${entry.slot} is edited by this render and cannot also carry its own minted crop`,
       };
     }
+    /*
+      AN OVERLAPPING ROW'S CROP IS NOT SENT, AND IS NOT A REFUSAL EITHER (#2635).
+
+      Deliberately BELOW the refusal above rather than folded into it, and the
+      order is the whole decision. The refusal exists because a caller handing a
+      feature its own crop built something incoherent — a caller defect, so
+      nothing is painted. **This is not that.** The ask named the kind, the
+      library happens to keep sided rows from an earlier render, and both facts
+      are ordinary: refusing here would fail a legitimate edit on state the
+      customer cannot see or clear.
+
+      So the old crop simply does not ride. Were it attached, the picture half
+      would say what the words half was already corrected for — her previous
+      white fangs handed to the render that was told to make them black, and a
+      carried crop argues harder than a sentence.
+    */
+    if (editsFeatureAt(entry.slot)) continue;
     if (claimed.has(entry.slot)) {
       return {
         ok: false, reason: "slotTwiceReferenced", slot: entry.slot,
@@ -1818,7 +2030,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     attempts out of six, so a one-sided promise is not one the product can keep.
   */
   const vacantSlots = library
-    .filter((entry) => entry.vacant === true && !editedSet.has(entry.slot))
+    .filter((entry) => entry.vacant === true && !editsFeatureAt(entry.slot))
     .map((entry) => entry.slot);
   const pairFeature = (slot: FeatureSlot): string | null => {
     const at = slot.lastIndexOf("@");
@@ -1835,7 +2047,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   const pairAlreadySaid = new Set<string>();
 
   for (const entry of library) {
-    if (editedSet.has(entry.slot)) continue;
+    if (editsFeatureAt(entry.slot)) continue;
     /*
       AN EMPTY SLOT SAYS SO, WHATEVER TIER IT IS.
 
@@ -2015,7 +2227,7 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
   */
   const carried = [
     ...library
-      .filter((entry) => !editedSet.has(entry.slot))
+      .filter((entry) => !editsFeatureAt(entry.slot))
       /* A born-ink row is not carried, for the reason the standing loop skips
          it: this list is every slot the render PROMISES to hold, and a render
          that was never told about her tattoos promises nothing about them. */
@@ -2050,19 +2262,20 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     )),
   ];
 
-  const ask = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
-  if (typeof ask !== "string" && "saysNothing" in ask) {
+  const rendered = askSentence(input.asks, bySlot, wordStacks, possessive, input.presentation ?? []);
+  if ("saysNothing" in rendered) {
     return {
       ok: false, reason: "presentationSaysNothing", slot: null,
-      detail: `the recipe was handed a presentation clause about ${ask.saysNothing} with nothing to say, so the render would be told to change it into nothing`,
+      detail: `the recipe was handed a presentation clause about ${rendered.saysNothing} with nothing to say, so the render would be told to change it into nothing`,
     };
   }
-  if (typeof ask !== "string") {
+  if ("unnamed" in rendered) {
     return {
-      ok: false, reason: "slotNotNamed", slot: ask.unnamed,
-      detail: `${ask.unnamed} has no library entry and the ask carries no noun, so the render cannot say what it is changing`,
+      ok: false, reason: "slotNotNamed", slot: rendered.unnamed,
+      detail: `${rendered.unnamed} has no library entry and the ask carries no noun, so the render cannot say what it is changing`,
     };
   }
+  const ask = rendered.prompt;
 
   /*
     ---- WHAT A TATTOO IS ON SKIN, FOR THE LANE THAT HAS NO PICTURE ----
@@ -2140,20 +2353,154 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       .join(" ")
     : "";
 
+  const describesNow = input.currentDescription !== undefined && input.currentDescription.trim() !== "";
+  /*
+    HIS LABELLED LAYOUT (#2647) — only on the description road, and only when
+    the caller handed the customer's own sentence. The Reference lines stand as
+    they are; then the edit instruction, which is the customer's words exactly
+    as typed under the slot the change clause would name, with the side, teeth
+    and ink notes beside it where they apply; then the description; then the
+    constraints. Without `editInstruction` this is not reached and the
+    description road's prompt is the one it was.
+  */
+  const typed = input.editInstruction?.words.trim() ?? "";
+  if (describesNow && input.editInstruction !== undefined && typed !== "") {
+    const said = /[.!?]$/.test(typed) ? typed : `${typed}.`;
+    const subject = editSubject(input.asks, input.editInstruction, bySlot, wordStacks, possessive);
+    const instruction = subject === null
+      ? `Edit instruction: ${said}`
+      : `Edit instruction: Change only ${subject}: ${said}`;
+    return {
+      ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
+      changeFacts: rendered.facts,
+      withheld,
+      prompt: [
+        ...sentences,
+        ...standing.map((entry) => entry.sentence),
+        instruction,
+        teethPartingNote(input.asks, bySlot),
+        painterSideLines(input.asks, wordStacks, possessive),
+        inkWords,
+        afterThisEditSentence(input.currentDescription!, pronouns),
+        EDIT_CONSTRAINTS,
+      ]
+        .filter((line) => line !== "")
+        .join(" "),
+    };
+  }
   return {
     ok: true, references, edited, restated, carried, vacated, wordStacks, sentences, standing, ask,
+    changeFacts: rendered.facts,
     withheld,
     prompt: [
       ...sentences,
       ...standing.map((entry) => entry.sentence),
       /* The description stands where the change sentence stood — never beside
          it, which would be two authors for one edit. */
-      input.currentDescription !== undefined && input.currentDescription.trim() !== ""
-        ? describedNowSentence(input.currentDescription, pronouns)
+      describesNow
+        ? describedNowSentence(input.currentDescription!, pronouns)
         : ask,
+      /* A TEETH EDIT MAY OPEN THE MOUTH (#2626) — one permission note beside
+         the customer's words, on both roads, never rewording them. */
+      teethPartingNote(input.asks, bySlot),
+      /* AND THE PAINTER STILL GETS TOLD WHICH HALF OF THE FRAME IT IS IN —
+         only on the description road, because off it the parenthetical inside
+         `ask` already says it (#2578 §3). */
+      describesNow ? painterSideLines(input.asks, wordStacks, possessive) : "",
       inkWords,
     ]
       .filter((line) => line !== "")
       .join(" "),
   };
+}
+
+/**
+ * WHERE A SIDED FEATURE IS IN THE FRAME, SAID TO THE PAINTER — the half of the
+ * edit clause that must NOT reach the stored description (ruled
+ * fable-20261016-2030 on #2578 §3).
+ *
+ * Flag-on, the description stands where the change clause stood, and the clause
+ * is where `whereItIs` lived — so without this line the picture-half mapping
+ * would simply stop being said. V4 measured that mapping 4-of-12 wrong eyes
+ * → 0, *"never once worse"*, at no cost per render; this card's own court saw
+ * no separation at n=6 and says so in its own words (*"can only see a large
+ * effect and saw none"*). **An underpowered null does not retire a measured
+ * protection that costs nothing**, so it stays — and it is recorded as
+ * UNADJUDICATED at n=6 rather than as re-proven.
+ *
+ * # Why this is not the two-authors defect the one-author pin exists to stop
+ *
+ * That pin forbids two sources stating WHAT the edit is. This line states no
+ * change at all: it locates an existing feature in the frame, which is
+ * `imageHalfClause`'s whole job, moved to the only place it can live once the
+ * clause's prose is being stored. The `not.toContain("Change only")` pin is
+ * untouched.
+ *
+ * # What it deliberately does not say
+ *
+ * A COLLAPSED PAIR names no side — there is no half of the picture to point at
+ * when the answer is both — so it is skipped here exactly as `whereItIs` is
+ * skipped for it in the clause, and through the same `pairCollapse` rather than
+ * a second judgement about what a pair is. A taken-back slot contributes
+ * nothing for the same reason it contributes no clause. And the STANDING lane
+ * never carried the mapping (`whereItIs` is emitted only in the edit clause),
+ * so nothing here reaches it — whether it should is a question about a
+ * pre-existing state and its own card.
+ *
+ * Composed at assembly and never stored: it is prompt text, like the identity
+ * clause beside it.
+ */
+function painterSideLines(
+  asks: readonly Ask[],
+  wordStacks: ReadonlyMap<FeatureSlot, readonly string[]>,
+  possessive: string,
+): string {
+  const collapsed = pairCollapse(asks, wordStacks);
+  const lines: string[] = [];
+  for (const ask of asks) {
+    if (ask.restate) continue;
+    if (collapsed.has(ask.slot)) continue;
+    const definition = slotDefinition(ask.slot);
+    if (definition === null || definition.instance === null) continue;
+    /* Through the one owner of the flip and the one owner of the words — this
+       function spells neither (law 4, and the flip is the only part that can be
+       wrong). The noun already carries the side: "right eye". */
+    const where = pictureHalfPhrase(imageHalfOf(definition.instance));
+    const sentence = `${possessive} ${definition.noun} is ${where}.`;
+    const capitalised = `${sentence[0]!.toUpperCase()}${sentence.slice(1)}`;
+    if (!lines.includes(capitalised)) lines.push(capitalised);
+  }
+  return lines.join(" ");
+}
+
+/**
+ * THE ONE PERMISSION NOTE A TEETH EDIT CARRIES (#2626, his rulings 2026-10-17,
+ * verbatim: *"i honestly think we shouldnt change how the image engine recieves
+ * its instructions from the user just let the result be"*, *"i think the issue
+ * is closed mouths with fangs is what its fighting mostly?"*).
+ *
+ * A teeth ask on a closed-mouth master is an ask about something the frame
+ * does not show, and the fang courts saw parted mouths come out natural on any
+ * wording. So the painter is told only that it MAY part the lips. The
+ * customer's own words reach it exactly as typed: this is a sentence beside
+ * them, never a rewrite of them, and it names nothing about what the teeth
+ * become.
+ *
+ * Said once per render, and only when an ask in the change clause is about the
+ * teeth (the `teeth` slot, or an open kind whose noun names teeth, fangs or
+ * canines). A taken-back slot says no clause, so it gets no note either. No
+ * other slot is given it.
+ */
+export const TEETH_PARTING_NOTE = "The lips may part slightly so the teeth show.";
+
+const TEETH_NOUN = /\b(?:teeth|tooth|fangs?|canines?)\b/i;
+
+function teethPartingNote(
+  asks: readonly Ask[],
+  bySlot: ReadonlyMap<FeatureSlot, LibraryEntry>,
+): string {
+  const touchesTeeth = asks.some((ask) => (
+    !ask.restate && TEETH_NOUN.test(bySlot.get(ask.slot)?.noun ?? ask.noun ?? "")
+  ));
+  return touchesTeeth ? TEETH_PARTING_NOTE : "";
 }

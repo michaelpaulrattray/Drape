@@ -914,3 +914,176 @@ no production variable, no flag, no migration. Three read-only disposables again
 deleted at close. One fast-forward of the clean main tree (`d0c2f64f9` → `4d6f94a36`) so the
 dependency floor was read at the real tip rather than twelve commits behind it — no history
 rewritten, no branch switched, and no live seat was in that tree.
+
+## Run 8 — 2026-10-17 11:15–12:0x AEST (Warden, patrol #8, crew run #790)
+
+Ran because `patrol-clocks.mts` read the seat **DUE today** (7 days since run 7) with his
+Security switch ON. The bands were read one by one rather than off the digest: **0 `urgent`
+cards**; **no founder-ordered card on offer** (13 of 14 held, #2610 claimed by a relay agent at
+00:25Z with PR #2620 open); **no new Desk replies** (300/300 acknowledged at launch and again
+before close); **no card taps waiting**. ⚠ **One repair WAS owed and it was NOT mine** — PR
+**#2570** reads `review=finding` at the real reader, and the machinist's entry an hour earlier
+had read `none finding` because **the relay posted it at 00:47:06Z, between the two readings**.
+It was claimed by `seat1-20261017-110035` at 01:15:12Z, one minute before this seat's first
+read, so his *"a repair owed comes before any new card"* order was satisfied by another lane and
+the fired clock was the admissible brief (#505).
+
+**Run 7's brief was worked in its stated order and every item is discharged. ZERO findings, and
+no card filed.** The run's one new act is the first un-wiring differ this seat has ever run (§C).
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| **run 7's two cards** | the queue | **#2169 CLOSED** (repaired in PR #2171) · **#2170 CLOSED** 2026-10-10T07:33:29Z (PR #2178) | Nothing of this seat's is outstanding — the second run running that this can be said. |
+| **#2170's repair READ AT THE ROWS, not at the merge** (run 7 §E item 1) | production, both tables | ✅ **CONFIRMED — 2.75 counts per face before, 1.00–1.25 after** | §B. |
+| `pnpm audit`, **ALL SCOPES** (run 7 §E item 2) | `b1613763c`, lockfile at HEAD | ✅ **0** — run 7 read 1 high | **#2171's `source-map-js ^1.2.2` floor HELD**, and the override reader below confirms it resolves 1.2.2. |
+| `pnpm audit --prod` | the same tree | **0** | The gate's own half, clean — nothing went around it. |
+| **Dependabot alerts, NO `state` filter, counted by state HERE** | the alert list, all pages | ✅ **120 all time — 120 `fixed`, 0 `open`** | Run 7 read 120 = 119 + 1; that one open alert was W7-A and #2171 closed it. **The population is fully accounted for and there is nothing open at either scope.** |
+| **`pnpm warden:overrides`** | `package.json` + `pnpm-lock.yaml`, 715 packages | **11 overrides: 8 govern a package, 3 govern NOTHING** — `lodash-es`, `mdast-util-to-hast`, `tar` | The eleventh is #2171's. ⚠ **The same three dead ones, and per run 7 §E item 7 the count is REPORTED and no action taken** — #1815 ruled removal is its own decision with its own receipt. |
+| **`secrets.yml` cron of 2026-10-12** (run 7 §E item 4) | run **38317793695**, 2026-10-12T22:38:18Z, `8701d95ea`, `schedule` | **4850 commits scanned, `no leaks found`** | Baseline 3390 → 3683 → 3793 → 4102 → 4460 → **4850**, still zero. The 10-19 cron has not fired yet; this run did not slip past it. |
+| `audit_logs` | production, **1239 rows**, 2026-07-10 → 2026-10-17T00:31:14Z | **1015 info · 222 warning · 2 critical.** 21 rows since run 7 | Run 7 read 1187 / 1003 / 182 / 2. **The two criticals are still the only two this log has ever had** and are still #1807's health alarm of 2026-09-29. |
+| **the metadata-only boundary**, controls first | the nine boundary keys, parsed over every `metadata` JSON | ✅ **197 of 1239 rows carry a boundary key, and all 197 are `system.health_alert` at `$.description`.** Zero rows under any other action, at any path | Controls printed before any verdict counted: positive found `["$.inner.masterPrompt","$.list[0].resultUrl"]` (nested AND in-array), negative found `[]` on a decoy holding the string `masterPrompt` as a VALUE. **The boundary holds and this is evidence.** |
+| **`abuse.*` rows** | production, all time | **15 — unchanged from run 7**, all `abuse.free_scan_capped`, all `userId 1`, all 2026-10-08 09:22–09:25Z | ✅ **Not one new capped row in the nine days since #2170 shipped**, which is the same repair read from the other side. |
+| `blocked_ips` / staff population / suspensions / lockouts | production | **0 blocked IPs · 2 admins, 4 users · 0 suspended · 0 frozen** | ⚠ **UNCHANGED from runs 6 and 7, and this nearly went in as a change**: the first reading said "users 6" against run 7's "2 admins, 4 users" and looked like growth. It is the same six — run 7's phrasing is 2 + 4. Both accounts created 2026-09-28 predate run 7. |
+| **branch protection** | `GET …/branches/main/protection` | **UNCHANGED — the same seven required checks** `gate-checks`, `founder-gate`, `Socket Security: Pull Request Alerts`, `static-shapes`, `bundle-budget`, `unit-tests-1`, `unit-tests-2` | `strict: false`, `enforce_admins: false`, `required_pull_request_reviews: null`, force-push and deletions off, all unchanged. `enforce_admins` is still his call (#858) and still gets no recommendation. |
+| the security surface's diff since run 7 | `git log --since=2026-10-10` over `server/security`, `_core`, the auth routes, billing, stripe, admin, `.github`, `shared/const.ts` | **39 commits, and every one of them NARROWS** | This is the bug hunt's output landing on this seat's surface: sign-in gives one answer until the password is proven (#2376), sign-up only says an address is taken to someone holding a valid code (#2443), Google sign-in refuses an address Google has not confirmed (#2377) and finds the account by Google's own id (#2389), an access code lets in no more people than its limit under a race (#2373), the six unlimited public endpoints get a per-address limit (#2423), and two privacy fixes keeping customer values out of logs and Sentry (#2218, #2222). **Nothing widened a surface.** |
+| semgrep, tree | run **38990059668** (`team/relay-2613`), job `static-shapes`, semgrep 1.174.0 | **`Ran 76 rules on 2379 files: 0 findings`** | 2163 → 2379 targets, which is the week's test growth the Machinist measured the same hour (1071 → 1221 test files). Row appended to `docs/WARDEN_SEMGREP.md`. |
+| actionlint + zizmor | the same run | **`No findings to report. Good job!`** | |
+| access-control suites + the wired controls | `b1613763c` | **7 files / 206 tests green** — `approvalGate`, `staffImageBoundary`, `publicInputStrictness`, `sessionIssuanceSites`, `loginAttackAlert`, `bugReportInbox`, `moneySurfaceClassifier` | Run 7 read 7 / 205. Keyed on the **Test Files** line as well as the Tests line. **Five mint sites still five** (`sessionIssuanceSites` pins the population). |
+| **invariant 5 at the Atlas** — the public allowlist | `docs/architecture/drape-architecture.json` | ✅ **13 `public-endpoint` findings, matching CLAUDE.md's enumerated thirteen NAME FOR NAME**, and **2 `onboarding-endpoint`** (`access.redeem`, `access.status`), matching too | §D. |
+| **invariant 4's public half** | the same artifact, 293 procedures | ✅ **0 procedures are `open` input AND `public` auth** | §D. |
+| **the un-wiring differ over this run's own window** — NEW this run | `4d6f94a36` (run 7's tree) vs `b1613763c` | **5 symbols lost their last production importer — all 5 DECIDED, 0 accidents** | §C. |
+
+### B. #2170's repair, confirmed at the rows — 2.75 counts a face became 1.00
+
+Run 7's §D measured the defect at the rows: `face_scan_daily_usage` held one row, `user=1,
+day=2026-10-08, scans=55`, against **20** distinct `(candidateId, versionKey)` pairs in
+`casting_face_scans` that day — **2.75 counts per face**, and the account was refused 15 times
+while it still had 500+ candidates it could legitimately open.
+
+The cross-check re-run tonight, every row of both tables:
+
+| day | `face_scan_daily_usage.scans` | distinct `(candidateId, versionKey)` | counts per face |
+|---|---|---|---|
+| 2026-10-08 (**before** the repair) | 55 | 20 | **2.75** |
+| 2026-10-10 (`userId 130044`) | 1 | 1 | **1.00** |
+| 2026-10-15 | 5 | 4 | 1.25 |
+| 2026-10-17 | 5 | 5 | **1.00** |
+
+**The repair works and the two tables are an independent cross-check** — neither is derived from
+the other, and `casting_face_scans` is written on a different road from the counter.
+
+⚠ **THE 5-AGAINST-4 IS NOT A RESIDUAL DEFECT, AND THE SCHEMA SAYS WHY BEFORE THE ROWS DO.**
+`casting_face_scans` carries a UNIQUE index on `(candidateId, versionKey)`, so it holds **one row
+per identity all time**, dated at first write; it is also purged and gated by
+`CASTING_SCAN_TABLE_SCOPE`. **So it is a FLOOR on a day's distinct faces, never an equality**, and
+run 7's "should equal" was a stronger sentence than the tables can support. A re-look at an
+identity first written on an earlier day adds no row, and after a deploy clears the in-process
+entry that `scanIsInHand` reads, that re-look genuinely re-buys the segmenter calls — so it
+*should* spend a count. One such look against four new faces is exactly the 5/4.
+
+Read at the code rather than inferred: `countFaceScanAgainstDay` (`server/db/quietLimits.ts:206`)
+still increments unconditionally and deliberately — **the repair is at the CALL SITE**.
+`server/routes/castingV2.ts` now asks the cap only when `imageKey !== null && !inHand`, where
+`inHand` reads the same entry `scannedFace` answers from, so the two cannot disagree about what
+was already bought. The three-state verdict (`null` for never-consulted) is what keeps the quiet
+line off a database failure and off a face with no picture.
+
+### C. The un-wiring differ over the window — 39 commits on the security surface, 0 orphaned controls
+
+**New to this seat and worth keeping.** A week in which 39 commits land on auth, billing and the
+admin routes is exactly when the **path-three death** happens — a control written, wired, live,
+and then orphaned by a change aimed at something else — and CLAUDE.md names it the hardest of the
+three roads to catch because it leaves no failing test and no error. The BH milestone-close review
+was asked to look for exactly this class. `scripts/diff-importer-count-across-time.mts` is the
+instrument, run over a detached worktree at run 7's commit against the tree at HEAD.
+
+```
+CONTROLS
+  PASS  sanity  both trees read            2139 files / 3493 exports -> 2360 files / 3905 exports
+  PASS  sanity  the two trees are DIFFERENT  412 exports, 221 files
+```
+
+**Five symbols lost their last production importer. Each was opened and read; all five are
+DECIDED and none is an accident:**
+
+| symbol | lost importer(s) | verdict |
+|---|---|---|
+| `sendAccountFrozenEmail` (`server/mail.ts`) | `routes/admin/users.ts`, `routes/moderatorReconciliation.ts` | **DECIDED — #2481**, and it is working law 4 done right. Both freeze roads now go through ONE wrapper, `noticeOfFreeze`, so the two cannot drift apart in what they report. ⚠ **The wrapper was checked at BOTH roads rather than assumed**: `routes/admin/users.ts:3` and `routes/moderatorReconciliation.ts:7` each import it. The customer is still told, and staff now learn whether the telling worked. |
+| `testConnection` (`server/klaviyo.ts`) | `routes/newsletter.ts` | **DECIDED — #2372 (`7090953f3`), and it is itself a security fix**: `newsletter.testConnection` was a staff debug check any customer could call, and it was deleted. The helper stays with its own suite plus an ABSENCE test (`newsletter.test.ts:79`) proving a customer cannot reach it. Confirmed gone from the Atlas's public allowlist too (§D). |
+| `castingIdentityEngine` (`server/castingV2/signEngine.ts`) | `castingV2/refineService.ts` | **DECIDED — #1577 slice 4b**, and CLAUDE.md already records this one by name, including why the symbol is not deleted: `scripts/calibration/accessory-instance-cell.mts` is a tracked instrument that builds it. |
+| `harvestRefinement` (`server/castingV2/maskedRefine.ts`) | `castingV2/refineService.ts` | **DECIDED — the same paste-compositor retirement.** Same shape as the row above: still built by a tracked instrument, `scripts/calibration/composite-anchored-arm.mts:44`. |
+| `makeupRegionFor` (`server/castingV2/makeupPlacement.ts`) | `castingV2/refineService.ts` | **DECIDED and already written down by the commit that did it** — `refineService.ts:6312` says in its own prose that `makeupRegionFor` has no caller left in the product. A retirement that documented its own remainder. |
+
+⚠ **A clean run here is a FLOOR and not coverage, and the instrument's own docblock says so** —
+it cannot see a call site that still exists but sits after an early return, and the new tree is
+the working directory, so an untracked file importing a symbol makes it read as still wired.
+What it does prove is that no production module quietly lost its last consumer in this window.
+
+### D. Invariant 5 and invariant 4's public half, at the Atlas
+
+The allowlist is the one security surface that is meant to be mechanically verifiable, and it
+verified. **13 `public-endpoint` findings**, and they are CLAUDE.md's enumerated thirteen with no
+additions and no absences: `access.validate`, `announcements.getActive`, `auth.logout`, `auth.me`,
+`billing.getPlans`, `creationCheck.lookup`, `credits.getCosts`, `generation.costs`,
+`newsletter.subscribe`, `referral.validate`, `system.health`, `waitlist.getStats`, `waitlist.join`.
+**2 `onboarding-endpoint`**: `access.redeem`, `access.status`. Both lists match the file exactly.
+
+**And the stronger reading, which is the one a security pass wants: `open` input AND `public` auth
+is ZERO.** Every public endpoint is `strict` or takes no input at all, so invariant 4's public
+half holds by measurement rather than by the 2026-08-23 commit still being believed.
+
+⚠ **THE THREE NUMBERS CLAUDE.md QUOTES HAVE MOVED, AND THIS IS RECORDED RATHER THAN CARDED.** The
+file says *270 procedures — 113 closed, 115 open, 42 with no `.input()` at all* (read at #1028,
+2026-09-17). Tonight: **293 procedures — 134 strict, 113 open, 46 none**, with the Atlas raising
+`non-strict-input` for the 113. **Strict went 113 → 134 and open went 115 → 113, so the direction
+is right and nothing regressed.** It is not a card because that very sentence ends *"`pnpm
+architecture:generate` reports the current figure"* — the document hedges itself on purpose, and
+pinning a live count into prose is the mirror this repository keeps being bitten by (working law 4).
+
+### E. What this run leaves standing, and run 9's brief
+
+**Filed: nothing. Closed: nothing of this seat's** — run 7's two were both closed before this run
+opened. **This is the first Warden run with no finding at all**, and the honest reason is that the
+bug hunt spent 12–15 October walking this seat's surface ahead of it.
+
+**Run 9 (~2026-10-24) takes, in order:**
+
+1. **`pnpm audit` with ALL SCOPES, expecting 0** — and read the Dependabot alerts beside it with
+   **no `state` filter, counting by `state` yourself**. That form has now worked twice running
+   (120 = 119 + 1 at run 7; 120 = 120 + 0 tonight) and is the only one that has. **The `--prod`
+   half is the gate's, not the seat's** — a non-zero `--prod` on `main` means something went
+   around the gate.
+2. ⚠ **The dev-scope gap is still ONE instance, not two.** Run 7 measured it (an advisory the
+   gate cannot see waits up to seven days for this seat) and said a second instance makes it a
+   pattern worth putting on his Desk. **Tonight there was no dev-scope advisory open at all**, so
+   the count did not move. **Do not promote it on age** — one instance is a story.
+3. **The `secrets.yml` crons of 2026-10-19 and 2026-10-26**, at their logs, for the commit count
+   and the zero.
+4. **Run the un-wiring differ again (§C), over run 8 → run 9.** It cost one worktree and about
+   four minutes, it is free, and it is the only reader in the tree that answers *did something
+   STOP*. ⚠ **Its clean verdict is a floor — say floor, never coverage.**
+5. ⚠ **Socket's known-vulnerability alert is STILL UNPROVEN and its weight has dropped again.**
+   Nothing this week carried a published advisory (Dependabot sat at 0 open all week), so there
+   was no opportunity, and **manufacturing one is not this seat's brief**. Since #1805 the gate
+   refuses on an unacknowledged PRODUCTION advisory whatever Socket says, so Socket's answer only
+   still matters for a dev-scope one.
+6. The `audit_logs` read, the boundary reader **with its two controls in front of it**, the
+   population, branch protection, the override resolution, and the standing two (semgrep, the
+   access-control suites), as always.
+7. ⚠ **The three dead overrides (`lodash-es`, `mdast-util-to-hast`, `tar`) are NOT a finding and
+   must not become a card by accumulation.** Third run reporting them. #1815 reasoned it out:
+   a bounded dead override becomes a live floor the moment its package returns as a transitive.
+   Report the count, take no action.
+
+**Not a Warden brief, named so it is not re-proposed:** a gate `audit` step for dev scope (his
+decision, evidence only); `enforce_admins` (his call, #858, still no recommendation); the Socket
+dashboard's policy (not this seat's access); a row-level reconciliation of the credit ledger
+(run 5's limit); W5-E's fraud cap (his decision, already made); whether the casting writers belong
+in `audit_logs` (run 2's question, still nobody's card); the health alarm's duplicate rows (run 7
+§C — his ruling declined it); **and the CLAUDE.md procedure counts (§D) — hedged on purpose.**
+
+**Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render,
+no production variable, no flag, no migration. Four read-only disposables against production, all
+deleted at close. One detached worktree at `4d6f94a36`, removed with both commands.

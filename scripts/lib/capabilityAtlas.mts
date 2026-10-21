@@ -64,6 +64,9 @@ import {
   type Road,
 } from "../capability-atlas-roads.mts";
 import { CANNOT_SAY_COPY, cannotSaySentence, type CannotSayReason } from "../../server/castingV2/cannotSayCopy";
+/* The placement vocabulary, for the populations `reasonOfNote` must try —
+   three of those sentences compose a list of places since #2580. */
+import { INK_PLACEMENTS, type InkPlacement } from "../../shared/inkPlacementVocabulary";
 import { CONCEPT_DESCRIBE_COPY } from "../../server/castingV2/conceptDescribeCopy";
 import { ROLL_REFUSAL_COPY } from "../../server/castingV2/briefRefusalCopy";
 import { UPLOAD_REFUSAL_COPY, REFERENCE_ATTACH_REFUSAL_COPY } from "../../server/castingV2/uploadRefusalCopy";
@@ -1991,6 +1994,28 @@ const PRONOUN_SETS = [
   { subject: "they", object: "them", possessive: "their", plural: true },
 ] as const;
 
+/**
+ * EVERY SET OF PLACES A CAST'S OUTFIT CAN LEAVE SHOWING (#2580).
+ *
+ * Three of these sentences compose a list of placements since #2580 — the
+ * account's words road intersected with what this cast is wearing — and one of
+ * them has a separate branch for the empty case. So the matcher tries every
+ * population, exactly as it already tries three pronoun sets, three nouns and
+ * both money states: the census reads a sentence off a fixture whose outfit it
+ * does not carry, and a matcher that only knew one population would file a real
+ * `unplacedInk` as `unmatched` — the product saying something the table does
+ * not own, which is a real finding and would here be an artifact of the reader.
+ *
+ * Derived as the subsets of the vocabulary rather than typed, so a fourth
+ * measured surface widens this on the day it is measured. Coverage is answered
+ * per surface (`bareSurfaces`), so any subset is a real outfit's answer.
+ */
+const PLACEMENT_POPULATIONS: readonly (readonly InkPlacement[])[] = INK_PLACEMENTS
+  .reduce<readonly (readonly InkPlacement[])[]>(
+    (sets, key) => [...sets, ...sets.map((set) => [...set, key])],
+    [[]],
+  );
+
 export function reasonOfNote(note: string, context: { facet: string | null; scopeNoun: string | null }): string {
   const normalize = (s: string) => s.replace(/\s+/g, " ").trim();
   const wanted = normalize(note);
@@ -1998,15 +2023,18 @@ export function reasonOfNote(note: string, context: { facet: string | null; scop
     for (const words of [null, "it", "that"]) {
       for (const moneySafe of [true, false]) {
         for (const pronouns of PRONOUN_SETS) {
-          let rendered: string;
-          try {
-            rendered = cannotSaySentence(reason, {
-              words, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe, pronouns,
-            });
-          } catch {
-            continue;
+          for (const inkPlaces of PLACEMENT_POPULATIONS) {
+            let rendered: string;
+            try {
+              rendered = cannotSaySentence(reason, {
+                words, facet: context.facet, scopeNoun: context.scopeNoun, moneySafe, pronouns,
+                inkPlaces,
+              });
+            } catch {
+              continue;
+            }
+            if (normalize(rendered) === wanted) return reason;
           }
-          if (normalize(rendered) === wanted) return reason;
         }
       }
     }
@@ -2038,13 +2066,15 @@ export function reasonOfNote(note: string, context: { facet: string | null; scop
   for (const reason of Object.keys(CANNOT_SAY_COPY) as CannotSayReason[]) {
     for (const pronouns of PRONOUN_SETS) {
       for (const scopeNoun of [context.scopeNoun, null, "the upper chest", "an upper arm"]) {
-        try {
-          const rendered = normalize(cannotSaySentence(reason, {
-            words: null, facet: context.facet, scopeNoun, moneySafe: true, pronouns,
-          }));
-          const run = longestCommonRun(rendered, wanted);
-          if (run > bestRun) { bestRun = run; bestReason = reason; }
-        } catch { /* a member that needs a noun it was not given */ }
+        for (const inkPlaces of PLACEMENT_POPULATIONS) {
+          try {
+            const rendered = normalize(cannotSaySentence(reason, {
+              words: null, facet: context.facet, scopeNoun, moneySafe: true, pronouns, inkPlaces,
+            }));
+            const run = longestCommonRun(rendered, wanted);
+            if (run > bestRun) { bestRun = run; bestReason = reason; }
+          } catch { /* a member that needs a noun it was not given */ }
+        }
       }
     }
   }

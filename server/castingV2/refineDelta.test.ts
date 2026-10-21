@@ -533,6 +533,48 @@ describe("the free lane composes under its registered headings", () => {
   });
 
   /*
+    ⚠ A QUALIFIED PLACE KEEPS THE CUSTOMER'S OWN QUALIFIER (#2572's last
+    done-when, and the arm the card was left open for).
+
+    His ruling of 2026-10-16 is that *"side of the neck"* resolves to the neck in
+    one step, because *"the image engine can reliably decide that itself"*. The
+    bullet carrying it out is explicit that the reduction is for the GATE and the
+    DESIGN ROW only: *"The customer's own words should therefore still reach the
+    render where the recipe already carries them. Do not replace them with a
+    flattened 'neck'."*
+
+    The arm above pins a BARE address (*"on her neck"*), which could never have
+    shown this: the flattening risk arrived with #2585 teaching
+    `resolveInkPlacement` to map a qualified address onto the `neck` key, and the
+    nearest thing to a defect here would be that key reaching the prompt instead
+    of what the customer typed. Read at the composed prompt, the qualifier
+    survives character for character and the clause is ADDED beside it — so this
+    arm is what keeps that true rather than a note saying it was true once.
+
+    Option C — carrying the qualifier through the crop, the tally and the replace
+    offer — was NOT ordered, so nothing here asserts anything about those.
+  */
+  it("keeps a qualified place word the customer typed, and adds the clause beside it", () => {
+    const sideOf = composeEditPrompt(
+      { free: { ink: ["a small sparrow tattoo on the side of the neck"] } },
+      prose,
+    );
+    expect(sideOf).toContain("INK: a small sparrow tattoo on the side of the neck.");
+    /* The reinforcement rides AFTER her words, naming the measured surface. */
+    expect(sideOf).toMatch(/on the side of the neck\.\s*It sits on the neck and nowhere else/);
+    /* And the flattened form never stands in for what she typed. */
+    expect(sideOf).not.toContain("INK: neck");
+    expect(sideOf).not.toContain("INK: a small sparrow tattoo on the neck.");
+
+    /* A stated side is carried too — the qualifier the side machinery reads. */
+    const leftSide = composeEditPrompt(
+      { free: { ink: ["a small sparrow on the left side of the neck"] } },
+      prose,
+    );
+    expect(leftSide).toContain("INK: a small sparrow on the left side of the neck.");
+  });
+
+  /*
     A PAIR MEANS BOTH EARS, IN THE PROMPT SHE PAYS FOR (fable-118 ruling (b)).
 
     The founder asked for "gold hoop earrings" and got one, with the other ear

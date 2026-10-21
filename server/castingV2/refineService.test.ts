@@ -136,8 +136,6 @@ const announcedSteps: string[] = [];
  */
 let announceThrows = false;
 /* HER SHAPE, AS THE SERVICE WROTE IT (#55, board E's dust). */
-const figureWrites: Record<string, unknown>[] = [];
-let figureWriteThrows = false;
 let engineThrows: Error | null = null;
 /**
  * A PAINT HELD OPEN, for the dispatch swap's arms at the bottom of this file.
@@ -265,11 +263,6 @@ vi.mock("../db/castingV2Variants", () => ({
   recordVariantStep: vi.fn(async (input: Record<string, unknown>) => {
     announcedSteps.push(String(input.step));
     if (announceThrows) throw new Error("the stage could not be announced");
-    return true;
-  }),
-  recordVariantFigure: vi.fn(async (input: Record<string, unknown>) => {
-    figureWrites.push(input);
-    if (figureWriteThrows) throw new Error("her shape could not be recorded");
     return true;
   }),
   recordVariantDispatch: vi.fn(async (input: Record<string, unknown>) => {
@@ -700,8 +693,6 @@ beforeEach(() => {
   dispatchRecords.length = 0;
   announcedSteps.length = 0;
   announceThrows = false;
-  figureWrites.length = 0;
-  figureWriteThrows = false;
   briefWorn = null;
   variantRows = [];
   candidateRow = {
@@ -2523,71 +2514,6 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   /*
-    AND IT RECORDS WHERE SHE IS IN HER OWN PICTURE, ONCE (#55, board E clause 3
-    — *"dust on her shape … so they sit on her outline, hair and body, not on
-    the wall"*).
-
-    The dust the customer watches is scattered against this map. It is cut from
-    the master's own bytes at dispatch, which is the only place it is free: the
-    render is composed from those bytes, so nothing is downloaded or decoded for
-    it that was not already in hand.
-
-    ⚠ **ONCE is half the assertion.** The four stages are announced four times
-    on purpose; her shape does not change while a render runs, and a map rewritten
-    per stage would be four json writes on a row for one unchanging fact.
-  */
-  it("records her shape once, from the master's own bytes", async () => {
-    await refineCandidate(greenEyes, input);
-    expect(figureWrites, "one map per render, not one per stage").toHaveLength(1);
-    const written = figureWrites[0].figure as { w: number; h: number; cells: string };
-    expect(written.cells).toHaveLength(written.w * written.h);
-    expect(figureWrites[0].userId, "scoped to the owner in the write itself").toBe(1);
-  });
-
-  /*
-    A MAP THAT CANNOT BE CUT IS NO MAP, AND NO ROW IS TOUCHED.
-
-    The fixture master here is a real PNG, so the ordinary road cuts one. This
-    arm drives the other answer — `cutRefineFigure` returns null for a picture
-    sharp cannot read — and asserts the write does not happen at all rather than
-    happening with something empty in it. A row carrying an empty map is a row
-    the loader would scatter uniform dust against and call her shape.
-  */
-  it("writes nothing when her shape cannot be read", async () => {
-    await refineCandidate({ ...greenEyes, cutFigure: async () => null }, input);
-    expect(figureWrites).toHaveLength(0);
-    expect(landedVariant, "and the picture still landed").not.toBeNull();
-  });
-
-  /*
-    AND DUST NEVER COSTS A PICTURE — the same fence as the stage announcement
-    above, on the same reasoning, driven the same way.
-
-    This write sits inside the compensated try: an unfenced rejection would
-    refund the charge and fail a render that was about to arrive. **Decoration
-    that can fail a paid edit is decoration built wrong.** Both halves are
-    driven — the cut throwing, and the write throwing — because they are two
-    different lines and only one of them was fenced in the first draft.
-  */
-  it("delivers the picture when recording her shape fails", async () => {
-    figureWriteThrows = true;
-    const result = await refineCandidate(greenEyes, input);
-    expect(result.variantId, "the render landed").toBeTruthy();
-    expect(ledger.charges, "charged once, as always").toHaveLength(1);
-    expect(ledger.refunds, "a decoration's write never moves money").toHaveLength(0);
-  });
-
-  it("delivers the picture when CUTTING her shape throws", async () => {
-    const result = await refineCandidate(
-      { ...greenEyes, cutFigure: async () => { throw new Error("sharp fell over"); } },
-      input,
-    );
-    expect(result.variantId, "the render landed").toBeTruthy();
-    expect(ledger.refunds).toHaveLength(0);
-    expect(figureWrites, "and nothing was written").toHaveLength(0);
-  });
-
-  /*
     PRESENCE BINDS (fable-118 ruling (c), and the founder paid for the proof).
 
     v#164, his account: "dangly cross earrings", 25 credits, delivered — with
@@ -3135,6 +3061,126 @@ describe("the RULE 3 re-read takes the open lane (#1577 slice D1, declared)", ()
     expect(result.variantId).toBeTruthy();
     expect(ledger.charges, "a paid render of the removal she asked for").toHaveLength(1);
     expect(ledger.refunds).toHaveLength(0);
+  });
+});
+
+/**
+ * ⚠ THE TWO READS ARE HANDED THE SAME FACTS — DERIVED, NEVER LISTED (#2584).
+ *
+ * The defect this closes is a CLASS, and it was found twice one member at a
+ * time before anybody looked at it as a set. RULE 3's re-read was sixteen
+ * hand-written lines passing eight of the main read's fourteen facts, and the
+ * six it left out did not arrive as *unknown* — an absent optional boolean is
+ * read as `=== true`, so each one arrived as **no**:
+ *
+ *   `openLane`           the relay's finding on PR #2556. A flag at `all` for
+ *                        everyone, and this road alone asked the CLOSED edit
+ *                        prompt, so an uncatalogued creature feature asked to
+ *                        come off refused FREE here where the main read of the
+ *                        same words filed the absence and rendered it
+ *   `inkWordsRoadOpen`   measured for #2584 at `da7644a18^`. This road alone
+ *                        ran with the neck-only placement list while
+ *                        `CASTING_INK_WORDS_SCOPE` stood at `all`
+ *
+ * **Neither is a type error and neither ever will be**, which is the whole
+ * reason this arm exists rather than a sixth flag-by-flag discovery: `tsc`
+ * cannot speak about an optional field a caller omits, and a reviewer reading
+ * either call site alone sees nothing wrong.
+ *
+ * So the assertion DERIVES the comparison: capture both reads' option objects
+ * at the wire and hold every key of the first to the second, with the only
+ * permitted difference being `mode` — the removal vocabulary, which is the one
+ * thing the re-read withholds on purpose. **Nothing here names a field**, so a
+ * fact added to the main read in future cannot skip the re-read, and a return
+ * to a hand-written literal reddens on the first fact it forgets.
+ */
+describe("RULE 3's re-read is handed the same facts as the main read (#2584)", () => {
+  it("differs from the first read in `mode` and in nothing else", async () => {
+    /* The D1 arm's fixture: a removal of a thing with no departure road, so the
+       subject is not departable and the RULE 3 branch is the one that runs. */
+    briefWorn = ["a long fox tail"];
+    const sent: Array<Record<string, unknown>> = [];
+    let call = 0;
+    await refineCandidate({
+        regions: {
+          region: async () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 }),
+          subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+          landmark: async () => [],
+        },
+        interpret: (async (args: Parameters<typeof interpretRefinement>[0]) => {
+          sent.push({ ...args });
+          call += 1;
+          /* First read: a removal whose subject cannot depart, so RULE 3's
+             branch is the one that runs. Second: that re-read, answered on a
+             CATALOGUED subject so the request finishes and this arm measures
+             the options rather than a composer refusal. */
+          return call === 1
+            ? { ok: true as const, intent: "remove" as const, subject: null, match: "tail" }
+            : { ok: true as const, delta: { free: { statedAccessories: ["small gold hoop earrings"] } } };
+        }) as never,
+      },
+      { ...input, instruction: "take off his tail" },
+    );
+
+    expect(sent, "two reads: the removal, then RULE 3's edit re-read").toHaveLength(2);
+    const [first, second] = sent as [Record<string, unknown>, Record<string, unknown>];
+    expect(second.mode, "the re-read withholds the removal vocabulary").toBe("edit");
+
+    /* EVERY fact the first read was handed, by the same value. The loop is the
+       point: naming them here would be the second list this card is about. */
+    for (const key of Object.keys(first)) {
+      expect(second[key], `the re-read was not handed \`${key}\``).toEqual(first[key]);
+    }
+    /* And the re-read adds NOTHING but `mode` — so a fact smuggled into one
+       read and not the other reddens in whichever direction it went. */
+    expect(Object.keys(second).filter((key) => !(key in first)).sort()).toEqual(["mode"]);
+
+    /*
+      ⚠ THE CONTROL THAT STOPS THIS PASSING ON AN EMPTY OBJECT. A reader that
+      sent `{ instruction }` alone would satisfy every assertion above, so the
+      population is held to the facts that were actually missing — by COUNT and
+      by the two whose values are non-trivial, not by re-listing the six.
+    */
+    expect(Object.keys(first).length, "the main read is handed more than a sentence")
+      .toBeGreaterThanOrEqual(13);
+    expect(first).toHaveProperty("wardrobe");
+    expect(first.wardrobe, "a real resolution, so a VALUE is proven to travel").not.toBeUndefined();
+    expect(first).toHaveProperty("referenceAttached");
+  });
+
+  it("reaches the interpreter from ONE place in the module, so a fifth copy cannot arrive", async () => {
+    /*
+      The arm above protects RULE 3's road and cannot see a NEW hand-written
+      literal somewhere else in these ten thousand lines — which is exactly how
+      the fourth copy arrived. This holds the shape instead: the interpreter is
+      dispatched once, inside `readInstruction`, and every caller asks it for
+      the difference it wants.
+
+      Comments are stripped before counting, because this module's prose
+      discusses the call it is counting at length — a reader that counted a
+      docblock's example would be red the day somebody explained the rule.
+    */
+    const source = await readFile(new URL("./refineService.ts", import.meta.url), "utf8");
+    const code = withoutComments(source);
+    const dispatches = code.split("(dependencies.interpret ?? interpretRefinement)(").length - 1;
+    expect(dispatches, "one dispatch, inside readInstruction").toBe(1);
+    /*
+      ⚠ TWO CONTROLS, because `toBe(1)` is satisfied by a dead anchor as easily
+      as by a correct module — an anchor that stopped matching would count ZERO
+      and a reader returning nothing would too, and neither is "no copies".
+
+      POSITIVE on the anchor: it is present in the raw source as well, so the
+      count is a reading and not a miss.
+
+      NEGATIVE on the reader: a sentence that exists ONLY inside a comment in
+      this module must be gone from the stripped text. Without it a
+      `withoutComments` that had quietly become the identity function would
+      leave every docblock's prose in the haystack, and this arm would then be
+      counting explanations.
+    */
+    expect(source).toContain("(dependencies.interpret ?? interpretRefinement)(");
+    expect(source, "the sentence the negative control rests on").toContain("ONE READING, ASKED FOUR WAYS");
+    expect(code, "comments really were stripped").not.toContain("ONE READING, ASKED FOUR WAYS");
   });
 });
 
@@ -4136,6 +4182,67 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(painted[0]!.height).toBe(48);
   });
 
+  /**
+   * ⚠ A NOSE IS ONE FEATURE, WHATEVER ELSE SHE WEARS (#2612).
+   *
+   * His report, verbatim: *"i clicked her nose and said \"add nose piercing\"
+   * and also tried \"add nose piercing to right nostril\" and both times it gave
+   * me \" That names one side of a pair…"*. Reproduced on dev through the real
+   * entrance on a cast wearing *"small gold hoop earrings, one in each ear"*:
+   * the interpreter re-states the WHOLE accessory list (a plural subject), the
+   * list was filed under ONE kind — the earring pair, by longest match — and
+   * the "right" of "right nostril" was read as a side of the EARRINGS. Without
+   * a side, the nose piercing was silently painted onto both ears instead.
+   *
+   * Driven at the service with the engine stubbed, and asserted on the prompt
+   * the engine was actually handed (working law 5).
+   */
+  describe("a nose piercing beside earrings is the nose's, never the pair's (#2612)", () => {
+    const wearing = (items: string[]) => ({
+      ...repainting,
+      interpret: async () => ({ ok: true as const, delta: { free: { statedAccessories: items } } }),
+    });
+    const EARRINGS = "small gold hoop earrings, one in each ear";
+
+    it("serves a named nostril on the nose, and the ears hear only about earrings", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing in right nostril"]),
+        { ...input, instruction: "her nose — add nose piercing to right nostril" });
+
+      expect(painted).toHaveLength(1);
+      const prompt = painted[0]!.prompt;
+      expect(prompt).toContain("nose piercing in right nostril");
+      const earLines = prompt.split(/(?<=\.)\s/).filter((line) => /earring|\bear\b/i.test(line) && /left|right/i.test(line) && !/nostril/.test(line));
+      for (const line of earLines) expect(line).not.toMatch(/nose/i);
+      /* The nostril line is its own ask, not glued onto an earring's. */
+      expect(prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves an unsided nose piercing as one, without touching the ears' words", async () => {
+      await refineCandidate(wearing([EARRINGS, "nose piercing"]),
+        { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(1);
+      expect(painted[0]!.prompt).toContain("nose piercing");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, nose piercing`);
+    });
+
+    it("serves a septum ring as the nose's, and a nose piercing on a bare cast", async () => {
+      await refineCandidate(wearing([EARRINGS, "a septum ring"]), { ...input, instruction: "a septum ring" });
+      await refineCandidate(wearing(["nose piercing"]), { ...input, instruction: "add nose piercing" });
+
+      expect(painted).toHaveLength(2);
+      expect(painted[0]!.prompt).toContain("a septum ring");
+      expect(painted[0]!.prompt).not.toContain(`${EARRINGS}, a septum ring`);
+      expect(painted[1]!.prompt).toContain("nose piercing");
+    });
+
+    it("CONTROL — one side of the EARRINGS named in prose still refuses, before any paint", async () => {
+      await expect(refineCandidate(wearing(["a gold hoop in her right ear"]),
+        { ...input, instruction: "a gold hoop in her right ear" })).rejects.toThrow(/one side/);
+      expect(painted).toHaveLength(0);
+    });
+  });
+
   it("delivers the engine's own frame, with nothing composited into it", async () => {
     const stored: Buffer[] = [];
     await refineCandidate({
@@ -4913,12 +5020,125 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(request.references.map((reference) => reference.bytes)).toEqual([TINY_MASTER_PNG]);
     expect(request.prompt).not.toContain("Reference 2");
     /*
-      AND THE WORDS SURVIVED THE CROP BEING DROPPED. Without this the fix and
-      "drop the whole entry" are indistinguishable, and the second would silently
-      throw away everything ever said about her hair — the stack an edit
-      regenerates from.
+      ⚠ AND STACK WORDS THAT ARGUE WITH THE ASK DO NOT RIDE (#2650). This arm
+      used to require "tight curls piled into a high bun" beside "hair down" —
+      a bun stated as fact in the very edit that takes it down. The words that
+      survive a dropped crop are the ones that HOLD the chain's ask; the
+      positive control is the next test.
     */
-    expect(request.prompt).toContain("tight curls piled into a high bun");
+    expect(request.prompt).not.toContain("piled into a high bun");
+    expect(request.prompt).toContain("hair down");
+  });
+
+  it("KEEPS a carried slot's stack words when they hold the chain's ask — the control for the arm above (#2650)", async () => {
+    lineageReferences = [carryRow({
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["tight curls worn down past the shoulders"],
+      storageKey: "casting-v2/library/hair.png",
+    })];
+
+    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
+
+    expect(painted).toHaveLength(1);
+    expect(painted[0]!.prompt).toContain("tight curls worn down past the shoulders");
+  });
+
+  /*
+    ⚠ THE #2650 SPECIMEN AT THE WIRE: an adopted bun crop beside a chain that
+    asks for a short crop, on a render about something else (freckles). The
+    dev re-drive of #2649 sent exactly this pair at step 5. Driven through the
+    real entrance; no reader is consulted by the rule under test.
+  */
+  const shortCropChain = () => {
+    variantRows = [{
+      id: 711,
+      publicId: "variant-short-crop",
+      candidateId: 1,
+      userId: 1,
+      imageKey: "casting-v2/variants/short-crop.png",
+      internalPrompt: candidateRow.internalPrompt,
+      instructions: ["cut the hair into a short crop"],
+      requestText: "cut the hair into a short crop",
+      deltas: { free: { hairCut: "short crop" } },
+      stepDeltas: [{ free: { hairCut: "short crop" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-short-crop";
+  };
+  const freckles = {
+    ...repainting,
+    interpret: async () => ({ ok: true as const, delta: { free: { marks: ["freckles across the nose and cheeks"] } } }),
+  };
+
+  it("⚠ SENDS NO crop and NO keep-line for a kept feature whose words contradict the chain's ask (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [carryRow({
+      variantId: 710,
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["Dark brown hair pulled into a high top bun with a center part"],
+      storageKey: "casting-v2/library/bun.png",
+      digest: "b0b0b0b0b0b0",
+    })];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).not.toContain("high top bun");
+    expect(prompt).not.toMatch(/Keep \w+ hair exactly/);
+    expect(prompt).not.toContain("exact hair");
+    expect(references).toHaveLength(1);
+    /* And the slot is said in the customer's words instead. */
+    expect(prompt).toContain("short crop");
+  });
+
+  it("⚠ THE RELAY'S SEAM: short crop at step 1, the bun slips back at step 3, and step 4 carries the STEP-1 crop (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [
+      /* Step 1: the short crop, delivered and adopted. */
+      carryRow({
+        id: 1, publicId: "ref-1", variantId: 701, version: 1,
+        slot: "hair", tier: "anatomy", noun: "hair",
+        words: ["Short dark brown hair, closely cropped at the sides"],
+        storageKey: "casting-v2/library/short.png", digest: null,
+      }),
+      /* Step 3: the slip, disputed — kept for a person, no pixels. */
+      carryRow({
+        id: 2, publicId: "ref-2", variantId: 703, version: 2,
+        slot: "hair", tier: "anatomy", noun: "hair",
+        words: ["Dark brown hair pulled into a high top bun"],
+        storageKey: null, digest: null,
+        refusal: { reason: "disputedDelivery", kind: "hair", coverage: 9990 },
+      }),
+    ];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).toMatch(/Keep \w+ hair exactly: Short dark brown hair, closely cropped at the sides/);
+    expect(prompt).toContain("exact hair");
+    expect(prompt).not.toContain("bun");
+    expect(references).toHaveLength(2);
+  });
+
+  it("⚠ CONTROL — a kept feature whose words hold the chain's ask still rides, crop and keep-line (#2650)", async () => {
+    shortCropChain();
+    lineageReferences = [carryRow({
+      variantId: 710,
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: ["Short dark brown hair, closely cropped at the sides"],
+      storageKey: "casting-v2/library/short.png",
+      digest: null,
+    })];
+
+    await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
+
+    expect(painted).toHaveLength(1);
+    const { prompt, references } = painted[0]!;
+    expect(prompt).toMatch(/Keep \w+ hair exactly: Short dark brown hair, closely cropped at the sides/);
+    expect(prompt).toContain("exact hair");
+    expect(references).toHaveLength(2);
   });
 
   it("and the OTHER slots' crops still carry — the over-correction, driven", async () => {
@@ -5852,7 +6072,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
    * so it now asserts what the pruned render actually does.
    */
   describe("a prune on the repaint road", () => {
-    const prunedEarrings = async () => {
+    const prunedEarrings = async (extra: Record<string, unknown> = {}) => {
       lineageReferences = [
         carryRow({
           id: 9, publicId: "ref-9", slot: "earring@left", tier: "item", noun: "left earring",
@@ -5897,6 +6117,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
               ? { ok: true as const, intent: "remove" as const, subject: "statedAccessories", match: "gold hoop earrings" }
               : { ok: true as const, delta: { free: { lips: "a fuller cupid's bow" } } };
           }) as never,
+          ...extra,
         },
         { ...input, instruction: "take the earrings off" },
       );
@@ -5924,6 +6145,43 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       await prunedEarrings();
       const recipe = (landedVariant?.internalPrompt as { repaint?: { restated?: string[] } })?.repaint;
       expect(recipe?.restated ?? []).toContain("earring@left");
+    });
+
+    /*
+      #2645 — THE DESCRIPTION WRITER IS TOLD WHAT THE PRUNE TOOK BACK, in the
+      customer's own sentence. The layout court measured the defect on the real
+      entrance: a prune contributes no clause to the assembled change
+      (`Ask.restate`), so the writer was handed only the chain's re-said edits
+      and filed "take the horns off" with the horns still in the paragraph,
+      which the next edit then painted back.
+    */
+    it("hands the description writer the customer's sentence and what was taken back (#2645)", async () => {
+      const castingScope = process.env.CASTING_V2_SCOPE;
+      process.env.CASTING_V2_SCOPE = "users:1";
+      process.env.CASTING_CURRENT_DESCRIPTION_SCOPE = "users:1";
+      const asked: string[] = [];
+      try {
+        await prunedEarrings({
+          readBaseWorn: async () => ({ compiledBrief: null, lockContract: null, briefText: "A person in their thirties." }),
+          describeEngine: () => ({
+            id: "test:describe",
+            complete: async (request: { user: string }) => {
+              asked.push(request.user);
+              return { text: "A person in their thirties with a fuller cupid's bow. They wear no earrings.", latencyMs: 5 };
+            },
+          }),
+        });
+      } finally {
+        delete process.env.CASTING_CURRENT_DESCRIPTION_SCOPE;
+        if (castingScope === undefined) delete process.env.CASTING_V2_SCOPE;
+        else process.env.CASTING_V2_SCOPE = castingScope;
+      }
+      expect(asked).toHaveLength(1);
+      expect(asked[0]).toContain("The change, in the customer's own words:\ntake the earrings off");
+      expect(asked[0]).toContain("must not appear in the description except as its absence:\n- gold hoop earrings");
+      /* The chain's re-said edit is not handed over as if it were this change. */
+      expect(asked[0]).not.toContain("Change only");
+      expect(landedVariant?.currentDescription).toBe("A person in their thirties with a fuller cupid's bow. They wear no earrings.");
     });
 
     it("CONTROL — a prune that names nothing still meets the old refusal", async () => {
@@ -6434,6 +6692,13 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
          mentioning fangs is the failure this arm exists for: she is charged,
          she gets a picture, and nothing in it is what she asked for. */
       expect(record.prompt).toContain("vampire fangs");
+      /* #2626, his rulings 2026-10-17: the words go as typed, and the one
+         permission note rides beside them — never inside them. */
+      expect(record.prompt).toContain(
+        "Change only her fangs: vampire fangs. The lips may part slightly so the teeth show.",
+      );
+      expect(record.prompt).not.toContain("upper canines");
+      expect(record.prompt).not.toContain("Every change is made");
     });
 
     it("⚠ A PAIR IS ASKED FOR ONCE ON THE WIRE — the four-horns escalation", async () => {
@@ -15484,17 +15749,94 @@ describe("one current description rides the paid refine", () => {
 
     expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
     for (const prompt of painted) {
-      expect(prompt).toContain(`This is how she looks now: ${DESCRIPTION} Everything else about her stays exactly as in Reference 1.`);
-      /* In place of, never beside: two authors for one edit is the defect. */
-      expect(prompt).not.toContain("Change only");
-      expect(prompt.startsWith("Reference 1 is the photograph of this person")).toBe(true);
+      /* HIS LABELLED LAYOUT (#2647), at the wire: the customer's sentence
+         verbatim on the edit line, the description after it, the constraints
+         last. */
+      expect(prompt).toBe("Reference 1 is the photograph of this person — reproduce her exactly: "
+        + "same face, same pose, same lighting, same framing, same background. "
+        + "Edit instruction: Change only her hair: wear her hair down. "
+        + `How she looks after this edit: ${DESCRIPTION} `
+        + "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.");
+      /* The studio's resolved clause never rides beside it: one author for
+         what the edit is, and it is the customer. */
+      expect(prompt).not.toContain("Change only her hair: hair down");
+      expect(prompt).not.toContain("This is how");
     }
     expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
     /* Seeded from the brief — this version's predecessor is the original. */
     expect(asked).toHaveLength(1);
     expect(asked[0]!.about).toBe("refine.describe");
     expect(asked[0]!.user).toContain("A woman in her thirties with long dark hair.");
-    expect(asked[0]!.user).toContain("wear her hair down");
+    /* THE WRITER IS HANDED THE EDIT AS FACTS, NOT THE RAW SENTENCE (#2578 §2).
+       This arm read `toContain("wear her hair down")` until that card: the raw
+       sentence is what lost the removal's site phrase and the sided fact. */
+    /* ⚠ AND SINCE #2645 IT IS THE CUSTOMER'S OWN SENTENCE AGAIN, VERBATIM:
+       the assembled clause was the whole recipe in the studio's words, which
+       is how "short crop" was filed as "standard crop" and a removal was
+       never written. */
+    expect(asked[0]!.user).toContain("The change, in the customer's own words:\nwear her hair down");
+    expect(asked[0]!.user).not.toContain("Change only");
+    /* And the PAINTER's half never reaches the writer. */
+    expect(asked[0]!.user).not.toContain("as you look at it");
+  });
+
+  /*
+    #2645 FOLLOW-UP — THE HALF THE PHOTOGRAPH DOES NOT SHOW NEVER REACHES THE
+    WRITER AS SERVED. Driven through the real entrance: the frame strip takes
+    the waist out of the delta, and the writer must be told so beside the
+    customer's verbatim sentence, or "a smaller waist" is filed on the cast and
+    painted by every later render.
+  */
+  it("a half-served ask: the writer is told the waist was NOT done, and a paragraph that writes it in is not filed", async () => {
+    const mixed = {
+      ...describing,
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { waist: "a smaller waist", lips: "red lipstick" } },
+      }),
+    };
+    await refineCandidate(mixed as never, { ...input, instruction: "a smaller waist and red lipstick" });
+    expect(asked).toHaveLength(1);
+    const user = asked[0]!.user;
+    /* The customer's words, verbatim — never reworded. */
+    expect(user).toContain("The change, in the customer's own words:\na smaller waist and red lipstick");
+    /* And the waist is said as NOT done. */
+    const notDone = user.slice(user.indexOf("Part of this change was not made"));
+    expect(user.indexOf("Part of this change was not made")).toBeGreaterThan(-1);
+    expect(notDone).toContain("\n- waist");
+    /* The only places "waist" appears are the sentence and that block. */
+    const before = user.slice(0, user.indexOf("The change, in the customer's own words:"));
+    expect(before).not.toMatch(/waist/);
+    expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
+
+    /* A writer that writes the waist in anyway is refused, and the render
+       rides today's prompt with no description filed — law 3, poisoned. */
+    painted.length = 0;
+    asked.length = 0;
+    landedVariant = null;
+    const poisoned = {
+      ...mixed,
+      describeEngine: () => ({
+        id: "test:describe",
+        complete: async (request: { about?: string; user: string }) => {
+          asked.push(request);
+          return {
+            text: "A woman in her thirties with long dark hair, a smaller waist and red lipstick.",
+            latencyMs: 5,
+            provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+          };
+        },
+      }),
+    };
+    await refineCandidate(poisoned as never, {
+      ...input,
+      instruction: "a smaller waist and red lipstick",
+      clientRequestId: "44444444-4444-4444-8444-444444444444",
+    });
+    expect(asked).toHaveLength(1);
+    expect(landedVariant, "the version still landed").not.toBeNull();
+    expect(landedVariant).not.toHaveProperty("currentDescription");
+    for (const prompt of painted) expect(prompt).not.toContain("smaller waist");
   });
 
   it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {
@@ -15604,12 +15946,85 @@ describe("one current description rides the paid refine", () => {
     await refineCandidate(child as never, ask);
 
     expect(asked).toHaveLength(1);
+    /* The change reads as the assembled FACT clause since #2578 §2, not the
+       customer's raw sentence; the SEED half is what this arm is about and it
+       is unchanged.
+
+       ⚠ THE WHOLE TURN IS PINNED ON PURPOSE and the last paragraph is #2657's:
+       the seed road now says, unconditionally, that the frame has never shown
+       the facets it cannot show, because a facet in that table is stripped from
+       every ask that names it and so no history can hold a served one. It is
+       written out rather than derived from the module's own constant — a test
+       that composes its expectation the way the subject does proves only that
+       the subject agrees with itself. Keeping `toBe` is the point: this arm's
+       floor is that NOTHING ELSE leaks into a seeded turn. */
     expect(asked[0]!.user).toBe(`How they were first described:
 ${CHILD_BRIEF}
 
-The change:
-wear her hair down`);
+The change, in the customer's own words:
+wear her hair down
+
+Their photograph does not show these, so no change above was made to them. Do not apply any part of a change that names one: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:
+- waist`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
+  });
+
+  /*
+    ⚠ A REFUSED FIRST PASS SPENDS NOTHING ON THE WRITER (#2598, Squall's
+    finding on PR #2594).
+
+    `describeThisEdit`'s own paragraph claimed it — *"absent only when the first
+    pass REFUSED, and then today's raw sentence is not used either"* — and the
+    call site's claimed it twice over. Neither was a guard: `describeThisEdit`
+    ran on `undefined` and fell through to `change: … : instruction`, so a
+    refused pass bought one house text call to write a description **from the
+    customer's raw sentence** for a render about to throw on that same refusal.
+    No money moved and nothing was shown, which is exactly why no arm and no
+    customer could ever have found it.
+
+    ⚠ **THE FIXTURE IS THE HARD PART AND IT IS WHY THIS AND NOT A UNIT ARM.**
+    `assembleRecipe` is imported rather than injected, so the refusal cannot be
+    faked through the `dependencies` seam — it has to be PROVOKED. The lever is
+    `wordsNotDeclarative` (`recipeAssembler.ts:1541`), which is the interpreter's
+    own output checked at the boundary it crosses: the delta's words are an
+    imperative where the assembler is owed a state phrase. That reaches the
+    first `assembleRecipe` with everything else in this block's fixture held
+    equal, and the only thing that moves between this arm and its neighbours
+    above is the shape of those words.
+  */
+  it("spends NOTHING on the writer when the first pass refused", async () => {
+    const refusing = {
+      ...describing,
+      /* A state phrase is owed; an imperative is what the assembler refuses. */
+      interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "make her hair down" } } }),
+    };
+
+    /* What the CUSTOMER gets: the refusal is thrown as an Error inside the
+       render and surfaces as the generic refunded sentence. That is today's
+       behaviour and this card does not touch it — the subject here is what was
+       SPENT on the way to it. */
+    await expect(refineCandidate(refusing as never, ask))
+      .rejects.toThrow("That refinement didn't come through. Your credits have been returned.");
+
+    expect(asked, "the description writer was not asked at all").toHaveLength(0);
+    expect(painted, "and nothing was painted either").toHaveLength(0);
+    /* Money is conserved in both directions — the charge is returned, which is
+       what makes this a COST finding and not a money one. */
+    expect(ledger.charges.length).toBeGreaterThan(0);
+    expect(ledger.refunds.reduce((sum, one) => sum + one.amount, 0))
+      .toBe(ledger.charges.reduce((sum, one) => sum + one.amount, 0));
+  });
+
+  it("CONTROL — the same fixture with declarative words DOES ask the writer", async () => {
+    /*
+      Working law 2, and it is load-bearing twice over: the arm above would pass
+      on a fixture that never reaches the writer for some unrelated reason, and
+      it would pass on a `describing` block whose engine was never wired. One
+      word of the delta separates the two arms.
+    */
+    await refineCandidate(describing as never, ask);
+    expect(asked, "the writer is reachable from this very fixture").toHaveLength(1);
+    expect(painted.length).toBeGreaterThan(0);
   });
 
 });

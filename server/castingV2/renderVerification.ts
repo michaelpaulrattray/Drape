@@ -213,6 +213,16 @@ export type FacetCheck = {
   /** What the reader says it sees — required on every answer, either way. */
   saw?: string;
   /**
+   * ⚠ A SECOND READING READ THIS SAME FACT AND ALSO SAID YES (#2650).
+   *
+   * Set only by {@link confirmVerdict}, only on a rap-sheet affirmation, and
+   * only when the re-read held a check for this fact that was read and
+   * verified. The verdict's `readings` count cannot stand in for it: a re-read
+   * can come back and say nothing about `hairWorn` at all, and the count still
+   * reads 2. Absent means not confirmed.
+   */
+  confirmed?: true;
+  /**
    * Whether this fact is one the product may REFUSE over (D-187).
    *
    * A closed-vocabulary value has a shared meaning: "green" is a value this
@@ -642,6 +652,84 @@ const UNRELIABLE_FACETS: ReadonlySet<Facet> = new Set<Facet>([facetOfSubject("ha
 /** Test seam: the guard is only honest if it can be driven without an LLM. */
 export function facetsWithUnreliabilityPrior(): Facet[] {
   return Array.from(UNRELIABLE_FACETS);
+}
+
+/**
+ * ⚠ THE AFFIRMATIONS THIS VERDICT HOLDS THAT ITS OWN RULE SAYS ARE NOT ENOUGH
+ * (#2646).
+ *
+ * A yes on a facet with a rap sheet buys a second reading before it counts
+ * ({@link confirmVerdict}). When that second reading never came back — the
+ * re-read failed twice and the verdict says `readings: 1` — the render is still
+ * delivered (D-194: silence never takes the customer's money), and until #2646
+ * the yes was then believed by everything downstream, including the reference
+ * library. That is how the layout court's short crop was locked out: the crop
+ * slipped back to the bun, the one reading said "worn as cut", the confirmation
+ * could not be reached, and the library filed a crop of the bun as *"the exact
+ * hair they have"*. Every later prompt carried it beside a description saying
+ * short cropped hair.
+ *
+ * Delivering on one reading is right. ADOPTING on one reading is not, on the
+ * facets where one reading has been measured to lie. Derived from the same
+ * predicate the confirmation uses, so the two cannot disagree about which
+ * facets need a second look.
+ */
+export function unconfirmedAffirmations(verdict: RenderVerdict): Set<Facet> {
+  const unconfirmed = new Set<Facet>();
+  if (verdict.unavailable) return unconfirmed;
+  /*
+    PER CHECK, NEVER PER VERDICT (#2650). This read `readings >= 2` as the
+    confirmation until the reviewer of #2649 found the hole: a re-read that
+    came back but never answered THIS facet left `readings: 2` and the yes
+    believed. Only the check's own `confirmed` mark — a second reading that
+    read this fact and agreed — counts now.
+  */
+  for (const check of verdict.checks) {
+    if (!(check.read && check.verified && hasUnreliabilityPrior(check))) continue;
+    if (check.confirmed === true) continue;
+    const facet = facetIn(check.subject);
+    if (facet !== null) unconfirmed.add(facet);
+  }
+  return unconfirmed;
+}
+
+/**
+ * WHAT THIS VERDICT LETS THE LIBRARY ADOPT, for the facets this render WROTE.
+ *
+ * - `earned`: written, read and verified — and, on a rap-sheet facet, confirmed.
+ * - `missed`: written and read, and either not verified or verified on one
+ *   reading the confirmation rule says is not enough (#2646). The library files
+ *   these as disputed: evidence a person can open, never the slot's newest
+ *   carry.
+ * - `unconfirmed`: every rap-sheet affirmation the confirmation never reached,
+ *   written or carried, so a carried one is not counted as a confirmation
+ *   either.
+ *
+ * Nothing at all when the reader was unavailable: no reading, no evidence, no
+ * pixels. Lifted out of `refineService` unchanged apart from the unconfirmed
+ * clause, so the outgoing-prompt arm drives the real derivation.
+ */
+export function libraryReadingOf(
+  verdict: RenderVerdict,
+  writtenFacets: ReadonlySet<Facet>,
+): { earned: Facet[]; missed: Set<Facet>; unconfirmed: Set<Facet> } {
+  const unconfirmed = unconfirmedAffirmations(verdict);
+  if (verdict.unavailable) return { earned: [], missed: new Set(), unconfirmed };
+  const readChecks = verdict.checks.filter((check) => {
+    const facet = facetIn(check.subject);
+    return facet !== null && check.read && writtenFacets.has(facet);
+  });
+  const missed = new Set<Facet>();
+  for (const check of readChecks) {
+    const facet = facetIn(check.subject)!;
+    if (!check.verified || unconfirmed.has(facet)) missed.add(facet);
+  }
+  const earned = Array.from(new Set(
+    readChecks
+      .filter((check) => check.verified && !missed.has(facetIn(check.subject)!))
+      .map((check) => facetIn(check.subject)!),
+  ));
+  return { earned, missed, unconfirmed };
 }
 
 /**
@@ -1096,7 +1184,10 @@ export async function confirmVerdict(
   let checks = first.checks.map((check) => {
     if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
     const other = secondBy.get(keyOf(check));
-    if (!other || !other.read || other.verified) return check;
+    /* Silent on this fact: no confirmation, and no withdrawal either (#2650). */
+    if (!other || !other.read) return check;
+    /* Read and agreed: THIS is the confirmation, marked on the check itself. */
+    if (other.verified) return { ...check, confirmed: true as const };
     log.warn(
       { facet: subjectKey(check.subject), asked: check.asked, saw: other.saw },
       "[renderVerification] affirmation withdrawn on re-read — recorded as a miss, not a pass",

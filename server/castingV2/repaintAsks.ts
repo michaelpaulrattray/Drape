@@ -56,6 +56,7 @@
  */
 import type { EyeColour, EyeShape, HairTexture } from "../../shared/castingRealization";
 import type { CastPronouns } from "./castPronouns";
+import type { InkPlacement } from "../../shared/inkPlacementVocabulary";
 import type { HairColour } from "../../shared/castingVocabularies";
 
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
@@ -64,7 +65,7 @@ import {
   PRESENTATION_SUBJECTS, presentationNounOf, type FreeSubject,
 } from "./refineSubjects";
 import {
-  FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet,
+  FACET_SLOTS, facetsOfSlot, narrowToScope, slotDefinition, slotsForFacet, type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import {
   isOpenSlot,
@@ -340,6 +341,13 @@ export type RepaintAsksResult =
      * ordinary render carries no new field.
      */
     unnameableRestores?: readonly FeatureSlot[];
+    /**
+     * THE SLOTS (AND PRESENTATION NOUNS) THIS STEP ITSELF ASKED FOR (#2647) —
+     * a subset of `asks`, without the kinds and carries that are only re-said.
+     * Read by the labelled layout's "Edit instruction" line on the description
+     * road, so that line names the edit the customer typed and nothing else.
+     */
+    askedNow: { slots: readonly FeatureSlot[]; presentation: readonly string[] };
   }
   | RepaintAsksRefusal;
 
@@ -394,10 +402,31 @@ export class RepaintCannotSayError extends Error {
    * request already knew.
    */
   readonly pronouns: CastPronouns;
+  /**
+   * WHERE A TATTOO WOULD ACTUALLY WORK ON THIS CAST (#2580).
+   *
+   * It rides on the error for the third time the same reason does: the sentence
+   * is written at SETTLEMENT, in a function that holds the error and nothing
+   * else, so a list derived there would be derived from nothing — and `[]`
+   * would make the settlement say *"there's no skin showing"* about a cast
+   * standing in a t-shirt.
+   *
+   * ⚠ **`unplacedInk` is one of this error's reasons, and that is why this
+   * field exists on it rather than only at the pre-claim door.** That door
+   * answers first and should always answer first — its own entry in
+   * `cannotSayCopy.ts` says it *"should never be the one she meets"* — but
+   * *should* is not a channel, and the sentence is written for the day it is.
+   */
+  readonly inkPlaces: readonly InkPlacement[];
 
   constructor(
     refusal: RepaintAsksRefusal,
-    options: { words?: string | null; scopeNoun?: string | null; pronouns: CastPronouns },
+    options: {
+      words?: string | null;
+      scopeNoun?: string | null;
+      pronouns: CastPronouns;
+      inkPlaces: readonly InkPlacement[];
+    },
   ) {
     super(`the repaint cannot express this ask: ${refusal.detail}`);
     this.name = "RepaintCannotSayError";
@@ -406,6 +435,10 @@ export class RepaintCannotSayError extends Error {
     this.words = options.words ?? null;
     this.scopeNoun = options.scopeNoun ?? null;
     this.pronouns = options.pronouns;
+    /* REQUIRED, with no default, for `CannotSayContext.inkPlaces`' own reason:
+       an absent list read as empty is a confident false sentence, where a
+       missing argument is a type error. */
+    this.inkPlaces = options.inkPlaces;
   }
 }
 
@@ -439,6 +472,41 @@ export function sideNamedIn(phrase: string): "left" | "right" | null {
   const right = words.includes("right");
   if (left === right) return null;
   return left ? "left" : "right";
+}
+
+/**
+ * A FAMILY FACET'S ITEMS, GROUPED BY THE KIND EACH ONE NAMES (#2612).
+ *
+ * Null when the facet is not a family, or when no item names a kind of its
+ * own — then the caller's one kind is the whole answer, unchanged. Otherwise
+ * one group per kind, in the order the kinds first appear; an item that names
+ * no kind of its own joins the caller's kind, which is where it was filed
+ * before this existed (so a necklace beside earrings is said exactly as it
+ * was), and a group with no kind at all keeps the honest refusal below.
+ *
+ * Exported for its arms; the kind comes from `accessoryKindOf`, the one table.
+ */
+export function familyGroupsOf(
+  facet: Facet,
+  delta: RefineDelta,
+  fallbackKind: string | null,
+): Array<{ kind: string | null; phrase: string | null }> | null {
+  if (!("family" in FACET_SLOTS[facet])) return null;
+  const items: string[] = [];
+  for (const [subject, value] of Object.entries(delta.free ?? {})) {
+    if (facet !== facetOfSubject(subject as FreeSubject)) continue;
+    for (const item of itemsOf(value)) if (item.trim() !== "") items.push(item.trim());
+  }
+  const own = items.map((item) => accessoryKindOf(item));
+  if (own.every((kind) => kind === null)) return null;
+  const byKind = new Map<string | null, string[]>();
+  items.forEach((item, at) => {
+    const kind = own[at] ?? fallbackKind;
+    const held = byKind.get(kind);
+    if (held) held.push(item);
+    else byKind.set(kind, [item]);
+  });
+  return Array.from(byKind, ([kind, words]) => ({ kind, phrase: words.join(", ") }));
 }
 
 function statePhrase(
@@ -856,13 +924,50 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
       refuses, which is the case that door was built for.
     */
     if (vacatedFacets.has(facet) && statePhrase(facet, input.delta, input.prose) === null) continue;
-    let definitions = narrowToScope(
-      slotsForFacet(facet, {
-        accessoryKind: input.accessoryKind,
-        inkPlacement: input.inkPlacement,
-      }),
-      input.scope,
-    );
+    /*
+      ONE KIND PER THING SHE WEARS, NOT ONE KIND FOR THE WHOLE BAG (#2612).
+
+      `statedAccessories` is a plural subject, so its value is the COMPLETE list
+      — the earrings she already wears re-said beside the nose stud she just
+      asked for. It used to be filed under ONE kind for the whole list, the
+      caller's longest match over every item, so *"add nose piercing"* on a
+      cast wearing *"a stud in her left ear"* was filed under the EARRING pair,
+      read the earring's "left" as a side named for the pair, and refused as
+      *"one side of a pair"* — about a nose, which has one. And on a cast
+      wearing a matching pair it was worse and silent: both ears were told
+      "gold hoop earrings, nose piercing".
+
+      So a family facet is split by each item's own kind, through the same
+      longest-match table, and each group gets its own slots, its own words
+      and its own side check. A list in which no item names a kind of its own
+      is one group under the caller's kind, which is exactly what it was.
+    */
+    const groups = familyGroupsOf(facet, input.delta, input.accessoryKind ?? null);
+    const scopedGroups = groups === null ? null : groups.map((group) => ({
+      phrase: group.phrase,
+      definitions: narrowToScope(
+        group.kind === null ? [] : slotsForFacet(facet, { accessoryKind: group.kind }),
+        input.scope,
+      ),
+    }));
+    /* A scope narrows; it never refuses a group it was not pointing at while
+       another group of the same facet is where she pointed. */
+    const survivors = scopedGroups === null ? null
+      : input.scope !== undefined && scopedGroups.some((group) => group.definitions.length > 0)
+        ? scopedGroups.filter((group) => group.definitions.length > 0)
+        : scopedGroups;
+    const passes: Array<{ definitions: SlotDefinition[]; phrase: string | null }> = survivors ?? [{
+      definitions: narrowToScope(
+        slotsForFacet(facet, {
+          accessoryKind: input.accessoryKind,
+          inkPlacement: input.inkPlacement,
+        }),
+        input.scope,
+      ),
+      phrase: statePhrase(facet, input.delta, input.prose),
+    }];
+    for (const pass of passes) {
+    let definitions = pass.definitions;
     if (definitions.length === 0) {
       /* The reason comes from the catalogue's own ASSIGNMENT rather than from
          what the caller happened to pass, so a decided absence and an unnamed
@@ -886,7 +991,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
           : `${facet} has no library slot, so a repaint would paint a recipe that never mentions what was asked for`,
       };
     }
-    const phrase = statePhrase(facet, input.delta, input.prose);
+    const phrase = pass.phrase;
     if (phrase === null) {
       return {
         ok: false, reason: "noWords", facet,
@@ -961,6 +1066,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
       order.push(definition.slot);
       wordsBySlot.set(definition.slot, [phrase]);
       nounBySlot.set(definition.slot, definition.noun);
+    }
     }
   }
 
@@ -1040,6 +1146,26 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     half of this rule that always holds, and the words are the half that heals
     it.
   */
+  /*
+    WHAT THIS STEP ITSELF ASKED FOR, read before the restore loop adds the
+    slots it re-says (#2647). The labelled layout names this edit's slots on
+    its "Edit instruction" line, and the asks list also carries what is only
+    RE-SAID — an open kind with no crop yet, a superseded carry — which are not
+    this edit. Derived from the same facts the emptiness check above reads
+    (`order`, `delta.open`, `restated`, `facetsWrittenBy`), never a second
+    reading of the sentence (law 4).
+  */
+  const openAskedThisStep = new Set(Object.keys(input.delta.open ?? {}).map((kind) => openSlotKey(kind)));
+  const askedNow: FeatureSlot[] = [
+    ...order.filter((slot) => !isOpenSlot(slot) || openAskedThisStep.has(slot)),
+    ...restated.map((one) => one.slot).filter((slot) => !order.includes(slot)),
+  ];
+  const writtenNow = new Set(Array.from(facetsWrittenBy(input.delta)));
+  const presentationAskedNow = PRESENTATION_SUBJECTS
+    .filter((subject) => writtenNow.has(facetOfSubject(subject)) && spokenAsPresentation.has(facetOfSubject(subject)))
+    .map((subject) => presentationNounOf(subject))
+    .filter((noun): noun is string => noun !== null);
+
   const unnameableRestores: FeatureSlot[] = [];
   for (const slot of input.restore?.slots ?? []) {
     if (wordsBySlot.has(slot) || vacateBySlot.has(slot)) continue;
@@ -1065,6 +1191,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
        clauses) is what every render that never asked for one receives. */
     ...(presentation.length > 0 ? { presentation } : {}),
     ...(unnameableRestores.length > 0 ? { unnameableRestores } : {}),
+    askedNow: { slots: askedNow, presentation: presentationAskedNow },
     asks: order.map((slot) => {
       const says = vacateBySlot.get(slot);
       return {

@@ -109,6 +109,25 @@ export function outOfFrame(facet: Facet): string | null {
 }
 
 /**
+ * EVERYTHING THE CASTING FRAME CANNOT SHOW, in the customer's own terms —
+ * DERIVED from the table above and never a second copy of it (#2657).
+ *
+ * The description writer's SEED road needs this, and needs it unconditionally:
+ * a facet listed above is stripped from every ask that names it, on every
+ * render, so nothing in a cast's history can ever have changed one. A seeded
+ * writer handed the earlier asks as prose can therefore be told, flatly, that
+ * none of these was altered — without knowing which ask named which, and so
+ * without a word-match over a stored sentence, which `refineSubjects.ts` is
+ * explicit must never be built.
+ *
+ * It returns a list rather than a set because its one consumer hands it to
+ * `featuresNotInShot`, which de-duplicates and strips determiners itself.
+ */
+export function everyFeatureOutOfFrame(): string[] {
+  return Object.values(OUT_OF_FRAME).filter((what): what is string => typeof what === "string");
+}
+
+/**
  * THE SAME ASK WITH WHAT THE PHOTOGRAPH DOES NOT CONTAIN TAKEN OUT OF IT.
  *
  * # Why the half that cannot be served must LEAVE the recipe, not just go unsaid
@@ -131,6 +150,31 @@ export function outOfFrame(facet: Facet): string | null {
  * So the frame decides what is in the ask at all, once, here — before anything
  * is composed, claimed, painted, captioned, verified or stored. What the camera
  * did not take is not part of the edit; it is not a quiet failure of it.
+ *
+ * ⚠ **AND THAT HELD OF THE RECIPE AND NOT OF THE WORDS — #2657, closed by
+ * `everyFeatureOutOfFrame` below.** The delta this returns is what gets stored;
+ * the SENTENCE is stored too, whole and verbatim, in `instructions`, and
+ * nothing stored anywhere says which half of it the camera refused. The
+ * description writer reads those sentences back: where a version carries no
+ * description yet it seeds from the brief plus every earlier ask as raw prose,
+ * so the waist this function dropped came back as a fact about that person —
+ * **measured on 10 real briefs, twice each: 20 of 20** (2026-10-17). The same
+ * phantom as the paragraph above, through a door that did not exist when it was
+ * written.
+ *
+ * **What closed it is the asymmetry rather than a record of the past**: a facet
+ * in this table is stripped from EVERY ask that names it, so no history can
+ * contain a served one — and the seed writer can therefore be told flatly that
+ * none of them changed, with no per-step storage and no reading of which ask
+ * named what. ⚠ **A word-match over the stored sentence would NOT have been
+ * the repair** — `refineSubjects.ts`'s `SUBJECT_NOUNS` says in its own docblock
+ * that it must never become a routing vocabulary, and deciding "that earlier
+ * ask was about the waist" from its words is exactly that.
+ *
+ * ⚠ **ITS SIBLING IS NOT CLOSED AND IS #2658**: an earlier ask whose half
+ * reached no lane at all (the interpreter's `unserved`) is handed to the same
+ * seed writer just as raw, and that vocabulary is OPEN, so the asymmetry above
+ * does not reach it.
  *
  * Both lanes are swept, and by FACET rather than by key, so a subject added to
  * either lane inherits the rule instead of needing to be remembered.

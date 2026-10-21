@@ -55,12 +55,12 @@ async function rule(selector: string): Promise<string> {
 describe("the picture is the loader, and it claims nothing it cannot know", () => {
   it("softens the image itself rather than covering it with a panel", async () => {
     const waiting = await rule('.dpc-viewer__frame[data-wait="true"] img');
-    expect(waiting).toContain("animation: dpc-settle");
-    const css = await readFile(CSS, "utf8");
-    const keyframes = css.slice(css.indexOf("@keyframes dpc-settle"));
-    expect(keyframes.slice(0, 200)).toContain("blur(");
+    expect(waiting).toContain("blur(");
     /* Colour drains while it waits and returns when it lands — the arrival. */
-    expect(keyframes.slice(0, 200)).toContain("saturate(");
+    expect(waiting).toContain("saturate(");
+    /* Held still (#2613, B · One light): the light is the one movement, and a
+       breathing picture under it would be the busy-ness he asked to lose. */
+    expect(waiting).not.toContain("animation:");
   });
 
   /*
@@ -76,22 +76,37 @@ describe("the picture is the loader, and it claims nothing it cannot know", () =
   });
 
   /*
-    NO TRAVELLING HIGHLIGHT. A band moving across a face captioned "the hair"
-    claims the model is working that region. The dot field is uniform and
-    full-frame precisely so it can claim nothing about where work happens.
+    THE LIGHT ONLY EVER CROSSES THE WHOLE FRAME (#2613, his pick of B · One
+    light). D-169 refused a travelling highlight because a band that STOPS on a
+    face captioned "the hair" claims the model is working that region. His pick
+    keeps one band, so that clause survives as a shape: wider than the plate,
+    starting off one edge and resting off the other, never parked inside it.
   */
-  it("keeps the dot field uniform across the whole frame", async () => {
-    const dots = await rule(".dpc-viewer__dots");
-    expect(dots).toContain("position: absolute");
-    expect(dots).toContain("inset: 0");
+  it("sweeps one light across the whole frame, from off one edge to off the other", async () => {
+    const light = await rule(".dpc-viewer__light");
+    expect(light).toContain("position: absolute");
+    expect(light, "wider than the plate, so its ends are always outside it").toContain("inset: -20%");
+    expect(light).toContain("pointer-events: none");
+    const timing = light.match(/animation: dpc-light ([\d.]+)s ease-in-out infinite/);
+    expect(timing, "one slow sweep, on repeat").not.toBe(null);
+    /* About every 4–5 s — the relay's number on his pick. */
+    expect(Number(timing![1])).toBeGreaterThanOrEqual(4);
+    expect(Number(timing![1])).toBeLessThanOrEqual(5);
+    const css = await readFile(CSS, "utf8");
+    const at = css.indexOf("@keyframes dpc-light");
+    const frames = css.slice(at, css.indexOf("\n}\n", at));
+    expect(frames).toContain("0%        { transform: translateX(-70%); }");
+    expect(frames).toContain("65%, 100% { transform: translateX(70%); }");
   });
 
   it("never sets an animation that could read as progress", async () => {
     const css = await readFile(CSS, "utf8");
-    const wait = css.slice(css.indexOf(".dpc-viewer__dots"), css.indexOf(".dpc-viewer__caption"));
+    const wait = css.slice(css.indexOf(".dpc-viewer__light {"), css.indexOf(".dpc-viewer__caption"));
+    expect(wait.length, "the slice must hold the wait's rules").toBeGreaterThan(500);
     /* A width or a transform-scaleX growing over time IS a progress bar,
-       whatever it is called. The wave moves a mask; nothing grows. */
+       whatever it is called. The light translates; nothing grows. */
     expect(wait).not.toMatch(/@keyframes[^}]*width:/);
+    expect(wait).not.toMatch(/@keyframes[^}]*scale/);
   });
 
   it("sets the status in the type everything else uses, never mono", async () => {
@@ -131,8 +146,10 @@ describe("the picture is the loader, and it claims nothing it cannot know", () =
 
   it("keeps the bar and the word when motion is off", async () => {
     const css = await readFile(CSS, "utf8");
-    const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce) {\n  .dpc-viewer__frame"));
+    const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce) {", css.indexOf("@keyframes dpc-light")));
     const block = reduced.slice(0, reduced.indexOf("\n}\n"));
+    /* And the sweep is the motion that goes (#2613): not parked, not drawn. */
+    expect(block).toContain(".dpc-viewer__light { display: none; }");
     /* His clause 7: the motion goes, the bar and the word stay. So the only
        thing the query may do to them is stop the fill travelling. */
     expect(block).toContain(".dpc-viewer__barFill { transition: none; }");
