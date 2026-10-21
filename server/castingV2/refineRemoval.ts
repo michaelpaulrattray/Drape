@@ -619,6 +619,77 @@ export function composeChain(chain: readonly ChainStep[]): RefineDelta {
 }
 
 /**
+ * WHAT A KEPT SENTENCE ONCE ASKED FOR AND NO LONGER DOES (#2665).
+ *
+ * A pruned step KEEPS ITS SENTENCE (D-171, `chainAfterRemoval`): "remove the
+ * fangs" against "add fangs and horns" takes the fangs out of the step's delta
+ * and leaves "add fangs and horns" in the record, because it is what the
+ * customer typed. That is right for the record and wrong for any reader that
+ * takes the sentence as a description of who the cast is NOW — the description
+ * writer's seed road hands it over verbatim as a change "already made", and
+ * nothing beside it says half of it was taken back. Every render after that
+ * paints from the paragraph, so the fangs come back.
+ *
+ * Nothing stored says what a prune took: the step's delta is simply smaller.
+ * So it is read off the LINEAGE — an ancestor that holds a step with the same
+ * sentence held what that sentence asked for before the prune — and the
+ * difference is the answer. Two shapes can shrink a kept step and both are
+ * read: an open kind (`dropOpen`, by key, answered with its `noun`) and an item
+ * of a plural free subject (`keep`, answered with the item, verbatim).
+ *
+ * ⚠ **MINUS ANYTHING THE RECIPE STILL HOLDS (`now`).** Fangs taken off and
+ * asked for again by a later step are on the cast, and naming them here would
+ * have the writer told to remove them and its backstop refuse a correct
+ * paragraph. `now` is the composed recipe of the render being described.
+ *
+ * What it does NOT see, named: a lineage whose pre-prune version is gone (a
+ * deleted or unreadable row). That is a miss — the seed reads as before this
+ * card — never a false entry, because every entry it returns was held by a
+ * same-sentence step and is held by nothing now.
+ */
+export function takenFromKeptSentences(
+  steps: readonly ChainStep[],
+  lineage: readonly (readonly ChainStep[])[],
+  now: RefineDelta,
+): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (words: string) => {
+    const key = words.trim().toLowerCase();
+    if (key === "" || seen.has(key)) return;
+    seen.add(key);
+    out.push(words.trim());
+  };
+  const nowItems = (subject: string) => new Set(
+    itemsOf(now.free?.[subject as FreeSubject]).map((item) => item.trim().toLowerCase()),
+  );
+  for (const step of steps) {
+    const sentence = step.instruction.trim();
+    for (const chain of lineage) {
+      for (const earlier of chain) {
+        if (earlier.instruction.trim() !== sentence) continue;
+        for (const [kind, ask] of Object.entries(earlier.delta.open ?? {})) {
+          if (step.delta.open?.[kind] || now.open?.[kind]) continue;
+          add(ask.noun);
+        }
+        for (const [subject, value] of Object.entries(earlier.delta.free ?? {})) {
+          const kept = new Set(
+            itemsOf(step.delta.free?.[subject as FreeSubject]).map((item) => item.trim().toLowerCase()),
+          );
+          const held = nowItems(subject);
+          for (const item of itemsOf(value)) {
+            const key = item.trim().toLowerCase();
+            if (kept.has(key) || held.has(key)) continue;
+            add(item);
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * DID THE EDIT RE-READ NAME A THING TO HAVE — the ambiguous-word decision
  * (fable-481 §2), in one place because two copies of it would disagree.
  *
