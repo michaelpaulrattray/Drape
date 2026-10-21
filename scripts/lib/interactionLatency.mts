@@ -239,10 +239,12 @@ const RAIL_PROVISIONAL = String.raw`return document.querySelectorAll(".dpc-rollr
   reads only the moment it blinks while the sheet switches rolls. The text
   names the followed face, so a fresh follow reads its appearance and a
   re-follow reads its relabel — both the moment the sheet is on the new roll.
+  Since #2622 the chip shows the face's picture rather than its number, so the
+  face is read off the chip's `data-face` (the candidate id), not its text.
 */
 const FOLLOWING_CHIP = String.raw`
   const chip = document.querySelector(".dpc-following__chip");
-  return chip ? chip.textContent : null;
+  return chip ? chip.getAttribute("data-face") : null;
 `;
 const TILE_FACE = String.raw`
   const tile = target.closest(".dpc-tile") || target.closest(".dpc-card");

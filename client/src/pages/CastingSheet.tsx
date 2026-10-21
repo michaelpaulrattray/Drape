@@ -51,7 +51,16 @@ import { inFlightCandidate, refineBusy, refineGhosts, refineWait } from "@/featu
 import { bridgeWithinCandidate } from "@/features/castingV2/panelBridge";
 import { sheetExpiryNotice } from "@/features/castingV2/retentionCopy";
 import { showingProvisionalRoll } from "@/features/castingV2/rollOnScreen";
+import {
+  dispatchOnScreen as readDispatchOnScreen,
+  followedFaceThumb,
+  followingChipFace,
+  lineageForDispatch,
+  lineageOnScreen,
+  type SheetLineage,
+} from "@/features/castingV2/followLineage";
 import { sheetGoneRefusal, sheetGoneState } from "@/features/castingV2/sheetGone";
+import { FollowingChip } from "@/features/castingV2/components/FollowingChip";
 import { carriedBriefState, readCarriedBrief, sheetBoxStart } from "@/features/castingV2/carriedBrief";
 import { sheetNotice } from "@/features/castingV2/sheetNotice";
 import { CastSettingsButton } from "@/features/castingV2/components/CastSettingsModal";
@@ -593,6 +602,12 @@ export default function CastingSheet() {
   const shownRollId = viewedRollId ?? activeRollId;
   const viewingHistory = Boolean(shownRollId && activeRollId && shownRollId !== activeRollId);
 
+  /*
+    The lineage the last press bought, recorded at the click (#2587). Read only
+    while that dispatch is the roll on screen — see `followLineage.ts`.
+  */
+  const [dispatchedLineage, setDispatchedLineage] = useState<SheetLineage | null>(null);
+
   /* The settings for the NEXT roll (#142): her choice if she touched it, else the sheet's own, else the default. The imagination half left with #535. */
   const [styleChoice, setStyleChoice] = useState<CastStyle | null>(null);
 
@@ -704,6 +719,13 @@ export default function CastingSheet() {
   const rollInFlight = awaitingNewRoll || (session.data?.castingNow ?? false);
 
   const showingProvisional = showingProvisionalRoll({ rollInFlight, viewedRollId });
+
+  /*
+    THIS TAB'S OWN DISPATCH IS THE ROLL ON SCREEN (#2587). While it is, the
+    sheet's lineage words describe the press, not the roll still loaded under
+    it — the loaded one is the previous sheet, and its lineage is the earlier
+    follow ("FOLLOWING 07" over a follow of 04).
+  */
 
   /**
    * The roll being paid for, or nothing.
@@ -1104,6 +1126,25 @@ export default function CastingSheet() {
     */
     const anchorId = mode === "follow" ? candidateId : (standingFollowId ?? undefined);
 
+    /*
+      What this press is buying, said from the click (#2587) — the face pressed,
+      or the family a standing chip continues, or no family at all.
+    */
+    const pressed =
+      mode === "follow" && candidateId
+        ? roll.data?.candidates.find((entry) => entry.candidateId === candidateId)
+        : undefined;
+    setDispatchedLineage(
+      lineageForDispatch({
+        mode,
+        pressed: pressed
+          ? { candidateId: pressed.candidateId, indexLabel: pressed.indexLabel, rollId: shownRollId }
+          : null,
+        standing: roll.data?.lineage ?? null,
+        standingFollowId,
+      }),
+    );
+
     const clientRequestId = createClientRequestId();
     const release = () => {
       latch.release();
@@ -1111,6 +1152,7 @@ export default function CastingSheet() {
     };
     const onFailure = (error: unknown) => {
       release();
+      setDispatchedLineage(null);
       /*
         THE PARENT CAN GO AWAY, and a standing chip is what makes that reachable
         in ordinary use for the first time. A followed candidate can be
@@ -2766,7 +2808,7 @@ export default function CastingSheet() {
 
 
   /*
-    "FROM 04" — the roll this one followed.
+    The roll this one followed.
 
     Resolved through the session's roll list rather than by arithmetic. The
     parent is whichever roll the followed candidate belonged to, which is not
@@ -2779,20 +2821,63 @@ export default function CastingSheet() {
     purged after its 24h floor while its roll survives the session, so the
     candidate id is allowed to be absent here.
   */
-  const lineageLabel = useMemo(() => {
-    const fromRollId = roll.data?.lineage.fromRollId;
-    if (!fromRollId) return null;
-    const parent = rolls.find((entry) => entry.rollId === fromRollId);
-    return parent ? `FROM ${String(parent.rollIndex).padStart(2, "0")}` : null;
-  }, [roll.data?.lineage.fromRollId, rolls]);
+  /*
+    ⚠ Every lineage word reads THIS, never `roll.data.lineage` raw (#2587): from
+    the press until the new roll lands, the loaded roll is the previous sheet,
+    and its lineage is the earlier follow ("FOLLOWING 07" over a follow of 04).
+  */
+  const dispatchOnScreen = readDispatchOnScreen({
+    pressed: dispatchedLineage !== null,
+    awaitingNewRoll,
+    viewedRollId,
+    loadedRollId: roll.data?.rollId,
+    activeRollId,
+  });
+  const shownLineage = lineageOnScreen({
+    dispatchOnScreen,
+    dispatched: dispatchedLineage,
+    loaded: roll.data?.lineage,
+  });
+  const followingChip = followingChipFace({
+    dispatchOnScreen,
+    dispatched: dispatchedLineage,
+    standingFollowId,
+    loaded: roll.data?.lineage,
+  });
+  /*
+    THE CHIP DRAWS THE FACE, NOT ITS NUMBER (#2622). The picture is read off
+    the roll that face sits on. When that is the roll on screen this is the
+    sheet's own query (same key, same cache, no second request); on a follow of
+    a follow it is the previous sheet, read once — a finished face does not
+    change, so it is not polled.
+  */
+  const followedRoll = trpc.castingV2.getRoll.useQuery(
+    { rollId: followingChip?.rollId ?? "" },
+    { enabled: Boolean(followingChip?.rollId), staleTime: 5 * 60_000 },
+  );
+  const followingThumb = followedFaceThumb({
+    face: followingChip,
+    candidates: followedRoll.data?.candidates,
+  });
 
   /*
-    The same lineage, said in the echo's register rather than the pill's.
-    "FROM 02" is a mono tag on a tile; a sentence says "the roll before this
-    one". Both point at the same parent — they are not two facts.
+    The press's record is spent once its roll is loaded: the server's lineage
+    says the same thing from here on, and a record kept past its window is a
+    second copy waiting to be wrong.
+  */
+  useEffect(() => {
+    if (dispatchedLineage && !awaitingNewRoll && roll.data && roll.data.rollId === activeRollId) {
+      setDispatchedLineage(null);
+    }
+  }, [dispatchedLineage, awaitingNewRoll, roll.data, activeRollId]);
+
+  /*
+    The lineage, said in the echo's register. The per-tile "FROM 02" pill that
+    used to say it a second time is gone (#2622): every tile on a follow sheet
+    shares one parent, and the chip shows that face once.
   */
   const followLabel = useMemo(() => {
-    const fromRollId = roll.data?.lineage.fromRollId;
+    const fromRollId = shownLineage?.fromRollId;
     if (!fromRollId) return null;
     const parent = rolls.find((entry) => entry.rollId === fromRollId);
     if (!parent) return null;
@@ -2804,9 +2889,9 @@ export default function CastingSheet() {
       being computed server-side for the lineage pill; it simply never reached
       the sentence.
     */
-    const face = roll.data?.lineage.fromCandidateLabel;
+    const face = shownLineage?.fromCandidateLabel;
     return face ? `${face} on ${rollLabel}` : rollLabel;
-  }, [roll.data?.lineage.fromRollId, roll.data?.lineage.fromCandidateLabel, rolls]);
+  }, [shownLineage?.fromRollId, shownLineage?.fromCandidateLabel, rolls]);
 
   if (!sessionId) return null;
   /*
@@ -3070,24 +3155,12 @@ export default function CastingSheet() {
           Beside the rail rather than in the dock: the dock is where you act,
           and this is state — the same register as which roll you are reading.
         */}
-        {standingFollowId ? (
-          <div className="dpc-following">
-            <span className="dpc-following__chip">
-              FOLLOWING {roll.data?.lineage.fromCandidateLabel ?? "—"}
-              <button
-                type="button"
-                className="dpc-following__clear"
-                onClick={() => setFollowDismissed(true)}
-                aria-label="Stop following — the next roll casts openly"
-                title="Stop following — the next roll casts openly"
-              >
-                ×
-              </button>
-            </span>
-            <span className="dpc-following__note">
-              Roll again keeps this family. Clear it to cast openly.
-            </span>
-          </div>
+        {followingChip ? (
+          <FollowingChip
+            faceId={followingChip.candidateId}
+            thumbUrl={followingThumb}
+            onClear={() => setFollowDismissed(true)}
+          />
         ) : null}
 
         {/*
@@ -3294,7 +3367,6 @@ export default function CastingSheet() {
                       ? "failed-refunded"
                       : candidate.status,
                   }}
-                  lineageLabel={lineageLabel}
                   rollWasCancelled={
                     rollWasCancelled || Boolean(optimisticCancelled[candidate.candidateId])
                   }

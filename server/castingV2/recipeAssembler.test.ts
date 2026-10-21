@@ -18,6 +18,8 @@ import {
   type CarriedInkDesign,
   type LibraryEntry,
   type RecipeSource,
+  EDIT_CONSTRAINTS,
+  TEETH_PARTING_NOTE,
 } from "./recipeAssembler";
 import {
   inkDeliveredCarrySentence, inkNotOnClothingClause, inkRealismClause,
@@ -1194,6 +1196,136 @@ describe("two empty lobes are one sentence", () => {
     expect(recipe.ask).not.toContain("her eyes:");
   });
 
+  describe("the two renderings of one edit, and the painter's half (#2578)", () => {
+    const DESCRIPTION = "A woman in her thirties with a fiery red right iris.";
+
+    it("the writer's rendering drops the picture half; the painter's keeps it", () => {
+      /*
+        §2's whole claim, read at the two strings the one builder returns. The
+        parenthetical is an instruction to the PAINTER about the frame — it
+        states no fact about the person — and it leaked into the stored
+        description 2 of 3 times when the writer was handed the clause whole.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.ask).toContain("on the left of the picture as you look at it");
+      expect(recipe.changeFacts).toBe("Change only her right eye: a fiery red iris.");
+      expect(recipe.changeFacts, "the painter's half must never reach the writer")
+        .not.toContain("as you look at it");
+      /* It is the SAME clause otherwise — same noun, same words, same frame. */
+      expect(recipe.changeFacts).toContain("her right eye");
+      expect(recipe.changeFacts).toContain("a fiery red iris");
+    });
+
+    it("CONTROL — an UNSIDED edit renders identically both ways, which is most edits", () => {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "hair", noun: "hair", words: "a platinum undercut" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      /* Nothing to omit, so the two strings are the same string. Without this
+         arm the one above would pass over a facts rendering that dropped
+         something it should have kept. */
+      expect(recipe.changeFacts).toBe(recipe.ask);
+      expect(recipe.ask).not.toContain("as you look at it");
+    });
+
+    it("a REMOVAL's site phrase survives into the writer's rendering — the loss this card was filed for", () => {
+      /*
+        Asked "take her earrings off", the writer wrote "She wears no earrings."
+        3 of 3 times: the absence, never the SITE. The vacancy phrase names the
+        site, and a pair vacancy carries no parenthetical, so both renderings
+        are byte-identical here — which is why the measured arm reproduced 3/3
+        unchanged.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [
+          { slot: "earring@left", noun: "left earring", vacate: { says: PAIR } },
+          { slot: "earring@right", noun: "right earring", vacate: { says: PAIR } },
+        ],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.changeFacts).toContain(PAIR);
+      expect(recipe.changeFacts).toBe(recipe.ask);
+    });
+
+    it("flag ON, a sided edit: the painter is still told which half of the frame it is in (§3)", () => {
+      /*
+        The description stands where the change clause stood, and the clause is
+        where the mapping lived — so without this line it would simply stop
+        being said. V4 measured it 4-of-12 wrong eyes → 0, never once worse,
+        free per render; this card's court saw no separation at n=6 and says so
+        itself. An underpowered null does not retire a free protection.
+      */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).toContain("Her right eye is on the left of the picture as you look at it.");
+      /* AND THE ONE-AUTHOR PIN IS UNTOUCHED — this line states no change, it
+         locates a feature. Two sources saying WHAT the edit is was the defect. */
+      expect(recipe.prompt).not.toContain("Change only");
+      expect(recipe.prompt).toContain(`This is how she looks now: ${DESCRIPTION}`);
+    });
+
+    it("flag ON, an UNSIDED edit: no painter line at all", () => {
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [{ slot: "hair", noun: "hair", words: "a platinum undercut" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).not.toContain("as you look at it");
+      expect(recipe.prompt).not.toContain("Change only");
+    });
+
+    it("flag ON, a COLLAPSED PAIR names no side — there is no half to point at when the answer is both", () => {
+      /* Through `pairCollapse` rather than a second judgement about what a pair
+         is: the clause skips `whereItIs` for a collapsed pair and so does this. */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: DESCRIPTION,
+        asks: [
+          { slot: "eye@left", noun: "left eye", words: "a fiery red iris" },
+          { slot: "eye@right", noun: "right eye", words: "a fiery red iris" },
+        ],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).not.toContain("as you look at it");
+    });
+
+    it("flag OFF, a sided edit: the parenthetical says it and no second line does", () => {
+      /* The off road must be byte-identical to what it sent before this card —
+         the mapping is in the clause, said once. */
+      const recipe = assembleRecipe({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      });
+
+      expect(recipe.ok).toBe(true);
+      if (!recipe.ok) return;
+      expect(recipe.prompt).toContain("Change only her right eye (on the left of the picture as you look at it): a fiery red iris.");
+      expect(recipe.prompt).not.toContain("Her right eye is on the left");
+      /* Said ONCE, not twice — the count is the claim. */
+      expect(recipe.prompt.split("as you look at it").length - 1).toBe(1);
+    });
+  });
+
   it("says a vacate ONCE in the change clause, however many slots the kind vacates", () => {
     /*
       The duplication as it shipped: a pair vacates two slots and each ask
@@ -1296,6 +1428,39 @@ describe("a presentation clause is said and filed nowhere", () => {
     if (!withOut.ok || !empty.ok) return;
     expect(withOut.prompt).toBe(empty.prompt);
     expect(withOut.ask).toBe("Change only her hair: a copper crop.");
+  });
+
+  it("answers OK with an EMPTY `changeFacts` when there is no clause at all", () => {
+    /*
+      ⚠ PINNED FOR #2598, WHERE THIS BRANCH IS THE REASON A GUARD IS SPELLED
+      `=== undefined` RATHER THAN FALSY.
+
+      `refineService`'s description writer is not run when the first assembled
+      pass REFUSED, and `undefined` is how that refusal travels. The tempting
+      shorter guard is `if (!changeFacts)` — and this is the state that makes it
+      wrong: a recipe with nothing to change is `ok`, carries `changeFacts: ""`,
+      and the writer should still run there, handed the customer's own sentence
+      rather than an empty change. So `""` and `undefined` mean different
+      things on that road, and this arm is what says so about THIS module
+      instead of a comment one file away claiming it.
+
+      Nothing about the assembler changes in that card; this arm exists because
+      a branch another module's guard rests on should be asserted where it
+      lives.
+    */
+    const nothing = assembleRecipe({ master: MASTER, pronouns: SHE, library: [], asks: [] });
+
+    expect(nothing.ok).toBe(true);
+    if (!nothing.ok) return;
+    expect(nothing.changeFacts).toBe("");
+    expect(nothing.ask).toBe("");
+    /* And the positive control beside it, so "empty" is a reading of this
+       branch rather than of an assembler that answers empty for everything. */
+    const something = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+    });
+    expect(something.ok && something.changeFacts).toBe("Change only her hair: a copper crop.");
   });
 });
 
@@ -2552,5 +2717,390 @@ describe("a cast born with tattoos — the words the engine never sees", () => {
     /* CONTROL — an ordinary anatomy row on the same branch DOES carry, so this
        arm cannot pass by the assembler carrying nothing at all. */
     expect(recipe.carried).toContain("lips");
+  });
+});
+
+/**
+ * # AN ASK ON AN OPEN KIND'S BARE SLOT SILENCES ITS SIDED ROWS (#2635)
+ *
+ * Measured, not supposed. The fang court of 2026-10-17 logged this line on a
+ * real paid render:
+ *
+ *     edited:  ["open:fangs"]
+ *     carried: ["open:fangs@left", "open:fangs@right"]
+ *     standing:["open:fangs@left", "open:fangs@right"]
+ *
+ * and the prompt it sent, on an ask whose words were "black fangs":
+ *
+ *     Keep their fangs exactly: … white, pointed tip … .
+ *     Keep their fangs exactly: … white, pointed tip … .
+ *     Change only their fangs: … slightly pointed black fangs … .
+ *
+ * The ask lands on the bare slot and the library keeps one row per side, so
+ * `editedSet.has(slot)` — an EQUALITY test — matched neither row. Twice over,
+ * because each sided row said its own sentence.
+ *
+ * The first arm is that specimen. The two after it are the arms that make the
+ * fix a rule rather than a special case: the relation is OVERLAP, so a sided
+ * ask reaches the bare row too, and two DIFFERENT sides do not overlap at all.
+ * That last one is a POSITIVE control in the direction that matters — a fix
+ * that silenced it would delete a keep the customer is entitled to.
+ */
+describe("a kept clause never argues with the ask riding beside it", () => {
+  const WHITE = "a single elongated canine, white, the tip past the lower lip";
+
+  const fangRows = (carry?: boolean): LibraryEntry[] => ([
+    {
+      slot: "open:fangs@left" as never, tier: "anatomy", noun: "fangs",
+      words: [WHITE], ...(carry === true ? { carry: { key: "lib/fangs-left.png" } } : {}),
+    },
+    {
+      slot: "open:fangs@right" as never, tier: "anatomy", noun: "fangs",
+      words: [WHITE], ...(carry === true ? { carry: { key: "lib/fangs-right.png" } } : {}),
+    },
+  ]);
+
+  it("drops BOTH sided keeps when the ask names the bare kind — the court's own specimen", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(),
+      asks: [{ slot: "open:fangs" as never, noun: "fangs", words: "black fangs" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The contradiction itself: not once, and not twice. */
+    expect(recipe.prompt).not.toContain("Keep her fangs exactly");
+    expect(recipe.prompt.match(/Keep her fangs exactly/g)).toBeNull();
+    /* The colour the customer replaced is nowhere in the prompt at all. */
+    expect(recipe.prompt).not.toContain(WHITE);
+    /* And the ask still rides — the arm would pass on an empty prompt without
+       this line, which is how a suppression test goes green for nothing. */
+    expect(recipe.prompt).toContain("black fangs");
+    /* The verification stops PROMISING to hold what it is repainting: both
+       sided rows left `carried`, which the court's log had them sitting in. */
+    expect(recipe.carried).not.toContain("open:fangs@left");
+    expect(recipe.carried).not.toContain("open:fangs@right");
+  });
+
+  it("reaches the bare row from a SIDED ask — the same overlap, read the other way", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{
+        slot: "open:fangs" as never, tier: "anatomy", noun: "fangs", words: [WHITE],
+      }],
+      asks: [{ slot: "open:fangs@left" as never, noun: "fangs", words: "a black left fang" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The bare row describes the whole feature, the left fang included, so its
+       keep would be arguing about the very side being changed. */
+    expect(recipe.prompt).not.toContain("Keep her fangs exactly");
+    /* The ask still rides. Not the words verbatim: a fang ask is rewritten into
+       the cast's own canines by the description road (#2626), so this asserts
+       the colour reached the prompt rather than the phrasing surviving it. */
+    expect(recipe.prompt).toContain("black left fang");
+  });
+
+  it("LEAVES the other side's keep standing — one side changed is not both", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(),
+      asks: [{ slot: "open:fangs@left" as never, noun: "fangs", words: "a black left fang" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The right fang is untouched and the render must be told to keep it —
+       exactly ONCE, from the one row that still speaks. */
+    expect(recipe.prompt.match(/Keep her fangs exactly/g)).toHaveLength(1);
+    expect(recipe.prompt).toContain(WHITE);
+    expect(recipe.carried).toContain("open:fangs@right");
+    expect(recipe.carried).not.toContain("open:fangs@left");
+  });
+
+  it("leaves a NAMED slot's keep exactly where it was — the predicate is open-kind only", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: [{ slot: "hair", tier: "anatomy", noun: "hair", words: ["copper, to the shoulder"] }],
+      asks: [{ slot: "teeth", noun: "teeth", words: "black fangs" }],
+    });
+
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* A named slot has no sides and no kind, so nothing about this change may
+       reach it: `openKindOfSlot` answers null and the predicate collapses to
+       the equality test it replaced. */
+    expect(recipe.prompt).toContain("Keep her hair exactly: copper, to the shoulder.");
+    expect(recipe.carried).toContain("hair");
+  });
+
+  it("holds back an overlapping row's CROP, and does not refuse the render for it", () => {
+    const recipe = assembleRecipe({
+      master: MASTER, pronouns: SHE,
+      library: fangRows(true),
+      asks: [{ slot: "open:fangs" as never, noun: "fangs", words: "black fangs" }],
+    });
+
+    /* The ordinary edit is still assembled — `carriesItsOwnEdit` is a caller
+       defect and this is ordinary library state, so a refusal here would fail
+       a legitimate ask on rows the customer cannot see or clear. */
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    /* The master, and nothing else: her previous white fangs are not handed to
+       the render that was told to make them black. A carried crop argues
+       harder than a sentence, so this is the half worth pinning. */
+    expect(recipe.references.map((reference) => reference.role)).toEqual([{ kind: "master" }]);
+    expect(recipe.prompt).not.toContain(WHITE);
+  });
+});
+
+/*
+  #2626 — THE CUSTOMER'S TEETH WORDS GO AS TYPED, AND ONE NOTE RIDES BESIDE
+  THEM. His rulings, 2026-10-17, verbatim: *"i honestly think we shouldnt
+  change how the image engine recieves its instructions from the user just let
+  the result be"*; *"i think the issue is closed mouths with fangs is what its
+  fighting mostly?"*; *"yes i think thats a better fix and remove the general
+  color sentence or any other additional text around fangs"*.
+
+  Each PRE string below is the prompt main sent BEFORE #2634, byte for byte —
+  generated by that commit's own `assembleRecipe` (bcb2792ad^) on these exact
+  inputs, not retyped from memory.
+*/
+describe("#2626 — a teeth edit is sent as typed, with one permission note beside it", () => {
+  const NOTE = "The lips may part slightly so the teeth show.";
+  const HEAD = "Reference 1 is the photograph of this person — reproduce her exactly:"
+    + " same face, same pose, same lighting, same framing, same background.";
+  const promptFor = (input: Parameters<typeof assembleRecipe>[0]): string => {
+    const recipe = assembleRecipe(input);
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+  const occurrences = (text: string, needle: string): number => text.split(needle).length - 1;
+
+  it("the note is the ruled sentence, word for word", () => {
+    expect(TEETH_PARTING_NOTE).toBe(NOTE);
+  });
+
+  it("change-clause road: the pre-#2634 prompt, byte for byte, plus the note — teeth slot and open fangs", () => {
+    const PRE_TEETH = `${HEAD} Change only her teeth: vampire fangs.`;
+    const PRE_FANGS = `${HEAD} Change only her fangs: vampire fangs.`;
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+    })).toBe(`${PRE_TEETH} ${NOTE}`);
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "open:fangs", noun: "fangs", words: "vampire fangs" }],
+    })).toBe(`${PRE_FANGS} ${NOTE}`);
+  });
+
+  it("description road: the pre-#2634 prompt, byte for byte, plus the note", () => {
+    const PRE = `${HEAD} This is how she looks now: She has vampire fangs.`
+      + " Everything else about her stays exactly as in Reference 1.";
+    expect(promptFor({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has vampire fangs.",
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+    })).toBe(`${PRE} ${NOTE}`);
+  });
+
+  it("the customer's words are never reworded — colour, size and costume words all ride as typed", () => {
+    for (const words of ["black fangs", "long vampire fangs", "gold fangs", "fangs", "no fangs", "shorter fangs"]) {
+      expect(promptFor({
+        master: MASTER, pronouns: SHE, library: [],
+        asks: [{ slot: "teeth", noun: "teeth", words }],
+      }), words).toBe(`${HEAD} Change only her teeth: ${words}. ${NOTE}`);
+    }
+  });
+
+  it("said ONCE when two teeth asks share a render", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "teeth", noun: "teeth", words: "a small gap between the front teeth" },
+        { slot: "open:fangs", noun: "fangs", words: "vampire fangs" },
+      ],
+    });
+    expect(occurrences(prompt, NOTE)).toBe(1);
+  });
+
+  it("CONTROL — no other slot gets it, and the pre-#2634 prompt is unchanged byte for byte", () => {
+    for (const ask of [
+      { slot: "hair", noun: "hair", words: "dark red" },
+      { slot: "lips", noun: "lips", words: "a soft nude lip gloss" },
+      { slot: "open:horns", noun: "horns", words: "small curved horns" },
+      { slot: "open:nose stud", noun: "nose stud", words: "a nose piercing" },
+    ]) {
+      expect(promptFor({ master: MASTER, pronouns: SHE, library: [], asks: [ask] }), ask.noun)
+        .toBe(`${HEAD} Change only her ${ask.noun}: ${ask.words}.`);
+    }
+    const removal = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "glasses", noun: "glasses", vacate: { says: "no glasses — her face uncovered" } }],
+    });
+    expect(removal).not.toContain(NOTE);
+  });
+
+  it("CONTROL — a taken-back teeth slot says no clause, so it gets no note", () => {
+    const prompt = promptFor({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [
+        { slot: "teeth", noun: "teeth", restate: { taken: "vampire fangs" } },
+        { slot: "hair", noun: "hair", words: "dark red" },
+      ],
+    });
+    expect(prompt).not.toContain(NOTE);
+  });
+
+  it("the retired #2634 text is gone from every road — no fit sentence, no growth wording", () => {
+    for (const input of [
+      { master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }] },
+      { master: MASTER, pronouns: SHE, library: [], currentDescription: "She has fangs.", asks: [{ slot: "teeth", noun: "teeth", words: "fangs" }] },
+      { master: MASTER, pronouns: SHE, library: [], asks: [{ slot: "brow@left", noun: "left brow", words: "a thin scar" }] },
+    ]) {
+      const prompt = promptFor(input);
+      expect(prompt).not.toContain("Every change is made");
+      expect(prompt).not.toContain("upper canines");
+      expect(prompt).not.toContain("Draw the fangs");
+    }
+  });
+});
+
+describe("his labelled layout on the description road (#2647)", () => {
+  /*
+    His rule, 2026-10-17: *"we shouldnt change how the image engine recieves its
+    instructions from the user just let the result be"*, and his yes on the
+    layout court's arm D1. Every arm reads the OUTGOING prompt.
+  */
+  const IDENT = "Reference 1 is the photograph of this person — reproduce her exactly: "
+    + "same face, same pose, same lighting, same framing, same background.";
+  const NOW = "A woman in her thirties with a short crop.";
+  const CONSTRAINTS = "Constraints: change only the requested element; preserve identity, lighting, composition, and all other visible details.";
+  const promptOf = (input: Parameters<typeof assembleRecipe>[0]): string => {
+    const recipe = assembleRecipe(input);
+    expect(recipe.ok).toBe(true);
+    return recipe.ok ? recipe.prompt : "";
+  };
+
+  it("the whole layout, byte for byte: framing, the customer's words verbatim, the description, the constraints", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "hair", noun: "hair", words: "standard crop" }],
+      editInstruction: { words: "cut the hair into a short crop", slots: ["hair"] },
+    });
+
+    expect(prompt).toBe(`${IDENT} Edit instruction: Change only her hair: cut the hair into a short crop. `
+      + `How she looks after this edit: ${NOW} ${CONSTRAINTS}`);
+    /* The studio's own word for it never reaches the painter on this road. */
+    expect(prompt).not.toContain("standard crop");
+    expect(prompt).not.toContain("This is how");
+    expect(EDIT_CONSTRAINTS).toBe(CONSTRAINTS);
+  });
+
+  it("the words are never reworded — punctuation the customer typed stands, a missing stop is the only addition", () => {
+    for (const [typed, said] of [
+      ["make the scales a deeper emerald", "make the scales a deeper emerald."],
+      ["Amber eyes, with slit pupils!", "Amber eyes, with slit pupils!"],
+      ["  a heavier brow.  ", "a heavier brow."],
+    ] as const) {
+      expect(promptOf({
+        master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+        asks: [{ slot: "hair", noun: "hair", words: "x" }],
+        editInstruction: { words: typed, slots: ["hair"] },
+      })).toContain(`Edit instruction: Change only her hair: ${said} How she looks after this edit:`);
+    }
+  });
+
+  it("names ONLY this edit's slots — a kind that is merely re-said is not on the edit line", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [
+        { slot: "open:scales", noun: "scales", words: "deeper emerald" },
+        { slot: "open:horns", noun: "horns", words: "a pair of short curved horns" },
+      ],
+      editInstruction: { words: "a pair of short curved horns", slots: ["open:horns"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her horns: a pair of short curved horns.");
+    expect(prompt).not.toContain("scales");
+  });
+
+  it("the side note stays beside the edit line, before the description", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "eye@right", noun: "right eye", words: "a fiery red iris" }],
+      editInstruction: { words: "make her right eye fiery red", slots: ["eye@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her right eye: make her right eye fiery red. "
+      + "Her right eye is on the left of the picture as you look at it. How she looks after this edit:");
+  });
+
+  it("the teeth note stays beside the edit line, before the description", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She has vampire fangs.",
+      asks: [{ slot: "teeth", noun: "teeth", words: "vampire fangs" }],
+      editInstruction: { words: "give her vampire fangs", slots: ["teeth"] },
+    });
+
+    expect(prompt).toBe(`${IDENT} Edit instruction: Change only her teeth: give her vampire fangs. `
+      + `${TEETH_PARTING_NOTE} How she looks after this edit: She has vampire fangs. ${CONSTRAINTS}`);
+  });
+
+  it("a REMOVAL has an edit line too — a taken-back pair is named by the pair's noun, once", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "A lizard woman with a heavy brow. They have no horns.",
+      asks: [
+        { slot: "horns@left", restate: { taken: "a pair of short curved horns" } },
+        { slot: "horns@right", restate: { taken: "a pair of short curved horns" } },
+      ],
+      editInstruction: { words: "take the horns off", slots: ["horns@left", "horns@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her horns: take the horns off. How she looks after this edit: "
+      + "A lizard woman with a heavy brow. They have no horns.");
+  });
+
+  it("a vacated born-worn pair is named the same way", () => {
+    const says = "no earrings — both earlobes bare, nothing hanging from either ear";
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She wears no earrings.",
+      asks: [
+        { slot: "earring@left", noun: "left earring", vacate: { says } },
+        { slot: "earring@right", noun: "right earring", vacate: { says } },
+      ],
+      editInstruction: { words: "take her earrings off", slots: ["earring@left", "earring@right"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her earrings: take her earrings off.");
+  });
+
+  it("a presentation ask is named by its noun", () => {
+    const prompt = promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: "She smiles softly.",
+      asks: [],
+      presentation: [{ noun: "expression", words: "a soft smile" }],
+      editInstruction: { words: "make her smile", slots: [], presentation: ["expression"] },
+    });
+
+    expect(prompt).toContain("Edit instruction: Change only her expression: make her smile.");
+  });
+
+  it("CONTROL — flag OFF (no description), the edit instruction changes not one byte", () => {
+    const base = {
+      master: MASTER, pronouns: SHE, library: [] as LibraryEntry[],
+      asks: [{ slot: "hair" as const, noun: "hair", words: "standard crop" }],
+    };
+    const off = promptOf(base);
+    expect(off).toBe(`${IDENT} Change only her hair: standard crop.`);
+    expect(promptOf({ ...base, editInstruction: { words: "cut the hair into a short crop", slots: ["hair"] } })).toBe(off);
+  });
+
+  it("CONTROL — a description with no edit instruction is today's description prompt, byte for byte", () => {
+    expect(promptOf({
+      master: MASTER, pronouns: SHE, library: [], currentDescription: NOW,
+      asks: [{ slot: "hair", noun: "hair", words: "standard crop" }],
+    })).toBe(`${IDENT} This is how she looks now: ${NOW} Everything else about her stays exactly as in Reference 1.`);
   });
 });

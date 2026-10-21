@@ -62,7 +62,14 @@ describe("an ink ask this road cannot state yet is told, never asked", () => {
     told sentence, and present in the one it replaces.
   */
   it("replaces a question with a capability, and the question does not survive", () => {
-    const bare = { words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns: HER };
+    /* ⚠ A CAST WHOSE OUTFIT LEAVES ALL THREE SHOWING (#2580) — the places are
+       the caller's answer now, not this table's, and this arm is about the two
+       sentences' SHAPE rather than about the list, so it is handed the whole
+       one and keeps saying what it always said. */
+    const bare = {
+      words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns: HER,
+      inkPlaces: ["neck", "upperArm", "upperChest"] as const,
+    };
     const asked = cannotSaySentence("unplacedInk", bare);
     const told = cannotSaySentence("inkBeyondToday", bare);
 
@@ -72,6 +79,12 @@ describe("an ink ask this road cannot state yet is told, never asked", () => {
     // What she CAN have leads, so the reply is a road rather than a wall.
     expect(told).toContain("copy one design exactly");
     expect(told).toContain("her neck, an upper arm or her upper chest");
+    /* ⚠ AND THE DOCBLOCK AT THE HEAD OF `inkBeyondTodayAsk.ts` QUOTES THE OLD
+       SENTENCE as what the product said back to his flash-collage ask. That
+       quote is HISTORY and stays — it is the specimen the module exists for —
+       but the live sentence names only what this cast's outfit leaves showing,
+       which is why this arm hands it a bare cast rather than relying on three
+       surfaces being named unconditionally (#2580). */
     // And the limit is named without pretending it is her fault.
     expect(told).toContain("isn't ready yet");
     // Nothing is charged at this door — it sits above the claim.

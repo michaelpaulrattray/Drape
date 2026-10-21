@@ -13,7 +13,9 @@ import { describe, expect, it, vi } from "vitest";
     the picture is centred in (so the picture never moves when it opens);
   - the count is one quiet line above the picture, "2 of 8", with "Hold ·
     Compare" beside it only when there is a previous version;
-  - the only chip is Undo, after an edit, reading "Undo · free";
+  - no chip at all — the "Undo · free" chip #2533 approved was removed by
+    #2610 on his word 2026-10-17 (*"remove the undo pill we dont need it people
+    can click between versions on the left side panel thumbnails"*);
   - no hint lines under the box;
   - in light mode the viewer's corner controls and the drawer's close wear the
     field's glass with no nested blur, and dark mode is untouched.
@@ -159,21 +161,21 @@ describe("the composer under the picture", () => {
     expect(box).toMatch(/Refine · [\d,]+ credits/);
   });
 
-  it("CONTROL — offers no Undo on the original, where there is nothing to take back", () => {
-    expect(panel({ selectedVariantId: null })).not.toContain("Undo");
-  });
-
-  it("offers ONE chip after an edit, and it reads \"Undo · free\"", () => {
-    const html = panel({ selectedVariantId: "v1" });
-    expect(html.match(/class="dpc-refine__chip"/g)?.length).toBe(1);
-    expect(html).toContain("Undo · free");
-  });
-
-  it("sends the bare word through the SAME paid handler the box sends through", async () => {
-    /* Free on the server because the word is bare — never a second road. */
-    const source = await readFile(new URL("./components/RefinePanel.tsx", import.meta.url), "utf8");
-    expect(source).toContain('const UNDO_WORD = "undo";');
-    expect(source).toContain("onClick={() => onRefine(UNDO_WORD)}");
+  /*
+    NO UNDO PILL — #2610. The way back is the version thumbnails. The chip used
+    to draw only after an edit (`selectedVariantId !== null`), so the arm that
+    matters is the edited one; the original is read too so that neither branch
+    can bring it back.
+  */
+  it("draws no Undo pill after an edit, nor on the original", () => {
+    for (const selectedVariantId of ["v1", null]) {
+      const html = panel({ selectedVariantId });
+      expect(html).not.toContain("dpc-refine__chip");
+      expect(html).not.toContain("Undo");
+      /* CONTROL — the render really is the composer, so the absence is read
+         off a page that holds it. */
+      expect(html).toMatch(/Refine · [\d,]+ credits/);
+    }
   });
 });
 
@@ -249,5 +251,42 @@ describe("light mode's corner controls wear the field's glass; dark is untouched
     /* `:root:not([data-theme="dark"])` is the light rule above, so a dark
        selector is one NOT preceded by `not(`. */
     expect(css).not.toMatch(/(?<!not\()\[data-theme="dark"\][^{,]*\.dpc-viewer__(?:close|download|drawerClose)/);
+  });
+});
+
+/*
+  THE VERSIONS START LEVEL WITH THE PICTURE — card 2611, his report 2026-10-17:
+  *"the first thumbnail is sitting higher than the image box"*. Measured in the
+  running app: the rail began at the stage's top (40px) while the picture began
+  under the quiet counter (70px), and with twelve versions the centred column
+  spilled its first thumbnails above the scroller (the original at -87px). A
+  static render cannot lay anything out, so the browser drive with its
+  measurements is on the pull request; these arms hold the three lines the
+  alignment cannot exist without.
+*/
+describe("the version rail is level with the picture", () => {
+  it("measures the picture's distance from the stage's top and hands it to the rail", async () => {
+    const viewer = await readFile(VIEWER, "utf8");
+    expect(viewer).toContain("inset: s ? Math.max(0, Math.round(p.top - s.top)) : 0,");
+    const rail = viewer.slice(viewer.indexOf('className="dpc-viewer__rail"'));
+    expect(rail.slice(0, rail.indexOf("</aside>"))).toContain('["--dpc-rail-inset" as string]: `${drawerPlace.inset}px`');
+  });
+
+  it("pads the rail by that distance in the three-column stage, and not when it stacks", async () => {
+    const css = await readFile(CSS, "utf8");
+    const rule = css.slice(css.indexOf(".dpc-viewer__rail {"));
+    expect(rule.slice(0, rule.indexOf("}"))).toContain("padding-top: var(--dpc-rail-inset, 0px);");
+    expect(css).toContain(".dpc-viewer__rail { width: 100%; justify-content: center; padding-top: 0; }");
+  });
+
+  it("starts the column at its top, so an overflowing rail never hides its first version", async () => {
+    const css = await readFile(CSS, "utf8");
+    const rule = css.slice(css.indexOf('.dpc-refine__stack[data-layout="column"] {'));
+    const body = rule.slice(0, rule.indexOf("}"));
+    expect(body).toContain("justify-content: flex-start;");
+    /* CONTROL — the row the column inherits from really is centred, so the
+       override above is the line doing the work. */
+    const row = css.slice(css.indexOf(".dpc-refine__stack {"));
+    expect(row.slice(0, row.indexOf("}"))).toContain("justify-content: center;");
   });
 });

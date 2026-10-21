@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2640"
+          "server/castingV2/refineService.ts:2645"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1280"
+          "server/castingV2/refineService.ts:1274"
         ]
       },
       {
@@ -54,7 +54,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:464"
+          "server/castingV2/cannotSayCopy.ts:629"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4981",
+          "server/castingV2/refineService.ts:5022",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1262"
+          "server/castingV2/refineService.ts:1256"
         ]
       },
       {
@@ -159,7 +159,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:210"
+          "server/castingV2/cannotSayCopy.ts:290"
         ]
       },
       {
@@ -190,7 +190,7 @@
           "server/castingV2/refineDelta.ts:613",
           "server/castingV2/refineDelta.ts:1586",
           "server/castingV2/refineDelta.ts:1586",
-          "server/castingV2/refineService.ts:2489"
+          "server/castingV2/refineService.ts:2494"
         ]
       },
       {
@@ -222,8 +222,8 @@
           "server/castingV2/refineDelta.ts:586",
           "server/castingV2/refineDelta.ts:1563",
           "server/castingV2/refineDelta.ts:1563",
-          "server/castingV2/refineService.ts:2488",
-          "server/castingV2/refineService.ts:2500"
+          "server/castingV2/refineService.ts:2493",
+          "server/castingV2/refineService.ts:2505"
         ]
       },
       {
@@ -247,7 +247,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2995"
+          "server/castingV2/refineService.ts:3003"
         ]
       },
       {
@@ -257,7 +257,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3741"
+          "server/castingV2/refineService.ts:3769"
         ]
       },
       {
@@ -266,10 +266,11 @@
         "charge": "free",
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
-          "server/castingV2/inkBeyondTodayAsk.test.ts"
+          "server/castingV2/inkBeyondTodayAsk.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:272"
+          "server/castingV2/cannotSayCopy.ts:378"
         ]
       },
       {
@@ -280,7 +281,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:408"
+          "server/castingV2/cannotSayCopy.ts:573"
         ]
       },
       {
@@ -291,7 +292,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:435"
+          "server/castingV2/cannotSayCopy.ts:600"
         ]
       },
       {
@@ -301,7 +302,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1269"
+          "server/castingV2/refineService.ts:1263"
         ]
       },
       {
@@ -309,10 +310,11 @@
         "kind": "cannot-say",
         "charge": "free",
         "pinnedBy": [
-          "server/castingV2/cannotSayCopy.test.ts"
+          "server/castingV2/cannotSayCopy.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:300"
+          "server/castingV2/cannotSayCopy.ts:439"
         ]
       },
       {
@@ -328,7 +330,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:141"
+          "server/castingV2/cannotSayCopy.ts:221"
         ]
       },
       {
@@ -340,7 +342,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:479"
+          "server/castingV2/cannotSayCopy.ts:644"
         ]
       },
       {
@@ -354,7 +356,7 @@
           "server/castingV2/viewFeatureWords.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:474"
+          "server/castingV2/cannotSayCopy.ts:639"
         ]
       },
       {
@@ -366,7 +368,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:195"
+          "server/castingV2/cannotSayCopy.ts:275"
         ]
       },
       {
@@ -400,7 +402,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4464"
+          "server/castingV2/refineService.ts:4499"
         ]
       },
       {
@@ -412,8 +414,8 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:1102",
-          "server/castingV2/cannotSayCopy.ts:205"
+          "server/castingV2/repaintAsks.ts:1229",
+          "server/castingV2/cannotSayCopy.ts:285"
         ]
       },
       {
@@ -423,7 +425,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3466"
+          "server/castingV2/refineService.ts:3474"
         ]
       },
       {
@@ -433,7 +435,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3447"
+          "server/castingV2/refineService.ts:3455"
         ]
       },
       {
@@ -443,7 +445,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3585"
+          "server/castingV2/refineService.ts:3612"
         ]
       },
       {
@@ -453,8 +455,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3224",
-          "server/castingV2/refineService.ts:3241"
+          "server/castingV2/refineService.ts:3232",
+          "server/castingV2/refineService.ts:3249"
         ]
       },
       {
@@ -464,7 +466,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4434"
+          "server/castingV2/refineService.ts:4469"
         ]
       },
       {
@@ -474,7 +476,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3038"
+          "server/castingV2/refineService.ts:3046"
         ]
       },
       {
@@ -540,7 +542,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4960"
+          "server/castingV2/refineService.ts:4995"
         ]
       },
       {
@@ -550,8 +552,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1350",
-          "server/castingV2/refineService.ts:1388"
+          "server/castingV2/refineService.ts:1344",
+          "server/castingV2/refineService.ts:1382"
         ]
       },
       {
@@ -561,7 +563,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:450"
+          "server/castingV2/rollService.ts:457"
         ]
       },
       {
@@ -571,7 +573,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:444"
+          "server/castingV2/rollService.ts:451"
         ]
       },
       {
@@ -581,7 +583,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:438"
+          "server/castingV2/rollService.ts:445"
         ]
       },
       {
@@ -593,7 +595,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:180"
+          "server/castingV2/cannotSayCopy.ts:260"
         ]
       },
       {
@@ -603,7 +605,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2686"
+          "server/castingV2/refineService.ts:2691"
         ]
       },
       {
@@ -615,8 +617,8 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/repaintAsks.ts:639",
-          "server/castingV2/cannotSayCopy.ts:441"
+          "server/castingV2/repaintAsks.ts:707",
+          "server/castingV2/cannotSayCopy.ts:606"
         ]
       },
       {
@@ -629,7 +631,7 @@
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:220"
+          "server/castingV2/cannotSayCopy.ts:300"
         ]
       },
       {
@@ -639,10 +641,11 @@
         "pinnedBy": [
           "server/castingV2/cannotSayCopy.test.ts",
           "server/castingV2/inkBeyondTodayAsk.test.ts",
+          "server/castingV2/inkWordsRoad.test.ts",
           "server/castingV2/repaintAsks.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:248"
+          "server/castingV2/cannotSayCopy.ts:336"
         ]
       },
       {
@@ -736,8 +739,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1256",
-          "server/castingV2/refineService.ts:2612"
+          "server/castingV2/refineService.ts:1250",
+          "server/castingV2/refineService.ts:2617"
         ]
       },
       {
@@ -838,7 +841,7 @@
           "server/castingV2/cannotSayCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/cannotSayCopy.ts:415"
+          "server/castingV2/cannotSayCopy.ts:580"
         ]
       }
     ],
@@ -1575,7 +1578,7 @@
           "CASTING_CURRENT_DESCRIPTION_SCOPE"
         ],
         "notes": [
-          "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). A FOLLOW OF AN EDITED VERSION carries the direction the edits took (#2576, his word 2026-10-16: 'build it', which supersedes 'follow doesnt need a description' for this one thing): in the `follow` procedure, BEFORE `createRoll` and so before the claim, `resolveFollowBrief` (followBrief.ts) has the same engine rewrite the face's roll brief from that version's description or ask chain (`writeFollowBrief`, purpose `follow.brief`, 8 s and one retry) — direction-level changes in (hair, style, augments, outfit direction, build), one-person specifics out (an exact scar, a single mole, eye colour the brief never stated), and everything that is not the person (setting, light, camera and framing, style, mood) kept word for word, with a reply shorter than 70% of the brief refused as a collapse (`FOLLOW_BRIEF_MIN_LENGTH_RATIO`) — and the rewritten words are the roll's recorded brief, so the new sheet shows them. It is NOT a door either: a never-edited face, the flag off, words the customer typed that differ from the face's brief, or a writer that does not answer all send the box's own string, and price, claim and refunds are createRoll's unchanged. A Follow child's FIRST description is seeded from its own roll's brief like any face without one: 'following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed'.",
+          "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). A FOLLOW OF AN EDITED VERSION carries the direction the edits took (#2576, his word 2026-10-16: 'build it', which supersedes 'follow doesnt need a description' for this one thing): inside `createRoll` — BELOW every door that refuses free in milliseconds and above the compile, which is #2582 items 1 and 3 — `resolveFollowBrief` (followBrief.ts) has the same engine rewrite the face's roll brief from that version's description or ask chain (`writeFollowBrief`, purpose `follow.brief`, 8 s and one retry under one overall deadline of `FOLLOW_BRIEF_DEADLINE_MS` from the press, which covers the shared text queue's own unbounded wait for a slot) — direction-level changes in (hair, style, augments, outfit direction, build), one-person specifics out and REFUSED on the way out rather than only forbidden in the prompt (`introducedOnePersonSpecific`: a scar, a mole, a freckle, a tattoo, or an eye colour the brief never stated), and everything that is not the person (setting, light, camera and framing, style, mood) kept word for word, with a reply that drops more of the brief's clauses than it puts back refused as a collapse (`clauseBalance`, which replaced a 70% length floor that refused a short brief's removal and passed the very collapse it was for). The rewritten words are what the roll COMPILES from and what its row records, so the new sheet shows them; the CLAIM is keyed on the customer's own words instead, because a claim hashed over a nondeterministic rewrite made a replayed press of one request id read as a different action. It is NOT a door either: a never-edited face, the flag off, words the customer typed that differ from the face's brief, or a writer that does not answer all send the box's own string, and price, claim and refunds are createRoll's unchanged. A Follow child's FIRST description is seeded from its own roll's brief like any face without one: 'following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed'.",
           "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
           "`refine_limit` is the 24-instruction ceiling — removals are still allowed there; only growth is blocked.",
           "Charge-then-refund where the answer was knowable pre-claim is a defect class this program has closed twice (the mid-chain prune, the dangling-crop transform); the census's ledger arm guards the whole table.",

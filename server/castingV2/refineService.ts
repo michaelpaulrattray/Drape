@@ -73,15 +73,12 @@ import {
   markVariantDispatched,
   recordVariantDispatch,
   recordVariantOutcome,
-  recordVariantFigure,
   recordVariantStep,
   selectVariant,
   VariantOwnershipError,
 } from "../db/castingV2Variants";
 import { isRefineStep, type RefineStep } from "../../shared/refineSteps";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
-import { isRefineFigure, type RefineFigure } from "../../shared/refineFigure";
-import { cutRefineFigure } from "./refineFigure";
 import { getBriefForOwnedCandidate, getOwnedCandidateOnVersion, getOwnedCandidateWithSelectedFace } from "../db/castingV2";
 import { readBriefFacts } from "./rollProjection";
 import { createModuleLogger } from "../logging/logger";
@@ -197,6 +194,7 @@ import {
 } from "./refineReask";
 import {
   chainAfterRemoval,
+  struckPartOf,
   composeChain,
   facetOf,
   matchSteps,
@@ -204,6 +202,7 @@ import {
   readRemovalSubject,
   reReadNamesAThingToHave,
   sameChain,
+  takenFromKeptSentences,
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
@@ -220,6 +219,7 @@ import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
+import { carriesHoldingTheirAsks, chainAsksBySlot } from "./askHeldByWords";
 import {
   deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences, priorWordsBySlot,
   supersededCarrySlots,
@@ -241,8 +241,10 @@ import { inkDesignForAsk, slotPlacementOf, type InkAskAddress } from "./inkDesig
 import { sidesForInkPlacement } from "../../shared/inkReleasedPlacements";
 import { INK_PLACEMENTS, inkPlacementBareNoun, isInkPlacement } from "../../shared/inkPlacementVocabulary";
 /* Whether the words road can put a NEW tattoo at a placement — the derived tail
-   of C4a's answer, off the same lists that decide the road (fable-1339 §2). */
-import { wordsRoadServes } from "./inkPlacement";
+   of C4a's answer, off the same lists that decide the road (fable-1339 §2) —
+   and WHICH placements would actually work for this cast, which three refusal
+   sentences now carry instead of naming all three surfaces as prose (#2580). */
+import { servedAndBarePlacements, wordsRoadServes } from "./inkPlacement";
 /* AND WHETHER THIS CAST'S OUTFIT LEAVES THAT SURFACE SHOWING (#2558).
    The road is one of the two questions a words render asks; the covering is the
    other, and the offer below asks both. Read from the SAME owner `bareSurfaces`
@@ -325,6 +327,7 @@ import {
   missingFacts,
   shortfalls,
   scopedToInstance,
+  libraryReadingOf,
   verifyRender,
   type FacetCheck,
   type RenderVerdict,
@@ -843,15 +846,6 @@ export type RefineServiceDependencies = {
    * get wrong.
    */
   recordStep?: typeof recordVariantStep;
-  /**
-   * Records where she is in her own picture, so the loader's dust can sit on her
-   * shape (#55, board E). Injectable for the same reason as `recordStep`: what
-   * is worth asserting is that it is written ONCE, from the master's own bytes,
-   * and that its failure costs the render nothing.
-   */
-  recordFigure?: typeof recordVariantFigure;
-  /** Cuts that map. Injectable so a suite can drive the fence without sharp. */
-  cutFigure?: typeof cutRefineFigure;
   /**
    * Brings each reference to the master's geometry before dispatch.
    *
@@ -1830,11 +1824,22 @@ async function refineCandidateCounted(
   });
 
   /*
-    ONE READING, ASKED THREE WAYS — the same face, the same sentence, the same
-    prior. Named here because there are three call sites (the first reading, the
-    removal re-read, and the restatement pass) and a fourth copy of this block
-    would be the drift law's own failure mode on the step that decides what gets
-    painted.
+    ONE READING, ASKED FOUR WAYS — the same face, the same sentence, the same
+    prior. Named here because there are four call sites (the first reading, the
+    no-removal-word re-read, RULE 3's re-read, and the restatement pass) and a
+    fifth copy of this block would be the drift law's own failure mode on the
+    step that decides what gets painted.
+
+    ⚠ **IT SAID THREE UNTIL #2584, AND THE FOURTH COPY WAS ALREADY THERE** —
+    RULE 3's re-read was sixteen hand-written lines passing eight of these
+    fourteen facts, with the other six arriving as `false` because an absent
+    optional boolean is read as `=== true`. Two members of that gap were found
+    one at a time by two different readers before anybody looked at it as a set
+    (`openLane` on PR #2556, `inkWordsRoadOpen` measured for #2584). The verdict
+    on each of the six, and why the drift was invisible to the compiler, is at
+    that call site; `refineService.test.ts` now derives the comparison between
+    the two option sets rather than listing them, which is the only arm shape
+    neither of those two members would have needed finding by hand.
   */
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
@@ -2742,6 +2747,9 @@ async function refineCandidateCounted(
     all of them or it is deciding on the customer's behalf in silence.
   */
   let outOfFrameNote: string | null = null;
+  /* What the frame took out of this ask, for the description writer (#2645
+     follow-up): that half was never painted, so it must never be described. */
+  let notInShotForWriter: readonly string[] = [];
   /*
     AND THE THIRD MEMBER OF THAT CLASS: a subject she NAMED that reached no lane
     at all (ruled fable-1374 §2, noun ruled fable-1376).
@@ -3534,39 +3542,58 @@ async function refineCandidateCounted(
         the refund paths moved, and the thing still has to be ON them — the brief,
         the recipe or the segmenter — to reach this line at all.
 
-        ⚠ **AND `openLane` WAS ONE MEMBER OF A SET OF NINE, WHICH IS #2584 —
-        READ IT BEFORE ADDING OR REMOVING ANYTHING IN THE CALL BELOW.** Measured
-        on the relay's finding on PR #2569: the main read — the
-        `interpretRefinement` call that passes `referenceAttached` — is handed
-        FOURTEEN facts and this re-read is handed eight, seven of them shared, so
-        **seven facts the main read knows are absent here and every one of them is
-        read as `false` or null** — `referenceAttached`, `inkReferenceEnabled`
-        (`CASTING_INK_REFERENCE_SCOPE`, still a live flag), `wardrobe`,
-        `inkDocumentedByDelivery`, `memory`, `lastColourFacet`,
-        `scopedColourFacet`. `inkWordsRoadOpen` was the eighth and `openLane` the
-        ninth; both are moot only because their flags retired.
+        ⚠ **THROUGH `readInstruction`, AND IT WAS A HAND-WRITTEN OBJECT UNTIL
+        #2584.** `readInstruction`'s own docblock warns that *"a fourth copy of
+        this block would be the drift law's own failure mode on the step that
+        decides what gets painted"* — and the fourth copy was these sixteen
+        lines. It passed EIGHT things where the main read passes fourteen, and
+        the six it left out were not unknown to the reader: an absent optional
+        boolean is read as `=== true`, so every one of them arrived as **no**.
+        `tsc` can never speak about that, and a reviewer reading either call
+        site alone sees nothing wrong.
 
-        Two of the nine have now been found one at a time, by two readers, three
-        weeks apart, each by grepping a NAME after the compiler had called the
-        sweep finished — because an optional boolean read as `=== true` is silent
-        when absent, so `tsc` has nothing to say and either call site reads
-        perfectly well on its own. **Withholding the removal vocabulary is this
-        re-read's whole purpose and is right; nothing here has ever said why the
-        other seven are withheld.** #2584 asks for a verdict on each and a derived
-        guard over the pair, so a fact added to the main read cannot silently skip
-        this one.
+        **The class was found twice before it was looked at as a class**, one
+        member at a time, by two different readers: `openLane` (the relay's
+        finding on PR #2556 — a flag at `all` for everyone, and this road alone
+        asked the closed prompt, so an uncatalogued creature feature asked to
+        come off refused FREE here where the main read of the same words
+        rendered it) and `inkWordsRoadOpen` (measured for #2584 at
+        `da7644a18^` — this road alone ran with the neck-only placement list).
+        Both are moot, their flags retired. They are the evidence, not the fix.
+
+        **The six, each with its verdict, and all six are the same verdict —
+        they should always have been passed:**
+
+          `referenceAttached`        without it the interpreter has never heard
+                                     of the attachment, *"this photo"* reads as
+                                     a real person, and the sentence the crop
+                                     road exists for refuses at the likeness
+                                     wall — measured four for four
+          `inkReferenceEnabled`      a LIVE flag; withholding it means this one
+                                     road answers as if the account could never
+                                     use a picture as a tattoo document
+          `wardrobe`                 the second half of *can a tattoo go there*
+                                     (D-206); absent reads as `unpathed`
+          `inkDocumentedByDelivery`  without it the transform road is
+                                     unreachable from this re-read, so a change
+                                     to ink this product already delivered
+                                     walls here and not one line away
+          `lastColourFacet`          D-178's history; absent, *"make it pinker"*
+                                     after a hair edit loses the referent
+          `scopedColourFacet`        the part the customer TAPPED. Withholding a
+                                     tap is census card C2 inverted — the
+                                     prompt half saying nothing while the
+                                     backstop carries it
+
+        **Nothing is withheld on purpose except the removal vocabulary, and
+        that is what `mode: "edit"` is.** Its sibling re-read 670 lines above —
+        *"a removal with no plain removal word"* — has always been
+        `readInstruction({ mode: "edit" })`, which is what makes this the
+        outlier rather than the design. `refineService.test.ts` holds the two
+        option sets equal by DERIVING the comparison rather than listing the
+        fields, so a fact added to the main read in future cannot skip this one.
       */
-      const asEdit = await (dependencies.interpret ?? interpretRefinement)({
-        instruction,
-        mode: "edit",
-        prior: priorItems,
-        currentEyeColour: currentValueOfFacet(currentIdentity, "eye.colour"),
-        currentEyeShape: currentValueOfFacet(currentIdentity, "eye.shape"),
-        currentHairStyle: currentValueOfFacet(currentIdentity, "hair.cut"),
-        currentHairColour: currentValueOfFacet(currentIdentity, "hair.colour"),
-        currentHairTexture: currentValueOfFacet(currentIdentity, "hair.texture"),
-        currentMakeup: currentValueOfFacet(currentIdentity, "makeup"),
-      });
+      const asEdit = await readInstruction({ mode: "edit" });
       /*
         THE FOUNDER'S OWN DOOR (opus-465). "Remove her hair" came through here,
         was re-read as an edit, hit the content wall, and the refusal reached him
@@ -3593,7 +3620,7 @@ async function refineCandidateCounted(
       }
     } else {
       for (const match of matched) {
-        for (const facet of Array.from(facetsWrittenBy(predecessorChain[match.index]!.delta))) {
+        for (const facet of Array.from(facetsWrittenBy(struckPartOf(predecessorChain[match.index]!, match)))) {
           removedFacets.add(facet);
         }
         /*
@@ -3604,7 +3631,7 @@ async function refineCandidateCounted(
           unchanged: this set is additive and empty on every prune of an
           ordinary facet.
         */
-        for (const slot of slotsOfPrunedStep(predecessorChain[match.index]!.delta)) {
+        for (const slot of slotsOfPrunedStep(struckPartOf(predecessorChain[match.index]!, match))) {
           removedSlots.add(slot);
         }
       }
@@ -3727,6 +3754,7 @@ async function refineCandidateCounted(
       );
       editDelta = inFrame;
       outOfFrameNote = partlyOutOfFrameNote(nameWhatIsMissing(notInShot));
+      notInShotForWriter = notInShot;
     }
   }
 
@@ -3883,6 +3911,13 @@ async function refineCandidateCounted(
           kind: "selected" as const,
           note: cannotSaySentence(reason, {
             words, facet: "ink", scopeNoun, moneySafe: true, pronouns,
+            /* WHERE A NEW ONE WOULD ACTUALLY WORK ON THIS CAST (#2580) — the
+               account's road intersected with what this outfit leaves showing,
+               from the one derivation, read off the same `wardrobeNow` the ink
+               gate itself was asked with. `noInkToChange` offered all three
+               surfaces as prose before this and the house tee covers the
+               chest. */
+            inkPlaces: servedAndBarePlacements(wardrobeNow),
           }),
           variantId: source.variantPublicId,
           candidateId: input.candidatePublicId,
@@ -4967,6 +5002,12 @@ async function refineCandidateCounted(
           scopeNoun,
           /* Nothing has been claimed at this line — the whole point of it. */
           moneySafe: true,
+          /* `notASlot` names no placement, so this door reads nothing from the
+             list — it carries the real answer rather than an empty stand-in
+             because `CannotSayContext` has one truthful value for it here, and
+             a stand-in is how a field starts lying at the one door that later
+             grows a sentence (#2580). */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
         }),
       });
     }
@@ -5406,6 +5447,12 @@ async function refineCandidateCounted(
         "I can put a tattoo on her, but I need to know where it goes —
          her neck, an upper arm, her upper chest. Say where and I'll do it."
 
+    ⚠ **That sentence is QUOTED HISTORY and is no longer what the door says**
+    (#2580): it named all three surfaces as frozen prose, and the house crew tee
+    covers the chest, so it offered the default cast a place the next ask
+    refuses. The places are derived per cast now — see `cannotSayCopy.ts` — and
+    the quote above is kept because it is the specimen this paragraph is about.
+
     said to a customer whose own sentence was *"give him a small geometric
     dinosaur skeleton tattoo ON HIS NECK"*, and whose FILED DELTA held those
     words verbatim. The product asked her for the one thing she had already
@@ -5526,6 +5573,11 @@ async function refineCandidateCounted(
         kind: "selected",
         note: cannotSaySentence(beyondToday ? "inkBeyondToday" : "unplacedInk", {
           words: null, facet: "ink", scopeNoun: null, moneySafe: true, pronouns,
+          /* BOTH SENTENCES CARRY THE SAME LIST (#2580), because both are this
+             one ask read two ways — `servedAndBarePlacements` is the single
+             statement that holds the road and this cast's outfit together, and
+             the copy layer composes rather than deriving a second answer. */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
         }),
         variantId: source.variantPublicId,
         candidateId: input.candidatePublicId,
@@ -6151,37 +6203,6 @@ async function refineCandidateCounted(
 
     const base = await (dependencies.readBytes ?? storageReadBytes)(variant.baseImageKey);
     /*
-      HER SHAPE, FOR THE WAITING PICTURE — cut once, here, because here is where
-      her bytes already are (#55, board E's dust).
-
-      ⚠ **FENCED LIKE `announce`, AND THE FENCE IS THE WHOLE OF IT.** This is
-      decoration on a loading screen sitting inside the compensated try, where an
-      escaping rejection refunds the charge and fails the edit. Nothing about
-      dust may ever cost a picture — so sharp's own failures are swallowed by
-      `cutRefineFigure` (it answers null), and the WRITE is caught here. A row
-      with no map draws the ambient field, which is what every row drew before
-      this shipped.
-
-      Not awaited for its value, and deliberately at this line rather than
-      earlier: the bytes are the input, so anywhere above it would be a second
-      read of the master for decoration.
-    */
-    try {
-      const figure = await (dependencies.cutFigure ?? cutRefineFigure)(base.bytes);
-      if (figure) {
-        await (dependencies.recordFigure ?? recordVariantFigure)({
-          userId: input.userId,
-          variantId: variant.id,
-          figure,
-        });
-      }
-    } catch (error) {
-      log.warn(
-        { err: String(error).slice(0, 120), operationId, variant: variant.publicId },
-        "[refineService] could not record her shape — the render stands, the loader's dust stays ambient",
-      );
-    }
-    /*
       THE MASTER'S EXACT PIXELS, read from the master itself — and read LAZILY,
       because only the masked path needs them.
     
@@ -6515,7 +6536,70 @@ async function refineCandidateCounted(
       DOES hold it.
     */
     let describedNow: Promise<string | undefined> | null = null;
-    const describeThisEdit = (): Promise<string | undefined> => {
+    /*
+      ⚠ **THE WRITER IS HANDED THE CUSTOMER'S OWN SENTENCE AGAIN, AND THE
+      PARAGRAPHS BELOW ABOUT `changeFacts` ARE HISTORY — #2645, 2026-10-17.**
+      `changeFacts` is the WHOLE recipe's change clause, not this edit's: every
+      render anchors on the master, so every earlier edit is re-said in it, in
+      the studio's resolved words. The layout court measured both halves on the
+      real entrance: on "take the horns off" the prune contributes no clause
+      (`Ask.restate`), so the writer saw only "their scales: deeper emerald",
+      wrote "deeper emerald still" and kept the horns, which the next edit then
+      painted back; and "cut the hair into a short crop" reached it as the house
+      style name "standard crop" for six edits. His rule, 2026-10-17: the studio
+      never rewords what the customer asked for. What #2578 §2 measured is kept
+      in the two pieces it was actually about: the removal's SITE phrase rides
+      as `absences` (the vacate asks' own `says`), and the picture-half
+      parenthetical cannot reach the writer because the customer's sentence
+      never had one. What THIS edit takes back rides as `takenBack`, which the
+      writer is told and its backstop refuses.
+
+      `changeFacts` IS THE EDIT AS FACTS ABOUT THE PERSON (#2578 §2) — the
+      assembled change clause with the picture-half parentheticals omitted,
+      built by the assembler's own clause builder in the pass above.
+
+      It replaces the customer's raw sentence as the writer's `change`, which
+      is the whole of this card: asked *"take her earrings off"*, the writer
+      wrote *"She wears no earrings."* 3 of 3 times — the absence, never the
+      SITE. Handed the vacancy phrase instead (*"no earrings — both earlobes
+      bare, nothing hanging from either ear"*) the site survives 3/3.
+
+      ⚠ **ABSENT MEANS THE FIRST PASS REFUSED, AND THE WRITER IS NOT RUN — AND
+      THAT WAS A COMMENT RATHER THAN A GUARD UNTIL #2598** (Squall's finding on
+      PR #2594). These three lines said today's raw sentence was not used
+      either; the line below read `changeFacts ?? instruction` in effect, so a
+      refused pass spent one house text call writing a description **from the
+      customer's raw sentence** for a render that was about to throw on that
+      same refusal. No money moved and nothing was ever shown — it was wasted
+      cost and code contradicting its own paragraph.
+
+      ⚠ **THE GUARD TELLS `undefined` AND `""` APART, AND THE DIFFERENCE IS A
+      REAL CASE RATHER THAN TIDINESS.** `undefined` is the refusal and returns
+      early. An EMPTY STRING is an `ok` pass: `recipeAssembler.ts:1064` answers
+      `{ prompt: "", facts: "" }` for a recipe with **zero clauses**, and
+      sending `change: ""` to the writer is worse than sending the sentence —
+      so the raw-sentence fallback below stays for exactly that case and for
+      nothing else.
+
+      ⚠ **AND IT SITS ABOVE THE MEMO, WHICH IS WHY IT IS NOT ONE LINE LOWER.**
+      Returning `undefined` from inside the async body would pin `undefined`
+      into `describedNow` for every later call. It cannot bite today —
+      `repaintOnce` has one call site, so this runs once per request — but a
+      retry road added later would silently lose the description for a pass
+      that SUCCEEDED, and the early return costs nothing.
+
+      ⚠ MEMOISED, so the first call's value is the one that counts. That is the
+      existing contract (*"written ONCE per refine, however many times
+      `repaintOnce` runs"*) and not something this parameter changes — but it
+      does mean a later caller cannot correct the wording, so there is exactly
+      one call site and it is the one holding the assembled pass.
+    */
+    const describeThisEdit = (
+      edit?: { takenBack: readonly string[]; absences: readonly string[] },
+    ): Promise<string | undefined> => {
+      /* The refusal, before the memo — see the paragraph above for both halves
+         of why it is here and not one line down. */
+      if (edit === undefined) return Promise.resolve(undefined);
       if (describedNow) return describedNow;
       describedNow = (async () => {
         if (!captureCastingCurrentDescriptionEnabled(input.userId)) return undefined;
@@ -6558,9 +6642,54 @@ async function refineCandidateCounted(
             return undefined;
           }
         }
+        /*
+          AND WHAT AN EARLIER PRUNE TOOK OUT OF A SENTENCE THAT STAYED (#2665).
+
+          `earlierAsks` are the customer's sentences, verbatim, and a pruned
+          step keeps its sentence (D-171): after "remove the fangs", the record
+          still reads "add fangs and horns". `edit.takenBack` covers only THIS
+          edit, so a seed written after a prune whose own description was never
+          filed was handed the fangs as a change already made — and every
+          render after it paints from that paragraph. The sentence is never
+          edited; what it no longer asks for rides beside it as taken back, the
+          same lines and the same backstop as this edit's own. Only on the seed
+          road: a previous description already carries the removal.
+        */
+        const takenEarlier = previous === null
+          ? takenFromKeptSentences(
+            predecessorChain ?? [],
+            lineageChainsOf(existing, predecessor),
+            composed,
+          )
+          : [];
         const written = await writeCurrentDescription(
           (dependencies.describeEngine ?? interpreterEngine)(),
-          { previous, seed: { brief, earlierAsks }, change: instruction },
+          {
+            previous,
+            seed: { brief, earlierAsks },
+            /*
+              The measured wording where the assembler produced one; the
+              customer's own sentence otherwise, which is what every render
+              before this card used.
+
+              ⚠ `changeFacts` CANNOT BE `undefined` HERE SINCE #2598 — the
+              guard at the top returns before the memo. What is left is the
+              ZERO-CLAUSE recipe (`recipeAssembler.ts:1064` → `facts: ""`),
+              which is an `ok` pass with nothing assembled, and the sentence is
+              the better of the two things to hand the writer there. The
+              `!== undefined` half is kept because the parameter is still
+              optional and a reader should not have to walk up to know why.
+            */
+            /* The customer's own sentence, verbatim (#2645) — see the
+               paragraph above `describeThisEdit`. */
+            change: instruction,
+            takenBack: Array.from(new Set([...edit.takenBack, ...takenEarlier])),
+            absences: edit.absences,
+            /* The half of that sentence the photograph does not show was not
+               painted, so the writer is told so and its backstop refuses a
+               paragraph that writes it in (#2645 follow-up). */
+            notInShot: notInShotForWriter,
+          },
         );
         if (!written.ok) {
           log.warn(
@@ -6621,7 +6750,33 @@ async function refineCandidateCounted(
         the per-instance memory below are asking a different question — what
         this face's rows SAY — and pruning an ask does not unsay it.
       */
-      const carried = carriesAfterPruning({ rows: branchRows, composed });
+      const pruned = carriesAfterPruning({ rows: branchRows, composed });
+      /*
+        ⚠ AND A KEPT FEATURE WHOSE WORDS DO NOT HOLD WHAT THE CHAIN ASKS FOR IT
+        STOPS RIDING (#2650) — no crop and no keep-line, whatever any reader
+        said and whenever the row was filed. Its slot joins the restore list
+        below, so the feature is said in the customer's own words instead. The
+        test is a fixed word comparison, not a reader (`askHeldByWords.ts`).
+      */
+      const held = carriesHoldingTheirAsks({ rows: pruned.rows, composed });
+      const carried = { rows: held.rows, dropped: pruned.dropped };
+      const contradictedSlots = held.contradictedSlots;
+      /* A slot whose older, matching crop rides again is NOT said in words —
+         a restored slot is an edited slot, and an edited slot's crop is
+         dropped below, which would throw the matching picture away. */
+      const reinstatedSlots = new Set(held.reinstated);
+      if (held.contradicted.length > 0 || reinstatedSlots.size > 0) {
+        log.warn(
+          {
+            operationId,
+            variant: variant.publicId,
+            setAside: held.contradicted.map((one) => one.slot),
+            wordsOnly: contradictedSlots,
+            olderMatchingCropRides: held.reinstated,
+          },
+          "[refineService] a kept feature's words do not hold what the chain asks for it — its crop and keep-line stay home, and the ask is said in words",
+        );
+      }
       if (carried.dropped.length > 0) {
         log.info(
           {
@@ -6704,7 +6859,13 @@ async function refineCandidateCounted(
             pixels, so on an ordinary face the list is empty and not one line of
             this changes the recipe.
           */
-          restore: { state: composed, slots: supersededCarrySlots(branchRows) },
+          restore: {
+            state: composed,
+            slots: Array.from(new Set([
+              ...supersededCarrySlots(branchRows).filter((slot) => !reinstatedSlots.has(slot)),
+              ...contradictedSlots,
+            ])),
+          },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
             does not come from a tapped row or a clicked rectangle — the panel
@@ -6779,6 +6940,12 @@ async function refineCandidateCounted(
             answering for everything is how the generic line stops being generic.
           */
           words: asks.facet === "makeup" ? editDelta?.makeup ?? null : null,
+          /* WHERE A TATTOO WOULD WORK ON THIS CAST, derived HERE because this is
+             where `wardrobeNow` is (#2580). `unplacedInk` is one of this error's
+             reasons: the pre-claim door answers it first and always should, but
+             the settlement writes the sentence from the error alone, so the list
+             has to travel with it. */
+          inkPlaces: servedAndBarePlacements(wardrobeNow),
           /* The part she pointed at, said the way the product speaks about it —
              the sentence's whole difference on a scoped ask (fable-471). */
           scopeNoun: (() => {
@@ -7106,11 +7273,28 @@ async function refineCandidateCounted(
           "[refineService] her own designs ride a render that is not about them",
         );
       }
-      const currentDescription = await describeThisEdit();
-      const recipe = assembleRecipe({
-        /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
-           and the prompt is today's byte for byte. */
-        ...(currentDescription !== undefined ? { currentDescription } : {}),
+      /*
+        THE RECIPE IS ASSEMBLED TWICE ON THE DESCRIPTION ROAD, AND THAT IS THE
+        SEAM #2578 §2 ASKED FOR.
+
+        The writer must be handed the edit's FACT wording — the removal's site
+        phrase above all — and that wording is built by the assembler's own
+        clause builder from `wordStacks`, which only exists inside an assembly.
+        But the description has to be IN the prompt, so it must be written
+        before the assembly that sends it. Hence: one pass with no description
+        to read `changeFacts` off, then the real pass with the paragraph.
+
+        The input is built ONCE and spread, so there is no second copy of it to
+        drift (law 4), and `assembleRecipe` is pure — no logging, no I/O, no
+        clock — so the first pass costs string building and nothing else.
+
+        ⚠ FLAG OFF, THE FIRST PASS *IS* THE RECIPE and is reused rather than
+        recomputed: its input is byte-identical to what this call site passed
+        before this change, so the off road assembles exactly once and sends
+        exactly the bytes it sent yesterday. The flag-off byte pins are what
+        hold that true rather than this comment.
+      */
+      const recipeInput = {
         /* The master is the base this render is anchored on, by key. Every
            render is `edit(original, …)` and `claimVariant` proved that base
            inside the statement that proved the parent, so this cannot be got
@@ -7297,7 +7481,44 @@ async function refineCandidateCounted(
             };
           })()
           : {}),
-      });
+      };
+      const withoutDescription = assembleRecipe(recipeInput);
+      /* A refusal carries no `changeFacts`, and the writer is simply not run
+         on one: the render is about to fail on the same refusal below, so
+         spending a text call on it would buy nothing. ⚠ Enforced by
+         `describeThisEdit`'s own `undefined` guard since #2598 — this sentence
+         was true of the INTENT and false of the code, which spent the call and
+         wrote from the raw sentence. */
+      const currentDescription = await describeThisEdit(
+        withoutDescription.ok
+          ? {
+            /* Read off the asks this render was assembled from, so the writer
+               and the recipe can never disagree about what left (law 4). */
+            takenBack: Array.from(new Set(recipeInput.asks
+              .map((one) => one.restate?.taken.trim() ?? "")
+              .filter((one) => one !== ""))),
+            absences: Array.from(new Set(recipeInput.asks
+              .map((one) => one.vacate?.says.trim() ?? "")
+              .filter((one) => one !== ""))),
+          }
+          : undefined,
+      );
+      /* WHO THEY ARE NOW (#2565) — in place of the change sentence, or absent
+         and the prompt is the first pass, byte for byte. And beside it, his
+         labelled layout (#2647): the customer's own sentence, verbatim — the
+         same `instruction` the description writer is handed — under the slots
+         THIS step asked for, never the ones only re-said. */
+      const recipe = currentDescription === undefined
+        ? withoutDescription
+        : assembleRecipe({
+          ...recipeInput,
+          currentDescription,
+          editInstruction: {
+            words: instruction,
+            slots: asks.askedNow.slots,
+            presentation: asks.askedNow.presentation,
+          },
+        });
       if (!recipe.ok) {
         log.error(
           { operationId, variant: variant.publicId, reason: recipe.reason, slot: recipe.slot },
@@ -9089,24 +9310,20 @@ async function refineCandidateCounted(
       retire a crop.
     */
     const facetOfCheck = (check: FacetCheck): Facet | null => facetIn(check.subject);
-    const readChecks = verification.unavailable
-      ? []
-      : verification.checks.filter((check) => {
-        const facet = facetOfCheck(check);
-        /* `&& !carriedFacets.has(facet)` stood here: a fact the paste put in the
-           frame was not this render's own reading to claim. The paste road is
-           retired (#1160), the set was always empty, and the clause was
-           therefore always true. */
-        return facet !== null && check.read && writtenFacets.has(facet);
-      });
-    const missedFacets = new Set(
-      readChecks.filter((check) => !check.verified).flatMap((check) => facetOfCheck(check) ?? []),
-    );
-    const earned = Array.from(new Set(
-      readChecks
-        .filter((check) => check.verified && !missedFacets.has(facetOfCheck(check)!))
-        .flatMap((check) => facetOfCheck(check) ?? []),
-    ));
+    /*
+      ⚠ AND A YES THE CONFIRMATION COULD NOT REACH IS NOT A YES TO THE LIBRARY
+      (#2646) — see `libraryReadingOf`, which owns the derivation so the
+      outgoing-prompt arm can drive it without this function around it.
+
+      Delivering on one reading is right (D-194). ADOPTING on one reading was
+      the layout court's lock-in: the cut slipped back to the bun, the single
+      reading said "worn as cut", the re-read failed twice, and the library
+      filed a crop of the bun as the exact hair they have. An unconfirmed
+      affirmation on a written facet now files with the misses, so the slot is
+      disputed (evidence, never newest), its carry is superseded, and the next
+      render says the ASKED state in words.
+    */
+    const { missed: missedFacets, earned, unconfirmed } = libraryReadingOf(verification, writtenFacets);
     /*
       ⚠ AND THE CARRIED FACETS THIS RENDER'S READER SAID ARE GONE — the missing
       counterpart of `confirmed` (his own incident, fable-1242/1244).
@@ -9381,6 +9598,9 @@ async function refineCandidateCounted(
                    door, from `openAsks`, and never from a reader's affirmative. */
                 const facet = facetIn(check.subject);
                 if (facet === null) return [];
+                /* An unconfirmed yes on a rap-sheet facet confirms nothing
+                   (#2646) — the same rule the earned pass reads above. */
+                if (unconfirmed.has(facet)) return [];
                 return check.read && check.verified && !writtenFacets.has(facet) ? [facet] : [];
               }),
           )),
@@ -9539,7 +9759,15 @@ async function refineCandidateCounted(
             deliveredRegions: null,
             masterSideRegions: null,
             deliveredSideRegions: null,
-            slots,
+            /* What the chain asks of each slot rides beside it, so the mint
+               can refuse a crop whose own words do not hold it (#2650). */
+            slots: (() => {
+              const asks = chainAsksBySlot(composed);
+              return slots.map((one) => {
+                const asked = asks.get(one.slot);
+                return asked === undefined ? one : { ...one, asks: asked };
+              });
+            })(),
             knownDigests: known,
             /*
               EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
@@ -10562,6 +10790,9 @@ function failedFactsMessage(error: unknown): string | null {
       /* Carried on the error, because this function has the error and nothing
          else — see `RepaintCannotSayError.pronouns`. */
       pronouns: error.pronouns,
+      /* And the places, for exactly that reason (#2580) — derived at the throw
+         site, where the cast's outfit is in hand. */
+      inkPlaces: error.inkPlaces,
       /*
         HER BALANCE REALLY IS WHERE SHE LEFT IT, and the caller is what makes
         that true: this function is only consulted when `refund.recorded` is
@@ -10755,26 +10986,6 @@ export function readRefineStep(internalPrompt: unknown): RefineStep | null {
   if (!internalPrompt || typeof internalPrompt !== "object") return null;
   const value = (internalPrompt as { step?: unknown }).step;
   return isRefineStep(value) ? value : null;
-}
-
-/**
- * WHERE SHE IS IN HER OWN PICTURE — off the row's own record, or null (#55,
- * board E's dust).
- *
- * Same boundary rule as the step above: the column is INTERNAL and only the
- * answer crosses (invariant 8). And the same treatment of null, for the same
- * reason — a row cut before this existed, or a master sharp could not read, has
- * no map, and the loader draws the ambient field it always drew rather than
- * scattering a uniform cloud it would be calling her shape.
- *
- * Validated on the way out even though it was validated on the way in: between
- * those two moments it was a json column, and #55's own dust loop is the
- * consumer — a `w` nobody re-checked is a page that hangs.
- */
-export function readRefineFigure(internalPrompt: unknown): RefineFigure | null {
-  if (!internalPrompt || typeof internalPrompt !== "object") return null;
-  const value = (internalPrompt as { figure?: unknown }).figure;
-  return isRefineFigure(value) ? value : null;
 }
 
 /**
@@ -11070,4 +11281,30 @@ export function readStepDeltas(value: unknown): RefineDelta[] {
     steps.push(delta);
   }
   return steps;
+}
+
+/**
+ * THE CHAINS OF A VERSION'S ANCESTORS, walked by `parentVariantId` (#2665).
+ *
+ * The same walk the reference-pointer read makes: a branch the customer is not
+ * on cannot have put anything on this cast, so only the ancestry is read, never
+ * every row. A row whose two lists disagree reads as no chain and is skipped —
+ * `takenFromKeptSentences` then simply sees less, which is a miss and never a
+ * false entry.
+ */
+export function lineageChainsOf(
+  rows: ReadonlyArray<{ id: number; parentVariantId: number | null; instructions: unknown; stepDeltas: unknown }>,
+  from: { parentVariantId: number | null } | null | undefined,
+): ChainStep[][] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const chains: ChainStep[][] = [];
+  const guard = new Set<number>();
+  let walk = from?.parentVariantId == null ? null : byId.get(from.parentVariantId) ?? null;
+  while (walk && !guard.has(walk.id)) {
+    guard.add(walk.id);
+    const chain = readChain(readInstructions(walk.instructions), readStepDeltas(walk.stepDeltas));
+    if (chain) chains.push(chain);
+    walk = walk.parentVariantId == null ? null : byId.get(walk.parentVariantId) ?? null;
+  }
+  return chains;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { displayRefund, formatCredits } from "../../shared/creditDisplay";
 import type { TextEngine } from "../providers/types";
 import { CHARGE_UNAVAILABLE_SENTENCE } from "../lib/chargeRefusal";
+import { hashGenerationOperationClaim } from "../casting/operationContract";
 
 /**
  * The roll service's money and its ordering (plan §F, §H).
@@ -681,6 +682,161 @@ describe("the sequence", () => {
         code: "PRECONDITION_FAILED",
       });
       expect(journal.filter((entry) => entry.startsWith("casting:"))).toEqual([]);
+    });
+  });
+
+  /*
+    THE FOLLOW'S REWRITE: WHERE IT RUNS, AND WHAT THE CLAIM IS KEYED ON
+    (#2582 items 1 and 3, both must-fixes before the description flag widens).
+
+    The rewrite is nondeterministic by nature, so these arms are driven with a
+    resolver that CHANGES ITS ANSWER on every call — the one shape the defect
+    needs and the one a fixed double can never show.
+  */
+  describe("a Follow's rewritten brief", () => {
+    const FOLLOWED = "66666666-6666-4666-8666-666666666666";
+
+    /** What the roll ROW was written with — the sheet's own brief. */
+    async function lastRollInsert(): Promise<{ briefText: string }> {
+      const castingDb = await import("../db/castingV2");
+      const calls = (castingDb.createRollWithCandidates as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      expect(calls.length, "nothing reached the insert").toBeGreaterThan(0);
+      return calls[calls.length - 1]![0] as { briefText: string };
+    }
+
+    /** A writer that never says the same thing twice, like the real one. */
+    function changingResolver() {
+      const boxSeen: string[] = [];
+      let answer = 0;
+      const resolveFollowBrief = vi.fn(async (resolverInput: { boxText: string }) => {
+        boxSeen.push(resolverInput.boxText);
+        answer += 1;
+        return { briefText: `${resolverInput.boxText} — rewrite ${answer}`, outcome: "rewritten" as const };
+      });
+      return { resolveFollowBrief, boxSeen };
+    }
+
+    function claimWatcher() {
+      const claims: Array<Record<string, unknown>> = [];
+      const begin = vi.fn(async (claim: { payload: Record<string, unknown> }) => {
+        claims.push(claim.payload);
+        journal.push("claim");
+        return { type: "claimed" as const, operationId: OPERATION_ID, payloadHash: "h" };
+      });
+      return { begin, claims };
+    }
+
+    it("⚠ the CLAIM is keyed on the customer's own words, while the roll casts from the rewrite", async () => {
+      /*
+        The defect, exactly: the rewrite went into the claim's payload, whose
+        hash is what a replay of the same `clientRequestId` is compared on. A
+        second press of one id therefore answered CONFLICT — "That request id
+        was already used for a different action" — instead of handing back the
+        roll it had already made. Nothing was charged twice; what was lost was
+        the roll.
+      */
+      const { resolveFollowBrief } = changingResolver();
+      const { begin, claims } = claimWatcher();
+      const spy = vi.fn(async (compilerInput: { briefText: string }) =>
+        (baseDependencies() as { compileBrief: (i: unknown) => unknown }).compileBrief(compilerInput),
+      );
+      await createRoll(
+        { ...(baseDependencies() as object), resolveFollowBrief, compileBrief: spy, begin } as never,
+        { ...INPUT, followCandidatePublicId: FOLLOWED } as never,
+      );
+
+      /* The claim: the words the customer sent, untouched. */
+      expect(claims).toHaveLength(1);
+      expect(claims[0]).toMatchObject({ briefText: INPUT.briefText, followCandidatePublicId: FOLLOWED });
+      /* The work: the rewrite. Both halves, or this arm would pass on a change
+         that simply stopped rewriting. */
+      expect(spy.mock.calls[0]![0].briefText).toBe(`${INPUT.briefText} — rewrite 1`);
+      expect((await lastRollInsert()).briefText).toBe(`${INPUT.briefText} — rewrite 1`);
+    });
+
+    it("⚠ so two presses of ONE request id claim identically — the replay that used to conflict", async () => {
+      const { resolveFollowBrief } = changingResolver();
+      const { begin, claims } = claimWatcher();
+      const dependencies = { ...(baseDependencies() as object), resolveFollowBrief, begin } as never;
+      const input = { ...INPUT, followCandidatePublicId: FOLLOWED } as never;
+      /* Re-seeded in front of EACH roll — the fixture is stateful on purpose
+         and a second roll on consumed rows is cancelled, not claimed. */
+      seedCandidates();
+      await createRoll(dependencies, input);
+      seedCandidates();
+      await createRoll(dependencies, input);
+
+      expect(resolveFollowBrief).toHaveBeenCalledTimes(2);
+      expect(claims).toHaveLength(2);
+      /* Hashed through the real reader, not compared as objects: the hash is
+         what `beginDirectOperation` actually keys a replay on (law 5). */
+      const hashOf = (payload: unknown) => hashGenerationOperationClaim({
+        clientRequestId: INPUT.clientRequestId,
+        kind: "castingV2.roll",
+        payload,
+      });
+      expect(hashOf(claims[0])).toBe(hashOf(claims[1]));
+
+      /*
+        ⚠ NEGATIVE CONTROL — the same two claims as they were BEFORE this fix,
+        carrying the rewrite. If these hashed the same the arm above would pass
+        over a resolver that was not varying, and the defect would be invisible.
+      */
+      const asItWas = [1, 2].map((n) => hashOf({
+        sessionPublicId: INPUT.sessionPublicId,
+        briefText: `${INPUT.briefText} — rewrite ${n}`,
+        followCandidatePublicId: FOLLOWED,
+      }));
+      expect(asItWas[0]).not.toBe(asItWas[1]);
+    });
+
+    it("⚠ a free refusal spends no text call — the rewrite runs BELOW every instant door", async () => {
+      /*
+        It ran in the `follow` procedure, above `createRoll`, so a Follow on an
+        expired sheet waited on a text call and spent one before being refused
+        in milliseconds for free.
+      */
+      getOwnedCastingSession.mockResolvedValueOnce({ id: 10, status: "expired" } as never);
+      const { resolveFollowBrief } = changingResolver();
+      await expect(createRoll(
+        { ...(baseDependencies() as object), resolveFollowBrief } as never,
+        { ...INPUT, followCandidatePublicId: FOLLOWED } as never,
+      )).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+      expect(resolveFollowBrief).not.toHaveBeenCalled();
+    });
+
+    it("CONTROL — an open sheet does reach it, and a roll that is not a Follow never does", async () => {
+      const open = changingResolver();
+      seedCandidates();
+      await createRoll(
+        { ...(baseDependencies() as object), resolveFollowBrief: open.resolveFollowBrief } as never,
+        { ...INPUT, followCandidatePublicId: FOLLOWED } as never,
+      );
+      expect(open.resolveFollowBrief).toHaveBeenCalledTimes(1);
+      expect(open.boxSeen).toEqual([INPUT.briefText]);
+
+      const plain = changingResolver();
+      seedCandidates();
+      await createRoll(
+        { ...(baseDependencies() as object), resolveFollowBrief: plain.resolveFollowBrief } as never,
+        INPUT,
+      );
+      expect(plain.resolveFollowBrief).not.toHaveBeenCalled();
+    });
+
+    it("the stamp is already on when it runs, so the wait reads as casting", async () => {
+      const seen: string[] = [];
+      const resolveFollowBrief = vi.fn(async (resolverInput: { boxText: string }) => {
+        seen.push(...journal);
+        return { briefText: resolverInput.boxText, outcome: "rewritten" as const };
+      });
+      await createRoll(
+        { ...(baseDependencies() as object), resolveFollowBrief } as never,
+        { ...INPUT, followCandidatePublicId: FOLLOWED } as never,
+      );
+      expect(seen).toContain("casting:on");
+      expect(seen).not.toContain("claim");
+      expect(seen).not.toContain("charge");
     });
   });
 
