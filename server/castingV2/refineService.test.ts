@@ -2365,11 +2365,15 @@ describe("the render is checked against the record before it is delivered", () =
   */
   const verifierSaying = (...verdicts: boolean[]) => verifierAnswering({ absent: true }, verdicts);
 
+  /* How many VERDICT reads the reader was asked for, counted at the engine —
+     the presentation read is not one (#2672 proves a count against this). */
+  let verdictReads = 0;
   const verifierAnswering = (
     shape: { absent?: boolean },
     verdicts: boolean[],
   ) => {
     let call = 0;
+    verdictReads = 0;
     return {
       id: "verifier",
       complete: async (request: { system: string }) => {
@@ -2379,6 +2383,7 @@ describe("the render is checked against the record before it is delivered", () =
         }
         const present = verdicts[Math.min(call, verdicts.length - 1)];
         call += 1;
+        verdictReads += 1;
         return {
           /* `saw` on BOTH answers (D-235). An affirmative that names nothing is
              not a reading, so a fake that omits it here is reproducing the
@@ -2405,13 +2410,37 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("re-renders once, free, when the first attempt is missing a fact", async () => {
-    /* Two readings agreeing it is missing (D-194), then a clean second attempt. */
+  /*
+    ⚠ **THIS ARM READ "re-renders once, free, when the first attempt is missing
+    a fact" UNTIL 2026-10-21, AND HIS RULING TURNED IT OVER (#2672).** Verbatim:
+    *"go with your reccomendation on those 2 squall cards"* — the proposal to
+    stop the hidden second try, whose reason was his own *"users can just retry
+    if its not the exact look they want themselves for a cost"*.
+
+    Counted at the two engines rather than at a flag: the painter's own journal
+    holds every paint, and the reader counts every verdict it was asked for.
+    The reader below says *missing* every time it is asked, so any second paint
+    or confirming read would be visible here.
+  */
+  it("delivers a disputed render after ONE paint and ONE reading — no free re-render (#2672)", async () => {
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
-    /* Two renders, ONE charge — the retry is absorbed. */
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate"), "one paint").toHaveLength(1);
+    expect(verdictReads, "one reading, and no confirming re-read").toBe(1);
+    expect(ledger.charges.at(-1)?.amount, "the price is unchanged").toBe(REFINE_PRICE);
     expect(ledger.charges).toHaveLength(1);
-    expect(ledger.refunds).toHaveLength(0);
+    expect(ledger.refunds, "a dispute still moves no money").toHaveLength(0);
+    /* The one reading is kept as the record, and it says what it said. */
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain('"attempts":1');
+    expect(landed).toContain('"readings":1');
+    expect(landed).toContain('"verified":false');
+  });
+
+  it("CONTROL — a clean render is also one paint and one reading, so the count above can tell the two apart", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(true) }, input);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(verdictReads).toBe(1);
+    expect(JSON.stringify(landedVariant ?? {})).toContain('"verified":true');
   });
 
   /*
@@ -2446,20 +2475,19 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("tries twice for free and then DELIVERS, charging once (fable-721)", async () => {
+  it("DELIVERS a confirmed-looking miss and charges once (fable-721, #2672)", async () => {
     /*
       Confirmed missing on both attempts: two readings each. This asserted the
       refusal and the whole 25 back until the founder retired the reader from
       the money path — *"only give refunds on catastrophic failures because it
       couldn't truly detect something as subtle as freckles."*
 
-      The free retry is what must survive, and it does: the product still spends
-      its own second render trying to satisfy the check. What changed is the end
-      of that road — she gets the picture and pays once, and the disputed verdict
-      rides the row as telemetry.
+      It then said *"the free retry is what must survive"*, and #2672 retired
+      that too: one paint, the customer gets the picture and pays once, and the
+      disputed verdict rides the row as telemetry.
     */
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input);
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
     expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds, "the reader's opinion of a healthy frame moves no money").toHaveLength(0);
   });
@@ -2485,15 +2513,13 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   /*
-    AND IT GOES BACKWARDS WHEN THE WORK DOES. The free re-render is a second
-    trip through paint-and-check, so the road really does return to `rendering`
-    — and the bar retreats with it, because a high-water mark would be the one
-    number here nobody could justify.
+    ⚠ THIS ARM WENT BACKWARDS UNTIL #2672: the free re-render was a second trip
+    through paint-and-check, so a disputed render announced `rendering` twice.
+    With no second paint the road passes each stage once, disputed or not.
   */
-  it("announces the re-render again rather than holding its best position", async () => {
+  it("announces each stage once on a disputed render too (#2672)", async () => {
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
-    expect(announcedSteps)
-      .toEqual(["preparing", "rendering", "reading", "rendering", "reading", "storing"]);
+    expect(announcedSteps).toEqual(["preparing", "rendering", "reading", "storing"]);
   });
 
   /*
@@ -2823,39 +2849,30 @@ describe("the render is checked against the record before it is delivered", () =
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
     const landed = JSON.stringify(landedVariant ?? {});
     expect(landed).toContain("verification");
-    expect(landed).toContain('"attempts":2');
+    /* `attempts` read 2 here until #2672 retired the free re-render; the field
+       stays on the row so the reliability report reads one shape across it. */
+    expect(landed).toContain('"attempts":1');
     /* How many readings the verdict took, recorded — the reader's own
        reliability, per render (D-194). */
     expect(landed).toContain('"readings"');
   });
 
   /*
-    THE SECOND OPINION (D-194), and the trial is why.
+    THE SECOND OPINION (D-194) WAS BOUGHT HERE FOR A MISS, AND #2672 RETIRED IT.
 
-    The same reader disagreed with itself on 21% of judgements about the same
-    image. Chain 3 position 1: the service passed a render an independent
-    re-read said was missing the fact. One reading cannot spend a refusal.
+    Two arms stood here: *"does not re-render when a second reading disagrees"*
+    and *"breaks a split with a third reading, and RE-RENDERS only on a
+    majority"*. Both measured how many reads a miss bought before it could buy
+    a second paint. A miss now buys neither, so the one arm left pins that the
+    reader's later answers are never asked for, however they would have voted.
   */
-  it("does not re-render when a second reading disagrees with the first", async () => {
-    /* miss, then hit, then hit — the majority says it is there. */
-    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true, true) }, input);
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
-    expect(ledger.refunds).toHaveLength(0);
-  });
-
-  it("breaks a split with a third reading, and RE-RENDERS only on a majority", async () => {
-    /*
-      D-194 is untouched by fable-721, and this is where that is proved: one
-      reading still cannot spend the product's free retry. Attempt 1: miss, hit,
-      miss → majority missing → re-render. Attempt 2: miss, miss → confirmed →
-      and the picture is delivered, because a confirmed reading of a healthy
-      frame is telemetry now rather than a refund.
-    */
+  it("asks no second or third reading of a miss, whatever it would have said (#2672)", async () => {
     await refineCandidate(
       { ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
       input,
     );
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(verdictReads).toBe(1);
     expect(ledger.refunds).toHaveLength(0);
   });
 });

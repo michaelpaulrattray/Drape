@@ -60,10 +60,11 @@ describe("the bar and the word say only what the road announced", () => {
 
   /*
     THE BAR RETREATS WHEN THE WORK DOES, and that is the design rather than a
-    defect: a render that fails its verification buys one free re-render, so the
-    road genuinely returns from `reading` to `rendering`. A high-water mark
-    would be a number the road cannot justify, which is the thing this card
-    forbids.
+    defect. Its first specimen — a failed verification buying one free
+    re-render — is retired (#2672), so today's refine passes each step once;
+    the rule stands for any road that returns from `reading` to `rendering`. A
+    high-water mark would be a number the road cannot justify, which is the
+    thing this card forbids.
   */
   it("goes backwards when the road goes backwards", () => {
     expect(refineStepFraction("rendering")).toBeLessThan(refineStepFraction("reading"));
