@@ -419,20 +419,27 @@ describe("the slots a render DISPUTES", () => {
     expect(slots[1]!.words).toEqual(["Natural, slim, no pronounced cupid's bow"]);
   });
 
-  it("EARNED WINS when two facets of one slot disagree", () => {
+  it("⚠ A DISPUTED FACET DISPUTES ITS SLOT, even when a neighbour earned it (#2646)", () => {
     /*
       One ask, one slot, two verdicts: the reader saw the colour land and not the
-      cut. The slot is earned — the render did change it and the guard can certify
-      the crop — and marking it disputed over a neighbouring facet would throw away
-      a good reference. The order of the two lists is the whole of this rule, so it
-      is driven from both directions.
+      cut. This used to file the slot EARNED, on the reasoning that disputing it
+      would throw away a good reference. But the crop holds the cut too, so it is
+      a picture of the miss — and the layout court is what that cost: the short
+      crop slipped back to a bun, a sibling facet passed, and the bun rode every
+      later prompt as "the exact hair they have". Driven from both directions,
+      because the order of the two lists used to be the whole of the old rule.
     */
     const captions = { "hair.cut": "A blunt bob at the jaw", "hair.colour": "Copper" };
     const both = mintedSlotsForRender({ earned: ["hair.colour"], disputed: ["hair.cut"], captions });
-    expect(both.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+    expect(both.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", true]]);
+    expect(both.slots[0]!.disputedFacets).toEqual(["hair.cut"]);
 
     const reversed = mintedSlotsForRender({ earned: ["hair.cut"], disputed: ["hair.colour"], captions });
-    expect(reversed.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+    expect(reversed.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", true]]);
+
+    /* CONTROL: the same earned facet with no disputed sibling is still earned. */
+    const clean = mintedSlotsForRender({ earned: ["hair.colour"], disputed: [], captions });
+    expect(clean.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
   });
 
   it("files a disputed accessory as both of its sides, both marked", () => {

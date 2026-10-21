@@ -24,82 +24,17 @@
  * rows, the rail's gear, and the two Settings rows that lead onward.
  * `openAddCredits()` is the credits chip and every out-of-credits path.
  */
-import { useCallback, useMemo, useState } from "react";
-
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { ChangePlanModal } from "@/features/billing/ChangePlanModal";
 import { AddCreditsModal } from "@/features/billing/AddCreditsModal";
 
-import { SettingsModal, type SettingsSection } from "./SettingsModal";
-
-export type AccountSurfacesState = {
-  settings: SettingsSection | null;
-  changePlan: boolean;
-  addCredits: boolean;
-  openSettings: (section?: SettingsSection) => void;
-  openChangePlan: () => void;
-  openAddCredits: () => void;
-  /**
-   * Close ONE layer, not the stack.
-   *
-   * Change plan and Add credits open ON TOP of Settings (§2: Settings → Billing
-   * leads to both), so dismissing them must leave Settings where it was.
-   * Dismissing everything is `closeAll`, which is what the Settings scrim and
-   * its Done button do.
-   */
-  closeChangePlan: () => void;
-  closeAddCredits: () => void;
-  closeAll: () => void;
-  setSection: (section: SettingsSection) => void;
-};
-
-export function useAccountSurfaces(): AccountSurfacesState {
-  const [settings, setSettings] = useState<SettingsSection | null>(null);
-  const [changePlan, setChangePlan] = useState(false);
-  const [addCredits, setAddCredits] = useState(false);
-
-  const openSettings = useCallback((section: SettingsSection = "profile") => {
-    setSettings(section);
-  }, []);
-  const openChangePlan = useCallback(() => setChangePlan(true), []);
-  const openAddCredits = useCallback(() => setAddCredits(true), []);
-  const closeChangePlan = useCallback(() => setChangePlan(false), []);
-  const closeAddCredits = useCallback(() => setAddCredits(false), []);
-  const closeAll = useCallback(() => {
-    setSettings(null);
-    setChangePlan(false);
-    setAddCredits(false);
-  }, []);
-  const setSection = useCallback((section: SettingsSection) => setSettings(section), []);
-
-  return useMemo(
-    () => ({
-      settings,
-      changePlan,
-      addCredits,
-      openSettings,
-      openChangePlan,
-      openAddCredits,
-      closeChangePlan,
-      closeAddCredits,
-      closeAll,
-      setSection,
-    }),
-    [
-      settings,
-      changePlan,
-      addCredits,
-      openSettings,
-      openChangePlan,
-      openAddCredits,
-      closeChangePlan,
-      closeAddCredits,
-      closeAll,
-      setSection,
-    ],
-  );
-}
+import { SettingsModal } from "./SettingsModal";
+/* THE STATE LIVES ONE MODULE OVER SINCE #2608, and the reason is this file's
+   own import list: those three lines above are the settings cluster and
+   `features/billing`, so anything importing the HOOK from here downloaded all
+   of it. `useAccountSurfaces.ts` carries the measurement. */
+import type { AccountSurfacesState } from "./useAccountSurfaces";
 
 export function AccountSurfaces({
   state,
@@ -120,10 +55,18 @@ export function AccountSurfaces({
     unconditionally would cost a paying customer a proration preview on every
     page view. Gating the whole block on "is anything open" keeps that fix.
   */
-  const anyOpen = state.settings !== null || state.changePlan || state.addCredits;
+  /* ONE derivation of "is anything open", in the hook, read here and at the
+     mount — see `AccountSurfacesState.anyOpen`. It was computed here and is
+     now read, because since #2608 the mount needs the same answer to decide
+     whether to fetch this chunk at all. */
+  const { anyOpen } = state;
   const { data: status } = trpc.billing.getStatus.useQuery(undefined, { enabled: anyOpen });
   const { data: plans } = trpc.billing.getPlans.useQuery(undefined, { enabled: anyOpen });
 
+  /* Kept even though the mount no longer renders this component while nothing
+     is open: `DrapeStudio` mounts it unconditionally, and a component whose
+     own contract is "nothing is open, draw nothing" should not depend on every
+     caller remembering. */
   if (!anyOpen) return null;
 
   /*

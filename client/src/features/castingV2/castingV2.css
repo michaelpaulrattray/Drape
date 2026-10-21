@@ -921,19 +921,6 @@
   pointer-events: none;
 }
 
-.dpc-card__lineage {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--scrimPill);
-  font: 500 9.5px var(--font-mono);
-  letter-spacing: 0.06em;
-  color: var(--onScrim);
-  pointer-events: none;
-}
-
 /*
   The on-media scrim action row the prototype draws is not built: the founder
   preferred the labelled row beneath the card, which reads more plainly than
@@ -1765,8 +1752,18 @@
   back sharp and in colour when the answer lands — which is the whole of the
   arrival moment, and costs nothing to be honest about.
 */
+/*
+  B · ONE LIGHT — his pick, 2026-10-17 (#2613): *"go with B"*.
+
+  The picture is held soft and still: about 14px of blur, a little colour taken
+  out, and dimmed to the middle of the range he tuned on #55 (0.52 → 0.64,
+  *"revert the image to its previous darkness as the text and loading bar are
+  difficult to read/see now"*) so the sentence and the bar stay readable. It
+  used to breathe as well; with the light crossing it, a second movement would
+  be the busy-ness he asked to be rid of.
+*/
 .dpc-viewer__frame[data-wait="true"] img {
-  animation: dpc-settle 6s ease-in-out infinite;
+  filter: blur(14px) saturate(0.8) brightness(0.58);
   transform: scale(1.04);
 }
 
@@ -1797,102 +1794,43 @@
 */
 
 /*
-  THE BREATH, AT HIS OWN NUMBERS (#55, 2026-09-26).
+  THE ONE LIGHT. A single soft band crosses the whole picture, edge to edge, and
+  rests off-frame before it comes round again — one pass every 4.6s.
 
-  It was `brightness(0.72)` → `brightness(0.66)` over 7.5s, eyeballed as a mock
-  in D-169 when nothing was drawn over the picture but a sentence. His filed
-  spec names `0.52` → `0.64` over 6s, and that is the treatment he tuned the bar
-  and the stage word against — literally so: two of his instructions that
-  evening were about this exact value (*"i just think the dimming of the image
-  might be a little too dark?"*, then *"revert the image to its previous
-  darkness as the text and loading bar are difficult to read/see now"*).
+  It starts and ends OUTSIDE the plate on purpose: a band that stopped on a face
+  captioned "the hair" would claim the model is working that region (D-169's
+  reason for refusing a travelling highlight). A band that only ever crosses the
+  whole frame says what the old dot field said and no more — a surface is laid
+  over the picture until it is ready.
 
-  ⚠ **THE CARD CALLS THIS THE *EXISTING* OVERLAY AND IT WAS NOT** — read at the
-  bytes, the app has never run these numbers; the mockup's picture sat over a
-  near-black plate at 0.55 opacity, which the app's does not. Photographed
-  before this change, the bar's 18%-white track was all but invisible against
-  the lighter treatment — the precise legibility complaint he made twice. His
-  numbers, taken.
+  `inset: -20%` makes the band wider than the plate; the plate's own
+  `overflow: hidden` is what clips it. `pointer-events: none` because the plate
+  underneath owns press-and-hold to see the previous frame.
 
-  The blur and the drain of colour are unchanged: they are what makes the
-  arrival an arrival.
+  The light is `--onScrim` (white in both themes), because it is drawn on the
+  darkened picture in both themes, exactly like the type over it.
 */
-@keyframes dpc-settle {
-  0%, 100% { filter: blur(12px) saturate(0.32) brightness(0.52); }
-  50%      { filter: blur(16px) saturate(0.32) brightness(0.64); }
-}
-
-/*
-  The dot field: ambient, uniform, and deliberately dumb.
-
-  A travelling HIGHLIGHT over a face captioned "the hair" would claim the model
-  is working that region, which is not how any of this works. A field of dots
-  claims only that a surface is laid over the picture until it is ready — and it
-  never accelerates, because between dispatch and landing nothing is known and
-  motion that appeared to react would be inventing a signal.
-*/
-.dpc-viewer__dots {
+.dpc-viewer__light {
   position: absolute;
-  inset: 0;
+  inset: -20%;
   pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 36%,
+    color-mix(in srgb, var(--onScrim) 26%, transparent) 50%,
+    transparent 64%
+  );
+  transform: translateX(-70%);
+  animation: dpc-light 4.6s ease-in-out infinite;
 }
 
-/*
-  HER PICTURE AS DUST — the canvas board E draws on (#55).
-
-  It sits exactly where the dot field sits and answers the same box, so the two
-  are interchangeable and the surface never has to know which one it got.
-
-  `pointer-events: none` is load-bearing rather than tidy: the plate underneath
-  owns press-and-hold to see the previous frame, and a transparent canvas over
-  the photograph would swallow it. The dust reads the pointer from the plate's
-  own listener instead (`RefineDust.tsx` says so at the line that adds it).
-
-  No animation is declared here. Every particle's motion is in the canvas, on
-  the frame clock — a CSS animation on this element would be a second, slower
-  idea of the same movement.
-*/
-.dpc-viewer__dust {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+@keyframes dpc-light {
+  0%        { transform: translateX(-70%); }
+  65%, 100% { transform: translateX(70%); }
 }
 
-.dpc-viewer__dots::before,
-.dpc-viewer__dots::after {
-  content: "";
-  position: absolute;
-  inset: -8px;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.85) 1px, transparent 1.4px);
-  /* On the 4px grid, like everything else. */
-  background-size: 12px 12px;
-}
-
-.dpc-viewer__dots::before { opacity: 0.16; }
-
-.dpc-viewer__dots::after {
-  opacity: 0.6;
-  /* A MASK STOP, not a colour: a mask reads ALPHA, so the opaque end means
-     "keep" and transparent means "drop". Written as the `black` keyword rather
-     than `#000` — identical output, and it keeps a piece of geometry out of the
-     no-hex guard without buying a carve-out that would cover this whole
-     stylesheet. There is no theme in which it should differ. */
-  -webkit-mask-image: linear-gradient(112deg, transparent 34%, black 50%, transparent 66%);
-  mask-image: linear-gradient(112deg, transparent 34%, black 50%, transparent 66%);
-  -webkit-mask-size: 300% 300%;
-  mask-size: 300% 300%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  animation: dpc-wave 6s linear infinite;
-}
-
-@keyframes dpc-wave {
-  from { -webkit-mask-position: 135% 50%; mask-position: 135% 50%; }
-  to   { -webkit-mask-position: -35% 50%; mask-position: -35% 50%; }
-}
-
-/* A falloff with no edge anywhere — the minimum that lets type read over a dot
-   field, and the maximum that can be added before a panel creeps back in. */
+/* A falloff with no edge anywhere — the minimum that lets type read over the
+   softened picture, and the maximum that can be added before a panel creeps back in. */
 .dpc-viewer__falloff {
   position: absolute;
   inset: 0;
@@ -2000,11 +1938,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dpc-viewer__frame[data-wait="true"] img {
-    animation: none;
-    filter: blur(14px) saturate(0.32) brightness(0.7);
-  }
-  .dpc-viewer__dots::after { animation: none; }
+  /* No sweep: the light is not drawn at all, rather than parked mid-frame
+     where a still band would read as a mark on the picture. */
+  .dpc-viewer__light { display: none; }
   /* His spec's clause 7: the motion goes, the bar and the word stay. The fill
      still moves when the road does — it just arrives rather than travels. */
   .dpc-viewer__barFill { transition: none; }
@@ -2290,12 +2226,25 @@
   gap: 6px;
   padding: 3px 4px 3px 10px;
   border: 1px solid var(--rule);
-  border-radius: 13px;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  border-radius: 15px;
+  font-size: 12px;
   color: var(--ink);
   white-space: nowrap;
+}
+
+/*
+  The followed face itself (#2622) — the picture, where a number used to be.
+  The empty frame holds the same size while that face's roll is still loading.
+*/
+.dpc-following__face {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 20%;
+  background: var(--fill);
+  flex: none;
 }
 
 /*
@@ -3850,34 +3799,6 @@
   align-items: stretch;
 }
 
-/* Undo, the one chip — the attach control's own quiet dress, as a pill. */
-.dpc-refine__chips { display: flex; gap: 6px; }
-
-.dpc-refine__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--onScrim) 24%, transparent);
-  background: color-mix(in srgb, var(--onScrim) 8%, transparent);
-  color: var(--onScrim);
-  opacity: 0.8;
-  font-family: var(--font-sans);
-  font-size: 11.5px;
-  letter-spacing: normal;
-  cursor: pointer;
-  transition: opacity 120ms ease, border-color 120ms ease;
-}
-
-.dpc-refine__chip:hover:not(:disabled) {
-  opacity: 1;
-  border-color: color-mix(in srgb, var(--onScrim) 44%, transparent);
-}
-
-.dpc-refine__chip:disabled { opacity: 0.3; cursor: default; }
-
 .dpc-refine__field::placeholder { color: color-mix(in srgb, var(--onScrim) 46%, transparent); }
 
 /* The about-to-buy-it-twice warning (D-161) — it warns, it never blocks. */
@@ -4189,6 +4110,15 @@
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: center;
+  /*
+    THE FIRST VERSION AT THE TOP, never above it (#2611). The row's
+    `justify-content: center` was inherited here, and a centred column that
+    overflows spills out of BOTH ends — the first thumbnails sat above the
+    scroller's top where no scroll reaches them (measured: the original at
+    -87px with twelve versions). Start-aligned, the column overflows downward
+    only, which is the direction the scroll goes.
+  */
+  justify-content: flex-start;
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
@@ -4200,16 +4130,19 @@
   display: flex;
   min-height: 0;
   align-items: flex-start;
+  /* Level with the picture's top, measured in CandidateViewer (#2611). */
+  padding-top: var(--dpc-rail-inset, 0px);
 }
 
 @media (max-width: 1080px) {
   /* No room for three columns. The rail goes back to being a row above the
      picture rather than a column squeezed beside it. */
-  .dpc-viewer__rail { width: 100%; justify-content: center; }
+  .dpc-viewer__rail { width: 100%; justify-content: center; padding-top: 0; }
   .dpc-refine__stack[data-layout="column"] {
     flex-direction: row;
     flex-wrap: wrap;
     max-height: 26vh;
+    justify-content: center;
   }
 }
 

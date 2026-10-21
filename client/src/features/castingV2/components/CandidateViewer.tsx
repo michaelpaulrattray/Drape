@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { decodeFrame } from "../frameDecodes";
 import { refineProgress } from "../refineProgress";
-import { RefineDust } from "./RefineDust";
-import type { RefineFigure } from "@shared/refineFigure";
 import type { RefineStep } from "@shared/refineSteps";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
@@ -115,19 +113,6 @@ export type ViewerWait = {
    * honest reading and is his rule — *a stage that does not fire is not shown*.
    */
   step?: RefineStep | null;
-  /**
-   * WHERE SHE IS IN HER OWN PICTURE — the dust's seed map (#55, board E clause
-   * 3), or null when the road has none for this row.
-   *
-   * Cut from the master by the server and passed straight through: the browser
-   * cannot read her pixels (the public bucket sends no CORS header), and opening
-   * the bucket to let it would let any origin read a customer's cast into a
-   * canvas. `shared/refineFigure.ts` carries the whole reading.
-   *
-   * Null is a real answer and is drawn as one: the ambient field that shipped
-   * before this, never a uniform scatter called her shape.
-   */
-  figure?: RefineFigure | null;
   /** How many are running, when more than one is (the picture narrates none). */
   extra?: number;
 };
@@ -190,6 +175,19 @@ const DRAWER_GAP_PX = 28;
 const DRAWER_EDGE_PX = 16;
 
 /**
+ * The measured box the drawer and the versions rail are placed against.
+ * `inset` is how far the PICTURE's top sits below the stage's top — the quiet
+ * counter above the picture is what puts it there (#2611).
+ */
+interface DrawerPlace {
+  top: number;
+  left: number;
+  height: number;
+  width: number;
+  inset: number;
+}
+
+/**
  * WHERE THE DRAWER STANDS — beside the PICTURE, top to bottom, and never in the
  * row the picture is centred in.
  *
@@ -204,13 +202,15 @@ function useDrawerPlacement(
   plate: React.RefObject<HTMLSpanElement | null>,
   drawer: React.RefObject<HTMLElement | null>,
   viewer: React.RefObject<HTMLDivElement | null>,
-): { top: number; left: number; height: number; width: number } | null {
-  const [place, setPlace] = useState<{ top: number; left: number; height: number; width: number } | null>(null);
+  stage: React.RefObject<HTMLDivElement | null>,
+): DrawerPlace | null {
+  const [place, setPlace] = useState<DrawerPlace | null>(null);
   useLayoutEffect(() => {
     if (!enabled) return;
     const measure = () => {
       const p = plate.current?.getBoundingClientRect();
       const v = viewer.current?.getBoundingClientRect();
+      const s = stage.current?.getBoundingClientRect();
       const width = drawer.current?.offsetWidth ?? 0;
       if (!p || !v || p.width === 0) return;
       const left = Math.max(
@@ -222,10 +222,11 @@ function useDrawerPlacement(
         left: Math.round(left - v.left),
         height: Math.round(p.height),
         width: Math.round(p.width),
+        inset: s ? Math.max(0, Math.round(p.top - s.top)) : 0,
       };
       setPlace((was) => (
         was && was.top === next.top && was.left === next.left && was.height === next.height
-          && was.width === next.width ? was : next
+          && was.width === next.width && was.inset === next.inset ? was : next
       ));
     };
     measure();
@@ -236,7 +237,7 @@ function useDrawerPlacement(
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [enabled, plate, drawer, viewer]);
+  }, [enabled, plate, drawer, viewer, stage]);
   return place;
 }
 
@@ -539,7 +540,10 @@ export function CandidateViewer({
      moment the panel arrived. */
   const quietCounter = Boolean(drawer);
   const drawerOpen = asDrawer && Boolean(drawer?.open);
-  const drawerPlace = useDrawerPlacement(Boolean(below || asDrawer), plateRef, drawerRef, viewerRef);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const drawerPlace = useDrawerPlacement(
+    Boolean(below || asDrawer || before), plateRef, drawerRef, viewerRef, stageRef,
+  );
   const asked = frames[index] ?? frames[0];
   const { frame, preview, sizer } = useShownFrame(asked);
   const canStep = Boolean(onIndexChange) && frames.length > 1;
@@ -747,8 +751,29 @@ export function CandidateViewer({
         THE STAGE: the picture, and whatever stands beside it. One row, so the
         panel's own length can never be taken out of the photograph's height.
       */}
-      <div className="dpc-viewer__stage" data-beside={beside && !asDrawer ? "true" : "false"}>
-        {before ? <aside className="dpc-viewer__rail">{before}</aside> : null}
+      <div
+        ref={stageRef}
+        className="dpc-viewer__stage"
+        data-beside={beside && !asDrawer ? "true" : "false"}
+      >
+        {/*
+          THE VERSIONS START LEVEL WITH THE PICTURE, not with the row (#2611,
+          his report 2026-10-17: *"the first thumbnail is sitting higher than
+          the image box"*). With a drawer the quiet counter sits ABOVE the
+          picture, so the row's top is a caption line higher than the image's;
+          the rail is pushed down by the measured distance, never by a copied
+          number, so a changed caption cannot reopen the gap.
+        */}
+        {before ? (
+          <aside
+            className="dpc-viewer__rail"
+            style={drawerPlace
+              ? { ["--dpc-rail-inset" as string]: `${drawerPlace.inset}px` } as React.CSSProperties
+              : undefined}
+          >
+            {before}
+          </aside>
+        ) : null}
         <div
           className="dpc-viewer__column"
           /* THE PICTURE'S OWN WIDTH, for the composer under it (#2533). Measured
@@ -869,29 +894,25 @@ export function CandidateViewer({
               {overlay}
               {wait ? (
                 <>
-                  {/* The dot field is the render's own texture — nothing is
-                      rendering, so nothing moves. */}
-                  {wait.stage === "settling" ? null : wait.figure ? (
-                    /*
-                      HER PICTURE AS DUST — board E, on the row that has her
-                      shape (#55). It is the same claim the dot field made and no
-                      more: a surface is laid over the picture until it is ready.
-                      What it adds is that the surface is HERS.
-                    */
-                    <RefineDust figure={wait.figure} />
-                  ) : (
-                    /*
-                      AND THE AMBIENT FIELD IS WHAT A ROW WITHOUT HER SHAPE GETS
-                      — a row claimed before the map shipped, or a master sharp
-                      could not read. Scattering a uniform cloud and calling it
-                      dust on her shape would be the fidelity law's violation
-                      rather than its shortcut; this field never claimed to be
-                      her, and still does not.
-                    */
-                    <span className="dpc-viewer__dots" aria-hidden="true" />
+                  {/*
+                    ONE LOADER, FROM THE PRESS TO THE PICTURE (#2613, his pick
+                    2026-10-17: *"go with B"* — B · One light).
+
+                    It used to be two in a row: the dot field while the row had
+                    no shape map yet, then the particle dust once it had one
+                    — a visible flip a few seconds into every
+                    refine, and the dust was, in his word, *"too busy"*. Now the
+                    softened picture carries one soft band of light across it,
+                    edge to edge, and the same element is here at every stage the
+                    render is live, so there is nothing to switch to.
+
+                    Nothing is rendering on a settling row, so nothing moves.
+                  */}
+                  {wait.stage === "settling" ? null : (
+                    <span className="dpc-viewer__light" aria-hidden="true" />
                   )}
-                  {/* The scrim stays either way: the sentence has to be
-                      readable over a photograph that is no longer softened. */}
+                  {/* The scrim stays at every stage: it is what lets the
+                      sentence read over the picture. */}
                   <span className="dpc-viewer__falloff" aria-hidden="true" />
                   <span className="dpc-viewer__wait" role="status">
                     {/*

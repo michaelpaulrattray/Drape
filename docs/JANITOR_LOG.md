@@ -4189,3 +4189,232 @@ a lane-mate's live tree from litter.
 (this entry's 45-hour figure is the baseline), and whether any stack appears whose
 launch directory is a tree with no merged PR behind it — that would be a live
 seat's and a different question.
+
+## Run 16 — 2026-10-17 08:22–1x:xx AEST (Janitor, patrol #16, card #2605 filed; run 12's item 8 DISCHARGED after four carries)
+
+**A FULL patrol, and it was the admissible brief rather than a fallback.** Read
+at launch, in this order: **no repair owed** — all four held PRs (#2600, #2569,
+#2592, #2570) read `review=no-verdict` at the real reader, not `finding`, so the
+relay's #2600 finding is answered and nothing is owed back; **no urgent card**;
+**0 of 13 `founder-ordered` cards on offer**; **no new replies** (300/300); and
+**three clocks fired** — Janitor, Machinist and Warden, with `patrol-clocks.mts`
+ranking Janitor first. Standing exceptions outrank the focus, so the patrol ran.
+
+⚠ **A lane-mate was live and was left alone.** Row **#783** (`seat1-20261017-080817`,
+on #2601) opened **22:22:34Z, two minutes before this row** — its `supersession`
+reads *not readable*, but a row that opened two minutes before the read is alive
+on positive evidence, which is stronger than the verdict the tool could not give.
+Not closed, not touched, and #2601 was kept clear of all night.
+
+| run 15's next-run item | outcome |
+|---|---|
+| 1 — the `%TEMP%` floor is genuinely open; read in UTC; expect growth | ✅ **SWEPT. Both predictions held: 189 → 262 entries, 8,941 → 10,577 files, and 67 entries were past the floor.** §B |
+| 2 — the 6 `drape-scratch-*` files past their floors; write the rule first | ✅ **READ AND LEFT, and the premise has moved: `drape-scratch` is now 1,618 files / 2,015 MB and 0 of them are past the floor.** No rule was needed and none was written. §C |
+| 3 — re-drive the junction canary before any non-empty out-of-repo sweep | ✅ **RE-DRIVEN, 7 arms, all PASS, before anything was deleted.** §A |
+| 4 — the knip types SET diff: take it or retire it, do not carry it a fifth time | ✅ **TAKEN. Extracted and diffed over three nightlies, and the column turned out to be a ROW count.** §D |
+| 5 — the ~517 unnameable disposables are the standing remainder | ⚠ **Unchanged in kind, 720 now.** No sweep, no cleverer fallback proposed. §E |
+| 6 — remote `origin/team/*` is 68 and is a REAL number | ⚠ **NOT RE-READ this run** — no act depended on it and §F's local ledger is the half that moved. Carried. |
+| 7 — #2155 is `blocked` on three decisions, none a seat's | ⚠ **Re-read and still true; and the number it tracks GREW: 37 → 48 worktrees, 23 → 39 holding junctions.** §F |
+
+### A. The junction canary — re-driven, 7 arms, and it gated everything below
+
+A recorded pass is a record rather than a reading (run 12), so it was driven
+again with the **exact command the sweep would then use** (`Remove-Item -Recurse
+-Force`), not a near relative of it:
+
+| arm | result |
+|---|---|
+| junction built at a holder in `%TEMP%` → `C:\Users\Admin\Drape\node_modules` | created |
+| `react/package.json` read THROUGH it | **1,242 bytes** — live, and the same figure run 12 recorded |
+| the walker (`Get-ChildItem -Recurse -File`) over the holder | **1 file** — it refuses the junction |
+| holder removed with the sweep's own command | gone |
+| `node_modules` top-level entries | **64 → 64** |
+| `react/package.json` after | **1,242 bytes**, unchanged |
+| `require.resolve` of `react` and `vite` after | both resolve |
+
+**And the danger was separately measured to be absent rather than only guarded
+against: 0 reparse points anywhere in the 67-entry delete set.** The canary is
+what makes that a second reading instead of the only one.
+
+### B. 67 `%TEMP%` trees swept — the first run where the floor was open
+
+Run 15 left this with a date and both of its predictions held. Read in UTC
+against a floor of `2026-10-09T22:30Z`:
+
+| | run 14 | run 15 | **run 16** |
+|---|---|---|---|
+| `%TEMP%` `drape-*` entries | 123 | 189 | **262** |
+| files | 1,453 | 8,941 | **10,577** |
+| entries past the floor | 0 | 0 | **67** |
+
+**By prefix**, so the producers are named rather than lumped:
+`drape-atlas-commit-` 113 · `drape-atlas-push-` 53 · `drape-2590-other-` 25 ·
+`drape-precommit-` 21 · `drape-2590-blind-` 20 · `drape-atlas-merge-` 20 · nine
+singletons.
+
+**Manifest written BEFORE any deletion** (`output/janitor-run16/temp-sweep-manifest.txt`,
+272 lines, every row in both the DELETE and the KEEP set with its file count and
+UTC mtime). **Swept: 67 entries, 3,589 files, 11.9 MB. Failed: 0.**
+`node_modules` **64 → 64** across the sweep, and `react`/`vite` resolve after.
+**195 entries / 6,988 files remain, every one inside its floor.**
+
+⚠ **The citation reader was controlled BOTH ways before any verdict, and then
+the one-pass form was controlled AGAIN because it is a different invocation**
+(`grep -roohF -f` is not `grep -rlF`): negative `drape-atlas-commit-ZZZZZZ-cannot-exist`
+returned nothing, positive `drape-shift-relay-2547` returned three real files,
+and the one-pass form fired on the same positive while returning **0 of the
+real 67**. ⚠ **It also had to exclude `output/janitor-run16/` — the manifest I
+had just written names all 67, so an uncorrected reader would have called every
+entry cited by my own act.**
+
+**Three zero-file shells also removed** — `drape-shift-relay-2542`, `-2542c`,
+`-2547` — on run 11's rule that *a floor protects work and a zero-file shell
+holds none*. `-2547` is cited **31 times** and every citation was read: all are
+historical records or *leave-it-alone* notes about a live process
+(run 12's third shape), the directory holds **0 files**, and the process question
+is dead — see §G. **56 → 53 `drape-*` directories.**
+
+⚠ **FOUR unregistered shells were NOT removed and each is inside its floor**:
+`drape-review-2414` (1 file, a 4.2 MB `tsbuildinfo`, floor passes 2026-10-19),
+`drape-shift-seat-1-20261012-035005` (1, floor 10-18),
+`drape-shift-relay-2315` (2, floor 10-19), `drape-shift-relay-2576` (2, floor
+10-23). All four hold only machine-written caches and no work — **but they are
+inside the floor and the floor is not waived for a cache.**
+
+### C. `drape-scratch` is 2 GB and NONE of it is sweepable — the premise moved
+
+Run 15's item 2 named *"6 `drape-scratch-*` files (5.1 MB) past their floors"*
+and told this run to write a manifest rule first. **Read at the tree: the rule
+is not needed yet.** `drape-scratch` holds **1,618 files / 2,015 MB** across 14
+relay working directories and 17 loose files, and:
+
+> **0 files are past the 7-day floor. The oldest file in the whole 2 GB is
+> `2026-10-15T00:06:06Z`.**
+
+It is two days of the relay's own court output and logs — `relay-2583` alone is
+649 MB, `relay-801r2`/`801r3`/`801r3b`/`801w` another 1.1 GB between them.
+**The manifest rule is still owed and nothing is waiting on it**; it should be
+written by the run that first finds something past the floor there, which on
+today's dates is **~2026-10-22**.
+
+### D. The knip types SET — diffed at last, and the column was a ROW count
+
+Run 12's item 8 has been carried four times. **Taken.** Full reasoning and the
+named symbols are in the `2026-10-17` row of `docs/JANITOR_KNIP.md`; the two
+facts that belong here:
+
+1. ⚠ **Every `exports` and `types` figure in that table is a ROW count.** Knip's
+   compact reporter heads each section with the number of FILES: the types header
+   reads `(40)` where the extractor finds **40 rows and 47 symbols**. This is the
+   mechanical root of run 12's corrected *"types arrive faster"* error — a symbol
+   count was being compared against a row count — and it is the same trap runs 10
+   and 11 each hit from the exports side.
+2. **Like-for-like over one window** (11 → 16 Oct, **242 commits / 541 code
+   files**): export symbols **103 → 131, 31 arrived / 3 gone**; type symbols
+   **47 → 47, 2 arrived / 2 gone**. **Exports arrive ~15× faster than types, and
+   types are net static.** The 15 → 16 Oct night is sharper still and is *not*
+   run 11's same-tree artifact — **41 commits over 106 code files and the type
+   set is byte-identical, 47 of 47.**
+
+**#2605 filed** on the export half: #1437's sweep left 63 symbols on 27 Sep and
+the population is **131** today, above the 120 that stood before it. **Carded,
+not worked** — dropping an export keyword is the deletion class.
+
+### E. The unnameable disposables: 720, and still only one lever
+
+`scripts/` carries **744 untracked files, 720 of them matching `disposable`** —
+the figure the previous shift measured and handed over, re-read here. Unchanged
+in kind from run 15's 517 and growing. **No sweep touches them and no cleverer
+fallback is proposed, as instructed.** The only lever remains shifts naming their
+files `_<card>-<what>-disposable.mts`; this run's own two were so named and are
+deleted.
+
+### F. The worktree count #2155 tracks has grown by a third, and no patrol may clear it
+
+Re-read because run 15's item 7 said to. **48 `drape-*` worktrees registered
+(plus the main tree = 49), 39 of them holding a live `node_modules` junction** —
+against the **37 / 23** on #2155's own body. `drape-shift-relay-2152` alone holds
+**1,600 junctions, 44,487 files, 740 MB**. The card is still `blocked` on three
+decisions, none of which is a seat's. **Local `team/*` refs: 389, of which 36 are
+deletable by `janitor-local-branches.mts`** (manifest at
+`output/local-branch-manifest.txt`) — **not run this time**, because the sweep
+budget this run went to `%TEMP%` and the branch tool's own output warns its
+deletable set is a floor.
+
+### G. Dev-server stacks: 2 arrived, 12 processes killed, and the reader's "root" is not the root
+
+**Two abandoned stacks**, both launched from `C:/Users/Admin/drape-shift-relay-2576`.
+Three independent ownership facts before any kill, which is what run 15's §C asks
+for: the directory is **not a registered worktree**; **both launching sessions
+have exited** (`ppid` 6900 and 45352 both gone); **no listener on :300x**. Its
+PR **#2579 merged 2026-10-16T09:36:17Z**, 25 minutes after the second stack
+started — so these had a merged PR behind them and were nobody's live work, which
+answers run 15's second next-run question directly.
+
+⚠ **THE READER NAMES THE WRONG PROCESS AS THE ROOT, AND ITS OWN INSTRUCTION IS
+*"kill the ROOT or the watcher starts another"*.** `dev-servers.mts` reported
+`root 50928` with one child. Walked for real, a stack is **SIX** processes:
+
+```
+sh.exe → node pnpm dev → cmd.exe → node cross-env → cmd.exe → node tsx watch
+```
+
+and `50928` is the **cross-env** layer, two down. **A shift obeying the reader
+kills 3 of 6 and leaves `sh.exe` and `pnpm dev` resident per stack.** Run 15
+corrected this ledger's arithmetic from 3 to 5 layers; **the correction never
+reached the reader, and the true depth is 6.** Killed from the true top: **12
+processes, 0 remaining** — confirmed by two readers that share no resolver (the
+tool says *"no dev server is running"*; an independent `Win32_Process`
+command-line match returns zero).
+
+**Arrival rate**, against run 15's 45-hour baseline — and ⚠ **the baseline's own
+timestamp is wrong and that had to be settled first.** Run 15's between-runs
+table labels its sweep *"16 Oct, 10:20Z"*; shift ids are **local** (UTC+10), and
+row `seat1-20261016-101001` is `2026-10-16 00:10Z`. Read at `crew_shift_runs`
+rather than inferred: my own row `foreman-20261017-0822` carries
+`startedAt 2026-10-16 22:24:47Z`, which fixes the offset exactly. **So the
+previous sweep was ~00:20Z, the two stacks arrived at 08:58Z and 09:11Z, and the
+window is ~22 hours, not the 10 the label implies.**
+
+| | run 15's sweep (16 Oct) | **run 16** |
+|---|---|---|
+| stacks | 7 in 45 h (0.156/h) | **2 in 22 h (0.091/h)** |
+| processes killed | 35 | **12** |
+| distinct trees | 4 | **1** |
+
+**The rate has roughly halved, and the signature run 15 named held exactly**: not
+a slow drift but **one tree taking two stacks 13 minutes apart** — a seat starting
+`pnpm dev` again when the first did not come up. ⚠ **But the close-path repair
+cannot be credited for the fall**: it names dev-server trees born at or after a
+*shift's* row opened, and these two were born in a **relay** tree, which runs no
+shift close. **Two data points is not a trend** — the next run has the third.
+
+### H. The readings that cost nothing and found nothing
+
+- **Memory index** (`memory-index-audit.mts`, on this same 3-day clock): **0
+  faults** — 343 files on disk, 343 pointed at, across 5 indexes; 0 unreachable,
+  0 dangling, 0 duplicate, 0 joined lines, 0 ellipsis hooks. Exit 0.
+- **Backup retention** — not run; no sweep this run wrote a backup.
+
+**Next run (~2026-10-20):**
+
+1. **The third dev-server data point decides the trend.** Baselines now: 7 in
+   45 h, then **2 in 22 h**. ⚠ **And `dev-servers.mts` still names the cross-env
+   layer "root" while instructing you to kill the root** — §G. That is a reader
+   defect a seat could fix in one sitting; it is NOT carded, because the
+   anti-boredom rule makes it a proposal and the Retro's clock fires 2026-10-18.
+2. **`%TEMP%` restarts from 195 entries / 6,988 files, all inside the floor.**
+   The oldest now passes **~2026-10-18**, so expect a sweepable set every run from
+   here — this is no longer a deferred item, it is a recurring one.
+3. **`drape-scratch` needs its manifest rule written by whichever run first finds
+   a file past the floor there — on today's dates ~2026-10-22.** 2,015 MB, 0 past
+   the floor today.
+4. **Four unregistered shells pass their floors on 10-18, 10-19, 10-19 and
+   10-23** (§B names them). Each holds a cache and no work.
+5. **The knip types item is RETIRED, not carried** — it is answered, the sets are
+   kept at `output/janitor-run16/knip/`, and the next diff is mechanical. **Do not
+   re-derive the row-vs-symbol fact**: every figure in that table is ROWS.
+6. **#2605 (export regrowth) is a seat's session, not a patrol's** — it needs a
+   manifest, a second reader and a full suite.
+7. **#2155 is `blocked` and grew to 48 / 39.** Still not a seat's.
+8. **Local `team/*`: 389 refs, 36 deletable, not swept this run.**
