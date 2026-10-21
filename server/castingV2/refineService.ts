@@ -219,7 +219,6 @@ import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
-import { carriesHoldingTheirAsks, chainAsksBySlot } from "./askHeldByWords";
 import {
   deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences, priorWordsBySlot,
   supersededCarrySlots,
@@ -324,7 +323,6 @@ import {
   confirmVerdict,
   facetIn,
   joinClauses,
-  missingFacts,
   shortfalls,
   scopedToInstance,
   libraryReadingOf,
@@ -6729,33 +6727,14 @@ async function refineCandidateCounted(
         the per-instance memory below are asking a different question — what
         this face's rows SAY — and pruning an ask does not unsay it.
       */
-      const pruned = carriesAfterPruning({ rows: branchRows, composed });
       /*
-        ⚠ AND A KEPT FEATURE WHOSE WORDS DO NOT HOLD WHAT THE CHAIN ASKS FOR IT
-        STOPS RIDING (#2650) — no crop and no keep-line, whatever any reader
-        said and whenever the row was filed. Its slot joins the restore list
-        below, so the feature is said in the customer's own words instead. The
-        test is a fixed word comparison, not a reader (`askHeldByWords.ts`).
+        ⚠ A KEPT FEATURE IS NOT HELD TO A WORD TEST ON THE WAY OUT (#2673).
+        #2650 set every kept row's words beside the chain's ask and sent the
+        slot in words when they did not hold it. His ruling retired that: the
+        newest picture of the feature an edit changed is its guide, and a
+        customer who does not like it retries.
       */
-      const held = carriesHoldingTheirAsks({ rows: pruned.rows, composed });
-      const carried = { rows: held.rows, dropped: pruned.dropped };
-      const contradictedSlots = held.contradictedSlots;
-      /* A slot whose older, matching crop rides again is NOT said in words —
-         a restored slot is an edited slot, and an edited slot's crop is
-         dropped below, which would throw the matching picture away. */
-      const reinstatedSlots = new Set(held.reinstated);
-      if (held.contradicted.length > 0 || reinstatedSlots.size > 0) {
-        log.warn(
-          {
-            operationId,
-            variant: variant.publicId,
-            setAside: held.contradicted.map((one) => one.slot),
-            wordsOnly: contradictedSlots,
-            olderMatchingCropRides: held.reinstated,
-          },
-          "[refineService] a kept feature's words do not hold what the chain asks for it — its crop and keep-line stay home, and the ask is said in words",
-        );
-      }
+      const carried = carriesAfterPruning({ rows: branchRows, composed });
       if (carried.dropped.length > 0) {
         log.info(
           {
@@ -6838,13 +6817,7 @@ async function refineCandidateCounted(
             pixels, so on an ordinary face the list is empty and not one line of
             this changes the recipe.
           */
-          restore: {
-            state: composed,
-            slots: Array.from(new Set([
-              ...supersededCarrySlots(branchRows).filter((slot) => !reinstatedSlots.has(slot)),
-              ...contradictedSlots,
-            ])),
-          },
+          restore: { state: composed, slots: supersededCarrySlots(branchRows) },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
             does not come from a tapped row or a clicked rectangle — the panel
@@ -7809,6 +7782,14 @@ async function refineCandidateCounted(
           forbids.
         */
         repaint: recordOf(painted.sent),
+        /*
+          THE SLOTS THIS STEP ITSELF ASKED FOR (#2673) — `repaintAsksFor`'s own
+          `askedNow`, the same list the labelled layout names on its "Edit
+          instruction" line, never the slots only re-said. The mint reads it:
+          the delivered crop of each of these slots becomes that slot's guide,
+          whatever the reader said.
+        */
+        askedNow: asks.askedNow.slots,
       };
     };
 
@@ -8272,11 +8253,18 @@ async function refineCandidateCounted(
     }
 
     /*
-      RENDER, CHECK, AND ONE FREE RETRY.
+      RENDER AND CHECK — ONCE (#2672).
 
-      The verdict is evidence rather than proof — the same reader misread
-      pink-through-glasses irises as "deep brown" (D-183) — so a failure buys a
-      re-render at the house's expense before it ever spends the user's refusal.
+      ⚠ **THIS WAS "RENDER, CHECK, AND ONE FREE RETRY" UNTIL 2026-10-21.** A
+      disputed reading bought a second paint at the house's expense, plus the
+      confirming re-reads that decided whether to buy it. His ruling took both
+      away, verbatim: *"go with your reccomendation on those 2 squall cards"*,
+      on the proposal whose reason was his own *"users can just retry if its
+      not the exact look they want themselves for a cost"*. The reader's
+      opinion of a healthy frame already moved no money (fable-721); now it
+      moves no second picture either. The customer is handed the first frame,
+      the one reading rides the row as the record, and Regenerate is theirs.
+      The damage detector below is unchanged and still refunds.
     */
     const attemptRender = async () => {
       const rendered = await renderOnce();
@@ -8395,33 +8383,24 @@ async function refineCandidateCounted(
       return {
         rendered,
         /*
-          A MISS THE GATE WILL ACT ON IS RE-READ BEFORE IT COUNTS (D-194).
-
-          The reader disagrees with itself 21% of the time, measured on the
-          trial's own data, so one reading cannot be evidence enough to spend a
-          refusal. The extra calls land only on a render already headed for a
-          re-render or a refund.
-
-          ⚠ **"BINDING" WAS THE POPULATION UNTIL #2526 AND IS NOW NARROWER:**
-          `confirmVerdict` confirms exactly what `isRefusableMiss` admits, so a
-          quibble and a silence — neither of which can decline this delivery any
-          more — stop buying a confirming vision call they could not act on.
+          A MISS IS NO LONGER RE-READ (#2672). D-194 re-read a miss because it
+          was about to spend a refusal or a free re-render, and neither exists
+          any more. Nor is a yes in a slot this step edited: #2673 files that
+          slot's crop as its guide whatever the reader says, so its facets are
+          `moot` and keep one reading. The one second reading left is a
+          rap-sheet yes on a CARRIED facet, because the carried-confirmation
+          pass below still files a slot from it (#2646, #2650).
         */
-        verification: await confirmVerdict(await read(), read),
+        verification: await confirmVerdict(await read(), read, {
+          moot: new Set((rendered.askedNow ?? []).flatMap((slot) => facetsOfSlot(slot) ?? [])),
+        }),
       };
     };
 
-    let { rendered: image, verification } = await attemptRender();
-    let attempts = 1;
-
-    if (!verification.ok) {
-      log.warn(
-        { operationId, variant: variant.publicId, missing: missingFacts(verification) },
-        "[refineService] the render is missing filed facts — re-rendering once, free",
-      );
-      ({ rendered: image, verification } = await attemptRender());
-      attempts = 2;
-    }
+    const { rendered: image, verification } = await attemptRender();
+    /* Always one since #2672 — kept on the row and in the lines below so the
+       reliability report reads the same field across the change. */
+    const attempts = 1;
 
     /*
       THE READER-DEFECT WATCH LIST (D-187), logged on every delivered render.
@@ -8492,7 +8471,7 @@ async function refineCandidateCounted(
 
         So the door asks the contract instead of holding one. `facts_missing` is
         the reader's opinion of a HEALTHY frame: the damage detector passed this
-        picture twice, and what is in dispute is whether a subtle thing the
+        picture, and what is in dispute is whether a subtle thing the
         reader cannot reliably see is in it. That is the customer's judgment
         now, and the remedy is Regenerate.
 
@@ -8521,7 +8500,7 @@ async function refineCandidateCounted(
             attempts,
             verification: verification.checks,
           },
-          "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
+          "[refineService] VERIFICATION FAILED — refusing and refunding",
         );
         /*
           AND THE PICTURE THAT WAS REFUSED (founder-approved 2026-08-08).
@@ -9531,9 +9510,12 @@ async function refineCandidateCounted(
             locality: (await readOpenKindProperties(kind))?.locality ?? null,
           })),
         );
-        const { slots, unfiled, unfiledOpen } = mintedSlotsForRender({
+        const { slots, unfiled, unfiledOpen, disputeSetAside } = mintedSlotsForRender({
           earned,
           disputed,
+          /* The slots THIS step asked for (#2673): their delivered crop is the
+             guide, and the reader's dispute on them is logged, not obeyed. */
+          editedSlots: image.askedNow ?? [],
           captions: capturedCaptions,
           /* The earned pass's fallback: a fact the binding verifier confirmed
              files its ask's words rather than nothing, so a caption the two
@@ -9600,6 +9582,24 @@ async function refineCandidateCounted(
           priorWords: priorWordsBySlot(live),
           minted: new Set(slots.map((one) => one.slot)),
         };
+        /*
+          ⚠ THE READER'S DISPUTES ON A SLOT THIS EDIT CHANGED, KEPT AS TELEMETRY
+          (#2673). The slot was filed as its newest picture anyway, on his
+          ruling; this line is where a person can still see that the reader and
+          the painter disagreed — including an affirmation whose confirming
+          re-read never came (#2646's unconfirmed rule, `unconfirmed` below).
+        */
+        if (disputeSetAside.length > 0) {
+          log.info(
+            {
+              operationId,
+              variant: variant.publicId,
+              disputeSetAside,
+              unconfirmed: Array.from(unconfirmed),
+            },
+            "[refineService] the reader disputed a feature this edit changed — its newest picture is kept as the guide anyway",
+          );
+        }
         if (unfiled.length > 0) {
           log.info(
             { operationId, variant: variant.publicId, unfiled },
@@ -9738,15 +9738,7 @@ async function refineCandidateCounted(
             deliveredRegions: null,
             masterSideRegions: null,
             deliveredSideRegions: null,
-            /* What the chain asks of each slot rides beside it, so the mint
-               can refuse a crop whose own words do not hold it (#2650). */
-            slots: (() => {
-              const asks = chainAsksBySlot(composed);
-              return slots.map((one) => {
-                const asked = asks.get(one.slot);
-                return asked === undefined ? one : { ...one, asks: asked };
-              });
-            })(),
+            slots,
             knownDigests: known,
             /*
               EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
