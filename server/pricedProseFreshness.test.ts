@@ -1087,15 +1087,6 @@ const PROSE_NOT_A_CURRENT_PRICE: ReadonlyArray<{
       + "reasoning would change what he was weighing.",
   },
   {
-    file: "server/castingV2/renderVerification.ts",
-    credits: 25,
-    quote: "The house kept 25 credits on",
-    why:
-      "A NAMED SPECIMEN, dev v#166: a paid render delivered and charged on a "
-      + "single negative reading because the confirming call did not return "
-      + "(fable-318 R1). The figure is what that render was charged then.",
-  },
-  {
     file: "server/castingV2/repaintAsks.ts",
     credits: 25,
     quote: "claim, so he was charged 25 credits and refunded them in the same second and",
