@@ -1140,15 +1140,21 @@ describe("refusals land before anything is claimed", () => {
     control nothing calls does not exist. Driven through a fake interpreter, so
     the model cannot rescue it (law 3).
   */
-  it("refuses an ask the photograph does not contain, for free", async () => {
-    await expect(refineCandidate(
+  it("⚠ SERVES a waist-only ask since #2671 — the mid-torso-up frame shows it (his word: 'I like B.')", async () => {
+    /*
+      This arm read "refuses an ask the photograph does not contain, for free"
+      until 2026-10-21. The relay court measured the painter slimming the
+      visible lower torso 3 of 3 on a mid-torso-up cast, so the waist is a
+      body ask like the arms beside it: rendered, paid for, and said as done.
+    */
+    const result = await refineCandidate(
       { interpret: async () => ({ ok: true as const, delta: { free: { waist: "a smaller waist" } } }) },
-      { ...input, instruction: "make her waist smaller" },
-    )).rejects.toThrow(/framed from the mid-torso up/);
-
-    expect(journal, "nothing was begun").not.toContain("begin");
-    expect(journal, "and nothing was deducted").not.toContain("deduct");
-    expect(ledger.charges).toHaveLength(0);
+      { ...input, instruction: "make the waist smaller" },
+    );
+    expect(result).toBeTruthy();
+    expect(journal, "the picture was made").toContain("land");
+    expect(ledger.charges.length, "and paid for like any other edit").toBe(1);
+    expect(result.note ?? "", "and nothing calls it out of shot").not.toContain("is not in it");
   });
 
   /*
@@ -1268,7 +1274,15 @@ describe("refusals land before anything is claimed", () => {
     expect(result.note ?? "").not.toContain("one more thing");
   });
 
-  it("says which half of a half-served ask was left out, and carries the waist nowhere", async () => {
+  it("⚠ CARRIES the waist on the wire since #2671 — the note, the stored recipe and the painter's ask", async () => {
+    /*
+      This arm read "says which half of a half-served ask was left out, and
+      carries the waist nowhere" until 2026-10-21, and each of its four places
+      now reads the other way: no "left out" sentence, the waist IS in the
+      stored recipe (base-anchored, so it survives every later edit on the
+      branch), and the painter is asked for it on the ASK side of the
+      preservation boundary rather than told to keep "the same waist".
+    */
     const { claimVariant } = await import("../db/castingV2Variants");
     const result = await refineCandidate(
       {
@@ -1280,42 +1294,50 @@ describe("refusals land before anything is claimed", () => {
       { ...input, instruction: "a smaller waist and bigger arms" },
     );
 
-    expect(result.note, "the delivery names the half it could not do").toContain("her waist is not in it");
-    expect(result.note).toContain("everything else you asked for was done");
-    /* A DELIVERED take. The refusal's reassuring sentence would be a lie here. */
-    expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
+    expect(result.note ?? "", "no out-of-shot sentence on a take that did it all").not.toContain("is not in it");
+    expect(result.note ?? "").not.toContain("left out of this take");
 
     const claimed = vi.mocked(claimVariant).mock.calls[0]![0] as {
       deltas: { free?: Record<string, unknown> };
       stepDeltas: { free?: Record<string, unknown> }[];
     };
-    expect(claimed.deltas.free?.waist, "the stored recipe is base-anchored — a phantom here is forever")
-      .toBeUndefined();
-    expect(claimed.deltas.free?.arms, "and the half she paid for IS stored").toBe("bigger arms");
-    expect(claimed.stepDeltas[claimed.stepDeltas.length - 1]?.free?.waist).toBeUndefined();
+    expect(claimed.deltas.free?.waist, "the stored recipe carries the waist").toBe("a smaller waist");
+    expect(claimed.deltas.free?.arms).toBe("bigger arms");
+    expect(claimed.stepDeltas[claimed.stepDeltas.length - 1]?.free?.waist).toBe("a smaller waist");
 
-    /*
-      ASSERT AT THE WIRE — and on the RIGHT LANE, which this test's first cut
-      got wrong in a way worth keeping.
-
-      It asserted the word "waist" was absent from the whole prompt, and it
-      failed: the preservation clause says *"the same waist"*, because a facet
-      nobody is editing is a facet to be left exactly as it is. That is the fix
-      WORKING, read by an instrument too blunt to tell the two lanes apart. So
-      the criterion is the one the compositor's own leak-checker uses: a genuine
-      ask has the shape `HEADING: value`, and the split is the preservation
-      boundary itself.
-    */
+    /* ASSERT AT THE WIRE, split at the preservation boundary (the compositor's
+       own leak-checker's criterion): a genuine ask is `HEADING: value`. */
     const prompt = (landedVariant?.internalPrompt as { prompt: string }).prompt.toLowerCase();
     const KEEP = "everything else must be identical to the reference";
     expect(prompt, "the split below is only meaningful if the boundary is there").toContain(KEEP);
     const askedFor = prompt.slice(0, prompt.indexOf(KEEP));
     const preserved = prompt.slice(prompt.indexOf(KEEP));
-    expect(askedFor, "the painter is never told to change a waist it cannot see").not.toContain("waist");
-    expect(askedFor, "the positive control — the served half IS asked for").toContain("arms: bigger arms");
-    expect(preserved, "and her waist is named as a thing to leave alone").toContain("the same waist");
+    expect(askedFor, "the painter IS asked for the waist").toContain("waist: a smaller waist");
+    expect(askedFor, "beside the other served half").toContain("arms: bigger arms");
+    expect(preserved, "and is never told to keep the waist it was asked to change").not.toContain("the same waist");
 
     expect(ledger.charges.length, "and it is paid for, once, like any other edit").toBe(1);
+  });
+
+  it("CONTROL — a part of the body the frame cannot show still reaches no lane and is said as not done", async () => {
+    /*
+      #2671 moved the waist and nothing else. Feet are not a closed facet at
+      all, so an ask for them reaches no lane, and the take that serves the
+      rest still owes the customer the sentence saying so — beside a waist
+      that is now served.
+    */
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { waist: "a smaller waist" } },
+          unserved: ["feet"],
+        }),
+      },
+      { ...input, instruction: "a smaller waist and bigger feet" },
+    );
+    expect(result.note, "the feet are said as not done").toContain("The feet isn't something I can do yet");
+    expect(result.note ?? "", "and the waist is not").not.toContain("waist");
   });
 
   it("does NOT refuse a body ask that IS in the picture", async () => {
@@ -15781,18 +15803,34 @@ describe("one current description rides the paid refine", () => {
   });
 
   /*
-    #2645 FOLLOW-UP — THE HALF THE PHOTOGRAPH DOES NOT SHOW NEVER REACHES THE
-    WRITER AS SERVED. Driven through the real entrance: the frame strip takes
-    the waist out of the delta, and the writer must be told so beside the
-    customer's verbatim sentence, or "a smaller waist" is filed on the cast and
-    painted by every later render.
+    #2671 — THE WAIST REACHES THE WRITER AS SERVED, AND THE PAINTER CARRIES IT.
+
+    Until 2026-10-21 the frame strip took the waist out and the writer was told
+    it was NOT done, so a slimming the painter had visibly made was never in
+    the cast's description and every later edit lost it (relay court: 3 of 3
+    torsos back at the master's width after "make their eyes green"). Driven
+    through the real entrance: the writer gets the customer's sentence with no
+    "not made" block, and a paragraph that writes the waist in is FILED and
+    painted — the reverse of the poisoned arm this replaced.
   */
-  it("a half-served ask: the writer is told the waist was NOT done, and a paragraph that writes it in is not filed", async () => {
+  it("a served waist ask: the writer is told nothing was left out, and a paragraph with the waist is filed and painted", async () => {
+    const WAISTED = "A woman in her thirties with long dark hair, a smaller waist and red lipstick.";
     const mixed = {
       ...describing,
       interpret: async () => ({
         ok: true as const,
         delta: { free: { waist: "a smaller waist", lips: "red lipstick" } },
+      }),
+      describeEngine: () => ({
+        id: "test:describe",
+        complete: async (request: { about?: string; user: string }) => {
+          asked.push(request);
+          return {
+            text: WAISTED,
+            latencyMs: 5,
+            provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+          };
+        },
       }),
     };
     await refineCandidate(mixed as never, { ...input, instruction: "a smaller waist and red lipstick" });
@@ -15800,43 +15838,14 @@ describe("one current description rides the paid refine", () => {
     const user = asked[0]!.user;
     /* The customer's words, verbatim — never reworded. */
     expect(user).toContain("The change, in the customer's own words:\na smaller waist and red lipstick");
-    /* And the waist is said as NOT done. */
-    const notDone = user.slice(user.indexOf("Part of this change was not made"));
-    expect(user.indexOf("Part of this change was not made")).toBeGreaterThan(-1);
-    expect(notDone).toContain("\n- waist");
-    /* The only places "waist" appears are the sentence and that block. */
-    const before = user.slice(0, user.indexOf("The change, in the customer's own words:"));
-    expect(before).not.toMatch(/waist/);
-    expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
-
-    /* A writer that writes the waist in anyway is refused, and the render
-       rides today's prompt with no description filed — law 3, poisoned. */
-    painted.length = 0;
-    asked.length = 0;
-    landedVariant = null;
-    const poisoned = {
-      ...mixed,
-      describeEngine: () => ({
-        id: "test:describe",
-        complete: async (request: { about?: string; user: string }) => {
-          asked.push(request);
-          return {
-            text: "A woman in her thirties with long dark hair, a smaller waist and red lipstick.",
-            latencyMs: 5,
-            provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
-          };
-        },
-      }),
-    };
-    await refineCandidate(poisoned as never, {
-      ...input,
-      instruction: "a smaller waist and red lipstick",
-      clientRequestId: "44444444-4444-4444-8444-444444444444",
-    });
-    expect(asked).toHaveLength(1);
-    expect(landedVariant, "the version still landed").not.toBeNull();
-    expect(landedVariant).not.toHaveProperty("currentDescription");
-    for (const prompt of painted) expect(prompt).not.toContain("smaller waist");
+    /* And nothing tells the writer the waist was not done. */
+    expect(user).not.toContain("was not made");
+    expect(user).not.toContain("does not show");
+    expect(user).not.toContain("- waist");
+    /* The writer's paragraph is filed, and it is what the painter is handed. */
+    expect(landedVariant?.currentDescription).toBe(WAISTED);
+    expect(painted.length, "the render must actually have happened").toBeGreaterThan(0);
+    for (const prompt of painted) expect(prompt).toContain(`How she looks after this edit: ${WAISTED}`);
   });
 
   it("⚠ a writer that THROWS changes nothing about money or the render — today's prompt, no description filed", async () => {
@@ -15950,10 +15959,10 @@ describe("one current description rides the paid refine", () => {
        customer's raw sentence; the SEED half is what this arm is about and it
        is unchanged.
 
-       ⚠ THE WHOLE TURN IS PINNED ON PURPOSE and the last paragraph is #2657's:
-       the seed road now says, unconditionally, that the frame has never shown
-       the facets it cannot show, because a facet in that table is stripped from
-       every ask that names it and so no history can hold a served one. It is
+       ⚠ THE WHOLE TURN IS PINNED ON PURPOSE. It carried a last paragraph from
+       #2657 — the seed road saying the frame had never shown the waist — until
+       #2671 emptied the casting frame's table (the waist is in shot, his
+       "I like B."), so that paragraph has nothing to name and is gone. It is
        written out rather than derived from the module's own constant — a test
        that composes its expectation the way the subject does proves only that
        the subject agrees with itself. Keeping `toBe` is the point: this arm's
@@ -15962,10 +15971,7 @@ describe("one current description rides the paid refine", () => {
 ${CHILD_BRIEF}
 
 The change, in the customer's own words:
-wear her hair down
-
-Their photograph does not show these, so no change above was made to them. Do not apply any part of a change that names one: describe each of these exactly as the description above already does, and if it says nothing about one, say nothing about it:
-- waist`);
+wear her hair down`);
     expect(asked[0]!.user, "the parent's edit was carried onto a cousin").not.toContain("green");
   });
 

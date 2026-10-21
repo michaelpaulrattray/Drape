@@ -384,15 +384,19 @@ describe("what the photograph has never shown (#2657)", () => {
     seed: { brief: "A weathered fisherman of the north Atlantic, sixty.", earlierAsks: ["a smaller waist and red lipstick"] },
     change: "give them green eyes",
   };
-  const WAIST = outOfFrame("waist")!;
+  /* ⚠ The casting frame's table is EMPTY since #2671 (his "I like B." — the
+     waist is in shot), so the seed road's never-in-shot sentence has nothing
+     to name. A per-change half still arrives through `notInShot`, and `hips`
+     stands in for one: it is not in the vocabulary, which is exactly why it
+     can only arrive that way. */
+  const HIPS = "hips";
 
-  it("the seeded writer is told the frame has never shown the waist, with no out-of-frame half in THIS change", () => {
+  it("⚠ the seeded writer is told NOTHING about the waist since #2671 — the earlier waist ask is folded in as made", () => {
+    expect(outOfFrame("waist")).toBeNull();
     const user = currentDescriptionUserTurn(SEEDED);
-    expect(user).toContain("Their photograph does not show these, so no change above was made to them.");
-    /* The writer's they/their terms, never the possessive - same rule as the
-       current change's own block one describe up. */
-    expect(user).toContain("\n- waist");
-    expect(user).not.toContain("- her waist");
+    expect(user).not.toContain("does not show these");
+    expect(user).not.toContain("- waist");
+    expect(user).toContain("Changes already made since, in order (fold them into the description):\n- a smaller waist and red lipstick");
   });
 
   it("CONTROL - the previous road carries no such sentence", () => {
@@ -404,10 +408,17 @@ describe("what the photograph has never shown (#2657)", () => {
     expect(user).not.toContain("does not show these");
   });
 
-  it("a seeded reply that writes the waist in is REFUSED, though this change named nothing out of frame", async () => {
+  it("⚠ a seeded reply that writes the earlier waist in is FILED since #2671 — the render made it", async () => {
     await expect(writeCurrentDescription(
       engineSaying("A weathered fisherman of sixty with a smaller waist and green eyes."),
       SEEDED,
+    )).resolves.toMatchObject({ ok: true });
+  });
+
+  it("CONTROL - a per-change half that IS out of shot is still refused when written in", async () => {
+    await expect(writeCurrentDescription(
+      engineSaying("A weathered fisherman of sixty with narrower hips and green eyes."),
+      { ...SEEDED, notInShot: [HIPS] },
     )).resolves.toMatchObject({ ok: false, reason: "not_in_shot" });
   });
 
@@ -427,18 +438,18 @@ describe("what the photograph has never shown (#2657)", () => {
 
   it("the list is DERIVED from the casting frame and is not a second copy of it (working law 4)", () => {
     expect(notInShotForThisCall(SEEDED)).toEqual(everyFeatureOutOfFrame());
-    expect(everyFeatureOutOfFrame()).toContain(WAIST);
+    expect(everyFeatureOutOfFrame(), "empty since #2671").toEqual([]);
     /* On the previous road it is this change's own half and nothing else. */
     expect(notInShotForThisCall({ ...SEEDED, previous: "Anything at all." })).toEqual([]);
-    expect(notInShotForThisCall({ ...SEEDED, previous: "Anything at all.", notInShot: [WAIST] })).toEqual([WAIST]);
+    expect(notInShotForThisCall({ ...SEEDED, previous: "Anything at all.", notInShot: [HIPS] })).toEqual([HIPS]);
   });
 
   it("ONE sentence, not two, when THIS change's own half is the out-of-frame feature", () => {
-    const user = currentDescriptionUserTurn({ ...SEEDED, notInShot: [WAIST] });
+    const user = currentDescriptionUserTurn({ ...SEEDED, notInShot: [HIPS] });
     expect(user).toContain("Part of this change was not made");
     expect(user).not.toContain("does not show these");
     /* And the feature is listed once rather than once per sentence. */
-    expect(user.split("\n- waist").length - 1).toBe(1);
+    expect(user.split("\n- hips").length - 1).toBe(1);
   });
 
   it("a blank previous description is the seed road too, not a short-circuit", () => {
