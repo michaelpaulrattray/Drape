@@ -268,7 +268,8 @@ import { recordInkFormDemand } from "../db/castingV2InkFormDemand";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
-  RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
+  RepaintCannotSayError, familyKindsOf, repaintAsksFor, repaintCannotRemove,
+  scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
@@ -4304,6 +4305,16 @@ async function refineCandidateCounted(
      here — "a small nose stud" contains "stud", and first-match put it on her
      earlobe once already. */
   const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+  /* EVERY KIND THE WORN LIST NAMES, not just the one that won the longest
+     match over the joined words (#2616) — derived ONCE here, through the
+     grouping `repaintAsks` already owns, and handed to the mint and the
+     library's side lookup below. The reasoning, the measurement and what
+     `fallbackKind` still does are on `familyKindsOf` itself. */
+  const accessoryKinds = familyKindsOf(
+    facetOfSubject("statedAccessories"),
+    composed,
+    accessoryRegion,
+  );
 
   /**
    * EVERY SLOT A PRUNE CAN NAME — one derivation, two readers (working law 4).
@@ -8139,8 +8150,10 @@ async function refineCandidateCounted(
       }
       /* The library's answer, which needs no scope and outlives the ask.
          `accessoryKind` is this step's own object, so a carried accessory's
-         slots resolve exactly as the mint resolved them. */
-      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryRegion });
+         slots resolve exactly as the mint resolved them — EVERY kind the worn
+         list names since #2616, derived once above, so this reader and the mint
+         below cannot resolve one item to two different slots. */
+      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryKinds });
       const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
       if (written === null) return null;
       const side = slots.find((it) => it.slot === written);
@@ -9519,9 +9532,12 @@ async function refineCandidateCounted(
              readers worded differently cannot delete a paid feature. */
           asked: askedWords,
           open: openAsks,
-          /* What the instruction said the worn object IS — derived once above,
-             beside the region override that has to name the same object. */
-          accessoryKind: accessoryRegion,
+          /* What the instruction said the worn object IS — EVERY kind the worn
+             list names, derived once above through `familyGroupsOf` (#2616).
+             It was the single longest match, so a list holding two sorts of
+             thing filed every item under the winner's slots and the other
+             item's slot got no row at all. */
+          accessoryKind: accessoryKinds,
           /*
             WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
             answer to *has she paid for a build?*
