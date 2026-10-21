@@ -343,10 +343,18 @@ export const CANNOT_SAY_COPY: Readonly<Record<CannotSayReason, CannotSayEntry>> 
 
         ⚠ **It says what is in the way WITHOUT claiming to have read the
         outfit.** An empty list means every served surface is either covered or
-        unreadable, and those are different facts; *"this outfit covers every
-        place that works"* asserts the first. So the sentence states what is
-        true of both — nothing is showing — and names the one road out that
+        unreadable, and those are different facts. So the sentence states what
+        is true of both — nothing is showing — and names the one road out that
         every account has.
+
+        ⚠ **`gate_ink_document` ASSERTED THE FIRST AND NO LONGER DOES — #2601,
+        this card's own law-7 sibling.** That sentence said *"this outfit covers
+        every place that works"*; it carries this phrase now, so the four doors
+        a customer can meet one ask apart describe one product. And the reason
+        is sharper than *either/or* suggests: `covered` alone cannot empty the
+        list at all, because the one `covered` answer in either coverage table
+        is the house chest and the house table leaves the neck and upper arm
+        bare. An empty list means the outfit could not be READ.
       */
       if (context.inkPlaces.length === 0) {
         return `I can put a tattoo on ${context.pronouns.object}, but there's nowhere showing `

@@ -101,11 +101,11 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `noInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:439 | 2 test(s) | ink.transform.wrongslot, ink.scoped.none.prefill |
-| `inkOneChangeAtATime` | cannot-say | free | server/castingV2/cannotSayCopy.ts:600 | 1 test(s) | ink.transform.two |
-| `whichInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:580 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:573 | 1 test(s) | ink.transform.dangling |
-| `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:378 | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `noInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:447 | 2 test(s) | ink.transform.wrongslot, ink.scoped.none.prefill |
+| `inkOneChangeAtATime` | cannot-say | free | server/castingV2/cannotSayCopy.ts:608 | 1 test(s) | ink.transform.two |
+| `whichInkToChange` | cannot-say | free | server/castingV2/cannotSayCopy.ts:588 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:581 | 1 test(s) | ink.transform.dangling |
+| `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:386 | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:336 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3473 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
 | `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3045 | 1 test(s) | _documented-unreachable or gap — see findings_ |
