@@ -28565,6 +28565,11 @@
     },
     {
       "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
@@ -28596,6 +28601,11 @@
     {
       "from": "module:server/castingV2/askHeldByWords.ts",
       "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {

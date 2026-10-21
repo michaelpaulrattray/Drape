@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { carriesHoldingTheirAsks, chainAsksBySlot, isComparativeAsk, wordsHoldAsks } from "./askHeldByWords";
+import { axisAskWords, carriesHoldingTheirAsks, chainAsksBySlot, isComparativeAsk, wordsHoldAsks } from "./askHeldByWords";
 import { REFUSAL_THAT_IS_EVIDENCE_ONLY } from "./referenceCompleteness";
 
 describe("the fixed word test behind #2650", () => {
@@ -67,34 +67,60 @@ describe("the send side judges the row that would ride (#2650)", () => {
   });
 });
 
-describe("the word test reads only the customer's own words (#2666)", () => {
+describe("the word test never holds a crop to a house name (#2666)", () => {
   const base = {
     publicId: "r", candidateId: 1, variantId: 5, role: "carry", slot: "hair", tier: "anatomy", noun: "hair",
     maskKey: null, digest: null, geometry: null, guard: null, refusal: null, retiredAt: null, createdAt: new Date(0),
   };
   const shortCrop = { ...base, id: 7, version: 2, words: ["short dark brown hair, closely cropped"], storageKey: "crop.png" };
 
-  it("a real house cut name never becomes an ask, and the short-crop picture keeps riding", () => {
+  it("a house cut name is tested as its family, so the short-crop picture keeps riding (the card's case)", () => {
     /* The axis value as the interpreter files it: the house name, not the customer's words. */
     const composed = { hairStyle: "standard crop" } as never;
-    expect(chainAsksBySlot(composed).has("hair")).toBe(false);
+    expect(chainAsksBySlot(composed).get("hair")).toEqual(["cropped"]);
     const result = carriesHoldingTheirAsks({ rows: [shortCrop] as never[], composed });
     expect(result.rows.map((row: { id: number }) => row.id)).toEqual([7]);
     expect(result.contradicted).toHaveLength(0);
     expect(result.contradictedSlots).toEqual([]);
   });
 
-  it("no guaranteed axis is ever read, whatever its value", () => {
-    const composed = {
-      eyeColour: "green", eyeShape: "almond", hairStyle: "standard crop",
-      hairColour: "dark brown", hairTexture: "curly", makeup: "smoky eyeliner",
-    } as never;
-    expect(Array.from(chainAsksBySlot(composed).entries())).toEqual([]);
+  it("a bun crop never rides against a short-crop cut filed as an axis (the #2650 case)", () => {
+    const composed = { hairStyle: "standard crop" } as never;
+    const bun = { ...base, id: 12, version: 3, words: ["Dark brown hair pulled into a high top bun"], storageKey: "bun.png" };
+    const alone = carriesHoldingTheirAsks({ rows: [bun] as never[], composed });
+    expect(alone.rows).toHaveLength(0);
+    expect(alone.contradictedSlots).toEqual(["hair"]);
+    /* And with the step-1 crop still in the library, that one rides instead. */
+    const both = carriesHoldingTheirAsks({ rows: [shortCrop, bun] as never[], composed });
+    expect(both.rows.map((row: { id: number }) => row.id)).toEqual([7]);
+    expect(both.contradicted.map((row: { id: number }) => row.id)).toEqual([12]);
+    expect(both.reinstated).toEqual(["hair"]);
   });
 
-  it("an axis beside a free ask leaves the free ask judged, and it still refuses a crop that argues", () => {
+  it("a hair colour is still tested: a black-hair crop does not ride against copper", () => {
+    const composed = { hairColour: "copper" } as never;
+    expect(chainAsksBySlot(composed).get("hair")).toEqual(["copper"]);
+    const black = { ...base, id: 13, version: 2, words: ["short black hair, closely cropped"], storageKey: "black.png" };
+    const result = carriesHoldingTheirAsks({ rows: [black] as never[], composed });
+    expect(result.rows).toHaveLength(0);
+    expect(result.contradictedSlots).toEqual(["hair"]);
+    const copper = { ...base, id: 14, version: 3, words: ["short copper hair, closely cropped"], storageKey: "copper.png" };
+    expect(carriesHoldingTheirAsks({ rows: [copper] as never[], composed }).rows).toHaveLength(1);
+  });
+
+  it("plain-word axes ask their own value; a trend eye shape asks nothing", () => {
+    expect(axisAskWords("hairTexture", "curly")).toBe("curly");
+    expect(axisAskWords("eyeColour", "green")).toBe("green");
+    expect(axisAskWords("makeup", "smoky eyeliner")).toBe("smoky eyeliner");
+    expect(axisAskWords("eyeShape", "hooded")).toBe("hooded");
+    expect(axisAskWords("eyeShape", "fox eyes")).toBeNull();
+    /* Derived from the cut table, never a copied list. */
+    expect(axisAskWords("hairStyle", "bob")).toBe("mid-length");
+  });
+
+  it("an axis beside a free ask: both are judged, and a crop that argues is still refused", () => {
     const composed = { hairStyle: "standard crop", free: { hairWorn: "worn down" } } as never;
-    expect(chainAsksBySlot(composed).get("hair")).toEqual(["worn down"]);
+    expect(chainAsksBySlot(composed).get("hair")).toEqual(["cropped", "worn down"]);
     const bun = { ...base, id: 8, version: 3, words: ["hair pulled into a high top bun"], storageKey: "bun.png" };
     const down = { ...base, id: 9, version: 1, words: ["short hair worn down, closely cropped"], storageKey: "down.png" };
     const result = carriesHoldingTheirAsks({ rows: [down, bun] as never[], composed });
