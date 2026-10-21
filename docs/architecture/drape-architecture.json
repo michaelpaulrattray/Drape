@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 71
+      "moduleCount": 70
     },
     {
       "id": "domain:client-shared",
@@ -117,12 +117,12 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:shared",
       "name": "shared",
-      "moduleCount": 93
+      "moduleCount": 92
     },
     {
       "id": "domain:staff",
@@ -1447,6 +1447,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/FollowingChip.tsx",
+      "path": "client/src/features/castingV2/components/FollowingChip.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/HeroDeck.tsx",
       "path": "client/src/features/castingV2/components/HeroDeck.tsx",
       "domain": "castingV2",
@@ -1467,12 +1473,6 @@
     {
       "id": "module:client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
       "path": "client/src/features/castingV2/components/PostSignCampaignOffer.tsx",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "path": "client/src/features/castingV2/components/RefineDust.tsx",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -1611,12 +1611,6 @@
     {
       "id": "module:client/src/features/castingV2/refineBusy.ts",
       "path": "client/src/features/castingV2/refineBusy.ts",
-      "domain": "castingV2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:client/src/features/castingV2/refineDust.ts",
-      "path": "client/src/features/castingV2/refineDust.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -2193,6 +2187,12 @@
     {
       "id": "module:client/src/features/settings/usageWindow.ts",
       "path": "client/src/features/settings/usageWindow.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "path": "client/src/features/settings/useAccountSurfaces.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -3817,6 +3817,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:server/castingV2/askHeldByWords.ts",
+      "path": "server/castingV2/askHeldByWords.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:server/castingV2/askReference.ts",
       "path": "server/castingV2/askReference.ts",
       "domain": "casting-v2",
@@ -4635,12 +4641,6 @@
     {
       "id": "module:server/castingV2/refineFacets.ts",
       "path": "server/castingV2/refineFacets.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/refineFigure.ts",
-      "path": "server/castingV2/refineFigure.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -6987,12 +6987,6 @@
     {
       "id": "module:shared/referralCodeFormat.ts",
       "path": "shared/referralCodeFormat.ts",
-      "domain": "shared",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:shared/refineFigure.ts",
-      "path": "shared/refineFigure.ts",
       "domain": "shared",
       "lifecycle": "active"
     },
@@ -12601,6 +12595,10 @@
       "path": "client/src/_core/hooks/useAuth.test.ts"
     },
     {
+      "id": "test:client/src/accountSurfacesLazy.test.ts",
+      "path": "client/src/accountSurfacesLazy.test.ts"
+    },
+    {
       "id": "test:client/src/appRoutes.test.ts",
       "path": "client/src/appRoutes.test.ts"
     },
@@ -12869,6 +12867,10 @@
       "path": "client/src/features/castingV2/followLineage.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/followingChip2622.test.ts",
+      "path": "client/src/features/castingV2/followingChip2622.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/frameDecodes.test.ts",
       "path": "client/src/features/castingV2/frameDecodes.test.ts"
     },
@@ -12965,8 +12967,8 @@
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
     {
-      "id": "test:client/src/features/castingV2/refineDust.test.ts",
-      "path": "client/src/features/castingV2/refineDust.test.ts"
+      "id": "test:client/src/features/castingV2/refineLoader2613.test.ts",
+      "path": "client/src/features/castingV2/refineLoader2613.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/refineOutcomeNote.test.ts",
@@ -14169,6 +14171,10 @@
       "path": "server/castingV2/ageIdioms.test.ts"
     },
     {
+      "id": "test:server/castingV2/askHeldByWords.test.ts",
+      "path": "server/castingV2/askHeldByWords.test.ts"
+    },
+    {
       "id": "test:server/castingV2/askReference.test.ts",
       "path": "server/castingV2/askReference.test.ts"
     },
@@ -14989,10 +14995,6 @@
       "path": "server/castingV2/refineFacets.test.ts"
     },
     {
-      "id": "test:server/castingV2/refineFigure.test.ts",
-      "path": "server/castingV2/refineFigure.test.ts"
-    },
-    {
       "id": "test:server/castingV2/refineInterpreterCeiling.test.ts",
       "path": "server/castingV2/refineInterpreterCeiling.test.ts"
     },
@@ -15203,6 +15205,10 @@
     {
       "id": "test:server/castingV2/sliceRefundLedger.test.ts",
       "path": "server/castingV2/sliceRefundLedger.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/slippedEditCarry.test.ts",
+      "path": "server/castingV2/slippedEditCarry.test.ts"
     },
     {
       "id": "test:server/castingV2/slotWordShape.test.ts",
@@ -17674,7 +17680,12 @@
     },
     {
       "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -20684,11 +20695,6 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:client/src/features/castingV2/frameDecodes.ts",
       "kind": "imports"
     },
@@ -20705,11 +20711,6 @@
     {
       "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
       "to": "module:shared/brand.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/CandidateViewer.tsx",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -20903,16 +20904,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:client/src/features/castingV2/refineDust.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/components/RefineDust.tsx",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/VersionRail.tsx",
       "kind": "imports"
@@ -21074,17 +21065,7 @@
     },
     {
       "from": "module:client/src/features/castingV2/refineBusy.ts",
-      "to": "module:shared/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineBusy.ts",
       "to": "module:shared/refineSteps.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:client/src/features/castingV2/refineDust.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -22044,6 +22025,11 @@
     },
     {
       "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -22055,6 +22041,11 @@
     {
       "from": "module:client/src/features/settings/index.ts",
       "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -22325,6 +22316,11 @@
     {
       "from": "module:client/src/features/settings/usageWindow.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "to": "module:client/src/features/settings/SettingsModal.tsx",
       "kind": "imports"
     },
     {
@@ -24280,6 +24276,11 @@
     {
       "from": "module:client/src/pages/CastingSheet.tsx",
       "to": "module:client/src/features/castingV2/components/faceSelection.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/pages/CastingSheet.tsx",
+      "to": "module:client/src/features/castingV2/components/FollowingChip.tsx",
       "kind": "imports"
     },
     {
@@ -28563,6 +28564,41 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/referenceLibrary.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/refineDelta.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/refineFacets.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/askReference.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -29400,6 +29436,11 @@
     {
       "from": "module:server/castingV2/creationRecordTimestampTrust.ts",
       "to": "module:server/castingV2/creationRecordTimestamp.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/currentDescription.ts",
+      "to": "module:server/castingV2/castingFrame.ts",
       "kind": "imports"
     },
     {
@@ -31509,6 +31550,11 @@
     },
     {
       "from": "module:server/castingV2/referenceMint.ts",
+      "to": "module:server/castingV2/askHeldByWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -31785,11 +31831,6 @@
     {
       "from": "module:server/castingV2/refineFacets.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineFigure.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -32134,6 +32175,11 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
+      "to": "module:server/castingV2/askHeldByWords.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/askReference.ts",
       "kind": "imports"
     },
@@ -32414,11 +32460,6 @@
     },
     {
       "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/refineFigure.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/refineInterpreter.ts",
       "kind": "imports"
     },
@@ -32680,11 +32721,6 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:shared/referenceDelivery.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -35020,11 +35056,6 @@
     {
       "from": "module:server/db/castingV2Variants.ts",
       "to": "module:server/db/connection.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/db/castingV2Variants.ts",
-      "to": "module:shared/refineFigure.ts",
       "kind": "imports"
     },
     {
@@ -42563,10 +42594,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:896",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:887",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:896",
+      "subject": "server/castingV2/refineService.ts:887",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

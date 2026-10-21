@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { displayPrice, formatCredits } from "@shared/creditDisplay";
-import { Plus, RotateCw, Undo2, X } from "lucide-react";
+import { Plus, RotateCw, X } from "lucide-react";
 
 import type { InkProvenance } from "@shared/inkProvenance";
 import { REFINE_INSTRUCTION_MAX_LENGTH } from "@shared/refineLimits";
@@ -22,13 +22,6 @@ import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
 import { waitExceeds } from "../waitNotice";
-
-/**
- * The word the Undo chip sends — the same bare word a person could type, which
- * the server answers as free navigation back to the version before, never a
- * render (`server/castingV2/refineDelta.ts`'s bare-undo kind).
- */
-const UNDO_WORD = "undo";
 
 /** How tall the ask box may grow before it scrolls, in lines. */
 const FIELD_MAX_LINES = 3;
@@ -913,32 +906,13 @@ export function RefinePanel({
       ) : null}
 
       {/*
-        UNDO, AND IT IS THE ONLY CHIP (#2533, his approved design: *"the only
-        chip is Undo, shown after an edit, and it reads 'Undo · free'"*).
-
-        It replaces the line under the box that told people they could TYPE
-        "undo" — a capability somebody had to read about, learn the word for,
-        and trust was free. Now it is one press, and the price is on it.
-
-        It is the typed path, not a second one: it sends the bare word `undo`
-        through the same `onRefine` the box sends through, which the server
-        answers as free navigation and never as a render. Shown only on a
-        version that was made by an edit — on the original there is nothing to
-        take back, and a control that can never apply is not drawn.
+        ⚠ NO UNDO PILL — #2610, his word 2026-10-17, verbatim: *"remove the
+        undo pill we dont need it people can click between versions on the
+        left side panel thumbnails"*. It superseded #2533's "Undo · free" chip.
+        The way back is the version thumbnails (`VersionRail`), one click and
+        free; a typed "undo" is still answered by the server as free
+        navigation, but nothing here advertises it.
       */}
-      {selectedVariantId !== null ? (
-        <div className="dpc-refine__chips">
-          <button
-            type="button"
-            className="dpc-refine__chip"
-            disabled={busy}
-            onClick={() => onRefine(UNDO_WORD)}
-          >
-            <Undo2 size={13} strokeWidth={1.8} aria-hidden="true" />
-            Undo · free
-          </button>
-        </div>
-      ) : null}
 
       <form
         className="dpc-refine__ask"
@@ -1177,8 +1151,8 @@ export function RefinePanel({
 
         Two sentences stood here: what a refine may ask for (*"Anything about
         them — not their clothes or the room"*), and that typing "undo" takes
-        something back for free. The second became the Undo chip above the box,
-        which says the same thing by being pressable. The first is gone with
+        something back for free. The second became an Undo chip above the box,
+        itself removed by #2610 — the version thumbnails are the way back. The first is gone with
         nothing in its place, and that is a real trade, named rather than
         hidden: an outfit ask is now learned at the server's own refusal, which
         says what was refused and what to do, instead of being warned about in

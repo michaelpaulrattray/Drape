@@ -175,6 +175,49 @@ export function openKindOfSlot(key: string): { kind: string; side: Instance | nu
   return { kind: rest.slice(0, at), side: side as Instance };
 }
 
+/**
+ * DOES THIS SET OF EDITED SLOTS CHANGE THE FEATURE `slot` IS ABOUT — the one
+ * spelling of the overlap relation, for every layer that asks it (#2641).
+ *
+ * `edited.has(slot)` answers *"is this exact slot edited"*. Most callers are
+ * asking the different question *"does this render change the feature this row
+ * is about"*. For a named slot the two are the same question. For an OPEN KIND
+ * they are not: an ask arrives on the BARE slot (`open:fangs`) while the
+ * library keeps one row per SIDE (`open:fangs@left`, `@right`), so equality
+ * matches nothing and a feature being repainted reads as a feature being held.
+ *
+ * THE RELATION IS OVERLAP, NOT EQUALITY, and it runs both ways: a bare ask
+ * covers every side of its kind, and a sided ask overlaps the bare row, which
+ * describes the whole feature including that side. Two DIFFERENT sides do not
+ * overlap — "change the left fang" leaves the right fang alone, which is the
+ * case that must keep working.
+ *
+ * It lives beside the grammar for the reason `openKindCarriedByCrops` does: it
+ * is the same question the grammar answers, and a caller re-deriving it from a
+ * spelling is how this went wrong twice. #2635 fixed it in the recipe
+ * assembler; #2641 found `libraryWithoutEditedCrops` one layer down still
+ * keyed on equality, so the two layers answered one question two ways. A
+ * second copy of this rule anywhere would have to agree with this one
+ * (working law 4) — so there is one, and both callers derive from it.
+ *
+ * Named slots and the ink namespace are unaffected: `openKindOfSlot` answers
+ * `null` for both, so the predicate collapses to `edited.has(slot)` exactly.
+ */
+export function editsFeatureAtSlot(
+  edited: ReadonlySet<string>,
+  slot: string,
+): boolean {
+  if (edited.has(slot)) return true;
+  const open = openKindOfSlot(slot);
+  if (open === null) return false;
+  /* Asked by the grammar's own key builders rather than by re-parsing every
+     edited slot — the same shape as `openKindCarriedByCrops` above, and it
+     keeps the spelling of a key in the one place that owns it. */
+  if (edited.has(openSlotKey(open.kind))) return true;
+  return open.side === null
+    && INSTANCES.some((side) => edited.has(openSideSlotKey(open.kind, side)));
+}
+
 /* ------------------------------------------------------------------ *
  * THE INK NAMESPACE — a tattoo at a place, and it never sees the       *
  * library                                                              *
