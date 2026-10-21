@@ -511,7 +511,26 @@ export type RefineRefusal =
    * Absent means backed — every refusal written before this existed came from a
    * matched stage word, which is what the field says.
    */
-  | { reason: "wall_stage"; asked: string; backed?: boolean }
+  /**
+   * ⚠ `clothingServed` IS THE ACCOUNT'S BIT, AND THE SENTENCE TURNS ON IT —
+   * #2544 slice 1.
+   *
+   * The backed sentence has always ended *"a garment, a prop or the set, which
+   * comes after Sign"*. Once an account IS served the wardrobe subject that
+   * clause is false of it twice over: clothing works there, and a garment ask
+   * no longer reaches this wall at all — only the scenery half can raise it. So
+   * a served account is given a sentence that names what still refuses and what
+   * now works, and an unserved one is given today's words unchanged.
+   *
+   * ⚠ **The bit rides the REFUSAL rather than being read in the copy layer**,
+   * which is this file's own precedent two doors down (`alternatives`, #2562):
+   * the sentence that derived its own answer named surfaces the cast's outfit
+   * was covering. A copy layer that re-asked a flag would be the same defect
+   * with a different subject.
+   *
+   * Absent means not served, which is every account until the flag moves.
+   */
+  | { reason: "wall_stage"; asked: string; backed?: boolean; clothingServed?: boolean }
   /**
    * THE MODEL CLAIMED A WALL AND THE LEXICON COULD NOT BACK IT — the unbacked
    * half of the wall above, given its own name (census card C1, ruled
@@ -937,6 +956,27 @@ export type FreeLaneCheck = {
    * is read on its own terms. A bare string cannot say which of those it is.
    */
   wardrobe?: WardrobeResolution;
+  /**
+   * WHETHER THIS ACCOUNT IS SERVED THE WARDROBE SUBJECT — one derived bit, set
+   * by the interpreter from `CASTING_OUTFIT_EDIT_SCOPE` (#2544 slice 1).
+   *
+   * It does two things and nothing else: it licenses the garment half of the
+   * stage lexicon for a value filed under `wardrobe`, and it rides onto a
+   * `wall_stage` refusal so the sentence can be true of the account reading it.
+   *
+   * ⚠ **It never licenses the SCENERY half, under any subject.** That is the
+   * whole guard, so it is spelled as one term in one condition rather than as a
+   * branch: the `find` below skips a garment word when licensed and can never
+   * skip a scenery one, because `GARMENT_WORDS` is what it asks.
+   *
+   * One derived bit rather than the two facts separately, for
+   * `inkDocumentedByReference`'s reason one field up: the reader has no business
+   * knowing about flags, and the flag has no business re-deciding what a
+   * wardrobe ask is.
+   *
+   * Absent means not served — every caller that has never heard of the flag.
+   */
+  outfitEditServed?: boolean;
   /** Set when the value hit a wall, so the caller can name which one. */
   wall?: RefineRefusal;
   /**
@@ -1170,6 +1210,51 @@ const STAGE_WORDS = [
 ];
 
 /**
+ * THE GARMENT HALF OF THE LIST ABOVE — #2544 slice 1, the design's §4.
+ *
+ * ⚠ **THE LEXICON SPLITS IN MEANING, NOT IN MEMBERSHIP, AND NOT IN ORDER.**
+ * `STAGE_WORDS` is untouched above — same members, same sequence — because the
+ * word it returns is QUOTED BACK to the customer (`asked`), so re-grouping the
+ * array would quietly change which word a sentence naming two of them is
+ * refused for. This set names the garment members of that one list; the scenery
+ * half is DERIVED from it below rather than typed a second time, which is
+ * working law 4 in the one place a second copy would be worst.
+ *
+ * What the halves are FOR: the scenery half refuses under every subject, always,
+ * served or not. The garment half is licensed where the filed subject is
+ * `wardrobe` and the account is served it — the exact shape `ACCESSORY_ALLOWED`
+ * already has one line down, which is why it is spelled the same way.
+ *
+ * `wearing` sits here because it is how anyone describes putting a garment on.
+ * It is ALSO in `ACCESSORY_ALLOWED`, and the two exemptions are independent: an
+ * earring ask is licensed that verb with no flag anywhere (D-160), and an
+ * outfit ask is licensed the whole half only where the subject is served.
+ *
+ * `hat` and `scarf` stay here and ALSO join the wardrobe subject's nouns in the
+ * same act (`subjectCards.ts`), which is the design's own reasoning: served,
+ * *"add a beanie"* must not keep refusing while *"add a hoodie"* works — a
+ * distinction no customer has any basis to predict.
+ */
+const GARMENT_WORDS = new Set([
+  "coat", "jacket", "shirt", "dress", "suit", "hat", "scarf", "wearing",
+]);
+
+/**
+ * The other half, derived — the words that refuse under every subject.
+ *
+ * Exported for the arm the design calls the one that matters most: with the
+ * flag ON, every one of these still refuses at all five sites. A test that
+ * retyped the list would pass against a lexicon that had silently lost a
+ * member.
+ */
+export const SCENERY_WORDS: readonly string[] =
+  STAGE_WORDS.filter((word) => !GARMENT_WORDS.has(word));
+
+/** The garment half, for the same reason — read, never retyped, by its arms. */
+export const GARMENT_STAGE_WORDS: readonly string[] =
+  STAGE_WORDS.filter((word) => GARMENT_WORDS.has(word));
+
+/**
  * Words the ACCESSORIES subject is allowed to use (D-160).
  *
  * "Wearing" is how anyone describes an earring, so the stage guard was refusing
@@ -1214,10 +1299,27 @@ const ACCESSORY_ALLOWED = new Set(["wearing"]);
  * real garment ask names its garment too — "wearing a red coat" still fires on
  * `coat` — so nothing that should refuse stops refusing.
  */
-export function stageWordIn(text: string): string | null {
+/**
+ * ⚠ `garmentLicensed` ASKS ONLY THE SCENERY HALF — #2544 slice 1.
+ *
+ * Passed by a caller that has already established BOTH halves of the licence:
+ * this ask is a wardrobe ask, and this account is served the subject. Absent —
+ * every caller that has never heard of the flag, and every account outside it —
+ * is today's question, byte for byte.
+ *
+ * It is a parameter rather than a second function because the lexicon has one
+ * owner and the two halves are one list: a `sceneryWordIn` beside this would be
+ * the second reader that drifts.
+ */
+export function stageWordIn(
+  text: string,
+  options: { garmentLicensed?: boolean } = {},
+): string | null {
   const lowered = text.toLowerCase();
   return STAGE_WORDS.find(
-    (word) => !ACCESSORY_ALLOWED.has(word) && new RegExp(`\\b${word}\\b`).test(lowered),
+    (word) => !ACCESSORY_ALLOWED.has(word)
+      && !(options.garmentLicensed === true && GARMENT_WORDS.has(word))
+      && new RegExp(`\\b${word}\\b`).test(lowered),
   ) ?? null;
 }
 
@@ -1615,13 +1717,32 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
           return null;
         }
         /* WALL (b), secondary: scenery smuggled into a person subject. */
+        /*
+          ⚠ AND THE GARMENT HALF IS LICENSED UNDER ONE SUBJECT, FOR A SERVED
+          ACCOUNT — #2544 slice 1, site 2 of the design's five.
+
+          BOTH terms are required and neither is sufficient. The subject alone
+          would open garments for everybody the moment the model filed one under
+          `wardrobe`, which it can do today; the flag alone would license `coat`
+          inside a `skin` value, where it is the smuggling this wall exists to
+          catch. The scenery half is outside the condition entirely, so no
+          combination of the two can reach it.
+        */
+        const garmentLicensed = subject === "wardrobe" && check.outfitEditServed === true;
         const lowered = scrubbed.toLowerCase();
         const stage = STAGE_WORDS.find((word) => (
           !(subject === "statedAccessories" && ACCESSORY_ALLOWED.has(word))
+          && !(garmentLicensed && GARMENT_WORDS.has(word))
           && new RegExp(`\\b${word}\\b`).test(lowered)
         ));
         if (stage) {
-          check.wall = { reason: "wall_stage", asked: stage };
+          check.wall = {
+            reason: "wall_stage",
+            asked: stage,
+            /* The sentence has to be true of the account reading it: a served
+               account is told clothing works and the set does not. */
+            ...(check.outfitEditServed === true ? { clothingServed: true } : {}),
+          };
           return null;
         }
         /*

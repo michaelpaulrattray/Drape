@@ -61,7 +61,9 @@ import {
   recoverCastingV2RefineOperation,
   type RefineRecoveryOutcome,
 } from "./refineRecovery";
-import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
+import {
+  captureCastingCurrentDescriptionEnabled, captureCastingOutfitEditEnabled,
+} from "./castingV2Scope";
 import { writeCurrentDescription } from "./currentDescription";
 import { interpreterEngine } from "./interpreter";
 import type { TextEngine } from "../providers/types";
@@ -828,6 +830,14 @@ export type RefineServiceDependencies = {
   hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_OUTFIT_EDIT_SCOPE` — whether clothing is an editable subject for
+   * this account (#2544 slice 1). Injectable for the same reason as its
+   * siblings: the arm that proves the flag OFF leaves today's road untouched,
+   * and the arm that proves a served account reaches a render, both have to be
+   * able to say so without setting a process-wide variable.
+   */
+  outfitEditEnabled?: (userId: number) => boolean;
   /**
    * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
    * already has. Injectable for the same reason as its siblings: the arm that
@@ -1840,9 +1850,27 @@ async function refineCandidateCounted(
     the two option sets rather than listing them, which is the only arm shape
     neither of those two members would have needed finding by hand.
   */
+  /*
+    IS CLOTHING THIS ACCOUNT'S TO CHANGE — read ONCE, for the same reason
+    `wardrobeNow` is (#2544 slice 1).
+
+    Two `interpretRefinement` call sites in this function read it (the first
+    reading, and rule 3's re-read with the removal vocabulary withheld), and two
+    captures of one flag are two answers waiting to disagree about one request.
+  */
+  const outfitEditServed =
+    (dependencies.outfitEditEnabled ?? captureCastingOutfitEditEnabled)(input.userId);
+
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
+      /*
+        CLOTHING IS AN EDITABLE SUBJECT FOR THIS ACCOUNT, or it is not (#2544
+        slice 1). Read from the ACCOUNT, like `inkReferenceEnabled` beside it:
+        what a customer may ask for is a property of their account rather than
+        of the sentence they typed.
+      */
+      outfitEditServed,
       /*
         A PICTURE RIDES THIS ASK — the entrance to the reference road
         (fable-1104 §2).
