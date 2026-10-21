@@ -44,8 +44,26 @@
  * 2 · NEGATIVE, the NEW fence: with the repaint out of the picture, a narrowed
  *     reference library must refuse each child by name. A fence that cannot
  *     refuse is not a fence (invariant 7).
- * 3 · THE POINT: drive `CASTING_REPAINT_SCOPE` dark and the gate must NOT
- *     refuse. This is the only arm here that fails on the tree as it was.
+ *
+ * ⚠ **AND ARM 3 IS GONE, WHICH CHANGES WHAT THIS FILE IS FOR — read this before
+ * keeping or deleting it (the relay's finding on PR #2569).** Arm 3 was *the
+ * point*: drive `CASTING_REPAINT_SCOPE` dark and the gate must not refuse. Slice
+ * 4b deleted that flag, so the arm could not fail over any value and was removed
+ * (the measurement is beside its own deletion below). **Slice 4a has shipped and
+ * its question is answered by tracked suites, so nothing here rehearses a
+ * pending slice any more.**
+ *
+ * **What is NOT covered anywhere else, and is the whole reason this file was
+ * kept rather than deleted:** arm 1 drives the REAL `validateEnv()` with the
+ * live service's WHOLE recorded position set, in the order the process calls
+ * things. Seven tracked suites import `PRODUCTION_FLAG_POSITIONS` and nine call
+ * `validateEnv`, and **the two sets do not intersect** — every unit arm drives
+ * one fence with a fixture, and `productionBootSettings.test.ts` compares the
+ * record to the code's declarations without booting it. So no suite asks *"do
+ * the values the service actually holds survive the real gate together"*, which
+ * is the question a crash-looping deploy answers the expensive way (the evidence
+ * boot guards, 2026-07-31). Run it before any scope edit ships; it reads
+ * nothing, writes nothing and spends nothing.
  *
  * Reads nothing, writes nothing, spends nothing: no database, no network, no
  * provider. It mutates `process.env` in its own process only, and the signing
@@ -127,8 +145,16 @@ function run(overrides: Record<string, string | undefined>): string | null {
   }
 }
 
+/* ⚠ THE ARM COUNT IS COUNTED, NEVER TYPED — the relay's finding on PR #2569.
+   The verdict line read `6 arms` while four ran, because the number was a
+   literal in the sentence and every arm this file has retired left it behind.
+   The PR body then CITED that line as proof of what had run. An instrument that
+   states its own population is the one place a hand-typed count cannot be
+   allowed: it is the sentence a reader trusts instead of re-counting. */
 let failures = 0;
+let arms = 0;
 function expectPass(label: string, overrides: Record<string, string | undefined>): void {
+  arms += 1;
   const message = run(overrides);
   if (message === null) {
     console.log("  PASS  " + label);
@@ -148,6 +174,7 @@ function expectRefusal(
   overrides: Record<string, string | undefined>,
   child: string,
 ): void {
+  arms += 1;
   const parent = "CASTING_REFERENCE_LIBRARY_SCOPE";
   const message = run(overrides);
   if (message === null) {
@@ -173,8 +200,9 @@ console.log("1 · POSITIVE CONTROL — production's own recorded positions");
 expectPass("the live service's flag positions boot", {});
 
 console.log(
-  "\n2 · NEGATIVE CONTROLS — the NEW fence must be able to refuse, BY NAME."
-  + "\n    The repaint is driven `off` in each so its own fence cannot fire first.",
+  "\n2 · NEGATIVE CONTROL — the NEW fence must be able to refuse, BY NAME,"
+  + "\n    naming the child's own variable AND its parent's (defect 2 above)."
+  + "\n    Every sibling is driven `off` so only the fence under test can fire.",
 );
 /*
   ⚠ AND EACH ARM MUST SILENCE THE OTHER CHILDREN, which is defect 2 once more
@@ -188,8 +216,13 @@ const SIBLINGS = {
   /* ⚠ `CASTING_SIDE_PHRASING_SCOPE: "off"` stood here and is removed with the flag
      (#1577 slice D2). The paragraph above keeps it as the SPECIMEN because the
      lesson is the instrument's, not the flag's — but there is no fence left for it
-     to fire from, so silencing it would describe a refusal that cannot happen. */
-  CASTING_OPEN_LANE_SCOPE: "off",
+     to fire from, so silencing it would describe a refusal that cannot happen.
+     ⚠ `CASTING_OPEN_LANE_SCOPE: "off"` left the same way in slice D1, and it had to
+     be found TWICE: the slice itself missed it, the relay's finding on PR #2556 missed
+     it, and the sweep that caught it was a grep for the NAME after the compiler had
+     already said it was finished. Nothing in this file is a type -- the flag was a key
+     in a string table and a string argument -- so `tsc` was always going to be silent
+     about it. */
   CASTING_REFERENCE_ATTACH_SCOPE: "off",
   /* ⚠ The reference library ALREADY had children of its own before slice 4a —
      the face scan and, under it, the kept-scan table — and the face scan stands
@@ -206,7 +239,10 @@ const SIBLINGS = {
 } as const;
 
 const NARROWED = {
-  CASTING_REPAINT_SCOPE: "off",
+  /* ⚠ `CASTING_REPAINT_SCOPE: "off"` stood here to stop the repaint's own fence
+     firing first — defect 2 above. It is removed with the flag (slice 4b): the
+     variable is read by nothing now, so setting it silenced nothing and described
+     a refusal that cannot happen. Driven at four values, all admitted. */
   CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
   ...SIBLINGS,
 };
@@ -217,37 +253,60 @@ const NARROWED = {
   re-pointed, and that is the honest act: with the fence gone the arm would have
   found no refusal and reported it as a FAILURE of slice 4a, which is a red about
   nothing — and the opposite mistake, loosening the arm until it passed, would
-  have left a rehearsal that cannot fail. **Two arms remain and the rehearsal's
-  verdict still means what it says.**
+  have left a rehearsal that cannot fail.
+
+  ⚠ **AND THE OPEN-LANE ARM WENT THE SAME WAY IN SLICE D1, WHICH LEAVES EXACTLY ONE.
+  This paragraph said *"two arms remain"*, and for one day it was true.** The flag's
+  boot fence (`validateCastingOpenLaneEnvironment`) was deleted with the flag, so the
+  arm that asserted it refuses BY NAME found no refusal -- and the thing it printed
+  was not a quiet pass, it was `REHEARSAL RED -- Do NOT ship slice 4a`, two days after
+  slice 4a shipped. **That is this paragraph's own prediction arriving, and it was
+  driven rather than reasoned**: the arm was run on `67fed3a5` and read
+  *"it ADMITTED the configuration -- the fence is inert"*. Removed rather than
+  re-pointed or loosened, for the reason above. **One negative control remains and the
+  rehearsal's verdict still means what it says.**
 */
-expectRefusal(
-  "an open-lane user outside the reference library",
-  { ...NARROWED, CASTING_OPEN_LANE_SCOPE: "users:1,7" },
-  "CASTING_OPEN_LANE_SCOPE",
-);
 expectRefusal(
   "a reference-attach user outside the reference library",
   { ...NARROWED, CASTING_REFERENCE_ATTACH_SCOPE: "users:1,9" },
   "CASTING_REFERENCE_ATTACH_SCOPE",
 );
 
-console.log(
-  "\n3 · THE ARM THAT IS THE POINT — the repaint no longer gates boot."
-  + "\n    This is the only arm here that fails on the tree as it was.",
-);
-expectPass("production's positions with CASTING_REPAINT_SCOPE off", {
-  CASTING_REPAINT_SCOPE: "off",
-});
-expectPass("production's positions with CASTING_REPAINT_SCOPE absent", {
-  CASTING_REPAINT_SCOPE: undefined,
-});
+/*
+  ⚠ **ARM 3 — *"THE ARM THAT IS THE POINT — the repaint no longer gates boot"*,
+  two `expectPass` arms driving `CASTING_REPAINT_SCOPE` `off` and absent — IS
+  REMOVED, AND IT IS THE THIRD ARM OF THIS FILE TO DIE OF ITS OWN SUBJECT
+  RETIRING.** `CASTING_REPAINT_SCOPE` went with the paste road in slice 4b: it is
+  out of `PRODUCTION_FLAG_POSITIONS` (the stamp where that row
+  stood says so, in `productionFlagPositions.mts`) and out of the server, which mentions it only
+  in three historical comments. So no fence reads it and no parse sees it.
+
+  ⚠ **DRIVEN, NOT REASONED, AND THE PROBE CARRIED A POSITIVE CONTROL** — the gate
+  was given the variable at four values and ADMITTED every one, including a
+  malformed `users:` that its own parse refused while the flag existed, and plain
+  `gibberish`; the control, a malformed `CASTING_REFERENCE_ATTACH_SCOPE`, refused
+  by name in the same probe. **So the two arms could not fail over any value at
+  all** — they asserted the absence of a deleted fence, which is the one assertion
+  that is true of a product that never had the feature, and they were duplicates
+  of arm 1 besides.
+
+  That is the mistake the paragraph above names in its own words: *"the opposite
+  mistake, loosening the arm until it passed, would have left a rehearsal that
+  cannot fail."* An arm kept past its fence does not need loosening — the deletion
+  of its subject loosens it, silently, and it goes on printing PASS. **The
+  question it asked is not lost**: `referenceAttachScope.test.ts` › *"is no longer
+  gated on the repaint flag — the point of the re-parent"* is the tracked,
+  CI-visible arm for it, and `scopeParentChain.test.ts` derives every fence's
+  parent from the code and holds it against the variable `validateEnv` actually
+  passes — which is the stronger reading this script could only rehearse.
+*/
 
 console.log(
   "\n" + (failures === 0
-    ? "REHEARSAL GREEN — 6 arms, 0 failures. Production boots after the re-parent, each"
-      + " child's new fence refuses by its own name, and the repaint is no longer in any"
-      + " child's chain."
-    : "REHEARSAL RED — " + failures + " arm(s) failed. Do NOT ship slice 4a."),
+    ? "REHEARSAL GREEN — " + arms + " arms, 0 failures. Production's whole recorded"
+      + " position set boots through the real validateEnv(), and the one child whose"
+      + " fence is still alive refuses by its own name over its own parent."
+    : "REHEARSAL RED — " + failures + " of " + arms + " arm(s) failed."),
 );
 
 process.exit(failures === 0 ? 0 : 1);

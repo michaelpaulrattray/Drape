@@ -559,8 +559,16 @@ export function validateCastingScanTableEnvironment(input: {
    `captureCastingOpenLaneEnabled` and `validateCastingOpenLaneEnvironment`. It
    is retired on his word of 2026-10-15 (*"yes approve the plan and switch off
    the six settings"*), the ghost audit's row D1: it had stood at `all` since
-   2026-09-24 and every flag above it was `all` too, so its off arm -- the two
-   closed-lane interpreter prompts -- was asked of nobody.
+   2026-09-24 and every flag above it was `all` too.
+
+   ⚠ THIS SENTENCE ENDED *"so its off arm -- the two closed-lane interpreter
+   prompts -- was asked of nobody"*, AND ONE ROAD WAS STILL ASKING IT: the removal
+   path's RULE 3 re-read never passed the option, and absent meant off. Found by
+   the relay on PR #2556; declared and measured on the D1 row. Nothing here moves,
+   because that road never read a scope -- and the lesson that belongs to THIS file
+   is the one below, one turn further: a flag with two gates has two sweeps, and a
+   caller that passed NEITHER gate is found by asking what every caller passes,
+   never by the compiler and never by a grep for the flag.
 
    WHAT THE BLOCK ARGUED, kept because the next sub-flag here will face it:
 
