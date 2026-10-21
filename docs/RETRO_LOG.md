@@ -1399,3 +1399,187 @@ no stamp** (#1859's remainder).
 Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19,
 run 5 2026-09-27, run 6 2026-10-04, **run 7 2026-10-11** (on its clock, the
 third on-time run running). Next due ~2026-10-18.
+
+## Run 8 — 2026-10-21 19:49–2x:xx AEST (Retro, patrol #8, run #800)
+
+**Window:** 2026-10-10 17:30Z (run 7's close) → 2026-10-21 10:00Z. **Eleven days, not
+seven**, and the reason is this run's own finding: the clock fired around 18 Oct and the
+team was parked at the founder's weekly model cap from **2026-10-17 18:39** until this
+morning. **150 mailbox files** — **101 seat-stamped** (96 foreman, 1 warden, 1 janitor,
+1 machinist, 1 seat1, 1 fable) and 49 runner notices (41 pass digests, **3
+`runner-close-*`**, **3 parked**, 1 unparked, 1 reloaded). **0 `runner-escalated-*`. 230
+PRs merged.** ⚠ The corpus boundary is a floor and not a precision, for run 6's reason
+(mtime over entry names that mix UTC and local stamps).
+
+**Why the Retro ran, and why it ran FIRST.** Its clock was **overdue by 3 days**
+(`patrol-clocks.mts`: last run 2026-10-11, every 7 days) with switch **Process ON**, and
+#505 puts an overdue patrol ahead of the category order. Everything above it was
+genuinely unavailable rather than skipped: **0 of his 15 ordered cards on offer**; the
+**urgent band empty**; no new Desk replies (300/300, read again before the close) and no
+card taps; and the one **repair owed** (PR #2676, `review=finding`) had been claimed by
+**seat-1 four minutes before this row opened** — on `team/relay-2672`, the relay's own
+branch, with the relay sequencing #2675 → #2676 → #2677 as I read. Standing off that lane
+was the third shift running to do so, and it was right again.
+
+⚠ **AND `patrol-clocks.mts` REFUSED AT LAUNCH, CORRECTLY, WHICH IS WHY THIS RUN HAPPENED
+AT ALL.** It would not print a table while the tree was behind `origin/main` on
+`MACHINIST_LEDGER.md` (#2180), and the shift digest had carried `UNREADABLE` for the same
+reason. A `git pull --ff-only` — checked first as a true fast-forward, and that the six
+incoming commits did not touch the dirty `.claude/settings.json` — then showed **two**
+fired clocks. **A seat that reads that refusal as "nothing to do" loses its own patrol**,
+which is the failure the refusal exists to prevent.
+
+### A. Audit ledger
+
+1. **Close-stamps, anchored on the last heading** (run 4's correction, kept): **101 seat
+   entries — 98 stamped, 3 carrying none, 1 `⚠ UNVERIFIED CLOSE`, 13 double-headings.**
+   Run 7: 54 / 53 / 1 / 0 / 12. Run 6: 83 / 75 / 8 / — / 0.
+2. ✅ **THE DOUBLE-HEADING HABIT IS STILL SPREADING (12 → 13) AND IT NO LONGER COSTS
+   ANYTHING — #2230's repair verified at the bytes, not at the card.** Before
+   (`close-stamp.before-2230.ps1:161`) the verifier `break`s at **any**
+   `^##\s.*runner close-stamp \(machine-written\)`, which is exactly the placeholder
+   shifts hand-write. Now (`close-stamp.ps1:187–188`) it breaks only on the `… — verified`
+   form or the `UNVERIFIED CLOSE` form. Corroborated across the window: **all 13
+   double-heading entries carry exactly ONE real stamp body** (`^exit: 2026`), so nothing
+   was truncated. **R18's #2230 instance is closed.**
+3. ⚠ **THE UNSTAMPED-ENTRY MYSTERY IS NARROWED 3 → 2, AND ONE CAUSE IS NOW KNOWN AND IS
+   NOT A DEFECT.** `seat1-20261011-195056.md` **can never be stamped**: the population
+   filter at `close-stamp.ps1:43` is
+   `^(foreman|fable|manual|retro|janitor|warden|machinist)-.*\.md$`, and no `seat*-` name
+   matches it. **The regex matches the standing orders** — a builder seat is told never to
+   touch `.agents/` — so the off-instruction act is the entry, not the filter, and
+   **nothing is carded.** The remaining two (`foreman-20261016-1705`,
+   `foreman-20261017-1611`) are unexplained, as run 7 left `foreman-20261008-1156`:
+   #1859's remainder, now open a third run. **Two hypotheses were refuted rather than left
+   standing**: no entry in the window carries **two** real stamp bodies, so no stamp
+   landed on a neighbouring entry; and no `[close-stamp] FAILED` line exists in `.agents/`
+   at all. Said plainly rather than attributed to a cause.
+4. **One report audited end to end at the artifacts** — `foreman-20261017-1655`, the last
+   real entry before the park and a claim-dense one. **Every claim read HOLDS:** #2638 /
+   #2645 / #2646 / #2650 all CLOSED; **#2657 exists**; **#2644 carries exactly `bug` +
+   `awaiting-fable`** with `small-fix` gone, as it said; its disposables are gone
+   (`ls scripts/_264*` → none); and **edition 740 / `1068839dd` / deployment `bf6c2b94`**
+   is in Railway's own deployment list, created 2026-10-17T07:30:10Z. Its "0 of 15 on
+   offer" also reconciles with today's sweep (15 ordered, 11 held by label, the other 4
+   held by a live claim or an open pull request).
+5. ⚠ **REOPENED CARDS: 0 GENUINE — AND THE `reopened:` QUALIFIER LIED IN BOTH LIMBS,
+   WHICH HARDENS RUN 7'S METHOD NOTE INTO A RULE.** The search returned **2** (#1612,
+   #535). Read at the timeline, which is the artifact:
+   - **#1612 holds no `closed` and no `reopened` event at all** — the *third* measured
+     instance of this qualifier inventing a hit (run 5: two; run 7: this same card).
+   - **#535's reopen history is real and is entirely 2026-09-06** — seven close/reopen
+     events, five weeks **outside** the window the qualifier was given.
+
+   So it is not merely occasionally wrong: it fabricates existence **and** ignores the date
+   range. **Read the timeline; never the qualifier.**
+6. **QUIET declarations under #360's rule: 10** (run 7: 5; run 6: 0), all between
+   2026-10-11 and 2026-10-13 — the N2c/N2d/BH boundary days, when four seats were claiming
+   everything takeable. **3 parks fired in the window**, which is the gate working rather
+   than a fault.
+7. **The seat's standing reading — `pnpm retro:cap-wordings`, per-run from this run on:**
+   **NO UNRECOGNISED WORDINGS.** Corpus 4,363 `*.log`, 4,157 non-empty, 784 matched by the
+   live cap reading somewhere. #2236's five siblings stay theoretical.
+
+### B. Recurrence ledger
+
+| # | Repeat | Occurrences (evidence) | Class | Proposal | Status |
+|---|---|---|---|---|---|
+| **R22** (new) | **A park silences every alarm the team has and leaves them all looking green — and the supersession reader is blindest exactly when death is certain** | **Run row #798** told his page a shift was working on #2657 for **97 hours**: the shift was killed by the cap in the same minute, its pull request merged without it, and its card sat shipped-but-open behind a claim nobody could expire. **`deploy-verify` failed at 08:08Z today and went unread for 1 h 20 m** (#2678), with 3 of the 5 runs **cancelled** by the next push so only one carried the finding at all. **#2198** (closed) is the third instance: the 2026-10-10 park misreported its own reason over a log whose first line was a cap | the alarms are read by SHIFTS; a park stops shifts; so the longer the team is stopped the less anyone knows — and every reading stays green-looking | **Carded: #2679.** Count runs of **every** seat, not the row's own lane: if no run of any seat has opened since the row went quiet, the runner itself was stopped, which is a far stronger fact than an idle lane. Measured on the real instance — **zero runs of any seat** between #798 going quiet (17 Oct 08:03Z) and this pass (21 Oct 09:43Z). Fails safe: any run inside the gap falls through to exactly today's reader. ⚠ **NOT the park-notice file** — that is untracked and would put the repair in R18's class; the run table is tracked and already open in the reader's own hand | **Carded, not worked** |
+| **R18** (run 7) | a defect in the team's own honesty machinery whose repair lives in untracked `.agents/`, so no seat may ship it and no suite may guard it | — | — | ✅ **BOTH INSTANCES CLOSED, and the first is proven by a LIVE EVENT rather than a fixture.** **#2198**: the park of 2026-10-17 18:39 read the cap correctly and said so verbatim — *"usage cap reached: You've hit your weekly limit · resets Oct 21, 4pm"* — which is the exact wording that defeated the old pattern; `$CAP_MESSAGE` now carries `hit your (?:[\w-]+\s+){1,2}limit`. **#2230**: verified at the bytes, §A.2. ⚠ **The CLASS is not closed, and R22 is its next instance one floor down** | **Closed as a recurrence** |
+| **R19** (run 7) | a card a shift has refused still counts as open work in the number his park gate reads | — | — | ✅ **CLOSED, verified at the code.** #2231 closed; `QUEUE_EXCLUSION_REASONS` (`shared/crewQueueExclusions.ts:282`) now carries a `refused` key with its own reasoning, and the live counts print exclusions the way `security` does (`0 open · 1 parked`). The tradeoff the card named is honoured — it did not touch `buildStateHoldsOffOffer`, so a refusal still reaches a seat that wants to overturn the reading | **Closed as a recurrence** |
+| **R20** / **R21** (filed between runs) | a hold's sentence rots and no reader asks whether it is still true; a seat's own card is subtracted from its own seat's switch | — | — | **Both unchanged this run, and neither re-litigated.** R20's machinery is visibly working: the sweep's live-hold re-read printed all 10 `blocked` sentences for the glance, and #1995 printed under *"HIS OWN — worth a glance, nothing to do"* exactly as #2117 built it | **Watched** |
+| **R14** (runs 5–6) | a receipt composed rather than pasted | **0 new self-declared instances** | — | ⚠ Method limit unchanged and worth restating: `.agents/` is gitignored, so no suite can ever read a shift entry and a CONCEALED instance is not findable mechanically. This row can only ever report self-declared ones | **Watched**, line in force |
+
+**Also read, and NOT findings:**
+
+- ⚠ **THE RUN'S OWN NEAR-MISS, AND IT IS WHY THE SECOND-READER HABIT IS WORTH ITS COST.**
+  A commit-message sweep over the open cards at 09:50Z returned **21** candidates for
+  *shipped but still open*, among them **#2608** — whose fix was then verified on a freshly
+  built tree (268.3 kB first-paint, headroom 21.7 kB, matching the seat's own claim to
+  0.0 kB). The desk sweep's reader answered **1**. This run was one step from filing *"the
+  shipped-but-open checker missed #2608"* as a finding. **Three readers then disagreed with
+  me rather than with each other**: `gh issue list --limit 200`, `--limit 300` and the
+  search API's `total_count` all answered **78 open**, and #2608 was not among them — **the
+  relay closed #2608, #2665 and #2666 at 09:55Z, while this run was measuring.** The
+  checker was right, the population was five minutes stale, and a stale reading looks
+  exactly like a defect in somebody else's instrument. The previous entry's first
+  instruction was *"re-read the board before anything — it moved three times under me in
+  forty minutes"*; it moved under this run too.
+- ⚠ **`dist/` WAS FOUR DAYS OLD AND `--reuse` WOULD HAVE MEASURED THE WRONG TREE.** The
+  bundle figure above was taken after a fresh `pnpm build`; reading the stale `dist/` would
+  have returned a plausible number for a tree that predates the fix it was being used to
+  judge — the predecessor's own named class, *a reader whose failure mode is a
+  plausible-looking zero*.
+- **The anti-boredom read is COMPLETE this run rather than a floor: 230 of 230 merges read,
+  222 carry `Card: #N` in the title.** ⚠ The first pass returned **200 of 230** because
+  `gh pr list --limit 200` returned exactly its own bound, and the search API's
+  `total_count` is what caught it. **A reader that returns exactly its limit has not
+  finished** — #2291's lesson, met again one reader over.
+- **Gate health is NOT reported this run, and the reason is the window rather than an
+  omission:** the team was parked for 4 of its 11 days, so a failure rate over it would not
+  be comparable with runs 6 and 7. Named rather than computed misleadingly.
+
+### C. The anti-boredom read
+
+**230 of 230 merged pull requests read; 222 cite a card in the title.** The 8 that do not
+are 4 dependabot bumps, the N4b design doc (#2468), two patrol readings (#2516, #2519) and
+one CI fix (#2670) — each explicable, none a finding. ⚠ Method is run 6's and no better:
+citation PRESENCE, not "the cited card existed before the pull request".
+
+### D. The items the window's shifts addressed to this seat
+
+The predecessor's item 6 handed this seat **three guard-shaped findings, all three
+instrument failures caught only by controls** — a heredoc-eaten word-boundary escape
+arriving as a literal backspace; `readStoredDelta` returning `null` in BOTH arms when
+handed a JSON string; and `problems` filtered on `p.resolved` where the field is `p.state`,
+which made one open row look like 24 and nearly suppressed a real row on his page. **It
+also named their class, correctly: a reader whose failure mode is a plausible-looking
+zero.**
+
+⚠ **They are recorded here and NOT carded, and the reason is that the class gained three
+more instances from this run alone** — the stale `dist/`, the 200-of-230 truncation, and
+the five-minute-stale open-card population above. **All six share one shape, and a card per
+instance would be six cards for one lesson.** What they argue for is a habit rather than a
+guard, and the habit is already this seat's method: **a reading gets a second reader that
+does not share its resolver, and a reading that returns exactly its own bound has not
+finished.** If a seventh instance appears, that is the point at which it wants a card
+rather than a ledger row.
+
+### E. The seat's own work, audited the same way
+
+This run **filed two cards** (#2678, #2679), **closed one card at its artifacts rather than
+at its card** (#2657 — the merged squash, the serving build read at `/api/health`, and the
+fix's own new symbols read in the diff), **closed one 97-hour stale run row** (#798), and
+**killed one finding of its own before believing it** (the #2608 "checker gap", §B).
+
+⚠ **The stale row was closed against the letter of the standing orders, deliberately, and
+the reasoning is recorded because the next seat will meet the same case.** The orders say a
+row whose `supersession` reads *not readable* is to be left alone and never stamped on a
+guess. It read `not readable` — **and the reason it did is that 0 later `foreman` sessions
+had run, which the park is itself the explanation for.** What was used instead is not a
+guess: the runner's **own machine-written records** — `runner-parked-20261017-1839.md`
+naming the cap, and `runner-close-20261017-183907.md` recording that shift's exit with code
+1 — plus `foreman-20261017-174845.log` being the **last** foreman log of that day with none
+again until this pass, and the row's own pull request having merged without it. **That is a
+stronger confirmation of the same fact the SUPERSEDED line exists to give.** #2679 is the
+repair that would make this answerable mechanically, so no future seat has to make the call
+by hand.
+
+⚠ **AND NO EDITION SHIPPED, WHICH IS A DEPARTURE AND IS THE FINDING'S OWN CONSEQUENCE.**
+His page is served from the **deployed** briefing, and #2678 is that nothing deploys — so
+an edition had nowhere to land, and the rite would have spent its 41-minute tail waiting
+for a build that cannot come and then pushed a commit that **cancels the in-flight
+`deploy-verify` and queues another doomed one**, adding noise to the exact signal the card
+rests on. **What he needs reached him by the road that still works, and it was verified
+through the real reader rather than assumed**: #2678 carries `bug` + `urgent` + `blocked`
+and a 159-character `**Waiting on:**` line beginning `YOUR`, and the desk sweep printed it
+as `#2678 [blocked] YOU …` with the sentence untruncated — the live desk reads GitHub every
+30 s, so it draws without an edition. **The `problems` row for it is owed by the first
+shift that can deploy.**
+
+### Clocks
+
+Retro: run 1 2026-08-26, run 2 2026-09-05, run 3 2026-09-12, run 4 2026-09-19, run 5
+2026-09-27, run 6 2026-10-04, run 7 2026-10-11, **run 8 2026-10-21** (3 days late — the
+team was parked at the weekly model cap for 4 of the 11 days, and a clock cannot fire while
+no shift runs, which is R22). Next due ~2026-10-28.
