@@ -112,6 +112,23 @@ export type MintedSlotsInput = {
    */
   disputed?: readonly Facet[];
   /**
+   * ⚠ THE SLOTS THIS EDIT CHANGED, AND FOR THEM THE READER'S DISPUTE DOES NOT
+   * DECIDE (#2673).
+   *
+   * His ruling, 2026-10-21, on the relay's recommendation: *"why not just always
+   * crop the new hair regardless of the description if its not right the
+   * customers can retry"*. So the delivered crop of a slot THIS step asked for
+   * always becomes that slot's guide: a disputed facet in one of these slots —
+   * including an affirmation the confirmation never reached (#2646's
+   * unconfirmed rule) and a neighbouring facet's miss (#2646's slot rule) — is
+   * filed EARNED here, never disputed. The dispute is not thrown away: it comes
+   * back in {@link MintedSlotsResult.disputeSetAside} for the caller to log.
+   *
+   * Every slot NOT in this list keeps the dispute rules exactly as they were.
+   * Absent is the empty list, which is every caller that predates the ruling.
+   */
+  editedSlots?: readonly FeatureSlot[];
+  /**
    * The landed render's read-back, by facet — carried facets included.
    *
    * A caption is prose read off the frame OR a pin chosen from a vocabulary, and
@@ -275,6 +292,13 @@ export type MintedSlotsResult = {
    * different things, two names.
    */
   unfiledOpen: Array<{ kind: string; reason: UnfiledReason }>;
+  /**
+   * THE DISPUTES THIS RENDER'S READER RAISED ON A SLOT THIS EDIT CHANGED, which
+   * the filing above set aside (#2673, {@link MintedSlotsInput.editedSlots}).
+   * Telemetry only: the slot was filed earned, and the caller logs these so a
+   * person can still see where the reader and the painter disagreed.
+   */
+  disputeSetAside: Array<{ slot: FeatureSlot; facets: Facet[] }>;
 };
 
 /**
@@ -435,11 +459,13 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
    * not smuggled.
    */
   const earnedSet = new Set<Facet>(input.earned);
-  const askedWordsFor = (definition: SlotDefinition): readonly string[] | null => {
+  const askedWordsFor = (definition: SlotDefinition, anyWritten = false): readonly string[] | null => {
     if (!input.asked) return null;
     if (accessoryKindOfSlot(definition.slot) !== null) return null;
     const words = (facetsOfSlot(definition.slot) ?? [])
-      .filter((member) => earnedSet.has(member))
+      /* `anyWritten`: a slot this edit changed (#2673) takes the ask's words
+         for every facet the ask wrote, disputed or not. */
+      .filter((member) => anyWritten || earnedSet.has(member))
       .map((member) => (input.asked?.[member] ?? "").trim())
       .filter((value) => value !== "");
     const unique = Array.from(new Set(words));
@@ -449,6 +475,9 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
   const disputedSet = new Set<Facet>(input.disputed ?? []);
   const disputedFacetsOf = (definition: SlotDefinition): readonly Facet[] =>
     (facetsOfSlot(definition.slot) ?? []).filter((facet) => disputedSet.has(facet));
+  /* The slots this edit changed (#2673): their dispute is recorded, never obeyed. */
+  const editedSet = new Set<FeatureSlot>(input.editedSlots ?? []);
+  const disputeSetAside: MintedSlotsResult["disputeSetAside"] = [];
 
   const file = (definition: SlotDefinition, words: readonly string[], disputed: boolean) => {
     const spec = slotSpecFor(definition.slot, words);
@@ -480,6 +509,28 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
       }
       for (const definition of definitions) {
         if (seen.has(definition.slot)) continue;
+        /*
+          ⚠ A SLOT THIS EDIT CHANGED IS FILED EARNED, WHATEVER THE READER SAID
+          (#2673). The two #2646 rules below — a disputed facet disputes its
+          slot, and a slot reached only through the disputed list is filed as
+          evidence — stand for every other slot. Here the delivered crop is the
+          guide, and a customer who does not like it retries.
+        */
+        const edited = editedSet.has(definition.slot);
+        const disputedHere = disputedFacetsOf(definition);
+        if (edited && disputedHere.length > 0) {
+          disputeSetAside.push({ slot: definition.slot, facets: [...disputedHere] });
+        }
+        if (edited) {
+          const words = stackOf(definition);
+          const fallback = askedWordsFor(definition, true);
+          if (words === null && fallback === null && definition.remint !== "everyRender") {
+            unfiled.push({ facet, reason: "noWords" });
+            continue;
+          }
+          file(definition, words ?? fallback ?? [], false);
+          continue;
+        }
         /*
           ⚠ A SLOT WITH A DISPUTED FACET IS NOT EARNED BY ITS NEIGHBOUR (#2646).
 
@@ -734,5 +785,5 @@ export function mintedSlotsForRender(input: MintedSlotsInput): MintedSlotsResult
     slots.push(spec);
   }
 
-  return { slots, unfiled, unfiledOpen };
+  return { slots, unfiled, unfiledOpen, disputeSetAside };
 }

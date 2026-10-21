@@ -166,7 +166,6 @@ import {
 import { DERIVED_REGION_ASKS, DERIVED_REGION_KEY, isDerivedRegion } from "./referenceSlotCatalogue";
 import { INSTANCES, parseSlot, type Instance, type SlotFrame } from "./referenceSlots";
 import { accessoryKindOfSlot, tidyStackWord } from "./slotWordShape";
-import { wordsHoldAsks } from "./askHeldByWords";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 
 const log = createModuleLogger("castingV2/referenceMint");
@@ -284,12 +283,6 @@ export type SlotSpec = {
    * that before the list arrives here.
    */
   disputed?: boolean;
-  /**
-   * WHAT THE CHAIN CURRENTLY ASKS OF THIS SLOT, in the customer's words
-   * (`chainAsksBySlot`, #2650). A cut crop whose own words do not hold these
-   * is not adopted. Absent means the chain asks nothing of this slot.
-   */
-  asks?: readonly string[];
   /**
    * WHICH FACETS THE READER DISPUTED — the names, not just the mark.
    *
@@ -1990,10 +1983,7 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
        so the log line states what was spent rather than implying it. */
     let disputedReads = 0;
 
-    for (const arrived of cuttable) {
-      /* Re-bound below when the crop's own words do not hold the chain's ask
-         (#2650) — the slot then takes the disputed road from that line on. */
-      let slot = arrived;
+    for (const slot of cuttable) {
       const cut = cutBySlot.get(slot.slot);
       if (!cut) {
         /* No evidence about this slot on this frame. Not a failure: the words
@@ -2052,35 +2042,11 @@ export async function mintReferencesForRender(input: MintInput): Promise<MintRes
       */
       const said = (await wordsFor(slot)) ?? [];
       /*
-        ⚠ A CROP WHOSE OWN WORDS DO NOT HOLD WHAT THE CHAIN ASKS FOR THIS SLOT
-        IS NOT ADOPTED (#2650).
-
-        The verification's yes is necessary and no longer sufficient: on the
-        dev re-drive it was checked against a pin re-read off the master
-        (*"in a bun"*), said a true yes, and the library filed a bun as "the
-        exact hair they have" beside a chain that asks for a short crop. So the
-        crop's own description is set beside the CHAIN's ask (`slot.asks`, the
-        customer's words) with a fixed word test, and a crop that does not
-        plainly hold it — or has no words at all — goes the disputed road: kept
-        for a person, never newest, its slot said in words. A wrong refusal
-        here costs one crop; a wrong adoption costs a contradiction in every
-        later render.
+        A CUT CROP IS NOT HELD TO A WORD TEST AGAINST THE CHAIN'S ASK (#2673).
+        #2650 refused a crop whose own words did not plainly hold what the chain
+        asked; his ruling retired it — the delivered picture of a feature an
+        edit changed is that feature's guide, and the customer can retry.
       */
-      if (!slot.disputed && slot.asks !== undefined && slot.asks.length > 0
-        && !wordsHoldAsks(said, slot.asks, slot.noun)) {
-        log.warn(
-          {
-            userId: input.userId,
-            variantId: input.variantId,
-            operationId: input.operationId,
-            slot: slot.slot,
-            asks: slot.asks,
-            said,
-          },
-          "[library] this crop's own words do not hold what the chain asks for the slot — kept for a human, not adopted",
-        );
-        slot = { ...slot, disputed: true };
-      }
       const encoded = await encodedFor(cut);
       const digest = digestOf(encoded.content);
       /*
