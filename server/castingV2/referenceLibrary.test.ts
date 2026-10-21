@@ -402,6 +402,62 @@ describe("the library the assembler is handed", () => {
     expect(tattoo.anchor?.key).toBe("flash-swallow.png");
   });
 
+  /*
+    THE OPEN LANE'S BARE ASK, WHICH IS THE ONE THIS FUNCTION COULD NOT SEE
+    (#2641, the #2635 sibling).
+
+    An ask on an open kind lands on the BARE slot (`open:fangs`) while the
+    library keeps one row per SIDE (`open:fangs@left`, `@right`). Slot equality
+    therefore matched nothing, and the function handed the assembler crops of
+    the very feature being repainted.
+
+    `editsFeatureAt` in the assembler already answers this question correctly,
+    and the two layers disagreeing about one question is the defect — not the
+    end-to-end behaviour, which #2635's refusal holds either way.
+  */
+  it("drops a BARE open-kind ask's crops from every side of that kind", () => {
+    const library = deriveLibrary([
+      row({ slot: "open:fangs@left", role: "carry", tier: "item", noun: "left fang",
+        words: ["white, pointed tip"], storageKey: "fang-left.png" }),
+      row({ slot: "open:fangs@right", role: "carry", tier: "item", noun: "right fang",
+        words: ["white, pointed tip"], storageKey: "fang-right.png" }),
+      row({ slot: "open:horns@left", role: "carry", tier: "item", noun: "left horn",
+        words: ["short, ridged"], storageKey: "horn-left.png" }),
+    ]);
+
+    const forRender = libraryWithoutEditedCrops(library, new Set(["open:fangs"] as never));
+
+    /* Both sides of the asked kind give up their crops ... */
+    for (const slot of ["open:fangs@left", "open:fangs@right"]) {
+      const entry = forRender.find((candidate) => candidate.slot === slot)!;
+      expect(entry.carry, slot).toBeUndefined();
+      /* ... and keep the word stack the edit regenerates from. */
+      expect(entry.words, slot).toEqual(["white, pointed tip"]);
+    }
+    /* A DIFFERENT open kind is not collateral. */
+    expect(forRender.find((entry) => entry.slot === "open:horns@left")!.carry?.key)
+      .toBe("horn-left.png");
+  });
+
+  it("drops the BARE row's crop on a sided ask, and leaves the other side alone", () => {
+    /* The relation runs both ways: a sided ask overlaps the bare row, which
+       describes the whole feature including that side. Two DIFFERENT sides do
+       not overlap — "change the left fang" leaves the right fang's crop
+       standing, and that is the case that must keep working. */
+    const library = deriveLibrary([
+      row({ slot: "open:fangs", role: "carry", tier: "item", noun: "fangs",
+        words: ["white, pointed tip"], storageKey: "fangs-both.png" }),
+      row({ slot: "open:fangs@right", role: "carry", tier: "item", noun: "right fang",
+        words: ["white, pointed tip"], storageKey: "fang-right.png" }),
+    ]);
+
+    const forRender = libraryWithoutEditedCrops(library, new Set(["open:fangs@left"] as never));
+
+    expect(forRender.find((entry) => entry.slot === "open:fangs")!.carry).toBeUndefined();
+    expect(forRender.find((entry) => entry.slot === "open:fangs@right")!.carry?.key)
+      .toBe("fang-right.png");
+  });
+
   it("is a no-op when nothing is edited, and when the edited slot never carried", () => {
     /* The control that makes the two above mean something: the same function on
        the same library, changing nothing. */

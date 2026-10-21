@@ -37,7 +37,7 @@
  * (#304). A grep for `CreditsChip` or `LobbyUtilityMenu` finds one composition
  * site, and it is this file.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -52,7 +52,13 @@ import {
 import { UserCard } from "@/components/UserCard";
 import { HelpInAccountMenu, LobbyUtilityMenu } from "@/features/lobby/LobbyUtilityMenu";
 import { ReportBugButton } from "@/features/lobby/ReportBugButton";
-import { AccountSurfaces, useAccountSurfaces } from "@/features/settings";
+/* #2608 — THE HOOK'S OWN MODULE, NEVER THE BARREL, AND NEVER THE COMPONENT'S
+   FILE. This is the same shape as `useAccountMenuCounts` one import down and
+   for the same reason: the barrel also exports `AccountSurfaces`, whose own
+   imports are the settings cluster and `features/billing`, so reaching the
+   state through either of them puts all of it in the entry chunk. The surfaces
+   themselves are lazy below. */
+import { useAccountSurfaces } from "@/features/settings/useAccountSurfaces";
 /* #1042 — the hook's own module, not the `@/features/staff` barrel. The barrel
    re-exports `StaffSurface`, which imports this file, so importing the barrel
    here closed a ring between the entry chunk and every lazy staff chunk that
@@ -66,6 +72,55 @@ import { ProfileAvatar } from "@/features/profile/ProfileVisual";
  * by design (invariant 8) and a list key is not a reason to widen it.
  */
 const SELF_MEMBER_ID = "self";
+
+/**
+ * THE ACCOUNT SURFACES ARE LAZY, AND THE STATE THAT OPENS THEM IS NOT (#2608).
+ *
+ * The cluster — Settings, Change plan, Add credits, and `features/billing`
+ * behind them — is reachable from every signed-in page and OPENED on almost
+ * none of them. It rendered `null` until somebody opened one, and the bytes
+ * were in the first download anyway. Measured on #2608's branch:
+ *
+ *   first-paint JS    285.9 kB -> 268.3 kB   (-17.6 kB; headroom 4.1 -> 21.7)
+ *   after first paint 174.5 kB -> 194.0 kB   (+19.5 kB against 280.0)
+ *
+ * So the bytes MOVED rather than vanished, which is the honest shape of every
+ * split and is why both numbers are here. The budget pair exists to say that
+ * before-paint bytes are the expensive ones (#1035/#1265).
+ *
+ * ⚠ **AND THE CHUNK IS WARMED ON IDLE, so no customer waits for it** — see
+ * {@link useWarmAccountSurfaces}. Without that, a click on Settings would show
+ * nothing until a ~19 kB fetch landed, which on a slow connection is most of a
+ * second of a button that looks broken. A split that trades first paint for a
+ * dead-looking control has moved the cost onto the person, which is the
+ * disappearing-technology law's own line.
+ */
+const AccountSurfaces = lazy(() =>
+  import("@/features/settings/AccountSurfaces").then((m) => ({ default: m.AccountSurfaces })),
+);
+
+/**
+ * Fetch the account cluster once the page has stopped being busy.
+ *
+ * `requestIdleCallback` where it exists and a short timer where it does not
+ * (Safari, as of writing). Either way it is one import after first paint, its
+ * result is cached by the module registry, and a failure is nothing: the
+ * `Suspense` boundary below would fetch it again on the click.
+ */
+function useWarmAccountSurfaces(enabled: boolean): void {
+  useEffect(() => {
+    if (!enabled) return;
+    const warm = () => { void import("@/features/settings/AccountSurfaces"); };
+    const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback;
+    if (typeof idle === "function") {
+      idle(warm);
+      return;
+    }
+    const timer = setTimeout(warm, 2_000);
+    return () => clearTimeout(timer);
+  }, [enabled]);
+}
 
 export function AppChrome({
   breadcrumb,
@@ -88,6 +143,10 @@ export function AppChrome({
     point below is a call into it (brief §2).
   */
   const account = useAccountSurfaces();
+  /* Only for somebody who can open them: a signed-out visitor on this chrome
+     has no account menu, so warming the cluster for them would be the first
+     download moved rather than removed. */
+  useWarmAccountSurfaces(Boolean(user));
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const { data: creditsData } = trpc.credits.getBalance.useQuery(undefined, {
@@ -256,7 +315,8 @@ export function AppChrome({
       {children}
 
       {/*
-        THE THREE SURFACES, MOUNTED ONCE (section 03).
+        THE THREE SURFACES, MOUNTED ONCE (section 03) — AND ONLY WHILE ONE IS
+        OPEN, since #2608.
 
         The five modals that used to sit here are gone; `AccountSurfaces` owns
         the mount AND the queries behind it. The one behaviour worth carrying
@@ -265,12 +325,28 @@ export function AppChrome({
         Stripe proration read that was gated only on `!isFreeUser`, so mounting
         the cluster unconditionally cost a paying customer one on every page
         view of the four casting surfaces.
+
+        ⚠ The condition is `account.anyOpen` — the HOOK's own derivation, which
+        the component reads too, never a second one computed here. Two answers
+        to "is anything open" would fail in the quiet direction: a mount that
+        disagrees fetches a chunk to render nothing, or renders a surface the
+        state thinks is shut.
+
+        ⚠ `fallback={null}` is correct here and is not a shrug: the chunk is
+        warmed on idle above, so by the time anybody opens a surface it is
+        already in the registry and this boundary never suspends in practice.
+        On the cold path it is one beat before a modal appears, which is the
+        same nothing the button showed before it was pressed.
       */}
-      <AccountSurfaces
-        state={account}
-        avatarUrl={avatarUrl}
-        onAvatarChange={setProfileImage}
-      />
+      {account.anyOpen ? (
+        <Suspense fallback={null}>
+          <AccountSurfaces
+            state={account}
+            avatarUrl={avatarUrl}
+            onAvatarChange={setProfileImage}
+          />
+        </Suspense>
+      ) : null}
     </AppShell>
   );
 }

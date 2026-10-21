@@ -341,6 +341,13 @@ export type RepaintAsksResult =
      * ordinary render carries no new field.
      */
     unnameableRestores?: readonly FeatureSlot[];
+    /**
+     * THE SLOTS (AND PRESENTATION NOUNS) THIS STEP ITSELF ASKED FOR (#2647) —
+     * a subset of `asks`, without the kinds and carries that are only re-said.
+     * Read by the labelled layout's "Edit instruction" line on the description
+     * road, so that line names the edit the customer typed and nothing else.
+     */
+    askedNow: { slots: readonly FeatureSlot[]; presentation: readonly string[] };
   }
   | RepaintAsksRefusal;
 
@@ -1176,6 +1183,26 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
     half of this rule that always holds, and the words are the half that heals
     it.
   */
+  /*
+    WHAT THIS STEP ITSELF ASKED FOR, read before the restore loop adds the
+    slots it re-says (#2647). The labelled layout names this edit's slots on
+    its "Edit instruction" line, and the asks list also carries what is only
+    RE-SAID — an open kind with no crop yet, a superseded carry — which are not
+    this edit. Derived from the same facts the emptiness check above reads
+    (`order`, `delta.open`, `restated`, `facetsWrittenBy`), never a second
+    reading of the sentence (law 4).
+  */
+  const openAskedThisStep = new Set(Object.keys(input.delta.open ?? {}).map((kind) => openSlotKey(kind)));
+  const askedNow: FeatureSlot[] = [
+    ...order.filter((slot) => !isOpenSlot(slot) || openAskedThisStep.has(slot)),
+    ...restated.map((one) => one.slot).filter((slot) => !order.includes(slot)),
+  ];
+  const writtenNow = new Set(Array.from(facetsWrittenBy(input.delta)));
+  const presentationAskedNow = PRESENTATION_SUBJECTS
+    .filter((subject) => writtenNow.has(facetOfSubject(subject)) && spokenAsPresentation.has(facetOfSubject(subject)))
+    .map((subject) => presentationNounOf(subject))
+    .filter((noun): noun is string => noun !== null);
+
   const unnameableRestores: FeatureSlot[] = [];
   for (const slot of input.restore?.slots ?? []) {
     if (wordsBySlot.has(slot) || vacateBySlot.has(slot)) continue;
@@ -1201,6 +1228,7 @@ export function repaintAsksFor(input: RepaintAsksInput): RepaintAsksResult {
        clauses) is what every render that never asked for one receives. */
     ...(presentation.length > 0 ? { presentation } : {}),
     ...(unnameableRestores.length > 0 ? { unnameableRestores } : {}),
+    askedNow: { slots: askedNow, presentation: presentationAskedNow },
     asks: order.map((slot) => {
       const says = vacateBySlot.get(slot);
       return {
