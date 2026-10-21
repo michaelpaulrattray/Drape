@@ -45,11 +45,11 @@ _Called as:_ `castingV2.refine`
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1256 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1274 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:5001<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4478 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:5009<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4486 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1263 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1250<br>server/castingV2/refineService.ts:2617 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3748 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3756 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3003 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2691 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -82,7 +82,7 @@ _Called as:_ `castingV2.refine`
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:605<br>server/castingV2/refineDelta.ts:605<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:613<br>server/castingV2/refineDelta.ts:613<br>(+3) | 3 test(s) | ink.words.chest.basics |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1344<br>server/castingV2/refineService.ts:1382 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4974 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4982 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
 - gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.
@@ -112,7 +112,7 @@ _Called as:_ `castingV2.refine`
 | `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3455 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
 | `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3232<br>server/castingV2/refineService.ts:3249 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3591 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4448 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4456 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_original` | service-refusal |  | server/castingV2/refineService.ts:2645 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
