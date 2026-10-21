@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 211
+      "moduleCount": 210
     },
     {
       "id": "domain:castingV2",
@@ -3813,12 +3813,6 @@
     {
       "id": "module:server/castingV2/arrivalRetry.ts",
       "path": "server/castingV2/arrivalRetry.ts",
-      "domain": "casting-v2",
-      "lifecycle": "active"
-    },
-    {
-      "id": "module:server/castingV2/askHeldByWords.ts",
-      "path": "server/castingV2/askHeldByWords.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -14169,10 +14163,6 @@
     {
       "id": "test:server/castingV2/ageIdioms.test.ts",
       "path": "server/castingV2/ageIdioms.test.ts"
-    },
-    {
-      "id": "test:server/castingV2/askHeldByWords.test.ts",
-      "path": "server/castingV2/askHeldByWords.test.ts"
     },
     {
       "id": "test:server/castingV2/askReference.test.ts",
@@ -28564,51 +28554,6 @@
       "kind": "imports"
     },
     {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/hairStyles.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/recipeAssembler.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/referenceCompleteness.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/referenceLibrary.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/refineDelta.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/refineFacets.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:server/castingV2/subjectCards.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/askHeldByWords.ts",
-      "to": "module:shared/castingRealization.ts",
-      "kind": "imports"
-    },
-    {
       "from": "module:server/castingV2/askReference.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
@@ -31560,11 +31505,6 @@
     },
     {
       "from": "module:server/castingV2/referenceMint.ts",
-      "to": "module:server/castingV2/askHeldByWords.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
       "kind": "imports"
     },
@@ -32181,11 +32121,6 @@
     {
       "from": "module:server/castingV2/refineService.ts",
       "to": "module:server/castingV2/accessoryKinds.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/refineService.ts",
-      "to": "module:server/castingV2/askHeldByWords.ts",
       "kind": "imports"
     },
     {
@@ -42597,17 +42532,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:750",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:749",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:750",
+      "subject": "server/castingV2/refineService.ts:749",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:887",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:886",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:887",
+      "subject": "server/castingV2/refineService.ts:886",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

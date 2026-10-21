@@ -393,7 +393,7 @@ describe("the slots a render files", () => {
 
   it("files nothing at all for a render that earned nothing", () => {
     expect(mintedSlotsForRender({ earned: [], captions: { lips: "Full" } }))
-      .toEqual({ slots: [], unfiled: [], unfiledOpen: [] });
+      .toEqual({ slots: [], unfiled: [], unfiledOpen: [], disputeSetAside: [] });
   });
 });
 
@@ -440,6 +440,45 @@ describe("the slots a render DISPUTES", () => {
     /* CONTROL: the same earned facet with no disputed sibling is still earned. */
     const clean = mintedSlotsForRender({ earned: ["hair.colour"], disputed: [], captions });
     expect(clean.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+  });
+
+  it("⚠ A SLOT THIS EDIT CHANGED IS FILED EARNED WHATEVER THE READER SAID — and the dispute comes back as telemetry (#2673)", () => {
+    /*
+      His ruling, 2026-10-21: *"why not just always crop the new hair
+      regardless of the description if its not right the customers can retry"*.
+      Both #2646 shapes, on a slot this edit changed: a written facet disputed
+      outright, and a neighbour's miss beside an earned facet.
+    */
+    const captions = { "hair.cut": "A blunt bob at the jaw", "hair.colour": "Copper" };
+    const outright = mintedSlotsForRender({ earned: [], disputed: ["hair.cut"], captions, editedSlots: ["hair"] });
+    expect(outright.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+    expect(outright.slots[0]!.words).toEqual(["A blunt bob at the jaw", "Copper"]);
+    expect(outright.disputeSetAside).toEqual([{ slot: "hair", facets: ["hair.cut"] }]);
+
+    const neighbour = mintedSlotsForRender({
+      earned: ["hair.colour"], disputed: ["hair.cut"], captions, editedSlots: ["hair"],
+    });
+    expect(neighbour.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", false]]);
+    expect(neighbour.disputeSetAside).toEqual([{ slot: "hair", facets: ["hair.cut"] }]);
+
+    /* CONTROL: the very same verdict on a slot this edit did NOT change keeps
+       the #2646 rule — disputed, and nothing set aside. */
+    const unedited = mintedSlotsForRender({
+      earned: ["hair.colour"], disputed: ["hair.cut"], captions, editedSlots: ["lips"],
+    });
+    expect(unedited.slots.map((slot) => [slot.slot, slot.disputed ?? false])).toEqual([["hair", true]]);
+    expect(unedited.disputeSetAside).toEqual([]);
+  });
+
+  it("an edited slot with no caption files the ask's own words for every facet the ask wrote (#2673)", () => {
+    const filed = mintedSlotsForRender({
+      earned: [], disputed: ["hair.cut"], captions: {}, asked: { "hair.cut": "short crop" }, editedSlots: ["hair"],
+    });
+    expect(filed.slots.map((slot) => [slot.slot, slot.disputed ?? false, slot.words])).toEqual([["hair", false, ["short crop"]]]);
+    /* CONTROL: not edited, a disputed slot files no ask words (fable-220 §3) —
+       and with no caption it files nothing at all. */
+    const unedited = mintedSlotsForRender({ earned: [], disputed: ["hair.cut"], captions: {}, asked: { "hair.cut": "short crop" } });
+    expect(unedited.slots.filter((slot) => !slot.disputed)).toEqual([]);
   });
 
   it("files a disputed accessory as both of its sides, both marked", () => {
