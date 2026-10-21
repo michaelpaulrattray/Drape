@@ -2336,6 +2336,64 @@ describe("an unreadable history stops the money", () => {
     expect(askedOfTheReader.join("\n")).toContain("tied up in a high knot");
     expect(askedOfTheReader.join("\n")).not.toContain(arrangementWording("gathered"));
   });
+
+  /*
+    ⚠ ONE PAINT AND ONE READ ON A HAIR YES TOO — the relay's finding on PR
+    #2676. A yes on `hairWorn` used to buy a confirming second reading for the
+    library (#2646). Since #2673 the slot this step edited is filed as its
+    guide whatever the reader says, so that reading decided nothing. The
+    reader below says yes every time, so a second verdict call would show here.
+  */
+  const hairYesReader = () => {
+    let verdictCalls = 0;
+    const engine = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        verdictCalls += 1;
+        const results = request.user.split("\n").filter(Boolean).map((line, index) => ({
+          id: index + 1, present: true, saw: `${line.slice(0, 40)}, as asked`,
+        }));
+        return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+      },
+    } as never;
+    return { engine, calls: () => verdictCalls };
+  };
+
+  it("reads a hair yes ONCE when this step edited the hair (#2676 finding)", async () => {
+    const reader = hairYesReader();
+    await refineCandidate(
+      {
+        verifier: reader.engine,
+        interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "tied up in a high knot" } } }),
+      },
+      { ...input, instruction: "tie her hair up in a high knot" },
+    );
+    expect(journal.filter((entry) => entry === "generate"), "one paint").toHaveLength(1);
+    expect(reader.calls(), "one reader call, no confirming re-read").toBe(1);
+    expect(JSON.stringify(landedVariant ?? {}), "the one reading is the record").toContain('"readings":1');
+  });
+
+  it("CONTROL — a CARRIED hair yes still buys its second reading, because the carried pass files from it", async () => {
+    variantRows = [{
+      id: 505,
+      publicId: "variant-hair",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/hair.png",
+      internalPrompt: { ...(candidateRow.internalPrompt as Record<string, unknown>) },
+      instructions: ["tie her hair up in a high knot"],
+      deltas: { free: { hairWorn: "tied up in a high knot" } },
+      stepDeltas: [{ free: { hairWorn: "tied up in a high knot" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-hair";
+    const reader = hairYesReader();
+    await refineCandidate({ ...greenEyes, verifier: reader.engine }, input);
+    expect(reader.calls(), "the carried hair yes is confirmed").toBe(2);
+    expect(JSON.stringify(landedVariant ?? {})).toContain('"readings":2');
+  });
 });
 
 /*

@@ -8385,11 +8385,15 @@ async function refineCandidateCounted(
         /*
           A MISS IS NO LONGER RE-READ (#2672). D-194 re-read a miss because it
           was about to spend a refusal or a free re-render, and neither exists
-          any more. `confirmVerdict` now buys a second reading only for a yes
-          on a facet with a rap sheet, because the reference library still
-          decides on that one (#2646, #2650).
+          any more. Nor is a yes in a slot this step edited: #2673 files that
+          slot's crop as its guide whatever the reader says, so its facets are
+          `moot` and keep one reading. The one second reading left is a
+          rap-sheet yes on a CARRIED facet, because the carried-confirmation
+          pass below still files a slot from it (#2646, #2650).
         */
-        verification: await confirmVerdict(await read(), read),
+        verification: await confirmVerdict(await read(), read, {
+          moot: new Set((rendered.askedNow ?? []).flatMap((slot) => facetsOfSlot(slot) ?? [])),
+        }),
       };
     };
 

@@ -1074,14 +1074,29 @@ async function readOnce(input: {
  * third reading, because a miss no longer acts on anything; one that is silent
  * on it changes nothing. A re-read that cannot be reached leaves every yes
  * unconfirmed, which the library already treats as not enough.
+ *
+ * ⚠ **AND A YES IN A SLOT THIS STEP EDITED IS NOT CONFIRMED EITHER — the
+ * relay's finding on PR #2676, after #2673.** That slot's delivered crop is
+ * filed as its guide whatever the reader says, so a second reading of it
+ * decides nothing and was the last confirming re-read on a refine. The caller
+ * names those facets in `moot`; they keep their ONE reading as the record (and
+ * read as unconfirmed, which only reaches a log line there). What still buys a
+ * second reading is a rap-sheet yes on a facet the step did NOT edit — a
+ * carried one — because the carried-confirmation pass still files a slot from
+ * it (`refineService.ts`, the `confirmed:` list into `mintedSlotsForRender`;
+ * `mintedSlots.ts`, the `for (const facet of input.confirmed ?? [])` loop).
  */
 export async function confirmVerdict(
   first: RenderVerdict,
   reread: () => Promise<RenderVerdict>,
+  options: { moot?: ReadonlySet<Facet> } = {},
 ): Promise<RenderVerdict> {
-  const suspectPasses = first.checks.filter(
-    (c) => c.read && c.verified && hasUnreliabilityPrior(c),
-  );
+  const needsConfirmation = (c: FacetCheck): boolean => {
+    if (!(c.read && c.verified && hasUnreliabilityPrior(c))) return false;
+    const facet = facetIn(c.subject);
+    return facet === null || !options.moot?.has(facet);
+  };
+  const suspectPasses = first.checks.filter(needsConfirmation);
   if (suspectPasses.length === 0 || first.unavailable) {
     return { ...first, readings: 1 };
   }
@@ -1106,7 +1121,7 @@ export async function confirmVerdict(
     fields of a check are the reading that produced them.
   */
   const checks = first.checks.map((check) => {
-    if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
+    if (!needsConfirmation(check)) return check;
     const other = secondBy.get(keyOf(check));
     /* Silent on this fact: no confirmation, and no withdrawal either (#2650). */
     if (!other || !other.read) return check;
