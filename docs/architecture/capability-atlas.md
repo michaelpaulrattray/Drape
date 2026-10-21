@@ -43,15 +43,15 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1274 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1292 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:4985<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4462 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1281 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1268<br>server/castingV2/refineService.ts:2642 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3732 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3025 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2716 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1265 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1283 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:5028<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4505 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1272 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1259<br>server/castingV2/refineService.ts:2644 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3775 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3030 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2718 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). A FOLLOW OF AN EDITED VERSION carries the direction the edits took (#2576, his word 2026-10-16: 'build it', which supersedes 'follow doesnt need a description' for this one thing): inside `createRoll` — BELOW every door that refuses free in milliseconds and above the compile, which is #2582 items 1 and 3 — `resolveFollowBrief` (followBrief.ts) has the same engine rewrite the face's roll brief from that version's description or ask chain (`writeFollowBrief`, purpose `follow.brief`, 8 s and one retry under one overall deadline of `FOLLOW_BRIEF_DEADLINE_MS` from the press, which covers the shared text queue's own unbounded wait for a slot) — direction-level changes in (hair, style, augments, outfit direction, build), one-person specifics out and REFUSED on the way out rather than only forbidden in the prompt (`introducedOnePersonSpecific`: a scar, a mole, a freckle, a tattoo, or an eye colour the brief never stated), and everything that is not the person (setting, light, camera and framing, style, mood) kept word for word, with a reply that drops more of the brief's clauses than it puts back refused as a collapse (`clauseBalance`, which replaced a 70% length floor that refused a short brief's removal and passed the very collapse it was for). The rewritten words are what the roll COMPILES from and what its row records, so the new sheet shows them; the CLAIM is keyed on the customer's own words instead, because a claim hashed over a nondeterministic rewrite made a replayed press of one request id read as a different action. It is NOT a door either: a never-edited face, the flag off, words the customer typed that differ from the face's brief, or a writer that does not answer all send the box's own string, and price, claim and refunds are createRoll's unchanged. A Follow child's FIRST description is seeded from its own roll's brief like any face without one: 'following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed'.
 - `busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.
@@ -81,8 +81,8 @@ _Called as:_ `castingV2.refine`
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:605<br>server/castingV2/refineDelta.ts:605<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:624<br>server/castingV2/refineDelta.ts:624<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:632<br>server/castingV2/refineDelta.ts:632<br>(+3) | 3 test(s) | ink.words.chest.basics |
-| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1362<br>server/castingV2/refineService.ts:1400 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:4958 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1353<br>server/castingV2/refineService.ts:1391 | 1 test(s) | guard.scope.unknown |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:5001 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - CASTING_OUTFIT_EDIT_SCOPE (#2544 slice 1) serves the WARDROBE subject to an account, and clothing stops being the stage: inside it a garment ask files under wardrobe and never reaches wall_stage, the backed refusal drops the false 'comes after Sign' clause, and four prompt lines that called a garment the wall say the true thing instead. OFF EVERYWHERE TODAY, and off is byte-identical: SERVED_SUBJECTS never moves and only the flag's bit can select the other list, with all four interpreter prompts hashed. The SCENERY half of the lexicon — backdrop, background, wall, studio, set, scene, location, prop, chair, table, holding — refuses under every subject, served or not, at all five sites; the licence needs BOTH the wardrobe subject and the account, so a garment word smuggled into a skin value still walls. No new door is minted: the corpus rows below are the flag-off reading and are unchanged.
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
@@ -108,13 +108,13 @@ _Called as:_ `castingV2.refine`
 | `inkNotKept` | cannot-say | free | server/castingV2/cannotSayCopy.ts:573 | 1 test(s) | ink.transform.dangling |
 | `inkBeyondToday` | cannot-say | free | server/castingV2/cannotSayCopy.ts:378 | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `unplacedInk` | cannot-say | refunded | server/castingV2/cannotSayCopy.ts:336 | 4 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3496 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
-| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3068 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3477 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
-| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3254<br>server/castingV2/refineService.ts:3271 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3576 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4432 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2670 | 1 test(s) | guard.undo |
+| `removal_absent` | service-refusal |  | server/castingV2/refineService.ts:3501 | 1 test(s) | ink.remove.none, skin.freckles.remove.none |
+| `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3073 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3482 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
+| `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3259<br>server/castingV2/refineService.ts:3276 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3618 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4475 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `already_original` | service-refusal |  | server/castingV2/refineService.ts:2672 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
 - free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.

@@ -1,7 +1,7 @@
 {
-  "edition": 736,
-  "updatedAt": "2026-10-16T19:50:00.000Z",
-  "shift": "CLOTHING NOW WORKS IN A PAID EDIT, BUILT AND SWITCHED OFF. You asked for it on 15 October and priced it on the 16th, and tonight it is built. Where it is switched on, somebody types “put them in a long black coat” into the same box they already use and it works the way “give them green eyes” works — one edit, the same price, the same Try again, the same money back if it fails. Nothing new appears on screen: no picker, no setting, no extra decision in front of the button. It is switched on for NOBODY tonight, including you, and that is deliberate — the only thing it waits on is your eye on the three strips of pictures already on your desk.\n\nTHE THING I WAS MOST CAREFUL ABOUT. Clothes and scenery were one list in the code: a coat and a backdrop refused for the same reason. Opening clothing means splitting that list, and if the scenery half slips through with it, a paid edit could repaint the room behind somebody. So the list is split in MEANING and not in membership — the words and their order are untouched — and the longest part of the new checks is the one that proves, with clothing switched ON, that a backdrop, a set, a prop, a chair and anything being held still refuse in all five places they are asked about. Asking for a coat against a red backdrop still refuses, on the backdrop.\n\nAND THE REFUSAL STOPS LYING. Until tonight, asking for clothes got “that is a garment, a prop or the set, which comes after Sign”. For an account that can change clothes, that sentence is false twice over, so it now says what still refuses and what works — and the old words stay, exactly, for everybody it is still true of.\n\nONE THING I DID NOT DO, AND WHY. The picture test found one real failure: asking to take a layer off can come back refused by the picture engine, because it reads the taking-off as an undressing. The note from that test said the fix was free. I read the code and it is not: the words we send have to be words the person actually typed, and “take the jacket off” does not contain the sweater that stays. Making it say what IS worn needs a real decision about where those words come from. So I filed it with the reading, rather than half-building it. Nobody can reach it today, and it should be settled before clothing is switched on beyond your own account.\n\nI ALSO BROKE MY OWN CHECKS ON PURPOSE, FIVE WAYS, TO SEE IF THEY NOTICE. All five were caught — and the first one caught a weakness in the CHECKS rather than in the code: one of them was quietly looking at the wrong list, so moving “backdrop” into the clothing half slipped past it. Fixed and re-run: four complaints before, seven after.\n\nNOTHING ELSE IS WAITING ON YOU TONIGHT. Four jobs are finished and waiting on a review, this one among them — it touches the file that checks our settings at start-up, which this workshop counts as money-and-login code, so a shift does not merge it. The queue is 61 open, 13 of them ones you ordered; 12 untouched for a week, the same 12 as the last two nights.",
+  "edition": 740,
+  "updatedAt": "2026-10-17T07:22:16.000Z",
+  "shift": "THREE THINGS, AND ONE OF THEM IS ABOUT YOUR OWN CHARACTERS. FIRST, THE ONE WORTH READING: a character's written description can gain a feature you never saw. When you ask for two things at once and the picture can only show one of them - \"a smaller waist and red lipstick\" on a head-and-shoulders shot - the studio correctly makes only the lipstick. That part was fixed this morning. But the FIRST time the studio writes that character's description, it starts from scratch and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes permanent. This is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet - which is every character you edited before today. It is not fixed: the obvious repair is not available, because the studio does not record which half of an older ask went unmade, so the three honest options are written on the card with what each one costs. Filed as its own job rather than quietly folded into this morning's fix. SECOND, A DEAD END YOU CANNOT REACH YET, AND I CHECKED THAT RATHER THAN ASSUMING IT. If a character has a feature the studio invented a name for - fangs, horns, scales - and you colour it black and then type \"make them blacker\", the studio stops and asks \"which part?\", tells you \"nothing's been coloured yet\" when you have just coloured something, and offers you only the hair, the eyes or makeup. None of those is what you asked about, so there is no right answer to the question. I read your characters on production: not one of them has a feature of that kind, so nobody can hit this today - but nothing stops it, and my test database already has one. The existing job for this said it was harmless and that the studio simply carried on; that was wrong, and the job now says what actually happens. I have NOT guessed a fix: the three ways out each change what you get, and one of them sits on top of the colour rules you set this morning, so it waits for a proper design pass instead of my judgement. THIRD, AND IT IS HOUSEKEEPING THAT WAS COSTING REAL TIME: four jobs were finished, shipped and live on production and still sitting on the board as open work. Three are now closed, each with the receipt read at the running service rather than taken from the merge note; the fourth is a change to how every edit is worded, which is live on your account and is yours to judge when you next refine, so it stays open and now says so. Your ordered list now honestly reports that nothing on it can be started - which it should have said this morning, instead of sending each new shift to read three jobs before discovering the work was already done.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-16T19:09:07.995Z",
+      "readAt": "2026-10-17T06:37:08.491Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7490,6 +7490,13 @@
   ],
   "pipeline": [
     {
+      "id": "open-kind-removal-2638",
+      "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
+      "status": "merged",
+      "prNumber": 2643,
+      "note": "Fangs, horns, tusks and anything else without a catalogue entry could be added and then never removed: the removal was refused and nothing was charged. Fixed, with the proof going all the way to the end - after the removal the character has no fangs and still has their horns. Narrow on purpose: asking to remove a character's teeth must never take their horns too, and a test fails if anyone widens it that far."
+    },
+    {
       "id": "outfit-design-2544",
       "title": "Outfit changes in Refine — the design document (#2544)",
       "status": "merged",
@@ -7499,9 +7506,9 @@
     {
       "id": "face-reader-slice1-2566",
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2570,
-      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. It also clashes with the main line now, but nothing is owed for that: the merge tool brings the main line in itself once the review passes."
+      "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
     {
       "id": "ghost-audit-slice4b-1577",
@@ -10705,9 +10712,23 @@
     {
       "id": "outfit-serve-2544",
       "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
-      "status": "in-review",
+      "status": "blocked",
       "prNumber": 2600,
-      "note": "Held for a review: it touches the start-up settings check, which counts as money-and-login code."
+      "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
+    },
+    {
+      "id": "ink-places-outfit-2580",
+      "title": "A tattoo is only offered where the character's own outfit leaves skin showing (#2580)",
+      "status": "merged",
+      "prNumber": 2602,
+      "note": "Three refusal sentences stopped naming the upper chest to a character in the house tee."
+    },
+    {
+      "id": "library-overlap-2641",
+      "title": "Two parts of the edit machinery gave different answers to one question, and only one was right (#2641)",
+      "status": "merged",
+      "prNumber": 2654,
+      "note": "Tidy-up with no change you can see: the two layers now ask one shared question instead of each answering it their own way."
     }
   ],
   "problems": [
@@ -10878,6 +10899,13 @@
       "state": "resolved",
       "title": "Fixed — our own map of the product could say a screen that IS being used has no users, and that is the reading we delete on (#2349)",
       "detail": "Fixed and live, within the hour it was found.\n\nBefore the crew deletes anything, it asks one map whether anything still uses it. That map read one of the two ways our screens call the server, and not the other — so five things came out as \"nothing uses this\" while something did, including a customer downloading a copy of their own data and three of the staff export buttons.\n\nMeasured both ways with a control: the first way read correctly, 254 of 254; the second read 0 of 6. Read back after the repair, all five now name their screen, and the job that found it names all four of its own.\n\nNothing was ever wrongly deleted and no customer was affected. The risk was the next deletion: \"no one uses this\" is exactly the answer that makes removing something safe, and on those five it was wrong. A fourth way of calling the server now makes the check fail rather than go quiet.\n\nIt was found because that night's own job appeared in the map missing one of its four callers."
+    },
+    {
+      "id": "description-gains-unmade-half-2657",
+      "severity": "warning",
+      "state": "open",
+      "title": "A character's description can gain a feature you never saw — live on your account (#2657)",
+      "detail": "When you ask for two things at once and the picture can only show one of them — \"a smaller waist and red lipstick\" on a head-and-shoulders shot — the studio correctly makes only the lipstick. That half was fixed this morning.\n\nWhat is still wrong is the FIRST time the studio writes that character's description. It starts from the original brief and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes a permanent part of who that character is.\n\nIt is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet — which is every character you edited before today.\n\nIt is not fixed, and the obvious repair is not available: the studio does not record which half of an older ask went unmade, so there is nothing to look up. Three honest options are written on the card with what each one costs, and a short measurement is owed first — how many of your characters have no description yet AND an earlier ask with an out-of-shot half. Nothing is charged wrongly and nothing is deleted; what is wrong is what the description says."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11183,7 +11211,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-16T19:09:07.995Z",
+    "readAt": "2026-10-17T06:37:08.490Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11285,6 +11313,20 @@
           "state": "blocked",
           "because": "YOU — look at three strips and say whether they read right. RECOMMENDATION: they do; carry on."
         }
+      },
+      {
+        "issueNumber": 2626,
+        "title": "Every edit must fit the cast — an added feature belongs to that cast's own colouring, anatomy, light and style, never pasted on (his rule 2026-10-17)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "two cards — #2630 and #2631, the measured ways this rule still fails. Nothing is asked of you; it closes with them or on your word."
+        }
+      },
+      {
+        "issueNumber": 2647,
+        "title": "The refine prompt sends the customer's words verbatim as the edit instruction, with the description as context — his labelled layout (his yes 2026-10-17)",
+        "urgent": false
       }
     ]
   }
