@@ -16,17 +16,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  DISCOVERY_PHRASEBOOK,
   discoverFeatures,
   discoveryCropsOf,
-  gateScanPlan,
   isBareNoun,
   mergeDiscoveries,
   parseDiscovery,
   type FaceDiscovery,
 } from "./faceDiscovery";
-import { scanPlan } from "./faceScan";
-import { catalogueSlots } from "./referenceSlotCatalogue";
 import type { TextEngine, TextRequest, TextResult } from "../providers/types";
 
 /** An engine that says exactly what it is told to, once per call. */
@@ -226,159 +222,6 @@ describe("mergeDiscoveries — the two crops", () => {
   });
 });
 
-describe("gateScanPlan — what the discovery is allowed to cancel", () => {
-  const plan = [
-    { feature: "hair" },
-    { feature: "facial-hair" },
-    { feature: "eye" },
-    { feature: "teeth" },
-    { feature: "ear" },
-    { feature: "skin" },
-    { feature: "horns" },
-    { feature: "earring" },
-    { feature: "glasses" },
-  ];
-  const found = (...names: string[]): FaceDiscovery => ({
-    ok: true,
-    features: names.map((name) => ({ name, count: 1, about: "" })),
-    cannotSee: [],
-    unusable: [],
-    crops: ["head", "full"],
-  });
-
-  it("drops only the optional features nothing on this character answers", () => {
-    const gated = gateScanPlan(plan, found("hair", "eyes", "horns"));
-    /* Horns were named; earrings and glasses were not, and nothing else here
-       is cancellable at all. */
-    expect(gated.dropped.sort()).toEqual(["earring", "glasses"]);
-    expect(gated.plan.map((r) => r.feature))
-      .toEqual(["hair", "facial-hair", "eye", "teeth", "ear", "skin", "horns"]);
-  });
-
-  it("CANNOT drop a feature every character has, whatever the reading says", () => {
-    /*
-      THE RELAY'S FIRST FINDING ON PR #2570, as an arm — driven on dev, read at
-      the frames: cast 812 lost TEETH in 3 of 3 readings with the teeth plainly
-      visible, and cast 772 lost BOTH EARS. A reading that did not mention the
-      teeth has missed them, never found them absent.
-    */
-    const gated = gateScanPlan(plan, found("hair"));
-    for (const feature of ["hair", "facial-hair", "eye", "teeth", "ear", "skin"]) {
-      expect(gated.plan.map((r) => r.feature)).toContain(feature);
-      expect(gated.dropped).not.toContain(feature);
-    }
-  });
-
-  it("CANNOT drop the two features the panel can state an absence for", () => {
-    /*
-      DERIVED FROM THE CATALOGUE, not from the pair of names above — `hair` and
-      `facial-hair` are the only slots carrying `whenAbsent` ("bald",
-      "clean-shaven"), and an absence is built from a question that was ASKED
-      and came back empty. Cancelling the question deletes the row, so the
-      saving's whole product would be the row it deleted (the relay's fifth
-      finding). A third `whenAbsent` member arriving cancellable reddens here.
-    */
-    const speaks = catalogueSlots()
-      .filter((definition) => definition.whenAbsent !== undefined)
-      .map((definition) => definition.feature);
-    expect(speaks.length).toBeGreaterThan(0);
-    for (const feature of speaks) expect(DISCOVERY_PHRASEBOOK[feature]).toBeUndefined();
-  });
-
-  it("keeps an optional question when the feature is actually named", () => {
-    expect(gateScanPlan(plan, found("earring")).plan.map((r) => r.feature)).toContain("earring");
-    expect(gateScanPlan(plan, found("goggles")).plan.map((r) => r.feature)).toContain("glasses");
-    expect(gateScanPlan(plan, found("antlers")).plan.map((r) => r.feature)).toContain("horns");
-  });
-
-  it("matches on whole words, so 'ears' does NOT keep the earring question alive", () => {
-    /* The saving's whole size, one entry over from where this argument started:
-       a loose substring match would have every character on the platform paying
-       for an earring read, because every character has ears. */
-    expect(gateScanPlan(plan, found("ears")).dropped).toContain("earring");
-    expect(gateScanPlan(plan, found("ear studs")).dropped).not.toContain("earring");
-  });
-
-  it("reads 'I cannot see it' as a reason to ASK, never as an absence", () => {
-    /*
-      THE RELAY'S FINDING AT ITS SHARPEST: cast 772's reading listed "ears"
-      under `cannotSee` and the ears were visible behind the strands, with
-      today's segmenter finding them. The same shape on an optional feature is
-      what this arm drives, because that is the only set the gate can still
-      touch.
-    */
-    const hidden: FaceDiscovery = {
-      ok: true,
-      features: [{ name: "hair", count: 1, about: "" }],
-      cannotSee: [{ name: "earrings", why: "behind the strands" }],
-      unusable: [],
-      crops: ["head", "full"],
-    };
-    expect(gateScanPlan(plan, hidden).dropped).not.toContain("earring");
-    expect(gateScanPlan(plan, hidden).dropped).toContain("glasses");
-  });
-
-  it("reads a REJECTED name as a reason to ask — a parse rule is not a deletion", () => {
-    /*
-      The relay's third finding. `cleanName` drops "dangling gold earrings"
-      because a cutter handed those words returns nothing — and until this the
-      rejection ALSO cancelled the earring question, so a caption became a
-      deletion. The words still never reach a cutter: they are in `unusable`,
-      which only ever makes the gate ask.
-    */
-    const captioned: FaceDiscovery = {
-      ok: true,
-      features: [{ name: "hair", count: 1, about: "" }],
-      cannotSee: [],
-      unusable: ["dangling gold earrings"],
-      crops: ["head", "full"],
-    };
-    expect(gateScanPlan(plan, captioned).dropped).not.toContain("earring");
-    /* And the negative control beside it: the rejection keeps its OWN question
-       alive and nothing else's. */
-    expect(gateScanPlan(plan, captioned).dropped).toContain("glasses");
-  });
-
-  it("asks a question the phrasebook has never heard of", () => {
-    /* Fail open: the direction that costs money rather than features. */
-    const gated = gateScanPlan([{ feature: "something-new" }], found("hair"));
-    expect(gated.plan.map((r) => r.feature)).toEqual(["something-new"]);
-    expect(gated.dropped).toEqual([]);
-  });
-
-  it("leaves the plan WHOLE when the discovery failed", () => {
-    const gated = gateScanPlan(plan, { ok: false, why: "the provider timed out" });
-    expect(gated.plan).toHaveLength(plan.length);
-    expect(gated.dropped).toEqual([]);
-  });
-
-  it("leaves the plan WHOLE when there was no discovery at all", () => {
-    expect(gateScanPlan(plan, null).plan).toHaveLength(plan.length);
-    expect(gateScanPlan(plan, undefined).plan).toHaveLength(plan.length);
-  });
-
-  it("can cancel three of the real catalogue's twelve questions, and names them", () => {
-    /*
-      DERIVED from `scanPlan()` rather than typed here, and it pins BOTH sides
-      of the split so a new catalogue question has to be classified on purpose:
-      an entry arriving in the phrasebook makes a question cancellable, and the
-      arm above proves an absence-speaking one may never be.
-
-      The enumeration is the point, the way the catalogue's own `whenAbsent`
-      case is: this is the honest size of the saving — three of twelve — and a
-      fourth member arriving without an argument is what this makes visible.
-    */
-    const features = scanPlan().map((region) => region.feature);
-    const cancellable = features.filter((feature) => DISCOVERY_PHRASEBOOK[feature] !== undefined);
-    expect(cancellable).toEqual(["horns", "earring", "glasses"]);
-    expect(features.filter((feature) => DISCOVERY_PHRASEBOOK[feature] === undefined))
-      .toEqual(["hair", "facial-hair", "eye", "brow", "nose", "lips", "teeth", "ear", "skin"]);
-    /* And nothing in the phrasebook that the catalogue does not ask: a noun
-       list for a question nobody sends is dead data wearing a gate's clothes. */
-    expect(Object.keys(DISCOVERY_PHRASEBOOK).filter((key) => !features.includes(key))).toEqual([]);
-  });
-});
-
 describe("discoverFeatures — every road out of a bad provider minute", () => {
   const crops = [
     { kind: "head" as const, bytes: Buffer.from("a"), contentType: "image/png" },
@@ -435,24 +278,6 @@ describe("discoverFeatures — every road out of a bad provider minute", () => {
       engine: engineSaying(ONE_FEATURE, new Error("502 from the provider")),
     });
     expect(fullDied.ok).toBe(false);
-  });
-
-  it("a part-answer gates NOTHING — the consequence that matters", async () => {
-    const answer = await discoverFeatures({
-      crops,
-      engine: engineSaying(new Error("502 from the provider"), ONE_FEATURE),
-    });
-    const gated = gateScanPlan([{ feature: "earring" }, { feature: "glasses" }], answer);
-    expect(gated.plan).toHaveLength(2);
-    expect(gated.dropped).toEqual([]);
-  });
-
-  it("CONTROL — both crops answering still gates, so the arm above is not vacuous", async () => {
-    /* Working law 2: the arm above would pass on a gate that never cancels
-       anything at all. This is the positive control that says it can. */
-    const answer = await discoverFeatures({ crops, engine: engineSaying(ONE_FEATURE, ONE_FEATURE) });
-    expect(answer.ok).toBe(true);
-    expect(gateScanPlan([{ feature: "earring" }], answer).dropped).toEqual(["earring"]);
   });
 
   it("asks with a deadline of its own and no retries", async () => {
@@ -517,24 +342,12 @@ describe("discoverFeatures — every road out of a bad provider minute", () => {
     if (answer.ok) expect(answer.features.map((f) => f.name)).toEqual(["hair"]);
   });
 
-  it("a cut-off reply gates NOTHING — the consequence that matters", async () => {
-    const engine = engineSayingTruncated(true, CUT_OFF_BUT_VALID);
-    const gated = gateScanPlan(scanPlan(), await discoverFeatures({ crops, engine }));
-    expect(gated.plan).toHaveLength(scanPlan().length);
-  });
-
   it("fails OPEN when there are no crops to read", async () => {
     const engine = engineSaying(ONE_FEATURE);
     expect((await discoverFeatures({ crops: [], engine })).ok).toBe(false);
     expect(engine.calls).toHaveLength(0);
   });
 
-  it("a failed discovery gates nothing — the property the whole road rests on", async () => {
-    const engine = engineSaying(new Error("down"), new Error("down"));
-    const answer = await discoverFeatures({ crops, engine });
-    const gated = gateScanPlan(scanPlan(), answer);
-    expect(gated.plan).toHaveLength(scanPlan().length);
-  });
 });
 
 describe("discoveryCropsOf", () => {

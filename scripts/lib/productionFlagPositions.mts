@@ -262,7 +262,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "ALONE: the relay drove it on dev and measured a reading 6-8 seconds "
       + "slower for $0.00-0.01 saved, finding nothing new because the off-list "
       + "features are slice 2's -- so slice 1's value only lands with the "
-      + "pointer road beside it (the finding on PR #2570)",
+      + "pointer road beside it (the finding on PR #2570). Since the second "
+      + "finding it cancels no question and runs beside the scan, so on it "
+      + "changes nothing the panel draws and costs one text read per reading",
   },
   ENABLE_CASTING_PAIR_ONE_READ: {
     /*

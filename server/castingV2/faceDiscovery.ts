@@ -85,28 +85,27 @@
  * frame (the finding on PR #2570, law 9): **cast 812 lost its Teeth in 3 of 3
  * readings with the teeth plainly visible, cast 772 lost both Ears, and the
  * same frame gave a different panel on different readings.** Nothing had
- * failed. The reading simply did not mention a feature, and
- * {@link gateScanPlan} read silence as absence.
+ * failed. The reading simply did not mention a feature, and the gate (since
+ * deleted) read silence as absence.
  *
  * Four repairs, each a road out of that one mistake:
  *
- *   **only optional features**   {@link DISCOVERY_PHRASEBOOK} now holds horns,
- *                                earrings and glasses alone. Anatomy every
- *                                character has — and the two features the panel
- *                                is allowed to state an ABSENCE for — cannot be
- *                                cancelled at all
+ *   **nothing is cancelled**     superseded by the second finding: the
+ *                                phrasebook and the gate are deleted, and a
+ *                                discovery may only add (see the note where the
+ *                                phrasebook stood)
  *   **silence is not absence**   a `cannotSee` name and a name whose words were
  *                                rejected both keep their question
  *   **both crops or neither**    a part-answer gates nothing
- *   **nothing thin is kept**     a narrowed reading is served and not persisted
- *                                (`faceScanService`'s keep branch), so one bad
- *                                minute cannot become a permanent panel
+ *   **nothing thin is kept**     superseded with the gate: no reading is
+ *                                narrowed any more, so the keep branch's
+ *                                narrowed-reading refusal went too
  *
- * **What the narrowing is worth after that: at most three questions of twelve.**
- * That is the honest number and this module is not built on it — slice 1's
- * product is the NAMES, which the pointer road cuts the features no catalogue
- * question covers. The relay measured the flag 6–8 s SLOWER per reading for
- * $0.00–0.01 saved, so **it stays dark until slice 2 lands beside it**; that is
+ * **What the narrowing is worth now: nothing, by design.** The discovery
+ * cancels no question. Slice 1's product is the NAMES, which slice 2's pointer
+ * road uses to cut the features no catalogue question covers. Until then the
+ * read runs BESIDE the scan rather than in front of it (`faceScanService`), so
+ * it costs the panel no time. It stays dark until slice 2 lands beside it, as
  * declared on `productionFlagPositions.mts`'s own row and on #2566.
  */
 import sharp from "sharp";
@@ -159,7 +158,7 @@ export type FaceDiscovery =
      * Not a diagnostic field. A caption such as *"long black hair"* is an
      * unusable NAME and a perfectly good FACT, and until the relay's finding on
      * PR #2570 the rejection cancelled the question — so a parse rule became a
-     * deletion. These never reach a cutter; {@link gateScanPlan} reads them as
+     * deletion. These never reach a cutter; the deleted gate read them as
      * a reason to ask, and nothing else in the product reads them at all.
      */
     unusable: readonly string[];
@@ -340,7 +339,7 @@ export function isBareNoun(name: string): boolean {
  *
  *   `{ ok: true }`   usable — it becomes a feature and may become a cut
  *   `{ ok: false }`  the reader named SOMETHING in words no cutter can use.
- *                    The words are kept so {@link gateScanPlan} can still read
+ *                    The words are kept so the deleted gate could still read
  *                    them as a reason to ask
  *   `null`           there is no name here at all — not a string, empty, or so
  *                    long it is prose rather than an answer
@@ -481,153 +480,24 @@ export function mergeDiscoveries(
   };
 }
 
-/**
- * THE PHRASEBOOK — and **membership in it is the whole licence to cancel a
- * question.** A catalogue feature absent from this map is ALWAYS ASKED.
+/*
+ * ⚠ THE PHRASEBOOK AND `gateScanPlan` ARE DELETED — the relay's second HELD
+ * finding on PR #2570 (head `60e871e1d`). The repair above narrowed the cancel
+ * licence to three optional features (horns, earrings, glasses), and the
+ * re-drive still lost a visible Earrings row: on cast 812's selected version,
+ * reading 2 of 3 named no earring and the question was cancelled, with the
+ * piercings plainly on the ear. A reader that is wrong some of the time cannot
+ * hold a licence to delete a row, however narrow the licence. And the
+ * cancellation bought no speed: flag on measured 29 s against 20 s on 812.
  *
- * The design's own sentence: *"the fixed list stops being the gate on what
- * exists and survives only as a phrasebook — proven plural nouns for the text
- * road."* This is that phrasebook read the other way round: for each question
- * a discovery may cancel, the plain nouns a person (or the reader) would use
- * for the same thing.
- *
- * ⚠ **IT HELD ALL TWELVE CATALOGUE QUESTIONS UNTIL THE RELAY DROVE IT, AND
- * THAT WAS THE DEFECT — a successful discovery took rows off the panel that
- * have pictures today** (the finding on PR #2570, read on dev as verify-bot
- * 823 with every frame opened by eye — law 9):
- *
- *   cast 812 lost TEETH in 3 of 3 readings, with its teeth plainly visible
- *            between parted lips, and Skin in 1 of 3
- *   cast 772 lost BOTH EARS, visible behind the strands — the reading listed
- *            "ears" under `cannotSee` and today's segmenter finds them
- *   and      the same frame gave a different panel on different readings
- *
- * So the rule now: **a question is cancellable only when the feature is
- * OPTIONAL — a thing a character either has or has not got.** Horns, earrings
- * and glasses are optional. Eyes, brows, a nose, lips, teeth, ears, hair and
- * skin are not: every character this product casts has them, so a reading that
- * did not mention one has MISSED it, never found it absent. They are absent
- * from this map and are therefore asked on every scan, exactly as they are
- * today.
- *
- * ⚠ **`facial-hair` IS NOT CANCELLABLE EITHER, AND IT IS THE ONE ENTRY WHOSE
- * REASON IS NOT ANATOMY.** It is optional, and the saving the first shape of
- * this map was built to buy was precisely the beard question on a clean-shaven
- * face. But `hair` and `facial-hair` are the only two slots the catalogue lets
- * state an absence (`whenAbsent` — "bald" and "clean-shaven", authored beside
- * their controls on `referenceSlotCatalogue.ts`), and an absence is built from
- * a question that was ASKED and came back empty. Cancelling the question
- * therefore deletes the "clean-shaven" row a customer sees today — **the
- * saving's whole product is the row it would delete.** `faceDiscovery.test.ts`
- * derives the `whenAbsent` features from the catalogue and refuses either of
- * them a place in this map, so a later widening cannot take that row away by
- * accident.
- *
- * ⚠ **IT IS NOT A LOOSE SUBSTRING MATCH, AND THAT IS STILL LOAD-BEARING** —
- * one entry over from where it started. `"earring".includes` is not the test,
- * because `ears` must not keep the earring question alive: a loose match would
- * have every character on the platform paying for an earring read. Matching is
- * on whole words ({@link namesThe}).
- *
- * **What the narrowing is worth now, stated rather than implied: three
- * questions of twelve, at most.** That is the honest size of it, and this
- * module's value was never the saving — it is the NAMES, which are what the
- * pointer road (slice 2) cuts features from that no catalogue question covers.
+ * So the rule is now the one the relay set: **the discovery may only ADD.** It
+ * never cancels a catalogue question, so every reading asks the whole
+ * catalogue exactly as it does with the flag off. Nothing else read the
+ * phrasebook, so it went with the licence rather than being left behind as a
+ * second list. What a discovery adds (the features no catalogue question
+ * covers) is slice 2's pointer road. Until that lands, a discovery's names are
+ * logged and change nothing on the panel.
  */
-export const DISCOVERY_PHRASEBOOK: Readonly<Record<string, readonly string[]>> = {
-  horns: ["horn", "horns", "antlers"],
-  earring: ["earring", "earrings", "ear stud", "ear studs"],
-  glasses: ["glasses", "spectacles", "eyewear", "goggles", "monocle", "visor"],
-};
-
-/** Whole words, lowercased — so `third eye` matches `eye` and `hair` does not
- *  match `facial hair`. */
-function wordsOf(text: string): string[] {
-  return text.toLowerCase().split(/[^a-z]+/).filter((word) => word.length > 0);
-}
-
-/** Does this discovered name mean this phrasebook noun? */
-function namesThe(name: string, noun: string): boolean {
-  const nameWords = wordsOf(name);
-  const nounWords = wordsOf(noun);
-  if (nounWords.length === 0) return false;
-  for (let at = 0; at + nounWords.length <= nameWords.length; at += 1) {
-    if (nounWords.every((word, offset) => nameWords[at + offset] === word)) return true;
-  }
-  return false;
-}
-
-/**
- * Narrow a scan plan to the features this character actually has.
- *
- * This is the step that makes a first reading cheaper AND wider at once: the
- * questions about features nobody has stop being asked, and what the budget
- * they free buys is the pointer road's cuts for the things no question covers
- * (slice 2). On the measured hooded fixture, five catalogue questions have no
- * answer to find.
- *
- * ⚠ **IT FAILS OPEN, EVERYWHERE, AND THAT IS THE PROPERTY TO PROTECT.** A
- * reading that did not happen, came back in part, could not be parsed, or
- * covers a question this phrasebook does not know leaves the plan exactly as
- * it is today. The cost of failing the other way is a feature vanishing from a
- * customer's panel because a provider had a bad minute, which is not a cost
- * this is allowed to pay to save half a cent.
- *
- * ⚠ **THREE KINDS OF NAME KEEP A QUESTION ALIVE, NOT ONE, AND THE SECOND TWO
- * WERE THE RELAY'S FINDING ON PR #2570.** A question survives when the reading
- * named the feature, **and equally when the reading said it could not see it,
- * and when it named it in words a cutter could not use**:
- *
- *   `features`   it is there — ask, and cut it
- *   `cannotSee`  the reader declared it hidden, cut off or too small to be sure
- *                of. That is a reason to ASK, never a finding of absence —
- *                cast 772 lost both ears to exactly this, with the ears visible
- *                behind the strands and today's segmenter finding them
- *   `unusable`   the reader named it and `cleanName` rejected the words
- *                (*"long black hair"*, *"dangling gold earrings"*). The NAME is
- *                unusable and is never handed to a cutter; the FACT that
- *                something is there is perfectly good, and letting a rejected
- *                caption cancel a question turns a parse rule into a deletion
- *
- * ⚠ **The honest risk that remains, stated rather than discovered later: a
- * feature the discovery OVERLOOKS is dropped too.** It is now bounded to the
- * three optional features this phrasebook holds, and three things stand between
- * it and a customer: both crops must have answered ({@link discoverFeatures}
- * fails open on a part-answer), the reading must have said nothing about the
- * feature in any of the three senses above, and nothing it could cancel is a
- * row the panel can state an absence for.
- */
-export function gateScanPlan<T extends { feature: string }>(
-  plan: readonly T[],
-  discovery: FaceDiscovery | null | undefined,
-): { plan: T[]; dropped: string[] } {
-  if (!discovery || !discovery.ok) return { plan: [...plan], dropped: [] };
-
-  /* Every name this reading produced that is a reason to ask — see the three
-     kinds above. Built once rather than per region. */
-  const reasonsToAsk = [
-    ...discovery.features.map((feature) => feature.name),
-    ...discovery.cannotSee.map((row) => row.name),
-    ...discovery.unusable,
-  ];
-
-  const kept: T[] = [];
-  const dropped: string[] = [];
-  for (const region of plan) {
-    const nouns = DISCOVERY_PHRASEBOOK[region.feature];
-    if (nouns === undefined) {
-      /* Not cancellable: always-present anatomy, the two features the panel can
-         state an absence for, and any question this phrasebook has never heard
-         of. All three take the same road, which is to be asked. */
-      kept.push(region);
-      continue;
-    }
-    const named = reasonsToAsk.some((name) => nouns.some((noun) => namesThe(name, noun)));
-    if (named) kept.push(region);
-    else dropped.push(region.feature);
-  }
-  return { plan: kept, dropped };
-}
 
 /**
  * Read one character's crops and say what is on them.

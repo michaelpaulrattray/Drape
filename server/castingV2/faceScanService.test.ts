@@ -18,7 +18,7 @@ import { resetInterpreterForTests } from "./interpreter";
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
-import { plannedQuestions, scanPlan } from "./faceScan";
+import { scanPlan } from "./faceScan";
 import type { FaceDiscovery } from "./faceDiscovery";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
@@ -370,44 +370,50 @@ describe("the panel fills a feature at a time", () => {
     expect(settled.slots.size).toBeGreaterThanOrEqual(midway!.scan.slots.size);
   });
 
-  it("a PARTIAL of a gated scan counts the questions it asked, not the catalogue (#2566)", async () => {
+  it("a discovery that OMITS a feature today's road answers takes no row away (#2566)", async () => {
     /*
-      The partial is written while the scan is still running, so it cannot read
-      `asked` off a returned scan and has to derive it. Derived from
-      `scanPlan()` it would say twelve while the reading bought three — and the
-      panel's own "is this a face or a broken reader" line is exactly
-      asked-against-found, so the flattering lie here reads to a customer as a
-      catastrophically bad reader rather than a narrow one.
-
-      Driven because it survived sabotage: with `planRan.length` put back to
-      `scanPlan().length` every other suite stayed green.
+      THE RELAY'S SECOND HELD FINDING ON PR #2570. On cast 812's selected
+      version the discovery named no earring in reading 2 of 3, the question
+      was cancelled, and the Earrings row (piercings plainly on the ear) left
+      the panel. The repair is that a discovery may only ADD, so this drives the
+      exact shape: a successful reading that names hair and eyes and says
+      nothing about earrings, horns or glasses, against a reader that finds
+      every feature. Every catalogue question is asked and every row stays.
     */
     const held = heldReader({ x: 10, y: 10, width: 20, height: 20 });
     const { deps } = await dependencies(held.reader);
-    const discovery: FaceDiscovery = {
+    let discovered = 0;
+    const omitting: FaceDiscovery = {
       ok: true,
       features: [{ name: "hair", count: 1, about: "" }, { name: "eyes", count: 2, about: "" }],
       cannotSee: [],
       unusable: [],
       crops: ["head", "full"],
     };
-    const gated = plannedQuestions(discovery).length;
-    expect(gated, "the fixture only makes sense if the gate narrowed something")
-      .toBeLessThan(scanPlan().length);
-
     const reading = scannedFace({
       ...FACE,
-      dependencies: { ...deps, discover: async () => discovery },
+      dependencies: { ...deps, discover: async () => { discovered += 1; return omitting; } },
     });
     const midway = await waitForProgress(held.release);
     expect(midway, "some features have landed").not.toBeNull();
-    expect(midway!.scan.asked).toBe(gated);
+    expect(midway!.scan.asked, "the partial counts the whole catalogue").toBe(scanPlan().length);
 
     while (scanProgressOf(FACE)?.done !== true) await held.release();
     const settled = await reading;
-    /* And the settled answer agrees with its own partial — one definition of
-       "the plan that ran", read at two moments. */
-    expect(settled.asked).toBe(gated);
+    expect(discovered, "the discovery was bought, so the arm is not vacuous").toBe(1);
+    expect(settled.asked).toBe(scanPlan().length);
+    expect(settled.slots.has("earring@left"), "the omitted earring is still asked and still found").toBe(true);
+    expect(settled.slots.has("earring@right")).toBe(true);
+  });
+
+  it("CONTROL — the same reader with no discovery finds the same rows", async () => {
+    const held = heldReader({ x: 10, y: 10, width: 20, height: 20 });
+    const { deps } = await dependencies(held.reader);
+    const reading = scannedFace({ ...FACE, dependencies: { ...deps, discover: null } });
+    while (scanProgressOf(FACE)?.done !== true) await held.release();
+    const settled = await reading;
+    expect(settled.asked).toBe(scanPlan().length);
+    expect(settled.slots.has("earring@left")).toBe(true);
   });
 
   it("says DONE on the first look at a face already read — no polling for an answer we have", async () => {
@@ -894,39 +900,24 @@ describe("the reading this face has already paid for", () => {
     expect(keptCalls.kept[0].scan.slots.size).toBeGreaterThan(0);
   });
 
-  it("does NOT write a NARROWED reading down — a thin read must not become permanent", async () => {
+  it("writes a reading with a discovery beside it down like any other (#2566)", async () => {
     /*
-      THE RELAY'S FIFTH FINDING ON PR #2570 (#2566). A kept reading is the END
-      of the asking: every later look at that version serves the row and never
-      pays again. So a discovery that overlooked an optional feature would
-      cancel its question AND then have that cancellation written down for
-      good — one reader's bad minute becoming a permanent panel, which is the
-      exact sentence the damaged-scan rule beside it exists to refuse.
-
-      The arm above is the positive control and the two differ in ONE thing:
-      whether a discovery narrowed the plan. Both run with the table flag on.
+      The narrowed-reading refusal that stood here went with the gate: a
+      discovery cancels nothing, so a flag-on reading is as whole as a flag-off
+      one and is kept on the same rule.
     */
     arm("all");
     const { deps } = await dependencies(countingReader());
-    const narrowing: FaceDiscovery = {
-      ok: true,
-      features: [{ name: "hair", count: 1, about: "" }],
-      cannotSee: [],
-      unusable: [],
-      crops: ["head", "full"],
-    };
-    /* The fixture only means anything if the gate actually narrowed something. */
-    expect(plannedQuestions(narrowing).length).toBeLessThan(scanPlan().length);
-
     const scan = await scannedFace({
       ...FACE,
-      dependencies: { ...deps, discover: async () => narrowing },
+      dependencies: {
+        ...deps,
+        discover: async () => ({ ok: true, features: [{ name: "hair", count: 1, about: "" }], cannotSee: [], unusable: [], crops: ["head", "full"] }),
+      },
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(keptCalls.kept, "nothing was written down").toHaveLength(0);
-    expect(scan.asked, "and the customer still got the reading").toBeLessThan(scanPlan().length);
-    expect(scan.found).toBeGreaterThan(0);
+    expect(scan.asked).toBe(scanPlan().length);
+    expect(keptCalls.kept).toHaveLength(1);
   });
 
   /*

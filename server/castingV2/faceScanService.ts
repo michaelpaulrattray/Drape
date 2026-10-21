@@ -60,7 +60,7 @@ import { AUDIT_ACTIONS } from "../../drizzle/schema";
 import { withCallCensus, type CallCensus } from "./callCensus";
 import { storagePublicUrl, storageReadBytes } from "../storage";
 import { describeFace, type FaceDescriptions } from "./faceDescribe";
-import { plannedQuestions, scanFace, scanPlan, type FaceScan } from "./faceScan";
+import { scanFace, scanPlan, type FaceScan } from "./faceScan";
 import { interpreterEngine } from "./interpreter";
 import { createFalRegionReader } from "./falRegionReader";
 import type { PanelBox, PanelScan } from "./facePanel";
@@ -125,21 +125,13 @@ export type ScannedFace = {
 /**
  * The laterality summary, derived from the plan the scan actually ran.
  *
- * From the plan rather than from the slots that came back, so a feature that
- * answered NOTHING still prints `--` — an absence is only legible beside the
- * question that produced it.
- *
- * ⚠ **It takes the plan rather than calling `scanPlan()` itself, and that is
- * #2566's doing.** A question the discovery gated out was never asked, so
- * printing `horns:--` for it would say we looked and found nothing when we
- * never looked — the same sentence meaning two different things, which is the
- * one thing this summary exists to keep straight.
+ * From `scanPlan()` rather than from the slots that came back, so a feature
+ * that answered NOTHING still prints `--` — an absence is only legible beside
+ * the question that produced it.
+
  */
-function sidesOf(
-  slots: ReadonlyMap<FeatureSlot, unknown>,
-  plan: ReturnType<typeof plannedQuestions>,
-): string {
-  return plan
+function sidesOf(slots: ReadonlyMap<FeatureSlot, unknown>): string {
+  return scanPlan()
     .filter((region) => region.slots.some((slot) => slot.instance !== null))
     .map((region) => {
       const found = (instance: string) =>
@@ -235,11 +227,7 @@ async function stencilOf(mask: Mask, box: PanelBox): Promise<Buffer> {
  * lifecycle, and minting sixteen objects per face-version to draw eight
  * thumbnails is the manifest-and-purge machinery 4a exists to avoid.
  */
-async function displayOf(
-  scan: FaceScan,
-  frameUrl: string,
-  plan: ReturnType<typeof plannedQuestions>,
-): Promise<ScannedFace> {
+async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace> {
   const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
   let stencilBytes = 0;
   for (const [slot, box] of Array.from(scan.boxes.entries())) {
@@ -264,7 +252,7 @@ async function displayOf(
     empty: scan.empty,
     failed: scan.failed,
     stencilBytes,
-    sides: sidesOf(slots, plan),
+    sides: sidesOf(slots),
   };
 }
 
@@ -335,9 +323,10 @@ function defaultRegionReader(): RegionReader | null {
  * ⚠ **AND THAT LAST SENTENCE WAS A CLAIM ABOUT THE FAILURE ROADS ONLY — IT IS
  * NOW TRUE OF A SUCCESSFUL READING TOO.** The relay drove the flag on and
  * measured features leaving real panels on readings where nothing had failed
- * (the finding on PR #2570); `faceDiscovery.ts`'s header carries the four
- * repairs. A fifth silent road belongs with them and is one branch down in this
- * file: a NARROWED reading is served and never kept.
+ * (the finding on PR #2570); `faceDiscovery.ts`'s header carries the repairs.
+ * The second finding closed the class rather than the instance: the discovery
+ * no longer cancels any question, so no reading it touches can be thinner than
+ * a flag-off one.
  *
  * ⚠ **Exported for its own arms, on `pairInOneReadEnabled`'s own reasoning, and
  * that export was bought by a sabotage rather than chosen.** Driven through a
@@ -605,36 +594,31 @@ export async function scannedFace(input: {
     if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
     const url = publicUrl(input.imageKey);
     /*
-      THE DISCOVERY, BEFORE THE QUESTIONS — because its whole job is to decide
-      which of them get bought, so it cannot ride alongside them the way the
-      describer does (#2566).
+      THE DISCOVERY, BESIDE THE QUESTIONS AND NEVER IN FRONT OF THEM (#2566).
 
-      That ordering is the one real cost of this road and it is stated rather
-      than buried: about 12 seconds in front of a panel somebody is watching,
-      before the first segmenter call goes out. What it buys back is the reads
-      it cancels and — from slice 2 — the features no catalogue question covers.
+      ⚠ It used to run FIRST and decide which questions got bought, and that is
+      gone on the relay's second HELD finding on PR #2570: a discovery that
+      missed a visible feature cancelled its question and took the row off the
+      panel (cast 812's Earrings, reading 2 of 3), and running first made a
+      flag-on reading 29 s against 20 s for a saving the measurement could not
+      see. The discovery may only ADD now, and what it adds is slice 2's. So
+      nothing here waits for it: it is started beside the scan, the scan asks
+      the whole catalogue exactly as it does with the flag off, and the read's
+      counts are logged by `discoverFeatures` itself.
 
-      It cannot throw. `discoverFeatures` turns every failure into a reading
-      that gates nothing, and a discoverer that is absent does the same.
+      It cannot throw. `discoverFeatures` turns every failure into `{ ok: false }`,
+      and a discoverer that is absent is no read at all.
     */
     const discover = input.dependencies?.discover === undefined
       ? defaultDiscoverer(input.userId)
       : input.dependencies.discover;
-    const discovery = discover === null
-      ? null
-      : await discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height });
-    /*
-      The questions this reading will buy. `scanFace` narrows its own plan from
-      the same discovery through the same function, so these cannot disagree —
-      what is needed HERE is the count and the laterality for the PARTIAL, which
-      is written while the scan is still running and has no returned scan to
-      read them off.
-    */
-    const planRan = plannedQuestions(discovery);
+    const discovering: Promise<unknown> = discover === null
+      ? Promise.resolve(null)
+      : discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height })
+        .catch(() => null);
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
-      discovery,
       contentType: frame.contentType,
       describe: input.dependencies?.describe === undefined
         ? defaultDescriber()
@@ -659,12 +643,12 @@ export async function scannedFace(input: {
               frameUrl: url,
               slots,
               words: entry.partial?.words ?? new Map(),
-              asked: planRan.length,
+              asked: scanPlan().length,
               found: slots.size,
               empty: [],
               failed: [],
               stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
-              sides: sidesOf(slots, planRan),
+              sides: sidesOf(slots),
             };
           }
         })().catch(() => {
@@ -673,7 +657,10 @@ export async function scannedFace(input: {
         });
       },
     });
-    return await displayOf(scan, url, planRan);
+    /* Not awaited: the panel never waits on a read that changes nothing on it.
+       `discovering` already swallows its own failures. */
+    void discovering;
+    return await displayOf(scan, url);
     });
     spent = census;
     return value;
@@ -731,32 +718,7 @@ export async function scannedFace(input: {
           bookkeeping, and `keepScan` never throws — its own failures fall back
           to today's behaviour, which is that the next look pays again.
         */
-        /*
-          ⚠ AND A NARROWED READING IS NOT KEPT EITHER (#2566, the relay's fifth
-          finding on PR #2570) — the damaged-scan rule above, pointed at the
-          other way a reading can be thin.
-
-          A discovery that overlooked an optional feature cancels its question,
-          and a kept scan is the END of the asking: every later look at that
-          version serves the row and never pays again. So one reader's bad
-          minute would become a permanent panel — which is the exact sentence
-          the `else` branch above exists to refuse, and it does not care which
-          of the two reasons made the reading thin.
-
-          Derived from the scan rather than carried beside it: `asked` is
-          `plan.length` at the one choke point (`faceScan`'s own note), so a
-          narrowed reading is the one that asked fewer questions than the
-          catalogue holds. With the flag off, or a discovery that failed or
-          cancelled nothing, these are equal and this is today's behaviour.
-        */
-        const narrowed = value.asked < scanPlan().length;
-        if (narrowed) {
-          log.info(
-            { asked: value.asked, of: scanPlan().length },
-            "[faceScanService] this reading asked fewer questions than the catalogue — serving it and NOT keeping it",
-          );
-        }
-        if (captureCastingScanTableEnabled(input.userId) && !narrowed) {
+        if (captureCastingScanTableEnabled(input.userId)) {
           void keepScan({
             userId: input.userId,
             candidateId: input.candidateId,
@@ -915,28 +877,7 @@ export function scanIsInHand(input: {
  * catalogue's decision (`whenAbsent`), authored per slot beside its reason, and
  * the panel is where the two meet — one place deciding what is true, another
  * deciding what may be said about it.
- *
- * ⚠ **IT WALKS THE WHOLE CATALOGUE AND NOT THE PLAN THAT RAN, AND THAT IS
- * DELIBERATE RATHER THAN AN OVERSIGHT** (the relay's sixth finding on PR #2570,
- * answered here rather than patched). Two things make the full walk the right
- * one, and the second is the load-bearing half:
- *
- *   `empty` already bounds it   a question the discovery CANCELLED was never
- *                               asked, so it can never be in `empty` and this
- *                               loop can never reach its slots. Narrowing the
- *                               walk would change nothing it computes
- *   nothing it can speak is     `whenAbsent` is exactly `hair` and
- *   cancellable                 `facial-hair`, and neither is in
- *                               `DISCOVERY_PHRASEBOOK` — so no narrowing can
- *                               take the "bald" or "clean-shaven" row away.
- *                               `faceDiscovery.test.ts` derives both sides of
- *                               that sentence and reddens if either moves
- *
- * So a third definition of *"the plan that ran"* is precisely what this is not:
- * it is the CATALOGUE, read on purpose, and the gate is unable to disagree with
- * it. A later widening that made an absence-speaking feature cancellable would
- * break that, which is why the guard is derived from both lists rather than
- * written down here.
+
  */
 function absentSlotsOf(scan: ScannedFace): ReadonlySet<FeatureSlot> {
   if (scan.empty.length === 0) return new Set();
