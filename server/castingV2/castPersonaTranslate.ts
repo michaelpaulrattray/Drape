@@ -89,7 +89,7 @@ export type CastPersonaTranslation =
   | { kind: "nothing" };
 
 /** The cap the stored line is held to — the customer's own edit cap. */
-export function castPersonaCapFor(line: CastPersonaField): number {
+function castPersonaCapFor(line: CastPersonaField): number {
   return line === "voice" ? CAST_VOICE_MAX_LENGTH : CAST_PERSONALITY_MAX_LENGTH;
 }
 

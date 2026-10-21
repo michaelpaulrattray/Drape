@@ -149,7 +149,7 @@ function propertyName(name: ts.PropertyName | undefined): string | null {
  * reaches this through the tree walk cannot tell a reader that answers wrongly
  * from a tree that has nothing in it to find (law 2).
  */
-export function stripsTheShell(object: ts.ObjectLiteralExpression): boolean {
+function stripsTheShell(object: ts.ObjectLiteralExpression): boolean {
   for (const property of object.properties) {
     if (!ts.isPropertyAssignment(property)) continue;
     const name = propertyName(property.name);
@@ -271,7 +271,7 @@ export function shellLessPathLaunchesIn(file: string, source: string): LaunchSit
 }
 
 /** How many shell-resolved launches a file makes, stripped env or not. */
-export function countShellResolvedLaunches(file: string, source: string): number {
+function countShellResolvedLaunches(file: string, source: string): number {
   const sourceFile = ts.createSourceFile(
     file,
     source,
