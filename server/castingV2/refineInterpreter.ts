@@ -29,7 +29,7 @@ import { EYE_COLOURS, EYE_SHAPES, HAIR_TEXTURES } from "../../shared/castingReal
 import { HAIR_COLOURS } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
-import type { ReadPurpose, TextEngine } from "../providers/types";
+import { providerAccountRefused, type ReadPurpose, type TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
 import {
@@ -1043,14 +1043,21 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     /*
       Fail CLOSED — see the header. Refusing costs nobody anything.
 
-      `reader_outage` rather than `unreadable`: no engine configured is a
-      DEPLOYMENT state and there is nothing wrong with her sentence, so telling
-      her to rephrase it is false. The roll road folds the same state into the
-      same door (`interpretBrief`'s `cause: "unconfigured"` → `reader_outage`),
-      and this is that road's rule applied here rather than a second opinion.
+      `reader_down` rather than `unreadable`: no engine configured is a
+      DEPLOYMENT state and there is nothing wrong with their sentence, so
+      telling them to rephrase it is false. The roll road folds the same state
+      into the same door (`interpretBrief`'s `cause: "unconfigured"` →
+      `reader_down`), and this is that road's rule applied here rather than a
+      second opinion.
+
+      ⚠ IT WAS `reader_outage` UNTIL #2688, and the move is the whole point of
+      that card on this road: a deployment with no reader cannot be fixed by
+      trying again in a moment, which is what that door says. Nothing about
+      the money moves — both are free, and this exit has always refused before
+      anything was claimed.
     */
     log.warn({}, "[refineInterpreter] no text engine — refusing rather than guessing");
-    return { ok: false, refusal: { reason: "reader_outage" } };
+    return { ok: false, refusal: { reason: "reader_down" } };
   }
 
   /*
@@ -1141,6 +1148,26 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     failing to be clear, so "try again in a moment" is the true advice and "try
     naming what you want changed" is advice she cannot act on.
   */
+  /*
+    ⚠ AND `account` TAKES THE OTHER DOOR (#2688, the sweep of #2686).
+
+    `threw` and `truncated` are both OURS and both reach for the same advice,
+    because a deadline, a dead transport and our own token ceiling all read
+    differently on the next sampling — *"try again in a moment"* is true of
+    them. A provider that refused our KEY is the one failure here that no
+    retry reaches, so it gets the door that does not ask for one. Three
+    samplings all failing that way is the only road to this state, which is
+    why it is read off `trace.last` rather than counted.
+
+    Money is identical on both: this road refuses free.
+  */
+  if (trace.last === "account") {
+    log.warn(
+      { why: trace.last },
+      "[refineInterpreter] the reader is down at OUR end — refusing without asking for a retry that cannot work",
+    );
+    return { ok: false, refusal: { reason: "reader_down" } };
+  }
   if (trace.last === "threw" || trace.last === "truncated") {
     log.warn(
       { why: trace.last },
@@ -1548,8 +1575,20 @@ export async function asksNothingOfItsOwn(
  * for. This is the same reading #1272 applied to `hairColourFromReference` and
  * `makeupFromReference`, and it needs no new customer copy — it moves this road
  * between two sentences that already exist.
+ *
+ * ⚠ `account` IS THE FOURTH STATE AND IT SPLITS `threw` (#2688, the sweep of
+ * #2686). A call that threw because the deadline fired or the transport died
+ * is weather — the same instruction a minute later is a different reading, and
+ * *"try again in a moment"* is true of it. A call that threw because the
+ * provider refused OUR key is not weather, and every retry fails identically.
+ * This catch's own comment already named that cause — *"or the account is
+ * overdrawn"* — so the module knew and the sentence did not, which is exactly
+ * the shape #2700 found in the two reference readers. Measured on production,
+ * 2026-10-27 from 03:09Z: the key was off, every call answered 401, and this
+ * road said "in a moment" throughout. Money is untouched on every one of
+ * these states and always was — this road refuses free.
  */
-type ReadFailure = "threw" | "truncated" | "unparsed";
+type ReadFailure = "threw" | "account" | "truncated" | "unparsed";
 
 /**
  * One sampling. Returns null when the reply was unusable, so the caller retries.
@@ -1656,8 +1695,14 @@ async function runOnce(
       instead of hers; the return value is unchanged, so every other caller
       behaves exactly as before.
     */
-    if (trace) trace.last = "threw";
-    log.warn({ err: error }, "[refineInterpreter] the reader did not answer");
+    const ours = providerAccountRefused(error);
+    if (trace) trace.last = ours ? "account" : "threw";
+    log.warn(
+      { err: error, cause: ours ? "account" : "threw" },
+      ours
+        ? "[refineInterpreter] the provider refused OUR account — no retry reaches it"
+        : "[refineInterpreter] the reader did not answer",
+    );
     return null;
   }
 

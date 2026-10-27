@@ -1,7 +1,7 @@
 {
-  "edition": 752,
-  "updatedAt": "2026-10-27T20:05:00.000Z",
-  "shift": "NOTHING YOU CAN SEE CHANGED TONIGHT, AND THAT IS THE POINT OF THE JOB AGAIN. No money was spent, no character was touched, and nothing was deleted that anybody was using.\n\nTHE JOB. The last switch on the paid-edit road is out. It decided whether a character's face builds a LIBRARY — the small pictures we cut from each edit so the next edit can see what the character already looks like. With that switch off, the feature panel showed nothing, an edit carried none of the character's own features forward, and nothing was saved. It has been on for every account since 24 August, so nobody has been on the other road for two months. Taking it out does not change what you get; it means the library can no longer be switched off by one setting.\n\nTHAT IS THE SIXTH AND LAST OF THE SIX SETTINGS YOU APPROVED RETIRING ON 15 OCTOBER. Both of the last two are now built and waiting for a read before they merge.\n\n⚠ LAST NIGHT'S NOTE TOLD YOU THIS PIECE WAS A QUESTION FOR YOU, AND IT WAS NOT. The previous shift read it as a decision — the switch also controlled what turns the feature panel on, so removing it means something else has to — and left it for you. Reading the code first showed the answer was already written there: the same move had been made one level down two weeks ago when an earlier switch retired, and the three things that hung off this one simply hang off the main casting switch now. So it was ours after all, and nothing is waiting on you. I am telling you because a job that sits on your desk for no reason costs you a night.\n\n⚠ THE ONE THING THIS DELETION TAKES AWAY, AND IT IS NOT A FEATURE. The switch also refused to let the product start at all unless the cleaner that eventually deletes old pictures was turned on — because these little pictures are cut from somebody's face and sit at a public web address. That refusal is gone with the switch. It changes nothing today: the cleaner IS on, and has been since at least 11 August, and every OTHER thing that keeps pictures (an uploaded tattoo design, a photograph you attached, a saved face reading) still refuses to start without it, all on its own. What is gone is a guard against a mistake nobody has made. I am writing it down rather than leaving it in a report, because a protection that disappears quietly is how this product has been bitten before.\n\nWHAT THE WORK TURNED UP, AND IT IS WORTH MORE THAN THE SWITCH. Three of our own alarm files — the ones that exist to stop a retired switch creeping back — were using THIS switch as their proof that their reader still works. That is the trap peculiar to those files: the thing they test against is itself a switch, and a switch can be retired. An alarm checking itself against something that no longer exists does not go off; it quietly stops proving anything while still showing green. All three now check against a setting that is on nobody's retirement list.\n\nAND MY OWN CHECKING TOOL LIED TO ME FIRST. I wrote a small harness to deliberately break the new alarm nine different ways and confirm it goes off each time. Its first run reported nine perfect results — and every one was the same mistake: I had passed an option the test runner does not have, so all nine died before any test ran. It was caught only because the harness also insists on seeing WHICH alarm went off, not just that something failed. A checking tool that only reads success or failure can manufacture nine good results out of one typo.\n\nWHERE THAT LEAVES YOUR RUNG. The paid-edit cleanup is DONE as a piece of work — every switch the audit named is retired or built and waiting. What is left on that job is writing the record of it, which is a small job for us. Nothing is waiting on you tonight.",
+  "edition": 753,
+  "updatedAt": "2026-10-27T21:15:00.000Z",
+  "shift": "NOTHING WAS TAKEN AWAY TONIGHT AND NOTHING COST ANYTHING. One sentence the product says to customers was wrong, and it is now right.\n\nTHE JOB. Say several things in one go — a new outfit, and a scar on the eyebrow — and if any one of those things was too long for us to write down, the product used to answer: \"That one didn't come through clearly. Try naming what you want changed about them.\" Every word of that was wrong. It HAD come through clearly — we read it, we understood it, and then we threw the whole thing away because one part of it did not fit. So we told somebody their own clear English was the problem, and then advised them to do the exact thing they had just done. They would retype the same sentence and get the same answer, with no way of ever working out why.\n\nAND IT QUIETLY KILLED THE REST. The over-long part did not just drop itself — it took every other change in the same sentence with it. Ask for a coat and a scar, and if the coat is too long to store, the scar dies silently beside it.\n\nWHAT IT SAYS NOW. \"I understood that, but one part of it is longer than I can keep on record — so none of it was applied. Say that part in fewer words and the rest of your sentence will go through with it. Nothing was charged.\" True, and it tells them what to do.\n\nIT ALSO STOPS WASTING OUR MONEY. Because the old road gave no reason, the product assumed it had misheard and asked the reading model the same question three times before giving up. It now answers on the first read.\n\nAND THE SAME MISTAKE WAS SITTING RIGHT NEXT TO IT. The rule here is to fix the kind of mistake and not just the one you found, so I looked for others: the makeup box had the identical problem a hundred lines up in the same file. Fixed in the same go. Two more near-misses turned out to be genuinely different problems needing different words, so each got its own job rather than being quietly folded into this one — asking for more than eight things at once, and naming a fashion label. Both were tested first to be sure they were real.\n\nONE THING I DELIBERATELY DID NOT DO, so it is not a surprise later: the new sentence does not say WHICH part was too long. We have no plain-English name for each thing a character has — the two lists that look like they would do the job are really for other purposes, and one of them would have made the sentence change by accident whenever somebody edited an unrelated instruction. Naming the part is worth doing properly one day and not worth faking now.\n\nWAITING ON NOBODY. Nothing on this needs you. The work is written, tested and waiting on our own review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T19:49:04.684Z",
+      "readAt": "2026-10-27T20:59:52.125Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7549,6 +7549,13 @@
   ],
   "pipeline": [
     {
+      "id": "overlong-value-refusal-2714",
+      "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
+      "status": "in-review",
+      "prNumber": 2732,
+      "note": "Held for the relay by hand: it changes a sentence a customer reads, but on a server file, which the automatic check cannot see (it only watches screen files). Gate run on the head."
+    },
+    {
       "id": "refine-dispatch-flag-1577-d4",
       "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
       "status": "in-review",
@@ -11343,7 +11350,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T19:49:04.684Z",
+    "readAt": "2026-10-27T20:59:52.125Z",
     "items": [
       {
         "issueNumber": 1577,

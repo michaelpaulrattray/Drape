@@ -376,6 +376,41 @@ export const REFINE_REFUSALS = {
     charge: "free",
     report: "unread",
   },
+  reader_down: {
+    /*
+      THE SAME OUTAGE WITH NO RETRY BEHIND IT (#2688, the sweep of #2686).
+
+      `reader_outage` above is honest about whose fault it is and wrong about
+      what to do. *"Try again in a moment"* is true of a sampling that threw
+      on a deadline or a dead transport — the same instruction a minute later
+      is a different reading. It is a **lie** when the provider has refused
+      our own key, and when this deployment has no reader at all: every retry
+      it invites fails the same way, and the customer is left rewriting a
+      sentence that was never read.
+
+      Measured on production, 2026-10-27 from 03:09Z — the key was disabled,
+      every call answered 401, and this road said "in a moment" for the whole
+      outage.
+
+      ⚠ **THE VOICE CHANGES FROM "I" TO "the studio", AND THAT IS THE POINT
+      RATHER THAN A SLIP.** Refine speaks in the first person about an edit it
+      read; here it read nothing, and *"I couldn't read that"* about words
+      nobody looked at points at her sentence. "The studio" is what this
+      product already says for this fact at every other entrance — the roll
+      road's `READER_DOWN_MESSAGE`, the concept door's, and the four picture
+      roads' `PICTURE_READER_DOWN_MESSAGE` — so the customer who meets two of
+      them in one sitting is told about one outage. Held by an arm rather than
+      by this comment.
+
+      It says nothing she can do to her sentence, because there is nothing
+      wrong with her sentence — and it does not say "in a moment", because
+      that is the one instruction a disabled key cannot honour.
+    */
+    say: () => "The studio can't read edits just now — that's something at our end, not your "
+      + "words. Nothing was charged. Try again later.",
+    charge: "free",
+    report: "unread",
+  },
 } as const satisfies Record<RefineRefusal["reason"], RefusalEntry>;
 
 /** Every refusal reason the product can return — derived, never a second list. */

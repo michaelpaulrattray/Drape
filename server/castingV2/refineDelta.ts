@@ -733,6 +733,31 @@ export type RefineRefusal =
    * charged. The only thing that moves is the sentence.
    */
   | { reason: "reader_outage" }
+  /**
+   * THE READER CANNOT ANSWER AT ALL — and no retry reaches it (#2688, the
+   * sweep of #2686).
+   *
+   * `reader_outage` above splits in two, and only one half is weather.
+   * A sampling that threw on a deadline or a dead transport reads differently
+   * a minute later, so its *"try again in a moment"* is true. The provider
+   * refusing OUR key — a 401, 402 or 403, which
+   * `classifyOpenRouterTextHttp` maps to `provider_account` — is not weather:
+   * every retry fails identically, and so does an edit asked of a deployment
+   * with no reader configured at all.
+   *
+   * Measured on production, 2026-10-27 from 03:09Z: the text account's key was
+   * disabled, every call answered 401, and this road told the customer to try
+   * again in a moment for the whole outage. `runOnce`'s own catch already
+   * named the cause in a comment — *"or the account is overdrawn"* — so the
+   * module knew and the sentence did not, which is the same shape #2700 found
+   * in the two reference readers.
+   *
+   * Free, exactly as `reader_outage` and `unreadable` are: nothing is claimed
+   * and nothing is charged on any of them. The only thing that moves is the
+   * sentence, and `REFINE_REFUSALS` carries both halves side by side so the
+   * split can be read rather than reasoned about.
+   */
+  | { reason: "reader_down" }
   | { reason: "empty" }
   /**
    * THE ASK WAS ABSORBED — everything filed was already true of her.
