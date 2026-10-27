@@ -25,7 +25,6 @@ import {
   coveredByCatalogue,
   cutDiscovered,
   discoveredSlotOf,
-  isDiscoveredSlot,
   normalisedName,
   offListFeatures,
 } from "./pointerCut";
@@ -182,12 +181,15 @@ describe("offListFeatures — a name the scan already buys never reaches this ro
 describe("discoveredSlotOf — an identity, never a description", () => {
   it("is prefixed, slugged and numbered", () => {
     expect(discoveredSlotOf("jaw hardware", 1)).toBe(`${DISCOVERED_SLOT_PREFIX}jaw-hardware#1`);
-    expect(isDiscoveredSlot(discoveredSlotOf("sash", 2))).toBe(true);
+    expect(discoveredSlotOf("sash", 2)).toBe(`${DISCOVERED_SLOT_PREFIX}sash#2`);
   });
 
-  it("never reads as a catalogue slot", () => {
+  /* The non-collision, held against the REAL catalogue rather than asserted in
+     prose: the prefix is what makes a found key unmistakable, and this is the
+     only place that can check it. */
+  it("never collides with a catalogue slot", () => {
     for (const definition of catalogueSlots()) {
-      expect(isDiscoveredSlot(definition.slot), definition.slot).toBe(false);
+      expect(definition.slot.startsWith(DISCOVERED_SLOT_PREFIX), definition.slot).toBe(false);
     }
   });
 

@@ -123,11 +123,14 @@ const log = createModuleLogger("castingV2/pointerCut");
  */
 export const DISCOVERED_SLOT_PREFIX = "discovered:";
 
-/** Whether this key is one of this road's — for a caller that must not treat
- *  one as a catalogue slot. */
-export function isDiscoveredSlot(slot: FeatureSlot): boolean {
-  return slot.startsWith(DISCOVERED_SLOT_PREFIX);
-}
+/*
+  AND THERE IS NO `isDiscoveredSlot` BESIDE IT, deliberately. A predicate here
+  would read as diligence and have no caller: nothing in the product branches on
+  whether a key is this road's, because the prefix makes a collision with a
+  catalogue slot or an `open:` kind impossible by construction. `pointerCut.test.ts`
+  holds that non-collision against the real catalogue, which is the one place it
+  can actually be checked — an unread export is what #2605 swept 62 of.
+*/
 
 /**
  * The key for one instance of one found name.
