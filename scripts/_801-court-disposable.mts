@@ -71,22 +71,31 @@ process.env.CASTING_SCAN_TABLE_SCOPE = "all";
 process.env.CASTING_BRIEF_FIDELITY_SCOPE = "all";
 process.env.CASTING_RETRY_SCOPE = "all";
 /*
-  THE ONE FLAG DELIBERATELY NOT AT ITS PRODUCTION POSITION, and why.
+  ⚠ NO FLAG IS MOVED FOR THIS ANY MORE — THE CALLER SAYS IT ITSELF (#2560).
 
-  `CASTING_REFINE_DISPATCH_SCOPE` is `all` on production and it changes the
-  SHAPE OF THE ANSWER, not the picture: the call returns a dispatch receipt the
-  moment the render starts, and `imageUrl` on that receipt is the face the
-  customer is still looking at. The first control run read those receipts as
-  delivered frames and wrote three copies of the master to disk, then met
-  "That edit is already being made" on every following step — and when the
-  process exited, the lizard's render was abandoned mid-flight (`v557`, still
-  `dispatched`). A browser waits; a script has to be told to.
+  `CASTING_REFINE_DISPATCH_SCOPE = "off"` stood here, and the reason was never
+  about the customer it names: the call returns a dispatch receipt the moment
+  the render starts, and `imageUrl` on that receipt is the face the customer is
+  still looking at. The first control run read those receipts as delivered
+  frames and wrote three copies of the master to disk, then met "That edit is
+  already being made" on every following step — and when the process exited,
+  the lizard's render was abandoned mid-flight (`v557`, still `dispatched`).
+  A browser waits; a script has to be told to.
 
-  Off, the call is "one attempt, awaited whole" (`refineService`'s own words),
-  which is the same render on the same road. The frame is still read from the
-  VARIANT ROW rather than from the response, because the row is the artifact.
+  So the fact was always about THIS CALLER and not about any account, and it is
+  now stated where it belongs: `refineCandidate` is handed
+  `cannotTakeAReceipt: true` at the A-control's own call site below. The road is
+  identical — "one attempt, awaited whole" (`refineService`'s own words), the
+  same render on the same road — and `record.ms` therefore still measures the
+  RENDER rather than the time to hand back a receipt, which is what keeps a
+  later round comparable with round 2.
+
+  The frame is still read from the VARIANT ROW rather than from the response,
+  because the row is the artifact.
+
+  ⚠ A reader must not re-add the line: the switch is retiring (#1577 slice D4),
+  and this script was the thing holding it open.
 */
-process.env.CASTING_REFINE_DISPATCH_SCOPE = "off";
 
 import "dotenv/config";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -273,7 +282,11 @@ async function runControl(): Promise<void> {
            waits exactly as a person would rather than scoring it a failure. */
         for (let attempt = 0; ; attempt += 1) {
           try {
-            record.answer = JSON.stringify(await refineCandidate({}, {
+            /* #2560 — this process cannot take a receipt: it would exit with
+               the render it paid for still running, and `record.ms` would be
+               the time to hand one back rather than the time to draw the
+               picture. Stated on the CALL, so no customer switch moves. */
+            record.answer = JSON.stringify(await refineCandidate({ cannotTakeAReceipt: true }, {
               userId: fixture.userId,
               clientRequestId: randomUUID(),
               candidatePublicId: fixture.candidatePublicId,
