@@ -76,6 +76,20 @@
  */
 import { cardNumberToken, type CardPullRequestWhere } from "./crewShiftState";
 import { blockOpeningLines } from "./crewMarkdownLead";
+/*
+  THE HOLD VOCABULARY IS OWNED ONE FILE OVER AND IS READ FROM THERE (#2707).
+
+  `crewNextUpHold.ts` holds every hold label and the marker a hold's sentence is
+  written with, and `crewQueueExclusions.ts`'s own header records what happened
+  when `blocked` was a literal here instead: *"`blocked` was a literal in this
+  file while `shared/crewNextUpHold.ts` owns the whole hold vocabulary"*. So the
+  instruction below renders the label and the marker from those constants, and a
+  fourth hold or a changed marker reaches what a seat is told in the same edit.
+
+  The direction is safe: that module imports `crewMarkdownLead` alone, so there
+  is no cycle to create.
+*/
+import { CREW_HOLD_LABELS, CREW_HOLD_MARKER } from "./crewNextUpHold";
 import {
   handFindingNote,
   handVerdictFreshness,
@@ -393,6 +407,35 @@ const DASH = String.raw`[—–-]`;
   The one half this cannot reach is the launch orders and the shift digest
   themselves, which live in `.agents/` and are not a seat's to edit. That
   remains owed on #1701; this closes the road a seat CAN be told on.
+
+  ⚠ **AND THE SAME SPLIT IS WHY THE HOLD SENTENCE LANDED HERE — #2707, Retro,
+  2026-10-27.** Four builder-seat sessions were spent on four cards
+  (#2599, #2616, #2631, #2658) that no seat could build, and **not one seat
+  missed the cause — three of them named it in writing and each left it for
+  somebody who would not see it**: *"what it lacks is the hold — `blocked` plus
+  a `**Waiting on:**` line … That is the relay's one-field act, not a seat's."*
+  The stated reason was a rule that does not appear to exist; the artifacts say
+  the opposite, and standing order #586 says it in as many words — *"two shifts
+  wrote exactly that and neither labelled it"*.
+
+  **The class is a correct finding that names its own remedy and routes it to
+  somebody who was never going to read it.** `#2198` is the same shape (six
+  sessions in one day, ended by a seat applying `blocked` by hand) and `#1669`
+  is its ancestor (seven sessions on one card). A card comment is the one place
+  no scheduled reader consults.
+
+  ⚠ **A REFUSED CARD STAYS ON OFFER BY DESIGN AND THAT IS NOT THE BUG** — his
+  word of 2026-09-29 (Crew reply #237, option A) keeps it open and re-offered,
+  `refused` is `holdsOffWork: false` in `shared/crewQueueExclusions.ts`, and the
+  refusal travels to the next seat as an annotation. **Nothing in the cutter is
+  wrong.** What held the loop open is that `blocked` is the only label that
+  takes a standing refusal OFF the offer, and the instruction that told a seat
+  to apply `not-built` did not mention it.
+
+  The guard half of #2707's proposal is NOT built and is named there rather than
+  here: `crew-desk-sweep.mts`'s population is the `founder-ordered` band, so the
+  obvious home can see none of these four, and widening it is a decision about
+  work rather than a repair.
 */
 
 /** `CLAIMED` — the word that takes a card. */
@@ -475,6 +518,18 @@ export function crewCardHandbackInstruction(seat?: string | null): string {
     "               then the file:line that disagrees with the card, and why —",
     `               and apply the \`${CREW_NOT_BUILT_LABEL}\` label, which never ages out`,
     "               the way a comment does.",
+    `               ⚠ AND APPLY \`${CREW_HOLD_LABELS.blocked}\` IN THE SAME ACT, with a`,
+    `               \`${CREW_HOLD_MARKER} <what>\` line in the card's body saying what`,
+    "               would change the answer. The two labels do different jobs:",
+    `               \`${CREW_NOT_BUILT_LABEL}\` records the VERDICT, and \`${CREW_HOLD_LABELS.blocked}\` is the`,
+    "               only one that takes a refused card OFF the offer — so without",
+    "               it the card is handed to the next seat every pass, which is",
+    "               correct behaviour and cost four sessions in a day (#2707).",
+    `               ⚠ Do NOT begin that \`${CREW_HOLD_MARKER}\` line with "you", "his"`,
+    "               or \"Michael\" unless the card really is his to answer: the desk",
+    "               reads its FIRST word, and those put it in front of him.",
+    "               If a hold would be WRONG — the card turns out already done —",
+    "               close it with the receipt instead, and say which you did.",
     "",
     `  release it   ${crewCardReleaseLine(seat)}`,
     "               ⚠ OPENING A PULL REQUEST IS NOT A RELEASE. A pull request is",
