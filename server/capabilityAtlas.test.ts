@@ -22,6 +22,7 @@ import {
   importedModules, narrowSharedBareIdPins, rollRaiseSitesIn, sharedBareDoorIds, type DeclaredId,
   declaredSourceNames, roadProseNames, roadProseSymbolFindings, type ProseName,
   staleCoverageEntryFindings,
+  declaredFlags, driveProfileFlags, driveProfileDrift, profileFixtureUserId, profileHasDrifted,
 } from "../scripts/lib/capabilityAtlas.mts";
 import {
   LAWS, ROADS, UNDECLARED_PROSE_NAMES, UNMAPPED_ENTRANCES, type Road,
@@ -2008,5 +2009,109 @@ describe("a coverage entry cannot outlive its door (#2568)", () => {
       UNREACHABLE_DOORS.some((entry) => entry.id === "kind_unserved"),
       "its exemption was deleted with it — the specimen must stay absent, or this suite is its own subject",
     ).toBe(false);
+  });
+});
+
+/*
+  ───────────────────────────────────────────────────────────────────────────────
+  THE DRIVE PROFILE DRIFTS SILENTLY, AND NOW IT SAYS SO (#2694).
+
+  `driveProfileFlags` DERIVES the census's open-doors profile from
+  `declaredFlags()`, so a flag joins it by being declared in `castingV2Scope.ts`
+  — no edit anywhere, nothing announced. The derivation is being KEPT: the
+  alternative costs a line per flag and buys a decision nobody asked for. What
+  was missing is that a committed table could describe a product the next drive
+  would not measure, and a reader had no way to know before reading its
+  findings.
+
+  These arms hold the reader, not the numbers on the tree: a population
+  assertion against today's figures would be a second copy of the drift it is
+  meant to detect.
+*/
+describe("the drive profile's own drift (#2694)", () => {
+  it("⚠ CONTROL — the derivation found a real population, and both of its exception arms", () => {
+    /*
+      POSITIVE CONTROLS FIRST. Every arm below is vacuously true over an empty
+      profile, which is exactly how a drift reader goes green while comparing
+      nothing. The two exception shapes are asserted by NAME because they are
+      the only values the derivation can produce other than `users:`, and a
+      derivation that lost them would read as "everything opened" rather than
+      as broken.
+    */
+    const derived = driveProfileFlags(28601);
+    expect(Object.keys(derived).length).toBeGreaterThan(10);
+    expect(declaredFlags().length).toBe(Object.keys(derived).length);
+    expect(derived.CASTING_V2_SCOPE).toBe("all");
+    expect(derived.CASTING_SCAN_TABLE_SCOPE).toBe("off");
+    /* And the default arm, which is the one #2694 is about: anything not named
+       is opened to the fixture. */
+    expect(Object.values(derived)).toContain("users:28601");
+  });
+
+  it("names what the next drive would open, what it has lost, and what has moved", () => {
+    const drift = driveProfileDrift({
+      committed: { KEPT_SCOPE: "users:7", LEFT_SCOPE: "users:7", MOVED_SCOPE: "off" },
+      derived: { KEPT_SCOPE: "users:7", MOVED_SCOPE: "users:7", NEW_SCOPE: "users:7" },
+    });
+    expect(drift.opened).toEqual(["NEW_SCOPE"]);
+    expect(drift.retired).toEqual(["LEFT_SCOPE"]);
+    expect(drift.moved).toEqual([{ flag: "MOVED_SCOPE", committed: "off", derived: "users:7" }]);
+    expect(profileHasDrifted(drift)).toBe(true);
+  });
+
+  it("⚠ CONTROL — two identical profiles drift in no direction at all", () => {
+    /*
+      THE NEGATIVE CONTROL, and it is the arm that matters: a reader that
+      reported drift unconditionally would satisfy every assertion above while
+      making the finding fire on a freshly driven table forever — which is a
+      warn nobody reads within a week.
+    */
+    const same = { A_SCOPE: "all", B_SCOPE: "users:3", C_SCOPE: "off" };
+    const drift = driveProfileDrift({ committed: same, derived: { ...same } });
+    expect(drift).toEqual({ opened: [], retired: [], moved: [] });
+    expect(profileHasDrifted(drift)).toBe(false);
+  });
+
+  it("reads the fixture account out of the profile itself, never from a database", () => {
+    /* The check must reach no network and no database, so the id can only come
+       from the one place a profile records it. */
+    expect(profileFixtureUserId({ A_SCOPE: "all", B_SCOPE: "users:28601" })).toBe(28601);
+    /* First `users:` row wins, and they are all the same account by
+       construction — a profile with two different ids is not a shape this
+       derivation can produce. */
+    expect(profileFixtureUserId({ A_SCOPE: "users:5", B_SCOPE: "users:5" })).toBe(5);
+    /* ⚠ AND IT IS NULL RATHER THAN A GUESS when no row carries one — the
+       finding says it cannot compare, instead of comparing against an
+       invented account. */
+    expect(profileFixtureUserId({ A_SCOPE: "all", B_SCOPE: "off" })).toBeNull();
+    expect(profileFixtureUserId({})).toBeNull();
+    /* Not a positive integer is not an id. */
+    expect(profileFixtureUserId({ A_SCOPE: "users:0" })).toBeNull();
+    expect(profileFixtureUserId({ A_SCOPE: "users:abc" })).toBeNull();
+  });
+
+  /*
+    AND THE COMMITTED TABLE IS COMPARED FOR REAL, which is the arm that would
+    have caught #2544's sentence. It asserts only that the reader RUNS over the
+    real committed profile and answers — never WHAT it answers, because the
+    whole point is that the answer moves as flags are declared and retired. An
+    arm pinning today's ten-and-seven would be the stale snapshot this card is
+    about, one layer up.
+  */
+  it("runs over the real committed profile and answers without a database", () => {
+    const committed = readCommittedAtlas();
+    expect(committed, "no committed census to read").not.toBeNull();
+    const flags = committed!.driven?.profile.flags;
+    expect(flags, "the committed census has no drive profile").toBeTruthy();
+    const userId = profileFixtureUserId(flags!);
+    expect(userId, "the committed profile records no fixture account").not.toBeNull();
+    const drift = driveProfileDrift({ committed: flags!, derived: driveProfileFlags(userId!) });
+    /* Every field present and an array — the shape a caller reads. */
+    expect(Array.isArray(drift.opened)).toBe(true);
+    expect(Array.isArray(drift.retired)).toBe(true);
+    expect(Array.isArray(drift.moved)).toBe(true);
+    /* A flag cannot be both opened and retired; that would be the reader
+       disagreeing with itself about one name. */
+    expect(drift.opened.filter((flag) => drift.retired.includes(flag))).toEqual([]);
   });
 });
