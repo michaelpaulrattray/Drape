@@ -1274,6 +1274,76 @@ describe("refusals land before anything is claimed", () => {
     expect(result.note ?? "").not.toContain("one more thing");
   });
 
+  /*
+    AND THE CLAUSE THAT REACHED NO LANE AT ALL — not even an unserved key —
+    SAYS SO (#2695). "Make her hair copper red in a studio" files only the
+    copper: the stage wall runs over the PARSED value, the elided studio is
+    handed to nobody, and the measured result through the real entrance was 20
+    of 21 served reads rendering with the scenery word dropped in silence. The
+    detector reads the sentence against the delta it filed, so the confession
+    depends on no model behaviour at all.
+  */
+  it("⚠ SAYS SO WHEN HALF THE SENTENCE NAMED THE SHOOT AND THE READING DROPPED IT", async () => {
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "make her hair copper red in a studio" },
+    );
+
+    expect(result.note).toContain("The studio part of your ask wasn't changed");
+    expect(result.note).toContain("refining changes the person, not the shoot");
+    /* A DELIVERED, charged take — the refusal's reassurance would be a lie. */
+    expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
+    expect(ledger.charges.length, "and it was paid for like any other edit").toBeGreaterThan(0);
+  });
+
+  it("CONTROL — a whole-person ask owes no shoot sentence", async () => {
+    /* Without this arm the fix is satisfied by a product that apologises about
+       the shoot on every edit — the permanent-confession failure the unserved
+       control above exists to stop, one note over. */
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "make her hair copper red" },
+    );
+    expect(result.note ?? "").not.toContain("part of your ask wasn't changed");
+  });
+
+  it("CONTROL — a stage word the reading actually USED is never apologised for", async () => {
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { skinCharacter: "a studio glam look" } },
+        }),
+      },
+      { ...input, instruction: "give her a studio glam look" },
+    );
+    expect(result.note ?? "").not.toContain("The studio part");
+  });
+
+  it("never confesses one clause twice: an unserved key keeps its own richer sentence", async () => {
+    /* "chair" recorded as an unserved open key gets the named-but-not-served
+       note, which carries more than this one; the dropped-clause note stands
+       down for that word rather than saying the same fact in two voices. */
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: "nude gloss" } },
+          unserved: ["chair"],
+        }),
+      },
+      { ...input, instruction: "give her nude gloss on her lips sitting in a chair" },
+    );
+
+    const said = result.note ?? "";
+    expect(said).toContain("The chair isn't something I can do yet");
+    expect(said).not.toContain("The chair part of your ask wasn't changed");
+  });
+
   it("⚠ CARRIES the waist on the wire since #2671 — the note, the stored recipe and the painter's ask", async () => {
     /*
       This arm read "says which half of a half-served ask was left out, and
@@ -11193,6 +11263,48 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     await vi.waitFor(() => expect(landedVariant, "the picture arrives on the rows").not.toBeNull());
     expect(ledger.charges, "and it is still one charge").toHaveLength(1);
     expect(ledger.refunds).toHaveLength(0);
+  });
+
+  it("⚠ THE DROPPED CLAUSE RIDES THE RECEIPT — the only answer a dispatched customer reads (#2695)", async () => {
+    /*
+      The confession is a fact of the READING, known before the render begins —
+      which is what makes it honest on a receipt, and what makes the receipt the
+      right carrier: on production every paid refine answers this way, the
+      settled result loses the race, and a note composed only at the landing
+      reaches nobody (the inert-on-arrival class `refineOutcomeNote.ts` records).
+      The latch is still shut when the note is asserted, so this is provably the
+      parse's sentence and not a fast render's.
+    */
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "make her hair copper red in a studio" },
+    );
+
+    expect(result.kind).toBe("dispatched");
+    expect(result.note, "said before any paint exists").toContain(
+      "The studio part of your ask wasn't changed",
+    );
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant, "and the picture still lands").not.toBeNull());
+  });
+
+  it("CONTROL — a receipt for a whole-person ask carries no note", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const result = await refineCandidate({ ...greenEyes }, input);
+
+    expect(result.kind).toBe("dispatched");
+    expect(result.note).toBeUndefined();
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant).not.toBeNull());
   });
 
   it("lands a background failure DURABLY — on the rows, where the surface reads it", async () => {
