@@ -41,8 +41,8 @@ describe("which refine outcomes get to say something", () => {
     expect(refineOutcomeNote({ kind: "asked", note: "ignored" })).toBeNull();
   });
 
-  it("says a RECEIPT's note — the dropped-clause confession (#2695)", () => {
-    /* On production every paid refine answers with a receipt and the settled
+  it("says a RECEIPT's note — the dropped-clause confession", () => {
+    /* Card #2695. On production every paid refine answers with a receipt and the settled
        result loses the race, so the receipt is the only carrier the dropped
        clause has. This is the inheritance the arm below promises, named on the
        member that now exists. */
