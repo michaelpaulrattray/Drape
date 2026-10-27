@@ -1,7 +1,7 @@
 {
-  "edition": 745,
-  "updatedAt": "2026-10-27T09:10:09.227Z",
-  "shift": "ONE QUESTION FOR YOU TONIGHT, and the thing it is about is already fixed, so there is no hurry on it.\n\nThis was the weekly security check. The headline first: everything protecting your customers held. Nothing a\ncustomer can reach was at risk at any point, and I checked that two separate ways rather than believing one\nreader.\n\nWHAT I FOUND, AND FIXED TONIGHT. The tools we BUILD the site with — not the site itself — had eleven known\nsecurity holes open, one of them serious. They are in the dev server, the test runner, and a small address parser\nthat comes along with them. None of it goes out to customers: the check that reads what actually ships read zero,\nbefore and after. What was exposed is our own machines and our build robot. The serious one is a Windows-only hole\nin the dev server's \"open this file in my editor\" button — which is the machine you and the crew actually work on.\n\nIt is fixed, and the fix was small. All three already had a safe patched version inside the version ranges we had\nwritten down months ago, so this was three one-line changes, not an upgrade to anything new. Measured before and\nafter: eleven holes, then \"no known vulnerabilities found\". The whole test suite — about 21,000 checks — passes on\nthe new versions, and so does the check that judges how much a customer has to download before the page appears,\nwhich is the one thing a change to the build tool could plausibly have moved.\n\nWHY THEY SAT THERE FOR THREE DAYS IS THE PART WORTH YOUR ATTENTION, and nobody was asleep. The robot that offers\nus dependency updates had already opened a BIG version jump for two of these packages back on the 19th — a whole\nmajor version each — and both of those have been failing their tests ever since. The robot will not offer a\nsecond, smaller update for a package it already has an open one for. So the cheap safe fix was never put in front\nof anyone. I checked that rather than assuming it: the bundle of updates it opened this morning moves neither\npackage at all.\n\nTHE QUESTION, AND IT IS ONE WORD. Our merge check reads known holes in what SHIPS, and deliberately not in the\nbuild tools — it says so in its own output. That is a defensible line, because a hole in the test runner cannot\nreach a customer. But it does mean eleven of them, one serious, sat for three days with the only thing noticing\nbeing this weekly check. Should the merge check also read the build tools, and if so, should it REFUSE or just\nWARN? My recommendation is WARN: it would have told us on the 24th, and it can never block your work. The card is\non your desk.\n\nALSO FOUND, AND IT IS NOT A HOLE. Our own internal map of the product carries a column saying whether each of its\n293 doors has a speed limit on it. The column is wrong on seventeen of them — it says \"no limit\" where the code\nplainly has one, including on one of the thirteen doors that are open to the public with no sign-in. The limits\nare all genuinely there: the thing that really proves it is a test that drives every public door until it refuses\nand then proves a second visitor still gets in, and that test is green. The map's column is simply wrong, because\nit guesses by looking for three particular spellings and fifteen of our files use a different one. Nothing in the\nproduct reads the column, which is why it has been wrong for months with nothing ever going red. Filed; the\nrecommendation is to fix it properly or delete it, because an unread column that is wrong is worse than none.\n\nEVERYTHING ELSE WAS CLEAN. No secrets anywhere in 5,015 commits of history, checked twice this fortnight. No\nfindings from either code scanner. The access-control tests green. Your audit log gained exactly one row in ten\ndays. No blocked addresses, no suspensions, nobody frozen. And nobody's private cast recipe anywhere in the log\nthat staff can read — checked over all 1,240 rows, with the reader given a decoy first to prove it can still spot\none.",
+  "edition": 746,
+  "updatedAt": "2026-10-27T10:43:11.304Z",
+  "shift": "NOTHING TONIGHT NEEDS YOU. One job built and waiting on review, one problem found and written down, and one\nthing deliberately NOT built because it is a design question rather than a fix.\n\nWHAT WAS BUILT, and no customer will see a thing — which is the point of it. When someone presses an edit in\nthe studio, we take the money, start drawing, and hand the screen a note saying \"this is running\"; the picture\nlands a moment later. That is right for a person and it has not changed. But our own measuring scripts cannot\nwork that way: handed that note, a script finishes and shuts down, and the picture it just paid for is\nabandoned half-drawn. That has actually happened to us once — the refine-engine court saved three copies of the\nunedited face as though they were results and left a render stranded.\n\nUntil tonight the only way a script could avoid it was to reach in and flip one of YOUR customer settings off\ninside itself — a setting we are in the middle of retiring. So a script borrowed a customer switch to describe\nsomething about itself, and the day that switch goes, the borrowing stops working. Now the script just says it:\n\"I cannot take a note, finish the picture before you answer me.\" Same render, same money, same records, same\nroad — the only difference is when the answer comes back. It is in review and I have not merged it, because the\ncharge and the refund live inside the function it touches and that is your rule.\n\nWHAT CHECKING IT TURNED UP, and it is the useful part. Sixteen more of our own scripts have the same weakness\nand nobody had noticed, because they are only safe by accident: the setting happens to be off on the machine\nthey run on. The day we retire it, each of those sixteen gets the note instead of the picture and writes the\nwrong face to disk — the same incident sixteen times over. Two of them are tools we keep and re-run, not\nthrowaways. It is written down with the full list, and the card that retires the setting now points at it, so\nwhoever does that job reads this first. Nothing is broken today and nothing is urgent.\n\nWHAT I DID NOT BUILD. A real bug came up first in the order: type \"make her hair copper red in a studio\" into\nRefine and you get the copper hair, the studio is quietly dropped, and nothing tells you. Your picture is never\nwrong and no money is spent on a set change — we checked that, and it holds every time. It is a SILENCE problem,\nnot a wrong-picture one. But fixing it means deciding what the product should SAY to you in that moment, and a\nnew sentence beside your picture is your call and a design job, not a patch. I read it right through the code\nfirst so nothing has to be measured again, wrote down what I found, and handed it to the design seat, which\npicks it up next.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T09:15:59.684Z",
+      "readAt": "2026-10-27T10:41:54.117Z",
       "items": [
         {
           "issueNumber": 14,
@@ -10785,6 +10785,13 @@
       "status": "merged",
       "prNumber": 2706,
       "note": "Three one-line floor raises inside ranges we already declared; squash 3360592f. Nothing a customer can reach was affected — the production check read zero before and after."
+    },
+    {
+      "id": "script-await-seam-2560",
+      "title": "A measuring script can now say \"finish the picture before you answer me\", instead of flipping one of your settings (#2560)",
+      "status": "in-review",
+      "prNumber": 2709,
+      "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
     }
   ],
   "problems": [
@@ -11282,7 +11289,7 @@
     301
   ],
   "nextUp": {
-    "readAt": "2026-10-27T09:15:59.684Z",
+    "readAt": "2026-10-27T10:41:54.117Z",
     "items": [
       {
         "issueNumber": 1577,
