@@ -1808,14 +1808,51 @@ function perPlacementFacets(): readonly Facet[] {
  */
 export function slotsForFacet(
   facet: Facet,
-  context: { accessoryKind?: string | null; inkPlacement?: InkAskPlacement | null } = {},
+  context: {
+    /**
+     * ONE KIND, OR EVERY KIND THE LIST NAMES (#2616).
+     *
+     * A family facet is ONE facet over every sort of thing a face can wear, so
+     * its value is the whole worn list — *"a gold hoop in her left ear, a nose
+     * stud"*. A single kind was the right answer while one ask meant one
+     * object, and it stopped being one the moment a list could hold two: the
+     * caller's `accessoryKindOf` picks a single winner by longest match, and
+     * every other item in the list is then resolved to the WINNER's slots.
+     *
+     * Measured: earrings worn with glasses added answers `earring`, so the
+     * glasses resolve to `earring@left, earring@right` — which is exactly the
+     * defect `LANDMARK_OF_ACCESSORY.region`'s own docblock says it exists to
+     * prevent, one layer along.
+     *
+     * An array is therefore accepted and UNIONED, in the order given and
+     * deduped by slot. A bare string still means what it always did, so no
+     * existing caller changes, and a caller with one kind cannot tell the
+     * difference.
+     */
+    accessoryKind?: string | readonly string[] | null;
+    inkPlacement?: InkAskPlacement | null;
+  } = {},
 ): SlotDefinition[] {
   const assignment = FACET_SLOTS[facet];
   if ("notASlot" in assignment) return [];
   if ("family" in assignment) {
-    const kind = context.accessoryKind;
-    if (!kind) return [];
-    return slotsForFeature(kind.replace(/ /g, "-")) ?? [];
+    const asked = context.accessoryKind;
+    const kinds = (typeof asked === "string" ? [asked] : asked ?? [])
+      .filter((kind) => typeof kind === "string" && kind.trim() !== "");
+    if (kinds.length === 0) return [];
+    /* Deduped by SLOT rather than by kind: two kinds can legitimately share a
+       slot, and a slot filed twice is the duplicate every consumer's own
+       ordering rule exists to prevent. */
+    const found: SlotDefinition[] = [];
+    const seen = new Set<string>();
+    for (const kind of kinds) {
+      for (const definition of slotsForFeature(kind.replace(/ /g, "-")) ?? []) {
+        if (seen.has(definition.slot)) continue;
+        seen.add(definition.slot);
+        found.push(definition);
+      }
+    }
+    return found;
   }
   if ("perPlacement" in assignment) {
     /*
