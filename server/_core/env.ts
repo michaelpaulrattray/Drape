@@ -430,8 +430,17 @@ export function validateEnv(): void {
 
     The fence that stood here refused a scope reaching past its parent. There is
     nothing left to fence: the flag had been `all` since 2026-09-24 with every
-    flag above it `all` too, so its off arm — the two closed-lane prompts — was
-    asked of nobody, and both are gone with it.
+    flag above it `all` too, and both prompts are gone with it.
+
+    ⚠ **This paragraph said that off arm was *asked of nobody*, and ONE ROAD was
+    still asking it** — the removal path's RULE 3 re-read, the only production
+    caller of `interpretRefinement` that never passed the option at all, so
+    *absent means off* applied to it. Found by the relay on PR #2556, declared and
+    measured on the ghost audit's D1 row. **Nothing about the BOOT question
+    changes** — that road never read a scope — and the sentence is corrected here
+    rather than only where it was found, because a correction that reaches the
+    audit row and not the four copies in the code is the drift this file has been
+    bitten by before.
 
     ⚠ **The Railway variable is removed only AFTER this build is serving**, and
     the order is not reversible: an absent variable parsed as `off`, so dropping

@@ -45,11 +45,11 @@ _Called as:_ `castingV2.refine`
 |---|---|---|---|---|---|
 | `candidate_missing` | service-refusal |  | server/castingV2/refineService.ts:1267 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_signed` | service-refusal |  | server/castingV2/refineService.ts:1285 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `busy` | service-refusal |  | server/castingV2/refineService.ts:5040<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4517 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `busy` | service-refusal |  | server/castingV2/refineService.ts:5061<br>server/castingV2/rollEngine.ts:122<br>(+1) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `refine_limit` | service-refusal |  | server/castingV2/refineService.ts:4538 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `master_missing` | service-refusal |  | server/castingV2/refineService.ts:1274 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `version_missing` | service-refusal |  | server/castingV2/refineService.ts:1261<br>server/castingV2/refineService.ts:2646 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3777 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `history_unreadable` | service-refusal |  | server/castingV2/refineService.ts:3798 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `history_predates_undo` | service-refusal |  | server/castingV2/refineService.ts:3032 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `step_moved` | service-refusal |  | server/castingV2/refineService.ts:2720 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
@@ -69,20 +69,20 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:662<br>server/castingV2/refineInterpreter.ts:1027<br>(+1) | 4 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:662<br>server/castingV2/refineInterpreter.ts:1039<br>(+1) | 4 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 7 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:661<br>server/castingV2/refineInterpreter.ts:1041<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:661<br>server/castingV2/refineInterpreter.ts:1053<br>(+2) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:1716<br>(+2) | 6 test(s) | guard.likeness |
-| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineInterpreter.ts:1776<br>(+1) | 6 test(s) | guard.content |
+| `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineInterpreter.ts:1788<br>(+1) | 6 test(s) | guard.content |
 | `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:533<br>server/castingV2/refineDelta.ts:1740<br>(+2) | 10 test(s) | background.white |
-| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:557<br>server/castingV2/refineInterpreter.ts:1886<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
+| `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:557<br>server/castingV2/refineInterpreter.ts:1898<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
 | `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:1441<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:598<br>server/castingV2/refineDelta.ts:598<br>(+3) | 3 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
 | `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:605<br>server/castingV2/refineDelta.ts:605<br>(+4) | 3 test(s) | ink.words.chest |
 | `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:624<br>server/castingV2/refineDelta.ts:624<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:632<br>server/castingV2/refineDelta.ts:632<br>(+3) | 3 test(s) | ink.words.chest.basics |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1355<br>server/castingV2/refineService.ts:1393 | 1 test(s) | guard.scope.unknown |
-| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:5013 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:5034 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
 - CASTING_OUTFIT_EDIT_SCOPE (#2544 slice 1) serves the WARDROBE subject to an account, and clothing stops being the stage: inside it a garment ask files under wardrobe and never reaches wall_stage, the backed refusal drops the false 'comes after Sign' clause, and four prompt lines that called a garment the wall say the true thing instead. OFF EVERYWHERE TODAY, and off is byte-identical: SERVED_SUBJECTS never moves and only the flag's bit can select the other list, with all four interpreter prompts hashed. The SCENERY half of the lexicon — backdrop, background, wall, studio, set, scene, location, prop, chair, table, holding — refuses under every subject, served or not, at all five sites; the licence needs BOTH the wardrobe subject and the account, so a garment word smuggled into a skin value still walls. No new door is minted: the corpus rows below are the flag-off reading and are unchanged.
 - wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.
@@ -112,8 +112,8 @@ _Called as:_ `castingV2.refine`
 | `removal_unnamed` | service-refusal |  | server/castingV2/refineService.ts:3075 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `removal_not_in_brief` | service-refusal |  | server/castingV2/refineService.ts:3484 | 1 test(s) | acc.glasses.remove.none, acc.remove.branch.other |
 | `removal_uncheckable` | service-refusal |  | server/castingV2/refineService.ts:3261<br>server/castingV2/refineService.ts:3278 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3620 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4487 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_reread_unmatched` | service-refusal |  | server/castingV2/refineService.ts:3641 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `removal_unnameable` | service-refusal |  | server/castingV2/refineService.ts:4508 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 | `already_original` | service-refusal |  | server/castingV2/refineService.ts:2674 | 1 test(s) | guard.undo |
 
 - THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).
