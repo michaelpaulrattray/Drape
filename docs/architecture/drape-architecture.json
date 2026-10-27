@@ -40669,6 +40669,11 @@
     },
     {
       "from": "module:shared/crewCardBuildState.ts",
+      "to": "module:shared/crewNextUpHold.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewCardBuildState.ts",
       "to": "module:shared/crewShiftState.ts",
       "kind": "imports"
     },

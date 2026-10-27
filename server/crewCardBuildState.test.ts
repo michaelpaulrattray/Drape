@@ -38,6 +38,10 @@ import {
   pullRequestBuildsCard,
 } from "../shared/crewCardBuildState";
 import { findCardPullRequests } from "../shared/crewShiftState";
+/* #2707: the instruction's claim about the cutter is driven through the real
+   readers rather than asserted as prose. */
+import { CREW_HOLD_LABELS, CREW_HOLD_MARKER, holdOwnerFromReason } from "../shared/crewNextUpHold";
+import { workHoldExclusionFor } from "../shared/crewQueueExclusions";
 
 /** PR #1326, as the search API returned it — its card and four it merely cites. */
 const PR_1326 = {
@@ -652,6 +656,16 @@ describe("the handback vocabulary a seat is told", () => {
     expect(text).toContain(SEAT);
     /* "or the PR" is the clause in the orders that actively misleads. */
     expect(text.toLowerCase()).toContain("not a release");
+    /*
+      ⚠ AND THE HOLD (#2707). Both are read from the constants that own them, so
+      a renamed label or a changed marker reaches what a seat is told in the
+      same edit — which is the whole reason this instruction is rendered
+      rather than written out.
+    */
+    expect(text, "a refusing seat is not told which label takes the card off the offer")
+      .toContain(CREW_HOLD_LABELS.blocked);
+    expect(text, "a refusing seat is not told how to write the hold's sentence")
+      .toContain(CREW_HOLD_MARKER);
   });
 
   /*
@@ -744,6 +758,106 @@ describe("the handback vocabulary a seat is told", () => {
   */
   it("the instruction text is not itself read as a fact", () => {
     expect(crewCardCommentFact({ card: 2272, body: crewCardHandbackInstruction(SEAT), createdAt: AT }))
+      .toBeNull();
+  });
+});
+
+/*
+  ⚠ #2707 — THE HOLD IS PART OF A REFUSAL, AND THE SEAT IS TOLD SO.
+
+  Four builder-seat sessions on 2026-10-27 were spent on four cards
+  (#2599, #2616, #2631, #2658) that no seat could build, and **three of the
+  seats named the missing act in writing and each left it for somebody who would
+  not read it** — a card comment. `#2198` is the same shape (six sessions, ended
+  by a seat applying `blocked` by hand) and `#1669` is its ancestor.
+
+  **What is NOT the bug: a refused card staying on offer.** That is his own word
+  of 2026-09-29 (Crew reply #237, option A), `refused` is `holdsOffWork: false`
+  by declaration, and the cutter is not touched by this card. The missing act is
+  the hold, and `blocked` is the only label that performs it.
+
+  # Why these arms are not just "the prose contains a word"
+
+  The instruction makes a FACTUAL CLAIM about the cutter — that `not-built`
+  alone leaves a card takeable and `blocked` is what stops it. That claim is
+  DRIVEN here through the real reader rather than trusted, with the refused-only
+  case as the control. An instruction that told a seat something the cutter does
+  not do would be the #2272 defect again: an instruction that is false is worse
+  than one that is missing.
+*/
+describe("⚠ a refusal's hold — the sentence #2707 added, and the claim it makes", () => {
+  /* Its own, because the block above scopes these inside its describe. */
+  const SEAT = "seat1-20261027-223547";
+  const AT = "2026-10-27T23:45:00Z";
+
+  it("⚠ THE CLAIM IS TRUE OF THE CUTTER — `not-built` leaves it takeable, `blocked` does not", () => {
+    /*
+      THE CONTROL FIRST, because the arm below means nothing without it: a card
+      carrying the refusal label ALONE is still offered. That is correct and
+      ruled, and it is what the four cards did for four sessions.
+    */
+    expect(workHoldExclusionFor([CREW_NOT_BUILT_LABEL, "bug"])).toBeNull();
+
+    /* And the hold is what takes it off. */
+    expect(workHoldExclusionFor([CREW_NOT_BUILT_LABEL, "bug", CREW_HOLD_LABELS.blocked]))
+      .toBe("blocked");
+
+    /*
+      AND THE HOLD ALONE DOES IT, which is why the instruction says the two
+      labels do DIFFERENT jobs rather than that one implies the other: the
+      verdict and the hold are independent facts, and a seat that applies only
+      the hold has recorded no verdict for the next reader.
+    */
+    expect(workHoldExclusionFor([CREW_HOLD_LABELS.blocked])).toBe("blocked");
+  });
+
+  it("the instruction says both labels are needed, and what each one is for", () => {
+    const text = crewCardHandbackInstruction(SEAT);
+    expect(text).toContain("IN THE SAME ACT");
+    expect(text.toLowerCase()).toContain("off the offer");
+    /* The cost, so the sentence carries its own reason rather than reading as
+       one more piece of ceremony. */
+    expect(text).toContain("#2707");
+  });
+
+  it("⚠ and it warns about the FIRST WORD, which is what would put the card on his desk", () => {
+    /*
+      `holdOwnerFromReason` reads the first word of the hold's sentence (past an
+      article) and answers `you` for "you", "his", "him", "he", "michael",
+      "founder". So a seat writing `**Waiting on:** YOU` on a card it just
+      refused would put its own refusal in front of him — which is the one way
+      this new instruction could do harm, so it is named in it.
+    */
+    const text = crewCardHandbackInstruction(SEAT).toLowerCase();
+    expect(text).toContain("first word");
+    for (const word of ["you", "his", "michael"]) expect(text).toContain(word);
+  });
+
+  it("⚠ THE WARNING IS TRUE OF THE READER — driven, both answers", () => {
+    /* The harm the warning prevents… */
+    expect(holdOwnerFromReason("YOU — your word on whether this is worth building")).toBe("you");
+    expect(holdOwnerFromReason("his eye on the frames")).toBe("you");
+    /* …and the shape a refusing seat should actually write. */
+    expect(holdOwnerFromReason("#2688 closing — this card's premise moves with it")).toBe("other");
+    expect(holdOwnerFromReason("a decision on whether the sweep's population widens")).toBe("other");
+  });
+
+  it("it offers the escape, because a hold is sometimes the wrong answer", () => {
+    /* A card that turns out already finished is CLOSED with its receipt, not
+       frozen — #541's freezer is the failure a blanket "always hold" would add. */
+    const text = crewCardHandbackInstruction(SEAT);
+    expect(text).toContain("If a hold would be WRONG");
+    expect(text.toLowerCase()).toContain("close it with the receipt");
+  });
+
+  it("⚠ the longer instruction STILL does not parse as a handback of its own card", () => {
+    /*
+      The arm that matters most about ADDING to this text: it renders all three
+      ceremonial lines, so any new line that happened to open a block with a
+      read word would file the help text as a refusal of whatever card it was
+      printed under. Nine lines were added by #2707.
+    */
+    expect(crewCardCommentFact({ card: 2707, body: crewCardHandbackInstruction(SEAT), createdAt: AT }))
       .toBeNull();
   });
 });
