@@ -697,6 +697,17 @@ const {
  */
 const refineCandidate: typeof refineCandidateRaw = (dependencies, input) =>
   refineCandidateRaw({ cannotTakeAReceipt: true, ...dependencies }, input);
+
+/**
+ * What the entrance answers, for the two arms that read it WITHOUT awaiting.
+ *
+ * Declared at file scope rather than inside one of them because both need it —
+ * and because the first version lived in one `it` block and the second arm
+ * referenced it from another, which `check:root` cannot see (its `exclude`
+ * drops every test file) and `check:server-tests` caught. `vitest` transpiles
+ * without typechecking, so a green suite says nothing about this.
+ */
+type Answer = Awaited<ReturnType<typeof refineCandidateRaw>>;
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -11235,7 +11246,6 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     ).toBeUndefined();
     const render = latch();
 
-    type Answer = Awaited<ReturnType<typeof refineCandidate>>;
     let answered: Answer | null = null;
     /*
       ⚠ `cannotTakeAReceipt: false` is spelled out HERE and it is not a
