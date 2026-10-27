@@ -419,6 +419,109 @@ export function validateCastingFaceScanEnvironment(input: {
   return scan;
 }
 
+/**
+ * THE DISCOVERY READ — whether a first reading asks the picture what is on this
+ * character before it asks the catalogue (#2566, the design approved on #2532).
+ *
+ * Off, a scan asks its fixed list of twelve questions exactly as it does today,
+ * and a cast's own horns, jaw hardware or jacket stay invisible to the panel at
+ * any price. On, one open text read of the frame names what is actually there,
+ * the questions about features this face has not got are never bought, and what
+ * it names beyond the list is the ground slice 2's pointer road stands on.
+ *
+ * # Why it needs a switch of its own, given the scan already has one
+ *
+ * It SPENDS, on a different transport, and it CHANGES WHAT THE PANEL DRAWS. Two
+ * text reads per first reading (a head crop and the full frame — measured on
+ * #2566, each crop sees things the other does not) on the OpenRouter balance
+ * rather than fal's, against a run of segmenter questions it then shortens. The
+ * net is expected to be a saving, and expected is exactly the word a switch
+ * exists for: his eye on the panels decides whether it widens, and until then a
+ * deploy cannot start it on anybody.
+ *
+ * # Its parent is the SCAN scope, because the scan is its only consumer
+ *
+ * A discovery narrows a scan plan and does nothing else — it has no row, no
+ * object and no surface of its own. A user outside `CASTING_FACE_SCAN_SCOPE`
+ * buys no scan for it to narrow, so a discovery scope reaching past it is a
+ * paid read whose answer nothing consumes: inert, and inert is
+ * indistinguishable from mistaken from outside (invariant 7). The scan scope in
+ * turn sits inside the library scope and then `CASTING_V2_SCOPE`, so naming a
+ * user here names them all the way down.
+ *
+ * ⚠ **It does not refuse to boot without `OPENROUTER_API_KEY`, and that is
+ * deliberate rather than an omission.** A discovery that cannot reach its
+ * transport is the fail-open case the reader is built around: the scan asks its
+ * whole list, the panel is exactly today's, and nobody sees an error. Refusing
+ * the boot would turn a degraded courtesy into an outage, which is the opposite
+ * of what every other clause in this file is protecting.
+ */
+export const CASTING_FACE_DISCOVERY_SCOPE_ENV = "CASTING_FACE_DISCOVERY_SCOPE";
+
+export class CastingFaceDiscoveryScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_FACE_DISCOVERY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingFaceDiscoveryScopeConfigurationError";
+  }
+}
+
+export class CastingFaceDiscoveryCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_FACE_DISCOVERY_SCOPE_ENV} ${detail}`);
+    this.name = "CastingFaceDiscoveryCoverageError";
+  }
+}
+
+export function parseCastingFaceDiscoveryScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingFaceDiscoveryScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's first readings ask the picture before they ask the list.
+ *
+ * An AND of the whole chain, for `captureCastingFaceScanEnabled`'s reason: the
+ * boot check already refuses a scope that reaches past its parent, and this is
+ * the same rule enforced again where it is used, because a boot check that was
+ * never invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingFaceDiscoveryEnabled(userId: number): boolean {
+  const discovery = parseCastingFaceDiscoveryScope(process.env[CASTING_FACE_DISCOVERY_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(discovery, userId)) return false;
+  return captureCastingFaceScanEnabled(userId);
+}
+
+export function validateCastingFaceDiscoveryEnvironment(input: {
+  scope: string | undefined;
+  scanScope: string | undefined;
+}): CastingV2Scope {
+  const discovery = parseCastingFaceDiscoveryScope(input.scope);
+  if (discovery.kind === "off") return discovery;
+
+  const scan = parseCastingFaceScanScope(input.scanScope);
+  if (scan.kind === "off") {
+    throw new CastingFaceDiscoveryCoverageError(
+      `cannot be enabled while ${CASTING_FACE_SCAN_SCOPE_ENV} is off — there would be no scan plan to narrow`,
+    );
+  }
+  if (scan.kind === "all") return discovery;
+  if (discovery.kind === "all") {
+    throw new CastingFaceDiscoveryCoverageError(
+      `cannot be "all" while ${CASTING_FACE_SCAN_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = discovery.userIds.filter((userId) => !scan.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingFaceDiscoveryCoverageError(
+      `names users outside ${CASTING_FACE_SCAN_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return discovery;
+}
+
 export function validateCastingV2Environment(input: {
   scope: string | undefined;
   cleanupWorker: string | undefined;
@@ -559,8 +662,16 @@ export function validateCastingScanTableEnvironment(input: {
    `captureCastingOpenLaneEnabled` and `validateCastingOpenLaneEnvironment`. It
    is retired on his word of 2026-10-15 (*"yes approve the plan and switch off
    the six settings"*), the ghost audit's row D1: it had stood at `all` since
-   2026-09-24 and every flag above it was `all` too, so its off arm -- the two
-   closed-lane interpreter prompts -- was asked of nobody.
+   2026-09-24 and every flag above it was `all` too.
+
+   ⚠ THIS SENTENCE ENDED *"so its off arm -- the two closed-lane interpreter
+   prompts -- was asked of nobody"*, AND ONE ROAD WAS STILL ASKING IT: the removal
+   path's RULE 3 re-read never passed the option, and absent meant off. Found by
+   the relay on PR #2556; declared and measured on the D1 row. Nothing here moves,
+   because that road never read a scope -- and the lesson that belongs to THIS file
+   is the one below, one turn further: a flag with two gates has two sweeps, and a
+   caller that passed NEITHER gate is found by asking what every caller passes,
+   never by the compiler and never by a grep for the flag.
 
    WHAT THE BLOCK ARGUED, kept because the next sub-flag here will face it:
 

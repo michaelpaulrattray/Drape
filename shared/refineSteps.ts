@@ -27,11 +27,14 @@
  * than being placed somewhere plausible — which is what "a stage that does not
  * fire is not shown" means on the surface.
  *
- * ⚠ **A STEP MAY GO BACKWARDS, ON PURPOSE.** A render that fails its
- * verification buys one free re-render (`attemptRender` runs twice), so the
- * road genuinely returns from `reading` to `rendering`. The bar retreats with
- * it, because the work retreated; a high-water mark would be the invented
- * number this whole card exists to refuse.
+ * ⚠ **A STEP MAY GO BACKWARDS, ON PURPOSE** — and since #2672 (2026-10-21)
+ * the refine road itself no longer does. It used to: a render that failed its
+ * verification bought one free re-render (`attemptRender` ran twice), so the
+ * road returned from `reading` to `rendering`. His ruling retired that second
+ * paint, so every refine now passes each step once. The rule stands for any
+ * road that does retreat: the bar retreats with the work, because a
+ * high-water mark would be the invented number this whole card exists to
+ * refuse.
  *
  * # Why the vocabulary lives in `shared/`
  *

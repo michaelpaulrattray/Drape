@@ -23,6 +23,13 @@ import type { Facet } from "./refineFacets";
  *           unchanged" + "Keep their hair exactly: … high bun", beside a
  *           description saying short cropped hair.
  *
+ * ⚠ SINCE #2673 THESE ARMS ARE THE RULE FOR A SLOT THE STEP DID NOT CHANGE.
+ * His ruling, 2026-10-21 (*"why not just always crop the new hair regardless
+ * of the description if its not right the customers can retry"*), files the
+ * slot a step DID change as its newest picture whatever the reader said; the
+ * last arm drives that half, with the bun as its accepted cost. The arms above
+ * it pass no edited slot, so they read the dispute rules unedited slots keep.
+ *
  * Neither end alone shows it: the library suite proves what it adopts and the
  * assembler suite proves what it says about a library it is handed. The
  * contradiction lived between them.
@@ -86,7 +93,7 @@ const STEP_2 = row({
  * Step 3, through the real derivation and the real slot list, then step 4's
  * prompt through the real assembler. Returns the prompt and what was superseded.
  */
-function stepThreeThenFour(verdict: RenderVerdict) {
+function stepThreeThenFour(verdict: RenderVerdict, editedSlots: readonly string[] = []) {
   const reading = libraryReadingOf(verdict, WRITTEN);
   const minted = mintedSlotsForRender({
     earned: reading.earned,
@@ -94,6 +101,7 @@ function stepThreeThenFour(verdict: RenderVerdict) {
     captions: { "hair.cut": BUN_WORDS },
     accessoryKind: null,
     held: new Set(),
+    editedSlots: editedSlots as never,
   });
   const hair = minted.slots.find((spec) => spec.slot === "hair");
   expect(hair, "step 3 filed no hair row at all").toBeDefined();
@@ -196,5 +204,26 @@ describe("an edit the render lost is not carried forward as the truth (#2646)", 
     const { reading, recipe } = stepThreeThenFour(verdict);
     expect(reading.unconfirmed.has("hairWorn" as Facet)).toBe(false);
     expect(recipe.prompt).toMatch(/Keep \w+ hair exactly: Dark brown hair swept up into a high bun/);
+  });
+
+  it("⚠ #2673 — on a slot THIS step changed, the unconfirmed yes and the neighbour's miss are set aside, and the delivered crop is the guide", () => {
+    /* The ruling's accepted cost, stated as a test: if the painter slipped
+       back to the bun on the hair edit itself, the bun is what the next render
+       is told, and the customer retries. Both #2646 shapes. */
+    const unconfirmed = stepThreeThenFour(falsePass(1), ["hair"]);
+    expect(unconfirmed.reading.unconfirmed.has("hairWorn" as Facet), "still recorded").toBe(true);
+    expect(unconfirmed.recipe.references.map((ref) => ref.image.key)).toContain("casting-v2/library/bun.png");
+    expect(unconfirmed.superseded).not.toContain("hair");
+
+    const neighbour = stepThreeThenFour({
+      ok: true,
+      readings: 2,
+      checks: [
+        check("hair.cut" as Facet, true, "short hair"),
+        check("hairWorn" as Facet, false, "hair gathered into a bun on top of head"),
+      ],
+    }, ["hair"]);
+    expect(neighbour.recipe.prompt).toMatch(/Keep \w+ hair exactly: Dark brown hair swept up into a high bun/);
+    expect(neighbour.superseded).not.toContain("hair");
   });
 });

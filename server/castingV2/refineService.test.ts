@@ -2358,6 +2358,64 @@ describe("an unreadable history stops the money", () => {
     expect(askedOfTheReader.join("\n")).toContain("tied up in a high knot");
     expect(askedOfTheReader.join("\n")).not.toContain(arrangementWording("gathered"));
   });
+
+  /*
+    ⚠ ONE PAINT AND ONE READ ON A HAIR YES TOO — the relay's finding on PR
+    #2676. A yes on `hairWorn` used to buy a confirming second reading for the
+    library (#2646). Since #2673 the slot this step edited is filed as its
+    guide whatever the reader says, so that reading decided nothing. The
+    reader below says yes every time, so a second verdict call would show here.
+  */
+  const hairYesReader = () => {
+    let verdictCalls = 0;
+    const engine = {
+      id: "verifier",
+      complete: async (request: { system: string; user: string }) => {
+        if (request.system.includes("how they")) {
+          return { text: JSON.stringify({ hairWorn: "unclear" }), truncated: false, latencyMs: 1 };
+        }
+        verdictCalls += 1;
+        const results = request.user.split("\n").filter(Boolean).map((line, index) => ({
+          id: index + 1, present: true, saw: `${line.slice(0, 40)}, as asked`,
+        }));
+        return { text: JSON.stringify({ results }), truncated: false, latencyMs: 1 };
+      },
+    } as never;
+    return { engine, calls: () => verdictCalls };
+  };
+
+  it("reads a hair yes ONCE when this step edited the hair (#2676 finding)", async () => {
+    const reader = hairYesReader();
+    await refineCandidate(
+      {
+        verifier: reader.engine,
+        interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "tied up in a high knot" } } }),
+      },
+      { ...input, instruction: "tie her hair up in a high knot" },
+    );
+    expect(journal.filter((entry) => entry === "generate"), "one paint").toHaveLength(1);
+    expect(reader.calls(), "one reader call, no confirming re-read").toBe(1);
+    expect(JSON.stringify(landedVariant ?? {}), "the one reading is the record").toContain('"readings":1');
+  });
+
+  it("CONTROL — a CARRIED hair yes still buys its second reading, because the carried pass files from it", async () => {
+    variantRows = [{
+      id: 505,
+      publicId: "variant-hair",
+      candidateId: 1,
+      imageKey: "casting-v2/variants/hair.png",
+      internalPrompt: { ...(candidateRow.internalPrompt as Record<string, unknown>) },
+      instructions: ["tie her hair up in a high knot"],
+      deltas: { free: { hairWorn: "tied up in a high knot" } },
+      stepDeltas: [{ free: { hairWorn: "tied up in a high knot" } }],
+      status: "ready",
+    }];
+    candidateRow.selectedVariantPublicId = "variant-hair";
+    const reader = hairYesReader();
+    await refineCandidate({ ...greenEyes, verifier: reader.engine }, input);
+    expect(reader.calls(), "the carried hair yes is confirmed").toBe(2);
+    expect(JSON.stringify(landedVariant ?? {})).toContain('"readings":2');
+  });
 });
 
 /*
@@ -2387,11 +2445,15 @@ describe("the render is checked against the record before it is delivered", () =
   */
   const verifierSaying = (...verdicts: boolean[]) => verifierAnswering({ absent: true }, verdicts);
 
+  /* How many VERDICT reads the reader was asked for, counted at the engine —
+     the presentation read is not one (#2672 proves a count against this). */
+  let verdictReads = 0;
   const verifierAnswering = (
     shape: { absent?: boolean },
     verdicts: boolean[],
   ) => {
     let call = 0;
+    verdictReads = 0;
     return {
       id: "verifier",
       complete: async (request: { system: string }) => {
@@ -2401,6 +2463,7 @@ describe("the render is checked against the record before it is delivered", () =
         }
         const present = verdicts[Math.min(call, verdicts.length - 1)];
         call += 1;
+        verdictReads += 1;
         return {
           /* `saw` on BOTH answers (D-235). An affirmative that names nothing is
              not a reading, so a fake that omits it here is reproducing the
@@ -2427,13 +2490,37 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("re-renders once, free, when the first attempt is missing a fact", async () => {
-    /* Two readings agreeing it is missing (D-194), then a clean second attempt. */
+  /*
+    ⚠ **THIS ARM READ "re-renders once, free, when the first attempt is missing
+    a fact" UNTIL 2026-10-21, AND HIS RULING TURNED IT OVER (#2672).** Verbatim:
+    *"go with your reccomendation on those 2 squall cards"* — the proposal to
+    stop the hidden second try, whose reason was his own *"users can just retry
+    if its not the exact look they want themselves for a cost"*.
+
+    Counted at the two engines rather than at a flag: the painter's own journal
+    holds every paint, and the reader counts every verdict it was asked for.
+    The reader below says *missing* every time it is asked, so any second paint
+    or confirming read would be visible here.
+  */
+  it("delivers a disputed render after ONE paint and ONE reading — no free re-render (#2672)", async () => {
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
-    /* Two renders, ONE charge — the retry is absorbed. */
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate"), "one paint").toHaveLength(1);
+    expect(verdictReads, "one reading, and no confirming re-read").toBe(1);
+    expect(ledger.charges.at(-1)?.amount, "the price is unchanged").toBe(REFINE_PRICE);
     expect(ledger.charges).toHaveLength(1);
-    expect(ledger.refunds).toHaveLength(0);
+    expect(ledger.refunds, "a dispute still moves no money").toHaveLength(0);
+    /* The one reading is kept as the record, and it says what it said. */
+    const landed = JSON.stringify(landedVariant ?? {});
+    expect(landed).toContain('"attempts":1');
+    expect(landed).toContain('"readings":1');
+    expect(landed).toContain('"verified":false');
+  });
+
+  it("CONTROL — a clean render is also one paint and one reading, so the count above can tell the two apart", async () => {
+    await refineCandidate({ ...greenEyes, verifier: verifierSaying(true) }, input);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(verdictReads).toBe(1);
+    expect(JSON.stringify(landedVariant ?? {})).toContain('"verified":true');
   });
 
   /*
@@ -2468,20 +2555,19 @@ describe("the render is checked against the record before it is delivered", () =
     expect(ledger.refunds).toHaveLength(0);
   });
 
-  it("tries twice for free and then DELIVERS, charging once (fable-721)", async () => {
+  it("DELIVERS a confirmed-looking miss and charges once (fable-721, #2672)", async () => {
     /*
       Confirmed missing on both attempts: two readings each. This asserted the
       refusal and the whole 25 back until the founder retired the reader from
       the money path — *"only give refunds on catastrophic failures because it
       couldn't truly detect something as subtle as freckles."*
 
-      The free retry is what must survive, and it does: the product still spends
-      its own second render trying to satisfy the check. What changed is the end
-      of that road — she gets the picture and pays once, and the disputed verdict
-      rides the row as telemetry.
+      It then said *"the free retry is what must survive"*, and #2672 retired
+      that too: one paint, the customer gets the picture and pays once, and the
+      disputed verdict rides the row as telemetry.
     */
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, false, false) }, input);
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
     expect(ledger.charges.at(-1)?.amount).toBe(REFINE_PRICE);
     expect(ledger.refunds, "the reader's opinion of a healthy frame moves no money").toHaveLength(0);
   });
@@ -2507,15 +2593,13 @@ describe("the render is checked against the record before it is delivered", () =
   });
 
   /*
-    AND IT GOES BACKWARDS WHEN THE WORK DOES. The free re-render is a second
-    trip through paint-and-check, so the road really does return to `rendering`
-    — and the bar retreats with it, because a high-water mark would be the one
-    number here nobody could justify.
+    ⚠ THIS ARM WENT BACKWARDS UNTIL #2672: the free re-render was a second trip
+    through paint-and-check, so a disputed render announced `rendering` twice.
+    With no second paint the road passes each stage once, disputed or not.
   */
-  it("announces the re-render again rather than holding its best position", async () => {
+  it("announces each stage once on a disputed render too (#2672)", async () => {
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
-    expect(announcedSteps)
-      .toEqual(["preparing", "rendering", "reading", "rendering", "reading", "storing"]);
+    expect(announcedSteps).toEqual(["preparing", "rendering", "reading", "storing"]);
   });
 
   /*
@@ -2845,39 +2929,30 @@ describe("the render is checked against the record before it is delivered", () =
     await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, false, true) }, input);
     const landed = JSON.stringify(landedVariant ?? {});
     expect(landed).toContain("verification");
-    expect(landed).toContain('"attempts":2');
+    /* `attempts` read 2 here until #2672 retired the free re-render; the field
+       stays on the row so the reliability report reads one shape across it. */
+    expect(landed).toContain('"attempts":1');
     /* How many readings the verdict took, recorded — the reader's own
        reliability, per render (D-194). */
     expect(landed).toContain('"readings"');
   });
 
   /*
-    THE SECOND OPINION (D-194), and the trial is why.
+    THE SECOND OPINION (D-194) WAS BOUGHT HERE FOR A MISS, AND #2672 RETIRED IT.
 
-    The same reader disagreed with itself on 21% of judgements about the same
-    image. Chain 3 position 1: the service passed a render an independent
-    re-read said was missing the fact. One reading cannot spend a refusal.
+    Two arms stood here: *"does not re-render when a second reading disagrees"*
+    and *"breaks a split with a third reading, and RE-RENDERS only on a
+    majority"*. Both measured how many reads a miss bought before it could buy
+    a second paint. A miss now buys neither, so the one arm left pins that the
+    reader's later answers are never asked for, however they would have voted.
   */
-  it("does not re-render when a second reading disagrees with the first", async () => {
-    /* miss, then hit, then hit — the majority says it is there. */
-    await refineCandidate({ ...greenEyes, verifier: verifierSaying(false, true, true) }, input);
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
-    expect(ledger.refunds).toHaveLength(0);
-  });
-
-  it("breaks a split with a third reading, and RE-RENDERS only on a majority", async () => {
-    /*
-      D-194 is untouched by fable-721, and this is where that is proved: one
-      reading still cannot spend the product's free retry. Attempt 1: miss, hit,
-      miss → majority missing → re-render. Attempt 2: miss, miss → confirmed →
-      and the picture is delivered, because a confirmed reading of a healthy
-      frame is telemetry now rather than a refund.
-    */
+  it("asks no second or third reading of a miss, whatever it would have said (#2672)", async () => {
     await refineCandidate(
       { ...greenEyes, verifier: verifierSaying(false, true, false, false, false) },
       input,
     );
-    expect(journal.filter((entry) => entry === "generate")).toHaveLength(2);
+    expect(journal.filter((entry) => entry === "generate")).toHaveLength(1);
+    expect(verdictReads).toBe(1);
     expect(ledger.refunds).toHaveLength(0);
   });
 });
@@ -5042,34 +5117,24 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(request.references.map((reference) => reference.bytes)).toEqual([TINY_MASTER_PNG]);
     expect(request.prompt).not.toContain("Reference 2");
     /*
-      ⚠ AND STACK WORDS THAT ARGUE WITH THE ASK DO NOT RIDE (#2650). This arm
-      used to require "tight curls piled into a high bun" beside "hair down" —
-      a bun stated as fact in the very edit that takes it down. The words that
-      survive a dropped crop are the ones that HOLD the chain's ask; the
-      positive control is the next test.
+      AND THE WORDS SURVIVED THE CROP BEING DROPPED. Without this the fix and
+      "drop the whole entry" are indistinguishable, and the second would silently
+      throw away everything ever said about the hair — the stack an edit
+      regenerates from. (#2650 had flipped this arm to refuse stack words that
+      did not hold the chain's ask; that word test is retired on his ruling,
+      #2673, and the arm is back to what it asserted before it.)
     */
-    expect(request.prompt).not.toContain("piled into a high bun");
-    expect(request.prompt).toContain("hair down");
-  });
-
-  it("KEEPS a carried slot's stack words when they hold the chain's ask — the control for the arm above (#2650)", async () => {
-    lineageReferences = [carryRow({
-      slot: "hair", tier: "anatomy", noun: "hair",
-      words: ["tight curls worn down past the shoulders"],
-      storageKey: "casting-v2/library/hair.png",
-    })];
-
-    await refineCandidate(hairDown, { ...input, instruction: "wear her hair down" });
-
-    expect(painted).toHaveLength(1);
-    expect(painted[0]!.prompt).toContain("tight curls worn down past the shoulders");
+    expect(request.prompt).toContain("tight curls piled into a high bun");
   });
 
   /*
-    ⚠ THE #2650 SPECIMEN AT THE WIRE: an adopted bun crop beside a chain that
-    asks for a short crop, on a render about something else (freckles). The
-    dev re-drive of #2649 sent exactly this pair at step 5. Driven through the
-    real entrance; no reader is consulted by the rule under test.
+    THE #2650 SPECIMEN, AFTER #2673: an adopted bun crop beside a chain that
+    asks for a short crop, on a render about something else (freckles). #2650
+    held every kept row to a word test against the chain's ask; his ruling
+    (2026-10-21, *"why not just always crop the new hair regardless of the
+    description if its not right the customers can retry"*) retired it, so
+    these arms now pin the road as it stands without one. Driven through the
+    real entrance.
   */
   const shortCropChain = () => {
     variantRows = [{
@@ -5092,29 +5157,28 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     interpret: async () => ({ ok: true as const, delta: { free: { marks: ["freckles across the nose and cheeks"] } } }),
   };
 
-  it("⚠ SENDS NO crop and NO keep-line for a kept feature whose words contradict the chain's ask (#2650)", async () => {
+  it("the newest kept picture rides whatever its words say — the word test is retired (#2673)", async () => {
     shortCropChain();
     lineageReferences = [carryRow({
       variantId: 710,
       slot: "hair", tier: "anatomy", noun: "hair",
       words: ["Dark brown hair pulled into a high top bun with a center part"],
       storageKey: "casting-v2/library/bun.png",
-      digest: "b0b0b0b0b0b0",
+      digest: null,
     })];
 
     await refineCandidate(freckles, { ...input, instruction: "freckles across the nose and cheeks" });
 
     expect(painted).toHaveLength(1);
     const { prompt, references } = painted[0]!;
-    expect(prompt).not.toContain("high top bun");
-    expect(prompt).not.toMatch(/Keep \w+ hair exactly/);
-    expect(prompt).not.toContain("exact hair");
-    expect(references).toHaveLength(1);
-    /* And the slot is said in the customer's words instead. */
-    expect(prompt).toContain("short crop");
+    /* #2650 sent this slot in words and kept the crop home; nothing holds a
+       kept row to its words now, so the newest live crop is the guide. */
+    expect(prompt).toContain("exact hair");
+    expect(prompt).toMatch(/Keep \w+ hair exactly: Dark brown hair pulled into a high top bun/);
+    expect(references).toHaveLength(2);
   });
 
-  it("⚠ THE RELAY'S SEAM: short crop at step 1, the bun slips back at step 3, and step 4 carries the STEP-1 crop (#2650)", async () => {
+  it("an UNEDITED slot's dispute keeps its rule: the step-3 slip, on an edit about something else, sends the hair in words (#2673)", async () => {
     shortCropChain();
     lineageReferences = [
       /* Step 1: the short crop, delivered and adopted. */
@@ -5138,13 +5202,20 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
 
     expect(painted).toHaveLength(1);
     const { prompt, references } = painted[0]!;
-    expect(prompt).toMatch(/Keep \w+ hair exactly: Short dark brown hair, closely cropped at the sides/);
-    expect(prompt).toContain("exact hair");
+    /*
+      #2650 brought the step-1 crop back here through the word test. With that
+      retired, the dispute rule the card keeps for unedited slots decides: the
+      disputed step-3 row supersedes the crop, and the hair is said in words —
+      the step-1 caption and the customer's own "short crop" — with no picture
+      of either version riding and no bun anywhere.
+    */
+    expect(prompt).not.toContain("exact hair");
     expect(prompt).not.toContain("bun");
-    expect(references).toHaveLength(2);
+    expect(prompt).toContain("short crop");
+    expect(references).toHaveLength(1);
   });
 
-  it("⚠ CONTROL — a kept feature whose words hold the chain's ask still rides, crop and keep-line (#2650)", async () => {
+  it("CONTROL — a kept feature whose words agree with the chain rides, crop and keep-line, as it always did", async () => {
     shortCropChain();
     lineageReferences = [carryRow({
       variantId: 710,
@@ -6903,6 +6974,79 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
     expect(filed!.words).toContain("worn long and loose");
   });
 
+
+  /*
+    ⚠ #2673 — THE CARD'S OWN CHAIN, AT THE OUTGOING PROMPT.
+
+    His ruling, 2026-10-21: *"why not just always crop the new hair regardless
+    of the description if its not right the customers can retry"*. Step 1 cuts
+    the hair into a short crop and its reader DISPUTES the delivery (the
+    checker is stubbed to say the hair is still up — the dispute is forced,
+    no engine is called). Step 2 is an unrelated edit (freckles). The library
+    between them is built from step 1's own mint request, the way the mint
+    files it: a slot it is told is disputed is kept as evidence with no
+    picture, any other slot is stored with its crop. Step 1's crop must ride
+    into step 2's request.
+  */
+  const STEP_ONE_CROP = "casting-v2/library/step-one-short-crop.png";
+  const shortCropAsk = {
+    ...repainting,
+    interpret: async () => ({ ok: true as const, delta: { free: { hairCut: "short crop" } } }),
+  };
+  const checkerDisputesEverything = {
+    id: "verifier",
+    complete: async () => ({
+      text: JSON.stringify({ results: [1, 2, 3, 4, 5, 6, 7, 8].map((id) => ({
+        id, present: false, saw: "hair still gathered up into a high bun",
+      })) }),
+      truncated: false,
+      latencyMs: 1,
+    }),
+  } as never;
+  const stepTwoAfterStepOne = async () => {
+    captionsRead = { "hair.cut": "Short dark brown hair, closely cropped at the sides" };
+    await refineCandidate(
+      { ...shortCropAsk, referenceLibraryEnabled: () => true, verifier: checkerDisputesEverything },
+      { ...input, instruction: "cut the hair into a short crop" },
+    );
+    expect(painted, "step 1 was delivered (the dispute is advisory)").toHaveLength(1);
+    expect(mintAsks, "step 1 reached the mint").toHaveLength(1);
+    const hair = mintAsks[0]!.slots.find((slot) => slot.slot === "hair");
+    expect(hair, `step 1 filed no hair row: ${JSON.stringify(mintAsks[0]!.slots)}`).toBeDefined();
+    lineageReferences = [carryRow({
+      id: 1, publicId: "ref-1", variantId: 701, version: 1,
+      slot: "hair", tier: "anatomy", noun: "hair",
+      words: hair!.words,
+      ...(hair!.disputed
+        ? { storageKey: null, digest: null, refusal: { reason: "disputedDelivery", kind: "hair", coverage: 9990 } }
+        : { storageKey: STEP_ONE_CROP, digest: null }),
+    })];
+    /* The branch now carries step 1: the chain names the short crop. */
+    shortCropChain();
+    painted.length = 0;
+    dispatchRecords.length = 0;
+    captionsRead = {};
+    await refineCandidate(
+      { ...repainting, interpret: async () => ({ ok: true as const, delta: { free: { marks: ["freckles across the nose and cheeks"] } } }) },
+      { ...input, instruction: "freckles across the nose and cheeks" },
+    );
+    expect(painted, "step 2 was painted").toHaveLength(1);
+    return { hair: hair!, request: painted[0]! };
+  };
+
+  it("⚠ the newest crop of the slot an edit changed rides into the next render, even when the checker disputed it (#2673)", async () => {
+    const { hair, request } = await stepTwoAfterStepOne();
+    expect(hair.disputed ?? false, "step 1's edited hair was filed as evidence, not as its guide").toBe(false);
+    /* At the wire: the bytes step 2 sent, and the sentence beside them. */
+    expect(request.references.map((reference) => reference.bytes.toString()))
+      .toContain(`crop:${STEP_ONE_CROP}`);
+    expect(request.prompt).toContain("is the exact hair");
+    expect(request.prompt).not.toContain("high bun");
+    /* And the dispute was kept as telemetry rather than thrown away. */
+    const setAside = logged.find((line) => line.message.includes("the reader disputed a feature this edit changed"));
+    expect(setAside, "the overridden dispute was not logged").toBeDefined();
+    expect(JSON.stringify(setAside!.fields)).toContain("hair");
+  });
 
   it("hands the mint the two reads her BUILD is composed from, on both roads", async () => {
     /*
@@ -9704,16 +9848,19 @@ describe("a render files in the library only the facets its own reading earned",
     expect(earnedSlots(), "the facet its reading found is filed").toContain("skin");
   });
 
-  it("keeps NOTHING when the reading says the facet is not there", async () => {
+  it("⚠ files the slot THIS edit changed as earned even when the reading says the facet is not there (#2673)", async () => {
     await refineCandidate(
       { ...freckles, verifier: readerSays(false, "no freckling visible") },
       { ...input, instruction: "give her freckles" },
     );
     /*
-      The exact row the walk filed. Filing this as earned would make the LOSS
-      the truth about the facet, and every later render would build on it.
+      This arm used to assert the opposite (fable-220 §3: a disputed written
+      facet earns nothing). His ruling, 2026-10-21: the delivered crop of a slot
+      this edit changed always becomes its guide, and a customer who does not
+      like it retries. The dispute is logged, not obeyed.
     */
-    expect(earnedSlots(), "a facet that did not arrive earns nothing").not.toContain("skin");
+    expect(earnedSlots(), "the edited slot is filed as its newest picture").toContain("skin");
+    expect(disputedSlots(), "and is not filed as evidence").not.toContain("skin");
   });
 
   /*
@@ -10283,7 +10430,7 @@ describe("the render tells the library what it made of her", () => {
     }),
   } as never);
 
-  it("sends a facet its own reader disputed to the LIBRARY, marked", async () => {
+  it("⚠ files a facet THIS edit wrote UNMARKED even when its own reader disputed it — the dispute is logged (#2673)", async () => {
     captionsRead = { lips: "Natural, slim, no pronounced fuller cupid's bow visible" };
     await refineCandidate(
       {
@@ -10298,22 +10445,19 @@ describe("the render tells the library what it made of her", () => {
     );
 
     expect(mintAsks, "the library was told about the disputed facet").toHaveLength(1);
+    /* fable-220 §3 filed this marked; his ruling (#2673) files the slot this
+       edit changed as its newest picture whatever the reader said. */
     expect(mintAsks[0].slots.map((slot) => [slot.slot, slot.disputed ?? false]))
-      .toEqual([["lips", true]]);
+      .toEqual([["lips", false]]);
     /* The words are the read-back of the frame that landed, which is what makes
        the kept crop worth opening: the sentence and the picture disagree with
        the ask in the same direction, or one of them is wrong. */
     expect(mintAsks[0].slots[0]!.words[0]).toContain("no pronounced fuller cupid's bow");
 
-    /*
-      AND THE HALF THAT MUST NOT MOVE: it is filed MARKED, never as earned. The
-      second half of this used to read the segment store — *"and never to
-      permanence"* — and went with it (#1160). The marking is the surviving
-      statement of the same rule: a facet its own reader denied is kept for a
-      human to look at, and is not recorded as a thing this render delivered.
-    */
-    expect(mintAsks[0].slots.filter((slot) => !slot.disputed), "nothing was filed as earned")
-      .toEqual([]);
+    /* And the dispute is not lost: it is in the log line, which is the one
+       place it is kept now (asserted by the logger arm below). */
+    expect(logged.some((line) => line.message.includes("the reader disputed a feature this edit changed")),
+      "the set-aside dispute was logged").toBe(true);
   });
 
   it("CONTROL — the same facet, believed, is unmarked and DOES reach permanence", async () => {
