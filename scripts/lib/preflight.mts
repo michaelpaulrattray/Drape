@@ -176,7 +176,7 @@ export const PREFLIGHT_CHECKS: readonly PreflightCheck[] = [
   },
   {
     id: "dependency-advisories",
-    label: "Dependency advisories (what ships BLOCKS; the build tools WARN)",
+    label: "Dependency advisories (what ships BLOCKS, the build tools WARN)",
     command: ["npx", "tsx", "scripts/check-dependency-advisories.mts"],
     // ADOPTED rather than excused (#1805), and the reasoning was reversed by
     // this very arm. The first draft of the gate step meant to EXCUSE it, on the

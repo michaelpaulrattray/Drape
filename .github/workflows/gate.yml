@@ -343,7 +343,7 @@ jobs:
       # production side (#1894, #1899). The point is to be told on the 24th
       # instead of the 27th. It costs one more registry round trip (~1.6s
       # measured) and no secret.
-      - name: Dependency advisories (what ships BLOCKS; the build tools WARN)
+      - name: Dependency advisories (what ships BLOCKS, the build tools WARN)
         run: npx tsx scripts/check-dependency-advisories.mts
 
       - name: Typecheck (pnpm check)
