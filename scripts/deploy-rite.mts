@@ -110,6 +110,7 @@ import { uptimeAnchor } from "./lib/uptimeAnchor.mts";
 import {
   balanceLine,
   booksLine,
+  keySpendLine,
   readOpenRouterActivity,
   readOpenRouterBalance,
   readOpenRouterUsage,
@@ -1962,23 +1963,19 @@ say(balanceLine(await readOpenRouterBalance()));
   That is exactly the reading that attributed tonight's own 7¢ movement.
 */
 const books = await readOpenRouterActivity();
-say(await (async () => {
-  const usage = await readOpenRouterUsage();
-  if (!usage.ok) return `openrouter spend UNREAD — ${usage.why}`;
-  /*
-    THE "NEEDS A MANAGEMENT KEY" NOTE BELONGS TO THE BOOKS, NOT TO THIS KEY.
+/*
+  THE LINE ITSELF MOVED TO `keySpendLine` (#2699), AND SO DID THE REASONING.
 
-    `isManagementKey` is a property of the INFERENCE key and is correctly false
-    — but the breakdown now arrives on a different credential, on the next
-    line. Printing the note off this flag alone told the reader a capability was
-    missing while it sat directly underneath. Same class as the three threshold
-    sentences swept earlier tonight: a fact restated somewhere it cannot see
-    whether it is still true.
-  */
-  return `openrouter spend  today $${usage.daily.toFixed(2)} · week $${usage.weekly.toFixed(2)}`
-    + ` · month $${usage.monthly.toFixed(2)}`
-    + (books.ok ? "" : "  (per-day/model breakdown needs a management key)");
-})());
+  It was composed inline here, so the Machinist ledger — reading the same
+  activity endpoint with the same dead key — had no fallback at all and printed
+  nothing where this receipt kept its totals. Two readers of one source with
+  different coverage is working law 4, and the repair is one function rather
+  than a second copy. The paragraph that used to sit here, on why the
+  "needs a management key" note is keyed on the BOOKS and never on this key's
+  own `isManagementKey`, moved with it — it was reasoned out once and a
+  refactor that carried only the arithmetic would have dropped it.
+*/
+say(keySpendLine(await readOpenRouterUsage(), books));
 /*
   AND THE BOOKS THEMSELVES (fable-693 §2c).
 

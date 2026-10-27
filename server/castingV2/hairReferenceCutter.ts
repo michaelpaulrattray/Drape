@@ -93,6 +93,7 @@ import {
 } from "./hairReferenceCrop";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
+import { PICTURE_READER_DOWN_MESSAGE, segmenterAccountRefused } from "./readerDown";
 
 const log = createModuleLogger("castingV2/hairReferenceCutter");
 
@@ -137,6 +138,18 @@ type HairCarrierRefusalCode =
   | "noHair"
   /** The reader did not answer — a provider failure, not a fact about her picture. */
   | "couldNotRead"
+  /**
+   * THE READER REFUSED **US** — our key, our balance, our access (#2688).
+   *
+   * Split out of `couldNotRead` rather than added beside it, because the two
+   * ask the customer to do different things and that is the only reason a
+   * refusal code exists. `couldNotRead` is weather — a 429, a 5xx, a timeout —
+   * and *"try again in a moment"* is true of it. This is a 401 or a 403, where
+   * no retry can work and the bytes were never looked at, so the sentence it
+   * used to share invited a retry that fails identically and implied the fault
+   * was the photograph they chose.
+   */
+  | "readerDown"
   /** A mask came back in a space that is not its panel's. Ours, never hers. */
   | "wrongSpace"
   /** The carrier pictures no scale, so it would lose the length it was cut for. */
@@ -179,7 +192,14 @@ export type MintedHairCarrier = {
 const REFUSALS: Readonly<Record<HairCarrierRefusalCode, string>> = Object.freeze({
   unreadable: "That picture won't open — attach it again and I'll take another look. Nothing was charged.",
   noHair: "I couldn't find any hair in that picture — try one where the hair is clearly in view. Nothing was charged.",
+  /* WEATHER, and the only one of the two that still says "in a moment" — a 429,
+     a 5xx, a timeout. The same question a minute later is a different reading,
+     so the advice is true. */
   couldNotRead: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
+  /* OUR ACCOUNT, said as ours — one sentence shared with the three sibling
+     picture roads so a customer who meets two of them in one sitting is told
+     about one outage (`readerDown.ts`, which carries the whole reasoning). */
+  readerDown: PICTURE_READER_DOWN_MESSAGE,
   wrongSpace: "Something went wrong reading that picture — try again in a moment. Nothing was charged.",
   noScale:
     "I can see the hair in that picture, but not enough of the head around it to tell how long it is — "
@@ -297,11 +317,14 @@ export async function cutHairCarrier(input: CutHairCarrierInput): Promise<CutHai
       return { at, panel, bytes, hair, pixels: coveredBy(hair) };
     }));
   } catch (error) {
+    /* Whose failure it was decides the sentence, never the retry advice alone
+       — see {@link segmenterAccountRefused}. */
+    const ours = segmenterAccountRefused(error);
     log.warn(
-      { ...input.about, err: error instanceof Error ? error.message : String(error) },
+      { ...input.about, accountRefused: ours, err: error instanceof Error ? error.message : String(error) },
       "[hairReferenceCutter] the reader did not answer — a failure, not a finding about her picture",
     );
-    return refuse("couldNotRead");
+    return refuse(ours ? "readerDown" : "couldNotRead");
   }
 
   for (const cut of cuts) {
@@ -342,11 +365,12 @@ export async function cutHairCarrier(input: CutHairCarrierInput): Promise<CutHai
   try {
     form = await input.reader.region({ image: carrying.bytes, name: SCALE_REGION, absentIsAnswer: true });
   } catch (error) {
+    const ours = segmenterAccountRefused(error);
     log.warn(
-      { ...input.about, err: error instanceof Error ? error.message : String(error) },
+      { ...input.about, accountRefused: ours, err: error instanceof Error ? error.message : String(error) },
       "[hairReferenceCutter] the scale question went unanswered",
     );
-    return refuse("couldNotRead");
+    return refuse(ours ? "readerDown" : "couldNotRead");
   }
   if (form.width !== carrying.panel.width || form.height !== carrying.panel.height) {
     log.warn(

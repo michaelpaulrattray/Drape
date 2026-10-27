@@ -163,12 +163,21 @@ async function read(): Promise<{ verdict: StallVerdict; sha: string; suites: Sui
   };
   const sha = head.headRefOid;
 
+  /*
+    ⚠ `run_started_at` IS MAPPED, AND IT IS THE FIELD THE CLOCK NEEDS (#2702).
+    It was in this response all along and simply not read, so the decision
+    measured a re-run from its FIRST attempt's `created_at` — see
+    `attemptStartedMs` in `lib/gateStall.mts` for what that printed. Read at
+    the live API 2026-10-27 over the gate's last 100 runs: present on 100 of
+    100, and equal to `created_at` on all 95 first attempts.
+  */
   const runs = (await api<{
     workflow_runs: Array<{
       status: string;
       conclusion: string | null;
       created_at: string;
       updated_at: string;
+      run_started_at?: string | null;
     }>;
   }>(
     `repos/:owner/:repo/actions/workflows/${gate!.id}/runs?head_sha=${sha}&per_page=50`,
@@ -177,6 +186,7 @@ async function read(): Promise<{ verdict: StallVerdict; sha: string; suites: Sui
     conclusion: r.conclusion,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
+    runStartedAt: r.run_started_at,
   }));
 
   const suites = (

@@ -33,6 +33,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
+  CREW_RUNNER_STOPPED_MIN_MS,
   CREW_SHIFT_LIVE_HEARTBEAT_MS,
   CREW_SHIFT_SUPERSEDING_RUNS_MIN,
   describeCardCollision,
@@ -227,7 +228,7 @@ describe("is this open row's process dead", () => {
   it("row #548 is SUPERSEDED, named by the five sessions that proved it", () => {
     const verdict = readRunSupersession({ run: ROW_548, runs: SEAT1_LANE, now: WHEN_IT_WAS_MET });
     expect(verdict.kind).toBe("superseded");
-    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    if (verdict.kind !== "superseded" || verdict.basis !== "lane-mates") throw new Error("unreachable");
     expect(verdict.lane).toBe("seat1");
     expect(verdict.by.map((r) => r.id)).toEqual([550, 552, 554, 557, 560]);
     /* The two lane-mates that ran BEFORE it went quiet are not evidence. */
@@ -247,7 +248,7 @@ describe("is this open row's process dead", () => {
       now: Date.parse("2026-10-03T14:30:00Z"),
     });
     expect(verdict.kind).toBe("superseded");
-    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    if (verdict.kind !== "superseded" || verdict.basis !== "lane-mates") throw new Error("unreachable");
     expect(verdict.lane).toBe("foreman");
     expect(verdict.by.map((r) => r.id)).toEqual([551, 553, 555, 556]);
   });
@@ -351,7 +352,7 @@ describe("is this open row's process dead", () => {
       now: WHEN_607_WAS_MET,
     });
     expect(verdict.kind).toBe("superseded");
-    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    if (verdict.kind !== "superseded" || verdict.basis !== "lane-mates") throw new Error("unreachable");
     expect(verdict.lane).toBe("seat1");
     expect(verdict.by.map((lane) => lane.id)).toEqual([610, 612, 615]);
   });
@@ -501,9 +502,263 @@ describe("is this open row's process dead", () => {
       now: WHEN_IT_WAS_MET,
     });
     expect(verdict.kind).toBe("superseded");
-    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    if (verdict.kind !== "superseded" || verdict.basis !== "lane-mates") throw new Error("unreachable");
     expect(verdict.by.map((r) => r.id)).not.toContain(548);
     expect(verdict.by.map((r) => r.id)).toEqual([550, 552, 554, 557, 560]);
+  });
+});
+
+/* ── THE PARK ROAD (#2679) ─────────────────────────────────────────────────── */
+
+/**
+ * WHEN THE WHOLE TABLE WENT SILENT — the one case the reading above cannot see.
+ *
+ * During a park no lane-mate completes, in any lane, because nothing launches
+ * at all. So the lane reading answers `not readable` **exactly when death is
+ * most certain**, and that is R22: row #798 sat on his Working-now table for
+ * 97 hours claiming to be a working shift, with every rule involved doing its
+ * job.
+ *
+ * ⚠ **EVERY ROW AND TIMESTAMP BELOW IS REAL**, read off production
+ * `crew_shift_runs` on 2026-10-27 (804 rows) — the two recorded parks and, as
+ * the negative control, the longest silence of any row that reported its own
+ * outcome and was therefore ALIVE at its close.
+ */
+describe("when the runner itself was stopped", () => {
+  /** #798, the four-day park this card was filed about. `outcome = failed`. */
+  const ROW_798 = {
+    id: 798,
+    shift: "foreman-20261017-1802",
+    startedAt: new Date("2026-10-17T08:03:52Z"),
+    heartbeatAt: new Date("2026-10-17T08:30:37Z"),
+  };
+  /**
+   * The un-parking pass's own launch. `crew-shift-start` reads the open rows
+   * BEFORE it inserts its own, so at this instant the table holds nothing that
+   * opened inside #798's silence.
+   */
+  const WHEN_798_WAS_MET = Date.parse("2026-10-21T09:43:46Z");
+  /** The two runs of that pass, which had both CLOSED by 10:18Z. */
+  const THE_UNPARK_PASS: LaneRunForSupersession[] = [
+    runWithLife(799, "seat1-20261021-192651", "2026-10-21T09:43:46Z", "2026-10-21T10:08:46Z", "2026-10-21T10:12:56Z"),
+    runWithLife(800, "retro-20261021-1949", "2026-10-21T09:48:33Z", "2026-10-21T10:08:55Z", "2026-10-21T10:18:25Z"),
+  ];
+
+  /*
+    THE CARD'S NEGATIVE CONTROL, ON THE ROW IT WAS FILED ABOUT: an empty gap
+    must read DEAD rather than `not readable`.
+  */
+  it("row #798 is SUPERSEDED — 97 hours in which no seat ran at all", () => {
+    const verdict = readRunSupersession({ run: ROW_798, runs: [], now: WHEN_798_WAS_MET });
+    expect(verdict.kind).toBe("superseded");
+    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    expect(verdict.basis).toBe("runner-stopped");
+    if (verdict.basis !== "runner-stopped") throw new Error("unreachable");
+    expect(verdict.lane).toBe("foreman");
+    /* 2026-10-17T08:30:37Z → 2026-10-21T09:43:46Z. */
+    expect(verdict.quietForMs / 3_600_000).toBeCloseTo(97.22, 1);
+  });
+
+  /*
+    ⚠ THE CARD'S POSITIVE CONTROL, AND IT IS THE REAL ROWS RATHER THAN A
+    FIXTURE: a gap holding another seat's COMPLETED run must still read
+    `not readable`. Once the un-parking pass has finished, the claim *the
+    runner was stopped for the whole of this silence* is simply false — so the
+    reading steps back, which is the lapse the constant's docblock names.
+  */
+  it("and it is NOT readable once the un-parking pass has completed", () => {
+    const verdict = readRunSupersession({
+      run: ROW_798,
+      runs: THE_UNPARK_PASS,
+      now: Date.parse("2026-10-21T10:20:00Z"),
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("the runner was cycling");
+  });
+
+  /**
+   * The 2026-10-10 park (#2198). Three seats went quiet within twelve minutes
+   * and all three were stamped `failed` by hand the next morning.
+   */
+  const PARK_10_OCT = {
+    row643: {
+      id: 643,
+      shift: "seat1-20261010-032509",
+      startedAt: new Date("2026-10-09T17:36:24Z"),
+      heartbeatAt: new Date("2026-10-09T17:45:51Z"),
+    },
+    row644: {
+      id: 644,
+      shift: "seat2-20261010-032509",
+      startedAt: new Date("2026-10-09T17:37:25Z"),
+      heartbeatAt: new Date("2026-10-09T17:38:25Z"),
+    },
+    row645: {
+      id: 645,
+      shift: "foreman-20261010-0345",
+      startedAt: new Date("2026-10-09T17:45:12Z"),
+      heartbeatAt: new Date("2026-10-09T17:50:12Z"),
+    },
+  };
+  /** #646's launch, the un-park. All three rows were still OPEN at this instant. */
+  const WHEN_THE_PARK_BROKE = Date.parse("2026-10-10T06:39:21Z");
+
+  /*
+    ⚠ THREE LANES AT ONCE, WHICH IS WHY THE LANE READING COULD NOT HAVE SEEN
+    ANY OF THEM: each row is the only member of its lane inside its own
+    silence, so each had ZERO lane-mates and the floor is two.
+
+    ⚠ AND #644 IS THE ARM THAT MATTERS MOST. Its silence began at 17:38:25Z
+    and #645 OPENED at 17:45:12Z — inside the gap. #645 never closed in it, so
+    it is not evidence the runner was cycling, and #644 still reads dead. An
+    OPENING is not a cycle; that asymmetry is the whole reading.
+  */
+  it("all three rows of the 10 Oct park read dead at the un-park", () => {
+    const openAtTheTime: LaneRunForSupersession[] = [
+      { id: 643, shift: PARK_10_OCT.row643.shift, startedAt: PARK_10_OCT.row643.startedAt, endedAt: null },
+      { id: 644, shift: PARK_10_OCT.row644.shift, startedAt: PARK_10_OCT.row644.startedAt, endedAt: null },
+      { id: 645, shift: PARK_10_OCT.row645.shift, startedAt: PARK_10_OCT.row645.startedAt, endedAt: null },
+    ];
+    for (const [row, hours] of [
+      [PARK_10_OCT.row643, 12.89],
+      [PARK_10_OCT.row644, 13.01],
+      [PARK_10_OCT.row645, 12.82],
+    ] as const) {
+      const verdict = readRunSupersession({ run: row, runs: openAtTheTime, now: WHEN_THE_PARK_BROKE });
+      expect(verdict.kind, `row #${row.id}`).toBe("superseded");
+      if (verdict.kind !== "superseded") throw new Error("unreachable");
+      expect(verdict.basis).toBe("runner-stopped");
+      if (verdict.basis !== "runner-stopped") throw new Error("unreachable");
+      expect(verdict.quietForMs / 3_600_000, `row #${row.id}`).toBeCloseTo(hours, 1);
+    }
+  });
+
+  /*
+    ⚠ THE FLOOR IS LOAD-BEARING AND IT IS THE ONLY THING STANDING BETWEEN THIS
+    READING AND #288'S DEFECT. The card's repair as written — *if no run of any
+    seat has opened since the row went quiet, the runner itself was stopped* —
+    is also true of an ordinary busy minute, because the runner launches one
+    pass at a time. Without a length this verdict would call a brand-new row
+    dead.
+  */
+  it("the floor is exactly where the constant says, in both directions", () => {
+    const quiet = Date.parse("2026-10-17T08:30:37Z");
+    const below = readRunSupersession({
+      run: ROW_798,
+      runs: [],
+      now: quiet + CREW_RUNNER_STOPPED_MIN_MS - 60_000,
+    });
+    const at = readRunSupersession({ run: ROW_798, runs: [], now: quiet + CREW_RUNNER_STOPPED_MIN_MS });
+    expect(below.kind).toBe("unreadable");
+    if (below.kind !== "unreadable") throw new Error("unreachable");
+    expect(below.why).toContain("no run of any seat opened and closed");
+    expect(at.kind).toBe("superseded");
+  });
+
+  /*
+    ⚠ THE CATASTROPHIC CASE, DRIVEN: a seat seconds old whose pass-mates
+    opened beside it. It has never checked in, so `hasEverCheckedIn` is false
+    and `looksLive` does NOT protect it — the floor is the only thing that
+    does. This arm is what the card's literal repair would have failed.
+  */
+  it("a brand-new seat with its pass-mates beside it is never called dead", () => {
+    const born = Date.parse("2026-10-27T03:49:56Z");
+    const verdict = readRunSupersession({
+      run: {
+        id: 801,
+        shift: "seat2-20261027-133611",
+        startedAt: new Date(born),
+        heartbeatAt: new Date(born),
+      },
+      runs: [
+        { id: 802, shift: "seat1-20261027-133611", startedAt: new Date(born + 38_000), endedAt: null },
+        { id: 803, shift: "seat3-20261027-133611", startedAt: new Date(born + 214_000), endedAt: null },
+      ],
+      now: born + 240_000,
+    });
+    expect(verdict.kind).toBe("unreadable");
+  });
+
+  /*
+    THE LIVE NEGATIVE CONTROL, AND IT SETS THE FLOOR'S LOWER BOUND. #667
+    closed itself `shipped`, so it was ALIVE at its close — and it carries the
+    longest empty silence of any row in the record that reported its own
+    outcome: 0.98 h. It must never read dead, at its close or ever.
+  */
+  it("row #667 — alive at its close after the record's longest empty silence — gets NO verdict", () => {
+    const row667 = {
+      id: 667,
+      shift: "foreman-20261011-1222",
+      startedAt: new Date("2026-10-11T02:38:24Z"),
+      heartbeatAt: new Date("2026-10-11T03:01:08Z"),
+    };
+    const verdict = readRunSupersession({
+      run: row667,
+      runs: [],
+      now: Date.parse("2026-10-11T04:00:04Z"),
+    });
+    expect(verdict.kind).toBe("unreadable");
+  });
+
+  /*
+    ⚠ A CROSS-LANE RUN IS EVIDENCE OF THE RUNNER AND NEVER OF THIS ROW, AND
+    THAT CUTS BOTH WAYS. The lane reading discards seat2's completed run as
+    proof about seat1 (pinned above, "another lane's sessions are not this
+    lane's"); this reading counts the very same row as proof the LAUNCHER was
+    alive. So a silence twice the floor still reads `not readable` when any
+    seat completed a run inside it.
+  */
+  it("one completed run of ANY seat inside the silence withholds it, however long the silence", () => {
+    const verdict = readRunSupersession({
+      run: ROW_798,
+      runs: [
+        runWithLife(
+          910,
+          "janitor-20261018-0100",
+          "2026-10-18T01:00:00Z",
+          "2026-10-18T01:20:00Z",
+          "2026-10-18T01:30:00Z",
+        ),
+      ],
+      now: Date.parse("2026-10-21T09:43:46Z"),
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("the runner was cycling");
+  });
+
+  /*
+    ⚠ STRICTLY ADDITIVE: the lane reading keeps first refusal on every row. A
+    row with two clean lane-mates reads `lane-mates` even though its silence is
+    long — the park road is reached only where today's answer is unreadable,
+    which is the card's own bound.
+  */
+  it("the lane reading still answers first, and names itself as the basis", () => {
+    const verdict = readRunSupersession({ run: ROW_548, runs: SEAT1_LANE, now: WHEN_IT_WAS_MET });
+    expect(verdict.kind).toBe("superseded");
+    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    expect(verdict.basis).toBe("lane-mates");
+  });
+
+  /*
+    ⚠ AND THE OVERLAP BRANCH CAN NEVER REACH THE PARK ROAD, BY CONSTRUCTION: a
+    lane-mate inside the window IS a completed run inside the silence, so it is
+    its own counter-evidence. Driven rather than argued, because this is the
+    one place a future widening could turn a concurrent launcher into a park.
+  */
+  it("a lane running two at once inside the silence is never read as a park", () => {
+    const verdict = readRunSupersession({
+      run: ROW_798,
+      runs: [
+        runWithLife(911, "foreman-20261018-0100", "2026-10-18T01:00:00Z", "2026-10-18T03:00:00Z", "2026-10-18T03:10:00Z"),
+        runWithLife(912, "foreman-20261018-0200", "2026-10-18T02:00:00Z", "2026-10-18T04:00:00Z", "2026-10-18T04:10:00Z"),
+      ],
+      now: Date.parse("2026-10-21T09:43:46Z"),
+    });
+    expect(verdict.kind).toBe("unreadable");
+    if (verdict.kind !== "unreadable") throw new Error("unreachable");
+    expect(verdict.why).toContain("two at once");
   });
 });
 
@@ -536,6 +791,58 @@ describe("the one sentence both readers print", () => {
     expect(line).toContain("not readable");
     expect(line).not.toContain("SUPERSEDED");
     expect(line).not.toContain("dead");
+  });
+
+  /*
+    ⚠ THE PARK ROAD OPENS ON THE SAME SIX WORDS (#2679), AND THAT IS WHAT MAKES
+    IT CITABLE. A shift greps for `SUPERSEDED — its process is dead`, pastes it
+    onto a card and closes the row by it; the standing orders name that exact
+    spelling. The sentence then says which fact it rests on, and the park road
+    must name the STRETCH, because an absence with no length to it is worth
+    nothing.
+  */
+  it("the park road says SUPERSEDED, names the stretch, and counts no rows", () => {
+    const line = describeRunSupersession({
+      kind: "superseded",
+      basis: "runner-stopped",
+      lane: "foreman",
+      quietForMs: 97.22 * 3_600_000,
+    });
+    expect(line).toContain("SUPERSEDED");
+    expect(line).toContain("its process is dead");
+    expect(line).toContain("4.1 days");
+    expect(line).toContain("ANY seat");
+    /* The lane road's wording must not leak in — there are no rows to count,
+       and "0 later sessions" about a row just proved dead is the defect. */
+    expect(line).not.toContain("0 later sessions");
+  });
+
+  /*
+    ⚠ AND THE COLLISION SENTENCE THE SEAT CUT PRINTS TAKES THE SAME TWO ROADS.
+    This is the consumer that asks `kind === "superseded"` to mean *dead and
+    needs closing* — the reason #2679 added a `basis` rather than a third
+    `kind`. A third kind would have answered it FALSE on a row the reader had
+    just proved dead, silently, with nothing to fail.
+  */
+  it("the seat cut's sentence calls a parked row DEAD without counting rows", () => {
+    const line = describeCardCollision(
+      [{
+        shift: "foreman-20261017-1802",
+        startedAt: new Date("2026-10-17T08:03:52Z"),
+        heartbeatAt: new Date("2026-10-17T08:30:37Z"),
+        supersession: {
+          kind: "superseded",
+          basis: "runner-stopped",
+          lane: "foreman",
+          quietForMs: 97.22 * 3_600_000,
+        },
+      }],
+      Date.parse("2026-10-21T09:43:46Z"),
+    );
+    expect(line).toContain("its process is DEAD");
+    expect(line).toContain("needs closing");
+    expect(line).toContain("no run of any seat opened and closed");
+    expect(line).not.toContain("undefined");
   });
 });
 
@@ -601,6 +908,13 @@ describe("the row read the reader and the start warning share", () => {
        being ASKED FOR is held by the text; the value being CARRIED THROUGH is
        held by the arm below, which flips a verdict on it. */
     expect(asked[0]!.sql).toMatch(/heartbeatAt/);
+    /* ⚠ AND IT MUST NOT NARROW TO A LANE (#2679), WHICH IS A TEXT ARM BECAUSE
+       NOTHING ELSE HERE CAN HOLD IT. The stub cannot execute a WHERE, so a
+       lane clause added to the query would change no row this suite sees — and
+       the park reading depends on the cross-lane rows arriving. The verdict's
+       own copy of that mistake IS driven (narrow `runnerCycled` to the lane and
+       three arms redden); this holds the half that only the SQL can get wrong. */
+    expect(asked[0]!.sql).not.toMatch(/shift\s*(=|!=|<>|like|in\b)/i);
   });
 
   /*
@@ -646,6 +960,50 @@ describe("the row read the reader and the start warning share", () => {
     ]);
     const verdicts = await readRunSupersessions(conn, [ROW_548_OPEN], WHEN_IT_WAS_MET);
     expect(verdicts.get(548)?.kind).toBe("unreadable");
+  });
+
+  /*
+    ⚠ AND SINCE #2679 THOSE CROSS-LANE ROWS ARE LOAD-BEARING RATHER THAN MERELY
+    HARMLESS — THIS IS THE ARM THE LIB'S NOTE PROMISES.
+
+    The SELECT carries no lane filter, and until this card that was redundant
+    (the verdict dropped the rows anyway) and the suite could not tell the two
+    apart — which is exactly what the sabotage pass recorded. The park road
+    reads those same rows to ask whether the LAUNCHER was alive, so a
+    lane-narrowed SELECT would now make every busy night look like a park.
+
+    Both halves are driven on one subject with a 97-hour silence: with another
+    seat's completed run in the rows it is `not readable`, and with the rows
+    empty it is dead. Restore a lane filter in the query and the first arm
+    flips to a death verdict.
+  */
+  it("another seat's completed run reaches the park reading through the query", async () => {
+    const ROW_798_OPEN = {
+      id: 798,
+      shift: "foreman-20261017-1802",
+      startedAt: new Date("2026-10-17T08:03:52Z"),
+      heartbeatAt: new Date("2026-10-17T08:30:37Z"),
+    };
+    const met = Date.parse("2026-10-21T09:43:46Z");
+
+    const { conn: withAnotherSeat } = stub([
+      {
+        id: 910,
+        shift: "janitor-20261018-0100",
+        startedAt: new Date("2026-10-18T01:00:00Z"),
+        heartbeatAt: new Date("2026-10-18T01:20:00Z"),
+        endedAt: new Date("2026-10-18T01:30:00Z"),
+      },
+    ]);
+    const withIt = await readRunSupersessions(withAnotherSeat, [ROW_798_OPEN], met);
+    expect(withIt.get(798)?.kind).toBe("unreadable");
+
+    const { conn: empty } = stub([]);
+    const without = await readRunSupersessions(empty, [ROW_798_OPEN], met);
+    const verdict = without.get(798)!;
+    expect(verdict.kind).toBe("superseded");
+    if (verdict.kind !== "superseded") throw new Error("unreachable");
+    expect(verdict.basis).toBe("runner-stopped");
   });
 
   /* With no open runs there is nothing to ask about, and it asks nothing. */
@@ -991,4 +1349,100 @@ describe("the history proxy is written down where a re-measurement will look (#1
     That is the arm behaving as designed: what must survive is the information a
     shift re-measuring the floor needs, not a particular way of saying it.
   */
+});
+
+/**
+ * AND THE PARK FLOOR'S OWN MEASUREMENT IS WRITTEN WHERE A RE-READ WILL LOOK
+ * (#2679) — the same guard, on the second constant, for the same reason.
+ *
+ * ⚠ **This one guards a TRAP as well as a number, and the trap caught the seat
+ * that built it.** The first pass of this measurement assumed a closed row was
+ * alive at its close, which bounded the floor at 97.54 h — because #798, the
+ * one row the whole table holds that was closed by somebody else's hand four
+ * days after it died, became its own counter-example. The non-circular
+ * splitter is the row's reported OUTCOME. A shift re-measuring this floor
+ * without that sentence in front of it will take the same wrong reading.
+ */
+describe("the park floor's measurement is written down where a re-read will look (#2679)", () => {
+  const SHARED_SOURCE = readFileSync("shared/crewShiftState.ts", "utf8");
+
+  const parkDocblock = (source: string): string => {
+    const declaration = source.indexOf("export const CREW_RUNNER_STOPPED_MIN_MS");
+    expect(declaration, "the park floor is not declared here any more").toBeGreaterThan(-1);
+    const opens = source.lastIndexOf("/**", declaration);
+    expect(opens, "the park floor carries no docblock at all").toBeGreaterThan(-1);
+    return source.slice(opens, declaration);
+  };
+
+  /** Its own title, so the slice proves it is this docblock and not a neighbour. */
+  const PARK_TITLE = "HOW LONG THE WHOLE TABLE MUST HAVE BEEN SILENT";
+
+  /*
+    Each token is a fact a re-measurement cannot do without:
+      `outcome`  — the non-circular splitter, and the trap above
+      `0.98`     — the alive population's bound, the floor's lower edge
+      `12.82`    — the thinnest true positive, the floor's real upper margin
+      `800 of 800` — why the permanent-window rule is not re-added
+  */
+  const PARK_FACTS = ["outcome", "0.98", "12.82", "800 of 800"];
+
+  it("names the outcome split, both edges of the band, and the rejected rule", () => {
+    const docblock = parkDocblock(SHARED_SOURCE);
+    /* Verify the slice before trusting its contents (memory: a guard arm
+       satisfied by a sibling). */
+    expect(docblock).toContain(PARK_TITLE);
+    const lowered = docblock.toLowerCase();
+    for (const fact of PARK_FACTS) {
+      expect(
+        lowered.includes(fact.toLowerCase()),
+        "The park floor's docblock no longer names " + fact + ". It is the only "
+          + "place a shift re-measuring this floor will look, and without the "
+          + "outcome split that shift will bound the floor at 97.54 h off #798 "
+          + "— a row closed by another shift's hand four days after it died.",
+      ).toBe(true);
+    }
+  });
+
+  /*
+    POSITIVE CONTROL, ONE PER FACT, GUTTING THE TOKEN AND NEVER THE SECTION —
+    the heading-deletion mistake the guard above records. None of these tokens
+    appears in either of the slice's anchors, so the slice is unaffected and the
+    only thing that moves is the fact under test.
+  */
+  it("and each of those readings can say no", () => {
+    for (const fact of PARK_FACTS) {
+      /* ⚠ CASE-INSENSITIVELY, AND THE FIRST DRAFT OF THIS CONTROL GOT IT
+         WRONG: a case-SENSITIVE gut left `OUTCOME` standing in a capitalised
+         heading while the arm under test reads case-insensitively, so the
+         control reddened over a fact that was still there. The `.` in `0.98`
+         is escaped for the same reason — a regex metacharacter in a fact is a
+         gut that removes more than it was asked to. */
+      const gutted = SHARED_SOURCE.replace(
+        new RegExp(fact.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+        "(removed)",
+      );
+      const docblock = parkDocblock(gutted);
+      expect(docblock).toContain(PARK_TITLE);
+      expect(docblock.toLowerCase().includes(fact.toLowerCase())).toBe(false);
+    }
+  });
+
+  /* AND THE READER IS NOT BLIND — without this, the arms above are both
+     consistent with a reader that always says yes. */
+  it("a docblock that genuinely lacks the facts is refused", () => {
+    const synthetic = "/**\n * " + PARK_TITLE + "\n * Twelve hours, because it felt right.\n */\n"
+      + "export const CREW_RUNNER_STOPPED_MIN_MS = 12 * 60 * 60 * 1000;";
+    const docblock = parkDocblock(synthetic);
+    expect(docblock).toContain(PARK_TITLE);
+    for (const fact of PARK_FACTS) {
+      expect(docblock.toLowerCase().includes(fact.toLowerCase())).toBe(false);
+    }
+  });
+
+  /* ⚠ AND THE CONSTANT ITSELF IS PINNED, because the docblock's whole argument
+     is about ONE number: prose saying 12 h over a constant set to 1 h is the
+     drift this file has been bitten by (working law 4). */
+  it("the constant is the number its docblock argues for", () => {
+    expect(CREW_RUNNER_STOPPED_MIN_MS / 3_600_000).toBe(12);
+  });
 });

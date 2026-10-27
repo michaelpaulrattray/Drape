@@ -64,10 +64,28 @@
  * ask her to do different things, and telling her the wrong one sends her
  * looking for a better photograph of a problem that was ours.
  *
- * Two of them ARE the same sentence, deliberately: `unreadable` and
- * `no_transport` differ only in whose fault it was, which is our fact and not
- * hers, and she is asked to do the identical thing by both.
+ * ⚠ **`unreadable` AND `no_transport` USED TO SHARE A SENTENCE AND NO LONGER
+ * DO (#2686), AND THE REASONING THAT PAIRED THEM IS WHAT WAS WRONG.** It read:
+ * *"they differ only in whose fault it was, which is our fact and not hers, and
+ * she is asked to do the identical thing by both."* The first half is true; the
+ * second is false, and it is the whole defect. *"Try again in a moment"* is
+ * honest for a read that came back as noise and is a **lie** for a studio with
+ * no reader at all — no amount of trying fixes that, and it was never their
+ * picture. The two now say different things because there are genuinely
+ * different things to do about them.
  */
+/**
+ * The one sentence for "the studio cannot read pictures right now, and it is
+ * not your picture" — shared by the two reasons that mean exactly that (#2686).
+ *
+ * Named rather than written twice: two literals saying one fact is the drift
+ * working law 4 is about, and these two must never come to disagree about whose
+ * problem it is.
+ */
+const READER_DOWN_MESSAGE =
+  "The studio can't read pictures just now — that's something at our end, not your picture. "
+  + "Try again later.";
+
 export const CONCEPT_DESCRIBE_COPY = {
   /*
      #204 — HIS OWN CARD, after a creature upload met "try one with someone in
@@ -110,8 +128,50 @@ export const CONCEPT_DESCRIBE_COPY = {
   */
   ran_long:
     "That came back longer than a casting note. Try again, or describe them in your own words.",
+  /* GENUINELY TRANSIENT, AND THE ONLY ONE OF THE THREE THAT STILL SAYS
+     "in a moment". A read that came back as noise usually reads fine on the
+     next try, so the advice is true. The two outage reasons below were sharing
+     this sentence and are not transient at all. */
   unreadable: "I couldn't read that picture just now. Try again in a moment.",
-  no_transport: "I couldn't read that picture just now. Try again in a moment.",
+  /*
+     THE STUDIO CANNOT DO THIS, AND IT IS NOT THEIR PICTURE (#2686).
+
+     `no_transport` is raised when no reader is configured at all, and
+     `reader_outage` when the one we have refuses US — on production,
+     2026-10-27 from 03:09Z, the account key was disabled and the text provider
+     answered `401` to every call. Both were being said as *"I couldn't read
+     that picture just now. Try again in a moment."*, so for the whole outage
+     the founder's own uploads told him to keep retrying something that could
+     not work, and implied his picture was the problem.
+
+     It names **the studio** as the actor, exactly as the roll road's
+     `READER_OUTAGE_MESSAGE` does for the same fact one entrance over, and that
+     much is held by an arm in `conceptDescribeCopy.test.ts` rather than by
+     this comment — the way `no_being`'s alignment with `NOT_A_BEING_MESSAGE`
+     already is. The arm holds the ATTRIBUTION and not the whole sentence,
+     because the two doors legitimately differ after it: a roll costs credits
+     and says so, and this one has taken no money to talk about.
+
+     ⚠ **THE ROLL ROAD STILL SAYS "Try again in a moment" FOR ITS OWN OUTAGE,
+     AND THAT IS THE SAME DEFECT ONE DOOR OVER** — `briefCompiler.ts` raises
+     `reader_outage` for every `unavailable` cause without asking which, so it
+     cannot tell a flaky read from a dead account. Found by this card's law-7
+     sweep and filed rather than folded in: it needs the account class carried
+     through `InterpreterUnavailableCause`, which is a money-path road.
+
+     ⚠ **IT SAYS NOTHING ABOUT MONEY, DELIBERATELY.** The roll road's sentence
+     adds *"you have not been charged"* because a roll costs credits; a concept
+     read is HOUSE MONEY on every call (`routes/castingV2.ts`, stated above its
+     rate limit), so there is no charge to reassure anyone about and saying so
+     would invent one.
+
+     ⚠ **AND NO ENGINE NAME, which is the disappearing-technology law's one hard
+     line** (clause 5: no engine name on a path someone must walk to reach their
+     picture). They are told what happened and whose problem it is, never which
+     vendor refused us.
+  */
+  no_transport: READER_DOWN_MESSAGE,
+  reader_outage: READER_DOWN_MESSAGE,
 } as const satisfies Readonly<Record<string, string>>;
 
 /**

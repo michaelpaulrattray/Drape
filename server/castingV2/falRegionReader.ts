@@ -24,7 +24,7 @@ import { assertImageBytes, NotAnImageError } from "../security/trustedImageFetch
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
-import { falHeaders } from "../providers/falTransport";
+import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
@@ -94,12 +94,35 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
       signal,
     });
     if (!response.ok) {
+      /* The body is read ONCE into a const, because it is now wanted twice —
+         for the message and for the classifier — and `response.text()` on a
+         consumed body answers with the empty string rather than throwing, so
+         reading it twice would have classified every failure against "". */
+      const body = await response.text();
       /* 429 is the account's own concurrency ceiling and 5xx is the provider
          having a moment — both are weather, and the scan's cache reads this to
          decide whether a damaged reading is worth keeping. */
       throw new MaskError(
-        `${endpoint}: ${response.status} ${(await response.text()).slice(0, 200)}`,
-        { retryable: response.status === 429 || response.status >= 500 },
+        `${endpoint}: ${response.status} ${body.slice(0, 200)}`,
+        {
+          retryable: response.status === 429 || response.status >= 500,
+          /*
+            OUR ACCOUNT, NOT THE PICTURE (#2688) — asked of the product's own
+            fal classifier rather than re-deciding here what a 401 means.
+
+            `classifyFalHttp` is the one reader of a fal status in this product
+            and it is already exported; a second `status === 401 || …` here is
+            the mirror working law 4 is about, and it would be the copy that
+            got forgotten the day fal starts answering 402 for an exhausted
+            balance (it is the one status the other two classifiers in the
+            product treat as an account failure and this one does not).
+
+            The two cutters read this to choose a sentence; nothing else does,
+            and `retryable` above is untouched — so every existing caller, the
+            face scan's weather cache included, behaves exactly as before.
+          */
+          accountRefused: classifyFalHttp(response.status, body) === "provider_account",
+        },
       );
     }
     return response.json();
