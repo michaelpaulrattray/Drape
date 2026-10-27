@@ -665,7 +665,7 @@ the live service on every push.
 | `CASTING_BRIEF_FIDELITY_SCOPE` | whether a customer's own words are rationed on the way into her sheet |
 | `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road — ✅ RETIRED with the old lane (#1443); every roll takes it |
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
-| `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request — ✅ RETIRED (#1577 slice D4); every refine answers with a receipt, and a CALLER that cannot take one says so on the call |
+| `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request — ✅ RETIRED (#1577 slice D4); every refine answers with a receipt now |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |
