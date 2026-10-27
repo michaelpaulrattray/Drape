@@ -366,6 +366,9 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "concept.no_transport",
     reason: "answers an upload made with no text engine configured at all — a deployment state, not a picture and not a sentence",
     becomesReachable: "deliberately never as a corpus row: the census runs against a configured service by construction; pinned by its own arm" },
+  { id: "concept.reader_outage",
+    reason: "answers an upload the text provider refused US rather than one it could not read — a 401, 402 or 403 on our own account (`openrouterText.ts`'s `classifyOpenRouterTextHttp` maps all three to `provider_account`). It shares `concept.no_transport`'s sentence because it is the same fact to the customer — the studio cannot read pictures right now and it is not their picture — and it is split from `concept.unreadable` because that one's \"try again in a moment\" is advice no retry can satisfy when our key is disabled. Measured in production on 2026-10-27: from 03:09Z the account key was off, every call answered 401, and every upload met `concept.unreadable` (#2686)",
+    becomesReachable: "deliberately never as a corpus row: manufacturing a disabled account in the census would test the harness and not the product — the discharge `concept.unreadable` and `concept.no_transport` already carry. Its pin is its own driven arm in `conceptDescribe.test.ts`, which throws a real `ProviderError(\"provider_account\")` at all three statuses and asserts the reason, with every other terminal class driven beside it as the negative control" },
   /* ── #209 item 1: THE UPLOAD ENTRANCE'S FOUR BYTE DOORS AND THE ATTACH'S CAP
      — the map's third and fourth entrances, and the doors that had NO ID AT ALL
      until this commit. Every other gap #206 closed was a reader's blind spot;

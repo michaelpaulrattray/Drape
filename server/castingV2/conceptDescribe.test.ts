@@ -528,6 +528,57 @@ describe("the reader", () => {
     expect(engine.calls()).toBe(1);
   });
 
+  /**
+   * OUR ACCOUNT IS NOT THEIR PICTURE (#2686).
+   *
+   * Measured on production: from 03:09Z on 2026-10-27 the text account key was
+   * disabled, the provider answered `401 User not found` to every call, and the
+   * upload door told the founder *"I couldn't read that picture just now. Try
+   * again in a moment."* on every attempt — advice no retry could satisfy,
+   * about a picture that was never the problem.
+   *
+   * All three of the account statuses are driven, because
+   * `classifyOpenRouterTextHttp` maps 401, 402 and 403 to one class and a fix
+   * that only knew about the one we happened to hit would be an instance fix.
+   */
+  it.each([401, 402, 403])(
+    "calls an account refusal 'reader_outage', never 'unreadable' — status %i",
+    async (status) => {
+      const engine = engineThrowing(
+        new ProviderError("provider_account", "The interpreter call was refused", { status }),
+        said(CLEAN),
+      );
+      expect(await describeConcept({ ...PICTURE, engine }))
+        .toEqual({ ok: false, reason: "reader_outage", attempts: 1 });
+      /* It is terminal, not retried: a second ask cannot re-enable our key, and
+         spending one would double every customer's wait through an outage. */
+      expect(engine.calls()).toBe(1);
+    },
+  );
+
+  /**
+   * THE NEGATIVE CONTROL, and it is the half that keeps the split honest.
+   *
+   * Every other terminal class must still answer `unreadable` — a repair that
+   * widened to "any thrown error is an outage" would tell a customer the studio
+   * was down when their picture had merely read as noise, which is the original
+   * defect pointing the other way. `capability` is in this list on purpose:
+   * it is what the queue's breaker raises once five consecutive failures have
+   * opened it, and it is also a malformed request and a cancel, so it is
+   * deliberately NOT treated as an outage (see `readerAccountRefused`).
+   */
+  it.each<ProviderFailureClass>([
+    "timeout",
+    "transport",
+    "rate_limit",
+    "capability",
+    "content_policy",
+  ])("keeps 'unreadable' for every class that is NOT our account — %s", async (failureClass) => {
+    const engine = engineThrowing(new ProviderError(failureClass, "not an account fault"), said(CLEAN));
+    expect(await describeConcept({ ...PICTURE, engine }))
+      .toEqual({ ok: false, reason: "unreadable", attempts: 1 });
+  });
+
   it("calls ONCE on a throw that is not a ProviderError — our own bug is not retried into invisibility", async () => {
     const engine = engineThrowing(new TypeError("cannot read properties of undefined"), said(CLEAN));
     expect(await describeConcept({ ...PICTURE, engine }))
