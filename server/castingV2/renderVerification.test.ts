@@ -239,47 +239,31 @@ describe("facets with a measured unreliability prior get a second reading", () =
   });
 
   /*
-    ⚠ THE "no" READINGS IN BOTH ARMS BELOW NOW CARRY `absent: true`, AND THAT IS
-    THE FIXTURE BECOMING FAITHFUL RATHER THAN THE ARM BEING LOOSENED (#2526).
-
-    A reader answering `present:false` on "tied up" is told by the prompt to say
-    which kind of not-present it means, and *"the hair is not down"* is its own
-    worked example of an outright absence. With the field omitted these arms
-    were driving a shape the live prompt asks the reader not to send, and under
-    the catastrophic gate the demotion would have had nothing to act on — which
-    is what `confirmVerdict`'s own carry of `other.absent` is there to keep.
+    ⚠ TWO ARMS STOOD HERE UNTIL #2672 (2026-10-21): *"makes a demoted BINDING
+    affirmation survive the majority of three"* and *"refuses when two of three
+    readings agree"*. A third reading existed to settle whether a miss could
+    buy the free re-render, and his ruling retired the re-render — so a split
+    is now recorded as the second reading said and nothing more is asked.
+    `absent: true` on the "no" is the fixture being faithful to the live prompt
+    (#2526), so the withdrawn yes is the strongest miss the reader can send.
   */
-  it("makes a demoted BINDING affirmation survive the majority of three", async () => {
+  it("withdraws a BINDING yes on two readings and asks for no third (#2672)", async () => {
     const asked = "tied up";
     const make = (verified: boolean) =>
       verdictOf([{
         subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x",
         ...(verified ? {} : { absent: true }),
       }]);
-
-    /* first says yes, second says no → a split, so a third breaks the tie.
-       Third says yes: one doubter out of three is not a refusal. */
-    let call = 0;
+    let rereads = 0;
     const confirmed = await confirmVerdict(make(true), async () => {
-      call += 1;
-      return make(call === 1 ? false : true);
+      rereads += 1;
+      return rereads === 1 ? make(false) : make(true);
     });
-    expect(confirmed.readings).toBe(3);
-    expect(confirmed.checks[0].verified).toBe(true);
-    expect(confirmed.ok).toBe(true);
-  });
-
-  it("refuses when two of three readings agree the demoted fact is missing", async () => {
-    const asked = "tied up";
-    const make = (verified: boolean) =>
-      verdictOf([{
-        subject: aboutFacet(HAIR_WORN), asked, verified, read: true, binding: true, saw: "x",
-        ...(verified ? {} : { absent: true }),
-      }]);
-
-    const confirmed = await confirmVerdict(make(true), async () => make(false));
-    expect(confirmed.readings).toBe(3);
+    expect(rereads, "one confirming reading of the yes, never a tie-break").toBe(1);
+    expect(confirmed.readings).toBe(2);
     expect(confirmed.checks[0].verified).toBe(false);
+    expect(confirmed.checks[0].confirmed).toBeUndefined();
+    /* The record says what the second reading said; it no longer buys anything. */
     expect(confirmed.ok).toBe(false);
   });
 
@@ -302,15 +286,29 @@ describe("facets with a measured unreliability prior get a second reading", () =
     expect(confirmed.ok).toBe(true);
   });
 
-  it("delivers rather than refusing when the second opinion is unavailable", async () => {
-    const first = verdictOf([
-      { subject: aboutFacet(EYE_COLOUR), asked: "pale blue", verified: false, read: true, binding: true, saw: "hazel" },
-    ]);
-    const confirmed = await confirmVerdict(first, async () => ({
-      ok: true, checks: [], unavailable: true,
-    }));
-    expect(confirmed.ok).toBe(true);
+  /*
+    ⚠ A MISS IS NEVER RE-READ (#2672). This arm read *"delivers rather than
+    refusing when the second opinion is unavailable"* while a miss still bought
+    a confirming reading; it now proves the reading is not asked for at all,
+    on the strongest miss there is — binding, and outright absent.
+  */
+  it("does not re-read a MISS — the one reading is the record (#2672)", async () => {
+    const first: RenderVerdict = {
+      ok: false,
+      checks: [{
+        subject: aboutFacet(EYE_COLOUR), asked: "pale blue", verified: false, read: true,
+        binding: true, absent: true, saw: "hazel",
+      }],
+    };
+    let rereads = 0;
+    const confirmed = await confirmVerdict(first, async () => {
+      rereads += 1;
+      return { ok: true, checks: [], unavailable: true };
+    });
+    expect(rereads).toBe(0);
     expect(confirmed.readings).toBe(1);
+    expect(confirmed.ok, "kept exactly as it was read").toBe(false);
+    expect(confirmed.checks).toEqual(first.checks);
   });
 });
 
@@ -629,7 +627,7 @@ describe("a pair means both ears", () => {
  * defect out loud. Every arm below is that row with one thing changed, so the
  * suite can say which clause each outcome turns on.
  */
-describe("a confirming re-read that never lands cannot deliver an evidenced absence", () => {
+describe("v#166: what a confirming re-read is bought for, and what the record keeps", () => {
   const ACCESSORIES = facetOfSubject("statedAccessories");
 
   /** v#166, verbatim — the paid specimen. */
@@ -657,58 +655,49 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
   });
   const unavailable = async (): Promise<RenderVerdict> => ({ ok: true, checks: [], unavailable: true });
 
-  it("THE SPECIMEN — v#166's own shape does not deliver", async () => {
+  /*
+    ⚠ THIS BLOCK WAS *"a confirming re-read that never lands cannot deliver an
+    evidenced absence"* UNTIL #2672. Its arms proved that a failed confirmation
+    handed v#166's frame to the house's free re-render instead of delivering
+    it. The re-render is retired on his ruling, so nothing here can decline a
+    delivery any more; what the arms still pin is which readings are bought and
+    what the record keeps.
+  */
+  it("THE SPECIMEN — the rap-sheet yes beside the miss is what buys the re-read, and an unreachable one leaves it unconfirmed", async () => {
     let rereads = 0;
     const confirmed = await confirmVerdict(specimen(), async () => {
       rereads += 1;
       return unavailable();
     });
 
-    expect(confirmed.ok, "delivered and charged is what this row actually did").toBe(false);
-    expect(confirmed.readings).toBe(1);
     expect(rereads, "the confirmation is retried once before the question is settled").toBe(2);
+    expect(confirmed.readings).toBe(1);
+    expect(confirmed.checks[1]?.confirmed, "the hair yes was never confirmed").toBeUndefined();
+    expect(confirmed.ok, "the miss is kept on the record as it was read").toBe(false);
   });
 
   it("and the retry is a real second chance — a confirmation that lands on the second try is used", async () => {
     let rereads = 0;
     const confirmed = await confirmVerdict(specimen(), async () => {
       rereads += 1;
-      /* The second attempt at the confirmation comes back, and it AGREES the
-         earrings are wrong: two readings that agree are what a refusal is made
-         of, so this settles at two rather than falling through to the absence
-         rule above. */
       return rereads === 1 ? await unavailable() : specimen();
     });
 
     expect(rereads).toBe(2);
     expect(confirmed.readings).toBe(2);
-    expect(confirmed.ok).toBe(false);
+    expect(confirmed.checks[1]?.confirmed).toBe(true);
   });
 
-  it("CONTROL — a QUIBBLE with no second opinion still delivers (D-187 untouched)", async () => {
-    const quibble = specimen();
-    /* run-10's shape: the hoops are ON her, the reader objects to an adjective
-       she never used. `absent: false` is the reader saying so. */
-    quibble.checks[0] = {
-      ...quibble.checks[0]!,
-      absent: false,
-      saw: "gold hoops on both ears, thin and understated rather than bold",
-    };
+  it("CONTROL — the same miss WITHOUT the rap-sheet yes buys no reading at all", async () => {
+    const missOnly = specimen();
+    missOnly.checks = [missOnly.checks[0]!];
+    let rereads = 0;
+    const confirmed = await confirmVerdict(missOnly, async () => {
+      rereads += 1;
+      return unavailable();
+    });
 
-    const confirmed = await confirmVerdict(quibble, unavailable);
-
-    expect(confirmed.ok, "a quibble may not spend her refund or her wait").toBe(true);
-    expect(confirmed.readings).toBe(1);
-  });
-
-  it("CONTROL — SILENCE with no second opinion still delivers (D-235 asymmetry untouched)", async () => {
-    const silent = specimen();
-    const { absent: _dropped, ...withoutAbsence } = silent.checks[0]!;
-    silent.checks[0] = withoutAbsence;
-
-    const confirmed = await confirmVerdict(silent, unavailable);
-
-    expect(confirmed.ok, "an unanswered absence question is not an absence").toBe(true);
+    expect(rereads).toBe(0);
     expect(confirmed.readings).toBe(1);
   });
 
@@ -798,10 +787,16 @@ describe("a confirming re-read that never lands cannot deliver an evidenced abse
       }],
     };
 
-    const confirmed = await confirmVerdict(removal, unavailable);
+    let rereads = 0;
+    const confirmed = await confirmVerdict(removal, async () => {
+      rereads += 1;
+      return unavailable();
+    });
 
+    /* Recorded as the catastrophe it reads as, and — since #2672 — not re-read. */
     expect(confirmed.ok).toBe(false);
     expect(confirmed.readings).toBe(1);
+    expect(rereads).toBe(0);
   });
 });
 

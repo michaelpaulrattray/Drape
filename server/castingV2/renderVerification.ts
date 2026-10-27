@@ -1053,136 +1053,75 @@ async function readOnce(input: {
 }
 
 /**
- * A BINDING FAILURE NEEDS TWO READERS TO AGREE (D-194).
+ * A YES ON A FACET WITH A RAP SHEET IS READ TWICE BEFORE THE LIBRARY BELIEVES
+ * IT (D-235, #2646, #2650) — AND THAT IS THE ONLY SECOND READING LEFT (#2672).
  *
- * Measured on the trial's own data: the same reader, given the same prompt and
- * the same image twice, **disagreed with itself on 21% of judgements** — 7
- * reversals in 33 pairs, five of them on one facet in one direction. Chain 3
- * position 1 is the exhibit the founder named: a render the service passed, and
- * an independent re-read of that same picture said the fact was missing.
+ * ⚠ **THIS FUNCTION USED TO CONFIRM MISSES TOO, AND HIS RULING TOOK THAT HALF
+ * AWAY (#2672, 2026-10-21).** It was D-194's: the reader disagreed with itself
+ * on 21% of judgements, so a miss that was about to spend a refusal or the
+ * house's free re-render was re-read, and a split bought a third reading for a
+ * majority. Both of the things a miss could buy are gone — fable-721 took the
+ * refund, and #2672 takes the re-render on his word (*"users can just retry if
+ * its not the exact look they want themselves for a cost"*). A confirmation
+ * whose verdict has nowhere to go is a vision call bought for nothing, so a
+ * disputed render now keeps its ONE reading as the record and is delivered.
  *
- * A single reading is therefore not evidence enough to spend somebody's refusal
- * on. So a binding miss is re-read before it counts:
+ * What stays is the delivery-path half, because it still decides something:
+ * whether the reference library may ADOPT an affirmation on a facet where one
+ * reading has been measured to lie (`unconfirmedAffirmations`). A second
+ * reading that read the fact and agreed marks the check `confirmed`; one that
+ * read it and disagreed withdraws the yes and is recorded as a miss — never a
+ * third reading, because a miss no longer acts on anything; one that is silent
+ * on it changes nothing. A re-read that cannot be reached leaves every yes
+ * unconfirmed, which the library already treats as not enough.
  *
- *   - agree it is missing → it is missing;
- *   - disagree → a third reading breaks the tie;
- *   - anything that does not reach a majority stays DELIVERED.
- *
- * The cost is bounded and lands only where it is already expensive: extra
- * readings happen exclusively on a render that is about to be re-rendered or
- * refunded, never on the happy path. One or two more vision calls against a 25
- * credit refund and a wasted image.
+ * ⚠ **AND A YES IN A SLOT THIS STEP EDITED IS NOT CONFIRMED EITHER — the
+ * relay's finding on PR #2676, after #2673.** That slot's delivered crop is
+ * filed as its guide whatever the reader says, so a second reading of it
+ * decides nothing and was the last confirming re-read on a refine. The caller
+ * names those facets in `moot`; they keep their ONE reading as the record (and
+ * read as unconfirmed, which only reaches a log line there). What still buys a
+ * second reading is a rap-sheet yes on a facet the step did NOT edit — a
+ * carried one — because the carried-confirmation pass still files a slot from
+ * it (`refineService.ts`, the `confirmed:` list into `mintedSlotsForRender`;
+ * `mintedSlots.ts`, the `for (const facet of input.confirmed ?? [])` loop).
  */
 export async function confirmVerdict(
   first: RenderVerdict,
   reread: () => Promise<RenderVerdict>,
+  options: { moot?: ReadonlySet<Facet> } = {},
 ): Promise<RenderVerdict> {
-  const original = new Map(first.checks.map((check) => [keyOf(check), check]));
-  /*
-    ⚠ **A SECOND READING IS BOUGHT ONLY FOR A MISS THAT CAN STILL ACT (#2526).**
-
-    This filter was `isMiss(c) && c.binding`, which is wider than the gate it
-    confirms: since the absence exemption landed (D-246, 2026-08-12) a quibble
-    could never decline a delivery, and since #2526 neither can a silence — so
-    both were paying for a confirming vision call whose verdict had nowhere to
-    go. Confirming exactly what {@link isRefusableMiss} admits keeps one rule in
-    one place and takes the paid reading off the renders it cannot change.
-  */
-  const actingMisses = first.checks.filter(isRefusableMiss);
-  /* (b) The delivery-path half: an affirmative on a facet with a rap sheet. */
-  const suspectPasses = first.checks.filter(
-    (c) => c.read && c.verified && hasUnreliabilityPrior(c),
-  );
-  if ((actingMisses.length === 0 && suspectPasses.length === 0) || first.unavailable) {
+  const needsConfirmation = (c: FacetCheck): boolean => {
+    if (!(c.read && c.verified && hasUnreliabilityPrior(c))) return false;
+    const facet = facetIn(c.subject);
+    return facet === null || !options.moot?.has(facet);
+  };
+  const suspectPasses = first.checks.filter(needsConfirmation);
+  if (suspectPasses.length === 0 || first.unavailable) {
     return { ...first, readings: 1 };
   }
 
   /*
-    ONE RETRY FOR THE CONFIRMATION ITSELF (fable-318 R1).
-
-    The re-read is a vision call and it can simply fail. Until shift 62 a single
-    failed confirmation ended the question in the house's favour, so a transport
-    blip and a reader that saw nothing wrong produced the identical outcome:
-    delivered and charged. The retry costs one call, on a render already headed
-    for a re-render or a refund, and it is the cheapest of the three answers
-    below.
+    ONE RETRY FOR THE CONFIRMATION ITSELF (fable-318 R1). The re-read is a
+    vision call and it can simply fail; one more attempt is the cheapest way to
+    tell a transport blip from a yes nobody could confirm.
   */
   let second = await reread();
   if (second.unavailable) second = await reread();
   if (second.unavailable) {
-    /*
-      AND HERE THE TWO SILENCES ARE FINALLY TOLD APART (fable-318 R1).
-
-      A reading that is MISSING and a reading that is PRESENT, EVIDENCED AND
-      NEGATIVE are not the same event, and until shift 62 this line treated them
-      as one: "one reading never refuses on its own" delivered both. Its specimen
-      is dev v#166, a paid render whose only reading said *"left ear has a dangly
-      gold cross; right ear has a plain hoop, not a cross"* — `binding`,
-      `absent: true`, `verified: false` — and which was delivered and charged
-      because the confirming call did not come back. The house kept 25 credits on
-      a frame its own reader had described as not the thing she asked for, and
-      the branch it left behind refused her NEXT, innocent ask.
-
-      D-194's asymmetry is untouched for everything it was written about: a
-      quibble (`absent: false`), a silence (`absent` undefined), an affirmative
-      on an unreliable facet — all still deliver on one reading, and nothing new
-      can refund anybody over an adjective. What changes is the one shape the
-      founder's bar calls catastrophic: the reader was ASKED whether the thing is
-      in the picture at all and answered no.
-
-      `absenceIsTheAsk` rides with it, declared rather than inherited: a removal
-      that did not happen is the same fact reached from the other side, and the
-      field's own comment calls a miss on it "the catastrophe". Reading it here
-      keeps one rule where D-246 already put one.
-
-      This does NOT refuse. It declines to DELIVER, which hands the render to
-      `refineService`'s free second attempt — the house's own re-render, costing
-      her nothing — and only a second failure reaches the refund. The user's
-      money is never spent on a single unconfirmed reading in either direction.
-    */
-    /* The hand-written population here WAS the gate's, clause for clause, and
-       since #2526 the gate says exactly this — so it asks the gate rather than
-       restating it (working law 4: the second list always drifts). */
-    const wordedAbsence = first.checks.filter(isRefusableMiss);
-    if (wordedAbsence.length === 0) {
-      /* No second opinion, and nothing evidenced to act on. As it always was. */
-      log.warn({}, "[renderVerification] no second opinion — delivering rather than refusing");
-      return { ...first, ok: true, readings: 1 };
-    }
-    log.error(
-      {
-        facets: wordedAbsence.map((check) => subjectKey(check.subject)),
-        saw: wordedAbsence.map((check) => check.saw ?? null),
-      },
-      "[renderVerification] no second opinion, and the one reading says the asked thing is ABSENT — not delivering on it",
-    );
-    return { ...first, ok: false, readings: 1 };
+    log.warn({}, "[renderVerification] no second opinion — the yes stays unconfirmed, and the render is delivered");
+    return { ...first, readings: 1 };
   }
   const secondBy = new Map(second.checks.map((check) => [keyOf(check), check]));
 
   /*
-    AN AFFIRMATION ON AN UNRELIABLE FACET LOSES TO DISAGREEMENT.
-
-    Not a majority — a demotion. The asymmetry is deliberate and it is the
-    founder's bar talking: a false pass charges for non-compliance, so on the
-    facets that have actually produced one, the benefit of the doubt runs the
-    other way. Where the facet is advisory this costs nothing but an honest
-    record; where it is binding the demoted check still has to survive the
-    majority of three below before it spends anybody's refusal.
-
-    ⚠ **AND THE SECOND READING'S OWN ABSENCE ANSWER RIDES WITH ITS VERDICT
-    (#2526).** This used to replace `verified` and `saw` and keep the FIRST
-    check's `absent` — which was undefined, because the first reading was an
-    affirmative and the field only exists beside a negative. Under the
-    catastrophic gate that would have quietly ended the sentence above: a
-    demoted check with no absence answer can never be an acting miss, so it
-    could not have survived a majority of three because it would never have
-    reached one. Carrying `other.absent` keeps the demotion exactly as strong as
-    it was, and it is the honest merge in any case — the fields of a check are
-    the reading that produced them.
+    AN AFFIRMATION ON AN UNRELIABLE FACET LOSES TO DISAGREEMENT. Not a majority
+    — a demotion, because a false pass is what files a wrong reference. The
+    second reading's own absence answer rides with its verdict (#2526): the
+    fields of a check are the reading that produced them.
   */
-  let checks = first.checks.map((check) => {
-    if (!(check.read && check.verified && hasUnreliabilityPrior(check))) return check;
+  const checks = first.checks.map((check) => {
+    if (!needsConfirmation(check)) return check;
     const other = secondBy.get(keyOf(check));
     /* Silent on this fact: no confirmation, and no withdrawal either (#2650). */
     if (!other || !other.read) return check;
@@ -1199,33 +1138,7 @@ export async function confirmVerdict(
       ...(other.absent === undefined ? {} : { absent: other.absent }),
     };
   });
-
-  const contested = checks.filter(isRefusableMiss);
-  /* Two readings that AGREE are what an ACT is made of; a split needs a third. */
-  const split = contested.some((check) => {
-    const other = secondBy.get(keyOf(check));
-    if (!other || !other.read) return true;
-    return original.get(keyOf(check))!.verified !== other.verified;
-  });
-  if (contested.length === 0 || !split) {
-    return { ...first, checks, ok: okOf(checks), readings: 2 };
-  }
-
-  const third = await reread();
-  if (third.unavailable) return { ...first, checks, ok: true, readings: 2 };
-  const thirdBy = new Map(third.checks.map((check) => [keyOf(check), check]));
-
-  /* Majority of three, per fact, voting the FIRST reading rather than the
-     demoted one — otherwise the second reading would be counted twice. */
-  checks = checks.map((check) => {
-    if (!isRefusableMiss(check)) return check;
-    const key = keyOf(check);
-    const votes = [original.get(key), secondBy.get(key), thirdBy.get(key)]
-      .filter(Boolean)
-      .filter((vote) => vote!.verified === false).length;
-    return votes >= 2 ? check : { ...check, verified: true, saw: undefined };
-  });
-  return { ...first, checks, ok: okOf(checks), readings: 3 };
+  return { ...first, checks, ok: okOf(checks), readings: 2 };
 }
 
 /** The facets that failed and are worth acting on. */

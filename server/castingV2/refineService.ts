@@ -326,7 +326,6 @@ import {
   confirmVerdict,
   facetIn,
   joinClauses,
-  missingFacts,
   shortfalls,
   scopedToInstance,
   libraryReadingOf,
@@ -8324,11 +8323,18 @@ async function refineCandidateCounted(
     }
 
     /*
-      RENDER, CHECK, AND ONE FREE RETRY.
+      RENDER AND CHECK — ONCE (#2672).
 
-      The verdict is evidence rather than proof — the same reader misread
-      pink-through-glasses irises as "deep brown" (D-183) — so a failure buys a
-      re-render at the house's expense before it ever spends the user's refusal.
+      ⚠ **THIS WAS "RENDER, CHECK, AND ONE FREE RETRY" UNTIL 2026-10-21.** A
+      disputed reading bought a second paint at the house's expense, plus the
+      confirming re-reads that decided whether to buy it. His ruling took both
+      away, verbatim: *"go with your reccomendation on those 2 squall cards"*,
+      on the proposal whose reason was his own *"users can just retry if its
+      not the exact look they want themselves for a cost"*. The reader's
+      opinion of a healthy frame already moved no money (fable-721); now it
+      moves no second picture either. The customer is handed the first frame,
+      the one reading rides the row as the record, and Regenerate is theirs.
+      The damage detector below is unchanged and still refunds.
     */
     const attemptRender = async () => {
       const rendered = await renderOnce();
@@ -8447,33 +8453,24 @@ async function refineCandidateCounted(
       return {
         rendered,
         /*
-          A MISS THE GATE WILL ACT ON IS RE-READ BEFORE IT COUNTS (D-194).
-
-          The reader disagrees with itself 21% of the time, measured on the
-          trial's own data, so one reading cannot be evidence enough to spend a
-          refusal. The extra calls land only on a render already headed for a
-          re-render or a refund.
-
-          ⚠ **"BINDING" WAS THE POPULATION UNTIL #2526 AND IS NOW NARROWER:**
-          `confirmVerdict` confirms exactly what `isRefusableMiss` admits, so a
-          quibble and a silence — neither of which can decline this delivery any
-          more — stop buying a confirming vision call they could not act on.
+          A MISS IS NO LONGER RE-READ (#2672). D-194 re-read a miss because it
+          was about to spend a refusal or a free re-render, and neither exists
+          any more. Nor is a yes in a slot this step edited: #2673 files that
+          slot's crop as its guide whatever the reader says, so its facets are
+          `moot` and keep one reading. The one second reading left is a
+          rap-sheet yes on a CARRIED facet, because the carried-confirmation
+          pass below still files a slot from it (#2646, #2650).
         */
-        verification: await confirmVerdict(await read(), read),
+        verification: await confirmVerdict(await read(), read, {
+          moot: new Set((rendered.askedNow ?? []).flatMap((slot) => facetsOfSlot(slot) ?? [])),
+        }),
       };
     };
 
-    let { rendered: image, verification } = await attemptRender();
-    let attempts = 1;
-
-    if (!verification.ok) {
-      log.warn(
-        { operationId, variant: variant.publicId, missing: missingFacts(verification) },
-        "[refineService] the render is missing filed facts — re-rendering once, free",
-      );
-      ({ rendered: image, verification } = await attemptRender());
-      attempts = 2;
-    }
+    const { rendered: image, verification } = await attemptRender();
+    /* Always one since #2672 — kept on the row and in the lines below so the
+       reliability report reads the same field across the change. */
+    const attempts = 1;
 
     /*
       THE READER-DEFECT WATCH LIST (D-187), logged on every delivered render.
@@ -8544,7 +8541,7 @@ async function refineCandidateCounted(
 
         So the door asks the contract instead of holding one. `facts_missing` is
         the reader's opinion of a HEALTHY frame: the damage detector passed this
-        picture twice, and what is in dispute is whether a subtle thing the
+        picture, and what is in dispute is whether a subtle thing the
         reader cannot reliably see is in it. That is the customer's judgment
         now, and the remedy is Regenerate.
 
@@ -8573,7 +8570,7 @@ async function refineCandidateCounted(
             attempts,
             verification: verification.checks,
           },
-          "[refineService] VERIFICATION FAILED TWICE — refusing and refunding",
+          "[refineService] VERIFICATION FAILED — refusing and refunding",
         );
         /*
           AND THE PICTURE THAT WAS REFUSED (founder-approved 2026-08-08).
