@@ -1098,6 +1098,28 @@ export async function refineCandidate(
     question *may this account answer early*, and left the question *can this
     caller hear the answer*. A caller that says nothing dispatches, which is
     what every customer-facing road already did.
+
+    ⚠ **THE RETIREMENT TOOK A SECOND READ WITH IT AND THAT IS DECLARED RATHER
+    THAN QUIET.** `captureCastingRefineDispatchEnabled` was an AND: the dispatch
+    scope *and* `captureCastingV2Enabled(userId)`. Deleting the predicate
+    deletes both halves, so the parent read went too — and it could never have
+    answered differently here, read at the bytes rather than argued:
+    `refineCandidate` has exactly ONE production caller
+    (`server/routes/castingV2.ts:1711`, `refineCandidate({}, …)`), and the
+    statement above it is `requireCastingV2(ctx.user.id)`, which is literally
+    `if (!captureCastingV2Enabled(userId)) throw`. The same predicate, asked
+    twice, two statements apart. Keeping it would also have left a CUSTOMER
+    scope question in front of the receipt, which is the thing this slice
+    removes.
+
+    ⚠ **WHAT IT WAS LOAD-BEARING FOR IS THE TEST HARNESS, AND THAT TURNED OUT
+    TO BE #2710'S CLASS ONE STEP OVER.** Almost no arm in
+    `refineService.test.ts` sets either scope, so that AND was quietly giving
+    nearly four hundred receipt-blind arms the held road they never asked for;
+    235 of them reddened in one run when it went. They declare it once now, at
+    their own import, the way the sixteen scripts of #2710 do at their call
+    sites. The guard there cannot see a `.test.ts` by construction — its
+    population is `git ls-files -- scripts` — and that file says so.
   */
   if (dependencies.cannotTakeAReceipt !== true) {
     attempt.dispatched = (given) => announce?.(given);

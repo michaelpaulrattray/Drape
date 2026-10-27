@@ -661,8 +661,42 @@ vi.mock("./signEngine", () => ({
 
 const {
   assertNotAnUncataloguedDeparture, asksToRemoveHerHair, readAskReference,
-  readAskScope, refineCandidate,
+  readAskScope, refineCandidate: refineCandidateRaw,
 } = await import("./refineService");
+
+/**
+ * ⚠ THIS SUITE IS A RECEIPT-BLIND CALLER AND SAYS SO ONCE, HERE — #2710's class,
+ * one step over, found by #1577 slice D4.
+ *
+ * Nearly four hundred arms in this file `await refineCandidate(…)` and then
+ * assert on the PICTURE: `journal` contains `"generate"`, `landedVariant` is
+ * set, the charge is out, the prompt that was sent said a particular thing.
+ * That is a caller which cannot take a dispatch receipt, in exactly the sense
+ * `cannotTakeAReceipt`'s own docblock means — handed one, it reads the answer as
+ * the finished picture and carries on.
+ *
+ * **Until slice D4 they were protected by an accident of configuration**, and
+ * the accident is worth naming because it is the same one the sixteen scripts
+ * of #2710 were living on: `captureCastingRefineDispatchEnabled` ANDed the
+ * dispatch flag with `CASTING_V2_SCOPE`, and almost no arm here sets EITHER, so
+ * every one of them took the held road without ever asking for it. The flag
+ * retired, the AND went with it, and **235 arms turned red in one run** —
+ * which is the honest measure of how load-bearing that accident was.
+ *
+ * ⚠ **#2710's GUARD CANNOT SEE THIS FILE, BY CONSTRUCTION**:
+ * `server/refineReceiptDiscipline.test.ts` walks `git ls-files -- scripts`, so
+ * a `.test.ts` caller is outside its population. That is a stated floor there
+ * and this is the declaration that answers it for the one suite that matters.
+ *
+ * ⚠ **THE SPREAD ORDER IS THE WHOLE DESIGN.** The default goes in FIRST, so any
+ * arm that means to exercise the receipt road overrides it by saying
+ * `cannotTakeAReceipt: false` in its own bag — which the dispatch suite does,
+ * explicitly, on every arm. Nothing is hidden: an arm that wants a receipt
+ * has to say the word, and an arm that wants the picture gets what it has
+ * always got, byte for byte.
+ */
+const refineCandidate: typeof refineCandidateRaw = (dependencies, input) =>
+  refineCandidateRaw({ cannotTakeAReceipt: true, ...dependencies }, input);
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -11203,7 +11237,19 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
 
     type Answer = Awaited<ReturnType<typeof refineCandidate>>;
     let answered: Answer | null = null;
-    const pending = refineCandidate({ ...greenEyes }, input)
+    /*
+      ⚠ `cannotTakeAReceipt: false` is spelled out HERE and it is not a
+      contradiction of the arm's own title. The title's "a caller that says
+      nothing" is about the PRODUCT's caller — `routes/castingV2.ts` passes
+      `refineCandidate({}, …)` and says nothing. This FILE is a receipt-blind
+      caller and defaults the field to `true` at its import (the block there
+      records why and what it measured), so an arm about the receipt road has to
+      opt back in. **An explicit `false` is not the same statement as a bag that
+      never mentions the field**, which is what the product passes — so that
+      shape is pinned on its own, in the last arm of this suite, through the
+      UNWRAPPED import.
+    */
+    const pending = refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input)
       .then((outcome) => { answered = outcome; return outcome; });
 
     await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
@@ -11226,7 +11272,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   it("answers with a receipt BEFORE the render, and the picture lands afterwards", async () => {
     const render = latch();
 
-    const result = await refineCandidate({ ...greenEyes }, input);
+    const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
 
     /*
       The latch is still shut at this line, so this is not a fast render — it is
@@ -11253,7 +11299,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     process.on("unhandledRejection", watch);
 
     try {
-      const result = await refineCandidate({ ...greenEyes }, input);
+      const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
       expect(result.kind).toBe("dispatched");
 
       engineThrows = new Error("the paint never came back");
@@ -11275,7 +11321,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     const render = latch();
 
     const started = Date.now();
-    await refineCandidate({ ...greenEyes }, input);
+    await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
     expect(censusLines(), "nothing is priced while the render is still running").toHaveLength(0);
 
     await new Promise((resolve) => setTimeout(resolve, 60));
@@ -11315,7 +11361,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     process.on("unhandledRejection", watch);
 
     try {
-      const result = await refineCandidate({ ...greenEyes }, input);
+      const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
       expect(result.kind).toBe("dispatched");
 
       costLineThrows = true;
@@ -11384,6 +11430,51 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     expect(landedVariant, "the render was terminal BEFORE the caller was answered").not.toBeNull();
     expect(ledger.charges, "one charge, the same as both other roads").toHaveLength(1);
     expect(ledger.refunds, "and nothing came back").toHaveLength(0);
+  });
+
+  it("⚠ dispatches for a bag that never mentions the field — the shape the PRODUCT passes", async () => {
+    /*
+      THE PRODUCTION SHAPE, AND THE ONLY ARM IN THIS FILE THAT CAN HOLD IT.
+
+      `server/routes/castingV2.ts` calls `refineCandidate({}, …)`: the one
+      production caller says nothing about receipts, and after slice D4 that is
+      the whole of what decides its road. Every other arm here goes through this
+      file's wrapper, which puts `cannotTakeAReceipt: true` in FIRST — so a bag
+      that merely omits the field is a shape the wrapper can no longer express,
+      and an arm spelling `false` proves something weaker.
+
+      So this one calls `refineCandidateRaw` — the unwrapped import — with a bag
+      carrying the engine mock and NOTHING else. If a future change makes the
+      product's empty bag take the held road, this is the line that reddens and
+      no other one in the file will.
+    */
+    const render = latch();
+
+    /*
+      Shaped like the discriminator above rather than awaiting the call, for its
+      reason, which was measured on this very arm: awaiting it deadlocks against
+      a shut latch on the held road, so the sabotage that proves this arm can
+      fail arrived as a 30-second timeout instead of a sentence. Reading the
+      journal gives the same verdict in 70 ms and names it.
+    */
+    let answered: Answer | null = null;
+    const pending = refineCandidateRaw({ ...greenEyes }, input)
+      .then((outcome) => { answered = outcome; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(
+      (answered as Answer | null)?.kind,
+      "a dependency bag that says nothing about receipts dispatches, as the procedure's does",
+    ).toBe("dispatched");
+    expect(landedVariant, "the latch is shut, so this was a receipt and not a fast render").toBeNull();
+    expect(ledger.charges, "charged once, before the receipt").toHaveLength(1);
+
+    render.release();
+    await pending;
+    await vi.waitFor(() => expect(landedVariant, "and the picture lands afterwards").not.toBeNull());
+    expect(ledger.refunds).toHaveLength(0);
   });
 
   it("still dispatches when the caller says it CAN take one — the field is read as `true`, never as truthy", async () => {
