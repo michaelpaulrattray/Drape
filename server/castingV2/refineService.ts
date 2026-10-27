@@ -204,6 +204,7 @@ import {
   readRemovalSubject,
   reReadNamesAThingToHave,
   sameChain,
+  takenFromKeptSentences,
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
@@ -6648,6 +6649,26 @@ async function refineCandidateCounted(
             return undefined;
           }
         }
+        /*
+          AND WHAT AN EARLIER PRUNE TOOK OUT OF A SENTENCE THAT STAYED (#2665).
+
+          `earlierAsks` are the customer's sentences, verbatim, and a pruned
+          step keeps its sentence (D-171): after "remove the fangs", the record
+          still reads "add fangs and horns". `edit.takenBack` covers only THIS
+          edit, so a seed written after a prune whose own description was never
+          filed was handed the fangs as a change already made — and every
+          render after it paints from that paragraph. The sentence is never
+          edited; what it no longer asks for rides beside it as taken back, the
+          same lines and the same backstop as this edit's own. Only on the seed
+          road: a previous description already carries the removal.
+        */
+        const takenEarlier = previous === null
+          ? takenFromKeptSentences(
+            predecessorChain ?? [],
+            lineageChainsOf(existing, predecessor),
+            composed,
+          )
+          : [];
         const written = await writeCurrentDescription(
           (dependencies.describeEngine ?? interpreterEngine)(),
           {
@@ -6669,7 +6690,7 @@ async function refineCandidateCounted(
             /* The customer's own sentence, verbatim (#2645) — see the
                paragraph above `describeThisEdit`. */
             change: instruction,
-            takenBack: edit.takenBack,
+            takenBack: Array.from(new Set([...edit.takenBack, ...takenEarlier])),
             absences: edit.absences,
             /* The half of that sentence the photograph does not show was not
                painted, so the writer is told so and its backstop refuses a
@@ -11267,4 +11288,30 @@ export function readStepDeltas(value: unknown): RefineDelta[] {
     steps.push(delta);
   }
   return steps;
+}
+
+/**
+ * THE CHAINS OF A VERSION'S ANCESTORS, walked by `parentVariantId` (#2665).
+ *
+ * The same walk the reference-pointer read makes: a branch the customer is not
+ * on cannot have put anything on this cast, so only the ancestry is read, never
+ * every row. A row whose two lists disagree reads as no chain and is skipped —
+ * `takenFromKeptSentences` then simply sees less, which is a miss and never a
+ * false entry.
+ */
+export function lineageChainsOf(
+  rows: ReadonlyArray<{ id: number; parentVariantId: number | null; instructions: unknown; stepDeltas: unknown }>,
+  from: { parentVariantId: number | null } | null | undefined,
+): ChainStep[][] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const chains: ChainStep[][] = [];
+  const guard = new Set<number>();
+  let walk = from?.parentVariantId == null ? null : byId.get(from.parentVariantId) ?? null;
+  while (walk && !guard.has(walk.id)) {
+    guard.add(walk.id);
+    const chain = readChain(readInstructions(walk.instructions), readStepDeltas(walk.stepDeltas));
+    if (chain) chains.push(chain);
+    walk = walk.parentVariantId == null ? null : byId.get(walk.parentVariantId) ?? null;
+  }
+  return chains;
 }

@@ -63,9 +63,13 @@ describe("how many at once", () => {
        up."). It was five from 2026-08-18, when the plate mint became the fifth
        declared path and its slot came out of this — the courtesy — pool rather
        than a paid one. That cut was judged free at a counted 20 calls a scan;
-       real faces ask 21–27 (`FACE_SCAN_FAL_CALLS`, #2183), where it cost about
-       one wave and a measured median ~6 s (#2189), and #2206 gave the slot
-       back. The number lives in `FAL_ALLOWANCES` and is read from there, so
+       real faces asked 21–27 on the crop road those readings were taken under
+       (`FACE_SCAN_FAL_CALLS.sam3.measured`, #2183), where it cost about one
+       wave and a measured median ~6 s (#2189), and #2206 gave the slot back.
+       ⚠ The live road is the cheaper one since 2026-10-16 (14–17 reads,
+       `faceScanSam3Reads()`), which makes the waves smaller still and takes
+       nothing away from #2206's word — the figure is left as the one the
+       measurement was made under rather than restated by arithmetic. The number lives in `FAL_ALLOWANCES` and is read from there, so
        this arm moves when the budget does rather than describing an older one. */
     expect(falConcurrencyLimit()).toBe(6);
     delete process.env.FAL_CONCURRENCY;

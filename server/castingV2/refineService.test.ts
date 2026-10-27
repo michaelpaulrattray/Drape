@@ -16015,6 +16015,156 @@ Their photograph does not show these, so no change above was made to them. Do no
       .toBe(ledger.charges.reduce((sum, one) => sum + one.amount, 0));
   });
 
+  /*
+    #2665 — A FEATURE TAKEN OFF IN AN EARLIER EDIT NEVER COMES BACK THROUGH THE
+    SEED. Driven through the real entrance, three edits on one cast:
+
+      1. "add fangs and horns" (fixtured as the stored version it would land);
+      2. "remove the fangs" — the open-kind prune keeps the step and its
+         sentence (#2638), and this render's description is REFUSED, so the
+         version stores none;
+      3. one more edit, which therefore SEEDS from the brief plus the earlier
+         sentences — and the only sentence left is "add fangs and horns",
+         verbatim, because the studio never rewords what the customer typed.
+
+    The seeded turn must carry the fangs as taken back, and a paragraph that
+    writes them in anyway must not be filed. Asserted at the wire: the user turn
+    the writer actually received.
+  */
+  describe("an earlier prune survives the seed road (#2665)", () => {
+    /* Horns are a closed subject the studio owns; fangs ride the open lane.
+       One sentence filed both, which is the shape #2638's prune keeps. */
+    const FANGS_AND_HORNS = {
+      open: { fangs: { noun: "fangs", words: "long white fangs" } },
+      free: { horns: ["short curved horns"] },
+    };
+    const stepOne = () => {
+      variantRows = [{
+        id: 500,
+        publicId: "variant-1",
+        candidateId: 1,
+        parentVariantId: null,
+        imageKey: "casting-v2/variants/fangs-and-horns.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: ["add fangs and horns"],
+        stepDeltas: [FANGS_AND_HORNS],
+        deltas: FANGS_AND_HORNS,
+        status: "ready",
+      }];
+      candidateRow.selectedVariantPublicId = "variant-1";
+    };
+    const writing = (text: string) => () => ({
+      id: "test:describe",
+      complete: async (request: { about?: string; user: string }) => {
+        asked.push(request);
+        return {
+          text,
+          latencyMs: 5,
+          provenance: { provider: "openrouter", model: "anthropic/claude-sonnet-5", providerRef: "d" },
+        };
+      },
+    });
+    /* Step 2 through the entrance, then filed as the ready row it lands as. */
+    const pruneTheFangs = async () => {
+      stepOne();
+      await refineCandidate({
+        ...describing,
+        interpret: async () => ({ ok: true as const, intent: "remove" as const, subject: "teeth", match: "fangs" }),
+        /* The original photograph has no fangs, so the chain put them there
+           and the removal is the chain's to undo. */
+        regions: {
+          region: async () => ({ data: Buffer.alloc(32 * 48, 0), width: 32, height: 48 }),
+          subject: async () => ({ data: Buffer.alloc(32 * 48, 255), width: 32, height: 48 }),
+          landmark: async () => [{ x: 0.3, y: 0.4 }, { x: 0.7, y: 0.4 }],
+        },
+        /* A paragraph that keeps the fangs — refused by this edit's own
+           backstop, so the version lands with NO description. */
+        describeEngine: writing("A woman in her thirties with long dark hair, long white fangs and short curved horns."),
+      } as never, { ...input, instruction: "remove the fangs", clientRequestId: "55555555-5555-4555-8555-555555555555" });
+      expect(landedVariant, "the prune landed").not.toBeNull();
+      expect(landedVariant, "and its description was refused").not.toHaveProperty("currentDescription");
+      const claimed = (claimVariant as unknown as { mock: { calls: Array<[Record<string, unknown>]> } })
+        .mock.calls.at(-1)![0];
+      /* The prune kept the step and its sentence, and only the fangs left it. */
+      expect(claimed.instructions).toEqual(["add fangs and horns"]);
+      expect(claimed.stepDeltas).toEqual([{ free: { horns: ["short curved horns"] } }]);
+      variantRows.push({
+        id: 501,
+        publicId: "variant-2",
+        candidateId: 1,
+        parentVariantId: 500,
+        imageKey: "casting-v2/variants/horns.png",
+        internalPrompt: candidateRow.internalPrompt as Record<string, unknown>,
+        instructions: claimed.instructions,
+        stepDeltas: claimed.stepDeltas,
+        deltas: claimed.deltas,
+        status: "ready",
+      });
+      candidateRow.selectedVariantPublicId = "variant-2";
+      asked.length = 0;
+      painted.length = 0;
+      landedVariant = null;
+    };
+
+    it("the seeded writer is told the fangs were taken back, beside the customer's sentence verbatim", async () => {
+      await pruneTheFangs();
+      await refineCandidate(describing as never, { ...ask, clientRequestId: "66666666-6666-4666-8666-666666666666" });
+
+      expect(asked).toHaveLength(1);
+      const user = asked[0]!.user;
+      /* The seed road, and the earlier sentence exactly as typed — never edited. */
+      expect(user).toContain("How they were first described:");
+      expect(user).toContain("Changes already made since, in order (fold them into the description):\n- add fangs and horns");
+      /* And what that sentence no longer asks for, said as taken back. */
+      expect(user).toContain("This change takes away, so it must not appear in the description except as its absence:\n- fangs");
+      const takenBlock = user.slice(user.indexOf("This change takes away"));
+      expect(takenBlock, "the horns are still on the cast").not.toContain("horns");
+      expect(landedVariant?.currentDescription).toBe(DESCRIPTION);
+    });
+
+    it("a seeded paragraph that writes the fangs back in is NOT filed", async () => {
+      await pruneTheFangs();
+      await refineCandidate({
+        ...describing,
+        describeEngine: writing("A woman in her thirties with long dark hair worn down, long white fangs and short curved horns."),
+      } as never, { ...ask, clientRequestId: "77777777-7777-4777-8777-777777777777" });
+
+      expect(asked).toHaveLength(1);
+      expect(landedVariant, "the version still landed").not.toBeNull();
+      expect(landedVariant).not.toHaveProperty("currentDescription");
+      for (const prompt of painted) expect(prompt).not.toContain("fangs");
+    });
+
+    it("CONTROL — a paragraph that keeps the horns and says no fangs IS filed", async () => {
+      await pruneTheFangs();
+      const kept = "A woman in her thirties with long dark hair worn down and short curved horns. She has no fangs.";
+      await refineCandidate({ ...describing, describeEngine: writing(kept) } as never,
+        { ...ask, clientRequestId: "88888888-8888-4888-8888-888888888888" });
+      expect(landedVariant?.currentDescription).toBe(kept);
+    });
+
+    it("CONTROL — fangs asked for AGAIN after the prune are on the cast, so they are not taken back", async () => {
+      await pruneTheFangs();
+      await refineCandidate({
+        ...describing,
+        interpret: async () => ({
+          ok: true as const,
+          delta: { open: { fangs: { noun: "fangs", words: "long white fangs" } } },
+        }),
+      } as never, { ...input, instruction: "give her fangs again", clientRequestId: "99999999-9999-4999-8999-999999999999" });
+      expect(asked).toHaveLength(1);
+      expect(asked[0]!.user).not.toContain("This change takes away");
+    });
+
+    it("CONTROL — with no prune in the lineage the seed carries nothing taken back", async () => {
+      stepOne();
+      await refineCandidate(describing as never, ask);
+      expect(asked).toHaveLength(1);
+      expect(asked[0]!.user).toContain("- add fangs and horns");
+      expect(asked[0]!.user).not.toContain("This change takes away");
+    });
+  });
+
   it("CONTROL — the same fixture with declarative words DOES ask the writer", async () => {
     /*
       Working law 2, and it is load-bearing twice over: the arm above would pass

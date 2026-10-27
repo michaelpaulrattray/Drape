@@ -11,6 +11,7 @@ import {
   sameChain,
   stepLabel,
   struckPartOf,
+  takenFromKeptSentences,
   type ChainStep,
 } from "./refineRemoval";
 
@@ -553,5 +554,57 @@ describe("#2638 follow-up — only the named open kind leaves its step", () => {
     /* CONTROL — the same recipe still matches itself. */
     expect(sameChain(after, { instructions: [...after.instructions], delta: composeChain(pruned) })).toBe(true);
     expect(fingerprintDelta(after.delta)).not.toBe(fingerprintDelta(before.delta));
+  });
+});
+
+/*
+  #2665 — WHAT A KEPT SENTENCE NO LONGER ASKS FOR, read off the lineage through
+  the real prune (`matchSteps` + `chainAfterRemoval`), never a hand-built
+  "after" delta, so a change to what the prune keeps is a change this sees.
+*/
+describe("takenFromKeptSentences (#2665)", () => {
+  const sentence = "small gold hoops and thin wire glasses";
+  const before: ChainStep[] = [
+    { instruction: sentence, delta: { free: { statedAccessories: ["small gold hoops", "thin wire glasses"] } }, provenance: null },
+  ];
+  const after = chainAfterRemoval(
+    before,
+    matchSteps(before, { subject: "statedAccessories", match: "hoops" }),
+    "statedAccessories",
+  );
+
+  it("an item pruned from a kept step is named, verbatim, and the survivor is not", () => {
+    expect(after.map((one) => one.instruction)).toEqual([sentence]);
+    expect(takenFromKeptSentences(after, [before], composeChain(after))).toEqual(["small gold hoops"]);
+  });
+
+  it("an open kind pruned from a kept step is named by its noun", () => {
+    const fanged: ChainStep[] = [{
+      instruction: "add fangs and red lipstick",
+      delta: { open: { fangs: { noun: "fangs", words: "long white fangs" } }, free: { lips: "red lipstick" } },
+      provenance: null,
+    }];
+    const pruned = chainAfterRemoval(fanged, matchSteps(fanged, { subject: "teeth", match: "fangs" }), null);
+    expect(pruned).toHaveLength(1);
+    expect(takenFromKeptSentences(pruned, [fanged], composeChain(pruned))).toEqual(["fangs"]);
+  });
+
+  it("CONTROL — nothing is named when the lineage holds no shrunken step", () => {
+    expect(takenFromKeptSentences(before, [before], composeChain(before))).toEqual([]);
+    expect(takenFromKeptSentences(after, [], composeChain(after))).toEqual([]);
+  });
+
+  it("CONTROL — a pruned item the recipe holds again is not taken back", () => {
+    const again = composeChain([...after, {
+      instruction: "put the gold hoops back",
+      delta: { free: { statedAccessories: ["small gold hoops"] } },
+      provenance: null,
+    }]);
+    expect(takenFromKeptSentences(after, [before], again)).toEqual([]);
+  });
+
+  it("CONTROL — a different sentence in the lineage is never compared", () => {
+    const other: ChainStep[] = [{ ...before[0]!, instruction: "something else entirely" }];
+    expect(takenFromKeptSentences(after, [other], composeChain(after))).toEqual([]);
   });
 });
