@@ -1087,3 +1087,291 @@ in `audit_logs` (run 2's question, still nobody's card); the health alarm's dupl
 **Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render,
 no production variable, no flag, no migration. Four read-only disposables against production, all
 deleted at close. One detached worktree at `4d6f94a36`, removed with both commands.
+
+## Run 9 — 2026-10-27 18:40–2x:xx AEST (Warden, patrol #9, crew run #810)
+
+Ran because `patrol-clocks.mts` read the seat **OVERDUE by 3 days** (10 days since run 8) with his
+Security switch ON, and an overdue patrol whose switch is on goes ahead of the category order
+(#505). Everything above it was read rather than taken from the digest: **urgent band EMPTY**;
+**0 of 14 founder-ordered cards ON OFFER** (11 held, #2544 claimed and on his desk, #2566 waiting
+on review); **no repair owed** — all five open seat PRs checked for a `**Relay finding — HELD`
+header and none carries one; **no new Desk replies** (301/301 at launch and again before close);
+**no card taps waiting**. A lane-mate was live throughout (row #809, `seat1-20261027-182553`, on
+#2630 then #2698, the performance switch) and none of its cards was touched.
+
+**Two findings, both filed, and the first is also REPAIRED in this run.** The honest shape of the
+night: the product's own controls all held, and both findings are about **readers** — one that had
+nothing watching it, one that has been quietly wrong for months.
+
+### A. Findings baseline — the readings
+
+| reading | at | verdict | done with it |
+|---|---|---|---|
+| **run 8's cards** | the queue | **none to carry** — run 8 was the first Warden run with no finding at all | Nothing of this seat's was outstanding at launch. |
+| ⚠ **`pnpm audit`, ALL SCOPES** | `f4d2e5d46`, lockfile at HEAD | ⚠ **11 — 3 low, 7 moderate, 1 HIGH.** Run 8 read **0** | **W9-A → #2703**, and §B. |
+| `pnpm audit --prod` | the same tree | ✅ **0** | The gate's own half is clean, so nothing went around it. Every one of the eleven is a devDependency. |
+| **the gate's advisory step, run locally** | the same tree | **exit 0** — *"none blocking — 477 production dependencies read"* | ⚠ Its own next line is the finding's cause: *"devDependencies are NOT read here (--prod). A green line is a floor, not coverage."* |
+| **Dependabot alerts, NO `state` filter, counted by state HERE** | the alert list, all pages | **131 all time — 11 `open`, 120 `fixed`**, and **all 11 are `development` scope** | Third run running that this form is the only one that works (120 = 119+1 at run 7, 120 = 120+0 at run 8). The count matches `pnpm audit` exactly, severity for severity — **two readers that share no resolver, agreeing.** |
+| **`pnpm warden:overrides`** | `package.json` + `pnpm-lock.yaml`, 715 packages | **12 overrides: 9 govern a package, 3 govern NOTHING** — `lodash-es`, `mdast-util-to-hast`, `tar` | ⚠ **Read at run 8's own tree rather than inferred: it held ELEVEN, including `proxy-addr`.** The twelfth is **`body-parser`** alone, from #2683 (the three advisories that reddened every gate during the outage). **Fourth run reporting the same three dead ones; the count is REPORTED and no action taken** (#1815 — removal is its own decision with its own receipt). |
+| **`secrets.yml` crons of 2026-10-19 AND 2026-10-26** (run 8 §E item 3) | runs **39322105255** and **40398741278**, both `schedule`, both success | **5010 commits scanned, `no leaks found`** then **5015 commits scanned, `no leaks found`** | Baseline 3390 → 3683 → 3793 → 4102 → 4460 → 4850 → **5010 → 5015**, still zero. ⚠ **Five commits in that whole week** — the Railway build pause, visible in a second instrument. ⚠ **And the pause was counted here rather than cited from the Machinist: gate runs per day read 31 on 10-17, then 5, 0, 18, 0, 0, 0, 0, 1, and 36 on 10-27 — so the six zero-days are 10-18, 10-20 and 10-22 through 10-25.** Any figure derived across that span is read against the calendar first. |
+| `audit_logs` | production, **1240 rows**, 2026-07-10 → 2026-10-27T05:34:43Z | **1016 info · 222 warning · 2 critical** | Run 8 read 1239 / 1015 / 222 / 2. ⚠ **Exactly ONE new row in ten days** — `#1240 casting.scan_miss` [info], 2026-10-27T05:34:43Z. **The two criticals are still the only two this log has ever had** (#983, #984, both `system.health_alert`, 2026-09-29) and still #1807's health alarm. |
+| **the metadata-only boundary**, controls first | **17** refusing keys DERIVED from `shared/errorEventScrub.ts`, parsed over every `metadata` JSON of all 1240 rows | ✅ **0 rows carry any of the seventeen** | §E. Controls printed before the verdict counted: positive found both a NESTED and an IN-ARRAY key; negative found nothing on a decoy holding `masterPrompt` and `technicalSchema` as VALUES. |
+| **run 8's own 197, reconciled** | the same rows, the same reader, `description` added to the set | ✅ **197 — all `system.health_alert`, all at `$.description`**, reproduced EXACTLY | §E. ⚠ **And run 8's prose said *"the nine boundary keys"*: `REFUSING_KEYS` held SEVENTEEN at run 8's own tree too, read at `b1613763c`.** Its measurement is right and its description of the population was not. |
+| **the one enumerated grid exception** — bug reports (#255) | production | **`bug_reports` 0 rows, all time** · **0 audit rows whose action names a bug or a report** | Unchanged since #255 shipped. The audit row that must never carry the `description` does not exist yet, so the arm most worth keeping has had nothing to keep. |
+| **`abuse.*` rows** | production, all time | **15 — unchanged from runs 7 AND 8**, all `abuse.free_scan_capped`, all `userId 1`, all 2026-10-08 09:22–09:25Z | ✅ **Nineteen days and not one new capped row** since #2170 shipped — the same repair read from the other side, now twice. |
+| `blocked_ips` / staff population / suspensions / lockouts | production | **0 blocked IPs · 2 admins, 4 users · 0 suspended · 0 frozen** | **UNCHANGED from runs 6, 7 and 8.** Run 8 recorded that "users 6" nearly read as growth; it is 2 + 4 and it still is. |
+| **branch protection** | `GET …/branches/main/protection` | **UNCHANGED — the same seven required checks** `gate-checks`, `founder-gate`, `Socket Security: Pull Request Alerts`, `static-shapes`, `bundle-budget`, `unit-tests-1`, `unit-tests-2` | `strict: false`, `enforce_admins: false`, `required_pull_request_reviews: null`, force-push and deletions off, no restrictions — all unchanged. `enforce_admins` is still his call (#858) and still gets no recommendation. ⚠ **The third unit shard is not on that list — read, driven, and NOT a finding: §D.** |
+| the security surface's diff since run 8 | `git log --since=2026-10-17` over `server/security`, `_core`, the auth routes, billing, stripe, admin, `.github`, the three `db` money/security modules | **4 commits, and nothing widened** | Three add a flag declaration to `server/_core/env.ts` (`#2566`, `#1577`, `#2544`). The fourth, `18bfa29e0` (the Janitor's #2605), NARROWS: `withoutMachineMessage`, `RESEND_VERIFICATION_ANSWER` and `DEVICE_COOKIE_MAX_AGE_MS` lose their `export`. ⚠ **Each was read at the bytes** — declared once, used once in its own file, named in no other file, values unchanged. A tidy-up touching `_core/trpc.ts` and an auth route is the path-three shape, and this one is clean. |
+| semgrep, tree | run **40467780731**, job `static-shapes` (122067291686), semgrep 1.174.0 | **`Ran 76 rules on 2392 files: 0 findings`** | Run 8 read 76 rules / 2379 files / 0. Row appended to `docs/WARDEN_SEMGREP.md`. |
+| actionlint + zizmor | run **40467780731**, job `gate-checks` (122067291544) | **actionlint 1.7.12, zizmor 1.29.0, five workflows: `No findings to report. Good job!`** | |
+| access-control suites + the wired controls | `f4d2e5d46` | **7 Test Files / 206 tests green** — `approvalGate`, `staffImageBoundary`, `publicInputStrictness`, `sessionIssuanceSites`, `loginAttackAlert`, `bugReportInbox`, `moneySurfaceClassifier` | Identical to run 8. Keyed on the **Test Files** line as well as the Tests line. **Five mint sites still five.** |
+| **invariant 5 at the Atlas** — the public allowlist | `docs/architecture/drape-architecture.json` | ✅ **13 `public-endpoint` findings, matching CLAUDE.md's thirteen NAME FOR NAME**, and **2 `onboarding-endpoint`** (`access.redeem`, `access.status`) | §E. |
+| **invariant 4's public half** | the same artifact, 293 routes | ✅ **0 routes are `open` input AND `public` auth**, with TWO positive controls that fired | §E — and the first reading of this was a false clean, §F. |
+| ⚠ **the Atlas's `rateLimited` column** | the same artifact, against a second reader | ⚠ **WRONG on 17 of 293 rows, one of them the PUBLIC `creationCheck.lookup`** — 0 wrong the other way | **W9-B → #2704**, and §C. |
+| **invariant 5's rate-limit half, the real control** | `server/publicEndpointLimiters.test.ts` driven | ✅ **20/20 green, `KNOWN_UNLIMITED` empty** | §C. This is why W9-B is an instrument defect and not a hole. |
+| **the un-wiring differ over this run's window** | `b1613763c` (run 8's tree, a detached worktree) vs `f4d2e5d46` | **1 symbol lost its last production importer — DECIDED, 0 accidents** | §D. |
+
+### B. W9-A — eleven open advisories, one high, and every one already inside a range we declare
+
+**#2703.** `pnpm audit` went **0 at run 8 → 11 tonight**, and the Dependabot alert list agrees
+independently: 131 alerts all time, 11 open, 120 fixed, **every open one `development` scope**.
+
+| package | advisories | the worst of them |
+|---|---|---|
+| `vite` 7.3.6 | 5 | **GHSA-587h-7wmj-h5pm, HIGH** — `launch-editor`'s `fs.existsSync()` existence check bypassed **on Windows** |
+| `@vitest/mocker` 4.1.11 | 2 | code injection via unauthenticated manual mock registration; a Windows backslash traversal |
+| `fast-uri` 3.1.8, under `ajv` | 4 | URI scheme spoofing via percent-encoded scheme decoding (CVSS 6.1) |
+
+**Nothing a customer can reach is affected and that is measured**: `--prod` reads 0 at both ends,
+and the gate's advisory reader says *"477 production dependencies read"*. What is exposed is a
+developer's machine and CI — and three of the five vite rows are `launch-editor`, all three
+**Windows**-specific, reached from the dev server's *open in editor* overlay. This is the machine
+every shift and the founder actually work on.
+
+⚠ **THE PART WORTH KEEPING IS WHY NO ROAD OUT HAD BEEN TAKEN, AND IT IS NOT NEGLECT.** All three
+packages had a patch **inside the ranges `package.json` already declared** — `vite ^7.3.5` permits
+7.3.7, `vitest ^4.1.11` permits 4.1.12, and our own override `fast-uri ^3.1.8` permits 3.1.9. But
+**Dependabot had an open MAJOR pull request for two of them** — #2661 (vite → 8.3.4) and #2662
+(vitest → 5.0.5), both opened 2026-10-19, both red on `unit-tests-3`, eight days old — and
+**Dependabot will not open a second pull request for a dependency it already has one for**, so the
+cheap in-major patch is never proposed. `fast-uri` is a transitive held by our own override and was
+never going to get one at all. ⚠ **Read rather than inferred:** the group PR **#2685**, opened the
+same morning, moves **neither** package — every line of its lockfile diff is `@types/node` peer
+churn. This is #857's class ("the patch road is red, and 91 advisories wait behind it") returning
+in a smaller shape.
+
+**REPAIRED IN THIS RUN — the floors are raised, not the lockfile merely refreshed**, which is the
+road #2171 took for `source-map-js`: a refresh alone leaves a range that still permits the
+vulnerable release. Measured on the branch before and after: **`pnpm audit` 11 → `No known
+vulnerabilities found`**, `--prod` 0 → 0, from a 6-line `package.json` change and a 135-line
+lockfile diff. #2661 and #2662 stay open and stay their own decision.
+
+⚠ **A THIRD READER TURNED UP UNASKED AND AGREED SEVERITY FOR SEVERITY**: pushing the branch made
+git print *"GitHub found 11 vulnerabilities on michaelpaulrattray/Drape's default branch (1 high, 7
+moderate, 3 low)"*. So `pnpm audit`, the alert list counted by state, and GitHub's own push notice
+all give the same eleven and the same split — **three readers, no shared resolver.** It is recorded
+because the previous two Warden runs had to reason about which audit form to trust, and this one
+settles it for the window.
+
+**Receipts (PR #2706, branch `team/dev-advisory-floors-2703`, commit `00db55c98`):** resolution read
+at the lockfile after the change — `vite@7.3.7`, `vitest@4.1.12`, `@vitest/mocker@4.1.12`,
+`fast-uri@3.1.9`; **the FULL suite on the new tree, `Test Files 1196 passed | 31 skipped (1227)` and
+`Tests 20952 passed | 337 skipped (21289)`**, keyed on both lines; `pnpm preflight` **GREEN** at
+80.1s, **including both bundle budgets**, which is the one thing a vite patch could plausibly move
+(the first download is judged off a real client build). ⚠ **The full suite was run because a
+dependency bump is too broad for diff-adjacent selection, and the measurement says so: preflight
+picked 2 files.**
+
+⚠ **AND THIS IS THE SECOND MEASURED INSTANCE OF RUN 7'S DEV-SCOPE GAP, which is the half that is
+HIS and not a shift's.** Run 7 measured it (#2169) and said a second instance would make it worth
+his eye; run 8 looked and found no dev-scope advisory open at all, so the count did not move and
+run 8 was right not to promote it on age. Tonight there are eleven and one is high, caught by
+nobody for three days because the only reader is a weekly patrol. **The decision — whether the gate
+grows a dev-scope read, refusing or merely warning — is on #2703 as evidence and is not built by a
+shift.** The argument against it is real and is stated there: a dev advisory cannot reach a
+customer, and a refusing arm would redden every merge for a build tool.
+
+### C. W9-B — the map says seventeen routes have no rate limit, and one of them is public
+
+**#2704.** The Atlas carries a `rateLimited` flag on all 293 procedures and its HTML page draws it
+as a **"rate limit"** column in *Routes & access control*. Measured with a second reader that shares
+no resolver with the generator (the generator walks the TypeScript AST; this reads the files as
+text):
+
+- **17 of 293 rows say a procedure is not rate-limited when it is. 0 rows say the opposite** — the
+  error is entirely one-directional, and the false-positive pass over all 67 "limited" rows found
+  **0** reading true on a comment or string alone.
+- **One of the seventeen is `creationCheck.lookup`, which is PUBLIC**, on CLAUDE.md's invariant-5
+  allowlist. Its own file header says *"IP-rate-limited (a real `TOO_MANY_REQUESTS`, invariant 6)"*
+  and the code agrees: `limit(getClientIp(ctx.req), CREATION_CHECK_LOOKUP_RATE)` is the **first
+  statement in the handler, before anything is read** (`server/routes/creationCheck.ts:128`).
+- The other sixteen are the three remaining `creationCheck` procedures, `castingV2.voice.remove`,
+  and twelve `wardrobe.*` ones — upload, VTO, decompose, tattoo analysis.
+
+**The cause is one line** (`scripts/generate-architecture.mts:588`):
+`rateLimited: /rateLimit|RATE_LIMITS|checkRateLimit/.test(text)`, where `text = chain.getText()` —
+the procedure chain alone, never the file. **Fifteen route files import `checkRateLimit` and then
+call it through a locally named wrapper** — `rl`, `rateCheck`, `limit`, `rate`, `check`,
+`enforceRateLimit`, `throwIfRateLimited`, `recipientCheck` — and not one of those eight names
+contains any of the three spellings. ⚠ **This is the collector class CLAUDE.md records being fixed
+four times in ONE sitting on 2026-08-23** — *"a regex standing in for something the code already
+states is working law 4 inverted, and it reports a complete list either way."* **It is the fifth
+instance and the only one still open.**
+
+⚠ **AND NOTHING READS THE FIELD, WHICH IS WHY NO INSTRUMENT COULD EVER HAVE GONE RED.** Grepped
+across `scripts`, `server`, `client`, `shared`: the only mentions of `rateLimited` are its type
+declaration, the collector line, the HTML column and the JSON schema. **No finding kind, no guard,
+no suite consumes it.** A field recorded on every row and asserted nowhere is a field nobody has.
+
+✅ **WHAT IS NOT WRONG, so it is not re-fixed: invariant 5's "each is rate-limited" half IS pinned,
+by a driven guard, and it is green.** `server/publicEndpointLimiters.test.ts` (#2409) derives its
+population from the Atlas's `public-endpoint` findings, drives every member through the real
+`appRouter` from one address until it refuses, then proves a second address is still let in — so it
+tells *limited*, *unlimited*, *refuses everyone* and *not per address* apart, with five controls of
+its own. `KNOWN_UNLIMITED` is `{}`. **20 of 20 green tonight.** That suite, not this column, is the
+control — so the damage is confined to a human reading the map, and to any future reader built on
+the column. The card recommends either resolving the one alias hop with a second reader, or
+**deleting the column**, and says plainly that an unread field wrong on 17 rows is worse than no
+field.
+
+### D. The un-wiring differ, and the third unit shard
+
+**The differ over `b1613763c` → `f4d2e5d46`** (46 first-parent commits, 174 files, +13,561/−3,312),
+run over a detached worktree at run 8's tree:
+
+```
+CONTROLS
+  PASS  sanity  both trees read            2360 files / 3905 exports -> 2366 files / 3890 exports
+  PASS  sanity  the two trees are DIFFERENT  -15 exports, 6 files
+```
+
+**One symbol lost its last production importer, and it is DECIDED:** `missingFacts`
+(`server/castingV2/renderVerification.ts`) lost `castingV2/refineService.ts`. Opened and read
+rather than classified from the name: `33d0ab9b7` (#2672, PR #2676) removed the block whose log line
+was `"[refineService] the render is missing filed facts — re-rendering once, free"` — **the
+announcement of the free re-render that card exists to delete.** So the symbol lost its caller as a
+direct and intended consequence, and **the diagnosis itself is not lost**: `shortfalls(verification)`
+still builds the customer's sentence at `refineService.ts:8615`, and the verdict is still computed
+and still on the row. ⚠ **A clean run here is a FLOOR, not coverage** — the instrument cannot see a
+call site that survives behind an early return, and the new tree is the working directory.
+
+⚠ **One residual worth naming, and it is for the Janitor rather than a card.** `missingFacts` is now
+an export with **no production caller**, kept alive by its own suite — and the differ classified it
+**"STILL SELF-CONSULTED — the uncalled-export sweep cannot see these"** on a `selfUses` of 1 that is
+its own **docblock mention**, not a call. So it escapes the uncalled-export sweep and the differ's
+`FULLY DARK` class at the same time. One instance, housekeeping, named here so the next Janitor run
+does not have to re-find it.
+
+**THE THIRD UNIT SHARD — read, driven, and NOT a finding.** `main`'s required checks name
+`unit-tests-1` and `unit-tests-2` and **not** `unit-tests-3`, while `gate.yml` runs `--shard=1/3`,
+`2/3` and `3/3`; PR #2662 sits `UNSTABLE` with that shard red. ⚠ **The workflow's own comment had
+already reasoned it and law 7c found the reasoning before this became a card:** *"`enforce_admins`
+on `main` is off (#460) and every merge here is made by an admin, so a job that
+`scripts/lib/prMergeOrder.mts` does not read by name binds no merge"* — branch protection binds
+nothing here either way, and the real control is `unitShardJobNames` deriving every name from
+`gate.yml`. **Driven rather than read:** the derivation returns all three, `unit-tests-3` is in it by
+name, and it is the one protection omits — 3 arms, 3 pass — with the red-shard and empty-derivation
+refusals living in `server/prMergeOrder.test.ts`, **182/182 green**. **The honest residual, stated as
+a floor:** a merge made on any road other than `pr-merge-in-order.mts` — the GitHub merge button, a
+bare `gh pr merge` — would not consult the third shard.
+
+### E. Invariant 5, invariant 4's public half, and the boundary
+
+**13 `public-endpoint` findings**, and they are CLAUDE.md's enumerated thirteen with no additions
+and no absences: `access.validate`, `announcements.getActive`, `auth.logout`, `auth.me`,
+`billing.getPlans`, `creationCheck.lookup`, `credits.getCosts`, `generation.costs`,
+`newsletter.subscribe`, `referral.validate`, `system.health`, `waitlist.getStats`, `waitlist.join`.
+**2 `onboarding-endpoint`**: `access.redeem`, `access.status`. Both match the file exactly.
+
+**Invariant 4's public half holds by measurement: `open` input AND `public` auth is ZERO**, with two
+positive controls that fired (an injected open+public row, and a real open route made public). The
+thirteen read **5 `strict` and 8 `none`** — none open.
+
+**The procedure counts are IDENTICAL to run 8: 293 routes — 134 `strict`, 113 `open`, 46 `none`,**
+with the Atlas raising `non-strict-input` for the 113. CLAUDE.md's *270 / 113 / 115 / 42* is still
+stale and still **not a card**, for run 8's reason: that sentence ends *"`pnpm
+architecture:generate` reports the current figure"*, so the document hedges itself on purpose.
+
+**The boundary**, over all 1240 rows with its controls in front of it: **0 rows carry any of the 17
+keys `REFUSING_KEYS` declares.** Run 8's **197** is reproduced exactly — same count, same single
+action, same single path — the moment `description` joins the set, so the two readers agree and
+nothing has drifted. ⚠ **Run 8's prose called them "the nine boundary keys"; the list held
+seventeen at run 8's own tree**, read at `b1613763c`. The measurement was right and the sentence
+describing its population was not.
+
+### F. What I got wrong, and one of them would have gone into this log as a fact
+
+1. ⚠ **TWO READERS PRINTED A CONFIDENT `0 disagreements` BECAUSE SHELL QUOTING ATE A BACKSLASH
+   LEVEL.** Both a `node -e '…'` one-liner and a **quoted** `<<'EOF'` heredoc delivered
+   `^s{2,}lookup:s` where the source said `^\s{2,}lookup:\s` — inside a JS string or template
+   literal the surviving single backslash is an escape, so every `\s` became a literal `s` and
+   every `\b` a literal `b`. **The regex matched nothing and the reader reported no findings**,
+   which is indistinguishable from a clean tree. It was caught only because I had already read
+   `creationCheck.lookup` by hand and knew the answer could not be zero. **The repair is in the
+   method, not the regex:** readers are written with the Write tool, never a heredoc, and W9-B's
+   reader now **REFUSES (exit 1) unless a positive control it must find actually fires** — plus an
+   arm that tests whether its own escapes survived at all. This is `surviving-sabotage-may-be-inert`
+   and `truncated-read-rebuilt-pattern` in one.
+2. ⚠ **MY FIRST INVARIANT-4 READER FOUND `procedures: 0` AND STILL PRINTED "0 open+public".** The
+   field is `routes`, not `procedures`, and the state field is `input`, not `strictInput` — so an
+   **empty population read as a clean verdict**, and worse, my first decoy *passed* because I set
+   the same wrong field name on it. A positive control that passes for the wrong reason is no
+   control. The published numbers come from the corrected reader with two working controls.
+3. **The world guard refused my first production disposable, and it was right.**
+   `railway.cmd run --service MySQL` injects `MYSQL_PUBLIC_URL` and **not** `DATABASE_URL`, so
+   `dotenv` filled the gap from the local dev `.env` and the process was half production, half dev
+   — the two differ only by port. `resolveDatabaseUrl()` is the answer, and the guard caught it
+   before a single row was read.
+4. **`gh api` with a leading-slash endpoint is rewritten by Git Bash into a filesystem path**
+   (`C:/Program Files/Git/repos/…`, then a 404 that looks like a missing job). Drop the leading
+   slash; `gh` says so in the error if the message is read whole. This is the sibling of the
+   Machinist's run-9 trap — that one needed `--allow-escape-sequences`, which is also required here
+   and is why both job logs read at all.
+5. **I nearly filed the third shard as a finding** (§D). The gate workflow had already reasoned it
+   out in its own comment. Law 7c, paying for itself on the first card of the night.
+
+### G. What this run leaves standing, and run 10's brief
+
+**Filed: 2 — #2703 (W9-A) and #2704 (W9-B). Repaired in-run: #2703's part 1.** #2703's second part
+and all of #2704 are open.
+
+**Run 10 (~2026-11-03) takes, in order:**
+
+1. ⚠ **`pnpm audit` ALL SCOPES, and expect it to have MOVED AGAIN.** Tonight's repair takes it to
+   zero; the gap that let eleven accumulate unseen is #2703's open half. **Read the Dependabot
+   alerts beside it with no `state` filter, counting by state yourself** — that form has now worked
+   three runs running and is the only one that has. **A non-zero `--prod` means something went
+   around the gate** and is a different and worse finding.
+2. ⚠ **Check whether #2661 and #2662 are still open and still red.** They are the mechanism behind
+   W9-A, not a side note: while a major-bump PR sits on a dependency, **no in-major patch for it
+   will ever be offered**. If they are still red in a week that is its own card, and #857 is its
+   precedent.
+3. **#2704 — read whether it was taken, and do not re-measure it from scratch.** The 17-row count,
+   the alias list and both directions are in §C with their controls.
+4. **The `secrets.yml` crons of 2026-11-02**, at their logs, for the commit count and the zero.
+5. **Run the un-wiring differ again, run 9 → run 10.** One worktree, about four minutes, free, and
+   the only reader in the tree that answers *did something STOP*. ⚠ **Say floor, never coverage.**
+6. The `audit_logs` read, the boundary reader **with its two controls in front of it**, the
+   population, branch protection, the override resolution, and the standing two (semgrep, the
+   access-control suites), as always.
+7. ⚠ **The three dead overrides (`lodash-es`, `mdast-util-to-hast`, `tar`) are NOT a finding and
+   must not become a card by accumulation.** Fourth run reporting them. #1815 reasoned it out.
+8. ⚠ **Socket's known-vulnerability alert is STILL UNPROVEN, and tonight was the best opportunity
+   yet and it did not take it**: eleven published advisories landed in this tree over three days
+   and Socket's two checks were **green on every PR**. That is consistent with Socket being
+   scoped to production or to malware alone (#858 measured the latter), not proof of either — but
+   it is the first time the question has had real material under it. **Do not manufacture an
+   advisory to test it.**
+
+**Not a Warden brief, named so it is not re-proposed:** `enforce_admins` (his call, #858, still no
+recommendation); the Socket dashboard's policy (not this seat's access); a row-level reconciliation
+of the credit ledger (run 5's limit); W5-E's fraud cap (his decision, already made); whether the
+casting writers belong in `audit_logs` (run 2's question, still nobody's card); the health alarm's
+duplicate rows (run 7 §C — his ruling declined it); the CLAUDE.md procedure counts (§E — hedged on
+purpose); **the ~58 stale shift worktrees** (known Janitor litter, and the Janitor ran today);
+**and `missingFacts` as a dead export** (§D — housekeeping, named for the Janitor, not a card).
+
+**Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render, no
+production variable, no flag, no migration. Four read-only disposables against production and the
+tree, all deleted at close. One detached worktree at `b1613763c`, removed with both commands; one
+branch worktree for #2703's repair.
