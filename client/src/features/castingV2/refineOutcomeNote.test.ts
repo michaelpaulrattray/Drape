@@ -41,6 +41,18 @@ describe("which refine outcomes get to say something", () => {
     expect(refineOutcomeNote({ kind: "asked", note: "ignored" })).toBeNull();
   });
 
+  it("says a RECEIPT's note — the dropped-clause confession (#2695)", () => {
+    /* On production every paid refine answers with a receipt and the settled
+       result loses the race, so the receipt is the only carrier the dropped
+       clause has. This is the inheritance the arm below promises, named on the
+       member that now exists. */
+    expect(refineOutcomeNote({
+      kind: "dispatched",
+      note: "The studio part of your ask wasn't changed — refining changes the "
+        + "person, not the shoot. Everything else you asked for went ahead.",
+    })).toContain("The studio part of your ask wasn't changed");
+  });
+
   it("does not decide on `kind`, so the next confession inherits the rule", () => {
     /* The point of the whole module: an outcome kind this file has never heard
        of, carrying a note, is said. That is what makes the defect above
