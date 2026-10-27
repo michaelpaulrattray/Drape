@@ -140,7 +140,16 @@ export type Finding = {
     | "route-changed"             // observed ≠ the committed observation
     | "drive-error"               // the service threw something that was not a refusal
     | "not-driven"                // a corpus row whose state the fixture cannot supply
-    | "ledger-moved";             // the fixture's balance changed — the census spent
+    | "ledger-moved"              // the fixture's balance changed — the census spent
+    /*
+      THE TABLE WAS TAKEN UNDER A DIFFERENT PRODUCT THAN THE NEXT DRIVE WOULD
+      MEASURE (#2694) — read BEFORE any `belief-mismatch` or `route-changed`
+      finding a drive produces, because a profile widening makes both of those
+      appear about capabilities that are working exactly as built.
+    */
+    | "drive-profile-drift"
+    /** A committed profile whose fixture account cannot be read out of it. */
+    | "drive-profile-unreadable";
   subject: string;
   message: string;
 };
@@ -888,6 +897,114 @@ export function roadProseSymbolFindings(input: {
   }
 
   return findings;
+}
+
+/**
+ * THE FLAG CONFIGURATION A DRIVE RUNS UNDER — one owner, so the drive and the
+ * drift reader below cannot disagree about it (#2694).
+ *
+ * It lived as a local `const` inside `generate-capability-atlas.mts` until
+ * #2694; it is here because the reader that detects drift in it has to compute
+ * the same thing, and a second copy of this rule is the mirror working law 4 is
+ * about — one that would always drift toward the generator.
+ *
+ * The shipped parents are `all` (production's own values, read 2026-08-21); the
+ * feature doors are opened for the fixture alone, the way the founder's account
+ * is opened; the two that need a table or a worker stay off.
+ *
+ * ⚠ **IT IS A DERIVATION, AND THAT IS WHAT #2694 IS ABOUT.** A flag declared in
+ * `castingV2Scope.ts` joins this profile the moment it is written, with no edit
+ * anywhere. That is deliberate and is being kept — the alternative costs a line
+ * per flag and buys a decision nobody was asking for. What was missing is that
+ * the widening was SILENT, so a committed table could describe a product the
+ * next drive would not measure. {@link driveProfileDrift} is the sentence.
+ */
+export function driveProfileFlags(userId: number): Record<string, string> {
+  const flags: Record<string, string> = {};
+  for (const flag of declaredFlags()) {
+    if (["CASTING_V2_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"].includes(flag)) flags[flag] = "all";
+    else if (["CASTING_SCAN_TABLE_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"].includes(flag)) flags[flag] = "off";
+    else flags[flag] = `users:${userId}`;
+  }
+  return flags;
+}
+
+/**
+ * THE FIXTURE ACCOUNT A COMMITTED PROFILE WAS TAKEN ON, read out of the profile
+ * ITSELF rather than from a database.
+ *
+ * The check must never reach a network or a database — so the user id comes
+ * from the committed profile's own `users:<id>` values, which is the only place
+ * it is recorded. `null` when no row carries one, which is a profile this
+ * reader can only compare by NAME.
+ */
+export function profileFixtureUserId(flags: Record<string, string>): number | null {
+  for (const value of Object.values(flags)) {
+    const match = /^users:([1-9][0-9]*)$/.exec(value);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
+/** What has moved between a committed drive profile and the one a drive would use today. */
+export type DriveProfileDrift = {
+  /** Flags a drive would open that the committed table was never taken under. */
+  opened: string[];
+  /** Flags the committed table was taken under that the tree no longer declares. */
+  retired: string[];
+  /** Flags in both, standing somewhere different. */
+  moved: Array<{ flag: string; committed: string; derived: string }>;
+};
+
+/**
+ * WHAT THE NEXT DRIVE WOULD MEASURE THAT THIS TABLE WAS NOT TAKEN UNDER
+ * (#2694).
+ *
+ * # The defect this answers
+ *
+ * `driveProfileFlags` DERIVES its population from `declaredFlags()`, so a new
+ * flag joins the census's open-doors profile by being declared and nothing
+ * announces it. Measured on the tree this landed in: the committed profile held
+ * **19** flags, the tree declared **22**, **ten** would have been opened for the
+ * first time by the next drive and **seven** in the committed table had been
+ * retired since.
+ *
+ * ⚠ **The sharp instance is #2544.** `capability-atlas-roads.mts` says of the
+ * outfit capability, in the map's own prose, *"No new door is minted: the corpus
+ * rows below are the flag-off reading and are unchanged."* That is TRUE of the
+ * committed table — the last drive predates the flag — and FALSE of the next
+ * drive, which opens `CASTING_OUTFIT_EDIT_SCOPE` to the fixture and therefore
+ * measures the SERVED arm. The two wardrobe rows still expect
+ * `refused:wall_unbacked`, so the drive would produce belief and route-change
+ * findings nobody designed, about a capability working exactly as built.
+ *
+ * # Why this is a WARN and not an error
+ *
+ * An error fails `pnpm capability:check`, which runs inside `pnpm test` and
+ * inside the deploy rite on every push — so an error here would block every
+ * push until somebody re-drove the census, and a drive writes the committed
+ * table and spends provider calls. The card's own ask is *"a sentence the next
+ * driver has to read"*, not a refusal. **It turns a silent widening into a
+ * named one and stops there.**
+ */
+export function driveProfileDrift(input: {
+  /** The committed profile's flags — what the table on disk was taken under. */
+  committed: Record<string, string>;
+  /** The profile a drive would use today. */
+  derived: Record<string, string>;
+}): DriveProfileDrift {
+  const opened = Object.keys(input.derived).filter((flag) => !(flag in input.committed)).sort();
+  const retired = Object.keys(input.committed).filter((flag) => !(flag in input.derived)).sort();
+  const moved = Object.keys(input.derived)
+    .filter((flag) => flag in input.committed && input.committed[flag] !== input.derived[flag])
+    .sort()
+    .map((flag) => ({ flag, committed: input.committed[flag]!, derived: input.derived[flag]! }));
+  return { opened, retired, moved };
+}
+
+/** Whether anything moved at all — so a caller does not re-derive the three lengths. */
+export function profileHasDrifted(drift: DriveProfileDrift): boolean {
+  return drift.opened.length > 0 || drift.retired.length > 0 || drift.moved.length > 0;
 }
 
 export function declaredFlags(): string[] {
@@ -1957,7 +2074,23 @@ export type Observation = {
 };
 
 export type DrivenAtlas = {
-  profile: { name: string; flags: Record<string, string>; fixture: string };
+  profile: {
+    name: string;
+    flags: Record<string, string>;
+    fixture: string;
+    /**
+     * WHEN THIS TABLE WAS TAKEN — an ISO day, written by a drive (#2694).
+     *
+     * ⚠ **Optional, because the committed table records no date at all** and
+     * will not until the next drive writes one. That absence is the finding
+     * half of #2694's second reading: three of 48 re-driven rows had moved
+     * under the committed table, *"a 6% drift at whatever the current interval
+     * is — and nobody can say what that interval is, because the committed
+     * table records no date."* Absent reads as *taken before a drive recorded
+     * one*, never as today.
+     */
+    drivenAt?: string;
+  };
   observations: Observation[];
   /** Rows whose state the fixture could not supply — listed, never hidden. */
   notDriven: Array<{ id: string; state: CorpusState }>;
