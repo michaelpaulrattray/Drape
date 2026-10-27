@@ -238,8 +238,18 @@ describe("and it stays retired (#1577 slice D1)", () => {
   const RETIRED = "CASTING_OPEN_LANE_SCOPE";
   /** A flag that exists and cannot go — every control below finds this one. */
   const LIVE = "CASTING_V2_SCOPE";
-  /** The retired flag's former parent, which is live and keeps its row. */
-  const PARENT = "CASTING_REFERENCE_LIBRARY_SCOPE";
+  /*
+    A SECOND LIVE FLAG, used as this block's positive control for shape 1.
+
+    ⚠ IT WAS THE RETIRED FLAG'S FORMER PARENT, `CASTING_REFERENCE_LIBRARY_SCOPE`,
+    UNTIL #1577 SLICE D5 RETIRED THAT ONE TOO — the hazard every retirement
+    guard carries and no other suite does: its controls are flags, and a flag
+    can die. A control naming a dead flag does not fail loudly; it quietly stops
+    proving the reader works while the file keeps passing. So it moved to a flag
+    that is not on the ghost audit's retirement list at all: the auto-scan's,
+    which band E marks KEEP because widening it is his.
+  */
+  const PARENT = "CASTING_FACE_SCAN_SCOPE";
 
   const SOURCES = serverAndSharedSources(repoRoot);
   const DECLARED = declaredEnvNames(SOURCES);

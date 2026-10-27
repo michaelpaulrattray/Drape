@@ -1760,10 +1760,14 @@ export default function CastingSheet() {
   /*
     PANEL v2 — everything about this face, from the reference library.
 
-    Dark until `CASTING_REFERENCE_LIBRARY_SCOPE` names this account: off, the
-    server answers `enabled: false` with no rows and the panel above stays
-    exactly as it is today. Same cadence as the v1 read and the variants list —
-    what a face holds changes only when a refinement lands.
+    ⚠ It had its own switch until #1577 slice D5: dark unless
+    `CASTING_REFERENCE_LIBRARY_SCOPE` named the account, in which case the server
+    answered `enabled: false` with no rows. That flag stood at `all` from
+    2026-08-24 and is retired, so the panel is open to every account that can
+    open a sheet. `enabled` is still READ below and is still the right thing to
+    read — the scan beside it keeps a real dark branch on its own flag, and the
+    two payloads are the same shape on purpose. Same cadence as the variants
+    list: what a face holds changes only when a refinement lands.
   */
   const face = trpc.castingV2.facePanel.useQuery(
     {

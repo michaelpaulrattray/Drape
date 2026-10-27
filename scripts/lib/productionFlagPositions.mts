@@ -134,10 +134,26 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
      with anything, and a governed variable with no row is reported by
      `comparePositions`. So the two have to move together — and between the merge
      and the deletion the rite reports exactly that mismatch, by design. */
-  CASTING_REFERENCE_LIBRARY_SCOPE: {
-    position: "all",
-    why: "the repaint's parent; a repaint carries features by crop and needs it",
-  },
+  /* ⚠ CASTING_REFERENCE_LIBRARY_SCOPE'S ROW STOOD HERE AND IS GONE — #1577
+     slice D5, 2026-10-15, on his word (*"yes approve the plan and switch off the
+     six settings"*), the LAST of the six. It read `all` since 2026-08-24 and
+     said *"the repaint's parent; a repaint carries features by crop and needs
+     it"* — true, and the repaint's own flag went two slices earlier, leaving
+     this one gating nothing a customer could switch.
+
+     The code stops reading the variable in this commit and the variable leaves
+     the service in the same act as the merge — in that order, and the other
+     order is the expensive one: with the old build still serving, an absent
+     variable parses as `off`, which would blank the face panel for every
+     customer and stop every refine carrying the cast's own features.
+
+     The row is REMOVED rather than moved to `off`, which is the repaint's
+     precedent four rows up and what `productionFlagPositions.test.ts` enforces
+     from both directions: a row for a variable nothing declares can never
+     disagree with anything, and a governed variable with no row is reported by
+     `comparePositions`. So the two have to move together — and between the
+     merge and the deletion the rite reports exactly that mismatch, by
+     design. */
   CASTING_INK_STUDIO_SCOPE: {
     position: "off",
     /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — his Crew reply #208 (card

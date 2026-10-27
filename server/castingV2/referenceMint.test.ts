@@ -77,7 +77,6 @@ function harness(options: {
     get rows() { return recorded?.rows ?? []; },
     get batchId() { return recorded?.cleanupBatchId; },
     dependencies: {
-      enabledFor: () => true,
       read: async (input: { question: string }) => {
         asked.push(input.question);
         if (options.readThrows) throw new Error("the segmenter said no");
@@ -825,7 +824,22 @@ describe("what the mint never cuts", () => {
 });
 
 describe("what the mint does when things go wrong", () => {
-  it("is inert while the flag is off — no decode, no read, no write", async () => {
+  /*
+    ⚠ THE FLAG-OFF ARM STOOD HERE AND WENT WITH THE FLAG — #1577 slice D5.
+
+    It handed `enabledFor: () => false`, asserted `{ outcome: "off", slots: [] }`
+    and proved nothing was decoded, read or written on the way to it. Both the
+    seam and that outcome member are gone: the library has no switch, and the one
+    production caller reaches this from inside a refine behind
+    `requireCastingV2`.
+
+    ⚠ What the arm was really protecting is kept below rather than lost with it:
+    a mint asked for NOTHING must still touch nothing. `nothing-to-keep` is the
+    member that says so, and it is a different fact from `off` — one is a
+    configuration, the other is a render with no slots — so it gets the
+    inertness assertions the dead arm carried.
+  */
+  it("is inert when there is nothing to keep — no decode, no read, no write", async () => {
     let touched = false;
     const result = await mintReferencesForRender({
       userId: 1,
@@ -833,16 +847,15 @@ describe("what the mint does when things go wrong", () => {
       frame: { bytes: Buffer.from("not even a png") },
       applied: null,
       masterRegions: new Map(),
-      slots: [hairSlot()],
+      slots: [],
       dependencies: {
-        enabledFor: () => false,
         read: async () => { touched = true; return null; },
         store: async () => { touched = true; return { key: "" }; },
         record: (async () => { touched = true; return []; }) as never,
       },
     });
 
-    expect(result).toEqual({ outcome: "off", slots: [] });
+    expect(result).toEqual({ outcome: "nothing-to-keep", slots: [] });
     expect(touched).toBe(false);
   });
 

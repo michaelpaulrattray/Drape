@@ -22,7 +22,7 @@
  * their ear bands so the verdict is taken by eye — the per-ear reader has
  * produced false passes on this specimen and does not grade this.
  *
- *   CASTING_REFERENCE_LIBRARY_SCOPE=users:1 CASTING_REPAINT_SCOPE=users:1 \
+ *   CASTING_V2_SCOPE=users:1 \
  *     npx tsx scripts/drive-earring-vacancy-two-step-disposable.mts
  */
 import "dotenv/config";
@@ -58,7 +58,10 @@ if (process.env.MYSQL_PUBLIC_URL) {
 }
 assertOneWorld(["DATABASE_URL"]);
 const where = new URL((process.env.DATABASE_URL ?? "").replace(/^mysql:/, "http:"));
-const library = process.env.CASTING_REFERENCE_LIBRARY_SCOPE ?? "(unset)";
+/* ⚠ Both flags this line used to read are RETIRED — the repaint at #1577 slice
+   4b and the reference library at slice D5 — so the only position that still
+   decides anything here is the casting scope. */
+const library = process.env.CASTING_V2_SCOPE ?? "(unset)";
 const repaint = process.env.CASTING_REPAINT_SCOPE ?? "(unset)";
 console.log(`WORLD: DATABASE_URL → ${where.hostname}:${where.port}`);
 console.log(`FLAGS: library ${library} · repaint ${repaint}`);

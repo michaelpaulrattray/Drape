@@ -96,7 +96,7 @@ _Called as:_ `castingV2.refine`
 
 A delivered tattoo is remembered as a CROP row cut from the delivered frame by the placement's own reader word; that crop rides every later render as instruction material (upscaled to the legibility floor when small). Transforms ride the crop as the source; removals prune the step and recompose (navigate free when the survivor already exists, re-render when it does not); the record's names are believed only where a ROW backs them.
 
-_Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryMint.ts` · `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE`
+_Entrances:_ `server/castingV2/inkPriorAsk.ts` · `server/castingV2/inkDeliveryMint.ts` · `server/castingV2/refineService.ts`  ·  _Flags:_ `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE`
 
 _Called as:_ `castingV2.refine`
 
@@ -503,9 +503,9 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | wall_unfileable | interpreter-refusal |  | colourContextDoor.test.ts, inventionDoor.test.ts, referenceWordsLane.test.ts, refineDelta.test.ts, refineFacets.test.ts, refineInterpreterVouchedRecheck.test.ts, refineService.test.ts, refusalTag.test.ts |
 | whichInkToChange | cannot-say | free | cannotSayCopy.test.ts |
 
-## Flags (22)
+## Flags (21)
 
-`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_CURRENT_DESCRIPTION_SCOPE` · `CASTING_FACE_DISCOVERY_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_OUTFIT_EDIT_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFERENCE_LIBRARY_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
+`CASTING_BORN_INK_SCOPE` · `CASTING_BRIEF_FIDELITY_SCOPE` · `CASTING_CONCEPT_UPLOAD_SCOPE` · `CASTING_CREATION_RECORD_SCOPE` · `CASTING_CURRENT_DESCRIPTION_SCOPE` · `CASTING_FACE_DISCOVERY_SCOPE` · `CASTING_FACE_SCAN_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_CUT_SCOPE` · `CASTING_INK_REFERENCE_SCOPE` · `CASTING_INK_REGION_CROP_SCOPE` · `CASTING_INK_STUDIO_SCOPE` · `CASTING_INK_TRANSFORM_SCOPE` · `CASTING_OUTFIT_EDIT_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_REFINE_DISPATCH_SCOPE` · `CASTING_RETRY_SCOPE` · `CASTING_ROLL_ENGINE_SCOPE` · `CASTING_SCAN_TABLE_SCOPE` · `CASTING_V2_SCOPE` · `CASTING_VOICE_SCOPE`
 
 ## Findings (56)
 

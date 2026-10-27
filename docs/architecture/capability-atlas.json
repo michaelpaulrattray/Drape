@@ -873,7 +873,6 @@
       "CASTING_INK_TRANSFORM_SCOPE",
       "CASTING_OUTFIT_EDIT_SCOPE",
       "CASTING_REFERENCE_ATTACH_SCOPE",
-      "CASTING_REFERENCE_LIBRARY_SCOPE",
       "CASTING_REFINE_DISPATCH_SCOPE",
       "CASTING_RETRY_SCOPE",
       "CASTING_ROLL_ENGINE_SCOPE",
@@ -1668,8 +1667,7 @@
         ],
         "flags": [
           "CASTING_INK_STUDIO_SCOPE",
-          "CASTING_INK_TRANSFORM_SCOPE",
-          "CASTING_REFERENCE_LIBRARY_SCOPE"
+          "CASTING_INK_TRANSFORM_SCOPE"
         ],
         "notes": [
           "THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).",

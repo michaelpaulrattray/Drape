@@ -23,7 +23,6 @@ import {
 import {
   castingInkDesignArmed,
   castingReferenceAttachArmed,
-  castingReferenceLibraryArmed,
   castingScanTableArmed,
   castingInkDeliveryCropArmed,
 } from "./castingV2Scope";
@@ -113,18 +112,31 @@ export const CANDIDATE_CHILD_STORES = {
       "the segment store's table is absent — the store is retired (#1160) and nothing has ever written a row to it, so nothing is being left behind.",
   },
   /**
-   * The same tolerance, on the same terms, for the reference library.
+   * THE REFERENCE LIBRARY IS NOW PERMANENTLY ARMED, and the reason it stopped
+   * having a condition is the whole point of this comment.
    *
-   * Its table lands by ceremony too, so the window where the code knows about
-   * `casting_reference_library` and the database does not is real — and empty,
-   * because the flag that would write a row is off until after the ceremony. The
-   * moment the library is armed, a missing table stops being an empty set and
-   * starts being a fault the sweep says out loud.
+   * Its table landed by ceremony, so the window where the code knew about
+   * `casting_reference_library` and the database did not was real — and empty,
+   * because the flag that would write a row was off until after the ceremony.
+   * **That flag is gone.** #1577 slice D5 retired `CASTING_REFERENCE_LIBRARY_SCOPE`
+   * on his word of 2026-10-15, so the library is what a Casting V2 refine does
+   * and every paid edit files a crop. There is nothing left to ask.
+   *
+   * ⚠ SO IT IS WRITTEN AS THE CONSTANT IT HAS BECOME, rather than left as a
+   * call that looks like a live question — the `segments` entry above is the
+   * precedent, and it points the OTHER way for the opposite reason: nothing
+   * writes a segment, so absence is expected there, and everything writes a
+   * library row, so absence here is a fault said out loud.
+   *
+   * ⚠ **It changes nothing production does.** `castingReferenceLibraryArmed()`
+   * read `parse(env).kind !== "off"` and the variable stood at `all`, so this
+   * entry already refused to tolerate an absent table on every deploy since
+   * 2026-08-24. What is gone is a tolerance no live configuration could reach.
    */
   referenceLibrary: {
-    armed: castingReferenceLibraryArmed,
+    armed: () => true,
     absence:
-      "the reference library's table is absent — nothing can have been written to it, so nothing is being left behind. This is expected only before the library migration lands.",
+      "the reference library's table is absent — the library has no switch any more (#1577 slice D5), so every paid edit files a crop and an absent table is a fault rather than an empty set.",
   },
   /**
    * The same tolerance, on the same terms, for the kept face scan (0032).

@@ -36,7 +36,7 @@
  * Dev only, user 1's own face, 50 dev credits. Refuses if the flags that make
  * this the repaint road are not on, rather than quietly grading the old one.
  *
- *   CASTING_REFERENCE_LIBRARY_SCOPE=users:1 CASTING_REPAINT_SCOPE=users:1 \
+ *   CASTING_V2_SCOPE=users:1 \
  *     npx tsx scripts/drive-vacancy-two-step-disposable.mts
  */
 import "dotenv/config";
@@ -75,12 +75,15 @@ if (process.env.MYSQL_PUBLIC_URL) {
 }
 assertOneWorld(["DATABASE_URL"]);
 const where = new URL((process.env.DATABASE_URL ?? "").replace(/^mysql:/, "http:"));
-const library = process.env.CASTING_REFERENCE_LIBRARY_SCOPE ?? "(unset)";
+/* ⚠ Both flags this line used to read are RETIRED — the repaint at #1577 slice
+   4b and the reference library at slice D5 — so the only position that still
+   decides anything here is the casting scope. */
+const library = process.env.CASTING_V2_SCOPE ?? "(unset)";
 const repaint = process.env.CASTING_REPAINT_SCOPE ?? "(unset)";
 console.log(`WORLD: DATABASE_URL → ${where.hostname}:${where.port}`);
 console.log(`FLAGS: library ${library} · repaint ${repaint}`);
 if (!/^(all|users:.*\b1\b.*)$/.test(repaint) || !/^(all|users:.*\b1\b.*)$/.test(library)) {
-  throw new Error("the repaint road is not open for this user — set CASTING_REFERENCE_LIBRARY_SCOPE and CASTING_REPAINT_SCOPE to users:1");
+  throw new Error("the repaint road is not open for this user — both of the flags this arm reads are RETIRED (#1577 slices 4b and D5), so set CASTING_V2_SCOPE to users:1 instead");
 }
 console.log(`PLAN:  ${STEPS.length} paid steps × ${COST} credits = ${STEPS.length * COST} on dev user ${USER}\n`);
 

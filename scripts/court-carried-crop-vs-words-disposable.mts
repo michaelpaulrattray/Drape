@@ -81,7 +81,8 @@ const writeState = (state: State) => writeFileSync(STATE, `${JSON.stringify(stat
 
 const outsider = await ensureOutsider();
 process.env.CASTING_REPAINT_SCOPE = `users:${outsider.id}`;
-process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${outsider.id}`;
+/* `CASTING_REFERENCE_LIBRARY_SCOPE` was armed over the outsider here and is
+   retired (#1577 slice D5) — the library follows the casting scope now. */
 process.env.ENABLE_STORAGE_CLEANUP_WORKER = "true";
 
 const conn = await openDatabase(process.env.DATABASE_URL);

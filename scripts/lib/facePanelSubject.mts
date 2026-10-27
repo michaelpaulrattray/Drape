@@ -18,7 +18,7 @@
  * *"holds only what an EDIT minted"*. **So a ready candidate nobody has ever
  * edited has NO panel, correctly, and a driver pointed at one would report the
  * panel missing on a healthy product.** That is exactly what #1151 recorded
- * when it widened `CASTING_REFERENCE_LIBRARY_SCOPE` to the dev bot and found
+ * when it widened the reference library's own flag to the dev bot and found
  * the sheet rendering while the viewer *"still will not open"*.
  *
  * The subject therefore has to be a candidate that is `ready` **and carries

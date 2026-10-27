@@ -652,7 +652,7 @@ proposal; nothing here is decided.
 | **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | ✅ **RETIRED — slice D2, 2026-10-16** | the clause naming which half of the picture a side is on. **The bar was #1495's and it was MET**: the assembled instruction hashed across twelve shapes before and after the cut, every one byte-identical, rollup `883b5ab0…` — and ⚠ **the hash is the bar and the LENGTH is not**, driven rather than assumed: one changed letter moved a hash and left its length at 84. Out with the flag: the parse, two error classes, `captureCastingSidePhrasingEnabled`, the boot fence, the `sidePhrasingEnabled` service seam, and the `placeSides` option on the assembler — the compiler named every reader the moment the option came off `AssembleInput`. **`sidePhrasing.ts` and `imageHalfClause` STAY**: the signed-Cast view lane says the same sentence through the same owner. ⚠ **This row's `all` hid a stale belief, not a live arm** — `recipeAssembler.ts` still called the clause *"dark until its own court runs"* seven weeks after he widened it. The Railway variable comes off AFTER the deploy |
 | **D3** | `CASTING_INK_WORDS_SCOPE` (`all`): *"the neck alone"* is the off arm (`:1912`, `:4010`) | the off arm: none | ✅ **RETIRED — PR for slice D3, 2026-10-15.** Both off-arm sites confirmed at the code before the cut | the flag chose between two placement lists rather than flipping a boolean, so the cut was five choice sites and the parameter they rode on. ⚠ **The compiler named FOUR readers and a grep afterwards found THREE MORE** — an injected dependency and two object-literal fields that survived the typecheck because their literals are inferred or spread, where excess-property checking never runs. D2's slice found the opposite (*"a grep afterwards added nothing"*), which is why each slice establishes its own count. The bar: the classifier's verdict over 256 shapes, rollup identical, the reader proven able to fail on the closed arm |
 | **D4** | `CASTING_REFINE_DISPATCH_SCOPE` (`all`): the arm that HOLDS the request until the render lands (`refineService.ts:1076`) | the off arm: none | **retire with its flag, on his word** | money-adjacent (it decides when a paid request returns), so its slice is a held review |
-| **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent (`castingV2Scope.ts:356`), read at `routes/castingV2.ts:2722`, `:2822` | the off arm: none | **retire last, on his word** | it is the root of the chain C and D1-D2 hang from, so it goes after them or not at all |
+| **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent, read at `routes/castingV2.ts`'s two panel doors, `refineService.ts`'s three sites, the mint's `enabledFor` and the sweep's armed read | the off arm: none | ✅ **RETIRED — slice D5, 2026-10-28** | it was the root of the chain C and D1–D2 hung from, so it went after them. **Three validators re-parented onto `CASTING_V2_SCOPE`, not six** — three of the six had already gone with their own flags, exactly as the 2026-10-15 sweep's table predicted, and the re-count is a comment on #1577 rather than a figure carried from a handoff. ⚠ **ONE PROPERTY IS LOST RATHER THAN MOVED AND IT IS NAMED EVERYWHERE IT MATTERS: the cleanup-worker fence over the LIBRARY'S OWN writes.** Each surviving child asks for the sweep in its own body, so nothing about an uploaded design, an attached photograph or a kept scan is weaker; a deployment with the sweep off now boots and files crops nothing collects, and `ENABLE_STORAGE_CLEANUP_WORKER` is `true` on the service. ⚠ **The bar was the REAL BOOT GATE rather than a hash**: production's whole recorded position set driven through `validateEnv()` after the cut (`scripts/rehearse-reparent-boot-disposable.mts`, re-pointed in this slice rather than deleted — the first of its arms to survive a retirement, because the fence lived and only its variable moved), with a negative control that refuses BY NAME over the new parent. **The one behaviour change is declared**: a refine always reads the library now, where the flag could in principle have skipped the digest query — unreachable on production since 2026-08-24, and the arm that asserted the dark road is INVERTED rather than deleted |
 | **E** | the refine flags still at `users:1`: `MASKED_EDITING_SCOPE` (`maskedRefine.ts:99`, a **code constant**, read at `refineService.ts:3387`, `:4759`, `:7550`), and `CASTING_HAIR_REFERENCE_SCOPE`, `CASTING_INK_REFERENCE_SCOPE`, `CASTING_INK_TRANSFORM_SCOPE`, `CASTING_REFERENCE_ATTACH_SCOPE`, `CASTING_INK_REGION_CROP_SCOPE` | **live** for his account | **keep** | not ghosts: half rollouts, and widening is his. ⚠ `MASKED_EDITING_SCOPE` is a constant in the source, not a Railway variable, so `productionFlagPositions.mts` cannot see it. Worth one line in the catalogue |
 | **F** | `withoutFacets` (`refineDelta.ts:1957`), the segment store's facet filter | **none, anywhere, not even a test.** Lost its only caller at #1160 slice 1 (`fa1a9ce5d`, 2026-09-25) | ✅ **RETIRED — slice 1, this commit** | the differ found it. The uncalled-export sweep cannot, because the docblock at `:1971` names it and the sweep counts that as a self-use. Re-counted at the cut: two mentions in the source, the declaration and that docblock, and nothing else in the tree. `clearFacets` has a second live caller (`:2282`) and STAYS |
 | **G** | `readStoredDelta` / `migrateStoredDelta` (`refineLegacy.ts:116`, `:150`), the reader for deltas older builds wrote | **live**: 15 uses in `refineService.ts`, and `signService.ts:42` | **keep** | it is the READ path for history, the refine road's equivalent of `rollComposedOnAuthorRoad`: a stored row is our own paid-for past |
@@ -759,9 +759,12 @@ any of them (his rule on #1398).
      boot.** It was found by enumerating every production reader of the flag
      before editing anything, rather than by trusting this row's count — the
      rule that a retirement slice re-counts before it cuts, paying for itself
-     one slice after it was written down. All four now read
+     one slice after it was written down. All four then read
      `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1 shape, because
-     a child naming a missing parent refuses boot.
+     a child naming a missing parent refuses boot. ✅ **AND SLICE D5 MOVED THE
+     SURVIVORS AGAIN, ONTO `CASTING_V2_SCOPE`** — three of them, because three of
+     the four had retired with their own flags by then. The re-count rule paid
+     for itself a second time on the same row.
      **Nothing production holds changes**: both flags stood at `all`, and the
      repaint's own gate ENDED in the library's, so every user inside the
      repaint was already inside the library. ⚠ **It is the weaker of the two
@@ -853,9 +856,13 @@ any of them (his rule on #1398).
         answer. Collapsing it to unconditional made the library's own
         *"a dark deploy must not pay for a database round trip"* arm fail, and
         that arm had been passing for the WRONG REASON (what silenced the query
-        was the suite leaving the REPAINT flag unset). It is gated on
-        `CASTING_REFERENCE_LIBRARY_SCOPE` now — the same condition it always
-        had, named at its real parent.
+        was the suite leaving the REPAINT flag unset). It was then gated on
+        `CASTING_REFERENCE_LIBRARY_SCOPE` — the same condition it always
+        had, named at its real parent. ✅ **AND IT IS GATED ON NOTHING SINCE
+        SLICE D5**: the library has no switch, so the read is unconditional and
+        the arm that asserted the dark road is INVERTED rather than deleted —
+        *speaks to the library on every render*, which is this slice's one
+        declared behaviour change.
 
      **What is left standing and is named rather than cut**, because each is its
      own change with its own suites: `harvestRefinement` itself (~965 lines
@@ -895,7 +902,8 @@ any of them (his rule on #1398).
      by five sabotages, one per arm.
 5. **One flag at a time after that, each on his word**: open lane (D1, with the
    prompt-hash bar), side phrasing (D2), ink words (D3), refine dispatch (D4,
-   held review), and the reference library last (D5).
+   held review), and the reference library last (D5 — ✅ all five shipped; D5 on
+   2026-10-28, and with it every flag retirement this audit proposed).
 6. **The record closes**: this section's own last slice, as on the roll road.
 
 **What is NOT in it**: the dice reader and everything that reads the house-road

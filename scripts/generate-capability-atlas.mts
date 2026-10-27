@@ -58,7 +58,7 @@ const usage = () => {
 const profileFor = (userId: number): Record<string, string> => {
   const flags: Record<string, string> = {};
   for (const flag of declaredFlags()) {
-    if (["CASTING_V2_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"].includes(flag)) flags[flag] = "all";
+    if (flag === "CASTING_V2_SCOPE") flags[flag] = "all";
     else if (["CASTING_SCAN_TABLE_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"].includes(flag)) flags[flag] = "off";
     else flags[flag] = `users:${userId}`;
   }

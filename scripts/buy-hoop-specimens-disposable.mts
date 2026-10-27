@@ -18,7 +18,7 @@
  * # The library flag is set FOR THIS PROCESS, which is the whole point
  *
  * Per-side crops exist only where the library minted them, and the library is
- * dark everywhere. `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` is set in-process
+ * dark everywhere. The library's own flag was set in-process
  * before the service is touched — the same way the render that produced rows
  * #8/#9 was driven. Nothing about production changes; the variable is this
  * process's and dies with it.
@@ -56,17 +56,21 @@ if (INVENTORY) {
 
 /* Before the service module is imported, so the flag is live when its scope
    helper first reads the environment. */
-process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
 if (!process.env.FAL_KEY) throw new Error("FAL_KEY is required");
 
 const { refineCandidate } = await import("../server/castingV2/refineService");
 const { selectVariant } = await import("../server/db/castingV2Variants");
-const { captureCastingReferenceLibraryEnabled } = await import("../server/castingV2/castingV2Scope");
+const { captureCastingV2Enabled } = await import("../server/castingV2/castingV2Scope");
 
-/* ARMED, ASSERTED — a batch driven with the flag quietly off would buy three
-   renders and mint nothing, and the log line would look identical. */
-if (!captureCastingReferenceLibraryEnabled(USER_ID)) {
-  throw new Error("the library is not armed for user 1 in this process; the batch would buy three renders and mint no crop");
+/* ARMED, ASSERTED — a batch driven with the library quietly dark would buy
+   three renders and mint nothing, and the log line would look identical.
+   ⚠ It read `captureCastingReferenceLibraryEnabled` and pinned
+   `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` in this process until #1577 slice
+   D5 retired that flag. The library has no switch of its own now, so the
+   question this arm asks is the one that is left: is Casting V2 open to this
+   user at all. */
+if (!captureCastingV2Enabled(USER_ID)) {
+  throw new Error("Casting V2 is not open for user 1 in this process; the batch would buy three renders and mint no crop");
 }
 assertOneWorld(APP_WRITE_PATH_KEYS);
 

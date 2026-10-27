@@ -16,7 +16,7 @@
  *   step 2  "colour her hair copper"  → the PAIR sentence stands, once, no hoop
  *                                       crop rides beside it, lobes still bare
  *
- *   CASTING_REFERENCE_LIBRARY_SCOPE=users:1 CASTING_REPAINT_SCOPE=users:1 \
+ *   CASTING_V2_SCOPE=users:1 \
  *     npx tsx scripts/drive-earring-brief-acceptance-disposable.mts cast
  *   … then, with a candidate that is actually wearing them:
  *     npx tsx scripts/drive-earring-brief-acceptance-disposable.mts <publicId>
@@ -103,7 +103,10 @@ if (process.argv[2] === "cast") {
 const candidatePublicId = process.argv[2];
 if (!candidatePublicId) throw new Error("pass a candidate public id, or `cast`");
 
-const library = process.env.CASTING_REFERENCE_LIBRARY_SCOPE ?? "(unset)";
+/* ⚠ Both flags this line used to read are RETIRED — the repaint at #1577 slice
+   4b and the reference library at slice D5 — so the only position that still
+   decides anything here is the casting scope. */
+const library = process.env.CASTING_V2_SCOPE ?? "(unset)";
 const repaint = process.env.CASTING_REPAINT_SCOPE ?? "(unset)";
 console.log(`FLAGS: library ${library} · repaint ${repaint}`);
 if (!/^(all|users:.*\b1\b.*)$/.test(repaint) || !/^(all|users:.*\b1\b.*)$/.test(library)) {

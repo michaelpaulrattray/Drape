@@ -5,7 +5,6 @@ import {
   CASTING_INK_REFERENCE_SCOPE_ENV,
   CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
-  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
   CastingInkRegionCropCoverageError,
   CastingInkRegionCropScopeConfigurationError,
@@ -192,13 +191,11 @@ describe("the grammar, and the point of use", () => {
       regionCrop: process.env[CASTING_INK_REGION_CROP_SCOPE_ENV],
       reference: process.env[CASTING_INK_REFERENCE_SCOPE_ENV],
       attach: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
-      library: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
       casting: process.env[CASTING_V2_SCOPE_ENV],
       cut: process.env[CASTING_INK_CUT_SCOPE_ENV],
     };
     try {
       process.env[CASTING_V2_SCOPE_ENV] = "all";
-      process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "all";
       process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV] = "users:1";
       process.env[CASTING_INK_REGION_CROP_SCOPE_ENV] = "users:1";
 
@@ -215,7 +212,6 @@ describe("the grammar, and the point of use", () => {
         [CASTING_INK_REGION_CROP_SCOPE_ENV, saved.regionCrop],
         [CASTING_INK_REFERENCE_SCOPE_ENV, saved.reference],
         [CASTING_REFERENCE_ATTACH_SCOPE_ENV, saved.attach],
-        [CASTING_REFERENCE_LIBRARY_SCOPE_ENV, saved.library],
         [CASTING_V2_SCOPE_ENV, saved.casting],
         [CASTING_INK_CUT_SCOPE_ENV, saved.cut],
       ] as const) {
