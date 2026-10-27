@@ -221,7 +221,6 @@ import { mintReferencesForRender } from "./referenceMint";
 import { carriedInkSlotsForGeometry, carriedSlotsForGeometry, reMintCarriedGeometry } from "./carriedGeometry";
 import type { DeliveryAdjudication } from "./deliveryCourt";
 import { mintedSlotsForRender } from "./mintedSlots";
-import { carriesHoldingTheirAsks, chainAsksBySlot } from "./askHeldByWords";
 import {
   deriveLibrary, instanceLastWritten, libraryWithoutEditedCrops, liveReferences, priorWordsBySlot,
   supersededCarrySlots,
@@ -6797,33 +6796,14 @@ async function refineCandidateCounted(
         the per-instance memory below are asking a different question — what
         this face's rows SAY — and pruning an ask does not unsay it.
       */
-      const pruned = carriesAfterPruning({ rows: branchRows, composed });
       /*
-        ⚠ AND A KEPT FEATURE WHOSE WORDS DO NOT HOLD WHAT THE CHAIN ASKS FOR IT
-        STOPS RIDING (#2650) — no crop and no keep-line, whatever any reader
-        said and whenever the row was filed. Its slot joins the restore list
-        below, so the feature is said in the customer's own words instead. The
-        test is a fixed word comparison, not a reader (`askHeldByWords.ts`).
+        ⚠ A KEPT FEATURE IS NOT HELD TO A WORD TEST ON THE WAY OUT (#2673).
+        #2650 set every kept row's words beside the chain's ask and sent the
+        slot in words when they did not hold it. His ruling retired that: the
+        newest picture of the feature an edit changed is its guide, and a
+        customer who does not like it retries.
       */
-      const held = carriesHoldingTheirAsks({ rows: pruned.rows, composed });
-      const carried = { rows: held.rows, dropped: pruned.dropped };
-      const contradictedSlots = held.contradictedSlots;
-      /* A slot whose older, matching crop rides again is NOT said in words —
-         a restored slot is an edited slot, and an edited slot's crop is
-         dropped below, which would throw the matching picture away. */
-      const reinstatedSlots = new Set(held.reinstated);
-      if (held.contradicted.length > 0 || reinstatedSlots.size > 0) {
-        log.warn(
-          {
-            operationId,
-            variant: variant.publicId,
-            setAside: held.contradicted.map((one) => one.slot),
-            wordsOnly: contradictedSlots,
-            olderMatchingCropRides: held.reinstated,
-          },
-          "[refineService] a kept feature's words do not hold what the chain asks for it — its crop and keep-line stay home, and the ask is said in words",
-        );
-      }
+      const carried = carriesAfterPruning({ rows: branchRows, composed });
       if (carried.dropped.length > 0) {
         log.info(
           {
@@ -6906,13 +6886,7 @@ async function refineCandidateCounted(
             pixels, so on an ordinary face the list is empty and not one line of
             this changes the recipe.
           */
-          restore: {
-            state: composed,
-            slots: Array.from(new Set([
-              ...supersededCarrySlots(branchRows).filter((slot) => !reinstatedSlots.has(slot)),
-              ...contradictedSlots,
-            ])),
-          },
+          restore: { state: composed, slots: supersededCarrySlots(branchRows) },
           /*
             ONE INSTANCE, IF SHE POINTED AT ONE. Undefined on every ask that
             does not come from a tapped row or a clicked rectangle — the panel
@@ -7877,6 +7851,14 @@ async function refineCandidateCounted(
           forbids.
         */
         repaint: recordOf(painted.sent),
+        /*
+          THE SLOTS THIS STEP ITSELF ASKED FOR (#2673) — `repaintAsksFor`'s own
+          `askedNow`, the same list the labelled layout names on its "Edit
+          instruction" line, never the slots only re-said. The mint reads it:
+          the delivered crop of each of these slots becomes that slot's guide,
+          whatever the reader said.
+        */
+        askedNow: asks.askedNow.slots,
       };
     };
 
@@ -9601,9 +9583,12 @@ async function refineCandidateCounted(
             locality: (await readOpenKindProperties(kind))?.locality ?? null,
           })),
         );
-        const { slots, unfiled, unfiledOpen } = mintedSlotsForRender({
+        const { slots, unfiled, unfiledOpen, disputeSetAside } = mintedSlotsForRender({
           earned,
           disputed,
+          /* The slots THIS step asked for (#2673): their delivered crop is the
+             guide, and the reader's dispute on them is logged, not obeyed. */
+          editedSlots: image.askedNow ?? [],
           captions: capturedCaptions,
           /* The earned pass's fallback: a fact the binding verifier confirmed
              files its ask's words rather than nothing, so a caption the two
@@ -9673,6 +9658,24 @@ async function refineCandidateCounted(
           priorWords: priorWordsBySlot(live),
           minted: new Set(slots.map((one) => one.slot)),
         };
+        /*
+          ⚠ THE READER'S DISPUTES ON A SLOT THIS EDIT CHANGED, KEPT AS TELEMETRY
+          (#2673). The slot was filed as its newest picture anyway, on his
+          ruling; this line is where a person can still see that the reader and
+          the painter disagreed — including an affirmation whose confirming
+          re-read never came (#2646's unconfirmed rule, `unconfirmed` below).
+        */
+        if (disputeSetAside.length > 0) {
+          log.info(
+            {
+              operationId,
+              variant: variant.publicId,
+              disputeSetAside,
+              unconfirmed: Array.from(unconfirmed),
+            },
+            "[refineService] the reader disputed a feature this edit changed — its newest picture is kept as the guide anyway",
+          );
+        }
         if (unfiled.length > 0) {
           log.info(
             { operationId, variant: variant.publicId, unfiled },
@@ -9811,15 +9814,7 @@ async function refineCandidateCounted(
             deliveredRegions: null,
             masterSideRegions: null,
             deliveredSideRegions: null,
-            /* What the chain asks of each slot rides beside it, so the mint
-               can refuse a crop whose own words do not hold it (#2650). */
-            slots: (() => {
-              const asks = chainAsksBySlot(composed);
-              return slots.map((one) => {
-                const asked = asks.get(one.slot);
-                return asked === undefined ? one : { ...one, asks: asked };
-              });
-            })(),
+            slots,
             knownDigests: known,
             /*
               EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
