@@ -222,6 +222,17 @@ const scaled = (fraction: number, width: number, height: number) =>
 export type SideRegions = { left: Mask; right: Mask };
 
 /**
+ * A RECTANGLE A POINTER PUT ROUND SOMETHING, in the asked picture's own pixels.
+ *
+ * Pixels and not fractions, for the reason every other geometry in this family
+ * is in pixels: a mask comes back in the caller's pixel space, so a prompt in a
+ * different space is one conversion away from the wrong-frame class. The reader
+ * converts the detector's own normalised answer once, where the frame's size is
+ * in hand, and never hands a fraction out.
+ */
+export type PointerBox = { x: number; y: number; width: number; height: number };
+
+/**
  * What a region looks like to this module. One call per named region, so the
  * caller owns which segmenter answers and this owns what is done with it.
  */
@@ -352,6 +363,63 @@ export type RegionReader = {
   }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. `signal` as on `region`. */
   subject(input: { image: Buffer; signal?: AbortSignal }): Promise<Mask>;
+  /**
+   * WHERE A THING THE VOCABULARY HAS NEVER HEARD OF SITS — optional, and the
+   * two halves of it are two methods for the reason `regionSides` is its own
+   * method: a reader without the capability answers honestly rather than
+   * guessing, and nothing downstream has to carry two return shapes.
+   *
+   * `pointer` asks an open-vocabulary DETECTOR for rectangles round a bare
+   * noun. It is a third capability beside `region` and `landmark`, not a better
+   * one, and #2532 measured exactly what it buys: `region` asked `jaw hardware`
+   * returns nothing at all, `landmark` returns a point that grows into ONE of
+   * the two tubes, and a rectangle carries the EXTENT that cuts both. Seven of
+   * ten cells whole against the text road's three.
+   *
+   * ⚠ **AN EMPTY LIST IS THE ABSENCE ANSWER, AND IT IS THE ONE THE POINTER ROAD
+   * RESTS ON.** On all three of that bench's negative controls — goggles,
+   * horns, glasses, each verified absent by eye at the frame first — the
+   * detector returned nothing and the segmenter was never called. That matters
+   * because `region`'s own absence reading is unsafe for a word with a lookalike
+   * in frame (the departure-gate substitution: `eyebrows` on a browless ridge
+   * came back with two perfect brow shapes, outscoring both present arms). The
+   * detector answering nothing is a different instrument answering, not the same
+   * one asked more politely. Three cells is a floor, not a guarantee.
+   *
+   * It THROWS on a transport failure, the way `region` does, and returns an
+   * empty list for *nothing there*. The two are not the same answer and a
+   * caller that cannot tell them apart would file a missing row as an absence.
+   */
+  pointer?(input: {
+    image: Buffer;
+    name: string;
+    imageUrl?: string;
+    signal?: AbortSignal;
+  }): Promise<readonly PointerBox[]>;
+  /**
+   * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
+   *
+   * ⚠ **ONE BOX PER CALL, AND THAT IS A MEASUREMENT RATHER THAN AN INTERFACE
+   * CHOICE.** The obvious shape is a `boxes` array, because the detector
+   * returns a list and the segmenter's own schema takes one. #2532 drove it:
+   * sending several boxes does not COMBINE them, it switches which object comes
+   * back — two boxes on the jaw moved the cut from the right tube to the left,
+   * and on a three-eyed cast the detector's three boxes made the segmenter cut
+   * a NORMAL eye, turning a right answer wrong. The segmenter reads several
+   * prompts as hints toward ONE object. So the array cannot be offered: a caller
+   * that wants two instances makes two calls, and the type says so.
+   *
+   * `name` is carried for the log and the census alone — the rectangle is the
+   * question. `null` is *the segmenter returned no mask for that rectangle*,
+   * which is a real outcome and never an exception.
+   */
+  regionInBox?(input: {
+    image: Buffer;
+    name: string;
+    box: PointerBox;
+    imageUrl?: string;
+    signal?: AbortSignal;
+  }): Promise<Mask | null>;
   /**
    * WHERE A THING WOULD BE, even when nothing can see it.
    *

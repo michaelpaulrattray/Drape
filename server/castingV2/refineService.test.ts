@@ -11397,6 +11397,70 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
       process.off("unhandledRejection", watch);
     }
   });
+
+  /*
+    A CALLER THAT CANNOT TAKE A RECEIPT (#2560) — the two arms the card asks
+    for, and which of them is the discriminator.
+
+    The receipt half is already proven two arms up ("answers with a receipt
+    BEFORE the render"), against this same flag and this same latch, so it is
+    not written a second time. What is new is the HELD road reached without
+    touching the customer switch, and the control that the field is read as
+    `true` rather than as truthy.
+
+    ⚠ **NEITHER ARM CAN PASS BY NEVER RUNNING, AND THE FIRST ONE'S CLOCK IS THE
+    JOURNAL RATHER THAN A TIMER.** `"generate"` is pushed by the engine mock on
+    the line ABOVE the one that awaits the latch, so once it is in the journal
+    the render is parked and every earlier statement has run — the receipt's own
+    site among them. A `setTimeout` race would have asked the same question on a
+    contended machine's clock, where a slow sabotaged run answers "still
+    waiting" and the arm passes for the wrong reason.
+  */
+  it("HOLDS the request for a caller that cannot take a receipt — with the flag ON for this very user", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    let answered = false;
+    const pending = refineCandidate(
+      { ...greenEyes, cannotTakeAReceipt: true },
+      input,
+    ).then((outcome) => { answered = true; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    /*
+      THE DISCRIMINATOR. Delete the `cannotTakeAReceipt` condition in
+      `refineCandidate` and this is where it reddens: the receipt is announced
+      strictly before the engine is called, so by the moment above it would have
+      won the race and this call would already have answered `dispatched`.
+    */
+    expect(answered, "the call has NOT answered while the picture is still being drawn").toBe(false);
+    expect(landedVariant, "and nothing is painted yet either").toBeNull();
+    expect(ledger.charges, "the money moved on the same line it always did").toHaveLength(1);
+
+    render.release();
+    const result = await pending;
+
+    expect(result.kind, "the picture itself answers the call, as the script needs").toBe("rendered");
+    expect(result.variantId).toBeTruthy();
+    expect(landedVariant, "the render was terminal BEFORE the caller was answered").not.toBeNull();
+    expect(ledger.charges, "one charge, the same as both other roads").toHaveLength(1);
+    expect(ledger.refunds, "and nothing came back").toHaveLength(0);
+  });
+
+  it("still dispatches when the caller says it CAN take one — the field is read as `true`, never as truthy", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
+
+    expect(result.kind, "an explicit false is today's road — this field opts OUT, it never opts in").toBe("dispatched");
+    expect(landedVariant, "the latch is still shut, so this was a receipt and not a fast render").toBeNull();
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant).not.toBeNull());
+  });
 });
 
 /**

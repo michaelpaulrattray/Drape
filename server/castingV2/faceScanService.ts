@@ -70,6 +70,7 @@ import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
 import { discoverFeatures, discoveryCropsOf, type FaceDiscovery } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
+import { cutDiscovered, type DiscoveredRegion } from "./pointerCut";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
 
@@ -120,6 +121,36 @@ export type ScannedFace = {
    * looking straight at the camera.
    */
   sides: string;
+  /**
+   * WHAT THE READING FOUND THAT NO CATALOGUE QUESTION COVERS — one row per cut
+   * instance, carrying the customer's own noun (#2566 slice 2's pointer road).
+   *
+   * A LIST and not a map, which is the one shape decision in this field: a map
+   * keyed by slot could hold the geometry and not the NOUN, and the noun cannot
+   * be read back out of the key (`pointerCut`'s header, and the open lane's own
+   * binding condition before it). A row here is a jacket, a sash, a third eye —
+   * things the fixed list cannot see at any price.
+   *
+   * Empty is the ordinary answer and means nothing went wrong: the flag is off,
+   * or the discovery named only things the catalogue already asks about, or the
+   * detector found none of them. There is no state here for *the pointer road
+   * failed*, because a failure costs exactly the rows it could not cut and the
+   * panel is then what it is today.
+   */
+  discovered: readonly DiscoveredPanelRow[];
+};
+
+/**
+ * ONE FOUND ROW AS THE PANEL RECEIVES IT — its mask already a stencil, the way
+ * {@link ScannedFace.slots} carries one.
+ */
+export type DiscoveredPanelRow = {
+  slot: FeatureSlot;
+  /** The reading's own bare noun. Never derived from the slot. */
+  noun: string;
+  instance: number;
+  box: PanelBox;
+  maskUrl: string;
 };
 
 /**
@@ -227,7 +258,15 @@ async function stencilOf(mask: Mask, box: PanelBox): Promise<Buffer> {
  * lifecycle, and minting sixteen objects per face-version to draw eight
  * thumbnails is the manifest-and-purge machinery 4a exists to avoid.
  */
-async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace> {
+async function displayOf(
+  scan: FaceScan,
+  frameUrl: string,
+  /* The pointer road's rows, cut beside the catalogue's and stencilled here for
+     the reason the catalogue's are: one function turns masks into what the
+     panel draws, so a found row and a catalogued one cannot end up two
+     different kinds of picture (#2566 slice 2). */
+  found: readonly DiscoveredRegion[] = [],
+): Promise<ScannedFace> {
   const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
   let stencilBytes = 0;
   for (const [slot, box] of Array.from(scan.boxes.entries())) {
@@ -243,16 +282,36 @@ async function displayOf(scan: FaceScan, frameUrl: string): Promise<ScannedFace>
   const words = new Map<FeatureSlot, readonly string[]>();
   for (const [slot, line] of Array.from(scan.descriptions.entries())) words.set(slot, [line]);
 
+  const discovered: DiscoveredPanelRow[] = [];
+  for (const region of found) {
+    const stencil = await stencilOf(region.mask, region.box);
+    stencilBytes += stencil.length;
+    discovered.push({
+      slot: region.slot,
+      noun: region.noun,
+      instance: region.instance,
+      box: region.box,
+      maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+    });
+  }
+
   return {
     frameUrl,
     slots,
     words,
     asked: scan.asked,
+    /* STILL THE CATALOGUE'S COUNT, deliberately. `found` is read beside `asked`
+       to tell a thin reading from a broken one, and both are about the plan the
+       scan ran; adding the pointer road's rows to it would make a dressed cast
+       report more found than asked, which reads as an instrument fault. The
+       pointer road's own counts are in `pointerCut`'s log line and the length of
+       `discovered` is the panel's answer. */
     found: slots.size,
     empty: scan.empty,
     failed: scan.failed,
     stencilBytes,
     sides: sidesOf(slots),
+    discovered,
   };
 }
 
@@ -381,6 +440,21 @@ function readingFromKept(kept: KeptScanShape, frameUrl: string): ScannedFace {
     failed: [],
     stencilBytes: kept.stencilBytes,
     sides: kept.sides,
+    /*
+      ⚠ THE FOUND ROWS COME BACK OUT OF THE ROW, AND THIS LINE IS THE WHOLE
+      REASON THEY ARE STORED (#2566 slice 2).
+
+      `CASTING_SCAN_TABLE_SCOPE` is `all`, so the FIRST look is kept and every
+      later look on the same frame comes through here. Reading the catalogue
+      rows and not these would put a jacket on the panel once and never again —
+      *"the same frame gave a different panel on different readings"*, which is
+      the finding slice 1 was held on, arriving by the storage road instead of
+      the reader's.
+
+      `?? []` is the pre-#2566 row and the flag-off row alike, and both mean the
+      same thing: no found rows, which is today's panel.
+    */
+    discovered: kept.discovered ?? [],
   };
 }
 
@@ -609,13 +683,89 @@ export async function scannedFace(input: {
       It cannot throw. `discoverFeatures` turns every failure into `{ ok: false }`,
       and a discoverer that is absent is no read at all.
     */
+    /**
+     * ONE FOUND ROW ONTO THE PARTIAL, as it lands.
+     *
+     * It reads every other field off `entry.partial` and writes a whole new
+     * object, which is precisely what `onFiled` below does for a catalogue row
+     * — so the two writers cannot clobber each other's half, and neither has to
+     * know the other exists. That is the existing idiom in this function rather
+     * than a new one, and the reason it is safe is single-threaded JavaScript:
+     * each of these runs to completion between awaits.
+     */
+    const fileToPartial = async (region: DiscoveredRegion): Promise<void> => {
+      try {
+        const stencil = await stencilOf(region.mask, region.box);
+        const discovered = [...(entry.partial?.discovered ?? []), {
+          slot: region.slot,
+          noun: region.noun,
+          instance: region.instance,
+          box: region.box,
+          maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+        }];
+        const slots = new Map(entry.partial?.slots ?? []);
+        entry.partial = {
+          frameUrl: url,
+          slots,
+          words: entry.partial?.words ?? new Map(),
+          asked: scanPlan().length,
+          found: slots.size,
+          empty: [],
+          failed: [],
+          stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
+          sides: sidesOf(slots),
+          discovered,
+        };
+      } catch {
+        /* A partial is a courtesy on top of a courtesy — the settled reading
+           cuts the same stencil from the same mask a moment later. */
+      }
+    };
+
+    /*
+      ⚠ **AND NOW IT HAS A CONSUMER, WHICH IS SLICE 2 (#2566).** The paragraph
+      above still holds in every word — the discovery runs BESIDE the catalogue
+      questions and cancels none of them — and what has changed is only that its
+      names are no longer thrown away. They go to the pointer road, which cuts
+      the ones no catalogue question covers and hands back rows with pictures.
+
+      **The scan is still not waiting on any of it.** `scanFace` is awaited
+      below exactly as before, its `onFiled` fills the partial exactly as
+      before, and a panel asking mid-reading gets the catalogue rows at the same
+      moment it does today. What the SETTLED answer waits for is both — because
+      a settled reading that omitted the jacket would be kept, and the jacket
+      would then never arrive on that frame at all (see `readingFromKept`).
+
+      It cannot throw: every road through `discoverFeatures` and `cutDiscovered`
+      ends in a value, and the `.catch` here is the belt on the braces.
+    */
     const discover = input.dependencies?.discover === undefined
       ? defaultDiscoverer(input.userId)
       : input.dependencies.discover;
-    const discovering: Promise<unknown> = discover === null
-      ? Promise.resolve(null)
+    const discovering: Promise<readonly DiscoveredRegion[]> = discover === null
+      ? Promise.resolve([])
       : discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height })
-        .catch(() => null);
+        .then(async (discovery) => {
+          if (!discovery.ok) return [];
+          const cut = await cutDiscovered({
+            frame: {
+              bytes: frame.bytes,
+              width: metadata.width as number,
+              height: metadata.height as number,
+              url,
+            },
+            features: discovery.features,
+            reader,
+            /* Each found row onto the partial as it lands, for the catalogue
+               rows' own reason: a reading that takes forty seconds must look
+               like a reading that is working. `fileToPartial` is shared with
+               `onFiled` below so the two cannot describe one entry
+               differently. */
+            onFiled: (region) => { void fileToPartial(region); },
+          });
+          return cut.regions;
+        })
+        .catch(() => []);
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
@@ -649,6 +799,10 @@ export async function scannedFace(input: {
               failed: [],
               stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
               sides: sidesOf(slots),
+              /* Read off the entry rather than reset, so a found row that
+                 landed first is not wiped by the next catalogue row —
+                 `fileToPartial` above preserves `slots` the same way. */
+              discovered: entry.partial?.discovered ?? [],
             };
           }
         })().catch(() => {
@@ -657,10 +811,21 @@ export async function scannedFace(input: {
         });
       },
     });
-    /* Not awaited: the panel never waits on a read that changes nothing on it.
-       `discovering` already swallows its own failures. */
-    void discovering;
-    return await displayOf(scan, url);
+    /*
+      ⚠ **THIS IS AWAITED NOW, AND THE PREVIOUS COMMENT'S REASONING IS WHY IT
+      HAS TO BE** (#2566 slice 2). It read *"not awaited: the panel never waits
+      on a read that changes nothing on it"* — correct while the discovery's
+      names were logged and discarded, and false the moment they became rows.
+
+      The SETTLED reading is what gets kept (`keepScan`, under
+      `CASTING_SCAN_TABLE_SCOPE`, which is `all`), and a kept reading is the end
+      of the asking for that frame: a settled answer that omitted the found rows
+      would be written down as complete, and the jacket would never appear on
+      that version again. What the customer waits for is unchanged in the only
+      place it is measured — the panel's first paint reads the PARTIAL, which
+      both writers fill as rows land.
+    */
+    return await displayOf(scan, url, await discovering);
     });
     spent = census;
     return value;
@@ -909,6 +1074,13 @@ export function panelScanOf(scan: ScannedFace): PanelScan {
       to make.
     */
     absent: absentSlotsOf(scan),
+    /*
+      THE FOUND ROWS, STRAIGHT THROUGH (#2566 slice 2). Nothing is decided here:
+      which of them becomes a row, and whether it draws at all, is the panel's
+      business — it already owns his *"no features ... unless it has an image to
+      go with it"* rule for every other row and must own it for these too.
+    */
+    discovered: scan.discovered,
   };
 }
 
