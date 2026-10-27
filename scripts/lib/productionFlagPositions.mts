@@ -252,7 +252,7 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
   CASTING_FACE_DISCOVERY_SCOPE: {
-    position: "UNSET",
+    position: UNSET,
     why:
       "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
       + "approved on #2532). It has never been on for any account. It changes "

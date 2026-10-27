@@ -4736,6 +4736,57 @@ class** (a hold's sentence rots and no reader asks whether it is still true) **i
 its sharpest form: the sentence rotted on the card the band ranks FIRST.** Filed;
 editing the body of a founder-ordered card is the relay's act, not a patrol's.
 
+
+### ⚠ L. The close itself turned up a live defect: the deploy rite REFUSED, and it was right
+
+**Added after the entry above was written, because it was found by trying to ship it.**
+The rite refused this run's push with **`FLAG POSITION MISMATCH — 1`**:
+*"`CASTING_FACE_DISCOVERY_SCOPE`: the service holds `off`, this record says
+`UNSET`"*. **Production was never wrong and nothing on the service had moved.**
+
+**Read at both ends before either was touched**, which is the only reason the
+direction came out right:
+
+1. **The service, by name** — `CASTING_FACE_DISCOVERY_SCOPE` is **absent** from
+   the Drape service. ⚠ **And that answer was not believed until the reader had a
+   positive control**: a bare `grep` over a variable listing fails OPEN (the
+   memory `never-filter-a-secret-listing` is about exactly this shape), so
+   `CREW_TAB_SCOPE=all` was read back through the same command first — 72 lines
+   returned, reader working — and only then did "not present" count.
+2. **The record** — `scripts/lib/productionFlagPositions.mts:102` declares
+   `export const UNSET = "off"`, and **18 rows write `position: UNSET`.** Line
+   255, added **this morning** by PR #2570 (#2566 slice 1, merged 02:42Z), wrote
+   **`position: "UNSET"`** — the constant's NAME in quotes. So the record claimed
+   the service holds the literal string `UNSET`, and the rite compared it against
+   the real `off`.
+
+**Fixed: quotes off.** Class-swept per working law 7 — `UNSET` is the only
+constant in the module, and `grep -nE 'position: "[A-Z_]+"'` now returns **0**
+siblings, so the instance was the class's only live instance.
+
+⚠ **AND THE REASON IT SHIPPED IS WORTH MORE THAN THE FIX — EVERY LOCAL
+INSTRUMENT IS BLIND TO IT, DRIVEN RATHER THAN ASSUMED.** The defect was
+re-applied and each reader re-run: `productionFlagPositions.test.ts`,
+`productionBootSettings.test.ts` and `faceScanSpend.test.ts` return **3 files /
+45 tests PASS**, and `npx tsc --noEmit` reports **0** diagnostics naming the
+file. The type is the reason — `readonly position: string`, and `"UNSET"` is a
+perfectly good string. **So it passes the gate, merges, and is caught by the one
+reader that runs AFTER merge.**
+
+**Its real cost landed on the founder's page.** The rite is the only road a
+briefing edition takes to `/admin/crew`, so a one-token typo in a tooling record
+held edition 741 — the edition whose whole job was to tell him the ten-day
+outage is over. **Filed as #2691** (`bug`, tooling, waits behind the focus on his
+2026-10-01 rule) recommending the type be narrowed rather than another suite
+added, *because a type cannot be satisfied by a passing test that reads
+nothing* — with the domain's real width named (the 4 legitimate `"off"` rows,
+`"sunburst"`, `"ink.add.front_upper_torso.v1"`) so the next seat does not narrow
+it wrongly.
+
+⚠ **One thing a later run must NOT conclude from this: the rite was not at
+fault and its refusal must not be loosened.** It is the only instrument in the
+chain that compares the record against the live service, and it did exactly
+that. The repair belongs upstream, on the branch.
 ### Clocks
 
 Janitor: run 11 2026-09-30, run 12 2026-10-03, run 13 2026-10-08, run 14
