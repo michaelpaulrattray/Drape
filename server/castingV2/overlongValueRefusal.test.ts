@@ -153,7 +153,10 @@ describe("an over-long value is refused by name, not as an unreadable sentence (
       is what let the length case speak. The OTHER half — nothing survived the
       brand scrub — is the same class (a storage-shape refusal nulling the delta
       with no wall) and is a DIFFERENT fact needing a DIFFERENT sentence, so it
-      is filed on its own rather than folded in here, on his 2026-09-24 rule.
+      is **#2731** rather than folded in here, on his 2026-09-24 rule. Driven
+      with its controls before it was filed: a brand-only value nulls the whole
+      delta on `marks`, `wardrobe` AND `makeup`, names no wall, and takes an
+      ordinary brows ask down with it.
 
       This arm pins that it did NOT quietly inherit the length sentence: a
       brand-only value must not tell somebody to say it in fewer words. It is
@@ -174,11 +177,18 @@ describe("⚠ LAW 7's SWEEP — the class had TWO instances in one function (#27
     no wall, "didn't come through clearly". Fixing one and not the other is the
     instance fixed and the class left open, so it moved in the same commit.
 
-    ⚠ ONE further sibling is a DIFFERENT fact needing a DIFFERENT sentence, so
-    it is FILED rather than folded in here (his 2026-09-24 rule): too MANY items
-    under one subject, **#2730**. Driven, with its control — nine marks in one
-    sentence, each well inside its own cap, return the whole-delta `null` with
-    no wall, where the same sentence with eight files every one of them.
+    ⚠ TWO further siblings are DIFFERENT facts needing DIFFERENT sentences, so
+    each is FILED rather than folded in here (his 2026-09-24 rule), and each was
+    DRIVEN with its controls before it was filed:
+
+      * **#2730** — too MANY items under one subject. Nine marks in one
+        sentence, each well inside its own cap, return the whole-delta `null`
+        with no wall; the same sentence with eight files every one of them.
+      * **#2731** — the brand scrub emptying a value, which is the other half of
+        the condition this card split. A brand-only value nulls the whole delta
+        on `marks`, `wardrobe` and `makeup`, names no wall, and takes an
+        ordinary brows ask down with it. The arm below pins that it did not
+        inherit this card's sentence.
 
     ⚠ **AND A SECOND ONE WAS CLAIMED, DRIVEN, AND DOES NOT EXIST — written here
     because the next sweep will otherwise re-find it.** The `absent` (removal)
