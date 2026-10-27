@@ -1,7 +1,7 @@
 {
-  "edition": 742,
-  "updatedAt": "2026-10-27T04:42:31.000Z",
-  "shift": "GOOD NEWS FIRST, AND IT IS THE ONLY THING ON THIS PAGE THAT MATTERS TONIGHT: everything the crew builds is reaching the live site again. For ten days it was not. From 17 October nothing we merged went live - the site kept serving the 17 October build while job after job was marked finished. The crew found it on 21 October and told you then. It is fixed. Fifteen jobs landed this morning between 10:34 and 13:31, and all fifteen are live now - I checked the running site itself and read the version it is serving, rather than trusting the merge notes, because trusting the merge notes is exactly what hid this for four days. The automatic after-deploy check also passed on all eight runs today. So the clothing changes in Refine, the waist fix, the picture-guide fix, the face reader and the rest are all on production for you to try. TONIGHT WAS A TIDY-UP, NOT A FEATURE. The cleaning round runs every three days and was seven days late, because a clean-up cannot happen while the crew is stopped - and the crew was stopped at your weekly model limit from 17 to 21 October. What it cleared: 194 leftover temporary folders the build tools had abandoned, and 65 leftover screenshots sitting loose in the project folder from jobs that finished weeks ago. Your project folder went from 77 stray files down to 11, and every one of the 11 is kept on a stated reason rather than my taste - seven are evidence pictures a document points at, one belongs to a job that is still open, one is your note saying where the backup drive lives. Nothing that belongs to the product was touched, and I checked the project's own libraries were intact after every single deletion. ONE THING WORTH YOUR ATTENTION, AND I HAVE NOT TOUCHED IT. Your ordered list currently says one job is available to start - clothing changes in Refine. It is not available: its first half is already built and live, and the only thing left on it is you looking at three pictures and saying whether the clothing reads right. That ask is already on this page. The list can only read labels, so it cannot see that the work behind the label is done, and the next shift that reads the list will be sent to a job with nothing in it. I have written it up rather than quietly editing a job you ordered. AND ONE DELIBERATE DECISION TO LEAVE 3.3 GIGABYTES ALONE. The folder holding every test picture from every court we have run has grown to 3.3 GB, and about 1.9 GB of it belongs to courts that are finished. I deleted none of it. Those are the actual pictures behind verdicts you gave with your own eyes, deleting them cannot be undone, and the disk they sit on is 80 per cent empty - so clearing them would have bought back five hundredths of one per cent of a disk nobody is short of. I wrote down the rule for when they do come out, so the next clean-up does not have to make the judgement again. ONE LAST THING, AND IT ARRIVED WHILE I WAS PUBLISHING THIS PAGE. You answered the clothing-changes pictures at 04:29 - \"They read right - carry on\" - about fifteen minutes after I started pushing. That answer is now marked as read, and it mattered more than it looks: it was the only thing holding the second half of that job. The first half has been live since this morning; the second half switches clothing editing on for your account and measures how often it refuses and how often the picture comes back right. I have not started it - a seat will take it properly rather than me beginning it at a quarter to five with three other seats already working - but the job now says it is ready to start instead of saying, wrongly, that it was still waiting on the half that already shipped. That wrong sentence is the one real find of tonight's tidy-up: your ordered list was offering a job whose only remaining work was waiting on you, and nothing in the list could see it.",
+  "edition": 743,
+  "updatedAt": "2026-10-27T06:30:03.000Z",
+  "shift": "ONE THING NEEDS YOU TONIGHT, AND IT IS A YES OR A NO: switch clothing changes on for your own account in Refine?\nThis morning you looked at the three clothing pictures and said they read right. That released the last piece of\nthat job, and tonight I measured it. The point of the measurement was one specific worry: teaching the studio to\nunderstand clothing means adding a word to the instructions it reads before EVERY edit, and we have measured before\nthat adding to those instructions can make unrelated edits start refusing. So I put 46 ordinary customer sentences\nthrough the real studio twice over, once with clothing taught and once without, back to back on the same character\nin the same minute. Seven of the 46 refuse. With clothing taught, the same seven refuse, for the same seven reasons,\nand nothing else moved. That was the one thing that could have stopped this, and it did not happen.\n\nTHE CLOTHING ASKS THEMSELVES: six of seven now work where none of the seven worked before. A long black wool coat,\na denim jacket over what he is wearing, a dark green linen shirt, a grey beanie, a red scarf, a tailored navy suit\n- all refused today, all land with clothing taught. The seventh is 'take the jacket off him', and it does not fail\nas clothing: it answers that there is nothing recorded to take off, which is a different job already on the board.\n\nI ALSO CHECKED THE THING WE WERE MOST AFRAID OF, which is a clothing edit quietly repainting the room behind the\ncharacter. It cannot. I asked for a jacket alongside every word the studio knows for scenery - backdrop, set, prop,\nchair, table and the rest - fifty-five times, and not once did any of those reach the picture instruction. Nothing\nwas charged for any of this; it all ran before the paying step.\n\nWHAT I FOUND INSTEAD IS WORTH MORE THAN THE MEASUREMENT, AND IT IS LIVE FOR EVERYONE TODAY. Ask for two things at\nonce and the studio does one of them and says nothing about the other. 'Make her hair copper red in a studio' gives\nyou copper hair, and the studio part is dropped in silence - 20 times out of 21. That needs no settings and has\nnothing to do with clothing: it happens right now on hair, eyes, beards, freckles, earrings, tans and expressions.\nThe studio even has the right sentence written for this - it says the set is not something a refine touches - but it\nnever gets to say it, because it only ever sees the part of your sentence that was kept. I have written it up rather\nthan fixed it: the obvious fix is one this code deliberately walked away from once before, so it wants a think, not\na patch. It does NOT argue against switching clothing on, and I nearly reported it as a clothing problem before the\ncontrol proved it has been there all along.\n\nONE HOUSEKEEPING FIND. The map the crew keeps of what the studio can do opens every new setting by itself when it is\nre-read. Ten settings have been added since it was last read, so the next person to refresh it would measure a\ndifferent product from the one the map describes, with nothing saying so. Written up, not touched.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T04:21:21.436Z",
+      "readAt": "2026-10-27T06:29:03.643Z",
       "items": [
         {
           "issueNumber": 14,
@@ -326,6 +326,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "outfit-flip-2544",
+      "title": "Switch clothing changes on for your own account — or leave it off",
+      "productImpact": "Today nobody can change what a character is wearing in Refine. \"Put him in a long black coat\" is refused. You said this morning that the three clothing pictures read right, and that was the last thing holding this.\n\nWhat switching it on does: on YOUR account only, clothing becomes something you can edit in the same box you already type in. Change a garment, add a layer, change its colour or fabric, add a hat or a scarf. Same price as any other refine, nothing new on screen, no new button and no setting to learn — the words are the control, as they are for everything else there.\n\nBefore asking you I measured the one thing that could have made this a bad idea. Teaching the studio about clothing means adding to the instructions it reads before EVERY edit, and this program has already measured that adding to those instructions can make unrelated edits start refusing. So 46 ordinary customer sentences went through the real studio twice, once each way, back to back on the same character. Seven of the 46 refuse today. With clothing taught, the same seven refuse for the same seven reasons and nothing else moved.\n\nThe clothing asks themselves: six of seven work where none of seven worked before. The seventh is \"take the jacket off him\", and it does not fail as clothing — it says there is nothing recorded to take off, which is already its own job on the board.\n\nAnd the thing we were most afraid of cannot happen: a clothing edit quietly repainting the room behind the character. I asked for a jacket alongside every scenery word the studio knows, fifty-five times. Not once did any of them reach the picture instruction.\n\nOne thing you WILL meet, and it is not new and not about clothing: ask for two things at once and the studio does one and says nothing about the other. \"Give her a white coat and make the background black\" gives you the coat in silence. That happens right now, on your account, on hair and eyes and beards — it needs no settings. It is written up separately. Switching clothing on gives it one more place to show.",
+      "workedExample": "Open a signed character, type \"put him in a long black wool coat\" and press the button. Today it refuses. With this on, it comes back wearing the coat, for the same credits any other refine costs. If you then type \"put him in a red jacket against a studio backdrop\", you will get the jacket and nothing will mention the backdrop — that is the separate thing above, and it is what the measurement found.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "Switch it on for my account",
+          "consequence": "Clothing becomes editable in Refine on your account only. Nobody else's account changes. The next step after that is your eye on real edits, and then your word on everyone."
+        },
+        {
+          "key": "no",
+          "label": "Leave it off",
+          "consequence": "Nothing changes. Clothing stays refused for every account including yours, and the work sits built and dark until you say otherwise."
+        }
+      ],
+      "recommendation": "Yes. The one measurement that could have stopped it came back flat — the same seven sentences refuse either way — and the thing it could have broken, a refine quietly repainting the set, cannot happen in any of the fifty-five ways I tried it. Your account is the right and only place to try it next, which is what the plan said from the start.",
+      "state": "open",
+      "filedAt": "2026-10-27T06:30:03.000Z",
+      "issueNumber": 2544
+    },
     {
       "id": "outfit-court-2544",
       "title": "Done — you said the clothing reads right, and that released the next half",
@@ -11219,7 +11241,7 @@
     301
   ],
   "nextUp": {
-    "readAt": "2026-10-27T04:21:21.436Z",
+    "readAt": "2026-10-27T06:29:03.642Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11274,7 +11296,11 @@
       {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — both numbers are measured and neither stops it. Switch clothing edits on for your own account? Recommend YES. Details on your Desk."
+        }
       },
       {
         "issueNumber": 2545,
@@ -11312,15 +11338,6 @@
         "issueNumber": 2583,
         "title": "Follow returns near-identical twins — it must return eight different people under the same look (his word 2026-10-16)",
         "urgent": false
-      },
-      {
-        "issueNumber": 2597,
-        "title": "Your eye on the outfit court — three strips, and whether clothing changes read right",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — look at three strips and say whether they read right. RECOMMENDATION: they do; carry on."
-        }
       },
       {
         "issueNumber": 2626,
